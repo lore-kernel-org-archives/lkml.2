@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab0DMNHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 09:07:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57628 "EHLO
+	id S1752609Ab0DMNGn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 09:06:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:53957 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab0DMNHU (ORCPT
+	with ESMTP id S1752234Ab0DMNGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 09:07:20 -0400
-Message-ID: <4BC46C85.1030903@vlnb.net>
-Date: Tue, 13 Apr 2010 17:07:17 +0400
+	Tue, 13 Apr 2010 09:06:39 -0400
+Message-ID: <4BC46C62.7050400@vlnb.net>
+Date: Tue, 13 Apr 2010 17:06:42 +0400
 From: Vladislav Bolkhovitin <vst@vlnb.net>
 User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
@@ -24,822 +24,445 @@ CC: linux-kernel@vger.kernel.org,
        Bart Van Assche <bart.vanassche@gmail.com>,
        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
        Andy Yan <ayan@marvell.com>, linux-driver@qlogic.com
-Subject: Re: [PATCH][RFC 12/12/1/5] SCST sysfs rules
-References: <4BC44A49.7070307@vlnb.net> <4BC45841.2090707@vlnb.net>
-In-Reply-To: <4BC45841.2090707@vlnb.net>
+Subject: Re: [PATCH][RFC 9/12/1/5] SCST debugging support
+References: <4BC44A49.7070307@vlnb.net> <4BC44D08.4060907@vlnb.net>
+In-Reply-To: <4BC44D08.4060907@vlnb.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX1+gZmvxwdDmYqyS+SJXAzgpHgCuGGrTYOBz2wF
- zZitYxXZZ/+KPr6zcUaRe0pEHwq6h4KXoPxOSeOYMQ4NrmNJtg
- gVuLmSkyPRE+/z/HJU/0g==
+X-Provags-ID: V01U2FsdGVkX1+JG/0kIc+iT06OVhPxeUWeIPejTzX8u0UdZBB
+ SvYufyxRZfjeHULRrbBxV46OfnMe53LAEeyqe0j77YR5ywAuOv
+ 0GzzNU0LacLysqDxYD//A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains SCST sysfs rules.
+This patch contains SCST debugging support routines.
 
 Signed-off-by: Vladislav Bolkhovitin <vst@vlnb.net>
 ---
- SysfsRules |  795 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 795 insertions(+)
+ drivers/scst/scst_debug.c |  136 ++++++++++++++++++++++
+ include/scst/scst_debug.h |  276 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 412 insertions(+)
 
-diff -uprN orig/linux-2.6.33/Documentation/scst/SysfsRules linux-2.6.33/Documentation/scst/SysfsRules
---- orig/linux-2.6.33/Documentation/scst/SysfsRules
-+++ linux-2.6.33/Documentation/scst/SysfsRules
-@@ -0,0 +1,795 @@
-+		SCST SYSFS interface rules
-+		==========================
-+
-+This file describes SYSFS interface rules, which all SCST target
-+drivers, dev handlers and management utilities MUST follow. This allows
-+to have a simple, self-documented, target drivers and dev handlers
-+independent management interface.
-+
-+Words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
-+"SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
-+document are to be interpreted as described in RFC 2119.
-+
-+In this document "key attribute" means a configuration attribute with
-+not default value, which must be configured during the target driver's
-+initialization. A key attribute MUST have in the last line keyword
-+"[key]". If a default value set to a key attribute, it becomes a regular
-+none-key attribute. For instance, iSCSI target has attribute DataDigest.
-+Default value for this attribute is "None". It value "CRC32C" is set to
-+this attribute, it will become a key attribute. If value "None" is again
-+set, this attribute will become back to a none-key attribute.
-+
-+Each user configurable attribute with a not default value MUST be marked
-+as key attribute.
-+
-+I. Rules for target drivers
-+===========================
-+
-+SCST core for each target driver (struct scst_tgt_template) creates a
-+root subdirectory in /sys/kernel/scst_tgt/targets with name
-+scst_tgt_template.name (called "target_driver_name" further in this
-+document). 
-+
-+For each target (struct scst_tgt) SCST core creates a root subdirectory
-+in /sys/kernel/scst_tgt/targets/target_driver_name with name
-+scst_tgt.tgt_name (called "target_name" further in this document).
-+
-+There are 2 type of targets possible: hardware and virtual targets.
-+Hardware targets are targets corresponding to real hardware, for
-+instance, a Fibre Channel adapter's port. Virtual targets are hardware
-+independent targets, which can be dynamically added or removed, for
-+instance, an iSCSI target, or NPIV Fibre Channel target.
-+
-+A target driver supporting virtual targets must support "mgmt" attribute
-+and "add_target"/"del_target" commands.
-+
-+If target driver supports both hardware and virtual targets (for
-+instance, an FC adapter supporting NPIV, which has hardware targets for
-+its physical ports as well as virtual NPIV targets), it MUST create each
-+hardware target with hw_target mark to make SCST core create "hw_target"
-+attribute (see below).
-+
-+Attributes for target drivers
-+-----------------------------
-+
-+A target driver MAY support in its root subdirectory the following
-+optional attributes. Target drivers MAY also support there other
-+read-only or read-writable attributes.
-+
-+1. "enabled" - this attribute MUST allow to enable and disable target
-+driver as a whole, i.e. if disabled, the target driver MUST NOT accept
-+new connections. The goal of this attribute is to allow the target
-+driver's initial configuration. For instance, iSCSI target may need to
-+have discovery user names and passwords set before it starts serving
-+discovery connections.
-+
-+This attribute MUST have read and write permissions for superuser and be
-+read-only for other users.
-+
-+On read it MUST return 0, if the target driver is disabled, and 1, if it
-+is enabled.
-+
-+On write it MUST accept '0' character as request to disable and '1' as
-+request to enable, but MAY also accept other driver specific commands.
-+
-+During disabling the target driver MAY close already connected sessions
-+in all targets, but this is OPTIONAL.
-+
-+MUST be 0 by default.
-+
-+2. "trace_level" - this attribute SHOULD allow to change log level of this
-+driver. 
-+
-+This attribute SHOULD have read and write permissions for superuser and be
-+read-only for other users.
-+
-+On read it SHOULD return a help text about available command and log levels.
-+
-+On write it SHOULD accept commands to change log levels according to the
-+help text.
-+
-+For example:
-+
-+out_of_mem | minor | pid | line | function | special | mgmt | mgmt_dbg | flow_control | conn
-+
-+Usage:
-+        echo "all|none|default" >trace_level
-+        echo "value DEC|0xHEX|0OCT" >trace_level
-+        echo "add|del TOKEN" >trace_level
-+
-+where TOKEN is one of [debug, function, line, pid,
-+		       entryexit, buff, mem, sg, out_of_mem,
-+		       special, scsi, mgmt, minor,
-+		       mgmt_dbg, scsi_serializing,
-+		       retry, recv_bot, send_bot, recv_top,
-+		       send_top, d_read, d_write, conn, conn_dbg, iov, pdu, net_page]
-+
-+3. "version" - this read-only for all attribute SHOULD return version of
-+the target driver and some info about its enabled compile time facilities.
-+
-+For example:
-+
-+2.0.0
-+EXTRACHECKS
-+DEBUG
-+ 
-+4. "mgmt" - this attribute MUST allow to add and delete targets, if
-+virtual targets are supported by this driver, as well as it MAY allow to
-+add and delete the target driver's or its targets' attributes.
-+
-+This attribute MUST have read and write permissions for superuser and be
-+read-only for other users.
-+
-+On read it MUST return a help string describing available commands and
-+parameters.
-+
-+For example:
-+
-+Usage: echo "add_target target_name [parameters]" >mgmt
-+       echo "del_target target_name" >mgmt
-+       echo "add_attribute IncomingUser name password" >mgmt
-+       echo "del_attribute IncomingUser name" >mgmt
-+       echo "add_attribute OutgoingUser name password" >mgmt
-+       echo "del_attribute OutgoingUser name" >mgmt
-+       echo "add_target_attribute target_name IncomingUser name password" >mgmt
-+       echo "del_target_attribute target_name IncomingUser name" >mgmt
-+       echo "add_target_attribute target_name OutgoingUser name password" >mgmt
-+       echo "del_target_attribute target_name OutgoingUser name" >mgmt
-+
-+where parameters are one or more param_name=value pairs separated by ';'                                                                
-+
-+4.1. "add_target" - if supported, this command MUST add new target with
-+name "target_name" and specified optional or required parameters. Each
-+parameter MUST be in form "parameter=value". All parameters MUST be
-+separated by ';' symbol.
-+
-+All target drivers supporting creation of virtual targets MUST support
-+this command.
-+
-+All target drivers supporting "add_target" command MUST support all
-+read-only targets' key attributes as parameters to "add_target" command
-+with the attributes' names as parameters' names and the attributes'
-+values as parameters' values. 
-+
-+For example:
-+
-+echo "add_target TARGET1 parameter1=1; parameter2=2" >mgmt
-+
-+will add target with name "TARGET1" and parameters with names
-+"parameter1" and "parameter2" with values 1 and 2 correspondingly.
-+
-+4.2. "del_target" - if supported, this command MUST delete target with
-+name "target_name". If "add_target" command is supported "del_target"
-+MUST also be supported.
-+
-+4.3. "add_attribute" - if supported, this command MUST add a target
-+driver's attribute with the specified name and one or more values.
-+
-+All target drivers supporting run time creation of the target driver's
-+key attributes MUST support this command.
-+
-+For example, for iSCSI target:
-+
-+echo "add_attribute IncomingUser name password" >mgmt
-+
-+will add for discovery sessions an incoming user (attribute
-+/sys/kernel/scst_tgt/targets/iscsi/IncomingUser) with name "name" and
-+password "password".
-+
-+4.4. "del_attribute" - if supported, this command MUST delete  target
-+driver's attribute with the specified name and values. The values MUST
-+be specified, because in some cases attributes MAY internally be
-+distinguished by values. For instance, iSCSI target might have several
-+incoming users. If not needed, target driver might ignore the values.
-+
-+If "add_attribute" command is supported "del_attribute" MUST
-+also be supported.
-+
-+4.5. "add_target_attribute" - if supported, this command MUST add new
-+attribute for the specified target with the specified name and one or
-+more values.
-+
-+All target drivers supporting run time creation of targets' key
-+attributes MUST support this command.
-+
-+For example:
-+
-+echo "add_target_attribute iqn.2006-10.net.vlnb:tgt IncomingUser name password" >mgmt
-+
-+will add for target with name "iqn.2006-10.net.vlnb:tgt" an incoming
-+user (attribute
-+/sys/kernel/scst_tgt/targets/iscsi/iqn.2006-10.net.vlnb:tgt/IncomingUser)
-+with name "name" and password "password".
-+
-+4.6. "del_target_attribute" - if supported, this command MUST delete 
-+target's attribute with the specified name and values. The values MUST
-+be specified, because in some cases attributes MAY internally be
-+distinguished by values. For instance, iSCSI target might have several
-+incoming users. If not needed, target driver might ignore the values.
-+
-+If "add_target_attribute" command is supported "del_target_attribute"
-+MUST also be supported.
-+
-+Attributes for targets
-+----------------------
-+
-+Each target MAY support in its root subdirectory the following optional
-+attributes. Target drivers MAY also support there other read-only or
-+read-writable attributes.
-+
-+1. "enabled" - this attribute MUST allow to enable and disable the
-+corresponding target, i.e. if disabled, the target MUST NOT accept new
-+connections. The goal of this attribute is to allow the target's initial
-+configuration. For instance, each target needs to have its LUNs setup
-+before it starts serving initiators. Another example is iSCSI target,
-+which may need to have initialized a number of iSCSI parameters before
-+it starts accepting new iSCSI connections.
-+
-+This attribute MUST have read and write permissions for superuser and be
-+read-only for other users.
-+
-+On read it MUST return 0, if the target is disabled, and 1, if it is
-+enabled.
-+
-+On write it MUST accept '0' character as request to disable and '1' as
-+request to enable. Other requests MUST be rejected.
-+
-+SCST core provides some facilities, which MUST be used to implement this
-+attribute.
-+
-+During disabling the target driver MAY close already connected sessions
-+to the target, but this is OPTIONAL.
-+
-+MUST be 0 by default.
-+
-+SCST core will automatically create for all targets the following
-+attributes:
-+
-+1. "rel_tgt_id" - allows to read or write SCSI Relative Target Port
-+Identifier attribute.
-+
-+2. "hw_target" - allows to distinguish hardware and virtual targets, if
-+the target driver supports both.
-+
-+To provide OPTIONAL force close session functionality target drivers
-+MUST implement it using "force_close" write only session's attribute,
-+which on write to it MUST close the corresponding session.
-+
-+See SCST core's README for more info about those attributes.
-+
-+II. Rules for dev handlers
-+==========================
-+
-+There are 2 types of dev handlers: parent dev handlers and children dev
-+handlers. The children dev handlers depend from the parent dev handlers.
-+
-+SCST core for each parent dev handler (struct scst_dev_type with
-+parent member with value NULL) creates a root subdirectory in
-+/sys/kernel/scst_tgt/handlers with name scst_dev_type.name (called
-+"dev_handler_name" further in this document). 
-+
-+Parent dev handlers can have one or more subdirectories for children dev
-+handlers with names scst_dev_type.name of them.
-+
-+Only one level of the dev handlers' parent/children hierarchy is
-+allowed. Parent dev handlers, which support children dev handlers, MUST
-+NOT handle devices and MUST be only placeholders for the children dev
-+handlers.
-+
-+Further in this document children dev handlers or parent dev handlers,
-+which don't support children, will be called "end level dev handlers".
-+
-+Each end level dev handler MUST be either for pass-through, or for
-+virtual devices.
-+
-+End level dev handlers can be recognized by existence of the "mgmt"
-+attribute.
-+
-+For each device (struct scst_device) SCST core creates a root
-+subdirectory in /sys/kernel/scst_tgt/devices/device_name with name
-+scst_device.virt_name (called "device_name" further in this document).
-+
-+Attributes for dev handlers
-+---------------------------
-+
-+Each pass-through dev handler MUST have in its root subdirectory
-+"pass-through" and "mgmt" attributes and the "mgmt" attribute MUST
-+support "assign" and "unassign" commands as described below.
-+
-+Each virtual devices dev handler MUST have it in its root subdirectory
-+"mgmt" attribute, which MUST support "add_device" and "del_device"
-+attributes as described below.
-+
-+Parent dev handlers and end level dev handlers without parents MAY
-+support in its root subdirectory the following optional attributes. They
-+MAY also support there other read-only or read-writable attributes.
-+
-+1. "trace_level" - this attribute SHOULD allow to change log level of this
-+driver. 
-+
-+This attribute SHOULD have read and write permissions for superuser and be
-+read-only for other users.
-+
-+On read it SHOULD return a help text about available command and log levels.
-+
-+On write it SHOULD accept commands to change log levels according to the
-+help text.
-+
-+For example:
-+
-+out_of_mem | minor | pid | line | function | special | mgmt | mgmt_dbg
-+
-+Usage:
-+	echo "all|none|default" >trace_level
-+	echo "value DEC|0xHEX|0OCT" >trace_level
-+	echo "add|del TOKEN" >trace_level
-+
-+where TOKEN is one of [debug, function, line, pid,
-+		       entryexit, buff, mem, sg, out_of_mem,
-+		       special, scsi, mgmt, minor,
-+		       mgmt_dbg, scsi_serializing,
-+		       retry, recv_bot, send_bot, recv_top,
-+		       send_top]
-+
-+2. "version" - this read-only for all attribute SHOULD return version of
-+the dev handler and some info about its enabled compile time facilities.
-+
-+For example:
-+
-+2.0.0
-+EXTRACHECKS
-+DEBUG
-+
-+End level dev handlers in their root subdirectories MUST support "mgmt"
-+attribute and MAY support other read-only or read-writable attributes.
-+This attribute MUST have read and write permissions for superuser and be
-+read-only for other users.
-+
-+Attribute "mgmt" for virtual devices dev handlers
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+For virtual devices dev handlers "mgmt" attribute MUST allow to add and
-+delete devices as well as it MAY allow to add and delete the dev
-+handler's or its devices' attributes.
-+
-+On read it MUST return a help string describing available commands and
-+parameters.
-+
-+For example:
-+
-+Usage: echo "add_device device_name [parameters]" >mgmt
-+       echo "del_device device_name" >mgmt
-+       echo "add_attribute AttributeX ValueX" >mgmt
-+       echo "del_attribute AttributeX ValueX" >mgmt
-+       echo "add_attribute AttributeY ValueY1 ValueY2" >mgmt
-+       echo "del_attribute AttributeY" >mgmt
-+       echo "add_device_attribute device_name AttributeDX ValueDX" >mgmt
-+       echo "del_device_attribute device_name AttributeDX ValueDX" >mgmt
-+       echo "add_device_attribute device_name AttributeDY ValueY1 ValueY2" >mgmt
-+       echo "del_device_attribute device_name AttributeDY" >mgmt
-+
-+where parameters are one or more param_name=value pairs separated by ';'
-+
-+The following parameters available: filename, blocksize, write_through, nv_cache, o_direct, read_only, removable
-+
-+1. "add_device" - this command MUST add new device with name
-+"device_name" and specified optional or required parameters. Each
-+parameter MUST be in form "parameter=value". All parameters MUST be
-+separated by ';' symbol.
-+
-+All dev handlers supporting "add_device" command MUST support all
-+read-only devices' key attributes as parameters to "add_device" command
-+with the attributes' names as parameters' names and the attributes'
-+values as parameters' values. 
-+
-+For example:
-+
-+echo "add_device device1 parameter1=1; parameter2=2" >mgmt
-+
-+will add device with name "device1" and parameters with names
-+"parameter1" and "parameter2" with values 1 and 2 correspondingly.
-+
-+2. "del_device" - this command MUST delete device with name
-+"device_name".
-+
-+3. "add_attribute" - if supported, this command MUST add a device
-+driver's attribute with the specified name and one or more values.
-+
-+All dev handlers supporting run time creation of the dev handler's
-+key attributes MUST support this command.
-+
-+For example:
-+
-+echo "add_attribute AttributeX ValueX" >mgmt
-+
-+will add attribute
-+/sys/kernel/scst_tgt/handlers/dev_handler_name/AttributeX with value ValueX.
-+
-+4. "del_attribute" - if supported, this command MUST delete device
-+driver's attribute with the specified name and values. The values MUST
-+be specified, because in some cases attributes MAY internally be
-+distinguished by values. If not needed, dev handler might ignore the
-+values.
-+
-+If "add_attribute" command is supported "del_attribute" MUST also be
-+supported.
-+
-+5. "add_device_attribute" - if supported, this command MUST add new
-+attribute for the specified device with the specified name and one or
-+more values.
-+
-+All dev handlers supporting run time creation of devices' key attributes
-+MUST support this command.
-+
-+For example:
-+
-+echo "add_device_attribute device1 AttributeDX ValueDX" >mgmt
-+
-+will add for device with name "device1" attribute
-+/sys/kernel/scst_tgt/devices/device_name/AttributeDX) with value
-+ValueDX.
-+
-+6. "del_device_attribute" - if supported, this command MUST delete 
-+device's attribute with the specified name and values. The values MUST
-+be specified, because in some cases attributes MAY internally be
-+distinguished by values. If not needed, dev handler might ignore the
-+values.
-+
-+If "add_device_attribute" command is supported "del_device_attribute"
-+MUST also be supported.
-+
-+Attribute "mgmt" for pass-through devices dev handlers
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+For pass-through devices dev handlers "mgmt" attribute MUST allow to
-+assign and unassign this dev handler to existing SCSI devices.
-+
-+On read it MUST return a help string describing available commands and
-+parameters.
-+
-+For example:
-+
-+Usage: echo "assign H:C:I:L" >mgmt
-+       echo "unassign H:C:I:L" >mgmt
-+
-+1. "assign" - this command MUST assign SCSI device with
-+host:channel:id:lun numbers to this dev handler.
-+
-+All pass-through dev handlers MUST support this command.
-+
-+For example:
-+
-+echo "assign 1:0:0:0" >mgmt
-+
-+will assign SCSI device 1:0:0:0 to this dev handler.
-+
-+2. "unassign" - this command MUST unassign SCSI device with
-+host:channel:id:lun numbers from this dev handler.
-+
-+SCST core will automatically create for all dev handlers the following
-+attributes:
-+
-+1. "pass_through" - if the dev handler is a handler for pass-through
-+devices, SCST core create this attribute. This attribute will have value
-+1.
-+
-+2. "type" - SCSI type of device this dev handler can handle.
-+
-+See SCST core's README for more info about those attributes.
-+
-+Attributes for devices
-+----------------------
-+
-+Each device MAY support in its root subdirectory any read-only or
-+read-writable attributes.
-+
-+SCST core will automatically create for all devices the following
-+attributes:
-+
-+1. "type" - SCSI type of this device
-+
-+See SCST core's README for more info about those attributes.
-+
-+III. Rules for management utilities
-+===================================
-+
-+Rules summary
-+-------------
-+
-+A management utility (scstadmin) SHOULD NOT keep any knowledge specific
-+to any device, dev handler, target or target driver. It SHOULD only know
-+the common SCST SYSFS rules, which all dev handlers and target drivers
-+MUST follow. Namely:
-+
-+Common rules:
-+~~~~~~~~~~~~~
-+
-+1. All key attributes MUST be marked by mark "[key]" in the last line of
-+the attribute.
-+
-+2. All not key attributes don't matter and SHOULD be ignored.
-+
-+For target drivers and targets:
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+1. If target driver supports adding new targets, it MUST have "mgmt"
-+attribute, which MUST support "add_target" and "del_target" commands as
-+specified above.
-+
-+2. If target driver supports run time adding new key attributes, it MUST
-+have "mgmt" attribute, which MUST support "add_attribute" and
-+"del_attribute" commands as specified above.
-+
-+3. If target driver supports both hardware and virtual targets, all its
-+hardware targets MUST have "hw_target" attribute with value 1.
-+
-+4. If target has read-only key attributes, the add_target command MUST
-+support them as parameters.
-+
-+5. If target supports run time adding new key attributes, the target
-+driver MUST have "mgmt" attribute, which MUST support
-+"add_target_attribute" and "del_target_attribute" commands as specified
-+above.
-+
-+6. Both target drivers and targets MAY support "enable" attribute. If
-+supported, after configuring the corresponding target driver or target
-+"1" MUST be written to this attribute in the following order: at first,
-+for all targets of the target driver, then for the target driver.
-+
-+For devices and dev handlers:
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+1. Each dev handler in its root subdirectory MUST have "mgmt" attribute.
-+
-+2. All pass-through dev handlers MUST have "pass_through" attribute.
-+
-+3. Each virtual devices dev handler MUST support "add_device" and
-+"del_device" commands to the "mgmt" attribute as specified above.
-+
-+4. Each pass-through dev handler MUST support "assign" and "unassign"
-+commands to the "mgmt" attribute as specified above.
-+
-+5. If dev handler driver supports run time adding new key attributes, it
-+MUST support "add_attribute" and "del_attribute" commands to the "mgmt"
-+attribute as specified above.
-+
-+6. All device handlers have links in the root subdirectory pointing to
-+their devices.
-+
-+7. If device has read-only key attributes, the "add_device" command MUST
-+support them as parameters.
-+
-+8. If device supports run time adding new key attributes, its dev
-+handler MUST support "add_device_attribute" and "del_device_attribute"
-+commands to the "mgmt" attribute as specified above.
-+
-+9. Each device has "handler" link to its dev handler's root
-+subdirectory.
-+
-+Algorithm to convert current SCST configuration to config file
-+--------------------------------------------------------------
-+
-+A management utility SHOULD use the following algorithm when converting
-+current SCST configuration to a config file:
-+
-+1. Scan all attributes in /sys/kernel/scst_tgt (not requirsive) and store
-+all found key attributes.
-+
-+2. Scan all subdirectories of /sys/kernel/scst_tgt/handlers. Each
-+subdirectory with "mgmt" attribute is a root subdirectory of a dev
-+handler with name the name of the subdirectory. For each found dev
-+handler do the following:
-+
-+2.1. Store the dev handler's name. Store also its path to the root
-+subdirectory, if it isn't default (/sys/kernel/scst_tgt/handlers/handler_name).
-+
-+2.2. Store all dev handler's key attributes.
-+
-+2.3. Go through all links in the root subdirectory pointing to
-+/sys/kernel/scst_tgt/devices and for each device:
-+
-+2.3.1. For virtual devices dev handlers:
-+
-+2.3.1.1. Store the name of the device.
-+
-+2.3.1.2. Store all key attributes. Mark all read only key attributes
-+during storing, they will be parameters for the device's creation.
-+
-+2.3.2. For pass-through devices dev handlers:
-+
-+2.3.2.1. Store the H:C:I:L name of the device. Optionally, instead of
-+the name unique T10 vendor device ID found using command:
-+
-+sg_inq -p 0x83 /dev/sdX
-+
-+can be stored. It will allow to reliably find out this device if on the
-+next reboot it will have another host:channel:id:lin numbers. The sdX
-+device can be found as the last letters after ':' in
-+/sys/kernel/scst_tgt/devices/H:C:I:L/scsi_device/device/block:sdX.
-+
-+3. Go through all subdirectories in /sys/kernel/scst_tgt/targets. For
-+each target driver:
-+
-+3.1. Store the name of the target driver.
-+
-+3.2. Store all its key attributes.
-+
-+3.3. Go through all target's subdirectories. For each target:
-+
-+3.3.1. Store the name of the target.
-+
-+3.3.2. Mark if the target is hardware or virtual target. The target is a
-+hardware target if it has "hw_target" attribute or its target driver
-+doesn't have "mgmt" attribute.
-+
-+3.3.3. Store all key attributes. Mark all read only key attributes
-+during storing, they will be parameters for the target's creation.
-+
-+3.3.4. Scan all "luns" subdirectory and store:
-+
-+ - LUN.
-+
-+ - LU's device name.
-+
-+ - Key attributes.
-+
-+3.3.5. Scan all "ini_groups" subdirectories. For each group store the following:
-+
-+ - The group's name.
-+
-+ - The group's LUNs (the same info as for 3.3.4).
-+
-+ - The group's initiators.
-+
-+3.3.6. Store value of "enabled" attribute, if it exists.
-+
-+3.4. Store value of "enabled" attribute, if it exists.
-+
-+Algorithm to initialize SCST from config file
-+---------------------------------------------
-+
-+A management utility SHOULD use the following algorithm when doing
-+initial SCST configuration from a config file. All necessary kernel
-+modules and user space programs supposed to be already loaded, hence all
-+dev handlers' entries in /sys/kernel/scst_tgt/handlers as well as all
-+entries for hardware targets already created.
-+
-+1. Set stored values for all stored global (/sys/kernel/scst_tgt)
-+attributes.
-+
-+2. For each dev driver:
-+
-+2.1. Set stored values for all already existing stored attributes.
-+
-+2.2. Create not existing stored attributes using "add_attribute" command.
-+
-+2.3. For virtual devices dev handlers for each stored device:
-+
-+2.3.1. Create the device using "add_device" command using marked read
-+only attributes as parameters.
-+
-+2.3.2. Set stored values for all already existing stored attributes.
-+
-+2.3.3. Create not existing stored attributes using
-+"add_device_attribute" command.
-+
-+2.4. For pass-through dev handlers for each stores device:
-+
-+2.4.1. Assign the corresponding pass-through device to this dev handler
-+using "assign" command, if it isn't already auto assigned to it.
-+
-+3. For each target driver:
-+
-+3.1. Set stored values for all already existing stored attributes.
-+
-+3.2. Create not existing stored attributes using "add_attribute" command.
-+
-+3.3. For each target:
-+
-+3.3.1. For virtual targets:
-+
-+3.3.1.1. Create the target using "add_target" command using marked read
-+only attributes as parameters.
-+
-+3.3.1.2. Set stored values for all already existing stored attributes.
-+
-+3.3.1.3. Create not existing stored attributes using
-+"add_target_attribute" command.
-+
-+3.3.2. For hardware targets for each target:
-+
-+3.3.2.1. Set stored values for all already existing stored attributes.
-+
-+3.3.2.2. Create not existing stored attributes using
-+"add_target_attribute" command.
-+
-+3.3.3. Setup LUNs
-+
-+3.3.4. Setup ini_groups, their LUNs and initiators' names.
-+
-+3.3.5. If this target supports enabling, enable it.
-+
-+3.4. If this target driver supports enabling, enable it.
-+
-+Algorithm to apply changes in config file to currently running SCST
-+-------------------------------------------------------------------
-+
-+A management utility SHOULD use the following algorithm when applying
-+changes in config file to currently running SCST.
-+
-+Not all changes can be applied on enabled targets or enabled target
-+drivers. From other side, for some target drivers enabling/disabling is
-+a very long and disruptive operation, which should be performed as rare
-+as possible. Thus, the management utility SHOULD support additional
-+option, which, if set, will make it to disable all affected targets
-+before doing any change with them.
-+
-+1. Scan all attributes in /sys/kernel/scst_tgt (not requirsive) and
-+compare stored and actual key attributes. Apply all changes.
-+
-+2. Scan all subdirectories of /sys/kernel/scst_tgt/handlers. Each
-+subdirectory with "mgmt" attribute is a root subdirectory of a dev
-+handler with name the name of the subdirectory. For each found dev
-+handler do the following:
-+
-+2.1. Compare stored and actual key attributes. Apply all changes. Create
-+new attributes using "add_attribute" commands and delete not needed any
-+more attributes using "del_attribute" command.
-+
-+2.2. Compare existing devices (links in the root subdirectory pointing
-+to /sys/kernel/scst_tgt/devices) and stored devices in the config file.
-+Delete all not needed devices and create new devices.
-+
-+2.3. For all existing devices:
-+
-+2.3.1. Compare stored and actual key attributes. Apply all changes.
-+Create new attributes using "add_device_attribute" commands and delete
-+not needed any more attributes using "del_device_attribute" command.
-+
-+2.3.2. If any read only key attribute for virtual device should be
-+changed, delete the devices and recreate it.
-+
-+2.3.3. For pass-through devices dev handlers reassign handlers if
-+necessary.
-+
-+3. Go through all subdirectories in /sys/kernel/scst_tgt/targets. For
-+each target driver:
-+
-+3.1. If this target driver should be disabled, disable it.
-+
-+3.2. Compare stored and actual key attributes. Apply all changes. Create
-+new attributes using "add_attribute" commands and delete not needed any
-+more attributes using "del_attribute" command.
-+
-+3.3. Go through all target's subdirectories. Compare existing and stored
-+targets. Delete all not needed targets and create new targets.
-+
-+3.4. For all existing targets:
-+
-+3.4.1. If this target should be disabled, disable it.
-+
-+3.4.2. Compare stored and actual key attributes. Apply all changes.
-+Create new attributes using "add_target_attribute" commands and delete
-+not needed any more attributes using "del_target_attribute" command.
-+
-+3.4.3. If any read only key attribute for virtual target should be
-+changed, delete the target and recreate it.
-+
-+3.4.4. Scan all "luns" subdirectory and apply necessary changes, using
-+"replace" commands to replace one LUN by another, if needed.
-+
-+3.4.5. Scan all "ini_groups" subdirectories and apply necessary changes,
-+using "replace" commands to replace one LUN by another and "move"
-+command to move initiator from one group to another, if needed. It MUST
-+be done in the following order:
-+
-+ - Necessary initiators deleted, if they aren't going to be moved
-+
-+ - LUNs updated
-+ 
-+ - Necessary initiators added or moved
-+
-+3.4.6. If this target should be enabled, enable it.
-+
-+3.5. If this target driver should be enabled, enable it.
-+
+diff -uprN orig/linux-2.6.33/include/scst/scst_debug.h linux-2.6.33/include/scst/scst_debug.h
+--- orig/linux-2.6.33/include/scst/scst_debug.h
++++ linux-2.6.33/include/scst/scst_debug.h
+@@ -0,0 +1,276 @@
++/*
++ *  include/scst_debug.h
++ *
++ *  Copyright (C) 2004 - 2010 Vladislav Bolkhovitin <vst@vlnb.net>
++ *  Copyright (C) 2004 - 2005 Leonid Stoljar
++ *  Copyright (C) 2007 - 2010 ID7 Ltd.
++ *
++ *  Contains macroses for execution tracing and error reporting
++ *
++ *  This program is free software; you can redistribute it and/or
++ *  modify it under the terms of the GNU General Public License
++ *  as published by the Free Software Foundation, version 2
++ *  of the License.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ *  GNU General Public License for more details.
++ */
++
++#ifndef __SCST_DEBUG_H
++#define __SCST_DEBUG_H
++
++#include <generated/autoconf.h>	/* for CONFIG_* */
++
++#include <linux/bug.h>		/* for WARN_ON_ONCE */
++
++#ifdef CONFIG_SCST_EXTRACHECKS
++#define EXTRACHECKS_BUG_ON(a)		BUG_ON(a)
++#define EXTRACHECKS_WARN_ON(a)		WARN_ON(a)
++#define EXTRACHECKS_WARN_ON_ONCE(a)	WARN_ON_ONCE(a)
++#else
++#define EXTRACHECKS_BUG_ON(a)		do { } while (0)
++#define EXTRACHECKS_WARN_ON(a)		do { } while (0)
++#define EXTRACHECKS_WARN_ON_ONCE(a)	do { } while (0)
++#endif
++
++#define TRACE_NULL           0x00000000
++#define TRACE_DEBUG          0x00000001
++#define TRACE_FUNCTION       0x00000002
++#define TRACE_LINE           0x00000004
++#define TRACE_PID            0x00000008
++#define TRACE_BUFF           0x00000020
++#define TRACE_MEMORY         0x00000040
++#define TRACE_SG_OP          0x00000080
++#define TRACE_OUT_OF_MEM     0x00000100
++#define TRACE_MINOR          0x00000200 /* less important events */
++#define TRACE_MGMT           0x00000400
++#define TRACE_MGMT_DEBUG     0x00000800
++#define TRACE_SCSI           0x00001000
++#define TRACE_SPECIAL        0x00002000 /* filtering debug, etc */
++#define TRACE_FLOW_CONTROL   0x00004000 /* flow control in action */
++#define TRACE_ALL            0xffffffff
++/* Flags 0xXXXX0000 are local for users */
++
++#define TRACE_MINOR_AND_MGMT_DBG	(TRACE_MINOR|TRACE_MGMT_DEBUG)
++
++#ifndef KERN_CONT
++#define KERN_CONT       ""
++#endif
++
++/*
++ * Note: in the next two printk() statements the KERN_CONT macro is only
++ * present to suppress a checkpatch warning (KERN_CONT is defined as "").
++ */
++#define PRINT(log_flag, format, args...)  \
++		printk(log_flag format "\n", ## args)
++#define PRINTN(log_flag, format, args...) \
++		printk(log_flag format, ## args)
++
++#ifdef LOG_PREFIX
++#define __LOG_PREFIX	LOG_PREFIX
++#else
++#define __LOG_PREFIX	NULL
++#endif
++
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++
++#ifndef CONFIG_SCST_DEBUG
++#define ___unlikely(a)		(a)
++#else
++#define ___unlikely(a)		unlikely(a)
++#endif
++
++/*
++ * We don't print prefix for debug traces to not put additional preasure
++ * on the logging system in case of a lot of logging.
++ */
++
++extern int debug_print_prefix(unsigned long trace_flag,
++	const char *prefix, const char *func, int line);
++extern void debug_print_buffer(const void *data, int len);
++
++#define TRACE(trace, format, args...)					\
++do {									\
++	if (___unlikely(trace_flag & (trace))) {			\
++		debug_print_prefix(trace_flag, __LOG_PREFIX,		\
++				       __func__, __LINE__);		\
++		PRINT(KERN_CONT, format, args);				\
++	}								\
++} while (0)
++
++#ifdef CONFIG_SCST_DEBUG
++
++#define PRINT_BUFFER(message, buff, len)                            \
++do {                                                                \
++	PRINT(KERN_INFO, "%s:%s:", __func__, message);		    \
++	debug_print_buffer(buff, len);				    \
++} while (0)
++
++#else
++
++#define PRINT_BUFFER(message, buff, len)                            \
++do {                                                                \
++	PRINT(KERN_INFO, "%s:", message);			    \
++	debug_print_buffer(buff, len);				    \
++} while (0)
++
++#endif
++
++#define PRINT_BUFF_FLAG(flag, message, buff, len)			\
++do {									\
++	if (___unlikely(trace_flag & (flag))) {				\
++		debug_print_prefix(trace_flag, NULL, __func__, __LINE__);\
++		PRINT(KERN_CONT, "%s:", message);			\
++		debug_print_buffer(buff, len);				\
++	}								\
++} while (0)
++
++#else  /* CONFIG_SCST_DEBUG || CONFIG_SCST_TRACING */
++
++#define TRACE(trace, args...) do {} while (0)
++#define PRINT_BUFFER(message, buff, len) do {} while (0)
++#define PRINT_BUFF_FLAG(flag, message, buff, len) do {} while (0)
++
++#endif /* CONFIG_SCST_DEBUG || CONFIG_SCST_TRACING */
++
++#ifdef CONFIG_SCST_DEBUG
++
++#define TRACE_DBG_FLAG(trace, format, args...)				\
++do {									\
++	if (trace_flag & (trace)) {					\
++		debug_print_prefix(trace_flag, NULL, __func__, __LINE__);\
++		PRINT(KERN_CONT, format, args);				\
++	}								\
++} while (0)
++
++#define TRACE_MEM(args...)		TRACE_DBG_FLAG(TRACE_MEMORY, args)
++#define TRACE_SG(args...)		TRACE_DBG_FLAG(TRACE_SG_OP, args)
++#define TRACE_DBG(args...)		TRACE_DBG_FLAG(TRACE_DEBUG, args)
++#define TRACE_DBG_SPECIAL(args...)	TRACE_DBG_FLAG(TRACE_DEBUG|TRACE_SPECIAL, args)
++#define TRACE_MGMT_DBG(args...)		TRACE_DBG_FLAG(TRACE_MGMT_DEBUG, args)
++#define TRACE_MGMT_DBG_SPECIAL(args...)	\
++		TRACE_DBG_FLAG(TRACE_MGMT_DEBUG|TRACE_SPECIAL, args)
++
++#define TRACE_BUFFER(message, buff, len)				\
++do {									\
++	if (trace_flag & TRACE_BUFF) {					\
++		debug_print_prefix(trace_flag, NULL, __func__, __LINE__);\
++		PRINT(KERN_CONT, "%s:", message);			\
++		debug_print_buffer(buff, len);				\
++	}								\
++} while (0)
++
++#define TRACE_BUFF_FLAG(flag, message, buff, len)			\
++do {									\
++	if (trace_flag & (flag)) {					\
++		debug_print_prefix(trace_flag, NULL, __func__, __LINE__);\
++		PRINT(KERN_CONT, "%s:", message);			\
++		debug_print_buffer(buff, len);				\
++	}								\
++} while (0)
++
++#define PRINT_LOG_FLAG(log_flag, format, args...)			\
++do {									\
++	debug_print_prefix(trace_flag, __LOG_PREFIX, __func__, __LINE__);\
++	PRINT(KERN_CONT, format, args);					\
++} while (0)
++
++#define PRINT_WARNING(format, args...)					\
++do {									\
++	debug_print_prefix(trace_flag, __LOG_PREFIX, __func__, __LINE__);\
++	PRINT(KERN_CONT, "***WARNING***: " format, args);		\
++} while (0)
++
++#define PRINT_ERROR(format, args...)					\
++do {									\
++	debug_print_prefix(trace_flag, __LOG_PREFIX, __func__, __LINE__);\
++	PRINT(KERN_CONT, "***ERROR***: " format, args);			\
++} while (0)
++
++#define PRINT_CRIT_ERROR(format, args...)				\
++do {									\
++	debug_print_prefix(trace_flag, __LOG_PREFIX, __func__, __LINE__);\
++	PRINT(KERN_CONT, "***CRITICAL ERROR***: " format, args);	\
++} while (0)
++
++#define PRINT_INFO(format, args...)					\
++do {									\
++	debug_print_prefix(trace_flag, __LOG_PREFIX, __func__, __LINE__);\
++	PRINT(KERN_CONT, format, args);					\
++} while (0)
++
++#else  /* CONFIG_SCST_DEBUG */
++
++#define TRACE_MEM(format, args...) do {} while (0)
++#define TRACE_SG(format, args...) do {} while (0)
++#define TRACE_DBG(format, args...) do {} while (0)
++#define TRACE_DBG_FLAG(format, args...) do {} while (0)
++#define TRACE_DBG_SPECIAL(format, args...) do {} while (0)
++#define TRACE_MGMT_DBG(format, args...) do {} while (0)
++#define TRACE_MGMT_DBG_SPECIAL(format, args...) do {} while (0)
++#define TRACE_BUFFER(message, buff, len) do {} while (0)
++#define TRACE_BUFF_FLAG(flag, message, buff, len) do {} while (0)
++
++#ifdef LOG_PREFIX
++
++#define PRINT_INFO(format, args...)				\
++do {								\
++	PRINT(KERN_INFO, "%s: " format, LOG_PREFIX, args);	\
++} while (0)
++
++#define PRINT_WARNING(format, args...)          \
++do {                                            \
++	PRINT(KERN_INFO, "%s: ***WARNING***: "	\
++	      format, LOG_PREFIX, args);	\
++} while (0)
++
++#define PRINT_ERROR(format, args...)            \
++do {                                            \
++	PRINT(KERN_INFO, "%s: ***ERROR***: "	\
++	      format, LOG_PREFIX, args);	\
++} while (0)
++
++#define PRINT_CRIT_ERROR(format, args...)       \
++do {                                            \
++	PRINT(KERN_INFO, "%s: ***CRITICAL ERROR***: "	\
++		format, LOG_PREFIX, args);		\
++} while (0)
++
++#else
++
++#define PRINT_INFO(format, args...)           	\
++do {                                            \
++	PRINT(KERN_INFO, format, args);		\
++} while (0)
++
++#define PRINT_WARNING(format, args...)          \
++do {                                            \
++	PRINT(KERN_INFO, "***WARNING***: "	\
++		format, args);			\
++} while (0)
++
++#define PRINT_ERROR(format, args...)          	\
++do {                                            \
++	PRINT(KERN_ERR, "***ERROR***: "	\
++		format, args);			\
++} while (0)
++
++#define PRINT_CRIT_ERROR(format, args...)		\
++do {							\
++	PRINT(KERN_CRIT, "***CRITICAL ERROR***: "	\
++		format, args);				\
++} while (0)
++
++#endif /* LOG_PREFIX */
++
++#endif /* CONFIG_SCST_DEBUG */
++
++#if defined(CONFIG_SCST_DEBUG) && defined(CONFIG_DEBUG_SLAB)
++#define SCST_SLAB_FLAGS (SLAB_RED_ZONE | SLAB_POISON)
++#else
++#define SCST_SLAB_FLAGS 0L
++#endif
++
++#endif /* __SCST_DEBUG_H */
+diff -uprN orig/linux-2.6.33/drivers/scst/scst_debug.c linux-2.6.33/drivers/scst/scst_debug.c
+--- orig/linux-2.6.33/drivers/scst/scst_debug.c
++++ linux-2.6.33/drivers/scst/scst_debug.c
+@@ -0,0 +1,136 @@
++/*
++ *  scst_debug.c
++ *
++ *  Copyright (C) 2004 - 2010 Vladislav Bolkhovitin <vst@vlnb.net>
++ *  Copyright (C) 2004 - 2005 Leonid Stoljar
++ *  Copyright (C) 2007 - 2010 ID7 Ltd.
++ *
++ *  Contains helper functions for execution tracing and error reporting.
++ *  Intended to be included in main .c file.
++ *
++ *  This program is free software; you can redistribute it and/or
++ *  modify it under the terms of the GNU General Public License
++ *  as published by the Free Software Foundation, version 2
++ *  of the License.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ *  GNU General Public License for more details.
++ */
++
++#include "scst.h"
++#include "scst_debug.h"
++
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++
++#define TRACE_BUF_SIZE    512
++
++static char trace_buf[TRACE_BUF_SIZE];
++static DEFINE_SPINLOCK(trace_buf_lock);
++
++static inline int get_current_tid(void)
++{
++	/* Code should be the same as in sys_gettid() */
++	if (in_interrupt()) {
++		/*
++		 * Unfortunately, task_pid_vnr() isn't IRQ-safe, so otherwise
++		 * it can oops. ToDo.
++		 */
++		return 0;
++	}
++	return task_pid_vnr(current);
++}
++
++/**
++ * debug_print_prefix() - print debug prefix for a log line
++ *
++ * Prints, if requested by trace_flag, debug prefix for each log line
++ */
++int debug_print_prefix(unsigned long trace_flag,
++	const char *prefix, const char *func, int line)
++{
++	int i = 0;
++	unsigned long flags;
++	int pid = get_current_tid();
++
++	spin_lock_irqsave(&trace_buf_lock, flags);
++
++	trace_buf[0] = '\0';
++
++	if (trace_flag & TRACE_PID)
++		i += snprintf(&trace_buf[i], TRACE_BUF_SIZE, "[%d]: ", pid);
++	if (prefix != NULL)
++		i += snprintf(&trace_buf[i], TRACE_BUF_SIZE - i, "%s: ",
++			      prefix);
++	if (trace_flag & TRACE_FUNCTION)
++		i += snprintf(&trace_buf[i], TRACE_BUF_SIZE - i, "%s:", func);
++	if (trace_flag & TRACE_LINE)
++		i += snprintf(&trace_buf[i], TRACE_BUF_SIZE - i, "%i:", line);
++
++	PRINTN(KERN_INFO, "%s", trace_buf);
++
++	spin_unlock_irqrestore(&trace_buf_lock, flags);
++
++	return i;
++}
++EXPORT_SYMBOL(debug_print_prefix);
++
++/**
++ * debug_print_buffer() - print a buffer
++ *
++ * Prints in the log data from the buffer
++ */
++void debug_print_buffer(const void *data, int len)
++{
++	int z, z1, i;
++	const unsigned char *buf = (const unsigned char *) data;
++	unsigned long flags;
++
++	if (buf == NULL)
++		return;
++
++	spin_lock_irqsave(&trace_buf_lock, flags);
++
++	PRINT(KERN_INFO, " (h)___0__1__2__3__4__5__6__7__8__9__A__B__C__D__E__F");
++	for (z = 0, z1 = 0, i = 0; z < len; z++) {
++		if (z % 16 == 0) {
++			if (z != 0) {
++				i += snprintf(&trace_buf[i], TRACE_BUF_SIZE - i,
++					      " ");
++				for (; (z1 < z) && (i < TRACE_BUF_SIZE - 1);
++				     z1++) {
++					if ((buf[z1] >= 0x20) &&
++					    (buf[z1] < 0x80))
++						trace_buf[i++] = buf[z1];
++					else
++						trace_buf[i++] = '.';
++				}
++				trace_buf[i] = '\0';
++				PRINT(KERN_INFO, "%s", trace_buf);
++				i = 0;
++			}
++			i += snprintf(&trace_buf[i], TRACE_BUF_SIZE - i,
++				      "%4x: ", z);
++		}
++		i += snprintf(&trace_buf[i], TRACE_BUF_SIZE - i, "%02x ",
++			      buf[z]);
++	}
++
++	i += snprintf(&trace_buf[i], TRACE_BUF_SIZE - i, "  ");
++	for (; (z1 < z) && (i < TRACE_BUF_SIZE - 1); z1++) {
++		if ((buf[z1] > 0x20) && (buf[z1] < 0x80))
++			trace_buf[i++] = buf[z1];
++		else
++			trace_buf[i++] = '.';
++	}
++	trace_buf[i] = '\0';
++
++	PRINT(KERN_INFO, "%s", trace_buf);
++
++	spin_unlock_irqrestore(&trace_buf_lock, flags);
++	return;
++}
++EXPORT_SYMBOL(debug_print_buffer);
++
++#endif /* CONFIG_SCST_DEBUG || CONFIG_SCST_TRACING */
+
 
