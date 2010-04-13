@@ -1,100 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412Ab0DMMWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 08:22:05 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:42192 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab0DMMWC (ORCPT
+	id S1751468Ab0DMM3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 08:29:38 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38068 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab0DMM3g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 08:22:02 -0400
-Message-ID: <4BC461AD.6090504@monstr.eu>
-Date: Tue, 13 Apr 2010 14:21:01 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: microblaze-uclinux@itee.uq.edu.au, LKML <linux-kernel@vger.kernel.org>
-CC: John Williams <john.williams@petalogix.com>,
-       John Linn <John.Linn@xilinx.com>,
-       Stefan Asserhall <stefan.asserhall@xilinx.com>,
-       Goran Bilski <goran@xilinx.com>,
-       "Steven J. Magnani" <steve@digidescorp.com>,
-       Arnd Bergmann <arnd@arndb.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-       "Edgar E. Iglesias" <edgar.iglesias@gmail.com>,
-       Grant Likely <grant.likely@secretlab.ca>, sam@ravnborg.org,
-       "Steven J. Magnani" <steve@digidescorp.com>, stephenn@xilinx.com,
-       Karen Whelan <karen.whelan@petalogix.com>,
-       Wendy Liang <wendy.liang@petalogix.com>
-Subject: Microblaze - The fist year
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Apr 2010 08:29:36 -0400
+Subject: Re: [PATCH 1/5] sched: fix capacity calculations for SMT4
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael Neuling <mikey@neuling.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
+       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Gautham R Shenoy <ego@in.ibm.com>
+In-Reply-To: <20100409062118.D4096CBB6C@localhost.localdomain>
+References: <20100409062118.D4096CBB6C@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 13 Apr 2010 14:29:26 +0200
+Message-ID: <1271161766.4807.1280.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Linux community,
+On Fri, 2010-04-09 at 16:21 +1000, Michael Neuling wrote:
+> When calculating capacity we use the following calculation:
+> 
+>        capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
+> 
+> In SMT2, power will be 1178/2 (provided we are not scaling power with
+> freq say) and SCHED_LOAD_SCALE will be 1024, resulting in capacity
+> being 1.
+> 
+> With SMT4 however, power will be 1178/4, hence capacity will end up as
+> 0.
+> 
+> Fix this by ensuring capacity is always at least 1 after this
+> calculation.
+> 
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
+> ---
+> I'm not sure this is the correct fix but this works for me.  
 
-The MicroBlaze Linux Kernel has been in mainline for exactly one year. 
-It is time to look back and celebrate this year.
+Right, so I suspect this will indeed break some things.
 
-First of all I would like to thank Xilinx and PetaLogix for their 
-committed support and everybody who has helped to improve the MicroBlaze 
-Linux kernel namely to Andrew Morton, Arnd Bergmann, Edgar E. Iglesias, 
-Grant Likely, Ingo Molnar, John Linn, John Williams, Linus Torvalds, Sam 
-Ravnborg, Stephen Neuendorffer and Steve Magnani. Goran Bilski and 
-Stefan Asserhall (from Xilinx Processing Solutions group) have provided 
-valuable assistance too.
+We initially allowed 0 capacity for when a cpu is consumed by an RT task
+and there simply isn't much capacity left, in that case you really want
+to try and move load to your sibling cpus if possible.
 
-Thank you for your work.
+However you're right that this goes awry in your case.
 
-MicroBlaze is the first soft-cpu to be merged to the mainline Linux 
-kernel and I believe it has proved to be an effective decision to do so. 
-With the support of Xilinx and PetaLogix we have dedicated a lot of time 
-to improve the MicroBlaze Linux port, adding new features and 
-stabilizing the whole kernel. There are still areas for improvement but 
-we have set a good direction and we hope with continued support from 
-Xilinx and PetaLogix to achieve much more in the future
+One thing to look at is if that 15% increase is indeed representative
+for the power7 cpu, it having 4 SMT threads seems to suggest there was
+significant gains, otherwise they'd not have wasted the silicon.
+
+(The broken x86 code was meant to actually compute the SMT gain, so that
+we'd not have to guess the 15%)
+
+Now, increasing this will only marginally fix the issue, since if you
+end up with 512 per thread it only takes a very tiny amount of RT
+workload to drop below and end up at 0 again.
+
+One thing we could look at is using the cpu base power to compute
+capacity from. We'd have to add another field to sched_group and store
+power before we do the scale_rt_power() stuff.
+
+Thoughts?
 
 
-I would like to ask the whole community if you can point us to new 
-features (or weak places) which should be implemented on MicroBlaze. 
-Thank you for your continued input.
+>  kernel/sched_fair.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6-ozlabs/kernel/sched_fair.c
+> ===================================================================
+> --- linux-2.6-ozlabs.orig/kernel/sched_fair.c
+> +++ linux-2.6-ozlabs/kernel/sched_fair.c
+> @@ -1482,6 +1482,7 @@ static int select_task_rq_fair(struct ta
+>  			}
+>  
+>  			capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
+> +			capacity = max(capacity, 1UL);
+>  
+>  			if (tmp->flags & SD_POWERSAVINGS_BALANCE)
+>  				nr_running /= 2;
+> @@ -2488,6 +2489,7 @@ static inline void update_sg_lb_stats(st
+>  
+>  	sgs->group_capacity =
+>  		DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
+> +	sgs->group_capacity = max(sgs->group_capacity, 1UL);
+>  }
+>  
+>  /**
+> @@ -2795,9 +2797,11 @@ find_busiest_queue(struct sched_group *g
+>  
+>  	for_each_cpu(i, sched_group_cpus(group)) {
+>  		unsigned long power = power_of(i);
+> -		unsigned long capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
+> +		unsigned long capacity;
+>  		unsigned long wl;
+>  
+> +		capacity = max(DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE), 1UL);
+> +
+>  		if (!cpumask_test_cpu(i, cpus))
+>  			continue;
+>  
 
-
-Let me summarize some MicroBlaze Linux highlights over the last 12 months.
-
-MicroBlaze noMMU - added on April 13, 2009
-MicroBlaze QEMU support - April, 2009
-MicroBlaze MMU - added on June 12, 2009
-First youtube movie with MicroBlaze QEMU by PetaLogix - October 28, 2009
-Ftrace support - November 2009
-Everyday testing framework - December 2009
-and many others
-
-Latest code is available on PetaLogix GIT server.
-http://developer.petalogix.com/git/gitweb.cgi (or 
-http://git.monstr.eu/git/gitweb.cgi)
-
-Output log from everyday testing
-http://www.monstr.eu/wiki/doku.php?id=log:log
-
-I also created a new facebook fan page for MicroBlaze where you can join 
-us. http://www.facebook.com/pages/Microblaze-linux/111131818899940
-
-As I announced on Facebook, I decided to open monstr.eu wiki which is 
-becoming the microblaze linux wiki.
-You can register on 
-http://www.monstr.eu/wiki/doku.php?id=user:user&do=register
-
-Thank you.
-
-Best regards,
-Michal
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
