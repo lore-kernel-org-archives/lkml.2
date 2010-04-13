@@ -1,227 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab0DMQMf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 12:12:35 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:61535 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab0DMQLt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 12:11:49 -0400
-From: Dinh.Nguyen@freescale.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-       grant.likely@secretlab.ca, r.herring@freescale.com,
-       bryan.wu@canonical.com, amit.kucheria@canonical.com,
-       Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCH 2.6.34-rc4 6/8] mx5: Add USB support for Freescale MX51 Babbage
-Date: Tue, 13 Apr 2010 11:10:29 -0500
-Message-Id: <1271175030-3635-6-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1271175030-3635-5-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-2-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-3-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-4-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-5-git-send-email-Dinh.Nguyen@freescale.com>
+	id S1753407Ab0DMQNr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 12:13:47 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47097 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753011Ab0DMQNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 12:13:45 -0400
+Date: Tue, 13 Apr 2010 17:13:26 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 6/6] Add comment in alloc_pages_exact_node
+Message-ID: <20100413161326.GG25756@csn.ul.ie>
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com> <d74305233536342dfeb1ca7ffe9e83495ce1f285.1271171877.git.minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <d74305233536342dfeb1ca7ffe9e83495ce1f285.1271171877.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+On Wed, Apr 14, 2010 at 12:25:03AM +0900, Minchan Kim wrote:
+> alloc_pages_exact_node naming makes some people misleading.
+> They considered it following as.
+> "This function will allocate pages from node which I wanted
+> exactly".
+> But it can allocate pages from fallback list if page allocator
+> can't find free page from node user wanted.
+> 
+> So let's comment this NOTE.
+> 
 
-This patch updates the clocks, gpios, iomuxing and device structures for
-enabling USB Host functionality on Freescale MX51 Babbage HW.
-This patch applies to 2.6.34-rc4.
+It's a little tough to read. How about
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/mach-mx5/board-mx51_babbage.c |   40 +++++++++++++++++++++++++-
- arch/arm/mach-mx5/clock-mx51.c         |    8 +++++
- arch/arm/mach-mx5/devices.c            |   49 ++++++++++++++++++++++++++++++++
- arch/arm/mach-mx5/devices.h            |    2 +
- 4 files changed, 98 insertions(+), 1 deletions(-)
+/*
+ * Use this instead of alloc_pages_node when the caller knows
+ * exactly which node they need (as opposed to passing in -1
+ * for current). Fallback to other nodes will still occur
+ * unless __GFP_THISNODE is specified.
+ */
 
-diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-index 1338d6a..ddfa48b 100644
---- a/arch/arm/mach-mx5/board-mx51_babbage.c
-+++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-@@ -13,6 +13,7 @@
- #include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
-+#include <linux/delay.h>
- 
- #include <mach/common.h>
- #include <mach/hardware.h>
-@@ -30,6 +31,8 @@
- extern void __init mx5_usb_dr_init(void);
- extern void __init mx5_usbh1_init(void);
- 
-+#define GPIO_1_7  (0*32+7)
-+
- static struct platform_device *devices[] __initdata = {
- 	&mxc_fec_device,
- };
-@@ -50,6 +53,22 @@ static struct pad_desc mx51babbage_pads[] = {
- 	MX51_PAD_EIM_D26__UART3_TXD,
- 	MX51_PAD_EIM_D27__UART3_RTS,
- 	MX51_PAD_EIM_D24__UART3_CTS,
-+
-+	/* USB HOST1 */
-+	MX51_PAD_GPIO_1_25__USBH1_CLK,
-+	MX51_PAD_GPIO_1_26__USBH1_DIR,
-+	MX51_PAD_GPIO_1_28__USBH1_NXT,
-+	MX51_PAD_GPIO_1_11__USBH1_DATA0,
-+	MX51_PAD_GPIO_1_12__USBH1_DATA1,
-+	MX51_PAD_GPIO_1_13__USBH1_DATA2,
-+	MX51_PAD_GPIO_1_14__USBH1_DATA3,
-+	MX51_PAD_GPIO_1_15__USBH1_DATA4,
-+	MX51_PAD_GPIO_1_16__USBH1_DATA5,
-+	MX51_PAD_GPIO_1_17__USBH1_DATA6,
-+	MX51_PAD_GPIO_1_18__USBH1_DATA7,
-+
-+	/* USB HUB reset line*/
-+	MX51_PAD_GPIO_1_7__GPIO1_7,
- };
- 
- /* Serial ports */
-@@ -64,12 +83,31 @@ static inline void mxc_init_imx_uart(void)
- 	mxc_register_device(&mxc_uart_device1, &uart_pdata);
- 	mxc_register_device(&mxc_uart_device2, &uart_pdata);
- }
--#else /* !SERIAL_IMX */
-+#else /* SERIAL_IMX */
- static inline void mxc_init_imx_uart(void)
- {
- }
- #endif /* SERIAL_IMX */
- 
-+static inline void mx5_babbage_usbhub_reset(void)
-+{
-+	int ret;
-+
-+	/* Bring USB hub out of reset */
-+	ret = gpio_request(GPIO_1_7, "GPIO1_7");
-+	if (ret) {
-+		printk("failed to get GPIO_1_7: %d\n", ret);
-+		return;
-+	}
-+	gpio_direction_output(GPIO_1_7, 0);
-+
-+	/* USB HUB RESET - De-assert USB HUB RESET_N */
-+	msleep(1);
-+	gpio_set_value(GPIO_1_7, 0);
-+	msleep(1);
-+	gpio_set_value(GPIO_1_7, 1);
-+}
-+
- /*
-  * Board specific initialization.
-  */
-diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
-index 8f85f73..36684d0 100644
---- a/arch/arm/mach-mx5/clock-mx51.c
-+++ b/arch/arm/mach-mx5/clock-mx51.c
-@@ -765,6 +765,10 @@ DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
- DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
- 	NULL,  NULL, &ipg_clk, NULL);
- 
-+/* USB */
-+DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
-+	NULL,  NULL, &pll3_sw_clk, NULL);
-+
- #define _REGISTER_CLOCK(d, n, c) \
-        { \
- 		.dev_id = d, \
-@@ -778,6 +782,10 @@ static struct clk_lookup lookups[] = {
- 	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
- 	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
- 	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
-+	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
-+	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
-+	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
-+	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
- };
- 
- static void clk_tree_init(void)
-diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
-index 73f2342..3d8f66a 100644
---- a/arch/arm/mach-mx5/devices.c
-+++ b/arch/arm/mach-mx5/devices.c
-@@ -11,6 +11,7 @@
-  */
- 
- #include <linux/platform_device.h>
-+#include <linux/dma-mapping.h>
- #include <mach/hardware.h>
- #include <mach/gpio.h>
- #include <mach/imx-uart.h>
-@@ -92,6 +93,54 @@ struct platform_device mxc_fec_device = {
- 	.resource = mxc_fec_resources,
- };
- 
-+static u64 usb_dma_mask = DMA_BIT_MASK(32);
-+
-+static struct resource usbotg_resources[] = {
-+	{
-+		.start = MX51_OTG_BASE_ADDR,
-+		.end = MX51_OTG_BASE_ADDR + 0x1ff,
-+		.flags = IORESOURCE_MEM,
-+	},
-+	{
-+		.start = MX51_MXC_INT_USB_OTG,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+struct platform_device mxc_usbdr_host_device = {
-+	.name = "mxc-ehci",
-+	.id = 0,
-+	.num_resources = ARRAY_SIZE(usbotg_resources),
-+	.resource = usbotg_resources,
-+	.dev = {
-+		.dma_mask = &usb_dma_mask,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
-+	},
-+};
-+
-+static struct resource usbh1_resources[] = {
-+	{
-+		.start = MX51_OTG_BASE_ADDR + 0x200,
-+		.end = MX51_OTG_BASE_ADDR + 0x200 + 0x1ff,
-+		.flags = IORESOURCE_MEM,
-+	},
-+	{
-+		.start = MX51_MXC_INT_USB_H1,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+struct platform_device mxc_usbh1_device = {
-+	.name = "mxc-ehci",
-+	.id = 1,
-+	.num_resources = ARRAY_SIZE(usbh1_resources),
-+	.resource = usbh1_resources,
-+	.dev = {
-+		.dma_mask = &usb_dma_mask,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
-+	},
-+};
-+
- struct mxc_gpio_port mxc_gpio_ports[] = {
- 	{
- 		.chip.label = "gpio-0",
-diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
-index f339ab8..95c45f9 100644
---- a/arch/arm/mach-mx5/devices.h
-+++ b/arch/arm/mach-mx5/devices.h
-@@ -2,3 +2,5 @@ extern struct platform_device mxc_uart_device0;
- extern struct platform_device mxc_uart_device1;
- extern struct platform_device mxc_uart_device2;
- extern struct platform_device mxc_fec_device;
-+extern struct platform_device mxc_usbdr_host_device;
-+extern struct platform_device mxc_usbh1_device;
+That at least will tie in why "exact" is in the name?
+
+> Actually I wanted to change naming with better.
+> ex) alloc_pages_explict_node.
+
+"Explicit" can also be taken to mean "this and only this node".
+
+> But I changed my mind since the comment would be enough.
+> 
+> If anybody suggests better name, I will do with pleasure.
+> 
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Bob Liu <lliubbo@gmail.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  include/linux/gfp.h |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+> index b65f003..7539c17 100644
+> --- a/include/linux/gfp.h
+> +++ b/include/linux/gfp.h
+> @@ -288,6 +288,11 @@ static inline struct page *alloc_pages_node(int nid, gfp_t gfp_mask,
+>  	return __alloc_pages(gfp_mask, order, node_zonelist(nid, gfp_mask));
+>  }
+>  
+> +/*
+> + * NOTE : Allow page from fallback if page allocator can't find free page
+> + * in your nid. Only if you want to allocate page from your nid, use
+> + * __GFP_THISNODE flags with gfp_mask.
+> + */
+>  static inline struct page *alloc_pages_exact_node(int nid, gfp_t gfp_mask,
+>  						unsigned int order)
+>  {
+> -- 
+> 1.7.0.5
+> 
+
 -- 
-1.6.0.4
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
