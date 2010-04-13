@@ -1,156 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab0DMIj7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 04:39:59 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:36583 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752342Ab0DMIj5 (ORCPT
+	id S1752412Ab0DMInO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 04:43:14 -0400
+Received: from gmp-eb-inf-2.sun.com ([192.18.6.24]:34231 "EHLO
+	gmp-eb-inf-2.sun.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab0DMInM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 04:39:57 -0400
-Date: Tue, 13 Apr 2010 18:39:31 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Janos Haar <janos.haar@netcenter.hu>
-Cc: xiyou.wangcong@gmail.com, linux-kernel@vger.kernel.org,
-       kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org, xfs@oss.sgi.com,
-       axboe@kernel.dk
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look
- please!...)
-Message-ID: <20100413083931.GW2493@dastard>
-References: <20100402230905.GW3335@dastard>
- <22c901cad333$7a67db60$0400a8c0@dcccs>
- <20100404103701.GX3335@dastard>
- <2bd101cad4ec$5a425f30$0400a8c0@dcccs>
- <20100405224522.GZ3335@dastard>
- <3a5f01cad6c5$8a722c00$0400a8c0@dcccs>
- <20100408025822.GL11036@dastard>
- <11b701cad9c8$93212530$0400a8c0@dcccs>
- <20100412001158.GA2493@dastard>
- <18b101cadadf$5edbb660$0400a8c0@dcccs>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <18b101cadadf$5edbb660$0400a8c0@dcccs>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 13 Apr 2010 04:43:12 -0400
+X-Greylist: delayed 799 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Apr 2010 04:43:12 EDT
+MIME-version: 1.0
+Content-type: text/plain; charset=windows-1252
+Date: Tue, 13 Apr 2010 10:29:41 +0200
+From: =?iso-8859-1?Q?H=E5kon_Bugge?= <Haakon.Bugge@Sun.COM>
+Subject: Re: [PATCH] ummunotify: Userspace support for MMU notifications
+In-reply-to: <20100412235937.GF15629@obsidianresearch.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Eric B Munson <ebmunson@us.ibm.com>, linux-kernel@vger.kernel.org,
+       linux-rdma@vger.kernel.org, rolandd@cisco.com, peterz@infradead.org,
+       pavel@ucw.cz, mingo@elte.hu
+Message-id: <3251DDDA-D705-4B1E-9595-9C24709EF146@Sun.com>
+X-Mailer: Apple Mail (2.1078)
+Content-transfer-encoding: 8BIT
+References: <1271053337-7121-1-git-send-email-ebmunson@us.ibm.com>
+ <20100412160359.1d9074dc.akpm@linux-foundation.org>
+ <20100412235937.GF15629@obsidianresearch.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 10:00:17AM +0200, Janos Haar wrote:
-> >On Mon, Apr 12, 2010 at 12:44:37AM +0200, Janos Haar wrote:
-> >>Hi,
-> >>
-> >>Ok, here comes the funny part:
-> >>I have got several messages from the kernel about one of my XFS
-> >>(sdb2) have corrupted inodes, but my xfs_repair (v. 2.8.11) says the
-> >>FS is clean and shine.
-> >>Should i upgrade my xfs_repair, or this is another bug? :-)
-> >
-> >v2.8.11 is positively ancient. :/
-> >
-> >I'd upgrade (current is 3.1.1) and re-run repair again.
+
+On Apr 13, 2010, at 1:59 , Jason Gunthorpe wrote:
+
+> On Mon, Apr 12, 2010 at 04:03:59PM -0700, Andrew Morton wrote:
 > 
-> OK, i will get the new repair today.
-> 
-> btw
-> Since i tested the FS with the 2.8.11, today morning i found this in
-> the log:
-> 
-> ...
-> Apr 12 00:41:10 alfa kernel: XFS mounting filesystem sdb2   # This
-> was the point of check with xfs_repair v2.8.11
-> Apr 13 03:08:33 alfa kernel: xfs_da_do_buf: bno 32768
-> Apr 13 03:08:33 alfa kernel: dir: inode 474253931
-> Apr 13 03:08:33 alfa kernel: Filesystem "sdb2": XFS internal error
-> xfs_da_do_buf(1) at line 2020 of file fs/xfs/xfs_da_btree.c.  Caller
-> 0xffffffff811c4fa6
+>>> As discussed in <http://article.gmane.org/gmane.linux.drivers.openib/61925>
+>>> and follow-up messages, libraries using RDMA would like to track
+>>> precisely when application code changes memory mapping via free(),
+>>> munmap(), etc.  Current pure-userspace solutions using malloc hooks
+>>> and other tricks are not robust, and the feeling among experts is that
+>>> the issue is unfixable without kernel help.
 
-A corrupted directory. There have been several different types of
-directory corruption that 2.8.11 didn't detect that 3.1.1 does.
+I am not sure I agree with the premises here. ptMalloc and malloc hooks are not related to the issue in my opinion. User space library calls do not change virtual to physical mapping, system calls do. The following sys calls might change virtual to physical mapping: munmap(), mremap(), sbrk(), madvice(). What we need is glibc to provide hooks for these 4 sys calls and the general syscall() when its argument is one of the four mentioned syscalls. To me, that is what is needed, and the ummunotify direction seems way too complicated to me.
 
-> The entire log is here:
-> http://download.netcenter.hu/bughunt/20100413/messages
+It is further claimed that "… other tricks are not robust". I wrote the code used in Scali/Platform MPI handling the issue. I do not think its fair to claim that this MPI  is not robust in this matter nor that is performance is bad.
 
-So the bad inodes are:
 
-$ awk '/corrupt inode/ { print $10 } /dir: inode/ { print $8 }' messages | sort -n -u
-474253931
-474253936
-474253937
-474253938
-474253939
-474253940
-474253941
-474253943
-474253945
-474253946
-474253947
-474253948
-474253949
-474253950
-474253951
-673160704
-673160708
-673160712
-673160713
+Thanks, Håkon
 
-It looks like the bad inodes are confined to two inode clusters. The
-nature of the errors - bad block mappings and bad extent counts -
-makes me think you might have bad memory in the machine:
 
-$ awk '/xfs_da_do_buf: bno/ { printf "%x\n", $8 }' messages | sort -n -u
-4d8000
-5e0000
-7f8001
-8000
-8001
-10000
-10001
-20001
-28001
-38000
-270001
-370001
-548001
-568000
-568001
-600000
-600001
-618000
-618001
-628000
-628001
-650001
-
-I think they should all be 0 or 1, and:
-
-$ awk '/corrupt inode/ { split($13, a, ")"); printf "%x\n", a[1] }' messages | sort -n -u
-fffffffffd000001
-6b000001
-1000001
-75000001
-
-I think they should all be 1, too.
-
-I've seen this sort of error pattern before on a machine that had a
-bad DIMM.  If the corruption is on disk then the buffers were
-corrupted between the time that the CPU writes to them and being
-written to disk. If there is no corruption on disk, then the CPU is
-reading bad data from memory...
-
-If you run:
-
-$ xfs_db -r -c "inode 474253940" -c p /dev/sdb2
-
-Then I can can confirm whether there is corruption on disk or not.
-Probably best to sample multiple of the inode numbers from the above
-list of bad inodes.
-
-FWIW, I'd strongly suggest backing up everything you can first
-before running an updated xfs_repair....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
