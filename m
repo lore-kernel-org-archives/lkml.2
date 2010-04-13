@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280Ab0DMPAT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 11:00:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40610 "EHLO mx1.redhat.com"
+	id S1752584Ab0DMPEZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 11:04:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50915 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906Ab0DMPAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 11:00:17 -0400
-Message-ID: <4BC486CE.1040503@redhat.com>
-Date: Tue, 13 Apr 2010 10:59:26 -0400
-From: Peter Jones <pjones@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc14 Thunderbird/3.0.3
+	id S1752249Ab0DMPEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 11:04:24 -0400
+Date: Tue, 13 Apr 2010 17:59:44 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Herbert Xu <herbert@gondor.hengli.com.au>,
+       "Michael S. Tsirkin" <mst@redhat.com>, Paul Moore <paul.moore@hp.com>,
+       David Woodhouse <David.Woodhouse@intel.com>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jan Kiszka <jan.kiszka@siemens.com>,
+       qemu-devel <qemu-devel@nongnu.org>
+Subject: [PATCH] tun: orphan an skb on tx
+Message-ID: <20100413145944.GA7716@redhat.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-CC: Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, open-iscsi@googlegroups.com
-Subject: Re: [PATCH 2/2] RFC: iscsi ibft: convert iscsi_ibft module to iscsi
- boot lib
-References: <1271095578-4212-1-git-send-email-michaelc@cs.wisc.edu> <201004122221.05326.konrad@darnok.org> <4BC3D7C1.90307@cs.wisc.edu> <201004122236.13843.konrad@darnok.org>
-In-Reply-To: <201004122236.13843.konrad@darnok.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2010 10:36 PM, Konrad Rzeszutek Wilk wrote:
-> On Monday 12 April 2010 22:32:33 Mike Christie wrote:
->> On 04/12/2010 09:21 PM, Konrad Rzeszutek Wilk wrote:
->>>> + * Helper routiners to check to determine if the entry is valid
->>>> + * in the proper iBFT structure.
->>>> + */
->>>> +static mode_t ibft_check_nic_for(void *data, int type)
->>>> +{
->>>> +	struct ibft_kobject *entry = data;
->>>> +	struct ibft_nic *nic = entry->nic;
->>>> +	mode_t rc = 0;
->>>> +
->>>> +	switch (type) {
->>>> +	case ISCSI_BOOT_ETH_INDEX:
->>>> +	case ISCSI_BOOT_ETH_FLAGS:
->>>> +		rc = 1;
->>>
->>> Did you mean for that value?
->>>
->>>> +		break;
->>>> +	case ISCSI_BOOT_ETH_IP_ADDR:
->>>> +		if (memcmp(nic->ip_addr, nulls, sizeof(nic->ip_addr)))
->>>> +			rc = S_IRUGO;
->>>> +		break;
->>>> +	case ISCSI_BOOT_ETH_SUBNET_MASK:
->>>> +		if (nic->subnet_mask_prefix)
->>>> +			rc = S_IRUGO;
->>>> +		break;
->>>> +	case ISCSI_BOOT_ETH_ORIGIN:
->>>> +		rc = 1;
->>>
->>> and this one as well?
->>
->> I did not. They should be S_IRUGO. Do you want me to resubmit the
->> patches or are you just going to edit those two lines if you merge them?
-> 
-> No need to resend them (unless Peter eyes found something I missed).
+The following situation was observed in the field:
+tap1 sends packets, tap2 does not consume them, as a result
+tap1 can not be closed. This happens because
+tun/tap devices can hang on to skbs undefinitely.
 
-Nope, that's all I see.
+As noted by Herbert, possible solutions include a timeout followed by a
+copy/change of ownership of the skb, or always copying/changing
+ownership if we're going into a hostile device.
 
+This patch implements the second approach.
+
+Note: one issue still remaining is that since skbs
+keep reference to tun socket and tun socket has a
+reference to tun device, we won't flush backlog,
+instead simply waiting for all skbs to get transmitted.
+At least this is not user-triggerable, and
+this was not reported in practice, my assumption is
+other devices besides tap complete an skb
+within finite time after it has been queued.
+
+A possible solution for the second issue
+would not to have socket reference the device,
+instead, implement dev->destructor for tun, and
+wait for all skbs to complete there, but this
+needs some thought, probably too risky for 2.6.34.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Tested-by: Yan Vugenfirer <yvugenfi@redhat.com>
+
+---
+
+Please review the below, and consider for 2.6.34,
+and stable trees.
+
+ drivers/net/tun.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 96c39bd..4326520 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -387,6 +387,10 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		}
+ 	}
+ 
++	/* Orphan the skb - required as we might hang on to it
++	 * for indefinite time. */
++	skb_orphan(skb);
++
+ 	/* Enqueue packet */
+ 	skb_queue_tail(&tun->socket.sk->sk_receive_queue, skb);
+ 	dev->trans_start = jiffies;
 -- 
-        Peter
-
-Sanity's just a one trick pony anyway.  You only get one trick -- rational
-thinking -- but when you're good and crazy, the sky's the limit!
-		-- The Tick
+1.7.0.2.280.gc6f05
