@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab0DMNHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 09:07:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:50081 "EHLO
+	id S1753243Ab0DMNI4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 09:08:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61879 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab0DMNHh (ORCPT
+	with ESMTP id S1753045Ab0DMNIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 09:07:37 -0400
-Message-ID: <4BC46C59.3000009@vlnb.net>
-Date: Tue, 13 Apr 2010 17:06:33 +0400
+	Tue, 13 Apr 2010 09:08:24 -0400
+Message-ID: <4BC46CC7.7040309@vlnb.net>
+Date: Tue, 13 Apr 2010 17:08:23 +0400
 From: Vladislav Bolkhovitin <vst@vlnb.net>
 User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
@@ -20,41 +20,42 @@ CC: linux-kernel@vger.kernel.org,
        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
        Mike Christie <michaelc@cs.wisc.edu>, Jeff Garzik <jeff@garzik.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       Vu Pham <vuhuong@mellanox.com>,
-       Bart Van Assche <bart.vanassche@gmail.com>,
-       James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-       Andy Yan <ayan@marvell.com>, linux-driver@qlogic.com,
-       Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH][RFC 8/12/1/5] SCST sysfs interface
-References: <4BC44A49.7070307@vlnb.net> <4BC44D08.4060907@vlnb.net>
-In-Reply-To: <4BC44D08.4060907@vlnb.net>
+       Bart Van Assche <bart.vanassche@gmail.com>
+Subject: Re: [PATCH][RFC 3/3/2/5] SCST vdisk dev handler
+References: <4BC45A32.2010904@vlnb.net> <4BC46173.7000102@vlnb.net>
+In-Reply-To: <4BC46173.7000102@vlnb.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX1+hhI6Kq8lazh2IKmvsL0jvTvFSNq/rtO+NHPq
- kv4Tdz3+E+9wBneqJ/f0uUi1zL4k6VU7eE+irbaqKRCbl8whHP
- c1QsclmLW7Se/bIWXaAoQ==
+X-Provags-ID: V01U2FsdGVkX19Ml6EV5Il6oSFXqg1hi/qWz4CvxYLtqao2zf5
+ OAIxTkZr3BYUwoQQArnFxLKLWRNubL1tETPbE9jJAzTdV79FMN
+ U7zJRqLz9Mu0Uf/jzgoug==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains file scst_sysfs.c.
+This patch contains SCST vdisk dev handlers. This dev handler allows
+to create virtual disks and CDROMs from files on file system.
 
-Signed-off-by: Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
 Signed-off-by: Vladislav Bolkhovitin <vst@vlnb.net>
 ---
- scst_sysfs.c | 3884 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 3884 insertions(+)
+ scst_vdisk.c | 3813 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 3813 insertions(+)
 
-diff -uprN orig/linux-2.6.33/drivers/scst/scst_sysfs.c linux-2.6.33/drivers/scst/scst_sysfs.c
---- orig/linux-2.6.33/drivers/scst/scst_sysfs.c
-+++ linux-2.6.33/drivers/scst/scst_sysfs.c
-@@ -0,0 +1,3884 @@
+diff -uprN orig/linux-2.6.33/drivers/scst/dev_handlers/scst_vdisk.c linux-2.6.33/drivers/scst/dev_handlers/scst_vdisk.c
+--- orig/linux-2.6.33/drivers/scst/dev_handlers/scst_vdisk.c
++++ linux-2.6.33/drivers/scst/dev_handlers/scst_vdisk.c
+@@ -0,0 +1,3813 @@
 +/*
-+ *  scst_sysfs.c
++ *  scst_vdisk.c
 + *
-+ *  Copyright (C) 2009 Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-+ *  Copyright (C) 2009 - 2010 Vladislav Bolkhovitin <vst@vlnb.net>
-+ *  Copyright (C) 2009 - 2010 ID7 Ltd.
++ *  Copyright (C) 2004 - 2010 Vladislav Bolkhovitin <vst@vlnb.net>
++ *  Copyright (C) 2004 - 2005 Leonid Stoljar
++ *  Copyright (C) 2007 Ming Zhang <blackmagic02881 at gmail dot com>
++ *  Copyright (C) 2007 Ross Walker <rswwalker at hotmail dot com>
++ *  Copyright (C) 2007 - 2010 ID7 Ltd.
++ *
++ *  SCSI disk (type 0) and CDROM (type 5) dev handler using files
++ *  on file systems or block devices (VDISK)
 + *
 + *  This program is free software; you can redistribute it and/or
 + *  modify it under the terms of the GNU General Public License
@@ -67,3870 +68,3794 @@ diff -uprN orig/linux-2.6.33/drivers/scst/scst_sysfs.c linux-2.6.33/drivers/scst
 + *  GNU General Public License for more details.
 + */
 +
-+#include <linux/kobject.h>
++#include <linux/file.h>
++#include <linux/fs.h>
 +#include <linux/string.h>
-+#include <linux/sysfs.h>
-+#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/unistd.h>
++#include <linux/smp_lock.h>
++#include <linux/spinlock.h>
 +#include <linux/init.h>
++#include <linux/uio.h>
++#include <linux/list.h>
 +#include <linux/ctype.h>
++#include <linux/writeback.h>
++#include <linux/vmalloc.h>
++#include <asm/atomic.h>
++#include <linux/kthread.h>
++#include <linux/sched.h>
++#include <linux/version.h>
++#include <asm/div64.h>
++
++#define LOG_PREFIX			"dev_vdisk"
 +
 +#include "scst.h"
-+#include "scst_priv.h"
-+#include "scst_mem.h"
-+
-+static DECLARE_COMPLETION(scst_sysfs_root_release_completion);
-+
-+static struct kobject scst_sysfs_root_kobj;
-+static struct kobject *scst_targets_kobj;
-+static struct kobject *scst_devices_kobj;
-+static struct kobject *scst_sgv_kobj;
-+static struct kobject *scst_handlers_kobj;
-+
-+/* Regular SCST sysfs operations */
-+struct sysfs_ops scst_sysfs_ops;
-+EXPORT_SYMBOL_GPL(scst_sysfs_ops);
-+
-+static const char *scst_dev_handler_types[] = {
-+    "Direct-access device (e.g., magnetic disk)",
-+    "Sequential-access device (e.g., magnetic tape)",
-+    "Printer device",
-+    "Processor device",
-+    "Write-once device (e.g., some optical disks)",
-+    "CD-ROM device",
-+    "Scanner device (obsolete)",
-+    "Optical memory device (e.g., some optical disks)",
-+    "Medium changer device (e.g., jukeboxes)",
-+    "Communications device (obsolete)",
-+    "Defined by ASC IT8 (Graphic arts pre-press devices)",
-+    "Defined by ASC IT8 (Graphic arts pre-press devices)",
-+    "Storage array controller device (e.g., RAID)",
-+    "Enclosure services device",
-+    "Simplified direct-access device (e.g., magnetic disk)",
-+    "Optical card reader/writer device"
-+};
 +
 +#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
 +
-+static DEFINE_MUTEX(scst_log_mutex);
++#define TRACE_ORDER	0x80000000
 +
-+static struct scst_trace_log scst_trace_tbl[] = {
-+    { TRACE_OUT_OF_MEM,		"out_of_mem" },
-+    { TRACE_MINOR,		"minor" },
-+    { TRACE_SG_OP,		"sg" },
-+    { TRACE_MEMORY,		"mem" },
-+    { TRACE_BUFF,		"buff" },
-+    { TRACE_PID,		"pid" },
-+    { TRACE_LINE,		"line" },
-+    { TRACE_FUNCTION,		"function" },
-+    { TRACE_DEBUG,		"debug" },
-+    { TRACE_SPECIAL,		"special" },
-+    { TRACE_SCSI,		"scsi" },
-+    { TRACE_MGMT,		"mgmt" },
-+    { TRACE_MGMT_DEBUG,		"mgmt_dbg" },
-+    { TRACE_FLOW_CONTROL,	"flow_control" },
++static struct scst_trace_log vdisk_local_trace_tbl[] = {
++    { TRACE_ORDER,		"order" },
 +    { 0,			NULL }
 +};
++#define trace_log_tbl			vdisk_local_trace_tbl
 +
-+static struct scst_trace_log scst_local_trace_tbl[] = {
-+    { TRACE_RTRY,		"retry" },
-+    { TRACE_SCSI_SERIALIZING,	"scsi_serializing" },
-+    { TRACE_RCV_BOT,		"recv_bot" },
-+    { TRACE_SND_BOT,		"send_bot" },
-+    { TRACE_RCV_TOP,		"recv_top" },
-+    { TRACE_SND_TOP,		"send_top" },
-+    { 0,			NULL }
-+};
++#define VDISK_TRACE_TLB_HELP	", order"
 +
-+static ssize_t scst_trace_level_show(const struct scst_trace_log *local_tbl,
-+	unsigned long log_level, char *buf, const char *help);
-+static int scst_write_trace(const char *buf, size_t length,
-+	unsigned long *log_level, unsigned long default_level,
-+	const char *name, const struct scst_trace_log *tbl);
-+
-+#endif /* defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING) */
-+
-+static ssize_t scst_luns_mgmt_show(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   char *buf);
-+static ssize_t scst_luns_mgmt_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count);
-+static ssize_t scst_tgt_addr_method_show(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   char *buf);
-+static ssize_t scst_tgt_addr_method_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count);
-+static ssize_t scst_tgt_io_grouping_type_show(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   char *buf);
-+static ssize_t scst_tgt_io_grouping_type_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count);
-+static ssize_t scst_ini_group_mgmt_show(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   char *buf);
-+static ssize_t scst_ini_group_mgmt_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count);
-+static ssize_t scst_rel_tgt_id_show(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   char *buf);
-+static ssize_t scst_rel_tgt_id_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count);
-+static ssize_t scst_acg_luns_mgmt_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count);
-+static ssize_t scst_acg_ini_mgmt_show(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   char *buf);
-+static ssize_t scst_acg_ini_mgmt_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count);
-+static ssize_t scst_acg_addr_method_show(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   char *buf);
-+static ssize_t scst_acg_addr_method_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count);
-+static ssize_t scst_acg_io_grouping_type_show(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   char *buf);
-+static ssize_t scst_acg_io_grouping_type_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count);
-+static ssize_t scst_acn_file_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf);
-+
-+static void scst_sysfs_release(struct kobject *kobj)
-+{
-+	kfree(kobj);
-+}
-+
-+/*
-+ * Target Template
-+ */
-+
-+static void scst_tgtt_release(struct kobject *kobj)
-+{
-+	struct scst_tgt_template *tgtt;
-+
-+	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
-+
-+	complete_all(&tgtt->tgtt_kobj_release_cmpl);
-+
-+	scst_tgtt_cleanup(tgtt);
-+	return;
-+}
-+
-+static struct kobj_type tgtt_ktype = {
-+	.sysfs_ops = &scst_sysfs_ops,
-+	.release = scst_tgtt_release,
-+};
-+
-+#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
-+
-+static ssize_t scst_tgtt_trace_level_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	struct scst_tgt_template *tgtt;
-+
-+	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
-+
-+	return scst_trace_level_show(tgtt->trace_tbl,
-+		tgtt->trace_flags ? *tgtt->trace_flags : 0, buf,
-+		tgtt->trace_tbl_help);
-+}
-+
-+static ssize_t scst_tgtt_trace_level_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+	struct scst_tgt_template *tgtt;
-+
-+	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
-+
-+	if (mutex_lock_interruptible(&scst_log_mutex) != 0) {
-+		res = -EINTR;
-+		goto out;
-+	}
-+
-+	res = scst_write_trace(buf, count, tgtt->trace_flags,
-+		tgtt->default_trace_flags, tgtt->name, tgtt->trace_tbl);
-+
-+	mutex_unlock(&scst_log_mutex);
-+
-+out:
-+	return res;
-+}
-+
-+static struct kobj_attribute tgtt_trace_attr =
-+	__ATTR(trace_level, S_IRUGO | S_IWUSR,
-+	       scst_tgtt_trace_level_show, scst_tgtt_trace_level_store);
-+
-+#endif /* #if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING) */
-+
-+static ssize_t scst_tgtt_mgmt_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	char *help = "Usage: echo \"add_target target_name [parameters]\" "
-+				">mgmt\n"
-+		     "       echo \"del_target target_name\" >mgmt\n"
-+		     "%s"
-+		     "\n"
-+		     "where parameters are one or more "
-+		     "param_name=value pairs separated by ';'\n"
-+		     "%s%s";
-+	struct scst_tgt_template *tgtt;
-+
-+	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
-+
-+	if (tgtt->add_target_parameters_help != NULL)
-+		return sprintf(buf, help,
-+			(tgtt->mgmt_cmd_help) ? tgtt->mgmt_cmd_help : "",
-+			"\nThe following parameters available: ",
-+			tgtt->add_target_parameters_help);
-+	else
-+		return sprintf(buf, help,
-+			(tgtt->mgmt_cmd_help) ? tgtt->mgmt_cmd_help : "",
-+			"", "");
-+}
-+
-+static ssize_t scst_tgtt_mgmt_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count)
-+{
-+	int res;
-+	char *buffer, *p, *pp, *target_name;
-+	struct scst_tgt_template *tgtt;
-+
-+	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
-+
-+	buffer = kzalloc(count+1, GFP_KERNEL);
-+	if (buffer == NULL) {
-+		res = -ENOMEM;
-+		goto out;
-+	}
-+
-+	memcpy(buffer, buf, count);
-+	buffer[count] = '\0';
-+
-+	pp = buffer;
-+	if (pp[strlen(pp) - 1] == '\n')
-+		pp[strlen(pp) - 1] = '\0';
-+
-+	p = scst_get_next_lexem(&pp);
-+
-+	if (strcasecmp("add_target", p) == 0) {
-+		target_name = scst_get_next_lexem(&pp);
-+		if (*target_name == '\0') {
-+			PRINT_ERROR("%s", "Target name required");
-+			res = -EINVAL;
-+			goto out_free;
-+		}
-+		res = tgtt->add_target(target_name, pp);
-+	} else if (strcasecmp("del_target", p) == 0) {
-+		target_name = scst_get_next_lexem(&pp);
-+		if (*target_name == '\0') {
-+			PRINT_ERROR("%s", "Target name required");
-+			res = -EINVAL;
-+			goto out_free;
-+		}
-+
-+		p = scst_get_next_lexem(&pp);
-+		if (*p != '\0')
-+			goto out_syntax_err;
-+
-+		res = tgtt->del_target(target_name);
-+	} else if (tgtt->mgmt_cmd != NULL) {
-+		scst_restore_token_str(p, pp);
-+		res = tgtt->mgmt_cmd(buffer);
-+	} else {
-+		PRINT_ERROR("Unknown action \"%s\"", p);
-+		res = -EINVAL;
-+		goto out_free;
-+	}
-+
-+	if (res == 0)
-+		res = count;
-+
-+out_free:
-+	kfree(buffer);
-+
-+out:
-+	return res;
-+
-+out_syntax_err:
-+	PRINT_ERROR("Syntax error on \"%s\"", p);
-+	res = -EINVAL;
-+	goto out_free;
-+}
-+
-+static struct kobj_attribute scst_tgtt_mgmt =
-+	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_tgtt_mgmt_show,
-+	       scst_tgtt_mgmt_store);
-+
-+int scst_create_tgtt_sysfs(struct scst_tgt_template *tgtt)
-+{
-+	int retval = 0;
-+	const struct attribute **pattr;
-+
-+	init_completion(&tgtt->tgtt_kobj_release_cmpl);
-+
-+	tgtt->tgtt_kobj_initialized = 1;
-+
-+	retval = kobject_init_and_add(&tgtt->tgtt_kobj, &tgtt_ktype,
-+			scst_targets_kobj, tgtt->name);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add tgtt %s to sysfs", tgtt->name);
-+		goto out;
-+	}
-+
-+	/*
-+	 * In case of errors there's no need for additional cleanup, because
-+	 * it will be done by the _put function() called by the caller.
-+	 */
-+
-+	if (tgtt->add_target != NULL) {
-+		retval = sysfs_create_file(&tgtt->tgtt_kobj,
-+				&scst_tgtt_mgmt.attr);
-+		if (retval != 0) {
-+			PRINT_ERROR("Can't add mgmt attr for target driver %s",
-+				tgtt->name);
-+			goto out;
-+		}
-+	}
-+
-+	pattr = tgtt->tgtt_attrs;
-+	if (pattr != NULL) {
-+		while (*pattr != NULL) {
-+			TRACE_DBG("Creating attr %s for target driver %s",
-+				(*pattr)->name, tgtt->name);
-+			retval = sysfs_create_file(&tgtt->tgtt_kobj, *pattr);
-+			if (retval != 0) {
-+				PRINT_ERROR("Can't add attr %s for target "
-+					"driver %s", (*pattr)->name,
-+					tgtt->name);
-+				goto out;
-+			}
-+			pattr++;
-+		}
-+	}
-+
-+#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
-+	if (tgtt->trace_flags != NULL) {
-+		retval = sysfs_create_file(&tgtt->tgtt_kobj,
-+				&tgtt_trace_attr.attr);
-+		if (retval != 0) {
-+			PRINT_ERROR("Can't add trace_flag for target "
-+				"driver %s", tgtt->name);
-+			goto out;
-+		}
-+	}
 +#endif
 +
-+out:
-+	return retval;
-+}
++#include "scst_dev_handler.h"
 +
-+void scst_tgtt_sysfs_put(struct scst_tgt_template *tgtt)
-+{
++/* 8 byte ASCII Vendor */
++#define SCST_FIO_VENDOR			"SCST_FIO"
++#define SCST_BIO_VENDOR			"SCST_BIO"
++/* 4 byte ASCII Product Revision Level - left aligned */
++#define SCST_FIO_REV			" 200"
 +
-+	if (tgtt->tgtt_kobj_initialized) {
-+		int rc;
++#define MAX_USN_LEN			(20+1) /* For '\0' */
 +
-+		kobject_del(&tgtt->tgtt_kobj);
-+		kobject_put(&tgtt->tgtt_kobj);
++#define INQ_BUF_SZ			128
++#define EVPD				0x01
++#define CMDDT				0x02
 +
-+		rc = wait_for_completion_timeout(&tgtt->tgtt_kobj_release_cmpl, HZ);
-+		if (rc == 0) {
-+			PRINT_INFO("Waiting for releasing sysfs entry "
-+				"for target template %s...", tgtt->name);
-+			wait_for_completion(&tgtt->tgtt_kobj_release_cmpl);
-+			PRINT_INFO("Done waiting for releasing sysfs "
-+				"entry for target template %s", tgtt->name);
-+		}
-+	} else
-+		scst_tgtt_cleanup(tgtt);
-+	return;
-+}
++#define MSENSE_BUF_SZ			256
++#define DBD				0x08	/* disable block descriptor */
++#define WP				0x80	/* write protect */
++#define DPOFUA				0x10	/* DPOFUA bit */
++#define WCE				0x04	/* write cache enable */
 +
++#define PF				0x10	/* page format */
++#define SP				0x01	/* save pages */
++#define PS				0x80	/* parameter saveable */
++
++#define	BYTE				8
++#define	DEF_DISK_BLOCKSIZE_SHIFT	9
++#define	DEF_DISK_BLOCKSIZE		(1 << DEF_DISK_BLOCKSIZE_SHIFT)
++#define	DEF_CDROM_BLOCKSIZE_SHIFT	11
++#define	DEF_CDROM_BLOCKSIZE		(1 << DEF_CDROM_BLOCKSIZE_SHIFT)
++#define	DEF_SECTORS			56
++#define	DEF_HEADS			255
++#define LEN_MEM				(32 * 1024)
++#define DEF_RD_ONLY			0
++#define DEF_WRITE_THROUGH		0
++#define DEF_NV_CACHE			0
++#define DEF_O_DIRECT			0
++#define DEF_REMOVABLE			0
++
++#define VDISK_NULLIO_SIZE		(3LL*1024*1024*1024*1024/2)
++
++#define DEF_TST				SCST_CONTR_MODE_SEP_TASK_SETS
 +/*
-+ * Target directory implementation
++ * Since we can't control backstorage device's reordering, we have to always
++ * report unrestricted reordering.
 + */
++#define DEF_QUEUE_ALG_WT	SCST_CONTR_MODE_QUEUE_ALG_UNRESTRICTED_REORDER
++#define DEF_QUEUE_ALG		SCST_CONTR_MODE_QUEUE_ALG_UNRESTRICTED_REORDER
++#define DEF_SWP			0
++#define DEF_TAS			0
 +
-+static void scst_tgt_release(struct kobject *kobj)
-+{
-+	struct scst_tgt *tgt;
++#define DEF_DSENSE		SCST_CONTR_MODE_FIXED_SENSE
 +
-+	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-+
-+	/* Let's make lockdep happy */
-+	up_write(&tgt->tgt_attr_rwsem);
-+
-+	scst_free_tgt(tgt);
-+	return;
-+}
-+
-+static ssize_t scst_tgt_attr_show(struct kobject *kobj, struct attribute *attr,
-+	char *buf)
-+{
-+	int res;
-+	struct kobj_attribute *kobj_attr;
-+	struct scst_tgt *tgt;
-+
-+	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-+
-+	if (down_read_trylock(&tgt->tgt_attr_rwsem) == 0) {
-+		res = -ENOENT;
-+		goto out;
-+	}
-+
-+	kobj_attr = container_of(attr, struct kobj_attribute, attr);
-+
-+	res = kobj_attr->show(kobj, kobj_attr, buf);
-+
-+	up_read(&tgt->tgt_attr_rwsem);
-+
-+out:
-+	return res;
-+}
-+
-+static ssize_t scst_tgt_attr_store(struct kobject *kobj,
-+	struct attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+	struct kobj_attribute *kobj_attr;
-+	struct scst_tgt *tgt;
-+
-+	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-+
-+	if (down_read_trylock(&tgt->tgt_attr_rwsem) == 0) {
-+		res = -ENOENT;
-+		goto out;
-+	}
-+
-+	kobj_attr = container_of(attr, struct kobj_attribute, attr);
-+
-+	res = kobj_attr->store(kobj, kobj_attr, buf, count);
-+
-+	up_read(&tgt->tgt_attr_rwsem);
-+
-+out:
-+	return res;
-+}
-+
-+static struct sysfs_ops scst_tgt_sysfs_ops = {
-+	.show = scst_tgt_attr_show,
-+	.store = scst_tgt_attr_store,
++static unsigned int random_values[256] = {
++	    9862592UL,  3744545211UL,  2348289082UL,  4036111983UL,
++	  435574201UL,  3110343764UL,  2383055570UL,  1826499182UL,
++	 4076766377UL,  1549935812UL,  3696752161UL,  1200276050UL,
++	 3878162706UL,  1783530428UL,  2291072214UL,   125807985UL,
++	 3407668966UL,   547437109UL,  3961389597UL,   969093968UL,
++	   56006179UL,  2591023451UL,     1849465UL,  1614540336UL,
++	 3699757935UL,   479961779UL,  3768703953UL,  2529621525UL,
++	 4157893312UL,  3673555386UL,  4091110867UL,  2193909423UL,
++	 2800464448UL,  3052113233UL,   450394455UL,  3424338713UL,
++	 2113709130UL,  4082064373UL,  3708640918UL,  3841182218UL,
++	 3141803315UL,  1032476030UL,  1166423150UL,  1169646901UL,
++	 2686611738UL,   575517645UL,  2829331065UL,  1351103339UL,
++	 2856560215UL,  2402488288UL,   867847666UL,     8524618UL,
++	  704790297UL,  2228765657UL,   231508411UL,  1425523814UL,
++	 2146764591UL,  1287631730UL,  4142687914UL,  3879884598UL,
++	  729945311UL,   310596427UL,  2263511876UL,  1983091134UL,
++	 3500916580UL,  1642490324UL,  3858376049UL,   695342182UL,
++	  780528366UL,  1372613640UL,  1100993200UL,  1314818946UL,
++	  572029783UL,  3775573540UL,   776262915UL,  2684520905UL,
++	 1007252738UL,  3505856396UL,  1974886670UL,  3115856627UL,
++	 4194842288UL,  2135793908UL,  3566210707UL,     7929775UL,
++	 1321130213UL,  2627281746UL,  3587067247UL,  2025159890UL,
++	 2587032000UL,  3098513342UL,  3289360258UL,   130594898UL,
++	 2258149812UL,  2275857755UL,  3966929942UL,  1521739999UL,
++	 4191192765UL,   958953550UL,  4153558347UL,  1011030335UL,
++	  524382185UL,  4099757640UL,   498828115UL,  2396978754UL,
++	  328688935UL,   826399828UL,  3174103611UL,  3921966365UL,
++	 2187456284UL,  2631406787UL,  3930669674UL,  4282803915UL,
++	 1776755417UL,   374959755UL,  2483763076UL,   844956392UL,
++	 2209187588UL,  3647277868UL,   291047860UL,  3485867047UL,
++	 2223103546UL,  2526736133UL,  3153407604UL,  3828961796UL,
++	 3355731910UL,  2322269798UL,  2752144379UL,   519897942UL,
++	 3430536488UL,  1801511593UL,  1953975728UL,  3286944283UL,
++	 1511612621UL,  1050133852UL,   409321604UL,  1037601109UL,
++	 3352316843UL,  4198371381UL,   617863284UL,   994672213UL,
++	 1540735436UL,  2337363549UL,  1242368492UL,   665473059UL,
++	 2330728163UL,  3443103219UL,  2291025133UL,  3420108120UL,
++	 2663305280UL,  1608969839UL,  2278959931UL,  1389747794UL,
++	 2226946970UL,  2131266900UL,  3856979144UL,  1894169043UL,
++	 2692697628UL,  3797290626UL,  3248126844UL,  3922786277UL,
++	  343705271UL,  3739749888UL,  2191310783UL,  2962488787UL,
++	 4119364141UL,  1403351302UL,  2984008923UL,  3822407178UL,
++	 1932139782UL,  2323869332UL,  2793574182UL,  1852626483UL,
++	 2722460269UL,  1136097522UL,  1005121083UL,  1805201184UL,
++	 2212824936UL,  2979547931UL,  4133075915UL,  2585731003UL,
++	 2431626071UL,   134370235UL,  3763236829UL,  1171434827UL,
++	 2251806994UL,  1289341038UL,  3616320525UL,   392218563UL,
++	 1544502546UL,  2993937212UL,  1957503701UL,  3579140080UL,
++	 4270846116UL,  2030149142UL,  1792286022UL,   366604999UL,
++	 2625579499UL,   790898158UL,   770833822UL,   815540197UL,
++	 2747711781UL,  3570468835UL,  3976195842UL,  1257621341UL,
++	 1198342980UL,  1860626190UL,  3247856686UL,   351473955UL,
++	  993440563UL,   340807146UL,  1041994520UL,  3573925241UL,
++	  480246395UL,  2104806831UL,  1020782793UL,  3362132583UL,
++	 2272911358UL,  3440096248UL,  2356596804UL,   259492703UL,
++	 3899500740UL,   252071876UL,  2177024041UL,  4284810959UL,
++	 2775999888UL,  2653420445UL,  2876046047UL,  1025771859UL,
++	 1994475651UL,  3564987377UL,  4112956647UL,  1821511719UL,
++	 3113447247UL,   455315102UL,  1585273189UL,  2311494568UL,
++	  774051541UL,  1898115372UL,  2637499516UL,   247231365UL,
++	 1475014417UL,   803585727UL,  3911097303UL,  1714292230UL,
++	  476579326UL,  2496900974UL,  3397613314UL,   341202244UL,
++	  807790202UL,  4221326173UL,   499979741UL,  1301488547UL,
++	 1056807896UL,  3525009458UL,  1174811641UL,  3049738746UL,
 +};
 +
-+static struct kobj_type tgt_ktype = {
-+	.sysfs_ops = &scst_tgt_sysfs_ops,
-+	.release = scst_tgt_release,
-+};
-+
-+static void scst_acg_release(struct kobject *kobj)
-+{
-+	struct scst_acg *acg;
-+
-+	acg = container_of(kobj, struct scst_acg, acg_kobj);
-+
-+	scst_destroy_acg(acg);
-+	return;
-+}
-+
-+static struct kobj_type acg_ktype = {
-+	.sysfs_ops = &scst_sysfs_ops,
-+	.release = scst_acg_release,
-+};
-+
-+static struct kobj_attribute scst_luns_mgmt =
-+	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_luns_mgmt_show,
-+	       scst_luns_mgmt_store);
-+
-+static struct kobj_attribute scst_acg_luns_mgmt =
-+	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_luns_mgmt_show,
-+	       scst_acg_luns_mgmt_store);
-+
-+static struct kobj_attribute scst_acg_ini_mgmt =
-+	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_acg_ini_mgmt_show,
-+	       scst_acg_ini_mgmt_store);
-+
-+static struct kobj_attribute scst_ini_group_mgmt =
-+	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_ini_group_mgmt_show,
-+	       scst_ini_group_mgmt_store);
-+
-+static struct kobj_attribute scst_tgt_addr_method =
-+	__ATTR(addr_method, S_IRUGO | S_IWUSR, scst_tgt_addr_method_show,
-+	       scst_tgt_addr_method_store);
-+
-+static struct kobj_attribute scst_tgt_io_grouping_type =
-+	__ATTR(io_grouping_type, S_IRUGO | S_IWUSR,
-+	       scst_tgt_io_grouping_type_show,
-+	       scst_tgt_io_grouping_type_store);
-+
-+static struct kobj_attribute scst_rel_tgt_id =
-+	__ATTR(rel_tgt_id, S_IRUGO | S_IWUSR, scst_rel_tgt_id_show,
-+	       scst_rel_tgt_id_store);
-+
-+static struct kobj_attribute scst_acg_addr_method =
-+	__ATTR(addr_method, S_IRUGO | S_IWUSR, scst_acg_addr_method_show,
-+		scst_acg_addr_method_store);
-+
-+static struct kobj_attribute scst_acg_io_grouping_type =
-+	__ATTR(io_grouping_type, S_IRUGO | S_IWUSR,
-+	       scst_acg_io_grouping_type_show,
-+	       scst_acg_io_grouping_type_store);
-+
-+static ssize_t scst_tgt_enable_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	struct scst_tgt *tgt;
-+	int res;
-+	bool enabled;
-+
-+	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-+
-+	enabled = tgt->tgtt->is_target_enabled(tgt);
-+
-+	res = sprintf(buf, "%d\n", enabled ? 1 : 0);
-+	return res;
-+}
-+
-+static ssize_t scst_tgt_enable_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+	struct scst_tgt *tgt;
-+	bool enable;
-+
-+	if (buf == NULL) {
-+		PRINT_ERROR("%s: NULL buffer?", __func__);
-+		res = -EINVAL;
-+		goto out;
-+	}
-+
-+	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-+
-+	switch (buf[0]) {
-+	case '0':
-+		enable = false;
-+		break;
-+	case '1':
-+		if (tgt->rel_tgt_id == 0) {
-+			res = gen_relative_target_port_id(&tgt->rel_tgt_id);
-+			if (res)
-+				goto out;
-+			PRINT_INFO("Using autogenerated rel ID %d for target "
-+				"%s", tgt->rel_tgt_id, tgt->tgt_name);
-+		} else {
-+			if (!scst_is_relative_target_port_id_unique(
-+			    tgt->rel_tgt_id, tgt)) {
-+				PRINT_ERROR("Relative port id %d is not unique",
-+					tgt->rel_tgt_id);
-+					res = -EBADSLT;
-+				goto out;
-+			}
-+		}
-+		enable = true;
-+		break;
-+	default:
-+		PRINT_ERROR("%s: Requested action not understood: %s",
-+		       __func__, buf);
-+		res = -EINVAL;
-+		goto out;
-+	}
-+
-+	res = tgt->tgtt->enable_target(tgt, enable);
-+	if (res == 0)
-+		res = count;
-+
-+out:
-+	return res;
-+}
-+
-+static struct kobj_attribute tgt_enable_attr =
-+	__ATTR(enabled, S_IRUGO | S_IWUSR,
-+	       scst_tgt_enable_show, scst_tgt_enable_store);
-+
-+int scst_create_tgt_sysfs(struct scst_tgt *tgt)
-+{
-+	int retval;
-+	const struct attribute **pattr;
-+
-+	init_rwsem(&tgt->tgt_attr_rwsem);
-+
-+	tgt->tgt_kobj_initialized = 1;
-+
-+	retval = kobject_init_and_add(&tgt->tgt_kobj, &tgt_ktype,
-+			&tgt->tgtt->tgtt_kobj, tgt->tgt_name);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add tgt %s to sysfs", tgt->tgt_name);
-+		goto out;
-+	}
++struct scst_vdisk_dev {
++	uint32_t block_size;
++	uint64_t nblocks;
++	int block_shift;
++	loff_t file_size;	/* in bytes */
 +
 +	/*
-+	 * In case of errors there's no need for additional cleanup, because
-+	 * it will be done by the _put function() called by the caller.
++	 * This lock can be taken on both SIRQ and thread context, but in
++	 * all cases for each particular instance it's taken consistenly either
++	 * on SIRQ or thread context. Mix of them is forbidden.
 +	 */
++	spinlock_t flags_lock;
 +
-+	if ((tgt->tgtt->enable_target != NULL) &&
-+	    (tgt->tgtt->is_target_enabled != NULL)) {
-+		retval = sysfs_create_file(&tgt->tgt_kobj,
-+				&tgt_enable_attr.attr);
-+		if (retval != 0) {
-+			PRINT_ERROR("Can't add attr %s to sysfs",
-+				tgt_enable_attr.attr.name);
-+			goto out;
-+		}
-+	}
++	/*
++	 * Below flags are protected by flags_lock or suspended activity
++	 * with scst_vdisk_mutex.
++	 */
++	unsigned int rd_only:1;
++	unsigned int wt_flag:1;
++	unsigned int nv_cache:1;
++	unsigned int o_direct_flag:1;
++	unsigned int media_changed:1;
++	unsigned int prevent_allow_medium_removal:1;
++	unsigned int nullio:1;
++	unsigned int blockio:1;
++	unsigned int cdrom_empty:1;
++	unsigned int removable:1;
 +
-+	tgt->tgt_sess_kobj = kobject_create_and_add("sessions", &tgt->tgt_kobj);
-+	if (tgt->tgt_sess_kobj == NULL) {
-+		PRINT_ERROR("Can't create sess kobj for tgt %s", tgt->tgt_name);
-+		goto out_nomem;
-+	}
++	int virt_id;
++	char name[16+1];	/* Name of the virtual device,
++				   must be <= SCSI Model + 1 */
++	char *filename;		/* File name, protected by
++				   scst_mutex and suspended activities */
++	unsigned int t10_dev_id_set:1; /* true if t10_dev_id manually set */
++	char t10_dev_id[16+8+2]; /* T10 device ID */
++	char usn[MAX_USN_LEN];
++	struct scst_device *dev;
++	struct list_head vdev_list_entry;
 +
-+	tgt->tgt_luns_kobj = kobject_create_and_add("luns", &tgt->tgt_kobj);
-+	if (tgt->tgt_luns_kobj == NULL) {
-+		PRINT_ERROR("Can't create luns kobj for tgt %s", tgt->tgt_name);
-+		goto out_nomem;
-+	}
++	struct mutex vdev_sysfs_mutex;
++	struct scst_dev_type *vdev_devt;
++};
 +
-+	retval = sysfs_create_file(tgt->tgt_luns_kobj, &scst_luns_mgmt.attr);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
-+			scst_luns_mgmt.attr.name, tgt->tgt_name);
++struct scst_vdisk_tgt_dev {
++	/*
++	 * Used without locking since SCST core ensures that only commands
++	 * with the same ORDERED type per tgt_dev can be processed
++	 * simultaneously.
++	 */
++	enum scst_cmd_queue_type last_write_cmd_queue_type;
++};
++
++struct scst_vdisk_thr {
++	struct scst_thr_data_hdr hdr;
++	struct file *fd;
++	struct block_device *bdev;
++	struct iovec *iv;
++	int iv_count;
++};
++
++/* Context RA patch supposed to be applied on the kernel */
++#define DEF_NUM_THREADS		8
++static int num_threads = DEF_NUM_THREADS;
++
++module_param_named(num_threads, num_threads, int, S_IRUGO);
++MODULE_PARM_DESC(num_threads, "vdisk threads count");
++
++static int vdisk_attach(struct scst_device *dev);
++static void vdisk_detach(struct scst_device *dev);
++static int vdisk_attach_tgt(struct scst_tgt_dev *tgt_dev);
++static void vdisk_detach_tgt(struct scst_tgt_dev *tgt_dev);
++static int vdisk_parse(struct scst_cmd *);
++static int vdisk_do_job(struct scst_cmd *cmd);
++static int vcdrom_parse(struct scst_cmd *);
++static int vcdrom_exec(struct scst_cmd *cmd);
++static void vdisk_exec_read(struct scst_cmd *cmd,
++	struct scst_vdisk_thr *thr, loff_t loff);
++static void vdisk_exec_write(struct scst_cmd *cmd,
++	struct scst_vdisk_thr *thr, loff_t loff);
++static void blockio_exec_rw(struct scst_cmd *cmd, struct scst_vdisk_thr *thr,
++	u64 lba_start, int write);
++static void vdisk_exec_verify(struct scst_cmd *cmd,
++	struct scst_vdisk_thr *thr, loff_t loff);
++static void vdisk_exec_read_capacity(struct scst_cmd *cmd);
++static void vdisk_exec_read_capacity16(struct scst_cmd *cmd);
++static void vdisk_exec_inquiry(struct scst_cmd *cmd);
++static void vdisk_exec_request_sense(struct scst_cmd *cmd);
++static void vdisk_exec_mode_sense(struct scst_cmd *cmd);
++static void vdisk_exec_mode_select(struct scst_cmd *cmd);
++static void vdisk_exec_log(struct scst_cmd *cmd);
++static void vdisk_exec_read_toc(struct scst_cmd *cmd);
++static void vdisk_exec_prevent_allow_medium_removal(struct scst_cmd *cmd);
++static int vdisk_fsync(struct scst_vdisk_thr *thr, loff_t loff,
++	loff_t len, struct scst_cmd *cmd, struct scst_device *dev);
++static ssize_t vdisk_add_fileio_device(const char *device_name, char *params);
++static ssize_t vdisk_add_blockio_device(const char *device_name, char *params);
++static ssize_t vdisk_add_nullio_device(const char *device_name, char *params);
++static ssize_t vdisk_del_device(const char *device_name);
++static ssize_t vcdrom_add_device(const char *device_name, char *params);
++static ssize_t vcdrom_del_device(const char *device_name);
++static int vdisk_task_mgmt_fn(struct scst_mgmt_cmd *mcmd,
++	struct scst_tgt_dev *tgt_dev);
++static uint64_t vdisk_gen_dev_id_num(const char *virt_dev_name);
++
++/** SYSFS **/
++
++static ssize_t vdev_sysfs_size_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf);
++static ssize_t vdisk_sysfs_blocksize_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf);
++static ssize_t vdisk_sysfs_rd_only_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf);
++static ssize_t vdisk_sysfs_wt_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf);
++static ssize_t vdisk_sysfs_nv_cache_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf);
++static ssize_t vdisk_sysfs_o_direct_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf);
++static ssize_t vdisk_sysfs_removable_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf);
++static ssize_t vdev_sysfs_filename_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf);
++static ssize_t vdisk_sysfs_resync_size_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count);
++static ssize_t vdev_sysfs_t10_dev_id_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count);
++static ssize_t vdev_sysfs_t10_dev_id_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf);
++static ssize_t vdev_sysfs_usn_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf);
++
++static ssize_t vcdrom_sysfs_filename_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count);
++
++static struct kobj_attribute vdev_size_attr =
++	__ATTR(size_mb, S_IRUGO, vdev_sysfs_size_show, NULL);
++static struct kobj_attribute vdisk_blocksize_attr =
++	__ATTR(blocksize, S_IRUGO, vdisk_sysfs_blocksize_show, NULL);
++static struct kobj_attribute vdisk_rd_only_attr =
++	__ATTR(read_only, S_IRUGO, vdisk_sysfs_rd_only_show, NULL);
++static struct kobj_attribute vdisk_wt_attr =
++	__ATTR(write_through, S_IRUGO, vdisk_sysfs_wt_show, NULL);
++static struct kobj_attribute vdisk_nv_cache_attr =
++	__ATTR(nv_cache, S_IRUGO, vdisk_sysfs_nv_cache_show, NULL);
++static struct kobj_attribute vdisk_o_direct_attr =
++	__ATTR(o_direct, S_IRUGO, vdisk_sysfs_o_direct_show, NULL);
++static struct kobj_attribute vdisk_removable_attr =
++	__ATTR(removable, S_IRUGO, vdisk_sysfs_removable_show, NULL);
++static struct kobj_attribute vdisk_filename_attr =
++	__ATTR(filename, S_IRUGO, vdev_sysfs_filename_show, NULL);
++static struct kobj_attribute vdisk_resync_size_attr =
++	__ATTR(resync_size, S_IWUSR, NULL, vdisk_sysfs_resync_size_store);
++static struct kobj_attribute vdev_t10_dev_id_attr =
++	__ATTR(t10_dev_id, S_IWUSR|S_IRUGO, vdev_sysfs_t10_dev_id_show,
++		vdev_sysfs_t10_dev_id_store);
++static struct kobj_attribute vdev_usn_attr =
++	__ATTR(usn, S_IRUGO, vdev_sysfs_usn_show, NULL);
++
++static struct kobj_attribute vcdrom_filename_attr =
++	__ATTR(filename, S_IRUGO|S_IWUSR, vdev_sysfs_filename_show,
++		vcdrom_sysfs_filename_store);
++
++static const struct attribute *vdisk_fileio_attrs[] = {
++	&vdev_size_attr.attr,
++	&vdisk_blocksize_attr.attr,
++	&vdisk_rd_only_attr.attr,
++	&vdisk_wt_attr.attr,
++	&vdisk_nv_cache_attr.attr,
++	&vdisk_o_direct_attr.attr,
++	&vdisk_removable_attr.attr,
++	&vdisk_filename_attr.attr,
++	&vdisk_resync_size_attr.attr,
++	&vdev_t10_dev_id_attr.attr,
++	&vdev_usn_attr.attr,
++	NULL,
++};
++
++static const struct attribute *vdisk_blockio_attrs[] = {
++	&vdev_size_attr.attr,
++	&vdisk_blocksize_attr.attr,
++	&vdisk_rd_only_attr.attr,
++	&vdisk_removable_attr.attr,
++	&vdisk_filename_attr.attr,
++	&vdisk_resync_size_attr.attr,
++	&vdev_t10_dev_id_attr.attr,
++	&vdev_usn_attr.attr,
++	NULL,
++};
++
++static const struct attribute *vdisk_nullio_attrs[] = {
++	&vdev_size_attr.attr,
++	&vdisk_blocksize_attr.attr,
++	&vdisk_rd_only_attr.attr,
++	&vdisk_removable_attr.attr,
++	&vdev_t10_dev_id_attr.attr,
++	&vdev_usn_attr.attr,
++	NULL,
++};
++
++static const struct attribute *vcdrom_attrs[] = {
++	&vdev_size_attr.attr,
++	&vcdrom_filename_attr.attr,
++	&vdev_t10_dev_id_attr.attr,
++	&vdev_usn_attr.attr,
++	NULL,
++};
++
++/* Protects vdisks addition/deletion and related activities, like search */
++static DEFINE_MUTEX(scst_vdisk_mutex);
++static DEFINE_RWLOCK(vdisk_t10_dev_id_rwlock);
++
++/* Protected by scst_vdisk_mutex */
++static LIST_HEAD(vdev_list);
++
++static struct kmem_cache *vdisk_thr_cachep;
++
++/*
++ * Be careful changing "name" field, since it is the name of the corresponding
++ * /sys/kernel/scst_tgt entry, hence a part of user space ABI.
++ */
++
++static struct scst_dev_type vdisk_file_devtype = {
++	.name =			"vdisk_fileio",
++	.type =			TYPE_DISK,
++	.exec_sync =		1,
++	.threads_num =		-1,
++	.parse_atomic =		1,
++	.exec_atomic =		0,
++	.dev_done_atomic =	1,
++	.attach =		vdisk_attach,
++	.detach =		vdisk_detach,
++	.attach_tgt =		vdisk_attach_tgt,
++	.detach_tgt =		vdisk_detach_tgt,
++	.parse =		vdisk_parse,
++	.exec =			vdisk_do_job,
++	.task_mgmt_fn =		vdisk_task_mgmt_fn,
++	.add_device =		vdisk_add_fileio_device,
++	.del_device =		vdisk_del_device,
++	.dev_attrs =		vdisk_fileio_attrs,
++	.add_device_parameters_help = "filename, blocksize, write_through, "
++		"nv_cache, o_direct, read_only, removable",
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++	.default_trace_flags =	SCST_DEFAULT_DEV_LOG_FLAGS,
++	.trace_flags =		&trace_flag,
++	.trace_tbl =		vdisk_local_trace_tbl,
++	.trace_tbl_help =	VDISK_TRACE_TLB_HELP,
++#endif
++};
++
++static struct kmem_cache *blockio_work_cachep;
++
++static struct scst_dev_type vdisk_blk_devtype = {
++	.name =			"vdisk_blockio",
++	.type =			TYPE_DISK,
++	.threads_num =		0,
++	.parse_atomic =		1,
++	.exec_atomic =		0,
++	.dev_done_atomic =	1,
++	.attach =		vdisk_attach,
++	.detach =		vdisk_detach,
++	.attach_tgt =		vdisk_attach_tgt,
++	.detach_tgt =		vdisk_detach_tgt,
++	.parse =		vdisk_parse,
++	.exec =			vdisk_do_job,
++	.task_mgmt_fn =		vdisk_task_mgmt_fn,
++	.add_device =		vdisk_add_blockio_device,
++	.del_device =		vdisk_del_device,
++	.dev_attrs =		vdisk_blockio_attrs,
++	.add_device_parameters_help = "filename, blocksize, read_only, "
++		"removable",
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++	.default_trace_flags =	SCST_DEFAULT_DEV_LOG_FLAGS,
++	.trace_flags =		&trace_flag,
++	.trace_tbl =		vdisk_local_trace_tbl,
++	.trace_tbl_help =	VDISK_TRACE_TLB_HELP,
++#endif
++};
++
++static struct scst_dev_type vdisk_null_devtype = {
++	.name =			"vdisk_nullio",
++	.type =			TYPE_DISK,
++	.threads_num =		0,
++	.parse_atomic =		1,
++	.exec_atomic =		1,
++	.dev_done_atomic =	1,
++	.attach =		vdisk_attach,
++	.detach =		vdisk_detach,
++	.attach_tgt =		vdisk_attach_tgt,
++	.detach_tgt =		vdisk_detach_tgt,
++	.parse =		vdisk_parse,
++	.exec =			vdisk_do_job,
++	.task_mgmt_fn =		vdisk_task_mgmt_fn,
++	.add_device =		vdisk_add_nullio_device,
++	.del_device =		vdisk_del_device,
++	.dev_attrs =		vdisk_nullio_attrs,
++	.add_device_parameters_help = "blocksize, read_only, removable",
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++	.default_trace_flags =	SCST_DEFAULT_DEV_LOG_FLAGS,
++	.trace_flags =		&trace_flag,
++	.trace_tbl =		vdisk_local_trace_tbl,
++	.trace_tbl_help =	VDISK_TRACE_TLB_HELP,
++#endif
++};
++
++static struct scst_dev_type vcdrom_devtype = {
++	.name =			"vcdrom",
++	.type =			TYPE_ROM,
++	.exec_sync =		1,
++	.threads_num =		-1,
++	.parse_atomic =		1,
++	.exec_atomic =		0,
++	.dev_done_atomic =	1,
++	.attach =		vdisk_attach,
++	.detach =		vdisk_detach,
++	.attach_tgt =		vdisk_attach_tgt,
++	.detach_tgt =		vdisk_detach_tgt,
++	.parse =		vcdrom_parse,
++	.exec =			vcdrom_exec,
++	.task_mgmt_fn =		vdisk_task_mgmt_fn,
++	.add_device =		vcdrom_add_device,
++	.del_device =		vcdrom_del_device,
++	.dev_attrs =		vcdrom_attrs,
++	.add_device_parameters_help = NULL,
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++	.default_trace_flags =	SCST_DEFAULT_DEV_LOG_FLAGS,
++	.trace_flags =		&trace_flag,
++	.trace_tbl =		vdisk_local_trace_tbl,
++	.trace_tbl_help =	VDISK_TRACE_TLB_HELP,
++#endif
++};
++
++static struct scst_vdisk_thr nullio_thr_data;
++
++static const char *vdev_get_filename(const struct scst_vdisk_dev *virt_dev)
++{
++	if (virt_dev->filename != NULL)
++		return virt_dev->filename;
++	else
++		return "none";
++}
++
++/* Returns fd, use IS_ERR(fd) to get error status */
++static struct file *vdev_open_fd(const struct scst_vdisk_dev *virt_dev)
++{
++	int open_flags = 0;
++	struct file *fd;
++
++	if (virt_dev->dev->rd_only)
++		open_flags |= O_RDONLY;
++	else
++		open_flags |= O_RDWR;
++	if (virt_dev->o_direct_flag)
++		open_flags |= O_DIRECT;
++	if (virt_dev->wt_flag && !virt_dev->nv_cache)
++		open_flags |= O_SYNC;
++	TRACE_DBG("Opening file %s, flags 0x%x",
++		  virt_dev->filename, open_flags);
++	fd = filp_open(virt_dev->filename, O_LARGEFILE | open_flags, 0600);
++	return fd;
++}
++
++/* Returns 0 on success and file size in *file_size, error code otherwise */
++static int vdisk_get_file_size(const char *filename, bool blockio,
++	loff_t *file_size)
++{
++	struct inode *inode;
++	int res = 0;
++	struct file *fd;
++
++	*file_size = 0;
++
++	fd = filp_open(filename, O_LARGEFILE | O_RDONLY, 0600);
++	if (IS_ERR(fd)) {
++		res = PTR_ERR(fd);
++		PRINT_ERROR("filp_open(%s) returned error %d", filename, res);
 +		goto out;
 +	}
 +
-+	tgt->tgt_ini_grp_kobj = kobject_create_and_add("ini_groups",
-+					&tgt->tgt_kobj);
-+	if (tgt->tgt_ini_grp_kobj == NULL) {
-+		PRINT_ERROR("Can't create ini_grp kobj for tgt %s",
-+			tgt->tgt_name);
-+		goto out_nomem;
++	inode = fd->f_dentry->d_inode;
++
++	if (blockio && !S_ISBLK(inode->i_mode)) {
++		PRINT_ERROR("File %s is NOT a block device", filename);
++		res = -EINVAL;
++		goto out_close;
 +	}
 +
-+	retval = sysfs_create_file(tgt->tgt_ini_grp_kobj,
-+			&scst_ini_group_mgmt.attr);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
-+			scst_ini_group_mgmt.attr.name, tgt->tgt_name);
-+		goto out;
++	if (S_ISREG(inode->i_mode))
++		/* Nothing to do*/;
++	else if (S_ISBLK(inode->i_mode))
++		inode = inode->i_bdev->bd_inode;
++	else {
++		res = -EINVAL;
++		goto out_close;
 +	}
 +
-+	retval = sysfs_create_file(&tgt->tgt_kobj,
-+			&scst_rel_tgt_id.attr);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add attribute %s for tgt %s",
-+			scst_rel_tgt_id.attr.name, tgt->tgt_name);
-+		goto out;
-+	}
++	*file_size = inode->i_size;
 +
-+	retval = sysfs_create_file(&tgt->tgt_kobj,
-+			&scst_tgt_addr_method.attr);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add attribute %s for tgt %s",
-+			scst_tgt_addr_method.attr.name, tgt->tgt_name);
-+		goto out;
-+	}
-+
-+	retval = sysfs_create_file(&tgt->tgt_kobj,
-+			&scst_tgt_io_grouping_type.attr);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add attribute %s for tgt %s",
-+			scst_tgt_io_grouping_type.attr.name, tgt->tgt_name);
-+		goto out;
-+	}
-+
-+	pattr = tgt->tgtt->tgt_attrs;
-+	if (pattr != NULL) {
-+		while (*pattr != NULL) {
-+			TRACE_DBG("Creating attr %s for tgt %s", (*pattr)->name,
-+				tgt->tgt_name);
-+			retval = sysfs_create_file(&tgt->tgt_kobj, *pattr);
-+			if (retval != 0) {
-+				PRINT_ERROR("Can't add tgt attr %s for tgt %s",
-+					(*pattr)->name, tgt->tgt_name);
-+				goto out;
-+			}
-+			pattr++;
-+		}
-+	}
++out_close:
++	filp_close(fd, NULL);
 +
 +out:
-+	return retval;
-+
-+out_nomem:
-+	retval = -ENOMEM;
-+	goto out;
++	return res;
 +}
 +
-+/*
-+ * Must not be called under scst_mutex or there can be a deadlock with
-+ * tgt_attr_rwsem
-+ */
-+void scst_tgt_sysfs_prepare_put(struct scst_tgt *tgt)
-+{
-+	if (tgt->tgt_kobj_initialized) {
-+		down_write(&tgt->tgt_attr_rwsem);
-+		tgt->tgt_kobj_put_prepared = 1;
-+	}
-+
-+	return;
-+}
-+
-+/*
-+ * Must not be called under scst_mutex or there can be a deadlock with
-+ * tgt_attr_rwsem
-+ */
-+void scst_tgt_sysfs_put(struct scst_tgt *tgt)
-+{
-+	if (tgt->tgt_kobj_initialized) {
-+		kobject_del(tgt->tgt_sess_kobj);
-+		kobject_put(tgt->tgt_sess_kobj);
-+
-+		kobject_del(tgt->tgt_luns_kobj);
-+		kobject_put(tgt->tgt_luns_kobj);
-+
-+		kobject_del(tgt->tgt_ini_grp_kobj);
-+		kobject_put(tgt->tgt_ini_grp_kobj);
-+
-+		kobject_del(&tgt->tgt_kobj);
-+
-+		if (!tgt->tgt_kobj_put_prepared)
-+			down_write(&tgt->tgt_attr_rwsem);
-+		kobject_put(&tgt->tgt_kobj);
-+	} else
-+		scst_free_tgt(tgt);
-+	return;
-+}
-+
-+/*
-+ * Devices directory implementation
-+ */
-+
-+ssize_t scst_device_sysfs_type_show(struct kobject *kobj,
-+			    struct kobj_attribute *attr, char *buf)
-+{
-+	int pos = 0;
-+
-+	struct scst_device *dev;
-+
-+	dev = container_of(kobj, struct scst_device, dev_kobj);
-+
-+	pos = sprintf(buf, "%d - %s\n", dev->type,
-+		(unsigned)dev->type > ARRAY_SIZE(scst_dev_handler_types) ?
-+		      "unknown" : scst_dev_handler_types[dev->type]);
-+
-+	return pos;
-+}
-+
-+static struct kobj_attribute device_type_attr =
-+	__ATTR(type, S_IRUGO, scst_device_sysfs_type_show, NULL);
-+
-+static ssize_t scst_device_sysfs_threads_num_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	int pos = 0;
-+	struct scst_device *dev;
-+
-+	dev = container_of(kobj, struct scst_device, dev_kobj);
-+
-+	pos = sprintf(buf, "%d\n%s", dev->threads_num,
-+		(dev->threads_num != dev->handler->threads_num) ?
-+			SCST_SYSFS_KEY_MARK "\n" : "");
-+	return pos;
-+}
-+
-+static ssize_t scst_device_sysfs_threads_data_store(struct scst_device *dev,
-+	int threads_num, enum scst_dev_type_threads_pool_type threads_pool_type)
++static int vdisk_attach(struct scst_device *dev)
 +{
 +	int res = 0;
++	loff_t err;
++	struct scst_vdisk_dev *virt_dev = NULL, *vv;
 +
-+	if (dev->threads_num < 0) {
-+		PRINT_ERROR("Threads pool disabled for device %s",
-+			dev->virt_name);
-+		res = -EPERM;
-+		goto out;
-+	}
++	TRACE_DBG("virt_id %d (%s)", dev->virt_id, dev->virt_name);
 +
-+	if ((threads_num == dev->threads_num) &&
-+	    (threads_pool_type == dev->threads_pool_type))
-+		goto out;
-+
-+	res = scst_suspend_activity(true);
-+	if (res != 0)
-+		goto out;
-+
-+	if (mutex_lock_interruptible(&scst_mutex) != 0) {
-+		res = -EINTR;
-+		goto out_resume;
-+	}
-+
-+	scst_stop_dev_threads(dev);
-+
-+	dev->threads_num = threads_num;
-+	dev->threads_pool_type = threads_pool_type;
-+
-+	res = scst_create_dev_threads(dev);
-+	if (res != 0)
-+		goto out_up;
-+
-+out_up:
-+	mutex_unlock(&scst_mutex);
-+
-+out_resume:
-+	scst_resume_activity();
-+
-+out:
-+	return res;
-+}
-+
-+static ssize_t scst_device_sysfs_threads_num_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+	struct scst_device *dev;
-+	long newtn;
-+
-+	dev = container_of(kobj, struct scst_device, dev_kobj);
-+
-+	res = strict_strtoul(buf, 0, &newtn);
-+	if (res != 0) {
-+		PRINT_ERROR("strict_strtoul() for %s failed: %d ", buf, res);
-+		goto out;
-+	}
-+
-+	if (newtn < 0) {
-+		PRINT_ERROR("Illegal threads num value %ld", newtn);
++	if (dev->virt_id == 0) {
++		PRINT_ERROR("%s", "Not a virtual device");
 +		res = -EINVAL;
-+		goto out;
-+	}
-+
-+	res = scst_device_sysfs_threads_data_store(dev, newtn,
-+		dev->threads_pool_type);
-+	if (res != 0)
-+		goto out;
-+
-+	PRINT_INFO("Changed cmd threads num to %ld", newtn);
-+
-+	res = count;
-+
-+out:
-+	return res;
-+}
-+
-+static struct kobj_attribute device_threads_num_attr =
-+	__ATTR(threads_num, S_IRUGO | S_IWUSR,
-+		scst_device_sysfs_threads_num_show,
-+		scst_device_sysfs_threads_num_store);
-+
-+static ssize_t scst_device_sysfs_threads_pool_type_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	int pos = 0;
-+	struct scst_device *dev;
-+
-+	dev = container_of(kobj, struct scst_device, dev_kobj);
-+
-+	if (dev->threads_num == 0) {
-+		pos = sprintf(buf, "Async\n");
-+		goto out;
-+	} else if (dev->threads_num < 0) {
-+		pos = sprintf(buf, "Not valid\n");
-+		goto out;
-+	}
-+
-+	switch (dev->threads_pool_type) {
-+	case SCST_THREADS_POOL_PER_INITIATOR:
-+		pos = sprintf(buf, "%s\n%s", SCST_THREADS_POOL_PER_INITIATOR_STR,
-+			(dev->threads_pool_type != dev->handler->threads_pool_type) ?
-+				SCST_SYSFS_KEY_MARK "\n" : "");
-+		break;
-+	case SCST_THREADS_POOL_SHARED:
-+		pos = sprintf(buf, "%s\n%s", SCST_THREADS_POOL_SHARED_STR,
-+			(dev->threads_pool_type != dev->handler->threads_pool_type) ?
-+				SCST_SYSFS_KEY_MARK "\n" : "");
-+		break;
-+	default:
-+		pos = sprintf(buf, "Unknown\n");
-+		break;
-+	}
-+
-+out:
-+	return pos;
-+}
-+
-+static ssize_t scst_device_sysfs_threads_pool_type_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+	struct scst_device *dev;
-+	enum scst_dev_type_threads_pool_type newtpt;
-+
-+	dev = container_of(kobj, struct scst_device, dev_kobj);
-+
-+	newtpt = scst_parse_threads_pool_type(buf, count);
-+	if (newtpt == SCST_THREADS_POOL_TYPE_INVALID) {
-+		PRINT_ERROR("Illegal threads pool type %s", buf);
-+		res = -EINVAL;
-+		goto out;
-+	}
-+
-+	TRACE_DBG("buf %s, count %zd, newtpt %d", buf, count, newtpt);
-+
-+	res = scst_device_sysfs_threads_data_store(dev, dev->threads_num,
-+		newtpt);
-+	if (res != 0)
-+		goto out;
-+
-+	PRINT_INFO("Changed cmd threads pool type to %d", newtpt);
-+
-+	res = count;
-+
-+out:
-+	return res;
-+}
-+
-+static struct kobj_attribute device_threads_pool_type_attr =
-+	__ATTR(threads_pool_type, S_IRUGO | S_IWUSR,
-+		scst_device_sysfs_threads_pool_type_show,
-+		scst_device_sysfs_threads_pool_type_store);
-+
-+static struct attribute *scst_device_attrs[] = {
-+	&device_type_attr.attr,
-+	&device_threads_num_attr.attr,
-+	&device_threads_pool_type_attr.attr,
-+	NULL,
-+};
-+
-+static void scst_sysfs_device_release(struct kobject *kobj)
-+{
-+	struct scst_device *dev;
-+
-+	dev = container_of(kobj, struct scst_device, dev_kobj);
-+
-+	/* Let's make lockdep happy */
-+	up_write(&dev->dev_attr_rwsem);
-+
-+	scst_free_device(dev);
-+	return;
-+}
-+
-+int scst_create_devt_dev_sysfs(struct scst_device *dev)
-+{
-+	int retval = 0;
-+	const struct attribute **pattr;
-+
-+	if (dev->handler == &scst_null_devtype)
-+		goto out;
-+
-+	BUG_ON(!dev->handler->devt_kobj_initialized);
-+
-+	/*
-+	 * In case of errors there's no need for additional cleanup, because
-+	 * it will be done by the _put function() called by the caller.
-+	 */
-+
-+	retval = sysfs_create_link(&dev->dev_kobj,
-+			&dev->handler->devt_kobj, "handler");
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't create handler link for dev %s",
-+			dev->virt_name);
-+		goto out;
-+	}
-+
-+	retval = sysfs_create_link(&dev->handler->devt_kobj,
-+			&dev->dev_kobj, dev->virt_name);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't create handler link for dev %s",
-+			dev->virt_name);
-+		goto out;
-+	}
-+
-+	pattr = dev->handler->dev_attrs;
-+	if (pattr != NULL) {
-+		while (*pattr != NULL) {
-+			retval = sysfs_create_file(&dev->dev_kobj, *pattr);
-+			if (retval != 0) {
-+				PRINT_ERROR("Can't add dev attr %s for dev %s",
-+					(*pattr)->name, dev->virt_name);
-+				goto out;
-+			}
-+			pattr++;
-+		}
-+	}
-+
-+out:
-+	return retval;
-+}
-+
-+void scst_devt_dev_sysfs_put(struct scst_device *dev)
-+{
-+	const struct attribute **pattr;
-+
-+	if (dev->handler == &scst_null_devtype)
-+		goto out;
-+
-+	BUG_ON(!dev->handler->devt_kobj_initialized);
-+
-+	pattr = dev->handler->dev_attrs;
-+	if (pattr != NULL) {
-+		while (*pattr != NULL) {
-+			sysfs_remove_file(&dev->dev_kobj, *pattr);
-+			pattr++;
-+		}
-+	}
-+
-+	sysfs_remove_link(&dev->dev_kobj, "handler");
-+	sysfs_remove_link(&dev->handler->devt_kobj, dev->virt_name);
-+
-+out:
-+	return;
-+}
-+
-+static ssize_t scst_dev_attr_show(struct kobject *kobj, struct attribute *attr,
-+			 char *buf)
-+{
-+	int res;
-+	struct kobj_attribute *kobj_attr;
-+	struct scst_device *dev;
-+
-+	dev = container_of(kobj, struct scst_device, dev_kobj);
-+
-+	if (down_read_trylock(&dev->dev_attr_rwsem) == 0) {
-+		res = -ENOENT;
-+		goto out;
-+	}
-+
-+	kobj_attr = container_of(attr, struct kobj_attribute, attr);
-+
-+	res = kobj_attr->show(kobj, kobj_attr, buf);
-+
-+	up_read(&dev->dev_attr_rwsem);
-+
-+out:
-+	return res;
-+}
-+
-+static ssize_t scst_dev_attr_store(struct kobject *kobj, struct attribute *attr,
-+			  const char *buf, size_t count)
-+{
-+	int res;
-+	struct kobj_attribute *kobj_attr;
-+	struct scst_device *dev;
-+
-+	dev = container_of(kobj, struct scst_device, dev_kobj);
-+
-+	if (down_read_trylock(&dev->dev_attr_rwsem) == 0) {
-+		res = -ENOENT;
-+		goto out;
-+	}
-+
-+	kobj_attr = container_of(attr, struct kobj_attribute, attr);
-+
-+	res = kobj_attr->store(kobj, kobj_attr, buf, count);
-+
-+	up_read(&dev->dev_attr_rwsem);
-+
-+out:
-+	return res;
-+}
-+
-+static struct sysfs_ops scst_dev_sysfs_ops = {
-+	.show = scst_dev_attr_show,
-+	.store = scst_dev_attr_store,
-+};
-+
-+static struct kobj_type scst_device_ktype = {
-+	.sysfs_ops = &scst_dev_sysfs_ops,
-+	.release = scst_sysfs_device_release,
-+	.default_attrs = scst_device_attrs,
-+};
-+
-+int scst_create_device_sysfs(struct scst_device *dev)
-+{
-+	int retval = 0;
-+
-+	init_rwsem(&dev->dev_attr_rwsem);
-+
-+	dev->dev_kobj_initialized = 1;
-+
-+	retval = kobject_init_and_add(&dev->dev_kobj, &scst_device_ktype,
-+				      scst_devices_kobj, dev->virt_name);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add device %s to sysfs", dev->virt_name);
 +		goto out;
 +	}
 +
 +	/*
-+	 * In case of errors there's no need for additional cleanup, because
-+	 * it will be done by the _put function() called by the caller.
++	 * scst_vdisk_mutex must be already taken before
++	 * scst_register_virtual_device()
 +	 */
-+
-+	dev->dev_exp_kobj = kobject_create_and_add("exported",
-+						   &dev->dev_kobj);
-+	if (dev->dev_exp_kobj == NULL) {
-+		PRINT_ERROR("Can't create exported link for device %s",
-+			dev->virt_name);
-+		retval = -ENOMEM;
-+		goto out;
-+	}
-+
-+	if (dev->scsi_dev != NULL) {
-+		retval = sysfs_create_link(&dev->dev_kobj,
-+			&dev->scsi_dev->sdev_dev.kobj, "scsi_device");
-+		if (retval != 0) {
-+			PRINT_ERROR("Can't create scsi_device link for dev %s",
-+				dev->virt_name);
-+			goto out;
-+		}
-+	}
-+
-+out:
-+	return retval;
-+}
-+
-+/*
-+ * Must not be called under scst_mutex or there can be a deadlock with
-+ * dev_attr_rwsem
-+ */
-+void scst_device_sysfs_put(struct scst_device *dev)
-+{
-+
-+	if (dev->dev_kobj_initialized) {
-+		kobject_del(dev->dev_exp_kobj);
-+		kobject_put(dev->dev_exp_kobj);
-+
-+		kobject_del(&dev->dev_kobj);
-+
-+		down_write(&dev->dev_attr_rwsem);
-+		kobject_put(&dev->dev_kobj);
-+	} else
-+		scst_free_device(dev);
-+	return;
-+}
-+
-+/*
-+ * Target sessions directory implementation
-+ */
-+
-+static ssize_t scst_sess_sysfs_commands_show(struct kobject *kobj,
-+			    struct kobj_attribute *attr, char *buf)
-+{
-+	struct scst_session *sess;
-+
-+	sess = container_of(kobj, struct scst_session, sess_kobj);
-+
-+	return sprintf(buf, "%i\n", atomic_read(&sess->sess_cmd_count));
-+}
-+
-+static struct kobj_attribute session_commands_attr =
-+	__ATTR(commands, S_IRUGO, scst_sess_sysfs_commands_show, NULL);
-+
-+static ssize_t scst_sess_sysfs_active_commands_show(struct kobject *kobj,
-+			    struct kobj_attribute *attr, char *buf)
-+{
-+	int res;
-+	struct scst_session *sess;
-+	int active_cmds = 0, t;
-+
-+	if (mutex_lock_interruptible(&scst_mutex) != 0) {
-+		res = -EINTR;
-+		goto out;
-+	}
-+
-+	sess = container_of(kobj, struct scst_session, sess_kobj);
-+
-+	for (t = TGT_DEV_HASH_SIZE-1; t >= 0; t--) {
-+		struct list_head *sess_tgt_dev_list_head =
-+			&sess->sess_tgt_dev_list_hash[t];
-+		struct scst_tgt_dev *tgt_dev;
-+		list_for_each_entry(tgt_dev, sess_tgt_dev_list_head,
-+				sess_tgt_dev_list_entry) {
-+			active_cmds += atomic_read(&tgt_dev->tgt_dev_cmd_count);
-+		}
-+	}
-+
-+	mutex_unlock(&scst_mutex);
-+
-+	res = sprintf(buf, "%i\n", active_cmds);
-+
-+out:
-+	return res;
-+}
-+
-+static struct kobj_attribute session_active_commands_attr =
-+	__ATTR(active_commands, S_IRUGO, scst_sess_sysfs_active_commands_show,
-+		NULL);
-+
-+static ssize_t scst_sess_sysfs_initiator_name_show(struct kobject *kobj,
-+			    struct kobj_attribute *attr, char *buf)
-+{
-+	struct scst_session *sess;
-+
-+	sess = container_of(kobj, struct scst_session, sess_kobj);
-+
-+	return scnprintf(buf, SCST_SYSFS_BLOCK_SIZE, "%s\n",
-+		sess->initiator_name);
-+}
-+
-+static struct kobj_attribute session_initiator_name_attr =
-+	__ATTR(initiator_name, S_IRUGO, scst_sess_sysfs_initiator_name_show, NULL);
-+
-+static struct attribute *scst_session_attrs[] = {
-+	&session_commands_attr.attr,
-+	&session_active_commands_attr.attr,
-+	&session_initiator_name_attr.attr,
-+	NULL,
-+};
-+
-+static void scst_sysfs_session_release(struct kobject *kobj)
-+{
-+	struct scst_session *sess;
-+
-+	sess = container_of(kobj, struct scst_session, sess_kobj);
-+
-+	/* Let's make lockdep happy */
-+	up_write(&sess->sess_attr_rwsem);
-+
-+	scst_release_session(sess);
-+	return;
-+}
-+
-+static ssize_t scst_sess_attr_show(struct kobject *kobj, struct attribute *attr,
-+			 char *buf)
-+{
-+	int res;
-+	struct kobj_attribute *kobj_attr;
-+	struct scst_session *sess;
-+
-+	sess = container_of(kobj, struct scst_session, sess_kobj);
-+
-+	if (down_read_trylock(&sess->sess_attr_rwsem) == 0) {
-+		res = -ENOENT;
-+		goto out;
-+	}
-+
-+	kobj_attr = container_of(attr, struct kobj_attribute, attr);
-+
-+	res = kobj_attr->show(kobj, kobj_attr, buf);
-+
-+	up_read(&sess->sess_attr_rwsem);
-+
-+out:
-+	return res;
-+}
-+
-+static ssize_t scst_sess_attr_store(struct kobject *kobj, struct attribute *attr,
-+			  const char *buf, size_t count)
-+{
-+	int res;
-+	struct kobj_attribute *kobj_attr;
-+	struct scst_session *sess;
-+
-+	sess = container_of(kobj, struct scst_session, sess_kobj);
-+
-+	if (down_read_trylock(&sess->sess_attr_rwsem) == 0) {
-+		res = -ENOENT;
-+		goto out;
-+	}
-+
-+	kobj_attr = container_of(attr, struct kobj_attribute, attr);
-+
-+	res = kobj_attr->store(kobj, kobj_attr, buf, count);
-+
-+	up_read(&sess->sess_attr_rwsem);
-+
-+out:
-+	return res;
-+}
-+
-+static struct sysfs_ops scst_sess_sysfs_ops = {
-+	.show = scst_sess_attr_show,
-+	.store = scst_sess_attr_store,
-+};
-+
-+static struct kobj_type scst_session_ktype = {
-+	.sysfs_ops = &scst_sess_sysfs_ops,
-+	.release = scst_sysfs_session_release,
-+	.default_attrs = scst_session_attrs,
-+};
-+
-+/* scst_mutex supposed to be locked */
-+int scst_create_sess_sysfs(struct scst_session *sess)
-+{
-+	int retval = 0;
-+	struct scst_session *s;
-+	const struct attribute **pattr;
-+	char *name = (char *)sess->initiator_name;
-+	int len = strlen(name) + 1, n = 1;
-+
-+restart:
-+	list_for_each_entry(s, &sess->tgt->sess_list, sess_list_entry) {
-+		if (!s->sess_kobj_initialized)
-+			continue;
-+
-+		if (strcmp(name, kobject_name(&s->sess_kobj)) == 0) {
-+			if (s == sess)
-+				continue;
-+
-+			TRACE_DBG("Dublicated session from the same initiator "
-+				"%s found", name);
-+
-+			if (name == sess->initiator_name) {
-+				len = strlen(sess->initiator_name);
-+				len += 20;
-+				name = kmalloc(len, GFP_KERNEL);
-+				if (name == NULL) {
-+					PRINT_ERROR("Unable to allocate a "
-+						"replacement name (size %d)",
-+						len);
-+				}
-+			}
-+
-+			snprintf(name, len, "%s_%d", sess->initiator_name, n);
-+			n++;
-+			goto restart;
-+		}
-+	}
-+
-+	init_rwsem(&sess->sess_attr_rwsem);
-+
-+	sess->sess_kobj_initialized = 1;
-+
-+	retval = kobject_init_and_add(&sess->sess_kobj, &scst_session_ktype,
-+			      sess->tgt->tgt_sess_kobj, name);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add session %s to sysfs", name);
-+		goto out_free;
-+	}
-+
-+	/*
-+	 * In case of errors there's no need for additional cleanup, because
-+	 * it will be done by the _put function() called by the caller.
-+	 */
-+
-+	pattr = sess->tgt->tgtt->sess_attrs;
-+	if (pattr != NULL) {
-+		while (*pattr != NULL) {
-+			retval = sysfs_create_file(&sess->sess_kobj, *pattr);
-+			if (retval != 0) {
-+				PRINT_ERROR("Can't add sess attr %s for sess "
-+					"for initiator %s", (*pattr)->name,
-+					name);
-+				goto out_free;
-+			}
-+			pattr++;
-+		}
-+	}
-+
-+	if (sess->acg == sess->tgt->default_acg)
-+		retval = sysfs_create_link(&sess->sess_kobj,
-+				sess->tgt->tgt_luns_kobj, "luns");
-+	else
-+		retval = sysfs_create_link(&sess->sess_kobj,
-+				sess->acg->luns_kobj, "luns");
-+
-+out_free:
-+	if (name != sess->initiator_name)
-+		kfree(name);
-+	return retval;
-+}
-+
-+/*
-+ * Must not be called under scst_mutex or there can be a deadlock with
-+ * sess_attr_rwsem
-+ */
-+void scst_sess_sysfs_put(struct scst_session *sess)
-+{
-+
-+	if (sess->sess_kobj_initialized) {
-+		kobject_del(&sess->sess_kobj);
-+
-+		down_write(&sess->sess_attr_rwsem);
-+		kobject_put(&sess->sess_kobj);
-+	} else
-+		scst_release_session(sess);
-+	return;
-+}
-+
-+/*
-+ * Target luns directory implementation
-+ */
-+
-+static void scst_acg_dev_release(struct kobject *kobj)
-+{
-+	struct scst_acg_dev *acg_dev;
-+
-+	acg_dev = container_of(kobj, struct scst_acg_dev, acg_dev_kobj);
-+
-+	scst_acg_dev_destroy(acg_dev);
-+	return;
-+}
-+
-+static ssize_t scst_lun_rd_only_show(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   char *buf)
-+{
-+	struct scst_acg_dev *acg_dev;
-+
-+	acg_dev = container_of(kobj, struct scst_acg_dev, acg_dev_kobj);
-+
-+	if (acg_dev->rd_only || acg_dev->dev->rd_only)
-+		return sprintf(buf, "%d\n%s\n", 1, SCST_SYSFS_KEY_MARK);
-+	else
-+		return sprintf(buf, "%d\n", 0);
-+}
-+
-+static struct kobj_attribute lun_options_attr =
-+	__ATTR(read_only, S_IRUGO, scst_lun_rd_only_show, NULL);
-+
-+static struct attribute *lun_attrs[] = {
-+	&lun_options_attr.attr,
-+	NULL,
-+};
-+
-+static struct kobj_type acg_dev_ktype = {
-+	.sysfs_ops = &scst_sysfs_ops,
-+	.release = scst_acg_dev_release,
-+	.default_attrs = lun_attrs,
-+};
-+
-+int scst_create_acg_dev_sysfs(struct scst_acg *acg, unsigned int virt_lun,
-+	struct kobject *parent)
-+{
-+	int retval;
-+	struct scst_acg_dev *acg_dev = NULL, *acg_dev_tmp;
-+	char str[20];
-+
-+	list_for_each_entry(acg_dev_tmp, &acg->acg_dev_list,
-+			    acg_dev_list_entry) {
-+		if (acg_dev_tmp->lun == virt_lun) {
-+			acg_dev = acg_dev_tmp;
-+			break;
-+		}
-+	}
-+	if (acg_dev == NULL) {
-+		PRINT_ERROR("%s", "acg_dev lookup for kobject creation failed");
-+		retval = -EINVAL;
-+		goto out;
-+	}
-+
-+	snprintf(str, sizeof(str), "export%u",
-+		acg_dev->dev->dev_exported_lun_num++);
-+
-+	kobject_get(&acg_dev->dev->dev_kobj);
-+
-+	acg_dev->acg_dev_kobj_initialized = 1;
-+
-+	retval = kobject_init_and_add(&acg_dev->acg_dev_kobj, &acg_dev_ktype,
-+				      parent, "%u", virt_lun);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add acg %s to sysfs", acg->acg_name);
-+		goto out;
-+	}
-+
-+	/*
-+	 * In case of errors there's no need for additional cleanup, because
-+	 * it will be done by the _put function() called by the caller.
-+	 */
-+
-+	retval = sysfs_create_link(acg_dev->dev->dev_exp_kobj,
-+				   &acg_dev->acg_dev_kobj, str);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't create acg %s LUN link", acg->acg_name);
-+		goto out;
-+	}
-+
-+	retval = sysfs_create_link(&acg_dev->acg_dev_kobj,
-+			&acg_dev->dev->dev_kobj, "device");
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't create acg %s device link", acg->acg_name);
-+		goto out;
-+	}
-+
-+out:
-+	return retval;
-+}
-+
-+static ssize_t __scst_luns_mgmt_store(struct scst_acg *acg,
-+	struct kobject *kobj, const char *buf, size_t count)
-+{
-+	int res, virt = 0, read_only = 0, action;
-+	char *buffer, *p, *e = NULL;
-+	unsigned int host, channel = 0, id = 0, lun = 0, virt_lun;
-+	struct scst_acg_dev *acg_dev = NULL, *acg_dev_tmp;
-+	struct scst_device *d, *dev = NULL;
-+
-+#define SCST_LUN_ACTION_ADD	1
-+#define SCST_LUN_ACTION_DEL	2
-+#define SCST_LUN_ACTION_REPLACE	3
-+#define SCST_LUN_ACTION_CLEAR	4
-+
-+	buffer = kzalloc(count+1, GFP_KERNEL);
-+	if (buffer == NULL) {
-+		res = -ENOMEM;
-+		goto out;
-+	}
-+
-+	memcpy(buffer, buf, count);
-+	buffer[count] = '\0';
-+	p = buffer;
-+
-+	p = buffer;
-+	if (p[strlen(p) - 1] == '\n')
-+		p[strlen(p) - 1] = '\0';
-+	if (strncasecmp("add", p, 3) == 0) {
-+		p += 3;
-+		action = SCST_LUN_ACTION_ADD;
-+	} else if (strncasecmp("del", p, 3) == 0) {
-+		p += 3;
-+		action = SCST_LUN_ACTION_DEL;
-+	} else if (!strncasecmp("replace", p, 7)) {
-+		p += 7;
-+		action = SCST_LUN_ACTION_REPLACE;
-+	} else if (!strncasecmp("clear", p, 5)) {
-+		p += 5;
-+		action = SCST_LUN_ACTION_CLEAR;
-+	} else {
-+		PRINT_ERROR("Unknown action \"%s\"", p);
-+		res = -EINVAL;
-+		goto out_free;
-+	}
-+
-+	res = scst_suspend_activity(true);
-+	if (res != 0)
-+		goto out_free;
-+
-+	if (mutex_lock_interruptible(&scst_mutex) != 0) {
-+		res = -EINTR;
-+		goto out_free_resume;
-+	}
-+
-+	if (action != SCST_LUN_ACTION_CLEAR) {
-+		if (!isspace(*p)) {
-+			PRINT_ERROR("%s", "Syntax error");
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
-+
-+		while (isspace(*p) && *p != '\0')
-+			p++;
-+		e = p; /* save p */
-+		host = simple_strtoul(p, &p, 0);
-+		if (*p == ':') {
-+			channel = simple_strtoul(p + 1, &p, 0);
-+			id = simple_strtoul(p + 1, &p, 0);
-+			lun = simple_strtoul(p + 1, &p, 0);
-+			e = p;
-+		} else {
-+			virt++;
-+			p = e; /* restore p */
-+			while (!isspace(*e) && *e != '\0')
-+				e++;
-+			*e = '\0';
-+		}
-+
-+		list_for_each_entry(d, &scst_dev_list, dev_list_entry) {
-+			if (virt) {
-+				if (d->virt_id && !strcmp(d->virt_name, p)) {
-+					dev = d;
-+					TRACE_DBG("Virt device %p (%s) found",
-+						  dev, p);
-+					break;
-+				}
-+			} else {
-+				if (d->scsi_dev &&
-+				    d->scsi_dev->host->host_no == host &&
-+				    d->scsi_dev->channel == channel &&
-+				    d->scsi_dev->id == id &&
-+				    d->scsi_dev->lun == lun) {
-+					dev = d;
-+					TRACE_DBG("Dev %p (%d:%d:%d:%d) found",
-+						  dev, host, channel, id, lun);
-+					break;
-+				}
-+			}
-+		}
-+		if (dev == NULL) {
-+			if (virt) {
-+				PRINT_ERROR("Virt device '%s' not found", p);
-+			} else {
-+				PRINT_ERROR("Device %d:%d:%d:%d not found",
-+					    host, channel, id, lun);
-+			}
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
-+	}
-+
-+	switch (action) {
-+	case SCST_LUN_ACTION_ADD:
-+	case SCST_LUN_ACTION_REPLACE:
-+	{
-+		bool dev_replaced = false;
-+
-+		e++;
-+		while (isspace(*e) && *e != '\0')
-+			e++;
-+		virt_lun = simple_strtoul(e, &e, 0);
-+
-+		while (isspace(*e) && *e != '\0')
-+			e++;
-+
-+		while (1) {
-+			char *pp;
-+			unsigned long val;
-+			char *param = scst_get_next_token_str(&e);
-+			if (param == NULL)
-+				break;
-+
-+			p = scst_get_next_lexem(&param);
-+			if (*p == '\0') {
-+				PRINT_ERROR("Syntax error at %s (device %s)",
-+					param, dev->virt_name);
-+				res = -EINVAL;
-+				goto out_free_up;
-+			}
-+
-+			pp = scst_get_next_lexem(&param);
-+			if (*pp == '\0') {
-+				PRINT_ERROR("Parameter %s value missed for device %s",
-+					p, dev->virt_name);
-+				res = -EINVAL;
-+				goto out_free_up;
-+			}
-+
-+			if (scst_get_next_lexem(&param)[0] != '\0') {
-+				PRINT_ERROR("Too many parameter's %s values (device %s)",
-+					p, dev->virt_name);
-+				res = -EINVAL;
-+				goto out_free_up;
-+			}
-+
-+			res = strict_strtoul(pp, 0, &val);
-+			if (res != 0) {
-+				PRINT_ERROR("strict_strtoul() for %s failed: %d "
-+					"(device %s)", pp, res, dev->virt_name);
-+				goto out_free_up;
-+			}
-+
-+			if (!strcasecmp("read_only", p)) {
-+				read_only = val;
-+				TRACE_DBG("READ ONLY %d", read_only);
-+			} else {
-+				PRINT_ERROR("Unknown parameter %s (device %s)",
-+					p, dev->virt_name);
-+				res = -EINVAL;
-+				goto out_free_up;
-+			}
-+		}
-+
-+		acg_dev = NULL;
-+		list_for_each_entry(acg_dev_tmp, &acg->acg_dev_list,
-+				    acg_dev_list_entry) {
-+			if (acg_dev_tmp->lun == virt_lun) {
-+				acg_dev = acg_dev_tmp;
-+				break;
-+			}
-+		}
-+
-+		if (acg_dev != NULL) {
-+			if (action == SCST_LUN_ACTION_ADD) {
-+				PRINT_ERROR("virt lun %d already exists in "
-+					"group %s", virt_lun, acg->acg_name);
-+				res = -EEXIST;
-+				goto out_free_up;
-+			} else {
-+				/* Replace */
-+				res = scst_acg_remove_dev(acg, acg_dev->dev,
-+						false);
-+				if (res != 0)
-+					goto out_free_up;
-+
-+				dev_replaced = true;
-+			}
-+		}
-+
-+		res = scst_acg_add_dev(acg, dev, virt_lun, read_only,
-+					!dev_replaced);
-+		if (res != 0)
-+			goto out_free_up;
-+
-+		res = scst_create_acg_dev_sysfs(acg, virt_lun, kobj);
-+		if (res != 0) {
-+			PRINT_ERROR("%s", "Creation of acg_dev kobject failed");
-+			goto out_remove_acg_dev;
-+		}
-+
-+		if (dev_replaced) {
-+			struct scst_tgt_dev *tgt_dev;
-+
-+			list_for_each_entry(tgt_dev, &dev->dev_tgt_dev_list,
-+				dev_tgt_dev_list_entry) {
-+				if ((tgt_dev->acg_dev->acg == acg) &&
-+				    (tgt_dev->lun == virt_lun)) {
-+					TRACE_MGMT_DBG("INQUIRY DATA HAS CHANGED"
-+						" on tgt_dev %p", tgt_dev);
-+					scst_gen_aen_or_ua(tgt_dev,
-+						SCST_LOAD_SENSE(scst_sense_inquery_data_changed));
-+				}
-+			}
-+		}
-+
-+		break;
-+	}
-+	case SCST_LUN_ACTION_DEL:
-+		res = scst_acg_remove_dev(acg, dev, true);
-+		if (res != 0)
-+			goto out_free_up;
-+		break;
-+	case SCST_LUN_ACTION_CLEAR:
-+		PRINT_INFO("Removed all devices from group %s",
-+			acg->acg_name);
-+		list_for_each_entry_safe(acg_dev, acg_dev_tmp,
-+					 &acg->acg_dev_list,
-+					 acg_dev_list_entry) {
-+			res = scst_acg_remove_dev(acg, acg_dev->dev,
-+				list_is_last(&acg_dev->acg_dev_list_entry,
-+					     &acg->acg_dev_list));
-+			if (res)
-+				goto out_free_up;
-+		}
-+		break;
-+	}
-+
-+	res = count;
-+
-+out_free_up:
-+	mutex_unlock(&scst_mutex);
-+
-+out_free_resume:
-+	scst_resume_activity();
-+
-+out_free:
-+	kfree(buffer);
-+
-+out:
-+	return res;
-+
-+out_remove_acg_dev:
-+	scst_acg_remove_dev(acg, dev, true);
-+	goto out_free_up;
-+
-+#undef SCST_LUN_ACTION_ADD
-+#undef SCST_LUN_ACTION_DEL
-+#undef SCST_LUN_ACTION_REPLACE
-+#undef SCST_LUN_ACTION_CLEAR
-+}
-+
-+static ssize_t scst_luns_mgmt_show(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   char *buf)
-+{
-+	static char *help = "Usage: echo \"add|del H:C:I:L lun [parameters]\" "
-+					">mgmt\n"
-+			    "       echo \"add|del VNAME lun [parameters]\" "
-+					">mgmt\n"
-+			    "       echo \"replace H:C:I:L lun [parameters]\" "
-+					">mgmt\n"
-+			    "       echo \"replace VNAME lun [parameters]\" "
-+					">mgmt\n"
-+			    "       echo \"clear\" >mgmt\n"
-+			    "\n"
-+			    "where parameters are one or more "
-+			    "param_name=value pairs separated by ';'\n"
-+			    "\nThe following parameters available: read_only.";
-+
-+	return sprintf(buf, help);
-+}
-+
-+static ssize_t scst_luns_mgmt_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count)
-+{
-+	int res;
-+	struct scst_acg *acg;
-+	struct scst_tgt *tgt;
-+
-+	tgt = container_of(kobj->parent, struct scst_tgt, tgt_kobj);
-+	acg = tgt->default_acg;
-+
-+	res = __scst_luns_mgmt_store(acg, kobj, buf, count);
-+	return res;
-+}
-+
-+static ssize_t __scst_acg_addr_method_show(struct scst_acg *acg, char *buf)
-+{
-+	int res;
-+
-+	switch (acg->addr_method) {
-+	case SCST_LUN_ADDR_METHOD_FLAT:
-+		res = sprintf(buf, "FLAT\n%s\n", SCST_SYSFS_KEY_MARK);
-+		break;
-+	case SCST_LUN_ADDR_METHOD_PERIPHERAL:
-+		res = sprintf(buf, "PERIPHERAL\n");
-+		break;
-+	default:
-+		res = sprintf(buf, "UNKNOWN\n");
-+		break;
-+	}
-+
-+	return res;
-+}
-+
-+static ssize_t __scst_acg_addr_method_store(struct scst_acg *acg,
-+	const char *buf, size_t count)
-+{
-+	int res = count;
-+
-+	if (strncasecmp(buf, "FLAT", min_t(int, 4, count)) == 0)
-+		acg->addr_method = SCST_LUN_ADDR_METHOD_FLAT;
-+	else if (strncasecmp(buf, "PERIPHERAL", min_t(int, 10, count)) == 0)
-+		acg->addr_method = SCST_LUN_ADDR_METHOD_PERIPHERAL;
-+	else {
-+		PRINT_ERROR("Unknown address method %s", buf);
-+		res = -EINVAL;
-+	}
-+	return res;
-+}
-+
-+static ssize_t scst_tgt_addr_method_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	struct scst_acg *acg;
-+	struct scst_tgt *tgt;
-+
-+	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-+	acg = tgt->default_acg;
-+
-+	return __scst_acg_addr_method_show(acg, buf);
-+}
-+
-+static ssize_t scst_tgt_addr_method_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+	struct scst_acg *acg;
-+	struct scst_tgt *tgt;
-+
-+	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-+	acg = tgt->default_acg;
-+
-+	res = __scst_acg_addr_method_store(acg, buf, count);
-+	return res;
-+}
-+
-+static ssize_t __scst_acg_io_grouping_type_show(struct scst_acg *acg, char *buf)
-+{
-+	int res;
-+
-+	switch (acg->acg_io_grouping_type) {
-+	case SCST_IO_GROUPING_AUTO:
-+		res = sprintf(buf, "%s\n", SCST_IO_GROUPING_AUTO_STR);
-+		break;
-+	case SCST_IO_GROUPING_THIS_GROUP_ONLY:
-+		res = sprintf(buf, "%s\n%s\n",
-+			SCST_IO_GROUPING_THIS_GROUP_ONLY_STR,
-+			SCST_SYSFS_KEY_MARK);
-+		break;
-+	case SCST_IO_GROUPING_NEVER:
-+		res = sprintf(buf, "%s\n%s\n", SCST_IO_GROUPING_NEVER_STR,
-+			SCST_SYSFS_KEY_MARK);
-+		break;
-+	default:
-+		res = sprintf(buf, "%d\n%s\n", acg->acg_io_grouping_type,
-+			SCST_SYSFS_KEY_MARK);
-+		break;
-+	}
-+
-+	return res;
-+}
-+
-+static ssize_t __scst_acg_io_grouping_type_store(struct scst_acg *acg,
-+	const char *buf, size_t count)
-+{
-+	int res = 0;
-+	int prev = acg->acg_io_grouping_type;
-+	struct scst_acg_dev *acg_dev;
-+
-+	if (strncasecmp(buf, SCST_IO_GROUPING_AUTO_STR,
-+			min_t(int, strlen(SCST_IO_GROUPING_AUTO_STR), count)) == 0)
-+		acg->acg_io_grouping_type = SCST_IO_GROUPING_AUTO;
-+	else if (strncasecmp(buf, SCST_IO_GROUPING_THIS_GROUP_ONLY_STR,
-+			min_t(int, strlen(SCST_IO_GROUPING_THIS_GROUP_ONLY_STR), count)) == 0)
-+		acg->acg_io_grouping_type = SCST_IO_GROUPING_THIS_GROUP_ONLY;
-+	else if (strncasecmp(buf, SCST_IO_GROUPING_NEVER_STR,
-+			min_t(int, strlen(SCST_IO_GROUPING_NEVER_STR), count)) == 0)
-+		acg->acg_io_grouping_type = SCST_IO_GROUPING_NEVER;
-+	else {
-+		long io_grouping_type;
-+		res = strict_strtoul(buf, 0, &io_grouping_type);
-+		if ((res != 0) || (io_grouping_type <= 0)) {
-+			PRINT_ERROR("Unknown or not allowed I/O grouping type "
-+				"%s", buf);
-+			res = -EINVAL;
-+			goto out;
-+		}
-+		acg->acg_io_grouping_type = io_grouping_type;
-+	}
-+
-+	if (prev == acg->acg_io_grouping_type)
-+		goto out;
-+
-+	res = scst_suspend_activity(true);
-+	if (res != 0)
-+		goto out;
-+
-+	if (mutex_lock_interruptible(&scst_mutex) != 0) {
-+		res = -EINTR;
-+		goto out_resume;
-+	}
-+
-+	list_for_each_entry(acg_dev, &acg->acg_dev_list, acg_dev_list_entry) {
-+		int rc;
-+
-+		scst_stop_dev_threads(acg_dev->dev);
-+
-+		rc = scst_create_dev_threads(acg_dev->dev);
-+		if (rc != 0)
-+			res = rc;
-+	}
-+
-+	mutex_unlock(&scst_mutex);
-+
-+out_resume:
-+	scst_resume_activity();
-+
-+out:
-+	return res;
-+}
-+
-+static ssize_t scst_tgt_io_grouping_type_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	struct scst_acg *acg;
-+	struct scst_tgt *tgt;
-+
-+	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-+	acg = tgt->default_acg;
-+
-+	return __scst_acg_io_grouping_type_show(acg, buf);
-+}
-+
-+static ssize_t scst_tgt_io_grouping_type_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+	struct scst_acg *acg;
-+	struct scst_tgt *tgt;
-+
-+	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-+	acg = tgt->default_acg;
-+
-+	res = __scst_acg_io_grouping_type_store(acg, buf, count);
-+	if (res != 0)
-+		goto out;
-+
-+	res = count;
-+
-+out:
-+	return res;
-+}
-+
-+static int scst_create_acg_sysfs(struct scst_tgt *tgt,
-+	struct scst_acg *acg)
-+{
-+	int retval = 0;
-+
-+	acg->acg_kobj_initialized = 1;
-+
-+	retval = kobject_init_and_add(&acg->acg_kobj, &acg_ktype,
-+		tgt->tgt_ini_grp_kobj, acg->acg_name);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add acg '%s' to sysfs", acg->acg_name);
-+		goto out;
-+	}
-+
-+	acg->luns_kobj = kobject_create_and_add("luns", &acg->acg_kobj);
-+	if (acg->luns_kobj == NULL) {
-+		PRINT_ERROR("Can't create luns kobj for tgt %s",
-+			tgt->tgt_name);
-+		retval = -ENOMEM;
-+		goto out;
-+	}
-+
-+	retval = sysfs_create_file(acg->luns_kobj, &scst_acg_luns_mgmt.attr);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
-+			scst_acg_luns_mgmt.attr.name, tgt->tgt_name);
-+		goto out;
-+	}
-+
-+	acg->initiators_kobj = kobject_create_and_add("initiators",
-+		&acg->acg_kobj);
-+	if (acg->initiators_kobj == NULL) {
-+		PRINT_ERROR("Can't create initiators kobj for tgt %s",
-+			tgt->tgt_name);
-+		retval = -ENOMEM;
-+		goto out;
-+	}
-+
-+	retval = sysfs_create_file(acg->initiators_kobj,
-+		&scst_acg_ini_mgmt.attr);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
-+			scst_acg_ini_mgmt.attr.name, tgt->tgt_name);
-+		goto out;
-+	}
-+
-+	retval = sysfs_create_file(&acg->acg_kobj, &scst_acg_addr_method.attr);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
-+			scst_acg_addr_method.attr.name, tgt->tgt_name);
-+		goto out;
-+	}
-+
-+	retval = sysfs_create_file(&acg->acg_kobj, &scst_acg_io_grouping_type.attr);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
-+			scst_acg_io_grouping_type.attr.name, tgt->tgt_name);
-+		goto out;
-+	}
-+
-+out:
-+	return retval;
-+}
-+
-+void scst_acg_sysfs_put(struct scst_acg *acg)
-+{
-+
-+	if (acg->acg_kobj_initialized) {
-+		scst_clear_acg(acg);
-+
-+		kobject_del(acg->luns_kobj);
-+		kobject_put(acg->luns_kobj);
-+
-+		kobject_del(acg->initiators_kobj);
-+		kobject_put(acg->initiators_kobj);
-+
-+		kobject_del(&acg->acg_kobj);
-+		kobject_put(&acg->acg_kobj);
-+	} else
-+		scst_destroy_acg(acg);
-+	return;
-+}
-+
-+static ssize_t scst_acg_addr_method_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	struct scst_acg *acg;
-+
-+	acg = container_of(kobj, struct scst_acg, acg_kobj);
-+
-+	return __scst_acg_addr_method_show(acg, buf);
-+}
-+
-+static ssize_t scst_acg_addr_method_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+	struct scst_acg *acg;
-+
-+	acg = container_of(kobj, struct scst_acg, acg_kobj);
-+
-+	res = __scst_acg_addr_method_store(acg, buf, count);
-+	return res;
-+}
-+
-+static ssize_t scst_acg_io_grouping_type_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	struct scst_acg *acg;
-+
-+	acg = container_of(kobj, struct scst_acg, acg_kobj);
-+
-+	return __scst_acg_io_grouping_type_show(acg, buf);
-+}
-+
-+static ssize_t scst_acg_io_grouping_type_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+	struct scst_acg *acg;
-+
-+	acg = container_of(kobj, struct scst_acg, acg_kobj);
-+
-+	res = __scst_acg_io_grouping_type_store(acg, buf, count);
-+	if (res != 0)
-+		goto out;
-+
-+	res = count;
-+
-+out:
-+	return res;
-+}
-+
-+static ssize_t scst_ini_group_mgmt_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	static char *help = "Usage: echo \"create GROUP_NAME\" >mgmt\n"
-+			    "       echo \"del GROUP_NAME\" >mgmt\n";
-+
-+	return sprintf(buf, help);
-+}
-+
-+static ssize_t scst_ini_group_mgmt_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res, action;
-+	int len;
-+	char *name;
-+	char *buffer, *p, *e = NULL;
-+	struct scst_acg *a, *acg = NULL;
-+	struct scst_tgt *tgt;
-+
-+#define SCST_INI_GROUP_ACTION_CREATE	1
-+#define SCST_INI_GROUP_ACTION_DEL	2
-+
-+	tgt = container_of(kobj->parent, struct scst_tgt, tgt_kobj);
-+
-+	buffer = kzalloc(count+1, GFP_KERNEL);
-+	if (buffer == NULL) {
-+		res = -ENOMEM;
-+		goto out;
-+	}
-+
-+	memcpy(buffer, buf, count);
-+	buffer[count] = '\0';
-+	p = buffer;
-+
-+	p = buffer;
-+	if (p[strlen(p) - 1] == '\n')
-+		p[strlen(p) - 1] = '\0';
-+	if (strncasecmp("create ", p, 7) == 0) {
-+		p += 7;
-+		action = SCST_INI_GROUP_ACTION_CREATE;
-+	} else if (strncasecmp("del ", p, 4) == 0) {
-+		p += 4;
-+		action = SCST_INI_GROUP_ACTION_DEL;
-+	} else {
-+		PRINT_ERROR("Unknown action \"%s\"", p);
-+		res = -EINVAL;
-+		goto out_free;
-+	}
-+
-+	res = scst_suspend_activity(true);
-+	if (res != 0)
-+		goto out_free;
-+
-+	if (mutex_lock_interruptible(&scst_mutex) != 0) {
-+		res = -EINTR;
-+		goto out_free_resume;
-+	}
-+
-+	while (isspace(*p) && *p != '\0')
-+		p++;
-+	e = p;
-+	while (!isspace(*e) && *e != '\0')
-+		e++;
-+	*e = '\0';
-+
-+	if (p[0] == '\0') {
-+		PRINT_ERROR("%s", "Group name required");
-+		res = -EINVAL;
-+		goto out_free_up;
-+	}
-+
-+	list_for_each_entry(a, &tgt->tgt_acg_list, acg_list_entry) {
-+		if (strcmp(a->acg_name, p) == 0) {
-+			TRACE_DBG("group (acg) %p %s found",
-+				  a, a->acg_name);
-+			acg = a;
++	list_for_each_entry(vv, &vdev_list, vdev_list_entry) {
++		if (strcmp(vv->name, dev->virt_name) == 0) {
++			virt_dev = vv;
 +			break;
 +		}
 +	}
 +
-+	switch (action) {
-+	case SCST_INI_GROUP_ACTION_CREATE:
-+		TRACE_DBG("Creating group '%s'", p);
-+		if (acg != NULL) {
-+			PRINT_ERROR("acg name %s exist", p);
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
-+
-+		len = strlen(p) + 1;
-+		name = kmalloc(len, GFP_KERNEL);
-+		if (name == NULL) {
-+			PRINT_ERROR("%s", "Allocation of name failed");
-+			res = -ENOMEM;
-+			goto out_free_up;
-+		}
-+		strlcpy(name, p, len);
-+
-+		acg = scst_alloc_add_acg(tgt, name);
-+		kfree(name);
-+		if (acg == NULL)
-+			goto out_free_up;
-+
-+		res = scst_create_acg_sysfs(tgt, acg);
-+		if (res != 0)
-+			goto out_free_acg;
-+		break;
-+	case SCST_INI_GROUP_ACTION_DEL:
-+		TRACE_DBG("Deleting group '%s'", p);
-+		if (acg == NULL) {
-+			PRINT_ERROR("Group %s not found", p);
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
-+		if (!scst_acg_sess_is_empty(acg)) {
-+			PRINT_ERROR("Group %s is not empty", acg->acg_name);
-+			res = -EBUSY;
-+			goto out_free_up;
-+		}
-+		scst_acg_sysfs_put(acg);
-+		break;
-+	}
-+
-+	res = count;
-+
-+out_free_up:
-+	mutex_unlock(&scst_mutex);
-+
-+out_free_resume:
-+	scst_resume_activity();
-+
-+out_free:
-+	kfree(buffer);
-+
-+out:
-+	return res;
-+
-+out_free_acg:
-+	scst_acg_sysfs_put(acg);
-+	goto out_free_up;
-+
-+#undef SCST_LUN_ACTION_CREATE
-+#undef SCST_LUN_ACTION_DEL
-+}
-+
-+static ssize_t scst_rel_tgt_id_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	struct scst_tgt *tgt;
-+	int res;
-+
-+	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-+
-+	res = sprintf(buf, "%d\n%s", tgt->rel_tgt_id,
-+		(tgt->rel_tgt_id != 0) ? SCST_SYSFS_KEY_MARK "\n" : "");
-+	return res;
-+}
-+
-+static ssize_t scst_rel_tgt_id_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res = 0;
-+	struct scst_tgt *tgt;
-+	unsigned long rel_tgt_id;
-+
-+	if (buf == NULL)
-+		goto out_err;
-+
-+	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-+
-+	res = strict_strtoul(buf, 0, &rel_tgt_id);
-+	if (res != 0)
-+		goto out_err;
-+
-+	TRACE_DBG("Try to set relative target port id %d",
-+		(uint16_t)rel_tgt_id);
-+
-+	if (rel_tgt_id < SCST_MIN_REL_TGT_ID ||
-+	    rel_tgt_id > SCST_MAX_REL_TGT_ID) {
-+		if ((rel_tgt_id == 0) && !tgt->tgtt->is_target_enabled(tgt))
-+			goto set;
-+
-+		PRINT_ERROR("Invalid relative port id %d",
-+			(uint16_t)rel_tgt_id);
++	if (virt_dev == NULL) {
++		PRINT_ERROR("Device %s not found", dev->virt_name);
 +		res = -EINVAL;
 +		goto out;
 +	}
 +
-+	if (tgt->tgtt->is_target_enabled(tgt) &&
-+	    rel_tgt_id != tgt->rel_tgt_id) {
-+		if (!scst_is_relative_target_port_id_unique(rel_tgt_id, tgt)) {
-+			PRINT_ERROR("Relative port id %d is not unique",
-+				(uint16_t)rel_tgt_id);
-+			res = -EBADSLT;
-+			goto out;
++	virt_dev->dev = dev;
++
++	dev->rd_only = virt_dev->rd_only;
++
++	if (!virt_dev->cdrom_empty) {
++		if (virt_dev->nullio)
++			err = VDISK_NULLIO_SIZE;
++		else {
++			res = vdisk_get_file_size(virt_dev->filename,
++				virt_dev->blockio, &err);
++			if (res != 0)
++				goto out;
 +		}
++		virt_dev->file_size = err;
++		TRACE_DBG("size of file: %lld", (long long unsigned int)err);
++	} else
++		virt_dev->file_size = 0;
++
++	virt_dev->nblocks = virt_dev->file_size >> virt_dev->block_shift;
++
++	if (!virt_dev->cdrom_empty) {
++		PRINT_INFO("Attached SCSI target virtual %s %s "
++		      "(file=\"%s\", fs=%lldMB, bs=%d, nblocks=%lld,"
++		      " cyln=%lld%s)",
++		      (dev->type == TYPE_DISK) ? "disk" : "cdrom",
++		      virt_dev->name, vdev_get_filename(virt_dev),
++		      virt_dev->file_size >> 20, virt_dev->block_size,
++		      (long long unsigned int)virt_dev->nblocks,
++		      (long long unsigned int)virt_dev->nblocks/64/32,
++		      virt_dev->nblocks < 64*32
++		      ? " !WARNING! cyln less than 1" : "");
++	} else {
++		PRINT_INFO("Attached empty SCSI target virtual cdrom %s",
++			virt_dev->name);
 +	}
 +
-+set:
-+	tgt->rel_tgt_id = (uint16_t)rel_tgt_id;
++	dev->dh_priv = virt_dev;
 +
-+	res = count;
++	dev->tst = DEF_TST;
++	dev->d_sense = DEF_DSENSE;
++	if (virt_dev->wt_flag && !virt_dev->nv_cache)
++		dev->queue_alg = DEF_QUEUE_ALG_WT;
++	else
++		dev->queue_alg = DEF_QUEUE_ALG;
++	dev->swp = DEF_SWP;
++	dev->tas = DEF_TAS;
 +
 +out:
 +	return res;
-+
-+out_err:
-+	PRINT_ERROR("%s: Requested action not understood: %s", __func__, buf);
-+	res = -EINVAL;
-+	goto out;
 +}
 +
-+int scst_create_acn_sysfs(struct scst_acg *acg, struct scst_acn *acn)
++/* scst_mutex supposed to be held */
++static void vdisk_detach(struct scst_device *dev)
 +{
-+	int retval = 0;
-+	int len;
-+	struct kobj_attribute *attr = NULL;
++	struct scst_vdisk_dev *virt_dev =
++	    (struct scst_vdisk_dev *)dev->dh_priv;
 +
-+	acn->acn_attr = NULL;
++	TRACE_DBG("virt_id %d", dev->virt_id);
 +
-+	attr = kzalloc(sizeof(struct kobj_attribute), GFP_KERNEL);
-+	if (attr == NULL) {
-+		PRINT_ERROR("Unable to allocate attributes for initiator '%s'",
-+			acn->name);
-+		retval = -ENOMEM;
-+		goto out;
-+	}
++	PRINT_INFO("Detached SCSI target virtual device %s (\"%s\")",
++		      virt_dev->name, vdev_get_filename(virt_dev));
 +
-+	len = strlen(acn->name) + 1;
-+	attr->attr.name = kzalloc(len, GFP_KERNEL);
-+	if (attr->attr.name == NULL) {
-+		PRINT_ERROR("Unable to allocate attributes for initiator '%s'",
-+			acn->name);
-+		retval = -ENOMEM;
-+		goto out_free;
-+	}
-+	strlcpy((char *)attr->attr.name, acn->name, len);
-+
-+	attr->attr.owner = THIS_MODULE;
-+	attr->attr.mode = S_IRUGO;
-+	attr->show = scst_acn_file_show;
-+	attr->store = NULL;
-+
-+	retval = sysfs_create_file(acg->initiators_kobj, &attr->attr);
-+	if (retval != 0) {
-+		PRINT_ERROR("Unable to create acn '%s' for group '%s'",
-+			acn->name, acg->acg_name);
-+		kfree(attr->attr.name);
-+		goto out_free;
-+	}
-+
-+	acn->acn_attr = attr;
-+
-+out:
-+	return retval;
-+
-+out_free:
-+	kfree(attr);
-+	goto out;
-+}
-+
-+void scst_acn_sysfs_del(struct scst_acg *acg, struct scst_acn *acn,
-+	bool reassign)
-+{
-+
-+	if (acn->acn_attr != NULL) {
-+		sysfs_remove_file(acg->initiators_kobj,
-+			&acn->acn_attr->attr);
-+		kfree(acn->acn_attr->attr.name);
-+		kfree(acn->acn_attr);
-+	}
-+	scst_acg_remove_acn(acn);
-+	if (reassign)
-+		scst_check_reassign_sessions();
++	/* virt_dev will be freed by the caller */
++	dev->dh_priv = NULL;
 +	return;
 +}
 +
-+static ssize_t scst_acn_file_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
++static void vdisk_free_thr_data(struct scst_thr_data_hdr *d)
 +{
-+	return scnprintf(buf, SCST_SYSFS_BLOCK_SIZE, "%s\n",
-+		attr->attr.name);
++	struct scst_vdisk_thr *thr =
++		container_of(d, struct scst_vdisk_thr, hdr);
++
++	if (thr->fd)
++		filp_close(thr->fd, NULL);
++
++	kfree(thr->iv);
++
++	kmem_cache_free(vdisk_thr_cachep, thr);
++	return;
 +}
 +
-+static ssize_t scst_acg_luns_mgmt_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count)
++static struct scst_vdisk_thr *vdisk_init_thr_data(
++	struct scst_tgt_dev *tgt_dev)
 +{
-+	int res;
-+	struct scst_acg *acg;
++	struct scst_vdisk_thr *res;
++	struct scst_vdisk_dev *virt_dev =
++	    (struct scst_vdisk_dev *)tgt_dev->dev->dh_priv;
 +
-+	acg = container_of(kobj->parent, struct scst_acg, acg_kobj);
-+	res = __scst_luns_mgmt_store(acg, kobj, buf, count);
-+	return res;
-+}
++	EXTRACHECKS_BUG_ON(virt_dev->nullio);
 +
-+static ssize_t scst_acg_ini_mgmt_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	static char *help = "Usage: echo \"add INITIATOR_NAME\" "
-+					">mgmt\n"
-+			    "       echo \"del INITIATOR_NAME\" "
-+					">mgmt\n"
-+			    "       echo \"move INITIATOR_NAME DEST_GROUP_NAME\" "
-+					">mgmt\n"
-+			    "       echo \"clear\" "
-+					">mgmt\n";
-+
-+	return sprintf(buf, help);
-+}
-+
-+static ssize_t scst_acg_ini_mgmt_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res, action;
-+	char *buffer, *p, *e = NULL;
-+	char *name = NULL, *group = NULL;
-+	struct scst_acg *acg = NULL, *acg_dest = NULL;
-+	struct scst_tgt *tgt = NULL;
-+	struct scst_acn *acn = NULL, *acn_tmp;
-+
-+#define SCST_ACG_ACTION_INI_ADD		1
-+#define SCST_ACG_ACTION_INI_DEL		2
-+#define SCST_ACG_ACTION_INI_CLEAR	3
-+#define SCST_ACG_ACTION_INI_MOVE	4
-+
-+	acg = container_of(kobj->parent, struct scst_acg, acg_kobj);
-+
-+	buffer = kzalloc(count+1, GFP_KERNEL);
-+	if (buffer == NULL) {
-+		res = -ENOMEM;
++	res = kmem_cache_zalloc(vdisk_thr_cachep, GFP_KERNEL);
++	if (res == NULL) {
++		TRACE(TRACE_OUT_OF_MEM, "%s", "Unable to allocate struct "
++			"scst_vdisk_thr");
 +		goto out;
 +	}
 +
-+	memcpy(buffer, buf, count);
-+	buffer[count] = '\0';
-+	p = buffer;
-+
-+	p = buffer;
-+	if (p[strlen(p) - 1] == '\n')
-+		p[strlen(p) - 1] = '\0';
-+
-+	if (strncasecmp("add", p, 3) == 0) {
-+		p += 3;
-+		action = SCST_ACG_ACTION_INI_ADD;
-+	} else if (strncasecmp("del", p, 3) == 0) {
-+		p += 3;
-+		action = SCST_ACG_ACTION_INI_DEL;
-+	} else if (strncasecmp("clear", p, 5) == 0) {
-+		p += 5;
-+		action = SCST_ACG_ACTION_INI_CLEAR;
-+	} else if (strncasecmp("move", p, 4) == 0) {
-+		p += 4;
-+		action = SCST_ACG_ACTION_INI_MOVE;
-+	} else {
-+		PRINT_ERROR("Unknown action \"%s\"", p);
-+		res = -EINVAL;
-+		goto out_free;
-+	}
-+
-+	if (action != SCST_ACG_ACTION_INI_CLEAR)
-+		if (!isspace(*p)) {
-+			PRINT_ERROR("%s", "Syntax error");
-+			res = -EINVAL;
++	if (!virt_dev->cdrom_empty) {
++		res->fd = vdev_open_fd(virt_dev);
++		if (IS_ERR(res->fd)) {
++			PRINT_ERROR("filp_open(%s) returned an error %ld",
++				virt_dev->filename, PTR_ERR(res->fd));
 +			goto out_free;
 +		}
++		if (virt_dev->blockio)
++			res->bdev = res->fd->f_dentry->d_inode->i_bdev;
++		else
++			res->bdev = NULL;
++	} else
++		res->fd = NULL;
++
++	scst_add_thr_data(tgt_dev, &res->hdr, vdisk_free_thr_data);
++
++out:
++	return res;
++
++out_free:
++	kmem_cache_free(vdisk_thr_cachep, res);
++	res = NULL;
++	goto out;
++}
++
++static int vdisk_attach_tgt(struct scst_tgt_dev *tgt_dev)
++{
++	struct scst_vdisk_tgt_dev *ftgt_dev;
++	int res = 0;
++
++	ftgt_dev = kzalloc(sizeof(*ftgt_dev), GFP_KERNEL);
++	if (ftgt_dev == NULL) {
++		TRACE(TRACE_OUT_OF_MEM, "%s", "Allocation of per-session "
++			"virtual device failed");
++		res = -ENOMEM;
++		goto out;
++	}
++
++	tgt_dev->dh_priv = ftgt_dev;
++
++out:
++	return res;
++}
++
++static void vdisk_detach_tgt(struct scst_tgt_dev *tgt_dev)
++{
++	struct scst_vdisk_tgt_dev *ftgt_dev =
++		(struct scst_vdisk_tgt_dev *)tgt_dev->dh_priv;
++
++	scst_del_all_thr_data(tgt_dev);
++
++	kfree(ftgt_dev);
++	tgt_dev->dh_priv = NULL;
++	return;
++}
++
++static inline int vdisk_sync_queue_type(enum scst_cmd_queue_type qt)
++{
++	switch (qt) {
++	case SCST_CMD_QUEUE_ORDERED:
++	case SCST_CMD_QUEUE_HEAD_OF_QUEUE:
++		return 1;
++	default:
++		return 0;
++	}
++}
++
++static inline int vdisk_need_pre_sync(enum scst_cmd_queue_type cur,
++	enum scst_cmd_queue_type last)
++{
++	if (vdisk_sync_queue_type(cur))
++		if (!vdisk_sync_queue_type(last))
++			return 1;
++	return 0;
++}
++
++static int vdisk_do_job(struct scst_cmd *cmd)
++{
++	int rc, res;
++	uint64_t lba_start = 0;
++	loff_t data_len = 0;
++	uint8_t *cdb = cmd->cdb;
++	int opcode = cdb[0];
++	loff_t loff;
++	struct scst_device *dev = cmd->dev;
++	struct scst_tgt_dev *tgt_dev = cmd->tgt_dev;
++	struct scst_vdisk_dev *virt_dev =
++		(struct scst_vdisk_dev *)dev->dh_priv;
++	struct scst_thr_data_hdr *d;
++	struct scst_vdisk_thr *thr = NULL;
++	int fua = 0;
++
++	switch (cmd->queue_type) {
++	case SCST_CMD_QUEUE_ORDERED:
++		TRACE(TRACE_ORDER, "ORDERED cmd %p (op %x)", cmd, cmd->cdb[0]);
++		break;
++	case SCST_CMD_QUEUE_HEAD_OF_QUEUE:
++		TRACE(TRACE_ORDER, "HQ cmd %p (op %x)", cmd, cmd->cdb[0]);
++		break;
++	default:
++		break;
++	}
++
++	rc = scst_check_local_events(cmd);
++	if (unlikely(rc != 0))
++		goto out_done;
++
++	cmd->status = 0;
++	cmd->msg_status = 0;
++	cmd->host_status = DID_OK;
++	cmd->driver_status = 0;
++
++	if (!virt_dev->nullio) {
++		d = scst_find_thr_data(tgt_dev);
++		if (unlikely(d == NULL)) {
++			thr = vdisk_init_thr_data(tgt_dev);
++			if (thr == NULL) {
++				scst_set_busy(cmd);
++				goto out_compl;
++			}
++			scst_thr_data_get(&thr->hdr);
++		} else
++			thr = container_of(d, struct scst_vdisk_thr, hdr);
++	} else {
++		thr = &nullio_thr_data;
++		scst_thr_data_get(&thr->hdr);
++	}
++
++	switch (opcode) {
++	case READ_6:
++	case WRITE_6:
++	case VERIFY_6:
++		lba_start = (((cdb[1] & 0x1f) << (BYTE * 2)) +
++			     (cdb[2] << (BYTE * 1)) +
++			     (cdb[3] << (BYTE * 0)));
++		data_len = cmd->bufflen;
++		break;
++	case READ_10:
++	case READ_12:
++	case WRITE_10:
++	case WRITE_12:
++	case VERIFY:
++	case WRITE_VERIFY:
++	case WRITE_VERIFY_12:
++	case VERIFY_12:
++		lba_start |= ((u64)cdb[2]) << 24;
++		lba_start |= ((u64)cdb[3]) << 16;
++		lba_start |= ((u64)cdb[4]) << 8;
++		lba_start |= ((u64)cdb[5]);
++		data_len = cmd->bufflen;
++		break;
++	case READ_16:
++	case WRITE_16:
++	case WRITE_VERIFY_16:
++	case VERIFY_16:
++		lba_start |= ((u64)cdb[2]) << 56;
++		lba_start |= ((u64)cdb[3]) << 48;
++		lba_start |= ((u64)cdb[4]) << 40;
++		lba_start |= ((u64)cdb[5]) << 32;
++		lba_start |= ((u64)cdb[6]) << 24;
++		lba_start |= ((u64)cdb[7]) << 16;
++		lba_start |= ((u64)cdb[8]) << 8;
++		lba_start |= ((u64)cdb[9]);
++		data_len = cmd->bufflen;
++		break;
++	case SYNCHRONIZE_CACHE:
++		lba_start |= ((u64)cdb[2]) << 24;
++		lba_start |= ((u64)cdb[3]) << 16;
++		lba_start |= ((u64)cdb[4]) << 8;
++		lba_start |= ((u64)cdb[5]);
++		data_len = ((cdb[7] << (BYTE * 1)) + (cdb[8] << (BYTE * 0)))
++				<< virt_dev->block_shift;
++		if (data_len == 0)
++			data_len = virt_dev->file_size -
++				((loff_t)lba_start << virt_dev->block_shift);
++		break;
++	}
++
++	loff = (loff_t)lba_start << virt_dev->block_shift;
++	TRACE_DBG("cmd %p, lba_start %lld, loff %lld, data_len %lld", cmd,
++		  (long long unsigned int)lba_start,
++		  (long long unsigned int)loff,
++		  (long long unsigned int)data_len);
++	if (unlikely(loff < 0) || unlikely(data_len < 0) ||
++	    unlikely((loff + data_len) > virt_dev->file_size)) {
++		PRINT_INFO("Access beyond the end of the device "
++			"(%lld of %lld, len %lld)",
++			   (long long unsigned int)loff,
++			   (long long unsigned int)virt_dev->file_size,
++			   (long long unsigned int)data_len);
++		scst_set_cmd_error(cmd, SCST_LOAD_SENSE(
++					scst_sense_block_out_range_error));
++		goto out_compl;
++	}
++
++	switch (opcode) {
++	case WRITE_10:
++	case WRITE_12:
++	case WRITE_16:
++		fua = (cdb[1] & 0x8);
++		if (fua) {
++			TRACE(TRACE_ORDER, "FUA: loff=%lld, "
++				"data_len=%lld", (long long unsigned int)loff,
++				(long long unsigned int)data_len);
++		}
++		break;
++	}
++
++	switch (opcode) {
++	case READ_6:
++	case READ_10:
++	case READ_12:
++	case READ_16:
++		if (virt_dev->blockio) {
++			blockio_exec_rw(cmd, thr, lba_start, 0);
++			goto out_thr;
++		} else
++			vdisk_exec_read(cmd, thr, loff);
++		break;
++	case WRITE_6:
++	case WRITE_10:
++	case WRITE_12:
++	case WRITE_16:
++	{
++		int do_fsync = vdisk_sync_queue_type(cmd->queue_type);
++		struct scst_vdisk_tgt_dev *ftgt_dev =
++			(struct scst_vdisk_tgt_dev *)tgt_dev->dh_priv;
++		enum scst_cmd_queue_type last_queue_type =
++			ftgt_dev->last_write_cmd_queue_type;
++		ftgt_dev->last_write_cmd_queue_type = cmd->queue_type;
++		if (vdisk_need_pre_sync(cmd->queue_type, last_queue_type)) {
++			TRACE(TRACE_ORDER, "ORDERED WRITE(%d): loff=%lld, "
++				"data_len=%lld", cmd->queue_type,
++			      (long long unsigned int)loff,
++			      (long long unsigned int)data_len);
++			do_fsync = 1;
++			if (vdisk_fsync(thr, 0, 0, cmd, dev) != 0)
++				goto out_compl;
++		}
++		if (virt_dev->blockio) {
++			blockio_exec_rw(cmd, thr, lba_start, 1);
++			goto out_thr;
++		} else
++			vdisk_exec_write(cmd, thr, loff);
++		/* O_SYNC flag is used for WT devices */
++		if (do_fsync || fua)
++			vdisk_fsync(thr, loff, data_len, cmd, dev);
++		break;
++	}
++	case WRITE_VERIFY:
++	case WRITE_VERIFY_12:
++	case WRITE_VERIFY_16:
++	{
++		int do_fsync = vdisk_sync_queue_type(cmd->queue_type);
++		struct scst_vdisk_tgt_dev *ftgt_dev =
++			(struct scst_vdisk_tgt_dev *) tgt_dev->dh_priv;
++		enum scst_cmd_queue_type last_queue_type =
++			ftgt_dev->last_write_cmd_queue_type;
++		ftgt_dev->last_write_cmd_queue_type = cmd->queue_type;
++		if (vdisk_need_pre_sync(cmd->queue_type, last_queue_type)) {
++			TRACE(TRACE_ORDER, "ORDERED "
++			      "WRITE_VERIFY(%d): loff=%lld,"
++			      " data_len=%lld", cmd->queue_type,
++			      (long long unsigned int)loff,
++			      (long long unsigned int)data_len);
++			do_fsync = 1;
++			if (vdisk_fsync(thr, 0, 0, cmd, dev) != 0)
++				goto out_compl;
++		}
++		/* ToDo: BLOCKIO VERIFY */
++		vdisk_exec_write(cmd, thr, loff);
++		/* O_SYNC flag is used for WT devices */
++		if (scsi_status_is_good(cmd->status))
++			vdisk_exec_verify(cmd, thr, loff);
++		else if (do_fsync)
++			vdisk_fsync(thr, loff, data_len, cmd, dev);
++		break;
++	}
++	case SYNCHRONIZE_CACHE:
++	{
++		int immed = cdb[1] & 0x2;
++		TRACE(TRACE_ORDER, "SYNCHRONIZE_CACHE: "
++			"loff=%lld, data_len=%lld, immed=%d",
++			(long long unsigned int)loff,
++			(long long unsigned int)data_len, immed);
++		if (immed) {
++			scst_cmd_get(cmd); /* to protect dev */
++			cmd->completed = 1;
++			cmd->scst_cmd_done(cmd, SCST_CMD_STATE_DEFAULT,
++				SCST_CONTEXT_SAME);
++			vdisk_fsync(thr, loff, data_len, NULL, dev);
++			/* ToDo: vdisk_fsync() error processing */
++			scst_cmd_put(cmd);
++			goto out_thr;
++		} else {
++			vdisk_fsync(thr, loff, data_len, cmd, dev);
++			break;
++		}
++	}
++	case VERIFY_6:
++	case VERIFY:
++	case VERIFY_12:
++	case VERIFY_16:
++		vdisk_exec_verify(cmd, thr, loff);
++		break;
++	case MODE_SENSE:
++	case MODE_SENSE_10:
++		vdisk_exec_mode_sense(cmd);
++		break;
++	case MODE_SELECT:
++	case MODE_SELECT_10:
++		vdisk_exec_mode_select(cmd);
++		break;
++	case LOG_SELECT:
++	case LOG_SENSE:
++		vdisk_exec_log(cmd);
++		break;
++	case ALLOW_MEDIUM_REMOVAL:
++		vdisk_exec_prevent_allow_medium_removal(cmd);
++		break;
++	case READ_TOC:
++		vdisk_exec_read_toc(cmd);
++		break;
++	case START_STOP:
++		vdisk_fsync(thr, 0, virt_dev->file_size, cmd, dev);
++		break;
++	case RESERVE:
++	case RESERVE_10:
++	case RELEASE:
++	case RELEASE_10:
++	case TEST_UNIT_READY:
++		break;
++	case INQUIRY:
++		vdisk_exec_inquiry(cmd);
++		break;
++	case REQUEST_SENSE:
++		vdisk_exec_request_sense(cmd);
++		break;
++	case READ_CAPACITY:
++		vdisk_exec_read_capacity(cmd);
++		break;
++	case SERVICE_ACTION_IN:
++		if ((cmd->cdb[1] & 0x1f) == SAI_READ_CAPACITY_16) {
++			vdisk_exec_read_capacity16(cmd);
++			break;
++		}
++		/* else go through */
++	case REPORT_LUNS:
++	default:
++		TRACE_DBG("Invalid opcode %d", opcode);
++		scst_set_cmd_error(cmd,
++		    SCST_LOAD_SENSE(scst_sense_invalid_opcode));
++	}
++
++out_compl:
++	cmd->completed = 1;
++
++out_done:
++	cmd->scst_cmd_done(cmd, SCST_CMD_STATE_DEFAULT, SCST_CONTEXT_SAME);
++
++out_thr:
++	if (likely(thr != NULL))
++		scst_thr_data_put(&thr->hdr);
++
++	res = SCST_EXEC_COMPLETED;
++	return res;
++}
++
++static int vdisk_get_block_shift(struct scst_cmd *cmd)
++{
++	struct scst_vdisk_dev *virt_dev =
++	    (struct scst_vdisk_dev *)cmd->dev->dh_priv;
++	return virt_dev->block_shift;
++}
++
++static int vdisk_parse(struct scst_cmd *cmd)
++{
++	scst_sbc_generic_parse(cmd, vdisk_get_block_shift);
++	return SCST_CMD_STATE_DEFAULT;
++}
++
++static int vcdrom_parse(struct scst_cmd *cmd)
++{
++	scst_cdrom_generic_parse(cmd, vdisk_get_block_shift);
++	return SCST_CMD_STATE_DEFAULT;
++}
++
++static int vcdrom_exec(struct scst_cmd *cmd)
++{
++	int res = SCST_EXEC_COMPLETED;
++	int opcode = cmd->cdb[0];
++	struct scst_vdisk_dev *virt_dev =
++	    (struct scst_vdisk_dev *)cmd->dev->dh_priv;
++
++	cmd->status = 0;
++	cmd->msg_status = 0;
++	cmd->host_status = DID_OK;
++	cmd->driver_status = 0;
++
++	if (virt_dev->cdrom_empty && (opcode != INQUIRY)) {
++		TRACE_DBG("%s", "CDROM empty");
++		scst_set_cmd_error(cmd,
++			SCST_LOAD_SENSE(scst_sense_not_ready));
++		goto out_done;
++	}
++
++	if (virt_dev->media_changed && scst_is_ua_command(cmd)) {
++		spin_lock(&virt_dev->flags_lock);
++		if (virt_dev->media_changed) {
++			virt_dev->media_changed = 0;
++			TRACE_DBG("%s", "Reporting media changed");
++			scst_set_cmd_error(cmd,
++				SCST_LOAD_SENSE(scst_sense_medium_changed_UA));
++			spin_unlock(&virt_dev->flags_lock);
++			goto out_done;
++		}
++		spin_unlock(&virt_dev->flags_lock);
++	}
++
++	res = vdisk_do_job(cmd);
++
++out:
++	return res;
++
++out_done:
++	cmd->scst_cmd_done(cmd, SCST_CMD_STATE_DEFAULT, SCST_CONTEXT_SAME);
++	goto out;
++}
++
++static uint64_t vdisk_gen_dev_id_num(const char *virt_dev_name)
++{
++	unsigned int dev_id_num, i;
++
++	for (dev_id_num = 0, i = 0; i < strlen(virt_dev_name); i++) {
++		unsigned int rv = random_values[(int)(virt_dev_name[i])];
++		/* Do some rotating of the bits */
++		dev_id_num ^= ((rv << i) | (rv >> (32 - i)));
++	}
++
++	return ((uint64_t)scst_get_setup_id() << 32) | dev_id_num;
++}
++
++static void vdisk_exec_inquiry(struct scst_cmd *cmd)
++{
++	int32_t length, i, resp_len = 0;
++	uint8_t *address;
++	uint8_t *buf;
++	struct scst_vdisk_dev *virt_dev =
++	    (struct scst_vdisk_dev *)cmd->dev->dh_priv;
++
++	/* ToDo: Performance Boost:
++	 * 1. remove kzalloc, buf
++	 * 2. do all checks before touching *address
++	 * 3. zero *address
++	 * 4. write directly to *address
++	 */
++
++	buf = kzalloc(INQ_BUF_SZ,
++		scst_cmd_atomic(cmd) ? GFP_ATOMIC : GFP_KERNEL);
++	if (buf == NULL) {
++		scst_set_busy(cmd);
++		goto out;
++	}
++
++	length = scst_get_buf_first(cmd, &address);
++	TRACE_DBG("length %d", length);
++	if (unlikely(length <= 0)) {
++		if (length < 0) {
++			PRINT_ERROR("scst_get_buf_first() failed: %d", length);
++			scst_set_cmd_error(cmd,
++				SCST_LOAD_SENSE(scst_sense_hardw_error));
++		}
++		goto out_free;
++	}
++
++	if (cmd->cdb[1] & CMDDT) {
++		TRACE_DBG("%s", "INQUIRY: CMDDT is unsupported");
++		scst_set_cmd_error(cmd,
++		    SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
++		goto out_put;
++	}
++
++	buf[0] = cmd->dev->type;      /* type dev */
++	if (virt_dev->removable)
++		buf[1] = 0x80;      /* removable */
++	/* Vital Product */
++	if (cmd->cdb[1] & EVPD) {
++		if (0 == cmd->cdb[2]) {
++			/* supported vital product data pages */
++			buf[3] = 3;
++			buf[4] = 0x0; /* this page */
++			buf[5] = 0x80; /* unit serial number */
++			buf[6] = 0x83; /* device identification */
++			resp_len = buf[3] + 4;
++		} else if (0x80 == cmd->cdb[2]) {
++			/* unit serial number */
++			int usn_len = strlen(virt_dev->usn);
++			buf[1] = 0x80;
++			buf[3] = usn_len;
++			strncpy(&buf[4], virt_dev->usn, usn_len);
++			resp_len = buf[3] + 4;
++		} else if (0x83 == cmd->cdb[2]) {
++			/* device identification */
++			int num = 4;
++
++			buf[1] = 0x83;
++			/* T10 vendor identifier field format (faked) */
++			buf[num + 0] = 0x2;	/* ASCII */
++			buf[num + 1] = 0x1;	/* Vendor ID */
++			if (virt_dev->blockio)
++				memcpy(&buf[num + 4], SCST_BIO_VENDOR, 8);
++			else
++				memcpy(&buf[num + 4], SCST_FIO_VENDOR, 8);
++
++			read_lock_bh(&vdisk_t10_dev_id_rwlock);
++			i = strlen(virt_dev->t10_dev_id);
++			memcpy(&buf[num + 12], virt_dev->t10_dev_id, i);
++			read_unlock_bh(&vdisk_t10_dev_id_rwlock);
++
++			buf[num + 3] = 8 + i;
++			num += buf[num + 3];
++
++			num += 4;
++
++			/* Binary */
++			buf[num + 0] = 0x01;
++
++			/* EUI-64 */
++			buf[num + 1] = 0x02;
++			buf[num + 2] = 0x00;
++			buf[num + 3] = 0x08;
++
++			/* IEEE id */
++			buf[num + 4] = virt_dev->t10_dev_id[0];
++			buf[num + 5] = virt_dev->t10_dev_id[1];
++			buf[num + 6] = virt_dev->t10_dev_id[2];
++
++			/* IEEE ext id */
++			buf[num + 7] = virt_dev->t10_dev_id[3];
++			buf[num + 8] = virt_dev->t10_dev_id[4];
++			buf[num + 9] = virt_dev->t10_dev_id[5];
++			buf[num + 10] = virt_dev->t10_dev_id[6];
++			buf[num + 11] = virt_dev->t10_dev_id[7];
++			num += buf[num + 3];
++
++			resp_len = num;
++			buf[2] = (resp_len >> 8) & 0xFF;
++			buf[3] = resp_len & 0xFF;
++			resp_len += 4;
++		} else {
++			TRACE_DBG("INQUIRY: Unsupported EVPD page %x",
++				cmd->cdb[2]);
++			scst_set_cmd_error(cmd,
++			    SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
++			goto out_put;
++		}
++	} else {
++		int len;
++
++		if (cmd->cdb[2] != 0) {
++			TRACE_DBG("INQUIRY: Unsupported page %x", cmd->cdb[2]);
++			scst_set_cmd_error(cmd,
++			    SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
++			goto out_put;
++		}
++
++		buf[2] = 5; /* Device complies to SPC-3 */
++		buf[3] = 0x12;	/* HiSup + data in format specified in SPC */
++		buf[4] = 31;/* n - 4 = 35 - 4 = 31 for full 36 byte data */
++		buf[6] = 1; /* MultiP 1 */
++		buf[7] = 2; /* CMDQUE 1, BQue 0 => commands queuing supported */
++
++		/*
++		 * 8 byte ASCII Vendor Identification of the target
++		 * - left aligned.
++		 */
++		if (virt_dev->blockio)
++			memcpy(&buf[8], SCST_BIO_VENDOR, 8);
++		else
++			memcpy(&buf[8], SCST_FIO_VENDOR, 8);
++
++		/*
++		 * 16 byte ASCII Product Identification of the target - left
++		 * aligned.
++		 */
++		memset(&buf[16], ' ', 16);
++		len = min(strlen(virt_dev->name), (size_t)16);
++		memcpy(&buf[16], virt_dev->name, len);
++
++		/*
++		 * 4 byte ASCII Product Revision Level of the target - left
++		 * aligned.
++		 */
++		memcpy(&buf[32], SCST_FIO_REV, 4);
++		resp_len = buf[4] + 5;
++	}
++
++	BUG_ON(resp_len >= INQ_BUF_SZ);
++	if (length > resp_len)
++		length = resp_len;
++	memcpy(address, buf, length);
++
++out_put:
++	scst_put_buf(cmd, address);
++	if (length < cmd->resp_data_len)
++		scst_set_resp_data_len(cmd, length);
++
++out_free:
++	kfree(buf);
++
++out:
++	return;
++}
++
++static void vdisk_exec_request_sense(struct scst_cmd *cmd)
++{
++	int32_t length, sl;
++	uint8_t *address;
++	uint8_t b[SCST_STANDARD_SENSE_LEN];
++
++	sl = scst_set_sense(b, sizeof(b), cmd->dev->d_sense,
++		SCST_LOAD_SENSE(scst_sense_no_sense));
++
++	length = scst_get_buf_first(cmd, &address);
++	TRACE_DBG("length %d", length);
++	if (length < 0) {
++		PRINT_ERROR("scst_get_buf_first() failed: %d)", length);
++		scst_set_cmd_error(cmd,
++			SCST_LOAD_SENSE(scst_sense_hardw_error));
++		goto out;
++	}
++
++	length = min(sl, length);
++	memcpy(address, b, length);
++	scst_set_resp_data_len(cmd, length);
++
++	scst_put_buf(cmd, address);
++
++out:
++	return;
++}
++
++/*
++ * <<Following mode pages info copied from ST318451LW with some corrections>>
++ *
++ * ToDo: revise them
++ */
++static int vdisk_err_recov_pg(unsigned char *p, int pcontrol,
++			       struct scst_vdisk_dev *virt_dev)
++{	/* Read-Write Error Recovery page for mode_sense */
++	const unsigned char err_recov_pg[] = {0x1, 0xa, 0xc0, 11, 240, 0, 0, 0,
++					      5, 0, 0xff, 0xff};
++
++	memcpy(p, err_recov_pg, sizeof(err_recov_pg));
++	if (1 == pcontrol)
++		memset(p + 2, 0, sizeof(err_recov_pg) - 2);
++	return sizeof(err_recov_pg);
++}
++
++static int vdisk_disconnect_pg(unsigned char *p, int pcontrol,
++				struct scst_vdisk_dev *virt_dev)
++{ 	/* Disconnect-Reconnect page for mode_sense */
++	const unsigned char disconnect_pg[] = {0x2, 0xe, 128, 128, 0, 10, 0, 0,
++					       0, 0, 0, 0, 0, 0, 0, 0};
++
++	memcpy(p, disconnect_pg, sizeof(disconnect_pg));
++	if (1 == pcontrol)
++		memset(p + 2, 0, sizeof(disconnect_pg) - 2);
++	return sizeof(disconnect_pg);
++}
++
++static int vdisk_rigid_geo_pg(unsigned char *p, int pcontrol,
++	struct scst_vdisk_dev *virt_dev)
++{
++	unsigned char geo_m_pg[] = {0x04, 0x16, 0, 0, 0, DEF_HEADS, 0, 0,
++				    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
++				    0x3a, 0x98/* 15K RPM */, 0, 0};
++	int32_t ncyl, n, rem;
++	uint64_t dividend;
++
++	memcpy(p, geo_m_pg, sizeof(geo_m_pg));
++	/*
++	 * Divide virt_dev->nblocks by (DEF_HEADS * DEF_SECTORS) and store
++	 * the quotient in ncyl and the remainder in rem.
++	 */
++	dividend = virt_dev->nblocks;
++	rem = do_div(dividend, DEF_HEADS * DEF_SECTORS);
++	ncyl = dividend;
++	if (rem != 0)
++		ncyl++;
++	memcpy(&n, p + 2, sizeof(u32));
++	n = n | (cpu_to_be32(ncyl) >> 8);
++	memcpy(p + 2, &n, sizeof(u32));
++	if (1 == pcontrol)
++		memset(p + 2, 0, sizeof(geo_m_pg) - 2);
++	return sizeof(geo_m_pg);
++}
++
++static int vdisk_format_pg(unsigned char *p, int pcontrol,
++			    struct scst_vdisk_dev *virt_dev)
++{       /* Format device page for mode_sense */
++	const unsigned char format_pg[] = {0x3, 0x16, 0, 0, 0, 0, 0, 0,
++					   0, 0, 0, 0, 0, 0, 0, 0,
++					   0, 0, 0, 0, 0x40, 0, 0, 0};
++
++	memcpy(p, format_pg, sizeof(format_pg));
++	p[10] = (DEF_SECTORS >> 8) & 0xff;
++	p[11] = DEF_SECTORS & 0xff;
++	p[12] = (virt_dev->block_size >> 8) & 0xff;
++	p[13] = virt_dev->block_size & 0xff;
++	if (1 == pcontrol)
++		memset(p + 2, 0, sizeof(format_pg) - 2);
++	return sizeof(format_pg);
++}
++
++static int vdisk_caching_pg(unsigned char *p, int pcontrol,
++			     struct scst_vdisk_dev *virt_dev)
++{ 	/* Caching page for mode_sense */
++	const unsigned char caching_pg[] = {0x8, 18, 0x10, 0, 0xff, 0xff, 0, 0,
++		0xff, 0xff, 0xff, 0xff, 0x80, 0x14, 0, 0, 0, 0, 0, 0};
++
++	memcpy(p, caching_pg, sizeof(caching_pg));
++	p[2] |= !(virt_dev->wt_flag || virt_dev->nv_cache) ? WCE : 0;
++	if (1 == pcontrol)
++		memset(p + 2, 0, sizeof(caching_pg) - 2);
++	return sizeof(caching_pg);
++}
++
++static int vdisk_ctrl_m_pg(unsigned char *p, int pcontrol,
++			    struct scst_vdisk_dev *virt_dev)
++{ 	/* Control mode page for mode_sense */
++	const unsigned char ctrl_m_pg[] = {0xa, 0xa, 0, 0, 0, 0, 0, 0,
++					   0, 0, 0x2, 0x4b};
++
++	memcpy(p, ctrl_m_pg, sizeof(ctrl_m_pg));
++	switch (pcontrol) {
++	case 0:
++		p[2] |= virt_dev->dev->tst << 5;
++		p[2] |= virt_dev->dev->d_sense << 2;
++		p[3] |= virt_dev->dev->queue_alg << 4;
++		p[4] |= virt_dev->dev->swp << 3;
++		p[5] |= virt_dev->dev->tas << 6;
++		break;
++	case 1:
++		memset(p + 2, 0, sizeof(ctrl_m_pg) - 2);
++#if 0	/*
++	 * It's too early to implement it, since we can't control the
++	 * backstorage device parameters. ToDo
++	 */
++		p[2] |= 7 << 5;		/* TST */
++		p[3] |= 0xF << 4;	/* QUEUE ALGORITHM MODIFIER */
++#endif
++		p[2] |= 1 << 2;		/* D_SENSE */
++		p[4] |= 1 << 3;		/* SWP */
++		p[5] |= 1 << 6;		/* TAS */
++		break;
++	case 2:
++		p[2] |= DEF_TST << 5;
++		p[2] |= DEF_DSENSE << 2;
++		if (virt_dev->wt_flag || virt_dev->nv_cache)
++			p[3] |= DEF_QUEUE_ALG_WT << 4;
++		else
++			p[3] |= DEF_QUEUE_ALG << 4;
++		p[4] |= DEF_SWP << 3;
++		p[5] |= DEF_TAS << 6;
++		break;
++	default:
++		BUG();
++	}
++	return sizeof(ctrl_m_pg);
++}
++
++static int vdisk_iec_m_pg(unsigned char *p, int pcontrol,
++			   struct scst_vdisk_dev *virt_dev)
++{	/* Informational Exceptions control mode page for mode_sense */
++	const unsigned char iec_m_pg[] = {0x1c, 0xa, 0x08, 0, 0, 0, 0, 0,
++					  0, 0, 0x0, 0x0};
++	memcpy(p, iec_m_pg, sizeof(iec_m_pg));
++	if (1 == pcontrol)
++		memset(p + 2, 0, sizeof(iec_m_pg) - 2);
++	return sizeof(iec_m_pg);
++}
++
++static void vdisk_exec_mode_sense(struct scst_cmd *cmd)
++{
++	int32_t length;
++	uint8_t *address;
++	uint8_t *buf;
++	struct scst_vdisk_dev *virt_dev;
++	uint32_t blocksize;
++	uint64_t nblocks;
++	unsigned char dbd, type;
++	int pcontrol, pcode, subpcode;
++	unsigned char dev_spec;
++	int msense_6, offset = 0, len;
++	unsigned char *bp;
++
++	buf = kzalloc(MSENSE_BUF_SZ,
++		scst_cmd_atomic(cmd) ? GFP_ATOMIC : GFP_KERNEL);
++	if (buf == NULL) {
++		scst_set_busy(cmd);
++		goto out;
++	}
++
++	virt_dev = (struct scst_vdisk_dev *)cmd->dev->dh_priv;
++	blocksize = virt_dev->block_size;
++	nblocks = virt_dev->nblocks;
++
++	type = cmd->dev->type;    /* type dev */
++	dbd = cmd->cdb[1] & DBD;
++	pcontrol = (cmd->cdb[2] & 0xc0) >> 6;
++	pcode = cmd->cdb[2] & 0x3f;
++	subpcode = cmd->cdb[3];
++	msense_6 = (MODE_SENSE == cmd->cdb[0]);
++	dev_spec = ((virt_dev->dev->rd_only ||
++		     cmd->tgt_dev->acg_dev->rd_only) ? WP : 0) | DPOFUA;
++
++	length = scst_get_buf_first(cmd, &address);
++	if (unlikely(length <= 0)) {
++		if (length < 0) {
++			PRINT_ERROR("scst_get_buf_first() failed: %d", length);
++			scst_set_cmd_error(cmd,
++				SCST_LOAD_SENSE(scst_sense_hardw_error));
++		}
++		goto out_free;
++	}
++
++	if (0x3 == pcontrol) {
++		TRACE_DBG("%s", "MODE SENSE: Saving values not supported");
++		scst_set_cmd_error(cmd,
++		    SCST_LOAD_SENSE(scst_sense_saving_params_unsup));
++		goto out_put;
++	}
++
++	if (msense_6) {
++		buf[1] = type;
++		buf[2] = dev_spec;
++		offset = 4;
++	} else {
++		buf[2] = type;
++		buf[3] = dev_spec;
++		offset = 8;
++	}
++
++	if (0 != subpcode) {
++		/* TODO: Control Extension page */
++		TRACE_DBG("%s", "MODE SENSE: Only subpage 0 is supported");
++		scst_set_cmd_error(cmd,
++		    SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
++		goto out_put;
++	}
++
++	if (!dbd) {
++		/* Create block descriptor */
++		buf[offset - 1] = 0x08;		/* block descriptor length */
++		if (nblocks >> 32) {
++			buf[offset + 0] = 0xFF;
++			buf[offset + 1] = 0xFF;
++			buf[offset + 2] = 0xFF;
++			buf[offset + 3] = 0xFF;
++		} else {
++			/* num blks */
++			buf[offset + 0] = (nblocks >> (BYTE * 3)) & 0xFF;
++			buf[offset + 1] = (nblocks >> (BYTE * 2)) & 0xFF;
++			buf[offset + 2] = (nblocks >> (BYTE * 1)) & 0xFF;
++			buf[offset + 3] = (nblocks >> (BYTE * 0)) & 0xFF;
++		}
++		buf[offset + 4] = 0;			/* density code */
++		buf[offset + 5] = (blocksize >> (BYTE * 2)) & 0xFF;/* blklen */
++		buf[offset + 6] = (blocksize >> (BYTE * 1)) & 0xFF;
++		buf[offset + 7] = (blocksize >> (BYTE * 0)) & 0xFF;
++
++		offset += 8;			/* increment offset */
++	}
++
++	bp = buf + offset;
++
++	switch (pcode) {
++	case 0x1:	/* Read-Write error recovery page, direct access */
++		len = vdisk_err_recov_pg(bp, pcontrol, virt_dev);
++		break;
++	case 0x2:	/* Disconnect-Reconnect page, all devices */
++		len = vdisk_disconnect_pg(bp, pcontrol, virt_dev);
++		break;
++	case 0x3:       /* Format device page, direct access */
++		len = vdisk_format_pg(bp, pcontrol, virt_dev);
++		break;
++	case 0x4:	/* Rigid disk geometry */
++		len = vdisk_rigid_geo_pg(bp, pcontrol, virt_dev);
++		break;
++	case 0x8:	/* Caching page, direct access */
++		len = vdisk_caching_pg(bp, pcontrol, virt_dev);
++		break;
++	case 0xa:	/* Control Mode page, all devices */
++		len = vdisk_ctrl_m_pg(bp, pcontrol, virt_dev);
++		break;
++	case 0x1c:	/* Informational Exceptions Mode page, all devices */
++		len = vdisk_iec_m_pg(bp, pcontrol, virt_dev);
++		break;
++	case 0x3f:	/* Read all Mode pages */
++		len = vdisk_err_recov_pg(bp, pcontrol, virt_dev);
++		len += vdisk_disconnect_pg(bp + len, pcontrol, virt_dev);
++		len += vdisk_format_pg(bp + len, pcontrol, virt_dev);
++		len += vdisk_caching_pg(bp + len, pcontrol, virt_dev);
++		len += vdisk_ctrl_m_pg(bp + len, pcontrol, virt_dev);
++		len += vdisk_iec_m_pg(bp + len, pcontrol, virt_dev);
++		len += vdisk_rigid_geo_pg(bp + len, pcontrol, virt_dev);
++		break;
++	default:
++		TRACE_DBG("MODE SENSE: Unsupported page %x", pcode);
++		scst_set_cmd_error(cmd,
++		    SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
++		goto out_put;
++	}
++
++	offset += len;
++
++	if (msense_6)
++		buf[0] = offset - 1;
++	else {
++		buf[0] = ((offset - 2) >> 8) & 0xff;
++		buf[1] = (offset - 2) & 0xff;
++	}
++
++	if (offset > length)
++		offset = length;
++	memcpy(address, buf, offset);
++
++out_put:
++	scst_put_buf(cmd, address);
++	if (offset < cmd->resp_data_len)
++		scst_set_resp_data_len(cmd, offset);
++
++out_free:
++	kfree(buf);
++
++out:
++	return;
++}
++
++static int vdisk_set_wt(struct scst_vdisk_dev *virt_dev, int wt)
++{
++	int res = 0;
++
++	if ((virt_dev->wt_flag == wt) || virt_dev->nullio || virt_dev->nv_cache)
++		goto out;
++
++	spin_lock(&virt_dev->flags_lock);
++	virt_dev->wt_flag = wt;
++	spin_unlock(&virt_dev->flags_lock);
++
++	scst_dev_del_all_thr_data(virt_dev->dev);
++
++out:
++	return res;
++}
++
++static void vdisk_ctrl_m_pg_select(unsigned char *p,
++	struct scst_vdisk_dev *virt_dev)
++{
++	struct scst_device *dev = virt_dev->dev;
++	int old_swp = dev->swp, old_tas = dev->tas, old_dsense = dev->d_sense;
++
++#if 0
++	/* Not implemented yet, see comment in vdisk_ctrl_m_pg() */
++	dev->tst = p[2] >> 5;
++	dev->queue_alg = p[3] >> 4;
++#endif
++	dev->swp = (p[4] & 0x8) >> 3;
++	dev->tas = (p[5] & 0x40) >> 6;
++	dev->d_sense = (p[2] & 0x4) >> 2;
++
++	PRINT_INFO("Device %s: new control mode page parameters: SWP %x "
++		"(was %x), TAS %x (was %x), D_SENSE %d (was %d)",
++		virt_dev->name, dev->swp, old_swp, dev->tas, old_tas,
++		dev->d_sense, old_dsense);
++	return;
++}
++
++static void vdisk_exec_mode_select(struct scst_cmd *cmd)
++{
++	int32_t length;
++	uint8_t *address;
++	struct scst_vdisk_dev *virt_dev;
++	int mselect_6, offset;
++
++	virt_dev = (struct scst_vdisk_dev *)cmd->dev->dh_priv;
++	mselect_6 = (MODE_SELECT == cmd->cdb[0]);
++
++	length = scst_get_buf_first(cmd, &address);
++	if (unlikely(length <= 0)) {
++		if (length < 0) {
++			PRINT_ERROR("scst_get_buf_first() failed: %d", length);
++			scst_set_cmd_error(cmd,
++				SCST_LOAD_SENSE(scst_sense_hardw_error));
++		}
++		goto out;
++	}
++
++	if (!(cmd->cdb[1] & PF) || (cmd->cdb[1] & SP)) {
++		TRACE(TRACE_MINOR|TRACE_SCSI, "MODE SELECT: Unsupported "
++			"value(s) of PF and/or SP bits (cdb[1]=%x)",
++			cmd->cdb[1]);
++		scst_set_cmd_error(cmd,
++		    SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
++		goto out_put;
++	}
++
++	if (mselect_6)
++		offset = 4;
++	else
++		offset = 8;
++
++	if (address[offset - 1] == 8) {
++		offset += 8;
++	} else if (address[offset - 1] != 0) {
++		PRINT_ERROR("%s", "MODE SELECT: Wrong parameters list "
++			"lenght");
++		scst_set_cmd_error(cmd,
++		    SCST_LOAD_SENSE(scst_sense_invalid_field_in_parm_list));
++		goto out_put;
++	}
++
++	while (length > offset + 2) {
++		if (address[offset] & PS) {
++			PRINT_ERROR("%s", "MODE SELECT: Illegal PS bit");
++			scst_set_cmd_error(cmd, SCST_LOAD_SENSE(
++				scst_sense_invalid_field_in_parm_list));
++			goto out_put;
++		}
++		if ((address[offset] & 0x3f) == 0x8) {
++			/* Caching page */
++			if (address[offset + 1] != 18) {
++				PRINT_ERROR("%s", "MODE SELECT: Invalid "
++					"caching page request");
++				scst_set_cmd_error(cmd, SCST_LOAD_SENSE(
++				    scst_sense_invalid_field_in_parm_list));
++				goto out_put;
++			}
++			if (vdisk_set_wt(virt_dev,
++			      (address[offset + 2] & WCE) ? 0 : 1) != 0) {
++				scst_set_cmd_error(cmd,
++				    SCST_LOAD_SENSE(scst_sense_hardw_error));
++				goto out_put;
++			}
++			break;
++		} else if ((address[offset] & 0x3f) == 0xA) {
++			/* Control page */
++			if (address[offset + 1] != 0xA) {
++				PRINT_ERROR("%s", "MODE SELECT: Invalid "
++					"control page request");
++				scst_set_cmd_error(cmd, SCST_LOAD_SENSE(
++				    scst_sense_invalid_field_in_parm_list));
++				goto out_put;
++			}
++			vdisk_ctrl_m_pg_select(&address[offset], virt_dev);
++		} else {
++			PRINT_ERROR("MODE SELECT: Invalid request %x",
++				address[offset] & 0x3f);
++			scst_set_cmd_error(cmd, SCST_LOAD_SENSE(
++			    scst_sense_invalid_field_in_parm_list));
++			goto out_put;
++		}
++		offset += address[offset + 1];
++	}
++
++out_put:
++	scst_put_buf(cmd, address);
++
++out:
++	return;
++}
++
++static void vdisk_exec_log(struct scst_cmd *cmd)
++{
++
++	/* No log pages are supported */
++	scst_set_cmd_error(cmd,
++		SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
++	return;
++}
++
++static void vdisk_exec_read_capacity(struct scst_cmd *cmd)
++{
++	int32_t length;
++	uint8_t *address;
++	struct scst_vdisk_dev *virt_dev;
++	uint32_t blocksize;
++	uint64_t nblocks;
++	uint8_t buffer[READ_CAP_LEN];
++
++	virt_dev = (struct scst_vdisk_dev *)cmd->dev->dh_priv;
++	blocksize = virt_dev->block_size;
++	nblocks = virt_dev->nblocks;
++
++	/* last block on the virt_dev is (nblocks-1) */
++	memset(buffer, 0, sizeof(buffer));
++	if (nblocks >> 32) {
++		buffer[0] = 0xFF;
++		buffer[1] = 0xFF;
++		buffer[2] = 0xFF;
++		buffer[3] = 0xFF;
++	} else {
++		buffer[0] = ((nblocks - 1) >> (BYTE * 3)) & 0xFF;
++		buffer[1] = ((nblocks - 1) >> (BYTE * 2)) & 0xFF;
++		buffer[2] = ((nblocks - 1) >> (BYTE * 1)) & 0xFF;
++		buffer[3] = ((nblocks - 1) >> (BYTE * 0)) & 0xFF;
++	}
++	buffer[4] = (blocksize >> (BYTE * 3)) & 0xFF;
++	buffer[5] = (blocksize >> (BYTE * 2)) & 0xFF;
++	buffer[6] = (blocksize >> (BYTE * 1)) & 0xFF;
++	buffer[7] = (blocksize >> (BYTE * 0)) & 0xFF;
++
++	length = scst_get_buf_first(cmd, &address);
++	if (unlikely(length <= 0)) {
++		if (length < 0) {
++			PRINT_ERROR("scst_get_buf_first() failed: %d", length);
++			scst_set_cmd_error(cmd,
++				SCST_LOAD_SENSE(scst_sense_hardw_error));
++		}
++		goto out;
++	}
++
++	if (length > READ_CAP_LEN)
++		length = READ_CAP_LEN;
++	memcpy(address, buffer, length);
++
++	scst_put_buf(cmd, address);
++
++	if (length < cmd->resp_data_len)
++		scst_set_resp_data_len(cmd, length);
++
++out:
++	return;
++}
++
++static void vdisk_exec_read_capacity16(struct scst_cmd *cmd)
++{
++	int32_t length;
++	uint8_t *address;
++	struct scst_vdisk_dev *virt_dev;
++	uint32_t blocksize;
++	uint64_t nblocks;
++	uint8_t buffer[READ_CAP16_LEN];
++
++	virt_dev = (struct scst_vdisk_dev *)cmd->dev->dh_priv;
++	blocksize = virt_dev->block_size;
++	nblocks = virt_dev->nblocks - 1;
++
++	memset(buffer, 0, sizeof(buffer));
++
++	buffer[0] = nblocks >> 56;
++	buffer[1] = (nblocks >> 48) & 0xFF;
++	buffer[2] = (nblocks >> 40) & 0xFF;
++	buffer[3] = (nblocks >> 32) & 0xFF;
++	buffer[4] = (nblocks >> 24) & 0xFF;
++	buffer[5] = (nblocks >> 16) & 0xFF;
++	buffer[6] = (nblocks >> 8) & 0xFF;
++	buffer[7] = nblocks & 0xFF;
++
++	buffer[8] = (blocksize >> (BYTE * 3)) & 0xFF;
++	buffer[9] = (blocksize >> (BYTE * 2)) & 0xFF;
++	buffer[10] = (blocksize >> (BYTE * 1)) & 0xFF;
++	buffer[11] = (blocksize >> (BYTE * 0)) & 0xFF;
++
++	switch (blocksize) {
++	case 512:
++		buffer[13] = 3;
++		break;
++	case 1024:
++		buffer[13] = 2;
++		break;
++	case 2048:
++		buffer[13] = 1;
++		break;
++	default:
++		PRINT_ERROR("%s: Unexpected block size %d",
++			cmd->op_name, blocksize);
++		/* go through */
++	case 4096:
++		buffer[13] = 0;
++		break;
++	}
++
++	length = scst_get_buf_first(cmd, &address);
++	if (unlikely(length <= 0)) {
++		if (length < 0) {
++			PRINT_ERROR("scst_get_buf_first() failed: %d", length);
++			scst_set_cmd_error(cmd,
++				SCST_LOAD_SENSE(scst_sense_hardw_error));
++			}
++		goto out;
++	}
++
++	/*
++	 * Some versions of Windows have a bug, which makes them consider
++	 * response of READ CAPACITY(16) longer than 12 bytes as a faulty one.
++	 * As the result, such Windows'es refuse to see SCST exported
++	 * devices >2TB in size. This is fixed by MS in latter Windows
++	 * versions, probably, by some hotfix.
++	 *
++	 * But if you're using such buggy Windows and experience this problem,
++	 * change this '1' to '0'.
++	 */
++#if 0	/* there are too many such hosts */
++	if (length > READ_CAP16_LEN)
++		length = READ_CAP16_LEN;
++#else
++	if (length > 12)
++		length = 12;
++#endif
++	memcpy(address, buffer, length);
++
++	scst_put_buf(cmd, address);
++
++	if (length < cmd->resp_data_len)
++		scst_set_resp_data_len(cmd, length);
++
++out:
++	return;
++}
++
++static void vdisk_exec_read_toc(struct scst_cmd *cmd)
++{
++	int32_t length, off = 0;
++	uint8_t *address;
++	struct scst_vdisk_dev *virt_dev;
++	uint32_t nblocks;
++	uint8_t buffer[4+8+8] = { 0x00, 0x0a, 0x01, 0x01, 0x00, 0x14,
++				  0x01, 0x00, 0x00, 0x00, 0x00, 0x00 };
++
++	if (cmd->dev->type != TYPE_ROM) {
++		PRINT_ERROR("%s", "READ TOC for non-CDROM device");
++		scst_set_cmd_error(cmd,
++			SCST_LOAD_SENSE(scst_sense_invalid_opcode));
++		goto out;
++	}
++
++	if (cmd->cdb[2] & 0x0e/*Format*/) {
++		PRINT_ERROR("%s", "READ TOC: invalid requested data format");
++		scst_set_cmd_error(cmd,
++			SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
++		goto out;
++	}
++
++	if ((cmd->cdb[6] != 0 && (cmd->cdb[2] & 0x01)) ||
++	    (cmd->cdb[6] > 1 && cmd->cdb[6] != 0xAA)) {
++		PRINT_ERROR("READ TOC: invalid requested track number %x",
++			cmd->cdb[6]);
++		scst_set_cmd_error(cmd,
++			SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
++		goto out;
++	}
++
++	length = scst_get_buf_first(cmd, &address);
++	if (unlikely(length <= 0)) {
++		if (length < 0) {
++			PRINT_ERROR("scst_get_buf_first() failed: %d", length);
++			scst_set_cmd_error(cmd,
++				SCST_LOAD_SENSE(scst_sense_hardw_error));
++		}
++		goto out;
++	}
++
++	virt_dev = (struct scst_vdisk_dev *)cmd->dev->dh_priv;
++	/* ToDo when you have > 8TB ROM device. */
++	nblocks = (uint32_t)virt_dev->nblocks;
++
++	/* Header */
++	memset(buffer, 0, sizeof(buffer));
++	buffer[2] = 0x01;    /* First Track/Session */
++	buffer[3] = 0x01;    /* Last Track/Session */
++	off = 4;
++	if (cmd->cdb[6] <= 1) {
++		/* Fistr TOC Track Descriptor */
++		/* ADDR    0x10 - Q Sub-channel encodes current position data
++		   CONTROL 0x04 - Data track, recoreded uninterrupted */
++		buffer[off+1] = 0x14;
++		/* Track Number */
++		buffer[off+2] = 0x01;
++		off += 8;
++	}
++	if (!(cmd->cdb[2] & 0x01)) {
++		/* Lead-out area TOC Track Descriptor */
++		buffer[off+1] = 0x14;
++		/* Track Number */
++		buffer[off+2] = 0xAA;
++		/* Track Start Address */
++		buffer[off+4] = (nblocks >> (BYTE * 3)) & 0xFF;
++		buffer[off+5] = (nblocks >> (BYTE * 2)) & 0xFF;
++		buffer[off+6] = (nblocks >> (BYTE * 1)) & 0xFF;
++		buffer[off+7] = (nblocks >> (BYTE * 0)) & 0xFF;
++		off += 8;
++	}
++
++	buffer[1] = off - 2;    /* Data  Length */
++
++	if (off > length)
++		off = length;
++	memcpy(address, buffer, off);
++
++	scst_put_buf(cmd, address);
++
++	if (off < cmd->resp_data_len)
++		scst_set_resp_data_len(cmd, off);
++
++out:
++	return;
++}
++
++static void vdisk_exec_prevent_allow_medium_removal(struct scst_cmd *cmd)
++{
++	struct scst_vdisk_dev *virt_dev =
++		(struct scst_vdisk_dev *)cmd->dev->dh_priv;
++
++	TRACE_DBG("PERSIST/PREVENT 0x%02x", cmd->cdb[4]);
++
++	if (cmd->dev->type == TYPE_ROM) {
++		spin_lock(&virt_dev->flags_lock);
++		virt_dev->prevent_allow_medium_removal =
++			cmd->cdb[4] & 0x01 ? 1 : 0;
++		spin_unlock(&virt_dev->flags_lock);
++	}
++
++	return;
++}
++
++static int vdisk_fsync(struct scst_vdisk_thr *thr, loff_t loff,
++	loff_t len, struct scst_cmd *cmd, struct scst_device *dev)
++{
++	int res = 0;
++	struct scst_vdisk_dev *virt_dev =
++		(struct scst_vdisk_dev *)dev->dh_priv;
++	struct file *file = thr->fd;
++
++	/* Hopefully, the compiler will generate the single comparison */
++	if (virt_dev->nv_cache || virt_dev->blockio || virt_dev->wt_flag ||
++	    virt_dev->o_direct_flag || virt_dev->nullio)
++		goto out;
++
++#if 0	/* For sparse files we might need to sync metadata as well */
++	res = generic_write_sync(file, loff, len);
++#else
++	res = filemap_write_and_wait_range(file->f_mapping, loff, len);
++#endif
++	if (unlikely(res != 0)) {
++		PRINT_ERROR("sync range failed (%d)", res);
++		if (cmd != NULL) {
++			scst_set_cmd_error(cmd,
++				SCST_LOAD_SENSE(scst_sense_write_error));
++		}
++	}
++
++	/* ToDo: flush the device cache, if needed */
++
++out:
++	return res;
++}
++
++static struct iovec *vdisk_alloc_iv(struct scst_cmd *cmd,
++	struct scst_vdisk_thr *thr)
++{
++	int iv_count;
++
++	iv_count = min_t(int, scst_get_buf_count(cmd), UIO_MAXIOV);
++	if (iv_count > thr->iv_count) {
++		kfree(thr->iv);
++		/* It can't be called in atomic context */
++		thr->iv = kmalloc(sizeof(*thr->iv) * iv_count, GFP_KERNEL);
++		if (thr->iv == NULL) {
++			PRINT_ERROR("Unable to allocate iv (%d)", iv_count);
++			scst_set_busy(cmd);
++			goto out;
++		}
++		thr->iv_count = iv_count;
++	}
++
++out:
++	return thr->iv;
++}
++
++static void vdisk_exec_read(struct scst_cmd *cmd,
++	struct scst_vdisk_thr *thr, loff_t loff)
++{
++	mm_segment_t old_fs;
++	loff_t err;
++	ssize_t length, full_len;
++	uint8_t __user *address;
++	struct scst_vdisk_dev *virt_dev =
++	    (struct scst_vdisk_dev *)cmd->dev->dh_priv;
++	struct file *fd = thr->fd;
++	struct iovec *iv;
++	int iv_count, i;
++	bool finished = false;
++
++	if (virt_dev->nullio)
++		goto out;
++
++	iv = vdisk_alloc_iv(cmd, thr);
++	if (iv == NULL)
++		goto out;
++
++	length = scst_get_buf_first(cmd, (uint8_t __force **)&address);
++	if (unlikely(length < 0)) {
++		PRINT_ERROR("scst_get_buf_first() failed: %zd", length);
++		scst_set_cmd_error(cmd,
++		    SCST_LOAD_SENSE(scst_sense_hardw_error));
++		goto out;
++	}
++
++	old_fs = get_fs();
++	set_fs(get_ds());
++
++	while (1) {
++		iv_count = 0;
++		full_len = 0;
++		i = -1;
++		while (length > 0) {
++			full_len += length;
++			i++;
++			iv_count++;
++			iv[i].iov_base = address;
++			iv[i].iov_len = length;
++			if (iv_count == UIO_MAXIOV)
++				break;
++			length = scst_get_buf_next(cmd,
++				(uint8_t __force **)&address);
++		}
++		if (length == 0) {
++			finished = true;
++			if (unlikely(iv_count == 0))
++				break;
++		} else if (unlikely(length < 0)) {
++			PRINT_ERROR("scst_get_buf_next() failed: %zd", length);
++			scst_set_cmd_error(cmd,
++			    SCST_LOAD_SENSE(scst_sense_hardw_error));
++			goto out_set_fs;
++		}
++
++		TRACE_DBG("(iv_count %d, full_len %zd)", iv_count, full_len);
++		/* SEEK */
++		if (fd->f_op->llseek)
++			err = fd->f_op->llseek(fd, loff, 0/*SEEK_SET*/);
++		else
++			err = default_llseek(fd, loff, 0/*SEEK_SET*/);
++		if (err != loff) {
++			PRINT_ERROR("lseek trouble %lld != %lld",
++				    (long long unsigned int)err,
++				    (long long unsigned int)loff);
++			scst_set_cmd_error(cmd,
++				SCST_LOAD_SENSE(scst_sense_hardw_error));
++			goto out_set_fs;
++		}
++
++		/* READ */
++		err = vfs_readv(fd, (struct iovec __force __user *)iv, iv_count,
++				&fd->f_pos);
++
++		if ((err < 0) || (err < full_len)) {
++			PRINT_ERROR("readv() returned %lld from %zd",
++				    (long long unsigned int)err,
++				    full_len);
++			if (err == -EAGAIN)
++				scst_set_busy(cmd);
++			else {
++				scst_set_cmd_error(cmd,
++				    SCST_LOAD_SENSE(scst_sense_read_error));
++			}
++			goto out_set_fs;
++		}
++
++		for (i = 0; i < iv_count; i++)
++			scst_put_buf(cmd, (void __force *)(iv[i].iov_base));
++
++		if (finished)
++			break;
++
++		loff += full_len;
++		length = scst_get_buf_next(cmd, (uint8_t __force **)&address);
++	};
++
++	set_fs(old_fs);
++
++out:
++	return;
++
++out_set_fs:
++	set_fs(old_fs);
++	for (i = 0; i < iv_count; i++)
++		scst_put_buf(cmd, (void __force *)(iv[i].iov_base));
++	goto out;
++}
++
++static void vdisk_exec_write(struct scst_cmd *cmd,
++	struct scst_vdisk_thr *thr, loff_t loff)
++{
++	mm_segment_t old_fs;
++	loff_t err;
++	ssize_t length, full_len, saved_full_len;
++	uint8_t __user *address;
++	struct scst_vdisk_dev *virt_dev =
++	    (struct scst_vdisk_dev *)cmd->dev->dh_priv;
++	struct file *fd = thr->fd;
++	struct iovec *iv, *eiv;
++	int i, iv_count, eiv_count;
++	bool finished = false;
++
++	if (virt_dev->nullio)
++		goto out;
++
++	iv = vdisk_alloc_iv(cmd, thr);
++	if (iv == NULL)
++		goto out;
++
++	length = scst_get_buf_first(cmd, (uint8_t __force **)&address);
++	if (unlikely(length < 0)) {
++		PRINT_ERROR("scst_get_buf_first() failed: %zd", length);
++		scst_set_cmd_error(cmd,
++		    SCST_LOAD_SENSE(scst_sense_hardw_error));
++		goto out;
++	}
++
++	old_fs = get_fs();
++	set_fs(get_ds());
++
++	while (1) {
++		iv_count = 0;
++		full_len = 0;
++		i = -1;
++		while (length > 0) {
++			full_len += length;
++			i++;
++			iv_count++;
++			iv[i].iov_base = address;
++			iv[i].iov_len = length;
++			if (iv_count == UIO_MAXIOV)
++				break;
++			length = scst_get_buf_next(cmd,
++				(uint8_t __force **)&address);
++		}
++		if (length == 0) {
++			finished = true;
++			if (unlikely(iv_count == 0))
++				break;
++		} else if (unlikely(length < 0)) {
++			PRINT_ERROR("scst_get_buf_next() failed: %zd", length);
++			scst_set_cmd_error(cmd,
++			    SCST_LOAD_SENSE(scst_sense_hardw_error));
++			goto out_set_fs;
++		}
++
++		saved_full_len = full_len;
++		eiv = iv;
++		eiv_count = iv_count;
++restart:
++		TRACE_DBG("writing(eiv_count %d, full_len %zd)", eiv_count, full_len);
++
++		/* SEEK */
++		if (fd->f_op->llseek)
++			err = fd->f_op->llseek(fd, loff, 0 /*SEEK_SET */);
++		else
++			err = default_llseek(fd, loff, 0 /*SEEK_SET */);
++		if (err != loff) {
++			PRINT_ERROR("lseek trouble %lld != %lld",
++				    (long long unsigned int)err,
++				    (long long unsigned int)loff);
++			scst_set_cmd_error(cmd,
++				   SCST_LOAD_SENSE(scst_sense_hardw_error));
++			goto out_set_fs;
++		}
++
++		/* WRITE */
++		err = vfs_writev(fd, (struct iovec __force __user *)eiv, eiv_count,
++				 &fd->f_pos);
++
++		if (err < 0) {
++			PRINT_ERROR("write() returned %lld from %zd",
++				    (long long unsigned int)err,
++				    full_len);
++			if (err == -EAGAIN)
++				scst_set_busy(cmd);
++			else {
++				scst_set_cmd_error(cmd,
++				    SCST_LOAD_SENSE(scst_sense_write_error));
++			}
++			goto out_set_fs;
++		} else if (err < full_len) {
++			/*
++			 * Probably that's wrong, but sometimes write() returns
++			 * value less, than requested. Let's restart.
++			 */
++			int i, e = eiv_count;
++			TRACE_MGMT_DBG("write() returned %d from %zd "
++				"(iv_count=%d)", (int)err, full_len,
++				eiv_count);
++			if (err == 0) {
++				PRINT_INFO("Suspicious: write() returned 0 from "
++					"%zd (iv_count=%d)", full_len, eiv_count);
++			}
++			full_len -= err;
++			for (i = 0; i < e; i++) {
++				if ((long long)eiv->iov_len < err) {
++					err -= eiv->iov_len;
++					eiv++;
++					eiv_count--;
++				} else {
++					eiv->iov_base =
++					    (uint8_t __force __user *)eiv->iov_base + err;
++					eiv->iov_len -= err;
++					break;
++				}
++			}
++			goto restart;
++		}
++
++		for (i = 0; i < iv_count; i++)
++			scst_put_buf(cmd, (void __force *)(iv[i].iov_base));
++
++		if (finished)
++			break;
++
++		loff += saved_full_len;
++		length = scst_get_buf_next(cmd, (uint8_t __force **)&address);
++	}
++
++	set_fs(old_fs);
++
++out:
++	return;
++
++out_set_fs:
++	set_fs(old_fs);
++	for (i = 0; i < iv_count; i++)
++		scst_put_buf(cmd, (void __force *)(iv[i].iov_base));
++	goto out;
++}
++
++struct scst_blockio_work {
++	atomic_t bios_inflight;
++	struct scst_cmd *cmd;
++};
++
++static inline void blockio_check_finish(struct scst_blockio_work *blockio_work)
++{
++	/* Decrement the bios in processing, and if zero signal completion */
++	if (atomic_dec_and_test(&blockio_work->bios_inflight)) {
++		blockio_work->cmd->completed = 1;
++		blockio_work->cmd->scst_cmd_done(blockio_work->cmd,
++			SCST_CMD_STATE_DEFAULT, scst_estimate_context());
++		kmem_cache_free(blockio_work_cachep, blockio_work);
++	}
++	return;
++}
++
++static void blockio_endio(struct bio *bio, int error)
++{
++	struct scst_blockio_work *blockio_work = bio->bi_private;
++
++	if (unlikely(!test_bit(BIO_UPTODATE, &bio->bi_flags))) {
++		if (error == 0) {
++			PRINT_ERROR("Not up to date bio with error 0 for "
++				"cmd %p, returning -EIO", blockio_work->cmd);
++			error = -EIO;
++		}
++	}
++
++	if (unlikely(error != 0)) {
++		static DEFINE_SPINLOCK(blockio_endio_lock);
++
++		PRINT_ERROR("cmd %p returned error %d", blockio_work->cmd,
++			error);
++
++		/* To protect from several bios finishing simultaneously */
++		spin_lock_bh(&blockio_endio_lock);
++
++		if (bio->bi_rw & WRITE)
++			scst_set_cmd_error(blockio_work->cmd,
++				SCST_LOAD_SENSE(scst_sense_write_error));
++		else
++			scst_set_cmd_error(blockio_work->cmd,
++				SCST_LOAD_SENSE(scst_sense_read_error));
++
++		spin_unlock_bh(&blockio_endio_lock);
++	}
++
++	blockio_check_finish(blockio_work);
++
++	bio_put(bio);
++	return;
++}
++
++static void blockio_exec_rw(struct scst_cmd *cmd, struct scst_vdisk_thr *thr,
++	u64 lba_start, int write)
++{
++	struct scst_vdisk_dev *virt_dev =
++		(struct scst_vdisk_dev *)cmd->dev->dh_priv;
++	struct block_device *bdev = thr->bdev;
++	struct request_queue *q = bdev_get_queue(bdev);
++	int length, max_nr_vecs = 0;
++	uint8_t *address;
++	struct bio *bio = NULL, *hbio = NULL, *tbio = NULL;
++	int need_new_bio;
++	struct scst_blockio_work *blockio_work;
++	int bios = 0;
++
++	if (virt_dev->nullio)
++		goto out;
++
++	/* Allocate and initialize blockio_work struct */
++	blockio_work = kmem_cache_alloc(blockio_work_cachep, GFP_KERNEL);
++	if (blockio_work == NULL)
++		goto out_no_mem;
++
++	blockio_work->cmd = cmd;
++
++	if (q)
++		max_nr_vecs = min(bio_get_nr_vecs(bdev), BIO_MAX_PAGES);
++	else
++		max_nr_vecs = 1;
++
++	need_new_bio = 1;
++
++	length = scst_get_buf_first(cmd, &address);
++	while (length > 0) {
++		int len, bytes, off, thislen;
++		uint8_t *addr;
++		u64 lba_start0;
++
++		addr = address;
++		off = offset_in_page(addr);
++		len = length;
++		thislen = 0;
++		lba_start0 = lba_start;
++
++		while (len > 0) {
++			int rc;
++			struct page *page = virt_to_page(addr);
++
++			if (need_new_bio) {
++				bio = bio_kmalloc(GFP_KERNEL, max_nr_vecs);
++				if (!bio) {
++					PRINT_ERROR("Failed to create bio "
++						"for data segment %d (cmd %p)",
++						cmd->get_sg_buf_entry_num, cmd);
++					goto out_no_bio;
++				}
++
++				bios++;
++				need_new_bio = 0;
++				bio->bi_end_io = blockio_endio;
++				bio->bi_sector = lba_start0 <<
++					(virt_dev->block_shift - 9);
++				bio->bi_bdev = bdev;
++				bio->bi_private = blockio_work;
++#if 0 /* It could be win, but could be not, so a performance study is needed */
++				bio->bi_rw |= 1 << BIO_RW_SYNC;
++#endif
++				if (!hbio)
++					hbio = tbio = bio;
++				else
++					tbio = tbio->bi_next = bio;
++			}
++
++			bytes = min_t(unsigned int, len, PAGE_SIZE - off);
++
++			rc = bio_add_page(bio, page, bytes, off);
++			if (rc < bytes) {
++				BUG_ON(rc != 0);
++				need_new_bio = 1;
++				lba_start0 += thislen >> virt_dev->block_shift;
++				thislen = 0;
++				continue;
++			}
++
++			addr += PAGE_SIZE;
++			thislen += bytes;
++			len -= bytes;
++			off = 0;
++		}
++
++		lba_start += length >> virt_dev->block_shift;
++
++		scst_put_buf(cmd, address);
++		length = scst_get_buf_next(cmd, &address);
++	}
++
++	/* +1 to prevent erroneous too early command completion */
++	atomic_set(&blockio_work->bios_inflight, bios+1);
++
++	while (hbio) {
++		bio = hbio;
++		hbio = hbio->bi_next;
++		bio->bi_next = NULL;
++		submit_bio(write, bio);
++	}
++
++	if (q && q->unplug_fn)
++		q->unplug_fn(q);
++
++	blockio_check_finish(blockio_work);
++
++out:
++	return;
++
++out_no_bio:
++	while (hbio) {
++		bio = hbio;
++		hbio = hbio->bi_next;
++		bio_put(bio);
++	}
++	kmem_cache_free(blockio_work_cachep, blockio_work);
++
++out_no_mem:
++	scst_set_busy(cmd);
++	goto out;
++}
++
++static void vdisk_exec_verify(struct scst_cmd *cmd,
++	struct scst_vdisk_thr *thr, loff_t loff)
++{
++	mm_segment_t old_fs;
++	loff_t err;
++	ssize_t length, len_mem = 0;
++	uint8_t *address_sav, *address;
++	int compare;
++	struct scst_vdisk_dev *virt_dev =
++	    (struct scst_vdisk_dev *)cmd->dev->dh_priv;
++	struct file *fd = thr->fd;
++	uint8_t *mem_verify = NULL;
++
++	if (vdisk_fsync(thr, loff, cmd->bufflen, cmd, cmd->dev) != 0)
++		goto out;
++
++	/*
++	 * Until the cache is cleared prior the verifying, there is not
++	 * much point in this code. ToDo.
++	 *
++	 * Nevertherless, this code is valuable if the data have not read
++	 * from the file/disk yet.
++	 */
++
++	/* SEEK */
++	old_fs = get_fs();
++	set_fs(get_ds());
++
++	if (!virt_dev->nullio) {
++		if (fd->f_op->llseek)
++			err = fd->f_op->llseek(fd, loff, 0/*SEEK_SET*/);
++		else
++			err = default_llseek(fd, loff, 0/*SEEK_SET*/);
++		if (err != loff) {
++			PRINT_ERROR("lseek trouble %lld != %lld",
++				    (long long unsigned int)err,
++				    (long long unsigned int)loff);
++			scst_set_cmd_error(cmd,
++				SCST_LOAD_SENSE(scst_sense_hardw_error));
++			goto out_set_fs;
++		}
++	}
++
++	mem_verify = vmalloc(LEN_MEM);
++	if (mem_verify == NULL) {
++		PRINT_ERROR("Unable to allocate memory %d for verify",
++			       LEN_MEM);
++		scst_set_cmd_error(cmd,
++				   SCST_LOAD_SENSE(scst_sense_hardw_error));
++		goto out_set_fs;
++	}
++
++	length = scst_get_buf_first(cmd, &address);
++	address_sav = address;
++	if (!length && cmd->data_len) {
++		length = cmd->data_len;
++		compare = 0;
++	} else
++		compare = 1;
++
++	while (length > 0) {
++		len_mem = (length > LEN_MEM) ? LEN_MEM : length;
++		TRACE_DBG("Verify: length %zd - len_mem %zd", length, len_mem);
++
++		if (!virt_dev->nullio)
++			err = vfs_read(fd, (char __force __user *)mem_verify,
++				len_mem, &fd->f_pos);
++		else
++			err = len_mem;
++		if ((err < 0) || (err < len_mem)) {
++			PRINT_ERROR("verify() returned %lld from %zd",
++				    (long long unsigned int)err, len_mem);
++			if (err == -EAGAIN)
++				scst_set_busy(cmd);
++			else {
++				scst_set_cmd_error(cmd,
++				    SCST_LOAD_SENSE(scst_sense_read_error));
++			}
++			if (compare)
++				scst_put_buf(cmd, address_sav);
++			goto out_set_fs;
++		}
++		if (compare && memcmp(address, mem_verify, len_mem) != 0) {
++			TRACE_DBG("Verify: error memcmp length %zd", length);
++			scst_set_cmd_error(cmd,
++			    SCST_LOAD_SENSE(scst_sense_miscompare_error));
++			scst_put_buf(cmd, address_sav);
++			goto out_set_fs;
++		}
++		length -= len_mem;
++		address += len_mem;
++		if (compare && length <= 0) {
++			scst_put_buf(cmd, address_sav);
++			length = scst_get_buf_next(cmd, &address);
++			address_sav = address;
++		}
++	}
++
++	if (length < 0) {
++		PRINT_ERROR("scst_get_buf_() failed: %zd", length);
++		scst_set_cmd_error(cmd,
++		    SCST_LOAD_SENSE(scst_sense_hardw_error));
++	}
++
++out_set_fs:
++	set_fs(old_fs);
++	if (mem_verify)
++		vfree(mem_verify);
++
++out:
++	return;
++}
++
++static int vdisk_task_mgmt_fn(struct scst_mgmt_cmd *mcmd,
++	struct scst_tgt_dev *tgt_dev)
++{
++
++	if ((mcmd->fn == SCST_LUN_RESET) || (mcmd->fn == SCST_TARGET_RESET)) {
++		/* Restore default values */
++		struct scst_device *dev = tgt_dev->dev;
++		struct scst_vdisk_dev *virt_dev =
++			(struct scst_vdisk_dev *)dev->dh_priv;
++
++		dev->tst = DEF_TST;
++		dev->d_sense = DEF_DSENSE;
++		if (virt_dev->wt_flag && !virt_dev->nv_cache)
++			dev->queue_alg = DEF_QUEUE_ALG_WT;
++		else
++			dev->queue_alg = DEF_QUEUE_ALG;
++		dev->swp = DEF_SWP;
++		dev->tas = DEF_TAS;
++
++		virt_dev->prevent_allow_medium_removal = 0;
++	}
++	return SCST_DEV_TM_NOT_COMPLETED;
++}
++
++static void vdisk_report_registering(const struct scst_vdisk_dev *virt_dev)
++{
++	char buf[128];
++	int i, j;
++
++	i = snprintf(buf, sizeof(buf), "Registering virtual %s device %s ",
++		virt_dev->vdev_devt->name, virt_dev->name);
++	j = i;
++
++	if (virt_dev->wt_flag)
++		i += snprintf(&buf[i], sizeof(buf) - i, "(WRITE_THROUGH");
++
++	if (virt_dev->nv_cache)
++		i += snprintf(&buf[i], sizeof(buf) - i, "%sNV_CACHE",
++			(j == i) ? "(" : ", ");
++
++	if (virt_dev->rd_only)
++		i += snprintf(&buf[i], sizeof(buf) - i, "%sREAD_ONLY",
++			(j == i) ? "(" : ", ");
++
++	if (virt_dev->o_direct_flag)
++		i += snprintf(&buf[i], sizeof(buf) - i, "%sO_DIRECT",
++			(j == i) ? "(" : ", ");
++
++	if (virt_dev->nullio)
++		i += snprintf(&buf[i], sizeof(buf) - i, "%sNULLIO",
++			(j == i) ? "(" : ", ");
++
++	if (virt_dev->blockio)
++		i += snprintf(&buf[i], sizeof(buf) - i, "%sBLOCKIO",
++			(j == i) ? "(" : ", ");
++
++	if (virt_dev->removable)
++		i += snprintf(&buf[i], sizeof(buf) - i, "%sREMOVABLE",
++			(j == i) ? "(" : ", ");
++
++	if (j == i)
++		PRINT_INFO("%s", buf);
++	else
++		PRINT_INFO("%s)", buf);
++
++	return;
++}
++
++static int vdisk_resync_size(struct scst_vdisk_dev *virt_dev)
++{
++	loff_t file_size;
++	int res = 0;
++
++	if (mutex_lock_interruptible(&virt_dev->vdev_sysfs_mutex) != 0) {
++		res = -EINTR;
++		goto out;
++	}
++
++	BUG_ON(virt_dev->nullio);
++
++	res = vdisk_get_file_size(virt_dev->filename,
++			virt_dev->blockio, &file_size);
++	if (res != 0)
++		goto out_unlock;
++
++	if (file_size == virt_dev->file_size) {
++		PRINT_INFO("Size of virtual disk %s remained the same",
++			virt_dev->name);
++		goto out_unlock;
++	}
 +
 +	res = scst_suspend_activity(true);
 +	if (res != 0)
-+		goto out_free;
++		goto out_unlock;
 +
-+	if (mutex_lock_interruptible(&scst_mutex) != 0) {
-+		res = -EINTR;
-+		goto out_free_resume;
-+	}
++	virt_dev->file_size = file_size;
++	virt_dev->nblocks = virt_dev->file_size >> virt_dev->block_shift;
 +
-+	if (action != SCST_ACG_ACTION_INI_CLEAR)
-+		while (isspace(*p) && *p != '\0')
-+			p++;
++	scst_dev_del_all_thr_data(virt_dev->dev);
 +
-+	switch (action) {
-+	case SCST_ACG_ACTION_INI_ADD:
-+		e = p;
-+		while (!isspace(*e) && *e != '\0')
-+			e++;
-+		*e = '\0';
-+		name = p;
++	PRINT_INFO("New size of SCSI target virtual disk %s "
++		"(fs=%lldMB, bs=%d, nblocks=%lld, cyln=%lld%s)",
++		virt_dev->name, virt_dev->file_size >> 20,
++		virt_dev->block_size,
++		(long long unsigned int)virt_dev->nblocks,
++		(long long unsigned int)virt_dev->nblocks/64/32,
++		virt_dev->nblocks < 64*32 ? " !WARNING! cyln less "
++						"than 1" : "");
 +
-+		if (name[0] == '\0') {
-+			PRINT_ERROR("%s", "Invalid initiator name");
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
++	scst_capacity_data_changed(virt_dev->dev);
 +
-+		res = scst_acg_add_name(acg, name);
-+		if (res != 0)
-+			goto out_free_up;
-+		break;
-+	case SCST_ACG_ACTION_INI_DEL:
-+		e = p;
-+		while (!isspace(*e) && *e != '\0')
-+			e++;
-+		*e = '\0';
-+		name = p;
-+
-+		if (name[0] == '\0') {
-+			PRINT_ERROR("%s", "Invalid initiator name");
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
-+
-+		acn = scst_acg_find_name(acg, name);
-+		if (acn == NULL) {
-+			PRINT_ERROR("Unable to find "
-+				"initiator '%s' in group '%s'",
-+				name, acg->acg_name);
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
-+		scst_acn_sysfs_del(acg, acn, true);
-+		break;
-+	case SCST_ACG_ACTION_INI_CLEAR:
-+		list_for_each_entry_safe(acn, acn_tmp, &acg->acn_list,
-+				acn_list_entry) {
-+			scst_acn_sysfs_del(acg, acn, false);
-+		}
-+		scst_check_reassign_sessions();
-+		break;
-+	case SCST_ACG_ACTION_INI_MOVE:
-+		e = p;
-+		while (!isspace(*e) && *e != '\0')
-+			e++;
-+		if (*e == '\0') {
-+			PRINT_ERROR("%s", "Too few parameters");
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
-+		*e = '\0';
-+		name = p;
-+
-+		if (name[0] == '\0') {
-+			PRINT_ERROR("%s", "Invalid initiator name");
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
-+
-+		e++;
-+		p = e;
-+		while (!isspace(*e) && *e != '\0')
-+			e++;
-+		*e = '\0';
-+		group = p;
-+
-+		if (group[0] == '\0') {
-+			PRINT_ERROR("%s", "Invalid group name");
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
-+
-+		TRACE_DBG("Move initiator '%s' to group '%s'",
-+			name, group);
-+
-+		/*
-+		 * Better get tgt from hierarchy tgt_kobj -> tgt_ini_grp_kobj ->
-+		 * acg_kobj -> initiators_kobj than have direct pointer to tgt
-+		 * in struct acg and have a headache to care about its possible
-+		 * wrong dereference on the destruction time.
-+		 */
-+		{
-+			struct kobject *k;
-+
-+			/* acg_kobj */
-+			k = kobj->parent;
-+			if (k == NULL) {
-+				res = -EINVAL;
-+				goto out_free_up;
-+			}
-+			/* tgt_ini_grp_kobj */
-+			k = k->parent;
-+			if (k == NULL) {
-+				res = -EINVAL;
-+				goto out_free_up;
-+			}
-+			/* tgt_kobj */
-+			k = k->parent;
-+			if (k == NULL) {
-+				res = -EINVAL;
-+				goto out_free_up;
-+			}
-+
-+			tgt = container_of(k, struct scst_tgt, tgt_kobj);
-+		}
-+
-+		acn = scst_acg_find_name(acg, name);
-+		if (acn == NULL) {
-+			PRINT_ERROR("Unable to find "
-+				"initiator '%s' in group '%s'",
-+				name, acg->acg_name);
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
-+		acg_dest = scst_tgt_find_acg(tgt, group);
-+		if (acg_dest == NULL) {
-+			PRINT_ERROR("Unable to find group '%s' in target '%s'",
-+				group, tgt->tgt_name);
-+			res = -EINVAL;
-+			goto out_free_up;
-+		}
-+		if (scst_acg_find_name(acg_dest, name) != NULL) {
-+			PRINT_ERROR("Initiator '%s' already exists in group '%s'",
-+				name, acg_dest->acg_name);
-+			res = -EEXIST;
-+			goto out_free_up;
-+		}
-+		scst_acn_sysfs_del(acg, acn, false);
-+
-+		res = scst_acg_add_name(acg_dest, name);
-+		if (res != 0)
-+			goto out_free_up;
-+		break;
-+	}
-+
-+	res = count;
-+
-+out_free_up:
-+	mutex_unlock(&scst_mutex);
-+
-+out_free_resume:
 +	scst_resume_activity();
 +
-+out_free:
-+	kfree(buffer);
++out_unlock:
++	mutex_unlock(&virt_dev->vdev_sysfs_mutex);
++
++out:
++	return res;
++}
++
++static int vdev_create(struct scst_dev_type *devt,
++	const char *name, struct scst_vdisk_dev **res_virt_dev)
++{
++	int res = 0;
++	struct scst_vdisk_dev *virt_dev;
++	uint64_t dev_id_num;
++	int dev_id_len;
++	char dev_id_str[17];
++	int32_t i;
++
++	virt_dev = kzalloc(sizeof(*virt_dev), GFP_KERNEL);
++	if (virt_dev == NULL) {
++		PRINT_ERROR("Allocation of virtual device %s failed",
++			devt->name);
++		res = -ENOMEM;
++		goto out;
++	}
++
++	spin_lock_init(&virt_dev->flags_lock);
++	mutex_init(&virt_dev->vdev_sysfs_mutex);
++	virt_dev->vdev_devt = devt;
++
++	virt_dev->rd_only = DEF_RD_ONLY;
++	virt_dev->removable = DEF_REMOVABLE;
++
++	virt_dev->block_size = DEF_DISK_BLOCKSIZE;
++	virt_dev->block_shift = DEF_DISK_BLOCKSIZE_SHIFT;
++
++	if (strlen(name) >= sizeof(virt_dev->name)) {
++		PRINT_ERROR("Name %s is too long (max allowed %zd)", name,
++			sizeof(virt_dev->name)-1);
++		res = -EINVAL;
++		goto out_free;
++	}
++	strcpy(virt_dev->name, name);
++
++	dev_id_num = vdisk_gen_dev_id_num(virt_dev->name);
++	dev_id_len = scnprintf(dev_id_str, sizeof(dev_id_str), "%llx",
++				dev_id_num);
++
++	i = strlen(virt_dev->name) + 1; /* for ' ' */
++	memset(virt_dev->t10_dev_id, ' ', i + dev_id_len);
++	memcpy(virt_dev->t10_dev_id, virt_dev->name, i-1);
++	memcpy(virt_dev->t10_dev_id + i, dev_id_str, dev_id_len);
++	TRACE_DBG("t10_dev_id %s", virt_dev->t10_dev_id);
++
++	scnprintf(virt_dev->usn, sizeof(virt_dev->usn), "%llx", dev_id_num);
++	TRACE_DBG("usn %s", virt_dev->usn);
++
++	*res_virt_dev = virt_dev;
 +
 +out:
 +	return res;
 +
-+#undef SCST_ACG_ACTION_INI_ADD
-+#undef SCST_ACG_ACTION_INI_DEL
-+#undef SCST_ACG_ACTION_INI_CLEAR
-+#undef SCST_ACG_ACTION_INI_MOVE
++out_free:
++	kfree(virt_dev);
++	goto out;
 +}
 +
-+/*
-+ * SGV directory implementation
-+ */
-+
-+static struct kobj_attribute sgv_stat_attr =
-+	__ATTR(stats, S_IRUGO | S_IWUSR, sgv_sysfs_stat_show,
-+		sgv_sysfs_stat_reset);
-+
-+static struct attribute *sgv_attrs[] = {
-+	&sgv_stat_attr.attr,
-+	NULL,
-+};
-+
-+static void sgv_kobj_release(struct kobject *kobj)
++static void vdev_destroy(struct scst_vdisk_dev *virt_dev)
 +{
-+	struct sgv_pool *pool;
-+
-+	pool = container_of(kobj, struct sgv_pool, sgv_kobj);
-+
-+	sgv_pool_destroy(pool);
++	kfree(virt_dev->filename);
++	kfree(virt_dev);
 +	return;
 +}
 +
-+static struct kobj_type sgv_pool_ktype = {
-+	.sysfs_ops = &scst_sysfs_ops,
-+	.release = sgv_kobj_release,
-+	.default_attrs = sgv_attrs,
-+};
-+
-+int scst_create_sgv_sysfs(struct sgv_pool *pool)
++/* scst_vdisk_mutex supposed to be held */
++static struct scst_vdisk_dev *vdev_find(const char *name)
 +{
-+	int retval;
++	struct scst_vdisk_dev *res, *vv;
 +
-+	pool->sgv_kobj_initialized = 1;
++	res = NULL;
++	list_for_each_entry(vv, &vdev_list, vdev_list_entry) {
++		if (strcmp(vv->name, name) == 0) {
++			res = vv;
++			break;
++		}
++	}
++	return res;
++}
 +
-+	retval = kobject_init_and_add(&pool->sgv_kobj, &sgv_pool_ktype,
-+			scst_sgv_kobj, pool->name);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add sgv pool %s to sysfs", pool->name);
-+		goto out;
++static int vdev_parse_add_dev_params(struct scst_vdisk_dev *virt_dev,
++	char *params, const char *allowed_params[])
++{
++	int res = 0;
++	unsigned long val;
++	char *param, *p, *pp;
++
++	while (1) {
++		param = scst_get_next_token_str(&params);
++		if (param == NULL)
++			break;
++
++		p = scst_get_next_lexem(&param);
++		if (*p == '\0') {
++			PRINT_ERROR("Syntax error at %s (device %s)",
++				param, virt_dev->name);
++			res = -EINVAL;
++			goto out;
++		}
++
++		if (allowed_params != NULL) {
++			const char **a = allowed_params;
++			bool allowed = false;
++
++			while (*a != NULL) {
++				if (!strcasecmp(*a, p)) {
++					allowed = true;
++					break;
++				}
++				a++;
++			}
++
++			if (!allowed) {
++				PRINT_ERROR("Unknown parameter %s (device %s)", p,
++					virt_dev->name);
++				res = -EINVAL;
++				goto out;
++			}
++		}
++
++		pp = scst_get_next_lexem(&param);
++		if (*pp == '\0') {
++			PRINT_ERROR("Parameter %s value missed for device %s",
++				p, virt_dev->name);
++			res = -EINVAL;
++			goto out;
++		}
++
++		if (scst_get_next_lexem(&param)[0] != '\0') {
++			PRINT_ERROR("Too many parameter's %s values (device %s)",
++				p, virt_dev->name);
++			res = -EINVAL;
++			goto out;
++		}
++
++		if (!strcasecmp("filename", p)) {
++			if (*pp != '/') {
++				PRINT_ERROR("Filename %s must be global "
++					"(device %s)", pp, virt_dev->name);
++				res = -EINVAL;
++				goto out;
++			}
++
++			virt_dev->filename = kstrdup(pp, GFP_KERNEL);
++			if (virt_dev->filename == NULL) {
++				PRINT_ERROR("Unable to duplicate file name %s "
++					"(device %s)", pp, virt_dev->name);
++				res = -ENOMEM;
++				goto out;
++			}
++			continue;
++		}
++
++		res = strict_strtoul(pp, 0, &val);
++		if (res != 0) {
++			PRINT_ERROR("strict_strtoul() for %s failed: %d "
++				"(device %s)", pp, res, virt_dev->name);
++			goto out;
++		}
++
++		if (!strcasecmp("write_through", p)) {
++			virt_dev->wt_flag = val;
++			TRACE_DBG("WRITE THROUGH %d", virt_dev->wt_flag);
++		} else if (!strcasecmp("nv_cache", p)) {
++			virt_dev->nv_cache = val;
++			TRACE_DBG("NON-VOLATILE CACHE %d", virt_dev->nv_cache);
++		} else if (!strcasecmp("o_direct", p)) {
++#if 0
++			virt_dev->o_direct_flag = val;
++			TRACE_DBG("O_DIRECT %d", virt_dev->o_direct_flag);
++#else
++			PRINT_INFO("O_DIRECT flag doesn't currently"
++				" work, ignoring it, use fileio_tgt "
++				"in O_DIRECT mode instead (device %s)", virt_dev->name);
++#endif
++		} else if (!strcasecmp("read_only", p)) {
++			virt_dev->rd_only = val;
++			TRACE_DBG("READ ONLY %d", virt_dev->rd_only);
++		} else if (!strcasecmp("removable", p)) {
++			virt_dev->removable = val;
++			TRACE_DBG("REMOVABLE %d", virt_dev->removable);
++		} else if (!strcasecmp("blocksize", p)) {
++			virt_dev->block_size = val;
++			virt_dev->block_shift = scst_calc_block_shift(
++							virt_dev->block_size);
++			if (virt_dev->block_shift < 9) {
++				res = -EINVAL;
++				goto out;
++			}
++			TRACE_DBG("block_size %d, block_shift %d",
++				virt_dev->block_size,
++				virt_dev->block_shift);
++		} else {
++			PRINT_ERROR("Unknown parameter %s (device %s)", p,
++				virt_dev->name);
++			res = -EINVAL;
++			goto out;
++		}
 +	}
 +
 +out:
-+	return retval;
++	return res;
 +}
 +
-+/* pool can be dead upon exit from this function! */
-+void scst_sgv_sysfs_put(struct sgv_pool *pool)
++/* scst_vdisk_mutex supposed to be held */
++static int vdev_fileio_add_device(const char *device_name, char *params)
 +{
-+	if (pool->sgv_kobj_initialized) {
-+		kobject_del(&pool->sgv_kobj);
-+		kobject_put(&pool->sgv_kobj);
-+	} else
-+		sgv_pool_destroy(pool);
-+	return;
++	int res = 0;
++	struct scst_vdisk_dev *virt_dev;
++
++	res = vdev_create(&vdisk_file_devtype, device_name, &virt_dev);
++	if (res != 0)
++		goto out;
++
++	virt_dev->wt_flag = DEF_WRITE_THROUGH;
++	virt_dev->nv_cache = DEF_NV_CACHE;
++	virt_dev->o_direct_flag = DEF_O_DIRECT;
++
++	res = vdev_parse_add_dev_params(virt_dev, params, NULL);
++	if (res != 0)
++		goto out_destroy;
++
++	if (virt_dev->rd_only && (virt_dev->wt_flag || virt_dev->nv_cache)) {
++		PRINT_ERROR("Write options on read only device %s",
++			virt_dev->name);
++		res = -EINVAL;
++		goto out_destroy;
++	}
++
++	if (virt_dev->filename == NULL) {
++		PRINT_ERROR("File name required (device %s)", virt_dev->name);
++		res = -EINVAL;
++		goto out_destroy;
++	}
++
++	list_add_tail(&virt_dev->vdev_list_entry, &vdev_list);
++
++	vdisk_report_registering(virt_dev);
++
++	virt_dev->virt_id = scst_register_virtual_device(virt_dev->vdev_devt,
++					virt_dev->name);
++	if (virt_dev->virt_id < 0) {
++		res = virt_dev->virt_id;
++		goto out_del;
++	}
++
++	TRACE_DBG("Registered virt_dev %s with id %d", virt_dev->name,
++		virt_dev->virt_id);
++
++out:
++	return res;
++
++out_del:
++	list_del(&virt_dev->vdev_list_entry);
++
++out_destroy:
++	vdev_destroy(virt_dev);
++	goto out;
 +}
 +
-+static struct kobj_attribute sgv_global_stat_attr =
-+	__ATTR(global_stats, S_IRUGO | S_IWUSR, sgv_sysfs_global_stat_show,
-+		sgv_sysfs_global_stat_reset);
-+
-+static struct attribute *sgv_default_attrs[] = {
-+	&sgv_global_stat_attr.attr,
-+	NULL,
-+};
-+
-+static struct kobj_type sgv_ktype = {
-+	.sysfs_ops = &scst_sysfs_ops,
-+	.release = scst_sysfs_release,
-+	.default_attrs = sgv_default_attrs,
-+};
-+
-+/*
-+ * SCST sysfs root directory implementation
-+ */
-+
-+static ssize_t scst_threads_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
++/* scst_vdisk_mutex supposed to be held */
++static int vdev_blockio_add_device(const char *device_name, char *params)
 +{
-+	int count;
++	int res = 0;
++	const char *allowed_params[] = { "filename", "read_only", "removable",
++					 "blocksize", NULL };
++	struct scst_vdisk_dev *virt_dev;
 +
-+	count = sprintf(buf, "%d\n%s", scst_main_cmd_threads.nr_threads,
-+		(scst_main_cmd_threads.nr_threads != scst_threads) ?
-+			SCST_SYSFS_KEY_MARK "\n" : "");
-+	return count;
++	res = vdev_create(&vdisk_blk_devtype, device_name, &virt_dev);
++	if (res != 0)
++		goto out;
++
++	virt_dev->blockio = 1;
++
++	res = vdev_parse_add_dev_params(virt_dev, params, allowed_params);
++	if (res != 0)
++		goto out_destroy;
++
++	if (virt_dev->filename == NULL) {
++		PRINT_ERROR("File name required (device %s)", virt_dev->name);
++		res = -EINVAL;
++		goto out_destroy;
++	}
++
++	list_add_tail(&virt_dev->vdev_list_entry, &vdev_list);
++
++	vdisk_report_registering(virt_dev);
++
++	virt_dev->virt_id = scst_register_virtual_device(virt_dev->vdev_devt,
++					virt_dev->name);
++	if (virt_dev->virt_id < 0) {
++		res = virt_dev->virt_id;
++		goto out_del;
++	}
++
++	TRACE_DBG("Registered virt_dev %s with id %d", virt_dev->name,
++		virt_dev->virt_id);
++
++out:
++	return res;
++
++out_del:
++	list_del(&virt_dev->vdev_list_entry);
++
++out_destroy:
++	vdev_destroy(virt_dev);
++	goto out;
 +}
 +
-+static ssize_t scst_threads_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
++/* scst_vdisk_mutex supposed to be held */
++static int vdev_nullio_add_device(const char *device_name, char *params)
++{
++	int res = 0;
++	const char *allowed_params[] = { "read_only", "removable",
++					 "blocksize", NULL };
++	struct scst_vdisk_dev *virt_dev;
++
++	res = vdev_create(&vdisk_null_devtype, device_name, &virt_dev);
++	if (res != 0)
++		goto out;
++
++	virt_dev->nullio = 1;
++
++	res = vdev_parse_add_dev_params(virt_dev, params, allowed_params);
++	if (res != 0)
++		goto out_destroy;
++
++	list_add_tail(&virt_dev->vdev_list_entry, &vdev_list);
++
++	vdisk_report_registering(virt_dev);
++
++	virt_dev->virt_id = scst_register_virtual_device(virt_dev->vdev_devt,
++					virt_dev->name);
++	if (virt_dev->virt_id < 0) {
++		res = virt_dev->virt_id;
++		goto out_del;
++	}
++
++	TRACE_DBG("Registered virt_dev %s with id %d", virt_dev->name,
++		virt_dev->virt_id);
++
++out:
++	return res;
++
++out_del:
++	list_del(&virt_dev->vdev_list_entry);
++
++out_destroy:
++	vdev_destroy(virt_dev);
++	goto out;
++}
++
++static ssize_t vdisk_add_fileio_device(const char *device_name, char *params)
 +{
 +	int res;
-+	long oldtn, newtn, delta;
 +
-+	if (mutex_lock_interruptible(&scst_mutex) != 0) {
++	if (mutex_lock_interruptible(&scst_vdisk_mutex) != 0) {
 +		res = -EINTR;
 +		goto out;
 +	}
 +
-+	oldtn = scst_main_cmd_threads.nr_threads;
++	res = vdev_fileio_add_device(device_name, params);
 +
-+	res = strict_strtoul(buf, 0, &newtn);
-+	if (res != 0) {
-+		PRINT_ERROR("strict_strtoul() for %s failed: %d ", buf, res);
-+		goto out_up;
-+	}
-+
-+	if (newtn <= 0) {
-+		PRINT_ERROR("Illegal threads num value %ld", newtn);
-+		res = -EINVAL;
-+		goto out_up;
-+	}
-+
-+	delta = newtn - oldtn;
-+	if (delta < 0)
-+		scst_del_threads(&scst_main_cmd_threads, -delta);
-+	else {
-+		res = scst_add_threads(&scst_main_cmd_threads, NULL, NULL, delta);
-+		if (res != 0)
-+			goto out_up;
-+	}
-+
-+	PRINT_INFO("Changed cmd threads num: old %ld, new %ld", oldtn, newtn);
-+
-+	res = count;
-+
-+out_up:
-+	mutex_unlock(&scst_mutex);
++	mutex_unlock(&scst_vdisk_mutex);
 +
 +out:
 +	return res;
 +}
 +
-+static ssize_t scst_setup_id_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	int count;
-+
-+	count = sprintf(buf, "0x%x%s\n", scst_setup_id,
-+		(scst_setup_id == 0) ? "" : SCST_SYSFS_KEY_MARK "\n");
-+	return count;
-+}
-+
-+static ssize_t scst_setup_id_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
++static ssize_t vdisk_add_blockio_device(const char *device_name, char *params)
 +{
 +	int res;
-+	unsigned long val;
 +
-+	res = strict_strtoul(buf, 0, &val);
-+	if (res != 0) {
-+		PRINT_ERROR("strict_strtoul() for %s failed: %d ", buf, res);
++	if (mutex_lock_interruptible(&scst_vdisk_mutex) != 0) {
++		res = -EINTR;
 +		goto out;
 +	}
 +
-+	scst_setup_id = val;
-+	PRINT_INFO("Changed scst_setup_id to %x", scst_setup_id);
++	res = vdev_blockio_add_device(device_name, params);
 +
-+	res = count;
++	mutex_unlock(&scst_vdisk_mutex);
 +
 +out:
 +	return res;
++
 +}
 +
-+#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
-+
-+static void scst_read_trace_tlb(const struct scst_trace_log *tbl, char *buf,
-+	unsigned long log_level, int *pos)
++static ssize_t vdisk_add_nullio_device(const char *device_name, char *params)
 +{
-+	const struct scst_trace_log *t = tbl;
++	int res;
 +
-+	if (t == NULL)
++	if (mutex_lock_interruptible(&scst_vdisk_mutex) != 0) {
++		res = -EINTR;
 +		goto out;
-+
-+	while (t->token) {
-+		if (log_level & t->val) {
-+			*pos += sprintf(&buf[*pos], "%s%s",
-+					(*pos == 0) ? "" : " | ",
-+					t->token);
-+		}
-+		t++;
 +	}
++
++	res = vdev_nullio_add_device(device_name, params);
++
++	mutex_unlock(&scst_vdisk_mutex);
++
 +out:
++	return res;
++
++}
++
++/* scst_vdisk_mutex supposed to be held */
++static void vdev_del_device(struct scst_vdisk_dev *virt_dev)
++{
++
++	scst_unregister_virtual_device(virt_dev->virt_id);
++
++	list_del(&virt_dev->vdev_list_entry);
++
++	PRINT_INFO("Virtual device %s unregistered", virt_dev->name);
++	TRACE_DBG("virt_id %d unregistered", virt_dev->virt_id);
++
++	vdev_destroy(virt_dev);
++
 +	return;
 +}
 +
-+static ssize_t scst_trace_level_show(const struct scst_trace_log *local_tbl,
-+	unsigned long log_level, char *buf, const char *help)
++static ssize_t vdisk_del_device(const char *device_name)
 +{
-+	int pos = 0;
++	int res = 0;
++	struct scst_vdisk_dev *virt_dev;
 +
-+	scst_read_trace_tlb(scst_trace_tbl, buf, log_level, &pos);
-+	scst_read_trace_tlb(local_tbl, buf, log_level, &pos);
-+
-+	pos += sprintf(&buf[pos], "\n\n\nUsage:\n"
-+		"	echo \"all|none|default\" >trace_level\n"
-+		"	echo \"value DEC|0xHEX|0OCT\" >trace_level\n"
-+		"	echo \"add|del TOKEN\" >trace_level\n"
-+		"\nwhere TOKEN is one of [debug, function, line, pid,\n"
-+		"		       buff, mem, sg, out_of_mem,\n"
-+		"		       special, scsi, mgmt, minor,\n"
-+		"		       mgmt_dbg, scsi_serializing,\n"
-+		"		       retry, recv_bot, send_bot, recv_top,\n"
-+		"		       send_top%s]", help != NULL ? help : "");
-+
-+	return pos;
-+}
-+
-+static ssize_t scst_main_trace_level_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	return scst_trace_level_show(scst_local_trace_tbl, trace_flag,
-+			buf, NULL);
-+}
-+
-+static int scst_write_trace(const char *buf, size_t length,
-+	unsigned long *log_level, unsigned long default_level,
-+	const char *name, const struct scst_trace_log *tbl)
-+{
-+	int res = length;
-+	int action;
-+	unsigned long level = 0, oldlevel;
-+	char *buffer, *p, *e;
-+	const struct scst_trace_log *t;
-+
-+#define SCST_TRACE_ACTION_ALL		1
-+#define SCST_TRACE_ACTION_NONE		2
-+#define SCST_TRACE_ACTION_DEFAULT	3
-+#define SCST_TRACE_ACTION_ADD		4
-+#define SCST_TRACE_ACTION_DEL		5
-+#define SCST_TRACE_ACTION_VALUE		6
-+
-+	if ((buf == NULL) || (length == 0)) {
-+		res = -EINVAL;
++	if (mutex_lock_interruptible(&scst_vdisk_mutex) != 0) {
++		res = -EINTR;
 +		goto out;
 +	}
 +
-+	buffer = kmalloc(length+1, GFP_KERNEL);
-+	if (buffer == NULL) {
-+		PRINT_ERROR("Unable to alloc intermediate buffer (size %zd)",
++	virt_dev = vdev_find(device_name);
++	if (virt_dev == NULL) {
++		PRINT_ERROR("Device %s not found", device_name);
++		res = -EINVAL;
++		goto out_unlock;
++	}
++
++	vdev_del_device(virt_dev);
++
++out_unlock:
++	mutex_unlock(&scst_vdisk_mutex);
++
++out:
++	return res;
++}
++
++/* scst_vdisk_mutex supposed to be held */
++static ssize_t __vcdrom_add_device(const char *device_name, char *params)
++{
++	int res = 0;
++	const char *allowed_params[] = { NULL }; /* no params */
++	struct scst_vdisk_dev *virt_dev;
++
++	res = vdev_create(&vcdrom_devtype, device_name, &virt_dev);
++	if (res != 0)
++		goto out;
++
++	virt_dev->rd_only = 1;
++	virt_dev->removable = 1;
++	virt_dev->cdrom_empty = 1;
++
++	virt_dev->block_size = DEF_CDROM_BLOCKSIZE;
++	virt_dev->block_shift = DEF_CDROM_BLOCKSIZE_SHIFT;
++
++	res = vdev_parse_add_dev_params(virt_dev, params, allowed_params);
++	if (res != 0)
++		goto out_destroy;
++
++	list_add_tail(&virt_dev->vdev_list_entry, &vdev_list);
++
++	vdisk_report_registering(virt_dev);
++
++	virt_dev->virt_id = scst_register_virtual_device(virt_dev->vdev_devt,
++					virt_dev->name);
++	if (virt_dev->virt_id < 0) {
++		res = virt_dev->virt_id;
++		goto out_del;
++	}
++
++	TRACE_DBG("Registered virt_dev %s with id %d", virt_dev->name,
++		virt_dev->virt_id);
++
++out:
++	return res;
++
++out_del:
++	list_del(&virt_dev->vdev_list_entry);
++
++out_destroy:
++	vdev_destroy(virt_dev);
++	goto out;
++}
++
++static ssize_t vcdrom_add_device(const char *device_name, char *params)
++{
++	int res;
++
++	if (mutex_lock_interruptible(&scst_vdisk_mutex) != 0) {
++		res = -EINTR;
++		goto out;
++	}
++
++	res = __vcdrom_add_device(device_name, params);
++
++	mutex_unlock(&scst_vdisk_mutex);
++
++out:
++	return res;
++
++}
++
++static ssize_t vcdrom_del_device(const char *device_name)
++{
++	int res = 0;
++	struct scst_vdisk_dev *virt_dev;
++
++	if (mutex_lock_interruptible(&scst_vdisk_mutex) != 0) {
++		res = -EINTR;
++		goto out;
++	}
++
++	virt_dev = vdev_find(device_name);
++	if (virt_dev == NULL) {
++		PRINT_ERROR("Device %s not found", device_name);
++		res = -EINVAL;
++		goto out_unlock;
++	}
++
++	vdev_del_device(virt_dev);
++
++out_unlock:
++	mutex_unlock(&scst_vdisk_mutex);
++
++out:
++	return res;
++}
++
++static int vcdrom_change(struct scst_vdisk_dev *virt_dev,
++	const char *buffer, int length)
++{
++	loff_t err;
++	char *old_fn, *i_buf, *p, *pp;
++	const char *filename = NULL;
++	int res = 0;
++
++	i_buf = kmalloc(length+1, GFP_KERNEL);
++	if (i_buf == NULL) {
++		PRINT_ERROR("Unable to alloc intermediate buffer with size %d",
 +			length+1);
 +		res = -ENOMEM;
 +		goto out;
 +	}
-+	memcpy(buffer, buf, length);
-+	buffer[length] = '\0';
 +
-+	p = buffer;
-+	if (!strncasecmp("all", p, 3)) {
-+		action = SCST_TRACE_ACTION_ALL;
-+	} else if (!strncasecmp("none", p, 4) || !strncasecmp("null", p, 4)) {
-+		action = SCST_TRACE_ACTION_NONE;
-+	} else if (!strncasecmp("default", p, 7)) {
-+		action = SCST_TRACE_ACTION_DEFAULT;
-+	} else if (!strncasecmp("add", p, 3)) {
-+		p += 3;
-+		action = SCST_TRACE_ACTION_ADD;
-+	} else if (!strncasecmp("del", p, 3)) {
-+		p += 3;
-+		action = SCST_TRACE_ACTION_DEL;
-+	} else if (!strncasecmp("value", p, 5)) {
-+		p += 5;
-+		action = SCST_TRACE_ACTION_VALUE;
-+	} else {
-+		if (p[strlen(p) - 1] == '\n')
-+			p[strlen(p) - 1] = '\0';
-+		PRINT_ERROR("Unknown action \"%s\"", p);
-+		res = -EINVAL;
-+		goto out_free;
++	memcpy(i_buf, buffer, length);
++	i_buf[length] = '\0';
++	p = i_buf;
++
++	while (isspace(*p) && *p != '\0')
++		p++;
++	filename = p;
++	p = &i_buf[length-1];
++	pp = p;
++	while (isspace(*p) && *p != '\0') {
++		pp = p;
++		p--;
 +	}
++	*pp = '\0';
 +
-+	switch (action) {
-+	case SCST_TRACE_ACTION_ADD:
-+	case SCST_TRACE_ACTION_DEL:
-+	case SCST_TRACE_ACTION_VALUE:
-+		if (!isspace(*p)) {
-+			PRINT_ERROR("%s", "Syntax error");
-+			res = -EINVAL;
-+			goto out_free;
-+		}
-+	}
-+
-+	switch (action) {
-+	case SCST_TRACE_ACTION_ALL:
-+		level = TRACE_ALL;
-+		break;
-+	case SCST_TRACE_ACTION_DEFAULT:
-+		level = default_level;
-+		break;
-+	case SCST_TRACE_ACTION_NONE:
-+		level = TRACE_NULL;
-+		break;
-+	case SCST_TRACE_ACTION_ADD:
-+	case SCST_TRACE_ACTION_DEL:
-+		while (isspace(*p) && *p != '\0')
-+			p++;
-+		e = p;
-+		while (!isspace(*e) && *e != '\0')
-+			e++;
-+		*e = 0;
-+		if (tbl) {
-+			t = tbl;
-+			while (t->token) {
-+				if (!strcasecmp(p, t->token)) {
-+					level = t->val;
-+					break;
-+				}
-+				t++;
-+			}
-+		}
-+		if (level == 0) {
-+			t = scst_trace_tbl;
-+			while (t->token) {
-+				if (!strcasecmp(p, t->token)) {
-+					level = t->val;
-+					break;
-+				}
-+				t++;
-+			}
-+		}
-+		if (level == 0) {
-+			PRINT_ERROR("Unknown token \"%s\"", p);
-+			res = -EINVAL;
-+			goto out_free;
-+		}
-+		break;
-+	case SCST_TRACE_ACTION_VALUE:
-+		while (isspace(*p) && *p != '\0')
-+			p++;
-+		res = strict_strtoul(p, 0, &level);
-+		if (res != 0) {
-+			PRINT_ERROR("Invalid trace value \"%s\"", p);
-+			res = -EINVAL;
-+			goto out_free;
-+		}
-+		break;
-+	}
-+
-+	oldlevel = *log_level;
-+
-+	switch (action) {
-+	case SCST_TRACE_ACTION_ADD:
-+		*log_level |= level;
-+		break;
-+	case SCST_TRACE_ACTION_DEL:
-+		*log_level &= ~level;
-+		break;
-+	default:
-+		*log_level = level;
-+		break;
-+	}
-+
-+	PRINT_INFO("Changed trace level for \"%s\": old 0x%08lx, new 0x%08lx",
-+		name, oldlevel, *log_level);
-+
-+out_free:
-+	kfree(buffer);
-+out:
-+	return res;
-+
-+#undef SCST_TRACE_ACTION_ALL
-+#undef SCST_TRACE_ACTION_NONE
-+#undef SCST_TRACE_ACTION_DEFAULT
-+#undef SCST_TRACE_ACTION_ADD
-+#undef SCST_TRACE_ACTION_DEL
-+#undef SCST_TRACE_ACTION_VALUE
-+}
-+
-+static ssize_t scst_main_trace_level_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+
-+	if (mutex_lock_interruptible(&scst_log_mutex) != 0) {
-+		res = -EINTR;
-+		goto out;
-+	}
-+
-+	res = scst_write_trace(buf, count, &trace_flag,
-+		SCST_DEFAULT_LOG_FLAGS, "scst", scst_local_trace_tbl);
-+
-+	mutex_unlock(&scst_log_mutex);
-+
-+out:
-+	return res;
-+}
-+
-+#endif /* defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING) */
-+
-+static ssize_t scst_version_show(struct kobject *kobj,
-+				 struct kobj_attribute *attr,
-+				 char *buf)
-+{
-+
-+	sprintf(buf, "%s\n", SCST_VERSION_STRING);
-+
-+#ifdef CONFIG_SCST_STRICT_SERIALIZING
-+	strcat(buf, "STRICT_SERIALIZING\n");
-+#endif
-+
-+#ifdef CONFIG_SCST_EXTRACHECKS
-+	strcat(buf, "EXTRACHECKS\n");
-+#endif
-+
-+#ifdef CONFIG_SCST_TRACING
-+	strcat(buf, "TRACING\n");
-+#endif
-+
-+#ifdef CONFIG_SCST_DEBUG
-+	strcat(buf, "DEBUG\n");
-+#endif
-+
-+#ifdef CONFIG_SCST_DEBUG_TM
-+	strcat(buf, "DEBUG_TM\n");
-+#endif
-+
-+#ifdef CONFIG_SCST_DEBUG_RETRY
-+	strcat(buf, "DEBUG_RETRY\n");
-+#endif
-+
-+#ifdef CONFIG_SCST_DEBUG_OOM
-+	strcat(buf, "DEBUG_OOM\n");
-+#endif
-+
-+#ifdef CONFIG_SCST_DEBUG_SN
-+	strcat(buf, "DEBUG_SN\n");
-+#endif
-+
-+#ifdef CONFIG_SCST_USE_EXPECTED_VALUES
-+	strcat(buf, "USE_EXPECTED_VALUES\n");
-+#endif
-+
-+#ifdef CONFIG_SCST_ALLOW_PASSTHROUGH_IO_SUBMIT_IN_SIRQ
-+	strcat(buf, "ALLOW_PASSTHROUGH_IO_SUBMIT_IN_SIRQ\n");
-+#endif
-+
-+#ifdef CONFIG_SCST_STRICT_SECURITY
-+	strcat(buf, "SCST_STRICT_SECURITY\n");
-+#endif
-+	return strlen(buf);
-+}
-+
-+static struct kobj_attribute scst_threads_attr =
-+	__ATTR(threads, S_IRUGO | S_IWUSR, scst_threads_show,
-+	       scst_threads_store);
-+
-+static struct kobj_attribute scst_setup_id_attr =
-+	__ATTR(setup_id, S_IRUGO | S_IWUSR, scst_setup_id_show,
-+	       scst_setup_id_store);
-+
-+#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
-+static struct kobj_attribute scst_trace_level_attr =
-+	__ATTR(trace_level, S_IRUGO | S_IWUSR, scst_main_trace_level_show,
-+	       scst_main_trace_level_store);
-+#endif
-+
-+static struct kobj_attribute scst_version_attr =
-+	__ATTR(version, S_IRUGO, scst_version_show, NULL);
-+
-+static struct attribute *scst_sysfs_root_default_attrs[] = {
-+	&scst_threads_attr.attr,
-+	&scst_setup_id_attr.attr,
-+#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
-+	&scst_trace_level_attr.attr,
-+#endif
-+	&scst_version_attr.attr,
-+	NULL,
-+};
-+
-+static void scst_sysfs_root_release(struct kobject *kobj)
-+{
-+	complete_all(&scst_sysfs_root_release_completion);
-+}
-+
-+static ssize_t scst_show(struct kobject *kobj, struct attribute *attr,
-+			 char *buf)
-+{
-+	struct kobj_attribute *kobj_attr;
-+	kobj_attr = container_of(attr, struct kobj_attribute, attr);
-+
-+	return kobj_attr->show(kobj, kobj_attr, buf);
-+}
-+
-+static ssize_t scst_store(struct kobject *kobj, struct attribute *attr,
-+			  const char *buf, size_t count)
-+{
-+	struct kobj_attribute *kobj_attr;
-+	kobj_attr = container_of(attr, struct kobj_attribute, attr);
-+
-+	return kobj_attr->store(kobj, kobj_attr, buf, count);
-+}
-+
-+struct sysfs_ops scst_sysfs_ops = {
-+	.show = scst_show,
-+	.store = scst_store,
-+};
-+
-+static struct kobj_type scst_sysfs_root_ktype = {
-+	.sysfs_ops = &scst_sysfs_ops,
-+	.release = scst_sysfs_root_release,
-+	.default_attrs = scst_sysfs_root_default_attrs,
-+};
-+
-+static void scst_devt_free(struct kobject *kobj)
-+{
-+	struct scst_dev_type *devt;
-+
-+	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
-+
-+	complete_all(&devt->devt_kobj_release_compl);
-+
-+	scst_devt_cleanup(devt);
-+	return;
-+}
-+
-+#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
-+
-+static ssize_t scst_devt_trace_level_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	struct scst_dev_type *devt;
-+
-+	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
-+
-+	return scst_trace_level_show(devt->trace_tbl,
-+		devt->trace_flags ? *devt->trace_flags : 0, buf,
-+		devt->trace_tbl_help);
-+}
-+
-+static ssize_t scst_devt_trace_level_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+	struct scst_dev_type *devt;
-+
-+	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
-+
-+	if (mutex_lock_interruptible(&scst_log_mutex) != 0) {
-+		res = -EINTR;
-+		goto out;
-+	}
-+
-+	res = scst_write_trace(buf, count, devt->trace_flags,
-+		devt->default_trace_flags, devt->name, devt->trace_tbl);
-+
-+	mutex_unlock(&scst_log_mutex);
-+
-+out:
-+	return res;
-+}
-+
-+static struct kobj_attribute devt_trace_attr =
-+	__ATTR(trace_level, S_IRUGO | S_IWUSR,
-+	       scst_devt_trace_level_show, scst_devt_trace_level_store);
-+
-+#endif /* #if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING) */
-+
-+static ssize_t scst_devt_type_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	int pos;
-+	struct scst_dev_type *devt;
-+
-+	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
-+
-+	pos = sprintf(buf, "%d - %s\n", devt->type,
-+		(unsigned)devt->type > ARRAY_SIZE(scst_dev_handler_types) ?
-+			"unknown" : scst_dev_handler_types[devt->type]);
-+
-+	return pos;
-+}
-+
-+static struct kobj_attribute scst_devt_type_attr =
-+	__ATTR(type, S_IRUGO, scst_devt_type_show, NULL);
-+
-+static struct attribute *scst_devt_default_attrs[] = {
-+	&scst_devt_type_attr.attr,
-+	NULL,
-+};
-+
-+static struct kobj_type scst_devt_ktype = {
-+	.sysfs_ops = &scst_sysfs_ops,
-+	.release = scst_devt_free,
-+	.default_attrs = scst_devt_default_attrs,
-+};
-+
-+static ssize_t scst_devt_mgmt_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	char *help = "Usage: echo \"add_device device_name [parameters]\" "
-+				">mgmt\n"
-+		     "       echo \"del_device device_name\" >mgmt\n"
-+		     "%s"
-+		     "\n"
-+		     "where parameters are one or more "
-+		     "param_name=value pairs separated by ';'\n"
-+		     "%s%s";
-+	struct scst_dev_type *devt;
-+
-+	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
-+
-+	if (devt->add_device_parameters_help != NULL)
-+		return sprintf(buf, help,
-+			(devt->mgmt_cmd_help) ? devt->mgmt_cmd_help : "",
-+			"\nThe following parameters available: ",
-+			devt->add_device_parameters_help);
-+	else
-+		return sprintf(buf, help,
-+			(devt->mgmt_cmd_help) ? devt->mgmt_cmd_help : "",
-+			"", "");
-+}
-+
-+static ssize_t scst_devt_mgmt_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t count)
-+{
-+	int res;
-+	char *buffer, *p, *pp, *device_name;
-+	struct scst_dev_type *devt;
-+
-+	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
-+
-+	buffer = kzalloc(count+1, GFP_KERNEL);
-+	if (buffer == NULL) {
-+		res = -ENOMEM;
-+		goto out;
-+	}
-+
-+	memcpy(buffer, buf, count);
-+	buffer[count] = '\0';
-+
-+	pp = buffer;
-+	if (pp[strlen(pp) - 1] == '\n')
-+		pp[strlen(pp) - 1] = '\0';
-+
-+	p = scst_get_next_lexem(&pp);
-+
-+	if (strcasecmp("add_device", p) == 0) {
-+		device_name = scst_get_next_lexem(&pp);
-+		if (*device_name == '\0') {
-+			PRINT_ERROR("%s", "Device name required");
-+			res = -EINVAL;
-+			goto out_free;
-+		}
-+		res = devt->add_device(device_name, pp);
-+	} else if (strcasecmp("del_device", p) == 0) {
-+		device_name = scst_get_next_lexem(&pp);
-+		if (*device_name == '\0') {
-+			PRINT_ERROR("%s", "Device name required");
-+			res = -EINVAL;
-+			goto out_free;
-+		}
-+
-+		p = scst_get_next_lexem(&pp);
-+		if (*p != '\0')
-+			goto out_syntax_err;
-+
-+		res = devt->del_device(device_name);
-+	} else if (devt->mgmt_cmd != NULL) {
-+		scst_restore_token_str(p, pp);
-+		res = devt->mgmt_cmd(buffer);
-+	} else {
-+		PRINT_ERROR("Unknown action \"%s\"", p);
-+		res = -EINVAL;
-+		goto out_free;
-+	}
-+
-+	if (res == 0)
-+		res = count;
-+
-+out_free:
-+	kfree(buffer);
-+
-+out:
-+	return res;
-+
-+out_syntax_err:
-+	PRINT_ERROR("Syntax error on \"%s\"", p);
-+	res = -EINVAL;
-+	goto out_free;
-+}
-+
-+static struct kobj_attribute scst_devt_mgmt =
-+	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_devt_mgmt_show,
-+	       scst_devt_mgmt_store);
-+
-+static ssize_t scst_devt_pass_through_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "1");
-+}
-+
-+static struct kobj_attribute scst_devt_pass_through =
-+	__ATTR(pass_through, S_IRUGO, scst_devt_pass_through_show, NULL);
-+
-+static ssize_t scst_devt_pass_through_mgmt_show(struct kobject *kobj,
-+	struct kobj_attribute *attr, char *buf)
-+{
-+	char *help = "Usage: echo \"assign H:C:I:L\" >mgmt\n"
-+		     "       echo \"unassign H:C:I:L\" >mgmt\n";
-+	return sprintf(buf, help);
-+}
-+
-+static ssize_t scst_devt_pass_through_mgmt_store(struct kobject *kobj,
-+	struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	int res;
-+	char *buffer, *p, *pp, *action;
-+	struct scst_dev_type *devt;
-+	unsigned long host, channel, id, lun;
-+	struct scst_device *d, *dev = NULL;
-+
-+	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
-+
-+	buffer = kzalloc(count+1, GFP_KERNEL);
-+	if (buffer == NULL) {
-+		res = -ENOMEM;
-+		goto out;
-+	}
-+
-+	memcpy(buffer, buf, count);
-+	buffer[count] = '\0';
-+
-+	pp = buffer;
-+	if (pp[strlen(pp) - 1] == '\n')
-+		pp[strlen(pp) - 1] = '\0';
-+
-+	action = scst_get_next_lexem(&pp);
-+	p = scst_get_next_lexem(&pp);
-+	if (*p == '\0') {
-+		PRINT_ERROR("%s", "Device required");
-+		res = -EINVAL;
-+		goto out_free;
-+	}
-+
-+	;
-+	if (*scst_get_next_lexem(&pp) != '\0') {
-+		PRINT_ERROR("%s", "Too many parameters");
-+		res = -EINVAL;
-+		goto out_syntax_err;
-+	}
-+
-+	host = simple_strtoul(p, &p, 0);
-+	if ((host == ULONG_MAX) || (*p != ':'))
-+		goto out_syntax_err;
-+	p++;
-+	channel = simple_strtoul(p, &p, 0);
-+	if ((channel == ULONG_MAX) || (*p != ':'))
-+		goto out_syntax_err;
-+	p++;
-+	id = simple_strtoul(p, &p, 0);
-+	if ((channel == ULONG_MAX) || (*p != ':'))
-+		goto out_syntax_err;
-+	p++;
-+	lun = simple_strtoul(p, &p, 0);
-+	if (lun == ULONG_MAX)
-+		goto out_syntax_err;
-+
-+	TRACE_DBG("Dev %ld:%ld:%ld:%ld", host, channel, id, lun);
-+
-+	if (mutex_lock_interruptible(&scst_mutex) != 0) {
++	if (mutex_lock_interruptible(&virt_dev->vdev_sysfs_mutex) != 0) {
 +		res = -EINTR;
 +		goto out_free;
 +	}
 +
-+	list_for_each_entry(d, &scst_dev_list, dev_list_entry) {
-+		if ((d->virt_id == 0) &&
-+		    d->scsi_dev->host->host_no == host &&
-+		    d->scsi_dev->channel == channel &&
-+		    d->scsi_dev->id == id &&
-+		    d->scsi_dev->lun == lun) {
-+			dev = d;
-+			TRACE_DBG("Dev %p (%ld:%ld:%ld:%ld) found",
-+				  dev, host, channel, id, lun);
-+			break;
-+		}
-+	}
-+	if (dev == NULL) {
-+		PRINT_ERROR("Device %ld:%ld:%ld:%ld not found",
-+			       host, channel, id, lun);
++	res = scst_suspend_activity(true);
++	if (res != 0)
++		goto out_sysfs_unlock;
++
++	/* To sync with detach*() functions */
++	mutex_lock(&scst_mutex);
++
++	if (*filename == '\0') {
++		virt_dev->cdrom_empty = 1;
++		TRACE_DBG("%s", "No media");
++	} else if (*filename != '/') {
++		PRINT_ERROR("File path \"%s\" is not "
++			"absolute", filename);
 +		res = -EINVAL;
 +		goto out_unlock;
-+	}
++	} else
++		virt_dev->cdrom_empty = 0;
 +
-+	if (dev->scsi_dev->type != devt->type) {
-+		PRINT_ERROR("Type %d of device %s differs from type "
-+			"%d of dev handler %s", dev->type,
-+			dev->virt_name, devt->type, devt->name);
-+		res = -EINVAL;
-+		goto out_unlock;
-+	}
++	old_fn = virt_dev->filename;
 +
-+	if (strcasecmp("assign", action) == 0)
-+		res = scst_assign_dev_handler(dev, devt);
-+	else if (strcasecmp("deassign", action) == 0) {
-+		if (dev->handler != devt) {
-+			PRINT_ERROR("Device %s is not assigned to handler %s",
-+				dev->virt_name, devt->name);
-+			res = -EINVAL;
++	if (!virt_dev->cdrom_empty) {
++		int len = strlen(filename) + 1;
++		char *fn = kmalloc(len, GFP_KERNEL);
++		if (fn == NULL) {
++			TRACE(TRACE_OUT_OF_MEM, "%s",
++				"Allocation of filename failed");
++			res = -ENOMEM;
 +			goto out_unlock;
 +		}
-+		res = scst_assign_dev_handler(dev, &scst_null_devtype);
++
++		strlcpy(fn, filename, len);
++		virt_dev->filename = fn;
++
++		res = vdisk_get_file_size(virt_dev->filename,
++				virt_dev->blockio, &err);
++		if (res != 0)
++			goto out_free_fn;
 +	} else {
-+		PRINT_ERROR("Unknown action \"%s\"", action);
-+		res = -EINVAL;
-+		goto out_unlock;
++		err = 0;
++		virt_dev->filename = NULL;
 +	}
 +
-+	if (res == 0)
-+		res = count;
++	if (virt_dev->prevent_allow_medium_removal) {
++		PRINT_ERROR("Prevent medium removal for "
++			"virtual device with name %s", virt_dev->name);
++		res = -EINVAL;
++		goto out_free_fn;
++	}
++
++	virt_dev->file_size = err;
++	virt_dev->nblocks = virt_dev->file_size >> virt_dev->block_shift;
++	if (!virt_dev->cdrom_empty)
++		virt_dev->media_changed = 1;
++
++	mutex_unlock(&scst_mutex);
++
++	scst_dev_del_all_thr_data(virt_dev->dev);
++
++	if (!virt_dev->cdrom_empty) {
++		PRINT_INFO("Changed SCSI target virtual cdrom %s "
++			"(file=\"%s\", fs=%lldMB, bs=%d, nblocks=%lld,"
++			" cyln=%lld%s)", virt_dev->name,
++			vdev_get_filename(virt_dev),
++			virt_dev->file_size >> 20, virt_dev->block_size,
++			(long long unsigned int)virt_dev->nblocks,
++			(long long unsigned int)virt_dev->nblocks/64/32,
++			virt_dev->nblocks < 64*32 ? " !WARNING! cyln less "
++							"than 1" : "");
++	} else {
++		PRINT_INFO("Removed media from SCSI target virtual cdrom %s",
++			virt_dev->name);
++	}
++
++	kfree(old_fn);
++
++out_resume:
++	scst_resume_activity();
++
++out_sysfs_unlock:
++	mutex_unlock(&virt_dev->vdev_sysfs_mutex);
++
++out_free:
++	kfree(i_buf);
++
++out:
++	return res;
++
++out_free_fn:
++	kfree(virt_dev->filename);
++	virt_dev->filename = old_fn;
 +
 +out_unlock:
 +	mutex_unlock(&scst_mutex);
++	goto out_resume;
++}
 +
-+out_free:
-+	kfree(buffer);
++static ssize_t vcdrom_sysfs_filename_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	res = vcdrom_change(virt_dev, buf, count);
++	if (res != 0)
++		goto out;
++
++	res = count;
 +
 +out:
 +	return res;
-+
-+out_syntax_err:
-+	PRINT_ERROR("Syntax error on \"%s\"", p);
-+	res = -EINVAL;
-+	goto out_free;
 +}
 +
-+static struct kobj_attribute scst_devt_pass_through_mgmt =
-+	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_devt_pass_through_mgmt_show,
-+	       scst_devt_pass_through_mgmt_store);
-+
-+int scst_create_devt_sysfs(struct scst_dev_type *devt)
++static ssize_t vdev_sysfs_size_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
 +{
-+	int retval;
-+	struct kobject *parent;
-+	const struct attribute **pattr;
++	int pos = 0;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
 +
-+	init_completion(&devt->devt_kobj_release_compl);
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
 +
-+	if (devt->parent != NULL)
-+		parent = &devt->parent->devt_kobj;
-+	else
-+		parent = scst_handlers_kobj;
-+
-+	devt->devt_kobj_initialized = 1;
-+
-+	retval = kobject_init_and_add(&devt->devt_kobj, &scst_devt_ktype,
-+			parent, devt->name);
-+	if (retval != 0) {
-+		PRINT_ERROR("Can't add devt %s to sysfs", devt->name);
++	if (mutex_lock_interruptible(&virt_dev->vdev_sysfs_mutex) != 0) {
++		pos = -EINTR;
 +		goto out;
 +	}
 +
-+	/*
-+	 * In case of errors there's no need for additional cleanup, because
-+	 * it will be done by the _put function() called by the caller.
-+	 */
++	pos = sprintf(buf, "%lld\n", virt_dev->file_size / 1024 / 1024);
 +
-+	if (devt->add_device != NULL) {
-+		retval = sysfs_create_file(&devt->devt_kobj,
-+				&scst_devt_mgmt.attr);
-+		if (retval != 0) {
-+			PRINT_ERROR("Can't add mgmt attr for dev handler %s",
-+				devt->name);
-+			goto out;
-+		}
-+	} else if (devt->pass_through) {
-+		retval = sysfs_create_file(&devt->devt_kobj,
-+				&scst_devt_pass_through_mgmt.attr);
-+		if (retval != 0) {
-+			PRINT_ERROR("Can't add mgmt attr for dev handler %s",
-+				devt->name);
-+			goto out;
-+		}
-+
-+		retval = sysfs_create_file(&devt->devt_kobj,
-+				&scst_devt_pass_through.attr);
-+		if (retval != 0) {
-+			PRINT_ERROR("Can't add pass_through attr for dev "
-+				"handler %s", devt->name);
-+			goto out;
-+		}
-+	}
-+
-+	pattr = devt->devt_attrs;
-+	if (pattr != NULL) {
-+		while (*pattr != NULL) {
-+			retval = sysfs_create_file(&devt->devt_kobj, *pattr);
-+			if (retval != 0) {
-+				PRINT_ERROR("Can't add devt attr %s for dev "
-+					"handler %s", (*pattr)->name,
-+					devt->name);
-+				goto out;
-+			}
-+			pattr++;
-+		}
-+	}
-+
-+#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
-+	if (devt->trace_flags != NULL) {
-+		retval = sysfs_create_file(&devt->devt_kobj,
-+				&devt_trace_attr.attr);
-+		if (retval != 0) {
-+			PRINT_ERROR("Can't add devt trace_flag for dev "
-+				"handler %s", devt->name);
-+			goto out;
-+		}
-+	}
-+#endif
++	mutex_unlock(&virt_dev->vdev_sysfs_mutex);
 +
 +out:
-+	return retval;
++	return pos;
 +}
 +
-+void scst_devt_sysfs_put(struct scst_dev_type *devt)
++static ssize_t vdisk_sysfs_blocksize_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	pos = sprintf(buf, "%d\n%s", (int)virt_dev->block_size,
++		(virt_dev->block_size == DEF_DISK_BLOCKSIZE) ? "" :
++			SCST_SYSFS_KEY_MARK "\n");
++	return pos;
++}
++
++static ssize_t vdisk_sysfs_rd_only_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	pos = sprintf(buf, "%d\n%s", virt_dev->rd_only ? 1 : 0,
++		(virt_dev->rd_only == DEF_RD_ONLY) ? "" :
++			SCST_SYSFS_KEY_MARK "");
++	return pos;
++}
++
++static ssize_t vdisk_sysfs_wt_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	pos = sprintf(buf, "%d\n%s", virt_dev->wt_flag ? 1 : 0,
++		(virt_dev->wt_flag == DEF_WRITE_THROUGH) ? "" :
++			SCST_SYSFS_KEY_MARK "");
++	return pos;
++}
++
++static ssize_t vdisk_sysfs_nv_cache_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	pos = sprintf(buf, "%d\n%s", virt_dev->nv_cache ? 1 : 0,
++		(virt_dev->nv_cache == DEF_NV_CACHE) ? "" :
++			SCST_SYSFS_KEY_MARK "");
++	return pos;
++}
++
++static ssize_t vdisk_sysfs_o_direct_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	pos = sprintf(buf, "%d\n%s", virt_dev->o_direct_flag ? 1 : 0,
++		(virt_dev->o_direct_flag == DEF_O_DIRECT) ? "" :
++			SCST_SYSFS_KEY_MARK "");
++	return pos;
++}
++
++static ssize_t vdisk_sysfs_removable_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	pos = sprintf(buf, "%d\n", virt_dev->removable ? 1 : 0);
++
++	if ((virt_dev->dev->type != TYPE_ROM) &&
++	    (virt_dev->removable != DEF_REMOVABLE))
++		pos += sprintf(&buf[pos], "%s\n", SCST_SYSFS_KEY_MARK);
++	return pos;
++}
++
++static ssize_t vdev_sysfs_filename_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	if (mutex_lock_interruptible(&virt_dev->vdev_sysfs_mutex) != 0) {
++		pos = -EINTR;
++		goto out;
++	}
++
++	pos = sprintf(buf, "%s\n", vdev_get_filename(virt_dev));
++
++	if (virt_dev->dev->type != TYPE_ROM)
++		pos += sprintf(&buf[pos], "%s\n", SCST_SYSFS_KEY_MARK);
++
++	mutex_unlock(&virt_dev->vdev_sysfs_mutex);
++
++out:
++	return pos;
++}
++
++static ssize_t vdisk_sysfs_resync_size_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	res = vdisk_resync_size(virt_dev);
++	if (res != 0)
++		goto out;
++
++	res = count;
++
++out:
++	return res;
++}
++
++static ssize_t vdev_sysfs_t10_dev_id_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res, i;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	write_lock_bh(&vdisk_t10_dev_id_rwlock);
++
++	if ((count > sizeof(virt_dev->t10_dev_id)) ||
++	    ((count == sizeof(virt_dev->t10_dev_id)) &&
++	     (buf[count-1] != '\n'))) {
++		PRINT_ERROR("T10 device id is too long (max %zd "
++			"characters)", sizeof(virt_dev->t10_dev_id)-1);
++		res = -EINVAL;
++		goto out_unlock;
++	}
++
++	memset(virt_dev->t10_dev_id, 0, sizeof(virt_dev->t10_dev_id));
++	memcpy(virt_dev->t10_dev_id, buf, count);
++
++	i = 0;
++	while (i < sizeof(virt_dev->t10_dev_id)) {
++		if (virt_dev->t10_dev_id[i] == '\n') {
++			virt_dev->t10_dev_id[i] = '\0';
++			break;
++		}
++		i++;
++	}
++
++	virt_dev->t10_dev_id_set = 1;
++
++	res = count;
++
++	PRINT_INFO("T10 device id for device %s changed to %s", virt_dev->name,
++		virt_dev->t10_dev_id);
++
++out_unlock:
++	write_unlock_bh(&vdisk_t10_dev_id_rwlock);
++	return res;
++}
++
++static ssize_t vdev_sysfs_t10_dev_id_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	read_lock_bh(&vdisk_t10_dev_id_rwlock);
++	pos = sprintf(buf, "%s\n%s", virt_dev->t10_dev_id,
++		virt_dev->t10_dev_id_set ? SCST_SYSFS_KEY_MARK "\n" : "");
++	read_unlock_bh(&vdisk_t10_dev_id_rwlock);
++	return pos;
++}
++
++static ssize_t vdev_sysfs_usn_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++	struct scst_device *dev;
++	struct scst_vdisk_dev *virt_dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++	virt_dev = (struct scst_vdisk_dev *)dev->dh_priv;
++
++	pos = sprintf(buf, "%s\n", virt_dev->usn);
++	return pos;
++}
++
++static int __init init_scst_vdisk(struct scst_dev_type *devtype)
++{
++	int res = 0;
++
++	devtype->module = THIS_MODULE;
++
++	res = scst_register_virtual_dev_driver(devtype);
++	if (res < 0)
++		goto out;
++
++out:
++	return res;
++
++}
++
++static void exit_scst_vdisk(struct scst_dev_type *devtype)
 +{
 +
-+	if (devt->devt_kobj_initialized) {
-+		int rc;
++	mutex_lock(&scst_vdisk_mutex);
++	while (1) {
++		struct scst_vdisk_dev *virt_dev;
 +
-+		kobject_del(&devt->devt_kobj);
-+		kobject_put(&devt->devt_kobj);
++		if (list_empty(&vdev_list))
++			break;
 +
-+		rc = wait_for_completion_timeout(&devt->devt_kobj_release_compl, HZ);
-+		if (rc == 0) {
-+			PRINT_INFO("Waiting for releasing sysfs entry "
-+				"for dev handler template %s...", devt->name);
-+			wait_for_completion(&devt->devt_kobj_release_compl);
-+			PRINT_INFO("Done waiting for releasing sysfs entry "
-+				"for dev handler template %s", devt->name);
-+		}
-+	} else
-+		scst_devt_cleanup(devt);
++		virt_dev = list_entry(vdev_list.next, typeof(*virt_dev),
++				vdev_list_entry);
++
++		vdev_del_device(virt_dev);
++	}
++	mutex_unlock(&scst_vdisk_mutex);
++
++	scst_unregister_virtual_dev_driver(devtype);
 +	return;
 +}
 +
-+static DEFINE_MUTEX(scst_sysfs_user_info_mutex);
-+
-+/* All protected by scst_sysfs_user_info_mutex */
-+static LIST_HEAD(scst_sysfs_user_info_list);
-+static uint32_t scst_sysfs_info_cur_cookie;
-+
-+/* scst_sysfs_user_info_mutex supposed to be held */
-+static struct scst_sysfs_user_info *scst_sysfs_user_find_info(uint32_t cookie)
++static int __init init_scst_vdisk_driver(void)
 +{
-+	struct scst_sysfs_user_info *info, *res = NULL;
++	int res;
 +
-+	list_for_each_entry(info, &scst_sysfs_user_info_list,
-+			info_list_entry) {
-+		if (info->info_cookie == cookie) {
-+			res = info;
-+			break;
-+		}
-+	}
-+	return res;
-+}
-+
-+/**
-+ * scst_sysfs_user_get_info() - get user_info
-+ *
-+ * Finds the user_info based on cookie and mark it as received the reply by
-+ * setting for it flag info_being_executed.
-+ *
-+ * Returns found entry or NULL.
-+ */
-+struct scst_sysfs_user_info *scst_sysfs_user_get_info(uint32_t cookie)
-+{
-+	struct scst_sysfs_user_info *res = NULL;
-+
-+	mutex_lock(&scst_sysfs_user_info_mutex);
-+
-+	res = scst_sysfs_user_find_info(cookie);
-+	if (res != NULL) {
-+		if (!res->info_being_executed)
-+			res->info_being_executed = 1;
-+	}
-+
-+	mutex_unlock(&scst_sysfs_user_info_mutex);
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_sysfs_user_get_info);
-+
-+/**
-+ ** Helper functionality to help target drivers and dev handlers support
-+ ** sending events to user space and wait for their completion in a safe
-+ ** manner. See samples how to use it in iscsi-scst or scst_user.
-+ **/
-+
-+/**
-+ * scst_sysfs_user_add_info() - create and add user_info in the global list
-+ *
-+ * Creates an info structure and adds it in the info_list.
-+ * Returns 0 and out_info on success, error code otherwise.
-+ */
-+int scst_sysfs_user_add_info(struct scst_sysfs_user_info **out_info)
-+{
-+	int res = 0;
-+	struct scst_sysfs_user_info *info;
-+
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (info == NULL) {
-+		PRINT_ERROR("Unable to allocate sysfs user info (size %zd)",
-+			sizeof(*info));
++	vdisk_thr_cachep = KMEM_CACHE(scst_vdisk_thr, SCST_SLAB_FLAGS);
++	if (vdisk_thr_cachep == NULL) {
 +		res = -ENOMEM;
 +		goto out;
 +	}
 +
-+	mutex_lock(&scst_sysfs_user_info_mutex);
-+
-+	while ((info->info_cookie == 0) ||
-+	       (scst_sysfs_user_find_info(info->info_cookie) != NULL))
-+		info->info_cookie = scst_sysfs_info_cur_cookie++;
-+
-+	init_completion(&info->info_completion);
-+
-+	list_add_tail(&info->info_list_entry, &scst_sysfs_user_info_list);
-+	info->info_in_list = 1;
-+
-+	*out_info = info;
-+
-+	mutex_unlock(&scst_sysfs_user_info_mutex);
-+
-+out:
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_sysfs_user_add_info);
-+
-+/**
-+ * scst_sysfs_user_del_info - delete and frees user_info
-+ */
-+void scst_sysfs_user_del_info(struct scst_sysfs_user_info *info)
-+{
-+
-+	mutex_lock(&scst_sysfs_user_info_mutex);
-+
-+	if (info->info_in_list)
-+		list_del(&info->info_list_entry);
-+
-+	mutex_unlock(&scst_sysfs_user_info_mutex);
-+
-+	kfree(info);
-+	return;
-+}
-+EXPORT_SYMBOL_GPL(scst_sysfs_user_del_info);
-+
-+/*
-+ * Returns true if the reply received and being processed by another part of
-+ * the kernel, false otherwise. Also removes the user_info from the list to
-+ * fix for the user space that it missed the timeout.
-+ */
-+static bool scst_sysfs_user_info_executing(struct scst_sysfs_user_info *info)
-+{
-+	bool res;
-+
-+	mutex_lock(&scst_sysfs_user_info_mutex);
-+
-+	res = info->info_being_executed;
-+
-+	if (info->info_in_list) {
-+		list_del(&info->info_list_entry);
-+		info->info_in_list = 0;
++	blockio_work_cachep = KMEM_CACHE(scst_blockio_work, SCST_SLAB_FLAGS);
++	if (blockio_work_cachep == NULL) {
++		res = -ENOMEM;
++		goto out_free_vdisk_cache;
 +	}
 +
-+	mutex_unlock(&scst_sysfs_user_info_mutex);
-+	return res;
-+}
-+
-+/**
-+ * scst_wait_info_completion() - wait an user space event's completion
-+ *
-+ * Waits for the info request been completed by user space at most timeout
-+ * jiffies. If the reply received before timeout and being processed by
-+ * another part of the kernel, i.e. scst_sysfs_user_info_executing()
-+ * returned true, waits for it to complete indefinitely.
-+ *
-+ * Returns status of the request completion.
-+ */
-+int scst_wait_info_completion(struct scst_sysfs_user_info *info,
-+	unsigned long timeout)
-+{
-+	int res, rc;
-+
-+	TRACE_DBG("Waiting for info %p completion", info);
-+
-+	while (1) {
-+		rc = wait_for_completion_interruptible_timeout(
-+			&info->info_completion, timeout);
-+		if (rc > 0) {
-+			TRACE_DBG("Waiting for info %p finished with %d",
-+				info, rc);
-+			break;
-+		} else if (rc == 0) {
-+			if (!scst_sysfs_user_info_executing(info)) {
-+				PRINT_ERROR("Timeout waiting for user "
-+					"space event %p", info);
-+				res = -EBUSY;
-+				goto out;
-+			} else {
-+				/* Req is being executed in the kernel */
-+				TRACE_DBG("Keep waiting for info %p completion",
-+					info);
-+				wait_for_completion(&info->info_completion);
-+				break;
-+			}
-+		} else if (rc != -ERESTARTSYS) {
-+				res = rc;
-+				PRINT_ERROR("wait_for_completion() failed: %d",
-+					res);
-+				goto out;
-+		} else {
-+			TRACE_DBG("Waiting for info %p finished with %d, "
-+				"retrying", info, rc);
-+		}
++	if (num_threads < 1) {
++		PRINT_ERROR("num_threads can not be less than 1, use "
++			"default %d", DEF_NUM_THREADS);
++		num_threads = DEF_NUM_THREADS;
 +	}
 +
-+	TRACE_DBG("info %p, status %d", info, info->info_status);
-+	res = info->info_status;
++	vdisk_file_devtype.threads_num = num_threads;
++	vcdrom_devtype.threads_num = num_threads;
++
++	atomic_set(&nullio_thr_data.hdr.ref, 1); /* never destroy it */
++
++	res = init_scst_vdisk(&vdisk_file_devtype);
++	if (res != 0)
++		goto out_free_slab;
++
++	res = init_scst_vdisk(&vdisk_blk_devtype);
++	if (res != 0)
++		goto out_free_vdisk;
++
++	res = init_scst_vdisk(&vdisk_null_devtype);
++	if (res != 0)
++		goto out_free_blk;
++
++	res = init_scst_vdisk(&vcdrom_devtype);
++	if (res != 0)
++		goto out_free_null;
 +
 +out:
 +	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_wait_info_completion);
 +
-+int __init scst_sysfs_init(void)
-+{
-+	int retval = 0;
++out_free_null:
++	exit_scst_vdisk(&vdisk_null_devtype);
 +
-+	retval = kobject_init_and_add(&scst_sysfs_root_kobj,
-+			&scst_sysfs_root_ktype, kernel_kobj, "%s", "scst_tgt");
-+	if (retval != 0)
-+		goto sysfs_root_add_error;
++out_free_blk:
++	exit_scst_vdisk(&vdisk_blk_devtype);
 +
-+	scst_targets_kobj = kobject_create_and_add("targets",
-+				&scst_sysfs_root_kobj);
-+	if (scst_targets_kobj == NULL)
-+		goto targets_kobj_error;
++out_free_vdisk:
++	exit_scst_vdisk(&vdisk_file_devtype);
 +
-+	scst_devices_kobj = kobject_create_and_add("devices",
-+				&scst_sysfs_root_kobj);
-+	if (scst_devices_kobj == NULL)
-+		goto devices_kobj_error;
++out_free_slab:
++	kmem_cache_destroy(blockio_work_cachep);
 +
-+	scst_sgv_kobj = kzalloc(sizeof(*scst_sgv_kobj), GFP_KERNEL);
-+	if (scst_sgv_kobj == NULL)
-+		goto sgv_kobj_error;
-+
-+	retval = kobject_init_and_add(scst_sgv_kobj, &sgv_ktype,
-+			&scst_sysfs_root_kobj, "%s", "sgv");
-+	if (retval != 0)
-+		goto sgv_kobj_add_error;
-+
-+	scst_handlers_kobj = kobject_create_and_add("handlers",
-+					&scst_sysfs_root_kobj);
-+	if (scst_handlers_kobj == NULL)
-+		goto handlers_kobj_error;
-+
-+out:
-+	return retval;
-+
-+handlers_kobj_error:
-+	kobject_del(scst_sgv_kobj);
-+
-+sgv_kobj_add_error:
-+	kobject_put(scst_sgv_kobj);
-+
-+sgv_kobj_error:
-+	kobject_del(scst_devices_kobj);
-+	kobject_put(scst_devices_kobj);
-+
-+devices_kobj_error:
-+	kobject_del(scst_targets_kobj);
-+	kobject_put(scst_targets_kobj);
-+
-+targets_kobj_error:
-+	kobject_del(&scst_sysfs_root_kobj);
-+
-+sysfs_root_add_error:
-+	kobject_put(&scst_sysfs_root_kobj);
-+
-+	if (retval == 0)
-+		retval = -EINVAL;
++out_free_vdisk_cache:
++	kmem_cache_destroy(vdisk_thr_cachep);
 +	goto out;
 +}
 +
-+void scst_sysfs_cleanup(void)
++static void __exit exit_scst_vdisk_driver(void)
 +{
++	exit_scst_vdisk(&vdisk_null_devtype);
++	exit_scst_vdisk(&vdisk_blk_devtype);
++	exit_scst_vdisk(&vdisk_file_devtype);
++	exit_scst_vdisk(&vcdrom_devtype);
 +
-+	PRINT_INFO("%s", "Exiting SCST sysfs hierarchy...");
-+
-+	kobject_del(scst_sgv_kobj);
-+	kobject_put(scst_sgv_kobj);
-+
-+	kobject_del(scst_devices_kobj);
-+	kobject_put(scst_devices_kobj);
-+
-+	kobject_del(scst_targets_kobj);
-+	kobject_put(scst_targets_kobj);
-+
-+	kobject_del(scst_handlers_kobj);
-+	kobject_put(scst_handlers_kobj);
-+
-+	kobject_del(&scst_sysfs_root_kobj);
-+	kobject_put(&scst_sysfs_root_kobj);
-+
-+	wait_for_completion(&scst_sysfs_root_release_completion);
-+	/*
-+	 * There is a race, when in the release() schedule happens just after
-+	 * calling complete(), so if we exit and unload scst module immediately,
-+	 * there will be oops there. So let's give it a chance to quit
-+	 * gracefully. Unfortunately, current kobjects implementation
-+	 * doesn't allow better ways to handle it.
-+	 */
-+	msleep(3000);
-+
-+	PRINT_INFO("%s", "Exiting SCST sysfs hierarchy done");
-+	return;
++	kmem_cache_destroy(blockio_work_cachep);
++	kmem_cache_destroy(vdisk_thr_cachep);
 +}
++
++module_init(init_scst_vdisk_driver);
++module_exit(exit_scst_vdisk_driver);
++
++MODULE_AUTHOR("Vladislav Bolkhovitin & Leonid Stoljar");
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("SCSI disk (type 0) and CDROM (type 5) dev handler for "
++	"SCST using files on file systems or block devices");
++MODULE_VERSION(SCST_VERSION_STRING);
 
