@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab0DMSUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 14:20:13 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:53876 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab0DMSUL (ORCPT
+	id S1753484Ab0DMSUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 14:20:38 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:19598 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab0DMSUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 14:20:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ks6g0c2TxBAxtp8vXhMBVs14eKn7/WYfWXBypsE+Xw61ESrOK1N1Qz/dOtJVUlVBIt
-         /yjkn0iFWdbQL7N/BsXPthN2heWzNGhwDaNEjl5SYJDkk9GUVsTERWd1uF14CygtxR/q
-         MwdPNa0nm/vEXuu48Xi8MqkBK6BRPoXvxzFIc=
-Date: Tue, 13 Apr 2010 20:22:48 +0200
-From: Richard Zidlicky <rz@linux-m68k.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.33.2 does not boot on Atom?
-Message-ID: <20100413182248.GA8468@linux-m68k.org>
-References: <20100406205509.GA12034@linux-m68k.org> <20100412061604.GB31112@kroah.com> <20100413090952.GA17227@linux-m68k.org> <20100413132802.GC15247@kroah.com>
+	Tue, 13 Apr 2010 14:20:37 -0400
+Date: Tue, 13 Apr 2010 14:19:37 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Manfred Spraul <manfred@colorfullife.com>, zach.brown@oracle.com,
+       jens.axboe@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ipc semaphores: reduce ipc_lock contention in
+ semtimedop
+Message-ID: <20100413181937.GM13327@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Nick Piggin <npiggin@suse.de>,
+	Manfred Spraul <manfred@colorfullife.com>, zach.brown@oracle.com,
+	jens.axboe@oracle.com, linux-kernel@vger.kernel.org
+References: <1271098163-3663-1-git-send-email-chris.mason@oracle.com>
+ <1271098163-3663-2-git-send-email-chris.mason@oracle.com>
+ <4BC4A6B2.1090906@colorfullife.com>
+ <20100413173941.GI13327@think>
+ <20100413180945.GD5683@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100413132802.GC15247@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100413180945.GD5683@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4BC4B5E4.008E:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 06:28:02AM -0700, Greg KH wrote:
-> On Tue, Apr 13, 2010 at 11:09:52AM +0200, Richard Zidlicky wrote:
-> > On Sun, Apr 11, 2010 at 11:16:05PM -0700, Greg KH wrote:
-> > > On Tue, Apr 06, 2010 at 10:55:09PM +0200, Richard Zidlicky wrote:
-> > > > Hi,
-> > > > 
-> > > > I have been compiling my own kernels since ages and switched from 2.6.32.8 to 
-> > > > 2.6.33.2 now.
-> > > > Same procedure like allways - copied .config to new buildtree, make menuconfig
-> > > > (almost nothing changed in config), installed the new kernel on 2 machines.
+On Wed, Apr 14, 2010 at 04:09:45AM +1000, Nick Piggin wrote:
+> On Tue, Apr 13, 2010 at 01:39:41PM -0400, Chris Mason wrote:
+> > On Tue, Apr 13, 2010 at 07:15:30PM +0200, Manfred Spraul wrote:
+> > > Hi Chris,
 > > > 
-> > > Oops, that's the problem, you need to do 'make oldconfig' to ensure you
-> > > didn't miss anything, and to adjust any new defaults.
+> > > 
+> > > On 04/12/2010 08:49 PM, Chris Mason wrote:
+> > > >  /*
+> > > >+ * when a semaphore is modified, we want to retry the series of operations
+> > > >+ * for anyone that was blocking on that semaphore.  This breaks down into
+> > > >+ * a few different common operations:
+> > > >+ *
+> > > >+ * 1) One modification releases one or more waiters for zero.
+> > > >+ * 2) Many waiters are trying to get a single lock, only one will get it.
+> > > >+ * 3) Many modifications to the count will succeed.
+> > > >+ *
+> > > Have you thought about odd corner cases:
+> > > Nick noticed the last time that it is possible to wait for arbitrary values:
+> > > in one semop:
+> > >     - decrease semaphore 5 by 10
+> > >     - wait until semaphore 5 is 0
+> > >     - increase semaphore 5 by 10.
 > > 
-> > I can confirm that "make oldconfig" does not fix the problem.
+> > Do you mean within a single sop array doing all three of these?  I don't
+> > know if the sort is going to leave the three operations on semaphore 5
+> > in the same order (it probably won't).
 > > 
-> > Grub appears to load the kernel (at least it does not come back with an error as it otherwise
-> > would), cursor in the topleft corner and absolutely no activity. 
-> > no reaction to ctrl-alt-del or magic keys. For all other kernels I would see at least the
-> > "uncompressing kerne.." message, not here.
+> > But I could change that by having it include the slot in the original
+> > sop array in the sorting.  That way if we have duplicate semnums in the
+> > array, they will end up in the same position relative to each other in
+> > the sorted result.
+> > 
+> > (ewwww ;)
 > 
-> Try asking on a Fedora kernel list as this might just be a config issue
-> with the way modesetting is set up.
+> I had a bit of a hack at doing per-semaphore stuff when I was looking
+> at the first optimization, but it was tricky to make it work.
+> 
+> The other thing I don't know if your patch gets right is requeueing on
+> of the operations. When you requeue from one list to another, then you
+> seem to lose ordering with other pending operations, so that would
+> seem to break the API as well (can't remember if the API strictly
+> mandates FIFO, but anyway it can open up starvation cases).
 
-it is a clean kernel.org kernel, with early printk and I tried playing with 
-various (no)rhgb noquiet options just to be sure. So this does really appear to
-be something that happens in the earliest bootstages before uncompressing and
-can not think how it could be Fedora's fault - it does not get anywhere close
-to touching the initramd image.
-The only way I can proceed is try some kind of bisecting.. real bisect won't
-work as the wlan connection is painfully slow with the only working kernel
-taht I have installed on that computer.
+I don't see anything in the docs about the FIFO order.  I could add an
+extra sort on sequence number pretty easily, but is the starvation case
+really that bad?
 
-Btw I have filled a Fedora bug against a 2.6.32.11-fedora kernel with broken
-kms but afaics this appears to be totally unrelated.
+> 
+> I was looking at doing a sequence number to be able to sort these, but
+> it ended up getting over complex (and SAP was only using simple ops so
+> it didn't seem to need much better).
+> 
+> We want to be careful not to change semantics at all. And it gets
+> tricky quickly :( What about Zach's simpler wakeup API?
 
-Richard
+Yeah, that's why my patches include code to handle userland sending
+duplicate semids.  Zach's simpler API is cooking too, but if I can get
+this done without insane complexity it helps with more than just the
+post/wait oracle workload.
+
+-chris
+
