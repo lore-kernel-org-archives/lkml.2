@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab0DMUqi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 16:46:38 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:35432 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963Ab0DMUqh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 16:46:37 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zz98dN936eM62a3Lzz1202hzzz32i6bh467h2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L0U1PH-01-DSG-02
-X-M-MSG: 
-Date: Tue, 13 Apr 2010 22:45:19 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Stephane Eranian <eranian@google.com>
-Subject: Re: [osrc-patches] [PATCH 00/12] perf: introduce model specific
- events and AMD IBS
-Message-ID: <20100413204519.GX11907@erda.amd.com>
-References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
+	id S1753641Ab0DMUsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 16:48:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52228 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752793Ab0DMUsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 16:48:24 -0400
+Date: Tue, 13 Apr 2010 23:43:07 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Herbert Xu <herbert@gondor.hengli.com.au>,
+       Paul Moore <paul.moore@hp.com>,
+       David Woodhouse <David.Woodhouse@intel.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] tun: orphan an skb on tx
+Message-ID: <20100413204307.GC3582@redhat.com>
+References: <20100413145944.GA7716@redhat.com> <4BC48F79.5090409@siemens.com> <1271176838.16881.537.camel@edumazet-laptop> <20100413173919.GC26011@redhat.com> <1271183463.16881.545.camel@edumazet-laptop> <20100413202548.GA3582@redhat.com> <1271191086.16881.570.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 13 Apr 2010 20:45:20.0401 (UTC) FILETIME=[3B64E010:01CADB4A]
-X-Reverse-DNS: unknown
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1271191086.16881.570.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.04.10 22:23:09, Robert Richter wrote:
-> This patch series introduces model specific events and impments AMD
-> IBS (Instruction Based Sampling) for perf_events.
+On Tue, Apr 13, 2010 at 10:38:06PM +0200, Eric Dumazet wrote:
+> Le mardi 13 avril 2010 à 23:25 +0300, Michael S. Tsirkin a écrit :
+> > On Tue, Apr 13, 2010 at 08:31:03PM +0200, Eric Dumazet wrote:
+> > > Le mardi 13 avril 2010 à 20:39 +0300, Michael S. Tsirkin a écrit :
+> > > 
+> > > > > When a socket with inflight tx packets is closed, we dont block the
+> > > > > close, we only delay the socket freeing once all packets were delivered
+> > > > > and freed.
+> > > > > 
+> > > > 
+> > > > Which is wrong, since this is under userspace control, so you get
+> > > > unkillable processes.
+> > > > 
+> > > 
+> > > We do not get unkillable processes, at least with sockets I was thinking
+> > > about (TCP/UDP ones).
+> > > 
+> > > Maybe tun sockets can behave the same ?
+> > 
+> > Looks like that's what my patch does: ip_rcv seems to call
+> > skb_orphan too.
+> 
+> Well, I was speaking of tx side, you speak of receiving side.
 
-The patch set triggers this warning in perf_prepare_sample():
+Point is, both ip_rcv and my patch call skb_orphan.
 
- WARN_ON_ONCE(size & (sizeof(u64)-1))
+> An external flood (coming from another domain) is another problem.
+> 
+> A sender might flood the 'network' inside our domain. How can we
+> reasonably limit the sender ?
+> 
+> Maybe the answer is 'We can not', but it should be stated somewhere, so
+> that someone can address this point later.
+> 
 
-Should a raw data sample padded to 64 bit?
-
--Robert
+And whatever's done should ideally work for tap to IP
+and IP to IP sockets as well, not just tap to tap.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
-
+MST
