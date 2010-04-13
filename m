@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab0DMQ2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 12:28:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21092 "EHLO mga02.intel.com"
+	id S1753410Ab0DMQc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 12:32:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:33223 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753048Ab0DMQ2R convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 12:28:17 -0400
+	id S1753302Ab0DMQcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 12:32:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,198,1270450800"; 
-   d="scan'208";a="508767572"
-From: "Tung, Chien Tin" <chien.tin.tung@intel.com>
-To: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-       "rolandd@cisco.com" <rolandd@cisco.com>,
-       "peterz@infradead.org" <peterz@infradead.org>,
-       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
-       Eric B Munson <ebmunson@us.ibm.com>,
-       Steve Wise <swise@opengridcomputing.com>
-Date: Tue, 13 Apr 2010 09:28:14 -0700
-Subject: RE: Socket Direct Protocol: help (2)
-Thread-Topic: Socket Direct Protocol: help (2)
-Thread-Index: AcraTaoAP5dQHyzdQbqIjnF2p6VPCAA1vn+A
-Message-ID: <2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com>
-References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
- <1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-In-Reply-To: <1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="265157689"
+From: "Sean Hefty" <sean.hefty@intel.com>
+To: "'Tetsuo Handa'" <penguin-kernel@I-love.SAKURA.ne.jp>, <amwang@redhat.com>,
+       <rolandd@cisco.com>
+Cc: <opurdila@ixiacom.com>, <eric.dumazet@gmail.com>, <netdev@vger.kernel.org>,
+       <nhorman@tuxdriver.com>, <davem@davemloft.net>, <ebiederm@xmission.com>,
+       <linux-kernel@vger.kernel.org>
+References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain>	<20100412100816.5302.74919.sendpatchset@localhost.localdomain>	<201004130121.o3D1Lhh7099571@www262.sakura.ne.jp>	<4BC41994.7030707@redhat.com>	<4BC42FE0.4040601@redhat.com> <201004132207.GAJ52684.OJFtMQVFHOSFLO@I-love.SAKURA.ne.jp>
+Subject: RE: [Patch 3/3] net: reserve ports for applications using fixed port numbers
+Date: Tue, 13 Apr 2010 09:32:22 -0700
+Message-ID: <21DAC78125424ED291B5D6477CFF9657@amr.corp.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcrbCkI/ai0piY/8RCejW5vd1CL7OgAG2xmw
+In-Reply-To: <201004132207.GAJ52684.OJFtMQVFHOSFLO@I-love.SAKURA.ne.jp>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->I add that in kernel space SDP debug the error is:
->
->command line: dmesg
->sdp_init_qp:95 sdp_sock( 2100:2 40720:0): recv sge's. capability: 4
->needed: 9
->sdp_init_qp:95 sdp_sock( 2100:2 41203:0): recv sge's. capability: 4
->needed: 9
->
->The structure sdp_init_qp() is defined in
->/usr/src/ofa_kernel-1.5.1/drivers/infiniband/ulp/sdp/sdp_cma.c (lines 76
->- 141)
+>Sean and Roland, is below patch correct?
+>inet_is_reserved_local_port() is the new function proposed in this patchset.
 
-NE020 supports 4 SGEs.  I don't know enough about SDP to know why it is
-using this calculation for # of send_sge:
+It looks correct to me.  I didn't test the patch series, but if I comment out
+the call to inet_is_reserved_local_port() in the provided below, the changes
+worked fine for me.
 
-#define SDP_MAX_RECV_SKB_FRAGS (PAGE_SIZE > 0x8000 ? 1 : 0x8000 / PAGE_SIZE)
-
-
->Could be a firmware problem?
-
-This is not a firmware problem.
-
-Chien
-
+Acked-by: Sean Hefty <sean.hefty@intel.com>
 
