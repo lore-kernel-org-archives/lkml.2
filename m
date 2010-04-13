@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab0DMQsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 12:48:12 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:35647 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364Ab0DMQsL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 12:48:11 -0400
-Date: Tue, 13 Apr 2010 18:48:05 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, amit.kucheria@canonical.com,
-       linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-       grant.likely@secretlab.ca, r.herring@freescale.com,
-       linux-arm-kernel@lists.infradead.org, bryan.wu@canonical.com,
-       valentin.longchamp@epfl.ch
-Subject: Re: [PATCH 2.6.34-rc4 2/8] mxc: Update GPIO for USB support on
- Freescale MX51 Babbage HW
-Message-ID: <20100413164805.GN30801@buzzloop.caiaq.de>
-References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-2-git-send-email-Dinh.Nguyen@freescale.com>
+	id S1753474Ab0DMQww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 12:52:52 -0400
+Received: from david.siemens.de ([192.35.17.14]:17266 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752063Ab0DMQwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 12:52:51 -0400
+Message-ID: <4BC4A139.3010605@siemens.com>
+Date: Tue, 13 Apr 2010 18:52:09 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271175030-3635-2-git-send-email-Dinh.Nguyen@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Herbert Xu <herbert@gondor.hengli.com.au>,
+       Paul Moore <paul.moore@hp.com>,
+       David Woodhouse <David.Woodhouse@intel.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] tun: orphan an skb on tx
+References: <20100413145944.GA7716@redhat.com>	 <4BC48F79.5090409@siemens.com> <1271176838.16881.537.camel@edumazet-laptop>
+In-Reply-To: <1271176838.16881.537.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 11:10:25AM -0500, Dinh.Nguyen@freescale.com wrote:
-> This patch is part of enabling USB for Freescale MX51 Babbage HW. This
-> patch updates the iomux pins for USB, and gpio line for reset the
-> USB hub on the MX51 Babbage HW.
+Eric Dumazet wrote:
+> Le mardi 13 avril 2010 à 17:36 +0200, Jan Kiszka a écrit :
+>> Michael S. Tsirkin wrote:
+>>> The following situation was observed in the field:
+>>> tap1 sends packets, tap2 does not consume them, as a result
+>>> tap1 can not be closed.
+>> And before that, tap1 may not be able to send further packets to anyone
+>> else on the bridge as its TX resources were blocked by tap2 - that's
+>> what we saw in the field.
+>>
 > 
-> This patch applies to 2.6.34-rc4.
-> 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/plat-mxc/ehci.c                    |    4 +++
->  arch/arm/plat-mxc/include/mach/iomux-mx51.h |   33 ++++++++++++++++----------
->  2 files changed, 24 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/arm/plat-mxc/ehci.c b/arch/arm/plat-mxc/ehci.c
-> index cb0b638..20eaddc 100644
-> --- a/arch/arm/plat-mxc/ehci.c
-> +++ b/arch/arm/plat-mxc/ehci.c
-> @@ -186,6 +186,10 @@ int mxc_set_usbcontrol(int port, unsigned int flags)
->  		return 0;
->  	}
->  #endif /* CONFIG_MACH_MX27 */
-> +#ifdef CONFIG_ARCH_MX5
-> +	/* Nothing needs to be done for MX5 here */
-> +	return 0;
-> +#endif
+> After the patch, tap1 is able to flood tap2, and tap3/tap4 not able to
+> send one single frame. Is it OK ?
 
-This needs a cpu_is_mx5() condition. For now that's just nit-picking,
-but once another platform is added, the statement will return where it
-shouldn't.
+I think if that's a real issue, you have to apply traffic shaping to the
+untrusted nodes. The existing flow-control scheme was fragile anyway as
+you had to translate packet lengths on TX side to packet counts on RX.
 
-Daniel
+Jan
 
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
