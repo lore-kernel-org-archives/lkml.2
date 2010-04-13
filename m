@@ -1,131 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab0DMJ6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 05:58:37 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:40970 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751679Ab0DMJ6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 05:58:35 -0400
-Date: Tue, 13 Apr 2010 10:58:15 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100413095815.GU25756@csn.ul.ie>
-References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
+	id S1752766Ab0DMKCD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 06:02:03 -0400
+Received: from stinky.trash.net ([213.144.137.162]:46005 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab0DMKCA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 06:02:00 -0400
+Message-ID: <4BC44117.80901@trash.net>
+Date: Tue, 13 Apr 2010 12:01:59 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1271117878-19274-1-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       shemminger@vyatta.com, bhutchings@solarflare.com, andreas@fatal.se,
+       hadi@cyberus.ca, hideaki@yoshifuji.org
+Subject: Re: [PATCH] xtables: make XT_ALIGN() usable in exported headers by
+ exporting __ALIGN_KERNEL()
+References: <20100407162245.GA4557@x200> <4BC437C6.8020602@trash.net>
+In-Reply-To: <4BC437C6.8020602@trash.net>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 10:17:58AM +1000, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
+Patrick McHardy wrote:
+> Alexey Dobriyan wrote:
+>> XT_ALIGN() was rewritten through ALIGN() by commit 42107f5009da223daa800d6da6904d77297ae829
+>> "netfilter: xtables: symmetric COMPAT_XT_ALIGN definition".
+>> ALIGN() is not exported in userspace headers, which created compile problem for tc(8)
+>> and will create problem for iptables(8).
+>>
+>> We can't export generic looking name ALIGN() but we can export less generic
+>> __ALIGN_KERNEL() (suggested by Ben Hutchings).
+>> Google knows nothing about __ALIGN_KERNEL().
+>>
+>> COMPAT_XT_ALIGN() changed for symmetry.
 > 
-> When we enter direct reclaim we may have used an arbitrary amount of stack
-> space, and hence enterring the filesystem to do writeback can then lead to
-> stack overruns. This problem was recently encountered x86_64 systems with
-> 8k stacks running XFS with simple storage configurations.
-> 
-> Writeback from direct reclaim also adversely affects background writeback. The
-> background flusher threads should already be taking care of cleaning dirty
-> pages, and direct reclaim will kick them if they aren't already doing work. If
-> direct reclaim is also calling ->writepage, it will cause the IO patterns from
-> the background flusher threads to be upset by LRU-order writeback from
-> pageout() which can be effectively random IO. Having competing sources of IO
-> trying to clean pages on the same backing device reduces throughput by
-> increasing the amount of seeks that the backing device has to do to write back
-> the pages.
-> 
+> Since there haven't been any objections, I've applied your patch.
 
-It's already known that the VM requesting specific pages be cleaned and
-reclaimed is a bad IO pattern but unfortunately it is still required by
-lumpy reclaim. This change would appear to break that although I haven't
-tested it to be 100% sure.
-
-Even without high-order considerations, this patch would appear to make
-fairly large changes to how direct reclaim behaves. It would no longer
-wait on page writeback for example so direct reclaim will return sooner
-than it did potentially going OOM if there were a lot of dirty pages and
-it made no progress during direct reclaim.
-
-> Hence for direct reclaim we should not allow ->writepages to be entered at all.
-> Set up the relevant scan_control structures to enforce this, and prevent
-> sc->may_writepage from being set in other places in the direct reclaim path in
-> response to other events.
-> 
-
-If an FS caller cannot re-enter the FS, it should be using GFP_NOFS
-instead of GFP_KERNEL.
-
-> Reported-by: John Berthels <john@humyo.com>
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  mm/vmscan.c |   13 ++++++-------
->  1 files changed, 6 insertions(+), 7 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index e0e5f15..5321ac4 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1826,10 +1826,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  		 * writeout.  So in laptop mode, write out the whole world.
->  		 */
->  		writeback_threshold = sc->nr_to_reclaim + sc->nr_to_reclaim / 2;
-> -		if (total_scanned > writeback_threshold) {
-> +		if (total_scanned > writeback_threshold)
->  			wakeup_flusher_threads(laptop_mode ? 0 : total_scanned);
-> -			sc->may_writepage = 1;
-> -		}
->  
->  		/* Take a nap, wait for some writeback to complete */
->  		if (!sc->hibernation_mode && sc->nr_scanned &&
-> @@ -1871,7 +1869,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->  {
->  	struct scan_control sc = {
->  		.gfp_mask = gfp_mask,
-> -		.may_writepage = !laptop_mode,
-> +		.may_writepage = 0,
->  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
->  		.may_unmap = 1,
->  		.may_swap = 1,
-> @@ -1893,7 +1891,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
->  						struct zone *zone, int nid)
->  {
->  	struct scan_control sc = {
-> -		.may_writepage = !laptop_mode,
-> +		.may_writepage = 0,
->  		.may_unmap = 1,
->  		.may_swap = !noswap,
->  		.swappiness = swappiness,
-> @@ -1926,7 +1924,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
->  {
->  	struct zonelist *zonelist;
->  	struct scan_control sc = {
-> -		.may_writepage = !laptop_mode,
-> +		.may_writepage = 0,
->  		.may_unmap = 1,
->  		.may_swap = !noswap,
->  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-> @@ -2567,7 +2565,8 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  	struct reclaim_state reclaim_state;
->  	int priority;
->  	struct scan_control sc = {
-> -		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
-> +		.may_writepage = (current_is_kswapd() &&
-> +					(zone_reclaim_mode & RECLAIM_WRITE)),
->  		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
->  		.may_swap = 1,
->  		.nr_to_reclaim = max_t(unsigned long, nr_pages,
-> -- 
-> 1.6.5
-> 
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+This breaks compilation by removing __ALIGN_MASK(). Please fix this up.
