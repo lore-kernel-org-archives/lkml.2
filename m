@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab0DMKQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 06:16:43 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36022 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752520Ab0DMKQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 06:16:41 -0400
-Subject: Re: [PATCH 07/39] lmb: Add lmb_find_area()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai <yinghai.lu@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
+	id S1752791Ab0DMKWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 06:22:55 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:43027 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab0DMKWw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 06:22:52 -0400
+Subject: Re: [PATCH 07/13] powerpc: Preemptible mmu_gather
+From: Peter Zijlstra <peterz@infradead.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <4BC4053D.2050805@zytor.com>
-References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
-	 <1270793048-23796-8-git-send-email-yinghai@kernel.org>
-	 <1271131543.13059.53.camel@pasglop>  <4BC3F317.7030702@oracle.com>
-	 <1271135239.13059.69.camel@pasglop> <4BC40074.6030604@oracle.com>
-	 <4BC4053D.2050805@zytor.com>
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+In-Reply-To: <1271121817.13059.19.camel@pasglop>
+References: <20100408191737.296180458@chello.nl>
+	 <20100408192722.901224587@chello.nl>  <1271121817.13059.19.camel@pasglop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Apr 2010 20:15:09 +1000
-Message-ID: <1271153709.13059.101.camel@pasglop>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 13 Apr 2010 12:22:23 +0200
+Message-ID: <1271154143.4807.1022.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-12 at 22:46 -0700, H. Peter Anvin wrote:
-> On 04/12/2010 10:26 PM, Yinghai wrote:
-> > 
-> > current generic lmb_find_area() is allocating from high to low.
-> > x86 32bit seems have problem with that.
+On Tue, 2010-04-13 at 11:23 +1000, Benjamin Herrenschmidt wrote:
+> >  static inline void arch_leave_lazy_mmu_mode(void)
+> >  {
+> > -     struct ppc64_tlb_batch *batch = &__get_cpu_var(ppc64_tlb_batch);
+> > +     struct ppc64_tlb_batch *batch = &get_cpu_var(ppc64_tlb_batch);
+> > +
+> > +     if (batch->active) {
+> > +             if (batch->index)
+> > +                     __flush_tlb_pending(batch);
+> > +             batch->active = 0;
+> > +     }
 > 
-> Presumably because it fills up ZONE_DMA.
+> Can index be > 0 if active == 0 ? I though not, which means you don't
+> need to add a test on active, do you ?
 
-I'm working on some LMB cleanups now, among others trying to take into
-account what I think are Yinghai requirements. Give me a few days.
+True I guess, but like this we avoid a write, doesn't really matter I
+suspect.
 
-For the specific problem above, my idea is to have the low level alloc
-function be able to take both low and high limits, so that x86 can
-figure out what's best for a given allocation.
+> I'm also pondering whether we should just stick something in the
+> task/thread struct and avoid that whole per-cpu manipulation including
+> the stuff in process.c in fact.
 
-Cheers,
-Ben.
+Can do, I can add batching similar to the generic code to the
+thread_info thingy.
 
+> Heh, maybe it's time to introduce thread vars ? :-) 
 
+Heh, that seems like a real good way to waste a lot of memory fast ;-)
