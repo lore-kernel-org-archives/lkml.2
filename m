@@ -1,103 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab0DMVCy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 17:02:54 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:19802 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab0DMVCv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 17:02:51 -0400
-Subject: Re: [PATCH -v2 2/2] x86,pci, acpi: Inherent BUSY flag when
-	setup_resource for root bus
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai <yinghai.lu@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, Andy Isaacson <adi@hexapodia.org>,
-       guenter.roeck@ericsson.com,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>
-In-Reply-To: <4BC39FAF.4030808@oracle.com>
-References: <20100409223532.GC11130@hexapodia.org>
-	 <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org>
-	 <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org>
-	 <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org>
-	 <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org>
-	 <4BC375D9.4040503@oracle.com> <20100412200224.GO11130@hexapodia.org>
-	 <4BC39FAF.4030808@oracle.com>
-Content-Type: text/plain
-Date: Tue, 13 Apr 2010 15:02:28 -0600
-Message-Id: <1271192548.6035.46.camel@dc7800.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1753883Ab0DMVDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 17:03:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45290 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752674Ab0DMVDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 17:03:10 -0400
+Date: Tue, 13 Apr 2010 17:03:53 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+       linux-kernel@vger.kernel.org, davej@redhat.com, kyle@redhat.com,
+       vgoyal@redhat.com, arjan@linux.intel.com
+Subject: [PATCH] kconfig: introduce nonint_oldconfig and
+	loose_nonint_oldconfig (v2)
+Message-ID: <20100413210352.GA31193@redhat.com>
+References: <20100413194747.GX31193@redhat.com> <20100413130031.d4dec19b.randy.dunlap@oracle.com> <20100413201759.GY31193@redhat.com> <4BC4D310.6060705@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BC4D310.6060705@oracle.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-12 at 15:33 -0700, Yinghai wrote:
-> So make pci root resource from _CRS honor the range We reserve in e820 below 1M
-> then  will not assign them to unsigned pci BAR
-> 
-> -v2: let pci_bus_alloc_resource() honor IORESOURCE_BUSY
->      driver can not use those range, so skip it
+This patch has been around for a long time in Fedora and Red Hat Enterprise   
+Linux kernels and it may be useful for others. The nonint_oldconfig target    
+will fail and print the unset config options while loose_nonint_oldconfig will
+simply let the config option unset. They're useful in distro kernel packages  
+where the config files are built using a combination of smaller config files. 
 
-This -v2 text doesn't belong in the changelog.  If you need it, it
-should be in a cover message so it doesn't clutter the permanent git
-logs.
+Arjan van de Ven wrote the initial nonint_config and Roland McGrath added the
+loose_nonint_oldconfig.
 
-> Index: linux-2.6/arch/x86/pci/acpi.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/pci/acpi.c
-> +++ linux-2.6/arch/x86/pci/acpi.c
-> @@ -175,6 +175,10 @@ setup_resource(struct acpi_resource *acp
->  			"conflicts with %s %pR\n",
->  			res, conflict->name, conflict);
->  	} else {
-> +		/* In case it falls in big reserved region */
-> +		if (res->parent->flags & IORESOURCE_BUSY)
-> +			res->flags |= IORESOURCE_BUSY;
-> +
->  		pci_bus_add_resource(info->bus, res, 0);
->  		info->res_num++;
->  		if (addr.translation_offset)
-> Index: linux-2.6/drivers/pci/bus.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/bus.c
-> +++ linux-2.6/drivers/pci/bus.c
-> @@ -103,6 +103,10 @@ pci_bus_alloc_resource(struct pci_bus *b
->  		if (!r)
->  			continue;
->  
-> +		/* Driver can not reserve it later, so don't use it */
-> +		if (r->flags & IORESOURCE_BUSY)
-> +			continue;
-> +
->  		/* type_mask must match */
->  		if ((res->flags ^ r->flags) & type_mask)
->  			continue;
+v2:
+- when -B and -b are used, return "2" so the reason can be distinguished from
+  other errors
 
-I think this makes sense, but I think it should be in two separate
-patches.  The first would be the pci_bus_alloc_resource() change, which
-is of interest to all architectures, with a changelog like this:
+Signed-off-by: Arjan van de Ven <arjan@redhat.com> [defunct email]
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-  PCI: don't allocate from a BUSY bus resource
-
-  Drivers typically use pci_request_regions() to reserve the resources
-  they use, but that fails if the resource is already busy.  Therefore,
-  we should ignore busy resources when we're assigning resources to a
-  device.
-
-and the second would be:
-
-  x86/PCI: host bridge windows inherit BUSY flag from parent
-
-  If a host bridge window falls inside a region the architecture has
-  marked busy, the window should inherit the busy flag so we don't
-  try to assign that region to a device.
-
-Acked-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-
-
+--- linus-2.6.orig/scripts/kconfig/Makefile	2010-04-13 16:30:47.000000000 -0400
++++ linus-2.6/scripts/kconfig/Makefile	2010-04-13 16:48:24.000000000 -0400
+@@ -69,6 +69,11 @@ localyesconfig: $(obj)/streamline_config
+ 	fi
+ 	$(Q)rm -f .tmp.config
+ 
++nonint_oldconfig: $(obj)/conf
++	$< -b $(Kconfig)
++loose_nonint_oldconfig: $(obj)/conf
++	$< -B $(Kconfig)
++
+ # Create new linux.pot file
+ # Adjust charset to UTF-8 in .po file to accept UTF-8 in Kconfig files
+ # The symlink is used to repair a deficiency in arch/um
+--- linus-2.6.orig/scripts/kconfig/conf.c	2010-04-13 16:30:47.000000000 -0400
++++ linus-2.6/scripts/kconfig/conf.c	2010-04-13 16:53:20.000000000 -0400
+@@ -16,6 +16,9 @@
+ #define LKC_DIRECT_LINK
+ #include "lkc.h"
+ 
++/* Return codes */
++#define EUNSETOPT	2	/* if -B is used and unset config options were found */
++
+ static void conf(struct menu *menu);
+ static void check_conf(struct menu *menu);
+ 
+@@ -23,6 +26,8 @@ enum {
+ 	ask_all,
+ 	ask_new,
+ 	ask_silent,
++	dont_ask,
++	dont_ask_dont_tell,
+ 	set_default,
+ 	set_yes,
+ 	set_mod,
+@@ -360,7 +365,10 @@ static void conf(struct menu *menu)
+ 
+ 		switch (prop->type) {
+ 		case P_MENU:
+-			if (input_mode == ask_silent && rootEntry != menu) {
++			if ((input_mode == ask_silent ||
++			     input_mode == dont_ask ||
++			     input_mode == dont_ask_dont_tell) &&
++			    rootEntry != menu) {
+ 				check_conf(menu);
+ 				return;
+ 			}
+@@ -406,6 +414,8 @@ conf_childs:
+ 		indent -= 2;
+ }
+ 
++static int return_value;
++
+ static void check_conf(struct menu *menu)
+ {
+ 	struct symbol *sym;
+@@ -418,10 +428,19 @@ static void check_conf(struct menu *menu
+ 	if (sym && !sym_has_value(sym)) {
+ 		if (sym_is_changable(sym) ||
+ 		    (sym_is_choice(sym) && sym_get_tristate_value(sym) == yes)) {
+-			if (!conf_cnt++)
+-				printf(_("*\n* Restart config...\n*\n"));
+-			rootEntry = menu_get_parent_menu(menu);
+-			conf(rootEntry);
++			if (input_mode == dont_ask ||
++			    input_mode == dont_ask_dont_tell) {
++				if (input_mode == dont_ask &&
++				    sym->name && !sym_is_choice_value(sym)) {
++					fprintf(stderr,"CONFIG_%s\n",sym->name);
++					return_value = EUNSETOPT;
++				}
++			} else {
++				if (!conf_cnt++)
++					printf(_("*\n* Restart config...\n*\n"));
++				rootEntry = menu_get_parent_menu(menu);
++				conf(rootEntry);
++			}
+ 		}
+ 	}
+ 
+@@ -439,7 +458,7 @@ int main(int ac, char **av)
+ 	bindtextdomain(PACKAGE, LOCALEDIR);
+ 	textdomain(PACKAGE);
+ 
+-	while ((opt = getopt(ac, av, "osdD:nmyrh")) != -1) {
++ 	while ((opt = getopt(ac, av, "osbBdD:nmyrh")) != -1) {
+ 		switch (opt) {
+ 		case 'o':
+ 			input_mode = ask_silent;
+@@ -448,6 +467,12 @@ int main(int ac, char **av)
+ 			input_mode = ask_silent;
+ 			sync_kconfig = 1;
+ 			break;
++		case 'b':
++			input_mode = dont_ask;
++			break;
++		case 'B':
++			input_mode = dont_ask_dont_tell;
++			break;
+ 		case 'd':
+ 			input_mode = set_default;
+ 			break;
+@@ -525,6 +550,8 @@ int main(int ac, char **av)
+ 	case ask_silent:
+ 	case ask_all:
+ 	case ask_new:
++	case dont_ask:
++	case dont_ask_dont_tell:
+ 		conf_read(NULL);
+ 		break;
+ 	case set_no:
+@@ -586,12 +613,16 @@ int main(int ac, char **av)
+ 		conf(&rootmenu);
+ 		input_mode = ask_silent;
+ 		/* fall through */
++	case dont_ask:
++	case dont_ask_dont_tell:
+ 	case ask_silent:
+ 		/* Update until a loop caused no more changes */
+ 		do {
+ 			conf_cnt = 0;
+ 			check_conf(&rootmenu);
+-		} while (conf_cnt);
++		} while (conf_cnt &&
++			 (input_mode != dont_ask &&
++			  input_mode != dont_ask_dont_tell));
+ 		break;
+ 	}
+ 
+@@ -613,5 +644,5 @@ int main(int ac, char **av)
+ 			exit(1);
+ 		}
+ 	}
+-	return 0;
++	return return_value;
+ }
