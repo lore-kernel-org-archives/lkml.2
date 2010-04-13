@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab0DMLHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 07:07:04 -0400
-Received: from de01.mail.all-tld.net ([195.140.232.8]:54848 "EHLO
-	de01.mail.all-tld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab0DMLHA convert rfc822-to-8bit (ORCPT
+	id S1753185Ab0DMLIX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 07:08:23 -0400
+Received: from stinky.trash.net ([213.144.137.162]:47197 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab0DMLIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 07:07:00 -0400
-Date: Tue, 13 Apr 2010 13:05:32 +0200
-From: Anders Larsen <al@alarsen.net>
-Subject: [at91] Save power by disabling the processor clock when CPU is idle
-To: patches@arm.linux.org.uk
-Cc: Andrew Victor <avictor.za@gmail.com>, linux-arm-kernel@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-X-Mailer: Balsa 2.3.14
-Message-Id: <1271156732l.25331l.7l@i-dmzi_al.realan.de>
+	Tue, 13 Apr 2010 07:08:22 -0400
+Message-ID: <4BC450A4.1010200@trash.net>
+Date: Tue, 13 Apr 2010 13:08:20 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-ALL-TLD-GmbH-Information: AEV Virus and Spam Secure Mail System
-X-ALL-TLD-GmbH-VirusScanner: Found to be clean
-X-ALL-TLD-GmbH-SpamCheck: 
-X-MailScanner-From: al@alarsen.net
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       shemminger@vyatta.com, bhutchings@solarflare.com, andreas@fatal.se,
+       hadi@cyberus.ca, hideaki@yoshifuji.org
+Subject: Re: [PATCH v2] xtables: make XT_ALIGN() usable in exported headers
+ by exporting __ALIGN_KERNEL()
+References: <20100407162245.GA4557@x200> <4BC437C6.8020602@trash.net> <4BC44117.80901@trash.net> <20100414120712.GA25686@x200>
+In-Reply-To: <20100414120712.GA25686@x200>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disable the processor clock when the CPU is idle.
+Alexey Dobriyan wrote:
+> XT_ALIGN() was rewritten through ALIGN() by commit 42107f5009da223daa800d6da6904d77297ae829
+> "netfilter: xtables: symmetric COMPAT_XT_ALIGN definition".
+> ALIGN() is not exported in userspace headers, which created compile problem for tc(8)
+> and will create problem for iptables(8).
+> 
+> We can't export generic looking name ALIGN() but we can export less generic
+> __ALIGN_KERNEL() (suggested by Ben Hutchings).
+> Google knows nothing about __ALIGN_KERNEL().
+> 
+> COMPAT_XT_ALIGN() changed for symmetry.
 
-This saves much more power than merely entering 'Wait for Interrupt' mode.
-Since JTAG-debugging doesn't work when the processor clock is switched off,
-make it conditional on CONFIG_DEBUG_KERNEL.
+I've already pushed your change out, could you send me an incremental
+fix please?
 
-Signed-off-by: Anders Larsen <al@alarsen.net>
-Cc: Andrew Victor <avictor.za@gmail.com>
----
-KernelVersion: 2.6.33
-
- arch/arm/mach-at91/include/mach/system.h |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-
-Index: b/arch/arm/mach-at91/include/mach/system.h
-===================================================================
---- a/arch/arm/mach-at91/include/mach/system.h
-+++ b/arch/arm/mach-at91/include/mach/system.h
-@@ -24,21 +24,24 @@
- #include <mach/hardware.h>
- #include <mach/at91_st.h>
- #include <mach/at91_dbgu.h>
-+#include <mach/at91_pmc.h>
- 
- static inline void arch_idle(void)
- {
-+#ifndef CONFIG_DEBUG_KERNEL
- 	/*
- 	 * Disable the processor clock.  The processor will be automatically
- 	 * re-enabled by an interrupt or by a reset.
- 	 */
--//	at91_sys_write(AT91_PMC_SCDR, AT91_PMC_PCK);
--
-+	at91_sys_write(AT91_PMC_SCDR, AT91_PMC_PCK);
-+#else
- 	/*
- 	 * Set the processor (CP15) into 'Wait for Interrupt' mode.
- 	 * Unlike disabling the processor clock via the PMC (above)
- 	 *  this allows the processor to be woken via JTAG.
- 	 */
- 	cpu_do_idle();
-+#endif
- }
- 
- void (*at91_arch_reset)(void);
-
+master.kernel.org:/pub/scm/linux/kernel/git/kaber/nf-next-2.6.git
