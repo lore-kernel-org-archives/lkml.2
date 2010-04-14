@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab0DNBtA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 21:49:00 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57102 "EHLO smtps.tip.net.au"
+	id S1754517Ab0DNBtf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 21:49:35 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:34880 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753736Ab0DNBs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 21:48:59 -0400
-Date: Wed, 14 Apr 2010 11:48:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Uri Simchoni <uri@jdland.co.il>
-Subject: linux-next: manual merge of the crypto tree with Linus' tree
-Message-Id: <20100414114856.54e1cb21.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754367Ab0DNBtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 21:49:33 -0400
+Date: Tue, 13 Apr 2010 18:49:30 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: fweisbec@gmail.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
+       sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Weird rcu lockdep warning
+Message-ID: <20100414014930.GI2538@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100413200432.GB5099@nowhere>
+ <20100413234043.GG2538@linux.vnet.ibm.com>
+ <20100414000226.GH5602@nowhere>
+ <20100413.171306.25868761.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100413.171306.25868761.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Herbert,
+On Tue, Apr 13, 2010 at 05:13:06PM -0700, David Miller wrote:
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Date: Wed, 14 Apr 2010 02:02:27 +0200
+> 
+> > I just have a guess though....
+> > This seems to always happen from NMI path, and lockdep is disabled on NMI.
+> > I suspect the lock_acquire() performed by rcu_read_lock() is just ignored
+> > and then the rcu_read_lock_held() check has the wrong result...
+> 
+> Yeah, I bet that's it too.
+> 
+> lock_is_held() can't return anything meaningful while lockdep is
+> disabled, which it is during NMIs.
 
-Today's linux-next merge of the crypto tree got a conflict in
-drivers/crypto/mv_cesa.c between commit
-5a0e3ad6af8660be21ca98a971cd00f331318c05 ("include cleanup: Update gfp.h
-and slab.h includes to prepare for breaking implicit slab.h inclusion
-from percpu.h") from Linus' tree and commit
-750052dd2400cd09e0864d75b63c2c0bf605056f ("crypto: mv_cesa - Add sha1 and
-hmac(sha1) async hash drivers") from the crypto tree.
+Ah!  So I just need to add a "current->lockdep_recursion"
+check to debug_lockdep_rcu_enabled().  And move the function to
+kernel/rcutree_plugin.h to avoid #include hell.
 
-Just context changes.  I fixed it up (see below) and can carry the fix
-for a while.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+See below for (untested) patch.
 
-diff --cc drivers/crypto/mv_cesa.c
-index 6f29012,1cee5a9..0000000
---- a/drivers/crypto/mv_cesa.c
-+++ b/drivers/crypto/mv_cesa.c
-@@@ -14,9 -14,14 +14,15 @@@
-  #include <linux/kthread.h>
-  #include <linux/platform_device.h>
-  #include <linux/scatterlist.h>
- +#include <linux/slab.h>
-+ #include <crypto/internal/hash.h>
-+ #include <crypto/sha.h>
-  
-  #include "mv_cesa.h"
-+ 
-+ #define MV_CESA	"MV-CESA:"
-+ #define MAX_HW_HASH_SIZE	0xFFFF
-+ 
-  /*
-   * STM:
-   *   /---------------------------------------\
+						Thanx, Paul
+
+------------------------------------------------------------------------
+
+ include/linux/rcupdate.h |    5 +----
+ kernel/rcutree_plugin.h  |   11 +++++++++++
+ 2 files changed, 12 insertions(+), 4 deletions(-)
+
+commit 304d8da6cd791a81ce3164f867e1b3ef4f9af1d1
+Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date:   Tue Apr 13 18:45:51 2010 -0700
+
+    rcu: Make RCU lockdep check the lockdep_recursion variable
+    
+    The lockdep facility temporarily disables lockdep checking by incrementing
+    the current->lockdep_recursion variable.  Such disabling happens in NMIs
+    and in other situations where lockdep might expect to recurse on itself.
+    This patch therefore checks current->lockdep_recursion, disabling RCU
+    lockdep splats when this variable is non-zero.
+    
+    Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+    Reported-by: David Miller <davem@davemloft.net>
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 9f1ddfe..07db2fe 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -101,10 +101,7 @@ extern struct lockdep_map rcu_sched_lock_map;
+ # define rcu_read_release_sched() \
+ 		lock_release(&rcu_sched_lock_map, 1, _THIS_IP_)
+ 
+-static inline int debug_lockdep_rcu_enabled(void)
+-{
+-	return likely(rcu_scheduler_active && debug_locks);
+-}
++extern int debug_lockdep_rcu_enabled(void);
+ 
+ /**
+  * rcu_read_lock_held - might we be in RCU read-side critical section?
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 79b53bd..2169abe 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1067,3 +1067,14 @@ static void rcu_needs_cpu_flush(void)
+ }
+ 
+ #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
++
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++
++int debug_lockdep_rcu_enabled(void)
++{
++	return likely(rcu_scheduler_active &&
++		      debug_locks &&
++		      current->lockdep_recursion == 0);
++}
++
++#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
