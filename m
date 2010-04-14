@@ -1,128 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab0DNGwi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 02:52:38 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:39468 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754767Ab0DNGwf (ORCPT
+	id S1754860Ab0DNGwk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 02:52:40 -0400
+Received: from qw-out-2122.google.com ([74.125.92.26]:45533 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764Ab0DNGwf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Apr 2010 02:52:35 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-       Chris Mason <chris.mason@oracle.com>
-In-Reply-To: <20100414031205.GE2493@dastard>
-References: <20100413143659.GA2493@dastard> <20100414031205.GE2493@dastard>
-Message-Id: <20100414155222.D150.A69D9226@jp.fujitsu.com>
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YLrokkhr9eUuLHQtXjYX/ebliZNmSpwGt84HbNnUfTtpvCKf14MZv2dyxuN3i6tkVe
+         Ulz0bxRds/C7ysEK0TMoiG5yUyGVptOrJj2brQebYPAkK4vCUekk7EmoOzbfn9RFlPMu
+         EExLmVZYK3ZuoqFda6f3sAuyLyJuGHzNijoCA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 14 Apr 2010 15:52:32 +0900 (JST)
+In-Reply-To: <p2q121039231004132344pae57964atbd6587f6ed38c471@mail.gmail.com>
+References: <x2i121039231004132342sa230bfd4k832950fce534113f@mail.gmail.com>
+	 <p2q121039231004132344pae57964atbd6587f6ed38c471@mail.gmail.com>
+Date: Wed, 14 Apr 2010 12:16:56 +0530
+Message-ID: <o2h121039231004132346q558648d5k55ea6f733f4ba871@mail.gmail.com>
+Subject: DMA Engine API performance issues
+From: melwyn lobo <linux.melwyn@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Apr 14, 2010 at 12:36:59AM +1000, Dave Chinner wrote:
-> > On Tue, Apr 13, 2010 at 08:39:29PM +0900, KOSAKI Motohiro wrote:
-> > > > FWIW, the biggest problem here is that I have absolutely no clue on
-> > > > how to test what the impact on lumpy reclaim really is. Does anyone
-> > > > have a relatively simple test that can be run to determine what the
-> > > > impact is?
-> > > 
-> > > So, can you please run two workloads concurrently?
-> > >  - Normal IO workload (fio, iozone, etc..)
-> > >  - echo $NUM > /proc/sys/vm/nr_hugepages
-> > 
-> > What do I measure/observe/record that is meaningful?
-> 
-> So, a rough as guts first pass - just run a large dd (8 times the
-> size of memory - 8GB file vs 1GB RAM) and repeated try to allocate
-> the entire of memory in huge pages (500) every 5 seconds. The IO
-> rate is roughly 100MB/s, so it takes 75-85s to complete the dd.
-> 
-> The script:
-> 
-> $ cat t.sh
-> #!/bin/bash
-> 
-> echo 0 > /proc/sys/vm/nr_hugepages
-> echo 3 > /proc/sys/vm/drop_caches
-> 
-> dd if=/dev/zero of=/mnt/scratch/test bs=1024k count=8000 > /dev/null 2>&1 &
-> 
-> (
-> for i in `seq 1 1 20`; do
->         sleep 5
->         /usr/bin/time --format="wall %e" sh -c "echo 500 > /proc/sys/vm/nr_hugepages" 2>&1
->         grep HugePages_Total /proc/meminfo
-> done
-> ) | awk '
->         /wall/ { wall += $2; cnt += 1 }
->         /Pages/ { pages[cnt] = $2 }
->         END { printf "average wall time %f\nPages step: ", wall / cnt ;
->                 for (i = 1; i <= cnt; i++) {
->                         printf "%d ", pages[i];
->                 }
->         }'
-> ----
-> 
-> And the output looks like:
-> 
-> $ sudo ./t.sh
-> average wall time 0.954500
-> Pages step: 97 101 101 121 173 173 173 173 173 173 175 194 195 195 202 220 226 419 423 426
-> $
-> 
-> Run 50 times in a loop, and the outputs averaged, the existing lumpy
-> reclaim resulted in:
-> 
-> dave@test-1:~$ cat current.txt | awk -f av.awk
-> av. wall = 0.519385 secs
-> av Pages step: 192 228 242 255 265 272 279 284 289 294 298 303 307 322 342 366 383 401 412 420
-> 
-> And with my patch that disables ->writepage:
-> 
-> dave@test-1:~$ cat no-direct.txt | awk -f av.awk
-> av. wall = 0.554163 secs
-> av Pages step: 231 283 310 316 323 328 336 340 345 351 356 359 364 377 388 397 413 423 432 439
-> 
-> Basically, with my patch lumpy reclaim was *substantially* more
-> effective with only a slight increase in average allocation latency
-> with this test case.
-> 
-> I need to add a marker to the output that records when the dd
-> completes, but from monitoring the writeback rates via PCP, they
-> were in the balllpark of 85-100MB/s for the existing code, and
-> 95-110MB/s with my patch.  Hence it improved both IO throughput and
-> the effectiveness of lumpy reclaim.
-> 
-> On the down side, I did have an OOM killer invocation with my patch
-> after about 150 iterations - dd failed an order zero allocation
-> because there were 455 huge pages allocated and there were only
-> _320_ available pages for IO, all of which were under IO. i.e. lumpy
-> reclaim worked so well that the machine got into order-0 page
-> starvation.
-> 
-> I know this is a simple test case, but it shows much better results
-> than I think anyone (even me) is expecting...
+Subject edited to allow posting on ARM kernel list
 
-Ummm...
-
-Probably, I have to say I'm sorry. I guess my last mail give you
-a misunderstand.
-To be honest, I'm not interest this artificial non fragmentation case.
-The above test-case does 1) discard all cache 2) fill pages by streaming
-io. then, it makes artificial "file offset neighbor == block neighbor == PFN neighbor"
-situation. then, file offset order writeout by flusher thread can make
-PFN contenious pages effectively.
-
-Why I dont interest it? because lumpy reclaim is a technique for
-avoiding external fragmentation mess. IOW, it is for avoiding worst
-case. but your test case seems to mesure best one.
-
-
-
+On Wed, Apr 14, 2010 at 12:14 PM, melwyn lobo <linux.melwyn@gmail.com> wrote:
+> Forwarding the query also to arm kernel mailiing list.
+>
+> Regards,
+> M.
+>
+>
+> ---------- Forwarded message ----------
+> From: melwyn lobo <linux.melwyn@gmail.com>
+> Date: Wed, Apr 14, 2010 at 12:12 PM
+> Subject: DMA Engine API performance issues
+> To: dan.j.williams@intel.com, linux-arm-kernel@lists.arm.linux.org.uk,
+> linux-kernel@vger.kernel.org
+>
+>
+> Hello Dan,
+> I have some doubts regarding DMA API usage on its clients for example
+> MMC, ALSA, USB etc.
+>
+> I am going to take example of the ALSA framework. Audio data transfer
+> is initiated in soc_pcm_trigger(). This is called in an atomic
+> context,
+> with spinlock held and irqs disabled. Here most drivers enable data
+> transfer from the MSP peripheral to the audio codec via tx_submit
+> implementation
+> of the DMA engine driver. This enqueues the transaction in an active
+> list which calls for using spinlocks with bottom half disabled.
+> It is in this function when spin_unlock_bh() is called the kernel
+> detects irq's disabled and generates a warning.
+> So the workaround here for ALSA drivers would be to use tasklet or
+> workqueues to defer calling this in an interruptible context, which
+> would
+> cause performance problems (the same function soc_pcm_trigger is
+> called for stoppping the transfer) in cases where the stream has to be
+> repeatedly
+> stopped and started.
+>
+> So the core issue is use of spin_unlock_bh in an atomic context.
+> Workaround for removing the warnings would be:
+> 1. Use spin_lock with irqsave and corresponding unlock function which
+> does not generate a warning in a similar situation.
+>  But this could be futile in one case where the tasklet is scheduled
+> from ksoftirqd which could lead to corruption.
+>  Also this means the interrupts would be disabled (on the local cpu)
+> till the function executed which is not something
+>  desirable.
+> 2. Use local_irq_enable() before calling the DMA APIs and disable once
+> done. This is a crude solution and understandably undesirable and
+> dangerous.
+>
+> The DMA Engine framework assumes that the channel interrupt handling
+> is done in a tasklet (dma_run_dependencies), which I believe is the
+> reason for the issue.
+>
+> Regards,
+> M.
+>
