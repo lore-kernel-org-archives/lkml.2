@@ -1,126 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab0DNVWa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 17:22:30 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:41255 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756862Ab0DNVW2 (ORCPT
+	id S1756942Ab0DNVcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 17:32:14 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:59754 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755933Ab0DNVcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 17:22:28 -0400
+	Wed, 14 Apr 2010 17:32:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=WXPePT+U2cEuyikSGOKXzEcyMIn3ovNDm6uV81KyXZUh+1gz4KFSBw3DOCIY8GSd8+
-         nTylrCp0/hu6rFkpAgN+EBacBKhgtqUnMiIwKMhbd28Hh3ZSLrs8cn6X/KXFaOS/wqAG
-         Bg9FxR5NdSAYLQWO4iAas0Wa1xmNuPSmLjLCU=
-Message-ID: <4BC63223.8050604@gmail.com>
-Date: Wed, 14 Apr 2010 14:22:43 -0700
-From: Dean Hildebrand <seattleplus@gmail.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=RClfB/SxbkvmfpBj81SmBa0sqNyKt1zOXwlKRmjFJGydSvC0t22g6UpkW+Xey3yWGF
+         l5NFANiGfj5GeZ/wM8g73YgcdodflA30VjXIkFY5zhuvfYEevtD+iksDJsi04pDXml+9
+         AnUJZr95AOPPF5gqEwbqAIHql9kdjif+pkM2Y=
+From: Harald Arnesen <harald@skogtun.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tobias <mailing54@plzk.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.34-rc4
+References: <alpine.LFD.2.00.1004121859480.3647@i5.linux-foundation.org>
+	<4BC57F10.8080002@plzk.org>
+	<alpine.LFD.2.00.1004140733310.15116@i5.linux-foundation.org>
+Date: Wed, 14 Apr 2010 23:32:07 +0200
+In-Reply-To: <alpine.LFD.2.00.1004140733310.15116@i5.linux-foundation.org>
+	(Linus Torvalds's message of "Wed, 14 Apr 2010 07:46:11 -0700 (PDT)")
+Message-ID: <874ojd3elk.fsf@basilikum.skogtun.org>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Wu Fengguang <fengguang.wu@intel.com>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
-       John Stoffel <john@stoffel.org>, Dave Chinner <david@fromorbit.com>,
-       "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-       "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-       Linux Memory Management List <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] nfs: use 4*rsize readahead size
-References: <20100224032934.GF16175@discord.disaster> <20100224041822.GB27459@localhost> <20100224052215.GH16175@discord.disaster> <20100224061247.GA8421@localhost> <20100224073940.GJ16175@discord.disaster> <20100226074916.GA8545@localhost> <20100302031021.GA14267@localhost> <1267539563.3099.43.camel@localhost.localdomain> <19341.19446.356359.99958@stoffel.org> <1267555339.3099.127.camel@localhost.localdomain> <20100303032724.GA9979@localhost>
-In-Reply-To: <20100303032724.GA9979@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You cannot simply update linux system tcp parameters and expect nfs to 
-work well performance-wise over the wan.  The NFS server does not use 
-system tcp parameters.  This is a long standing issue.  A patch was 
-originally added in 2.6.30 that enabled NFS to use linux tcp buffer 
-autotuning, which would resolve the issue, but a regression was reported 
-(http://thread.gmane.org/gmane.linux.kernel/826598 ) and so they removed 
-the patch.
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-Maybe its time to rethink allowing users to manually set linux nfs 
-server tcp buffer sizes?  Years have passed on this subject and people 
-are still waiting.  Good performance over the wan will require manually 
-setting tcp buffer sizes.  As mentioned in the regression thread, 
-autotuning can reduce performance by up to 10%.  Here is a patch 
-(slightly outdated) that creates 2 sysctls that allow users to manually 
-to set NFS TCP buffer sizes.  The first link also has a fair amount of 
-background information on the subject.
-http://www.spinics.net/lists/linux-nfs/msg01338.html
-http://www.spinics.net/lists/linux-nfs/msg01339.html
+> On Wed, 14 Apr 2010, Tobias wrote:
 
-Dean
+>> -rc4 does not boot on my MacBook v2.1. Unfortunately, I can not add much info
+>> on what happens since it's all happening really fast. Last thing I can really
+>> see is that KMS takes over (?), outputs a few lines which look ok, last line
+>> being something about ata. Here the boot stops.
+>
+> The absolutely most helpful thing you could do (and it really isn't that 
+> complex, just somewhat time-consuming) is to do a "git bisect" to figure 
+> out exactly where it started.
 
+As a non-kernel-hacker, I agree fully. "git bisect" is the best
+error diagnosing tool ever invented.
 
-Wu Fengguang wrote:
-> On Wed, Mar 03, 2010 at 02:42:19AM +0800, Trond Myklebust wrote:
->   
->> On Tue, 2010-03-02 at 12:33 -0500, John Stoffel wrote: 
->>     
->>>>>>>> "Trond" == Trond Myklebust <Trond.Myklebust@netapp.com> writes:
->>>>>>>>                 
->>> Trond> On Tue, 2010-03-02 at 11:10 +0800, Wu Fengguang wrote: 
->>>       
->>>>> Dave,
->>>>>
->>>>> Here is one more test on a big ext4 disk file:
->>>>>
->>>>> 16k	39.7 MB/s
->>>>> 32k	54.3 MB/s
->>>>> 64k	63.6 MB/s
->>>>> 128k	72.6 MB/s
->>>>> 256k	71.7 MB/s
->>>>> rsize ==> 512k  71.7 MB/s
->>>>> 1024k	72.2 MB/s
->>>>> 2048k	71.0 MB/s
->>>>> 4096k	73.0 MB/s
->>>>> 8192k	74.3 MB/s
->>>>> 16384k	74.5 MB/s
->>>>>
->>>>> It shows that >=128k client side readahead is enough for single disk
->>>>> case :) As for RAID configurations, I guess big server side readahead
->>>>> should be enough.
->>>>>           
->>> Trond> There are lots of people who would like to use NFS on their
->>> Trond> company WAN, where you typically have high bandwidths (up to
->>> Trond> 10GigE), but often a high latency too (due to geographical
->>> Trond> dispersion).  My ping latency from here to a typical server in
->>> Trond> NetApp's Bangalore office is ~ 312ms. I read your test results
->>> Trond> with 10ms delays, but have you tested with higher than that?
->>>
->>> If you have that high a latency, the low level TCP protocol is going
->>> to kill your performance before you get to the NFS level.  You really
->>> need to open up the TCP window size at that point.  And it only gets
->>> worse as the bandwidth goes up too.  
->>>       
->> Yes. You need to open the TCP window in addition to reading ahead
->> aggressively.
->>     
->
-> I only get ~10MB/s throughput with following settings.
->
-> # huge NFS ra size
-> echo 89512 > /sys/devices/virtual/bdi/0:15/read_ahead_kb        
->
-> # on both sides
-> /sbin/tc qdisc add dev eth0 root netem delay 200ms              
->
-> net.core.rmem_max = 873800000
-> net.core.wmem_max = 655360000
-> net.ipv4.tcp_rmem = 8192 87380000 873800000
-> net.ipv4.tcp_wmem = 4096 65536000 655360000
->
-> Did I miss something?
->
-> Thanks,
-> Fengguang
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->   
+I have on two occations bisected kernel problems with the help of the
+kernel community, and I have really been impressed by the help I have
+got.
+-- 
+Hilsen Harald.
