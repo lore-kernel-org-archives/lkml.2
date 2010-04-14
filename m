@@ -1,116 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab0DNG5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 02:57:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35813 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753553Ab0DNG5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 02:57:19 -0400
-Date: Tue, 13 Apr 2010 21:09:49 +0200
-From: Jan Kara <jack@suse.cz>
-To: Jan Blunck <jblunck@suse.de>
-Cc: Jan Kara <jack@suse.cz>, tytso@mit.edu,
-       Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
-       linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arnd@arndb.de>, Andi Kleen <andi@firstfloor.org>,
-       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: Re: [PATCH 5/5] ext2: Add ext2_sb_info s_lock spinlock
-Message-ID: <20100413190948.GC3250@quack.wifi.zluty.cz>
-References: <1271104905-8804-1-git-send-email-jblunck@suse.de>
- <1271104905-8804-6-git-send-email-jblunck@suse.de>
+	id S1754833Ab0DNG6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 02:58:17 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:56020 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab0DNG6P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 02:58:15 -0400
+Message-ID: <4BC5677C.6010507@canonical.com>
+Date: Tue, 13 Apr 2010 23:58:04 -0700
+From: Bryan Wu <bryan.wu@canonical.com>
+Reply-To: bryan.wu@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100404 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271104905-8804-6-git-send-email-jblunck@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dinh.Nguyen@freescale.com
+CC: linux-kernel@vger.kernel.org, amit.kucheria@canonical.com,
+       linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+       grant.likely@secretlab.ca, r.herring@freescale.com,
+       linux-arm-kernel@lists.infradead.org, daniel@caiaq.de,
+       valentin.longchamp@epfl.ch
+Subject: Re: [PATCH 2.6.34-rc4 4/8] mx5: Add USB OTG port registration
+References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com>	<1271175030-3635-2-git-send-email-Dinh.Nguyen@freescale.com>	<1271175030-3635-3-git-send-email-Dinh.Nguyen@freescale.com> <1271175030-3635-4-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <1271175030-3635-4-git-send-email-Dinh.Nguyen@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 12-04-10 22:41:45, Jan Blunck wrote:
-> Add a spinlock that protects against concurrent modifications of
-> s_mount_state, s_blocks_last, s_overhead_last and the content of the
-> superblock's buffer pointed to by sbi->s_es. This is a preparation patch
-> for removing the BKL from ext2 in the next patch.
-> 
-> Signed-off-by: Jan Blunck <jblunck@suse.de>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+On 04/13/2010 09:10 AM, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen<Dinh.Nguyen@freescale.com>
+>
+> This patch adds the device platform registration for enabling USB
+> host functionality on the OTG port on Freescale MX51 Babbage HW. This
+> file makes platform specific calls to initialize the USB HW.
+>
+> This patch applies to 2.6.34-rc4.
+>
+> Signed-off-by: Dinh Nguyen<Dinh.Nguyen@freescale.com>
 > ---
->  fs/ext2/inode.c            |    2 ++
->  fs/ext2/super.c            |   31 +++++++++++++++++++++++++++++--
->  include/linux/ext2_fs_sb.h |    6 ++++++
->  3 files changed, 37 insertions(+), 2 deletions(-)
-> 
->diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
->index fc13cc1..5d15442 100644
->--- a/fs/ext2/inode.c
->+++ b/fs/ext2/inode.c
->@@ -1407,9 +1407,11 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
->                               * created, add a flag to the superblock.
->                               */
->                               lock_kernel();
->+                              spin_lock(&EXT2_SB(sb)->s_lock);
->                               ext2_update_dynamic_rev(sb);
->                               EXT2_SET_RO_COMPAT_FEATURE(sb,
->                                       EXT2_FEATURE_RO_COMPAT_LARGE_FILE);
->+                              spin_unlock(&EXT2_SB(sb)->s_lock);
->                               unlock_kernel();
->                               ext2_write_super(sb);
->                       }
-  Looking at this - probably we should protect by this lock also setting of
-a feature in ext2_xattr_update_super_block(). It's an unrelated bugfix but
-when we are already doing the bugfixing & cleanups in this area...
+>   arch/arm/mach-mx5/Makefile             |    2 +-
+>   arch/arm/mach-mx5/board-mx51_babbage.c |    4 ++
 
-> diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-> index b01c491..34d7a62 100644
-> --- a/fs/ext2/super.c
-> +++ b/fs/ext2/super.c
-> @@ -209,6 +216,7 @@ static int ext2_show_options(struct seq_file *seq, struct vfsmount *vfs)
->  	struct ext2_super_block *es = sbi->s_es;
->  	unsigned long def_mount_opts;
->  
-> +	spin_lock(&sbi->s_lock);
->  	def_mount_opts = le32_to_cpu(es->s_default_mount_opts);
->  
->  	if (sbi->s_sb_block != 1)
-> @@ -281,6 +289,7 @@ static int ext2_show_options(struct seq_file *seq, struct vfsmount *vfs)
->  	if (!test_opt(sb, RESERVATION))
->  		seq_puts(seq, ",noreservation");
->  
-> +	spin_unlock(&sbi->s_lock);
->  	return 0;
->  }
-  Why exactly do you have in the above? Probably because of consistent
-view of mount options? You should comment about that in the changelo and
-especially at the lock declaration in ext2_fs.h.
+Agree with Daniel here, this patch should be split into 2 parts, a) for usb_dr.c 
+and Makefile, b) for board-mx51_babbage.c change.
 
-> @@ -1158,19 +1173,22 @@ static void ext2_sync_super(struct super_block *sb, struct ext2_super_block *es)
->   * may have been checked while mounted and e2fsck may have
->   * set s_state to EXT2_VALID_FS after some corrections.
->   */
-> -
->  static int ext2_sync_fs(struct super_block *sb, int wait)
->  {
-> +	struct ext2_sb_info *sbi = EXT2_SB(sb);
->  	struct ext2_super_block *es = EXT2_SB(sb)->s_es;
->  	struct buffer_head *sbh = EXT2_SB(sb)->s_sbh;
->  
->  	lock_kernel();
-> +	spin_lock(&sbi->s_lock);
->  	if (es->s_state & cpu_to_le16(EXT2_VALID_FS)) {
->  		ext2_debug("setting valid to 0\n");
->  		es->s_state &= cpu_to_le16(~EXT2_VALID_FS);
-> +		spin_unlock(&sbi->s_lock);
->  		ext2_sync_super(sb, es);
->  	} else {
->  		ext2_commit_super(sb, es);
-> +		spin_unlock(&sbi->s_lock);
-  Could you please fold in ext2_commit_super? It's used only here and it's
-name looks a bit scary to be called under the spinlock...
+And one more suggestion is merge usb_dr.c and usb_h1.c as one file usb.c. It is 
+more simple to maintain and review.
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+-Bryan
+
+>   arch/arm/mach-mx5/usb_dr.c             |   57 ++++++++++++++++++++++++++++++++
+>   3 files changed, 62 insertions(+), 1 deletions(-)
+>   create mode 100644 arch/arm/mach-mx5/usb_dr.c
+>
+> diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+> index bf23f86..3fca1f1 100644
+> --- a/arch/arm/mach-mx5/Makefile
+> +++ b/arch/arm/mach-mx5/Makefile
+> @@ -3,7 +3,7 @@
+>   #
+>
+>   # Object file lists.
+> -obj-y   := cpu.o mm.o clock-mx51.o devices.o
+> +obj-y   := cpu.o mm.o clock-mx51.o devices.o usb_dr.o
+>
+>   obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+>
+> diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
+> index afbe400..4e196d7 100644
+> --- a/arch/arm/mach-mx5/board-mx51_babbage.c
+> +++ b/arch/arm/mach-mx5/board-mx51_babbage.c
+> @@ -27,6 +27,8 @@
+>
+>   #include "devices.h"
+>
+> +extern void __init mx5_usb_dr_init(void);
+> +
+>   static struct platform_device *devices[] __initdata = {
+>   	&mxc_fec_device,
+>   };
+> @@ -78,6 +80,8 @@ static void __init mxc_board_init(void)
+>   	platform_add_devices(devices, ARRAY_SIZE(devices));
+>
+>   	mxc_register_gpios();
+> +
+> +	mx5_usb_dr_init();
+>   }
+>
+>   static void __init mx51_babbage_timer_init(void)
+> diff --git a/arch/arm/mach-mx5/usb_dr.c b/arch/arm/mach-mx5/usb_dr.c
+> new file mode 100644
+> index 0000000..52273ea
+> --- /dev/null
+> +++ b/arch/arm/mach-mx5/usb_dr.c
+> @@ -0,0 +1,57 @@
+> +/*
+> + * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version 2
+> + * of the License, or (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+> + * MA 02110-1301, USA.
+> + */
+> +
+> +#include<linux/platform_device.h>
+> +#include<mach/mxc_ehci.h>
+> +#include<mach/common.h>
+> +#include "devices.h"
+> +
+> +extern int usbotg_init(struct platform_device *pdev);
+> +extern int usbotg_uninit(struct platform_device *pdev);
+> +
+> +static int usbotg_init_ext(struct platform_device *pdev);
+> +static int usbotg_uninit_ext(struct platform_device *pdev);
+> +
+> +/*
+> + * platform data structs
+> + * 	- Which one to use is determined by CONFIG options in usb.h
+> + * 	- operating_mode plugged at run time
+> + */
+> +static struct mxc_usbh_platform_data dr_utmi_config = {
+> +	.init	= usbotg_init_ext,
+> +	.exit	= usbotg_uninit_ext,
+> +	.portsc	= MXC_EHCI_UTMI_16BIT,
+> +	.flags	= MXC_EHCI_INTERNAL_PHY,
+> +};
+> +
+> +/* Notes: configure USB clock*/
+> +static int usbotg_init_ext(struct platform_device *pdev)
+> +{
+> +	return usbotg_init(pdev);
+> +}
+> +
+> +static int usbotg_uninit_ext(struct platform_device *pdev)
+> +{
+> +	return usbotg_uninit(pdev);
+> +}
+> +
+> +void __init mx5_usb_dr_init(void)
+> +{
+> +	mxc_register_device(&mxc_usbdr_host_device,&dr_utmi_config);
+> +}
+
