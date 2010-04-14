@@ -1,74 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab0DNQUZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 12:20:25 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:58304 "EHLO
+	id S1756333Ab0DNQU1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 12:20:27 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:58291 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756265Ab0DNQUW (ORCPT
+	with ESMTP id S1756304Ab0DNQUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 12:20:22 -0400
+	Wed, 14 Apr 2010 12:20:21 -0400
 From: Chase Douglas <chase.douglas@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: Steven Rostedt <rostedt@goodmis.org>,
        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
        Thomas Gleixner <tglx@linutronix.de>,
        Randy Dunlap <randy.dunlap@oracle.com>
-Subject: [PATCH 2/3] Add tracing_off_event() calls to BUG() and WARN() paths
-Date: Wed, 14 Apr 2010 12:20:15 -0400
-Message-Id: <1271262016-18650-2-git-send-email-chase.douglas@canonical.com>
+Subject: [PATCH 1/3 v4] Add tracing_off_event() to stop tracing when a bug or warning occur
+Date: Wed, 14 Apr 2010 12:20:14 -0400
+Message-Id: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
 X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
-References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change adds tracing_off_event() calls, which stop debug tracing,
-when a BUG() or WARN() function is called. The stoppage depends on
-commandline paramenter tracing_off={bug,warn,none}. The default is
-"bug", so only the BUG() paths will stop tracing.
+The tracing_off_event() function calls tracing_off() to stop tracing
+when an event occurs. By default, only BUG-type events stop tracing,
+while WARNING type events do not. This is controlled through the
+tracing_off={none,warn,bug} commandline parameter.
+
+Call this function from bug and warning event handlers to enable a user
+to debug their kernel by starting a trace, hitting an event, and then
+retrieving trace info knowing that the trace was stopped right after the
+event was hit.
 
 Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
 ---
- kernel/panic.c |    4 +++-
- lib/bug.c      |    2 ++
- 2 files changed, 5 insertions(+), 1 deletions(-)
+ include/linux/kernel.h     |    7 +++++++
+ kernel/trace/ring_buffer.c |   34 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 13d966b..f0ff321 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -319,7 +319,7 @@ int oops_may_print(void)
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 9365227..80c67ad 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -478,16 +478,23 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
+  *
+  * Most likely, you want to use tracing_on/tracing_off.
   */
- void oops_enter(void)
- {
--	tracing_off();
-+	tracing_off_event(TRACE_EVENT_BUG);
- 	/* can't trust the integrity of the kernel anymore: */
- 	debug_locks_off();
- 	do_oops_enter_exit();
-@@ -369,6 +369,8 @@ static void warn_slowpath_common(const char *file, int line, void *caller, struc
- {
- 	const char *board;
- 
-+	tracing_off_event(TRACE_EVENT_WARN);
++enum trace_off_event {
++	TRACE_EVENT_BUG = 0,
++	TRACE_EVENT_WARN,
++};
 +
- 	printk(KERN_WARNING "------------[ cut here ]------------\n");
- 	printk(KERN_WARNING "WARNING: at %s:%d %pS()\n", file, line, caller);
- 	board = dmi_get_system_info(DMI_PRODUCT_NAME);
-diff --git a/lib/bug.c b/lib/bug.c
-index 300e41a..457c1eb 100644
---- a/lib/bug.c
-+++ b/lib/bug.c
-@@ -154,6 +154,8 @@ enum bug_trap_type report_bug(unsigned long bugaddr, struct pt_regs *regs)
- 		warning = (bug->flags & BUGFLAG_WARNING) != 0;
- 	}
+ #ifdef CONFIG_RING_BUFFER
+ void tracing_on(void);
+ void tracing_off(void);
+ /* trace_off_permanent stops recording with no way to bring it back */
+ void tracing_off_permanent(void);
++void tracing_off_event(enum trace_off_event event);
+ int tracing_is_on(void);
+ #else
+ static inline void tracing_on(void) { }
+ static inline void tracing_off(void) { }
+ static inline void tracing_off_permanent(void) { }
++static inline void tracing_off_event(enum trace_off_event event) { }
+ static inline int tracing_is_on(void) { return 0; }
+ #endif
+ #ifdef CONFIG_TRACING
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 41ca394..f6be195 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -194,6 +194,40 @@ void tracing_off_permanent(void)
+ 	set_bit(RB_BUFFERS_DISABLED_BIT, &ring_buffer_flags);
+ }
  
-+	tracing_off_event(warning ? TRACE_EVENT_WARN : TRACE_EVENT_BUG);
++static enum trace_off_event tracing_off_event_ctrl = TRACE_EVENT_BUG;
 +
- 	if (warning) {
- 		/* this is a WARN_ON rather than BUG/BUG_ON */
- 		if (file)
++/**
++ * tracing_off_event - turn off tracing depending on event type
++ * @event: type of event that occurred
++ *
++ * This function checks the event type to determine whether tracing should be
++ * disabled. Useful for disabling tracing on bugs or warnings.
++ */
++void tracing_off_event(enum trace_off_event event)
++{
++	if (event <= tracing_off_event_ctrl)
++		tracing_off();
++}
++EXPORT_SYMBOL_GPL(tracing_off_event);
++
++static int __init tracing_off_event_setup(char *str)
++{
++	if (!strcmp("none", str))
++		tracing_off_event_ctrl = -1;
++	else if (!strcmp("bug", str))
++		tracing_off_event_ctrl = TRACE_EVENT_BUG;
++	else if (!strcmp("warn", str))
++		tracing_off_event_ctrl = TRACE_EVENT_WARN;
++	else {
++		printk(KERN_NOTICE "Invalid value passed for tracing_off parameter\n");
++		return 1;
++	}
++
++	return 0;
++}
++
++__setup("tracing_off=", tracing_off_event_setup);
++
+ /**
+  * tracing_is_on - show state of ring buffers enabled
+  */
 -- 
 1.7.0
 
