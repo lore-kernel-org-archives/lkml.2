@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab0DNWs3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 18:48:29 -0400
-Received: from khc.piap.pl ([195.187.100.11]:51824 "EHLO khc.piap.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757035Ab0DNWs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 18:48:28 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Michael Barkowski <michaelbarkowski@ruggedcom.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Julia Lawall <julia@diku.dk>,
-       "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: hdlc_ppp: why no detach()?
-References: <4BC32B00.1030600@ruggedcom.com>
-Date: Thu, 15 Apr 2010 00:48:25 +0200
-In-Reply-To: <4BC32B00.1030600@ruggedcom.com> (Michael Barkowski's message of
-	"Mon, 12 Apr 2010 10:15:28 -0400")
-Message-ID: <m3633todl2.fsf@intrepid.localdomain>
+	id S1757132Ab0DNWyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 18:54:18 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42215 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756958Ab0DNWyQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 18:54:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jB2YAf/6npAP407z70Y1nxg4PVPXM4lCRiF+ASEehM/DBaeU13EXMaWK83yYvG1EdT
+         owVpsJ+WNtLEws5kTYHrMUz+SEhAl0KZ/n0pMDXAobrYR8ajQWOJL8OCMSPJGaLcAuKJ
+         Bur9TSzMzt3C8RUweEfFnq006MObcU6Kc5Rv0=
+Date: Wed, 14 Apr 2010 15:54:07 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input: add HP Compaq 2710p to 'noloop' table
+Message-ID: <20100414225407.GA12143@core.coreip.homeip.net>
+References: <alpine.LNX.2.00.1004141409450.8345@pobox.suse.cz>
+ <20100414160429.GC2450@core.coreip.homeip.net>
+ <alpine.LNX.2.00.1004142354330.8345@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1004142354330.8345@pobox.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michael,
+On Wed, Apr 14, 2010 at 11:57:04PM +0200, Jiri Kosina wrote:
+> On Wed, 14 Apr 2010, Dmitry Torokhov wrote:
+> 
+> > > Add HP Compaq 2710p to 'noloop' table. Otherwsie this machine is reported 
+> > > to not report properly to AUX_LOOP command time-to-time, causing 
+> > > non-working keyboard due to messed up i8042.
+> > > 
+> > 
+> > What is the chassis type for the box in DMI? I am curious why it isn't
+> > caought up by the generic "portable" test...
+> 
+> Hmm, you are right, I completely forgot that we are now completely 
+> bypassing AUX IRQ delivery on Portable/Laptop/(Sub-)Notebook chasis types.
+> 
+> I was going through my older patchqueue and flushing it, and this one 
+> slipped through, as it is apparently not necessary for current mainline 
+> (the machine in question has chasis type "Notebook"), but only for older 
+> kernels.
+> 
 
-Michael Barkowski <michaelbarkowski@ruggedcom.com> writes:
+OK, thanks.
 
-> I am looking at your hdlc_ppp code and I don't understand: why is there
-> not the equivalent of fr_detach() in there?
-
-I assume you mean .detach = fr_destroy(). It's used only to kill
-subdevices, i.e. it has nothing to do with the interface being up/down.
-
-> pc8300_drv:cpc_remove_one() frees netdevs quite confidently but I wonder
-> how it can be so sure that there are not skbs in hdlc_ppp's tx_queue
-> associated with those devices before freeing them....q
-
-Theoretically all paths adding skbs to the tx_queue should send them out
-before returning (possibly also on behalf of other devices). However I
-wonder if it's the case. Let's see: Only ppp_tx_cp() adds to the queue
-directly:
-- ppp_rx() (calls ppp_tx_flush())
-- ppp_timer (calls ppp_tx_flush())
-- ppp_cp_event():
-  - ppp_cp_parse_cr() (calls ppp_tx_flush())
-  - ppp_stop() calls ppp_cp_event(), but it won't queue any skb, it only
-    marks the connection as closed and does the same to IPCP and IPV6CP.
-
-This means the problematic part is ppp_start() which calls
-ppp_cp_event(LCP, START) = IRC | SCR | 3 meaning
-Initialize-Restart-Count, Send-Configure-Request and change state to
-REQ_SENT. This causes two problems:
-
-1. The SCR packet will be delayed by 2 seconds (both first and second
-   SCR will be sent the same time). Perhaps we delay only a little
-   (instead of full 2 seconds) and only then send the initial packet.
-
-2. (as you noted) the skb will be added to tx_queue and left there. If
-   we happen to "ifconfig up" and "rmmod driver" before receiving any
-   packet and before ppp->req_timeout (2 seconds) and before any other
-   PPP interface does the same, we will eventually get skb with invalid
-   ->dev. This is simple to drain in .close (detach is a wrong place
-   since it may be called long after the interface is deactivated, there
-   is no need to delay it past .close). The fix for #1 will already fix
-   #2, but the redundant safety doesn't cost us anything.
-
-Thanks for noting the problem, I'll post a patch shortly.
-
-Also it seems the timeouts etc. should be configurable. ATM we're only
-fixing bugs, good.
 -- 
-Krzysztof Halasa
+Dmitry
