@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab0DNAYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 20:24:36 -0400
-Received: from mail-iw0-f197.google.com ([209.85.223.197]:54513 "EHLO
-	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab0DNAYe (ORCPT
+	id S1754132Ab0DNA0X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 20:26:23 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:52240 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883Ab0DNA0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 20:24:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=u9U4IcAmobxQtN8VAK9w+PV1BKu/gBi81zWLjA1AKoMfTSW8jl7Io9i55uITf4RwTS
-         TlegvW7nw7+EbHOsfeFTXpa827JIAiI7dHD8IShuekFjU6fUFKovJthV8bH3pajzkMbX
-         ypuYJKZ0n435BCDvrEoRSZzYfXan6d1HBZQ84=
-MIME-Version: 1.0
-In-Reply-To: <1271117878-19274-1-git-send-email-david@fromorbit.com>
-References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
-Date: Wed, 14 Apr 2010 09:24:33 +0900
-Message-ID: <m2h28c262361004131724ycf9bf4a5xd9b1bad2b4797f50@mail.gmail.com>
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 Apr 2010 20:26:22 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 14 Apr 2010 09:22:09 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 5/6] change alloc function in __vmalloc_area_node
+Message-Id: <20100414092209.4327e545.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <2cb77846a9523201588c5dbf94b23d6ea737ce65.1271171877.git.minchan.kim@gmail.com>
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
+	<2cb77846a9523201588c5dbf94b23d6ea737ce65.1271171877.git.minchan.kim@gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Dave.
+On Wed, 14 Apr 2010 00:25:02 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-On Tue, Apr 13, 2010 at 9:17 AM, Dave Chinner <david@fromorbit.com> wrote:
-> From: Dave Chinner <dchinner@redhat.com>
->
-> When we enter direct reclaim we may have used an arbitrary amount of stack
-> space, and hence enterring the filesystem to do writeback can then lead to
-> stack overruns. This problem was recently encountered x86_64 systems with
-> 8k stacks running XFS with simple storage configurations.
->
-> Writeback from direct reclaim also adversely affects background writeback. The
-> background flusher threads should already be taking care of cleaning dirty
-> pages, and direct reclaim will kick them if they aren't already doing work. If
-> direct reclaim is also calling ->writepage, it will cause the IO patterns from
-> the background flusher threads to be upset by LRU-order writeback from
-> pageout() which can be effectively random IO. Having competing sources of IO
-> trying to clean pages on the same backing device reduces throughput by
-> increasing the amount of seeks that the backing device has to do to write back
-> the pages.
->
-> Hence for direct reclaim we should not allow ->writepages to be entered at all.
-> Set up the relevant scan_control structures to enforce this, and prevent
-> sc->may_writepage from being set in other places in the direct reclaim path in
-> response to other events.
+> __vmalloc_area_node never pass -1 to alloc_pages_node.
+> It means node's validity check is unnecessary.
+> So we can use alloc_pages_exact_node instead of alloc_pages_node.
+> It could avoid comparison and branch as 6484eb3e2a81807722 tried.
+> 
+> Cc: Nick Piggin <npiggin@suse.de>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-I think your solution is rather aggressive change as Mel and Kosaki
-already pointed out.
-Do flush thread aware LRU of dirty pages in system level recency not
-dirty pages recency?
-Of course flush thread can clean dirty pages faster than direct reclaimer.
-But if it don't aware LRUness, hot page thrashing can be happened by
-corner case.
-It could lost write merge.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-And non-rotation storage might be not big of seek cost.
-I think we have to consider that case if we decide to change direct reclaim I/O.
+But, in another thinking,
 
-How do we separate the problem?
+-	if (node < 0)
+-		page = alloc_page(gfp_mask);
 
-1. stack hogging problem.
-2. direct reclaim random write.
+may be better ;)
 
-And try to solve one by one instead of all at once.
+Thanks,
+-Kame
 
--- 
-Kind regards,
-Minchan Kim
+> ---
+>  mm/vmalloc.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index ae00746..7abf423 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -1499,7 +1499,7 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+>  		if (node < 0)
+>  			page = alloc_page(gfp_mask);
+>  		else
+> -			page = alloc_pages_node(node, gfp_mask, 0);
+> +			page = alloc_pages_exact_node(node, gfp_mask, 0);
+>  
+>  		if (unlikely(!page)) {
+>  			/* Successfully allocated i pages, free them in __vunmap() */
+> -- 
+> 1.7.0.5
+> 
+> 
+
