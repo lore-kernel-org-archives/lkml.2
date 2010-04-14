@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab0DNW7s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 18:59:48 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:53222 "EHLO elrond.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757126Ab0DNW7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 18:59:46 -0400
-Message-ID: <4BC648DC.4060007@interlog.com>
-Date: Wed, 14 Apr 2010 18:59:40 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: SCSI development list <linux-scsi@vger.kernel.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-       Tomas Fasth <tomfa@debian.org>, Martin Pitt <mpitt@debian.org>,
-       kumba@gentoo.org,
-       =?ISO-8859-1?Q?Dan_H?= =?ISO-8859-1?Q?or=E1k?= 
-	<dhorak@redhat.com>
-Subject: [ANNOUNCE] sdparm 1.05 available
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756981Ab0DNXBW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 19:01:22 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:16793 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755166Ab0DNXBU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 19:01:20 -0400
+Date: Wed, 14 Apr 2010 16:00:43 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>, Michal Marek <mmarek@suse.cz>,
+       linux-kbuild@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>
+Subject: Re: [PATCH 0/6] kconfig: add support to show hidden options which
+ have prompts
+Message-Id: <20100414160043.7ffb1109.randy.dunlap@oracle.com>
+In-Reply-To: <4BC539DD.5040003@cn.fujitsu.com>
+References: <4BC539DD.5040003@cn.fujitsu.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0208.4BC6492F.01CE:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sdparm is a command line utility designed to get and set
-SCSI device parameters (cf hdparm for ATA disks). The
-parameters are held in mode pages. Apart from SCSI devices
-(e.g. disks, tapes and enclosures) sdparm can be used on
-any device that uses a SCSI command set. Almost all CD/DVD/BD
-drives use the SCSI MMC set irrespective of the transport.
-sdparm also can decode VPD pages including the device
-identification page. Commands to start and stop the media;
-load and unload removable media and some other housekeeping
-functions are supported. sdparm supports both the linux
-kernel 2.4 and 2.6 series with ports to FreeBSD, Solaris,
-Tru64 and Windows.
+On Wed, 14 Apr 2010 11:43:25 +0800 Li Zefan wrote:
 
-The version tracks changes in draft standards from
-www.t10.org since October 2009. Starting with this version
-if libsgutils2 from the sg3_utils package (version 1.29)
-is available during the sdparm build then the executable
-will depend on that shared object.
+> I noticed gconfig and xconfig have a button "Show all options",
+> but that's a bit too much, and I think normally what we are not
+> interested in those configs which have no prompt thus can't be
+> changed by users.
 
-ChangeLog for sdparm-1.05 [20100413] [svn: r149]
-   - add '--readonly' option especially for '-C start' and
-     '-C stop' on ATA disks.
-   - Control mode page updates (spc4r23)
-   - add Control data protection mode page (ssc4r01)
-   - block device characteristics VPD page: decode form factor
-   - extended inquiry VPD page: activate_microcode+r_sup (spc4r23)
-   - Automation device serial number and Data transfer device
-     element address VPD pages (ssc4r01)
-   - add SBC Referrals VPD page (sbc3r22)
-   - expand SBC Thin provisioning VPD page (sbc3r22)
-   - expand SBC Block limits VPD page (sbc3r22)
-   - SAS-2.1 specification split, upper layers placed in SPL
-     - add enable_slumber and enable_partial fields to
-       Enhanced phy control mode page
-   - add AM_MAINTAINER_MODE to configure.ac to lessen build issues
-   - build infrastructure change to use libsgutils2 if available
-
-ChangeLog for sdparm-1.04 [20090920] [svn: r129]
-....
+Yes, I use that all of the time (i.e., once it has been set, it remains
+set for the next execution, so I leave it that way).
 
 
-For more information and downloads see:
-     http://sg.danny.cz/sg/sdparm.html
+> Exmaple:
+> 
+>       --- Tracers
+>       -*-   Kernel Function Tracer
+>       - -     Kernel Function Graph Tracer
+>       [*]   Interrupts-off Latency Tracer
+>       - -   Preemption-off Latency Tracer
+>       [*]   Sysprof Tracer
+> 
+> Here you can see 2 tracers are not selectable, and then can find
+> out how to make them selectable.
+> 
+> I also add this support for gconfig, but haven't done for xconfig.
+> 
+> btw: are there many users using gconfig/xconfig today ?
 
-A release announcement will be sent to freshmeat.net .
+I use xconfig quite a bit, but only use gconfig for making sure that
+it still works or displays a menu tree correctly.
 
-Doug Gilbert
+---
+~Randy
