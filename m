@@ -1,34 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab0DNBoK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 21:44:10 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51973 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab0DNBoG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 21:44:06 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Apr 2010 10:40:10 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][BUGFIX][PATCH] memcg: fix underflow of mapped_file stat
-Message-Id: <20100414104010.7a359d04.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100414100308.693c5650.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
-	<20100413151400.cb89beb7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100414095408.d7b352f1.nishimura@mxp.nes.nec.co.jp>
-	<20100414100308.693c5650.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1754483Ab0DNBqE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 21:46:04 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49106 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754394Ab0DNBqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 21:46:00 -0400
+Date: Wed, 14 Apr 2010 11:45:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Ken Kawasaki <ken_kawasaki@spring.nifty.jp>,
+       Jiri Pirko <jpirko@redhat.com>
+Subject: linux-next: manual merge of the net tree with Linus' tree
+Message-Id: <20100414114556.97d7583d.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -36,35 +22,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Apr 2010 10:03:08 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Hi all,
 
-> > > @@ -2563,6 +2565,15 @@ void mem_cgroup_end_migration(struct mem
-> > >  	 */
-> > >  	if (ctype == MEM_CGROUP_CHARGE_TYPE_MAPPED)
-> > >  		mem_cgroup_uncharge_page(target);
-> > > +	else {
-> > > +		/*
-> > > +		 * When a migrated file cache is remapped, it's not charged.
-> > > +		 * Verify it. Because we're under lock_page(), there are
-> > > +		 * no race with uncharge.
-> > > +		 */
-> > > +		if (page_mapped(target))
-> > > +			mem_cgroup_update_file_mapped(mem, target, 1);
-> > > +	}
-> > We cannot rely on page lock, because when we succeeded in page migration,
-> > "target" = "newpage" has already unlocked in move_to_new_page(). So the "target"
-> > can be removed from the radix-tree theoretically(it's not related to this
-> > underflow problem, though).
-> > Shouldn't we call lock_page(target) and check "if (!target->mapping)" to handle
-> > this case(maybe in another patch) ?
-> > 
-> Sounds reasonable. I think about that.
-> 
+Today's linux-next merge of the net tree got a conflict in
+drivers/net/pcmcia/smc91c92_cs.c between commit
+a6d37024de02e7cb2b2333e438e71355a9c32a0a ("smc91c92_cs: define
+multicast_table as unsigned char") from Linus' tree and commit
+22bedad3ce112d5ca1eaf043d4990fa2ed698c87 ("net: convert multicast list to
+list_head") from the net tree.
 
-Ah, PageCgroupUsed() is already checked under lock_page_cgroup(). It's enough.
+I fixed it up (see below) and can carry the fix for a while.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks,
--Kame
-
-
+diff --cc drivers/net/pcmcia/smc91c92_cs.c
+index fd9d6e3,ad22676..0000000
+--- a/drivers/net/pcmcia/smc91c92_cs.c
++++ b/drivers/net/pcmcia/smc91c92_cs.c
+@@@ -1621,10 -1618,14 +1621,10 @@@ static void set_rx_mode(struct net_devi
+  	rx_cfg_setting = RxStripCRC | RxEnable | RxAllMulti;
+      else {
+  	if (!netdev_mc_empty(dev)) {
+- 	    struct dev_mc_list *mc_addr;
++ 	    struct netdev_hw_addr *ha;
+  
+- 	    netdev_for_each_mc_addr(mc_addr, dev) {
+- 		u_int position = ether_crc(6, mc_addr->dmi_addr);
++ 	    netdev_for_each_mc_addr(ha, dev) {
++ 		u_int position = ether_crc(6, ha->addr);
+ -#ifndef final_version		/* Verify multicast address. */
+ -		if ((ha->addr[0] & 1) == 0)
+ -		    continue;
+ -#endif
+  		multicast_table[position >> 29] |= 1 << ((position >> 26) & 7);
+  	    }
+  	}
