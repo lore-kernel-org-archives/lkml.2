@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab0DNQt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 12:49:26 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:36928 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218Ab0DNQtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 12:49:25 -0400
-Message-ID: <4BC5F20F.3050108@monstr.eu>
-Date: Wed, 14 Apr 2010 18:49:19 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1756086Ab0DNQuu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 12:50:50 -0400
+Received: from kroah.org ([198.145.64.141]:33322 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754224Ab0DNQus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 12:50:48 -0400
+Date: Wed, 14 Apr 2010 09:46:33 -0700
+From: Greg KH <greg@kroah.com>
+To: David Brownell <david-b@pacbell.net>
+Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-usb@vger.kernel.org,
+       Peter Korsgaard <jacmet@sunsite.dk>,
+       Rupesh Gujare <rupeshgujare@gmail.com>, linux-kernel@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 7/8] USB: testusb: imported David Brownell's USB
+	testing application
+Message-ID: <20100414164633.GC6922@kroah.com>
+References: <cover.1270644740.git.mina86@mina86.com> <3c4f11cdfb08952e964879c343d6ed7ceedc9542.1270644740.git.mina86@mina86.com> <20100408002952.GC4365@kroah.com> <201004140230.52556.david-b@pacbell.net>
 MIME-Version: 1.0
-To: steve@digidescorp.com
-CC: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
-       Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 2/2] microblaze: allow developer selection of STACKTRACE
-References: <1271220938-3526-1-git-send-email-steve@digidescorp.com>	 <4BC5DE54.2010305@monstr.eu> <1271259851.2990.20.camel@iscandar.digidescorp.com>
-In-Reply-To: <1271259851.2990.20.camel@iscandar.digidescorp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004140230.52556.david-b@pacbell.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven J. Magnani wrote:
-> On Wed, 2010-04-14 at 17:25 +0200, Michal Simek wrote:
->> Steven J. Magnani wrote:
->>> Allow the developer to configure STACKTRACE to enable userland access to backtraces in /proc/NN/stack.
->>>
->>> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
->>> ---
->>> diff -uprN a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
->>> --- a/arch/microblaze/Kconfig	2010-04-09 21:52:36.000000000 -0500
->>> +++ b/arch/microblaze/Kconfig	2010-04-12 22:16:01.000000000 -0500
->>> @@ -136,6 +136,14 @@ config PROC_DEVICETREE
->>>  	  an image of the device tree that the kernel copies from Open
->>>  	  Firmware or other boot firmware. If unsure, say Y here.
->>>  
->>> +config PROC_BACKTRACE
->>> +	bool "Support for kernel backtraces in /proc/NN/stack"
->>> +	default n
->>> +	select STACKTRACE
->>> +	help
->>> +	  This option adds a backtrace of the kernel stack to /proc/NN/stack.
->>> +	  If unsure, say N here.
->>> +
->> Why did you create new Kconfig option? /proc/NN/stack is there when you 
->> enable stacktrace support. There is not necessary to enable any new option.
->>
->> Or is there any other point which I am missing?
+On Wed, Apr 14, 2010 at 02:30:52AM -0700, David Brownell wrote:
+> On Wednesday 07 April 2010, Greg KH wrote:
+> > You should put a:
+> > ????????From: David Brownell <dbrownell@users.sourceforge.net>
+> > as the first line of the body of this patch, so it properly shows up as
+> > David's code.
+> > 
+> > I also would like to get an ack from David that he doesn't mind his code
+> > moving into the kernel here (personally I think it's a good thing to be
+> > here.)
+> > 
+> > thanks,
 > 
-> AFAICT STACKTRACE is an embedded option that isn't presented in the
-> menu. If all you want is /proc/NN/stack without the baggage of kmemleak,
-> tracing, etc., I didn't see a way to configure it.
+> ISTR sending an ack .... but, not with a "From:" like that.  I did author the
+> code, but the *patch* is not from me.
 
-Agree that you have to enable some option to get this functionality but 
-the correct question is if someone need only this functionality.
+The "From:" shows authorship, which is the correct statement here, we
+want to preserve it.  I know you didn't generate the patch, but that's
+ok :)
 
-> 
-> This probably belongs somewhere more generic, maybe lib/Kconfig.debug?
+thanks,
 
-It is more generic things.
-Arnd: What do you think?
-
-Thanks,
-Michal
-
-
-> 
-> Steve
-> 
-> 
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+greg k-h
