@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab0DNM3W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 08:29:22 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52949 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750715Ab0DNM3V (ORCPT
+	id S1754582Ab0DNMb3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 08:31:29 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:4461 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597Ab0DNMb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 08:29:21 -0400
-Date: Wed, 14 Apr 2010 13:32:29 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-       Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100414133229.134264f0@lxorguk.ukuu.org.uk>
-In-Reply-To: <8739yy9qnf.fsf@basil.nowhere.org>
-References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
-	<20100413095815.GU25756@csn.ul.ie>
-	<20100413111902.GY2493@dastard>
-	<20100413193428.GI25756@csn.ul.ie>
-	<20100413202021.GZ13327@think>
-	<877hoa9wlv.fsf@basil.nowhere.org>
-	<20100414112015.GO13327@think>
-	<8739yy9qnf.fsf@basil.nowhere.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Apr 2010 08:31:27 -0400
+X-SpamScore: -22
+X-BigFish: VPS-22(zz1432P98dN936eM62a3Lzz1202hzzz32i2a8h467h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L0V9G3-01-ABX-02
+X-M-MSG: 
+Date: Wed, 14 Apr 2010 14:31:13 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Stephane Eranian <eranian@google.com>
+Subject: Re: [osrc-patches] [PATCH 00/12] perf: introduce model specific
+ events and AMD IBS
+Message-ID: <20100414123113.GY11907@erda.amd.com>
+References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
+ <20100413204519.GX11907@erda.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100413204519.GX11907@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 14 Apr 2010 12:31:14.0129 (UTC) FILETIME=[5F408410:01CADBCE]
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The only part of the 4K stack code that's good is the separate
-> interrupt stack, but that one should be just combined with a sane 8K 
-> process stack.
+On 13.04.10 22:45:19, Robert Richter wrote:
+> On 13.04.10 22:23:09, Robert Richter wrote:
+> > This patch series introduces model specific events and impments AMD
+> > IBS (Instruction Based Sampling) for perf_events.
+> 
+> The patch set triggers this warning in perf_prepare_sample():
+> 
+>  WARN_ON_ONCE(size & (sizeof(u64)-1))
 
-The reality is that if you are blowing a 4K process stack you are
-probably playing russian roulette on the current 8K x86-32 stack as well
-because of the non IRQ split. So it needs fixing either way
+Just found Stephane's patch on the mailing list that removes the warning.
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
+
