@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab0DNMit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 08:38:49 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47348 "EHLO mx1.suse.de"
+	id S1755361Ab0DNMiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 08:38:51 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47340 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754426Ab0DNMin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750939Ab0DNMin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Apr 2010 08:38:43 -0400
 From: Jan Blunck <jblunck@suse.de>
 To: Jan Kara <jack@suse.cz>, tytso@mit.edu
 Cc: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
        linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
        Arnd Bergmann <arnd@arndb.de>, Jan Blunck <jblunck@suse.de>
-Subject: [PATCH 5/7] ext2: Move ext2_write_super() out of ext2_setup_super()
-Date: Wed, 14 Apr 2010 14:38:37 +0200
-Message-Id: <1271248719-21488-6-git-send-email-jblunck@suse.de>
+Subject: [PATCH 0/7] ext2: Preparation to remove BKL (v2)
+Date: Wed, 14 Apr 2010 14:38:32 +0200
+Message-Id: <1271248719-21488-1-git-send-email-jblunck@suse.de>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1271248719-21488-1-git-send-email-jblunck@suse.de>
-References: <1271248719-21488-1-git-send-email-jblunck@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move ext2_write_super() out of ext2_setup_super() as a preparation for the
-next patch that adds a new lock for superblock fields.
+This is a series of patches in preparation to the removal of the big kernel
+lock from ext2. It consists mostly of cleanup patches to later introduce a
+spinlock to protect some of the superblock's fields against concurrent access.
+With the spinlock in place we don't need to use the big kernel lock anymore.
 
-Signed-off-by: Jan Blunck <jblunck@suse.de>
----
- fs/ext2/super.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+This series has been part of the BKL removal patches that I have posted in
+November 2009 already. I've addressed the feedback kindly provided by Ogawa-san
+by moving the ext2_write_super() out of ext2_setup_super().
 
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index a304c54..f28a7ad 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -606,7 +606,6 @@ static int ext2_setup_super (struct super_block * sb,
- 	if (!le16_to_cpu(es->s_max_mnt_count))
- 		es->s_max_mnt_count = cpu_to_le16(EXT2_DFL_MAX_MNT_COUNT);
- 	le16_add_cpu(&es->s_mnt_count, 1);
--	ext2_write_super(sb);
- 	if (test_opt (sb, DEBUG))
- 		ext2_msg(sb, KERN_INFO, "%s, %s, bs=%lu, fs=%lu, gc=%lu, "
- 			"bpg=%lu, ipg=%lu, mo=%04lx]",
-@@ -1079,7 +1078,9 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
- 	if (EXT2_HAS_COMPAT_FEATURE(sb, EXT3_FEATURE_COMPAT_HAS_JOURNAL))
- 		ext2_msg(sb, KERN_WARNING,
- 			"warning: mounting ext3 filesystem as ext2");
--	ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY);
-+	if (ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY))
-+		sb->s_flags |= MS_RDONLY;
-+	ext2_write_super(sb);
- 	return 0;
- 
- cantfind_ext2:
-@@ -1238,6 +1239,7 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
- 		 */
- 		es->s_state = cpu_to_le16(sbi->s_mount_state);
- 		es->s_mtime = cpu_to_le32(get_seconds());
-+		ext2_sync_super(sb, es, 1);
- 	} else {
- 		__le32 ret = EXT2_HAS_RO_COMPAT_FEATURE(sb,
- 					       ~EXT2_FEATURE_RO_COMPAT_SUPP);
-@@ -1257,8 +1259,8 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
- 		sbi->s_mount_state = le16_to_cpu(es->s_state);
- 		if (!ext2_setup_super (sb, es, 0))
- 			sb->s_flags &= ~MS_RDONLY;
-+		ext2_write_super(sb);
- 	}
--	ext2_sync_super(sb, es, 1);
- 	unlock_kernel();
- 	return 0;
- restore_opts:
--- 
-1.6.4.2
+Changes since v1:
+- fix typo when setting MS_RDONLY
+- take s_lock when setting EXT2_FEATURE_COMPAT_EXT_ATTR
+- fold ext2_commit_super() into ext2_sync_super()
+- include BKL removal patch
+
+Thanks,
+Jan
+
+Jan Blunck (7):
+  ext2: Use ext2_clear_super_error() in ext2_sync_fs()
+  ext2: Set the write time in ext2_sync_fs()
+  ext2: Remove duplicate code from ext2_sync_fs()
+  ext2: Fold ext2_commit_super() into ext2_sync_super()
+  ext2: Move ext2_write_super() out of ext2_setup_super()
+  ext2: Add ext2_sb_info s_lock spinlock
+  BKL: Remove BKL from ext2 filesystem
+
+ fs/ext2/inode.c            |    5 +-
+ fs/ext2/super.c            |   99 ++++++++++++++++++--------------------------
+ fs/ext2/xattr.c            |    2 +
+ include/linux/ext2_fs_sb.h |    9 ++++
+ 4 files changed, 54 insertions(+), 61 deletions(-)
 
