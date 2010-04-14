@@ -1,132 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab0DNDBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 23:01:38 -0400
-Received: from p01c12o141.mxlogic.net ([208.65.145.64]:51607 "EHLO
-	p01c12o141.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582Ab0DNDBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 23:01:37 -0400
-X-MXL-Hash: 4bc530111d877e0e-139d979da1e02a9e8fbd7cf48cef36dce8caea25
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Greg KH <greg@kroah.com>, "ss@aao.gov.au" <ss@aao.gov.au>
-Date: Tue, 13 Apr 2010 22:01:31 -0500
-Subject: [PATCH] staging/dt3155: fix wait_ibsyclr function
-Thread-Topic: [PATCH] staging/dt3155: fix wait_ibsyclr function
-Thread-Index: AcrbfskJ1LWv7JbdTr+cH3EmIZF2xQ==
-Message-ID: <0D753D10438DA54287A00B0270842697636D5B78D9@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010040801)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.72]
-X-AnalysisOut: [v=1.0 c=1 a=UWhJqbO6U5wA:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
-X-AnalysisOut: [MA:10 a=jM3uHZP82BWpxjlUuN2t4A==:17 a=i00gxMtYAAAA:8 a=_oV]
-X-AnalysisOut: [-_3fp0TDCNF5Le3wA:9 a=Ufmv2ZJQeAL5YEMgOq8A:7 a=qGPOOK7qc_o]
-X-AnalysisOut: [pPD0BuVJ4HPad-_0A:4 a=QEXdDO2ut3YA:10 a=x1WnkoZAwusA:10 a=]
-X-AnalysisOut: [0kPLrQdw3YYA:10 a=GVOgsflweOz2VKJA:21 a=aTlMbw_eP2Bdzplk:2]
-X-AnalysisOut: [1]
+	id S1754644Ab0DNDBq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 23:01:46 -0400
+Received: from mail.perches.com ([173.55.12.10]:1468 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754630Ab0DNDBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 23:01:44 -0400
+Subject: Re: [REGRESSION PATCH] vsprintf: increase sizeof precision in
+ printf_spec
+From: Joe Perches <joe@perches.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1271213041.3008.35.camel@dhcp235-240.rdu.redhat.com>
+References: <20100414011336.16139.68030.stgit@paris.rdu.redhat.com>
+	 <1271208801.1555.12.camel@Joe-Laptop.home>
+	 <1271213041.3008.35.camel@dhcp235-240.rdu.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Apr 2010 20:01:42 -0700
+Message-ID: <1271214102.1555.27.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o3E31mmE010050
 
-The wait_ibsyclr function is supposed to return the status of the I2C
-cycle.  Currently it will always return FALSE because the IIC_CSR2
-register is not re-read in order to update the cached register value.
-This results in the NEW_CYCLE bit still being 1.
+On Tue, 2010-04-13 at 22:44 -0400, Eric Paris wrote:
+> On Tue, 2010-04-13 at 18:33 -0700, Joe Perches wrote:
+> > On Tue, 2010-04-13 at 21:13 -0400, Eric Paris wrote:
+> > > Patch ef0658f3de484bf9b173639cd47544584e01efa5 changed the precision field
+> > > from and int to an s8.  Problem is that we have code which uses a much larger
+> > > precision in the kernel.  An example would in the audit code where we have:
+> > > 
+> > > vsnprintf(...,..., " msg='%.1024s'", (char *)data);
+> > > 
+> > > which causes precision to be too large and end up truncating to nothing.
+> > > Raising the size of the precision fixes the audit system issue.  It also does
+> > > not affect the alignment of the struct according to pahole and is still
+> > > approprietely packed.
+> > 
+> > I don't see how it could be appropriately packed.
+> 
+> I was just saying there was no padding inside the struct, although you
+> are right about it now being longer than 64.
 
-The current code actually works correctly only because the return
-value of {Read|Write}I2C is not checked in the driver.
+Which is bad.
 
-Fix wait_ibsyclr by actually reading the IIC_CSR2 register to get the
-updated status.  While here, change the return type to be an actual
-errno instead of the private TRUE/FALSE define and remove the now
-obvious comments about the return value.
+> But what does __attribute__((packed)) buy us?
 
-Also, remove the local variable 'writestat' in WriteI2C and just
-return the result of wait_ibsyclr.
+It could force the size to be 64 bits on more platforms.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Scott Smedley <ss@aao.gov.au>
+> I'll gladly resend with u8 type and s16 precision if that's the best
+> solution.
 
----
+Reordering struct members to keep width and precision
+together seems appropriate.  The attribute may not be.
 
-diff --git a/drivers/staging/dt3155/dt3155_io.c b/drivers/staging/dt3155/dt3155_io.c
-index 6b9c685..7792e71 100644
---- a/drivers/staging/dt3155/dt3155_io.c
-+++ b/drivers/staging/dt3155/dt3155_io.c
-@@ -74,23 +74,22 @@ u8 i2c_pm_lut_data;
-  * wait_ibsyclr()
-  *
-  * This function handles read/write timing and r/w timeout error
-- *
-- * Returns TRUE  if NEW_CYCLE clears
-- * Returns FALSE if NEW_CYCLE doesn't clear in roughly 3 msecs, otherwise
-- * returns 0
-  */
- static int wait_ibsyclr(u8 *lpReg)
- {
- 	/* wait 100 microseconds */
- 	udelay(100L);
- 	/* __delay(loops_per_sec/10000); */
-+
-+	ReadMReg(lpReg + IIC_CSR2, iic_csr2_r.reg);
- 	if (iic_csr2_r.fld.NEW_CYCLE) {
- 		/* if NEW_CYCLE didn't clear */
- 		/* TIMEOUT ERROR */
- 		dt3155_errno = DT_ERR_I2C_TIMEOUT;
--		return FALSE;
--	} else
--		return TRUE;	/* no error */
-+		return -ETIMEDOUT;
-+	}
-+
-+	return 0;	/* no error */
- }
- 
- /*
-@@ -101,14 +100,9 @@ static int wait_ibsyclr(u8 *lpReg)
-  * 1st parameter is pointer to 32-bit register base address
-  * 2nd parameter is reg. index;
-  * 3rd is value to be written
-- *
-- * Returns TRUE   -  Successful completion
-- *         FALSE  -  Timeout error - cycle did not complete!
-  */
- int WriteI2C(u8 *lpReg, u_short wIregIndex, u8 byVal)
- {
--	int writestat;	/* status for return */
--
- 	/* read 32 bit IIC_CSR2 register data into union */
- 
- 	ReadMReg((lpReg + IIC_CSR2), iic_csr2_r.reg);
-@@ -126,8 +120,7 @@ int WriteI2C(u8 *lpReg, u_short wIregIndex, u8 byVal)
- 	WriteMReg((lpReg + IIC_CSR2), iic_csr2_r.reg);
- 
- 	/* wait for IIC cycle to finish */
--	writestat = wait_ibsyclr(lpReg);
--	return writestat;
-+	return wait_ibsyclr(lpReg);
- }
- 
- /*
-@@ -138,9 +131,6 @@ int WriteI2C(u8 *lpReg, u_short wIregIndex, u8 byVal)
-  * 1st parameter is pointer to 32-bit register base address
-  * 2nd parameter is reg. index;
-  * 3rd is adrs of value to be read
-- *
-- * Returns TRUE   -  Successful completion
-- *         FALSE  -  Timeout error - cycle did not complete!
-  */
- int ReadI2C(u8 *lpReg, u_short wIregIndex, u8 *byVal)
- {
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+struct printf_spec {
+	u8 type;
+	u8 flags;		/* flags to number() */
+	u8 base;
+	u8 qualifier;
+	s16 field_width;	/* width of output field */
+	s16 precision;		/* # of digits/chars */
+};
+
+
