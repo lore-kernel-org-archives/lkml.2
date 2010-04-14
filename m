@@ -1,52 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab0DNPP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:15:28 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60026 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755734Ab0DNPP0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 11:15:26 -0400
-Date: Wed, 14 Apr 2010 16:19:47 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Timur Maximov <xcom.org@gmail.com>
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: Re: [PATCH] serial_cs: MD55x support (PCMCIA GPRS/EDGE modem)
- (kernel 2.6.33)
-Message-ID: <20100414161947.18968240@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100414190657.50a245f8.xcom.org@gmail.com>
-References: <20100414190657.50a245f8.xcom.org@gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756115Ab0DNPQe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 11:16:34 -0400
+Received: from mail.mellanox.co.il ([194.90.237.43]:56121 "EHLO mellanox.co.il"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756014Ab0DNPQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 11:16:32 -0400
+Message-ID: <4BC5DC3D.4020004@mellanox.co.il>
+Date: Wed, 14 Apr 2010 18:16:13 +0300
+From: Amir Vadai <amirv@mellanox.co.il>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre)
+	Gecko/20100217 Lightning/1.0b1 Shredder/3.0.3pre
+MIME-Version: 1.0
+To: Steve Wise <swise@opengridcomputing.com>
+CC: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
+       "Tung, Chien Tin" <chien.tin.tung@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+       "rolandd@cisco.com" <rolandd@cisco.com>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
+       Eric B Munson <ebmunson@us.ibm.com>
+Subject: Re: Socket Direct Protocol: help (2)
+References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+	<1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+	<2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com>
+	<4BC49E2B.3000804@opengridcomputing.com>
+	<2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com>
+	<4BC4D22A.6020700@opengridcomputing.com>
+	<2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>
+	<7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+	<4BC5D1D3.3020004@mellanox.co.il> <4BC5D727.4090400@opengridcomputing.com>
+	<4BC5D95D.3010108@mellanox.co.il> <4BC5DA5F.6010607@opengridcomputing.com>
+In-Reply-To: <4BC5DA5F.6010607@opengridcomputing.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Apr 2010 15:16:28.0808 (UTC)
+	FILETIME=[74DC7880:01CADBE5]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17320.000
+X-TM-AS-Result: No--29.440700-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Apr 2010 19:06:57 +0400
-Timur Maximov <xcom.org@gmail.com> wrote:
+ok - actually I used it in an early version of SDP before changing to FMR...
 
-> Many PCMCIA GPRS modems like: Onda Edge N100E, Novaway PC98 (OEM SPC98Z),
-> Rovermate Edgus Adaptmate-039 and others have same construction and
-> identification:
-> 
-> lspcmcia -vvv
-> Product Name:   Generic Modem: MD55x 1.00 Serial number: xxxxx-xxx 
-> Identification: manf_id: 0x015d card_id: 0x4c45
->                 function: 2 (serial)
->                 prod_id(1): "Generic" (0xc49e4731)
->                 prod_id(2): "Modem: MD55x" (0x8913b110)
->                 prod_id(3): "1.00" (0x83dbf271)
->                 prod_id(4): "Serial number: xxxxx-xxx" (0x73ee9514)
-> 
-> Serial connection to GSM module based on Elan VPU16551 PCMCIA UART with
-> datasheet recommeded 14.7456MHz crystal oscillator.
-> 
-> By default serial_cs set UART clock == 1843200 Hz
-> For correct work need set clock 14745600 Hz.
-> This quirk already present in driver, only need add device in quirk list.
-> 
-> Signed-off-by: Timur Maximov <xcom.org@gmail.com>
+- Amir
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+On 04/14/2010 06:08 PM, Steve Wise wrote:
+> Amir Vadai wrote:
+>   
+>> You are right - I missed it.
+>>
+>> Andrea, Please open a bug at bugzilla (https://bugs.openfabrics.org) -
+>> so that you will be notified as soon as I will fix SDP not use FMR if
+>> not supported.
+>>
+>> As to fastreg_mrs support - I don't know this mechanism. Do you mean FRWR?
+>>
+>>   
+>>     
+> ib_alloc_fast_reg_mr(), ib_alloc_fast_reg_page_list() and friends, plus 
+> the IB_WR_FAST_REG_MR work request.
+>
+>
+>   
+>> Thanks,
+>> Amir
+>>
+>>
+>> On 04/14/2010 05:54 PM, Steve Wise wrote:
+>>   
+>>     
+>>> Hey Amir,
+>>>
+>>> I don't think this helps because sdp_add_device() will not add rdma 
+>>> devices that fail to create fmr pools. 
+>>>
+>>> So I guess you could key off of fmr pool failures and set 
+>>> sdp_zcopy_thresh to 0 and allow the device to be used?
+>>>
+>>> But what we really need is sdp support for fastreg_mrs  as an 
+>>> alternative to fmrs.
+>>>
+>>>
+>>> Steve.
+>>>
+>>>
+>>> Amir Vadai wrote:
+>>>   
+>>>     
+>>>       
+>>>> Hi,
+>>>>
+>>>> FMR are being used only in a special mode called ZCopy.
+>>>>
+>>>> You could disable this mode by setting the module paramter
+>>>> sdp_zcopy_thresh to 0, or by issuing:
+>>>> # echo 0 > /sys/module/ib_sdp/parameters/sdp_zcopy_thresh
+>>>>
+>>>> This means that you won't get the benefits of Zero-copy.
+>>>>
+>>>> - Amir
+>>>>
+>>>> On 04/14/2010 11:51 AM, Andrea Gozzelino wrote:
+>>>>   
+>>>>     
+>>>>       
+>>>>         
+>>>>> On Apr 13, 2010 10:22 PM, "Tung, Chien Tin" <chien.tin.tung@intel.com>
+>>>>> wrote:
+>>>>>
+>>>>>   
+>>>>>     
+>>>>>       
+>>>>>         
+>>>>>           
+>>>>>>>>> Chien, does the NE020 support FMRs? I looked at the nes ofed-1.5
+>>>>>>>>> code
+>>>>>>>>> and it appears to do nothing in the map_phys_fmr functions.
+>>>>>>>>>
+>>>>>>>>>           
+>>>>>>>>>             
+>>>>>>>>>               
+>>>>>>>>>                 
+>>>>>>>>>                   
+>>>>>>>> We never implemented map_phys_fmr. Is it relevant to the # of SGEs?
+>>>>>>>>
+>>>>>>>>         
+>>>>>>>>           
+>>>>>>>>             
+>>>>>>>>               
+>>>>>>>>                 
+>>>>>>> No, but SDP uses FMRs. I don't think it will run without FMR support.
+>>>>>>>
+>>>>>>>       
+>>>>>>>         
+>>>>>>>           
+>>>>>>>             
+>>>>>>>               
+>>>>>> Good to know.  Thanks.
+>>>>>>
+>>>>>> Chien
+>>>>>>
+>>>>>>
+>>>>>>     
+>>>>>>       
+>>>>>>         
+>>>>>>           
+>>>>>>             
+>>>>> Hi Steve and Chien,
+>>>>>
+>>>>> I understand that NE020 cards have problem with SDP connected with
+>>>>> map_phy_fmr (FMR stands for Fast Memory Region).
+>>>>> Is it possible to solve/fix this point?
+>>>>> If yes, have you an idea about the time that is necessary to code
+>>>>> development/build?
+>>>>> If no, can you suggest me a card that supports SDP protocol?
+>>>>>
+>>>>> I work on NE020 cards from February 2010 for an INFN experimental
+>>>>> proposal, called REDIGO (Read out at 10 Gbits/s), about the data
+>>>>> acquisition and movement systems. The covergence of storage protocols
+>>>>> around 10 Gigabits/s Ethernet protocols shows that one way could be the
+>>>>> Remote Direct Memory Access (RDMA). The goals are the investigations of
+>>>>> latency time, the throughput, the buffer size schemes and finally the
+>>>>> global event building bandwidth.
+>>>>>
+>>>>> Do you know if NE020 cards have problems with librdma (RDMA procedures,
+>>>>> in general) and / or with MPI versions?
+>>>>>
+>>>>> Thank you very much,
+>>>>> Andrea
+>>>>>
+>>>>> Andrea Gozzelino
+>>>>>
+>>>>> INFN - Laboratori Nazionali di Legnaro	(LNL)
+>>>>> Viale dell'Universita' 2
+>>>>> I-35020 - Legnaro (PD)- ITALIA
+>>>>> Tel: +39 049 8068346
+>>>>> Fax: +39 049 641925
+>>>>> Mail: andrea.gozzelino@lnl.infn.it			
+>>>>>
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>>   
+>>>>>     
+>>>>>       
+>>>>>         
+>>>>>           
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>   
+>>>>     
+>>>>       
+>>>>         
+>>>   
+>>>     
+>>>       
+>
+>   
