@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab0DNRJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 13:09:42 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55689 "EHLO
+	id S1756378Ab0DNRLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 13:11:35 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64835 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756152Ab0DNRJl (ORCPT
+	with ESMTP id S1756163Ab0DNRLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 13:09:41 -0400
+	Wed, 14 Apr 2010 13:11:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
          :mime-version:content-type:content-transfer-encoding;
-        b=TaMksJa8AWTCEGLGc2txIuUOdyJiWGDZv+n6OdCm5ax148oNpb4E3IP6B+pmMT5Q94
-         dxunvZOIshEUyJG2xLCkSwYN66dJN5BsRAaX6qoAg10VPnkTxhiuskzReQ2leIiX83l+
-         XtFiuCLWt3axQ1X/0Py63GZRild4m98aayBSM=
+        b=G5IlnqqKn81SeYehGErPTKGP0QPIalfmFf+bf+3ejQi+wPcmyzi0uQ4zUBZ7Vt59n4
+         OCwsjcJLW/kzcigA+ZXqPvkjHctPQdwT62TXrB6RLfeyb4DgGojysIqFdVK8eFzPy7tM
+         T/5XzQJAVSBAtb2fGoZKyDQ91LJqVfibmuMtQ=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -21,12 +21,12 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH v2] struct sort_entry has a callback named snprintf that turns an entry into a string result.
-Date: Wed, 14 Apr 2010 19:09:36 +0200
-Message-Id: <1271264976-1817-1-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH v3] perf: Fix accidentally preprocessed snprintf callback
+Date: Wed, 14 Apr 2010 19:11:29 +0200
+Message-Id: <1271265089-1842-1-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.6.2.3
-In-Reply-To: <20100414022800.GE25649@ghostprotocols.net>
-References: <20100414022800.GE25649@ghostprotocols.net>
+In-Reply-To: <1271205468-8202-1-git-send-regression-fweisbec@gmail.com>
+References: <1271205468-8202-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
@@ -34,6 +34,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+struct sort_entry has a callback named snprintf that turns an
+entry into a string result.
 But there are glibc versions that implement snprintf through a
 macro. The following expression is then going to get the snprintf
 call preprocessed:
