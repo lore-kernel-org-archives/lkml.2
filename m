@@ -1,75 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab0DNHKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 03:10:30 -0400
-Received: from mail-yw0-f198.google.com ([209.85.211.198]:35459 "EHLO
-	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab0DNHK3 convert rfc822-to-8bit (ORCPT
+	id S1751909Ab0DNHTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 03:19:07 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63126 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab0DNHTD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 03:10:29 -0400
+	Wed, 14 Apr 2010 03:19:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=g3D87bixQFITc42WXCXUgm0DtS2C0jCfKSfDT1+pXUIr43YGA+0ge3yviuO64a2azx
-         GjXvdu7IE7fdseUv2gGYe5zk5RTy7DVGcGvYyU7fRI+yK1kAWCLKCliSRP5/ufYOgCR4
-         /7JTH2p1vQ3tQkp0yQEYmj7upxsmVwaxIuQ/A=
+        b=DetDiWnaB8VIJcW/6erfm5gxGJg6eHALAHVTviGsamFe8t+Cz+NoBelot/y/S0GjkZ
+         nmeLsF+4jaAKSSpih/wp8UO3VljJHYuj15cKjqHknhkbHzmNq02ADbK8PXaElNAkKCS0
+         Y+aY8AH9WSX9o3MUVs6DTik10jaFA7FyffY9g=
 MIME-Version: 1.0
-In-Reply-To: <1271104905-8804-6-git-send-email-jblunck@suse.de>
-References: <1271104905-8804-1-git-send-email-jblunck@suse.de>
-	 <1271104905-8804-6-git-send-email-jblunck@suse.de>
-Date: Wed, 14 Apr 2010 12:40:28 +0530
-Message-ID: <o2r3f9a31f41004140010t7c553e39ib51e69fa9022a75f@mail.gmail.com>
-Subject: Re: [PATCH 5/5] ext2: Add ext2_sb_info s_lock spinlock
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: Jan Blunck <jblunck@suse.de>
-Cc: Jan Kara <jack@suse.cz>, tytso@mit.edu,
-       Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
-       linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arnd@arndb.de>, Andi Kleen <andi@firstfloor.org>,
-       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <y2x28c262361004132313r1e2ca71frd042d5460d897730@mail.gmail.com>
+References: <20100414135945.2b0a1e0d.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100414054144.GH2493@dastard>
+	 <20100414145056.D147.A69D9226@jp.fujitsu.com>
+	 <y2x28c262361004132313r1e2ca71frd042d5460d897730@mail.gmail.com>
+Date: Wed, 14 Apr 2010 16:19:02 +0900
+Message-ID: <w2u28c262361004140019pd8fe696ez609ece4a35527658@mail.gmail.com>
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, Apr 13, 2010 at 2:11 AM, Jan Blunck <jblunck@suse.de> wrote:
-> Add a spinlock that protects against concurrent modifications of
-> s_mount_state, s_blocks_last, s_overhead_last and the content of the
-> superblock's buffer pointed to by sbi->s_es. This is a preparation patch
-> for removing the BKL from ext2 in the next patch.
+On Wed, Apr 14, 2010 at 3:13 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Wed, Apr 14, 2010 at 2:54 PM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>>> On Wed, Apr 14, 2010 at 01:59:45PM +0900, KAMEZAWA Hiroyuki wrote:
+>>> > On Wed, 14 Apr 2010 11:40:41 +1000
+>>> > Dave Chinner <david@fromorbit.com> wrote:
+>>> >
+>>> > > Â 50) Â  Â  3168 Â  Â  Â 64 Â  xfs_vm_writepage+0xab/0x160 [xfs]
+>>> > > Â 51) Â  Â  3104 Â  Â  384 Â  shrink_page_list+0x65e/0x840
+>>> > > Â 52) Â  Â  2720 Â  Â  528 Â  shrink_zone+0x63f/0xe10
+>>> >
+>>> > A bit OFF TOPIC.
+>>> >
+>>> > Could you share disassemble of shrink_zone() ?
+>>> >
+>>> > In my environ.
+>>> > 00000000000115a0 <shrink_zone>:
+>>> > Â  Â 115a0: Â  Â  Â  55 Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â push Â  %rbp
+>>> > Â  Â 115a1: Â  Â  Â  48 89 e5 Â  Â  Â  Â  Â  Â  Â  Â mov Â  Â %rsp,%rbp
+>>> > Â  Â 115a4: Â  Â  Â  41 57 Â  Â  Â  Â  Â  Â  Â  Â  Â  push Â  %r15
+>>> > Â  Â 115a6: Â  Â  Â  41 56 Â  Â  Â  Â  Â  Â  Â  Â  Â  push Â  %r14
+>>> > Â  Â 115a8: Â  Â  Â  41 55 Â  Â  Â  Â  Â  Â  Â  Â  Â  push Â  %r13
+>>> > Â  Â 115aa: Â  Â  Â  41 54 Â  Â  Â  Â  Â  Â  Â  Â  Â  push Â  %r12
+>>> > Â  Â 115ac: Â  Â  Â  53 Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â push Â  %rbx
+>>> > Â  Â 115ad: Â  Â  Â  48 83 ec 78 Â  Â  Â  Â  Â  Â  sub Â  Â $0x78,%rsp
+>>> > Â  Â 115b1: Â  Â  Â  e8 00 00 00 00 Â  Â  Â  Â  Â callq Â 115b6 <shrink_zone+0x16>
+>>> > Â  Â 115b6: Â  Â  Â  48 89 75 80 Â  Â  Â  Â  Â  Â  mov Â  Â %rsi,-0x80(%rbp)
+>>> >
+>>> > disassemble seems to show 0x78 bytes for stack. And no changes to %rsp
+>>> > until retrun.
+>>>
+>>> I see the same. I didn't compile those kernels, though. IIUC,
+>>> they were built through the Ubuntu build infrastructure, so there is
+>>> something different in terms of compiler, compiler options or config
+>>> to what we are both using. Most likely it is the compiler inlining,
+>>> though Chris's patches to prevent that didn't seem to change the
+>>> stack usage.
+>>>
+>>> I'm trying to get a stack trace from the kernel that has shrink_zone
+>>> in it, but I haven't succeeded yet....
+>>
+>> I also got 0x78 byte stack usage. Umm.. Do we discussed real issue now?
+>>
 >
-> Signed-off-by: Jan Blunck <jblunck@suse.de>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-> ---
->  fs/ext2/inode.c            |    2 ++
->  fs/ext2/super.c            |   31 +++++++++++++++++++++++++++++--
->  include/linux/ext2_fs_sb.h |    6 ++++++
->  3 files changed, 37 insertions(+), 2 deletions(-)
+> In my case, 0x110 byte in 32 bit machine.
+> I think it's possible in 64 bit machine.
 >
-> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-> index fc13cc1..5d15442 100644
-> --- a/fs/ext2/inode.c
-> +++ b/fs/ext2/inode.c
-> @@ -1407,9 +1407,11 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
->                                * created, add a flag to the superblock.
->                                */
->                                lock_kernel();
-> +                               spin_lock(&EXT2_SB(sb)->s_lock);
->                                ext2_update_dynamic_rev(sb);
->                                EXT2_SET_RO_COMPAT_FEATURE(sb,
->                                        EXT2_FEATURE_RO_COMPAT_LARGE_FILE);
-> +                               spin_unlock(&EXT2_SB(sb)->s_lock);
->                                unlock_kernel();
->                                ext2_write_super(sb);
+> 00001830 <shrink_zone>:
+> Â  Â 1830: Â  Â  Â  55 Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â push Â  %ebp
+> Â  Â 1831: Â  Â  Â  89 e5 Â  Â  Â  Â  Â  Â  Â  Â  Â  mov Â  Â %esp,%ebp
+> Â  Â 1833: Â  Â  Â  57 Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â push Â  %edi
+> Â  Â 1834: Â  Â  Â  56 Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â push Â  %esi
+> Â  Â 1835: Â  Â  Â  53 Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â push Â  %ebx
+> Â  Â 1836: Â  Â  Â  81 ec 10 01 00 00 Â  Â  Â  sub Â  Â $0x110,%esp
+> Â  Â 183c: Â  Â  Â  89 85 24 ff ff ff Â  Â  Â  mov Â  Â %eax,-0xdc(%ebp)
+> Â  Â 1842: Â  Â  Â  89 95 20 ff ff ff Â  Â  Â  mov Â  Â %edx,-0xe0(%ebp)
+> Â  Â 1848: Â  Â  Â  89 8d 1c ff ff ff Â  Â  Â  mov Â  Â %ecx,-0xe4(%ebp)
+> Â  Â 184e: Â  Â  Â  8b 41 04 Â  Â  Â  Â  Â  Â  Â  Â mov Â  Â 0x4(%ecx)
+>
+> my gcc is following as.
+>
+> barrios@barriostarget:~/mmotm$ gcc -v
+> Using built-in specs.
+> Target: i486-linux-gnu
+> Configured with: ../src/configure -v --with-pkgversion='Ubuntu
+> 4.3.3-5ubuntu4'
+> --with-bugurl=file:///usr/share/doc/gcc-4.3/README.Bugs
+> --enable-languages=c,c++,fortran,objc,obj-c++ --prefix=/usr
+> --enable-shared --with-system-zlib --libexecdir=/usr/lib
+> --without-included-gettext --enable-threads=posix --enable-nls
+> --with-gxx-include-dir=/usr/include/c++/4.3 --program-suffix=-4.3
+> --enable-clocale=gnu --enable-libstdcxx-debug --enable-objc-gc
+> --enable-mpfr --enable-targets=all --with-tune=generic
+> --enable-checking=release --build=i486-linux-gnu --host=i486-linux-gnu
+> --target=i486-linux-gnu
+> Thread model: posix
+> gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4)
+>
+>
+> Is it depends on config?
+> I attach my config.
 
-Do we need both locks (kernel lock and spin lock)
+I changed shrink list by noinline_for_stack.
+The result is following as.
 
-Thanks,
---
-JSR
+
+00001fe0 <shrink_zone>:
+    1fe0:       55                      push   %ebp
+    1fe1:       89 e5                   mov    %esp,%ebp
+    1fe3:       57                      push   %edi
+    1fe4:       56                      push   %esi
+    1fe5:       53                      push   %ebx
+    1fe6:       83 ec 4c                sub    $0x4c,%esp
+    1fe9:       89 45 c0                mov    %eax,-0x40(%ebp)
+    1fec:       89 55 bc                mov    %edx,-0x44(%ebp)
+    1fef:       89 4d b8                mov    %ecx,-0x48(%ebp)
+
+0x110 -> 0x4c.
+
+Should we have to add noinline_for_stack for shrink_list?
+
+
+-- 
+Kind regards,
+Minchan Kim
