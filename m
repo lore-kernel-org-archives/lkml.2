@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab0DNBdY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 21:33:24 -0400
-Received: from mail.perches.com ([173.55.12.10]:1465 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752945Ab0DNBdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 21:33:23 -0400
-Subject: Re: [REGRESSION PATCH] vsprintf: increase sizeof precision in
- printf_spec
-From: Joe Perches <joe@perches.com>
+	id S1754387Ab0DNBeT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 21:34:19 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:40758 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251Ab0DNBeR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 21:34:17 -0400
+Date: Tue, 13 Apr 2010 19:33:34 -0600
+From: Alex Chiang <achiang@canonical.com>
 To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com
-In-Reply-To: <20100414011336.16139.68030.stgit@paris.rdu.redhat.com>
-References: <20100414011336.16139.68030.stgit@paris.rdu.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Apr 2010 18:33:21 -0700
-Message-ID: <1271208801.1555.12.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, jbarnes@virtuousgeek.org
+Subject: Re: WARNING: at fs/sysfs/dir.c:451 sysfs_add_one: sysfs: cannot
+ create duplicate filename '/devices/pci0000:00/0000:00:01.0/slot'
+Message-ID: <20100414013334.GA24240@canonical.com>
+Mail-Followup-To: Alex Chiang <achiang@canonical.com>,
+	Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+	gregkh@suse.de, jbarnes@virtuousgeek.org
+References: <1271099285.9831.13.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271099285.9831.13.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-13 at 21:13 -0400, Eric Paris wrote:
-> Patch ef0658f3de484bf9b173639cd47544584e01efa5 changed the precision field
-> from and int to an s8.  Problem is that we have code which uses a much larger
-> precision in the kernel.  An example would in the audit code where we have:
+* Eric Paris <eparis@redhat.com>:
 > 
-> vsnprintf(...,..., " msg='%.1024s'", (char *)data);
-> 
-> which causes precision to be too large and end up truncating to nothing.
-> Raising the size of the precision fixes the audit system issue.  It also does
-> not affect the alignment of the struct according to pahole and is still
-> approprietely packed.
+> I get one for 1.0, 1.1, 1.2, 2.0, 3.0, 4.0, 5.0.  Below I only show the
+> example for 1.0.  Attached should be the full dmesg and config.  Please
+> let me know about any ideas, tests, questions, or things I can do to
+> help debug the spew....
 
-I don't see how it could be appropriately packed.
+These come from a patch I wrote, but unfortunately, I don't have
+the time or hardware to properly debug them. :(
 
-This is the structure now:
+Jesse, can you please drop the slot sysfs symlink patch? I'll try
+and pick them back up in the future.
 
-struct printf_spec {
-	u16	type;
-	s16	field_width;	/* width of output field */
-	u8	flags;		/* flags to number() */
-	u8	base;
-	s8	precision;	/* # of digits/chars */
-	u8	qualifier;
-};
+Sorry for the spew.
 
-Adding another char should make the structure larger than 64 bits.
-
-type isn't currently required to be u16.
-It could be u8.
-
-Perhaps this is better.
-
-struct printf_spec {
-	u8 type;
-	u8 flags;		/* flags to number() */
-	u8 base;
-	u8 qualifier;
-	s16 field_width;	/* width of output field */
-	s16 precision;		/* # of digits/chars */
-} __attribute__((packed));
+/ac
 
