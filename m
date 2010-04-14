@@ -1,190 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab0DNJdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 05:33:14 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45771 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab0DNJdM (ORCPT
+	id S1754765Ab0DNJhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 05:37:35 -0400
+Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:21273 "HELO
+	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754717Ab0DNJhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 05:33:12 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Apr 2010 18:29:04 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: balbir@linux.vnet.ibm.com, Andrea Righi <arighi@develer.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
-Message-Id: <20100414182904.2f72a63d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <xr931veiplpr.fsf@ninji.mtv.corp.google.com>
-References: <1268609202-15581-1-git-send-email-arighi@develer.com>
-	<1268609202-15581-2-git-send-email-arighi@develer.com>
-	<20100317115855.GS18054@balbir.in.ibm.com>
-	<20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100318041944.GA18054@balbir.in.ibm.com>
-	<20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100318162855.GG18054@balbir.in.ibm.com>
-	<20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100319024039.GH18054@balbir.in.ibm.com>
-	<20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr931veiplpr.fsf@ninji.mtv.corp.google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 14 Apr 2010 05:37:34 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date:User-Agent:Cc:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Content-Disposition:Message-Id;
+  b=OwWe9SJbFGVEX5bN+0uCmPstBRQQJv45yoPqXyn6seba67VDqiahIpoqtIOS/aCk/4HN+DgzSxPQ2Io1YLpybA7r9SpSEzXT0Vr08e7nOevG0mqUOxSSKjSDhLft2UqqKGyFdkmINa0SVOJza1YGZMSBNKe7XQa6yQj1Cx/9Jcw=  ;
+X-Yahoo-SMTP: 2V1ThQ.swBDh24fWwg9PZFuY7TTwFsTuVtXZ.8DKSgQ-
+X-YMail-OSG: Zfi5_V8VM1moaOlzvjDIv.1zdWnQQVpK4cQxKQIXc6zuM4JqXZmjfKqNCZCdu7rqi7gFUUYI1NWl6YxRIsXeuwuuwDcCPvj_8aliP7luWa6mSE2YEaeNctGxoaF9H12NKQKLS7S31rTJwd8LYaGw_MhSnwfm5VwQiClDINg0lRWEyUZZWGk3LLmb9EyzxJJv_f7yjbDzefsf.0Syz14rHYAkQGT3monRWNMWiZJ6BmxMTDbtlrXn7l_BWCqebVt8S3Y1SSFOr.uosANGO6.WkaXfVtZCP8gd21T9q6Ti1vmdS6Ve.pTXg528vsuLr.HY2mV8sTx.1cBmRyLPxqDeWPizvzx_SJE-
+X-Yahoo-Newman-Property: ymail-3
+From: David Brownell <david-b@pacbell.net>
+To: Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 7/8] USB: testusb: imported David Brownell's USB testing application
+Date: Wed, 14 Apr 2010 02:30:52 -0700
+User-Agent: KMail/1.9.10
+Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-usb@vger.kernel.org,
+       Peter Korsgaard <jacmet@sunsite.dk>,
+       Rupesh Gujare <rupeshgujare@gmail.com>, linux-kernel@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>
+References: <cover.1270644740.git.mina86@mina86.com> <3c4f11cdfb08952e964879c343d6ed7ceedc9542.1270644740.git.mina86@mina86.com> <20100408002952.GC4365@kroah.com>
+In-Reply-To: <20100408002952.GC4365@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
+Message-Id: <201004140230.52556.david-b@pacbell.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Apr 2010 23:55:12 -0700
-Greg Thelen <gthelen@google.com> wrote:
-
-> On Thu, Mar 18, 2010 at 8:00 PM, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Fri, 19 Mar 2010 08:10:39 +0530
-> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> >
-> >> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-19 10:23:32]:
-> >>
-> >> > On Thu, 18 Mar 2010 21:58:55 +0530
-> >> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> >> >
-> >> > > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:35:27]:
-> >> >
-> >> > > > Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
-> >> > > > mem_cgroup_update_file_mapped(). The look may be messy but it's not your
-> >> > > > fault. But please write "why add new function" to patch description.
-> >> > > >
-> >> > > > I'm sorry for wasting your time.
-> >> > >
-> >> > > Do we need to go down this route? We could check the stat and do the
-> >> > > correct thing. In case of FILE_MAPPED, always grab page_cgroup_lock
-> >> > > and for others potentially look at trylock. It is OK for different
-> >> > > stats to be protected via different locks.
-> >> > >
-> >> >
-> >> > I _don't_ want to see a mixture of spinlock and trylock in a function.
-> >> >
-> >>
-> >> A well documented well written function can help. The other thing is to
-> >> of-course solve this correctly by introducing different locking around
-> >> the statistics. Are you suggesting the later?
-> >>
-> >
-> > No. As I wrote.
-> > Â  Â  Â  Â - don't modify codes around FILE_MAPPED in this series.
-> > Â  Â  Â  Â - add a new functions for new statistics
-> > Then,
-> > Â  Â  Â  Â - think about clean up later, after we confirm all things work as expected.
+On Wednesday 07 April 2010, Greg KH wrote:
+> You should put a:
+>         From: David Brownell <dbrownell@users.sourceforge.net>
+> as the first line of the body of this patch, so it properly shows up as
+> David's code.
 > 
-> I have ported Andrea Righi's memcg dirty page accounting patches to latest
-> mmtom-2010-04-05-16-09.  In doing so I have to address this locking issue.  Does
-> the following look good?  I will (of course) submit the entire patch for review,
-> but I wanted make sure I was aiming in the right direction.
+> I also would like to get an ack from David that he doesn't mind his code
+> moving into the kernel here (personally I think it's a good thing to be
+> here.)
 > 
-> void mem_cgroup_update_page_stat(struct page *page,
-> 			enum mem_cgroup_write_page_stat_item idx, bool charge)
-> {
-> 	static int seq;
-> 	struct page_cgroup *pc;
-> 
-> 	if (mem_cgroup_disabled())
-> 		return;
-> 	pc = lookup_page_cgroup(page);
-> 	if (!pc || mem_cgroup_is_root(pc->mem_cgroup))
-> 		return;
-> 
-> 	/*
-> 	 * This routine does not disable irq when updating stats.  So it is
-> 	 * possible that a stat update from within interrupt routine, could
-> 	 * deadlock.  Use trylock_page_cgroup() to avoid such deadlock.  This
-> 	 * makes the memcg counters fuzzy.  More complicated, or lower
-> 	 * performing locking solutions avoid this fuzziness, but are not
-> 	 * currently needed.
-> 	 */
-> 	if (irqs_disabled()) {
-> 		if (! trylock_page_cgroup(pc))
-> 			return;
-> 	} else
-> 		lock_page_cgroup(pc);
-> 
+> thanks,
 
-I prefer trylock_page_cgroup() always.
-
-I have another idea fixing this up _later_. (But I want to start from simple one.)
-
-My rough idea is following.  Similar to your idea which you gave me before.
-
-==
-DEFINE_PERCPU(account_move_ongoing);
-DEFINE_MUTEX(move_account_mutex):
-
-void memcg_start_account_move(void)
-{
-	mutex_lock(&move_account_mutex);
-	for_each_online_cpu(cpu)
-		per_cpu(cpu, account_move_ongoing) += 1;
-	mutex_unlock(&move_account_mutex);
-	/* Wait until there are no lockless update */
-	synchronize_rcu();
-	return;
-}
-
-void memcg_end_account_move(void)
-{
-	mutex_lock(&move_account_mutex);
-	for_each_online_cpu(cpu)
-		per_cpu(cpu, account_move_ongoing) -= 1;
-	mutex_unlock(&move_account_mutex);
-}
-
-/* return 1 when we took lock, return 0 if lockess OPs is guarantedd to be safe */
-int memcg_start_filecache_accounting(struct page_cgroup *pc)
-{
-	rcu_read_lock();
-	smp_rmb();
-	if (!this_cpu_read(move_account_ongoing))
-		return 0; /* no move account is ongoing */
-	lock_page_cgroup(pc);
-	return 1;
-}
-
-void memcg_end_filecache_accounting(struct page_cgroup *pc, int unlock)
-{
-	if (unlock)
-		unlock_page_cgroup(pc);
-
-	rcu_read_unlock();
-}
-
-and call memcg_start_account_move()/end_account_move() in the start/end of
-migrainting chunk of pages.
-
-Bye.
--Kame
+ISTR sending an ack .... but, not with a "From:" like that.  I did author the
+code, but the *patch* is not from me.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Omitting all the instructions and the test plan seems like a big mistake, too...
 
