@@ -1,79 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab0DNPFi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:05:38 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64982 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744Ab0DNPFg (ORCPT
+	id S1755976Ab0DNPHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 11:07:00 -0400
+Received: from smtp.opengridcomputing.com ([209.198.142.2]:57866 "EHLO
+	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755773Ab0DNPG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 11:05:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=m9OOzbEZzkv/C4HSYPELIxlmuiujQrLXojAf/OHtwPig4T1I8ctKQhKXnoyKvg2KVl
-         mOMadIHHroZltz2tZR+QZ0pjuHxxXIXLpcsgrWpQWebmrjm3XfaSK6VKs41Po3c1ltU2
-         sI0GD4H16bey196N+kJCXTiZyRnRgqfwVZET4=
-Date: Wed, 14 Apr 2010 17:00:10 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION PATCH] vsprintf: increase sizeof precision in
-	printf_spec
-Message-ID: <20100414150007.GD5142@nowhere>
-References: <20100414011336.16139.68030.stgit@paris.rdu.redhat.com> <1271208801.1555.12.camel@Joe-Laptop.home> <1271213041.3008.35.camel@dhcp235-240.rdu.redhat.com> <1271214102.1555.27.camel@Joe-Laptop.home>
+	Wed, 14 Apr 2010 11:06:59 -0400
+Message-ID: <4BC5DA5F.6010607@opengridcomputing.com>
+Date: Wed, 14 Apr 2010 10:08:15 -0500
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271214102.1555.27.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Amir Vadai <amirv@mellanox.co.il>
+CC: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
+       "Tung, Chien Tin" <chien.tin.tung@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+       "rolandd@cisco.com" <rolandd@cisco.com>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
+       Eric B Munson <ebmunson@us.ibm.com>
+Subject: Re: Socket Direct Protocol: help (2)
+References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>	<1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it>	<2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com>	<4BC49E2B.3000804@opengridcomputing.com>	<2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com>	<4BC4D22A.6020700@opengridcomputing.com>	<2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>	<7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it>	<4BC5D1D3.3020004@mellanox.co.il> <4BC5D727.4090400@opengridcomputing.com> <4BC5D95D.3010108@mellanox.co.il>
+In-Reply-To: <4BC5D95D.3010108@mellanox.co.il>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 08:01:42PM -0700, Joe Perches wrote:
-> On Tue, 2010-04-13 at 22:44 -0400, Eric Paris wrote:
-> > On Tue, 2010-04-13 at 18:33 -0700, Joe Perches wrote:
-> > > On Tue, 2010-04-13 at 21:13 -0400, Eric Paris wrote:
-> > > > Patch ef0658f3de484bf9b173639cd47544584e01efa5 changed the precision field
-> > > > from and int to an s8.  Problem is that we have code which uses a much larger
-> > > > precision in the kernel.  An example would in the audit code where we have:
-> > > > 
-> > > > vsnprintf(...,..., " msg='%.1024s'", (char *)data);
-> > > > 
-> > > > which causes precision to be too large and end up truncating to nothing.
-> > > > Raising the size of the precision fixes the audit system issue.  It also does
-> > > > not affect the alignment of the struct according to pahole and is still
-> > > > approprietely packed.
-> > > 
-> > > I don't see how it could be appropriately packed.
-> > 
-> > I was just saying there was no padding inside the struct, although you
-> > are right about it now being longer than 64.
-> 
-> Which is bad.
-> 
-> > But what does __attribute__((packed)) buy us?
-> 
-> It could force the size to be 64 bits on more platforms.
-> 
-> > I'll gladly resend with u8 type and s16 precision if that's the best
-> > solution.
-> 
-> Reordering struct members to keep width and precision
-> together seems appropriate.  The attribute may not be.
-> 
-> struct printf_spec {
-> 	u8 type;
-> 	u8 flags;		/* flags to number() */
-> 	u8 base;
-> 	u8 qualifier;
-> 	s16 field_width;	/* width of output field */
-> 	s16 precision;		/* # of digits/chars */
-> };
+Amir Vadai wrote:
+> You are right - I missed it.
+>
+> Andrea, Please open a bug at bugzilla (https://bugs.openfabrics.org) -
+> so that you will be notified as soon as I will fix SDP not use FMR if
+> not supported.
+>
+> As to fastreg_mrs support - I don't know this mechanism. Do you mean FRWR?
+>
+>   
+
+ib_alloc_fast_reg_mr(), ib_alloc_fast_reg_page_list() and friends, plus 
+the IB_WR_FAST_REG_MR work request.
 
 
-Yeah, we should avoid the attribute. Packing struct should be
-done for pretty special cases, not to fix padding holes, because
-the hole problem would be turned into an alignment access unefficiency.
+> Thanks,
+> Amir
+>
+>
+> On 04/14/2010 05:54 PM, Steve Wise wrote:
+>   
+>> Hey Amir,
+>>
+>> I don't think this helps because sdp_add_device() will not add rdma 
+>> devices that fail to create fmr pools. 
+>>
+>> So I guess you could key off of fmr pool failures and set 
+>> sdp_zcopy_thresh to 0 and allow the device to be used?
+>>
+>> But what we really need is sdp support for fastreg_mrs  as an 
+>> alternative to fmrs.
+>>
+>>
+>> Steve.
+>>
+>>
+>> Amir Vadai wrote:
+>>   
+>>     
+>>> Hi,
+>>>
+>>> FMR are being used only in a special mode called ZCopy.
+>>>
+>>> You could disable this mode by setting the module paramter
+>>> sdp_zcopy_thresh to 0, or by issuing:
+>>> # echo 0 > /sys/module/ib_sdp/parameters/sdp_zcopy_thresh
+>>>
+>>> This means that you won't get the benefits of Zero-copy.
+>>>
+>>> - Amir
+>>>
+>>> On 04/14/2010 11:51 AM, Andrea Gozzelino wrote:
+>>>   
+>>>     
+>>>       
+>>>> On Apr 13, 2010 10:22 PM, "Tung, Chien Tin" <chien.tin.tung@intel.com>
+>>>> wrote:
+>>>>
+>>>>   
+>>>>     
+>>>>       
+>>>>         
+>>>>>>>> Chien, does the NE020 support FMRs? I looked at the nes ofed-1.5
+>>>>>>>> code
+>>>>>>>> and it appears to do nothing in the map_phys_fmr functions.
+>>>>>>>>
+>>>>>>>>           
+>>>>>>>>             
+>>>>>>>>               
+>>>>>>>>                 
+>>>>>>> We never implemented map_phys_fmr. Is it relevant to the # of SGEs?
+>>>>>>>
+>>>>>>>         
+>>>>>>>           
+>>>>>>>             
+>>>>>>>               
+>>>>>> No, but SDP uses FMRs. I don't think it will run without FMR support.
+>>>>>>
+>>>>>>       
+>>>>>>         
+>>>>>>           
+>>>>>>             
+>>>>> Good to know.  Thanks.
+>>>>>
+>>>>> Chien
+>>>>>
+>>>>>
+>>>>>     
+>>>>>       
+>>>>>         
+>>>>>           
+>>>> Hi Steve and Chien,
+>>>>
+>>>> I understand that NE020 cards have problem with SDP connected with
+>>>> map_phy_fmr (FMR stands for Fast Memory Region).
+>>>> Is it possible to solve/fix this point?
+>>>> If yes, have you an idea about the time that is necessary to code
+>>>> development/build?
+>>>> If no, can you suggest me a card that supports SDP protocol?
+>>>>
+>>>> I work on NE020 cards from February 2010 for an INFN experimental
+>>>> proposal, called REDIGO (Read out at 10 Gbits/s), about the data
+>>>> acquisition and movement systems. The covergence of storage protocols
+>>>> around 10 Gigabits/s Ethernet protocols shows that one way could be the
+>>>> Remote Direct Memory Access (RDMA). The goals are the investigations of
+>>>> latency time, the throughput, the buffer size schemes and finally the
+>>>> global event building bandwidth.
+>>>>
+>>>> Do you know if NE020 cards have problems with librdma (RDMA procedures,
+>>>> in general) and / or with MPI versions?
+>>>>
+>>>> Thank you very much,
+>>>> Andrea
+>>>>
+>>>> Andrea Gozzelino
+>>>>
+>>>> INFN - Laboratori Nazionali di Legnaro	(LNL)
+>>>> Viale dell'Universita' 2
+>>>> I-35020 - Legnaro (PD)- ITALIA
+>>>> Tel: +39 049 8068346
+>>>> Fax: +39 049 641925
+>>>> Mail: andrea.gozzelino@lnl.infn.it			
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>   
+>>>>     
+>>>>       
+>>>>         
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>   
+>>>     
+>>>       
+>>   
+>>     
 
