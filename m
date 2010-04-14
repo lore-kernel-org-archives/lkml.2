@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab0DNLyw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 07:54:52 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:49264 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754797Ab0DNLyv (ORCPT
+	id S1755166Ab0DNLzH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 07:55:07 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38578
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755189Ab0DNLzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 07:54:51 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -24.389
-Message-ID: <4BC5AD08.8040606@tremplin-utc.net>
-Date: Wed, 14 Apr 2010 13:54:48 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100331 Mandriva/3.0.4-1mdv2010.1 (2010.1) Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Jaroslav Kysela <perex@perex.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       alsa-devel@alsa-project.org, Frank Griffin <ftg@roadrunner.com>
-Subject: Re: [REGRESSION bisected] Sound goes too fast due to commit 7b3a177b0
-References: <4BC4E812.6050602@tremplin-utc.net> <s5h633u5zx1.wl%tiwai@suse.de> <4BC5A566.8060106@tremplin-utc.net>
-In-Reply-To: <4BC5A566.8060106@tremplin-utc.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 14 Apr 2010 07:55:04 -0400
+Date: Wed, 14 Apr 2010 04:55:06 -0700 (PDT)
+Message-Id: <20100414.045506.52212061.davem@davemloft.net>
+To: herbert@gondor.hengli.com.au
+Cc: eric.dumazet@gmail.com, mst@redhat.com, jan.kiszka@siemens.com,
+       paul.moore@hp.com, David.Woodhouse@intel.com, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
+Subject: Re: [PATCH] tun: orphan an skb on tx
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100414005822.GD18044@gondor.apana.org.au>
+References: <20100413173919.GC26011@redhat.com>
+	<1271183463.16881.545.camel@edumazet-laptop>
+	<20100414005822.GD18044@gondor.apana.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/04/10 13:22, Éric Piel wrote:
-:
-> I don't fully grasp the meaning of bdl_pos_adj, so I don't know if it's
-> a bug to not play correctly when forcing it to 0. Is it?
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Wed, 14 Apr 2010 08:58:22 +0800
+
+> On Tue, Apr 13, 2010 at 08:31:03PM +0200, Eric Dumazet wrote:
+>>
+>> Herbert Acked your patch, so I guess its OK, but I think it can be
+>> dangerous.
 > 
-> I'll ask to another reporter who had the same problem if bdl_pos_adj is
-> also set to 0...
-Frank (cc'd here) has the same problem of music going too fast (on a
-2.6.33 kernel with the "culprit" commit applied). On his system  "cat
-/sys/module/snd_hda_intel/parameters/bdl_pos_adj" gives:
-32,32,-1,-1,-1,-1,-1,-1
+> The tun socket accounting was never designed to stop it from
+> flooding another tun interface.  It's there to stop it from
+> transmitting above a destination interface TX bandwidth and
+> cause unnecessary packet drops.  It also limits the total amount
+> of kernel memory that can be pinned down by a single tun interface.
+> 
+> In this case, all we're doing is shifting the accounting from the
+> "hardware" queue to the qdisc queue.
+> 
+> So your ability to flood a tun interface is essentially unchanged.
+> 
+> BTW we do the same thing in a number of hardware drivers, as well
+> as virtio-net.
 
-He also mentioned that on another system also using snd_hda_intel, with
-the same bdl_pos_adj, it works fine.
+Right.  Although this reminds me about the whole SKB
+orphaning on xmit issue that keeps coming back to haunt
+us.
 
-Eric
+If there weren't odd references to the SKB's socket in
+the packet scheduler et al. we could just orphan these
+things right upon entry to the qdisc and not have to
+add hacks like this to every driver.
+
+In fact... maybe we can just do it in dev_hard_queue_xmit()
+since we are out of the qdisc at that point.... but I guess
+there might be weird drivers that want the SKB socket in
+their ->xmit routine...  Ho hum.
+
+In any event that's net-next-2.6 exploratory material, and I've
+applied this patch to net-2.6, thanks!
