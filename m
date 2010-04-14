@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab0DNMwu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 08:52:50 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:39360 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201Ab0DNMwt (ORCPT
+	id S1755340Ab0DNMxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 08:53:09 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53544 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755074Ab0DNMxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 08:52:49 -0400
-Date: Wed, 14 Apr 2010 13:52:44 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH] Input: add HP Compaq 2710p to 'noloop' table
-Message-ID: <20100414125244.GC10075@srcf.ucam.org>
-References: <alpine.LNX.2.00.1004141409450.8345@pobox.suse.cz> <20100414123643.GB9242@srcf.ucam.org> <alpine.LNX.2.00.1004141437340.8345@pobox.suse.cz> <20100414135350.3b1643c2@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100414135350.3b1643c2@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 14 Apr 2010 08:53:07 -0400
+Date: Wed, 14 Apr 2010 13:57:04 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Michael Schnell <mschnell@lumino.de>
+Cc: nios2-dev <nios2-dev@sopc.et.ntust.edu.tw>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: atomic RAM ?
+Message-ID: <20100414135704.3fc7b713@lxorguk.ukuu.org.uk>
+In-Reply-To: <4BC5B915.6090803@lumino.de>
+References: <4BBD86A5.5030109@lumino.de>
+	<20100408114542.47b6589a@lxorguk.ukuu.org.uk>
+	<4BBDC7D4.6040301@lumino.de>
+	<20100408143750.0acebaa1@lxorguk.ukuu.org.uk>
+	<4BC5B915.6090803@lumino.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 01:53:50PM +0100, Alan Cox wrote:
+> > FUTEX  ... is an implementation ...  for certain classes of processor.
+> Alan,
+> 
+> If that is true "in depth", there should be no FUTEX-relevant  code,
+> neither in the Kernel, nor in the library, that should be considered
+> "arch-independent".
 
-> It's not really that unlikely that an AUX handling bug exists and only on
-> one BIOS version given we've seen things as neat as i8042 emulation that
-> only works on CPU #0 8)
+We have a lot of kernel code which is only usable on some architectures
+and a few opt out of. The largest example of course being the mm layer
+which is strictly for MMU equipped systems.
 
-Doubtless, but on the other hand these machines work with versions of 
-Windows that were released well before them, so if there's a difference 
-in behaviour then we have a bug regardless of what the spec says.
+The important point is that you don't *have* to use futex to provide the
+posix pthread lock primitives if they don't fit your platform.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
