@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab0DNUoE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 16:44:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32813 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755688Ab0DNUoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 16:44:00 -0400
-Date: Wed, 14 Apr 2010 23:40:03 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
-       jdike@linux.intel.com
-Subject: Re: [RFC][PATCH v3 1/3] A device for zero-copy based on KVM
-	virtio-net.
-Message-ID: <20100414204003.GC11321@redhat.com>
-References: <1270805865-16901-1-git-send-email-xiaohui.xin@intel.com> <201004141835.57673.arnd@arndb.de> <20100414203142.GA11321@redhat.com> <201004142239.50299.arnd@arndb.de>
+	id S1756750Ab0DNUqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 16:46:34 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:54182 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755899Ab0DNUqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 16:46:32 -0400
+Message-ID: <4BC629A5.4040500@canonical.com>
+Date: Wed, 14 Apr 2010 16:46:29 -0400
+From: "Peter M. Petrakis" <peter.petrakis@canonical.com>
+Organization: Canonical USA Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100404 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004142239.50299.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Reset ps/2 port should psmouse_probe fail before retrying
+Content-Type: multipart/mixed;
+ boundary="------------000001030100080907070605"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 10:39:49PM +0200, Arnd Bergmann wrote:
-> On Wednesday 14 April 2010 22:31:42 Michael S. Tsirkin wrote:
-> > On Wed, Apr 14, 2010 at 06:35:57PM +0200, Arnd Bergmann wrote:
-> > > On Wednesday 14 April 2010, Michael S. Tsirkin wrote:
-> > > > > > 
-> > > > > > qemu needs the ability to inject raw packets into device
-> > > > > > from userspace, bypassing vhost/virtio (for live migration).
-> > > > > 
-> > > > > Ok, but since there is only a write callback and no read, it won't
-> > > > > actually be able to do this with the current code, right?
-> > > > 
-> > > > I think it'll work as is, with vhost qemu only ever writes,
-> > > > never reads from device. We'll also never need GSO etc
-> > > > which is a large part of what tap does (and macvtap will
-> > > > have to do).
-> > > 
-> > > Ah, I see. I didn't realize that qemu needs to write to the
-> > > device even if vhost is used. But for the case of migration to
-> > > another machine without vhost, wouldn't qemu also need to read?
-> > 
-> > Not that I know. Why?
-> 
-> Well, if the guest not only wants to send data but also receive
-> frames coming from other machines, they need to get from the kernel
-> into qemu, and the only way I can see for doing that is to read
-> from this device if there is no vhost support around on the new
-> machine.
-> 
-> Maybe we're talking about different things here.
-> 
-> 	Arnd
+This is a multi-part message in MIME format.
+--------------000001030100080907070605
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-mpassthrough is currently useless without vhost.
-If the new machine has no vhost, it can't use mpassthrough :)
+Filed a bug on this too:
 
--- 
-MST
+https://bugzilla.kernel.org/show_bug.cgi?id=15780
+
+This particular laptop will lose it's synaptics touch
+pad on return from suspend state. Reloading the psmouse
+module makes no difference. I came up with the attached
+work around which simply calls psmouse_reset on the
+port should the initial probe fail. This solves the problem
+for me and I've tested this on several laptops.
+
+Initially discovered on Ubuntu 2.6.31 (karmic) and the problem
+continues to exist in lucid 2.6.32. I've filed a bug against
+ubuntu kernel here:
+
+https://bugs.launchpad.net/oem-priority/+bug/551234
+
+though the Ubuntu kernel team would really like to get upstream's
+input on the matter before accepting the patch. Please
+let me know what you think. Thanks.
+
+Peter
+
+
+
+--------------000001030100080907070605
+Content-Type: text/x-diff;
+ name="psmouse_reset.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="psmouse_reset.patch"
+
+diff --git a/psmouse-base.c b/psmouse-base.c
+index b407b35..d79eafc 100644
+--- a/psmouse-base.c
++++ b/psmouse-base.c
+@@ -856,12 +856,12 @@ static const struct psmouse_protocol *psmouse_protocol_by_name(const char *name,
+ 	return NULL;
+ }
+ 
+-
+ /*
+- * psmouse_probe() probes for a PS/2 mouse.
++ * __psmouse_probe() probes for a PS/2 mouse.
++ * Wrapped by psmouse_probe() for clean reset code.
+  */
+ 
+-static int psmouse_probe(struct psmouse *psmouse)
++static int __psmouse_probe(struct psmouse *psmouse)
+ {
+ 	struct ps2dev *ps2dev = &psmouse->ps2dev;
+ 	unsigned char param[2];
+@@ -892,6 +892,23 @@ static int psmouse_probe(struct psmouse *psmouse)
+ }
+ 
+ /*
++ * Wrapper for probe routine to cleanly reset the device should
++ * the initial probe fail for any reason.
++ */
++static int psmouse_probe(struct psmouse *psmouse) {
++	struct ps2dev *ps2dev = &psmouse->ps2dev;
++	int i, ret = -1;
++
++	for (i=0; ((ret = __psmouse_probe(psmouse)) != 0) && i < 3; i++) {
++		printk(KERN_ERR "psmouse.c: Error encountered while probing"
++			" PS/2 device on %s, reseting.\n", ps2dev->serio->phys);
++		psmouse_reset(psmouse);
++	}
++
++	return ret;
++}
++
++/*
+  * Here we set the mouse resolution.
+  */
+ 
+
+--------------000001030100080907070605--
