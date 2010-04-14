@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648Ab0DNNpE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 09:45:04 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54861 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755481Ab0DNNpB (ORCPT
+	id S1755671Ab0DNNuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 09:50:14 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:41966 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755633Ab0DNNuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 09:45:01 -0400
-Date: Wed, 14 Apr 2010 14:49:12 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Alan Cox <alan@linux.intel.com>, linux-i2c@vger.kernel.org,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Various intel small device drivers
-Message-ID: <20100414144912.12c83f51@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100414153052.4e07f0cc@hyperion.delvare>
-References: <20100414124913.23181.75903.stgit@localhost.localdomain>
-	<20100414153052.4e07f0cc@hyperion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Apr 2010 09:50:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=kw50pHUwekWLTRiVq7tQCTpp4DsE5qWymdX7iSb3fPKmUSaKlKdFZQHDFYS6cGZqmo
+         leuBsxTICkV8kyIYmGlDkBJrpaC6nmtyYUNDB60Fsw1m35QpvlCh3he+911/lwFh1m3d
+         3n1v1h2AfIQooEec7nCr38wo+iEroJ5OzY0ZU=
+Date: Wed, 14 Apr 2010 16:50:04 +0300 (EEST)
+From: Tero Roponen <tero.roponen@gmail.com>
+X-X-Sender: terrop@terrop
+To: Luca Tettamanti <kronos.it@gmail.com>
+cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+       astarikovskiy@suse.de, len.brown@intel.com
+Subject: Re: [acpi:battery?] kernel oops on boot
+In-Reply-To: <20100414131324.GA6598@nb-core2.darkstar.lan>
+Message-ID: <alpine.LFD.2.00.1004141641010.3640@terrop>
+References: <20100414095750.GA3304@swordfish.minsk.epam.com> <20100414131324.GA6598@nb-core2.darkstar.lan>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Kalhan Trisal (4):
-> >       emc1403: thermal sensor support
-> >       liss331d1: accelerometer driver
-> >       isl29020: ambient light sensor
-> >       hmc6352: Add driver for the HMC6352 compass
+
+On Wed, 14 Apr 2010, Luca Tettamanti wrote:
+
+> Hello,
+> I'm seeing a similar bug on my notebook (Asus F3Sa) with current git.
+> -rc4 does not work, while -rc3 does work.
 > 
-> The liss331d1, isl29020 and hmc6352 are not hardware monitoring drivers
+> The error (at least in my case) is a division by zero in
+> acpi_ex_insert_into_field.
 
-Disagree somewhat. In fact on close grepping I find that there is another
-related lis33 implementation in drivers/hwmon already 8)
+I have a similar problem with Asus M50Vm. git-bisect found
+the following commit and reverting it does indeed fix the
+problem.
 
-Given all the accelerometers are in drivers/hwmon where do you think they
-should be, and do you have pending patches to move the others ?
+commit dadf28a10c3eb29421837a2e413ab869ebd9e168
+Author: Alexey Starikovskiy <astarikovskiy@suse.de>
+Date:   Wed Mar 17 13:14:13 2010 -0400
 
-I'd also be interested where you think the compass fits if its not hwmon,
-ditto the ambient light sensor ?
+    ACPI: EC: Allow multibyte access to EC
+    
+    http://bugzilla.kernel.org/show_bug.cgi?id=14667
+    
+    Signed-off-by: Alexey Starikovskiy <astarikovskiy@suse.de>
+    Signed-off-by: Len Brown <len.brown@intel.com>
 
-I'll bounce the emc1403 onto lm-sensors.
-
-Thanks
-Alan
+-- 
+Tero Roponen
