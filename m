@@ -1,39 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab0DNU3Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 16:29:24 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56577 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755619Ab0DNU3X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 16:29:23 -0400
-Date: Wed, 14 Apr 2010 16:29:22 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Chris Wright <chrisw@sous-sol.org>
-cc: Daniel Mack <daniel@caiaq.de>, David Woodhouse <dwmw2@infradead.org>,
-       Greg KH <gregkh@suse.de>, USB list <linux-usb@vger.kernel.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       <iommu@lists.linux-foundation.org>, Andi Kleen <andi@firstfloor.org>,
-       Pedro Ribeiro <pedrib@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-In-Reply-To: <20100414183826.GA25962@sequoia.sous-sol.org>
-Message-ID: <Pine.LNX.4.44L0.1004141622410.1716-100000@iolanthe.rowland.org>
+	id S1756687Ab0DNUfl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 16:35:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27967 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756537Ab0DNUfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 16:35:39 -0400
+Date: Wed, 14 Apr 2010 23:31:42 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
+       jdike@linux.intel.com
+Subject: Re: [RFC][PATCH v3 1/3] A device for zero-copy based on KVM
+	virtio-net.
+Message-ID: <20100414203142.GA11321@redhat.com>
+References: <1270805865-16901-1-git-send-email-xiaohui.xin@intel.com> <201004141757.54829.arnd@arndb.de> <20100414161610.GA10897@redhat.com> <201004141835.57673.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004141835.57673.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Apr 2010, Chris Wright wrote:
+On Wed, Apr 14, 2010 at 06:35:57PM +0200, Arnd Bergmann wrote:
+> On Wednesday 14 April 2010, Michael S. Tsirkin wrote:
+> > > > 
+> > > > qemu needs the ability to inject raw packets into device
+> > > > from userspace, bypassing vhost/virtio (for live migration).
+> > > 
+> > > Ok, but since there is only a write callback and no read, it won't
+> > > actually be able to do this with the current code, right?
+> > 
+> > I think it'll work as is, with vhost qemu only ever writes,
+> > never reads from device. We'll also never need GSO etc
+> > which is a large part of what tap does (and macvtap will
+> > have to do).
+> 
+> Ah, I see. I didn't realize that qemu needs to write to the
+> device even if vhost is used. But for the case of migration to
+> another machine without vhost, wouldn't qemu also need to read?
 
-> So dma_map_single is the case that's failing, but you think the mask is
-> correct?  What about the direction?
+Not that I know. Why?
 
-The mask and direction are unquestionably correct.  The mask is set up 
-by pci_setup_device() and not changed thereafter.  Furthermore, the 
-audio works okay until another device (a DVB tuner) is plugged in.  
+> > > Moreover, it seems weird to have a new type of interface here that
+> > > duplicates tap/macvtap with less functionality. Coming back
+> > > to your original comment, this means that while mpassthru is currently
+> > > not duplicating the actual code from macvtap, it would need to do
+> > > exactly that to get the qemu interface right!
+> > > 
+> > I don't think so, see above. anyway, both can reuse tun.c :)
+> 
+> There is one significant difference between macvtap/mpassthru and
+> tun/tap in that the directions are reversed. While macvtap and
+> mpassthru forward data from write into dev_queue_xmit and from
+> skb_receive into read, tun/tap forwards data from write into
+> skb_receive and from start_xmit into read.
+> 
+> Also, I'm not really objecting to duplicating code between
+> macvtap and mpassthru, as the implementation can always be merged.
+> My main objection is instead to having two different _user_interfaces_
+> for doing the same thing.
+> 
+> 	Arnd
 
-Alan Stern
+They *could* do the same thing :)
 
+-- 
+MST
