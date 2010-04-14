@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab0DNNYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 09:24:38 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34983 "EHLO
+	id S1755464Ab0DNNYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 09:24:46 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34987 "EHLO
 	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755549Ab0DNNYf (ORCPT
+	with ESMTP id S1755582Ab0DNNYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 09:24:35 -0400
+	Wed, 14 Apr 2010 09:24:43 -0400
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 3/4] liss331d1: accelerometer driver
+Subject: [PATCH 4/4] emc1403: thermal sensor support
 To: linux-i2c@vger.kernel.org, khali@linux-fr.org, linux-input@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Date: Wed, 14 Apr 2010 13:52:00 +0100
-Message-ID: <20100414125155.23181.56610.stgit@localhost.localdomain>
+Date: Wed, 14 Apr 2010 13:52:08 +0100
+Message-ID: <20100414125205.23181.15562.stgit@localhost.localdomain>
 In-Reply-To: <20100414124913.23181.75903.stgit@localhost.localdomain>
 References: <20100414124913.23181.75903.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -23,66 +23,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kalhan Trisal <kalhan.trisal@intel.com>
+From: Kalhan Trisal <kalhan.trisal at intel.com>
 
-The acceleremeter driver reads the x,y,z coordinate registers and provides
-the information to user through the input layer
+Provides support for the emc1403 thermal sensor. Only reporting of values
+is supported. The various Moorestown specific extras to do with thermal
+alerts and the like are not in this version of the driver.
 
-Conversion to input device, clean up and porting of retry fixes needed
-for AAVA done by Alan Cox.
-
-Signed-off-by: Kalhan Trisal <kalhan.trisal@intel.com>
+Signed-off-by: Kalhan Trisal <kalhan.trisal at intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/hwmon/Kconfig    |    8 +
- drivers/hwmon/Makefile   |    1 
- drivers/hwmon/lis331dl.c |  286 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 295 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hwmon/lis331dl.c
+ drivers/hwmon/Kconfig   |   10 +
+ drivers/hwmon/Makefile  |    1 
+ drivers/hwmon/emc1403.c |  437 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 448 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwmon/emc1403.c
 
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 1fa2533..6868b9d 100644
+index 6868b9d..34ee302 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
-@@ -1104,6 +1104,14 @@ config SENSORS_ISL29020
- 	  Range values can be configured using sysfs.
- 	  Lux data is accessible via sysfs.
+@@ -1112,6 +1112,16 @@ config SENSORS_LIS331DL
+ 	  Device can be configured using sysfs.
+ 	  x y Z data can be   accessible via sysfs.
  
-+config SENSORS_LIS331DL
-+	tristate "STMicroeletronics LIS331DL three-axis digital accelerometer"
++config SENSORS_EMC1403
++	tristate "SMSC EMC1403 thermal sensor"
 +	depends on I2C
 +	help
-+	  If you say yes here you get support for the Accelerometer  Devices
-+	  Device can be configured using sysfs.
-+	  x y Z data can be   accessible via sysfs.
++	  If you say yes here you get support for the SMSC Devices
++	  EMC1403 temperature monitoring chip.
++
++	  Threshold values can be configured using sysfs.
++	  Data from the different diode are accessible via sysfs.
 +
  if ACPI
  
  comment "ACPI drivers"
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 13d6832..ebeb2a2 100644
+index ebeb2a2..a7332ce 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
-@@ -60,6 +60,7 @@ obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
- obj-$(CONFIG_SENSORS_LIS3LV02D) += lis3lv02d.o hp_accel.o
- obj-$(CONFIG_SENSORS_LIS3_SPI)	+= lis3lv02d.o lis3lv02d_spi.o
- obj-$(CONFIG_SENSORS_LIS3_I2C)	+= lis3lv02d.o lis3lv02d_i2c.o
-+obj-$(CONFIG_SENSORS_LIS331DL)	+= lis331dl.o
- obj-$(CONFIG_SENSORS_LM63)	+= lm63.o
- obj-$(CONFIG_SENSORS_LM70)	+= lm70.o
- obj-$(CONFIG_SENSORS_LM73)	+= lm73.o
-diff --git a/drivers/hwmon/lis331dl.c b/drivers/hwmon/lis331dl.c
+@@ -40,6 +40,7 @@ obj-$(CONFIG_SENSORS_ATXP1)	+= atxp1.o
+ obj-$(CONFIG_SENSORS_CORETEMP)	+= coretemp.o
+ obj-$(CONFIG_SENSORS_DME1737)	+= dme1737.o
+ obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
++obj-$(CONFIG_SENSORS_EMC1403)	+= emc1403.o
+ obj-$(CONFIG_SENSORS_F71805F)	+= f71805f.o
+ obj-$(CONFIG_SENSORS_F71882FG)	+= f71882fg.o
+ obj-$(CONFIG_SENSORS_F75375S)	+= f75375s.o
+diff --git a/drivers/hwmon/emc1403.c b/drivers/hwmon/emc1403.c
 new file mode 100644
-index 0000000..34009eb
+index 0000000..b71cfa1
 --- /dev/null
-+++ b/drivers/hwmon/lis331dl.c
-@@ -0,0 +1,286 @@
++++ b/drivers/hwmon/emc1403.c
+@@ -0,0 +1,437 @@
 +/*
-+ * lis331dl.c - ST LIS331DL  Accelerometer Driver
++ * emc1403.c - SMSC Thermal Driver
 + *
-+ * Copyright (C) 2009 Intel Corp
++ * Copyright (C) 2008 Intel Corp
 + *
 + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 + *
@@ -99,270 +99,421 @@ index 0000000..34009eb
 + * with this program; if not, write to the Free Software Foundation, Inc.,
 + * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
 + */
 +
 +#include <linux/module.h>
 +#include <linux/init.h>
 +#include <linux/slab.h>
 +#include <linux/i2c.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/hwmon-vid.h>
++#include <linux/interrupt.h>
++#include <linux/workqueue.h>
 +#include <linux/err.h>
 +#include <linux/delay.h>
 +#include <linux/mutex.h>
 +#include <linux/sysfs.h>
-+#include <linux/input-polldev.h>
 +
 +
-+#define POLL_INTERVAL	50
++/* Limit status reg Therm/High/Low/Fault*/
++static const u8 THM_STAT_REG_TEMP[] = { 0x37, 0x35, 0x36, 0x1B, 0x02};
 +
-+struct lis331dl {
-+	struct input_polled_dev *idev;
++/* Channel  diode temp set */
++static const u8 THM_CHAN_TEMP[] = { 0x10, 0x08, 0x04, 0x02, 0x01 };
++
++/* Therm Limit reg store values */
++static const u8 THM_LIMIT_REG_TEMP[] = { 0x05, 0x06, 0x07, 0x08, 0x15, 0x16,
++						0x19, 0x1A, 0x20, 0x21 };
++
++/* DATA REGISTERS */
++static const u8 THM_REG_CURR_TEMP[] = { 0x00, 0x01, 0x23 };
++
++#define THERMAL_PID_REG		0xfd
++#define THERMAL_SMSC_ID_REG	0xfe
++#define THERMAL_REVISION_REG	0xff
++#define THERMAL_ADC_UPDATE_BUSY	0x80
++#define I2C_THERMAL_SLAVE_ADDR	0x4C
++#define TEMP1			1
++#define TEMP2			2
++#define TEMP3			4
++#define IRQ_TYPE_MASK		(1 << 15)
++#define HIGH_EVENT		1
++#define LOW_EVENT		2
++#define THERM_EVENT		3
++#define FAULT_EVENT		4
++#define ALERT_EVENT		1
++
++struct thermal_data {
 +	struct i2c_client *client;
-+	struct mutex update_lock;
++	struct device *hwmon_dev;
++	int therm_irq;
++	int alert_irq;
++	struct work_struct therm_handler;
++	struct work_struct alert_handler;
 +};
 +
-+static ssize_t data_rate_show(struct device *dev,
-+			struct device_attribute *attr, char *buf)
++static int calculate_offset(int type, int temp_ofs)
 +{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int val;
-+	int speed = 100;
++	int offset = 0;
 +
-+	val = i2c_smbus_read_byte_data(client, 0x20);
-+	if (val & 0x80); /* 1= 400HZ 0= 100HZ */
-+		speed = 400;
-+	return sprintf(buf, "%d\n", speed);
-+}
-+
-+static ssize_t power_mode_show(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int val;
-+
-+	val = i2c_smbus_read_byte_data(client, 0x20) & 0x40;
-+	if (val == 0x40)
-+		val = 1;
-+	return sprintf(buf, "%d\n", val);
-+}
-+
-+static int read_with_retries(struct i2c_client *client, int r)
-+{
-+	int retries;
-+	int ret;
-+	
-+	for (retries = 0; retries < 5; retries++) {
-+		ret = i2c_smbus_read_byte_data(client, r);
-+		if (ret != -ETIMEDOUT)
-+			break;
-+		msleep(10);
++	switch (type) {
++	case TEMP1:
++		if (temp_ofs == 0)
++			offset = 1;
++		else if (temp_ofs == 1)
++			offset = 0;
++		else if (temp_ofs == 2)
++			offset = 8;
++		break;
++	case TEMP2:
++		if (temp_ofs == 0)
++			offset = 3;
++		else if (temp_ofs == 1)
++			offset = 2;
++		else if (temp_ofs == 2)
++			offset = 6;
++		break;
++	case TEMP3:
++		if (temp_ofs == 0)
++			offset = 5;
++		else if (temp_ofs == 1)
++			offset = 4;
++		else if (temp_ofs == 2)
++			offset = 7;
++		break;
++	default:
++		offset = -1;
++		break;
 +	}
-+	return ret;
++	return offset;
++
 +}
 +
-+static void lis331dl_poll(struct input_polled_dev *idev)
++
++static ssize_t show_temp_auto_offset(struct device *dev,
++				struct device_attribute *attr, char *buf)
 +{
-+	struct input_dev *input = idev->input;
-+	struct lis331dl *data = idev->private;
-+	int x, y, z;
-+	struct i2c_client *client = data->client;
++	struct sensor_device_attribute_2 *s_attr = to_sensor_dev_attr_2(attr);
++	int temp_index = s_attr->index;
++	int temp_ofs = s_attr->nr;
++	struct i2c_client *client = to_i2c_client(dev);
++	int ret_val;
++	int ret_offset;
 +
-+	x = read_with_retries(client, 0x29);
-+	y = read_with_retries(client, 0x2B);
-+	z = read_with_retries(client, 0x2D);
-+
-+	input_report_abs(input, ABS_X, x);
-+	input_report_abs(input, ABS_Y, y);
-+	input_report_abs(input, ABS_Z, z);
-+	input_sync(input);
++	ret_offset = calculate_offset(temp_index, temp_ofs);
++	if (ret_offset == -1)
++		return -EINVAL;
++	ret_val = i2c_smbus_read_byte_data(client,
++				THM_LIMIT_REG_TEMP[ret_offset]);
++	return sprintf(buf, "%d\n", ret_val);
 +}
 +
-+static ssize_t data_rate_store(struct device *dev,
++static ssize_t store_temp_auto_offset(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct sensor_device_attribute_2 *s_attr = to_sensor_dev_attr_2(attr);
++	int temp_index = s_attr->index;
++	int temp_ofs = s_attr->nr;
++	struct i2c_client *client = to_i2c_client(dev);
++	unsigned long val;
++	int ret_offset;
++
++	if (strict_strtoul(buf, 10, &val))
++		return -EINVAL;
++	ret_offset = calculate_offset(temp_index, temp_ofs);
++	if (ret_offset == -1)
++		return -EINVAL;
++
++	i2c_smbus_write_byte_data(client, THM_LIMIT_REG_TEMP[ret_offset], val);
++	return count;
++}
++
++static ssize_t show_temp_hyst(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	return sprintf(buf, "%d\n",
++		i2c_smbus_read_byte_data(client, THM_LIMIT_REG_TEMP[9]));
++}
++
++static ssize_t store_temp_hyst(struct device *dev,
 +		struct device_attribute *attr, const char *buf, size_t count)
 +{
 +	struct i2c_client *client = to_i2c_client(dev);
-+	struct lis331dl *data = i2c_get_clientdata(client);
-+	unsigned int ret_val;
 +	unsigned long val;
 +
 +	if (strict_strtoul(buf, 10, &val))
 +		return -EINVAL;
-+
-+	mutex_lock(&data->update_lock);
-+
-+	ret_val = i2c_smbus_read_byte_data(client, 0x20);
-+	ret_val &= 0x7F;
-+
-+	switch (val) {
-+	case 400:
-+		ret_val |= 0x80;
-+	case 100:
-+		i2c_smbus_write_byte_data(client, 0x20, ret_val);
-+		break;
-+	default:		
-+		mutex_unlock(&data->update_lock);
-+		return -EINVAL;
-+	}
-+	mutex_unlock(&data->update_lock);
++	i2c_smbus_write_byte_data(client, THM_LIMIT_REG_TEMP[9], val);
 +	return count;
 +}
 +
-+static ssize_t power_mode_store(struct device *dev,
-+		struct device_attribute *attr, const  char *buf, size_t count)
++static ssize_t show_temp1_curr_temp(struct device *dev,
++			struct device_attribute *attr, char *buf)
 +{
 +	struct i2c_client *client = to_i2c_client(dev);
-+	struct lis331dl *data = i2c_get_clientdata(client);
-+	unsigned int ret_val;
++	int ret_val;
++
++	ret_val = i2c_smbus_read_byte_data(client, THM_REG_CURR_TEMP[0]);
++	return sprintf(buf, "%d\n", ret_val);
++}
++
++static ssize_t show_temp2_curr_temp(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int ret_val;
++
++	ret_val = i2c_smbus_read_byte_data(client, THM_REG_CURR_TEMP[1]);
++	return sprintf(buf, "%d\n", ret_val);
++}
++
++static ssize_t show_temp3_curr_temp(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int ret_val;
++
++	ret_val = i2c_smbus_read_byte_data(client, THM_REG_CURR_TEMP[2]);
++	return sprintf(buf, "%d\n", ret_val);
++}
++
++static ssize_t show_status_reg(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int r1, r2, r3, r4;
++
++	r1 = i2c_smbus_read_byte_data(client, 0x1F);
++	r2 = i2c_smbus_read_byte_data(client, 0x35);
++	r3 = i2c_smbus_read_byte_data(client, 0x36);
++	r4 = i2c_smbus_read_byte_data(client, 0x37);
++	return sprintf(buf, "alarm=%x,High=%x,Low=%x,Therm=%x \n",
++				r1, r2, r3, r4);
++}
++
++static ssize_t show_power_state(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int ret_val = i2c_smbus_read_byte_data(client, 0x03);
++	return sprintf(buf, "%x", (ret_val >> 6) & 1);
++}
++
++static ssize_t store_power_state(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
 +	unsigned long val;
++	char curr_val;
 +
 +	if (strict_strtoul(buf, 10, &val))
 +		return -EINVAL;
 +
-+	mutex_lock(&data->update_lock);
-+
-+	ret_val = i2c_smbus_read_byte_data(client, 0x20);
-+	ret_val &= 0xBF;
-+	
-+	switch(val) {
-+	case 1:
-+		ret_val |= 0x40;
-+	case 0:
-+		i2c_smbus_write_byte_data(client, 0x20, ret_val);
-+		break;
-+	default:
-+		mutex_unlock(&data->update_lock);
++	curr_val = i2c_smbus_read_byte_data(client, 0x03);
++	if (val == 1)
++		curr_val &= 0xBF;
++	else if (val == 0)
++		curr_val |= 0x40;
++	else
 +		return -EINVAL;
-+	}
-+	mutex_unlock(&data->update_lock);
++	i2c_smbus_write_byte_data(client, 0x03, curr_val);
 +	return count;
 +}
 +
-+static DEVICE_ATTR(data_rate, S_IRUGO | S_IWUSR,
-+	data_rate_show, data_rate_store);
-+static DEVICE_ATTR(power_state, S_IRUGO | S_IWUSR,
-+	power_mode_show, power_mode_store);
++static ssize_t show_mode(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int ret_val = i2c_smbus_read_byte_data(client, 0x03);
++	return sprintf(buf, "%x", (ret_val >> 7) & 1);
++}
 +
-+static struct attribute *mid_att_accelero[] = {
-+	&dev_attr_data_rate.attr,
++static ssize_t store_mode(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	unsigned long val;
++	int curr_val;
++
++	if (strict_strtoul(buf, 10, &val))
++		return -EINVAL;
++
++	curr_val = i2c_smbus_read_byte_data(client, 0x03);
++	if (val == 1)
++		curr_val &= 0x7F;
++	else if (val == 0)
++		curr_val |= 0x80;
++	else
++		return -EINVAL;
++	i2c_smbus_write_byte_data(client, 0x03, curr_val);
++	return count;
++}
++
++static SENSOR_DEVICE_ATTR_2(temp1_min, S_IRUGO | S_IWUSR,
++	show_temp_auto_offset, store_temp_auto_offset, 0, 1);
++static SENSOR_DEVICE_ATTR_2(temp1_max, S_IRUGO | S_IWUSR,
++	show_temp_auto_offset, store_temp_auto_offset, 1, 1);
++static SENSOR_DEVICE_ATTR_2(temp1_crit, S_IRUGO | S_IWUSR,
++	show_temp_auto_offset, store_temp_auto_offset, 2, 1);
++static DEVICE_ATTR(temp1_curr, S_IRUGO, show_temp1_curr_temp, NULL);
++
++static SENSOR_DEVICE_ATTR_2(temp2_min, S_IRUGO | S_IWUSR,
++	show_temp_auto_offset, store_temp_auto_offset, 0, 2);
++static SENSOR_DEVICE_ATTR_2(temp2_max, S_IRUGO | S_IWUSR,
++	show_temp_auto_offset, store_temp_auto_offset, 1, 2);
++static SENSOR_DEVICE_ATTR_2(temp2_crit, S_IRUGO | S_IWUSR,
++	show_temp_auto_offset, store_temp_auto_offset, 2, 2);
++static DEVICE_ATTR(temp2_curr, S_IRUGO, show_temp2_curr_temp, NULL);
++
++static SENSOR_DEVICE_ATTR_2(temp3_min, S_IRUGO | S_IWUSR,
++	show_temp_auto_offset, store_temp_auto_offset, 0, 4);
++static SENSOR_DEVICE_ATTR_2(temp3_max, S_IRUGO | S_IWUSR,
++	show_temp_auto_offset, store_temp_auto_offset, 1, 4);
++static SENSOR_DEVICE_ATTR_2(temp3_crit, S_IRUGO | S_IWUSR,
++	show_temp_auto_offset, store_temp_auto_offset, 2, 4);
++static DEVICE_ATTR(temp3_curr, S_IRUGO, show_temp3_curr_temp, NULL);
++
++static DEVICE_ATTR(hyster, S_IRUGO | S_IWUSR, show_temp_hyst, store_temp_hyst);
++static DEVICE_ATTR(status, S_IRUGO, show_status_reg, NULL);
++
++static DEVICE_ATTR(power_state, S_IRUGO | S_IWUSR,
++	show_power_state, store_power_state);
++static DEVICE_ATTR(mode, S_IRUGO | S_IWUSR, show_mode, store_mode);
++
++static struct attribute *mid_att_thermal[] = {
++	&sensor_dev_attr_temp1_min.dev_attr.attr,
++	&sensor_dev_attr_temp1_max.dev_attr.attr,
++	&sensor_dev_attr_temp1_crit.dev_attr.attr,
++	&dev_attr_temp1_curr.attr,
++	&sensor_dev_attr_temp2_min.dev_attr.attr,
++	&sensor_dev_attr_temp2_max.dev_attr.attr,
++	&sensor_dev_attr_temp2_crit.dev_attr.attr,
++	&dev_attr_temp2_curr.attr,
++	&sensor_dev_attr_temp3_min.dev_attr.attr,
++	&sensor_dev_attr_temp3_max.dev_attr.attr,
++	&sensor_dev_attr_temp3_crit.dev_attr.attr,
++	&dev_attr_temp3_curr.attr,
++	&dev_attr_hyster.attr,
++	&dev_attr_status.attr,
 +	&dev_attr_power_state.attr,
++	&dev_attr_mode.attr,
 +	NULL
 +};
 +
-+static struct attribute_group m_accelero_gr = {
-+	.name = "lis331dl",
-+	.attrs = mid_att_accelero
++static struct attribute_group m_thermal_gr = {
++	.name = "emc1403",
++	.attrs = mid_att_thermal
 +};
 +
-+static void accel_set_default_config(struct i2c_client *client)
++static void emc1403_set_default_config(struct i2c_client *client)
 +{
-+	i2c_smbus_write_byte_data(client, 0x20, 0x47);
++	i2c_smbus_write_byte_data(client, 0x03, 0x00);
++	i2c_smbus_write_byte_data(client, 0x04, 0x02);
++	i2c_smbus_write_byte_data(client, 0x22, 0x00);
 +}
 +
-+static int  lis331dl_probe(struct i2c_client *client,
-+					const struct i2c_device_id *id)
++static int  emc1403_probe(struct i2c_client *new_client,
++			const struct i2c_device_id *id)
 +{
-+	int res;
-+	struct lis331dl *data;
-+	struct input_polled_dev *idev;
-+	struct input_dev *input;
++	int res = 0;
++	struct thermal_data *data;
++	u16 pid, smsc_id, revision;
 +
-+	data = kzalloc(sizeof(struct lis331dl), GFP_KERNEL);
++	data = kzalloc(sizeof(struct thermal_data), GFP_KERNEL);
++
 +	if (data == NULL) {
-+		dev_err(&client->dev, "lis331dl: out of memory\n");
++		printk(KERN_WARNING "emc1403: out of memory");
 +		return -ENOMEM;
 +	}
-+	mutex_init(&data->update_lock);
-+	i2c_set_clientdata(client, data);
-+	data->client = client;
++	data->client = new_client;
++	i2c_set_clientdata(new_client, data);
 +
-+	res = sysfs_create_group(&client->dev.kobj, &m_accelero_gr);
++	/* Check if thermal chip is SMSC and EMC1403 */
++	smsc_id = i2c_smbus_read_byte_data(new_client,
++					THERMAL_SMSC_ID_REG);
++	if (smsc_id != 0x5d) {
++		printk(KERN_WARNING "emc1403: vendor id mismatch\n");
++		goto thermal_error1;
++	}
++	pid = i2c_smbus_read_byte_data(new_client, THERMAL_PID_REG);
++	if (pid != 0x21)  {
++		printk(KERN_WARNING "emc1403: product id mismatch\n");
++		goto thermal_error1;
++	}
++	revision = i2c_smbus_read_byte_data(new_client,
++				THERMAL_REVISION_REG);
++	if (revision != 0x01) {
++		printk(KERN_WARNING "emc1403: rev id mismatch (is %d)\n",
++								revision);
++		goto thermal_error1;
++	}
++	res = sysfs_create_group(&new_client->dev.kobj, &m_thermal_gr);
 +	if (res) {
-+		dev_err(&client->dev, "lis331dl: sysfs  group failed\n");
-+		goto accelero_error1;
++		printk(KERN_WARNING "emc1403: create group failed\n");
++		hwmon_device_unregister(data->hwmon_dev);
++		goto thermal_error1;
 +	}
-+	idev = input_allocate_polled_device();
-+	if (!idev) {
-+		res = -ENOMEM;
-+		dev_err(&client->dev,
-+			"lis331dl: unable to register input device\n");
-+		goto accelero_error2;
++	data->hwmon_dev = hwmon_device_register(&new_client->dev);
++	if (IS_ERR(data->hwmon_dev)) {
++		res = PTR_ERR(data->hwmon_dev);
++		data->hwmon_dev = NULL;
++		printk(KERN_WARNING "emc1403:Register hwmon dev failed\n");
++		goto thermal_error2;
 +	}
-+	idev->poll = lis331dl_poll;
-+	idev->poll_interval = POLL_INTERVAL;
-+
-+	idev->private = data;
-+	data->idev =  idev;
-+
-+	input = idev->input;
-+	input->name = "lis331dl";
-+	input->phys = "lis331dl/input0";
-+	input->id.bustype = BUS_I2C;
-+	input->dev.parent = &client->dev;
-+	input->evbit[0] = BIT_MASK(EV_ABS);
-+	input_set_abs_params(input, ABS_X, 0, 255, 2, 2);
-+	input_set_abs_params(input, ABS_Y, 0, 255, 2, 2);
-+	input_set_abs_params(input, ABS_Z, 0, 255, 2, 2);
-+
-+	res = input_register_polled_device(idev);
-+	if (res == 0) {
-+		dev_info(&client->dev,
-+			"%s lis331dl:  Accelerometer chip found",
-+							client->name);
-+		return 0;
-+	}
-+	input_free_polled_device(idev);
-+accelero_error2:
-+	sysfs_remove_group(&client->dev.kobj, &m_accelero_gr);
-+accelero_error1:
-+	i2c_set_clientdata(client, NULL);
++	emc1403_set_default_config(new_client);
++	dev_info(&new_client->dev, "%s EMC1403 Thermal chip found\n",
++							new_client->name);
++	return res;
++thermal_error2:
++	sysfs_remove_group(&new_client->dev.kobj, &m_thermal_gr);
++thermal_error1:
++	i2c_set_clientdata(new_client, NULL);
 +	kfree(data);
 +	return res;
 +}
 +
-+static int lis331dl_remove(struct i2c_client *client)
++static int emc1403_remove(struct i2c_client *client)
 +{
-+	struct lis331dl *data = i2c_get_clientdata(client);
++	struct thermal_data *data = i2c_get_clientdata(client);
 +
-+	input_unregister_polled_device(data->idev);
-+	input_free_polled_device(data->idev);
-+	sysfs_remove_group(&client->dev.kobj, &m_accelero_gr);
++	hwmon_device_unregister(data->hwmon_dev);
++	sysfs_remove_group(&client->dev.kobj, &m_thermal_gr);
 +	kfree(data);
 +	return 0;
 +}
 +
-+static struct i2c_device_id lis331dl_id[] = {
-+	{ "i2c_accel", 0 },
++static struct i2c_device_id emc1403_idtable[] = {
++	{ "i2c_thermal", 0 },
 +	{ }
 +};
 +
-+MODULE_DEVICE_TABLE(i2c, lis331dl_id);
++MODULE_DEVICE_TABLE(i2c, emc1403_idtable);
 +
-+static struct i2c_driver lis331dl_driver = {
++static struct i2c_driver sensor_emc1403 = {
 +	.driver = {
-+	.name = "lis331dl",
++		.name = "emc1403",
 +	},
-+	.probe = lis331dl_probe,
-+	.remove = lis331dl_remove,
-+	.id_table = lis331dl_id,
++	.probe = emc1403_probe,
++	.remove = emc1403_remove,
++	.id_table = emc1403_idtable,
 +};
 +
-+static int __init sensor_lis331dl_init(void)
++static int __init sensor_emc1403_init(void)
 +{
-+	int res;
-+
-+	res = i2c_add_driver(&lis331dl_driver);
-+	return res;
++	return i2c_add_driver(&sensor_emc1403);
 +}
 +
-+static void  __exit sensor_lis331dl_exit(void)
++static void  __exit sensor_emc1403_exit(void)
 +{
-+	i2c_del_driver(&lis331dl_driver);
++	i2c_del_driver(&sensor_emc1403);
 +}
 +
-+module_init(sensor_lis331dl_init);
-+module_exit(sensor_lis331dl_exit);
++module_init(sensor_emc1403_init);
++module_exit(sensor_emc1403_exit);
 +
-+MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com>, Alan Cox");
-+MODULE_DESCRIPTION("STMicroelectronics LIS331DL Accelerometer Driver");
++MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com");
++MODULE_DESCRIPTION("emc1403 Thermal Driver");
 +MODULE_LICENSE("GPL v2");
 
