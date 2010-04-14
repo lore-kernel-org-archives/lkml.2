@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab0DNNY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 09:24:27 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34979 "EHLO
+	id S1755514Ab0DNNYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 09:24:20 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34975 "EHLO
 	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750939Ab0DNNYY (ORCPT
+	with ESMTP id S1755128Ab0DNNYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 09:24:24 -0400
+	Wed, 14 Apr 2010 09:24:16 -0400
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 2/4] isl29020: ambient light sensor
+Subject: [PATCH 1/4] hmc6352: Add driver for the HMC6352 compass
 To: linux-i2c@vger.kernel.org, khali@linux-fr.org, linux-input@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Date: Wed, 14 Apr 2010 13:51:49 +0100
-Message-ID: <20100414125147.23181.5817.stgit@localhost.localdomain>
+Date: Wed, 14 Apr 2010 13:51:41 +0100
+Message-ID: <20100414125136.23181.16788.stgit@localhost.localdomain>
 In-Reply-To: <20100414124913.23181.75903.stgit@localhost.localdomain>
 References: <20100414124913.23181.75903.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -25,62 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kalhan Trisal <kalhan.trisal@intel.com>
 
-The LS driver will read the latest Lux measurement based upon the
-light brightness and will report the LUX output through sysfs interface.
+This driver will report the heading values in degrees to the sysfs interface.
+The values returned are headings . e.g. 245.6
+
+(Some cleanups from Alan Cox)
 
 Signed-off-by: Kalhan Trisal <kalhan.trisal@intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/hwmon/Kconfig    |    9 ++
- drivers/hwmon/Makefile   |    1 
- drivers/hwmon/isl29020.c |  243 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 253 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hwmon/isl29020.c
+ drivers/hwmon/Kconfig   |    7 +
+ drivers/hwmon/Makefile  |    1 
+ drivers/hwmon/hmc6352.c |  235 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 243 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwmon/hmc6352.c
 
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 74f672d..1fa2533 100644
+index d38447f..74f672d 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
-@@ -1095,6 +1095,15 @@ config SENSORS_HMC6352
- 	  This driver provides support for the Honeywell HMC6352 compass,
- 	  providing configuration and heading data via sysfs.
+@@ -1088,6 +1088,13 @@ config SENSORS_MC13783_ADC
+         help
+           Support for the A/D converter on MC13783 PMIC.
  
-+config SENSORS_ISL29020
-+	tristate "Intersil ISL29020 ALS"
++config SENSORS_HMC6352
++	tristate "Honeywell HMC6352 compass"
 +	depends on I2C
 +	help
-+	  If you say yes here you get support for the ALS Devices
-+	  Ambient Light Sensor monitoring chip.
-+	  Range values can be configured using sysfs.
-+	  Lux data is accessible via sysfs.
++	  This driver provides support for the Honeywell HMC6352 compass,
++	  providing configuration and heading data via sysfs.
 +
  if ACPI
  
  comment "ACPI drivers"
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index ad2ed36..13d6832 100644
+index 4aa1a3d..ad2ed36 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
-@@ -53,6 +53,7 @@ obj-$(CONFIG_SENSORS_HMC6352)	+= hmc6352.o
+@@ -49,6 +49,7 @@ obj-$(CONFIG_SENSORS_GL518SM)	+= gl518sm.o
+ obj-$(CONFIG_SENSORS_GL520SM)	+= gl520sm.o
+ obj-$(CONFIG_SENSORS_ULTRA45)	+= ultra45_env.o
+ obj-$(CONFIG_SENSORS_HDAPS)	+= hdaps.o
++obj-$(CONFIG_SENSORS_HMC6352)	+= hmc6352.o
  obj-$(CONFIG_SENSORS_I5K_AMB)	+= i5k_amb.o
  obj-$(CONFIG_SENSORS_IBMAEM)	+= ibmaem.o
  obj-$(CONFIG_SENSORS_IBMPEX)	+= ibmpex.o
-+obj-$(CONFIG_SENSORS_ISL29020)	+= isl29020.o
- obj-$(CONFIG_SENSORS_IT87)	+= it87.o
- obj-$(CONFIG_SENSORS_K8TEMP)	+= k8temp.o
- obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
-diff --git a/drivers/hwmon/isl29020.c b/drivers/hwmon/isl29020.c
+diff --git a/drivers/hwmon/hmc6352.c b/drivers/hwmon/hmc6352.c
 new file mode 100644
-index 0000000..458140d
+index 0000000..926982f
 --- /dev/null
-+++ b/drivers/hwmon/isl29020.c
-@@ -0,0 +1,243 @@
++++ b/drivers/hwmon/hmc6352.c
+@@ -0,0 +1,235 @@
 +/*
-+ * isl29020.c - Intersil  ALS Driver
++ * hmc6352.c - Honeywell Compass Driver
 + *
-+ * Copyright (C) 2008 Intel Corp
++ * Copyright (C) 2009 Intel Corp
 + *
 + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 + *
@@ -112,212 +112,204 @@ index 0000000..458140d
 +#include <linux/mutex.h>
 +#include <linux/sysfs.h>
 +
-+
-+#define ALS_MIN_RANGE_VAL 0
-+#define ALS_MAX_RANGE_VAL 5
-+
-+struct als_data {
++struct compass_data {
 +	struct device *hwmon_dev;
 +};
 +
-+static unsigned int i2c_write_current_data(struct i2c_client *client,
-+					unsigned int reg, unsigned int value)
-+{
-+	int ret_val;
-+
-+	ret_val = i2c_smbus_write_byte_data(client, reg, value);
-+	return ret_val;
-+}
-+
-+static ssize_t als_sensing_range_show(struct device *dev,
-+			struct device_attribute *attr,  char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int  val;
-+
-+	val = i2c_smbus_read_byte_data(client, 0x00);
-+	return sprintf(buf, "%d000\n", 1 << (2 * (val & 3)));
-+
-+}
-+
-+static ssize_t als_lux_output_data_show(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	unsigned int ret_val, val;
-+	unsigned long int lux, max_count;
-+	int tempv1, tempv2;
-+
-+	max_count = 65535;
-+	tempv1 = i2c_smbus_read_byte_data(client, 0x02); /* MSB data */
-+	tempv2 = i2c_smbus_read_byte_data(client, 0x01); /* LSB data */
-+	ret_val = tempv1;
-+	ret_val = (ret_val << 8 | tempv2);
-+	val = i2c_smbus_read_byte_data(client, 0x00);
-+	lux = ((((1 << (2 * (val & 3))))*1000) * ret_val) / max_count;
-+	return sprintf(buf, "%ld\n", lux);
-+}
-+
-+static ssize_t als_sensing_range_store(struct device *dev,
-+		struct device_attribute *attr, const  char *buf, size_t count)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	unsigned int ret_val, set_val = 0;
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 10, &val))
-+		return -EINVAL;
-+	ret_val = i2c_smbus_read_byte_data(client, 0x00);
-+	ret_val = ret_val & 0xFC; /*reset the bit before setting them */
-+	if (val == 1)
-+		set_val = (ret_val | 0x00); /* setting the 1:0  bit */
-+	else if (val == 2)
-+		set_val = (ret_val | 0x01);
-+	else if (val == 3)
-+		set_val = (ret_val | 0x02);
-+	else if (val == 4)
-+		set_val = (ret_val | 0x03);
-+	else
-+		goto invarg;
-+	i2c_write_current_data(client, 0x00, set_val);
-+	return count;
-+invarg:
-+	return -EINVAL;
-+}
-+
-+static ssize_t als_power_status_show(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int ret_val;
-+
-+	ret_val = i2c_smbus_read_byte_data(client, 0x00);
-+	ret_val = ret_val & 0x80;
-+	if (ret_val == 0x80)
-+		ret_val = 1;
-+	return sprintf(buf, "%x", ret_val);
-+}
-+
-+static ssize_t als_power_status_store(struct device *dev,
++static ssize_t compass_calibration_store(struct device *dev,
 +		struct device_attribute *attr, const char *buf, size_t count)
 +{
 +	struct i2c_client *client = to_i2c_client(dev);
-+	unsigned long val = 0;
-+	char curr_val;
++	int ret;
++	unsigned long val;
++	char  cmd[] = {0x43};
++	char  cmd1[] = {0x45};
++	struct i2c_msg msg[] = {
++		{ client->addr, 0, 1, cmd },
++	};
++	struct i2c_msg msg1[] = {
++		{ client->addr, 0, 1, cmd1 },
++	};
++
++	if (strict_strtoul(buf, 10, &val))
++		return -EINVAL;
++	if (val == 1) {
++		client->addr = 0x21;
++		ret = i2c_transfer(client->adapter, msg, 1);
++		if (ret != 1) {
++			dev_warn(dev, "hmc6352_comp : i2c callib start cmd failed\n");
++			return ret;
++		}
++	} else if (val == 2) {
++		client->addr = 0x21;
++		ret = i2c_transfer(client->adapter, msg1, 1);
++		if (ret != 1) {
++			dev_warn(dev, "hmc6352_comp : i2c callib stop cmd failed\n");
++			return ret;
++		}
++	} else
++		return -EINVAL;
++
++	return count;
++}
++
++static ssize_t compass_heading_data_show(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++
++	struct i2c_client *client = to_i2c_client(dev);
++	static char cmd[] = { 0x41 };
++	unsigned char i2c_data[2];
++	unsigned int ret, ret_val;
++	struct i2c_msg msg[] = {
++		{ client->addr, 0, 1, cmd },
++	};
++	struct i2c_msg msg1[] = {
++		{ client->addr, I2C_M_RD, 2, i2c_data },
++	};
++
++	client->addr = 0x21;
++	ret = i2c_transfer(client->adapter, msg, 1);
++	if (ret != 1) {
++		dev_warn(dev, "hmc6352 : i2c cmd  0x41 failed\n");
++		return ret;
++	}
++	msleep(10); /* sending 0x41 cmd we need to wait for 7-10 milli second*/
++	ret = i2c_transfer(client->adapter, msg1, 1);
++	if (ret != 1) {
++		dev_warn(dev, "hmc6352 : i2c read data cmd failed\n");
++		return ret;
++	}
++	ret_val = i2c_data[0];
++	ret_val = ((ret_val << 8) | i2c_data[1]);
++	return sprintf(buf, "%d.%d\n", ret_val/10, ret_val%10);
++}
++
++static ssize_t compass_power_mode_store(struct device *dev,
++		struct device_attribute *attr, const  char *buf, size_t count)
++{
++
++	struct i2c_client *client = to_i2c_client(dev);
++	unsigned long val;
++	unsigned int ret;
++	static char cmd[] = { 0x53 };
++	static char cmd1[] = { 0x57 };
++	struct i2c_msg msg[] = {
++		{ client->addr, 0, 1, cmd },
++	};
++	struct i2c_msg msg1[] = {
++		{ client->addr, 0, 1, cmd1 },
++	};
 +
 +	if (strict_strtoul(buf, 10, &val))
 +		return -EINVAL;
 +
-+	curr_val = i2c_smbus_read_byte_data(client, 0x00);
-+	if (val == 1)
-+		curr_val = curr_val | 0x80;
-+	else if (val == 0)
-+		curr_val = curr_val & 0x7F;
-+	else
++	if (val == 0) {
++		ret = i2c_transfer(client->adapter, msg, 1);
++		if (ret != 1)
++			dev_warn(dev, "hmc6352: i2c cmd  sleep mode failed\n");
++	} else if (val == 1) {
++		ret = i2c_transfer(client->adapter, msg1, 1);
++		if (ret != 1)
++			dev_warn(dev, "hmc6352: i2c cmd active mode failed\n");
++	} else
 +		return -EINVAL;
-+	i2c_write_current_data(client, 0x00, curr_val);
++
 +	return count;
 +}
 +
-+static DEVICE_ATTR(sensing_range, S_IRUGO | S_IWUSR,
-+	als_sensing_range_show, als_sensing_range_store);
-+static DEVICE_ATTR(lux_output, S_IRUGO, als_lux_output_data_show, NULL);
-+static DEVICE_ATTR(power_state, S_IRUGO | S_IWUSR,
-+	als_power_status_show, als_power_status_store);
++static DEVICE_ATTR(heading, S_IRUGO, compass_heading_data_show, NULL);
++static DEVICE_ATTR(calibration, S_IWUSR, NULL, compass_calibration_store);
++static DEVICE_ATTR(power_state, S_IWUSR, NULL, compass_power_mode_store);
 +
-+static struct attribute *mid_att_als[] = {
-+	&dev_attr_sensing_range.attr,
-+	&dev_attr_lux_output.attr,
++static struct attribute *mid_att_compass[] = {
++	&dev_attr_heading.attr,
++	&dev_attr_calibration.attr,
 +	&dev_attr_power_state.attr,
 +	NULL
 +};
 +
-+static struct attribute_group m_als_gr = {
-+	.name = "isl29020",
-+	.attrs = mid_att_als
++static struct attribute_group m_compass_gr = {
++	.name = "hmc6352",
++	.attrs = mid_att_compass
 +};
 +
-+static void als_set_default_config(struct i2c_client *client)
-+{
-+	i2c_write_current_data(client, 0x00, 0xc0);
-+}
-+
-+static int  isl29020_probe(struct i2c_client *client,
++static int  hmc6352_probe(struct i2c_client *client,
 +					const struct i2c_device_id *id)
 +{
 +	int res;
-+	struct als_data *data;
++	struct compass_data *data;
 +
-+	data = kzalloc(sizeof(struct als_data), GFP_KERNEL);
++	data = kzalloc(sizeof(struct compass_data), GFP_KERNEL);
 +	if (data == NULL) {
-+		printk(KERN_WARNING " isl29020: out of memory");
++		dev_err(&client->dev, "hmc6352: out of memory");
 +		return -ENOMEM;
 +	}
 +	i2c_set_clientdata(client, data);
 +
-+	res = sysfs_create_group(&client->dev.kobj, &m_als_gr);
++	res = sysfs_create_group(&client->dev.kobj, &m_compass_gr);
 +	if (res) {
-+		printk(KERN_WARNING "isl29020: device create file failed!!\n");
-+		goto als_error1;
++		dev_err(&client->dev, "hmc6352: device_create_file failed\n");
++		goto compass_error1;
 +	}
 +	data->hwmon_dev = hwmon_device_register(&client->dev);
 +	if (IS_ERR(data->hwmon_dev)) {
 +		res = PTR_ERR(data->hwmon_dev);
 +		data->hwmon_dev = NULL;
-+		sysfs_remove_group(&client->dev.kobj, &m_als_gr);
-+		printk(KERN_ERR "isl29020:unable to register hwmon device\n");
-+		goto als_error1;
++		dev_err(&client->dev, "hmc6352: fail to register hwmon device\n");
++		sysfs_remove_group(&client->dev.kobj, &m_compass_gr);
++		goto compass_error1;
 +	}
-+	dev_info(&client->dev, "%s isl29020: ALS chip found\n", client->name);
-+	als_set_default_config(client);
++	dev_info(&client->dev, "%s HMC6352 compass chip found\n",
++		client->name);
 +	return res;
 +
-+als_error1:
++compass_error1:
 +	i2c_set_clientdata(client, NULL);
 +	kfree(data);
 +	return res;
 +}
 +
-+static int isl29020_remove(struct i2c_client *client)
++static int hmc6352_remove(struct i2c_client *client)
 +{
-+	struct als_data *data = i2c_get_clientdata(client);
++	struct compass_data *data = i2c_get_clientdata(client);
 +
 +	hwmon_device_unregister(data->hwmon_dev);
-+	sysfs_remove_group(&client->dev.kobj, &m_als_gr);
++	sysfs_remove_group(&client->dev.kobj, &m_compass_gr);
 +	kfree(data);
 +	return 0;
 +}
 +
-+static struct i2c_device_id isl29020_id[] = {
-+	{ "i2c_als", 0 },
++static struct i2c_device_id hmc6352_id[] = {
++	{ "i2c_compass", 0 },
 +	{ }
 +};
 +
-+MODULE_DEVICE_TABLE(i2c, isl29020_id);
++MODULE_DEVICE_TABLE(i2c, hmc6352_id);
 +
-+static struct i2c_driver isl29020_driver = {
++static struct i2c_driver hmc6352_driver = {
 +	.driver = {
-+	.name = "isl29020",
++	.name = "hmc6352",
 +	},
-+	.probe = isl29020_probe,
-+	.remove = isl29020_remove,
-+	.id_table = isl29020_id,
++	.probe = hmc6352_probe,
++	.remove = hmc6352_remove,
++	.id_table = hmc6352_id,
 +};
 +
-+static int __init sensor_isl29020_init(void)
++static int __init sensor_hmc6352_init(void)
 +{
-+	return i2c_add_driver(&isl29020_driver);
++	return i2c_add_driver(&hmc6352_driver);
 +}
 +
-+static void  __exit sensor_isl29020_exit(void)
++static void  __exit sensor_hmc6352_exit(void)
 +{
-+	i2c_del_driver(&isl29020_driver);
++	i2c_del_driver(&hmc6352_driver);
 +}
 +
-+module_init(sensor_isl29020_init);
-+module_exit(sensor_isl29020_exit);
++module_init(sensor_hmc6352_init);
++module_exit(sensor_hmc6352_exit);
 +
 +MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com");
-+MODULE_DESCRIPTION("Intersil isl29020 ALS Driver");
++MODULE_DESCRIPTION("hmc6352 Compass Driver");
 +MODULE_LICENSE("GPL v2");
 
