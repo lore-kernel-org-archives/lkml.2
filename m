@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab0DNAKj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 20:10:39 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:14426 "EHLO
+	id S1754277Ab0DNALF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 20:11:05 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:57145 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab0DNAKf (ORCPT
+	with ESMTP id S1754119Ab0DNALA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 20:10:35 -0400
+	Tue, 13 Apr 2010 20:11:00 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=jaMgY40XU9+7GCjoDGWjdNoig/gMAeqwwDyw4Xdn2gOzUQXiLp3CfDYug1hNNj6Vy
-	xnvZCMWPS0Bv+Lgop/E7A==
-Subject: [PATCH 2/3] [kidled]: Add eager injection.
+	b=V07GFHbEm0W6wrd+du7YPuzdCGRuVmZcQ44SxCkHcfuzTAmLXQYzpba3mXJwcLieD
+	6E/Rias5dIddh/E/ckSxQ==
+Subject: [PATCH 3/3] [kidled]: Introduce power capping priority and LB
+	awareness.
 To: peterz@infradead.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
        akpm@linux-foundation.org, svaidy@linux.vnet.ibm.com,
        linux-pm@lists.linux-foundation.org, arjan@infradead.org
 From: Salman <sqazi@google.com>
 Cc: csadler@google.com, ranjitm@google.com, kenchen@google.com,
        dawnchen@google.com
-Date: Tue, 13 Apr 2010 17:08:43 -0700
-Message-ID: <20100414000838.29004.1513.stgit@bumblebee1.mtv.corp.google.com>
+Date: Tue, 13 Apr 2010 17:08:56 -0700
+Message-ID: <20100414000848.29004.91509.stgit@bumblebee1.mtv.corp.google.com>
 In-Reply-To: <20100413234902.29004.41655.stgit@bumblebee1.mtv.corp.google.com>
 References: <20100413234902.29004.41655.stgit@bumblebee1.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -35,588 +36,360 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Salman Qazi <sqazi@google.com>
 
-We add the concept of a "power interactive" task group.  This is a task
-group that, for the purposes of power capping, will recieve special treatment.
+0) Power Capping Priority:
 
-When there are no power interactive tasks on the runqueue, we inject idle
-cycles unless we have already met the quota.  However, when there are
-power interactive tasks on the runqueue, we only inject idle cycles if we
-would otherwise fail to meet the quota.  As a result, we try our very best
-to not hit the interactive tasks with the idle cycles.  The power
-interactivity status of a task group is determined by the boolean value
-in cpu.power_interactive.
+After we finish a lazy injection, we look at the task groups in the order
+of increasing priority.  For each task group, we attempt to assign
+as much vruntime as possible, to cover the time that was spent doing
+the lazy injection.  Within each priority, we round-robin between the
+task group between different invocations to make sure that we don't
+consistently penalize the same one.
+
+The priorities themselves are specified through the value
+cpu.power_capping_priority in the parent CPU cgroup of the tasks.
+
+1) Load balancer awareness
+
+Idle cycle injector is an RT thread.  A consequence is that from the load
+balancer's point of view, it is a particularly heavy thread.  While
+we appreciate the ability to preempt any CFS threads, it is useful
+to have a lesser weight: as a heavy weight makes an injected CPU
+disproportionately less desirable than other CPUs.  We provide this
+by faking the weight of the idle cycle injector to be equivalent to
+a CFS thread of a user controllable nice value.
 
 Signed-off-by: Salman Qazi <sqazi@google.com>
 ---
- Documentation/kidled.txt |   15 ++++
- include/linux/kidled.h   |   34 +++++++++
- include/linux/sched.h    |    3 +
- kernel/kidled.c          |  166 +++++++++++++++++++++++++++++++++++++++++++---
- kernel/sched.c           |   80 ++++++++++++++++++++++
- 5 files changed, 285 insertions(+), 13 deletions(-)
+ Documentation/kidled.txt |   38 ++++++++++++++++++++++-
+ include/linux/kidled.h   |    6 ++++
+ kernel/kidled.c          |    2 +
+ kernel/sched.c           |   75 +++++++++++++++++++++++++++++++++++++++++++--
+ kernel/sched_fair.c      |   77 +++++++++++++++++++++++++++++++++++++++++++++-
+ 5 files changed, 192 insertions(+), 6 deletions(-)
 
 diff --git a/Documentation/kidled.txt b/Documentation/kidled.txt
-index 1149e3f..564aa00 100644
+index 564aa00..400b97b 100644
 --- a/Documentation/kidled.txt
 +++ b/Documentation/kidled.txt
-@@ -25,7 +25,7 @@ injected idle cycles are by convention reported as busy time, attributed to
- kidled.
+@@ -6,7 +6,7 @@ Overview:
+ Provides a kernel interface for causing the CPUs to have some
+ minimum percentage of the idle time.
+ 
+-Interfaces:
++Basic Interfaces:
+ 
+ Under /proc/sys/kernel/kidled/, we can find the following files:
+ 
+@@ -51,3 +51,39 @@ tasks become runnable, they are more likely to fall in an interval when we
+ aren't forcing the CPU idle.
  
  
--Operation:
-+Basic Operation:
- 
- The injecting component of the idle cycle injector is the kernel thread
- kidled.  The measurements to determine when to inject idle cycles is done
-@@ -38,3 +38,16 @@ quota.  If that's the case, then we inject idle cycles until the end of the
- interval.
- 
- 
-+Eager Injection:
++Power Capping Priority:
 +
-+Above is true, when there is at least one tasks marked "interactive" on
-+the CPU runqueue for the duration of the interval.  Marking a task
-+interactive involves setting power_interactive to 1 in its parent CPU
-+cgroup.  When such no such task is runnable and when we have not achieved
-+the minimum idle percentage for the interval, we eagerly inject idle cycles.
-+The purpose for doing so is to inject as many of the idle cycles as possible
-+while the interactive tasks are not running.  Thus, when the interactive
-+tasks become runnable, they are more likely to fall in an interval when we
-+aren't forcing the CPU idle.
++The time taken up by the idle cycle injector normally affects all of the
++interactive processes in the same way.  Essentially, that length of time
++disappears from CF's decisions.
++
++However, this isn't always desirable.  Ideally, we want
++to be able to shield some tasks from the consequences of power capping, while
++letting other tasks take the brunt of the impact.  We accomplish this by
++stealing time from tasks, as if they were running while we were lazy
++injecting.  We do this in a user specified priority order.  The priorities
++are specified as power_capping_priority in the parent CPU cgroup of the tasks.
++The higher the priority, the better it is for the task.  The run delay
++introduced by power capping is first given to the lower priority task, but
++if they aren't able to absorb it (i.e. it exceeds the time that they would
++have available to run), then it is passed to the higher priorities.  In
++case of a tie, we round robin the order of the tasks for this penalty.
++
++Note that we reserve the power capping priority treatment for lazy injections
++only.  Eagerly injected cycles are distributed equally among all the
++tasks.  Since interactive tasks are unaffected by eager injection, this
++is fine.
++
++Pretending to be a CFS thread for the LB:
++
++The kidled is an RT thread so that it can preempt almost anything.
++As such, it would normally have the weight associated with an RT thread.
++However, this makes a CPU recieving an idle cycle injection,
++suddenly much much less desirable than other CPUs with just CFS tasks.
++To provide a way to remedy this, we allow the setting of a fake nice value
++for the kidled thread.  Normally these threads are nice -19.  But the value
++can be adjusted by the user with /proc/sys/kernel/kidled/lb_prio.  This is
++specified as a non-negative integer.  0 corresponds to nice -19 (default)
++and 39 corresponds to nice 20.
 +
 +
 diff --git a/include/linux/kidled.h b/include/linux/kidled.h
-index 7940dfa..05c4ae5 100644
+index 05c4ae5..199915a 100644
 --- a/include/linux/kidled.h
 +++ b/include/linux/kidled.h
-@@ -11,6 +11,7 @@
- #define _IDLED_H
+@@ -69,9 +69,15 @@ static inline int ici_in_eager_mode(void)
  
- DECLARE_PER_CPU(unsigned long, cpu_lazy_inject_count);
-+DECLARE_PER_CPU(unsigned long, cpu_eager_inject_count);
- 
- static inline s64 current_cpu_lazy_inject_count(void)
- {
-@@ -18,9 +19,16 @@ static inline s64 current_cpu_lazy_inject_count(void)
- 	return __get_cpu_var(cpu_lazy_inject_count);
- }
- 
-+static inline s64 current_cpu_eager_inject_count(void)
-+{
-+	/* We update this value in the idle cycle injector */
-+	return __get_cpu_var(cpu_eager_inject_count);
-+}
-+
- static inline s64 current_cpu_inject_count(void)
- {
--	return current_cpu_lazy_inject_count();
-+	return current_cpu_lazy_inject_count() +
-+		current_cpu_eager_inject_count();
- }
- 
- 
-@@ -42,4 +50,28 @@ static inline s64 current_cpu_busy_count(void)
+ int  kidled_running(void);
+ struct task_struct *get_kidled_task(int cpu);
++int  get_ici_lb_prio(void);
+ int  is_ici_thread(struct task_struct *p);
  void kidled_interrupt_enter(void);
  void set_cpu_idle_ratio(int cpu, long idle_time, long busy_time);
  void get_cpu_idle_ratio(int cpu, long *idle_time, long *busy_time);
-+
-+enum ici_enum {
-+	ICI_LAZY,
-+	ICI_EAGER,
-+};
-+
-+DECLARE_PER_CPU(enum ici_enum, ici_state);
-+
-+static inline int ici_in_eager_mode(void)
-+{
-+#ifdef CONFIG_IDLE_CYCLE_INJECTOR
-+	return (__get_cpu_var(ici_state) == ICI_EAGER);
-+#else
-+	return 0;
-+#endif
-+}
-+
-+int  kidled_running(void);
-+struct task_struct *get_kidled_task(int cpu);
-+int  is_ici_thread(struct task_struct *p);
-+void kidled_interrupt_enter(void);
-+void set_cpu_idle_ratio(int cpu, long idle_time, long busy_time);
-+void get_cpu_idle_ratio(int cpu, long *idle_time, long *busy_time);
+ extern int should_eager_inject(void);
++void power_capping_reshuffle_runqueue(long injected, long period);
 +extern int should_eager_inject(void);
++
++#define MAX_POWER_CAPPING_PRIORITY	(48)
++
  #endif
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 78efe7c..1f94f21 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1566,6 +1566,9 @@ struct task_struct {
- 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
- 	} memcg_batch;
- #endif
-+#ifdef CONFIG_IDLE_CYCLE_INJECTOR
-+	int power_interactive;
-+#endif
- };
- 
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
 diff --git a/kernel/kidled.c b/kernel/kidled.c
-index f590178..4e7aff3 100644
+index 4e7aff3..5cd6911 100644
 --- a/kernel/kidled.c
 +++ b/kernel/kidled.c
-@@ -45,10 +45,16 @@ struct kidled_inputs {
- };
- 
- static int kidled_init_completed;
-+
-+DEFINE_PER_CPU(enum ici_enum, ici_state);
- static DEFINE_PER_CPU(struct task_struct *, kidled_thread);
- static DEFINE_PER_CPU(struct kidled_inputs, kidled_inputs);
- 
- DEFINE_PER_CPU(unsigned long, cpu_lazy_inject_count);
-+DEFINE_PER_CPU(unsigned long, cpu_eager_inject_count);
-+
-+static int sysctl_ici_lb_prio;
-+static int ici_lb_prio_max = MAX_PRIO - MAX_RT_PRIO - 1;
- 
- struct monitor_cpu_data {
- 	int cpu;
-@@ -58,10 +64,26 @@ struct monitor_cpu_data {
- 	long max_cpu_time;
- 	long clock_time;
- 	long cpu_time;
-+	long eager_inject_goal;
- };
- 
- static DEFINE_PER_CPU(struct monitor_cpu_data, monitor_cpu_data);
- 
-+int get_ici_lb_prio(void)
-+{
-+	return sysctl_ici_lb_prio;
-+}
-+
-+int is_ici_thread(struct task_struct *p)
-+{
-+	return per_cpu(kidled_thread, task_cpu(p)) == p;
-+}
-+
-+int kidled_running(void)
-+{
-+	return __get_cpu_var(kidled_thread)->se.on_rq;
-+}
-+
- 
- static DEFINE_PER_CPU(int, in_lazy_inject);
- static DEFINE_PER_CPU(unsigned long, inject_start);
-@@ -98,6 +120,40 @@ static void exit_lazy_inject(void)
- 	local_irq_enable();
- }
- 
-+static DEFINE_PER_CPU(int, in_eager_inject);
-+static void __enter_eager_inject(void)
-+{
-+	if (!__get_cpu_var(in_eager_inject)) {
-+		__get_cpu_var(inject_start) = ktime_to_ns(ktime_get());
-+		__get_cpu_var(in_eager_inject) = 1;
-+	}
-+	enter_idle();
-+}
-+
-+static void __exit_eager_inject(void)
-+{
-+	if (__get_cpu_var(in_eager_inject)) {
-+		__get_cpu_var(cpu_eager_inject_count) +=
-+			ktime_to_ns(ktime_get()) - __get_cpu_var(inject_start);
-+		__get_cpu_var(in_eager_inject) = 0;
-+	}
-+	__exit_idle();
-+}
-+
-+static void enter_eager_inject(void)
-+{
-+	local_irq_disable();
-+	__enter_eager_inject();
-+	local_irq_enable();
-+}
-+
-+static void exit_eager_inject(void)
-+{
-+	local_irq_disable();
-+	__exit_eager_inject();
-+	local_irq_enable();
-+}
-+
- /* Caller must have interrupts disabled */
- void kidled_interrupt_enter(void)
- {
-@@ -105,6 +161,7 @@ void kidled_interrupt_enter(void)
- 		return;
- 
- 	__exit_lazy_inject();
-+	__exit_eager_inject();
- }
- 
- static DEFINE_PER_CPU(int, still_lazy_injecting);
-@@ -168,8 +225,25 @@ static DEFINE_PER_CPU(int, still_monitoring);
- /*
-  * Tells us when we would need to wake up next.
-  */
--long get_next_timer(struct monitor_cpu_data *data)
-+static void eager_inject(void)
-+{
-+	while (should_eager_inject() && __get_cpu_var(still_monitoring)
-+			 && ici_in_eager_mode()) {
-+		enter_eager_inject();
-+		do_idle();
-+		exit_eager_inject();
-+		cond_resched();
-+	}
-+}
-+
-+/*
-+ * Tells us when we would need to wake up next
-+ */
-+long get_next_timer(struct monitor_cpu_data *data,
-+			enum ici_enum *state)
- {
-+	long next_timer;
-+	long rounded_eager;
- 	long lazy;
- 
- 	lazy = min(data->max_cpu_time - data->cpu_time,
-@@ -177,7 +251,19 @@ long get_next_timer(struct monitor_cpu_data *data)
- 
- 	lazy -= SLEEP_GRANULARITY - 1;
- 
--	return lazy;
-+	if (data->eager_inject_goal > 0) {
-+		*state = ICI_EAGER;
-+		if (!should_eager_inject())
-+			rounded_eager = NSEC_PER_MSEC;
-+		else
-+			rounded_eager = roundup(data->eager_inject_goal,
-+						SLEEP_GRANULARITY);
-+		next_timer = min(lazy, rounded_eager);
-+	} else {
-+		*state = ICI_LAZY;
-+		next_timer = lazy;
-+	}
-+	return next_timer;
- }
- 
- /*
-@@ -191,32 +277,51 @@ long get_next_timer(struct monitor_cpu_data *data)
- static enum hrtimer_restart monitor_cpu_timer_func(struct hrtimer *timer)
- {
- 	long next_timer;
-+	enum ici_enum old_state;
- 	struct monitor_cpu_data *data = &__get_cpu_var(monitor_cpu_data);
- 
- 	BUG_ON(data->cpu != smp_processor_id());
- 	data->clock_time = ktime_to_ns(ktime_get()) - data->base_clock_count;
- 	data->cpu_time = current_cpu_busy_count() - data->base_cpu_count;
-+	data->eager_inject_goal = (data->max_clock_time - data->max_cpu_time) -
-+				(data->clock_time - data->cpu_time);
- 
- 	if ((data->max_clock_time - data->clock_time < SLEEP_GRANULARITY) ||
- 	    (data->max_cpu_time - data->cpu_time < SLEEP_GRANULARITY)) {
- 		__get_cpu_var(still_monitoring) = 0;
-+		__get_cpu_var(ici_state) = ICI_LAZY;
- 
- 		wake_up_process(__get_cpu_var(kidled_thread));
- 		return HRTIMER_NORESTART;
- 	} else {
--		next_timer = get_next_timer(data);
-+		old_state = __get_cpu_var(ici_state);
-+		next_timer = get_next_timer(data, &__get_cpu_var(ici_state));
-+
-+		if (__get_cpu_var(ici_state) != old_state)
-+			set_tsk_need_resched(current);
-+
-+		if (ici_in_eager_mode() && should_eager_inject() &&
-+				!kidled_running())
-+			wake_up_process(__get_cpu_var(kidled_thread));
- 
- 		hrtimer_forward_now(timer, ktime_set(0,  next_timer));
- 		return HRTIMER_RESTART;
+@@ -218,6 +218,8 @@ static void lazy_inject(long nsecs, long interval)
  	}
+ 	__get_cpu_var(still_lazy_injecting) = 0;
+ 	hrtimer_cancel(&halt_timer);
++
++	power_capping_reshuffle_runqueue(nsecs, interval);
  }
  
-+struct task_struct *get_kidled_task(int cpu)
-+{
-+	return per_cpu(kidled_thread, cpu);
-+}
-+
- /*
-  * Allow other processes to use CPU for up to max_clock_time
-  * clock time, and max_cpu_time CPU time.
-  *
-  * Accurate only up to resolution of hrtimers.
-  *
-+ * Invariant: This function should return with ici_state == ICI_LAZY.
-+ *
-  * @return: Clock time left
-  */
- static unsigned long monitor_cpu(long max_clock_time, long max_cpu_time,
-@@ -232,12 +337,14 @@ static unsigned long monitor_cpu(long max_clock_time, long max_cpu_time,
- 	data->clock_time = 0;
- 	data->cpu_time = 0;
- 	data->cpu = smp_processor_id();
-+	data->eager_inject_goal = max_clock_time - max_cpu_time;
- 
--	first_timer =  get_next_timer(data);
-+	first_timer =  get_next_timer(data, &__get_cpu_var(ici_state));
- 	if (first_timer <= 0) {
- 		if (left_cpu_time)
- 			*left_cpu_time = max_cpu_time;
- 
-+		__get_cpu_var(ici_state) = ICI_LAZY;
- 		return max_clock_time;
- 	}
- 
-@@ -247,11 +354,19 @@ static unsigned long monitor_cpu(long max_clock_time, long max_cpu_time,
- 	sleep_timer.function = monitor_cpu_timer_func;
- 	hrtimer_start(&sleep_timer, ktime_set(0, first_timer),
- 		      HRTIMER_MODE_REL);
--	while (1) {
--		set_current_state(TASK_INTERRUPTIBLE);
--		if (!__get_cpu_var(still_monitoring))
--			break;
--		schedule();
-+
-+	while (__get_cpu_var(still_monitoring)) {
-+		while (1) {
-+			set_current_state(TASK_INTERRUPTIBLE);
-+			if (!__get_cpu_var(still_monitoring) ||
-+			    (ici_in_eager_mode() && should_eager_inject())) {
-+				set_current_state(TASK_RUNNING);
-+				break;
-+			}
-+			schedule();
-+		}
-+
-+		eager_inject();
- 	}
- 
- 	__get_cpu_var(still_monitoring) = 0;
-@@ -345,6 +460,25 @@ static void set_kidled_interval(int cpu, long interval)
- 	spin_unlock(&per_cpu(kidled_inputs, cpu).lock);
- }
- 
-+static int proc_ici_lb_prio(struct ctl_table *table, int write,
-+			    void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	int ret;
-+	int cpu;
-+	struct sched_param param = { .sched_priority = KIDLED_PRIO };
-+	ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
-+
-+	if (!ret && write) {
-+		/* Make the scheduler set the load weight again */
-+		for_each_online_cpu(cpu) {
-+			sched_setscheduler(per_cpu(kidled_thread, cpu),
-+					   SCHED_FIFO, &param);
-+		}
-+	}
-+
-+	return ret;
-+}
-+
- static int proc_min_idle_percent(struct ctl_table *table, int write,
- 				 void __user *buffer, size_t *lenp,
- 				 loff_t *ppos)
-@@ -427,6 +561,7 @@ static void getstats(void *info)
- 	stats[0] = current_cpu_idle_count();
- 	stats[1] = current_cpu_busy_count();
- 	stats[2] = current_cpu_lazy_inject_count();
-+	stats[3] = current_cpu_eager_inject_count();
- }
- 
- 
-@@ -434,7 +569,7 @@ static int proc_stats(struct ctl_table *table, int write,
- 		      void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	int ret;
--	unsigned long stats[3];
-+	unsigned long stats[4];
- 	int cpu = (int)((long)table->extra1);
- 	struct ctl_table fake = {};
- 
-@@ -442,7 +577,7 @@ static int proc_stats(struct ctl_table *table, int write,
- 		return -EINVAL;
- 
- 	fake.data = stats;
--	fake.maxlen = 3*sizeof(unsigned long);
-+	fake.maxlen = 4*sizeof(unsigned long);
- 
- 	ret = smp_call_function_single(cpu, getstats, &stats, 1);
- 	if (ret)
-@@ -487,6 +622,15 @@ static int zero;
- 
- struct ctl_table kidled_table[] = {
- 	{
-+		.procname	= "lb_prio",
-+		.data		= &sysctl_ici_lb_prio,
-+		.maxlen		= sizeof(int),
-+		.proc_handler	= proc_ici_lb_prio,
-+		.extra1		= &zero,
-+		.extra2		= &ici_lb_prio_max,
-+		.mode		= 0644,
-+	},
-+	{
- 		.procname	= "cpu",
- 		.mode		= 0555,
- 		.child		= kidled_cpu_table,
+ static DEFINE_PER_CPU(int, still_monitoring);
 diff --git a/kernel/sched.c b/kernel/sched.c
-index 3a8fb30..486cab2 100644
+index 486cab2..f2e89cd 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -71,6 +71,7 @@
- #include <linux/debugfs.h>
- #include <linux/ctype.h>
- #include <linux/ftrace.h>
-+#include <linux/kidled.h>
- 
- #include <asm/tlb.h>
- #include <asm/irq_regs.h>
-@@ -257,6 +258,9 @@ struct task_group {
- 	/* runqueue "owned" by this group on each cpu */
- 	struct cfs_rq **cfs_rq;
+@@ -260,6 +260,8 @@ struct task_group {
  	unsigned long shares;
-+#ifdef CONFIG_IDLE_CYCLE_INJECTOR
-+	int power_interactive;
-+#endif
+ #ifdef CONFIG_IDLE_CYCLE_INJECTOR
+ 	int power_interactive;
++	int power_capping_priority;
++	struct list_head pcp_queue_list[NR_CPUS];
+ #endif
  #endif
  
+@@ -552,6 +554,9 @@ struct rq {
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	/* list of leaf cfs_rq on this cpu: */
+ 	struct list_head leaf_cfs_rq_list;
++#ifdef CONFIG_IDLE_CYCLE_INJECTOR
++	struct list_head pwrcap_prio_queue[MAX_POWER_CAPPING_PRIORITY];
++#endif
+ #endif
  #ifdef CONFIG_RT_GROUP_SCHED
-@@ -626,6 +630,10 @@ struct rq {
- 	/* BKL stats */
- 	unsigned int bkl_count;
- #endif
-+
+ 	struct list_head leaf_rt_rq_list;
+@@ -1867,8 +1872,20 @@ static void dec_nr_running(struct rq *rq)
+ static void set_load_weight(struct task_struct *p)
+ {
+ 	if (task_has_rt_policy(p)) {
+-		p->se.load.weight = prio_to_weight[0] * 2;
+-		p->se.load.inv_weight = prio_to_wmult[0] >> 1;
 +#ifdef CONFIG_IDLE_CYCLE_INJECTOR
-+	unsigned int nr_interactive;
++		if (!is_ici_thread(p)) {
 +#endif
- };
- 
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
-@@ -1888,6 +1896,13 @@ static void enqueue_task(struct rq *rq, struct task_struct *p, int wakeup)
- 	if (wakeup)
- 		p->se.start_runtime = p->se.sum_exec_runtime;
- 
++			p->se.load.weight = prio_to_weight[0] * 2;
++			p->se.load.inv_weight = prio_to_wmult[0] >> 1;
 +#ifdef CONFIG_IDLE_CYCLE_INJECTOR
-+	if (!p->se.on_rq) {
-+		p->power_interactive = task_group(p)->power_interactive;
-+		rq->nr_interactive += p->power_interactive;
-+	}
++		} else {
++			int lb_prio = get_ici_lb_prio();
++			p->se.load.weight =
++				prio_to_weight[lb_prio];
++			p->se.load.inv_weight =
++				prio_to_wmult[lb_prio];
++		}
 +#endif
-+
- 	sched_info_queued(p);
- 	p->sched_class->enqueue_task(rq, p, wakeup);
- 	p->se.on_rq = 1;
-@@ -1906,6 +1921,11 @@ static void dequeue_task(struct rq *rq, struct task_struct *p, int sleep)
- 		}
+ 		return;
  	}
  
+@@ -9599,7 +9616,12 @@ void __init sched_init(void)
+ #ifdef CONFIG_GROUP_SCHED
+ 	list_add(&init_task_group.list, &task_groups);
+ 	INIT_LIST_HEAD(&init_task_group.children);
+-
++#ifdef CONFIG_FAIR_GROUP_SCHED
 +#ifdef CONFIG_IDLE_CYCLE_INJECTOR
-+	if (p->se.on_rq)
-+		rq->nr_interactive -= p->power_interactive;
++	for_each_possible_cpu(i)
++		INIT_LIST_HEAD(&init_task_group.pcp_queue_list[i]);
 +#endif
-+
- 	sched_info_dequeued(p);
- 	p->sched_class->dequeue_task(rq, p, sleep);
- 	p->se.on_rq = 0;
-@@ -5443,6 +5463,19 @@ static void put_prev_task(struct rq *rq, struct task_struct *prev)
- 	prev->sched_class->put_prev_task(rq, prev);
- }
++#endif
+ #ifdef CONFIG_USER_SCHED
+ 	INIT_LIST_HEAD(&root_task_group.children);
+ 	init_task_group.parent = &root_task_group;
+@@ -9627,6 +9649,10 @@ void __init sched_init(void)
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 		init_task_group.shares = init_task_group_load;
+ 		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
++#ifdef CONFIG_IDLE_CYCLE_INJECTOR
++		for (j = 0; j < MAX_POWER_CAPPING_PRIORITY; j++)
++			INIT_LIST_HEAD(&rq->pwrcap_prio_queue[j]);
++#endif
+ #ifdef CONFIG_CGROUP_SCHED
+ 		/*
+ 		 * How much cpu bandwidth does init_task_group get?
+@@ -10110,6 +10136,11 @@ struct task_group *sched_create_group(struct task_group *parent)
+ 
+ 	WARN_ON(!parent); /* root should already exist */
  
 +#ifdef CONFIG_IDLE_CYCLE_INJECTOR
-+int curr_rq_has_interactive(void)
-+{
-+	return (this_rq()->nr_interactive > 0);
-+}
-+
-+int should_eager_inject(void)
-+{
-+	return !curr_rq_has_interactive() && (!this_rq()->rt.rt_nr_running
-+		|| ((this_rq()->rt.rt_nr_running == 1) && kidled_running()));
-+}
++	for_each_possible_cpu(i)
++		INIT_LIST_HEAD(&tg->pcp_queue_list[i]);
 +#endif
 +
- /*
-  * Pick up the highest-prio task:
-  */
-@@ -5452,6 +5485,23 @@ pick_next_task(struct rq *rq)
- 	const struct sched_class *class;
- 	struct task_struct *p;
- 
-+#ifdef CONFIG_IDLE_CYCLE_INJECTOR
-+	if (ici_in_eager_mode() && should_eager_inject() &&
-+	    !kidled_running()) {
-+		p = get_kidled_task(cpu_of(rq));
-+
-+		current->se.last_wakeup = current->se.sum_exec_runtime;
-+
-+#if defined(CONFIG_SMP) && defined(CONFIG_SCHEDSTATS)
-+		schedstat_inc(rq, ttwu_count);
-+		schedstat_inc(rq, ttwu_local);
-+#endif
-+
-+		set_task_state(p, TASK_RUNNING);
-+		activate_task(rq, p, 1);
-+	}
-+#endif
-+
- 	/*
- 	 * Optimization: we know that if all tasks are in
- 	 * the fair class we can call that function directly:
-@@ -9567,6 +9617,9 @@ void __init sched_init(void)
- 		rq = cpu_rq(i);
- 		raw_spin_lock_init(&rq->lock);
- 		rq->nr_running = 0;
-+#ifdef CONFIG_IDLE_CYCLE_INJECTOR
-+		rq->nr_interactive = 0;
-+#endif
- 		rq->calc_load_active = 0;
- 		rq->calc_load_update = jiffies + LOAD_FREQ;
- 		init_cfs_rq(&rq->cfs, rq);
-@@ -10604,6 +10657,26 @@ static u64 cpu_shares_read_u64(struct cgroup *cgrp, struct cftype *cft)
- 
- 	return (u64) tg->shares;
+ 	tg->parent = parent;
+ 	INIT_LIST_HEAD(&tg->children);
+ 	list_add_rcu(&tg->siblings, &parent->children);
+@@ -10676,6 +10707,39 @@ static int cpu_power_interactive_write_u64(struct cgroup *cgrp,
+ 	tg->power_interactive = interactive;
+ 	return 0;
  }
 +
-+#ifdef CONFIG_IDLE_CYCLE_INJECTOR
-+static u64 cpu_power_interactive_read_u64(struct cgroup *cgrp,
-+					  struct cftype *cft)
++static u64 cpu_power_capping_priority_read_u64(struct cgroup *cgrp,
++						struct cftype *cft)
 +{
 +	struct task_group *tg = cgroup_tg(cgrp);
-+	return (u64) tg->power_interactive;
++	return (u64) tg->power_capping_priority;
 +}
 +
-+static int cpu_power_interactive_write_u64(struct cgroup *cgrp,
-+			struct cftype *cft, u64 interactive)
++static int cpu_power_capping_priority_write_u64(struct cgroup *cgrp,
++						struct cftype *cftype,
++						u64 priority)
 +{
 +	struct task_group *tg = cgroup_tg(cgrp);
-+	if ((interactive < 0) || (interactive > 1))
++	int i;
++
++	if (priority >= MAX_POWER_CAPPING_PRIORITY)
 +		return -EINVAL;
 +
-+	tg->power_interactive = interactive;
++	tg->power_capping_priority = priority;
++
++	for_each_online_cpu(i) {
++		struct rq *rq = cpu_rq(i);
++
++		raw_spin_lock_irq(&rq->lock);
++		if (!list_empty(&tg->pcp_queue_list[i])) {
++			list_move_tail(&tg->pcp_queue_list[i],
++					&rq->pwrcap_prio_queue[priority]);
++		}
++		raw_spin_unlock_irq(&rq->lock);
++	}
++
 +	return 0;
 +}
-+#endif /* CONFIG_IDLE_CYCLE_INJECTOR */
+ #endif /* CONFIG_IDLE_CYCLE_INJECTOR */
  #endif /* CONFIG_FAIR_GROUP_SCHED */
  
- #ifdef CONFIG_RT_GROUP_SCHED
-@@ -10637,6 +10710,13 @@ static struct cftype cpu_files[] = {
- 		.read_u64 = cpu_shares_read_u64,
- 		.write_u64 = cpu_shares_write_u64,
+@@ -10712,6 +10776,11 @@ static struct cftype cpu_files[] = {
  	},
-+#ifdef CONFIG_IDLE_CYCLE_INJECTOR
-+	{
-+		.name = "power_interactive",
-+		.read_u64 = cpu_power_interactive_read_u64,
-+		.write_u64 = cpu_power_interactive_write_u64,
-+	},
-+#endif
- #endif
- #ifdef CONFIG_RT_GROUP_SCHED
+ #ifdef CONFIG_IDLE_CYCLE_INJECTOR
  	{
++		.name = "power_capping_priority",
++		.read_u64 = cpu_power_capping_priority_read_u64,
++		.write_u64 = cpu_power_capping_priority_write_u64,
++	},
++	{
+ 		.name = "power_interactive",
+ 		.read_u64 = cpu_power_interactive_read_u64,
+ 		.write_u64 = cpu_power_interactive_write_u64,
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 8fe7ee8..715a3ae 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -625,8 +625,23 @@ static void
+ account_entity_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ {
+ 	update_load_add(&cfs_rq->load, se->load.weight);
+-	if (!parent_entity(se))
++	if (!parent_entity(se)) {
++
++#ifdef CONFIG_IDLE_CYCLE_INJECTOR
++		struct task_group *tg = NULL;
++
++		if (group_cfs_rq(se))
++			tg = group_cfs_rq(se)->tg;
++		if (tg && tg->parent) {
++			int cpu = cpu_of(rq_of(cfs_rq));
++			int pcp_prio = tg->power_capping_priority;
++			list_add_tail(&tg->pcp_queue_list[cpu],
++				 &rq_of(cfs_rq)->pwrcap_prio_queue[pcp_prio]);
++		}
++#endif
++
+ 		inc_cpu_load(rq_of(cfs_rq), se->load.weight);
++	}
+ 	if (entity_is_task(se)) {
+ 		add_cfs_task_weight(cfs_rq, se->load.weight);
+ 		list_add(&se->group_node, &cfs_rq->tasks);
+@@ -639,8 +654,19 @@ static void
+ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ {
+ 	update_load_sub(&cfs_rq->load, se->load.weight);
+-	if (!parent_entity(se))
++	if (!parent_entity(se)) {
++
++#ifdef CONFIG_IDLE_CYCLE_INJECTOR
++		struct task_group *tg = NULL;
++
++		if (group_cfs_rq(se))
++			tg = group_cfs_rq(se)->tg;
++		if (tg && tg->parent)
++			list_del_init(&tg->pcp_queue_list[cfs_rq->rq->cpu]);
++#endif
++
+ 		dec_cpu_load(rq_of(cfs_rq), se->load.weight);
++	}
+ 	if (entity_is_task(se)) {
+ 		add_cfs_task_weight(cfs_rq, -se->load.weight);
+ 		list_del_init(&se->group_node);
+@@ -988,6 +1014,53 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
+ 		check_preempt_tick(cfs_rq, curr);
+ }
+ 
++#ifdef CONFIG_IDLE_CYCLE_INJECTOR
++/* reshuffle run queue order base on power capping priority */
++void power_capping_reshuffle_runqueue(long injected, long ici_period)
++{
++	int i;
++	int cpu = smp_processor_id();
++	struct rq *rq = this_rq_lock();
++	struct task_group *tg;
++	struct task_group *next;
++
++	for (i = 0; i < MAX_POWER_CAPPING_PRIORITY; i++) {
++		struct list_head tmp_list;
++		INIT_LIST_HEAD(&tmp_list);
++		list_for_each_entry_safe(tg, next, &rq->pwrcap_prio_queue[i],
++					pcp_queue_list[cpu]) {
++			struct sched_entity *se;
++			struct cfs_rq *cfs_rq;
++			long slice, charge;
++
++			se = tg->se[cpu];
++			cfs_rq = se->cfs_rq;
++
++			slice = sched_slice(cfs_rq, se) * ici_period /
++				__sched_period(cfs_rq->nr_running);
++			charge = min(slice, injected);
++
++			__dequeue_entity(cfs_rq, se);
++			se->vruntime += calc_delta_fair(charge, se);
++			__enqueue_entity(cfs_rq, se);
++
++			injected -= charge;
++			list_del(&tg->pcp_queue_list[cpu]);
++			list_add_tail(&tg->pcp_queue_list[cpu], &tmp_list);
++			if (injected <= 0) {
++				list_splice(&tmp_list,
++					rq->pwrcap_prio_queue[i].prev);
++				goto done;
++			}
++		}
++		list_splice(&tmp_list, &rq->pwrcap_prio_queue[i]);
++	}
++done:
++	raw_spin_unlock_irq(&rq->lock);
++	return;
++}
++#endif
++
+ /**************************************************
+  * CFS operations on tasks:
+  */
 
