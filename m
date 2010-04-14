@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab0DNR42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 13:56:28 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41546 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246Ab0DNR4Y convert rfc822-to-8bit (ORCPT
+	id S1756475Ab0DNR4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 13:56:41 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:34000 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756115Ab0DNR40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 13:56:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=p+2AiUEJ2AaXe1ZtIQWOAzJ5xgV6uEAQc58gYLP90iPDPyxERXcWUnElJjDq+XCJBU
-         izwdNy9tBKzXk1Y1GH9s1HGH7S58KS+K0vRuRI8z2SgMgZ48qUlhMUAYmi7BH+96NPKp
-         AK/LVKXxvLXoG9kjcJpJ9UVtCS2bfQVRgZwcM=
+	Wed, 14 Apr 2010 13:56:26 -0400
+Message-ID: <4BC601C5.5050404@cs.helsinki.fi>
+Date: Wed, 14 Apr 2010 20:56:21 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1003292048530.3832@ayla.of.borg>
-References: <alpine.DEB.2.00.1003292048530.3832@ayla.of.borg>
-Date: Wed, 14 Apr 2010 19:56:24 +0200
-X-Google-Sender-Auth: 885b9f5ed05a1af3
-Message-ID: <k2m10f740e81004141056xa6b6328dxb52c4cbc7d6f0a07@mail.gmail.com>
-Subject: Re: [git pull] m68k updates for 2.6.34
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       "Linux/m68k" <linux-m68k@vger.kernel.org>,
-       Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: ShiYong LI <a22381@motorola.com>
+CC: linux-kernel@vger.kernel.org, cl@linux-foundation.org, mpm@selenic.com,
+       linux-mm@kvack.org, dwmw2@infradead.org, TAO HU <taohu@motorola.com>
+Subject: Re: [PATCH - V2] Fix missing of last user while dumping slab corruption
+ 	log
+References: <w2z4810ea571004112250x855fadd5uecbc813726ae3412@mail.gmail.com>
+In-Reply-To: <w2z4810ea571004112250x855fadd5uecbc813726ae3412@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 20:52, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Please pull to receive 2 more m68k updates for 2.6.34:
->  - The first one fixes a build problem we started seeing lately,
->  - The second one corrects struct sigcontext for ColdFire, as I've
->    accidentally merged the wrong version of a patch for the previous
->    pull request.
->
-> Thanks!
+ShiYong LI wrote:
+> Hi,
+> 
+> Compared to previous version, add alignment checking to make sure
+> memory space storing redzone2 and last user tags is 8 byte alignment.
+> 
+> From 949e8c29e8681a2359e23a8fbd8b9d4833f42344 Mon Sep 17 00:00:00 2001
+> From: Shiyong Li <shi-yong.li@motorola.com>
+> Date: Mon, 12 Apr 2010 13:48:21 +0800
+> Subject: [PATCH] Fix missing of last user info while getting
+> DEBUG_SLAB config enabled.
+> 
+> Even with SLAB_RED_ZONE and SLAB_STORE_USER enabled, kernel would NOT
+> store redzone and last user data around allocated memory space if arch
+> cache line > sizeof(unsigned long long). As a result, last user information
+> is unexpectedly MISSED while dumping slab corruption log.
+> 
+> This fix makes sure that redzone and last user tags get stored unless
+> the required alignment breaks redzone's.
+> 
+> Signed-off-by: Shiyong Li <shi-yong.li@motorola.com>
 
-This one is still valid, I've just rebased to the latest version.
-Thaks for pulling!
+OK, I added this to linux-next for testing. Thanks!
 
-The following changes since commit 2ba3abd8186f24c7fb418927025b4e2120e3a362:
-  Linus Torvalds (1):
-        Merge branch 'pm-fixes' of git://git.kernel.org/.../rafael/suspend-2.6
+> ---
+>  mm/slab.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/slab.c b/mm/slab.c
+> index a8a38ca..b97c57e 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -2267,8 +2267,8 @@ kmem_cache_create (const char *name, size_t
+> size, size_t align,
+>  	if (ralign < align) {
+>  		ralign = align;
+>  	}
+> -	/* disable debug if necessary */
+> -	if (ralign > __alignof__(unsigned long long))
+> +	/* disable debug if not aligning with REDZONE_ALIGN */
+> +	if (ralign & (__alignof__(unsigned long long) - 1))
+>  		flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
+>  	/*
+>  	 * 4) Store it.
+> @@ -2289,8 +2289,8 @@ kmem_cache_create (const char *name, size_t
+> size, size_t align,
+>  	 */
+>  	if (flags & SLAB_RED_ZONE) {
+>  		/* add space for red zone words */
+> -		cachep->obj_offset += sizeof(unsigned long long);
+> -		size += 2 * sizeof(unsigned long long);
+> +		cachep->obj_offset += align;
+> +		size += align + sizeof(unsigned long long);
+>  	}
+>  	if (flags & SLAB_STORE_USER) {
+>  		/* user store requires one word storage behind the end of
 
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-
-Geert Uytterhoeven (1):
-      m68k: Fix asm constraints for atomic_sub_and_test() and
-atomic_add_negative()
-
-Maxim Kuvyrkov (1):
-      m68k: Fix `struct sigcontext' for ColdFire
-
- arch/m68k/include/asm/atomic_mm.h  |    8 ++++++--
- arch/m68k/include/asm/sigcontext.h |    4 +---
- 2 files changed, 7 insertions(+), 5 deletions(-)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
