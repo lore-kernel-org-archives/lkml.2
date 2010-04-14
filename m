@@ -1,128 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab0DNPvQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:51:16 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:55074 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863Ab0DNPvO (ORCPT
+	id S1756091Ab0DNP6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 11:58:16 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62275 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755784Ab0DNP6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 11:51:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UGNkf4BJfga6OSNwrIqReq2XR0stiBIkH6kDeAJG7jOyosC5OmLEvrp7z0XzHviWTC
-         M2AUgUDuX8dfMEBXQt/rgTm1/gf90ot41LPZJzb3Dq2C5Mai9vjDe1HCQfotl0PWhFPx
-         BNyvpK30MoCsuGdjD5SxSUxt2TyUwrEkDwg2M=
-Date: Wed, 14 Apr 2010 17:51:11 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, David Miller <davem@davemloft.net>,
-       a.p.zijlstra@chello.nl, mingo@elte.hu, sparclinux@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: Weird rcu lockdep warning
-Message-ID: <20100414155110.GG5142@nowhere>
-References: <20100413200432.GB5099@nowhere> <20100413234043.GG2538@linux.vnet.ibm.com> <20100414000226.GH5602@nowhere> <20100413.171306.25868761.davem@davemloft.net> <20100414014930.GI2538@linux.vnet.ibm.com> <4BC537C9.8050600@cn.fujitsu.com> <20100414154302.GC2516@linux.vnet.ibm.com>
+	Wed, 14 Apr 2010 11:58:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [RFC][PATCH v3 1/3] A device for zero-copy based on KVM virtio-net.
+Date: Wed, 14 Apr 2010 17:57:54 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
+       jdike@linux.intel.com
+References: <1270805865-16901-1-git-send-email-xiaohui.xin@intel.com> <201004141655.21885.arnd@arndb.de> <20100414152615.GA8079@redhat.com>
+In-Reply-To: <20100414152615.GA8079@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100414154302.GC2516@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004141757.54829.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX18C//GxFhDkrLj35oNUYor81ijWfAVCU+nz3mB
+ +Hw/xHawlJndeunpI32bmAee8lyDaXpRgoy8NP09mXjMLoP5sl
+ 5mIjvx7e7g3OOb83M8DFw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 08:43:02AM -0700, Paul E. McKenney wrote:
-> On Wed, Apr 14, 2010 at 11:34:33AM +0800, Lai Jiangshan wrote:
-> > Paul E. McKenney wrote:
-> > > On Tue, Apr 13, 2010 at 05:13:06PM -0700, David Miller wrote:
-> > >> From: Frederic Weisbecker <fweisbec@gmail.com>
-> > >> Date: Wed, 14 Apr 2010 02:02:27 +0200
-> > >>
-> > >>> I just have a guess though....
-> > >>> This seems to always happen from NMI path, and lockdep is disabled on NMI.
-> > >>> I suspect the lock_acquire() performed by rcu_read_lock() is just ignored
-> > >>> and then the rcu_read_lock_held() check has the wrong result...
-> > >> Yeah, I bet that's it too.
-> > >>
-> > >> lock_is_held() can't return anything meaningful while lockdep is
-> > >> disabled, which it is during NMIs.
-> > > 
-> > > Ah!  So I just need to add a "current->lockdep_recursion"
-> > > check to debug_lockdep_rcu_enabled().  And move the function to
-> > > kernel/rcutree_plugin.h to avoid #include hell.
-> > > 
-> > > See below for (untested) patch.
-> > > 
-> > > 						Thanx, Paul
-> > > 
-> > > ------------------------------------------------------------------------
-> > > 
-> > >  include/linux/rcupdate.h |    5 +----
-> > >  kernel/rcutree_plugin.h  |   11 +++++++++++
-> > >  2 files changed, 12 insertions(+), 4 deletions(-)
-> > > 
-> > > commit 304d8da6cd791a81ce3164f867e1b3ef4f9af1d1
-> > > Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > Date:   Tue Apr 13 18:45:51 2010 -0700
-> > > 
-> > >     rcu: Make RCU lockdep check the lockdep_recursion variable
-> > >     
-> > >     The lockdep facility temporarily disables lockdep checking by incrementing
-> > >     the current->lockdep_recursion variable.  Such disabling happens in NMIs
-> > >     and in other situations where lockdep might expect to recurse on itself.
-> > >     This patch therefore checks current->lockdep_recursion, disabling RCU
-> > >     lockdep splats when this variable is non-zero.
-> > >     
-> > >     Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > >     Reported-by: David Miller <davem@davemloft.net>
-> > >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > > index 9f1ddfe..07db2fe 100644
-> > > --- a/include/linux/rcupdate.h
-> > > +++ b/include/linux/rcupdate.h
-> > > @@ -101,10 +101,7 @@ extern struct lockdep_map rcu_sched_lock_map;
-> > >  # define rcu_read_release_sched() \
-> > >  		lock_release(&rcu_sched_lock_map, 1, _THIS_IP_)
-> > >  
-> > > -static inline int debug_lockdep_rcu_enabled(void)
-> > > -{
-> > > -	return likely(rcu_scheduler_active && debug_locks);
-> > > -}
-> > > +extern int debug_lockdep_rcu_enabled(void);
-> > >  
-> > >  /**
-> > >   * rcu_read_lock_held - might we be in RCU read-side critical section?
-> > > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > > index 79b53bd..2169abe 100644
-> > > --- a/kernel/rcutree_plugin.h
-> > > +++ b/kernel/rcutree_plugin.h
-> > > @@ -1067,3 +1067,14 @@ static void rcu_needs_cpu_flush(void)
-> > >  }
-> > >  
-> > >  #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
-> > > +
-> > > +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> > > +
-> > > +int debug_lockdep_rcu_enabled(void)
+On Wednesday 14 April 2010, Michael S. Tsirkin wrote:
+> On Wed, Apr 14, 2010 at 04:55:21PM +0200, Arnd Bergmann wrote:
+> > On Friday 09 April 2010, xiaohui.xin@intel.com wrote:
+> > > From: Xin Xiaohui <xiaohui.xin@intel.com>
+>
+> > It seems that you are duplicating a lot of functionality that
+> > is already in macvtap. I've asked about this before but then
+> > didn't look at your newer versions. Can you explain the value
+> > of introducing another interface to user land?
+> 
+> Hmm, I have not noticed a lot of duplication.
+
+The code is indeed quite distinct, but the idea of adding another
+character device to pass into vhost for direct device access is.
+
+> BTW macvtap also duplicates tun code, it might be
+> a good idea for tun to export some functionality.
+
+Yes, that's something I plan to look into.
+
+> > I'm still planning to add zero-copy support to macvtap,
+> > hopefully reusing parts of your code, but do you think there
+> > is value in having both?
+> 
+> If macvtap would get zero copy tx and rx, maybe not. But
+> it's not immediately obvious whether zero-copy support
+> for macvtap might work, though, especially for zero copy rx.
+> The approach with mpassthru is much simpler in that
+> it takes complete control of the device.
+
+As far as I can tell, the most significant limitation of mpassthru
+is that there can only ever be a single guest on a physical NIC.
+
+Given that limitation, I believe we can do the same on macvtap,
+and simply disable zero-copy RX when you want to use more than one
+guest, or both guest and host on the same NIC.
+
+The logical next step here would be to allow VMDq and similar
+technologies to separate out the RX traffic in the hardware.
+We don't have a configuration interface for that yet, but
+since this is logically the same as macvlan, I think we should
+use the same interfaces for both, essentially treating VMDq
+as a hardware acceleration for macvlan. We can probably handle
+it in similar ways to how we handle hardware support for vlan.
+
+At that stage, macvtap would be the logical interface for
+connecting a VMDq (hardware macvlan) device to a guest!
+
+> > > +static ssize_t mp_chr_aio_write(struct kiocb *iocb, const struct iovec *iov,
+> > > +				unsigned long count, loff_t pos)
 > > > +{
-> > > +	return likely(rcu_scheduler_active &&
-> > > +		      debug_locks &&
-> > > +		      current->lockdep_recursion == 0);
-> > > +}
-> > > +
+> > > +	struct file *file = iocb->ki_filp;
+> > > +	struct mp_struct *mp = mp_get(file->private_data);
+> > > +	struct sock *sk = mp->socket.sk;
+> > > +	struct sk_buff *skb;
+> > > +	int len, err;
+> > > +	ssize_t result;
 > > 
-> > Looks good to me too, but I think
-> > 'likely' is needless since the function is not inline.
+> > Can you explain what this function is even there for? AFAICT, vhost-net
+> > doesn't call it, the interface is incompatible with the existing
+> > tap interface, and you don't provide a read function.
 > 
-> Good point.  And to add injury to insult, I forgot EXPORT_SYMBOL_GPL().
-> 
-> Updated patch in the works.
+> qemu needs the ability to inject raw packets into device
+> from userspace, bypassing vhost/virtio (for live migration).
 
+Ok, but since there is only a write callback and no read, it won't
+actually be able to do this with the current code, right?
 
-Note I just tested the patch the previous one and it looks fine now.
-You can then safely consider the "general idea" fixes the problem :)
+Moreover, it seems weird to have a new type of interface here that
+duplicates tap/macvtap with less functionality. Coming back
+to your original comment, this means that while mpassthru is currently
+not duplicating the actual code from macvtap, it would need to do
+exactly that to get the qemu interface right!
 
-Thanks.
-
+	Arnd
