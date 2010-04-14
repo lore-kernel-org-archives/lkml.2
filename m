@@ -1,153 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab0DNCCD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 22:02:03 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:54616 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754384Ab0DNCB7 (ORCPT
+	id S1754512Ab0DNCQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 22:16:05 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:44383 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339Ab0DNCQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 22:01:59 -0400
-Message-Id: <201004140201.o3E21Aqn075978@www262.sakura.ne.jp>
-Subject: [PATCH] Infiniband: Randomize local port allocation.
-From: penguin-kernel@i-love.sakura.ne.jp
-To: rolandd@cisco.com, sean.hefty@intel.com
-Cc: amwang@redhat.com, opurdila@ixiacom.com, eric.dumazet@gmail.com,
-       netdev@vger.kernel.org, nhorman@tuxdriver.com, davem@davemloft.net,
-       ebiederm@xmission.com, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Wed, 14 Apr 2010 11:01:10 +0900
-References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain>	<20100412100816.5302.74919.sendpatchset@localhost.localdomain>	<201004130121.o3D1Lhh7099571@www262.sakura.ne.jp>	<4BC41994.7030707@redhat.com>	<4BC42FE0.4040601@redhat.com> <201004132207.GAJ52684.OJFtMQVFHOSFLO@I-love.SAKURA.ne.jp> <21DAC78125424ED291B5D6477CFF9657@amr.corp.intel.com>
-In-Reply-To: <21DAC78125424ED291B5D6477CFF9657@amr.corp.intel.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 13042010 #3703990, status: clean
+	Tue, 13 Apr 2010 22:16:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=GJl9kU2MHz06XW+rfdqC5qLaACZRYqiD3fT9N8cl+3Ezn/3SwLEaqQXhIVzAiXFwvd
+         MNTcTp2xTu2xX6fGQzxQTilUCwoz0kyrRFQz5Tcxoq37Tq3slvbjBNvdypi+aK6O5Ndx
+         49JxUSyy3QSBWVP4OfNKzqIjyD918vu+H3JOk=
+From: Huang Shijie <shijie8@gmail.com>
+To: akpm@linux-foundation.org
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+       Huang Shijie <shijie8@gmail.com>
+Subject: [PATCH][resend] namei.c : update mnt when it needed
+Date: Wed, 14 Apr 2010 10:16:09 +0800
+Message-Id: <1271211369-27419-1-git-send-email-shijie8@gmail.com>
+X-Mailer: git-send-email 1.6.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sean Hefty wrote:
-> Sean and Roland, is below patch correct?
-> >inet_is_reserved_local_port() is the new function proposed in this patchset.
-> 
-> It looks correct to me.  I didn't test the patch series, but if I comment out
-> the call to inet_is_reserved_local_port() in the provided below, the changes
-> worked fine for me.
-> 
-> Acked-by: Sean Hefty <sean.hefty@intel.com>
-> 
-Thank you for testing.
+update the mnt of the path when it is not equal to the new one.
 
-I think it is better to split this patch into
-
-Part 1: Make cma_alloc_any_port() to use cma_alloc_port().
-
-Part 2: Insert "!inet_is_reserved_local_port(rover) &&" line.
-
-for future "git bisect".
-
-Roland, will you review below patch for part 1?
---------------------
-[PATCH] Infiniband: Randomize local port allocation.
-
-Randomize local port allocation in a way sctp_get_port_local() does.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Huang Shijie <shijie8@gmail.com>
 ---
- drivers/infiniband/core/cma.c |   69 ++++++++++++++----------------------------
- 1 file changed, 24 insertions(+), 45 deletions(-)
+ fs/namei.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
---- linux-2.6.34-rc4.orig/drivers/infiniband/core/cma.c
-+++ linux-2.6.34-rc4/drivers/infiniband/core/cma.c
-@@ -79,7 +79,6 @@ static DEFINE_IDR(sdp_ps);
- static DEFINE_IDR(tcp_ps);
- static DEFINE_IDR(udp_ps);
- static DEFINE_IDR(ipoib_ps);
--static int next_port;
- 
- struct cma_device {
- 	struct list_head	list;
-@@ -1970,47 +1969,32 @@ err1:
- 
- static int cma_alloc_any_port(struct idr *ps, struct rdma_id_private *id_priv)
+diff --git a/fs/namei.c b/fs/namei.c
+index a7dce91..9c3a040 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -523,9 +523,10 @@ static void path_put_conditional(struct path *path, struct nameidata *nd)
+ static inline void path_to_nameidata(struct path *path, struct nameidata *nd)
  {
--	struct rdma_bind_list *bind_list;
--	int port, ret, low, high;
--
--	bind_list = kzalloc(sizeof *bind_list, GFP_KERNEL);
--	if (!bind_list)
--		return -ENOMEM;
--
--retry:
--	/* FIXME: add proper port randomization per like inet_csk_get_port */
--	do {
--		ret = idr_get_new_above(ps, bind_list, next_port, &port);
--	} while ((ret == -EAGAIN) && idr_pre_get(ps, GFP_KERNEL));
--
--	if (ret)
--		goto err1;
-+	static unsigned int last_used_port;
-+	int low, high, remaining;
-+	unsigned int rover;
- 
- 	inet_get_local_port_range(&low, &high);
--	if (port > high) {
--		if (next_port != low) {
--			idr_remove(ps, port);
--			next_port = low;
--			goto retry;
-+	remaining = (high - low) + 1;
-+	rover = net_random() % remaining + low;
-+	do {
-+		rover++;
-+		if ((rover < low) || (rover > high))
-+			rover = low;
-+		if (last_used_port != rover &&
-+		    !idr_find(ps, (unsigned short) rover)) {
-+			int ret = cma_alloc_port(ps, id_priv, rover);
-+			/*
-+			 * Remember previously used port number in order to
-+			 * avoid re-using same port immediately after it is
-+			 * closed.
-+			 */
-+			if (!ret)
-+				last_used_port = rover;
-+			if (ret != -EADDRNOTAVAIL)
-+				return ret;
- 		}
--		ret = -EADDRNOTAVAIL;
--		goto err2;
--	}
--
--	if (port == high)
--		next_port = low;
--	else
--		next_port = port + 1;
--
--	bind_list->ps = ps;
--	bind_list->port = (unsigned short) port;
--	cma_bind_port(bind_list, id_priv);
--	return 0;
--err2:
--	idr_remove(ps, port);
--err1:
--	kfree(bind_list);
--	return ret;
-+	} while (--remaining > 0);
-+	return -EADDRNOTAVAIL;
+ 	dput(nd->path.dentry);
+-	if (nd->path.mnt != path->mnt)
++	if (nd->path.mnt != path->mnt) {
+ 		mntput(nd->path.mnt);
+-	nd->path.mnt = path->mnt;
++		nd->path.mnt = path->mnt;
++	}
+ 	nd->path.dentry = path->dentry;
  }
  
- static int cma_use_port(struct idr *ps, struct rdma_id_private *id_priv)
-@@ -2995,12 +2979,7 @@ static void cma_remove_one(struct ib_dev
- 
- static int __init cma_init(void)
- {
--	int ret, low, high, remaining;
--
--	get_random_bytes(&next_port, sizeof next_port);
--	inet_get_local_port_range(&low, &high);
--	remaining = (high - low) + 1;
--	next_port = ((unsigned int) next_port % remaining) + low;
-+	int ret;
- 
- 	cma_wq = create_singlethread_workqueue("rdma_cm");
- 	if (!cma_wq)
+-- 
+1.6.6
+
