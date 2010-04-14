@@ -1,49 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab0DNRbs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 13:31:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756475Ab0DNRbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 13:31:46 -0400
-Date: Wed, 14 Apr 2010 14:31:30 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v3] perf: Fix accidentally preprocessed snprintf
-	callback
-Message-ID: <20100414173130.GJ25649@ghostprotocols.net>
-References: <1271205468-8202-1-git-send-regression-fweisbec@gmail.com> <1271265089-1842-1-git-send-regression-fweisbec@gmail.com>
+	id S1756551Ab0DNRdt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 13:33:49 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:34794 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756475Ab0DNRdr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 13:33:47 -0400
+Date: Wed, 14 Apr 2010 13:33:19 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Nick Piggin <npiggin@suse.de>, zach.brown@oracle.com,
+       jens.axboe@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ipc semaphores: reduce ipc_lock contention in
+ semtimedop
+Message-ID: <20100414173319.GA3228@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Manfred Spraul <manfred@colorfullife.com>,
+	Nick Piggin <npiggin@suse.de>, zach.brown@oracle.com,
+	jens.axboe@oracle.com, linux-kernel@vger.kernel.org
+References: <1271098163-3663-1-git-send-email-chris.mason@oracle.com>
+ <1271098163-3663-2-git-send-email-chris.mason@oracle.com>
+ <4BC4A6B2.1090906@colorfullife.com>
+ <20100413173941.GI13327@think>
+ <20100413180945.GD5683@laptop>
+ <20100413181937.GM13327@think>
+ <4BC5EA75.9090803@colorfullife.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1271265089-1842-1-git-send-regression-fweisbec@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4BC5EA75.9090803@colorfullife.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4BC5FC71.00F5:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Apr 14, 2010 at 07:11:29PM +0200, Frederic Weisbecker escreveu:
-> struct sort_entry has a callback named snprintf that turns an
-> entry into a string result.
-> But there are glibc versions that implement snprintf through a
-> macro. The following expression is then going to get the snprintf
-> call preprocessed:
-> 
->         ent->snprintf(...)
-> 
-> to finally end up in a build error:
-> 
->         util/hist.c: Dans la fonction «hist_entry__snprintf» :
->         util/hist.c:539: erreur: «struct sort_entry» has no member named «__builtin___snprintf_chk»
-> 
-> To fix this, prepend struct sort_entry callbacks with an "se_"
-> prefix.
+On Wed, Apr 14, 2010 at 06:16:53PM +0200, Manfred Spraul wrote:
+> On 04/13/2010 08:19 PM, Chris Mason wrote:
+> >On Wed, Apr 14, 2010 at 04:09:45AM +1000, Nick Piggin wrote:
+> >>On Tue, Apr 13, 2010 at 01:39:41PM -0400, Chris Mason wrote:
+> >>The other thing I don't know if your patch gets right is requeueing on
+> >>of the operations. When you requeue from one list to another, then you
+> >>seem to lose ordering with other pending operations, so that would
+> >>seem to break the API as well (can't remember if the API strictly
+> >>mandates FIFO, but anyway it can open up starvation cases).
+> >I don't see anything in the docs about the FIFO order.  I could add an
+> >extra sort on sequence number pretty easily, but is the starvation case
+> >really that bad?
+> >
+> How do you want to determine the sequence number?
+> Is atomic_inc_return() on a per-semaphore array counter sufficiently fast?
 
-Thanks, I'll queue this one up
+I haven't tried yet, but hopefully it won't be a problem.  A later patch
+does atomics on the reference count and it doesn't show up in the
+profiles.
 
-- Arnaldo
+> 
+> >>I was looking at doing a sequence number to be able to sort these, but
+> >>it ended up getting over complex (and SAP was only using simple ops so
+> >>it didn't seem to need much better).
+> >>
+> >>We want to be careful not to change semantics at all. And it gets
+> >>tricky quickly :( What about Zach's simpler wakeup API?
+> >Yeah, that's why my patches include code to handle userland sending
+> >duplicate semids.  Zach's simpler API is cooking too, but if I can get
+> >this done without insane complexity it helps with more than just the
+> >post/wait oracle workload.
+> >
+> What is the oracle workload, which multi-sembuf operations does it use?
+> How many semaphores are in one array?
+> 
+> When the last optimizations were written, I've searched a bit:
+> - postgres uses per-process semaphores, with small semaphore arrays.
+>     [process sleeps on it's own semaphore and is woken up by someone
+> else when it can make progress]
+
+This is similar to Oracle (and the sembench program).  Each process has
+a semaphore and when it is waiting for a commit it goes to sleep on it.
+They are woken up in bulk with semtimedop calls from a single process.
+
+But oracle also uses semaphores for locking in a traditional sense.
+
+Putting the waiters into a per-semaphore list is really only part of the
+speedup.  The real boost comes from the patch to break up the locks into
+a per semaphore lock.
+
+We gain another 10-15% from a later patch that gets uses atomics on the
+refcount, which lets us do sem_putref without a lock (meaning we're
+lockless once we get woken up).
+
+I'm cleaning up fixes based on suggestions here and will repost.
+
+> - with google, I couldn't find anything relevant that uses
+> multi-sembuf semop() calls.
+> 
+
+I think this should help any workload that has more than one semaphore
+per array, even if they only do one sem per call.
+
+> And I agree with Nick: We should be careful about changing the API.
+
+Definitely, thanks for reading through it.
+
+-chris
+
