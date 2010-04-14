@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab0DNDZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 23:25:17 -0400
-Received: from mga14.intel.com ([143.182.124.37]:4534 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754634Ab0DNDZO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 23:25:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,202,1270450800"; 
-   d="scan'208";a="265388566"
-From: "Zhang, Xiantao" <xiantao.zhang@intel.com>
-To: Avi Kivity <avi@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       "Yang, Xiaowei" <xiaowei.yang@intel.com>,
-       "Dong, Eddie" <eddie.dong@intel.com>, "Li, Xin" <xin.li@intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Mike Galbraith <efault@gmx.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 14 Apr 2010 11:24:26 +0800
-Subject: RE: VM performance issue in KVM guests.
-Thread-Topic: VM performance issue in KVM guests.
-Thread-Index: Acra1RJBa7/WsUXHSmCNX+Wx4nKFQQAqjs2Q
-Message-ID: <EB8593BCECAB3D40A8248BE0B6400A38469C6790@shzsmsx502.ccr.corp.intel.com>
-References: <EB8593BCECAB3D40A8248BE0B6400A3846903F4C@shzsmsx502.ccr.corp.intel.com>
- <4BC0D125.9050108@redhat.com>
- <EB8593BCECAB3D40A8248BE0B6400A384690419B@shzsmsx502.ccr.corp.intel.com>
- <4BC2C07B.4040607@redhat.com>
- <EB8593BCECAB3D40A8248BE0B6400A38469046C1@shzsmsx502.ccr.corp.intel.com>
- <4BC41338.80206@redhat.com>
-In-Reply-To: <4BC41338.80206@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754702Ab0DND0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 23:26:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54964 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330Ab0DND0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 23:26:15 -0400
+Message-ID: <4BC5353A.30509@cn.fujitsu.com>
+Date: Wed, 14 Apr 2010 11:23:38 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] KVM MMU: optimize/cleanup for marking parent unsync
+References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D390.7050708@cn.fujitsu.com> <20100412171211.GC4976@amt.cnet> <4BC3CE83.8020705@cn.fujitsu.com> <20100413150137.GB24128@amt.cnet>
+In-Reply-To: <20100413150137.GB24128@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity wrote:
-> On 04/13/2010 03:50 AM, Zhang, Xiantao wrote:
->> Avi Kivity wrote:
->> 
->>> On 04/12/2010 05:04 AM, Zhang, Xiantao wrote:
->>> 
->>>> 
->>>>> What was the performance hit?  What was your I/O setup (image
->>>>> format, using aio?) 
->>>>> 
->>>>> 
->>>> The issue only happens when vcpu number is over-committed(e.g.
->>>> vcpu/pcpu>2) and physical cpus are saturated. For example,  when
->>>> run webbench in windows OS in this case, its performance drops by
->>>> 80%. In our experiment, we are using image file through virtio,
->>>> and I think aio should be used by default also.
->>>> 
->>>> 
->>> Is this on a machine that does pause-loop exits?  The current
->>> handing of PLE is very suboptimal.  With proper directed yield we
->>> should be much better there. 
->>> 
->>> Without PLE, we need paravirtualized spinlocks, no way around it.
->>> 
->> PLE has the ability to eliminate the issue at some extent, and pv
->> solution should be helpful also.  But for windows guests running on
->> machines without PLE, we still needs to enhance host side to resolve
->> the issue.   
->> 
+
+
+Marcelo Tosatti wrote:
+
+>>> I'd prefer to not touch it.
+>> This patch avoids walk all parents and i think this overload is really unnecessary.
+>> It has other tricks in this codepath but i not noticed? :-)
 > 
-> Well, was this on a machine with PLE or without PLE?
+> My point is that there is no point in optimizing something unless its
+> performance sensitive.
 
-I am saying the machine has no PLE feature support. Even with PLE feature support, there is still performance loss due to PLE's cost. 
- 
->>> Spin loops need to be addressed first, they are known to kill
->>> performance in overcommit situations.
->>> 
->> Even in overcommit case, if vcpu threads of one qemu are not
->> scheduled or pulled to the same logical processor, the performance
->> drop is tolerant like Xen's case today. But for KVM, it has to
->> suffer from additional performance loss, since host's scheduler
->> actively pulls these vcpu threads together.    
->> 
->> 
-> Can you quantify this loss?  Give examples of what happens?
+Hi Marcelo,
 
-For example, one machine is configured with 2 pCPUs and there are two Windows guests running on the machine, and each guest is cconfigured with 2 vcpus and one webbench server runs in it. 
-If use host's default scheduler, webbench's performance is very bad, but if pin each geust's vCPU0 to pCPU0 and vCPU1 to pCPU1, we can see 5-10X performance improvement with same CPU utilization. 
-In addition, we also see kvm's perf scalability is also impacted in large systems, for some performance experiments, kvm's perf begins to drop when vCPU is overcommitted and pCPU are saturated, but once the wake_up_affine feature is switched off in scheduler, kvm's perf can keep rising in this case.   
-Xiantao
+I think optimizing not only means 'performance' but also means 'smaller code'(maybe 'cleanup'
+is more suitable) and 'logic optimize'(do little things), i'm not sure this patch whether can
+improve system performance obviously but it optimize the code logic and reduce code size, and
+it not harm other code and system performance, right? :-)
 
+Actually, the origin code has a bug, the code segment in mmu_parent_walk():
+
+|	if (!sp->multimapped && sp->parent_pte) {
+|		......
+|		return;
+|	}
+|	hlist_for_each_entry(pte_chain, node, &sp->parent_ptes, link)
+|		for (i = 0; i < NR_PTE_CHAIN_ENTRIES; ++i) {
+|			......
+|		}
+
+So, if sp->parent_pte == NULL, it's unsafe...
+
+> And as i recall, mmu_unsync_walk was much more
+> sensitive performance wise than parent walking. Actually, gfn_to_memslot 
+> seems more important since its also noticeable on EPT/NPT hosts.
+
+Yeah, i also noticed these and i'm looking into these code.
+
+Thanks,
+Xiao
