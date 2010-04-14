@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab0DNHGb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 03:06:31 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:35687 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753462Ab0DNHGa (ORCPT
+	id S1752542Ab0DNHKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 03:10:30 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:35459 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab0DNHK3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 03:06:30 -0400
-Date: Wed, 14 Apr 2010 17:06:25 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100414070625.GJ2493@dastard>
-References: <20100414135945.2b0a1e0d.kamezawa.hiroyu@jp.fujitsu.com>
- <20100414054144.GH2493@dastard>
- <20100414145056.D147.A69D9226@jp.fujitsu.com>
+	Wed, 14 Apr 2010 03:10:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=g3D87bixQFITc42WXCXUgm0DtS2C0jCfKSfDT1+pXUIr43YGA+0ge3yviuO64a2azx
+         GjXvdu7IE7fdseUv2gGYe5zk5RTy7DVGcGvYyU7fRI+yK1kAWCLKCliSRP5/ufYOgCR4
+         /7JTH2p1vQ3tQkp0yQEYmj7upxsmVwaxIuQ/A=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100414145056.D147.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1271104905-8804-6-git-send-email-jblunck@suse.de>
+References: <1271104905-8804-1-git-send-email-jblunck@suse.de>
+	 <1271104905-8804-6-git-send-email-jblunck@suse.de>
+Date: Wed, 14 Apr 2010 12:40:28 +0530
+Message-ID: <o2r3f9a31f41004140010t7c553e39ib51e69fa9022a75f@mail.gmail.com>
+Subject: Re: [PATCH 5/5] ext2: Add ext2_sb_info s_lock spinlock
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Jan Blunck <jblunck@suse.de>
+Cc: Jan Kara <jack@suse.cz>, tytso@mit.edu,
+       Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+       linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnd Bergmann <arnd@arndb.de>, Andi Kleen <andi@firstfloor.org>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 02:54:14PM +0900, KOSAKI Motohiro wrote:
-> > On Wed, Apr 14, 2010 at 01:59:45PM +0900, KAMEZAWA Hiroyuki wrote:
-> > > On Wed, 14 Apr 2010 11:40:41 +1000
-> > > Dave Chinner <david@fromorbit.com> wrote:
-> > > 
-> > > >  50)     3168      64   xfs_vm_writepage+0xab/0x160 [xfs]
-> > > >  51)     3104     384   shrink_page_list+0x65e/0x840
-> > > >  52)     2720     528   shrink_zone+0x63f/0xe10
-> > > 
-> > > A bit OFF TOPIC.
-> > > 
-> > > Could you share disassemble of shrink_zone() ?
-> > > 
-> > > In my environ.
-> > > 00000000000115a0 <shrink_zone>:
-> > >    115a0:       55                      push   %rbp
-> > >    115a1:       48 89 e5                mov    %rsp,%rbp
-> > >    115a4:       41 57                   push   %r15
-> > >    115a6:       41 56                   push   %r14
-> > >    115a8:       41 55                   push   %r13
-> > >    115aa:       41 54                   push   %r12
-> > >    115ac:       53                      push   %rbx
-> > >    115ad:       48 83 ec 78             sub    $0x78,%rsp
-> > >    115b1:       e8 00 00 00 00          callq  115b6 <shrink_zone+0x16>
-> > >    115b6:       48 89 75 80             mov    %rsi,-0x80(%rbp)
-> > > 
-> > > disassemble seems to show 0x78 bytes for stack. And no changes to %rsp
-> > > until retrun.
-> > 
-> > I see the same. I didn't compile those kernels, though. IIUC,
-> > they were built through the Ubuntu build infrastructure, so there is
-> > something different in terms of compiler, compiler options or config
-> > to what we are both using. Most likely it is the compiler inlining,
-> > though Chris's patches to prevent that didn't seem to change the
-> > stack usage.
-> > 
-> > I'm trying to get a stack trace from the kernel that has shrink_zone
-> > in it, but I haven't succeeded yet....
-> 
-> I also got 0x78 byte stack usage. Umm.. Do we discussed real issue now?
+Hello,
 
-Ok, so here's a trace at the top of the stack from a kernel with a
-the above shrink_zone disassembly:
+On Tue, Apr 13, 2010 at 2:11 AM, Jan Blunck <jblunck@suse.de> wrote:
+> Add a spinlock that protects against concurrent modifications of
+> s_mount_state, s_blocks_last, s_overhead_last and the content of the
+> superblock's buffer pointed to by sbi->s_es. This is a preparation patch
+> for removing the BKL from ext2 in the next patch.
+>
+> Signed-off-by: Jan Blunck <jblunck@suse.de>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> ---
+>  fs/ext2/inode.c            |    2 ++
+>  fs/ext2/super.c            |   31 +++++++++++++++++++++++++++++--
+>  include/linux/ext2_fs_sb.h |    6 ++++++
+>  3 files changed, 37 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+> index fc13cc1..5d15442 100644
+> --- a/fs/ext2/inode.c
+> +++ b/fs/ext2/inode.c
+> @@ -1407,9 +1407,11 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
+>                                * created, add a flag to the superblock.
+>                                */
+>                                lock_kernel();
+> +                               spin_lock(&EXT2_SB(sb)->s_lock);
+>                                ext2_update_dynamic_rev(sb);
+>                                EXT2_SET_RO_COMPAT_FEATURE(sb,
+>                                        EXT2_FEATURE_RO_COMPAT_LARGE_FILE);
+> +                               spin_unlock(&EXT2_SB(sb)->s_lock);
+>                                unlock_kernel();
+>                                ext2_write_super(sb);
 
-$ cat /sys/kernel/debug/tracing/stack_trace
-        Depth    Size   Location    (49 entries)
-        -----    ----   --------
-  0)     6152     112   force_qs_rnp+0x58/0x150
-  1)     6040      48   force_quiescent_state+0x1a7/0x1f0
-  2)     5992      48   __call_rcu+0x13d/0x190
-  3)     5944      16   call_rcu_sched+0x15/0x20
-  4)     5928      16   call_rcu+0xe/0x10
-  5)     5912     240   radix_tree_delete+0x14a/0x2d0
-  6)     5672      32   __remove_from_page_cache+0x21/0x110
-  7)     5640      64   __remove_mapping+0x86/0x100
-  8)     5576     272   shrink_page_list+0x2fd/0x5a0
-  9)     5304     400   shrink_inactive_list+0x313/0x730
- 10)     4904     176   shrink_zone+0x3d1/0x490
- 11)     4728     128   do_try_to_free_pages+0x2b6/0x380
- 12)     4600     112   try_to_free_pages+0x5e/0x60
- 13)     4488     272   __alloc_pages_nodemask+0x3fb/0x730
- 14)     4216      48   alloc_pages_current+0x87/0xd0
- 15)     4168      32   __page_cache_alloc+0x67/0x70
- 16)     4136      80   find_or_create_page+0x4f/0xb0
- 17)     4056     160   _xfs_buf_lookup_pages+0x150/0x390
-.....
+Do we need both locks (kernel lock and spin lock)
 
-So the differences are most likely from the compiler doing
-automatic inlining of static functions...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks,
+--
+JSR
