@@ -1,106 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab0DNP6Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:58:16 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62275 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755784Ab0DNP6O (ORCPT
+	id S1756180Ab0DNP7r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 11:59:47 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:38118 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755958Ab0DNP7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 11:58:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [RFC][PATCH v3 1/3] A device for zero-copy based on KVM virtio-net.
-Date: Wed, 14 Apr 2010 17:57:54 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
-       jdike@linux.intel.com
-References: <1270805865-16901-1-git-send-email-xiaohui.xin@intel.com> <201004141655.21885.arnd@arndb.de> <20100414152615.GA8079@redhat.com>
-In-Reply-To: <20100414152615.GA8079@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004141757.54829.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18C//GxFhDkrLj35oNUYor81ijWfAVCU+nz3mB
- +Hw/xHawlJndeunpI32bmAee8lyDaXpRgoy8NP09mXjMLoP5sl
- 5mIjvx7e7g3OOb83M8DFw==
+	Wed, 14 Apr 2010 11:59:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=PBYGTM5lpFC4zgyQmhkpdApusT3V1Wc8+FJxUYVnpMII/1sU/O2aX93apO7YdFwARY
+         +2oqBaOYQwtd7DhyO2XaH+bu/HmrBz6mrKaa5wKiDDxlfCU3QNfRvSdNLZ9VHj3YMVM3
+         ZPMt52dF1GYpvQvc2P1t0om/G4Fp22KpNxEfc=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>
+Subject: [GIT PULL] perf updates
+Date: Wed, 14 Apr 2010 17:59:39 +0200
+Message-Id: <1271260779-2008-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.6.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 April 2010, Michael S. Tsirkin wrote:
-> On Wed, Apr 14, 2010 at 04:55:21PM +0200, Arnd Bergmann wrote:
-> > On Friday 09 April 2010, xiaohui.xin@intel.com wrote:
-> > > From: Xin Xiaohui <xiaohui.xin@intel.com>
->
-> > It seems that you are duplicating a lot of functionality that
-> > is already in macvtap. I've asked about this before but then
-> > didn't look at your newer versions. Can you explain the value
-> > of introducing another interface to user land?
-> 
-> Hmm, I have not noticed a lot of duplication.
+Ingo,
 
-The code is indeed quite distinct, but the idea of adding another
-character device to pass into vhost for direct device access is.
+Please pull the perf/core branch that can be found at:
 
-> BTW macvtap also duplicates tun code, it might be
-> a good idea for tun to export some functionality.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/core
 
-Yes, that's something I plan to look into.
+Thanks,
+	Frederic
+---
 
-> > I'm still planning to add zero-copy support to macvtap,
-> > hopefully reusing parts of your code, but do you think there
-> > is value in having both?
-> 
-> If macvtap would get zero copy tx and rx, maybe not. But
-> it's not immediately obvious whether zero-copy support
-> for macvtap might work, though, especially for zero copy rx.
-> The approach with mpassthru is much simpler in that
-> it takes complete control of the device.
+Frederic Weisbecker (2):
+      perf: Store active software events in a hashlist
+      perf: Make clock software events consistent with general exclusion rules
 
-As far as I can tell, the most significant limitation of mpassthru
-is that there can only ever be a single guest on a physical NIC.
 
-Given that limitation, I believe we can do the same on macvtap,
-and simply disable zero-copy RX when you want to use more than one
-guest, or both guest and host on the same NIC.
-
-The logical next step here would be to allow VMDq and similar
-technologies to separate out the RX traffic in the hardware.
-We don't have a configuration interface for that yet, but
-since this is logically the same as macvlan, I think we should
-use the same interfaces for both, essentially treating VMDq
-as a hardware acceleration for macvlan. We can probably handle
-it in similar ways to how we handle hardware support for vlan.
-
-At that stage, macvtap would be the logical interface for
-connecting a VMDq (hardware macvlan) device to a guest!
-
-> > > +static ssize_t mp_chr_aio_write(struct kiocb *iocb, const struct iovec *iov,
-> > > +				unsigned long count, loff_t pos)
-> > > +{
-> > > +	struct file *file = iocb->ki_filp;
-> > > +	struct mp_struct *mp = mp_get(file->private_data);
-> > > +	struct sock *sk = mp->socket.sk;
-> > > +	struct sk_buff *skb;
-> > > +	int len, err;
-> > > +	ssize_t result;
-> > 
-> > Can you explain what this function is even there for? AFAICT, vhost-net
-> > doesn't call it, the interface is incompatible with the existing
-> > tap interface, and you don't provide a read function.
-> 
-> qemu needs the ability to inject raw packets into device
-> from userspace, bypassing vhost/virtio (for live migration).
-
-Ok, but since there is only a write callback and no read, it won't
-actually be able to do this with the current code, right?
-
-Moreover, it seems weird to have a new type of interface here that
-duplicates tap/macvtap with less functionality. Coming back
-to your original comment, this means that while mpassthru is currently
-not duplicating the actual code from macvtap, it would need to do
-exactly that to get the qemu interface right!
-
-	Arnd
+ include/linux/perf_event.h |   12 ++
+ kernel/perf_event.c        |  255 +++++++++++++++++++++++++++++++------------
+ 2 files changed, 196 insertions(+), 71 deletions(-)
