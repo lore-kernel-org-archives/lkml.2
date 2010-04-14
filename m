@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab0DNPAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:00:53 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47021 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755953Ab0DNPAv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 11:00:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=RTc8w3N/drc6acrIZtR3GooDqiEABif9NU65Vo4Dv5pwVipJ/M1GlrBT084sCN7V3R
-         Ngobkt4zRaiCLy50PBtFytrrVCM4rca4FlcpfA9injdMxT4FG9lgaWxpqRtNKY5EsNwS
-         49TRd03Ojg9oMxri62ZmlUm+QQyatBDs2gXZw=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH v2] Add comment in alloc_pages_exact_node
-Date: Wed, 14 Apr 2010 23:58:39 +0900
-Message-Id: <1271257119-30117-6-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.5
-In-Reply-To: <1271257119-30117-1-git-send-email-minchan.kim@gmail.com>
-References: <1271257119-30117-1-git-send-email-minchan.kim@gmail.com>
+	id S1756000Ab0DNPBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 11:01:06 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53727 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755929Ab0DNPBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 11:01:03 -0400
+Date: Wed, 14 Apr 2010 15:00:39 GMT
+From: tip-bot for Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       rostedt@goodmis.org, tglx@linutronix.de, laijs@cn.fujitsu.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       rostedt@goodmis.org, tglx@linutronix.de, laijs@cn.fujitsu.com
+In-Reply-To: <4BB9A929.2000303@cn.fujitsu.com>
+References: <4BB9A929.2000303@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:tracing/core] tracing: Fix uninitialized variable of tracing/trace output
+Message-ID: <tip-aa27497c2fb4c7f57706099bd489e683e5cc3e3b@git.kernel.org>
+Git-Commit-ID: aa27497c2fb4c7f57706099bd489e683e5cc3e3b
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Apr 2010 15:00:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V2
- o modify comment by suggestion. (Thanks to Mel)
+Commit-ID:  aa27497c2fb4c7f57706099bd489e683e5cc3e3b
+Gitweb:     http://git.kernel.org/tip/aa27497c2fb4c7f57706099bd489e683e5cc3e3b
+Author:     Lai Jiangshan <laijs@cn.fujitsu.com>
+AuthorDate: Mon, 5 Apr 2010 17:11:05 +0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 5 Apr 2010 11:01:22 -0400
 
-alloc_pages_exact_node naming makes some people misleading.
-They considered it following as.
-"This function will allocate pages from node which I wanted
-exactly".
-But it can allocate pages from fallback list if page allocator
-can't find free page from node user wanted.
+tracing: Fix uninitialized variable of tracing/trace output
 
-So let's comment this NOTE.
+Because a local variable is not initialized, I got these
+when I did 'cat tracing/trace'. (not trace_pipe):
 
-Actually I wanted to change naming with better.
-ex) alloc_pages_explict_node.
-But I changed my mind since the comment would be enough.
+CPU:0 [LOST 18446744071579453134 EVENTS]
+              ps-3099  [000]   560.770221: lock_acquire: ffff880030865010 &(&dentry->d_lock)->rlock
+CPU:0 [LOST 18446744071579453134 EVENTS]
+              ps-3099  [000]   560.770221: lock_release: ffff880030865010 &(&dentry->d_lock)->rlock
+CPU:0 [LOST 18446612133255294080 EVENTS]
+              ps-3099  [000]   560.770221: lock_acquire: ffff880030865010 &(&dentry->d_lock)->rlock
+CPU:0 [LOST 18446744071579453134 EVENTS]
+              ps-3099  [000]   560.770222: lock_release: ffff880030865010 &(&dentry->d_lock)->rlock
+CPU:0 [LOST 18446744071579453134 EVENTS]
+              ps-3099  [000]   560.770222: lock_release: ffffffff816cfb98 dcache_lock
 
-If anybody suggests better name, I will do with pleasure.
+See peek_next_entry(), it does not set *lost_events when we 'cat tracing/trace'
 
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Bob Liu <lliubbo@gmail.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+LKML-Reference: <4BB9A929.2000303@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/gfp.h |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ kernel/trace/trace.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index b65f003..56b5fe6 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -288,6 +288,12 @@ static inline struct page *alloc_pages_node(int nid, gfp_t gfp_mask,
- 	return __alloc_pages(gfp_mask, order, node_zonelist(nid, gfp_mask));
- }
- 
-+/*
-+ * Use this instead of alloc_pages_node when the caller knows
-+ * exactly which node they need (as opposed to passing in -1
-+ * for current). Fallback to other nodes will still occur
-+ * unless __GFP_THISNODE is specified.
-+ */
- static inline struct page *alloc_pages_exact_node(int nid, gfp_t gfp_mask,
- 						unsigned int order)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 0498beb..b9be232 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1571,7 +1571,7 @@ __find_next_entry(struct trace_iterator *iter, int *ent_cpu,
  {
--- 
-1.7.0.5
-
+ 	struct ring_buffer *buffer = iter->tr->buffer;
+ 	struct trace_entry *ent, *next = NULL;
+-	unsigned long lost_events, next_lost = 0;
++	unsigned long lost_events = 0, next_lost = 0;
+ 	int cpu_file = iter->cpu_file;
+ 	u64 next_ts = 0, ts;
+ 	int next_cpu = -1;
