@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab0DNMes (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 08:34:48 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42595 "EHLO
+	id S1754871Ab0DNMgr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 08:36:47 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:42641 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab0DNMeo (ORCPT
+	with ESMTP id S1752775Ab0DNMgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 08:34:44 -0400
-Date: Wed, 14 Apr 2010 13:34:30 +0100
+	Wed, 14 Apr 2010 08:36:46 -0400
+Date: Wed, 14 Apr 2010 13:36:43 +0100
 From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-       Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH -next] eeepc-wmi: depends on INPUT_SPARSEKMAP
-Message-ID: <20100414123430.GA9242@srcf.ucam.org>
-References: <20100413163427.8acd04e5.sfr@canb.auug.org.au> <20100413094544.38369da9.randy.dunlap@oracle.com> <201004131539.34998.dmitry.torokhov@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input: add HP Compaq 2710p to 'noloop' table
+Message-ID: <20100414123643.GB9242@srcf.ucam.org>
+References: <alpine.LNX.2.00.1004141409450.8345@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201004131539.34998.dmitry.torokhov@gmail.com>
+In-Reply-To: <alpine.LNX.2.00.1004141409450.8345@pobox.suse.cz>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
@@ -29,7 +27,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've queued up a patch for this.
+On Wed, Apr 14, 2010 at 02:16:25PM +0200, Jiri Kosina wrote:
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq 2710p (#ABD)"),
+> +			DMI_MATCH(DMI_PRODUCT_VERSION, "F.14"),
+
+Is this really the only BIOS version affected? It seems unlikely. It's 
+also a pretty good indication that we're doing something wrong.
 
 -- 
 Matthew Garrett | mjg59@srcf.ucam.org
