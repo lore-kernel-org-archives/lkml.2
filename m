@@ -1,247 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378Ab0DNRLf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 13:11:35 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64835 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756163Ab0DNRLe (ORCPT
+	id S1756481Ab0DNRUo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 13:20:44 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:27280 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485Ab0DNRUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 13:11:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
-         :mime-version:content-type:content-transfer-encoding;
-        b=G5IlnqqKn81SeYehGErPTKGP0QPIalfmFf+bf+3ejQi+wPcmyzi0uQ4zUBZ7Vt59n4
-         OCwsjcJLW/kzcigA+ZXqPvkjHctPQdwT62TXrB6RLfeyb4DgGojysIqFdVK8eFzPy7tM
-         T/5XzQJAVSBAtb2fGoZKyDQ91LJqVfibmuMtQ=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH v3] perf: Fix accidentally preprocessed snprintf callback
-Date: Wed, 14 Apr 2010 19:11:29 +0200
-Message-Id: <1271265089-1842-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.6.2.3
-In-Reply-To: <1271205468-8202-1-git-send-regression-fweisbec@gmail.com>
-References: <1271205468-8202-1-git-send-regression-fweisbec@gmail.com>
+	Wed, 14 Apr 2010 13:20:43 -0400
+Message-ID: <4BC5F98D.5070601@oracle.com>
+Date: Wed, 14 Apr 2010 10:21:17 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Andy Isaacson <adi@hexapodia.org>,
+       guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH -v2 1/2] x86: Reserve [0xa0000, 0x100000] in e820 map
+References: <20100409223532.GC11130@hexapodia.org> <4BC4E8FB.8060802@zytor.com> <4BC51312.6080302@oracle.com> <201004141055.50172.bjorn.helgaas@hp.com>
+In-Reply-To: <201004141055.50172.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4BC5F945.0157:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct sort_entry has a callback named snprintf that turns an
-entry into a string result.
-But there are glibc versions that implement snprintf through a
-macro. The following expression is then going to get the snprintf
-call preprocessed:
+On 04/14/2010 09:55 AM, Bjorn Helgaas wrote:
+> On Tuesday 13 April 2010 06:57:54 pm Yinghai wrote:
+>
+>   
+>> Subject: [PATCH] x86, resource: Add reserve_region_with_split_check_child()
+>>
+>> It will cover the whole region to BUSY, except that some regions that have
+>> children under them.
+>>
+>> those children normally is PCI bar but it is falling into E820_RESERVED.
+>> We can not put BUSY on them, otherwise driver can not use pci_request_region()
+>> later
+>>
+>> /proc/iomem will have
+>> 00010000-00094fff : System RAM
+>> 00095000-0009ffff : reserved
+>> 000a0000-000bffff : PCI Bus 0000:00
+>>   000a0000-000bffff : reserved
+>> 000c0000-000cffff : reserved
+>> 000d0000-000dffff : PCI Bus 0000:00
+>>   000d0000-000dffff : reserved
+>> 000e0000-000fffff : reserved
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>
+>> ---
+>>  arch/x86/kernel/e820.c |   10 +++++++---
+>>  include/linux/ioport.h |    3 +++
+>>  kernel/resource.c      |   24 +++++++++++++++++++-----
+>>  3 files changed, 29 insertions(+), 8 deletions(-)
+>>
+>> Index: linux-2.6/arch/x86/kernel/e820.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/kernel/e820.c
+>> +++ linux-2.6/arch/x86/kernel/e820.c
+>> @@ -1094,7 +1094,7 @@ void __init e820_reserve_resources(void)
+>>  		 * pci device BAR resource and insert them later in
+>>  		 * pcibios_resource_survey()
+>>  		 */
+>> -		if (e820.map[i].type != E820_RESERVED || res->start < (1ULL<<20)) {
+>> +		if (e820.map[i].type != E820_RESERVED) {
+>>  			res->flags |= IORESOURCE_BUSY;
+>>  			insert_resource(&iomem_resource, res);
+>>  		}
+>> @@ -1135,8 +1135,12 @@ void __init e820_reserve_resources_late(
+>>  
+>>  	res = e820_res;
+>>  	for (i = 0; i < e820.nr_map; i++) {
+>> -		if (!res->parent && res->end)
+>> -			insert_resource_expand_to_fit(&iomem_resource, res);
+>> +		if (!res->parent && res->end) {
+>> +			if (res->start < (1ULL<<20)) {
+>> +				reserve_region_with_split_check_child(&iomem_resource, res->start, res->end, res->name);
+>> +			} else
+>> +				insert_resource_expand_to_fit(&iomem_resource, res);
+>>     
+> I don't like adding all these special-purpose resource interfaces, e.g.,
+> insert_resource_expand_to_fit(), reserve_region_with_split(),
+> reserve_region_with_split_check_child(), etc.  They tend to be only
+> used by one caller, which is a clue to me that we're doing something
+> wrong.
+>
+> Sometimes we'd like to print debug information in them (as we do in
+> insert_resource_expand_to_fit()), but we don't have enough context,
+> so the message isn't very meaningful.
+>   
+print out related resource tree segment ?
+> I think it's better to have more generic interfaces that allow us to
+> implement this sort of functionality where it's used and where we
+> have the context to print useful messages.  For example, could the
+> reserve_region_with_split_check_child() functionality be implemented
+> in e820.c by building on something like request_resource_conflict()?
+>
+>   
+>> +		}
+>>  		res++;
+>>  	}
+>>  
+>> Index: linux-2.6/include/linux/ioport.h
+>> ===================================================================
+>> --- linux-2.6.orig/include/linux/ioport.h
+>> +++ linux-2.6/include/linux/ioport.h
+>> @@ -120,6 +120,9 @@ void release_child_resources(struct reso
+>>  extern void reserve_region_with_split(struct resource *root,
+>>  			     resource_size_t start, resource_size_t end,
+>>  			     const char *name);
+>> +void reserve_region_with_split_check_child(struct resource *root,
+>> +			     resource_size_t start, resource_size_t end,
+>> +			     const char *name);
+>>  extern struct resource *insert_resource_conflict(struct resource *parent, struct resource *new);
+>>  extern int insert_resource(struct resource *parent, struct resource *new);
+>>  extern void insert_resource_expand_to_fit(struct resource *root, struct resource *new);
+>> Index: linux-2.6/kernel/resource.c
+>> ===================================================================
+>> --- linux-2.6.orig/kernel/resource.c
+>> +++ linux-2.6/kernel/resource.c
+>> @@ -609,7 +609,7 @@ int adjust_resource(struct resource *res
+>>  
+>>  static void __init __reserve_region_with_split(struct resource *root,
+>>  		resource_size_t start, resource_size_t end,
+>> -		const char *name)
+>> +		const char *name, bool check_child)
+>>  {
+>>  	struct resource *parent = root;
+>>  	struct resource *conflict;
+>> @@ -631,13 +631,18 @@ static void __init __reserve_region_with
+>>  	kfree(res);
+>>  
+>>  	/* conflict covered whole area */
+>> -	if (conflict->start <= start && conflict->end >= end)
+>> +	if (conflict->start <= start && conflict->end >= end) {
+>> +		if (check_child && !conflict->child && strstr(conflict->name, "PCI Bus"))
+>>     
+> This is kind of gross, too.  Checking the name of a resource for "PCI Bus"?
+>   
+yes, in case some system have device on BUS 0 directly. but have device
+have pci BAR below 1M and fall into E820_RESERVED.
 
-        ent->snprintf(...)
-
-to finally end up in a build error:
-
-        util/hist.c: Dans la fonction «hist_entry__snprintf» :
-        util/hist.c:539: erreur: «struct sort_entry» has no member named «__builtin___snprintf_chk»
-
-To fix this, prepend struct sort_entry callbacks with an "se_"
-prefix.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
----
- tools/perf/util/hist.c |   28 ++++++++++++++--------------
- tools/perf/util/sort.c |   42 +++++++++++++++++++++---------------------
- tools/perf/util/sort.h |   12 ++++++------
- 3 files changed, 41 insertions(+), 41 deletions(-)
-
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 18cf8b3..9c2b874 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -68,7 +68,7 @@ hist_entry__cmp(struct hist_entry *left, struct hist_entry *right)
- 	int64_t cmp = 0;
- 
- 	list_for_each_entry(se, &hist_entry__sort_list, list) {
--		cmp = se->cmp(left, right);
-+		cmp = se->se_cmp(left, right);
- 		if (cmp)
- 			break;
- 	}
-@@ -85,7 +85,7 @@ hist_entry__collapse(struct hist_entry *left, struct hist_entry *right)
- 	list_for_each_entry(se, &hist_entry__sort_list, list) {
- 		int64_t (*f)(struct hist_entry *, struct hist_entry *);
- 
--		f = se->collapse ?: se->cmp;
-+		f = se->se_collapse ?: se->se_cmp;
- 
- 		cmp = f(left, right);
- 		if (cmp)
-@@ -536,8 +536,8 @@ int hist_entry__snprintf(struct hist_entry *self,
- 			continue;
- 
- 		ret += snprintf(s + ret, size - ret, "%s", sep ?: "  ");
--		ret += se->snprintf(self, s + ret, size - ret,
--				    se->width ? *se->width : 0);
-+		ret += se->se_snprintf(self, s + ret, size - ret,
-+				       se->se_width ? *se->se_width : 0);
- 	}
- 
- 	return ret;
-@@ -564,7 +564,7 @@ static size_t hist_entry__fprintf_callchain(struct hist_entry *self, FILE *fp,
- 	if (sort__first_dimension == SORT_COMM) {
- 		struct sort_entry *se = list_first_entry(&hist_entry__sort_list,
- 							 typeof(*se), list);
--		left_margin = se->width ? *se->width : 0;
-+		left_margin = se->se_width ? *se->se_width : 0;
- 		left_margin -= thread__comm_len(self->thread);
- 	}
- 
-@@ -615,22 +615,22 @@ size_t perf_session__fprintf_hists(struct rb_root *hists,
- 		if (se->elide)
- 			continue;
- 		if (sep) {
--			fprintf(fp, "%c%s", *sep, se->header);
-+			fprintf(fp, "%c%s", *sep, se->se_header);
- 			continue;
- 		}
--		width = strlen(se->header);
--		if (se->width) {
-+		width = strlen(se->se_header);
-+		if (se->se_width) {
- 			if (symbol_conf.col_width_list_str) {
- 				if (col_width) {
--					*se->width = atoi(col_width);
-+					*se->se_width = atoi(col_width);
- 					col_width = strchr(col_width, ',');
- 					if (col_width)
- 						++col_width;
- 				}
- 			}
--			width = *se->width = max(*se->width, width);
-+			width = *se->se_width = max(*se->se_width, width);
- 		}
--		fprintf(fp, "  %*s", width, se->header);
-+		fprintf(fp, "  %*s", width, se->se_header);
- 	}
- 	fprintf(fp, "\n");
- 
-@@ -652,10 +652,10 @@ size_t perf_session__fprintf_hists(struct rb_root *hists,
- 			continue;
- 
- 		fprintf(fp, "  ");
--		if (se->width)
--			width = *se->width;
-+		if (se->se_width)
-+			width = *se->se_width;
- 		else
--			width = strlen(se->header);
-+			width = strlen(se->se_header);
- 		for (i = 0; i < width; i++)
- 			fprintf(fp, ".");
- 	}
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 9d24d4b..da30b30 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -30,38 +30,38 @@ static int hist_entry__parent_snprintf(struct hist_entry *self, char *bf,
- 				       size_t size, unsigned int width);
- 
- struct sort_entry sort_thread = {
--	.header = "Command:  Pid",
--	.cmp	= sort__thread_cmp,
--	.snprintf = hist_entry__thread_snprintf,
--	.width	= &threads__col_width,
-+	.se_header	= "Command:  Pid",
-+	.se_cmp		= sort__thread_cmp,
-+	.se_snprintf	= hist_entry__thread_snprintf,
-+	.se_width	= &threads__col_width,
- };
- 
- struct sort_entry sort_comm = {
--	.header		= "Command",
--	.cmp		= sort__comm_cmp,
--	.collapse	= sort__comm_collapse,
--	.snprintf	= hist_entry__comm_snprintf,
--	.width		= &comms__col_width,
-+	.se_header	= "Command",
-+	.se_cmp		= sort__comm_cmp,
-+	.se_collapse	= sort__comm_collapse,
-+	.se_snprintf	= hist_entry__comm_snprintf,
-+	.se_width	= &comms__col_width,
- };
- 
- struct sort_entry sort_dso = {
--	.header = "Shared Object",
--	.cmp	= sort__dso_cmp,
--	.snprintf = hist_entry__dso_snprintf,
--	.width	= &dsos__col_width,
-+	.se_header	= "Shared Object",
-+	.se_cmp		= sort__dso_cmp,
-+	.se_snprintf	= hist_entry__dso_snprintf,
-+	.se_width	= &dsos__col_width,
- };
- 
- struct sort_entry sort_sym = {
--	.header = "Symbol",
--	.cmp	= sort__sym_cmp,
--	.snprintf = hist_entry__sym_snprintf,
-+	.se_header	= "Symbol",
-+	.se_cmp		= sort__sym_cmp,
-+	.se_snprintf	= hist_entry__sym_snprintf,
- };
- 
- struct sort_entry sort_parent = {
--	.header = "Parent symbol",
--	.cmp	= sort__parent_cmp,
--	.snprintf = hist_entry__parent_snprintf,
--	.width	= &parent_symbol__col_width,
-+	.se_header	= "Parent symbol",
-+	.se_cmp		= sort__parent_cmp,
-+	.se_snprintf	= hist_entry__parent_snprintf,
-+	.se_width	= &parent_symbol__col_width,
- };
- 
- struct sort_dimension {
-@@ -255,7 +255,7 @@ int sort_dimension__add(const char *tok)
- 		if (strncasecmp(tok, sd->name, strlen(tok)))
- 			continue;
- 
--		if (sd->entry->collapse)
-+		if (sd->entry->se_collapse)
- 			sort__need_collapse = 1;
- 
- 		if (sd->entry == &sort_parent) {
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 6d7b4be..1d857aa 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -78,13 +78,13 @@ enum sort_type {
- struct sort_entry {
- 	struct list_head list;
- 
--	const char *header;
-+	const char *se_header;
- 
--	int64_t (*cmp)(struct hist_entry *, struct hist_entry *);
--	int64_t (*collapse)(struct hist_entry *, struct hist_entry *);
--	int	(*snprintf)(struct hist_entry *self, char *bf, size_t size,
--			    unsigned int width);
--	unsigned int *width;
-+	int64_t (*se_cmp)(struct hist_entry *, struct hist_entry *);
-+	int64_t (*se_collapse)(struct hist_entry *, struct hist_entry *);
-+	int	(*se_snprintf)(struct hist_entry *self, char *bf, size_t size,
-+			       unsigned int width);
-+	unsigned int *se_width;
- 	bool	elide;
- };
- 
--- 
-1.6.2.3
-
+YH
