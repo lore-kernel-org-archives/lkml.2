@@ -1,35 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab0DNOiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 10:38:16 -0400
-Received: from ns2.intersolute.de ([193.110.43.67]:47032 "EHLO
-	ns2.intersolute.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755698Ab0DNOiO (ORCPT
+	id S1755837Ab0DNOip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 10:38:45 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35491 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755808Ab0DNOio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 10:38:14 -0400
-Message-ID: <4BC5D34F.80304@lumino.de>
-Date: Wed, 14 Apr 2010 16:38:07 +0200
-From: Michael Schnell <mschnell@lumino.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Thunderbird/3.0.4
+	Wed, 14 Apr 2010 10:38:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=ACvybz2S06FXz8o4aPcKVp0iUoTbakvzMsUgXjVTwqEeAenH8TEtbsSmpz0vNlJUhI
+         /7Zjpu0HhhJr/5UKERZgBZ0oqaGNNEKXNdc/o+QimowkLi7021OnxHkJo0zVKMH5QzF2
+         Fpd/pVKaL8A/AIGsVtNxDgBF7Wu9TJq5RtUuc=
+Message-ID: <4BC5D3C0.3010008@gmail.com>
+Date: Wed, 14 Apr 2010 07:40:00 -0700
+From: "Justin P. mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>,
-       nios2-dev <nios2-dev@sopc.et.ntust.edu.tw>
-Subject: Re: atomic RAM ?
-References: <4BBD86A5.5030109@lumino.de>	<20100408114542.47b6589a@lxorguk.ukuu.org.uk>	<4BBDC7D4.6040301@lumino.de>	<20100408143750.0acebaa1@lxorguk.ukuu.org.uk>	<4BC5B915.6090803@lumino.de> <20100414135704.3fc7b713@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100414135704.3fc7b713@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joe Perches <joe@perches.com>
+CC: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION PATCH] vsprintf: increase sizeof precision in printf_spec
+References: <20100414011336.16139.68030.stgit@paris.rdu.redhat.com>	 <1271208801.1555.12.camel@Joe-Laptop.home>	 <1271213041.3008.35.camel@dhcp235-240.rdu.redhat.com> <1271214102.1555.27.camel@Joe-Laptop.home>
+In-Reply-To: <1271214102.1555.27.camel@Joe-Laptop.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2010 02:57 PM, Alan Cox wrote:
-> The important point is that you don't *have* to use futex to provide the
-> posix pthread lock primitives if they don't fit your platform.
->   
-I don't *have* to use Linux to provide the function the controller is
-supposed to do for the end-user :).
+On 04/13/2010 08:01 PM, Joe Perches wrote:
+> On Tue, 2010-04-13 at 22:44 -0400, Eric Paris wrote:
+>> On Tue, 2010-04-13 at 18:33 -0700, Joe Perches wrote:
+>>> On Tue, 2010-04-13 at 21:13 -0400, Eric Paris wrote:
+>>>> Patch ef0658f3de484bf9b173639cd47544584e01efa5 changed the precision field
+>>>> from and int to an s8.  Problem is that we have code which uses a much larger
+>>>> precision in the kernel.  An example would in the audit code where we have:
+>>>>
+>>>> vsnprintf(...,..., " msg='%.1024s'", (char *)data);
+>>>>
+>>>> which causes precision to be too large and end up truncating to nothing.
+>>>> Raising the size of the precision fixes the audit system issue.  It also does
+>>>> not affect the alignment of the struct according to pahole and is still
+>>>> approprietely packed.
+>>>
+>>> I don't see how it could be appropriately packed.
+>>
+>> I was just saying there was no padding inside the struct, although you
+>> are right about it now being longer than 64.
+>
+> Which is bad.
+>
+>> But what does __attribute__((packed)) buy us?
+>
+> It could force the size to be 64 bits on more platforms.
+>
+>> I'll gladly resend with u8 type and s16 precision if that's the best
+>> solution.
+>
+> Reordering struct members to keep width and precision
+> together seems appropriate.  The attribute may not be.
+>
+> struct printf_spec {
+> 	u8 type;
+> 	u8 flags;		/* flags to number() */
+> 	u8 base;
+> 	u8 qualifier;
+> 	s16 field_width;	/* width of output field */
+> 	s16 precision;		/* # of digits/chars */
+> };
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-But Linux is a very decent way to make it happen....
 
--Michael
+o.k. just added this patch from the first post,
+and the avc's look complete.(I'll keep an eye on
+nscd to make sure those avc's are complete as well).
+
+looks good over here.
+
+Justin P. Mattock
