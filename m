@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171Ab0DNXGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 19:06:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13210 "EHLO mx1.redhat.com"
+	id S1757186Ab0DNXIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 19:08:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9367 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756198Ab0DNXGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 19:06:44 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 1/4] cfq-iosched: Keep track of average think time for the sync-noidle workload.
-References: <1271279826-30294-1-git-send-email-jmoyer@redhat.com>
-	<1271279826-30294-2-git-send-email-jmoyer@redhat.com>
-	<20100414213745.GC3167@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 14 Apr 2010 19:06:38 -0400
-In-Reply-To: <20100414213745.GC3167@redhat.com> (Vivek Goyal's message of
-	"Wed, 14 Apr 2010 17:37:45 -0400")
-Message-ID: <x49zl15k51d.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757043Ab0DNXIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 19:08:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,208,1270450800"; 
+   d="scan'208";a="509226352"
+Date: Wed, 14 Apr 2010 23:35:54 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-i2c@vger.kernel.org, khali@linux-fr.org, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH 2/4] isl29020: ambient light sensor
+Message-ID: <20100414233554.3f020155@linux.intel.com>
+In-Reply-To: <20100414224542.GX30807@buzzloop.caiaq.de>
+References: <20100414124913.23181.75903.stgit@localhost.localdomain>
+	<20100414125147.23181.5817.stgit@localhost.localdomain>
+	<20100414224542.GX30807@buzzloop.caiaq.de>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+> Would it be possible to make the existing driver for the ISL29003
+> support the ISL29020 as well?
 
-> On Wed, Apr 14, 2010 at 05:17:03PM -0400, Jeff Moyer wrote:
+I dug the manuals out for these to take a look - the answer is they are
+quite different chips. 
 
->> @@ -3678,11 +3710,14 @@ static void *cfq_init_queue(struct request_queue *q)
->>  
->>  	/* Init root service tree */
->>  	cfqd->grp_service_tree = CFQ_RB_ROOT;
->> +	cfqd->grp_service_tree.last_end_request = jiffies;
->>  
->
-> This assignment is not required as we never update think time analsys of
-> service tree where all the groups are hanging.  So for grp_service_tree,
-> last_end_request can be zero and there will be no harm.
-
-OK, thanks.
-
-> Otherwise patch looks good to me. Can you please run some simple blkio
-> cgroup tests to make sure that functionality is not broken.
-
-Yes, I'll add that to my list and get back to you.
-
-Thanks for the review, Vivek.
-
-Cheers,
-Jeff
+Alan
