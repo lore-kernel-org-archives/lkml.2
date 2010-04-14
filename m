@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab0DNNYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 09:24:20 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34975 "EHLO
+	id S1755573Ab0DNNYi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 09:24:38 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34983 "EHLO
 	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755128Ab0DNNYQ (ORCPT
+	with ESMTP id S1755549Ab0DNNYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 09:24:16 -0400
+	Wed, 14 Apr 2010 09:24:35 -0400
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 1/4] hmc6352: Add driver for the HMC6352 compass
+Subject: [PATCH 3/4] liss331d1: accelerometer driver
 To: linux-i2c@vger.kernel.org, khali@linux-fr.org, linux-input@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Date: Wed, 14 Apr 2010 13:51:41 +0100
-Message-ID: <20100414125136.23181.16788.stgit@localhost.localdomain>
+Date: Wed, 14 Apr 2010 13:52:00 +0100
+Message-ID: <20100414125155.23181.56610.stgit@localhost.localdomain>
 In-Reply-To: <20100414124913.23181.75903.stgit@localhost.localdomain>
 References: <20100414124913.23181.75903.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -25,60 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kalhan Trisal <kalhan.trisal@intel.com>
 
-This driver will report the heading values in degrees to the sysfs interface.
-The values returned are headings . e.g. 245.6
+The acceleremeter driver reads the x,y,z coordinate registers and provides
+the information to user through the input layer
 
-(Some cleanups from Alan Cox)
+Conversion to input device, clean up and porting of retry fixes needed
+for AAVA done by Alan Cox.
 
 Signed-off-by: Kalhan Trisal <kalhan.trisal@intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/hwmon/Kconfig   |    7 +
- drivers/hwmon/Makefile  |    1 
- drivers/hwmon/hmc6352.c |  235 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 243 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hwmon/hmc6352.c
+ drivers/hwmon/Kconfig    |    8 +
+ drivers/hwmon/Makefile   |    1 
+ drivers/hwmon/lis331dl.c |  286 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 295 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwmon/lis331dl.c
 
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index d38447f..74f672d 100644
+index 1fa2533..6868b9d 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
-@@ -1088,6 +1088,13 @@ config SENSORS_MC13783_ADC
-         help
-           Support for the A/D converter on MC13783 PMIC.
+@@ -1104,6 +1104,14 @@ config SENSORS_ISL29020
+ 	  Range values can be configured using sysfs.
+ 	  Lux data is accessible via sysfs.
  
-+config SENSORS_HMC6352
-+	tristate "Honeywell HMC6352 compass"
++config SENSORS_LIS331DL
++	tristate "STMicroeletronics LIS331DL three-axis digital accelerometer"
 +	depends on I2C
 +	help
-+	  This driver provides support for the Honeywell HMC6352 compass,
-+	  providing configuration and heading data via sysfs.
++	  If you say yes here you get support for the Accelerometer  Devices
++	  Device can be configured using sysfs.
++	  x y Z data can be   accessible via sysfs.
 +
  if ACPI
  
  comment "ACPI drivers"
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 4aa1a3d..ad2ed36 100644
+index 13d6832..ebeb2a2 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
-@@ -49,6 +49,7 @@ obj-$(CONFIG_SENSORS_GL518SM)	+= gl518sm.o
- obj-$(CONFIG_SENSORS_GL520SM)	+= gl520sm.o
- obj-$(CONFIG_SENSORS_ULTRA45)	+= ultra45_env.o
- obj-$(CONFIG_SENSORS_HDAPS)	+= hdaps.o
-+obj-$(CONFIG_SENSORS_HMC6352)	+= hmc6352.o
- obj-$(CONFIG_SENSORS_I5K_AMB)	+= i5k_amb.o
- obj-$(CONFIG_SENSORS_IBMAEM)	+= ibmaem.o
- obj-$(CONFIG_SENSORS_IBMPEX)	+= ibmpex.o
-diff --git a/drivers/hwmon/hmc6352.c b/drivers/hwmon/hmc6352.c
+@@ -60,6 +60,7 @@ obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
+ obj-$(CONFIG_SENSORS_LIS3LV02D) += lis3lv02d.o hp_accel.o
+ obj-$(CONFIG_SENSORS_LIS3_SPI)	+= lis3lv02d.o lis3lv02d_spi.o
+ obj-$(CONFIG_SENSORS_LIS3_I2C)	+= lis3lv02d.o lis3lv02d_i2c.o
++obj-$(CONFIG_SENSORS_LIS331DL)	+= lis331dl.o
+ obj-$(CONFIG_SENSORS_LM63)	+= lm63.o
+ obj-$(CONFIG_SENSORS_LM70)	+= lm70.o
+ obj-$(CONFIG_SENSORS_LM73)	+= lm73.o
+diff --git a/drivers/hwmon/lis331dl.c b/drivers/hwmon/lis331dl.c
 new file mode 100644
-index 0000000..926982f
+index 0000000..34009eb
 --- /dev/null
-+++ b/drivers/hwmon/hmc6352.c
-@@ -0,0 +1,235 @@
++++ b/drivers/hwmon/lis331dl.c
+@@ -0,0 +1,286 @@
 +/*
-+ * hmc6352.c - Honeywell Compass Driver
++ * lis331dl.c - ST LIS331DL  Accelerometer Driver
 + *
 + * Copyright (C) 2009 Intel Corp
 + *
@@ -104,212 +106,263 @@ index 0000000..926982f
 +#include <linux/init.h>
 +#include <linux/slab.h>
 +#include <linux/i2c.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/hwmon-vid.h>
 +#include <linux/err.h>
 +#include <linux/delay.h>
 +#include <linux/mutex.h>
 +#include <linux/sysfs.h>
++#include <linux/input-polldev.h>
 +
-+struct compass_data {
-+	struct device *hwmon_dev;
++
++#define POLL_INTERVAL	50
++
++struct lis331dl {
++	struct input_polled_dev *idev;
++	struct i2c_client *client;
++	struct mutex update_lock;
 +};
 +
-+static ssize_t compass_calibration_store(struct device *dev,
++static ssize_t data_rate_show(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int val;
++	int speed = 100;
++
++	val = i2c_smbus_read_byte_data(client, 0x20);
++	if (val & 0x80); /* 1= 400HZ 0= 100HZ */
++		speed = 400;
++	return sprintf(buf, "%d\n", speed);
++}
++
++static ssize_t power_mode_show(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int val;
++
++	val = i2c_smbus_read_byte_data(client, 0x20) & 0x40;
++	if (val == 0x40)
++		val = 1;
++	return sprintf(buf, "%d\n", val);
++}
++
++static int read_with_retries(struct i2c_client *client, int r)
++{
++	int retries;
++	int ret;
++	
++	for (retries = 0; retries < 5; retries++) {
++		ret = i2c_smbus_read_byte_data(client, r);
++		if (ret != -ETIMEDOUT)
++			break;
++		msleep(10);
++	}
++	return ret;
++}
++
++static void lis331dl_poll(struct input_polled_dev *idev)
++{
++	struct input_dev *input = idev->input;
++	struct lis331dl *data = idev->private;
++	int x, y, z;
++	struct i2c_client *client = data->client;
++
++	x = read_with_retries(client, 0x29);
++	y = read_with_retries(client, 0x2B);
++	z = read_with_retries(client, 0x2D);
++
++	input_report_abs(input, ABS_X, x);
++	input_report_abs(input, ABS_Y, y);
++	input_report_abs(input, ABS_Z, z);
++	input_sync(input);
++}
++
++static ssize_t data_rate_store(struct device *dev,
 +		struct device_attribute *attr, const char *buf, size_t count)
 +{
 +	struct i2c_client *client = to_i2c_client(dev);
-+	int ret;
++	struct lis331dl *data = i2c_get_clientdata(client);
++	unsigned int ret_val;
 +	unsigned long val;
-+	char  cmd[] = {0x43};
-+	char  cmd1[] = {0x45};
-+	struct i2c_msg msg[] = {
-+		{ client->addr, 0, 1, cmd },
-+	};
-+	struct i2c_msg msg1[] = {
-+		{ client->addr, 0, 1, cmd1 },
-+	};
 +
 +	if (strict_strtoul(buf, 10, &val))
 +		return -EINVAL;
-+	if (val == 1) {
-+		client->addr = 0x21;
-+		ret = i2c_transfer(client->adapter, msg, 1);
-+		if (ret != 1) {
-+			dev_warn(dev, "hmc6352_comp : i2c callib start cmd failed\n");
-+			return ret;
-+		}
-+	} else if (val == 2) {
-+		client->addr = 0x21;
-+		ret = i2c_transfer(client->adapter, msg1, 1);
-+		if (ret != 1) {
-+			dev_warn(dev, "hmc6352_comp : i2c callib stop cmd failed\n");
-+			return ret;
-+		}
-+	} else
-+		return -EINVAL;
 +
++	mutex_lock(&data->update_lock);
++
++	ret_val = i2c_smbus_read_byte_data(client, 0x20);
++	ret_val &= 0x7F;
++
++	switch (val) {
++	case 400:
++		ret_val |= 0x80;
++	case 100:
++		i2c_smbus_write_byte_data(client, 0x20, ret_val);
++		break;
++	default:		
++		mutex_unlock(&data->update_lock);
++		return -EINVAL;
++	}
++	mutex_unlock(&data->update_lock);
 +	return count;
 +}
 +
-+static ssize_t compass_heading_data_show(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+
-+	struct i2c_client *client = to_i2c_client(dev);
-+	static char cmd[] = { 0x41 };
-+	unsigned char i2c_data[2];
-+	unsigned int ret, ret_val;
-+	struct i2c_msg msg[] = {
-+		{ client->addr, 0, 1, cmd },
-+	};
-+	struct i2c_msg msg1[] = {
-+		{ client->addr, I2C_M_RD, 2, i2c_data },
-+	};
-+
-+	client->addr = 0x21;
-+	ret = i2c_transfer(client->adapter, msg, 1);
-+	if (ret != 1) {
-+		dev_warn(dev, "hmc6352 : i2c cmd  0x41 failed\n");
-+		return ret;
-+	}
-+	msleep(10); /* sending 0x41 cmd we need to wait for 7-10 milli second*/
-+	ret = i2c_transfer(client->adapter, msg1, 1);
-+	if (ret != 1) {
-+		dev_warn(dev, "hmc6352 : i2c read data cmd failed\n");
-+		return ret;
-+	}
-+	ret_val = i2c_data[0];
-+	ret_val = ((ret_val << 8) | i2c_data[1]);
-+	return sprintf(buf, "%d.%d\n", ret_val/10, ret_val%10);
-+}
-+
-+static ssize_t compass_power_mode_store(struct device *dev,
++static ssize_t power_mode_store(struct device *dev,
 +		struct device_attribute *attr, const  char *buf, size_t count)
 +{
-+
 +	struct i2c_client *client = to_i2c_client(dev);
++	struct lis331dl *data = i2c_get_clientdata(client);
++	unsigned int ret_val;
 +	unsigned long val;
-+	unsigned int ret;
-+	static char cmd[] = { 0x53 };
-+	static char cmd1[] = { 0x57 };
-+	struct i2c_msg msg[] = {
-+		{ client->addr, 0, 1, cmd },
-+	};
-+	struct i2c_msg msg1[] = {
-+		{ client->addr, 0, 1, cmd1 },
-+	};
 +
 +	if (strict_strtoul(buf, 10, &val))
 +		return -EINVAL;
 +
-+	if (val == 0) {
-+		ret = i2c_transfer(client->adapter, msg, 1);
-+		if (ret != 1)
-+			dev_warn(dev, "hmc6352: i2c cmd  sleep mode failed\n");
-+	} else if (val == 1) {
-+		ret = i2c_transfer(client->adapter, msg1, 1);
-+		if (ret != 1)
-+			dev_warn(dev, "hmc6352: i2c cmd active mode failed\n");
-+	} else
-+		return -EINVAL;
++	mutex_lock(&data->update_lock);
 +
++	ret_val = i2c_smbus_read_byte_data(client, 0x20);
++	ret_val &= 0xBF;
++	
++	switch(val) {
++	case 1:
++		ret_val |= 0x40;
++	case 0:
++		i2c_smbus_write_byte_data(client, 0x20, ret_val);
++		break;
++	default:
++		mutex_unlock(&data->update_lock);
++		return -EINVAL;
++	}
++	mutex_unlock(&data->update_lock);
 +	return count;
 +}
 +
-+static DEVICE_ATTR(heading, S_IRUGO, compass_heading_data_show, NULL);
-+static DEVICE_ATTR(calibration, S_IWUSR, NULL, compass_calibration_store);
-+static DEVICE_ATTR(power_state, S_IWUSR, NULL, compass_power_mode_store);
++static DEVICE_ATTR(data_rate, S_IRUGO | S_IWUSR,
++	data_rate_show, data_rate_store);
++static DEVICE_ATTR(power_state, S_IRUGO | S_IWUSR,
++	power_mode_show, power_mode_store);
 +
-+static struct attribute *mid_att_compass[] = {
-+	&dev_attr_heading.attr,
-+	&dev_attr_calibration.attr,
++static struct attribute *mid_att_accelero[] = {
++	&dev_attr_data_rate.attr,
 +	&dev_attr_power_state.attr,
 +	NULL
 +};
 +
-+static struct attribute_group m_compass_gr = {
-+	.name = "hmc6352",
-+	.attrs = mid_att_compass
++static struct attribute_group m_accelero_gr = {
++	.name = "lis331dl",
++	.attrs = mid_att_accelero
 +};
 +
-+static int  hmc6352_probe(struct i2c_client *client,
++static void accel_set_default_config(struct i2c_client *client)
++{
++	i2c_smbus_write_byte_data(client, 0x20, 0x47);
++}
++
++static int  lis331dl_probe(struct i2c_client *client,
 +					const struct i2c_device_id *id)
 +{
 +	int res;
-+	struct compass_data *data;
++	struct lis331dl *data;
++	struct input_polled_dev *idev;
++	struct input_dev *input;
 +
-+	data = kzalloc(sizeof(struct compass_data), GFP_KERNEL);
++	data = kzalloc(sizeof(struct lis331dl), GFP_KERNEL);
 +	if (data == NULL) {
-+		dev_err(&client->dev, "hmc6352: out of memory");
++		dev_err(&client->dev, "lis331dl: out of memory\n");
 +		return -ENOMEM;
 +	}
++	mutex_init(&data->update_lock);
 +	i2c_set_clientdata(client, data);
++	data->client = client;
 +
-+	res = sysfs_create_group(&client->dev.kobj, &m_compass_gr);
++	res = sysfs_create_group(&client->dev.kobj, &m_accelero_gr);
 +	if (res) {
-+		dev_err(&client->dev, "hmc6352: device_create_file failed\n");
-+		goto compass_error1;
++		dev_err(&client->dev, "lis331dl: sysfs  group failed\n");
++		goto accelero_error1;
 +	}
-+	data->hwmon_dev = hwmon_device_register(&client->dev);
-+	if (IS_ERR(data->hwmon_dev)) {
-+		res = PTR_ERR(data->hwmon_dev);
-+		data->hwmon_dev = NULL;
-+		dev_err(&client->dev, "hmc6352: fail to register hwmon device\n");
-+		sysfs_remove_group(&client->dev.kobj, &m_compass_gr);
-+		goto compass_error1;
++	idev = input_allocate_polled_device();
++	if (!idev) {
++		res = -ENOMEM;
++		dev_err(&client->dev,
++			"lis331dl: unable to register input device\n");
++		goto accelero_error2;
 +	}
-+	dev_info(&client->dev, "%s HMC6352 compass chip found\n",
-+		client->name);
-+	return res;
++	idev->poll = lis331dl_poll;
++	idev->poll_interval = POLL_INTERVAL;
 +
-+compass_error1:
++	idev->private = data;
++	data->idev =  idev;
++
++	input = idev->input;
++	input->name = "lis331dl";
++	input->phys = "lis331dl/input0";
++	input->id.bustype = BUS_I2C;
++	input->dev.parent = &client->dev;
++	input->evbit[0] = BIT_MASK(EV_ABS);
++	input_set_abs_params(input, ABS_X, 0, 255, 2, 2);
++	input_set_abs_params(input, ABS_Y, 0, 255, 2, 2);
++	input_set_abs_params(input, ABS_Z, 0, 255, 2, 2);
++
++	res = input_register_polled_device(idev);
++	if (res == 0) {
++		dev_info(&client->dev,
++			"%s lis331dl:  Accelerometer chip found",
++							client->name);
++		return 0;
++	}
++	input_free_polled_device(idev);
++accelero_error2:
++	sysfs_remove_group(&client->dev.kobj, &m_accelero_gr);
++accelero_error1:
 +	i2c_set_clientdata(client, NULL);
 +	kfree(data);
 +	return res;
 +}
 +
-+static int hmc6352_remove(struct i2c_client *client)
++static int lis331dl_remove(struct i2c_client *client)
 +{
-+	struct compass_data *data = i2c_get_clientdata(client);
++	struct lis331dl *data = i2c_get_clientdata(client);
 +
-+	hwmon_device_unregister(data->hwmon_dev);
-+	sysfs_remove_group(&client->dev.kobj, &m_compass_gr);
++	input_unregister_polled_device(data->idev);
++	input_free_polled_device(data->idev);
++	sysfs_remove_group(&client->dev.kobj, &m_accelero_gr);
 +	kfree(data);
 +	return 0;
 +}
 +
-+static struct i2c_device_id hmc6352_id[] = {
-+	{ "i2c_compass", 0 },
++static struct i2c_device_id lis331dl_id[] = {
++	{ "i2c_accel", 0 },
 +	{ }
 +};
 +
-+MODULE_DEVICE_TABLE(i2c, hmc6352_id);
++MODULE_DEVICE_TABLE(i2c, lis331dl_id);
 +
-+static struct i2c_driver hmc6352_driver = {
++static struct i2c_driver lis331dl_driver = {
 +	.driver = {
-+	.name = "hmc6352",
++	.name = "lis331dl",
 +	},
-+	.probe = hmc6352_probe,
-+	.remove = hmc6352_remove,
-+	.id_table = hmc6352_id,
++	.probe = lis331dl_probe,
++	.remove = lis331dl_remove,
++	.id_table = lis331dl_id,
 +};
 +
-+static int __init sensor_hmc6352_init(void)
++static int __init sensor_lis331dl_init(void)
 +{
-+	return i2c_add_driver(&hmc6352_driver);
++	int res;
++
++	res = i2c_add_driver(&lis331dl_driver);
++	return res;
 +}
 +
-+static void  __exit sensor_hmc6352_exit(void)
++static void  __exit sensor_lis331dl_exit(void)
 +{
-+	i2c_del_driver(&hmc6352_driver);
++	i2c_del_driver(&lis331dl_driver);
 +}
 +
-+module_init(sensor_hmc6352_init);
-+module_exit(sensor_hmc6352_exit);
++module_init(sensor_lis331dl_init);
++module_exit(sensor_lis331dl_exit);
 +
-+MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com");
-+MODULE_DESCRIPTION("hmc6352 Compass Driver");
++MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com>, Alan Cox");
++MODULE_DESCRIPTION("STMicroelectronics LIS331DL Accelerometer Driver");
 +MODULE_LICENSE("GPL v2");
 
