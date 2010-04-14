@@ -1,82 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203Ab0DNKOf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 06:14:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48184 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754216Ab0DNKOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 06:14:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,203,1270450800"; 
-   d="scan'208";a="612980163"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH V3] perf & kvm: Enhance perf to collect KVM guest os statistics from host side
-Date: Wed, 14 Apr 2010 18:14:19 +0800
-User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com, Arnaldo Carvalho de Melo <acme@infradead.org>
-References: <1902387910.2078.435.camel@ymzhang.sh.intel.com> <201004141743.32393.sheng@linux.intel.com> <4BC5919E.1010400@redhat.com>
-In-Reply-To: <4BC5919E.1010400@redhat.com>
+	id S1755115Ab0DNKQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 06:16:38 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:62353 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754887Ab0DNKQg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 06:16:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qNoMw1Scapa7BW+jgRiG3efUpV7OkvFYr1gCBbrszR8CZORLdvejwTIM+567tWpueq
+         R2kuQ6m++op0D+AQ+kpdo5Ut5tHwcHPyQ72ELc35LC33MQxAa557Y6ojdnCzSAx5kwPM
+         yk+cM54Mqi/NRcp5q2di8TTCj+fqGuZxgLFgc=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004141814.19330.sheng@linux.intel.com>
+In-Reply-To: <20100414100724.GK25756@csn.ul.ie>
+References: <20100414135945.2b0a1e0d.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100414054144.GH2493@dastard>
+	 <20100414145056.D147.A69D9226@jp.fujitsu.com>
+	 <y2x28c262361004132313r1e2ca71frd042d5460d897730@mail.gmail.com>
+	 <w2u28c262361004140019pd8fe696ez609ece4a35527658@mail.gmail.com>
+	 <20100414184213.f6bf11a7.kamezawa.hiroyu@jp.fujitsu.com>
+	 <q2m28c262361004140301jba94a025nda755c1df2e04155@mail.gmail.com>
+	 <20100414100724.GK25756@csn.ul.ie>
+Date: Wed, 14 Apr 2010 19:16:36 +0900
+Message-ID: <u2g28c262361004140316l547b9d6cka3bdb2d738b6ad67@mail.gmail.com>
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 April 2010 17:57:50 Avi Kivity wrote:
-> On 04/14/2010 12:43 PM, Sheng Yang wrote:
-> > On Wednesday 14 April 2010 17:20:15 Avi Kivity wrote:
-> >> On 04/14/2030 12:05 PM, Zhang, Yanmin wrote:
-> >>> Here is the new patch of V3 against tip/master of April 13th
-> >>> if anyone wants to try it.
-> >>
-> >> Thanks for persisting despite the flames.
-> >>
-> >> Can you please separate arch/x86/kvm part of the patch?  That will make
-> >> for easier reviewing, and will need to go through separate trees.
-> >>
-> >> Sheng, did you make any progress with the NMI injection issue?
-> >
-> > Yes, though some other works interrupt me lately...
-> >
-> > The very first version has issue due to SELF_IPI mode can't be used to
-> > send NMI according to SDM. That's the reason why x2apic don't have way to
-> > do this.
-> 
-> Yes, I see that now.  Looks like others have the same questions...
-> 
-> > But later I found another issue of fail to inspect inside the guest. I
-> > think it's due to NMI is asynchronous event, though it should be
-> > triggered very quickly, you can't guarantee that the handler would be
-> > triggered before the state(current_vcpu) is cleared with current code.
-> >
-> > Maybe just extended the "guest state" region would be fine, if the
-> > latency is stable enough(though I think it maybe platform depended). I am
-> > working on this now.
-> 
-> I wouldn't like to depend on model specific behaviour.
+On Wed, Apr 14, 2010 at 7:07 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> On Wed, Apr 14, 2010 at 07:01:47PM +0900, Minchan Kim wrote:
+>> >> >>> > Dave Chinner <david@fromorbit.com> wrote:
+>> >> >>> >
+>> >> >>> > >  50)     3168      64   xfs_vm_writepage+0xab/0x160 [xfs]
+>> >> >>> > >  51)     3104     384   shrink_page_list+0x65e/0x840
+>> >> >>> > >  52)     2720     528   shrink_zone+0x63f/0xe10
+>> >> >>> >
+>> >> >>> > A bit OFF TOPIC.
+>> >> >>> >
+>> >> >>> > Could you share disassemble of shrink_zone() ?
+>> >> >>> >
+>> >> >>> > In my environ.
+>> >> >>> > 00000000000115a0 <shrink_zone>:
+>> >> >>> >    115a0:       55                      push   %rbp
+>> >> >>> >    115a1:       48 89 e5                mov    %rsp,%rbp
+>> >> >>> >    115a4:       41 57                   push   %r15
+>> >> >>> >    115a6:       41 56                   push   %r14
+>> >> >>> >    115a8:       41 55                   push   %r13
+>> >> >>> >    115aa:       41 54                   push   %r12
+>> >> >>> >    115ac:       53                      push   %rbx
+>> >> >>> >    115ad:       48 83 ec 78             sub    $0x78,%rsp
+>> >> >>> >    115b1:       e8 00 00 00 00          callq  115b6 <shrink_zone+0x16>
+>> >> >>> >    115b6:       48 89 75 80             mov    %rsi,-0x80(%rbp)
+>> >> >>> >
+>> >> >>> > disassemble seems to show 0x78 bytes for stack. And no changes to %rsp
+>> >> >>> > until retrun.
+>> >> >>>
+>> >> >>> I see the same. I didn't compile those kernels, though. IIUC,
+>> >> >>> they were built through the Ubuntu build infrastructure, so there is
+>> >> >>> something different in terms of compiler, compiler options or config
+>> >> >>> to what we are both using. Most likely it is the compiler inlining,
+>> >> >>> though Chris's patches to prevent that didn't seem to change the
+>> >> >>> stack usage.
+>> >> >>>
+>> >> >>> I'm trying to get a stack trace from the kernel that has shrink_zone
+>> >> >>> in it, but I haven't succeeded yet....
+>> >> >>
+>> >> >> I also got 0x78 byte stack usage. Umm.. Do we discussed real issue now?
+>> >> >>
+>> >> >
+>> >> > In my case, 0x110 byte in 32 bit machine.
+>> >> > I think it's possible in 64 bit machine.
+>> >> >
+>> >> > 00001830 <shrink_zone>:
+>> >> >    1830:       55                      push   %ebp
+>> >> >    1831:       89 e5                   mov    %esp,%ebp
+>> >> >    1833:       57                      push   %edi
+>> >> >    1834:       56                      push   %esi
+>> >> >    1835:       53                      push   %ebx
+>> >> >    1836:       81 ec 10 01 00 00       sub    $0x110,%esp
+>> >> >    183c:       89 85 24 ff ff ff       mov    %eax,-0xdc(%ebp)
+>> >> >    1842:       89 95 20 ff ff ff       mov    %edx,-0xe0(%ebp)
+>> >> >    1848:       89 8d 1c ff ff ff       mov    %ecx,-0xe4(%ebp)
+>> >> >    184e:       8b 41 04                mov    0x4(%ecx)
+>> >> >
+>> >> > my gcc is following as.
+>> >> >
+>> >> > barrios@barriostarget:~/mmotm$ gcc -v
+>> >> > Using built-in specs.
+>> >> > Target: i486-linux-gnu
+>> >> > Configured with: ../src/configure -v --with-pkgversion='Ubuntu
+>> >> > 4.3.3-5ubuntu4'
+>> >> > --with-bugurl=file:///usr/share/doc/gcc-4.3/README.Bugs
+>> >> > --enable-languages=c,c++,fortran,objc,obj-c++ --prefix=/usr
+>> >> > --enable-shared --with-system-zlib --libexecdir=/usr/lib
+>> >> > --without-included-gettext --enable-threads=posix --enable-nls
+>> >> > --with-gxx-include-dir=/usr/include/c++/4.3 --program-suffix=-4.3
+>> >> > --enable-clocale=gnu --enable-libstdcxx-debug --enable-objc-gc
+>> >> > --enable-mpfr --enable-targets=all --with-tune=generic
+>> >> > --enable-checking=release --build=i486-linux-gnu --host=i486-linux-gnu
+>> >> > --target=i486-linux-gnu
+>> >> > Thread model: posix
+>> >> > gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4)
+>> >> >
+>> >> >
+>> >> > Is it depends on config?
+>> >> > I attach my config.
+>> >>
+>> >> I changed shrink list by noinline_for_stack.
+>> >> The result is following as.
+>> >>
+>> >>
+>> >> 00001fe0 <shrink_zone>:
+>> >>     1fe0:       55                      push   %ebp
+>> >>     1fe1:       89 e5                   mov    %esp,%ebp
+>> >>     1fe3:       57                      push   %edi
+>> >>     1fe4:       56                      push   %esi
+>> >>     1fe5:       53                      push   %ebx
+>> >>     1fe6:       83 ec 4c                sub    $0x4c,%esp
+>> >>     1fe9:       89 45 c0                mov    %eax,-0x40(%ebp)
+>> >>     1fec:       89 55 bc                mov    %edx,-0x44(%ebp)
+>> >>     1fef:       89 4d b8                mov    %ecx,-0x48(%ebp)
+>> >>
+>> >> 0x110 -> 0x4c.
+>> >>
+>> >> Should we have to add noinline_for_stack for shrink_list?
+>> >>
+>> >
+>> > Hmm. about shirnk_zone(), I don't think uninlining functions directly called
+>> > by shrink_zone() can be a help.
+>> > Total stack size of call-chain will be still big.
+>>
+>> Absolutely.
+>> But above 500 byte usage is one of hogger and uninlining is not
+>> critical about reclaim performance. So I think we don't get any lost
+>> than gain.
+>>
 >
-> One option is to read all the information synchronously and store it in
-> a per-cpu area with atomic instructions, then queue the NMI.  Another
-> option is to have another callback which tells us that the NMI is done,
-> and have a busy loop wait until the NMI is delivered.
-> 
-Callback seems too heavy, may affect the performance badly. Maybe a short 
-queue would help, though this one is more complex.
+> Beat in mind that uninlining can slightly increase the stack usage in some
+> cases because arguments, return addresses and the like have to be pushed
+> onto the stack. Inlining or unlining is only the answer when it reduces the
+> number of stack variables that exist at any given time.
 
-But I am still curious if we extend the region, how much it would help. Would 
-get a result soon...
+Yes. I totally have missed it.
+Thanks, Mel.
 
 -- 
-regards
-Yang, Sheng
+Kind regards,
+Minchan Kim
