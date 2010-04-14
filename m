@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab0DNKJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 06:09:53 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:47191 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab0DNKJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 06:09:52 -0400
-Date: Wed, 14 Apr 2010 12:09:46 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Pedro Ribeiro <pedrib@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Andi Kleen <andi@firstfloor.org>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
-       linux-usb@vger.kernel.org
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-Message-ID: <20100414100946.GS30807@buzzloop.caiaq.de>
-References: <20100412162947.GQ18855@one.firstfloor.org>
- <Pine.LNX.4.44L0.1004121252310.1702-100000@iolanthe.rowland.org>
- <20100413182233.GR30807@buzzloop.caiaq.de>
- <k2o74fd948d1004131646k1e0e1897z7594f77a580c6b9f@mail.gmail.com>
+	id S1755182Ab0DNKK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 06:10:26 -0400
+Received: from mail.gmx.net ([213.165.64.20]:60755 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755026Ab0DNKKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 06:10:24 -0400
+X-Authenticated: #1587495
+X-Provags-ID: V01U2FsdGVkX18kfHQjRXgk3PbWtGVuk3V7mmT257KXT7KoLYh/HI
+	4MFHPgnWCEBXbN
+From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+To: Greg KH <gregkh@suse.de>
+Subject: Re: patch iwlwifi-counting-number-of-tfds-can-be-free-for-4965.patch added to 2.6.33-stable tree
+Date: Wed, 14 Apr 2010 12:09:50 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.33-2.slh.2-sidux-686; KDE/4.4.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org, wey-yi.w.guy@intel.com,
+       reinette.chatre@intel.com, shanyu.zhao@intel.com, stable@kernel.org
+References: <12705808611488@kroah.org> <201004110116.10564.s.L-H@gmx.de> <20100410232116.GA8360@suse.de>
+In-Reply-To: <20100410232116.GA8360@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <k2o74fd948d1004131646k1e0e1897z7594f77a580c6b9f@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004141210.08504.s.L-H@gmx.de>
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.52000000000000002
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 12:46:42AM +0100, Pedro Ribeiro wrote:
-> On 13 April 2010 19:22, Daniel Mack <daniel@caiaq.de> wrote:
-> > Some more ideas to nail this down would be to boot the machine with
-> > mem=4096M and mem=2048M to see whether this makes any difference. Also,
-> > I think it would be interesting to know whether the patch below helps.
-> >
-> > As the real reason seems entirely obfuscated, there's unfortunately need
-> > for some trial error approach. Pedro, as you're the only one who can
-> > actually reproduce the problem, do you see any chance to do that?
-> >
-> > Thanks,
-> > Daniel
-> >
-> >
-> > diff --git a/sound/usb/caiaq/audio.c b/sound/usb/caiaq/audio.c
-> > index 4328cad..26013be 100644
-> > --- a/sound/usb/caiaq/audio.c
-> > +++ b/sound/usb/caiaq/audio.c
-> > @@ -560,7 +560,7 @@ static struct urb **alloc_urbs(struct snd_usb_caiaqdev *dev, int dir, int *ret)
-> >                }
-> >
-> >                urbs[i]->transfer_buffer =
-> > -                       kmalloc(FRAMES_PER_URB * BYTES_PER_FRAME, GFP_KERNEL);
-> > +                       kmalloc(FRAMES_PER_URB * BYTES_PER_FRAME, GFP_KERNEL | GFP_DMA);
-> >                if (!urbs[i]->transfer_buffer) {
-> >                        log("unable to kmalloc() transfer buffer, OOM!?\n");
-> >                        *ret = -ENOMEM;
-> >
-> >
+Hi
+
+Hi
+
+On Wednesday 14 April 2010, Greg KH wrote:
+> On Sun, Apr 11, 2010 at 01:16:06AM +0200, Stefan Lippers-Hollmann wrote:
+> > Hi
+> > 
+> > On Sunday 11 April 2010, gregkh@suse.de wrote:
+> > > This is a note to let you know that we have just queued up the patch titled
+> > > 
+> > >     Subject: iwlwifi: counting number of tfds can be free for 4965
+> > > 
+> > > to the 2.6.33-stable tree.  Its filename is
+> > > 
+> > >     iwlwifi-counting-number-of-tfds-can-be-free-for-4965.patch
+> > > 
+> > > A git repo of this tree can be found at 
+> > >     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+> > > 
+> > > From be6b38bcb175613f239e0b302607db346472c6b6 Mon Sep 17 00:00:00 2001
+> > > From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+> > > Date: Thu, 18 Mar 2010 09:05:00 -0700
+> > > Subject: iwlwifi: counting number of tfds can be free for 4965
+> > > 
+> > > From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+> > > 
+> > > commit be6b38bcb175613f239e0b302607db346472c6b6 upstream.
+> > > 
+> > > Forget one hunk in 4965 during "iwlwifi: error checking for number of tfds
+> > > in queue" patch.
+> > [...]
+> > 
+> > With this patch applied as part of the current -stable queue for 2.6.33, 
+> > I've gotten feedback from two different IPW4965 users on amd64 and i386 
+> > architectures that they're getting a kernel panic while booting:
 > 
-> Good news, I can't trigger the interference with either:
-> - mem=2048m
-> - mem=4096m
-> - your patch
+> Yes, there is a follow-up patch that just went to Linus to fix this
+> issue.  I should be picking it up in a day or so.
+[...]
 
-Thanks! So the only thing I can do for now is submit exactly this patch.
-At least, it helps you and it shouldn't break anything. The question
-remains whether this type of memory should be used for all
-transfer_buffers.
+Thanks, the updated queue-2.6.33 (which means likely iwlwifi-need-check-for-
+valid-qos-packet-before-free.patch) indeed fixes the problem for both 
+users.
 
-> Any idea why is mem=4096m different than a regular boot since I have 4GB anyway?
-
-On Fri, Apr 09, 2010 at 04:11:52PM -0600, Robert Hancock wrote:
-> If you have 4GB of RAM then almost certainly you have memory located
-> at addresses over 4GB. If you look at the e820 memory map printed at
-> the start of dmesg on bootup and see entries with addresses of
-> 100000000 or higher reported as usable, then this is the case.
-
-Could you post the these e820 line from your dmesg when booted with
-mem=4096?
-
-Daniel
-
+Thank you a lot for your efforts
+	Stefan Lippers-Hollmann
