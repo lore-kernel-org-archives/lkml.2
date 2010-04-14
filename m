@@ -1,85 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab0DNJlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 05:41:50 -0400
-Received: from smtp108.sbc.mail.gq1.yahoo.com ([67.195.14.111]:30188 "HELO
-	smtp108.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754750Ab0DNJlt (ORCPT
+	id S1754835Ab0DNJnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 05:43:47 -0400
+Received: from mga05.intel.com ([192.55.52.89]:12964 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754564Ab0DNJnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 05:41:49 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date:User-Agent:Cc:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Content-Disposition:Message-Id;
-  b=jpAb6f1+ebu3UHKDPQ4319dcQa0W1SNC6nnRY46P26qdMoyPabu0tq/pHxmR66kOfMVjRVPGJ8QrIg8Kfj+85pgRzmnADleLcjMheMBnuWHkU3Q7o6ZpRymi5iotOPKTGNBpbyUQWkDGV0+gH2xKGAwkG3nF/HvrKErSE/5OPGw=  ;
-X-Yahoo-SMTP: 2V1ThQ.swBDh24fWwg9PZFuY7TTwFsTuVtXZ.8DKSgQ-
-X-YMail-OSG: ePlcA64VM1kwZ13ikxZe1nE1LFoRB0PR7kLOLI2SHIToFh_q.u2AoFc4YuHss_jBJRmZfZneTB6hBoDP0UP1IIQFgL875th6XxmWFCf7MclGsP2GyMHCVB9.2sPf44QOnq9OFknHHNwIZSBKG5FtEhv57v_.kJwp.lIyUVdepaahaRhQ8SrE7Ll8y.LsYI5nubXjMhTIK3viKZQr.49N3M204VBnG7OPQF9mQxl7gbWEuXebVzj8UAxj_q.6LCJivh0fX_o8Qz37ZCllGiZtpEPKHc.BD4UvmnB_JsLHBVeUqJiNJG39RwEhvpLbIgCzYLZDCCqU8SwAyq42wxAOMWfMJWibIYsrjSOT.ZCPEdyuMteFySj_ZB8-
-X-Yahoo-Newman-Property: ymail-3
-From: David Brownell <david-b@pacbell.net>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 7/8] USB: testusb: imported David Brownell's USB testing application
-Date: Wed, 14 Apr 2010 02:41:47 -0700
-User-Agent: KMail/1.9.10
-Cc: linux-usb@vger.kernel.org, Peter Korsgaard <jacmet@sunsite.dk>,
-       Rupesh Gujare <rupeshgujare@gmail.com>, linux-kernel@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>
-References: <cover.1270644740.git.mina86@mina86.com> <15d6fb76583235c380569d11d904cc0e8d019067.1270644740.git.mina86@mina86.com>  <3c4f11cdfb08952e964879c343d6ed7ceedc9542.1270644740.git.mina86@mina86.com>
-In-Reply-To: <3c4f11cdfb08952e964879c343d6ed7ceedc9542.1270644740.git.mina86@mina86.com>
+	Wed, 14 Apr 2010 05:43:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,203,1270450800"; 
+   d="scan'208";a="789069878"
+From: Sheng Yang <sheng@linux.intel.com>
+Organization: Intel Opensource Technology Center
+To: Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH V3] perf & kvm: Enhance perf to collect KVM guest os statistics from host side
+Date: Wed, 14 Apr 2010 17:43:32 +0800
+User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com, Arnaldo Carvalho de Melo <acme@infradead.org>
+References: <1902387910.2078.435.camel@ymzhang.sh.intel.com> <4BC588CF.5010507@redhat.com>
+In-Reply-To: <4BC588CF.5010507@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004140241.47445.david-b@pacbell.net>
+Message-Id: <201004141743.32393.sheng@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 April 2010, Michal Nazarewicz wrote:
+On Wednesday 14 April 2010 17:20:15 Avi Kivity wrote:
+> On 04/14/2030 12:05 PM, Zhang, Yanmin wrote:
+> > Here is the new patch of V3 against tip/master of April 13th
+> > if anyone wants to try it.
 > 
-> The testusb application can be used to test various USB gadget
-> that implment the source/sink intrerface.
+> Thanks for persisting despite the flames.
+> 
+> Can you please separate arch/x86/kvm part of the patch?  That will make
+> for easier reviewing, and will need to go through separate trees.
+> 
+> Sheng, did you make any progress with the NMI injection issue?
 
-That comment is woefully incomplete.  It's not just gadgets it exercises,
-and a lot of thought went into testing streaming modes too (within limitations
-of a the trivial test harness).
+Yes, though some other works interrupt me lately...
 
-And more significantly ... It's part of a fairly complete test suite which exercises
+The very first version has issue due to SELF_IPI mode can't be used to send 
+NMI according to SDM. That's the reason why x2apic don't have way to do this.
 
-- all four types of USB 2.0 data transfer,
+But later I found another issue of fail to inspect inside the guest. I think 
+it's due to NMI is asynchronous event, though it should be triggered very 
+quickly, you can't guarantee that the handler would be triggered before the 
+state(current_vcpu) is cleared with current code.
 
-          on both peripheral and host sides
+Maybe just extended the "guest state" region would be fine, if the latency is 
+stable enough(though I think it maybe platform depended). I am working on this 
+now. 
 
-       - - Good coverage of observed hardware and software failure modes,
-           (to help ensure routine fauilts are handled well)
+-- 
+regards
+Yang, Sheng
 
-    -  Decent coverage of Linux-USB programmming interfaces ... both
-       in-kernel and user-visible.
-
-   - - Stress test modes
-
-For more info, whvih *SHOULD* be referenced from wherever the
-kernel tree includes any of this code:
-
-See: http://www.linux-usb.org/usbtest/
-
-Just throwing tools at someone without instructions can be rather
-counter-productive .... they get misused, important issues ignored,
-results mis-interpreteed, etc.
-
-Note that there's a basic test plan, letting folk put
-drivers (and hardware) through their paces.  THe evidence is that when
-drivers behave on that whole suite, Linux won't misbehave much at all.
-
-In fact, without such tools and a test plan, it'd be hard to have mch faith
-in the drivr quality ... except as a weak and scattershot "this combination of
-drivers and hardware seems OK for now".
-futile
-
-
-At one point there were allegedly folk working on Linux testng frameworks, but
-they never seem to have looked at this (even on specific request); I'm not sure
-if it was just general weakness in driver testing efforts (they're not easy to test),
-lack of background (/interest?) in USB, or something else.   (As many of us know, it's
-a sad truth that testing isn't all that glamorous, for all that it's essential).
+> 
+> > +
+> > diff -Nraup linux-2.6_tip0413/arch/x86/kvm/x86.c
+> > linux-2.6_tip0413_perfkvm/arch/x86/kvm/x86.c ---
+> > linux-2.6_tip0413/arch/x86/kvm/x86.c	2010-04-14 11:11:04.341042024 +0800
+> > +++ linux-2.6_tip0413_perfkvm/arch/x86/kvm/x86.c	2010-04-14
+> > 11:32:45.841278890 +0800 @@ -3765,6 +3765,35 @@ static void
+> > kvm_timer_init(void)
+> >   	}
+> >   }
+> >
+> > +static DEFINE_PER_CPU(struct kvm_vcpu *, current_vcpu);
+> > +
+> > +static int kvm_is_in_guest(void)
+> > +{
+> > +	return percpu_read(current_vcpu) != NULL;
+> 
+> An even more accurate way to determine this is to check whether the
+> interrupt frame points back at the 'int $2' instruction.  However we
+> plan to switch to a self-IPI method to inject the NMI, and I'm not sure
+> wether APIC NMIs are accepted on an instruction boundary or whether
+> there's some latency involved.
+> 
+> > +static unsigned long kvm_get_guest_ip(void)
+> > +{
+> > +	unsigned long ip = 0;
+> > +	if (percpu_read(current_vcpu))
+> > +		ip = kvm_rip_read(percpu_read(current_vcpu));
+> > +	return ip;
+> > +}
+> 
+> This may be racy.  kvm_rip_read() accesses a cache in memory; if we're
+> in the process of updating the cache, then we may read a stale value.
+> See below.
+> 
+> >   	trace_kvm_entry(vcpu->vcpu_id);
+> > +
+> > +	percpu_write(current_vcpu, vcpu);
+> >   	kvm_x86_ops->run(vcpu);
+> > +	percpu_write(current_vcpu, NULL);
+> 
+> If you move this around the 'int $2' instructions you will close the
+> race, as a stray NMI won't catch us updating the rip cache.  But that
+> depends on whether self-IPI is accepted on the next instruction or not.
+> 
