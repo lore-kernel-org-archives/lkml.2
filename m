@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab0DNPfW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:35:22 -0400
-Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:47816 "EHLO
-	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755166Ab0DNPfV (ORCPT
+	id S1756118Ab0DNPjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 11:39:14 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52583 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755332Ab0DNPjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 11:35:21 -0400
-Date: Wed, 14 Apr 2010 11:35:20 -0400
-To: Arnd Hannemann <hannemann@nets.rwth-aachen.de>
-Cc: Martin Teufel <teufel@informatik.uni-frankfurt.de>,
-       linux-kernel@vger.kernel.org
-Subject: Re: AMD Geode LX WDT (geode-mfgpt)
-Message-ID: <20100414153520.GB4309@caffeine.csclub.uwaterloo.ca>
-References: <20100331045414.GA3241@hekate.rbi.informatik.uni-frankfurt.de> <4BB30304.7060300@nets.rwth-aachen.de>
+	Wed, 14 Apr 2010 11:39:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=QsKO3l62b8zP+wNJ4HuepL3eEx/y2IwRJHJJyFrNMK4zBMR1CkNpp436W+xRoRZdqd
+         RcoM04iHs0tIhoWWgHiribXlIj9Mx09j/C6CoEWIviAB0wP4qS5AFiHaWVDE7nlkxtec
+         mCZNpqlptETNlYm/C+cOdpOErCyKzYaBc5NJM=
+Message-ID: <4BC5E19C.8060509@roadrunner.com>
+Date: Wed, 14 Apr 2010 11:39:08 -0400
+From: Frank Griffin <ftg@roadrunner.com>
+Reply-To: ftg@roadrunner.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20090903 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BB30304.7060300@nets.rwth-aachen.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-From: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
+To: =?UTF-8?B?w4lyaWMgUGllbA==?= <eric.piel@tremplin-utc.net>
+CC: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       alsa-devel@alsa-project.org
+Subject: Re: [REGRESSION bisected] Sound goes too fast due to commit 7b3a177b0
+References: <4BC4E812.6050602@tremplin-utc.net>	<s5h633u5zx1.wl%tiwai@suse.de>	<4BC5A566.8060106@tremplin-utc.net>	<4BC5AD08.8040606@tremplin-utc.net> <s5hy6gqxiev.wl%tiwai@suse.de> <4BC5D2F4.4010500@tremplin-utc.net>
+In-Reply-To: <4BC5D2F4.4010500@tremplin-utc.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 10:08:36AM +0200, Arnd Hannemann wrote:
-> Am 31.03.2010 06:54, schrieb Martin Teufel:
-> 
-> > I have some ALIX boards (SBC) with AMD Geode LX CPUs and their companion
-> > device CS5536 and am using Debian on them. I didn't care about the
-> > integrated watchdog timer (in the CS5536) so far. Recently I did, but
-> > neither the CONFIG_GEODE_WDT was set in the debian kernel (2.6.26), nor
-> > the CONFIG_GEODE_MFGPT_TIMER. So I compiled my own debian 2.6.26 geode
-> > kernel (CONFIG_MGEODE_LX=y, CONFIG_GEODE_WDT=y,
-> > CONFIG_GEODE_MFGPT_TIMER=y, CONFIG_CRYPTO_DEV_GEODE=y etc.).
-> > 
-> > My problem is that the geode-mfgpt doesn't find any timers:
-> > 
-> > [    0.204012] geode-mfgpt:  0 MFGPT timers available.
-> > [    0.208013] mfgpt-timer:  Could not allocate a MFPGT timer
-> > ...
-> > [    2.284029] geodewdt:  No timers were available
-> > 
-> > My question is: Why doesn't it? Is this a known bug? If so, is it
-> > already fixed in a newer kernel version?
-> 
-> Your BIOS may already use all available timers.
-> AFAIR only TinyBios with ALIX leaves timers for the OS.
-> Award and CoreBoot both use them all.
+Éric Piel wrote:
+> Frank,
+> Could you check that for you too adding "position_fix=1" fixes the problem?
+>
+> To do so, edit /etc/modprobe.conf and add this line at end:
+> options snd-hda-intel position_fix=1
+>
+> You need to reboot for this to be taken into account.
+>
+>   
+That fixes not only the playback speed, but also the fact that the 
+failing system had no sound since the problem started (the acceleration 
+was noticed in movie playback).
 
-The BIOS on the CompuLab CM-iGLX modules leave 5 timers available as
-far as I recall.  We certainly haven't had any issue getting one for a
-watchdog on those modules.  The BIOS happens to be a buggy ancient piece
-of crap in other ways, but at least its OK for the timer use.
-
-It is unfortunately an amazingly stupid timer design (there is no way to
-clear a timer when you are done using it to indicate others can use it).
-We had to hack the driver a bit to allow using timers already in use
-given we actually start the watchdog from the bootloader and have the
-kernel watchdog driver take over later.
-
--- 
-Len Sorensen
+Thanks !
