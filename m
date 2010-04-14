@@ -1,49 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab0DNQUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 12:20:52 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:58338 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756308Ab0DNQUY (ORCPT
+	id S1756305Ab0DNQXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 12:23:11 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:56031 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756275Ab0DNQXI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 12:20:24 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Subject: [PATCH 3/3] Stop tracing on a schedule bug
-Date: Wed, 14 Apr 2010 12:20:16 -0400
-Message-Id: <1271262016-18650-3-git-send-email-chase.douglas@canonical.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
-References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
+	Wed, 14 Apr 2010 12:23:08 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=HYjkuJxnJO8GmV3Hrdlmi8zT20Fbh9bWNU4F1NPu64qXWHmjypE9tUeai5U40miDJ
+	CknoPHm2Iv1DRC+tdjeEQ==
+MIME-Version: 1.0
+In-Reply-To: <20100414182904.2f72a63d.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com> 
+	<20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com> <20100318041944.GA18054@balbir.in.ibm.com> 
+	<20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com> <20100318162855.GG18054@balbir.in.ibm.com> 
+	<20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com> <20100319024039.GH18054@balbir.in.ibm.com> 
+	<20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com> <xr931veiplpr.fsf@ninji.mtv.corp.google.com> 
+	<20100414182904.2f72a63d.kamezawa.hiroyu@jp.fujitsu.com>
+From: Greg Thelen <gthelen@google.com>
+Date: Wed, 14 Apr 2010 09:22:41 -0700
+Message-ID: <p2k49b004811004140922v8b6c4c57j2dd435261ff2dd43@mail.gmail.com>
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: balbir@linux.vnet.ibm.com, Andrea Righi <arighi@develer.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change adds a tracing_off_event() call to stop tracing on schedule
-bugs unless tracing_off=none was specified on the commandline.
+On Wed, Apr 14, 2010 at 2:29 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Tue, 13 Apr 2010 23:55:12 -0700
+> Greg Thelen <gthelen@google.com> wrote:
+>> On Thu, Mar 18, 2010 at 8:00 PM, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> > On Fri, 19 Mar 2010 08:10:39 +0530
+>> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+>> >> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-19 10:23:32]:
+>> >>
+>> >> > On Thu, 18 Mar 2010 21:58:55 +0530
+>> >> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+>> >> >
+>> >> > > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:35:27]:
+>> >> >
+>> >> > > > Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
+>> >> > > > mem_cgroup_update_file_mapped(). The look may be messy but it's not your
+>> >> > > > fault. But please write "why add new function" to patch description.
+>> >> > > >
+>> >> > > > I'm sorry for wasting your time.
+>> >> > >
+>> >> > > Do we need to go down this route? We could check the stat and do the
+>> >> > > correct thing. In case of FILE_MAPPED, always grab page_cgroup_lock
+>> >> > > and for others potentially look at trylock. It is OK for different
+>> >> > > stats to be protected via different locks.
+>> >> > >
+>> >> >
+>> >> > I _don't_ want to see a mixture of spinlock and trylock in a function.
+>> >> >
+>> >>
+>> >> A well documented well written function can help. The other thing is to
+>> >> of-course solve this correctly by introducing different locking around
+>> >> the statistics. Are you suggesting the later?
+>> >>
+>> >
+>> > No. As I wrote.
+>> >        - don't modify codes around FILE_MAPPED in this series.
+>> >        - add a new functions for new statistics
+>> > Then,
+>> >        - think about clean up later, after we confirm all things work as expected.
+>>
+>> I have ported Andrea Righi's memcg dirty page accounting patches to latest
+>> mmtom-2010-04-05-16-09.  In doing so I have to address this locking issue.  Does
+>> the following look good?  I will (of course) submit the entire patch for review,
+>> but I wanted make sure I was aiming in the right direction.
+>>
+>> void mem_cgroup_update_page_stat(struct page *page,
+>>                       enum mem_cgroup_write_page_stat_item idx, bool charge)
+>> {
+>>       static int seq;
+>>       struct page_cgroup *pc;
+>>
+>>       if (mem_cgroup_disabled())
+>>               return;
+>>       pc = lookup_page_cgroup(page);
+>>       if (!pc || mem_cgroup_is_root(pc->mem_cgroup))
+>>               return;
+>>
+>>       /*
+>>        * This routine does not disable irq when updating stats.  So it is
+>>        * possible that a stat update from within interrupt routine, could
+>>        * deadlock.  Use trylock_page_cgroup() to avoid such deadlock.  This
+>>        * makes the memcg counters fuzzy.  More complicated, or lower
+>>        * performing locking solutions avoid this fuzziness, but are not
+>>        * currently needed.
+>>        */
+>>       if (irqs_disabled()) {
+>>               if (! trylock_page_cgroup(pc))
+>>                       return;
+>>       } else
+>>               lock_page_cgroup(pc);
+>>
+>
+> I prefer trylock_page_cgroup() always.
 
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
----
- kernel/sched.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+What is your reason for preferring trylock_page_cgroup()?  I assume
+it's for code simplicity, but I wanted to check.
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 6af210a..439f036 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3590,6 +3590,8 @@ static noinline void __schedule_bug(struct task_struct *prev)
- {
- 	struct pt_regs *regs = get_irq_regs();
- 
-+	tracing_off_event(TRACE_EVENT_BUG);
-+
- 	printk(KERN_ERR "BUG: scheduling while atomic: %s/%d/0x%08x\n",
- 		prev->comm, prev->pid, preempt_count());
- 
--- 
-1.7.0
+I had though about using trylock_page_cgroup() always, but I think
+that would make file_mapped accounting even more fuzzy that it already
+it is.  I was trying to retain the current accuracy of file_mapped and
+only make new counters, like writeback/dirty/etc (those obtained in
+interrupt), fuzzy.
 
+> I have another idea fixing this up _later_. (But I want to start from simple one.)
+>
+> My rough idea is following.  Similar to your idea which you gave me before.
+
+Hi Kame-san,
+
+I like the general approach.  The code I previously gave you appears
+to work and is faster than non-root memcgs using mmotm due to mostly
+being lockless.
+
+> ==
+> DEFINE_PERCPU(account_move_ongoing);
+
+What's the reason for having a per-cpu account_move_ongoing flag?
+Would a single system-wide global be sufficient?  I assume the
+majority of the time this value will not be changing because
+accounting moves are rare.
+
+Perhaps all of the per-cpu variables are packed within a per-cpu
+cacheline making accessing it more likely to be local, but I'm not
+sure if this is true.
+
+--
+Greg
