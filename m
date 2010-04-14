@@ -1,236 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab0DNFoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 01:44:14 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33845 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab0DNFoN (ORCPT
+	id S1753448Ab0DNFuo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 01:50:44 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38762 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604Ab0DNFul convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 01:44:13 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Apr 2010 14:40:15 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][BUGFIX][PATCH] memcg: fix underflow of mapped_file stat
-Message-Id: <20100414144015.0a0d2bd2.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100414143132.179edc6e.nishimura@mxp.nes.nec.co.jp>
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
-	<20100413151400.cb89beb7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100414095408.d7b352f1.nishimura@mxp.nes.nec.co.jp>
-	<20100414100308.693c5650.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100414104010.7a359d04.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100414105608.d40c70ab.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100414120622.0a5c2983.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100414143132.179edc6e.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Apr 2010 01:50:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eNl3SvqZdiAa67aZ4hziksEFNGuLIKe5IXWfjw3L30x3RWKIfO2VzNz3xQwBT/E9Cg
+         t6frd5/gJvb0rGGX0Bz4L7ro4Ai4FQJSBS1NoAbnQrgml7hdXcUqQlkRcrDmMGt1RLrP
+         Hg7n7C+bKMUaAqlcimmcKJykb5fNP0o8YTZsg=
+MIME-Version: 1.0
+In-Reply-To: <j2z7e0fb38c1004132002sba54d278xc0337bed6e09dec5@mail.gmail.com>
+References: <20100414024842.GB3718@localhost.localdomain>
+	 <j2z7e0fb38c1004132002sba54d278xc0337bed6e09dec5@mail.gmail.com>
+Date: Wed, 14 Apr 2010 13:50:40 +0800
+Message-ID: <v2l628d1651004132250nf7df1f63y2494df724adda489@mail.gmail.com>
+Subject: Re: Security: Replace dac_mmap_min_addr to mmap_min_addr in 
+	cap_file_mmap()
+From: wzt wzt <wzt.wzt@gmail.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       jmorris@namei.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Apr 2010 14:31:32 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+still not understand,  if CONFIG_LSM_MMAP_MIN_ADDR is not set,
+mmap_min_addr is equal dac_mmap_min_addr, right?
+if not, mmap_min_addr is set as CONFIG_LSM_MMAP_MIN_ADDR.  what's the
+effect of mmap_min_addr?  except round_hint_to_min() will use
+mmap_min_addr, any other functions will call it?
+Anyway, the comments need change mmap_min_addr as dac_mmap_min_addr,
+right? If i'm wrong, please point it, thanks.
+/*
+ * If the process is attempting to map memory below mmap_min_addr they need   |{
+ * CAP_SYS_RAWIO.
+ */
 
-> > Reported-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  include/linux/memcontrol.h |    6 +-
-> >  mm/memcontrol.c            |   95 ++++++++++++++++++++++++---------------------
-> >  mm/migrate.c               |    2 
-> >  3 files changed, 56 insertions(+), 47 deletions(-)
-> > 
-> > Index: mmotm-temp/mm/memcontrol.c
-> > ===================================================================
-> > --- mmotm-temp.orig/mm/memcontrol.c
-> > +++ mmotm-temp/mm/memcontrol.c
-> > @@ -2501,10 +2501,12 @@ static inline int mem_cgroup_move_swap_a
-> >   * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
-> >   * page belongs to.
-> >   */
-> > -int mem_cgroup_prepare_migration(struct page *page, struct mem_cgroup **ptr)
-> > +int mem_cgroup_prepare_migration(struct page *page,
-> > +	struct page *newpage, struct mem_cgroup **ptr)
-> >  {
-> >  	struct page_cgroup *pc;
-> >  	struct mem_cgroup *mem = NULL;
-> > +	enum charge_type ctype;
-> >  	int ret = 0;
-> >  
-> >  	if (mem_cgroup_disabled())
-> > @@ -2517,65 +2519,70 @@ int mem_cgroup_prepare_migration(struct 
-> >  		css_get(&mem->css);
-> >  	}
-> >  	unlock_page_cgroup(pc);
-> > -
-> > -	if (mem) {
-> > -		ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, &mem, false);
-> > -		css_put(&mem->css);
-> > -	}
-> > -	*ptr = mem;
-> > +	/*
-> > +	 * If the page is uncharged before migration (removed from radix-tree)
-> > +	 * we return here.
-> > +	 */
-> > +	if (!mem)
-> > +		return 0;
-> > +	ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, &mem, false);
-> > +	css_put(&mem->css); /* drop extra refcnt */
-> it should be:
-> 
-> 	*ptr = mem;
-> 	ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, ptr, false);
-> 	css_put(&mem->css);
-> 
-> as Andrea has fixed already.
-> 
-Ah, yes. I'll rebase this onto Andrea's fix.
-
-
-
-> > +	if (ret)
-> > +		return ret;
-> > +	/*
-> > + 	 * The old page is under lock_page().
-> > + 	 * If the old_page is uncharged and freed while migration, page migration
-> > + 	 * will fail and newpage will properly uncharged by end_migration.
-> > + 	 * And commit_charge against newpage never fails.
-> > +  	 */
-> > +	pc = lookup_page_cgroup(newpage);
-> > +	if (PageAnon(page))
-> > +		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
-> > +	else if (!PageSwapBacked(page))
-> I think using page_is_file_cache() would be better.
-> 
-Right.
-
-
-
-> > +		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
-> > +	else
-> > +		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> > +	__mem_cgroup_commit_charge(mem, pc, ctype);
-> > +	/* FILE_MAPPED of this page will be updated at remap routine */
-> >  	return ret;
-> >  }
-> >  
-> >  /* remove redundant charge if migration failed*/
-> >  void mem_cgroup_end_migration(struct mem_cgroup *mem,
-> > -		struct page *oldpage, struct page *newpage)
-> > +	struct page *oldpage, struct page *newpage)
-> >  {
-> > -	struct page *target, *unused;
-> > -	struct page_cgroup *pc;
-> > -	enum charge_type ctype;
-> > +	struct page *used, *unused;
-> >  
-> >  	if (!mem)
-> >  		return;
-> >  	cgroup_exclude_rmdir(&mem->css);
-> > +
-> > +
-> unnecessary extra line :)
-> 
-will remove.
-
-
-
-> >  	/* at migration success, oldpage->mapping is NULL. */
-> >  	if (oldpage->mapping) {
-> > -		target = oldpage;
-> > -		unused = NULL;
-> > +		used = oldpage;
-> > +		unused = newpage;
-> >  	} else {
-> > -		target = newpage;
-> > +		used = newpage;
-> >  		unused = oldpage;
-> >  	}
-> > -
-> > -	if (PageAnon(target))
-> > -		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
-> > -	else if (page_is_file_cache(target))
-> > -		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
-> > -	else
-> > -		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> > -
-> > -	/* unused page is not on radix-tree now. */
-> > -	if (unused)
-> > -		__mem_cgroup_uncharge_common(unused, ctype);
-> > -
-> > -	pc = lookup_page_cgroup(target);
-> > -	/*
-> > -	 * __mem_cgroup_commit_charge() check PCG_USED bit of page_cgroup.
-> > -	 * So, double-counting is effectively avoided.
-> > -	 */
-> > -	__mem_cgroup_commit_charge(mem, pc, ctype);
-> > -
-> > +	/* PageCgroupUsed() flag check will do all we want */
-> > +	mem_cgroup_uncharge_page(unused);
-> hmm... using mem_cgroup_uncharge_page() would be enough, but I think it doesn't
-> show what we want: we must uncharge "unused" by all means in PageCgroupUsed case,
-> and I feel it strange a bit to uncharge "unused" by mem_cgroup_uncharge_page(),
-> if it *was* a cache page.
-> So I think __mem_cgroup_uncharge_common(unused, MEM_CGROUP_CHARGE_TYPE_FORCE)
-> would be better, otherwise we need more comments to explain why
-> mem_cgroup_uncharge_page() is enough.
-> 
-
-Hmm. ok. consider this part again.
-
-
-
-> >  	/*
-> > -	 * Both of oldpage and newpage are still under lock_page().
-> > -	 * Then, we don't have to care about race in radix-tree.
-> > -	 * But we have to be careful that this page is unmapped or not.
-> > -	 *
-> > -	 * There is a case for !page_mapped(). At the start of
-> > -	 * migration, oldpage was mapped. But now, it's zapped.
-> > -	 * But we know *target* page is not freed/reused under us.
-> > -	 * mem_cgroup_uncharge_page() does all necessary checks.
-> > -	 */
-> > -	if (ctype == MEM_CGROUP_CHARGE_TYPE_MAPPED)
-> > -		mem_cgroup_uncharge_page(target);
-> > + 	 * If old page was file cache, and removed from radix-tree
-> > + 	 * before lock_page(), perepare_migration doesn't charge and we never
-> > + 	 * reach here.
-> > + 	 *
-> And if newpage was removed from radix-tree after unlock_page(),
-> the context which removed it from radix-tree uncharges it properly, because
-> it is charged at prepare_migration.
-> 
-> right?
-> 
-yes. I'll add more texts.
-
-
-
-
-> > + 	 * Considering ANON pages, we can't depend on lock_page.
-> > + 	 * If a page may be unmapped before it's remapped, new page's
-> > + 	 * mapcount will not increase. (case that mapcount 0->1 never occur.)
-> > + 	 * PageCgroupUsed() and SwapCache checks will be done.
-> > + 	 *
-> > + 	 * Once mapcount goes to 1, our hook to page_remove_rmap will do
-> > + 	 * enough jobs.
-> > + 	 */
-> > +	if (PageAnon(used) && !page_mapped(used))
-> > +		mem_cgroup_uncharge_page(used);
-> mem_cgroup_uncharge_page() does the same check :)
-> 
-Ok. I'll fix.
-
-Thanks,
--Kame
-
+On Wed, Apr 14, 2010 at 11:02 AM, Eric Paris <eparis@parisplace.org> wrote:
+> NAK NAK NAK
+>
+> go back and reread the whole purpose for the separation.
+>
+> -Eric
+>
+> On Tue, Apr 13, 2010 at 10:48 PM,  <wzt.wzt@gmail.com> wrote:
+>> cap_file_mmap() comments said "If the process is attempting to map
+>> memory below mmap_min_addr", if CONFIG_LSM_MMAP_MIN_ADDR is set,
+>> dac_mmap_min_addr is not equal mmap_min_addr, so replace dac_mmap_min_addr
+>> to mmap_min_addr seems to be better.
+>>
+>> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+>>
+>> ---
+>>  include/linux/security.h |    1 +
+>>  security/commoncap.c     |    2 +-
+>>  2 files changed, 2 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/include/linux/security.h b/include/linux/security.h
+>> index 233d20b..61fd9e7 100644
+>> --- a/include/linux/security.h
+>> +++ b/include/linux/security.h
+>> @@ -101,6 +101,7 @@ void reset_security_ops(void);
+>>  extern unsigned long mmap_min_addr;
+>>  extern unsigned long dac_mmap_min_addr;
+>>  #else
+>> +#define mmap_min_addr          0UL
+>>  #define dac_mmap_min_addr      0UL
+>>  #endif
+>>
+>> diff --git a/security/commoncap.c b/security/commoncap.c
+>> index 6166973..878cf89 100644
+>> --- a/security/commoncap.c
+>> +++ b/security/commoncap.c
+>> @@ -942,7 +942,7 @@ int cap_file_mmap(struct file *file, unsigned long reqprot,
+>>  {
+>>        int ret = 0;
+>>
+>> -       if (addr < dac_mmap_min_addr) {
+>> +       if (addr < mmap_min_addr) {
+>>                ret = cap_capable(current, current_cred(), CAP_SYS_RAWIO,
+>>                                  SECURITY_CAP_AUDIT);
+>>                /* set PF_SUPERPRIV if it turns out we allow the low mmap */
+>> --
+>> 1.6.5.3
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
