@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab0DNKEH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 06:04:07 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32911 "EHLO hera.kernel.org"
+	id S1755013Ab0DNKEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 06:04:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:32923 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754886Ab0DNKEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 06:04:04 -0400
-Date: Wed, 14 Apr 2010 10:03:38 GMT
+	id S1754993Ab0DNKES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 06:04:18 -0400
+Date: Wed, 14 Apr 2010 10:03:56 GMT
 From: tip-bot for Tom Zanussi <tzanussi@gmail.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
        tzanussi@gmail.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
        tzanussi@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1270184365-8281-2-git-send-email-tzanussi@gmail.com>
-References: <1270184365-8281-2-git-send-email-tzanussi@gmail.com>
+In-Reply-To: <1270184365-8281-3-git-send-email-tzanussi@gmail.com>
+References: <1270184365-8281-3-git-send-email-tzanussi@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/live] perf: Add pipe-specific header read/write and event processing code
-Message-ID: <tip-8dc58101f2c838355d44402aa77646649d10dbec@git.kernel.org>
-Git-Commit-ID: 8dc58101f2c838355d44402aa77646649d10dbec
+Subject: [tip:perf/live] perf record: Introduce special handling for pipe output
+Message-ID: <tip-529870e37473a9fc609078f03cc5b4148cf06a87@git.kernel.org>
+Git-Commit-ID: 529870e37473a9fc609078f03cc5b4148cf06a87
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Apr 2010 10:03:40 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Apr 2010 10:03:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8dc58101f2c838355d44402aa77646649d10dbec
-Gitweb:     http://git.kernel.org/tip/8dc58101f2c838355d44402aa77646649d10dbec
+Commit-ID:  529870e37473a9fc609078f03cc5b4148cf06a87
+Gitweb:     http://git.kernel.org/tip/529870e37473a9fc609078f03cc5b4148cf06a87
 Author:     Tom Zanussi <tzanussi@gmail.com>
-AuthorDate: Thu, 1 Apr 2010 23:59:15 -0500
+AuthorDate: Thu, 1 Apr 2010 23:59:16 -0500
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 14 Apr 2010 11:56:05 +0200
+CommitDate: Wed, 14 Apr 2010 11:56:06 +0200
 
-perf: Add pipe-specific header read/write and event processing code
+perf record: Introduce special handling for pipe output
 
-This patch makes several changes to allow the perf event stream
-to be sent and received over a pipe:
+Adds special treatment for stdout - if the user specifies '-o -'
+to perf record, the intent is that the event stream be written
+to stdout rather than to a disk file.
 
-- adds pipe-specific versions of the header read/write code
-
-- adds pipe-specific version of the event processing code
-
-- adds a range of event types to be used for header or other
-  pseudo events, above the range used by the kernel
-
-- checks the return value of event handlers, which they can use
-  to skip over large events during event processing rather than actually
-  reading them into event objects.
-
-- unifies the multiple do_read() functions and updates its
-  users.
-
-Note that none of these changes affect the existing perf data
-file format or processing - this code only comes into play if
-perf output is sent to stdout (or is read from stdin).
+Also, redirect stdout of forked child to stderr - in pipe mode,
+stdout of the forked child interferes with the stdout perf
+stream, so redirect it to stderr where it can still be seen but
+won't be mixed in with the perf output.
 
 Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
 Acked-by: Thomas Gleixner <tglx@linutronix.de>
@@ -63,418 +51,66 @@ Cc: fweisbec@gmail.com
 Cc: rostedt@goodmis.org
 Cc: k-keiichi@bx.jp.nec.com
 Cc: acme@ghostprotocols.net
-LKML-Reference: <1270184365-8281-2-git-send-email-tzanussi@gmail.com>
+LKML-Reference: <1270184365-8281-3-git-send-email-tzanussi@gmail.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/builtin-record.c |    2 +-
- tools/perf/util/event.h     |    4 +
- tools/perf/util/header.c    |   78 +++++++++++++++++++------
- tools/perf/util/header.h    |    8 ++-
- tools/perf/util/session.c   |  135 ++++++++++++++++++++++++++++++++++++++++---
- tools/perf/util/session.h   |    4 +
- 6 files changed, 202 insertions(+), 29 deletions(-)
+ tools/perf/builtin-record.c |   18 +++++++++++++++---
+ 1 files changed, 15 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 9a95136..d060fc5 100644
+index d060fc5..d4464f7 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -487,7 +487,7 @@ static int __cmd_record(int argc, const char **argv)
+@@ -35,6 +35,7 @@ static unsigned int		page_size;
+ static unsigned int		mmap_pages			=    128;
+ static int			freq				=   1000;
+ static int			output;
++static int			pipe_output			=      0;
+ static const char		*output_name			= "perf.data";
+ static int			group				=      0;
+ static unsigned int		realtime_prio			=      0;
+@@ -449,7 +450,9 @@ static int __cmd_record(int argc, const char **argv)
+ 		exit(-1);
  	}
  
- 	if (!file_new) {
--		err = perf_header__read(&session->header, output);
-+		err = perf_header__read(session, output);
+-	if (!stat(output_name, &st) && st.st_size) {
++	if (!strcmp(output_name, "-"))
++		pipe_output = 1;
++	else if (!stat(output_name, &st) && st.st_size) {
+ 		if (!force) {
+ 			if (!append_file) {
+ 				pr_err("Error, output file %s exists, use -A "
+@@ -474,7 +477,10 @@ static int __cmd_record(int argc, const char **argv)
+ 	else
+ 		flags |= O_TRUNC;
+ 
+-	output = open(output_name, flags, S_IRUSR|S_IWUSR);
++	if (pipe_output)
++		output = STDOUT_FILENO;
++	else
++		output = open(output_name, flags, S_IRUSR | S_IWUSR);
+ 	if (output < 0) {
+ 		perror("failed to create output file");
+ 		exit(-1);
+@@ -513,6 +519,8 @@ static int __cmd_record(int argc, const char **argv)
+ 		}
+ 
+ 		if (!child_pid) {
++			if (pipe_output)
++				dup2(2, 1);
+ 			close(child_ready_pipe[0]);
+ 			close(go_pipe[1]);
+ 			fcntl(go_pipe[0], F_SETFD, FD_CLOEXEC);
+@@ -564,7 +572,11 @@ static int __cmd_record(int argc, const char **argv)
+ 			open_counters(cpumap[i]);
+ 	}
+ 
+-	if (file_new) {
++	if (pipe_output) {
++		err = perf_header__write_pipe(output);
++		if (err < 0)
++			return err;
++	} else if (file_new) {
+ 		err = perf_header__write(&session->header, output, false);
  		if (err < 0)
  			return err;
- 	}
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 7f7cf85..5c1eba6 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -83,6 +83,10 @@ struct build_id_event {
- 	char			 filename[];
- };
- 
-+enum perf_header_event_type { /* above any possible kernel type */
-+	PERF_RECORD_HEADER_MAX			= 64,
-+};
-+
- typedef union event_union {
- 	struct perf_event_header	header;
- 	struct ip_event			ip;
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 6c9aa16..8d05337 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -427,6 +427,25 @@ out_free:
- 	return err;
- }
- 
-+int perf_header__write_pipe(int fd)
-+{
-+	struct perf_pipe_file_header f_header;
-+	int err;
-+
-+	f_header = (struct perf_pipe_file_header){
-+		.magic	   = PERF_MAGIC,
-+		.size	   = sizeof(f_header),
-+	};
-+
-+	err = do_write(fd, &f_header, sizeof(f_header));
-+	if (err < 0) {
-+		pr_debug("failed to write perf pipe header\n");
-+		return err;
-+	}
-+
-+	return 0;
-+}
-+
- int perf_header__write(struct perf_header *self, int fd, bool at_exit)
- {
- 	struct perf_file_header f_header;
-@@ -518,25 +537,10 @@ int perf_header__write(struct perf_header *self, int fd, bool at_exit)
- 	return 0;
- }
- 
--static int do_read(int fd, void *buf, size_t size)
--{
--	while (size) {
--		int ret = read(fd, buf, size);
--
--		if (ret <= 0)
--			return -1;
--
--		size -= ret;
--		buf += ret;
--	}
--
--	return 0;
--}
--
- static int perf_header__getbuffer64(struct perf_header *self,
- 				    int fd, void *buf, size_t size)
- {
--	if (do_read(fd, buf, size))
-+	if (do_read(fd, buf, size) <= 0)
- 		return -1;
- 
- 	if (self->needs_swap)
-@@ -592,7 +596,7 @@ int perf_file_header__read(struct perf_file_header *self,
- {
- 	lseek(fd, 0, SEEK_SET);
- 
--	if (do_read(fd, self, sizeof(*self)) ||
-+	if (do_read(fd, self, sizeof(*self)) <= 0 ||
- 	    memcmp(&self->magic, __perf_magic, sizeof(self->magic)))
- 		return -1;
- 
-@@ -662,13 +666,51 @@ static int perf_file_section__process(struct perf_file_section *self,
- 	return 0;
- }
- 
--int perf_header__read(struct perf_header *self, int fd)
-+static int perf_file_header__read_pipe(struct perf_pipe_file_header *self,
-+				       struct perf_header *ph, int fd)
- {
-+	if (do_read(fd, self, sizeof(*self)) <= 0 ||
-+	    memcmp(&self->magic, __perf_magic, sizeof(self->magic)))
-+		return -1;
-+
-+	if (self->size != sizeof(*self)) {
-+		u64 size = bswap_64(self->size);
-+
-+		if (size != sizeof(*self))
-+			return -1;
-+
-+		ph->needs_swap = true;
-+	}
-+
-+	return 0;
-+}
-+
-+static int perf_header__read_pipe(struct perf_session *session, int fd)
-+{
-+	struct perf_header *self = &session->header;
-+	struct perf_pipe_file_header f_header;
-+
-+	if (perf_file_header__read_pipe(&f_header, self, fd) < 0) {
-+		pr_debug("incompatible file format\n");
-+		return -EINVAL;
-+	}
-+
-+	session->fd = fd;
-+
-+	return 0;
-+}
-+
-+int perf_header__read(struct perf_session *session, int fd)
-+{
-+	struct perf_header *self = &session->header;
- 	struct perf_file_header	f_header;
- 	struct perf_file_attr	f_attr;
- 	u64			f_id;
- 	int nr_attrs, nr_ids, i, j;
- 
-+	if (session->fd_pipe)
-+		return perf_header__read_pipe(session, fd);
-+
- 	if (perf_file_header__read(&f_header, self, fd) < 0) {
- 		pr_debug("incompatible file format\n");
- 		return -EINVAL;
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index c059f08..6562ece 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -39,6 +39,11 @@ struct perf_file_header {
- 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
- };
- 
-+struct perf_pipe_file_header {
-+	u64				magic;
-+	u64				size;
-+};
-+
- struct perf_header;
- 
- int perf_file_header__read(struct perf_file_header *self,
-@@ -60,8 +65,9 @@ struct perf_header {
- int perf_header__init(struct perf_header *self);
- void perf_header__exit(struct perf_header *self);
- 
--int perf_header__read(struct perf_header *self, int fd);
-+int perf_header__read(struct perf_session *session, int fd);
- int perf_header__write(struct perf_header *self, int fd, bool at_exit);
-+int perf_header__write_pipe(int fd);
- 
- int perf_header__add_attr(struct perf_header *self,
- 			  struct perf_header_attr *attr);
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index ddf288f..2c1277c 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -14,6 +14,16 @@ static int perf_session__open(struct perf_session *self, bool force)
- {
- 	struct stat input_stat;
- 
-+	if (!strcmp(self->filename, "-")) {
-+		self->fd_pipe = true;
-+		self->fd = STDIN_FILENO;
-+
-+		if (perf_header__read(self, self->fd) < 0)
-+			pr_err("incompatible file format");
-+
-+		return 0;
-+	}
-+
- 	self->fd = open(self->filename, O_RDONLY);
- 	if (self->fd < 0) {
- 		pr_err("failed to open file: %s", self->filename);
-@@ -38,7 +48,7 @@ static int perf_session__open(struct perf_session *self, bool force)
- 		goto out_close;
- 	}
- 
--	if (perf_header__read(&self->header, self->fd) < 0) {
-+	if (perf_header__read(self, self->fd) < 0) {
- 		pr_err("incompatible file format");
- 		goto out_close;
- 	}
-@@ -52,6 +62,11 @@ out_close:
- 	return -1;
- }
- 
-+void perf_session__update_sample_type(struct perf_session *self)
-+{
-+	self->sample_type = perf_header__sample_type(&self->header);
-+}
-+
- struct perf_session *perf_session__new(const char *filename, int mode, bool force)
- {
- 	size_t len = filename ? strlen(filename) + 1 : 0;
-@@ -85,7 +100,7 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
- 			goto out_delete;
- 	}
- 
--	self->sample_type = perf_header__sample_type(&self->header);
-+	perf_session__update_sample_type(self);
- out:
- 	return self;
- out_free:
-@@ -200,14 +215,17 @@ static const char *event__name[] = {
- 	[PERF_RECORD_SAMPLE]	 = "SAMPLE",
- };
- 
--unsigned long event__total[PERF_RECORD_MAX];
-+unsigned long event__total[PERF_RECORD_HEADER_MAX];
- 
- void event__print_totals(void)
- {
- 	int i;
--	for (i = 0; i < PERF_RECORD_MAX; ++i)
-+	for (i = 0; i < PERF_RECORD_HEADER_MAX; ++i) {
-+		if (!event__name[i])
-+			continue;
- 		pr_info("%10s events: %10ld\n",
- 			event__name[i], event__total[i]);
-+	}
- }
- 
- void mem_bswap_64(void *src, int byte_size)
-@@ -271,7 +289,7 @@ static event__swap_op event__swap_ops[] = {
- 	[PERF_RECORD_LOST]   = event__all64_swap,
- 	[PERF_RECORD_READ]   = event__read_swap,
- 	[PERF_RECORD_SAMPLE] = event__all64_swap,
--	[PERF_RECORD_MAX]    = NULL,
-+	[PERF_RECORD_HEADER_MAX]    = NULL,
- };
- 
- static int perf_session__process_event(struct perf_session *self,
-@@ -281,7 +299,7 @@ static int perf_session__process_event(struct perf_session *self,
- {
- 	trace_event(event);
- 
--	if (event->header.type < PERF_RECORD_MAX) {
-+	if (event->header.type < PERF_RECORD_HEADER_MAX) {
- 		dump_printf("%#Lx [%#x]: PERF_RECORD_%s",
- 			    offset + head, event->header.size,
- 			    event__name[event->header.type]);
-@@ -376,6 +394,101 @@ static struct thread *perf_session__register_idle_thread(struct perf_session *se
- 	return thread;
- }
- 
-+int do_read(int fd, void *buf, size_t size)
-+{
-+	void *buf_start = buf;
-+
-+	while (size) {
-+		int ret = read(fd, buf, size);
-+
-+		if (ret <= 0)
-+			return ret;
-+
-+		size -= ret;
-+		buf += ret;
-+	}
-+
-+	return buf - buf_start;
-+}
-+
-+#define session_done()	(*(volatile int *)(&session_done))
-+volatile int session_done;
-+
-+static int __perf_session__process_pipe_events(struct perf_session *self,
-+					       struct perf_event_ops *ops)
-+{
-+	event_t event;
-+	uint32_t size;
-+	int skip = 0;
-+	u64 head;
-+	int err;
-+	void *p;
-+
-+	perf_event_ops__fill_defaults(ops);
-+
-+	head = 0;
-+more:
-+	err = do_read(self->fd, &event, sizeof(struct perf_event_header));
-+	if (err <= 0) {
-+		if (err == 0)
-+			goto done;
-+
-+		pr_err("failed to read event header\n");
-+		goto out_err;
-+	}
-+
-+	if (self->header.needs_swap)
-+		perf_event_header__bswap(&event.header);
-+
-+	size = event.header.size;
-+	if (size == 0)
-+		size = 8;
-+
-+	p = &event;
-+	p += sizeof(struct perf_event_header);
-+
-+	err = do_read(self->fd, p, size - sizeof(struct perf_event_header));
-+	if (err <= 0) {
-+		if (err == 0) {
-+			pr_err("unexpected end of event stream\n");
-+			goto done;
-+		}
-+
-+		pr_err("failed to read event data\n");
-+		goto out_err;
-+	}
-+
-+	if (size == 0 ||
-+	    (skip = perf_session__process_event(self, &event, ops,
-+						0, head)) < 0) {
-+		dump_printf("%#Lx [%#x]: skipping unknown header type: %d\n",
-+			    head, event.header.size, event.header.type);
-+		/*
-+		 * assume we lost track of the stream, check alignment, and
-+		 * increment a single u64 in the hope to catch on again 'soon'.
-+		 */
-+		if (unlikely(head & 7))
-+			head &= ~7ULL;
-+
-+		size = 8;
-+	}
-+
-+	head += size;
-+
-+	dump_printf("\n%#Lx [%#x]: event: %d\n",
-+		    head, event.header.size, event.header.type);
-+
-+	if (skip > 0)
-+		head += skip;
-+
-+	if (!session_done())
-+		goto more;
-+done:
-+	err = 0;
-+out_err:
-+	return err;
-+}
-+
- int __perf_session__process_events(struct perf_session *self,
- 				   u64 data_offset, u64 data_size,
- 				   u64 file_size, struct perf_event_ops *ops)
-@@ -499,9 +612,13 @@ out_getcwd_err:
- 		self->cwdlen = strlen(self->cwd);
- 	}
- 
--	err = __perf_session__process_events(self, self->header.data_offset,
--					     self->header.data_size,
--					     self->size, ops);
-+	if (!self->fd_pipe)
-+		err = __perf_session__process_events(self,
-+						     self->header.data_offset,
-+						     self->header.data_size,
-+						     self->size, ops);
-+	else
-+		err = __perf_session__process_pipe_events(self, ops);
- out_err:
- 	return err;
- }
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 27f4c2d..5f78911 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -27,6 +27,7 @@ struct perf_session {
- 	u64			sample_type;
- 	struct ref_reloc_sym	ref_reloc_sym;
- 	int			fd;
-+	bool			fd_pipe;
- 	int			cwdlen;
- 	char			*cwd;
- 	char filename[0];
-@@ -92,6 +93,9 @@ static inline struct map *
- 	return map_groups__new_module(&self->kmaps, start, filename);
- }
- 
-+int do_read(int fd, void *buf, size_t size);
-+void perf_session__update_sample_type(struct perf_session *self);
-+
- #ifdef NO_NEWT_SUPPORT
- static inline int perf_session__browse_hists(struct rb_root *hists __used,
- 					      u64 nr_hists __used,
