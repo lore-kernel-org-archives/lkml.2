@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab0DNQgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 12:36:13 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50470 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756407Ab0DNQgJ (ORCPT
+	id S1756465Ab0DNQgo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 12:36:44 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:43625 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756441Ab0DNQgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 12:36:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [RFC][PATCH v3 1/3] A device for zero-copy based on KVM virtio-net.
-Date: Wed, 14 Apr 2010 18:35:57 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
-       jdike@linux.intel.com
-References: <1270805865-16901-1-git-send-email-xiaohui.xin@intel.com> <201004141757.54829.arnd@arndb.de> <20100414161610.GA10897@redhat.com>
-In-Reply-To: <20100414161610.GA10897@redhat.com>
+	Wed, 14 Apr 2010 12:36:42 -0400
+Date: Wed, 14 Apr 2010 18:36:37 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Pedro Ribeiro <pedrib@gmail.com>, linux-usb@vger.kernel.org,
+       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
+       alsa-devel@alsa-project.org
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100414163637.GV30807@buzzloop.caiaq.de>
+References: <t2w74fd948d1004140347k3447bffapb73856eacddfde55@mail.gmail.com>
+ <Pine.LNX.4.44L0.1004141003170.1716-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004141835.57673.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+oaoW3W1IVgses5m7Rq0rxGRf918g26MvA3ff
- rXx5SAR2RQCUqBMWeUYkF1NgH5oiO3QRF82Fez4OHvyetWMWgt
- wkYWMLllThe9DsiK2naxw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1004141003170.1716-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 April 2010, Michael S. Tsirkin wrote:
-> > > 
-> > > qemu needs the ability to inject raw packets into device
-> > > from userspace, bypassing vhost/virtio (for live migration).
+On Wed, Apr 14, 2010 at 10:08:47AM -0400, Alan Stern wrote:
+> On Wed, 14 Apr 2010, Pedro Ribeiro wrote:
+> > On 14 April 2010 11:09, Daniel Mack <daniel@caiaq.de> wrote:
+> > > Thanks! So the only thing I can do for now is submit exactly this patch.
+> > > At least, it helps you and it shouldn't break anything. The question
+> > > remains whether this type of memory should be used for all
+> > > transfer_buffers.
+> > >
 > > 
-> > Ok, but since there is only a write callback and no read, it won't
-> > actually be able to do this with the current code, right?
+> > Is there any chance you could push this to -stable? I don't care
+> > because I always use the latest kernel, but the next Debian stable and
+> > Ubuntu LTS are going to use 2.6.32.
 > 
-> I think it'll work as is, with vhost qemu only ever writes,
-> never reads from device. We'll also never need GSO etc
-> which is a large part of what tap does (and macvtap will
-> have to do).
+> No!  Please don't do it: Don't submit the patch and _certainly_ don't
+> submit it to -stable.  It doesn't fix anything; it only works around a
+> bug, and at the moment we don't even know if the bug is in the kernel
+> or in Pedro's hardware (and even though it affects two different
+> systems of his, nobody else has reported a similar problem).  Papering
+> over it will only remove the incentive to fix it properly.
 
-Ah, I see. I didn't realize that qemu needs to write to the
-device even if vhost is used. But for the case of migration to
-another machine without vhost, wouldn't qemu also need to read?
+No worries - I agree. But unfortunately, I'm out of ideas now, and my
+initial thoughts about what might cause the trouble were abviously not
+able to explain the issue. Does anyone see further steps of tracking
+this issue down?
 
-> > Moreover, it seems weird to have a new type of interface here that
-> > duplicates tap/macvtap with less functionality. Coming back
-> > to your original comment, this means that while mpassthru is currently
-> > not duplicating the actual code from macvtap, it would need to do
-> > exactly that to get the qemu interface right!
-> > 
-> I don't think so, see above. anyway, both can reuse tun.c :)
-
-There is one significant difference between macvtap/mpassthru and
-tun/tap in that the directions are reversed. While macvtap and
-mpassthru forward data from write into dev_queue_xmit and from
-skb_receive into read, tun/tap forwards data from write into
-skb_receive and from start_xmit into read.
-
-Also, I'm not really objecting to duplicating code between
-macvtap and mpassthru, as the implementation can always be merged.
-My main objection is instead to having two different _user_interfaces_
-for doing the same thing.
-
-	Arnd
+Thanks,
+Daniel
