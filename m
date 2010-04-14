@@ -1,82 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab0DNH5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 03:57:37 -0400
-Received: from de01.mail.all-tld.net ([195.140.232.8]:61542 "EHLO
-	de01.mail.all-tld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab0DNH5f convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 03:57:35 -0400
-Date: Wed, 14 Apr 2010 09:57:20 +0200
-From: Anders Larsen <al@alarsen.net>
-Subject: Re: [PATCH] Fix Oops with Atmel SPI
-To: Iwo Mergler <iwo@call-direct.com.au>
-Cc: linux-mtd@lists.infradead.org,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-       Ian McDonnell <ian@brightstareng.com>, Nicolas Pitre <nico@fluxnic.net>,
-       linux-kernel@vger.kernel.org, Matthias Kaehlcke <matthias@kaehlcke.net>,
-       David Woodhouse <dwmw2@infradead.org>
-In-Reply-To: <4BC56F21.6040909@call-direct.com.au> (from
-	iwo@call-direct.com.au on Wed Apr 14 09:30:41 2010)
-X-Mailer: Balsa 2.3.14
-Message-Id: <1271231840l.5270l.0l@i-dmzi_al.realan.de>
+	id S1754132Ab0DNH6N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 03:58:13 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37802 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753208Ab0DNH6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 03:58:10 -0400
+Date: Wed, 14 Apr 2010 09:58:08 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Tony Vroon <tony@linx.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       pm list <linux-pm@lists.linux-foundation.org>
+Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
+Message-ID: <20100414075808.GA4202@tiehlicka.suse.cz>
+References: <20100401133923.GA4104@tiehlicka.suse.cz>
+ <201004130101.54117.rjw@sisk.pl>
+ <20100413082756.GA5233@tiehlicka.suse.cz>
+ <201004132253.37432.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-References: <4BC56F21.6040909@call-direct.com.au>
-X-ALL-TLD-GmbH-Information: AEV Virus and Spam Secure Mail System
-X-ALL-TLD-GmbH-VirusScanner: Found to be clean
-X-ALL-TLD-GmbH-SpamCheck: 
-X-MailScanner-From: al@alarsen.net
+In-Reply-To: <201004132253.37432.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Iwo,
-
-On 2010-04-14 09:30:41, Iwo Mergler wrote:
-> I wouldn't recommend that. MTD erase blocks are 64K or more. In a typical
-> embedded system you will not be able to kmalloc that much memory after
-> a few day's of operation - the page pool gets fragmented.
-
-the original problem occurs with SPI flashes, which typically have a much
-smaller erase block size (and it only occurs when they are driven by an Atmel
-SoC SPI controller, hence the #ifdefs)
-
-> A possibly better approach is to arrange for that memory to get allocated
-> at driver start time.
-
-The buffer in question is indeed allocated _once_ (at the first write
-operation to the device) and only deallocated when the device is unmounted,
-so allocating it at driver load time wouldn't make much difference IMHO.
-
-I realize that my patch also affects e.g. parallel NOR flash on the system,
-but unless an MTD device is unmounted/remounted over and over again, I don't
-see a problem.
-
-Did I miss something else?
-
-> An even better approach would be to change the algorithm to operate on
-> a list of smaller allocations, e.g. MTD page size.
-
-That's unfortunately beyond my abilities, I fear.
-
-Cheers
-Anders
-
-> Anders Larsen wrote:
-> > Tweak MTD's cache allocation to make it work with the atmel DMA'ed SPI.
-> > Substitute kmalloc for vmalloc so the cache buffer is mappable as per
-> > the Atmel SPI driver's requirements, otherwise an Oops would occur.
+On Tue 13-04-10 22:53:37, Rafael J. Wysocki wrote:
+> On Tuesday 13 April 2010, Michal Hocko wrote:
+> > On Tue 13-04-10 01:01:54, Rafael J. Wysocki wrote:
+> > > On Saturday 10 April 2010, Rafael J. Wysocki wrote:
+> > > > On Friday 09 April 2010, Tony Vroon wrote:
+> > > > > On Fri, 2010-04-09 at 22:42 +0200, Rafael J. Wysocki wrote:
+> > > > > > Please check if the patch below changes anything.
+> > > > > >  drivers/acpi/wakeup.c |    4 ++--
+> > > > > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > > > > 
+> > > > > That didn't change the behaviour for me, sorry.
+> > > > 
+> > > > Well, I would be sorry if it did, because the patch removed some useful code. :-)
+> > > > 
+> > > > > (I made sure to go through a full power down session before trying the
+> > > > > patched kernel)
+> > > > 
+> > > > Thanks for testing.  So it looks like we don't disable the GPE during power off.
+> > > > 
+> > > > I'll try to figure out what's going on, please stay tuned.
+> > > 
+> > > Can you please check if the patch below changes the behavior?
 > > 
-> > The original patch by Ian McDonnell <ian@brightstareng.com> was found here:
-> > http://lists.infradead.org/pipermail/linux-mtd/2007-December/020184.html
-> > 
-> > Signed-off-by: Anders Larsen <al@alarsen.net>
-> > Cc: Ian McDonnell <ian@brightstareng.com>
-> > Cc: David Woodhouse <dwmw2@infradead.org>
-> > Cc: Matthias Kaehlcke <matthias@kaehlcke.net>
-> > Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> > Cc: Nicolas Pitre <nico@fluxnic.net>
+> > Unfortunately, it didn't help either (I have tried on top of the fresh
+> > rc4).
+> 
+> That gets really weird.
+> 
+> > > ---
+> > >  drivers/acpi/wakeup.c |    6 +++---
+> > >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > > 
+> > > Index: linux-2.6/drivers/acpi/wakeup.c
+> > > ===================================================================
+> > > --- linux-2.6.orig/drivers/acpi/wakeup.c
+> > > +++ linux-2.6/drivers/acpi/wakeup.c
+> > > @@ -63,17 +63,17 @@ void acpi_enable_wakeup_device(u8 sleep_
+> > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
+> > >  		struct acpi_device *dev =
+> > >  			container_of(node, struct acpi_device, wakeup_list);
+> > > +		u8 action = ACPI_GPE_ENABLE;
+> 
+> Can you try to change the above to ACPI_GPE_DISABLE and retest, please?
 
+Unfortunately didn't help as well...
+Just for reference:
+
+diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
+index 248b473..f23c08f 100644
+--- a/drivers/acpi/wakeup.c
++++ b/drivers/acpi/wakeup.c
+@@ -63,7 +63,7 @@ void acpi_enable_wakeup_device(u8 sleep_state)
+ 	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
+ 		struct acpi_device *dev =
+ 			container_of(node, struct acpi_device, wakeup_list);
+-		u8 action = ACPI_GPE_ENABLE;
++		u8 action = ACPI_GPE_DISABLE;
+ 
+ 		if (!dev->wakeup.flags.valid)
+ 			continue;
+> 
+> > >  		if (!dev->wakeup.flags.valid)
+> > >  			continue;
+> > >  
+> > >  		if ((!dev->wakeup.state.enabled && !dev->wakeup.prepare_count)
+> > >  		    || sleep_state > (u32) dev->wakeup.sleep_state)
+> > > -			continue;
+> > > +			action = ACPI_GPE_DISABLE;
+> > >  
+> > > -		/* The wake-up power should have been enabled already. */
+> > >  		acpi_set_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
+> > > -				ACPI_GPE_ENABLE);
+> > > +				action);
+> > >  	}
+> > >  }
+> 
+> Rafael
+
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
