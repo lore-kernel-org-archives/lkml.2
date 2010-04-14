@@ -1,123 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab0DNNYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 09:24:21 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:53810 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755439Ab0DNNYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 09:24:09 -0400
-Date: Wed, 14 Apr 2010 14:23:50 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Chris Mason <chris.mason@oracle.com>, Andi Kleen <andi@firstfloor.org>,
-       Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100414132349.GL25756@csn.ul.ie>
-References: <1271117878-19274-1-git-send-email-david@fromorbit.com> <20100413095815.GU25756@csn.ul.ie> <20100413111902.GY2493@dastard> <20100413193428.GI25756@csn.ul.ie> <20100413202021.GZ13327@think> <877hoa9wlv.fsf@basil.nowhere.org> <20100414112015.GO13327@think>
+	id S1755546Ab0DNNY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 09:24:27 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34979 "EHLO
+	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750939Ab0DNNYY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 09:24:24 -0400
+From: Alan Cox <alan@linux.intel.com>
+Subject: [PATCH 2/4] isl29020: ambient light sensor
+To: linux-i2c@vger.kernel.org, khali@linux-fr.org, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Date: Wed, 14 Apr 2010 13:51:49 +0100
+Message-ID: <20100414125147.23181.5817.stgit@localhost.localdomain>
+In-Reply-To: <20100414124913.23181.75903.stgit@localhost.localdomain>
+References: <20100414124913.23181.75903.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100414112015.GO13327@think>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 07:20:15AM -0400, Chris Mason wrote:
-> On Wed, Apr 14, 2010 at 12:06:36PM +0200, Andi Kleen wrote:
-> > Chris Mason <chris.mason@oracle.com> writes:
-> > >
-> > > Huh, 912 bytes...for select, really?  From poll.h:
-> > >
-> > > /* ~832 bytes of stack space used max in sys_select/sys_poll before allocating
-> > >    additional memory. */
-> > > #define MAX_STACK_ALLOC 832
-> > > #define FRONTEND_STACK_ALLOC    256
-> > > #define SELECT_STACK_ALLOC      FRONTEND_STACK_ALLOC
-> > > #define POLL_STACK_ALLOC        FRONTEND_STACK_ALLOC
-> > > #define WQUEUES_STACK_ALLOC     (MAX_STACK_ALLOC - FRONTEND_STACK_ALLOC)
-> > > #define N_INLINE_POLL_ENTRIES   (WQUEUES_STACK_ALLOC / sizeof(struct poll_table_entry))
-> > >
-> > > So, select is intentionally trying to use that much stack.  It should be using
-> > > GFP_NOFS if it really wants to suck down that much stack...
-> > 
-> > There are lots of other call chains which use multiple KB bytes by itself,
-> > so why not give select() that measly 832 bytes?
-> > 
-> > You think only file systems are allowed to use stack? :)
-> 
-> Grin, most definitely.
-> 
-> > 
-> > Basically if you cannot tolerate 1K (or more likely more) of stack
-> > used before your fs is called you're toast in lots of other situations
-> > anyways.
-> 
-> Well, on a 4K stack kernel, 832 bytes is a very large percentage for
-> just one function.
-> 
-> Direct reclaim is a problem because it splices parts of the kernel that
-> normally aren't connected together.  The people that code in select see
-> 832 bytes and say that's teeny, I should have taken 3832 bytes.
-> 
+From: Kalhan Trisal <kalhan.trisal@intel.com>
 
-Even without direct reclaim, I doubt stack usage is often at the top of
-peoples minds except for truly criminal large usages of it. Direct
-reclaim splicing is somewhat of a problem but it's separate to stack
-consumption overall.
+The LS driver will read the latest Lux measurement based upon the
+light brightness and will report the LUX output through sysfs interface.
 
-> But they don't realize their function can dive down into ecryptfs then
-> the filesystem then maybe loop and then perhaps raid6 on top of a
-> network block device.
-> 
-> > 
-> > > kernel had some sort of way to dynamically allocate ram, it could try
-> > > that too.
-> > 
-> > It does this for large inputs, but the whole point of the stack fast
-> > path is to avoid it for common cases when a small number of fds is
-> > only needed.
-> > 
-> > It's significantly slower to go to any external allocator.
-> 
-> Yeah, but since the call chain does eventually go into the allocator,
-> this function needs to be more stack friendly.
-> 
-> I do agree that we can't really solve this with noinline_for_stack pixie
-> dust, the long call chains are going to be a problem no matter what.
-> 
-> Reading through all the comments so far, I think the short summary is:
-> 
-> Cleaning pages in direct reclaim helps the VM because it is able to make
-> sure that lumpy reclaim finds adjacent pages.  This isn't a fast
-> operation, it has to wait for IO (infinitely slow compared to the CPU).
-> 
-> Will it be good enough for the VM if we add a hint to the bdi writeback
-> threads to work on a general area of the file?  The filesystem will get
-> writepages(), the VM will get the IO it needs started.
-> 
+Signed-off-by: Kalhan Trisal <kalhan.trisal@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-Bear in mind that the context of lumpy reclaim that the VM doesn't care
-about where the data is on the file or filesystem. It's only concerned
-about where the data is located in memory. There *may* be a correlation
-between location-of-data-in-file and location-of-data-in-memory but only
-if readahead was a factor and readahead happened to hit at a time the page
-allocator broke up a contiguous block of memory.
+ drivers/hwmon/Kconfig    |    9 ++
+ drivers/hwmon/Makefile   |    1 
+ drivers/hwmon/isl29020.c |  243 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 253 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwmon/isl29020.c
 
-> I know Mel mentioned before he wasn't interested in waiting for helper
-> threads, but I don't see how we can work without it.
-> 
 
-I'm not against the idea as such. It would have advantages in that the
-thread could reorder the IO for better seeks for example and lumpy
-reclaim is already potentially waiting a long time so another delay
-won't hurt. I would worry that it's just hiding the stack usage by
-moving it to another thread and that there would be communication cost
-between a direct reclaimer and this writeback thread. The main gain
-would be in hiding the "splicing" effect between subsystems that direct
-reclaim can have.
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 74f672d..1fa2533 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -1095,6 +1095,15 @@ config SENSORS_HMC6352
+ 	  This driver provides support for the Honeywell HMC6352 compass,
+ 	  providing configuration and heading data via sysfs.
+ 
++config SENSORS_ISL29020
++	tristate "Intersil ISL29020 ALS"
++	depends on I2C
++	help
++	  If you say yes here you get support for the ALS Devices
++	  Ambient Light Sensor monitoring chip.
++	  Range values can be configured using sysfs.
++	  Lux data is accessible via sysfs.
++
+ if ACPI
+ 
+ comment "ACPI drivers"
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index ad2ed36..13d6832 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -53,6 +53,7 @@ obj-$(CONFIG_SENSORS_HMC6352)	+= hmc6352.o
+ obj-$(CONFIG_SENSORS_I5K_AMB)	+= i5k_amb.o
+ obj-$(CONFIG_SENSORS_IBMAEM)	+= ibmaem.o
+ obj-$(CONFIG_SENSORS_IBMPEX)	+= ibmpex.o
++obj-$(CONFIG_SENSORS_ISL29020)	+= isl29020.o
+ obj-$(CONFIG_SENSORS_IT87)	+= it87.o
+ obj-$(CONFIG_SENSORS_K8TEMP)	+= k8temp.o
+ obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
+diff --git a/drivers/hwmon/isl29020.c b/drivers/hwmon/isl29020.c
+new file mode 100644
+index 0000000..458140d
+--- /dev/null
++++ b/drivers/hwmon/isl29020.c
+@@ -0,0 +1,243 @@
++/*
++ * isl29020.c - Intersil  ALS Driver
++ *
++ * Copyright (C) 2008 Intel Corp
++ *
++ *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/hwmon-vid.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/mutex.h>
++#include <linux/sysfs.h>
++
++
++#define ALS_MIN_RANGE_VAL 0
++#define ALS_MAX_RANGE_VAL 5
++
++struct als_data {
++	struct device *hwmon_dev;
++};
++
++static unsigned int i2c_write_current_data(struct i2c_client *client,
++					unsigned int reg, unsigned int value)
++{
++	int ret_val;
++
++	ret_val = i2c_smbus_write_byte_data(client, reg, value);
++	return ret_val;
++}
++
++static ssize_t als_sensing_range_show(struct device *dev,
++			struct device_attribute *attr,  char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int  val;
++
++	val = i2c_smbus_read_byte_data(client, 0x00);
++	return sprintf(buf, "%d000\n", 1 << (2 * (val & 3)));
++
++}
++
++static ssize_t als_lux_output_data_show(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	unsigned int ret_val, val;
++	unsigned long int lux, max_count;
++	int tempv1, tempv2;
++
++	max_count = 65535;
++	tempv1 = i2c_smbus_read_byte_data(client, 0x02); /* MSB data */
++	tempv2 = i2c_smbus_read_byte_data(client, 0x01); /* LSB data */
++	ret_val = tempv1;
++	ret_val = (ret_val << 8 | tempv2);
++	val = i2c_smbus_read_byte_data(client, 0x00);
++	lux = ((((1 << (2 * (val & 3))))*1000) * ret_val) / max_count;
++	return sprintf(buf, "%ld\n", lux);
++}
++
++static ssize_t als_sensing_range_store(struct device *dev,
++		struct device_attribute *attr, const  char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	unsigned int ret_val, set_val = 0;
++	unsigned long val;
++
++	if (strict_strtoul(buf, 10, &val))
++		return -EINVAL;
++	ret_val = i2c_smbus_read_byte_data(client, 0x00);
++	ret_val = ret_val & 0xFC; /*reset the bit before setting them */
++	if (val == 1)
++		set_val = (ret_val | 0x00); /* setting the 1:0  bit */
++	else if (val == 2)
++		set_val = (ret_val | 0x01);
++	else if (val == 3)
++		set_val = (ret_val | 0x02);
++	else if (val == 4)
++		set_val = (ret_val | 0x03);
++	else
++		goto invarg;
++	i2c_write_current_data(client, 0x00, set_val);
++	return count;
++invarg:
++	return -EINVAL;
++}
++
++static ssize_t als_power_status_show(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int ret_val;
++
++	ret_val = i2c_smbus_read_byte_data(client, 0x00);
++	ret_val = ret_val & 0x80;
++	if (ret_val == 0x80)
++		ret_val = 1;
++	return sprintf(buf, "%x", ret_val);
++}
++
++static ssize_t als_power_status_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	unsigned long val = 0;
++	char curr_val;
++
++	if (strict_strtoul(buf, 10, &val))
++		return -EINVAL;
++
++	curr_val = i2c_smbus_read_byte_data(client, 0x00);
++	if (val == 1)
++		curr_val = curr_val | 0x80;
++	else if (val == 0)
++		curr_val = curr_val & 0x7F;
++	else
++		return -EINVAL;
++	i2c_write_current_data(client, 0x00, curr_val);
++	return count;
++}
++
++static DEVICE_ATTR(sensing_range, S_IRUGO | S_IWUSR,
++	als_sensing_range_show, als_sensing_range_store);
++static DEVICE_ATTR(lux_output, S_IRUGO, als_lux_output_data_show, NULL);
++static DEVICE_ATTR(power_state, S_IRUGO | S_IWUSR,
++	als_power_status_show, als_power_status_store);
++
++static struct attribute *mid_att_als[] = {
++	&dev_attr_sensing_range.attr,
++	&dev_attr_lux_output.attr,
++	&dev_attr_power_state.attr,
++	NULL
++};
++
++static struct attribute_group m_als_gr = {
++	.name = "isl29020",
++	.attrs = mid_att_als
++};
++
++static void als_set_default_config(struct i2c_client *client)
++{
++	i2c_write_current_data(client, 0x00, 0xc0);
++}
++
++static int  isl29020_probe(struct i2c_client *client,
++					const struct i2c_device_id *id)
++{
++	int res;
++	struct als_data *data;
++
++	data = kzalloc(sizeof(struct als_data), GFP_KERNEL);
++	if (data == NULL) {
++		printk(KERN_WARNING " isl29020: out of memory");
++		return -ENOMEM;
++	}
++	i2c_set_clientdata(client, data);
++
++	res = sysfs_create_group(&client->dev.kobj, &m_als_gr);
++	if (res) {
++		printk(KERN_WARNING "isl29020: device create file failed!!\n");
++		goto als_error1;
++	}
++	data->hwmon_dev = hwmon_device_register(&client->dev);
++	if (IS_ERR(data->hwmon_dev)) {
++		res = PTR_ERR(data->hwmon_dev);
++		data->hwmon_dev = NULL;
++		sysfs_remove_group(&client->dev.kobj, &m_als_gr);
++		printk(KERN_ERR "isl29020:unable to register hwmon device\n");
++		goto als_error1;
++	}
++	dev_info(&client->dev, "%s isl29020: ALS chip found\n", client->name);
++	als_set_default_config(client);
++	return res;
++
++als_error1:
++	i2c_set_clientdata(client, NULL);
++	kfree(data);
++	return res;
++}
++
++static int isl29020_remove(struct i2c_client *client)
++{
++	struct als_data *data = i2c_get_clientdata(client);
++
++	hwmon_device_unregister(data->hwmon_dev);
++	sysfs_remove_group(&client->dev.kobj, &m_als_gr);
++	kfree(data);
++	return 0;
++}
++
++static struct i2c_device_id isl29020_id[] = {
++	{ "i2c_als", 0 },
++	{ }
++};
++
++MODULE_DEVICE_TABLE(i2c, isl29020_id);
++
++static struct i2c_driver isl29020_driver = {
++	.driver = {
++	.name = "isl29020",
++	},
++	.probe = isl29020_probe,
++	.remove = isl29020_remove,
++	.id_table = isl29020_id,
++};
++
++static int __init sensor_isl29020_init(void)
++{
++	return i2c_add_driver(&isl29020_driver);
++}
++
++static void  __exit sensor_isl29020_exit(void)
++{
++	i2c_del_driver(&isl29020_driver);
++}
++
++module_init(sensor_isl29020_init);
++module_exit(sensor_isl29020_exit);
++
++MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com");
++MODULE_DESCRIPTION("Intersil isl29020 ALS Driver");
++MODULE_LICENSE("GPL v2");
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
