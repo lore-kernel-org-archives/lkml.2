@@ -1,78 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab0DNDCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 23:02:07 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43115 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab0DNDCF convert rfc822-to-8bit (ORCPT
+	id S1754630Ab0DNDKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 23:10:21 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55866 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab0DNDKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 23:02:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100414024842.GB3718@localhost.localdomain>
-References: <20100414024842.GB3718@localhost.localdomain>
-Date: Tue, 13 Apr 2010 23:02:02 -0400
-Message-ID: <j2z7e0fb38c1004132002sba54d278xc0337bed6e09dec5@mail.gmail.com>
-Subject: Re: Security: Replace dac_mmap_min_addr to mmap_min_addr in 
-	cap_file_mmap()
-From: Eric Paris <eparis@parisplace.org>
-To: wzt.wzt@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       jmorris@namei.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Apr 2010 23:10:19 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 14 Apr 2010 12:06:22 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][BUGFIX][PATCH] memcg: fix underflow of mapped_file stat
+Message-Id: <20100414120622.0a5c2983.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100414105608.d40c70ab.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
+	<20100413151400.cb89beb7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100414095408.d7b352f1.nishimura@mxp.nes.nec.co.jp>
+	<20100414100308.693c5650.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100414104010.7a359d04.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100414105608.d40c70ab.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NAK NAK NAK
+On Wed, 14 Apr 2010 10:56:08 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> Thinking again....new page is unlocked here. It means the new page may be
+> removed from radix-tree before commit_charge().
+> 
+> Haha, it seems totally wrong. please wait..
+> 
 
-go back and reread the whole purpose for the separation.
+This is my answer. How do you think ?
+I think this logic is simple. (But yes, we should check corner cases.)
 
--Eric
+==
 
-On Tue, Apr 13, 2010 at 10:48 PM,  <wzt.wzt@gmail.com> wrote:
-> cap_file_mmap() comments said "If the process is attempting to map
-> memory below mmap_min_addr", if CONFIG_LSM_MMAP_MIN_ADDR is set,
-> dac_mmap_min_addr is not equal mmap_min_addr, so replace dac_mmap_min_addr
-> to mmap_min_addr seems to be better.
->
-> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
->
-> ---
->  include/linux/security.h |    1 +
->  security/commoncap.c     |    2 +-
->  2 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index 233d20b..61fd9e7 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -101,6 +101,7 @@ void reset_security_ops(void);
->  extern unsigned long mmap_min_addr;
->  extern unsigned long dac_mmap_min_addr;
->  #else
-> +#define mmap_min_addr          0UL
->  #define dac_mmap_min_addr      0UL
->  #endif
->
-> diff --git a/security/commoncap.c b/security/commoncap.c
-> index 6166973..878cf89 100644
-> --- a/security/commoncap.c
-> +++ b/security/commoncap.c
-> @@ -942,7 +942,7 @@ int cap_file_mmap(struct file *file, unsigned long reqprot,
->  {
->        int ret = 0;
->
-> -       if (addr < dac_mmap_min_addr) {
-> +       if (addr < mmap_min_addr) {
->                ret = cap_capable(current, current_cred(), CAP_SYS_RAWIO,
->                                  SECURITY_CAP_AUDIT);
->                /* set PF_SUPERPRIV if it turns out we allow the low mmap */
-> --
-> 1.6.5.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+At page migration, the new page is unlocked before calling end_migration().
+This is mis-understanding with page-migration code of memcg.
+And FILE_MAPPED of migrated file cache is not properly updated, now.
+
+At migrating mapped file, events happens in following sequence.
+
+ 1. allocate a new page.
+ 2. get memcg of an old page.
+ 3. charge ageinst new page, before migration. But at this point
+    no changes to page_cgroup, no commit-charge.
+ 4. page migration replaces radix-tree, old-page and new-page.
+ 5. page migration remaps the new page if the old page was mapped.
+ 6. memcg commits the charge for newpage.
+
+Because "commit" happens after page-remap, we lose file_mapped
+accounting information at migration.
+
+For fixing all, this changes parepare/end migration.
+New migration sequence with memcg is:
+
+ 1. allocate a new page.
+ 2. charge against a new page onto old page's memcg. (here, the new page
+    is marked as PageCgroupUsed.)
+ 3. page migration replaces radix-tree, page table, etc...
+ 4. At remapping, FILE_MAPPED will be properly updated. (because newpage is marked as
+    USED, already)
+ 5. If anonymous page is freed before remap, check it and fixup accounting.
+ 
+
+Reported-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/memcontrol.h |    6 +-
+ mm/memcontrol.c            |   95 ++++++++++++++++++++++++---------------------
+ mm/migrate.c               |    2 
+ 3 files changed, 56 insertions(+), 47 deletions(-)
+
+Index: mmotm-temp/mm/memcontrol.c
+===================================================================
+--- mmotm-temp.orig/mm/memcontrol.c
++++ mmotm-temp/mm/memcontrol.c
+@@ -2501,10 +2501,12 @@ static inline int mem_cgroup_move_swap_a
+  * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
+  * page belongs to.
+  */
+-int mem_cgroup_prepare_migration(struct page *page, struct mem_cgroup **ptr)
++int mem_cgroup_prepare_migration(struct page *page,
++	struct page *newpage, struct mem_cgroup **ptr)
+ {
+ 	struct page_cgroup *pc;
+ 	struct mem_cgroup *mem = NULL;
++	enum charge_type ctype;
+ 	int ret = 0;
+ 
+ 	if (mem_cgroup_disabled())
+@@ -2517,65 +2519,70 @@ int mem_cgroup_prepare_migration(struct 
+ 		css_get(&mem->css);
+ 	}
+ 	unlock_page_cgroup(pc);
+-
+-	if (mem) {
+-		ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, &mem, false);
+-		css_put(&mem->css);
+-	}
+-	*ptr = mem;
++	/*
++	 * If the page is uncharged before migration (removed from radix-tree)
++	 * we return here.
++	 */
++	if (!mem)
++		return 0;
++	ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, &mem, false);
++	css_put(&mem->css); /* drop extra refcnt */
++	if (ret)
++		return ret;
++	/*
++ 	 * The old page is under lock_page().
++ 	 * If the old_page is uncharged and freed while migration, page migration
++ 	 * will fail and newpage will properly uncharged by end_migration.
++ 	 * And commit_charge against newpage never fails.
++  	 */
++	pc = lookup_page_cgroup(newpage);
++	if (PageAnon(page))
++		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
++	else if (!PageSwapBacked(page))
++		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
++	else
++		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
++	__mem_cgroup_commit_charge(mem, pc, ctype);
++	/* FILE_MAPPED of this page will be updated at remap routine */
+ 	return ret;
+ }
+ 
+ /* remove redundant charge if migration failed*/
+ void mem_cgroup_end_migration(struct mem_cgroup *mem,
+-		struct page *oldpage, struct page *newpage)
++	struct page *oldpage, struct page *newpage)
+ {
+-	struct page *target, *unused;
+-	struct page_cgroup *pc;
+-	enum charge_type ctype;
++	struct page *used, *unused;
+ 
+ 	if (!mem)
+ 		return;
+ 	cgroup_exclude_rmdir(&mem->css);
++
++
+ 	/* at migration success, oldpage->mapping is NULL. */
+ 	if (oldpage->mapping) {
+-		target = oldpage;
+-		unused = NULL;
++		used = oldpage;
++		unused = newpage;
+ 	} else {
+-		target = newpage;
++		used = newpage;
+ 		unused = oldpage;
+ 	}
+-
+-	if (PageAnon(target))
+-		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
+-	else if (page_is_file_cache(target))
+-		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
+-	else
+-		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+-
+-	/* unused page is not on radix-tree now. */
+-	if (unused)
+-		__mem_cgroup_uncharge_common(unused, ctype);
+-
+-	pc = lookup_page_cgroup(target);
+-	/*
+-	 * __mem_cgroup_commit_charge() check PCG_USED bit of page_cgroup.
+-	 * So, double-counting is effectively avoided.
+-	 */
+-	__mem_cgroup_commit_charge(mem, pc, ctype);
+-
++	/* PageCgroupUsed() flag check will do all we want */
++	mem_cgroup_uncharge_page(unused);
+ 	/*
+-	 * Both of oldpage and newpage are still under lock_page().
+-	 * Then, we don't have to care about race in radix-tree.
+-	 * But we have to be careful that this page is unmapped or not.
+-	 *
+-	 * There is a case for !page_mapped(). At the start of
+-	 * migration, oldpage was mapped. But now, it's zapped.
+-	 * But we know *target* page is not freed/reused under us.
+-	 * mem_cgroup_uncharge_page() does all necessary checks.
+-	 */
+-	if (ctype == MEM_CGROUP_CHARGE_TYPE_MAPPED)
+-		mem_cgroup_uncharge_page(target);
++ 	 * If old page was file cache, and removed from radix-tree
++ 	 * before lock_page(), perepare_migration doesn't charge and we never
++ 	 * reach here.
++ 	 *
++ 	 * Considering ANON pages, we can't depend on lock_page.
++ 	 * If a page may be unmapped before it's remapped, new page's
++ 	 * mapcount will not increase. (case that mapcount 0->1 never occur.)
++ 	 * PageCgroupUsed() and SwapCache checks will be done.
++ 	 *
++ 	 * Once mapcount goes to 1, our hook to page_remove_rmap will do
++ 	 * enough jobs.
++ 	 */
++	if (PageAnon(used) && !page_mapped(used))
++		mem_cgroup_uncharge_page(used);
+ 	/*
+ 	 * At migration, we may charge account against cgroup which has no tasks
+ 	 * So, rmdir()->pre_destroy() can be called while we do this charge.
+Index: mmotm-temp/mm/migrate.c
+===================================================================
+--- mmotm-temp.orig/mm/migrate.c
++++ mmotm-temp/mm/migrate.c
+@@ -576,7 +576,7 @@ static int unmap_and_move(new_page_t get
+ 	}
+ 
+ 	/* charge against new page */
+-	charge = mem_cgroup_prepare_migration(page, &mem);
++	charge = mem_cgroup_prepare_migration(page, newpage, &mem);
+ 	if (charge == -ENOMEM) {
+ 		rc = -ENOMEM;
+ 		goto unlock;
+Index: mmotm-temp/include/linux/memcontrol.h
+===================================================================
+--- mmotm-temp.orig/include/linux/memcontrol.h
++++ mmotm-temp/include/linux/memcontrol.h
+@@ -89,7 +89,8 @@ int mm_match_cgroup(const struct mm_stru
+ extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *mem);
+ 
+ extern int
+-mem_cgroup_prepare_migration(struct page *page, struct mem_cgroup **ptr);
++mem_cgroup_prepare_migration(struct page *page,
++	struct page *newpage, struct mem_cgroup **ptr);
+ extern void mem_cgroup_end_migration(struct mem_cgroup *mem,
+ 	struct page *oldpage, struct page *newpage);
+ 
+@@ -228,7 +229,8 @@ static inline struct cgroup_subsys_state
+ }
+ 
+ static inline int
+-mem_cgroup_prepare_migration(struct page *page, struct mem_cgroup **ptr)
++mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
++	struct mem_cgroup **ptr)
+ {
+ 	return 0;
+ }
+
