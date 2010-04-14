@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743Ab0DNXkg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 19:40:36 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51108 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755573Ab0DNXkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 19:40:33 -0400
-Date: Wed, 14 Apr 2010 23:39:59 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
-       hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-       a.p.zijlstra@chello.nl, fweisbec@gmail.com, rostedt@goodmis.org,
-       tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-       a.p.zijlstra@chello.nl, fweisbec@gmail.com, rostedt@goodmis.org,
-       tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1271282283-23721-1-git-send-regression-fweisbec@gmail.com>
-References: <1271282283-23721-1-git-send-regression-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Fix dynamic field detection
-Message-ID: <tip-a1e2f60e3efc812bf66a2be0d8530ee175003f6d@git.kernel.org>
-Git-Commit-ID: a1e2f60e3efc812bf66a2be0d8530ee175003f6d
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Apr 2010 23:39:59 +0000 (UTC)
+	id S1755692Ab0DNXtR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 19:49:17 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:20961 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755166Ab0DNXtP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 19:49:15 -0400
+Date: Wed, 14 Apr 2010 16:48:47 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+       Tim Bird <tim.bird@am.sony.com>
+Subject: Re: [PATCH 6/6] gconfig: add support to show hidden options that
+ have prompts
+Message-Id: <20100414164847.661fe9d6.randy.dunlap@oracle.com>
+In-Reply-To: <4BC53A90.9020304@cn.fujitsu.com>
+References: <4BC539DD.5040003@cn.fujitsu.com>
+	<4BC53A90.9020304@cn.fujitsu.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B020A.4BC6546A.0049:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a1e2f60e3efc812bf66a2be0d8530ee175003f6d
-Gitweb:     http://git.kernel.org/tip/a1e2f60e3efc812bf66a2be0d8530ee175003f6d
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 14 Apr 2010 23:58:03 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 15 Apr 2010 01:34:46 +0200
+On Wed, 14 Apr 2010 11:46:24 +0800 Li Zefan wrote:
 
-perf: Fix dynamic field detection
+> There's a button in gconfig to "Show all options", but I think
+> normally we are not interested in those configs which have no
+> prompt and thus can't be changed, so here I add a new button to
+> show hidden options which have prompts.
 
-Checking if a tracing field is an array with a dynamic length
-requires to check the field type and seek the "__data_loc"
-string that prepends the actual type, as can be found in a trace
-event format file:
+(The new option is called "Show all prompt options".)
 
-	field:__data_loc char[] name;	offset:16;	size:4;	signed:1;
+These patches are looking good so far in my limited testing.
 
-But we actually use strcmp() to check if the field type fully
-matches "__data_loc", which may fail as we trip over the rest of
-the type.
+However, if gconfig is going to live, it needs at least one more thing:
+it should display the kconfig symbol type (tristate, boolean, etc.)
+like xconfig does (explicitly) and menuconfig does (by using [x] or <x>
+in the menu).
 
-To fix this, use strncmp to only check if it starts with
-"__data_loc".
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-LKML-Reference: <1271282283-23721-1-git-send-regression-fweisbec@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+thanks,
 ---
- tools/perf/util/trace-event-parse.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index 17d6d66..d6ef414 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -761,7 +761,7 @@ static int field_is_string(struct format_field *field)
- 
- static int field_is_dynamic(struct format_field *field)
- {
--	if (!strcmp(field->type, "__data_loc"))
-+	if (!strncmp(field->type, "__data_loc", 10))
- 		return 1;
- 
- 	return 0;
+~Randy
