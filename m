@@ -1,145 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab0DNWsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 18:48:30 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:52894 "EHLO elrond.infotech.no"
+	id S1757123Ab0DNWs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 18:48:29 -0400
+Received: from khc.piap.pl ([195.187.100.11]:51824 "EHLO khc.piap.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757036Ab0DNWs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757035Ab0DNWs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Apr 2010 18:48:28 -0400
-Message-ID: <4BC64633.6010407@interlog.com>
-Date: Wed, 14 Apr 2010 18:48:19 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: Michael Barkowski <michaelbarkowski@ruggedcom.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Julia Lawall <julia@diku.dk>,
+       "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: hdlc_ppp: why no detach()?
+References: <4BC32B00.1030600@ruggedcom.com>
+Date: Thu, 15 Apr 2010 00:48:25 +0200
+In-Reply-To: <4BC32B00.1030600@ruggedcom.com> (Michael Barkowski's message of
+	"Mon, 12 Apr 2010 10:15:28 -0400")
+Message-ID: <m3633todl2.fsf@intrepid.localdomain>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-       Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       John Kacur <jkacur@redhat.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] [RFC] block: replace BKL with global mutex
-References: <1271277384-7627-1-git-send-email-arnd@arndb.de>
-In-Reply-To: <1271277384-7627-1-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> The block layer is one of the remaining users
-> of the Big Kernel Lock. In there, it is used
-> mainly for serializing the blkdev_get and
-> blkdev_put functions and some ioctl implementations
-> as well as some less common open functions of
-> related character devices following a previous
-> pushdown and parts of the blktrace code.
-> 
-> The only one that seems to be a bit nasty is the
-> blkdev_get function which is actually recursive
-> and may try to get the BKL twice.
-> 
-> All users except the one in blkdev_get seem to
-> be outermost locks, meaning we don't rely on
-> the release-on-sleep semantics to avoid deadlocks.
-> 
-> The ctl_mutex (pktcdvd.ko), raw_mutex (raw.ko),
-> state_mutex (dasd.ko), reconfig_mutex (md.ko),
-> and jfs_log_mutex (jfs.ko) may be held when
-> blkdev_get is called, but as far as I can tell,
-> these mutexes are never acquired from any of the
-> functions that get converted in this patch.
-> 
-> In order to get rid of the BKL, this introduces
-> a new global mutex called blkdev_mutex, which
-> replaces the BKL in all drivers that directly
-> interact with the block layer. In case of blkdev_get,
-> the mutex is moved outside of the function itself
-> in order to avoid the recursive taking of blkdev_mutex.
-> 
-> Testing so far has shown no problems whatsoever
-> from this patch, but the usage in blkdev_get
-> may introduce extra latencies, and I may have
-> missed corner cases where an block device ioctl
-> function sleeps for a significant amount of time,
-> which may be harmful to the performance of other
-> threads.
+Hello Michael,
 
-<snip>
+Michael Barkowski <michaelbarkowski@ruggedcom.com> writes:
 
-> diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-> index dee1c96..ec5b43e 100644
-> --- a/drivers/scsi/sg.c
-> +++ b/drivers/scsi/sg.c
-> @@ -229,7 +229,7 @@ sg_open(struct inode *inode, struct file *filp)
->  	int res;
->  	int retval;
->  
-> -	lock_kernel();
-> +	mutex_lock(&blkdev_mutex);
->  	nonseekable_open(inode, filp);
->  	SCSI_LOG_TIMEOUT(3, printk("sg_open: dev=%d, flags=0x%x\n", dev, flags));
->  	sdp = sg_get_dev(dev);
-> @@ -307,7 +307,7 @@ error_out:
->  sg_put:
->  	if (sdp)
->  		sg_put_dev(sdp);
-> -	unlock_kernel();
-> +	mutex_unlock(&blkdev_mutex);
->  	return retval;
->  }
->  
-> @@ -757,9 +757,7 @@ sg_common_write(Sg_fd * sfp, Sg_request * srp,
->  	return 0;
->  }
->  
-> -static int
-> -sg_ioctl(struct inode *inode, struct file *filp,
-> -	 unsigned int cmd_in, unsigned long arg)
-> +static long sg_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
->  {
->  	void __user *p = (void __user *)arg;
->  	int __user *ip = p;
-> @@ -1078,6 +1076,17 @@ sg_ioctl(struct inode *inode, struct file *filp,
->  	}
->  }
->  
-> +static long sg_unlocked_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
-> +{
-> +	int ret;
-> +
-> +	mutex_lock(&blkdev_mutex);
-> +	ret = sg_ioctl(filp, cmd_in, arg);
-> +	mutex_unlock(&blkdev_mutex);
-> +
-> +	return ret;
-> +}
-> +
->  #ifdef CONFIG_COMPAT
->  static long sg_compat_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
->  {
-> @@ -1322,7 +1331,8 @@ static const struct file_operations sg_fops = {
->  	.read = sg_read,
->  	.write = sg_write,
->  	.poll = sg_poll,
-> -	.ioctl = sg_ioctl,
-> +	.llseek = generic_file_llseek,
+> I am looking at your hdlc_ppp code and I don't understand: why is there
+> not the equivalent of fr_detach() in there?
 
-The sg driver has no seek semantics on its read() and
-write() calls. And sg_open() calls nonseekable_open(). So
-     .llseek = no_llseek,
-seems more appropriate.
+I assume you mean .detach = fr_destroy(). It's used only to kill
+subdevices, i.e. it has nothing to do with the interface being up/down.
 
-> +	.unlocked_ioctl = sg_unlocked_ioctl,
->  #ifdef CONFIG_COMPAT
->  	.compat_ioctl = sg_compat_ioctl,
->  #endif
+> pc8300_drv:cpc_remove_one() frees netdevs quite confidently but I wonder
+> how it can be so sure that there are not skbs in hdlc_ppp's tx_queue
+> associated with those devices before freeing them....q
 
-And I just checked st.c (SCSI tape driver) and it calls
-lock_kernel() .
+Theoretically all paths adding skbs to the tx_queue should send them out
+before returning (possibly also on behalf of other devices). However I
+wonder if it's the case. Let's see: Only ppp_tx_cp() adds to the queue
+directly:
+- ppp_rx() (calls ppp_tx_flush())
+- ppp_timer (calls ppp_tx_flush())
+- ppp_cp_event():
+  - ppp_cp_parse_cr() (calls ppp_tx_flush())
+  - ppp_stop() calls ppp_cp_event(), but it won't queue any skb, it only
+    marks the connection as closed and does the same to IPCP and IPV6CP.
 
+This means the problematic part is ppp_start() which calls
+ppp_cp_event(LCP, START) = IRC | SCR | 3 meaning
+Initialize-Restart-Count, Send-Configure-Request and change state to
+REQ_SENT. This causes two problems:
 
-Doug Gilbert
+1. The SCR packet will be delayed by 2 seconds (both first and second
+   SCR will be sent the same time). Perhaps we delay only a little
+   (instead of full 2 seconds) and only then send the initial packet.
+
+2. (as you noted) the skb will be added to tx_queue and left there. If
+   we happen to "ifconfig up" and "rmmod driver" before receiving any
+   packet and before ppp->req_timeout (2 seconds) and before any other
+   PPP interface does the same, we will eventually get skb with invalid
+   ->dev. This is simple to drain in .close (detach is a wrong place
+   since it may be called long after the interface is deactivated, there
+   is no need to delay it past .close). The fix for #1 will already fix
+   #2, but the redundant safety doesn't cost us anything.
+
+Thanks for noting the problem, I'll post a patch shortly.
+
+Also it seems the timeouts etc. should be configurable. ATM we're only
+fixing bugs, good.
+-- 
+Krzysztof Halasa
