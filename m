@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab0DNQ7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 12:59:49 -0400
-Received: from mtagate1.de.ibm.com ([195.212.17.161]:50092 "EHLO
-	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756186Ab0DNQ7r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 12:59:47 -0400
-Date: Wed, 14 Apr 2010 19:00:08 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
-       linuxppc-dev@lists.ozlabs.org, benh@kernel.crashing.org,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v2 1/2] perf: Move arch specific code into separate
- arch directory
-Message-ID: <20100414170008.GA2359@osiris.boeblingen.de.ibm.com>
-References: <1271221600-25533-1-git-send-email-imunsie@au.ibm.com>
- <1271221600-25533-2-git-send-email-imunsie@au.ibm.com>
- <4BC5D534.8010508@redhat.com>
+	id S1756210Ab0DNRBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 13:01:54 -0400
+Received: from kroah.org ([198.145.64.141]:56328 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756113Ab0DNRBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 13:01:53 -0400
+Date: Wed, 14 Apr 2010 10:01:53 -0700
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+       Alan Cox <alan@linux.intel.com>, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: isl29020: ALS driver as misc device
+Message-ID: <20100414170153.GA7494@kroah.com>
+References: <20100414124913.23181.75903.stgit@localhost.localdomain> <20100414125136.23181.16788.stgit@localhost.localdomain> <4BC5C7A8.1040807@cam.ac.uk> <20100414153234.22765666@lxorguk.ukuu.org.uk> <4BC5D681.20707@jic23.retrosnub.co.uk> <20100414175602.44580f3c@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BC5D534.8010508@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100414175602.44580f3c@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 07:46:12AM -0700, Masami Hiramatsu wrote:
-> Ian Munsie wrote:
-> > From: Ian Munsie <imunsie@au.ibm.com>
-> > 
-> > The perf userspace tool included some architecture specific code to map
-> > registers from the DWARF register number into the names used by the regs
-> > and stack access API.
-> > 
-> > This patch moves the architecture specific code out into a separate
-> > arch/x86 directory along with the infrastructure required to use it.
-> > 
-> > Signed-off-by: Ian Munsie <imunsie@au.ibm.com>
-> > ---
-> > Changes since v1: From Masami Hiramatsu's suggestion, I added a check in the
-> > Makefile for if the arch specific Makefile defines PERF_HAVE_DWARF_REGS,
-> > printing a message during build if it has not. This simplifies the code
-> > removing the odd macro from the previous version and the need for an arch
-> > specific arch_dwarf-regs.h. I have not entirely disabled DWARF support for
-> > architectures that don't implement the register mappings, so that they can
-> > still add a probe based on a line number (they will be missing the ability to
-> > capture the value of a variable from a register).
+On Wed, Apr 14, 2010 at 05:56:02PM +0100, Alan Cox wrote:
+> And this adds the isl29020 as a misc device per discussions
 > 
-> Hmm, sorry, I don't think it is a good way to go... IMHO, porting dwarf-regs.c
-> is so easy (you can just refer systemtap/runtime/loc2c-runtime.h), easier
-> than porting kprobe-tracer on another arch. And perf is a part of kernel tree.
-> It means that someone who are porting kprobe-tracer, he should port
-> dwarf-regs.c too. In that case, PERF_HAVE_DWARF_REGS flag will be used only
-> between those two patches in same patchset. So, I suggested you to drop dwarf
-> support if dwarf-regs mapping doesn't exist.
+> isl29020: ambient light sensor
 > 
-> AFAIK, at this point, only s390 users are affected. I'd like to ask
-> them to just port a register mapping on perf and test it too.
+> From: Kalhan Trisal <kalhan.trisal@intel.com>
+> 
+> The LS driver will read the latest Lux measurement based upon the
+> light brightness and will report the LUX output through sysfs interface.
 
-Hm, I'm a bit lost here. Probably due to lack of context. What would be missing
-on s390 and what am I supposed to implement and how can I test it?
-Any pointers to git commits?
+Please document this sysfs interface with an addition to the
+Documentatin/ABI/ directory.
+
+thanks,
+
+greg k-h
