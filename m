@@ -1,142 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab0DNWAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 18:00:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61016 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755935Ab0DNWAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 18:00:52 -0400
-Date: Wed, 14 Apr 2010 17:59:28 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: [PATCH] rmap: add exclusively owned pages to the newest anon_vma
-Message-ID: <20100414175928.5e1bdce2@annuminas.surriel.com>
-In-Reply-To: <20100413093827.GA6954@liondog.tnic>
-References: <alpine.LFD.2.00.1004110938570.3514@i5.linux-foundation.org>
-	<alpine.LFD.2.00.1004111010280.3514@i5.linux-foundation.org>
-	<20100411185508.GA4450@liondog.tnic>
-	<alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org>
-	<alpine.LFD.2.00.1004111759440.3521@i5.linux-foundation.org>
-	<20100412072056.GA2432@liondog.tnic>
-	<alpine.LFD.2.00.1004120854440.26679@i5.linux-foundation.org>
-	<alpine.LFD.2.00.1004120906370.26679@i5.linux-foundation.org>
-	<20100412215027.GA6263@liondog.tnic>
-	<alpine.LFD.2.00.1004121508290.3647@i5.linux-foundation.org>
-	<20100413093827.GA6954@liondog.tnic>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756778Ab0DNWCn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 18:02:43 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:9381 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935Ab0DNWCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 18:02:42 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEADbYxUurR7Hu/2dsb2JhbACbWHGjTpoJhQ0E
+X-IronPort-AV: E=Sophos;i="4.52,207,1270425600"; 
+   d="scan'208";a="515055862"
+Message-ID: <4BC63B7B.7000303@cisco.com>
+Date: Wed, 14 Apr 2010 18:02:35 -0400
+From: David VomLehn <dvomlehn@cisco.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux_arch@dvomlehn-lnx2.corp.sa.net, linux-kernel@vger.kernel.org,
+       maint_arch@dvomlehn-lnx2.corp.sa.net
+Subject: Re: [PATCH 1/23] Make register values available to panic notifiers
+References: <20100412060338.GA24296@dvomlehn-lnx2.corp.sa.net> <20100412145757.7d0297bb.akpm@linux-foundation.org>
+In-Reply-To: <20100412145757.7d0297bb.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent anon_vma fixes cause many anonymous pages to end up
-in the parent process anon_vma, even when the page is exclusively
-owned by the current process.
+Andrew Morton wrote:
+> On Sun, 11 Apr 2010 23:03:38 -0700
+> David VomLehn <dvomlehn@cisco.com> wrote:
+>
+>   
+>> This patch makes panic() and die() registers available to, for example,
+>> panic notifier functions.  Panic notifier functions are quite useful
+>> for recording crash information, but they don't get passed the register
+>> values. This makes it hard to print register contents, do stack
+>> backtraces, etc. The changes in this patch save the register state when
+>> panic() is called and introduce a function for die() to call that allows
+>> it to pass in the registers it was passed.
+>>
+>> Following this patch are more patches, one per architecture. These include
+>> two types of changes:
+>> o  A save_ptregs() function for the processor. I've taken a whack at
+>>    doing this for all of the processors. I have tested x86 and MIPS
+>>    versions. I was able to find cross compilers for ARM, ... and the
+>>    code compiles cleanly. Everything else, well, what you see is sheer
+>>    fantasy. You are welcome to chortle with merriment.
+>> o  When I could figure it out, I replaced the calls to panic() in
+>>    exception handling functions with calls to panic_with_regs() so
+>>    that everyone can leverage these changes without much effort. Again,
+>>    not all the code was transparent, so there are likely some places
+>>    that should have additional work done.
+>>
+>> Note that the pointer to the struct pt_regs may be NULL. This is to
+>> accomodate those processors which don't have a working save_ptregs(). I'd
+>> love to eliminate this case by providing a save_ptregs() for all
+>> architectures, but I'll need help to so.
+>>
+>>     
+>
+> It would make life easier if you could describe (or send) a means by
+> which arch maintainers can easily test these changes.
+>   
+Great idea. It should be pretty easy to brew up an LKM to do this.
+>> --- a/kernel/panic.c
+>> +++ b/kernel/panic.c
+>>
+>> ...
+>>
+>> +/* Registers stored in calls to panic() */
+>> +static DEFINE_PER_CPU(struct pt_regs, panic_panic_regs);
+>> +static DEFINE_PER_CPU(const struct pt_regs *, panic_regs);
+>> +
+>> +/**
+>> + * get_panic_regs - return the current pointer to panic register values
+>> + */
+>> +const struct pt_regs *get_panic_regs()
+>> +{
+>> +	return __get_cpu_var(panic_regs);
+>> +}
+>> +EXPORT_SYMBOL(get_panic_regs);
+>> +
+>> +/**
+>> + * set_panic_regs - Set a pointer to the values of registers on panic()
+>> + * @new_regs:	Pointer to register values
+>> + *
+>> + * Returns: Pointer to the previous panic registers, if any.
+>> + */
+>> +const struct pt_regs *set_panic_regs(const struct pt_regs *new_regs)
+>> +{
+>> +	const struct pt_regs *old_regs, **pp_regs;
+>> +
+>> +	pp_regs = &__get_cpu_var(panic_regs);
+>> +	old_regs = *pp_regs;
+>> +	*pp_regs = new_regs;
+>> +	return old_regs;
+>> +}
+>>     
+>
+> What's going on here?  We define storage for a set of pt_regs and also
+> storage for a set of pt_regs pointers, and provide the ability for
+> callers to rewrite the thing which the pt_regs*'s point at.
+>   
+It's a stack of pt_regs. It's not on the processor's stack since that 
+would use a fair
+amount of memory. In this way, it is possible to construct code to handle
+nested exceptions. Since, on some processors, interrupts are handle the 
+same as
+other exceptions, so nested exceptions are fairly common. On the other hand,
+if the consensus is that this is not going to be used, I'm find with 
+just keeping
+around a pointer.
 
-Adding exclusively owned anonymous pages to the top anon_vma
-reduces rmap scanning overhead, especially in workloads with
-forking servers.
-
-This patch adds a parameter to __page_set_anon_rmap that can
-be used to indicate whether or not the added page is exclusively
-owned by the current process.
-
-Pages added through page_add_new_anon_rmap are exclusively
-owned by the current process, and can be added to the top
-anon_vma.
-
-Pages added through page_add_anon_rmap can be either shared
-or exclusively owned, so we do the conservative thing and
-add it to the oldest anon_vma.
-
-A next step would be to add the exclusive parameter to
-page_add_anon_rmap, to be used from functions where we do
-know for sure whether a page is exclusively owned.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
-Borislav, I audited the code before making this change, but would
-still appreciate your testing of this patch :)
-
-Linus, once this patch survives Borislav's testing, I'll start
-looking at the next step. I'd like to do things one step at a
-time so I won't cause another regression...
-
- mm/rmap.c |   30 +++++++++++++++++++-----------
- 1 files changed, 19 insertions(+), 11 deletions(-)
-
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 4bad326..12ac0f1 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -730,23 +730,31 @@ void page_move_anon_rmap(struct page *page,
-  * @page:	the page to add the mapping to
-  * @vma:	the vm area in which the mapping is added
-  * @address:	the user virtual address mapped
-+ * @exclusive:  the page is exclusively owned by the current process
-  */
- static void __page_set_anon_rmap(struct page *page,
--	struct vm_area_struct *vma, unsigned long address)
-+	struct vm_area_struct *vma, unsigned long address, int exclusive)
- {
- 	struct anon_vma_chain *avc;
- 	struct anon_vma *anon_vma;
- 
- 	BUG_ON(!vma->anon_vma);
- 
--	/*
--	 * We must use the _oldest_ possible anon_vma for the page mapping!
--	 *
--	 * So take the last AVC chain entry in the vma, which is the deepest
--	 * ancestor, and use the anon_vma from that.
--	 */
--	avc = list_entry(vma->anon_vma_chain.prev, struct anon_vma_chain, same_vma);
--	anon_vma = avc->anon_vma;
-+	if (exclusive)
-+		anon_vma = vma->anon_vma;
-+	else {
-+		/*
-+		 * The page may be shared between multiple processes.
-+		 * We must use the _oldest_ possible anon_vma for the
-+		 * page mapping!  That anon_vma is guaranteed to be
-+		 * present in all processes that could share this page.
-+		 *
-+		 * So take the last AVC chain entry in the vma, which is the
-+		 * deepest ancestor, and use the anon_vma from that.
-+		 */
-+		avc = list_entry(vma->anon_vma_chain.prev, struct anon_vma_chain, same_vma);
-+		anon_vma = avc->anon_vma;
-+	}
- 
- 	anon_vma = (void *) anon_vma + PAGE_MAPPING_ANON;
- 	page->mapping = (struct address_space *) anon_vma;
-@@ -802,7 +810,7 @@ void page_add_anon_rmap(struct page *page,
- 	VM_BUG_ON(!PageLocked(page));
- 	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
- 	if (first)
--		__page_set_anon_rmap(page, vma, address);
-+		__page_set_anon_rmap(page, vma, address, 0);
- 	else
- 		__page_check_anon_rmap(page, vma, address);
- }
-@@ -824,7 +832,7 @@ void page_add_new_anon_rmap(struct page *page,
- 	SetPageSwapBacked(page);
- 	atomic_set(&page->_mapcount, 0); /* increment count (starts at -1) */
- 	__inc_zone_page_state(page, NR_ANON_PAGES);
--	__page_set_anon_rmap(page, vma, address);
-+	__page_set_anon_rmap(page, vma, address, 1);
- 	if (page_evictable(page, vma))
- 		lru_cache_add_lru(page, LRU_ACTIVE_ANON);
- 	else
-
+It should be possible to have an interface which doesn't preclude 
+pt_regs stacks
+but which is simpler, so I'll shoot for that.
+> Seems complex.  Why not simply provide a set of pt_regs and permit
+> callers to copy their own pt_regs sets into that area?
+>   
+I was trying to avoid overflowing the panic-time stack with pt_regs. My 
+32-bit
+MIPS pt_regs is around 160 bytes. I think the 64-bit MIPS pt_regs is about
+twice that. That's enough that it gave me pause. But other points of 
+view would
+be helpful.
+> Secondly, this code implicitly assumes that the panicing code is pinned
+> to the panicing CPU and cannot be preempted and migrated to a different
+> CPU.  Is that true - do we take steps to ensure this anywhere?
+>   
+The get_panic_regs() functions is intended to be called only from panic 
+notifier
+functions. In the patch, these are now called from vpanic_with_regs, which
+is called from panic() and panic_with_regs(), both of which disable
+preemption, so I think the code won't slip off the right processor. Assuming
+that's right, I can make it clearer that get_panic_regs() should only be
+called from a panic notifier function. Enforcing such a restriction from
+a panic notifier function seems fruitless--what would I do, panic?
+> Thirdly and relatedly, the code assumes that callers have disabled
+> preemption (otherwise __get_cpu_var->smp_processor_id() will whine). 
+> Where does this get reliably assured?
+>   
+I think this is covered above, with the caveat that it really has to be 
+plain
+that you shouldn't call get_panic_regs() unless you are in a panic notifier
+function.
+--
+David VL
