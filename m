@@ -1,144 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab0DNKGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 06:06:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33088 "EHLO hera.kernel.org"
+	id S1755033Ab0DNKHq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 06:07:46 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53031 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755201Ab0DNKGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 06:06:45 -0400
-Date: Wed, 14 Apr 2010 10:06:28 GMT
-From: tip-bot for Tom Zanussi <tzanussi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       tzanussi@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tzanussi@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1270184365-8281-12-git-send-email-tzanussi@gmail.com>
-References: <1270184365-8281-12-git-send-email-tzanussi@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/live] perf trace: Invoke live mode automatically if record/report not specified
-Message-ID: <tip-a0cccc2e8e9fb16cbed3a117b30e3fbac3092ee3@git.kernel.org>
-Git-Commit-ID: a0cccc2e8e9fb16cbed3a117b30e3fbac3092ee3
-X-Mailer: tip-git-log-daemon
+	id S1754613Ab0DNKHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 06:07:44 -0400
+Date: Wed, 14 Apr 2010 11:07:24 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-ID: <20100414100724.GK25756@csn.ul.ie>
+References: <20100414135945.2b0a1e0d.kamezawa.hiroyu@jp.fujitsu.com> <20100414054144.GH2493@dastard> <20100414145056.D147.A69D9226@jp.fujitsu.com> <y2x28c262361004132313r1e2ca71frd042d5460d897730@mail.gmail.com> <w2u28c262361004140019pd8fe696ez609ece4a35527658@mail.gmail.com> <20100414184213.f6bf11a7.kamezawa.hiroyu@jp.fujitsu.com> <q2m28c262361004140301jba94a025nda755c1df2e04155@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Apr 2010 10:06:28 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <q2m28c262361004140301jba94a025nda755c1df2e04155@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a0cccc2e8e9fb16cbed3a117b30e3fbac3092ee3
-Gitweb:     http://git.kernel.org/tip/a0cccc2e8e9fb16cbed3a117b30e3fbac3092ee3
-Author:     Tom Zanussi <tzanussi@gmail.com>
-AuthorDate: Thu, 1 Apr 2010 23:59:25 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 14 Apr 2010 11:56:09 +0200
+On Wed, Apr 14, 2010 at 07:01:47PM +0900, Minchan Kim wrote:
+> >> >>> > Dave Chinner <david@fromorbit.com> wrote:
+> >> >>> >
+> >> >>> > >  50)     3168      64   xfs_vm_writepage+0xab/0x160 [xfs]
+> >> >>> > >  51)     3104     384   shrink_page_list+0x65e/0x840
+> >> >>> > >  52)     2720     528   shrink_zone+0x63f/0xe10
+> >> >>> >
+> >> >>> > A bit OFF TOPIC.
+> >> >>> >
+> >> >>> > Could you share disassemble of shrink_zone() ?
+> >> >>> >
+> >> >>> > In my environ.
+> >> >>> > 00000000000115a0 <shrink_zone>:
+> >> >>> >    115a0:       55                      push   %rbp
+> >> >>> >    115a1:       48 89 e5                mov    %rsp,%rbp
+> >> >>> >    115a4:       41 57                   push   %r15
+> >> >>> >    115a6:       41 56                   push   %r14
+> >> >>> >    115a8:       41 55                   push   %r13
+> >> >>> >    115aa:       41 54                   push   %r12
+> >> >>> >    115ac:       53                      push   %rbx
+> >> >>> >    115ad:       48 83 ec 78             sub    $0x78,%rsp
+> >> >>> >    115b1:       e8 00 00 00 00          callq  115b6 <shrink_zone+0x16>
+> >> >>> >    115b6:       48 89 75 80             mov    %rsi,-0x80(%rbp)
+> >> >>> >
+> >> >>> > disassemble seems to show 0x78 bytes for stack. And no changes to %rsp
+> >> >>> > until retrun.
+> >> >>>
+> >> >>> I see the same. I didn't compile those kernels, though. IIUC,
+> >> >>> they were built through the Ubuntu build infrastructure, so there is
+> >> >>> something different in terms of compiler, compiler options or config
+> >> >>> to what we are both using. Most likely it is the compiler inlining,
+> >> >>> though Chris's patches to prevent that didn't seem to change the
+> >> >>> stack usage.
+> >> >>>
+> >> >>> I'm trying to get a stack trace from the kernel that has shrink_zone
+> >> >>> in it, but I haven't succeeded yet....
+> >> >>
+> >> >> I also got 0x78 byte stack usage. Umm.. Do we discussed real issue now?
+> >> >>
+> >> >
+> >> > In my case, 0x110 byte in 32 bit machine.
+> >> > I think it's possible in 64 bit machine.
+> >> >
+> >> > 00001830 <shrink_zone>:
+> >> >    1830:       55                      push   %ebp
+> >> >    1831:       89 e5                   mov    %esp,%ebp
+> >> >    1833:       57                      push   %edi
+> >> >    1834:       56                      push   %esi
+> >> >    1835:       53                      push   %ebx
+> >> >    1836:       81 ec 10 01 00 00       sub    $0x110,%esp
+> >> >    183c:       89 85 24 ff ff ff       mov    %eax,-0xdc(%ebp)
+> >> >    1842:       89 95 20 ff ff ff       mov    %edx,-0xe0(%ebp)
+> >> >    1848:       89 8d 1c ff ff ff       mov    %ecx,-0xe4(%ebp)
+> >> >    184e:       8b 41 04                mov    0x4(%ecx)
+> >> >
+> >> > my gcc is following as.
+> >> >
+> >> > barrios@barriostarget:~/mmotm$ gcc -v
+> >> > Using built-in specs.
+> >> > Target: i486-linux-gnu
+> >> > Configured with: ../src/configure -v --with-pkgversion='Ubuntu
+> >> > 4.3.3-5ubuntu4'
+> >> > --with-bugurl=file:///usr/share/doc/gcc-4.3/README.Bugs
+> >> > --enable-languages=c,c++,fortran,objc,obj-c++ --prefix=/usr
+> >> > --enable-shared --with-system-zlib --libexecdir=/usr/lib
+> >> > --without-included-gettext --enable-threads=posix --enable-nls
+> >> > --with-gxx-include-dir=/usr/include/c++/4.3 --program-suffix=-4.3
+> >> > --enable-clocale=gnu --enable-libstdcxx-debug --enable-objc-gc
+> >> > --enable-mpfr --enable-targets=all --with-tune=generic
+> >> > --enable-checking=release --build=i486-linux-gnu --host=i486-linux-gnu
+> >> > --target=i486-linux-gnu
+> >> > Thread model: posix
+> >> > gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4)
+> >> >
+> >> >
+> >> > Is it depends on config?
+> >> > I attach my config.
+> >>
+> >> I changed shrink list by noinline_for_stack.
+> >> The result is following as.
+> >>
+> >>
+> >> 00001fe0 <shrink_zone>:
+> >>     1fe0:       55                      push   %ebp
+> >>     1fe1:       89 e5                   mov    %esp,%ebp
+> >>     1fe3:       57                      push   %edi
+> >>     1fe4:       56                      push   %esi
+> >>     1fe5:       53                      push   %ebx
+> >>     1fe6:       83 ec 4c                sub    $0x4c,%esp
+> >>     1fe9:       89 45 c0                mov    %eax,-0x40(%ebp)
+> >>     1fec:       89 55 bc                mov    %edx,-0x44(%ebp)
+> >>     1fef:       89 4d b8                mov    %ecx,-0x48(%ebp)
+> >>
+> >> 0x110 -> 0x4c.
+> >>
+> >> Should we have to add noinline_for_stack for shrink_list?
+> >>
+> >
+> > Hmm. about shirnk_zone(), I don't think uninlining functions directly called
+> > by shrink_zone() can be a help.
+> > Total stack size of call-chain will be still big.
+> 
+> Absolutely.
+> But above 500 byte usage is one of hogger and uninlining is not
+> critical about reclaim performance. So I think we don't get any lost
+> than gain.
+> 
 
-perf trace: Invoke live mode automatically if record/report not specified
+Beat in mind that uninlining can slightly increase the stack usage in some
+cases because arguments, return addresses and the like have to be pushed
+onto the stack. Inlining or unlining is only the answer when it reduces the
+number of stack variables that exist at any given time.
 
-Currently, live mode is invoked by explicitly invoking the
-record and report sides and connecting them with a pipe e.g.
+> But I don't get in a hurry. adhoc approach is not good.
+> I hope when Mel tackles down consumption of stack in reclaim path, he
+> modifies this part, too.
+> 
 
- $ perf trace record rwtop -o - | perf trace report rwtop 5 -i -
+It'll be at least two days before I get the chance to try. A lot of the
+temporary variables used in the reclaim path have existed for some time so
+it will take a while.
 
-In terms of usability, it's not that bad, but it does require
-the user to type and remember more than necessary.
-
-This patch allows the user to accomplish the same thing without
-specifying the separate record/report steps or the pipe.  So the
-same command as above can be accomplished more simply as:
-
- $ perf trace rwtop 5
-
-Notice that the '-i -' and '-o -' aren't required in this case -
-they're added internally, and that any extra arguments are
-passed along to the report script (but not to the record
-script).
-
-The overall effect is that any of the scripts listed in 'perf
-trace -l' can now be used directly in live mode, with the
-expected arguments, by simply specifying the script and args to
-'perf trace'.
-
-Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: fweisbec@gmail.com
-Cc: rostedt@goodmis.org
-Cc: k-keiichi@bx.jp.nec.com
-Cc: acme@ghostprotocols.net
-LKML-Reference: <1270184365-8281-12-git-send-email-tzanussi@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- tools/perf/builtin-trace.c |   59 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 59 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 1ee1e30..2eefb33 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -561,6 +561,65 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
- 		suffix = REPORT_SUFFIX;
- 	}
- 
-+	if (!suffix && argc >= 2 && strncmp(argv[1], "-", strlen("-")) != 0) {
-+		char *record_script_path, *report_script_path;
-+		int live_pipe[2];
-+		pid_t pid;
-+
-+		record_script_path = get_script_path(argv[1], RECORD_SUFFIX);
-+		if (!record_script_path) {
-+			fprintf(stderr, "record script not found\n");
-+			return -1;
-+		}
-+
-+		report_script_path = get_script_path(argv[1], REPORT_SUFFIX);
-+		if (!report_script_path) {
-+			fprintf(stderr, "report script not found\n");
-+			return -1;
-+		}
-+
-+		if (pipe(live_pipe) < 0) {
-+			perror("failed to create pipe");
-+			exit(-1);
-+		}
-+
-+		pid = fork();
-+		if (pid < 0) {
-+			perror("failed to fork");
-+			exit(-1);
-+		}
-+
-+		if (!pid) {
-+			dup2(live_pipe[1], 1);
-+			close(live_pipe[0]);
-+
-+			__argv = malloc(5 * sizeof(const char *));
-+			__argv[0] = "/bin/sh";
-+			__argv[1] = record_script_path;
-+			__argv[2] = "-o";
-+			__argv[3] = "-";
-+			__argv[4] = NULL;
-+
-+			execvp("/bin/sh", (char **)__argv);
-+			exit(-1);
-+		}
-+
-+		dup2(live_pipe[0], 0);
-+		close(live_pipe[1]);
-+
-+		__argv = malloc((argc + 3) * sizeof(const char *));
-+		__argv[0] = "/bin/sh";
-+		__argv[1] = report_script_path;
-+		for (i = 2; i < argc; i++)
-+			__argv[i] = argv[i];
-+		__argv[i++] = "-i";
-+		__argv[i++] = "-";
-+		__argv[i++] = NULL;
-+
-+		execvp("/bin/sh", (char **)__argv);
-+		exit(-1);
-+	}
-+
- 	if (suffix) {
- 		script_path = get_script_path(argv[2], suffix);
- 		if (!script_path) {
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
