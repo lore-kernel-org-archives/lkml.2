@@ -1,405 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab0DNWeh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 18:34:37 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:59544 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969Ab0DNWef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 18:34:35 -0400
-Date: Thu, 15 Apr 2010 00:34:29 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: =?iso-8859-1?Q?=C9ric?= Piel <E.A.B.Piel@tudelft.nl>
-Cc: Alan Cox <alan@linux.intel.com>, linux-i2c@vger.kernel.org,
-       khali@linux-fr.org, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] liss331d1: accelerometer driver
-Message-ID: <20100414223429.GW30807@buzzloop.caiaq.de>
-References: <20100414124913.23181.75903.stgit@localhost.localdomain>
- <20100414125155.23181.56610.stgit@localhost.localdomain>
- <4BC63DC5.8040501@tudelft.nl>
+	id S1757055Ab0DNWh5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 18:37:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55002 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755074Ab0DNWhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 18:37:55 -0400
+Date: Thu, 15 Apr 2010 00:37:35 +0200 (CEST)
+From: John Kacur <jkacur@redhat.com>
+X-X-Sender: jkacur@localhost.localdomain
+To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+cc: Thomas Gleixner <tglx@linutronix.de>,
+       "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+       Clark Williams <williams@redhat.com>, linux-rt-users@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>
+Subject: [RT:PATCH] tracing/x86: Add check to GCC messing with  mcount
+ prologue
+Message-ID: <alpine.LFD.2.00.1004150028170.14487@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4BC63DC5.8040501@tudelft.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 12:12:21AM +0200, Éric Piel wrote:
-> Op 14-04-10 14:52, Alan Cox schreef:
-> > From: Kalhan Trisal <kalhan.trisal@intel.com>
-> > 
-> > The acceleremeter driver reads the x,y,z coordinate registers and provides
-> > the information to user through the input layer
-> > 
-> > Conversion to input device, clean up and porting of retry fixes needed
-> > for AAVA done by Alan Cox.
-> Hello,
-> 
-> I wouldn't want to be too picky, if this driver works fine with your
-> hardware and it's tested, why not, but from looking at the spec of this
-> chip (and at the code of this driver), it looks like it could be
-> completely compatible with the lis3lv02d driver (with lis3lv02d_i2c).
-> Same registers, including the WHO_AM_I register which returns 0x3B
-> (which is a supported version).
-> 
-> Have you tried and there were some specific incompatibilities? To me, it
-> looks like the only thing not in the lis3lv02d is the read with multiple
-> retries, and it could be easily added if necessary for your hardware.
 
-Yes, that would be better. Also because there's also a SPI version of
-the lis331dl. If support for this chip would be incorporated in the
-existing driver, they would automatically be supported as well.
+This patch is originally from Steven Rostedt.
+I cherry-picked it from his git repo, and ported it to v2.6.33.2-rt13
+by fixing up the merge conflicts.
 
-Daniel
+The immediate importance of this, is that it restores the function_graph 
+tracer to 32-bit x86, for real-time.
+
+I have done some light testing on 32-bit x86, but it could use some more
+testing everywhere. After that I hope that Thomas will pick it up for the
+next 2.6.33.2-rtN release.
+
+I have done this for real-time purposes, but Steven's patch was intended
+for the mainline kernel, so maybe some testing in -rt would convince
+folks to pick it up for mainline as well, if it isn't already queued up.
+
+John Kacur
 
 
-> > Signed-off-by: Kalhan Trisal <kalhan.trisal@intel.com>
-> > Signed-off-by: Alan Cox <alan@linux.intel.com>
-> > ---
-> > 
-> >  drivers/hwmon/Kconfig    |    8 +
-> >  drivers/hwmon/Makefile   |    1 
-> >  drivers/hwmon/lis331dl.c |  286 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 295 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/hwmon/lis331dl.c
-> > 
-> > 
-> > diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> > index 1fa2533..6868b9d 100644
-> > --- a/drivers/hwmon/Kconfig
-> > +++ b/drivers/hwmon/Kconfig
-> > @@ -1104,6 +1104,14 @@ config SENSORS_ISL29020
-> >  	  Range values can be configured using sysfs.
-> >  	  Lux data is accessible via sysfs.
-> >  
-> > +config SENSORS_LIS331DL
-> > +	tristate "STMicroeletronics LIS331DL three-axis digital accelerometer"
-> > +	depends on I2C
-> > +	help
-> > +	  If you say yes here you get support for the Accelerometer  Devices
-> > +	  Device can be configured using sysfs.
-> > +	  x y Z data can be   accessible via sysfs.
-> > +
-> >  if ACPI
-> >  
-> >  comment "ACPI drivers"
-> > diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-> > index 13d6832..ebeb2a2 100644
-> > --- a/drivers/hwmon/Makefile
-> > +++ b/drivers/hwmon/Makefile
-> > @@ -60,6 +60,7 @@ obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
-> >  obj-$(CONFIG_SENSORS_LIS3LV02D) += lis3lv02d.o hp_accel.o
-> >  obj-$(CONFIG_SENSORS_LIS3_SPI)	+= lis3lv02d.o lis3lv02d_spi.o
-> >  obj-$(CONFIG_SENSORS_LIS3_I2C)	+= lis3lv02d.o lis3lv02d_i2c.o
-> > +obj-$(CONFIG_SENSORS_LIS331DL)	+= lis331dl.o
-> >  obj-$(CONFIG_SENSORS_LM63)	+= lm63.o
-> >  obj-$(CONFIG_SENSORS_LM70)	+= lm70.o
-> >  obj-$(CONFIG_SENSORS_LM73)	+= lm73.o
-> > diff --git a/drivers/hwmon/lis331dl.c b/drivers/hwmon/lis331dl.c
-> > new file mode 100644
-> > index 0000000..34009eb
-> > --- /dev/null
-> > +++ b/drivers/hwmon/lis331dl.c
-> > @@ -0,0 +1,286 @@
-> > +/*
-> > + * lis331dl.c - ST LIS331DL  Accelerometer Driver
-> > + *
-> > + * Copyright (C) 2009 Intel Corp
-> > + *
-> > + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License as published by
-> > + * the Free Software Foundation; version 2 of the License.
-> > + *
-> > + * This program is distributed in the hope that it will be useful, but
-> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-> > + * General Public License for more details.
-> > + *
-> > + * You should have received a copy of the GNU General Public License along
-> > + * with this program; if not, write to the Free Software Foundation, Inc.,
-> > + * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-> > + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> > + *
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/init.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/i2c.h>
-> > +#include <linux/err.h>
-> > +#include <linux/delay.h>
-> > +#include <linux/mutex.h>
-> > +#include <linux/sysfs.h>
-> > +#include <linux/input-polldev.h>
-> > +
-> > +
-> > +#define POLL_INTERVAL	50
-> > +
-> > +struct lis331dl {
-> > +	struct input_polled_dev *idev;
-> > +	struct i2c_client *client;
-> > +	struct mutex update_lock;
-> > +};
-> > +
-> > +static ssize_t data_rate_show(struct device *dev,
-> > +			struct device_attribute *attr, char *buf)
-> > +{
-> > +	struct i2c_client *client = to_i2c_client(dev);
-> > +	int val;
-> > +	int speed = 100;
-> > +
-> > +	val = i2c_smbus_read_byte_data(client, 0x20);
-> > +	if (val & 0x80); /* 1= 400HZ 0= 100HZ */
-> > +		speed = 400;
-> > +	return sprintf(buf, "%d\n", speed);
-> > +}
-> > +
-> > +static ssize_t power_mode_show(struct device *dev,
-> > +			struct device_attribute *attr, char *buf)
-> > +{
-> > +	struct i2c_client *client = to_i2c_client(dev);
-> > +	int val;
-> > +
-> > +	val = i2c_smbus_read_byte_data(client, 0x20) & 0x40;
-> > +	if (val == 0x40)
-> > +		val = 1;
-> > +	return sprintf(buf, "%d\n", val);
-> > +}
-> > +
-> > +static int read_with_retries(struct i2c_client *client, int r)
-> > +{
-> > +	int retries;
-> > +	int ret;
-> > +	
-> > +	for (retries = 0; retries < 5; retries++) {
-> > +		ret = i2c_smbus_read_byte_data(client, r);
-> > +		if (ret != -ETIMEDOUT)
-> > +			break;
-> > +		msleep(10);
-> > +	}
-> > +	return ret;
-> > +}
-> > +
-> > +static void lis331dl_poll(struct input_polled_dev *idev)
-> > +{
-> > +	struct input_dev *input = idev->input;
-> > +	struct lis331dl *data = idev->private;
-> > +	int x, y, z;
-> > +	struct i2c_client *client = data->client;
-> > +
-> > +	x = read_with_retries(client, 0x29);
-> > +	y = read_with_retries(client, 0x2B);
-> > +	z = read_with_retries(client, 0x2D);
-> > +
-> > +	input_report_abs(input, ABS_X, x);
-> > +	input_report_abs(input, ABS_Y, y);
-> > +	input_report_abs(input, ABS_Z, z);
-> > +	input_sync(input);
-> > +}
-> > +
-> > +static ssize_t data_rate_store(struct device *dev,
-> > +		struct device_attribute *attr, const char *buf, size_t count)
-> > +{
-> > +	struct i2c_client *client = to_i2c_client(dev);
-> > +	struct lis331dl *data = i2c_get_clientdata(client);
-> > +	unsigned int ret_val;
-> > +	unsigned long val;
-> > +
-> > +	if (strict_strtoul(buf, 10, &val))
-> > +		return -EINVAL;
-> > +
-> > +	mutex_lock(&data->update_lock);
-> > +
-> > +	ret_val = i2c_smbus_read_byte_data(client, 0x20);
-> > +	ret_val &= 0x7F;
-> > +
-> > +	switch (val) {
-> > +	case 400:
-> > +		ret_val |= 0x80;
-> > +	case 100:
-> > +		i2c_smbus_write_byte_data(client, 0x20, ret_val);
-> > +		break;
-> > +	default:		
-> > +		mutex_unlock(&data->update_lock);
-> > +		return -EINVAL;
-> > +	}
-> > +	mutex_unlock(&data->update_lock);
-> > +	return count;
-> > +}
-> > +
-> > +static ssize_t power_mode_store(struct device *dev,
-> > +		struct device_attribute *attr, const  char *buf, size_t count)
-> > +{
-> > +	struct i2c_client *client = to_i2c_client(dev);
-> > +	struct lis331dl *data = i2c_get_clientdata(client);
-> > +	unsigned int ret_val;
-> > +	unsigned long val;
-> > +
-> > +	if (strict_strtoul(buf, 10, &val))
-> > +		return -EINVAL;
-> > +
-> > +	mutex_lock(&data->update_lock);
-> > +
-> > +	ret_val = i2c_smbus_read_byte_data(client, 0x20);
-> > +	ret_val &= 0xBF;
-> > +	
-> > +	switch(val) {
-> > +	case 1:
-> > +		ret_val |= 0x40;
-> > +	case 0:
-> > +		i2c_smbus_write_byte_data(client, 0x20, ret_val);
-> > +		break;
-> > +	default:
-> > +		mutex_unlock(&data->update_lock);
-> > +		return -EINVAL;
-> > +	}
-> > +	mutex_unlock(&data->update_lock);
-> > +	return count;
-> > +}
-> > +
-> > +static DEVICE_ATTR(data_rate, S_IRUGO | S_IWUSR,
-> > +	data_rate_show, data_rate_store);
-> > +static DEVICE_ATTR(power_state, S_IRUGO | S_IWUSR,
-> > +	power_mode_show, power_mode_store);
-> > +
-> > +static struct attribute *mid_att_accelero[] = {
-> > +	&dev_attr_data_rate.attr,
-> > +	&dev_attr_power_state.attr,
-> > +	NULL
-> > +};
-> > +
-> > +static struct attribute_group m_accelero_gr = {
-> > +	.name = "lis331dl",
-> > +	.attrs = mid_att_accelero
-> > +};
-> > +
-> > +static void accel_set_default_config(struct i2c_client *client)
-> > +{
-> > +	i2c_smbus_write_byte_data(client, 0x20, 0x47);
-> > +}
-> > +
-> > +static int  lis331dl_probe(struct i2c_client *client,
-> > +					const struct i2c_device_id *id)
-> > +{
-> > +	int res;
-> > +	struct lis331dl *data;
-> > +	struct input_polled_dev *idev;
-> > +	struct input_dev *input;
-> > +
-> > +	data = kzalloc(sizeof(struct lis331dl), GFP_KERNEL);
-> > +	if (data == NULL) {
-> > +		dev_err(&client->dev, "lis331dl: out of memory\n");
-> > +		return -ENOMEM;
-> > +	}
-> > +	mutex_init(&data->update_lock);
-> > +	i2c_set_clientdata(client, data);
-> > +	data->client = client;
-> > +
-> > +	res = sysfs_create_group(&client->dev.kobj, &m_accelero_gr);
-> > +	if (res) {
-> > +		dev_err(&client->dev, "lis331dl: sysfs  group failed\n");
-> > +		goto accelero_error1;
-> > +	}
-> > +	idev = input_allocate_polled_device();
-> > +	if (!idev) {
-> > +		res = -ENOMEM;
-> > +		dev_err(&client->dev,
-> > +			"lis331dl: unable to register input device\n");
-> > +		goto accelero_error2;
-> > +	}
-> > +	idev->poll = lis331dl_poll;
-> > +	idev->poll_interval = POLL_INTERVAL;
-> > +
-> > +	idev->private = data;
-> > +	data->idev =  idev;
-> > +
-> > +	input = idev->input;
-> > +	input->name = "lis331dl";
-> > +	input->phys = "lis331dl/input0";
-> > +	input->id.bustype = BUS_I2C;
-> > +	input->dev.parent = &client->dev;
-> > +	input->evbit[0] = BIT_MASK(EV_ABS);
-> > +	input_set_abs_params(input, ABS_X, 0, 255, 2, 2);
-> > +	input_set_abs_params(input, ABS_Y, 0, 255, 2, 2);
-> > +	input_set_abs_params(input, ABS_Z, 0, 255, 2, 2);
-> > +
-> > +	res = input_register_polled_device(idev);
-> > +	if (res == 0) {
-> > +		dev_info(&client->dev,
-> > +			"%s lis331dl:  Accelerometer chip found",
-> > +							client->name);
-> > +		return 0;
-> > +	}
-> > +	input_free_polled_device(idev);
-> > +accelero_error2:
-> > +	sysfs_remove_group(&client->dev.kobj, &m_accelero_gr);
-> > +accelero_error1:
-> > +	i2c_set_clientdata(client, NULL);
-> > +	kfree(data);
-> > +	return res;
-> > +}
-> > +
-> > +static int lis331dl_remove(struct i2c_client *client)
-> > +{
-> > +	struct lis331dl *data = i2c_get_clientdata(client);
-> > +
-> > +	input_unregister_polled_device(data->idev);
-> > +	input_free_polled_device(data->idev);
-> > +	sysfs_remove_group(&client->dev.kobj, &m_accelero_gr);
-> > +	kfree(data);
-> > +	return 0;
-> > +}
-> > +
-> > +static struct i2c_device_id lis331dl_id[] = {
-> > +	{ "i2c_accel", 0 },
-> > +	{ }
-> > +};
-> > +
-> > +MODULE_DEVICE_TABLE(i2c, lis331dl_id);
-> > +
-> > +static struct i2c_driver lis331dl_driver = {
-> > +	.driver = {
-> > +	.name = "lis331dl",
-> > +	},
-> > +	.probe = lis331dl_probe,
-> > +	.remove = lis331dl_remove,
-> > +	.id_table = lis331dl_id,
-> > +};
-> > +
-> > +static int __init sensor_lis331dl_init(void)
-> > +{
-> > +	int res;
-> > +
-> > +	res = i2c_add_driver(&lis331dl_driver);
-> > +	return res;
-> > +}
-> > +
-> > +static void  __exit sensor_lis331dl_exit(void)
-> > +{
-> > +	i2c_del_driver(&lis331dl_driver);
-> > +}
-> > +
-> > +module_init(sensor_lis331dl_init);
-> > +module_exit(sensor_lis331dl_exit);
-> > +
-> > +MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com>, Alan Cox");
-> > +MODULE_DESCRIPTION("STMicroelectronics LIS331DL Accelerometer Driver");
-> > +MODULE_LICENSE("GPL v2");
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>From 8f31a8a1cc4f1ee54ad673318954b118e55aca31 Mon Sep 17 00:00:00 2001
+From: Steven Rostedt <srostedt@redhat.com>
+Date: Thu, 19 Nov 2009 23:41:02 -0500
+Subject: [PATCH] tracing/x86: Add check to detect GCC messing with mcount prologue
+
+Latest versions of GCC create a funny prologue for some functions.
+Instead of the typical:
+
+		push   %ebp
+		mov    %esp,%ebp
+		and    $0xffffffe0,%esp
+		[...]
+		call   mcount
+
+GCC may try to align the stack before setting up the frame pointer
+register:
+
+		push   %edi
+		lea    0x8(%esp),%edi
+		and    $0xffffffe0,%esp
+		pushl  -0x4(%edi)
+		push   %ebp
+		mov    %esp,%ebp
+		[...]
+		call   mcount
+
+This crazy code places a copy of the return address into the
+frame pointer. The function graph tracer uses this pointer to
+save and replace the return address of the calling function to jump
+to the function graph tracer's return handler, which will put back
+the return address. But instead instead of the typical return:
+
+		mov    %ebp,%esp
+		pop    %ebp
+		ret
+
+The return of the function performs:
+
+		lea    -0x8(%edi),%esp
+		pop    %edi
+		ret
+
+The function graph tracer return handler will not be called at the exit
+of the function, but the parent function will call it. Because we missed
+the return of the child function, the handler will replace the parent's
+return address with that of the child. Obviously this will cause a crash
+(Note, there is code to detect this case and safely panic the kernel).
+
+The kicker is that this happens to just a handful of functions.
+And only with certain gcc options.
+
+Compiling with: 	-march=pentium-mmx
+will cause the problem to appear. But if you were to change
+pentium-mmx to i686 or add -mtune=generic, then the problem goes away.
+
+I first saw this problem when compiling with optimize for size.
+But it seems that various other options may cause this issue to arise.
+
+Instead of completely disabling the function graph tracer for i386 builds
+this patch adds a check to recordmcount.pl to make sure that all
+functions that contain a call to mcount start with "push %ebp".
+If not, it will fail the compile and print out the nasty warning:
+
+  CC      kernel/time/timer_stats.o
+
+********************************************************
+  Your version of GCC breaks the function graph tracer
+  Please disable CONFIG_FUNCTION_GRAPH_TRACER
+  Failed function was "timer_stats_update_stats"
+********************************************************
+
+The script recordmcount.pl is given a new parameter "do_check". If
+this is negative, the script will only perform this check without
+creating the mcount caller section. This will be executed for x86_32
+when CONFIG_FUNCTION_GRAPH_TRACER is enabled and CONFIG_DYNAMIC_FTRACE
+is not.
+
+If the arch is x86_32 and $do_check is greater than 1, it will perform
+the check while processing the mcount callers. If $do_check is 0, then
+no check will be performed. This is for non x86_32 archs and when
+compiling without CONFIG_FUNCTION_GRAPH_TRACER enabled, even on x86_32.
+
+Reported-by: Thomas Gleixner <tglx@linutronix.de>
+LKML-Reference: <alpine.LFD.2.00.0911191423190.24119@localhost.localdomain>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Fixed merge conflicts when cherry-picking this for v2.6.33.2-rt13
+Signed-off-by: John Kacur <jkacur@redhat.com>
+---
+ kernel/trace/Kconfig    |    1 -
+ scripts/Makefile.build  |   25 +++++++++++++++-
+ scripts/recordmcount.pl |   72 +++++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 93 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index 7d57890..159ba62 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -141,7 +141,6 @@ config FUNCTION_GRAPH_TRACER
+ 	bool "Kernel Function Graph Tracer"
+ 	depends on HAVE_FUNCTION_GRAPH_TRACER
+ 	depends on FUNCTION_TRACER
+-	depends on !X86_32 || !CC_OPTIMIZE_FOR_SIZE
+ 	default y
+ 	help
+ 	  Enable the kernel to trace a function at both its return
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index 0b94d2f..6dfdc91 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -206,11 +206,34 @@ cmd_modversions =							\
+ endif
+ 
+ ifdef CONFIG_FTRACE_MCOUNT_RECORD
++
++ ifdef CONFIG_FUNCTION_GRAPH_TRACER
++  ifdef CONFIG_X86_32
++   rm_do_check = 1
++  else
++   rm_do_check = 0
++  endif
++ else
++  rm_do_check = 0
++ endif
++
+ cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
+ 	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
+ 	"$(if $(CONFIG_64BIT),64,32)" \
+ 	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC)" "$(LD)" "$(NM)" "$(RM)" "$(MV)" \
+-	"$(if $(part-of-module),1,0)" "$(@)";
++	"$(if $(part-of-module),1,0)" "$(rm_do_check)" "$(@)";
++
++else
++
++ ifdef CONFIG_X86_32
++ ifdef CONFIG_FUNCTION_GRAPH_TRACER
++   cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
++	"$(if $(CONFIG_64BIT),64,32)" \
++	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC)" "$(LD)" "$(NM)" "$(RM)" "$(MV)" \
++	"$(if $(part-of-module),1,0)" "-1" "$(@)";
++ endif
++ endif
++
+ endif
+ 
+ define rule_cc_o_c
+diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
+index ea6f6e3..22c4644 100755
+--- a/scripts/recordmcount.pl
++++ b/scripts/recordmcount.pl
+@@ -113,14 +113,14 @@ $P =~ s@.*/@@g;
+ 
+ my $V = '0.1';
+ 
+-if ($#ARGV != 11) {
+-	print "usage: $P arch endian bits objdump objcopy cc ld nm rm mv is_module inputfile\n";
++if ($#ARGV < 12) {
++	print "usage: $P arch endian bits objdump objcopy cc ld nm rm mv is_module do_check inputfile\n";
+ 	print "version: $V\n";
+ 	exit(1);
+ }
+ 
+ my ($arch, $endian, $bits, $objdump, $objcopy, $cc,
+-    $ld, $nm, $rm, $mv, $is_module, $inputfile) = @ARGV;
++    $ld, $nm, $rm, $mv, $is_module, $do_check, $inputfile) = @ARGV;
+ 
+ # This file refers to mcount and shouldn't be ftraced, so lets' ignore it
+ if ($inputfile =~ m,kernel/trace/ftrace\.o$,) {
+@@ -144,6 +144,60 @@ $nm = "nm" if ((length $nm) == 0);
+ $rm = "rm" if ((length $rm) == 0);
+ $mv = "mv" if ((length $mv) == 0);
+ 
++# gcc can do stupid things with the stack pointer on x86_32.
++# It may pass a copy of the return address to mcount, which will
++# break the function graph tracer. If this happens then we need
++# to flag it and break the build.
++#
++# For x86_32, the parameter do_check will be negative if we only
++# want to perform the check, and positive if we should od the check.
++# If function graph tracing is not enabled, do_check will be zero.
++#
++
++my $check_next_line = 0;
++my $line_failed = 0;
++my $last_function;
++
++sub test_x86_32_prologue
++{
++    if ($check_next_line) {
++	if (!/push\s*\%ebp/) {
++	    $line_failed = 1;
++	}
++    }
++
++    if ($line_failed && /mcount/) {
++	print STDERR "\n********************************************************\n";
++	print STDERR "  Your version of GCC breaks the function graph tracer\n";
++	print STDERR "  Please disable CONFIG_FUNCTION_GRAPH_TRACER\n";
++	print STDERR "  Failed function was \"$last_function\"\n";
++	print STDERR "********************************************************\n\n";
++	exit -1;
++    }
++    $check_next_line = 0;
++
++    # check the first line after a function starts for
++    #  push %ebp
++    if (/^[0-9a-fA-F]+\s+<([a-zA-Z_].*)>:$/) {
++	$last_function = $1;
++	$check_next_line = 1;
++	$line_failed = 0;
++    }
++}
++
++if ($do_check < 0) {
++    # Only perform the check and quit
++    open(IN, "$objdump -dr $inputfile|") || die "error running $objdump";
++
++    while (<IN>) {
++	test_x86_32_prologue;
++    }
++    close (IN);
++    exit 0;
++}
++
++my $check = 0;
++
+ #print STDERR "running: $P '$arch' '$objdump' '$objcopy' '$cc' '$ld' " .
+ #    "'$nm' '$rm' '$mv' '$inputfile'\n";
+ 
+@@ -202,6 +256,12 @@ if ($arch =~ /(x86(_64)?)|(i386)/) {
+     }
+ }
+ 
++if ($arch eq "i386") {
++    if ($do_check) {
++	$check = 1;
++    }
++}
++
+ #
+ # We base the defaults off of i386, the other archs may
+ # feel free to change them in the below if statements.
+@@ -470,6 +530,12 @@ while (<IN>) {
+ 	    "\tstill causes an issue, then disable CONFIG_DYNAMIC_FTRACE.\n";
+ 	exit(-1);
+     }
++    # x86_32 may need to test the start of every function to see
++    # if GCC did not mess up the mcount prologue. All functions must
++    # start with push %ebp, otherwise it is broken.
++    if ($check) {
++	test_x86_32_prologue;
++    }
+ 
+     # is it a section?
+     if (/$section_regex/) {
+-- 
+1.6.6.1
+
