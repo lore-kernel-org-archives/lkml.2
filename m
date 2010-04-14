@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab0DNLWF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 07:22:05 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:27739 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779Ab0DNLWD (ORCPT
+	id S1755103Ab0DNLWU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 07:22:20 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:46375 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057Ab0DNLWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 07:22:03 -0400
-Date: Wed, 14 Apr 2010 07:20:15 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Dave Chinner <david@fromorbit.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100414112015.GO13327@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-	Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-	linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
- <20100413095815.GU25756@csn.ul.ie>
- <20100413111902.GY2493@dastard>
- <20100413193428.GI25756@csn.ul.ie>
- <20100413202021.GZ13327@think>
- <877hoa9wlv.fsf@basil.nowhere.org>
+	Wed, 14 Apr 2010 07:22:18 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -24.389
+Message-ID: <4BC5A566.8060106@tremplin-utc.net>
+Date: Wed, 14 Apr 2010 13:22:14 +0200
+From: =?UTF-8?B?w4lyaWMgUGllbA==?= <eric.piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100331 Mandriva/3.0.4-1mdv2010.1 (2010.1) Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <877hoa9wlv.fsf@basil.nowhere.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BC5A528.0165:SCFMA4539814,ss=1,fgs=0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Jaroslav Kysela <perex@perex.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       alsa-devel@alsa-project.org
+Subject: Re: [REGRESSION bisected] Sound goes too fast due to commit 7b3a177b0
+References: <4BC4E812.6050602@tremplin-utc.net> <s5h633u5zx1.wl%tiwai@suse.de>
+In-Reply-To: <s5h633u5zx1.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 12:06:36PM +0200, Andi Kleen wrote:
-> Chris Mason <chris.mason@oracle.com> writes:
-> >
-> > Huh, 912 bytes...for select, really?  From poll.h:
-> >
-> > /* ~832 bytes of stack space used max in sys_select/sys_poll before allocating
-> >    additional memory. */
-> > #define MAX_STACK_ALLOC 832
-> > #define FRONTEND_STACK_ALLOC    256
-> > #define SELECT_STACK_ALLOC      FRONTEND_STACK_ALLOC
-> > #define POLL_STACK_ALLOC        FRONTEND_STACK_ALLOC
-> > #define WQUEUES_STACK_ALLOC     (MAX_STACK_ALLOC - FRONTEND_STACK_ALLOC)
-> > #define N_INLINE_POLL_ENTRIES   (WQUEUES_STACK_ALLOC / sizeof(struct poll_table_entry))
-> >
-> > So, select is intentionally trying to use that much stack.  It should be using
-> > GFP_NOFS if it really wants to suck down that much stack...
+On 14/04/10 08:08, Takashi Iwai wrote:
+> At Tue, 13 Apr 2010 23:54:26 +0200,
+> Éric Piel wrote:
+>>
+>> Hello,
+>>
+>> Since 2.6.34-rc*, I have a regression on alsa which prevents the sound
+>> to be played correctly. When playing, the music goes too fast, skipping
+>> some parts. Typically, it's very easy to reproduce by doing:
+>> time mplayer -endpos 30 sound-file-which-lasts-more-than-thirty-sec.mp3
+>>
+>> If the wall clock is less than 30s, you have the bug. With my intel-hda
+>> (AD1981), it's reliably reproducible: it gives ~27s, instead of the
+>> normal ~31s.
+>>
+>> After bisection, it turns out that it is commit
+>> 7b3a177b0d4f92b3431b8dca777313a07533a710, aka "ALSA: pcm_lib: fix
+>> "something must be really wrong" condition" which caused this
+>> regression. Reverting it on top of 2.6.34-rc3+ fixes the problem.
 > 
-> There are lots of other call chains which use multiple KB bytes by itself,
-> so why not give select() that measly 832 bytes?
-> 
-> You think only file systems are allowed to use stack? :)
+> What happens if you pass position_fix=1 option to snd-hda-intel?
+Oh! Very good remark...
+I've just noticed that I had an option already on the module:
+bdl_pos_adj=0. It seems it's not needed anymore to get my card working
+fine. If I remove every option (leaving bdl_pos_adj to the default value
+1), it works fine. If I put bdl_pos_adj=0 and position_fix=1, it works
+fine again.
 
-Grin, most definitely.
+I don't fully grasp the meaning of bdl_pos_adj, so I don't know if it's
+a bug to not play correctly when forcing it to 0. Is it?
 
-> 
-> Basically if you cannot tolerate 1K (or more likely more) of stack
-> used before your fs is called you're toast in lots of other situations
-> anyways.
+I'll ask to another reporter who had the same problem if bdl_pos_adj is
+also set to 0...
 
-Well, on a 4K stack kernel, 832 bytes is a very large percentage for
-just one function.
+> Is it via PulseAudio or other backend?
+This happens both with pulseaudio, oss and alsa (in which case it plays
+the 30s clip in 12s).
 
-Direct reclaim is a problem because it splices parts of the kernel that
-normally aren't connected together.  The people that code in select see
-832 bytes and say that's teeny, I should have taken 3832 bytes.
-
-But they don't realize their function can dive down into ecryptfs then
-the filesystem then maybe loop and then perhaps raid6 on top of a
-network block device.
-
-> 
-> > kernel had some sort of way to dynamically allocate ram, it could try
-> > that too.
-> 
-> It does this for large inputs, but the whole point of the stack fast
-> path is to avoid it for common cases when a small number of fds is
-> only needed.
-> 
-> It's significantly slower to go to any external allocator.
-
-Yeah, but since the call chain does eventually go into the allocator,
-this function needs to be more stack friendly.
-
-I do agree that we can't really solve this with noinline_for_stack pixie
-dust, the long call chains are going to be a problem no matter what.
-
-Reading through all the comments so far, I think the short summary is:
-
-Cleaning pages in direct reclaim helps the VM because it is able to make
-sure that lumpy reclaim finds adjacent pages.  This isn't a fast
-operation, it has to wait for IO (infinitely slow compared to the CPU).
-
-Will it be good enough for the VM if we add a hint to the bdi writeback
-threads to work on a general area of the file?  The filesystem will get
-writepages(), the VM will get the IO it needs started.
-
-I know Mel mentioned before he wasn't interested in waiting for helper
-threads, but I don't see how we can work without it.
-
--chris
+Eric
