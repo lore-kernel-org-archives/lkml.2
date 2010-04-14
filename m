@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab0DNSse (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 14:48:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:10441 "EHLO mga01.intel.com"
+	id S1756555Ab0DNSvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 14:51:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38074 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755243Ab0DNSsc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 14:48:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,206,1270450800"; 
-   d="scan'208";a="557964634"
-From: "Tung, Chien Tin" <chien.tin.tung@intel.com>
-To: Steve Wise <swise@opengridcomputing.com>
-CC: Amir Vadai <amirv@mellanox.co.il>,
-       Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-       "rolandd@cisco.com" <rolandd@cisco.com>,
-       "peterz@infradead.org" <peterz@infradead.org>,
-       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
-       Eric B Munson <ebmunson@us.ibm.com>
-Date: Wed, 14 Apr 2010 11:48:07 -0700
-Subject: RE: Socket Direct Protocol: help (2)
-Thread-Topic: Socket Direct Protocol: help (2)
-Thread-Index: Acrb49oHvCGazx5kRmyCfbFZTlUIRQAHxqGA
-Message-ID: <2EFBCAEF10980645BBCFB605689E08E9047C79BD12@azsmsx506.amr.corp.intel.com>
-References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-	<1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-	<2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com>
-	<4BC49E2B.3000804@opengridcomputing.com>
-	<2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com>
-	<4BC4D22A.6020700@opengridcomputing.com>
-	<2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>
-	<7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-	<4BC5D1D3.3020004@mellanox.co.il> <4BC5D529.1060701@mellanox.co.il>
- <2EFBCAEF10980645BBCFB605689E08E9047C79B918@azsmsx506.amr.corp.intel.com>
- <4BC5D9D4.7020702@opengridcomputing.com>
-In-Reply-To: <4BC5D9D4.7020702@opengridcomputing.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-puzzleid: {D1BFD222-9FD9-48E1-A0E7-4DE060676D8D}
-x-cr-hashedpuzzle: Ff1u HGI+ InwH P23f REuT Z8C0 oCea tbhL /V9c AEqeug==
- AFOdqA== AFvxQQ== AGJZ/g== AH5S+g== AI/JzQ==
- ALES6A==;10;YQBtAGkAcgB2AEAAbQBlAGwAbABhAG4AbwB4AC4AYwBvAC4AaQBsADsAYQBuAGQAcgBlAGEALgBnAG8AegB6AGUAbABpAG4AbwBAAGwAbgBsAC4AaQBuAGYAbgAuAGkAdAA7AGUAYgBtAHUAbgBzAG8AbgBAAHUAcwAuAGkAYgBtAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AcgBkAG0AYQBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbQBpAG4AZwBvAEAAZQBsAHQAZQAuAGgAdQA7AHAAYQB2AGUAbABAAHUAYwB3AC4AYwB6ADsAcABlAHQAZQByAHoAQABpAG4AZgByAGEAZABlAGEAZAAuAG8AcgBnADsAcgBvAGwAYQBuAGQAZABAAGMAaQBzAGMAbwAuAGMAbwBtADsAcwB3AGkAcwBlAEAAbwBwAGUAbgBnAHIAaQBkAGMAbwBtAHAAdQB0AGkAbgBnAC4AYwBvAG0A;Sosha1_v1;7;{D1BFD222-9FD9-48E1-A0E7-4DE060676D8D};YwBoAGkAZQBuAC4AdABpAG4ALgB0AHUAbgBnAEAAaQBuAHQAZQBsAC4AYwBvAG0A;Wed,
- 14 Apr 2010 18:48:07
- GMT;UgBFADoAIABTAG8AYwBrAGUAdAAgAEQAaQByAGUAYwB0ACAAUAByAG8AdABvAGMAbwBsADoAIABoAGUAbABwACAAKAAyACkA
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755243Ab0DNSvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 14:51:22 -0400
+Subject: Re: [REGRESSION PATCH V2] vsprintf: Change struct
+ printf_spec.precision from s8 to s16
+From: Eric Paris <eparis@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, fweisbec@gmail.com
+In-Reply-To: <1271262460.1578.53.camel@Joe-Laptop.home>
+References: <20100414011336.16139.68030.stgit@paris.rdu.redhat.com>
+	 <1271262460.1578.53.camel@Joe-Laptop.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Apr 2010 14:50:54 -0400
+Message-ID: <1271271054.3042.4.camel@dhcp235-240.rdu.redhat.com>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Tung, Chien Tin wrote:
->>> One more thing - Please open a bug regarding the num_sge limitation at:
->>> https://bugs.openfabrics.org/
->>>
->>
->> Done, Bug 2027.
->>
->> Chien
->>
->
->And 2028 opened to request fastreg support.
->
+On Wed, 2010-04-14 at 09:27 -0700, Joe Perches wrote:
+> Commit ef0658f3de484bf9b173639cd47544584e01efa5 changed precision
+> from int to s8.
+> 
+> There is existing kernel code that uses a larger precision.
+> 
+> An example from the audit code:
+> 	vsnprintf(...,..., " msg='%.1024s'", (char *)data);
+> which overflows precision and truncates to nothing.
+> 
+> Extending precision size fixes the audit system issue.
+> 
+> Other changes:
+> 
+> Change the size of the struct printf_spec.type from u16 to u8 so
+> sizeof(struct printf_spec) stays as small as possible.
+> Reorder the struct members so sizeof(struct printf_spec) remains 64 bits
+> without alignment holes.
+> Document the struct members a bit more.
+> 
+> Original-patch-by: Eric Paris <eparis@redhat.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
+Sorry slow today
 
-I am open to test fixes for these two bugs.
+Acked-by: Eric Paris <eparis@redhat.com>
+Tested-by:
+Review-by:
+anything else?
 
-Chien
