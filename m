@@ -1,58 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab0DNJcB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 05:32:01 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:40478 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754423Ab0DNJb7 (ORCPT
+	id S1754723Ab0DNJdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 05:33:14 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45771 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab0DNJdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 05:31:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=N7Spc2ePri9Zjh/8IgY0zAgZwwiCqM2tmpIHtBfDzjMslqn2U/vYwQKTjRiknZFLpp
-         UoZPIDWbkJ22WFpYA1ml7ZjnTeYBhUihFL++yYVsyo6BORCYDnMgyfWfzLJG/s/ptymX
-         r5bIWwAxZby8uyHTk8J6iAYl6FeYe01TbQCcQ=
-Message-ID: <4BC58B85.1020204@gmail.com>
-Date: Wed, 14 Apr 2010 11:31:49 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.2 Thunderbird/3.1b1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       Neil Horman <nhorman@tuxdriver.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [git pull] pull request for writable limits for 2.6.34-rc0
-References: <4B1D32D1.4090404@gmail.com> <4B9136F4.4010007@gmail.com> <alpine.LFD.2.00.1003201207160.18017@i5.linux-foundation.org> <20100321060607.GA4062@x200> <alpine.LFD.2.00.1003211128520.18017@i5.linux-foundation.org> <4BAA4595.3050203@gmail.com>
-In-Reply-To: <4BAA4595.3050203@gmail.com>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Apr 2010 05:33:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 14 Apr 2010 18:29:04 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: balbir@linux.vnet.ibm.com, Andrea Righi <arighi@develer.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-Id: <20100414182904.2f72a63d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <xr931veiplpr.fsf@ninji.mtv.corp.google.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+	<1268609202-15581-2-git-send-email-arighi@develer.com>
+	<20100317115855.GS18054@balbir.in.ibm.com>
+	<20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100318041944.GA18054@balbir.in.ibm.com>
+	<20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100318162855.GG18054@balbir.in.ibm.com>
+	<20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100319024039.GH18054@balbir.in.ibm.com>
+	<20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com>
+	<xr931veiplpr.fsf@ninji.mtv.corp.google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 06:02 PM, Jiri Slaby wrote:
-> On 03/21/2010 07:38 PM, Linus Torvalds wrote:
->> Or even just _one_ system call that takes two pointers, and can do an 
->> atomic replace-and-return-the-old-value, like 'sigaction()' does, ie 
->> something like
->>
->> 	int prlimit64(pid, limit, const struct rlimit64 *new, struct rlimit64 *old);
->>
->> wouldn't that be a nice generic interface?
+On Tue, 13 Apr 2010 23:55:12 -0700
+Greg Thelen <gthelen@google.com> wrote:
+
+> On Thu, Mar 18, 2010 at 8:00 PM, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Fri, 19 Mar 2010 08:10:39 +0530
+> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> >
+> >> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-19 10:23:32]:
+> >>
+> >> > On Thu, 18 Mar 2010 21:58:55 +0530
+> >> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> >> >
+> >> > > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:35:27]:
+> >> >
+> >> > > > Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
+> >> > > > mem_cgroup_update_file_mapped(). The look may be messy but it's not your
+> >> > > > fault. But please write "why add new function" to patch description.
+> >> > > >
+> >> > > > I'm sorry for wasting your time.
+> >> > >
+> >> > > Do we need to go down this route? We could check the stat and do the
+> >> > > correct thing. In case of FILE_MAPPED, always grab page_cgroup_lock
+> >> > > and for others potentially look at trylock. It is OK for different
+> >> > > stats to be protected via different locks.
+> >> > >
+> >> >
+> >> > I _don't_ want to see a mixture of spinlock and trylock in a function.
+> >> >
+> >>
+> >> A well documented well written function can help. The other thing is to
+> >> of-course solve this correctly by introducing different locking around
+> >> the statistics. Are you suggesting the later?
+> >>
+> >
+> > No. As I wrote.
+> >        - don't modify codes around FILE_MAPPED in this series.
+> >        - add a new functions for new statistics
+> > Then,
+> >        - think about clean up later, after we confirm all things work as expected.
 > 
-> Seconded. But should the limits be by default 64-bit even on 32-bit? I
-> mean: switch 'struct limit' in signal_struct to 'struct rlimit64'? This
-> would make the limits non-atomic on 32-bit. Oh, they are not already if
-> reader wants both cur and max without any locks, but I'm not sure now
-> what implications this will have (I haven't checked compilers, but I
-> think a store of 00000001 0000000 in place of 00000000 ffffffff may
-> result in a read of 00000001 ffffffff or alike). Or did I misunderstand you?
+> I have ported Andrea Righi's memcg dirty page accounting patches to latest
+> mmtom-2010-04-05-16-09.  In doing so I have to address this locking issue.  Does
+> the following look good?  I will (of course) submit the entire patch for review,
+> but I wanted make sure I was aiming in the right direction.
+> 
+> void mem_cgroup_update_page_stat(struct page *page,
+> 			enum mem_cgroup_write_page_stat_item idx, bool charge)
+> {
+> 	static int seq;
+> 	struct page_cgroup *pc;
+> 
+> 	if (mem_cgroup_disabled())
+> 		return;
+> 	pc = lookup_page_cgroup(page);
+> 	if (!pc || mem_cgroup_is_root(pc->mem_cgroup))
+> 		return;
+> 
+> 	/*
+> 	 * This routine does not disable irq when updating stats.  So it is
+> 	 * possible that a stat update from within interrupt routine, could
+> 	 * deadlock.  Use trylock_page_cgroup() to avoid such deadlock.  This
+> 	 * makes the memcg counters fuzzy.  More complicated, or lower
+> 	 * performing locking solutions avoid this fuzziness, but are not
+> 	 * currently needed.
+> 	 */
+> 	if (irqs_disabled()) {
+> 		if (! trylock_page_cgroup(pc))
+> 			return;
+> 	} else
+> 		lock_page_cgroup(pc);
+> 
 
-Maybe it is a silly question or you was just busy at that time?
+I prefer trylock_page_cgroup() always.
 
-thanks,
--- 
-js
+I have another idea fixing this up _later_. (But I want to start from simple one.)
+
+My rough idea is following.  Similar to your idea which you gave me before.
+
+==
+DEFINE_PERCPU(account_move_ongoing);
+DEFINE_MUTEX(move_account_mutex):
+
+void memcg_start_account_move(void)
+{
+	mutex_lock(&move_account_mutex);
+	for_each_online_cpu(cpu)
+		per_cpu(cpu, account_move_ongoing) += 1;
+	mutex_unlock(&move_account_mutex);
+	/* Wait until there are no lockless update */
+	synchronize_rcu();
+	return;
+}
+
+void memcg_end_account_move(void)
+{
+	mutex_lock(&move_account_mutex);
+	for_each_online_cpu(cpu)
+		per_cpu(cpu, account_move_ongoing) -= 1;
+	mutex_unlock(&move_account_mutex);
+}
+
+/* return 1 when we took lock, return 0 if lockess OPs is guarantedd to be safe */
+int memcg_start_filecache_accounting(struct page_cgroup *pc)
+{
+	rcu_read_lock();
+	smp_rmb();
+	if (!this_cpu_read(move_account_ongoing))
+		return 0; /* no move account is ongoing */
+	lock_page_cgroup(pc);
+	return 1;
+}
+
+void memcg_end_filecache_accounting(struct page_cgroup *pc, int unlock)
+{
+	if (unlock)
+		unlock_page_cgroup(pc);
+
+	rcu_read_unlock();
+}
+
+and call memcg_start_account_move()/end_account_move() in the start/end of
+migrainting chunk of pages.
+
+Bye.
+-Kame
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
