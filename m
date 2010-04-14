@@ -1,56 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937Ab0DNVRW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 17:17:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58534 "EHLO mx1.redhat.com"
+	id S1756895Ab0DNVRX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 17:17:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40941 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756827Ab0DNVRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 17:17:18 -0400
+	id S1756914Ab0DNVRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 17:17:15 -0400
 From: Jeff Moyer <jmoyer@redhat.com>
 To: jens.axboe@oracle.com
 Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
        vgoyal@redhat.com, Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH 4/4] jbd2: yield the device queue when waiting for journal commits
-Date: Wed, 14 Apr 2010 17:17:06 -0400
-Message-Id: <1271279826-30294-5-git-send-email-jmoyer@redhat.com>
+Subject: [PATCH 1/4] cfq-iosched: Keep track of average think time for the sync-noidle workload.
+Date: Wed, 14 Apr 2010 17:17:03 -0400
+Message-Id: <1271279826-30294-2-git-send-email-jmoyer@redhat.com>
 In-Reply-To: <1271279826-30294-1-git-send-email-jmoyer@redhat.com>
 References: <1271279826-30294-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch gets CFQ back in line with deadline for iozone runs, especially
-those testing small files + fsync timings.
+This patch uses an average think time for the entirety of the sync-noidle
+workload to determine whether or not to idle on said workload.  This brings
+it more in line with the policy for the sync queues in the sync workload.
+
+Testing shows that this provided an overall increase in throughput for
+a mixed workload on my hardware RAID array.
 
 Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
 ---
- fs/jbd2/journal.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ block/cfq-iosched.c |   45 ++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 40 insertions(+), 5 deletions(-)
 
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index c03d4dc..ce46df6 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -41,6 +41,7 @@
- #include <linux/hash.h>
- #include <linux/log2.h>
- #include <linux/vmalloc.h>
-+#include <linux/blkdev.h>
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 838834b..ef59ab3 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -83,9 +83,14 @@ struct cfq_rb_root {
+ 	unsigned total_weight;
+ 	u64 min_vdisktime;
+ 	struct rb_node *active;
++	unsigned long last_end_request;
++	unsigned long ttime_total;
++	unsigned long ttime_samples;
++	unsigned long ttime_mean;
+ };
+ #define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
+-			.count = 0, .min_vdisktime = 0, }
++			.count = 0, .min_vdisktime = 0, .last_end_request = 0, \
++			.ttime_total = 0, .ttime_samples = 0, .ttime_mean = 0 }
  
- #define CREATE_TRACE_POINTS
- #include <trace/events/jbd2.h>
-@@ -580,6 +581,11 @@ int jbd2_log_wait_commit(journal_t *journal, tid_t tid)
- 	while (tid_gt(tid, journal->j_commit_sequence)) {
- 		jbd_debug(1, "JBD: want %d, j_commit_sequence=%d\n",
- 				  tid, journal->j_commit_sequence);
-+                /*
-+		 * Give up our I/O scheduler time slice to allow the journal
-+		 * thread to issue I/O.
+ /*
+  * Per process-grouping structure
+@@ -962,8 +967,10 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+ 		goto done;
+ 
+ 	cfqg->weight = blkcg->weight;
+-	for_each_cfqg_st(cfqg, i, j, st)
++	for_each_cfqg_st(cfqg, i, j, st) {
+ 		*st = CFQ_RB_ROOT;
++		st->last_end_request = jiffies;
++	}
+ 	RB_CLEAR_NODE(&cfqg->rb_node);
+ 
+ 	/*
+@@ -1795,9 +1802,12 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 
+ 	/*
+ 	 * Otherwise, we do only if they are the last ones
+-	 * in their service tree.
++	 * in their service tree and the average think time is
++	 * less than the slice length.
+ 	 */
+-	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
++	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq) &&
++	    (!sample_valid(service_tree->ttime_samples || 
++	     cfqq->slice_end - jiffies < service_tree->ttime_mean)))
+ 		return 1;
+ 	cfq_log_cfqq(cfqd, cfqq, "Not idling. st->count:%d",
+ 			service_tree->count);
+@@ -2988,6 +2998,18 @@ err:
+ }
+ 
+ static void
++cfq_update_st_thinktime(struct cfq_data *cfqd, struct cfq_rb_root *service_tree)
++{
++	unsigned long elapsed = jiffies - service_tree->last_end_request;
++	unsigned long ttime = min(elapsed, 2UL * cfqd->cfq_slice_idle);
++
++	service_tree->ttime_samples = (7*service_tree->ttime_samples + 256) / 8;
++	service_tree->ttime_total = (7*service_tree->ttime_total + 256*ttime)/8;
++	service_tree->ttime_mean = (service_tree->ttime_total + 128) /
++						service_tree->ttime_samples;
++}
++
++static void
+ cfq_update_io_thinktime(struct cfq_data *cfqd, struct cfq_io_context *cic)
+ {
+ 	unsigned long elapsed = jiffies - cic->last_end_request;
+@@ -3166,6 +3188,7 @@ cfq_rq_enqueued(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 		cfqq->meta_pending++;
+ 
+ 	cfq_update_io_thinktime(cfqd, cic);
++	cfq_update_st_thinktime(cfqd, cfqq->service_tree);
+ 	cfq_update_io_seektime(cfqd, cfqq, rq);
+ 	cfq_update_idle_window(cfqd, cfqq, cic);
+ 
+@@ -3304,7 +3327,16 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+ 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
+ 
+ 	if (sync) {
++		struct cfq_rb_root *st;
++
+ 		RQ_CIC(rq)->last_end_request = now;
++		/*
++		 * cfqq->service_tree is only filled in while on the rb tree,
++		 * so we need to lookup the service tree here.
 +		 */
-+                blk_yield(journal->j_dev->bd_disk->queue);
- 		wake_up(&journal->j_wait_commit);
- 		spin_unlock(&journal->j_state_lock);
- 		wait_event(journal->j_wait_done_commit,
++		st = service_tree_for(cfqq->cfqg,
++				      cfqq_prio(cfqq), cfqq_type(cfqq));
++		st->last_end_request = now;
+ 		if (!time_after(rq->start_time + cfqd->cfq_fifo_expire[1], now))
+ 			cfqd->last_delayed_sync = now;
+ 	}
+@@ -3678,11 +3710,14 @@ static void *cfq_init_queue(struct request_queue *q)
+ 
+ 	/* Init root service tree */
+ 	cfqd->grp_service_tree = CFQ_RB_ROOT;
++	cfqd->grp_service_tree.last_end_request = jiffies;
+ 
+ 	/* Init root group */
+ 	cfqg = &cfqd->root_group;
+-	for_each_cfqg_st(cfqg, i, j, st)
++	for_each_cfqg_st(cfqg, i, j, st) {
+ 		*st = CFQ_RB_ROOT;
++		st->last_end_request = jiffies;
++	}
+ 	RB_CLEAR_NODE(&cfqg->rb_node);
+ 
+ 	/* Give preference to root group over other groups */
 -- 
 1.6.2.5
 
