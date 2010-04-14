@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab0DNE6G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 00:58:06 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:47671 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab0DNE6C (ORCPT
+	id S1752497Ab0DNFDu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 01:03:50 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:35259 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab0DNFDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 00:58:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=U1VG32zv+xF15nhKJTpm/OwjR+TOWbQnnuYk8+uTjt90GL3t3+oeKmFojL9dA2pxPT
-         qXhZ6M6iUMsbQhV5aC9W/3Sc5+Oa+UPs96yqPl4mlcjs37wlyd36BEFh8y3RXqGUT6Wf
-         q8dAg5KQPbxgV8yfHKhOPVAqDRXIzojbUu7MU=
-Subject: Re: [PATCH 1/2] MTD: cfi_cmdset_0002: Add reboot notifier for AMD
- flashes
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: dwmw2@infradead.org, saeed.bishara@gmail.com,
-       linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <bb2e763d69a8cc1576fd58fbde424ff5f688c409@localhost.localdomain>
-References: <4ccec90e21edfa387822b2cb71c886217c48b4e3@localhost.localdomain>
-	 <bb2e763d69a8cc1576fd58fbde424ff5f688c409@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Apr 2010 07:57:58 +0300
-Message-Id: <1271221078.2532.5.camel@localhost.localdomain>
+	Wed, 14 Apr 2010 01:03:48 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 14 Apr 2010 13:59:45 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-Id: <20100414135945.2b0a1e0d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100414014041.GD2493@dastard>
+References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
+	<20100413095815.GU25756@csn.ul.ie>
+	<20100413111902.GY2493@dastard>
+	<20100413193428.GI25756@csn.ul.ie>
+	<20100413202021.GZ13327@think>
+	<20100414014041.GD2493@dastard>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-13 at 13:30 -0700, Kevin Cernekee wrote:
-> +static int cfi_amdstd_reset(struct mtd_info *mtd)
-> +{
-> +	struct map_info *map = mtd->priv;
-> +	struct cfi_private *cfi = map->fldrv_priv;
-> +	int i, ret;
-> +	struct flchip *chip;
-> +
-> +	for (i = 0; i < cfi->numchips; i++) {
-> +
-> +		chip = &cfi->chips[i];
-> +
-> +		spin_lock(chip->mutex);
-> +
-> +		ret = get_chip(map, chip, chip->start, FL_SHUTDOWN);
-> +		if (!ret) {
-> +			map_write(map, CMD(0xF0), chip->start);
-> +			chip->state = FL_SHUTDOWN;
-> +			put_chip(map, chip, chip->start);
-> +		}
-> +
-> +		spin_unlock(chip->mutex);
-> +	}
-> +
-> +	return 0;
-> +}
+On Wed, 14 Apr 2010 11:40:41 +1000
+Dave Chinner <david@fromorbit.com> wrote:
 
-Kevin, I'd suggest to document why you do this in the code, just for the
-next generation, or for the archaeologists who will dig MTD code in the
-future. 
+>  50)     3168      64   xfs_vm_writepage+0xab/0x160 [xfs]
+>  51)     3104     384   shrink_page_list+0x65e/0x840
+>  52)     2720     528   shrink_zone+0x63f/0xe10
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+A bit OFF TOPIC.
+
+Could you share disassemble of shrink_zone() ?
+
+In my environ.
+00000000000115a0 <shrink_zone>:
+   115a0:       55                      push   %rbp
+   115a1:       48 89 e5                mov    %rsp,%rbp
+   115a4:       41 57                   push   %r15
+   115a6:       41 56                   push   %r14
+   115a8:       41 55                   push   %r13
+   115aa:       41 54                   push   %r12
+   115ac:       53                      push   %rbx
+   115ad:       48 83 ec 78             sub    $0x78,%rsp
+   115b1:       e8 00 00 00 00          callq  115b6 <shrink_zone+0x16>
+   115b6:       48 89 75 80             mov    %rsi,-0x80(%rbp)
+
+disassemble seems to show 0x78 bytes for stack. And no changes to %rsp
+until retrun.
+
+I may misunderstand something...
+
+Thanks,
+-Kame
 
