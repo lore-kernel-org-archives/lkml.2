@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab0DNMPY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 08:15:24 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:42015 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755206Ab0DNMPX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 08:15:23 -0400
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Dave Chinner <david@fromorbit.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-From: Andi Kleen <andi@firstfloor.org>
-References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
-	<20100413095815.GU25756@csn.ul.ie> <20100413111902.GY2493@dastard>
-	<20100413193428.GI25756@csn.ul.ie> <20100413202021.GZ13327@think>
-	<877hoa9wlv.fsf@basil.nowhere.org> <20100414112015.GO13327@think>
-Date: Wed, 14 Apr 2010 14:15:16 +0200
-In-Reply-To: <20100414112015.GO13327@think> (Chris Mason's message of "Wed, 14 Apr 2010 07:20:15 -0400")
-Message-ID: <8739yy9qnf.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+	id S1755297Ab0DNMQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 08:16:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35740 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755073Ab0DNMQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 08:16:27 -0400
+Date: Wed, 14 Apr 2010 14:16:25 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [PATCH] Input: add HP Compaq 2710p to 'noloop' table
+Message-ID: <alpine.LNX.2.00.1004141409450.8345@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris Mason <chris.mason@oracle.com> writes:
->> 
->> Basically if you cannot tolerate 1K (or more likely more) of stack
->> used before your fs is called you're toast in lots of other situations
->> anyways.
->
-> Well, on a 4K stack kernel, 832 bytes is a very large percentage for
-> just one function.
+Add HP Compaq 2710p to 'noloop' table. Otherwsie this machine is reported 
+to not report properly to AUX_LOOP command time-to-time, causing 
+non-working keyboard due to messed up i8042.
 
-To be honest I think 4K stack simply has to go. I tend to call
-it "russian roulette" mode. 
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 
-It was just a old workaround for a very old buggy VM that couldn't free 8K
-pages and the VM is a lot better at that now. And the general trend is
-to more complex code everywhere, so 4K stacks become more and more hazardous.
+--- 
 
-It was a bad idea back then and is still a bad idea, getting
-worse and worse with each MLOC being added to the kernel each year.
+The relevant i8042.debug output from the failing case is
 
-We don't have any good ways to verify that obscure paths through
-the more and more subsystems won't exceed it (in fact I'm pretty
-sure there are plenty of problems in exotic configurations)
+drivers/input/serio/i8042.c: 20 -> i8042 (command) [0]
+drivers/input/serio/i8042.c: 65 <- i8042 (return) [0]
+drivers/input/serio/i8042.c: 60 -> i8042 (command) [0]
+drivers/input/serio/i8042.c: 74 -> i8042 (parameter) [0]
+drivers/input/serio/i8042.c: d3 -> i8042 (command) [0]
+drivers/input/serio/i8042.c: 5a -> i8042 (parameter) [0]
+drivers/input/serio/i8042.c: 5a <- i8042 (return) [0]
+drivers/input/serio/i8042.c: a7 -> i8042 (command) [0]
+drivers/input/serio/i8042.c: 20 -> i8042 (command) [0]
+drivers/input/serio/i8042.c: 74 <- i8042 (return) [0]
+drivers/input/serio/i8042.c: a8 -> i8042 (command) [0]
+drivers/input/serio/i8042.c: 20 -> i8042 (command) [0]
+drivers/input/serio/i8042.c: 54 <- i8042 (return) [1]
+drivers/input/serio/i8042.c: 60 -> i8042 (command) [1]
+drivers/input/serio/i8042.c: 56 -> i8042 (parameter) [1]
+drivers/input/serio/i8042.c: d3 -> i8042 (command) [1]
+drivers/input/serio/i8042.c: a5 -> i8042 (parameter) [1]
+drivers/input/serio/i8042.c: 60 -> i8042 (command) [1]
+drivers/input/serio/i8042.c: 74 -> i8042 (parameter) [1]
+drivers/input/serio/i8042.c: d3 -> i8042 (command) [1]
+drivers/input/serio/i8042.c: f0 -> i8042 (parameter) [1]
+drivers/input/serio/i8042.c: 00 <- i8042 (return) [1]
+drivers/input/serio/i8042.c: 60 -> i8042 (command) [1]
+drivers/input/serio/i8042.c: 56 -> i8042 (parameter) [1]
+drivers/input/serio/i8042.c: 60 -> i8042 (command) [1]
+drivers/input/serio/i8042.c: 47 -> i8042 (parameter) [1]
+serio: i8042 KBD port at 0x60,0x64 irq 1
+serio: i8042 AUX port at 0x60,0x64 irq 12
+mice: PS/2 mouse device common for all mice
+drivers/input/serio/i8042.c: f2 -> i8042 (kbd-data) [1]
+...
+drivers/input/serio/i8042.c: ed -> i8042 (kbd-data) [52]
 
-And even if you can make a specific load work there's basically
-no safety net.
+ drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-The only part of the 4K stack code that's good is the separate
-interrupt stack, but that one should be just combined with a sane 8K 
-process stack.
-
-But yes on a 4K kernel you probably don't want to do any direct reclaim. 
-Maybe for GFP_NOFS everywhere except user allocations when it's set? 
-Or simply drop it?
-
-> But they don't realize their function can dive down into ecryptfs then
-> the filesystem then maybe loop and then perhaps raid6 on top of a
-> network block device.
-
-Those stackings need to use separate threads anyways. A lot of them
-do in fact. Block avoided this problem by iterating instead of
-recursing.  Those that still recurse on the same stack simply
-need to be fixed.
-
-> Yeah, but since the call chain does eventually go into the allocator,
-> this function needs to be more stack friendly.
-
-For common fast paths it doesn't go into the allocator.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index ead0494..d2c7cf0 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -172,6 +172,13 @@ static const struct dmi_system_id __initconst i8042_dmi_noloop_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_VERSION, "Rev 1"),
+ 		},
+ 	},
++	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq 2710p (#ABD)"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "F.14"),
++		},
++	},
+ 	{ }
+ };
+ 
