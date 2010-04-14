@@ -1,423 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab0DNUhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 16:37:18 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61022 "EHLO
+	id S1756718Ab0DNUkR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 16:40:17 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:63213 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755992Ab0DNUhP (ORCPT
+	with ESMTP id S1756537Ab0DNUkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 16:37:15 -0400
+	Wed, 14 Apr 2010 16:40:15 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Matthew Wilcox <willy@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-       Christoph Hellwig <hch@lst.de>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       "J. Bruce Fields" <bfields@fieldses.org>,
-       Miklos Szeredi <mszeredi@suse.cz>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 2/2] [RFC] Remove BKL from fs/locks.c
-Date: Wed, 14 Apr 2010 22:36:24 +0200
-Message-Id: <1271277384-7627-2-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1271277384-7627-1-git-send-email-arnd@arndb.de>
-References: <1271277384-7627-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/Z7TZwQKGBENyY4a1eXV1Q9cFIkaxMG6GTusP
- KG39QsE0tX+MeOVF75OGIPLkPfTHP0MOWGB8vHYHY8VOHeB/6X
- VrjXcogsNHQlwmwMYE5Xg==
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [RFC][PATCH v3 1/3] A device for zero-copy based on KVM virtio-net.
+Date: Wed, 14 Apr 2010 22:39:49 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
+Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
+       jdike@linux.intel.com
+References: <1270805865-16901-1-git-send-email-xiaohui.xin@intel.com> <201004141835.57673.arnd@arndb.de> <20100414203142.GA11321@redhat.com>
+In-Reply-To: <20100414203142.GA11321@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004142239.50299.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19VGRmB/zsKlN+JnVswTgT1Uq8i+4RPSkyVyDB
+ WSmtBBurKhFjxCWiND0NgupikNTCZNoxXPxFf2vhkaOh6vfYVo
+ JGGMUwSeucBRqDbP70PCw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Wilcox <willy@linux.intel.com>
+On Wednesday 14 April 2010 22:31:42 Michael S. Tsirkin wrote:
+> On Wed, Apr 14, 2010 at 06:35:57PM +0200, Arnd Bergmann wrote:
+> > On Wednesday 14 April 2010, Michael S. Tsirkin wrote:
+> > > > > 
+> > > > > qemu needs the ability to inject raw packets into device
+> > > > > from userspace, bypassing vhost/virtio (for live migration).
+> > > > 
+> > > > Ok, but since there is only a write callback and no read, it won't
+> > > > actually be able to do this with the current code, right?
+> > > 
+> > > I think it'll work as is, with vhost qemu only ever writes,
+> > > never reads from device. We'll also never need GSO etc
+> > > which is a large part of what tap does (and macvtap will
+> > > have to do).
+> > 
+> > Ah, I see. I didn't realize that qemu needs to write to the
+> > device even if vhost is used. But for the case of migration to
+> > another machine without vhost, wouldn't qemu also need to read?
+> 
+> Not that I know. Why?
 
-I've taken a patch originally written by Matthew Wilcox and
-ported it to the current version. It seems that there were
-originally concerns that this breaks NFS, but since Trond
-has recently removed the BKL from NFS, my naive assumption
-would be that it's all good now, despite not having tried to
-understand what it does.
+Well, if the guest not only wants to send data but also receive
+frames coming from other machines, they need to get from the kernel
+into qemu, and the only way I can see for doing that is to read
+from this device if there is no vhost support around on the new
+machine.
 
-Original introduction from Willy:
+Maybe we're talking about different things here.
 
-   I've been promising to do this for about seven years now.
-
-   It seems to work well enough, but I haven't run any serious stress
-   tests on it.  This implementation uses one spinlock to protect both lock
-   lists and all the i_flock chains.  It doesn't seem worth splitting up
-   the locking any further.
-
-   I had to move one memory allocation out from under the file_lock_lock.
-   I hope I got that logic right.  I'm rather tempted to split out the
-   find_conflict algorithm from that function into something that can be
-   called separately for the FL_ACCESS case.
-
-   I also have to drop and reacquire the file_lock_lock around the call
-   to cond_resched().  This was done automatically for us before by the
-   special BKL semantics.
-
-   I had to change vfs_setlease() as it relied on the special BKL ability
-   to recursively acquire the same lock.  The internal caller now calls
-   __vfs_setlease and the exported interface acquires and releases the
-   file_lock_lock around calling __vfs_setlease.
-
-   I should probably split out the removal of interruptible_sleep_on_locked()
-   as it's basically unrelated to all this.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Matthew Wilcox <willy@linux.intel.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: John Kacur <jkacur@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org
----
- fs/locks.c |  110 ++++++++++++++++++++++++++++++++++++------------------------
- 1 files changed, 66 insertions(+), 44 deletions(-)
-
-diff --git a/fs/locks.c b/fs/locks.c
-index ab24d49..87f1c60 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -140,9 +140,23 @@ int lease_break_time = 45;
- #define for_each_lock(inode, lockp) \
- 	for (lockp = &inode->i_flock; *lockp != NULL; lockp = &(*lockp)->fl_next)
- 
-+/*
-+ * Protects the two list heads below, plus the inode->i_flock list
-+ */
-+static DEFINE_SPINLOCK(file_lock_lock);
- static LIST_HEAD(file_lock_list);
- static LIST_HEAD(blocked_list);
- 
-+static inline void lock_flocks(void)
-+{
-+	spin_lock(&file_lock_lock);
-+}
-+
-+static inline void unlock_flocks(void)
-+{
-+	spin_unlock(&file_lock_lock);
-+}
-+
- static struct kmem_cache *filelock_cache __read_mostly;
- 
- /* Allocate an empty lock structure. */
-@@ -511,9 +525,9 @@ static void __locks_delete_block(struct file_lock *waiter)
-  */
- static void locks_delete_block(struct file_lock *waiter)
- {
--	lock_kernel();
-+	lock_flocks();
- 	__locks_delete_block(waiter);
--	unlock_kernel();
-+	unlock_flocks();
- }
- 
- /* Insert waiter into blocker's block list.
-@@ -644,7 +658,7 @@ posix_test_lock(struct file *filp, struct file_lock *fl)
- {
- 	struct file_lock *cfl;
- 
--	lock_kernel();
-+	lock_flocks();
- 	for (cfl = filp->f_path.dentry->d_inode->i_flock; cfl; cfl = cfl->fl_next) {
- 		if (!IS_POSIX(cfl))
- 			continue;
-@@ -657,7 +671,7 @@ posix_test_lock(struct file *filp, struct file_lock *fl)
- 			fl->fl_pid = pid_vnr(cfl->fl_nspid);
- 	} else
- 		fl->fl_type = F_UNLCK;
--	unlock_kernel();
-+	unlock_flocks();
- 	return;
- }
- EXPORT_SYMBOL(posix_test_lock);
-@@ -730,18 +744,16 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
- 	int error = 0;
- 	int found = 0;
- 
--	lock_kernel();
--	if (request->fl_flags & FL_ACCESS)
--		goto find_conflict;
--
--	if (request->fl_type != F_UNLCK) {
--		error = -ENOMEM;
-+	if (!(request->fl_flags & FL_ACCESS) && (request->fl_type != F_UNLCK)) {
- 		new_fl = locks_alloc_lock();
--		if (new_fl == NULL)
--			goto out;
--		error = 0;
-+		if (!new_fl)
-+			return -ENOMEM;
- 	}
- 
-+	lock_flocks();
-+	if (request->fl_flags & FL_ACCESS)
-+		goto find_conflict;
-+
- 	for_each_lock(inode, before) {
- 		struct file_lock *fl = *before;
- 		if (IS_POSIX(fl))
-@@ -767,8 +779,11 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
- 	 * If a higher-priority process was blocked on the old file lock,
- 	 * give it the opportunity to lock the file.
- 	 */
--	if (found)
-+	if (found) {
-+		unlock_flocks();
- 		cond_resched();
-+		lock_flocks();
-+	}
- 
- find_conflict:
- 	for_each_lock(inode, before) {
-@@ -794,7 +809,7 @@ find_conflict:
- 	error = 0;
- 
- out:
--	unlock_kernel();
-+	unlock_flocks();
- 	if (new_fl)
- 		locks_free_lock(new_fl);
- 	return error;
-@@ -823,7 +838,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 		new_fl2 = locks_alloc_lock();
- 	}
- 
--	lock_kernel();
-+	lock_flocks();
- 	if (request->fl_type != F_UNLCK) {
- 		for_each_lock(inode, before) {
- 			fl = *before;
-@@ -991,7 +1006,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 		locks_wake_up_blocks(left);
- 	}
-  out:
--	unlock_kernel();
-+	unlock_flocks();
- 	/*
- 	 * Free any unused locks.
- 	 */
-@@ -1066,14 +1081,14 @@ int locks_mandatory_locked(struct inode *inode)
- 	/*
- 	 * Search the lock list for this inode for any POSIX locks.
- 	 */
--	lock_kernel();
-+	lock_flocks();
- 	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
- 		if (!IS_POSIX(fl))
- 			continue;
- 		if (fl->fl_owner != owner)
- 			break;
- 	}
--	unlock_kernel();
-+	unlock_flocks();
- 	return fl ? -EAGAIN : 0;
- }
- 
-@@ -1186,7 +1201,7 @@ int __break_lease(struct inode *inode, unsigned int mode)
- 
- 	new_fl = lease_alloc(NULL, want_write ? F_WRLCK : F_RDLCK);
- 
--	lock_kernel();
-+	lock_flocks();
- 
- 	time_out_leases(inode);
- 
-@@ -1247,8 +1262,10 @@ restart:
- 			break_time++;
- 	}
- 	locks_insert_block(flock, new_fl);
-+	unlock_flocks();
- 	error = wait_event_interruptible_timeout(new_fl->fl_wait,
- 						!new_fl->fl_next, break_time);
-+	lock_flocks();
- 	__locks_delete_block(new_fl);
- 	if (error >= 0) {
- 		if (error == 0)
-@@ -1263,7 +1280,7 @@ restart:
- 	}
- 
- out:
--	unlock_kernel();
-+	unlock_flocks();
- 	if (!IS_ERR(new_fl))
- 		locks_free_lock(new_fl);
- 	return error;
-@@ -1319,7 +1336,7 @@ int fcntl_getlease(struct file *filp)
- 	struct file_lock *fl;
- 	int type = F_UNLCK;
- 
--	lock_kernel();
-+	lock_flocks();
- 	time_out_leases(filp->f_path.dentry->d_inode);
- 	for (fl = filp->f_path.dentry->d_inode->i_flock; fl && IS_LEASE(fl);
- 			fl = fl->fl_next) {
-@@ -1328,7 +1345,7 @@ int fcntl_getlease(struct file *filp)
- 			break;
- 		}
- 	}
--	unlock_kernel();
-+	unlock_flocks();
- 	return type;
- }
- 
-@@ -1341,7 +1358,7 @@ int fcntl_getlease(struct file *filp)
-  *	The (input) flp->fl_lmops->fl_break function is required
-  *	by break_lease().
-  *
-- *	Called with kernel lock held.
-+ *	Called with file_lock_lock held.
-  */
- int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
- {
-@@ -1436,7 +1453,15 @@ out:
- }
- EXPORT_SYMBOL(generic_setlease);
- 
-- /**
-+static int __vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
-+{
-+	if (filp->f_op && filp->f_op->setlease)
-+		return filp->f_op->setlease(filp, arg, lease);
-+	else
-+		return generic_setlease(filp, arg, lease);
-+}
-+
-+/**
-  *	vfs_setlease        -       sets a lease on an open file
-  *	@filp: file pointer
-  *	@arg: type of lease to obtain
-@@ -1467,12 +1492,9 @@ int vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
- {
- 	int error;
- 
--	lock_kernel();
--	if (filp->f_op && filp->f_op->setlease)
--		error = filp->f_op->setlease(filp, arg, lease);
--	else
--		error = generic_setlease(filp, arg, lease);
--	unlock_kernel();
-+	lock_flocks();
-+	error = __vfs_setlease(filp, arg, lease);
-+	unlock_flocks();
- 
- 	return error;
- }
-@@ -1499,9 +1521,9 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
- 	if (error)
- 		return error;
- 
--	lock_kernel();
-+	lock_flocks();
- 
--	error = vfs_setlease(filp, arg, &flp);
-+	error = __vfs_setlease(filp, arg, &flp);
- 	if (error || arg == F_UNLCK)
- 		goto out_unlock;
- 
-@@ -1516,7 +1538,7 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
- 
- 	error = __f_setown(filp, task_pid(current), PIDTYPE_PID, 0);
- out_unlock:
--	unlock_kernel();
-+	unlock_flocks();
- 	return error;
- }
- 
-@@ -2020,7 +2042,7 @@ void locks_remove_flock(struct file *filp)
- 			fl.fl_ops->fl_release_private(&fl);
- 	}
- 
--	lock_kernel();
-+	lock_flocks();
- 	before = &inode->i_flock;
- 
- 	while ((fl = *before) != NULL) {
-@@ -2038,7 +2060,7 @@ void locks_remove_flock(struct file *filp)
-  		}
- 		before = &fl->fl_next;
- 	}
--	unlock_kernel();
-+	unlock_flocks();
- }
- 
- /**
-@@ -2053,12 +2075,12 @@ posix_unblock_lock(struct file *filp, struct file_lock *waiter)
- {
- 	int status = 0;
- 
--	lock_kernel();
-+	lock_flocks();
- 	if (waiter->fl_next)
- 		__locks_delete_block(waiter);
- 	else
- 		status = -ENOENT;
--	unlock_kernel();
-+	unlock_flocks();
- 	return status;
- }
- 
-@@ -2172,7 +2194,7 @@ static int locks_show(struct seq_file *f, void *v)
- 
- static void *locks_start(struct seq_file *f, loff_t *pos)
- {
--	lock_kernel();
-+	lock_flocks();
- 	f->private = (void *)1;
- 	return seq_list_start(&file_lock_list, *pos);
- }
-@@ -2184,7 +2206,7 @@ static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
- 
- static void locks_stop(struct seq_file *f, void *v)
- {
--	unlock_kernel();
-+	unlock_flocks();
- }
- 
- static const struct seq_operations locks_seq_operations = {
-@@ -2231,7 +2253,7 @@ int lock_may_read(struct inode *inode, loff_t start, unsigned long len)
- {
- 	struct file_lock *fl;
- 	int result = 1;
--	lock_kernel();
-+	lock_flocks();
- 	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
- 		if (IS_POSIX(fl)) {
- 			if (fl->fl_type == F_RDLCK)
-@@ -2248,7 +2270,7 @@ int lock_may_read(struct inode *inode, loff_t start, unsigned long len)
- 		result = 0;
- 		break;
- 	}
--	unlock_kernel();
-+	unlock_flocks();
- 	return result;
- }
- 
-@@ -2271,7 +2293,7 @@ int lock_may_write(struct inode *inode, loff_t start, unsigned long len)
- {
- 	struct file_lock *fl;
- 	int result = 1;
--	lock_kernel();
-+	lock_flocks();
- 	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
- 		if (IS_POSIX(fl)) {
- 			if ((fl->fl_end < start) || (fl->fl_start > (start + len)))
-@@ -2286,7 +2308,7 @@ int lock_may_write(struct inode *inode, loff_t start, unsigned long len)
- 		result = 0;
- 		break;
- 	}
--	unlock_kernel();
-+	unlock_flocks();
- 	return result;
- }
- 
--- 
-1.7.0.4
-
+	Arnd
