@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab0DNSqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 14:46:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56751 "EHLO mx1.redhat.com"
+	id S1756639Ab0DNSse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 14:48:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10441 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755243Ab0DNSqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 14:46:12 -0400
-Message-ID: <4BC60E3D.40200@redhat.com>
-Date: Wed, 14 Apr 2010 11:49:33 -0700
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc11 Thunderbird/3.0.1
+	id S1755243Ab0DNSsc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 14:48:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,206,1270450800"; 
+   d="scan'208";a="557964634"
+From: "Tung, Chien Tin" <chien.tin.tung@intel.com>
+To: Steve Wise <swise@opengridcomputing.com>
+CC: Amir Vadai <amirv@mellanox.co.il>,
+       Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+       "rolandd@cisco.com" <rolandd@cisco.com>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
+       Eric B Munson <ebmunson@us.ibm.com>
+Date: Wed, 14 Apr 2010 11:48:07 -0700
+Subject: RE: Socket Direct Protocol: help (2)
+Thread-Topic: Socket Direct Protocol: help (2)
+Thread-Index: Acrb49oHvCGazx5kRmyCfbFZTlUIRQAHxqGA
+Message-ID: <2EFBCAEF10980645BBCFB605689E08E9047C79BD12@azsmsx506.amr.corp.intel.com>
+References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+	<1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+	<2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com>
+	<4BC49E2B.3000804@opengridcomputing.com>
+	<2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com>
+	<4BC4D22A.6020700@opengridcomputing.com>
+	<2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>
+	<7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+	<4BC5D1D3.3020004@mellanox.co.il> <4BC5D529.1060701@mellanox.co.il>
+ <2EFBCAEF10980645BBCFB605689E08E9047C79B918@azsmsx506.amr.corp.intel.com>
+ <4BC5D9D4.7020702@opengridcomputing.com>
+In-Reply-To: <4BC5D9D4.7020702@opengridcomputing.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-puzzleid: {D1BFD222-9FD9-48E1-A0E7-4DE060676D8D}
+x-cr-hashedpuzzle: Ff1u HGI+ InwH P23f REuT Z8C0 oCea tbhL /V9c AEqeug==
+ AFOdqA== AFvxQQ== AGJZ/g== AH5S+g== AI/JzQ==
+ ALES6A==;10;YQBtAGkAcgB2AEAAbQBlAGwAbABhAG4AbwB4AC4AYwBvAC4AaQBsADsAYQBuAGQAcgBlAGEALgBnAG8AegB6AGUAbABpAG4AbwBAAGwAbgBsAC4AaQBuAGYAbgAuAGkAdAA7AGUAYgBtAHUAbgBzAG8AbgBAAHUAcwAuAGkAYgBtAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AcgBkAG0AYQBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbQBpAG4AZwBvAEAAZQBsAHQAZQAuAGgAdQA7AHAAYQB2AGUAbABAAHUAYwB3AC4AYwB6ADsAcABlAHQAZQByAHoAQABpAG4AZgByAGEAZABlAGEAZAAuAG8AcgBnADsAcgBvAGwAYQBuAGQAZABAAGMAaQBzAGMAbwAuAGMAbwBtADsAcwB3AGkAcwBlAEAAbwBwAGUAbgBnAHIAaQBkAGMAbwBtAHAAdQB0AGkAbgBnAC4AYwBvAG0A;Sosha1_v1;7;{D1BFD222-9FD9-48E1-A0E7-4DE060676D8D};YwBoAGkAZQBuAC4AdABpAG4ALgB0AHUAbgBnAEAAaQBuAHQAZQBsAC4AYwBvAG0A;Wed,
+ 14 Apr 2010 18:48:07
+ GMT;UgBFADoAIABTAG8AYwBrAGUAdAAgAEQAaQByAGUAYwB0ACAAUAByAG8AdABvAGMAbwBsADoAIABoAGUAbABwACAAKAAyACkA
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
-       linuxppc-dev@lists.ozlabs.org, benh@kernel.crashing.org,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v2 1/2] perf: Move arch specific code into separate arch
- directory
-References: <1271221600-25533-1-git-send-email-imunsie@au.ibm.com> <1271221600-25533-2-git-send-email-imunsie@au.ibm.com> <4BC5D534.8010508@redhat.com> <20100414170008.GA2359@osiris.boeblingen.de.ibm.com>
-In-Reply-To: <20100414170008.GA2359@osiris.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heiko Carstens wrote:
-> On Wed, Apr 14, 2010 at 07:46:12AM -0700, Masami Hiramatsu wrote:
->> Ian Munsie wrote:
->>> From: Ian Munsie <imunsie@au.ibm.com>
+>Tung, Chien Tin wrote:
+>>> One more thing - Please open a bug regarding the num_sge limitation at:
+>>> https://bugs.openfabrics.org/
 >>>
->>> The perf userspace tool included some architecture specific code to map
->>> registers from the DWARF register number into the names used by the regs
->>> and stack access API.
->>>
->>> This patch moves the architecture specific code out into a separate
->>> arch/x86 directory along with the infrastructure required to use it.
->>>
->>> Signed-off-by: Ian Munsie <imunsie@au.ibm.com>
->>> ---
->>> Changes since v1: From Masami Hiramatsu's suggestion, I added a check in the
->>> Makefile for if the arch specific Makefile defines PERF_HAVE_DWARF_REGS,
->>> printing a message during build if it has not. This simplifies the code
->>> removing the odd macro from the previous version and the need for an arch
->>> specific arch_dwarf-regs.h. I have not entirely disabled DWARF support for
->>> architectures that don't implement the register mappings, so that they can
->>> still add a probe based on a line number (they will be missing the ability to
->>> capture the value of a variable from a register).
 >>
->> Hmm, sorry, I don't think it is a good way to go... IMHO, porting dwarf-regs.c
->> is so easy (you can just refer systemtap/runtime/loc2c-runtime.h), easier
->> than porting kprobe-tracer on another arch. And perf is a part of kernel tree.
->> It means that someone who are porting kprobe-tracer, he should port
->> dwarf-regs.c too. In that case, PERF_HAVE_DWARF_REGS flag will be used only
->> between those two patches in same patchset. So, I suggested you to drop dwarf
->> support if dwarf-regs mapping doesn't exist.
+>> Done, Bug 2027.
 >>
->> AFAIK, at this point, only s390 users are affected. I'd like to ask
->> them to just port a register mapping on perf and test it too.
-> 
-> Hm, I'm a bit lost here. Probably due to lack of context. What would be missing
-> on s390 and what am I supposed to implement and how can I test it?
-> Any pointers to git commits?
-
-Ah, sorry about that. Now we're talking about an idea about porting perf-probe
-on some architectures which supports kprobe-tracer.
-Ian's patch (https://patchwork.kernel.org/patch/92328/) is currently under
-discussion, so there is no git commit yet (but it will be in a few days).
-
-So what I'd like to suggest you is implementing s390 version of DWARF register
-mapping support(ppc version is here: https://patchwork.kernel.org/patch/92329/)
-for perf probe (a subcommand of perf tools(tools/perf)) and test the perf-probe
-can work.
-
-For testing, you may need to compile kernel with CONFIG_DEBUG_INFO, install
-elfutils-devel, and make perf tools (cd tools/perf; make).
-And then, execute below command.
-
-$ ./perf probe -v --add 'vfs_read file'
+>> Chien
+>>
+>
+>And 2028 opened to request fastreg support.
+>
 
 
-Thank you,
+I am open to test fixes for these two bugs.
 
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
-
+Chien
