@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab0DNUlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 16:41:25 -0400
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:17457 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846Ab0DNUlW (ORCPT
+	id S1756738Ab0DNUmG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 16:42:06 -0400
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:30723 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756705Ab0DNUmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 16:41:22 -0400
-Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAIvFxUurR7Ht/2dsb2JhbACbWHGkHJoHhQ0E
+	Wed, 14 Apr 2010 16:42:04 -0400
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
 X-IronPort-AV: E=Sophos;i="4.52,206,1270425600"; 
-   d="scan'208";a="115330573"
-Message-ID: <4BC6286F.6030308@cisco.com>
-Date: Wed, 14 Apr 2010 16:41:19 -0400
+   d="scan'208";a="183120253"
+Message-ID: <4BC62898.3000800@cisco.com>
+Date: Wed, 14 Apr 2010 16:42:00 -0400
 From: David VomLehn <dvomlehn@cisco.com>
 User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
 To: Davi Howells <dhowells@redhat.com>
-CC: to@dvomlehn-lnx2.corp.sa.net, linux-arch@vger.kernel.org,
-       akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       maint_arch@dvomlehn-lnx2.corp.sa.net
+CC: dvomlehn@cisco.com, linux-arch@vger.kernel.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org, maint_arch@dvomlehn-lnx2.corp.sa.net
 Subject: Re: [PATCH 1/23] Make register values available to panic notifiers
 References: <20100412060609.GA25273@dvomlehn-lnx2.corp.sa.net> <24048.1271070978@redhat.com>
 In-Reply-To: <24048.1271070978@redhat.com>
