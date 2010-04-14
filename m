@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab0DNEpF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 00:45:05 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:45196 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751162Ab0DNEpB (ORCPT
+	id S1751878Ab0DNExw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 00:53:52 -0400
+Received: from mail.digidescorp.com ([66.244.163.200]:11427 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab0DNExv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 00:45:01 -0400
-Date: Wed, 14 Apr 2010 14:44:58 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100414044458.GF2493@dastard>
-References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
- <m2h28c262361004131724ycf9bf4a5xd9b1bad2b4797f50@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m2h28c262361004131724ycf9bf4a5xd9b1bad2b4797f50@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 14 Apr 2010 00:53:51 -0400
+X-Spam-Processed: digidescorp.com, Tue, 13 Apr 2010 23:53:50 -0500
+X-Authenticated-Sender: steve@digidescorp.com
+X-MDRemoteIP: 99.142.37.252
+X-Return-Path: prvs=1720206d9c=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] microblaze: add stack unwinder
+From: "Steven J. Magnani" <steve@digidescorp.com>
+Reply-To: steve@digidescorp.com
+To: microblaze-uclinux@itee.uq.edu.au, Michal Simek <monstr@monstr.eu>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain
+Organization: Digital Design Corporation
+Date: Tue, 13 Apr 2010 23:53:46 -0500
+Message-Id: <1271220827.2897.23.camel@iscandar.digidescorp.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 09:24:33AM +0900, Minchan Kim wrote:
-> Hi, Dave.
-> 
-> On Tue, Apr 13, 2010 at 9:17 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > From: Dave Chinner <dchinner@redhat.com>
-> >
-> > When we enter direct reclaim we may have used an arbitrary amount of stack
-> > space, and hence enterring the filesystem to do writeback can then lead to
-> > stack overruns. This problem was recently encountered x86_64 systems with
-> > 8k stacks running XFS with simple storage configurations.
-> >
-> > Writeback from direct reclaim also adversely affects background writeback. The
-> > background flusher threads should already be taking care of cleaning dirty
-> > pages, and direct reclaim will kick them if they aren't already doing work. If
-> > direct reclaim is also calling ->writepage, it will cause the IO patterns from
-> > the background flusher threads to be upset by LRU-order writeback from
-> > pageout() which can be effectively random IO. Having competing sources of IO
-> > trying to clean pages on the same backing device reduces throughput by
-> > increasing the amount of seeks that the backing device has to do to write back
-> > the pages.
-> >
-> > Hence for direct reclaim we should not allow ->writepages to be entered at all.
-> > Set up the relevant scan_control structures to enforce this, and prevent
-> > sc->may_writepage from being set in other places in the direct reclaim path in
-> > response to other events.
-> 
-> I think your solution is rather aggressive change as Mel and Kosaki
-> already pointed out.
+This has been baking for awhile, I think it's ready for prime time. I've
+beat on it in a noMMU kernel for awhile - backtracetest module,
+kmemleak, dump_stack() in a number of different situations - all look
+good. Thanks to Paul Mundt for initial advice on this feature.
 
-It may be agressive, but writeback from direct reclaim is, IMO, one
-of the worst aspects of the current VM design because of it's
-adverse effect on the IO subsystem.
+I don't have MMU hardware or the ability to build a MMU kernel, so all
+I've done there is check for gross compile errors. The MMU kernel
+handles kernel stacks differently, which isn't an issue except in the
+trap handlers (interrupt, syscall, etc.). This patch should work for MMU
+kernels, but they won't trace back beyond a system trap. The intent is
+to provide hooks for someone to add that capability later.
 
-I'd prefer to remove it completely that continue to try and patch
-around it, especially given that everyone seems to agree that it
-does have an adverse affect on IO...
+The key feature of the design is a search backwards from each return
+address for the instruction that creates a stack frame.
+CONFIG_FRAME_POINTER causes Microblaze gcc to use r19 as a frame
+pointer, but because previous frame pointers are not stored in a
+consistent location within each frame, it's not possible to avoid some
+sort of search to determine frame size. (Side note, since
+-fno-omit-frame-pointer isn't useful for Microblaze, it would be nice if
+Microblaze could "opt-out" of FRAME_POINTER when selecting
+FUNCTION_TRACER).
 
-> Do flush thread aware LRU of dirty pages in system level recency not
-> dirty pages recency?
+A brute-force search was chosen over a kallsyms-assisted search (as used
+in the sh architecture) to avoid going off the rails in cases where
+kallsyms chooses the closest global address instead of the true (local)
+function address. Obviously there's an accuracy/speed tradeoff, but
+under an assumption that most functions are reasonably-sized and most
+backtraces are not performed in time-critical paths, this should be OK.
 
-It writes back in the order inodes were dirtied. i.e. the LRU is a
-coarser measure, but it it still definitely there. It also takes
-into account fairness of IO between dirty inodes, so no one dirty
-inode prevents IO beining issued on a other dirty inodes on the
-LRU...
+Happy unwinding,
+------------------------------------------------------------------------
+ Steven J. Magnani               "I claim this network for MARS!
+ www.digidescorp.com              Earthling, return my space modulator!"
 
-> Of course flush thread can clean dirty pages faster than direct reclaimer.
-> But if it don't aware LRUness, hot page thrashing can be happened by
-> corner case.
-> It could lost write merge.
-> 
-> And non-rotation storage might be not big of seek cost.
+ #include <standard.disclaimer>
 
-Non-rotational storage still goes faster when it is fed large, well
-formed IOs.
 
-> I think we have to consider that case if we decide to change direct reclaim I/O.
-> 
-> How do we separate the problem?
-> 
-> 1. stack hogging problem.
-> 2. direct reclaim random write.
-
-AFAICT, the only way to _reliably_ avoid the stack usage problem is
-to avoid writeback in direct reclaim. That has the side effect of
-fixing #2 as well, so do they really need separating?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
