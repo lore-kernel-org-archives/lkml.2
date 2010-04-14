@@ -1,105 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab0DNB1R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 21:27:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17291 "EHLO mga09.intel.com"
+	id S1754359Ab0DNBcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 21:32:22 -0400
+Received: from mga11.intel.com ([192.55.52.93]:35249 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753251Ab0DNB1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 21:27:15 -0400
+	id S1752945Ab0DNBcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 21:32:20 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,200,1270450800"; 
-   d="scan'208";a="508906355"
-Date: Wed, 14 Apr 2010 09:27:00 +0800
-From: Shaohua Li <shaohua.li@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-       "Wu, Fengguang" <fengguang.wu@intel.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Message-ID: <20100414012700.GA10450@sli10-desk.sh.intel.com>
-References: <4BC3DA2B.3070605@redhat.com>
- <20100413144519.D107.A69D9226@jp.fujitsu.com>
- <20100413175414.D110.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100413175414.D110.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-IronPort-AV: E=Sophos;i="4.52,201,1270450800"; 
+   d="scan'208";a="557698941"
+Subject: Re: [PATCH 5/5] sched: make fix_small_imbalance work with
+ asymmetric packing
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michael Neuling <mikey@neuling.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Gautham R Shenoy <ego@in.ibm.com>
+In-Reply-To: <1271161769.4807.1283.camel@twins>
+References: <20100409062119.10AC5CBB6D@localhost.localdomain>
+	 <1271161769.4807.1283.camel@twins>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Tue, 13 Apr 2010 18:31:10 -0700
+Message-Id: <1271208670.2834.55.camel@sbs-t61.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 04:55:52PM +0800, KOSAKI Motohiro wrote:
-> > > > I'm surprised this ack a bit. Rik, do you have any improvement plan about
-> > > > streaming io detection logic?
-> > > > I think the patch have a slightly marginal benefit, it help to<1% scan
-> > > > ratio case. but it have big regression, it cause streaming io (e.g. backup
-> > > > operation) makes tons swap.
-> > > 
-> > > How?  From the description I believe it took 16GB in
-> > > a zone before we start scanning anon pages when
-> > > reclaiming at DEF_PRIORITY?
-> > > 
-> > > Would that casue a problem?
+On Tue, 2010-04-13 at 05:29 -0700, Peter Zijlstra wrote:
+> On Fri, 2010-04-09 at 16:21 +1000, Michael Neuling wrote:
+> > With the asymmetric packing infrastructure, fix_small_imbalance is
+> > causing idle higher threads to pull tasks off lower threads.  
 > > 
-> > Please remember, 2.6.27 has following +1 scanning modifier.
+> > This is being caused by an off-by-one error.  
 > > 
-> >   zone->nr_scan_active += (zone_page_state(zone, NR_ACTIVE) >> priority) + 1;
-> >                                                                          ^^^^
-> > 
-> > and, early (ano not yet merged) SplitLRU VM has similar +1. likes
-> > 
-> >          scan = zone_nr_lru_pages(zone, sc, l);
-> >          scan >>= priority;
-> >          scan = (scan * percent[file]) / 100 + 1;
-> >                                              ^^^
-> > 
-> > We didn't think only one page scanning is not big matter. but it was not
-> > correct. we got streaming io bug report. the above +1 makes annoying swap
-> > io. because some server need big backup operation rather much much than
-> > physical memory size.
-> > 
-> > example, If vm are dropping 1TB use once pages, 0.1% anon scanning makes
-> > 1GB scan. and almost server only have some gigabyte swap although it
-> > has >1TB memory.
-> > 
-> > If my memory is not correct, please correct me.
-> > 
-> > My point is, greater or smaller than 16GB isn't essential. all patches 
-> > should have big worth than the downside. The description said "the impact 
-> > sounds not a big deal", nobody disagree it. but it's worth is more little.
-> > I don't imagine this patch improve anything.
+> > Signed-off-by: Michael Neuling <mikey@neuling.org>
+> > ---
+> > I'm not sure this is the right fix but without it, higher threads pull
+> > tasks off the lower threads, then the packing pulls it back down, etc
+> > etc and tasks bounce around constantly.
 > 
-> And now I've merged this patch into my local vmscan patch queue.
-> After solving streaming io issue, I'll put it to mainline.
-if the streaming io issue is popular, how about below patch against my last one?
-we take priority == DEF_PRIORITY an exception.
- 
-Index: linux/mm/vmscan.c
-===================================================================
---- linux.orig/mm/vmscan.c	2010-04-14 09:03:28.000000000 +0800
-+++ linux/mm/vmscan.c	2010-04-14 09:19:56.000000000 +0800
-@@ -1629,6 +1629,22 @@ static void get_scan_count(struct zone *
- 	fraction[0] = ap;
- 	fraction[1] = fp;
- 	denominator = ap + fp + 1;
-+
-+	/*
-+	 * memory pressure isn't high, we allow percentage underflow. This
-+	 * avoids swap in stream io case.
-+	 */
-+	if (priority == DEF_PRIORITY) {
-+		if (fraction[0] * 99 < fraction[1]) {
-+			fraction[0] = 0;
-+			fraction[1] = 1;
-+			denominator = 1;
-+		} else if (fraction[1] * 99 < fraction[0]) {
-+			fraction[0] = 1;
-+			fraction[1] = 0;
-+			denominator = 1;
-+		}
-+	}
- out:
- 	for_each_evictable_lru(l) {
- 		int file = is_file_lru(l);
+> Would help if you expand upon the why/how it manages to get pulled up.
+> 
+> I can't immediately spot anything wrong with the patch, but then that
+> isn't my favourite piece of code either.. Suresh, any comments?
+> 
+
+Sorry didn't pay much attention to this patchset. But based on the
+comments from Michael and looking at this patchset, it has SMT/MC
+implications. I will review and run some tests and get back in a day.
+
+As far as this particular patch is concerned, original code is coming
+from Ingo's original CFS code commit (dd41f596) and the below hunk
+pretty much explains what the change is about.
+
+-               if (max_load - this_load >= busiest_load_per_task * imbn) {
++               if (max_load - this_load + SCHED_LOAD_SCALE_FUZZ >=
++                                       busiest_load_per_task * imbn) {
+
+So the below proposed change will probably break what the above
+mentioned commit was trying to achieve, which is: for fairness reasons
+we were bouncing the small extra load (between the max_load and
+this_load) around.
+
+> > ---
+> > 
+> >  kernel/sched_fair.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > Index: linux-2.6-ozlabs/kernel/sched_fair.c
+> > ===================================================================
+> > --- linux-2.6-ozlabs.orig/kernel/sched_fair.c
+> > +++ linux-2.6-ozlabs/kernel/sched_fair.c
+> > @@ -2652,7 +2652,7 @@ static inline void fix_small_imbalance(s
+> >  						 * SCHED_LOAD_SCALE;
+> >  	scaled_busy_load_per_task /= sds->busiest->cpu_power;
+> >  
+> > -	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >=
+> > +	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >
+> >  			(scaled_busy_load_per_task * imbn)) {
+> >  		*imbalance = sds->busiest_load_per_task;
+> >  		return;
+> 
+
+thanks,
+suresh
+
