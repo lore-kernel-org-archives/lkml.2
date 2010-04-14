@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482Ab0DNS1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 14:27:36 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:36971 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756292Ab0DNS1e (ORCPT
+	id S1756565Ab0DNS1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 14:27:48 -0400
+Received: from ey-out-2122.google.com ([74.125.78.27]:31052 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756542Ab0DNS1q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 14:27:34 -0400
-Date: Wed, 14 Apr 2010 11:29:30 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: [GIT PULL] ceph fixes for 2.6.34-rc5
-Message-ID: <Pine.LNX.4.64.1004141121320.10273@cobra.newdream.net>
+	Wed, 14 Apr 2010 14:27:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rmBhkIj7prF3QVSJUKjiFYvZXsAF9TY6LMBNdOKZNHZ/PvfiW6UfKTWs8OMA4/REw+
+         yaZekM54tDTDUR6/+fi/kI3AETHsqfvH94AEe1amYot0GEbcNlysuf8kZLu53Yb7Nhcp
+         GR3PJgg3TTj71svLkBdhTHPYrHVKKtqJZumyg=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <Pine.LNX.4.44L0.1004141422181.1716-100000@iolanthe.rowland.org>
+References: <n2k74fd948d1004141021r8815647cx2b74085fc37a27b2@mail.gmail.com>
+	 <Pine.LNX.4.44L0.1004141422181.1716-100000@iolanthe.rowland.org>
+Date: Wed, 14 Apr 2010 19:27:42 +0100
+Message-ID: <v2x74fd948d1004141127uda643cb2kf291fbaf3f2065b7@mail.gmail.com>
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+From: Pedro Ribeiro <pedrib@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Daniel Mack <daniel@caiaq.de>, USB list <linux-usb@vger.kernel.org>,
+       Andi Kleen <andi@firstfloor.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 14 April 2010 19:23, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Wed, 14 Apr 2010, Pedro Ribeiro wrote:
+>
+>> The best way to trigger the issue is to connect a dib0700 based DVB
+>> adapter. All you need is to connect it. Since it polls for the remote
+>> control every 50 msec, it causes a constant interference. Beware that
+>> on 2.6.34 this behaviour has been corrected. Other DVB adapters may
+>> trigger the same issue if they also poll constatly for the rc.
+>
+> Your computer has two EHCI controllers, doesn't it?  Can you plug the
+> DVB into a different USB bus from the audio device?  If you do, does
+> the interference still occur?
+>
+> Alan Stern
+>
+>
 
-Please pull the following ceph bug fixes from
+It does not matter on which ports I plug into, even if in different
+buses not sharing IRQ's.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
-
-There are a few one-liners (leaked dentry refs, rehashing hashed dentries, 
-off-by-one error), a few patches fixing up writeback for snapshotted data 
-and metadata, and one patch to decode an updated version of the osd map 
-that should get into .35 to make everyone's life easier.
-
-Thanks-
-sage
-
---
-
-Sage Weil (8):
-      ceph: fix dentry rehashing on virtual .snap dir
-      ceph: allow writeback of snapped pages older than 'oldest' snapc
-      ceph: fix snap context reference leaks
-      ceph: fix leaked inode ref due to snap metadata writeback race
-      ceph: fix ack counter reset on connection reset
-      ceph: decode v5 of osdmap (pool names) [protocol change]
-      ceph: fix dentry reference leak in dcache readdir
-      ceph: queue_cap_snap should always queue dirty context
-
-Yehuda Sadeh (1):
-      ceph: reserve one more caps space when doing readdir
-
- fs/ceph/addr.c      |   62 +++++++++---------
- fs/ceph/caps.c      |   42 +++++++++---
- fs/ceph/dir.c       |    7 +-
- fs/ceph/inode.c     |   10 +++-
- fs/ceph/messenger.c |    1 +
- fs/ceph/osdmap.c    |  180 +++++++++++++++++++++++++++++++--------------------
- fs/ceph/osdmap.h    |    1 +
- fs/ceph/rados.h     |    6 +-
- fs/ceph/snap.c      |   26 ++++----
- fs/ceph/super.h     |    3 +-
- 10 files changed, 204 insertions(+), 134 deletions(-)
-
+Pedro
