@@ -1,67 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab0DNOnT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 10:43:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55617 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755493Ab0DNOnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 10:43:17 -0400
-Message-ID: <4BC5D534.8010508@redhat.com>
-Date: Wed, 14 Apr 2010 07:46:12 -0700
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc11 Thunderbird/3.0.1
+	id S1755844Ab0DNOod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 10:44:33 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:46773 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab0DNOoc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 10:44:32 -0400
+Date: Wed, 14 Apr 2010 20:14:24 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrea Righi <arighi@develer.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-ID: <20100414144424.GN3994@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1268609202-15581-2-git-send-email-arighi@develer.com>
+ <20100317115855.GS18054@balbir.in.ibm.com>
+ <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100318041944.GA18054@balbir.in.ibm.com>
+ <20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100318162855.GG18054@balbir.in.ibm.com>
+ <20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100319024039.GH18054@balbir.in.ibm.com>
+ <20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com>
+ <xr931veiplpr.fsf@ninji.mtv.corp.google.com>
 MIME-Version: 1.0
-To: Ian Munsie <imunsie@au1.ibm.com>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-       benh@kernel.crashing.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v2 1/2] perf: Move arch specific code into separate arch
- directory
-References: <1271221600-25533-1-git-send-email-imunsie@au.ibm.com> <1271221600-25533-2-git-send-email-imunsie@au.ibm.com>
-In-Reply-To: <1271221600-25533-2-git-send-email-imunsie@au.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <xr931veiplpr.fsf@ninji.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ian Munsie wrote:
-> From: Ian Munsie <imunsie@au.ibm.com>
-> 
-> The perf userspace tool included some architecture specific code to map
-> registers from the DWARF register number into the names used by the regs
-> and stack access API.
-> 
-> This patch moves the architecture specific code out into a separate
-> arch/x86 directory along with the infrastructure required to use it.
-> 
-> Signed-off-by: Ian Munsie <imunsie@au.ibm.com>
-> ---
-> Changes since v1: From Masami Hiramatsu's suggestion, I added a check in the
-> Makefile for if the arch specific Makefile defines PERF_HAVE_DWARF_REGS,
-> printing a message during build if it has not. This simplifies the code
-> removing the odd macro from the previous version and the need for an arch
-> specific arch_dwarf-regs.h. I have not entirely disabled DWARF support for
-> architectures that don't implement the register mappings, so that they can
-> still add a probe based on a line number (they will be missing the ability to
-> capture the value of a variable from a register).
+* Greg Thelen <gthelen@google.com> [2010-04-13 23:55:12]:
 
-Hmm, sorry, I don't think it is a good way to go... IMHO, porting dwarf-regs.c
-is so easy (you can just refer systemtap/runtime/loc2c-runtime.h), easier
-than porting kprobe-tracer on another arch. And perf is a part of kernel tree.
-It means that someone who are porting kprobe-tracer, he should port
-dwarf-regs.c too. In that case, PERF_HAVE_DWARF_REGS flag will be used only
-between those two patches in same patchset. So, I suggested you to drop dwarf
-support if dwarf-regs mapping doesn't exist.
+> On Thu, Mar 18, 2010 at 8:00 PM, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Fri, 19 Mar 2010 08:10:39 +0530
+> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> >
+> >> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-19 10:23:32]:
+> >>
+> >> > On Thu, 18 Mar 2010 21:58:55 +0530
+> >> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> >> >
+> >> > > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:35:27]:
+> >> >
+> >> > > > Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
+> >> > > > mem_cgroup_update_file_mapped(). The look may be messy but it's not your
+> >> > > > fault. But please write "why add new function" to patch description.
+> >> > > >
+> >> > > > I'm sorry for wasting your time.
+> >> > >
+> >> > > Do we need to go down this route? We could check the stat and do the
+> >> > > correct thing. In case of FILE_MAPPED, always grab page_cgroup_lock
+> >> > > and for others potentially look at trylock. It is OK for different
+> >> > > stats to be protected via different locks.
+> >> > >
+> >> >
+> >> > I _don't_ want to see a mixture of spinlock and trylock in a function.
+> >> >
+> >>
+> >> A well documented well written function can help. The other thing is to
+> >> of-course solve this correctly by introducing different locking around
+> >> the statistics. Are you suggesting the later?
+> >>
+> >
+> > No. As I wrote.
+> >        - don't modify codes around FILE_MAPPED in this series.
+> >        - add a new functions for new statistics
+> > Then,
+> >        - think about clean up later, after we confirm all things work as expected.
+> 
+> I have ported Andrea Righi's memcg dirty page accounting patches to latest
+> mmtom-2010-04-05-16-09.  In doing so I have to address this locking issue.  Does
+> the following look good?  I will (of course) submit the entire patch for review,
+> but I wanted make sure I was aiming in the right direction.
+> 
+> void mem_cgroup_update_page_stat(struct page *page,
+> 			enum mem_cgroup_write_page_stat_item idx, bool charge)
+> {
+> 	static int seq;
+> 	struct page_cgroup *pc;
+> 
+> 	if (mem_cgroup_disabled())
+> 		return;
+> 	pc = lookup_page_cgroup(page);
+> 	if (!pc || mem_cgroup_is_root(pc->mem_cgroup))
+> 		return;
+> 
+> 	/*
+> 	 * This routine does not disable irq when updating stats.  So it is
+> 	 * possible that a stat update from within interrupt routine, could
+> 	 * deadlock.  Use trylock_page_cgroup() to avoid such deadlock.  This
+> 	 * makes the memcg counters fuzzy.  More complicated, or lower
+> 	 * performing locking solutions avoid this fuzziness, but are not
+> 	 * currently needed.
+> 	 */
+> 	if (irqs_disabled()) {
+> 		if (! trylock_page_cgroup(pc))
+> 			return;
 
-AFAIK, at this point, only s390 users are affected. I'd like to ask
-them to just port a register mapping on perf and test it too.
+Since this is just stats can we used deferred updates?
+        else
+                update a deferred structure
 
-Thank you,
+> 	} else
+> 		lock_page_cgroup(pc);
+> 
+> 	__mem_cgroup_update_page_stat(pc, idx, charge);
+
+Do charging + any deferred charges pending in
+__mem_cgroup_update_page_stat().
+
+> 	unlock_page_cgroup(pc);
+> }
+> 
+> __mem_cgroup_update_page_stat() has a switch statement that updates all of the
+> MEMCG_NR_FILE_{MAPPED,DIRTY,WRITEBACK,WRITEBACK_TEMP,UNSTABLE_NFS} counters
+> using the following form:
+> 	switch (idx) {
+> 	case MEMCG_NR_FILE_MAPPED:
+> 		if (charge) {
+> 			if (!PageCgroupFileMapped(pc))
+> 				SetPageCgroupFileMapped(pc);
+> 			else
+> 				val = 0;
+> 		} else {
+> 			if (PageCgroupFileMapped(pc))
+> 				ClearPageCgroupFileMapped(pc);
+> 			else
+> 				val = 0;
+> 		}
+> 		idx = MEM_CGROUP_STAT_FILE_MAPPED;
+> 		break;
+> 
+> 		...
+> 	}
+> 
+> 	/*
+> 	 * Preemption is already disabled. We can use __this_cpu_xxx
+> 	 */
+> 	if (val > 0) {
+> 		__this_cpu_inc(mem->stat->count[idx]);
+> 	} else if (val < 0) {
+> 		__this_cpu_dec(mem->stat->count[idx]);
+> 	}
+> 
+> In my current tree, irq is never saved/restored by cgroup locking code.  To
+> protect against interrupt reentrancy, trylock_page_cgroup() is used.  As the
+> comment indicates, this makes the new counters fuzzy.
+> 
 
 -- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+	Three Cheers,
+	Balbir
