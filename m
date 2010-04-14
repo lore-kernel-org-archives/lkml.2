@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab0DNVMw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 17:12:52 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:35049 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749Ab0DNVMu convert rfc822-to-8bit (ORCPT
+	id S1756907Ab0DNVNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 17:13:15 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:19012 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724Ab0DNVNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 17:12:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wGuaK08ta1eOh+LAJkUOQamqDip7wgs54oKY/1OIl+aKUcutGkFxCYaXVQszwheJiJ
-         EpIbQVpVQGraWf4wUhliOOEYEi4qVfzvchYnYxGTs9L9Qz99HSGU4looci3jic0qsPiF
-         rOOelXAIjn10ZSbMuRNVZbMnTO4icc6v8qW5U=
+	Wed, 14 Apr 2010 17:13:12 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAH/MxUurRN+K/2dsb2JhbACbWHGjb5oGhQ0E
+X-IronPort-AV: E=Sophos;i="4.52,206,1270425600"; 
+   d="scan'208";a="515030155"
+Message-ID: <4BC62FE1.2020703@cisco.com>
+Date: Wed, 14 Apr 2010 17:13:05 -0400
+From: David VomLehn <dvomlehn@cisco.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-In-Reply-To: <20100414210143.GB5753@phenom.dumpdata.com>
-References: <20100414183826.GA25962@sequoia.sous-sol.org>
-	 <Pine.LNX.4.44L0.1004141622410.1716-100000@iolanthe.rowland.org>
-	 <20100414210143.GB5753@phenom.dumpdata.com>
-Date: Wed, 14 Apr 2010 22:12:48 +0100
-Message-ID: <y2z74fd948d1004141412z1bb8424ekae627356bd8cc408@mail.gmail.com>
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-From: Pedro Ribeiro <pedrib@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Chris Wright <chrisw@sous-sol.org>,
-       USB list <linux-usb@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       iommu@lists.linux-foundation.org, Andi Kleen <andi@firstfloor.org>,
-       Daniel Mack <daniel@caiaq.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: linux-arch@vger.kernel.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/23] Make register values available to CRIS panic	notifiers
+References: <20100412060625.GA25426@dvomlehn-lnx2.corp.sa.net> <20100412190840.GB17147@merkur.ravnborg.org>
+In-Reply-To: <20100412190840.GB17147@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 April 2010 22:01, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> On Wed, Apr 14, 2010 at 04:29:22PM -0400, Alan Stern wrote:
->> On Wed, 14 Apr 2010, Chris Wright wrote:
+Sam Ravnborg wrote:
+> On Sun, Apr 11, 2010 at 11:06:25PM -0700, David VomLehn wrote:
+>   
+>> The save_ptregs() function has not been tested or even built. I will need
+>> help to complete this.
 >>
->> > So dma_map_single is the case that's failing, but you think the mask is
->> > correct?  What about the direction?
+>> Signed-off-by: David VomLehn <dvomlehn@cisco.com>
+>> ---
+>>  arch/cris/include/arch-v10/arch/ptrace.h |   80 ++++++++++++++++++++++++++++
+>>  arch/cris/include/arch-v32/arch/ptrace.h |   84 ++++++++++++++++++++++++++++++
+>>  2 files changed, 164 insertions(+), 0 deletions(-)
 >>
->> The mask and direction are unquestionably correct.  The mask is set up
->> by pci_setup_device() and not changed thereafter.  Furthermore, the
->> audio works okay until another device (a DVB tuner) is plugged in.
+>> diff --git a/arch/cris/include/arch-v10/arch/ptrace.h b/arch/cris/include/arch-v10/arch/ptrace.h
+>> index 2f464ea..28be57c 100644
+>> --- a/arch/cris/include/arch-v10/arch/ptrace.h
+>> +++ b/arch/cris/include/arch-v10/arch/ptrace.h
+>> @@ -114,6 +114,86 @@ struct switch_stack {
+>>  #define profile_pc(regs) instruction_pointer(regs)
+>>  extern void show_regs(struct pt_regs *);
+>>  
+>> +/* Macros for saving the contents of registers and for the output constraint
+>> + * for those registers */
+>> +#include "/home/vomlehn/git/kernel.org/ptreg.h"
+>>     
 >
-> Could the driver for the DVB tuner change the PCI mask? That is, change
-> the pci mask way after it has been initialized (don't laugh, this did
-> happend - as I remember 4 months fix was posted on the DRM mailing list
-> for this).
+> The above include needs fixing.
+> I did not look at the rest of your patches - they may suffer the same.
 >
+> PS: Your To: is seriously broken, I have to hand-edit Cc:s to send the mail
+>   
+Yes;, and I apologize for this. I've got to track down the reason for 
+this. before send more
+patches.
+> 	Sam
+>   
 
-I can also trigger the bug on mount and unmount of a USB stick, albeit
-its not as intensive.
-
-Pedro
