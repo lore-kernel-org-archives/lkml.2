@@ -1,115 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab0DNH6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 03:58:13 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37802 "EHLO mx1.suse.de"
+	id S1754045Ab0DNIAY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 04:00:24 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37891 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753208Ab0DNH6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 03:58:10 -0400
-Date: Wed, 14 Apr 2010 09:58:08 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Tony Vroon <tony@linx.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>
-Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
-Message-ID: <20100414075808.GA4202@tiehlicka.suse.cz>
-References: <20100401133923.GA4104@tiehlicka.suse.cz>
- <201004130101.54117.rjw@sisk.pl>
- <20100413082756.GA5233@tiehlicka.suse.cz>
- <201004132253.37432.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753134Ab0DNIAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 04:00:23 -0400
+Date: Wed, 14 Apr 2010 10:00:19 +0200
+From: Jan Blunck <jblunck@suse.de>
+To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, tytso@mit.edu,
+       Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+       linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnd Bergmann <arnd@arndb.de>, Andi Kleen <andi@firstfloor.org>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Subject: Re: [PATCH 5/5] ext2: Add ext2_sb_info s_lock spinlock
+Message-ID: <20100414080019.GQ10776@bolzano.suse.de>
+References: <1271104905-8804-1-git-send-email-jblunck@suse.de> <1271104905-8804-6-git-send-email-jblunck@suse.de> <o2r3f9a31f41004140010t7c553e39ib51e69fa9022a75f@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <201004132253.37432.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <o2r3f9a31f41004140010t7c553e39ib51e69fa9022a75f@mail.gmail.com>
+Organization: SUSE LINUX Products GmbH, GF Markus Rex, HRB 16746 (AG Nuernberg)
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 13-04-10 22:53:37, Rafael J. Wysocki wrote:
-> On Tuesday 13 April 2010, Michal Hocko wrote:
-> > On Tue 13-04-10 01:01:54, Rafael J. Wysocki wrote:
-> > > On Saturday 10 April 2010, Rafael J. Wysocki wrote:
-> > > > On Friday 09 April 2010, Tony Vroon wrote:
-> > > > > On Fri, 2010-04-09 at 22:42 +0200, Rafael J. Wysocki wrote:
-> > > > > > Please check if the patch below changes anything.
-> > > > > >  drivers/acpi/wakeup.c |    4 ++--
-> > > > > >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > > > > 
-> > > > > That didn't change the behaviour for me, sorry.
-> > > > 
-> > > > Well, I would be sorry if it did, because the patch removed some useful code. :-)
-> > > > 
-> > > > > (I made sure to go through a full power down session before trying the
-> > > > > patched kernel)
-> > > > 
-> > > > Thanks for testing.  So it looks like we don't disable the GPE during power off.
-> > > > 
-> > > > I'll try to figure out what's going on, please stay tuned.
-> > > 
-> > > Can you please check if the patch below changes the behavior?
-> > 
-> > Unfortunately, it didn't help either (I have tried on top of the fresh
-> > rc4).
-> 
-> That gets really weird.
-> 
-> > > ---
-> > >  drivers/acpi/wakeup.c |    6 +++---
-> > >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > > 
-> > > Index: linux-2.6/drivers/acpi/wakeup.c
-> > > ===================================================================
-> > > --- linux-2.6.orig/drivers/acpi/wakeup.c
-> > > +++ linux-2.6/drivers/acpi/wakeup.c
-> > > @@ -63,17 +63,17 @@ void acpi_enable_wakeup_device(u8 sleep_
-> > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
-> > >  		struct acpi_device *dev =
-> > >  			container_of(node, struct acpi_device, wakeup_list);
-> > > +		u8 action = ACPI_GPE_ENABLE;
-> 
-> Can you try to change the above to ACPI_GPE_DISABLE and retest, please?
+On Wed, Apr 14, Jaswinder Singh Rajput wrote:
 
-Unfortunately didn't help as well...
-Just for reference:
-
-diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
-index 248b473..f23c08f 100644
---- a/drivers/acpi/wakeup.c
-+++ b/drivers/acpi/wakeup.c
-@@ -63,7 +63,7 @@ void acpi_enable_wakeup_device(u8 sleep_state)
- 	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
- 		struct acpi_device *dev =
- 			container_of(node, struct acpi_device, wakeup_list);
--		u8 action = ACPI_GPE_ENABLE;
-+		u8 action = ACPI_GPE_DISABLE;
- 
- 		if (!dev->wakeup.flags.valid)
- 			continue;
+> Hello,
 > 
-> > >  		if (!dev->wakeup.flags.valid)
-> > >  			continue;
-> > >  
-> > >  		if ((!dev->wakeup.state.enabled && !dev->wakeup.prepare_count)
-> > >  		    || sleep_state > (u32) dev->wakeup.sleep_state)
-> > > -			continue;
-> > > +			action = ACPI_GPE_DISABLE;
-> > >  
-> > > -		/* The wake-up power should have been enabled already. */
-> > >  		acpi_set_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
-> > > -				ACPI_GPE_ENABLE);
-> > > +				action);
-> > >  	}
-> > >  }
+> On Tue, Apr 13, 2010 at 2:11 AM, Jan Blunck <jblunck@suse.de> wrote:
+> > Add a spinlock that protects against concurrent modifications of
+> > s_mount_state, s_blocks_last, s_overhead_last and the content of the
+> > superblock's buffer pointed to by sbi->s_es. This is a preparation patch
+> > for removing the BKL from ext2 in the next patch.
+> >
+> > Signed-off-by: Jan Blunck <jblunck@suse.de>
+> > Cc: Andi Kleen <andi@firstfloor.org>
+> > Cc: Jan Kara <jack@suse.cz>
+> > Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> > ---
+> >  fs/ext2/inode.c            |    2 ++
+> >  fs/ext2/super.c            |   31 +++++++++++++++++++++++++++++--
+> >  include/linux/ext2_fs_sb.h |    6 ++++++
+> >  3 files changed, 37 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+> > index fc13cc1..5d15442 100644
+> > --- a/fs/ext2/inode.c
+> > +++ b/fs/ext2/inode.c
+> > @@ -1407,9 +1407,11 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
+> >                                * created, add a flag to the superblock.
+> >                                */
+> >                                lock_kernel();
+> > +                               spin_lock(&EXT2_SB(sb)->s_lock);
+> >                                ext2_update_dynamic_rev(sb);
+> >                                EXT2_SET_RO_COMPAT_FEATURE(sb,
+> >                                        EXT2_FEATURE_RO_COMPAT_LARGE_FILE);
+> > +                               spin_unlock(&EXT2_SB(sb)->s_lock);
+> >                                unlock_kernel();
+> >                                ext2_write_super(sb);
 > 
-> Rafael
+> Do we need both locks (kernel lock and spin lock)
+> 
 
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+The BKL is removed in a separate patch. First I though it should get merged
+through Frederic's tree but since the removal does not depend on the pushdown
+from do_new_mount() I guess it is safe to add here.
+
+Thanks,
+Jan
