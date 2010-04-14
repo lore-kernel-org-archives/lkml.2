@@ -1,173 +1,480 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab0DNKBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 06:01:50 -0400
-Received: from mail-yx0-f199.google.com ([209.85.210.199]:43182 "EHLO
-	mail-yx0-f199.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab0DNKBs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 06:01:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sR4P5UN9X+FMkQtW44Wuc7mpvb6fImakSRQvaZ5q76Gq29H6GikNB/k8X0UkesOH+L
-         VMAC4EEvsBqcQ8XtfPsg06ASm6XCiEb1TWObOT365dXoAVhScHSlprpsuTmLTQYhdXcz
-         2xZT7PFkepTZHBMyK2ic8oGQyKbMWfLKBChGk=
+	id S1754970Ab0DNKEH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 06:04:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:32911 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754886Ab0DNKEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 06:04:04 -0400
+Date: Wed, 14 Apr 2010 10:03:38 GMT
+From: tip-bot for Tom Zanussi <tzanussi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       tzanussi@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tzanussi@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1270184365-8281-2-git-send-email-tzanussi@gmail.com>
+References: <1270184365-8281-2-git-send-email-tzanussi@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/live] perf: Add pipe-specific header read/write and event processing code
+Message-ID: <tip-8dc58101f2c838355d44402aa77646649d10dbec@git.kernel.org>
+Git-Commit-ID: 8dc58101f2c838355d44402aa77646649d10dbec
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-In-Reply-To: <20100414184213.f6bf11a7.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100414135945.2b0a1e0d.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100414054144.GH2493@dastard>
-	 <20100414145056.D147.A69D9226@jp.fujitsu.com>
-	 <y2x28c262361004132313r1e2ca71frd042d5460d897730@mail.gmail.com>
-	 <w2u28c262361004140019pd8fe696ez609ece4a35527658@mail.gmail.com>
-	 <20100414184213.f6bf11a7.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 14 Apr 2010 19:01:47 +0900
-Message-ID: <q2m28c262361004140301jba94a025nda755c1df2e04155@mail.gmail.com>
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Apr 2010 10:03:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 6:42 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Wed, 14 Apr 2010 16:19:02 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> On Wed, Apr 14, 2010 at 3:13 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
->> > On Wed, Apr 14, 2010 at 2:54 PM, KOSAKI Motohiro
->> > <kosaki.motohiro@jp.fujitsu.com> wrote:
->> >>> On Wed, Apr 14, 2010 at 01:59:45PM +0900, KAMEZAWA Hiroyuki wrote:
->> >>> > On Wed, 14 Apr 2010 11:40:41 +1000
->> >>> > Dave Chinner <david@fromorbit.com> wrote:
->> >>> >
->> >>> > >  50)     3168      64   xfs_vm_writepage+0xab/0x160 [xfs]
->> >>> > >  51)     3104     384   shrink_page_list+0x65e/0x840
->> >>> > >  52)     2720     528   shrink_zone+0x63f/0xe10
->> >>> >
->> >>> > A bit OFF TOPIC.
->> >>> >
->> >>> > Could you share disassemble of shrink_zone() ?
->> >>> >
->> >>> > In my environ.
->> >>> > 00000000000115a0 <shrink_zone>:
->> >>> >    115a0:       55                      push   %rbp
->> >>> >    115a1:       48 89 e5                mov    %rsp,%rbp
->> >>> >    115a4:       41 57                   push   %r15
->> >>> >    115a6:       41 56                   push   %r14
->> >>> >    115a8:       41 55                   push   %r13
->> >>> >    115aa:       41 54                   push   %r12
->> >>> >    115ac:       53                      push   %rbx
->> >>> >    115ad:       48 83 ec 78             sub    $0x78,%rsp
->> >>> >    115b1:       e8 00 00 00 00          callq  115b6 <shrink_zone+0x16>
->> >>> >    115b6:       48 89 75 80             mov    %rsi,-0x80(%rbp)
->> >>> >
->> >>> > disassemble seems to show 0x78 bytes for stack. And no changes to %rsp
->> >>> > until retrun.
->> >>>
->> >>> I see the same. I didn't compile those kernels, though. IIUC,
->> >>> they were built through the Ubuntu build infrastructure, so there is
->> >>> something different in terms of compiler, compiler options or config
->> >>> to what we are both using. Most likely it is the compiler inlining,
->> >>> though Chris's patches to prevent that didn't seem to change the
->> >>> stack usage.
->> >>>
->> >>> I'm trying to get a stack trace from the kernel that has shrink_zone
->> >>> in it, but I haven't succeeded yet....
->> >>
->> >> I also got 0x78 byte stack usage. Umm.. Do we discussed real issue now?
->> >>
->> >
->> > In my case, 0x110 byte in 32 bit machine.
->> > I think it's possible in 64 bit machine.
->> >
->> > 00001830 <shrink_zone>:
->> >    1830:       55                      push   %ebp
->> >    1831:       89 e5                   mov    %esp,%ebp
->> >    1833:       57                      push   %edi
->> >    1834:       56                      push   %esi
->> >    1835:       53                      push   %ebx
->> >    1836:       81 ec 10 01 00 00       sub    $0x110,%esp
->> >    183c:       89 85 24 ff ff ff       mov    %eax,-0xdc(%ebp)
->> >    1842:       89 95 20 ff ff ff       mov    %edx,-0xe0(%ebp)
->> >    1848:       89 8d 1c ff ff ff       mov    %ecx,-0xe4(%ebp)
->> >    184e:       8b 41 04                mov    0x4(%ecx)
->> >
->> > my gcc is following as.
->> >
->> > barrios@barriostarget:~/mmotm$ gcc -v
->> > Using built-in specs.
->> > Target: i486-linux-gnu
->> > Configured with: ../src/configure -v --with-pkgversion='Ubuntu
->> > 4.3.3-5ubuntu4'
->> > --with-bugurl=file:///usr/share/doc/gcc-4.3/README.Bugs
->> > --enable-languages=c,c++,fortran,objc,obj-c++ --prefix=/usr
->> > --enable-shared --with-system-zlib --libexecdir=/usr/lib
->> > --without-included-gettext --enable-threads=posix --enable-nls
->> > --with-gxx-include-dir=/usr/include/c++/4.3 --program-suffix=-4.3
->> > --enable-clocale=gnu --enable-libstdcxx-debug --enable-objc-gc
->> > --enable-mpfr --enable-targets=all --with-tune=generic
->> > --enable-checking=release --build=i486-linux-gnu --host=i486-linux-gnu
->> > --target=i486-linux-gnu
->> > Thread model: posix
->> > gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4)
->> >
->> >
->> > Is it depends on config?
->> > I attach my config.
->>
->> I changed shrink list by noinline_for_stack.
->> The result is following as.
->>
->>
->> 00001fe0 <shrink_zone>:
->>     1fe0:       55                      push   %ebp
->>     1fe1:       89 e5                   mov    %esp,%ebp
->>     1fe3:       57                      push   %edi
->>     1fe4:       56                      push   %esi
->>     1fe5:       53                      push   %ebx
->>     1fe6:       83 ec 4c                sub    $0x4c,%esp
->>     1fe9:       89 45 c0                mov    %eax,-0x40(%ebp)
->>     1fec:       89 55 bc                mov    %edx,-0x44(%ebp)
->>     1fef:       89 4d b8                mov    %ecx,-0x48(%ebp)
->>
->> 0x110 -> 0x4c.
->>
->> Should we have to add noinline_for_stack for shrink_list?
->>
->
-> Hmm. about shirnk_zone(), I don't think uninlining functions directly called
-> by shrink_zone() can be a help.
-> Total stack size of call-chain will be still big.
+Commit-ID:  8dc58101f2c838355d44402aa77646649d10dbec
+Gitweb:     http://git.kernel.org/tip/8dc58101f2c838355d44402aa77646649d10dbec
+Author:     Tom Zanussi <tzanussi@gmail.com>
+AuthorDate: Thu, 1 Apr 2010 23:59:15 -0500
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 14 Apr 2010 11:56:05 +0200
 
-Absolutely.
-But above 500 byte usage is one of hogger and uninlining is not
-critical about reclaim performance. So I think we don't get any lost
-than gain.
+perf: Add pipe-specific header read/write and event processing code
 
-But I don't get in a hurry. adhoc approach is not good.
-I hope when Mel tackles down consumption of stack in reclaim path, he
-modifies this part, too.
+This patch makes several changes to allow the perf event stream
+to be sent and received over a pipe:
 
-Thanks.
+- adds pipe-specific versions of the header read/write code
 
-> Thanks,
-> -Kame
->
->
->
+- adds pipe-specific version of the event processing code
 
+- adds a range of event types to be used for header or other
+  pseudo events, above the range used by the kernel
 
+- checks the return value of event handlers, which they can use
+  to skip over large events during event processing rather than actually
+  reading them into event objects.
 
--- 
-Kind regards,
-Minchan Kim
+- unifies the multiple do_read() functions and updates its
+  users.
+
+Note that none of these changes affect the existing perf data
+file format or processing - this code only comes into play if
+perf output is sent to stdout (or is read from stdin).
+
+Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: fweisbec@gmail.com
+Cc: rostedt@goodmis.org
+Cc: k-keiichi@bx.jp.nec.com
+Cc: acme@ghostprotocols.net
+LKML-Reference: <1270184365-8281-2-git-send-email-tzanussi@gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ tools/perf/builtin-record.c |    2 +-
+ tools/perf/util/event.h     |    4 +
+ tools/perf/util/header.c    |   78 +++++++++++++++++++------
+ tools/perf/util/header.h    |    8 ++-
+ tools/perf/util/session.c   |  135 ++++++++++++++++++++++++++++++++++++++++---
+ tools/perf/util/session.h   |    4 +
+ 6 files changed, 202 insertions(+), 29 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 9a95136..d060fc5 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -487,7 +487,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	}
+ 
+ 	if (!file_new) {
+-		err = perf_header__read(&session->header, output);
++		err = perf_header__read(session, output);
+ 		if (err < 0)
+ 			return err;
+ 	}
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 7f7cf85..5c1eba6 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -83,6 +83,10 @@ struct build_id_event {
+ 	char			 filename[];
+ };
+ 
++enum perf_header_event_type { /* above any possible kernel type */
++	PERF_RECORD_HEADER_MAX			= 64,
++};
++
+ typedef union event_union {
+ 	struct perf_event_header	header;
+ 	struct ip_event			ip;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 6c9aa16..8d05337 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -427,6 +427,25 @@ out_free:
+ 	return err;
+ }
+ 
++int perf_header__write_pipe(int fd)
++{
++	struct perf_pipe_file_header f_header;
++	int err;
++
++	f_header = (struct perf_pipe_file_header){
++		.magic	   = PERF_MAGIC,
++		.size	   = sizeof(f_header),
++	};
++
++	err = do_write(fd, &f_header, sizeof(f_header));
++	if (err < 0) {
++		pr_debug("failed to write perf pipe header\n");
++		return err;
++	}
++
++	return 0;
++}
++
+ int perf_header__write(struct perf_header *self, int fd, bool at_exit)
+ {
+ 	struct perf_file_header f_header;
+@@ -518,25 +537,10 @@ int perf_header__write(struct perf_header *self, int fd, bool at_exit)
+ 	return 0;
+ }
+ 
+-static int do_read(int fd, void *buf, size_t size)
+-{
+-	while (size) {
+-		int ret = read(fd, buf, size);
+-
+-		if (ret <= 0)
+-			return -1;
+-
+-		size -= ret;
+-		buf += ret;
+-	}
+-
+-	return 0;
+-}
+-
+ static int perf_header__getbuffer64(struct perf_header *self,
+ 				    int fd, void *buf, size_t size)
+ {
+-	if (do_read(fd, buf, size))
++	if (do_read(fd, buf, size) <= 0)
+ 		return -1;
+ 
+ 	if (self->needs_swap)
+@@ -592,7 +596,7 @@ int perf_file_header__read(struct perf_file_header *self,
+ {
+ 	lseek(fd, 0, SEEK_SET);
+ 
+-	if (do_read(fd, self, sizeof(*self)) ||
++	if (do_read(fd, self, sizeof(*self)) <= 0 ||
+ 	    memcmp(&self->magic, __perf_magic, sizeof(self->magic)))
+ 		return -1;
+ 
+@@ -662,13 +666,51 @@ static int perf_file_section__process(struct perf_file_section *self,
+ 	return 0;
+ }
+ 
+-int perf_header__read(struct perf_header *self, int fd)
++static int perf_file_header__read_pipe(struct perf_pipe_file_header *self,
++				       struct perf_header *ph, int fd)
+ {
++	if (do_read(fd, self, sizeof(*self)) <= 0 ||
++	    memcmp(&self->magic, __perf_magic, sizeof(self->magic)))
++		return -1;
++
++	if (self->size != sizeof(*self)) {
++		u64 size = bswap_64(self->size);
++
++		if (size != sizeof(*self))
++			return -1;
++
++		ph->needs_swap = true;
++	}
++
++	return 0;
++}
++
++static int perf_header__read_pipe(struct perf_session *session, int fd)
++{
++	struct perf_header *self = &session->header;
++	struct perf_pipe_file_header f_header;
++
++	if (perf_file_header__read_pipe(&f_header, self, fd) < 0) {
++		pr_debug("incompatible file format\n");
++		return -EINVAL;
++	}
++
++	session->fd = fd;
++
++	return 0;
++}
++
++int perf_header__read(struct perf_session *session, int fd)
++{
++	struct perf_header *self = &session->header;
+ 	struct perf_file_header	f_header;
+ 	struct perf_file_attr	f_attr;
+ 	u64			f_id;
+ 	int nr_attrs, nr_ids, i, j;
+ 
++	if (session->fd_pipe)
++		return perf_header__read_pipe(session, fd);
++
+ 	if (perf_file_header__read(&f_header, self, fd) < 0) {
+ 		pr_debug("incompatible file format\n");
+ 		return -EINVAL;
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index c059f08..6562ece 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -39,6 +39,11 @@ struct perf_file_header {
+ 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
+ };
+ 
++struct perf_pipe_file_header {
++	u64				magic;
++	u64				size;
++};
++
+ struct perf_header;
+ 
+ int perf_file_header__read(struct perf_file_header *self,
+@@ -60,8 +65,9 @@ struct perf_header {
+ int perf_header__init(struct perf_header *self);
+ void perf_header__exit(struct perf_header *self);
+ 
+-int perf_header__read(struct perf_header *self, int fd);
++int perf_header__read(struct perf_session *session, int fd);
+ int perf_header__write(struct perf_header *self, int fd, bool at_exit);
++int perf_header__write_pipe(int fd);
+ 
+ int perf_header__add_attr(struct perf_header *self,
+ 			  struct perf_header_attr *attr);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index ddf288f..2c1277c 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -14,6 +14,16 @@ static int perf_session__open(struct perf_session *self, bool force)
+ {
+ 	struct stat input_stat;
+ 
++	if (!strcmp(self->filename, "-")) {
++		self->fd_pipe = true;
++		self->fd = STDIN_FILENO;
++
++		if (perf_header__read(self, self->fd) < 0)
++			pr_err("incompatible file format");
++
++		return 0;
++	}
++
+ 	self->fd = open(self->filename, O_RDONLY);
+ 	if (self->fd < 0) {
+ 		pr_err("failed to open file: %s", self->filename);
+@@ -38,7 +48,7 @@ static int perf_session__open(struct perf_session *self, bool force)
+ 		goto out_close;
+ 	}
+ 
+-	if (perf_header__read(&self->header, self->fd) < 0) {
++	if (perf_header__read(self, self->fd) < 0) {
+ 		pr_err("incompatible file format");
+ 		goto out_close;
+ 	}
+@@ -52,6 +62,11 @@ out_close:
+ 	return -1;
+ }
+ 
++void perf_session__update_sample_type(struct perf_session *self)
++{
++	self->sample_type = perf_header__sample_type(&self->header);
++}
++
+ struct perf_session *perf_session__new(const char *filename, int mode, bool force)
+ {
+ 	size_t len = filename ? strlen(filename) + 1 : 0;
+@@ -85,7 +100,7 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
+ 			goto out_delete;
+ 	}
+ 
+-	self->sample_type = perf_header__sample_type(&self->header);
++	perf_session__update_sample_type(self);
+ out:
+ 	return self;
+ out_free:
+@@ -200,14 +215,17 @@ static const char *event__name[] = {
+ 	[PERF_RECORD_SAMPLE]	 = "SAMPLE",
+ };
+ 
+-unsigned long event__total[PERF_RECORD_MAX];
++unsigned long event__total[PERF_RECORD_HEADER_MAX];
+ 
+ void event__print_totals(void)
+ {
+ 	int i;
+-	for (i = 0; i < PERF_RECORD_MAX; ++i)
++	for (i = 0; i < PERF_RECORD_HEADER_MAX; ++i) {
++		if (!event__name[i])
++			continue;
+ 		pr_info("%10s events: %10ld\n",
+ 			event__name[i], event__total[i]);
++	}
+ }
+ 
+ void mem_bswap_64(void *src, int byte_size)
+@@ -271,7 +289,7 @@ static event__swap_op event__swap_ops[] = {
+ 	[PERF_RECORD_LOST]   = event__all64_swap,
+ 	[PERF_RECORD_READ]   = event__read_swap,
+ 	[PERF_RECORD_SAMPLE] = event__all64_swap,
+-	[PERF_RECORD_MAX]    = NULL,
++	[PERF_RECORD_HEADER_MAX]    = NULL,
+ };
+ 
+ static int perf_session__process_event(struct perf_session *self,
+@@ -281,7 +299,7 @@ static int perf_session__process_event(struct perf_session *self,
+ {
+ 	trace_event(event);
+ 
+-	if (event->header.type < PERF_RECORD_MAX) {
++	if (event->header.type < PERF_RECORD_HEADER_MAX) {
+ 		dump_printf("%#Lx [%#x]: PERF_RECORD_%s",
+ 			    offset + head, event->header.size,
+ 			    event__name[event->header.type]);
+@@ -376,6 +394,101 @@ static struct thread *perf_session__register_idle_thread(struct perf_session *se
+ 	return thread;
+ }
+ 
++int do_read(int fd, void *buf, size_t size)
++{
++	void *buf_start = buf;
++
++	while (size) {
++		int ret = read(fd, buf, size);
++
++		if (ret <= 0)
++			return ret;
++
++		size -= ret;
++		buf += ret;
++	}
++
++	return buf - buf_start;
++}
++
++#define session_done()	(*(volatile int *)(&session_done))
++volatile int session_done;
++
++static int __perf_session__process_pipe_events(struct perf_session *self,
++					       struct perf_event_ops *ops)
++{
++	event_t event;
++	uint32_t size;
++	int skip = 0;
++	u64 head;
++	int err;
++	void *p;
++
++	perf_event_ops__fill_defaults(ops);
++
++	head = 0;
++more:
++	err = do_read(self->fd, &event, sizeof(struct perf_event_header));
++	if (err <= 0) {
++		if (err == 0)
++			goto done;
++
++		pr_err("failed to read event header\n");
++		goto out_err;
++	}
++
++	if (self->header.needs_swap)
++		perf_event_header__bswap(&event.header);
++
++	size = event.header.size;
++	if (size == 0)
++		size = 8;
++
++	p = &event;
++	p += sizeof(struct perf_event_header);
++
++	err = do_read(self->fd, p, size - sizeof(struct perf_event_header));
++	if (err <= 0) {
++		if (err == 0) {
++			pr_err("unexpected end of event stream\n");
++			goto done;
++		}
++
++		pr_err("failed to read event data\n");
++		goto out_err;
++	}
++
++	if (size == 0 ||
++	    (skip = perf_session__process_event(self, &event, ops,
++						0, head)) < 0) {
++		dump_printf("%#Lx [%#x]: skipping unknown header type: %d\n",
++			    head, event.header.size, event.header.type);
++		/*
++		 * assume we lost track of the stream, check alignment, and
++		 * increment a single u64 in the hope to catch on again 'soon'.
++		 */
++		if (unlikely(head & 7))
++			head &= ~7ULL;
++
++		size = 8;
++	}
++
++	head += size;
++
++	dump_printf("\n%#Lx [%#x]: event: %d\n",
++		    head, event.header.size, event.header.type);
++
++	if (skip > 0)
++		head += skip;
++
++	if (!session_done())
++		goto more;
++done:
++	err = 0;
++out_err:
++	return err;
++}
++
+ int __perf_session__process_events(struct perf_session *self,
+ 				   u64 data_offset, u64 data_size,
+ 				   u64 file_size, struct perf_event_ops *ops)
+@@ -499,9 +612,13 @@ out_getcwd_err:
+ 		self->cwdlen = strlen(self->cwd);
+ 	}
+ 
+-	err = __perf_session__process_events(self, self->header.data_offset,
+-					     self->header.data_size,
+-					     self->size, ops);
++	if (!self->fd_pipe)
++		err = __perf_session__process_events(self,
++						     self->header.data_offset,
++						     self->header.data_size,
++						     self->size, ops);
++	else
++		err = __perf_session__process_pipe_events(self, ops);
+ out_err:
+ 	return err;
+ }
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 27f4c2d..5f78911 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -27,6 +27,7 @@ struct perf_session {
+ 	u64			sample_type;
+ 	struct ref_reloc_sym	ref_reloc_sym;
+ 	int			fd;
++	bool			fd_pipe;
+ 	int			cwdlen;
+ 	char			*cwd;
+ 	char filename[0];
+@@ -92,6 +93,9 @@ static inline struct map *
+ 	return map_groups__new_module(&self->kmaps, start, filename);
+ }
+ 
++int do_read(int fd, void *buf, size_t size);
++void perf_session__update_sample_type(struct perf_session *self);
++
+ #ifdef NO_NEWT_SUPPORT
+ static inline int perf_session__browse_hists(struct rb_root *hists __used,
+ 					      u64 nr_hists __used,
