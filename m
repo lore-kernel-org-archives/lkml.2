@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab0DNNn2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 09:43:28 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59309 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755435Ab0DNNn1 (ORCPT
+	id S1755648Ab0DNNpE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 09:45:04 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54861 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755481Ab0DNNpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 09:43:27 -0400
-Date: Wed, 14 Apr 2010 14:43:21 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH] Input: add HP Compaq 2710p to 'noloop' table
-Message-ID: <20100414134321.GA11335@srcf.ucam.org>
-References: <alpine.LNX.2.00.1004141409450.8345@pobox.suse.cz> <20100414123643.GB9242@srcf.ucam.org> <alpine.LNX.2.00.1004141437340.8345@pobox.suse.cz> <20100414135350.3b1643c2@lxorguk.ukuu.org.uk> <20100414125244.GC10075@srcf.ucam.org> <20100414143550.75def636@lxorguk.ukuu.org.uk> <20100414133801.GA11142@srcf.ucam.org> <alpine.LNX.2.00.1004141538490.8345@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1004141538490.8345@pobox.suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 14 Apr 2010 09:45:01 -0400
+Date: Wed, 14 Apr 2010 14:49:12 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Alan Cox <alan@linux.intel.com>, linux-i2c@vger.kernel.org,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Various intel small device drivers
+Message-ID: <20100414144912.12c83f51@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100414153052.4e07f0cc@hyperion.delvare>
+References: <20100414124913.23181.75903.stgit@localhost.localdomain>
+	<20100414153052.4e07f0cc@hyperion.delvare>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 03:40:14PM +0200, Jiri Kosina wrote:
+> > Kalhan Trisal (4):
+> >       emc1403: thermal sensor support
+> >       liss331d1: accelerometer driver
+> >       isl29020: ambient light sensor
+> >       hmc6352: Add driver for the HMC6352 compass
+> 
+> The liss331d1, isl29020 and hmc6352 are not hardware monitoring drivers
 
-> Ask vendors, who are shipping specialized windows drivers for their mice, 
-> to be please so kind and always include a linux driver as well, and nuke 
-> all the probing logic from in-kernel driver?
+Disagree somewhat. In fact on close grepping I find that there is another
+related lis33 implementation in drivers/hwmon already 8)
 
-Well, in this case we know that there's a synaptics (it's in ACPIPNP) 
-and we know that an internal synaptics places pretty heavy constraints 
-on what else is going to be attached to the machine.
+Given all the accelerometers are in drivers/hwmon where do you think they
+should be, and do you have pending patches to move the others ?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I'd also be interested where you think the compass fits if its not hwmon,
+ditto the ambient light sensor ?
+
+I'll bounce the emc1403 onto lm-sensors.
+
+Thanks
+Alan
