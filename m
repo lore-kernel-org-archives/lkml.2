@@ -1,42 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab0DNPky (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:40:54 -0400
-Received: from mail.atmel.fr ([81.80.104.162]:39270 "EHLO atmel-es2.atmel.fr"
+	id S1756175Ab0DNPlZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 11:41:25 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:51965 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166Ab0DNPkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 11:40:53 -0400
-Message-ID: <4BC5E1F2.1000003@atmel.com>
-Date: Wed, 14 Apr 2010 17:40:34 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
+	id S1756158Ab0DNPlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 11:41:24 -0400
+Date: Wed, 14 Apr 2010 08:41:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next-2.6] fasync: RCU locking
+Message-ID: <20100414154119.GB2516@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1271230961.16881.630.camel@edumazet-laptop>
 MIME-Version: 1.0
-To: Andrew Victor <avictor.za@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] AT91: at91sam9g10 chip identification changed
-References: <1270115336-19488-1-git-send-email-nicolas.ferre@atmel.com>	 <l2ocd73a99e1004130042qfe9aba83l512a0fad50112d19@mail.gmail.com>	 <4BC57977.7000705@atmel.com> <t2rcd73a99e1004140801ybff81f03x5c7fae2ace55afd6@mail.gmail.com>
-In-Reply-To: <t2rcd73a99e1004140801ybff81f03x5c7fae2ace55afd6@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271230961.16881.630.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 14/04/2010 17:01, Andrew Victor :
-> hi Nicolas,
+On Wed, Apr 14, 2010 at 09:42:41AM +0200, Eric Dumazet wrote:
+> Paul, could you please check this patch, I am not sure
+> of the IRQ safety thing...
 > 
->> I do not think it is a good idea:
+> Is call_rcu() the right method to use in this case ?
+
+It looks like all the read-side critical sections are protected by
+rcu_read_lock(), so call_rcu() should be OK.  And it is OK to invoke
+call_rcu() with irqs disabled.  (Just don't try it in an NMI handler.)
+
+Or am I missing some code path that tries to use disabling of irqs
+instead of using rcu_read_lock()?  That happens to work in the current
+implementation, but...
+
+							Thanx, Paul
+
+> Thanks
 > 
-> Ok.  Then we'll go with your original patch.
+> [PATCH net-next-2.6] fasync: RCU locking
 > 
->  Acked-by: Andrew Victor <linux@maxim.org.za>
-
-Queued in patch tracking system as 6056/1:
-
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6056/1
-
-Thanks, bye,
--- 
-Nicolas Ferre
-
+> kill_fasync() uses a central rwlock, candidate for RCU conversion.
+> 
+> We can remove __kill_fasync() direct use in net, and rename it to
+> kill_fasync_rcu()
+> 
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> ---
+>  fs/fcntl.c         |   36 +++++++++++++++++++++---------------
+>  include/linux/fs.h |   11 +++++------
+>  net/socket.c       |    4 ++--
+>  3 files changed, 28 insertions(+), 23 deletions(-)
+> 
+> diff --git a/fs/fcntl.c b/fs/fcntl.c
+> index 452d02f..33cb3ee 100644
+> --- a/fs/fcntl.c
+> +++ b/fs/fcntl.c
+> @@ -614,9 +614,15 @@ int send_sigurg(struct fown_struct *fown)
+>  	return ret;
+>  }
+> 
+> -static DEFINE_RWLOCK(fasync_lock);
+> +static DEFINE_SPINLOCK(fasync_lock);
+>  static struct kmem_cache *fasync_cache __read_mostly;
+> 
+> +static void fasync_free_rcu(struct rcu_head *head)
+> +{
+> +	kmem_cache_free(fasync_cache,
+> +			container_of(head, struct fasync_struct, fa_rcu));
+> +}
+> +
+>  /*
+>   * Remove a fasync entry. If successfully removed, return
+>   * positive and clear the FASYNC flag. If no entry exists,
+> @@ -634,17 +640,17 @@ static int fasync_remove_entry(struct file *filp, struct fasync_struct **fapp)
+>  	int result = 0;
+> 
+>  	spin_lock(&filp->f_lock);
+> -	write_lock_irq(&fasync_lock);
+> +	spin_lock_irq(&fasync_lock);
+>  	for (fp = fapp; (fa = *fp) != NULL; fp = &fa->fa_next) {
+>  		if (fa->fa_file != filp)
+>  			continue;
+>  		*fp = fa->fa_next;
+> -		kmem_cache_free(fasync_cache, fa);
+> +		call_rcu(&fa->fa_rcu, fasync_free_rcu);
+>  		filp->f_flags &= ~FASYNC;
+>  		result = 1;
+>  		break;
+>  	}
+> -	write_unlock_irq(&fasync_lock);
+> +	spin_unlock_irq(&fasync_lock);
+>  	spin_unlock(&filp->f_lock);
+>  	return result;
+>  }
+> @@ -666,7 +672,7 @@ static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fa
+>  		return -ENOMEM;
+> 
+>  	spin_lock(&filp->f_lock);
+> -	write_lock_irq(&fasync_lock);
+> +	spin_lock_irq(&fasync_lock);
+>  	for (fp = fapp; (fa = *fp) != NULL; fp = &fa->fa_next) {
+>  		if (fa->fa_file != filp)
+>  			continue;
+> @@ -679,12 +685,12 @@ static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fa
+>  	new->fa_file = filp;
+>  	new->fa_fd = fd;
+>  	new->fa_next = *fapp;
+> -	*fapp = new;
+> +	rcu_assign_pointer(*fapp, new);
+>  	result = 1;
+>  	filp->f_flags |= FASYNC;
+> 
+>  out:
+> -	write_unlock_irq(&fasync_lock);
+> +	spin_unlock_irq(&fasync_lock);
+>  	spin_unlock(&filp->f_lock);
+>  	return result;
+>  }
+> @@ -704,7 +710,10 @@ int fasync_helper(int fd, struct file * filp, int on, struct fasync_struct **fap
+> 
+>  EXPORT_SYMBOL(fasync_helper);
+> 
+> -void __kill_fasync(struct fasync_struct *fa, int sig, int band)
+> +/*
+> + * rcu_read_lock() is held
+> + */
+> +static void kill_fasync_rcu(struct fasync_struct *fa, int sig, int band)
+>  {
+>  	while (fa) {
+>  		struct fown_struct * fown;
+> @@ -719,22 +728,19 @@ void __kill_fasync(struct fasync_struct *fa, int sig, int band)
+>  		   mechanism. */
+>  		if (!(sig == SIGURG && fown->signum == 0))
+>  			send_sigio(fown, fa->fa_fd, band);
+> -		fa = fa->fa_next;
+> +		fa = rcu_dereference(fa->fa_next);
+>  	}
+>  }
+> 
+> -EXPORT_SYMBOL(__kill_fasync);
+> -
+>  void kill_fasync(struct fasync_struct **fp, int sig, int band)
+>  {
+>  	/* First a quick test without locking: usually
+>  	 * the list is empty.
+>  	 */
+>  	if (*fp) {
+> -		read_lock(&fasync_lock);
+> -		/* reread *fp after obtaining the lock */
+> -		__kill_fasync(*fp, sig, band);
+> -		read_unlock(&fasync_lock);
+> +		rcu_read_lock();
+> +		kill_fasync_rcu(rcu_dereference(*fp), sig, band);
+> +		rcu_read_unlock();
+>  	}
+>  }
+>  EXPORT_SYMBOL(kill_fasync);
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 39d57bc..158b2cc 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1280,10 +1280,11 @@ static inline int lock_may_write(struct inode *inode, loff_t start,
+> 
+> 
+>  struct fasync_struct {
+> -	int	magic;
+> -	int	fa_fd;
+> -	struct	fasync_struct	*fa_next; /* singly linked list */
+> -	struct	file 		*fa_file;
+> +	int			magic;
+> +	int			fa_fd;
+> +	struct fasync_struct	*fa_next; /* singly linked list */
+> +	struct file		*fa_file;
+> +	struct rcu_head		fa_rcu;
+>  };
+> 
+>  #define FASYNC_MAGIC 0x4601
+> @@ -1292,8 +1293,6 @@ struct fasync_struct {
+>  extern int fasync_helper(int, struct file *, int, struct fasync_struct **);
+>  /* can be called from interrupts */
+>  extern void kill_fasync(struct fasync_struct **, int, int);
+> -/* only for net: no internal synchronization */
+> -extern void __kill_fasync(struct fasync_struct *, int, int);
+> 
+>  extern int __f_setown(struct file *filp, struct pid *, enum pid_type, int force);
+>  extern int f_setown(struct file *filp, unsigned long arg, int force);
+> diff --git a/net/socket.c b/net/socket.c
+> index 35bc198..846739c 100644
+> --- a/net/socket.c
+> +++ b/net/socket.c
+> @@ -1159,10 +1159,10 @@ int sock_wake_async(struct socket *sock, int how, int band)
+>  		/* fall through */
+>  	case SOCK_WAKE_IO:
+>  call_kill:
+> -		__kill_fasync(sock->fasync_list, SIGIO, band);
+> +		kill_fasync(sock->fasync_list, SIGIO, band);
+>  		break;
+>  	case SOCK_WAKE_URG:
+> -		__kill_fasync(sock->fasync_list, SIGURG, band);
+> +		kill_fasync(sock->fasync_list, SIGURG, band);
+>  	}
+>  	return 0;
+>  }
+> 
+> 
