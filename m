@@ -1,20 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab0DNNYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 09:24:46 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34987 "EHLO
+	id S1755476Ab0DNN0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 09:26:40 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34991 "EHLO
 	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755582Ab0DNNYn (ORCPT
+	with ESMTP id S1750939Ab0DNN0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 09:24:43 -0400
+	Wed, 14 Apr 2010 09:26:37 -0400
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 4/4] emc1403: thermal sensor support
 To: linux-i2c@vger.kernel.org, khali@linux-fr.org, linux-input@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Date: Wed, 14 Apr 2010 13:52:08 +0100
-Message-ID: <20100414125205.23181.15562.stgit@localhost.localdomain>
-In-Reply-To: <20100414124913.23181.75903.stgit@localhost.localdomain>
-References: <20100414124913.23181.75903.stgit@localhost.localdomain>
+Date: Wed, 14 Apr 2010 13:54:02 +0100
+Message-ID: <20100414125234.23507.42816.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,497 +20,590 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kalhan Trisal <kalhan.trisal at intel.com>
+Subject: [FOR COMMENT] cy8ctmg110 for review
 
-Provides support for the emc1403 thermal sensor. Only reporting of values
-is supported. The various Moorestown specific extras to do with thermal
-alerts and the like are not in this version of the driver.
+From: Samuli Konttila <samuli.konttila@aavamobile.com>
 
-Signed-off-by: Kalhan Trisal <kalhan.trisal at intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Add support for the cy8ctmg110 capacitive touchscreen used on some embedded
+devices.
+
+(Some clean up by Alan Cox)
+
+(No signed off, not yet ready to go in)
 ---
 
- drivers/hwmon/Kconfig   |   10 +
- drivers/hwmon/Makefile  |    1 
- drivers/hwmon/emc1403.c |  437 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 448 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hwmon/emc1403.c
+ drivers/input/touchscreen/Kconfig         |   12 +
+ drivers/input/touchscreen/Makefile        |    3 
+ drivers/input/touchscreen/cy8ctmg110_ts.c |  521 +++++++++++++++++++++++++++++
+ 3 files changed, 535 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/input/touchscreen/cy8ctmg110_ts.c
 
 
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 6868b9d..34ee302 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -1112,6 +1112,16 @@ config SENSORS_LIS331DL
- 	  Device can be configured using sysfs.
- 	  x y Z data can be   accessible via sysfs.
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index b3ba374..89a3eb1 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -591,4 +591,16 @@ config TOUCHSCREEN_TPS6507X
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called tps6507x_ts.
  
-+config SENSORS_EMC1403
-+	tristate "SMSC EMC1403 thermal sensor"
++config TOUCHSCREEN_CY8CTMG110
++	tristate "cy8ctmg110 touchscreen"
 +	depends on I2C
 +	help
-+	  If you say yes here you get support for the SMSC Devices
-+	  EMC1403 temperature monitoring chip.
++	  Say Y here if you have a cy8ctmg110 touchscreen capacitive
++	  touchscreen
 +
-+	  Threshold values can be configured using sysfs.
-+	  Data from the different diode are accessible via sysfs.
++	  If unsure, say N.
 +
- if ACPI
++	  To compile this driver as a module, choose M here: the
++	  module will be called cy8ctmg110_ts.
++
+ endif
+diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+index dfb7239..c7acb65 100644
+--- a/drivers/input/touchscreen/Makefile
++++ b/drivers/input/touchscreen/Makefile
+@@ -1,5 +1,5 @@
+ #
+-# Makefile for the touchscreen drivers.
++# Makefile for the touchscreen drivers.mororor
+ #
  
- comment "ACPI drivers"
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index ebeb2a2..a7332ce 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -40,6 +40,7 @@ obj-$(CONFIG_SENSORS_ATXP1)	+= atxp1.o
- obj-$(CONFIG_SENSORS_CORETEMP)	+= coretemp.o
- obj-$(CONFIG_SENSORS_DME1737)	+= dme1737.o
- obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
-+obj-$(CONFIG_SENSORS_EMC1403)	+= emc1403.o
- obj-$(CONFIG_SENSORS_F71805F)	+= f71805f.o
- obj-$(CONFIG_SENSORS_F71882FG)	+= f71882fg.o
- obj-$(CONFIG_SENSORS_F75375S)	+= f75375s.o
-diff --git a/drivers/hwmon/emc1403.c b/drivers/hwmon/emc1403.c
+ # Each configuration option enables a list of files.
+@@ -12,6 +12,7 @@ obj-$(CONFIG_TOUCHSCREEN_AD7879)	+= ad7879.o
+ obj-$(CONFIG_TOUCHSCREEN_ADS7846)	+= ads7846.o
+ obj-$(CONFIG_TOUCHSCREEN_ATMEL_TSADCC)	+= atmel_tsadcc.o
+ obj-$(CONFIG_TOUCHSCREEN_BITSY)		+= h3600_ts_input.o
++obj-$(CONFIG_TOUCHSCREEN_CY8CTMG110)    += cy8ctmg110_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_DYNAPRO)	+= dynapro.o
+ obj-$(CONFIG_TOUCHSCREEN_GUNZE)		+= gunze.o
+ obj-$(CONFIG_TOUCHSCREEN_EETI)		+= eeti_ts.o
+diff --git a/drivers/input/touchscreen/cy8ctmg110_ts.c b/drivers/input/touchscreen/cy8ctmg110_ts.c
 new file mode 100644
-index 0000000..b71cfa1
+index 0000000..4adbe87
 --- /dev/null
-+++ b/drivers/hwmon/emc1403.c
-@@ -0,0 +1,437 @@
++++ b/drivers/input/touchscreen/cy8ctmg110_ts.c
+@@ -0,0 +1,521 @@
 +/*
-+ * emc1403.c - SMSC Thermal Driver
-+ *
-+ * Copyright (C) 2008 Intel Corp
-+ *
-+ *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * cy8ctmg110_ts.c Driver for cypress touch screen controller
++ * Copyright (c) 2009 Aava Mobile
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
 +
 +#include <linux/module.h>
-+#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/input.h>
 +#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/hwmon-vid.h>
 +#include <linux/interrupt.h>
-+#include <linux/workqueue.h>
-+#include <linux/err.h>
++#include <asm/io.h>
++#include <linux/i2c.h>
++#include <linux/timer.h>
++#include <linux/gpio.h>
++#include <linux/hrtimer.h>
++
++#include <linux/platform_device.h>
 +#include <linux/delay.h>
-+#include <linux/mutex.h>
-+#include <linux/sysfs.h>
++#include <linux/fs.h>
++#include <asm/ioctl.h>
++#include <asm/uaccess.h>
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/delay.h>
++#include <linux/fs.h>
++#include <asm/ioctl.h>
++#include <linux/fs.h>
++#include <linux/init.h>
++#include <linux/miscdevice.h>
++#include <linux/module.h>
 +
 +
-+/* Limit status reg Therm/High/Low/Fault*/
-+static const u8 THM_STAT_REG_TEMP[] = { 0x37, 0x35, 0x36, 0x1B, 0x02};
++#define CY8CTMG110_DRIVER_NAME      "cy8ctmg110"
 +
-+/* Channel  diode temp set */
-+static const u8 THM_CHAN_TEMP[] = { 0x10, 0x08, 0x04, 0x02, 0x01 };
 +
-+/* Therm Limit reg store values */
-+static const u8 THM_LIMIT_REG_TEMP[] = { 0x05, 0x06, 0x07, 0x08, 0x15, 0x16,
-+						0x19, 0x1A, 0x20, 0x21 };
++/*HW definations*/
++#define CY8CTMG110_RESET_PIN_GPIO   43
++#define CY8CTMG110_IRQ_PIN_GPIO     59
++#define CY8CTMG110_I2C_ADDR         0x38
++#define CY8CTMG110_I2C_ADDR_EXT     0x39
++#define CY8CTMG110_I2C_ADDR_        0x2	/*i2c address first sample */
++#define CY8CTMG110_I2C_ADDR__       53	/*i2c address to FW where irq support missing */
++#define CY8CTMG110_TOUCH_IRQ        21
++#define CY8CTMG110_TOUCH_LENGHT     9787
++#define CY8CTMG110_SCREEN_LENGHT    8424
 +
-+/* DATA REGISTERS */
-+static const u8 THM_REG_CURR_TEMP[] = { 0x00, 0x01, 0x23 };
 +
-+#define THERMAL_PID_REG		0xfd
-+#define THERMAL_SMSC_ID_REG	0xfe
-+#define THERMAL_REVISION_REG	0xff
-+#define THERMAL_ADC_UPDATE_BUSY	0x80
-+#define I2C_THERMAL_SLAVE_ADDR	0x4C
-+#define TEMP1			1
-+#define TEMP2			2
-+#define TEMP3			4
-+#define IRQ_TYPE_MASK		(1 << 15)
-+#define HIGH_EVENT		1
-+#define LOW_EVENT		2
-+#define THERM_EVENT		3
-+#define FAULT_EVENT		4
-+#define ALERT_EVENT		1
++/*Touch coordinates*/
++#define CY8CTMG110_X_MIN        0
++#define CY8CTMG110_Y_MIN        0
++#define CY8CTMG110_X_MAX        864
++#define CY8CTMG110_Y_MAX        480
 +
-+struct thermal_data {
++
++/*cy8ctmg110 registers defination*/
++#define CY8CTMG110_TOUCH_WAKEUP_TIME   0
++#define CY8CTMG110_TOUCH_SLEEP_TIME    2
++#define CY8CTMG110_TOUCH_X1            3
++#define CY8CTMG110_TOUCH_Y1            5
++#define CY8CTMG110_TOUCH_X2            7
++#define CY8CTMG110_TOUCH_Y2            9
++#define CY8CTMG110_FINGERS             11
++#define CY8CTMG110_GESTURE             12
++#define CY8CTMG110_REG_MAX             13
++
++#define CY8CTMG110_POLL_TIMER_DELAY  1000*1000*100
++#define TOUCH_MAX_I2C_FAILS          50
++
++/* Scale factors for coordinates */
++#define X_SCALE_FACTOR 9387/8424
++#define Y_SCALE_FACTOR 97/100
++
++/* For tracing */
++static int g_y_trace_coord = 0;
++module_param(g_y_trace_coord, int, 0600);
++
++/* Polling mode */
++static int polling = 0;
++module_param(polling, int, 0);
++MODULE_PARM_DESC(polling, "Set to enabling polling of the touchscreen");
++
++
++/*
++ * The touch position structure.
++ */
++struct ts_event {
++	int x1;
++	int y1;
++	int x2;
++	int y2;
++	bool event_sended;
++};
++
++/*
++ * The touch driver structure.
++ */
++struct cy8ctmg110 {
++	struct input_dev *input;
++	char phys[32];
++	struct ts_event tc;
 +	struct i2c_client *client;
-+	struct device *hwmon_dev;
-+	int therm_irq;
-+	int alert_irq;
-+	struct work_struct therm_handler;
-+	struct work_struct alert_handler;
++	bool pending;
++	spinlock_t lock;
++	bool initController;
++	bool sleepmode;
++	int i2c_fail_count;
++	struct hrtimer timer;
 +};
 +
-+static int calculate_offset(int type, int temp_ofs)
++/*
++ * cy8ctmg110_poweroff is the routine that is called when touch hardware 
++ * will powered off
++ */
++static void cy8ctmg110_power(bool poweron)
 +{
-+	int offset = 0;
-+
-+	switch (type) {
-+	case TEMP1:
-+		if (temp_ofs == 0)
-+			offset = 1;
-+		else if (temp_ofs == 1)
-+			offset = 0;
-+		else if (temp_ofs == 2)
-+			offset = 8;
-+		break;
-+	case TEMP2:
-+		if (temp_ofs == 0)
-+			offset = 3;
-+		else if (temp_ofs == 1)
-+			offset = 2;
-+		else if (temp_ofs == 2)
-+			offset = 6;
-+		break;
-+	case TEMP3:
-+		if (temp_ofs == 0)
-+			offset = 5;
-+		else if (temp_ofs == 1)
-+			offset = 4;
-+		else if (temp_ofs == 2)
-+			offset = 7;
-+		break;
-+	default:
-+		offset = -1;
-+		break;
-+	}
-+	return offset;
-+
-+}
-+
-+
-+static ssize_t show_temp_auto_offset(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct sensor_device_attribute_2 *s_attr = to_sensor_dev_attr_2(attr);
-+	int temp_index = s_attr->index;
-+	int temp_ofs = s_attr->nr;
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int ret_val;
-+	int ret_offset;
-+
-+	ret_offset = calculate_offset(temp_index, temp_ofs);
-+	if (ret_offset == -1)
-+		return -EINVAL;
-+	ret_val = i2c_smbus_read_byte_data(client,
-+				THM_LIMIT_REG_TEMP[ret_offset]);
-+	return sprintf(buf, "%d\n", ret_val);
-+}
-+
-+static ssize_t store_temp_auto_offset(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct sensor_device_attribute_2 *s_attr = to_sensor_dev_attr_2(attr);
-+	int temp_index = s_attr->index;
-+	int temp_ofs = s_attr->nr;
-+	struct i2c_client *client = to_i2c_client(dev);
-+	unsigned long val;
-+	int ret_offset;
-+
-+	if (strict_strtoul(buf, 10, &val))
-+		return -EINVAL;
-+	ret_offset = calculate_offset(temp_index, temp_ofs);
-+	if (ret_offset == -1)
-+		return -EINVAL;
-+
-+	i2c_smbus_write_byte_data(client, THM_LIMIT_REG_TEMP[ret_offset], val);
-+	return count;
-+}
-+
-+static ssize_t show_temp_hyst(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	return sprintf(buf, "%d\n",
-+		i2c_smbus_read_byte_data(client, THM_LIMIT_REG_TEMP[9]));
-+}
-+
-+static ssize_t store_temp_hyst(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 10, &val))
-+		return -EINVAL;
-+	i2c_smbus_write_byte_data(client, THM_LIMIT_REG_TEMP[9], val);
-+	return count;
-+}
-+
-+static ssize_t show_temp1_curr_temp(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int ret_val;
-+
-+	ret_val = i2c_smbus_read_byte_data(client, THM_REG_CURR_TEMP[0]);
-+	return sprintf(buf, "%d\n", ret_val);
-+}
-+
-+static ssize_t show_temp2_curr_temp(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int ret_val;
-+
-+	ret_val = i2c_smbus_read_byte_data(client, THM_REG_CURR_TEMP[1]);
-+	return sprintf(buf, "%d\n", ret_val);
-+}
-+
-+static ssize_t show_temp3_curr_temp(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int ret_val;
-+
-+	ret_val = i2c_smbus_read_byte_data(client, THM_REG_CURR_TEMP[2]);
-+	return sprintf(buf, "%d\n", ret_val);
-+}
-+
-+static ssize_t show_status_reg(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int r1, r2, r3, r4;
-+
-+	r1 = i2c_smbus_read_byte_data(client, 0x1F);
-+	r2 = i2c_smbus_read_byte_data(client, 0x35);
-+	r3 = i2c_smbus_read_byte_data(client, 0x36);
-+	r4 = i2c_smbus_read_byte_data(client, 0x37);
-+	return sprintf(buf, "alarm=%x,High=%x,Low=%x,Therm=%x \n",
-+				r1, r2, r3, r4);
-+}
-+
-+static ssize_t show_power_state(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int ret_val = i2c_smbus_read_byte_data(client, 0x03);
-+	return sprintf(buf, "%x", (ret_val >> 6) & 1);
-+}
-+
-+static ssize_t store_power_state(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	unsigned long val;
-+	char curr_val;
-+
-+	if (strict_strtoul(buf, 10, &val))
-+		return -EINVAL;
-+
-+	curr_val = i2c_smbus_read_byte_data(client, 0x03);
-+	if (val == 1)
-+		curr_val &= 0xBF;
-+	else if (val == 0)
-+		curr_val |= 0x40;
++	if (poweron)
++		gpio_direction_output(CY8CTMG110_RESET_PIN_GPIO, 0);
 +	else
-+		return -EINVAL;
-+	i2c_smbus_write_byte_data(client, 0x03, curr_val);
-+	return count;
++		gpio_direction_output(CY8CTMG110_RESET_PIN_GPIO, 1);
 +}
 +
-+static ssize_t show_mode(struct device *dev,
-+			struct device_attribute *attr, char *buf)
++/*
++ * cy8ctmg110_write_req write regs to the i2c devices
++ * 
++ */
++static int cy8ctmg110_write_req(struct cy8ctmg110 *tsc, unsigned char reg,
++		unsigned char len, unsigned char *value)
 +{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int ret_val = i2c_smbus_read_byte_data(client, 0x03);
-+	return sprintf(buf, "%x", (ret_val >> 7) & 1);
-+}
++	struct i2c_client *client = tsc->client;
++	unsigned int ret;
++	unsigned char i2c_data[] = { 0, 0, 0, 0, 0, 0 };
++	struct i2c_msg msg[] = {
++			{client->addr, 0, len + 1, i2c_data},
++			};
 +
-+static ssize_t store_mode(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	unsigned long val;
-+	int curr_val;
++	i2c_data[0] = reg;
++	memcpy(i2c_data + 1, value, len);
 +
-+	if (strict_strtoul(buf, 10, &val))
-+		return -EINVAL;
-+
-+	curr_val = i2c_smbus_read_byte_data(client, 0x03);
-+	if (val == 1)
-+		curr_val &= 0x7F;
-+	else if (val == 0)
-+		curr_val |= 0x80;
-+	else
-+		return -EINVAL;
-+	i2c_smbus_write_byte_data(client, 0x03, curr_val);
-+	return count;
-+}
-+
-+static SENSOR_DEVICE_ATTR_2(temp1_min, S_IRUGO | S_IWUSR,
-+	show_temp_auto_offset, store_temp_auto_offset, 0, 1);
-+static SENSOR_DEVICE_ATTR_2(temp1_max, S_IRUGO | S_IWUSR,
-+	show_temp_auto_offset, store_temp_auto_offset, 1, 1);
-+static SENSOR_DEVICE_ATTR_2(temp1_crit, S_IRUGO | S_IWUSR,
-+	show_temp_auto_offset, store_temp_auto_offset, 2, 1);
-+static DEVICE_ATTR(temp1_curr, S_IRUGO, show_temp1_curr_temp, NULL);
-+
-+static SENSOR_DEVICE_ATTR_2(temp2_min, S_IRUGO | S_IWUSR,
-+	show_temp_auto_offset, store_temp_auto_offset, 0, 2);
-+static SENSOR_DEVICE_ATTR_2(temp2_max, S_IRUGO | S_IWUSR,
-+	show_temp_auto_offset, store_temp_auto_offset, 1, 2);
-+static SENSOR_DEVICE_ATTR_2(temp2_crit, S_IRUGO | S_IWUSR,
-+	show_temp_auto_offset, store_temp_auto_offset, 2, 2);
-+static DEVICE_ATTR(temp2_curr, S_IRUGO, show_temp2_curr_temp, NULL);
-+
-+static SENSOR_DEVICE_ATTR_2(temp3_min, S_IRUGO | S_IWUSR,
-+	show_temp_auto_offset, store_temp_auto_offset, 0, 4);
-+static SENSOR_DEVICE_ATTR_2(temp3_max, S_IRUGO | S_IWUSR,
-+	show_temp_auto_offset, store_temp_auto_offset, 1, 4);
-+static SENSOR_DEVICE_ATTR_2(temp3_crit, S_IRUGO | S_IWUSR,
-+	show_temp_auto_offset, store_temp_auto_offset, 2, 4);
-+static DEVICE_ATTR(temp3_curr, S_IRUGO, show_temp3_curr_temp, NULL);
-+
-+static DEVICE_ATTR(hyster, S_IRUGO | S_IWUSR, show_temp_hyst, store_temp_hyst);
-+static DEVICE_ATTR(status, S_IRUGO, show_status_reg, NULL);
-+
-+static DEVICE_ATTR(power_state, S_IRUGO | S_IWUSR,
-+	show_power_state, store_power_state);
-+static DEVICE_ATTR(mode, S_IRUGO | S_IWUSR, show_mode, store_mode);
-+
-+static struct attribute *mid_att_thermal[] = {
-+	&sensor_dev_attr_temp1_min.dev_attr.attr,
-+	&sensor_dev_attr_temp1_max.dev_attr.attr,
-+	&sensor_dev_attr_temp1_crit.dev_attr.attr,
-+	&dev_attr_temp1_curr.attr,
-+	&sensor_dev_attr_temp2_min.dev_attr.attr,
-+	&sensor_dev_attr_temp2_max.dev_attr.attr,
-+	&sensor_dev_attr_temp2_crit.dev_attr.attr,
-+	&dev_attr_temp2_curr.attr,
-+	&sensor_dev_attr_temp3_min.dev_attr.attr,
-+	&sensor_dev_attr_temp3_max.dev_attr.attr,
-+	&sensor_dev_attr_temp3_crit.dev_attr.attr,
-+	&dev_attr_temp3_curr.attr,
-+	&dev_attr_hyster.attr,
-+	&dev_attr_status.attr,
-+	&dev_attr_power_state.attr,
-+	&dev_attr_mode.attr,
-+	NULL
-+};
-+
-+static struct attribute_group m_thermal_gr = {
-+	.name = "emc1403",
-+	.attrs = mid_att_thermal
-+};
-+
-+static void emc1403_set_default_config(struct i2c_client *client)
-+{
-+	i2c_smbus_write_byte_data(client, 0x03, 0x00);
-+	i2c_smbus_write_byte_data(client, 0x04, 0x02);
-+	i2c_smbus_write_byte_data(client, 0x22, 0x00);
-+}
-+
-+static int  emc1403_probe(struct i2c_client *new_client,
-+			const struct i2c_device_id *id)
-+{
-+	int res = 0;
-+	struct thermal_data *data;
-+	u16 pid, smsc_id, revision;
-+
-+	data = kzalloc(sizeof(struct thermal_data), GFP_KERNEL);
-+
-+	if (data == NULL) {
-+		printk(KERN_WARNING "emc1403: out of memory");
-+		return -ENOMEM;
++	ret = i2c_transfer(client->adapter, msg, 1);
++	if (ret != 1) {
++		printk("cy8ctmg110 touch : i2c write data cmd failed \n");
++		return ret;
 +	}
-+	data->client = new_client;
-+	i2c_set_clientdata(new_client, data);
-+
-+	/* Check if thermal chip is SMSC and EMC1403 */
-+	smsc_id = i2c_smbus_read_byte_data(new_client,
-+					THERMAL_SMSC_ID_REG);
-+	if (smsc_id != 0x5d) {
-+		printk(KERN_WARNING "emc1403: vendor id mismatch\n");
-+		goto thermal_error1;
-+	}
-+	pid = i2c_smbus_read_byte_data(new_client, THERMAL_PID_REG);
-+	if (pid != 0x21)  {
-+		printk(KERN_WARNING "emc1403: product id mismatch\n");
-+		goto thermal_error1;
-+	}
-+	revision = i2c_smbus_read_byte_data(new_client,
-+				THERMAL_REVISION_REG);
-+	if (revision != 0x01) {
-+		printk(KERN_WARNING "emc1403: rev id mismatch (is %d)\n",
-+								revision);
-+		goto thermal_error1;
-+	}
-+	res = sysfs_create_group(&new_client->dev.kobj, &m_thermal_gr);
-+	if (res) {
-+		printk(KERN_WARNING "emc1403: create group failed\n");
-+		hwmon_device_unregister(data->hwmon_dev);
-+		goto thermal_error1;
-+	}
-+	data->hwmon_dev = hwmon_device_register(&new_client->dev);
-+	if (IS_ERR(data->hwmon_dev)) {
-+		res = PTR_ERR(data->hwmon_dev);
-+		data->hwmon_dev = NULL;
-+		printk(KERN_WARNING "emc1403:Register hwmon dev failed\n");
-+		goto thermal_error2;
-+	}
-+	emc1403_set_default_config(new_client);
-+	dev_info(&new_client->dev, "%s EMC1403 Thermal chip found\n",
-+							new_client->name);
-+	return res;
-+thermal_error2:
-+	sysfs_remove_group(&new_client->dev.kobj, &m_thermal_gr);
-+thermal_error1:
-+	i2c_set_clientdata(new_client, NULL);
-+	kfree(data);
-+	return res;
-+}
-+
-+static int emc1403_remove(struct i2c_client *client)
-+{
-+	struct thermal_data *data = i2c_get_clientdata(client);
-+
-+	hwmon_device_unregister(data->hwmon_dev);
-+	sysfs_remove_group(&client->dev.kobj, &m_thermal_gr);
-+	kfree(data);
 +	return 0;
 +}
 +
-+static struct i2c_device_id emc1403_idtable[] = {
-+	{ "i2c_thermal", 0 },
-+	{ }
++/*
++ * cy8ctmg110_read_req read regs from i2c devise
++ * 
++ */
++
++static int cy8ctmg110_read_req(struct cy8ctmg110 *tsc,
++		unsigned char *i2c_data, unsigned char len, unsigned char cmd)
++{
++	struct i2c_client *client = tsc->client;
++	unsigned int ret;
++	unsigned char regs_cmd[2] = { 0, 0 };
++	struct i2c_msg msg1[] = {
++		{client->addr, 0, 1, regs_cmd},
++	};
++	struct i2c_msg msg2[] = {
++		{client->addr, I2C_M_RD, len, i2c_data},
++	};
++
++	regs_cmd[0] = cmd;
++
++	/* first write slave position to i2c devices */
++	ret = i2c_transfer(client->adapter, msg1, 1);
++	if (ret != 1) {
++		tsc->i2c_fail_count++;
++		return ret;
++	}
++
++	/* Second read data from position */
++	ret = i2c_transfer(client->adapter, msg2, 1);
++	if (ret != 1) {
++		tsc->i2c_fail_count++;
++		return ret;
++	}
++	return 0;
++}
++
++/*
++ * cy8ctmg110_send_event delevery touch event to the userpace
++ * function use normal input interface
++ */
++static void cy8ctmg110_send_event(void *tsc)
++{
++	struct cy8ctmg110 *ts = tsc;
++	struct input_dev *input = ts->input;
++	u16 x, y;
++	u16 x2, y2;
++
++	x = ts->tc.x1;
++	y = ts->tc.y1;
++
++	if (ts->tc.event_sended == false) {
++		input_report_key(input, BTN_TOUCH, 1);
++		ts->pending = true;
++		x2 = (u16) (y * X_SCALE_FACTOR);
++		y2 = (u16) (x * Y_SCALE_FACTOR);
++		input_report_abs(input, ABS_X, x2);
++		input_report_abs(input, ABS_Y, y2);
++		input_sync(input);
++		if (g_y_trace_coord)
++			printk("cy8ctmg110 touch position X:%d (was = %d) Y:%d (was = %d)\n", x2, y, y2, x);
++	}
++
++}
++
++/*
++ * cy8ctmg110_touch_pos check touch position from i2c devices
++ * 
++ */
++static int cy8ctmg110_touch_pos(struct cy8ctmg110 *tsc)
++{
++	unsigned char reg_p[CY8CTMG110_REG_MAX];
++	int x, y;
++
++	memset(reg_p, 0, CY8CTMG110_REG_MAX);
++
++	/*Reading coordinates */
++	if (cy8ctmg110_read_req(tsc, reg_p, 9, CY8CTMG110_TOUCH_X1) != 0)
++		return -EIO;
++		
++	y = reg_p[2] << 8 | reg_p[3];
++	x = reg_p[0] << 8 | reg_p[1];
++		/*number of touch */
++	if (reg_p[8] == 0) {
++		if (tsc->pending == true) {
++			struct input_dev *input = tsc->input;
++
++			input_report_key(input, BTN_TOUCH, 0);
++			tsc->tc.event_sended = true;
++			tsc->pending = false;
++		}
++	} else if (tsc->tc.x1 != x || tsc->tc.y1 != y) {
++		tsc->tc.y1 = y;
++		tsc->tc.x1 = x;
++		tsc->tc.event_sended = false;
++		cy8ctmg110_send_event(tsc);
++	}
++	return 0;
++}
++
++/*
++ * if interrupt isn't in use the touch positions can reads by polling
++ * 
++ */
++static enum hrtimer_restart cy8ctmg110_timer(struct hrtimer *handle)
++{
++	struct cy8ctmg110 *ts = container_of(handle, struct cy8ctmg110, timer);
++	unsigned long flags;
++
++	spin_lock_irqsave(&ts->lock, flags);
++
++	cy8ctmg110_touch_pos(ts);
++	if (ts->i2c_fail_count < TOUCH_MAX_I2C_FAILS)
++		hrtimer_start(&ts->timer, ktime_set(0, CY8CTMG110_POLL_TIMER_DELAY), HRTIMER_MODE_REL);
++
++	spin_unlock_irqrestore(&ts->lock, flags);
++	return HRTIMER_NORESTART;
++}
++
++/*
++ * cy8ctmg110_init_controller set init value to touchcontroller
++ * 
++ */
++static bool cy8ctmg110_set_sleepmode(struct cy8ctmg110 *ts)
++{
++	unsigned char reg_p[3];
++
++	if (ts->sleepmode == true) {
++		reg_p[0] = 0x00;
++		reg_p[1] = 0xff;
++		reg_p[2] = 5;
++	} else {
++		reg_p[0] = 0x10;
++		reg_p[1] = 0xff;
++		reg_p[2] = 0;
++	}
++
++	if (cy8ctmg110_write_req(ts, CY8CTMG110_TOUCH_WAKEUP_TIME, 3, reg_p))
++		return false;
++
++	ts->initController = true;
++	return true;
++}
++
++/*
++ * cy8ctmg110_irq_handler irq handling function
++ * 
++ */
++
++static irqreturn_t cy8ctmg110_irq_handler(int irq, void *dev_id)
++{
++	struct cy8ctmg110 *tsc = (struct cy8ctmg110 *) dev_id;
++
++	if (tsc->initController == false) {
++		if (cy8ctmg110_set_sleepmode(tsc) == true)
++			tsc->initController = true;
++	} else
++		cy8ctmg110_touch_pos(tsc);
++
++	/* if interrupt supported in the touch controller
++	   timer polling need to stop */
++	tsc->i2c_fail_count = TOUCH_MAX_I2C_FAILS;
++	return IRQ_HANDLED;
++}
++
++
++static int cy8ctmg110_probe(struct i2c_client *client, const struct i2c_device_id *id)
++{
++	struct cy8ctmg110 *ts;
++	struct input_dev *input_dev;
++	int err;
++	client->irq = CY8CTMG110_TOUCH_IRQ;
++
++	if (!i2c_check_functionality(client->adapter,
++					I2C_FUNC_SMBUS_READ_WORD_DATA))
++		return -EIO;
++
++	ts = kzalloc(sizeof(struct cy8ctmg110), GFP_KERNEL);
++	input_dev = input_allocate_device();
++
++	if (!ts || !input_dev) {
++		err = -ENOMEM;
++		goto err_free_mem;
++	}
++
++	ts->client = client;
++	i2c_set_clientdata(client, ts);
++
++	ts->input = input_dev;
++	ts->pending = false;
++	ts->sleepmode = false;
++
++	snprintf(ts->phys, sizeof(ts->phys), "%s/input0",
++						dev_name(&client->dev));
++
++	input_dev->name = CY8CTMG110_DRIVER_NAME " Touchscreen";
++	input_dev->phys = ts->phys;
++	input_dev->id.bustype = BUS_I2C;
++
++	spin_lock_init(&ts->lock);
++
++	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP) |
++					BIT_MASK(EV_REL) | BIT_MASK(EV_ABS);
++	input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
++
++	input_set_capability(input_dev, EV_KEY, KEY_F);
++
++	input_set_abs_params(input_dev, ABS_X, CY8CTMG110_X_MIN, CY8CTMG110_X_MAX, 0, 0);
++	input_set_abs_params(input_dev, ABS_Y, CY8CTMG110_Y_MIN, CY8CTMG110_Y_MAX, 0, 0);
++
++	err = gpio_request(CY8CTMG110_RESET_PIN_GPIO, NULL);
++
++	if (err) {
++		dev_err(&client->dev, "cy8ctmg110_ts: Unable to request GPIO pin %d.\n",
++						CY8CTMG110_RESET_PIN_GPIO);
++		goto err_free_irq;
++	}
++	cy8ctmg110_power(true);
++
++	ts->initController = false;
++	ts->i2c_fail_count = 0;
++
++	hrtimer_init(&ts->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	ts->timer.function = cy8ctmg110_timer;
++
++	if (polling)
++		hrtimer_start(&ts->timer, ktime_set(10, 0), HRTIMER_MODE_REL);
++
++	/* Can we fall back to polling if these bits fail - something to look
++	   at for robustness */
++
++	err = gpio_request(CY8CTMG110_IRQ_PIN_GPIO, "touch_irq_key");
++	if (err < 0) {
++		dev_err(&client->dev,
++			"cy8ctmg110_ts: failed to request GPIO %d, error %d\n",
++						CY8CTMG110_IRQ_PIN_GPIO, err);
++		goto err_free_timer;
++	}
++
++	err = gpio_direction_input(CY8CTMG110_IRQ_PIN_GPIO);
++
++	if (err < 0) {
++		dev_err(&client->dev,
++			"cy8ctmg110_ts: failed to configure input direction for GPIO %d, error %d\n",
++						CY8CTMG110_IRQ_PIN_GPIO, err);
++		goto err_free_gpio;
++	}
++	client->irq = gpio_to_irq(CY8CTMG110_IRQ_PIN_GPIO);
++
++	if (client->irq < 0) {
++		err = client->irq;
++		dev_err(&client->dev,
++	"cy8ctmg110_ts: Unable to get irq number" " for GPIO %d, error %d\n",
++						CY8CTMG110_IRQ_PIN_GPIO, err);
++		goto err_free_gpio;
++	}
++	err = request_irq(client->irq, cy8ctmg110_irq_handler, IRQF_TRIGGER_RISING | IRQF_SHARED, "touch_reset_key", ts);
++	if (err < 0) {
++		dev_err(&client->dev,
++			"cy8ctmg110 irq %d busy? error %d\n",
++				client->irq, err);
++		goto err_free_gpio;
++	}
++
++	err = input_register_device(input_dev);
++	if (!err)
++		return 0;
++err_free_gpio:
++	gpio_free(CY8CTMG110_IRQ_PIN_GPIO);
++err_free_timer:
++	if (polling)
++		hrtimer_cancel(&ts->timer);
++err_free_irq:
++	free_irq(client->irq, ts);
++err_free_mem:
++	input_free_device(input_dev);
++	kfree(ts);
++	return err;
++}
++
++/*
++ * cy8ctmg110_suspend
++ * 
++ */
++
++static int cy8ctmg110_suspend(struct i2c_client *client, pm_message_t mesg)
++{
++	if (device_may_wakeup(&client->dev))
++		enable_irq_wake(client->irq);
++
++	return 0;
++}
++
++/*
++ * cy8ctmg110_resume 
++ * 
++ */
++
++static int cy8ctmg110_resume(struct i2c_client *client)
++{
++	if (device_may_wakeup(&client->dev))
++		disable_irq_wake(client->irq);
++
++	return 0;
++}
++
++/*
++ * cy8ctmg110_remove
++ * 
++ */
++
++static int cy8ctmg110_remove(struct i2c_client *client)
++{
++	struct cy8ctmg110 *ts = i2c_get_clientdata(client);
++
++	cy8ctmg110_power(false);
++
++	if (polling)
++		hrtimer_cancel(&ts->timer);
++	free_irq(client->irq, ts);
++	input_unregister_device(ts->input);
++	/* FIXME: Do we need to free the GPIO ? */
++	kfree(ts);
++	return 0;
++}
++
++static struct i2c_device_id cy8ctmg110_idtable[] = {
++	{CY8CTMG110_DRIVER_NAME, 1},
++	{}
 +};
 +
-+MODULE_DEVICE_TABLE(i2c, emc1403_idtable);
++MODULE_DEVICE_TABLE(i2c, cy8ctmg110_idtable);
 +
-+static struct i2c_driver sensor_emc1403 = {
++static struct i2c_driver cy8ctmg110_driver = {
 +	.driver = {
-+		.name = "emc1403",
-+	},
-+	.probe = emc1403_probe,
-+	.remove = emc1403_remove,
-+	.id_table = emc1403_idtable,
++		   .owner = THIS_MODULE,
++		   .name = CY8CTMG110_DRIVER_NAME,
++		   .bus = &i2c_bus_type,
++		   },
++	.id_table = cy8ctmg110_idtable,
++	.probe = cy8ctmg110_probe,
++	.remove = cy8ctmg110_remove,
++	.suspend = cy8ctmg110_suspend,
++	.resume = cy8ctmg110_resume,
 +};
 +
-+static int __init sensor_emc1403_init(void)
++static int __init cy8ctmg110_init(void)
 +{
-+	return i2c_add_driver(&sensor_emc1403);
++	return i2c_add_driver(&cy8ctmg110_driver);
 +}
 +
-+static void  __exit sensor_emc1403_exit(void)
++static void __exit cy8ctmg110_exit(void)
 +{
-+	i2c_del_driver(&sensor_emc1403);
++	i2c_del_driver(&cy8ctmg110_driver);
 +}
 +
-+module_init(sensor_emc1403_init);
-+module_exit(sensor_emc1403_exit);
++module_init(cy8ctmg110_init);
++module_exit(cy8ctmg110_exit);
 +
-+MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com");
-+MODULE_DESCRIPTION("emc1403 Thermal Driver");
++MODULE_AUTHOR("Samuli Konttila <samuli.konttila@aavamobile.com>");
++MODULE_DESCRIPTION("cy8ctmg110 TouchScreen Driver");
 +MODULE_LICENSE("GPL v2");
 
