@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271Ab0DNMzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 08:55:10 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:34836 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274Ab0DNMzI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 08:55:08 -0400
-Date: Wed, 14 Apr 2010 06:55:02 -0600
-From: Alex Chiang <achiang@canonical.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-       jbarnes@virtuousgeek.org
-Subject: Re: WARNING: at fs/sysfs/dir.c:451 sysfs_add_one: sysfs: cannot
- create duplicate filename '/devices/pci0000:00/0000:00:01.0/slot'
-Message-ID: <20100414125502.GA20755@canonical.com>
-Mail-Followup-To: Alex Chiang <achiang@canonical.com>,
-	Greg KH <gregkh@suse.de>, Eric Paris <eparis@redhat.com>,
-	linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org
-References: <1271099285.9831.13.camel@localhost>
- <20100414013334.GA24240@canonical.com>
- <20100414051017.GA17378@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100414051017.GA17378@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755363Ab0DNNAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 09:00:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37830 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755201Ab0DNNAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 09:00:20 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: mingo@elte.hu, rostedt@goodmis.org, fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] tracing: lost events changes
+Date: Wed, 14 Apr 2010 15:00:03 +0200
+Message-Id: <1271250005-11434-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH <gregkh@suse.de>:
-> On Tue, Apr 13, 2010 at 07:33:34PM -0600, Alex Chiang wrote:
-> > * Eric Paris <eparis@redhat.com>:
-> > > 
-> > > I get one for 1.0, 1.1, 1.2, 2.0, 3.0, 4.0, 5.0.  Below I only show the
-> > > example for 1.0.  Attached should be the full dmesg and config.  Please
-> > > let me know about any ideas, tests, questions, or things I can do to
-> > > help debug the spew....
-> > 
-> > These come from a patch I wrote, but unfortunately, I don't have
-> > the time or hardware to properly debug them. :(
-> 
-> It should be simple, for any dynamically allocated sysfs attribute, just
-> call sysfs_attribute_initialize() before registering it with the sysfs
-> core, and you will get rid of these messages.
+hi,
 
-Oh hm, I didn't realize that.
+I noticed LOST EVENTS messages in the iterator "trace" file.
+According to the comment from commit bc21b478 this won't work.
 
-> If you have a pointer to your patch, I'll be glad to generate an add-on
-> patch to resolve this issue.
+<comment>
+    Note, it does not work with the iterator "trace" file, since it requires
+    the use of consuming the page from the ring buffer to determine how many
+    events were lost, which the iterator does not do.
+</comment>
 
-In Jesse's linux-next branch:
+I'm not sure the attached fix (2/2) is on the right place,
+but stops the LOST EVENTS display for iterator "trace" file.
 
-commit 8b9cd07e02d69bb9e746a57fc987643d648c4b13
-Author: Alex Chiang <achiang@hp.com>
-Date:   Mon Mar 8 10:24:29 2010 -0700
+I also added option to control the LOST EVENTS display (1/2) if needed.
 
-    PCI: create function symlinks in /sys/bus/pci/slots/N/
+attached patches:
+- 1/2 - adding lost-events option
+- 2/2 - supress lost events message for iterator "trace"
 
-Thanks Greg.
 
-/ac
-
+wbr,
+jirka
+---
+ kernel/trace/trace.c |   24 ++++++++++++++----------
+ kernel/trace/trace.h |    1 +
+ 2 files changed, 15 insertions(+), 10 deletions(-)
