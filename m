@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab0DNWdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 18:33:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48546 "EHLO mx1.redhat.com"
+	id S1757089Ab0DNWdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 18:33:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12019 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755948Ab0DNWdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 18:33:12 -0400
+	id S1757073Ab0DNWdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 18:33:19 -0400
 From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip 3/6] perf probe: Fix a bug that --line range can be
-	overflow
+Subject: [PATCH -tip 4/6] perf probe: Fix line range to show end line
 To: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
        lkml <linux-kernel@vger.kernel.org>
 Cc: systemtap <systemtap@sources.redhat.com>,
@@ -18,8 +17,8 @@ Cc: systemtap <systemtap@sources.redhat.com>,
        Paul Mackerras <paulus@samba.org>, Paul Mackerras <paulus@samba.org>,
        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Date: Wed, 14 Apr 2010 18:39:42 -0400
-Message-ID: <20100414223942.14630.72730.stgit@localhost6.localdomain6>
+Date: Wed, 14 Apr 2010 18:39:50 -0400
+Message-ID: <20100414223950.14630.42263.stgit@localhost6.localdomain6>
 In-Reply-To: <20100414223921.14630.62353.stgit@localhost6.localdomain6>
 References: <20100414223921.14630.62353.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -30,11 +29,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since line_finder.lno_s/e are signed int but line_range.start/end
-are unsigned int, it is possible to be overflow when converting
-line_range->start/end to line_finder->lno_s/e.
-This changes line_range.start/end and line_list.line to signed int
-and adds overflow checks when setting line_finder.lno_s/e.
+Line range should reject the range if the number of lines is 0
+(e.g. "sched.c:1024+0"), and it should show the lines include
+the end of line number (e.g. "sched.c:1024-2048" should show
+2048th line).
 
 Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -46,159 +44,40 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 ---
 
- tools/perf/util/probe-event.c  |   23 ++++++++++++-----------
- tools/perf/util/probe-event.h  |    6 +++---
- tools/perf/util/probe-finder.c |   19 +++++++++----------
- 3 files changed, 24 insertions(+), 24 deletions(-)
+ tools/perf/util/probe-event.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 6d43839..954ca21 100644
+index 954ca21..5bf8ab0 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -189,7 +189,7 @@ static int try_to_find_kprobe_trace_events(struct perf_probe_event *pev,
- #define LINEBUF_SIZE 256
- #define NR_ADDITIONAL_LINES 2
+@@ -290,7 +290,7 @@ int show_line_range(struct line_range *lr)
  
--static int show_one_line(FILE *fp, unsigned int l, bool skip, bool show_num)
-+static int show_one_line(FILE *fp, int l, bool skip, bool show_num)
- {
- 	char buf[LINEBUF_SIZE];
- 	const char *color = PERF_COLOR_BLUE;
-@@ -198,7 +198,7 @@ static int show_one_line(FILE *fp, unsigned int l, bool skip, bool show_num)
- 		goto error;
- 	if (!skip) {
- 		if (show_num)
--			fprintf(stdout, "%7u  %s", l, buf);
-+			fprintf(stdout, "%7d  %s", l, buf);
- 		else
- 			color_fprintf(stdout, color, "         %s", buf);
- 	}
-@@ -231,7 +231,7 @@ error:
-  */
- int show_line_range(struct line_range *lr)
- {
--	unsigned int l = 1;
-+	int l = 1;
- 	struct line_node *ln;
- 	FILE *fp;
- 	int fd, ret;
-@@ -340,16 +340,15 @@ int parse_line_range_desc(const char *arg, struct line_range *lr)
- 	 */
+ 	if (lr->end == INT_MAX)
+ 		lr->end = l + NR_ADDITIONAL_LINES;
+-	while (l < lr->end && !feof(fp) && ret >= 0)
++	while (l <= lr->end && !feof(fp) && ret >= 0)
+ 		ret = show_one_line(fp, (l++) - lr->offset, false, false);
+ end:
+ 	fclose(fp);
+@@ -341,9 +341,15 @@ int parse_line_range_desc(const char *arg, struct line_range *lr)
  	ptr = strchr(arg, ':');
  	if (ptr) {
--		lr->start = (unsigned int)strtoul(ptr + 1, &tmp, 0);
-+		lr->start = (int)strtoul(ptr + 1, &tmp, 0);
- 		if (*tmp == '+')
--			lr->end = lr->start + (unsigned int)strtoul(tmp + 1,
--								    &tmp, 0);
-+			lr->end = lr->start + (int)strtoul(tmp + 1, &tmp, 0);
- 		else if (*tmp == '-')
--			lr->end = (unsigned int)strtoul(tmp + 1, &tmp, 0);
-+			lr->end = (int)strtoul(tmp + 1, &tmp, 0);
+ 		lr->start = (int)strtoul(ptr + 1, &tmp, 0);
+-		if (*tmp == '+')
++		if (*tmp == '+') {
+ 			lr->end = lr->start + (int)strtoul(tmp + 1, &tmp, 0);
+-		else if (*tmp == '-')
++			lr->end--;	/*
++					 * Adjust the number of lines here.
++					 * If the number of lines == 1, the
++					 * the end of line should be equal to
++					 * the start of line.
++					 */
++		} else if (*tmp == '-')
+ 			lr->end = (int)strtoul(tmp + 1, &tmp, 0);
  		else
--			lr->end = 0;
--		pr_debug("Line range is %u to %u\n", lr->start, lr->end);
--		if (lr->end && lr->start > lr->end) {
-+			lr->end = INT_MAX;
-+		pr_debug("Line range is %d to %d\n", lr->start, lr->end);
-+		if (lr->start > lr->end) {
- 			semantic_error("Start line must be smaller"
- 				       " than end line.\n");
- 			return -EINVAL;
-@@ -360,8 +359,10 @@ int parse_line_range_desc(const char *arg, struct line_range *lr)
- 			return -EINVAL;
- 		}
- 		tmp = strndup(arg, (ptr - arg));
--	} else
-+	} else {
- 		tmp = strdup(arg);
-+		lr->end = INT_MAX;
-+	}
- 
- 	if (tmp == NULL)
- 		return -ENOMEM;
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index aee60e1..f0831bc 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -74,15 +74,15 @@ struct perf_probe_event {
- /* Line number container */
- struct line_node {
- 	struct list_head	list;
--	unsigned int		line;
-+	int			line;
- };
- 
- /* Line range */
- struct line_range {
- 	char			*file;		/* File name */
- 	char			*function;	/* Function name */
--	unsigned int		start;		/* Start line number */
--	unsigned int		end;		/* End line number */
-+	int			start;		/* Start line number */
-+	int			end;		/* End line number */
- 	int			offset;		/* Start line offset */
- 	char			*path;		/* Real path name */
- 	struct list_head	line_list;	/* Visible lines */
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index e443e69..b4c9365 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -111,7 +111,7 @@ static int strtailcmp(const char *s1, const char *s2)
- /* Line number list operations */
- 
- /* Add a line to line number list */
--static int line_list__add_line(struct list_head *head, unsigned int line)
-+static int line_list__add_line(struct list_head *head, int line)
- {
- 	struct line_node *ln;
- 	struct list_head *p;
-@@ -138,7 +138,7 @@ found:
- }
- 
- /* Check if the line in line number list */
--static int line_list__has_line(struct list_head *head, unsigned int line)
-+static int line_list__has_line(struct list_head *head, int line)
- {
- 	struct line_node *ln;
- 
-@@ -1146,7 +1146,7 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
- 			if (lf->lr->path == NULL)
- 				return -ENOMEM;
- 		}
--		line_list__add_line(&lf->lr->line_list, (unsigned int)lineno);
-+		line_list__add_line(&lf->lr->line_list, lineno);
- 	}
- 	/* Update status */
- 	if (!list_empty(&lf->lr->line_list))
-@@ -1179,10 +1179,12 @@ static int line_range_search_cb(Dwarf_Die *sp_die, void *data)
- 		dwarf_decl_line(sp_die, &lr->offset);
- 		pr_debug("fname: %s, lineno:%d\n", lf->fname, lr->offset);
- 		lf->lno_s = lr->offset + lr->start;
--		if (!lr->end)
-+		if (lf->lno_s < 0)	/* Overflow */
-+			lf->lno_s = INT_MAX;
-+		lf->lno_e = lr->offset + lr->end;
-+		if (lf->lno_e < 0)	/* Overflow */
- 			lf->lno_e = INT_MAX;
--		else
--			lf->lno_e = lr->offset + lr->end;
-+		pr_debug("New line range: %d to %d\n", lf->lno_s, lf->lno_e);
- 		lr->start = lf->lno_s;
- 		lr->end = lf->lno_e;
- 		if (dwarf_func_inline(sp_die)) {
-@@ -1244,10 +1246,7 @@ int find_line_range(int fd, struct line_range *lr)
- 				ret = find_line_range_by_func(&lf);
- 			else {
- 				lf.lno_s = lr->start;
--				if (!lr->end)
--					lf.lno_e = INT_MAX;
--				else
--					lf.lno_e = lr->end;
-+				lf.lno_e = lr->end;
- 				ret = find_line_range_by_line(NULL, &lf);
- 			}
- 		}
+ 			lr->end = INT_MAX;
 
 
 -- 
