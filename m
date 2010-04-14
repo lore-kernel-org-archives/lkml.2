@@ -1,75 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab0DNEoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 00:44:23 -0400
-Received: from mail-yw0-f194.google.com ([209.85.211.194]:62597 "EHLO
-	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab0DNEoV (ORCPT
+	id S1752220Ab0DNEpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 00:45:05 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:45196 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751162Ab0DNEpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 00:44:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xo2JJpreSllrxKdxKZTDLrFdjY+Ki+AZAIa0ftNyjsVYIqhIWyqt9PTbTzdiETCYQu
-         qzgul2dqBlzKs258BlHIB8Gs7NAeev2m9lFX2VRypB3D33uApMy39W4xUOpR1zTPUKTl
-         U6LCAiFmVtvTSTRf3U41IAeENhl/fvhKbI/Ic=
-Date: Wed, 14 Apr 2010 12:48:05 +0800
-From: Amerigo Wang <xiyou.wangcong@gmail.com>
-To: Huang Shijie <shijie8@gmail.com>
-Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][resend] namei.c : update mnt when it needed
-Message-ID: <20100414044805.GE3919@cr0.nay.redhat.com>
-References: <1271211369-27419-1-git-send-email-shijie8@gmail.com>
+	Wed, 14 Apr 2010 00:45:01 -0400
+Date: Wed, 14 Apr 2010 14:44:58 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-ID: <20100414044458.GF2493@dastard>
+References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
+ <m2h28c262361004131724ycf9bf4a5xd9b1bad2b4797f50@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1271211369-27419-1-git-send-email-shijie8@gmail.com>
+In-Reply-To: <m2h28c262361004131724ycf9bf4a5xd9b1bad2b4797f50@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 10:16:09AM +0800, Huang Shijie wrote:
->update the mnt of the path when it is not equal to the new one.
->
->Signed-off-by: Huang Shijie <shijie8@gmail.com>
-
-
-This change is trivial, and it looks fine for me.
-
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-
-Thanks!
-
-
->---
-> fs/namei.c |    5 +++--
-> 1 files changed, 3 insertions(+), 2 deletions(-)
->
->diff --git a/fs/namei.c b/fs/namei.c
->index a7dce91..9c3a040 100644
->--- a/fs/namei.c
->+++ b/fs/namei.c
->@@ -523,9 +523,10 @@ static void path_put_conditional(struct path *path, struct nameidata *nd)
-> static inline void path_to_nameidata(struct path *path, struct nameidata *nd)
-> {
-> 	dput(nd->path.dentry);
->-	if (nd->path.mnt != path->mnt)
->+	if (nd->path.mnt != path->mnt) {
-> 		mntput(nd->path.mnt);
->-	nd->path.mnt = path->mnt;
->+		nd->path.mnt = path->mnt;
->+	}
-> 	nd->path.dentry = path->dentry;
-> }
+On Wed, Apr 14, 2010 at 09:24:33AM +0900, Minchan Kim wrote:
+> Hi, Dave.
 > 
->-- 
->1.6.6
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
+> On Tue, Apr 13, 2010 at 9:17 AM, Dave Chinner <david@fromorbit.com> wrote:
+> > From: Dave Chinner <dchinner@redhat.com>
+> >
+> > When we enter direct reclaim we may have used an arbitrary amount of stack
+> > space, and hence enterring the filesystem to do writeback can then lead to
+> > stack overruns. This problem was recently encountered x86_64 systems with
+> > 8k stacks running XFS with simple storage configurations.
+> >
+> > Writeback from direct reclaim also adversely affects background writeback. The
+> > background flusher threads should already be taking care of cleaning dirty
+> > pages, and direct reclaim will kick them if they aren't already doing work. If
+> > direct reclaim is also calling ->writepage, it will cause the IO patterns from
+> > the background flusher threads to be upset by LRU-order writeback from
+> > pageout() which can be effectively random IO. Having competing sources of IO
+> > trying to clean pages on the same backing device reduces throughput by
+> > increasing the amount of seeks that the backing device has to do to write back
+> > the pages.
+> >
+> > Hence for direct reclaim we should not allow ->writepages to be entered at all.
+> > Set up the relevant scan_control structures to enforce this, and prevent
+> > sc->may_writepage from being set in other places in the direct reclaim path in
+> > response to other events.
+> 
+> I think your solution is rather aggressive change as Mel and Kosaki
+> already pointed out.
+
+It may be agressive, but writeback from direct reclaim is, IMO, one
+of the worst aspects of the current VM design because of it's
+adverse effect on the IO subsystem.
+
+I'd prefer to remove it completely that continue to try and patch
+around it, especially given that everyone seems to agree that it
+does have an adverse affect on IO...
+
+> Do flush thread aware LRU of dirty pages in system level recency not
+> dirty pages recency?
+
+It writes back in the order inodes were dirtied. i.e. the LRU is a
+coarser measure, but it it still definitely there. It also takes
+into account fairness of IO between dirty inodes, so no one dirty
+inode prevents IO beining issued on a other dirty inodes on the
+LRU...
+
+> Of course flush thread can clean dirty pages faster than direct reclaimer.
+> But if it don't aware LRUness, hot page thrashing can be happened by
+> corner case.
+> It could lost write merge.
+> 
+> And non-rotation storage might be not big of seek cost.
+
+Non-rotational storage still goes faster when it is fed large, well
+formed IOs.
+
+> I think we have to consider that case if we decide to change direct reclaim I/O.
+> 
+> How do we separate the problem?
+> 
+> 1. stack hogging problem.
+> 2. direct reclaim random write.
+
+AFAICT, the only way to _reliably_ avoid the stack usage problem is
+to avoid writeback in direct reclaim. That has the side effect of
+fixing #2 as well, so do they really need separating?
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
