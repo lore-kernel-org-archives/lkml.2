@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab0DNLzH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 07:55:07 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38578
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755189Ab0DNLzE (ORCPT
+	id S1755223Ab0DNMHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 08:07:21 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34637 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755031Ab0DNMHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 07:55:04 -0400
-Date: Wed, 14 Apr 2010 04:55:06 -0700 (PDT)
-Message-Id: <20100414.045506.52212061.davem@davemloft.net>
-To: herbert@gondor.hengli.com.au
-Cc: eric.dumazet@gmail.com, mst@redhat.com, jan.kiszka@siemens.com,
-       paul.moore@hp.com, David.Woodhouse@intel.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
-Subject: Re: [PATCH] tun: orphan an skb on tx
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100414005822.GD18044@gondor.apana.org.au>
-References: <20100413173919.GC26011@redhat.com>
-	<1271183463.16881.545.camel@edumazet-laptop>
-	<20100414005822.GD18044@gondor.apana.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 14 Apr 2010 08:07:19 -0400
+Date: Wed, 14 Apr 2010 13:11:40 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Joseph Krahn <joseph.krahn@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Trying to fix ITE-887x parallel/serial driver bugs (including 
+ unhandled IRQs)
+Message-ID: <20100414131140.5c6187ab@lxorguk.ukuu.org.uk>
+In-Reply-To: <n2wff6de6f21004121405xd33676f8s81c12e23747b88b0@mail.gmail.com>
+References: <q2lff6de6f21004120834k72cfd554v188b9d2b5a01012c@mail.gmail.com>
+	<20100412174352.4e13113f@lxorguk.ukuu.org.uk>
+	<n2wff6de6f21004121405xd33676f8s81c12e23747b88b0@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Wed, 14 Apr 2010 08:58:22 +0800
+> > for free address ranges. It's hardly 'random probing' and it isn't a
+> > normal BAR or guaranteed to have been configured by anything beforehand.
 
-> On Tue, Apr 13, 2010 at 08:31:03PM +0200, Eric Dumazet wrote:
->>
->> Herbert Acked your patch, so I guess its OK, but I think it can be
->> dangerous.
-> 
-> The tun socket accounting was never designed to stop it from
-> flooding another tun interface.  It's there to stop it from
-> transmitting above a destination interface TX bandwidth and
-> cause unnecessary packet drops.  It also limits the total amount
-> of kernel memory that can be pinned down by a single tun interface.
-> 
-> In this case, all we're doing is shifting the accounting from the
-> "hardware" queue to the qdisc queue.
-> 
-> So your ability to flood a tun interface is essentially unchanged.
-> 
-> BTW we do the same thing in a number of hardware drivers, as well
-> as virtio-net.
+> Yes, but the drivers don't use INTCBAR. They scan through a herd-coded
+> list of possible port ranges:
 
-Right.  Although this reminds me about the whole SKB
-orphaning on xmit issue that keeps coming back to haunt
-us.
+They can't just use INTCBAR as it may not have been configured by anything
+before the device is probed. We do need to find and assign suitable ports
+although this should probably be done via the PCI quirks on PCI setup.
 
-If there weren't odd references to the SKB's socket in
-the packet scheduler et al. we could just orphan these
-things right upon entry to the qdisc and not have to
-add hacks like this to every driver.
+> The interrupt controller (INTC) provides IRQ status bits in a single
+> I/O port byte. I only have the datasheet for IT8875F, which is 1
+> parallel and no serial ports, so my understanding of UART IRQs is sort
+> of reverse engineering. Polling the UART IIR register shows that it
+> acts like a normal 16550 UART when set to SERIRQ mode, but I get no
+> IRQs generated. Setting to standard PCI INTA interrupts, the IRQs are
+> generated, but the UART IIR registers do not set the IRQ bits.
 
-In fact... maybe we can just do it in dev_hard_queue_xmit()
-since we are out of the qdisc at that point.... but I guess
-there might be weird drivers that want the SKB socket in
-their ->xmit routine...  Ho hum.
+Weird design.
 
-In any event that's net-next-2.6 exploratory material, and I've
-applied this patch to net-2.6, thanks!
+http://kr.ic-on-line.cn/IOL/viewpdf/IT8871F_200216.htm
+
+provides a tiny bit of info on the uart side but I've not found any
+complete documentation.
+
+> One possibility is to install custom io_serial_in/out functions. When
+> the value of IIR is requested, the INTC can be checked, and modify the
+> result to what it should be for a normal UART. That is a bit of a
+> hack, but makes it much easier to fit into the existing code.
+
+Seems a good starting point. The serial side code is robust for shared
+IRQs.
+
+Alan
