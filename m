@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab0DNO1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 10:27:19 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:48836 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755323Ab0DNO1R (ORCPT
+	id S1755639Ab0DNO2t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 10:28:49 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57702 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752895Ab0DNO2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 10:27:17 -0400
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Frank Ren" <frankrq2009@gmx.com>, "mingo" <mingo@elte.hu>,
-       "a.p.zijlstra" <a.p.zijlstra@chello.nl>,
-       "jens.axboe" <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, dm-devel@redhat.com,
-       Alasdair G Kergon <agk@redhat.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: high iowait problem(Bug 12309 on bugzilla.kernel.org)
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20100331124834.192500@gmx.com>
-	<20100413135416.b537eee8.akpm@linux-foundation.org>
-Date: Wed, 14 Apr 2010 10:25:08 -0400
-In-Reply-To: <20100413135416.b537eee8.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Tue, 13 Apr 2010 13:54:16 -0700")
-Message-ID: <yq1sk6yjem3.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4BC5D056.00E5:SCFMA4539814,ss=1,fgs=0
+	Wed, 14 Apr 2010 10:28:47 -0400
+Date: Wed, 14 Apr 2010 15:32:34 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Alan Cox <alan@linux.intel.com>, linux-i2c@vger.kernel.org,
+       khali@linux-fr.org, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] hmc6352: Add driver for the HMC6352 compass
+Message-ID: <20100414153234.22765666@lxorguk.ukuu.org.uk>
+In-Reply-To: <4BC5C7A8.1040807@cam.ac.uk>
+References: <20100414124913.23181.75903.stgit@localhost.localdomain>
+	<20100414125136.23181.16788.stgit@localhost.localdomain>
+	<4BC5C7A8.1040807@cam.ac.uk>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Andrew" == Andrew Morton <akpm@linux-foundation.org> writes:
+> This is in no way a hwmon chip.  Surely misc is a better location for now
+> (pending the usual discussion about all singing all dancing sensors frameworks).
 
-Andrew> I'm seeing just one device-mapper change whcih went in over that
-Andrew> timeframe:
+Yep it's moving at the moment
 
-Andrew> : commit e0f5cfa7c18b411634e73923841eccd3a4c0ce7f
-Andrew> : Author: Martin K. Petersen <martin.petersen@oracle.com>
-Andrew> : Date:   Mon Jan 11 03:21:50 2010 -0500
-Andrew> : 
-Andrew> :     DM: Fix device mapper topology stacking
 
-The topology changes do not modify anything in our runtime I/O path.
-They only come into play during filesystem or logical volume creation on
-top of devices that support reporting alignment/physical block size.
-And you need recent dm and filesystem utilities for that to work.
+> > +#include <linux/module.h>
+> > +#include <linux/init.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/i2c.h>
+> > +#include <linux/hwmon.h>
+> 
+> Why these extra hwmon includes?  At least at first glance I can't see
+> any uses of them.  The only call to hwmon is to stick this in the
+> hwmon class.
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+I inherited it for cleanup so these are good points (I've been staring at
+piles of these for so long extra input is very useful - this is the tip
+of the iceberg !)
+
+> > +#include <linux/hwmon-sysfs.h>
+> > +#include <linux/hwmon-vid.h>
+> > +#include <linux/err.h>
+> > +#include <linux/delay.h>
+> or any mutex usage?
+> > +#include <linux/mutex.h>
+> > +#include <linux/sysfs.h>
+> > +
+> 
+> I guess this makes the driver look like many others, but why bother with
+> the wrapping structure?  This is only used to keep track of the hwmon
+> device to be able to remove it later.
+
+Should go - agreed will remove
+
+> These address changes looking a little unusual to me.  They may well be needed, but
+> if so can we have an explanatory comment?
+
+Will investigate.
