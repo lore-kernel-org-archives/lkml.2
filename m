@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab0DNPL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:11:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:40279 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384Ab0DNPL4 (ORCPT
+	id S1756064Ab0DNPMs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 11:12:48 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61969 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074Ab0DNPMp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 11:11:56 -0400
-X-Authority-Analysis: v=1.1 cv=fBoeiQUdCPFYkf/ogivDuUUJ8T/GUdptomsnt0mqf60= c=1 sm=0 a=Lfq0IFdGML4A:10 a=IkcTkHD0fZMA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=gu6fZOg2AAAA:8 a=gEHSBOxwXaXEWl96V4oA:9 a=9xq5tSLqyWehZh7pIhwA:7 a=IbCiv3iGFbWtxMNSqqi0RUeE8OoA:4 a=QEXdDO2ut3YA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 0/2] tracing: lost events changes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: mingo@elte.hu, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-       Lai Jiangshan <laijs@cn.fujitsu.com>
-In-Reply-To: <1271250005-11434-1-git-send-email-jolsa@redhat.com>
-References: <1271250005-11434-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Apr 2010 11:11:28 -0400
-Message-ID: <1271257888.19099.4.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Apr 2010 11:12:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=t/EETIyO1RQuwfL1MdZdwIjNW8vlyNQ/wPOCAn5Dph6zxcmfSTtFVio4rAdqM52S7q
+         iVFbX8ardYy0PCwXWePSR9fAMmGfiUQ4Jqm9pwglFhb6JL8vMLdZGW0lmw4Km7HXl61w
+         v0cF9suy793GwAyOgK4eAeDWG2bd24PE9RF/o=
+MIME-Version: 1.0
+In-Reply-To: <1271255053.7196.89.camel@localhost.localdomain>
+References: <1271089672.7196.63.camel@localhost.localdomain>
+	 <1271249354.7196.66.camel@localhost.localdomain>
+	 <1271255053.7196.89.camel@localhost.localdomain>
+Date: Thu, 15 Apr 2010 00:12:45 +0900
+Message-ID: <h2m28c262361004140812y92447e97z29c001d0a8b8eaaf@mail.gmail.com>
+Subject: Re: vmalloc performance
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Steven Whitehouse <steve@chygwyn.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-14 at 15:00 +0200, Jiri Olsa wrote:
-> hi,
-> 
-> I noticed LOST EVENTS messages in the iterator "trace" file.
-> According to the comment from commit bc21b478 this won't work.
-> 
-> <comment>
->     Note, it does not work with the iterator "trace" file, since it requires
->     the use of consuming the page from the ring buffer to determine how many
->     events were lost, which the iterator does not do.
-> </comment>
-> 
-> I'm not sure the attached fix (2/2) is on the right place,
-> but stops the LOST EVENTS display for iterator "trace" file.
-> 
+On Wed, Apr 14, 2010 at 11:24 PM, Steven Whitehouse <steve@chygwyn.com> wrote:
+> Hi,
+>
+> Also, what lock should be protecting this code:
+>
+>        va->flags |= VM_LAZY_FREE;
+>        atomic_add((va->va_end - va->va_start) >> PAGE_SHIFT,
+> &vmap_lazy_nr);
+>
+> in free_unmap_vmap_area_noflush() ? It seem that if
+> __purge_vmap_area_lazy runs between the two statements above that the
+> number of pages contained in vmap_lazy_nr will be incorrect. Maybe the
+> two statements should just be reversed? I can't see any reason that the
+> flag assignment would be atomic either. In recent tests, including the
+> patch below, the following has been reported to me:
 
-This has already been fixed by Lai:
+It was already fixed.
+https://patchwork.kernel.org/patch/89783/
 
-http://marc.info/?l=linux-kernel&m=127045871922996
+Thanks.
 
-And I asked Ingo to pull it here:
-
-http://marc.info/?l=linux-kernel&m=127048065715829
-
-> I also added option to control the LOST EVENTS display (1/2) if needed.
-
-Hmm, I'm not sure we want to control it. It is very useful information.
-
-Thanks,
-
--- Steve
-
-> 
-> attached patches:
-> - 1/2 - adding lost-events option
-> - 2/2 - supress lost events message for iterator "trace"
-> 
-> 
-> wbr,
-> jirka
-> ---
->  kernel/trace/trace.c |   24 ++++++++++++++----------
->  kernel/trace/trace.h |    1 +
->  2 files changed, 15 insertions(+), 10 deletions(-)
-
-
+-- 
+Kind regards,
+Minchan Kim
