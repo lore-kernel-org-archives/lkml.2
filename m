@@ -1,57 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab0DMKxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 06:53:41 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37967 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752891Ab0DMKxj (ORCPT
+	id S1753083Ab0DMLGi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 07:06:38 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:48778 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab0DMLGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 06:53:39 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas of a mergeable VMA
-Cc: kosaki.motohiro@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Borislav Petkov <bp@alien8.de>, Johannes Weiner <hannes@cmpxchg.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-In-Reply-To: <1271088103.20295.3383.camel@laptop>
-References: <4BC33A02.8000307@redhat.com> <1271088103.20295.3383.camel@laptop>
-Message-Id: <20100413194443.D116.A69D9226@jp.fujitsu.com>
+	Tue, 13 Apr 2010 07:06:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ePplBG4GIaHUSBgfQD9DVRBASLgCKF0dLBOfPR/+shsH0NQy3vvLuFF1qzs0BcUJXi
+         88qPs6pIXoC99jpCeZ70JkyYRHLDjkPZ/CewuPHEWR1nl5qGGNTuP709ksIEy6nNqgVc
+         xp7wBms0fVYHSdinvxBFTVm9FikbCanBkMVXU=
+Date: Wed, 14 Apr 2010 15:07:12 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Patrick McHardy <kaber@trash.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       shemminger@vyatta.com, bhutchings@solarflare.com, andreas@fatal.se,
+       hadi@cyberus.ca, hideaki@yoshifuji.org
+Subject: [PATCH v2] xtables: make XT_ALIGN() usable in exported headers by
+ exporting __ALIGN_KERNEL()
+Message-ID: <20100414120712.GA25686@x200>
+References: <20100407162245.GA4557@x200>
+ <4BC437C6.8020602@trash.net>
+ <4BC44117.80901@trash.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 13 Apr 2010 19:53:33 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BC44117.80901@trash.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  struct anon_vma *page_lock_anon_vma(struct page *page)
->  {
-> @@ -294,14 +309,24 @@ struct anon_vma *page_lock_anon_vma(struct page *page)
->  	unsigned long anon_mapping;
->  
->  	rcu_read_lock();
-> -	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
-> +	anon_mapping = (unsigned long)rcu_dereference(page->mapping);
->  	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
->  		goto out;
-> -	if (!page_mapped(page))
-> -		goto out;
->  
->  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
->  	spin_lock(&anon_vma->lock);
+XT_ALIGN() was rewritten through ALIGN() by commit 42107f5009da223daa800d6da6904d77297ae829
+"netfilter: xtables: symmetric COMPAT_XT_ALIGN definition".
+ALIGN() is not exported in userspace headers, which created compile problem for tc(8)
+and will create problem for iptables(8).
 
-Does anon->lock dereference is guranteed if page->_mapcount==-1?
-It can be freed miliseconds ago, rcu_read_lock() doesn't provide such
-gurantee.
+We can't export generic looking name ALIGN() but we can export less generic
+__ALIGN_KERNEL() (suggested by Ben Hutchings).
+Google knows nothing about __ALIGN_KERNEL().
 
-perhaps, I'm missing your point.
+COMPAT_XT_ALIGN() changed for symmetry.
 
+Reported-by: Andreas Henriksson <andreas@fatal.se>
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
 
+ include/linux/kernel.h             |    6 ++++--
+ include/linux/netfilter/x_tables.h |    6 +++---
+ 2 files changed, 7 insertions(+), 5 deletions(-)
+
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -4,6 +4,8 @@
+ /*
+  * 'kernel.h' contains some often-used function prototypes etc
+  */
++#define __ALIGN_KERNEL(x, a)		__ALIGN_KERNEL_MASK(x, (typeof(x))(a) - 1)
++#define __ALIGN_KERNEL_MASK(x, mask)	(((x) + (mask)) & ~(mask))
+ 
+ #ifdef __KERNEL__
+ 
+@@ -37,8 +39,8 @@ extern const char linux_proc_banner[];
+ 
+ #define STACK_MAGIC	0xdeadbeef
+ 
+-#define ALIGN(x,a)		__ALIGN_MASK(x,(typeof(x))(a)-1)
+-#define __ALIGN_MASK(x,mask)	(((x)+(mask))&~(mask))
++#define ALIGN(x, a)		__ALIGN_KERNEL((x), (a))
++#define __ALIGN_MASK(x, mask)	__ALIGN_KERNEL_MASK((x), (mask))
+ #define PTR_ALIGN(p, a)		((typeof(p))ALIGN((unsigned long)(p), (a)))
+ #define IS_ALIGNED(x, a)		(((x) & ((typeof(x))(a) - 1)) == 0)
+ 
+diff --git a/include/linux/netfilter/x_tables.h b/include/linux/netfilter/x_tables.h
+index 84c7c92..f01ddbe 100644
+--- a/include/linux/netfilter/x_tables.h
++++ b/include/linux/netfilter/x_tables.h
+@@ -1,6 +1,6 @@
+ #ifndef _X_TABLES_H
+ #define _X_TABLES_H
+-
++#include <linux/kernel.h>
+ #include <linux/types.h>
+ 
+ #define XT_FUNCTION_MAXNAMELEN 30
+@@ -93,7 +93,7 @@ struct _xt_align {
+ 	__u64 u64;
+ };
+ 
+-#define XT_ALIGN(s) ALIGN((s), __alignof__(struct _xt_align))
++#define XT_ALIGN(s) __ALIGN_KERNEL((s), __alignof__(struct _xt_align))
+ 
+ /* Standard return verdict, or do jump. */
+ #define XT_STANDARD_TARGET ""
+@@ -598,7 +598,7 @@ struct _compat_xt_align {
+ 	compat_u64 u64;
+ };
+ 
+-#define COMPAT_XT_ALIGN(s) ALIGN((s), __alignof__(struct _compat_xt_align))
++#define COMPAT_XT_ALIGN(s) __ALIGN_KERNEL((s), __alignof__(struct _compat_xt_align))
+ 
+ extern void xt_compat_lock(u_int8_t af);
+ extern void xt_compat_unlock(u_int8_t af);
