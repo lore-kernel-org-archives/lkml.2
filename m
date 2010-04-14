@@ -1,206 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab0DNHmu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 03:42:50 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:34924 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151Ab0DNHms (ORCPT
+	id S1753908Ab0DNHq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 03:46:27 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36118 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab0DNHqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 03:42:48 -0400
+	Wed, 14 Apr 2010 03:46:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=DUL+jQHy/2SCpzgO0rpdt9RlUycP4GRpQy0VxPwO1/w9DjVswK0FJKSfe/xhWwN77Y
-         xyfTsPokjGENKN02mrNCA+a2TjaRDQ6n2FmE55ITn6a6ljcttin16I35OPSd291nCcr2
-         9IueBIiHWcO9TlzNCc8MbVaW1RDKUUY9xKpfk=
-Subject: [PATCH net-next-2.6] fasync: RCU locking
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: netdev <netdev@vger.kernel.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Apr 2010 09:42:41 +0200
-Message-ID: <1271230961.16881.630.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=JKF7SO6rJ6nifdsoYEWuHIhbwMfa6P26FBW7FLYawmkrjxF9FbA6Jo0MUzkLVwVHEb
+         TpGznYJuQg9Dqlo7FLZkpR43EtS8pY5J29fDBRYYQOlqfEmkQ8wZFeCv+P3cDjeqV+gj
+         ANRRctsbVRa3cLvNorSBcsKIt1MaO4+KqubtQ=
+Date: Wed, 14 Apr 2010 15:50:09 +0800
+From: Amerigo Wang <xiyou.wangcong@gmail.com>
+To: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix sdev_rw_attr macro for scsi device sysfs entries
+Message-ID: <20100414075009.GC4503@cr0.nay.redhat.com>
+References: <4BC55D72.7080301@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BC55D72.7080301@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul, could you please check this patch, I am not sure
-of the IRQ safety thing...
+On Wed, Apr 14, 2010 at 03:15:14PM +0900, Tomohiro Kusumi wrote:
+>Hi
+>
+>This patch fixes sdev_rw_attr() macro for scsi device sysfs entries.
+>It seems there is no such function snscanf in the current linux kernel,
 
-Is call_rcu() the right method to use in this case ?
-
-Thanks
-
-[PATCH net-next-2.6] fasync: RCU locking
-
-kill_fasync() uses a central rwlock, candidate for RCU conversion.
-
-We can remove __kill_fasync() direct use in net, and rename it to
-kill_fasync_rcu()
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- fs/fcntl.c         |   36 +++++++++++++++++++++---------------
- include/linux/fs.h |   11 +++++------
- net/socket.c       |    4 ++--
- 3 files changed, 28 insertions(+), 23 deletions(-)
-
-diff --git a/fs/fcntl.c b/fs/fcntl.c
-index 452d02f..33cb3ee 100644
---- a/fs/fcntl.c
-+++ b/fs/fcntl.c
-@@ -614,9 +614,15 @@ int send_sigurg(struct fown_struct *fown)
- 	return ret;
- }
- 
--static DEFINE_RWLOCK(fasync_lock);
-+static DEFINE_SPINLOCK(fasync_lock);
- static struct kmem_cache *fasync_cache __read_mostly;
- 
-+static void fasync_free_rcu(struct rcu_head *head)
-+{
-+	kmem_cache_free(fasync_cache,
-+			container_of(head, struct fasync_struct, fa_rcu));
-+}
-+
- /*
-  * Remove a fasync entry. If successfully removed, return
-  * positive and clear the FASYNC flag. If no entry exists,
-@@ -634,17 +640,17 @@ static int fasync_remove_entry(struct file *filp, struct fasync_struct **fapp)
- 	int result = 0;
- 
- 	spin_lock(&filp->f_lock);
--	write_lock_irq(&fasync_lock);
-+	spin_lock_irq(&fasync_lock);
- 	for (fp = fapp; (fa = *fp) != NULL; fp = &fa->fa_next) {
- 		if (fa->fa_file != filp)
- 			continue;
- 		*fp = fa->fa_next;
--		kmem_cache_free(fasync_cache, fa);
-+		call_rcu(&fa->fa_rcu, fasync_free_rcu);
- 		filp->f_flags &= ~FASYNC;
- 		result = 1;
- 		break;
- 	}
--	write_unlock_irq(&fasync_lock);
-+	spin_unlock_irq(&fasync_lock);
- 	spin_unlock(&filp->f_lock);
- 	return result;
- }
-@@ -666,7 +672,7 @@ static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fa
- 		return -ENOMEM;
- 
- 	spin_lock(&filp->f_lock);
--	write_lock_irq(&fasync_lock);
-+	spin_lock_irq(&fasync_lock);
- 	for (fp = fapp; (fa = *fp) != NULL; fp = &fa->fa_next) {
- 		if (fa->fa_file != filp)
- 			continue;
-@@ -679,12 +685,12 @@ static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fa
- 	new->fa_file = filp;
- 	new->fa_fd = fd;
- 	new->fa_next = *fapp;
--	*fapp = new;
-+	rcu_assign_pointer(*fapp, new);
- 	result = 1;
- 	filp->f_flags |= FASYNC;
- 
- out:
--	write_unlock_irq(&fasync_lock);
-+	spin_unlock_irq(&fasync_lock);
- 	spin_unlock(&filp->f_lock);
- 	return result;
- }
-@@ -704,7 +710,10 @@ int fasync_helper(int fd, struct file * filp, int on, struct fasync_struct **fap
- 
- EXPORT_SYMBOL(fasync_helper);
- 
--void __kill_fasync(struct fasync_struct *fa, int sig, int band)
-+/*
-+ * rcu_read_lock() is held
-+ */
-+static void kill_fasync_rcu(struct fasync_struct *fa, int sig, int band)
- {
- 	while (fa) {
- 		struct fown_struct * fown;
-@@ -719,22 +728,19 @@ void __kill_fasync(struct fasync_struct *fa, int sig, int band)
- 		   mechanism. */
- 		if (!(sig == SIGURG && fown->signum == 0))
- 			send_sigio(fown, fa->fa_fd, band);
--		fa = fa->fa_next;
-+		fa = rcu_dereference(fa->fa_next);
- 	}
- }
- 
--EXPORT_SYMBOL(__kill_fasync);
--
- void kill_fasync(struct fasync_struct **fp, int sig, int band)
- {
- 	/* First a quick test without locking: usually
- 	 * the list is empty.
- 	 */
- 	if (*fp) {
--		read_lock(&fasync_lock);
--		/* reread *fp after obtaining the lock */
--		__kill_fasync(*fp, sig, band);
--		read_unlock(&fasync_lock);
-+		rcu_read_lock();
-+		kill_fasync_rcu(rcu_dereference(*fp), sig, band);
-+		rcu_read_unlock();
- 	}
- }
- EXPORT_SYMBOL(kill_fasync);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 39d57bc..158b2cc 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1280,10 +1280,11 @@ static inline int lock_may_write(struct inode *inode, loff_t start,
- 
- 
- struct fasync_struct {
--	int	magic;
--	int	fa_fd;
--	struct	fasync_struct	*fa_next; /* singly linked list */
--	struct	file 		*fa_file;
-+	int			magic;
-+	int			fa_fd;
-+	struct fasync_struct	*fa_next; /* singly linked list */
-+	struct file		*fa_file;
-+	struct rcu_head		fa_rcu;
- };
- 
- #define FASYNC_MAGIC 0x4601
-@@ -1292,8 +1293,6 @@ struct fasync_struct {
- extern int fasync_helper(int, struct file *, int, struct fasync_struct **);
- /* can be called from interrupts */
- extern void kill_fasync(struct fasync_struct **, int, int);
--/* only for net: no internal synchronization */
--extern void __kill_fasync(struct fasync_struct *, int, int);
- 
- extern int __f_setown(struct file *filp, struct pid *, enum pid_type, int force);
- extern int f_setown(struct file *filp, unsigned long arg, int force);
-diff --git a/net/socket.c b/net/socket.c
-index 35bc198..846739c 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1159,10 +1159,10 @@ int sock_wake_async(struct socket *sock, int how, int band)
- 		/* fall through */
- 	case SOCK_WAKE_IO:
- call_kill:
--		__kill_fasync(sock->fasync_list, SIGIO, band);
-+		kill_fasync(sock->fasync_list, SIGIO, band);
- 		break;
- 	case SOCK_WAKE_URG:
--		__kill_fasync(sock->fasync_list, SIGURG, band);
-+		kill_fasync(sock->fasync_list, SIGURG, band);
- 	}
- 	return 0;
- }
+Yes! Good catch!
 
 
+>so it fails to compile scsi driver when someone try to add a new rw entry.
+>This has been unfixed for a long time probably because current scsi device
+>has no rw entries.
+>
+
+Really? I compiled it in my configuration, but i don't see any
+compile error. Hmm, i think we are lucky, no one is using the macro
+sdev_rw_attr() currently.
+
+
+># grep snscanf . -rn
+>./drivers/scsi/scsi_sysfs.c:489:        snscanf (buf, 20, format_string, &sdev->field);                 \
+>
+>Thanks,
+>Tomohiro Kusumi
+>
+>
+>
+>Signed-off-by: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+Thanks!
