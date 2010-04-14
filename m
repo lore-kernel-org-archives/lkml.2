@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab0DNHzO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 03:55:14 -0400
-Received: from ns2.intersolute.de ([193.110.43.67]:59255 "EHLO
-	ns2.intersolute.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab0DNHzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 03:55:12 -0400
-Message-ID: <4BC57478.3080902@lumino.de>
-Date: Wed, 14 Apr 2010 09:53:28 +0200
-From: Michael Schnell <mschnell@lumino.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: microblaze-uclinux@itee.uq.edu.au, LKML <linux-kernel@vger.kernel.org>,
-       John Williams <john.williams@petalogix.com>,
-       John Linn <John.Linn@xilinx.com>,
-       Stefan Asserhall <stefan.asserhall@xilinx.com>,
-       Goran Bilski <goran@xilinx.com>,
-       "Steven J. Magnani" <steve@digidescorp.com>,
-       Arnd Bergmann <arnd@arndb.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-       "Edgar E. Iglesias" <edgar.iglesias@gmail.com>,
-       Grant Likely <grant.likely@secretlab.ca>, sam@ravnborg.org,
-       stephenn@xilinx.com, Karen Whelan <karen.whelan@petalogix.com>,
-       Wendy Liang <wendy.liang@petalogix.com>
-Subject: Re: Microblaze - The fist year
-References: <4BC461AD.6090504@monstr.eu> <4BC46DC6.5050309@lumino.de> <4BC4713F.6030702@monstr.eu>
-In-Reply-To: <4BC4713F.6030702@monstr.eu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754089Ab0DNHzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 03:55:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55411 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752076Ab0DNHzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 03:55:31 -0400
+Date: Wed, 14 Apr 2010 09:55:30 +0200
+From: Jan Blunck <jblunck@suse.de>
+To: Jan Kara <jack@suse.cz>
+Cc: tytso@mit.edu, Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+       linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 4/5] ext2: Move ext2_write_super() out of ext2_setup_super()
+Message-ID: <20100414075530.GP10776@bolzano.suse.de>
+References: <1271104905-8804-1-git-send-email-jblunck@suse.de> <1271104905-8804-5-git-send-email-jblunck@suse.de> <20100413175318.GA3250@quack.wifi.zluty.cz>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100413175318.GA3250@quack.wifi.zluty.cz>
+Organization: SUSE LINUX Products GmbH, GF Markus Rex, HRB 16746 (AG Nuernberg)
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2010 03:27 PM, Michal Simek wrote:
->
-> yes, futex is there. You can check it in
-> arch/microblaze/include/asm/futex.h
-Great ! I'll check how this is done.
->
->> Does Microblaze MMU Linux support SMP ?
->
-> It is possible to connect several MicroBlazes but the problem is
-> missing cache coherency modul. I hope that Xilinx will release any
-> version which will support it.
-> We haven't done any significant work to support it but it is expected
-> solution which will happen.
+On Tue, Apr 13, Jan Kara wrote:
 
-Besides cache coherency, another problem might be doing FUTEX. here (I
-suppose) SMP safe atomic user space operations are necessary. many
-simple RISK (load/store-) CPUs don't provide these (new ARMs provide
-"load-locked / store-conditional" on that behalf as an extension to the
-load/store paradigm. I suppose these can be done in an SMP-safe way,
-supposedly using the hardware that provides cache coherency).
+> On Mon 12-04-10 22:41:44, Jan Blunck wrote:
+> > Move ext2_write_super() out of ext2_setup_super() as a preparation for the
+> > next patch that adds a new lock for superblock fields.
+> > 
+> > Signed-off-by: Jan Blunck <jblunck@suse.de>
+> > ---
+> >  fs/ext2/super.c |    8 +++++---
+> >  1 files changed, 5 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+> > index 40fc8d5..b01c491 100644
+> > --- a/fs/ext2/super.c
+> > +++ b/fs/ext2/super.c
+> > @@ -606,7 +606,6 @@ static int ext2_setup_super (struct super_block * sb,
+> >  	if (!le16_to_cpu(es->s_max_mnt_count))
+> >  		es->s_max_mnt_count = cpu_to_le16(EXT2_DFL_MAX_MNT_COUNT);
+> >  	le16_add_cpu(&es->s_mnt_count, 1);
+> > -	ext2_write_super(sb);
+> >  	if (test_opt (sb, DEBUG))
+> >  		ext2_msg(sb, KERN_INFO, "%s, %s, bs=%lu, fs=%lu, gc=%lu, "
+> >  			"bpg=%lu, ipg=%lu, mo=%04lx]",
+> > @@ -1079,7 +1078,9 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
+> >  	if (EXT2_HAS_COMPAT_FEATURE(sb, EXT3_FEATURE_COMPAT_HAS_JOURNAL))
+> >  		ext2_msg(sb, KERN_WARNING,
+> >  			"warning: mounting ext3 filesystem as ext2");
+> > -	ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY);
+> > +	if (ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY))
+> > +		sb->s_flags != MS_RDONLY;
+>                             ^^ Should be |=, shouldn't it?
+> 
 
--Michael
+Jan "Eagle Eye" Kara!!! Maybe its time for me to invest in new glasses ...
+
+Thanks for spotting it,
+Jan
