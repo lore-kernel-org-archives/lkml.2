@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab0DNPMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:12:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61969 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755074Ab0DNPMp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756006Ab0DNPMp (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 14 Apr 2010 11:12:45 -0400
+Received: from ey-out-2122.google.com ([74.125.78.24]:35809 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074Ab0DNPMm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 11:12:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=t/EETIyO1RQuwfL1MdZdwIjNW8vlyNQ/wPOCAn5Dph6zxcmfSTtFVio4rAdqM52S7q
-         iVFbX8ardYy0PCwXWePSR9fAMmGfiUQ4Jqm9pwglFhb6JL8vMLdZGW0lmw4Km7HXl61w
-         v0cF9suy793GwAyOgK4eAeDWG2bd24PE9RF/o=
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=Z17dJCpzme5AVEoVWih7Sf4Lc0RvfWGXQRG22bv/sfyK38e+7GLFWRH9v1NwYe7c5O
+         2LtCU+Bt+IXJhqcgzyflg1wljqKstU+g/ISIG3xwBTd2L7RqbewgsK1mGO3S5D5z2Qje
+         0WOzF5we3X9+yntt7lievn0mN/H2pPLGEvKu4=
 MIME-Version: 1.0
-In-Reply-To: <1271255053.7196.89.camel@localhost.localdomain>
-References: <1271089672.7196.63.camel@localhost.localdomain>
-	 <1271249354.7196.66.camel@localhost.localdomain>
-	 <1271255053.7196.89.camel@localhost.localdomain>
-Date: Thu, 15 Apr 2010 00:12:45 +0900
-Message-ID: <h2m28c262361004140812y92447e97z29c001d0a8b8eaaf@mail.gmail.com>
-Subject: Re: vmalloc performance
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Steven Whitehouse <steve@chygwyn.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Reply-To: kusmabite@gmail.com
+In-Reply-To: <tip-c05556421742eb47f80301767653a4bcb19de9de@git.kernel.org>
+References: <1271147857-11604-1-git-send-email-imunsie@au.ibm.com>
+	 <tip-c05556421742eb47f80301767653a4bcb19de9de@git.kernel.org>
+Date: Wed, 14 Apr 2010 17:12:40 +0200
+Message-ID: <j2k40aa078e1004140812s3d9fab4auf559b1e87af60b5b@mail.gmail.com>
+Subject: Re: [tip:perf/core] perf: Fix endianness argument compatibility with 
+	OPT_BOOLEAN() and introduce OPT_INCR()
+From: Erik Faye-Lund <kusmabite@googlemail.com>
+To: mingo@redhat.com, acme@redhat.com, jkacur@redhat.com,
+       a.p.zijlstra@chello.nl, rusty@rustcorp.com.au, efault@gmx.de,
+       mitake@dcl.info.waseda.ac.jp, imunsie@au1.ibm.com, fweisbec@gmail.com,
+       rostedt@goodmis.org, hirofumi@mail.parknet.co.jp, imunsie@au.ibm.com,
+       tglx@linutronix.de, mhiramat@redhat.com, paulus@samba.org,
+       hpa@zytor.com, linux-kernel@vger.kernel.org, anton@samba.org,
+       tzanussi@gmail.com, arjan@linux.intel.com, lizf@cn.fujitsu.com,
+       tfransosi@gmail.com, xiaoguangrong@cn.fujitsu.com, git@vger.kernel.org,
+       amwang@redhat.com, davem@davemloft.net, jaswinderrajput@gmail.com,
+       ebmunson@us.ibm.com, kosaki.motohiro@jp.fujitsu.com, mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 11:24 PM, Steven Whitehouse <steve@chygwyn.com> wrote:
-> Hi,
->
-> Also, what lock should be protecting this code:
->
-> Â  Â  Â  Â va->flags |= VM_LAZY_FREE;
-> Â  Â  Â  Â atomic_add((va->va_end - va->va_start) >> PAGE_SHIFT,
-> &vmap_lazy_nr);
->
-> in free_unmap_vmap_area_noflush() ? It seem that if
-> __purge_vmap_area_lazy runs between the two statements above that the
-> number of pages contained in vmap_lazy_nr will be incorrect. Maybe the
-> two statements should just be reversed? I can't see any reason that the
-> flag assignment would be atomic either. In recent tests, including the
-> patch below, the following has been reported to me:
+I'd just like to point out that I'm commenting from the Git
+pont-of-view, since this patch was CC'ed to the Git mailing-list.
 
-It was already fixed.
-https://patchwork.kernel.org/patch/89783/
+On Wed, Apr 14, 2010 at 11:36 AM, tip-bot for Ian Munsie
+<imunsie@au.ibm.com> wrote:
+> Commit-ID:  c05556421742eb47f80301767653a4bcb19de9de
+> Gitweb:     http://git.kernel.org/tip/c05556421742eb47f80301767653a4bcb19de9de
+> Author:     Ian Munsie <imunsie@au.ibm.com>
+> AuthorDate: Tue, 13 Apr 2010 18:37:33 +1000
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Wed, 14 Apr 2010 11:26:44 +0200
+>
+> perf: Fix endianness argument compatibility with OPT_BOOLEAN() and introduce OPT_INCR()
+>
+> Parsing an option from the command line with OPT_BOOLEAN on a
+> bool data type would not work on a big-endian machine due to the
+> manner in which the boolean was being cast into an int and
+> incremented.
 
-Thanks.
+We don't use C99 features like the "bool"-type in Git, so this
+shouldn't really be a problem in our end.
+
+> For example, running 'perf probe --list' on a
+> PowerPC machine would fail to properly set the list_events bool
+> and would therefore print out the usage information and
+> terminate.
+>
+
+I don't know what this 'perf'-thing is, but it sounds like it's some
+external client for the parse-options-API that uses OPT_BOOLEAN
+incorrectly.
+
+Looking at linux-next.git, it seems so. The code in tools/perf/ seems
+to use OPT_BOOLEAN with C99 bools, and it seems to have imported git's
+parse-options API (in commit 0780060124011b94af55830939c86cc0916be0f5,
+it seems).
+
+I'd suggest either fixing the call-sites to use int, or just keeping
+these changes in linux-next.git.
 
 -- 
-Kind regards,
-Minchan Kim
+Erik "kusma" Faye-Lund
