@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab0DNIw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 04:52:29 -0400
-Received: from pmx3.lnl.infn.it ([192.135.30.243]:58919 "EHLO pmx3.lnl.infn.it"
+	id S1754651Ab0DNIx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 04:53:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38582 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754126Ab0DNIwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 04:52:25 -0400
-Message-ID: <7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-Date: Wed, 14 Apr 2010 10:51:45 +0200 (CEST)
-From: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>
-To: "Tung, Chien Tin" <chien.tin.tung@intel.com>,
-       Steve Wise <swise@opengridcomputing.com>
-Subject: RE: Socket Direct Protocol: help (2)
-Cc: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-       "rolandd@cisco.com" <rolandd@cisco.com>,
-       "peterz@infradead.org" <peterz@infradead.org>,
-       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
-       Eric B Munson <ebmunson@us.ibm.com>
-In-Reply-To: <2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>
-Mime-Version: 1.0
+	id S1754045Ab0DNIx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 04:53:58 -0400
+Date: Wed, 14 Apr 2010 11:52:28 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Roland Dreier <rdreier@cisco.com>,
+       =?utf-8?B?SMOla29u?= Bugge <Haakon.Bugge@Sun.COM>,
+       Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Eric B Munson <ebmunson@us.ibm.com>, linux-kernel@vger.kernel.org,
+       linux-rdma@vger.kernel.org, rolandd@cisco.com, pavel@ucw.cz,
+       mingo@elte.hu, jsquyres@cisco.com
+Subject: Re: [PATCH] ummunotify: Userspace support for MMU notifications
+Message-ID: <20100414085228.GL23554@redhat.com>
+References: <1271053337-7121-1-git-send-email-ebmunson@us.ibm.com>
+ <20100412160359.1d9074dc.akpm@linux-foundation.org>
+ <20100412235937.GF15629@obsidianresearch.com>
+ <3251DDDA-D705-4B1E-9595-9C24709EF146@Sun.com>
+ <adahbnfme0j.fsf@roland-alpha.cisco.com>
+ <1271181774.4807.1868.camel@twins>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (normal)
-X-Mailer: SuSE Linux Openexchange Server 4 - WebMail (Build 2.4160)
-X-Operating-System: Linux 2.4.21-314-smp i386 (JVM 1.3.1_20)
-Organization: INFN - Laboratori Nazionali Legnaro
-References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com> <4BC49E2B.3000804@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com> <4BC4D22A.6020700@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>
-X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.14.83915 (i)
-X-Spam-Flag: NO
+Content-Disposition: inline
+In-Reply-To: <1271181774.4807.1868.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 13, 2010 10:22 PM, "Tung, Chien Tin" <chien.tin.tung@intel.com>
-wrote:
-
-> >>> Chien, does the NE020 support FMRs? I looked at the nes ofed-1.5
-> >>> code
-> >>> and it appears to do nothing in the map_phys_fmr functions.
-> >>>
-> >>
-> >> We never implemented map_phys_fmr. Is it relevant to the # of SGEs?
-> >>
-> >No, but SDP uses FMRs. I don't think it will run without FMR support.
-> >
+On Tue, Apr 13, 2010 at 08:02:54PM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-04-13 at 10:57 -0700, Roland Dreier wrote:
+> > Are those system calls the only possible way that virtual to physical
+> > mappings can change?  Can't page migration or something like that
+> > potentially affect things?  And even if you did have hooks into every
+> > system call that mattered (keep in mind that relying on glibc is not
+> > enough, since an MPI application may not use glibc) would decoding them
+> > and figuring out what happened really be preferable to a single event
+> > type that tells you exactly what address range was affected? 
 > 
+> Yeah, virtual<->physical maps can change through swapping, page
+> migration, memory compaction, huge-page aggregation (the latter two not
+> yet being upstream).
 > 
-> Good to know.  Thanks.
-> 
-> Chien
-> 
-> 
+> Even mlock() doesn't pin virtual<->physical maps.
+Pages registered for RDMA are GUPed so no method above should touch
+them. Fork+cow or unmap/map on the other hand can change
+virtual<->physical maps. GUPed pages are still GUPed, but they are no
+longer mapped into process' virtual address space. MPI copes with
+Fork+cow by marking registered memory as MADV_DONTFORK.
 
-Hi Steve and Chien,
-
-I understand that NE020 cards have problem with SDP connected with
-map_phy_fmr (FMR stands for Fast Memory Region).
-Is it possible to solve/fix this point?
-If yes, have you an idea about the time that is necessary to code
-development/build?
-If no, can you suggest me a card that supports SDP protocol?
-
-I work on NE020 cards from February 2010 for an INFN experimental
-proposal, called REDIGO (Read out at 10 Gbits/s), about the data
-acquisition and movement systems. The covergence of storage protocols
-around 10 Gigabits/s Ethernet protocols shows that one way could be the
-Remote Direct Memory Access (RDMA). The goals are the investigations of
-latency time, the throughput, the buffer size schemes and finally the
-global event building bandwidth.
-
-Do you know if NE020 cards have problems with librdma (RDMA procedures,
-in general) and / or with MPI versions?
-
-Thank you very much,
-Andrea
-
-Andrea Gozzelino
-
-INFN - Laboratori Nazionali di Legnaro	(LNL)
-Viale dell'Universita' 2
-I-35020 - Legnaro (PD)- ITALIA
-Tel: +39 049 8068346
-Fax: +39 049 641925
-Mail: andrea.gozzelino@lnl.infn.it			
-
+--
+			Gleb.
