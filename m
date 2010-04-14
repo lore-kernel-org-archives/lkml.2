@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab0DNMiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 08:38:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47340 "EHLO mx1.suse.de"
+	id S1755218Ab0DNMip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 08:38:45 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47341 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939Ab0DNMin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750715Ab0DNMin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Apr 2010 08:38:43 -0400
 From: Jan Blunck <jblunck@suse.de>
 To: Jan Kara <jack@suse.cz>, tytso@mit.edu
 Cc: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
        linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
        Arnd Bergmann <arnd@arndb.de>, Jan Blunck <jblunck@suse.de>
-Subject: [PATCH 0/7] ext2: Preparation to remove BKL (v2)
-Date: Wed, 14 Apr 2010 14:38:32 +0200
-Message-Id: <1271248719-21488-1-git-send-email-jblunck@suse.de>
+Subject: [PATCH 1/7] ext2: Use ext2_clear_super_error() in ext2_sync_fs()
+Date: Wed, 14 Apr 2010 14:38:33 +0200
+Message-Id: <1271248719-21488-2-git-send-email-jblunck@suse.de>
 X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1271248719-21488-1-git-send-email-jblunck@suse.de>
+References: <1271248719-21488-1-git-send-email-jblunck@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a series of patches in preparation to the removal of the big kernel
-lock from ext2. It consists mostly of cleanup patches to later introduce a
-spinlock to protect some of the superblock's fields against concurrent access.
-With the spinlock in place we don't need to use the big kernel lock anymore.
+ext2_sync_fs() used to duplicate the code from ext2_clear_super_error().
 
-This series has been part of the BKL removal patches that I have posted in
-November 2009 already. I've addressed the feedback kindly provided by Ogawa-san
-by moving the ext2_write_super() out of ext2_setup_super().
+Signed-off-by: Jan Blunck <jblunck@suse.de>
+---
+ fs/ext2/super.c |   20 +++-----------------
+ 1 files changed, 3 insertions(+), 17 deletions(-)
 
-Changes since v1:
-- fix typo when setting MS_RDONLY
-- take s_lock when setting EXT2_FEATURE_COMPAT_EXT_ATTR
-- fold ext2_commit_super() into ext2_sync_super()
-- include BKL removal patch
-
-Thanks,
-Jan
-
-Jan Blunck (7):
-  ext2: Use ext2_clear_super_error() in ext2_sync_fs()
-  ext2: Set the write time in ext2_sync_fs()
-  ext2: Remove duplicate code from ext2_sync_fs()
-  ext2: Fold ext2_commit_super() into ext2_sync_super()
-  ext2: Move ext2_write_super() out of ext2_setup_super()
-  ext2: Add ext2_sb_info s_lock spinlock
-  BKL: Remove BKL from ext2 filesystem
-
- fs/ext2/inode.c            |    5 +-
- fs/ext2/super.c            |   99 ++++++++++++++++++--------------------------
- fs/ext2/xattr.c            |    2 +
- include/linux/ext2_fs_sb.h |    9 ++++
- 4 files changed, 54 insertions(+), 61 deletions(-)
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index 42e4a30..8e8b675 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -1120,8 +1120,8 @@ static void ext2_clear_super_error(struct super_block *sb)
+ 		 * be remapped.  Nothing we can do but to retry the
+ 		 * write and hope for the best.
+ 		 */
+-		printk(KERN_ERR "EXT2-fs: %s previous I/O error to "
+-		       "superblock detected", sb->s_id);
++		ext2_msg(sb, KERN_ERR,
++		       "previous I/O error to superblock detected\n");
+ 		clear_buffer_write_io_error(sbh);
+ 		set_buffer_uptodate(sbh);
+ 	}
+@@ -1161,23 +1161,9 @@ static void ext2_sync_super(struct super_block *sb, struct ext2_super_block *es)
+ static int ext2_sync_fs(struct super_block *sb, int wait)
+ {
+ 	struct ext2_super_block *es = EXT2_SB(sb)->s_es;
+-	struct buffer_head *sbh = EXT2_SB(sb)->s_sbh;
+ 
+ 	lock_kernel();
+-	if (buffer_write_io_error(sbh)) {
+-		/*
+-		 * Oh, dear.  A previous attempt to write the
+-		 * superblock failed.  This could happen because the
+-		 * USB device was yanked out.  Or it could happen to
+-		 * be a transient write error and maybe the block will
+-		 * be remapped.  Nothing we can do but to retry the
+-		 * write and hope for the best.
+-		 */
+-		ext2_msg(sb, KERN_ERR,
+-		       "previous I/O error to superblock detected\n");
+-		clear_buffer_write_io_error(sbh);
+-		set_buffer_uptodate(sbh);
+-	}
++	ext2_clear_super_error(sb);
+ 
+ 	if (es->s_state & cpu_to_le16(EXT2_VALID_FS)) {
+ 		ext2_debug("setting valid to 0\n");
+-- 
+1.6.4.2
 
