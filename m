@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab0DNMLN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 08:11:13 -0400
-Received: from ozlabs.org ([203.10.76.45]:48732 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754797Ab0DNMLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 08:11:11 -0400
-Subject: Re: [PATCH] powerpc/perf_event: Fix oops due to
- perf_event_do_pending call
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: Paul Mackerras <paulus@samba.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-       Anton Blanchard <anton@samba.org>
-In-Reply-To: <20100414064603.GA4714@drongo>
-References: <20100414064603.GA4714@drongo>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-PVasO5QlV5XfeYA5Awxf"
-Date: Wed, 14 Apr 2010 22:11:09 +1000
-Message-ID: <1271247069.3727.1.camel@concordia>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1755274Ab0DNMPY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 08:15:24 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:42015 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755206Ab0DNMPX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 08:15:23 -0400
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Dave Chinner <david@fromorbit.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+From: Andi Kleen <andi@firstfloor.org>
+References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
+	<20100413095815.GU25756@csn.ul.ie> <20100413111902.GY2493@dastard>
+	<20100413193428.GI25756@csn.ul.ie> <20100413202021.GZ13327@think>
+	<877hoa9wlv.fsf@basil.nowhere.org> <20100414112015.GO13327@think>
+Date: Wed, 14 Apr 2010 14:15:16 +0200
+In-Reply-To: <20100414112015.GO13327@think> (Chris Mason's message of "Wed, 14 Apr 2010 07:20:15 -0400")
+Message-ID: <8739yy9qnf.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Chris Mason <chris.mason@oracle.com> writes:
+>> 
+>> Basically if you cannot tolerate 1K (or more likely more) of stack
+>> used before your fs is called you're toast in lots of other situations
+>> anyways.
+>
+> Well, on a 4K stack kernel, 832 bytes is a very large percentage for
+> just one function.
 
---=-PVasO5QlV5XfeYA5Awxf
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+To be honest I think 4K stack simply has to go. I tend to call
+it "russian roulette" mode. 
 
-On Wed, 2010-04-14 at 16:46 +1000, Paul Mackerras wrote:
-> Anton Blanchard found that large POWER systems would occasionally
-> crash in the exception exit path when profiling with perf_events.
-> The symptom was that an interrupt would occur late in the exit path
-> when the MSR[RI] (recoverable interrupt) bit was clear.  Interrupts
-> should be hard-disabled at this point but they were enabled.  Because
-> the interrupt was not recoverable the system panicked.
->=20
-...
-> diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-> index 1b16b9a..0441bbd 100644
-> --- a/arch/powerpc/kernel/time.c
-> +++ b/arch/powerpc/kernel/time.c
-> @@ -532,25 +532,60 @@ void __init iSeries_time_init_early(void)
->  }
->  #endif /* CONFIG_PPC_ISERIES */
-> =20
-> -#if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_PPC32)
-> -DEFINE_PER_CPU(u8, perf_event_pending);
-> +#ifdef CONFIG_PERF_EVENTS
-> =20
-> -void set_perf_event_pending(void)
-> +/*
-> + * 64-bit uses a byte in the PACA, 32-bit uses a per-cpu variable...
-> + */
+It was just a old workaround for a very old buggy VM that couldn't free 8K
+pages and the VM is a lot better at that now. And the general trend is
+to more complex code everywhere, so 4K stacks become more and more hazardous.
 
-Any reason not to switch to per-cpu for both, now that you don't need to
-access it from asm?
+It was a bad idea back then and is still a bad idea, getting
+worse and worse with each MLOC being added to the kernel each year.
 
-cheers
+We don't have any good ways to verify that obscure paths through
+the more and more subsystems won't exceed it (in fact I'm pretty
+sure there are plenty of problems in exotic configurations)
 
---=-PVasO5QlV5XfeYA5Awxf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+And even if you can make a specific load work there's basically
+no safety net.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
+The only part of the 4K stack code that's good is the separate
+interrupt stack, but that one should be just combined with a sane 8K 
+process stack.
 
-iEYEABECAAYFAkvFsNkACgkQdSjSd0sB4dKXtwCdFSWKKxxitwjJwM+QXzgKad1z
-jIIAoLprKHTqhJiKzFSAHbBV9HvoVcRs
-=9xj3
------END PGP SIGNATURE-----
+But yes on a 4K kernel you probably don't want to do any direct reclaim. 
+Maybe for GFP_NOFS everywhere except user allocations when it's set? 
+Or simply drop it?
 
---=-PVasO5QlV5XfeYA5Awxf--
+> But they don't realize their function can dive down into ecryptfs then
+> the filesystem then maybe loop and then perhaps raid6 on top of a
+> network block device.
 
+Those stackings need to use separate threads anyways. A lot of them
+do in fact. Block avoided this problem by iterating instead of
+recursing.  Those that still recurse on the same stack simply
+need to be fixed.
+
+> Yeah, but since the call chain does eventually go into the allocator,
+> this function needs to be more stack friendly.
+
+For common fast paths it doesn't go into the allocator.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
