@@ -1,210 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab0DNNN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 09:13:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56725 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755271Ab0DNNNx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 09:13:53 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4BACCB4E.7010108@draigBrady.com>
-References: <4BACCB4E.7010108@draigBrady.com> <20100326144241.8583.95617.stgit@warthog.procyon.org.uk>
-To: P@draigBrady.com
-cc: torvalds@osdl.org, matthew@wil.cx, arjan@infradead.org,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-       dhowells@redhat.com
-Subject: Re: [PATCH 1/3] X86: Optimise fls(), ffs() and fls64()
+	id S1755471Ab0DNNVE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 09:21:04 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:58932 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755425Ab0DNNVB (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 14 Apr 2010 09:21:01 -0400
+Date: Wed, 14 Apr 2010 09:18:22 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Pedro Ribeiro <pedrib@gmail.com>
+Cc: linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
+       alsa-devel@alsa-project.org
+Subject: Re: [LKML] Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100414131822.GC17171@phenom.dumpdata.com>
+References: <20100412162947.GQ18855@one.firstfloor.org> <Pine.LNX.4.44L0.1004121252310.1702-100000@iolanthe.rowland.org> <20100413182233.GR30807@buzzloop.caiaq.de> <k2o74fd948d1004131646k1e0e1897z7594f77a580c6b9f@mail.gmail.com> <20100414100946.GS30807@buzzloop.caiaq.de> <t2w74fd948d1004140347k3447bffapb73856eacddfde55@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 14 Apr 2010 14:13:35 +0100
-Message-ID: <18695.1271250815@redhat.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <t2w74fd948d1004140347k3447bffapb73856eacddfde55@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4BC5C108.01D0:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pádraig Brady <P@draigBrady.com> wrote:
+> So basically the BIOS is incorrectly reporting
+> BIOS-e820: 0000000100000000 - 000000013c000000 (usable)
 
-> Benchmarks would be useful for this patch set.
+No. Count up the the sizes of the (usuable) entries. You will see
+that when you provided mem=4GB, the E820 got truncated to stop at 4GB.
+Without that it goes past the 4GB mark (which is correct).
 
-Okay.
-
-Using the attached test program:
-
-	warthog>time ./get_order 
-	real    1m37.191s
-	user    1m36.313s
-	sys     0m0.861s
-	warthog>time ./get_order x
-	real    0m16.892s
-	user    0m16.586s
-	sys     0m0.287s
-	warthog>time ./get_order x x
-	real    0m7.731s
-	user    0m7.727s
-	sys     0m0.002s
-
-Using the current upstream fls64() as a basis for an inlined get_order() [the
-second result above] is much faster than using the current out-of-line
-loop-based get_order() [the first result above].
-
-Using my optimised inline fls64()-based get_order() [the third result above]
-is even faster still.
-
-I ran the above on my Core2 desktop box running x86_64 Fedora 12.
-
-Also note that I compiled the test program with -O3, so I had to do things to
-prevent gcc from optimising the call to fls64() or get_order() away, such as
-adding up the results and sticking them in a global variable, and not having
-too few values passed to get_order(), lest gcc calculate them in advance.
-
-So it would be useful to decide if we can optimise fls() and fls64() for
-x86_64.  Certainly it would be useful to replace the out-of-line get_order()
-for x86_64.
-
-David
----
-#include <stdlib.h>
-#include <stdio.h>
-
-#ifndef __x86_64__
-#error
-#endif
-
-#define BITS_PER_LONG 64
-
-#define PAGE_SHIFT 12
-
-typedef unsigned long long __u64, u64;
-typedef unsigned int __u32, u32;
-#define noinline	__attribute__((noinline))
-
-static __always_inline int fls64(__u64 x)
-{
-	long bitpos = -1;
-
-	asm("bsrq %1,%0"
-	    : "+r" (bitpos)
-	    : "rm" (x));
-	return bitpos + 1;
-}
-
-static inline unsigned long __fls(unsigned long word)
-{
-	asm("bsr %1,%0"
-	    : "=r" (word)
-	    : "rm" (word));
-	return word;
-}
-static __always_inline int old_fls64(__u64 x)
-{
-	if (x == 0)
-		return 0;
-	return __fls(x) + 1;
-}
-
-static noinline // __attribute__((const))
-int old_get_order(unsigned long size)
-{
-	int order;
-
-	size = (size - 1) >> (PAGE_SHIFT - 1);
-	order = -1;
-	do {
-		size >>= 1;
-		order++;
-	} while (size);
-	return order;
-}
-
-static inline __attribute__((const))
-int __get_order_old_fls64(unsigned long size)
-{
-	int order;
-	size--;
-	size >>= PAGE_SHIFT;
-	order = old_fls64(size);
-	return order;
-}
-
-static inline __attribute__((const))
-int __get_order(unsigned long size)
-{
-	int order;
-	size--;
-	size >>= PAGE_SHIFT;
-	order = fls64(size);
-	return order;
-}
-
-#define get_order_old_fls64(n)						\
-	(								\
-		__get_order_old_fls64(n)				\
-	)
-
-#define get_order(n)							\
-	(								\
-		__get_order(n)						\
-	)
-
-unsigned long prevent_optimise_out;
-
-static noinline unsigned long test_old_get_order(void)
-{
-	unsigned long n, total = 0;
-	long rep, loop;
-
-	for (rep = 1000000; rep > 0; rep--) {
-		for (loop = 0; loop <= 16384; loop += 4) {
-			n = 1UL << loop;
-			total += old_get_order(n);
-		}
-	}
-	return total;
-}
-
-static noinline unsigned long test_get_order_old_fls64(void)
-{
-	unsigned long n, total = 0;
-	long rep, loop;
-
-	for (rep = 1000000; rep > 0; rep--) {
-		for (loop = 0; loop <= 16384; loop += 4) {
-			n = 1UL << loop;
-			total += get_order_old_fls64(n);
-		}
-	}
-	return total;
-}
-
-static noinline unsigned long test_get_order(void)
-{
-	unsigned long n, total = 0;
-	long rep, loop;
-
-	for (rep = 1000000; rep > 0; rep--) {
-		for (loop = 0; loop <= 16384; loop += 4) {
-			n = 1UL << loop;
-			total += get_order(n);
-		}
-	}
-	return total;
-}
-
-int main(int argc, char **argv)
-{
-	unsigned long total;
-
-	switch (argc) {
-	case 1:  total = test_old_get_order();		break;
-	case 2:  total = test_get_order_old_fls64();	break;
-	default: total = test_get_order();		break;
-	}
-	prevent_optimise_out = total;
-	return 0;
-}
+Keep in mind, 4GB doesn't mean your usuable memory stops at 4GB. The
+BIOS shuffles the memory around to stick in the BIOS, ACPI, PCI hole so
+that part of the usable memory is above 4GB.
