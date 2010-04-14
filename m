@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab0DNUw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 16:52:29 -0400
-Received: from mail-out2.uio.no ([129.240.10.58]:49854 "EHLO mail-out2.uio.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755688Ab0DNUw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 16:52:27 -0400
-Subject: Re: [PATCH 2/2] [RFC] Remove BKL from fs/locks.c
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Matthew Wilcox <willy@linux.intel.com>, Christoph Hellwig <hch@lst.de>,
-       "J. Bruce Fields" <bfields@fieldses.org>,
-       Miklos Szeredi <mszeredi@suse.cz>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <1271277384-7627-2-git-send-email-arnd@arndb.de>
-References: <1271277384-7627-1-git-send-email-arnd@arndb.de>
-	 <1271277384-7627-2-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Apr 2010 16:52:14 -0400
-Message-ID: <1271278334.3159.19.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1756847Ab0DNUxO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 16:53:14 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56138 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755749Ab0DNUxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 16:53:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [RFC][PATCH v3 1/3] A device for zero-copy based on KVM virtio-net.
+Date: Wed, 14 Apr 2010 22:52:43 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
+Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
+       jdike@linux.intel.com
+References: <1270805865-16901-1-git-send-email-xiaohui.xin@intel.com> <201004142239.50299.arnd@arndb.de> <20100414204003.GC11321@redhat.com>
+In-Reply-To: <20100414204003.GC11321@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 10 msgs/h 1 sum rcpts/h 10 sum msgs/h 1 total rcpts 57 max rcpts/h 12 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: 88573C40A6D8356F6D5C5003EDC606AAB692A291
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 22 max/h 4 blacklist 0 greylist 0 ratelimit 0
+Message-Id: <201004142252.43931.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/UMe4LsK11bOJunXZdQTSvrmIbkHvVtmnvZoT
+ yT2GBNuCeP/YPcay1manxcH2gYhGW3iRFfkNCWy/jDD2mRrwEj
+ IhW0CH8TdlUb8J6h7o9ew==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-14 at 22:36 +0200, Arnd Bergmann wrote: 
-> From: Matthew Wilcox <willy@linux.intel.com>
-> 
-> I've taken a patch originally written by Matthew Wilcox and
-> ported it to the current version. It seems that there were
-> originally concerns that this breaks NFS, but since Trond
-> has recently removed the BKL from NFS, my naive assumption
-> would be that it's all good now, despite not having tried to
-> understand what it does.
+On Wednesday 14 April 2010 22:40:03 Michael S. Tsirkin wrote:
+> On Wed, Apr 14, 2010 at 10:39:49PM +0200, Arnd Bergmann wrote:
+> > Well, if the guest not only wants to send data but also receive
+> > frames coming from other machines, they need to get from the kernel
+> > into qemu, and the only way I can see for doing that is to read
+> > from this device if there is no vhost support around on the new
+> > machine.
+> > 
+> > Maybe we're talking about different things here.
+>
+> mpassthrough is currently useless without vhost.
+> If the new machine has no vhost, it can't use mpassthrough :)
 
-Hi Arnd,
+Ok. Is that a planned feature though? vhost is currently limited
+to guests with a virtio-net driver and even if you extend it to other
+guest emulations, it will probably always be a subset of the qemu
+supported drivers, but it may be useful to support zero-copy on other
+drivers as well.
 
-We still need to fix up the bits in NFS that dereference inode->i_flock.
-On the client side, those are mainly the bits that deal with lock
-recovery when the NFS server has rebooted or restarted.
-
-AFAICS, there are two places in the NFSv4 client that need to be changed
-to call lock_flocks(): nfs_delegation_claim_locks(), and
-nfs4_reclaim_locks(). In both cases, the replacement is trivial.
-
-For NFSv3, I think we are already safe, since AFAICS the host->h_rwsem
-already provides exclusion between file locking and lock recovery
-attempts. I think we should therefore be able to immediately remove the
-BKL in fs/lockd/clntlock.c:reclaimer().
-
-I'm not as sure about how sensitive the NFS server is to the switch from
-BKL -> lock_flocks(). Perhaps Bruce can comment...
-
-Cheers
-  Trond
-
+	Arnd
