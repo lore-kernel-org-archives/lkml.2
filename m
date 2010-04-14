@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab0DNCRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 22:17:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62708 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754426Ab0DNCRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 22:17:06 -0400
-Message-ID: <4BC52505.6000502@cn.fujitsu.com>
-Date: Wed, 14 Apr 2010 10:14:29 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1754591Ab0DNC2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 22:28:11 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57843 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754427Ab0DNC2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 22:28:09 -0400
+Date: Tue, 13 Apr 2010 23:28:00 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] perf: Fix accidentally preprocessed snprintf callback
+Message-ID: <20100414022800.GE25649@ghostprotocols.net>
+References: <1271205468-8202-1-git-send-regression-fweisbec@gmail.com> <20100414004115.GI5602@nowhere>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] KVM MMU: fix kvm_mmu_zap_page() and its calling path
-References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D345.100@cn.fujitsu.com> <20100412171037.GB4976@amt.cnet> <4BC3CA16.6020106@cn.fujitsu.com> <20100413145927.GA24128@amt.cnet>
-In-Reply-To: <20100413145927.GA24128@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100414004115.GI5602@nowhere>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Marcelo Tosatti wrote:
-> On Tue, Apr 13, 2010 at 09:34:14AM +0800, Xiao Guangrong wrote:
->>
->> Marcelo Tosatti wrote:
->>
->>>> @@ -1483,8 +1483,8 @@ static int mmu_zap_unsync_children(struct kvm *kvm,
->>>>  		for_each_sp(pages, sp, parents, i) {
->>>>  			kvm_mmu_zap_page(kvm, sp);
->>>>  			mmu_pages_clear_parents(&parents);
->>>> +			zapped++;
->>>>  		}
->>>> -		zapped += pages.nr;
->>>>  		kvm_mmu_pages_init(parent, &parents, &pages);
->>>>  	}
->>> Don't see why this is needed? The for_each_sp loop uses pvec.nr.
->> I think mmu_zap_unsync_children() should return the number of zapped pages then we
->> can adjust the number of free pages in kvm_mmu_change_mmu_pages(), but pages.nr no
->> only includes the unsync/zapped pages but also includes their parents.
+Em Wed, Apr 14, 2010 at 02:41:16AM +0200, Frederic Weisbecker escreveu:
+> On Wed, Apr 14, 2010 at 02:37:48AM +0200, Frederic Weisbecker wrote:
+> > struct sort_entry has a callback named snprintf that turns an
+> > entry into a string result.
+> > 
+> > But there are glibc versions that implement snprintf through a
+> > macro. The following expression is then going to get the snprintf
+> > call preprocessed:
+> > 
+> > 	ent->snprintf(...)
+> > 
+> > to finally end up in a build error:
+> > 
+> > 	util/hist.c: Dans la fonction «hist_entry__snprintf» :
+> > 	util/hist.c:539: erreur: «struct sort_entry» has no member named «__builtin___snprintf_chk»
+> > 
+> > To fix this, rename struct sort_entry::snprintf() callback to
+> > to_string(), assuming at least Java methods naming won't ever
+> > conflict with perf.
 > 
-> Oh i see. I think its safer to check for list_empty then to rely on
-> proper accounting there, like __kvm_mmu_free_some_pages does.
+> 
+> Note I'm not entirely happy with this to_string() renaming.
+> May be append_string() would have been better. I don't know.
+> snprintf() was just too good.
+> If you think about something else, don't hesistate to change,
+> or I can change it myself if you want.
 
-Do you mean that we'd better add WARN_ON(list_empty()) code in kvm_mmu_zap_page()?
+psnprintf() I guess, the intent was exactly to mean that it is indeed
+similar to snprintf... dammit, there is already a psnprintf out there
+:-\
 
-Thanks,
-Xiao
+Perhaps just do it as ->he_snprintf and have the other methods as well
+prefixed with he as a shorthand for hist_entry, that is what the methods
+operate, besides the string, ok?
+
+- Arnaldo
