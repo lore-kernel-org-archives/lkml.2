@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523Ab0DNX3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 19:29:37 -0400
-Received: from p01c12o147.mxlogic.net ([208.65.145.70]:47188 "EHLO
-	p01c12o147.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432Ab0DNX3f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 19:29:35 -0400
-X-MXL-Hash: 4bc64fdf043652e2-9d4fa85787b0d3947b1c3df5b96440ba2fa30018
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Greg KH <greg@kroah.com>, "ss@aao.gov.au" <ss@aao.gov.au>
-Date: Wed, 14 Apr 2010 18:29:17 -0500
-Subject: [PATCH] staging/dt3155: fix 50Hz configuration
-Thread-Topic: [PATCH] staging/dt3155: fix 50Hz configuration
-Thread-Index: AcrcKk08qQbuFR/sRs+p5KTQeaFlZg==
-Message-ID: <0D753D10438DA54287A00B0270842697636D62B002@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1755488Ab0DNXhL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 19:37:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35130 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754246Ab0DNXhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 19:37:08 -0400
+Message-ID: <4BC65237.5080408@kernel.org>
+Date: Thu, 15 Apr 2010 08:39:35 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010040801)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [(unknown)]
-X-AnalysisOut: [v=1.0 c=1 a=13beN-c2da8A:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
-X-AnalysisOut: [MA:10 a=qS3xps/WtSuafY8lc/WARg==:17 a=i00gxMtYAAAA:8 a=JhO]
-X-AnalysisOut: [pUDsbAAAA:8 a=oWM6WVPIm1j3StMXHvUA:9 a=CW_TKV6tCWPASGpxDak]
-X-AnalysisOut: [vmYeY7UkA:4 a=QEXdDO2ut3YA:10 a=x1WnkoZAwusA:10 a=0kPLrQdw]
-X-AnalysisOut: [3YYA:10]
+To: Mel Gorman <mel@csn.ul.ie>
+CC: Minchan Kim <minchan.kim@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com> <d5d70d4b57376bc89f178834cf0e424eaa681ab4.1271171877.git.minchan.kim@gmail.com> <20100413154820.GC25756@csn.ul.ie>
+In-Reply-To: <20100413154820.GC25756@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Apr 2010 23:36:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o3ENTnmE021007
 
-According to the header file, dt3155_io.h, the 50/60 Hz configuration
-is controlled by a bit in the I2C CSR2 register (bit 2).  The function
-dt3155_init_isr actually reads the I2C CONFIG register into the global
-I2C_CSR union variable then modifies the bit.  It then does a write
-to the I2C CONFIG register with the global I2C_CONFIG union variable
-which is not even set with a value anywhere in the driver.
+Hello,
 
-My guess is 50Hz operation doesn't even work as-is.
+On 04/14/2010 12:48 AM, Mel Gorman wrote:
+> and the mapping table on x86 at least is based on possible CPUs in
+> init_cpu_to_node() leaves the mapping as 0 if the APIC is bad or the numa
+> node is reported in apicid_to_node as -1. It would appear on power that
+> the node will be 0 for possible CPUs as well.
+> 
+> Hence, I believe this to be safe but a confirmation from Tejun would be
+> nice. I would continue digging but this looks like an initialisation path
+> so I'll move on to the next patch rather than spending more time.
 
-Fix this by actually reading and writing the correct register with
-the correct value.
+This being a pretty cold path, I don't really see much benefit in
+converting it to alloc_pages_node_exact().  It ain't gonna make any
+difference.  I'd rather stay with the safer / boring one unless
+there's a pressing reason to convert.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Simon Horman <horms@verge.net.au>
+Thanks.
 
----
-
-diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
-index a67c622..8c43284 100644
---- a/drivers/staging/dt3155/dt3155_drv.c
-+++ b/drivers/staging/dt3155/dt3155_drv.c
-@@ -472,9 +472,9 @@ static void dt3155_init_isr(int minor)
-   /* 50/60 Hz should be set before this point but let's make sure it is */
-   /* right anyway */
- 
--  ReadI2C(dt3155_lbase[ minor ], CONFIG, &i2c_csr2.reg);
-+  ReadI2C(dt3155_lbase[ minor ], CSR2, &i2c_csr2.reg);
-   i2c_csr2.fld.HZ50 = FORMAT50HZ;
--  WriteI2C(dt3155_lbase[ minor ], CONFIG, i2c_config.reg);
-+  WriteI2C(dt3155_lbase[ minor ], CSR2, i2c_csr2.reg);
- 
-   /* enable busmaster chip, clear flags */
- 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+tejun
