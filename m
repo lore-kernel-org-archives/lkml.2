@@ -1,77 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab0DNOF0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 10:05:26 -0400
-Received: from ey-out-2122.google.com ([74.125.78.26]:59122 "EHLO
-	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab0DNOFY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 10:05:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=md0Ym4M5Kdneqwa+JJuKIt85fmBqOveqQT7LD8AQU5dIoBr4tkGEArPBWlpHPfeT2K
-         0+2kqToOu9mvLeg6aZgshwAK1Zlx58An44jidfjQ6vJQ9zAgZmj6ApAhHwbVrcf2bZW1
-         cWIm53II2ElYsXHW2oxjeZusHrzyCw053nmDg=
-Date: Wed, 14 Apr 2010 17:05:17 +0300 (EEST)
-From: Tero Roponen <tero.roponen@gmail.com>
-X-X-Sender: terrop@terrop
-To: Alexey Starikovskiy <astarikovskiy@suse.de>
-cc: Tero Roponen <tero.roponen@gmail.com>,
-       Luca Tettamanti <kronos.it@gmail.com>, linux-acpi@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, len.brown@intel.com
-Subject: Re: [acpi:battery?] kernel oops on boot
-In-Reply-To: <4BC5CA13.3070801@suse.de>
-Message-ID: <alpine.LFD.2.00.1004141704350.1535@terrop>
-References: <20100414095750.GA3304@swordfish.minsk.epam.com> <20100414131324.GA6598@nb-core2.darkstar.lan> <alpine.LFD.2.00.1004141641010.3640@terrop> <4BC5CA13.3070801@suse.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755639Ab0DNOGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 10:06:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38959 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755584Ab0DNOGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 10:06:04 -0400
+Date: Wed, 14 Apr 2010 10:04:30 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Greg Thelen <gthelen@google.com>, balbir@linux.vnet.ibm.com,
+       Andrea Righi <arighi@develer.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-ID: <20100414140430.GB13535@redhat.com>
+References: <20100317115855.GS18054@balbir.in.ibm.com> <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com> <20100318041944.GA18054@balbir.in.ibm.com> <20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com> <20100318162855.GG18054@balbir.in.ibm.com> <20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com> <20100319024039.GH18054@balbir.in.ibm.com> <20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com> <xr931veiplpr.fsf@ninji.mtv.corp.google.com> <20100414182904.2f72a63d.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-73982546-1271253922=:1535"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100414182904.2f72a63d.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, Apr 14, 2010 at 06:29:04PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 13 Apr 2010 23:55:12 -0700
+> Greg Thelen <gthelen@google.com> wrote:
+> 
+> > On Thu, Mar 18, 2010 at 8:00 PM, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > On Fri, 19 Mar 2010 08:10:39 +0530
+> > > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > >
+> > >> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-19 10:23:32]:
+> > >>
+> > >> > On Thu, 18 Mar 2010 21:58:55 +0530
+> > >> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > >> >
+> > >> > > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:35:27]:
+> > >> >
+> > >> > > > Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
+> > >> > > > mem_cgroup_update_file_mapped(). The look may be messy but it's not your
+> > >> > > > fault. But please write "why add new function" to patch description.
+> > >> > > >
+> > >> > > > I'm sorry for wasting your time.
+> > >> > >
+> > >> > > Do we need to go down this route? We could check the stat and do the
+> > >> > > correct thing. In case of FILE_MAPPED, always grab page_cgroup_lock
+> > >> > > and for others potentially look at trylock. It is OK for different
+> > >> > > stats to be protected via different locks.
+> > >> > >
+> > >> >
+> > >> > I _don't_ want to see a mixture of spinlock and trylock in a function.
+> > >> >
+> > >>
+> > >> A well documented well written function can help. The other thing is to
+> > >> of-course solve this correctly by introducing different locking around
+> > >> the statistics. Are you suggesting the later?
+> > >>
+> > >
+> > > No. As I wrote.
+> > >        - don't modify codes around FILE_MAPPED in this series.
+> > >        - add a new functions for new statistics
+> > > Then,
+> > >        - think about clean up later, after we confirm all things work as expected.
+> > 
+> > I have ported Andrea Righi's memcg dirty page accounting patches to latest
+> > mmtom-2010-04-05-16-09.  In doing so I have to address this locking issue.  Does
+> > the following look good?  I will (of course) submit the entire patch for review,
+> > but I wanted make sure I was aiming in the right direction.
+> > 
+> > void mem_cgroup_update_page_stat(struct page *page,
+> > 			enum mem_cgroup_write_page_stat_item idx, bool charge)
+> > {
+> > 	static int seq;
+> > 	struct page_cgroup *pc;
+> > 
+> > 	if (mem_cgroup_disabled())
+> > 		return;
+> > 	pc = lookup_page_cgroup(page);
+> > 	if (!pc || mem_cgroup_is_root(pc->mem_cgroup))
+> > 		return;
+> > 
+> > 	/*
+> > 	 * This routine does not disable irq when updating stats.  So it is
+> > 	 * possible that a stat update from within interrupt routine, could
+> > 	 * deadlock.  Use trylock_page_cgroup() to avoid such deadlock.  This
+> > 	 * makes the memcg counters fuzzy.  More complicated, or lower
+> > 	 * performing locking solutions avoid this fuzziness, but are not
+> > 	 * currently needed.
+> > 	 */
+> > 	if (irqs_disabled()) {
+> > 		if (! trylock_page_cgroup(pc))
+> > 			return;
+> > 	} else
+> > 		lock_page_cgroup(pc);
+> > 
+> 
+> I prefer trylock_page_cgroup() always.
+> 
+> I have another idea fixing this up _later_. (But I want to start from simple one.)
+> 
+> My rough idea is following.  Similar to your idea which you gave me before.
+> 
+> ==
+> DEFINE_PERCPU(account_move_ongoing);
+> DEFINE_MUTEX(move_account_mutex):
+> 
+> void memcg_start_account_move(void)
+> {
+> 	mutex_lock(&move_account_mutex);
+> 	for_each_online_cpu(cpu)
+> 		per_cpu(cpu, account_move_ongoing) += 1;
+> 	mutex_unlock(&move_account_mutex);
+> 	/* Wait until there are no lockless update */
+> 	synchronize_rcu();
+> 	return;
+> }
+> 
+> void memcg_end_account_move(void)
+> {
+> 	mutex_lock(&move_account_mutex);
+> 	for_each_online_cpu(cpu)
+> 		per_cpu(cpu, account_move_ongoing) -= 1;
+> 	mutex_unlock(&move_account_mutex);
+> }
+> 
+> /* return 1 when we took lock, return 0 if lockess OPs is guarantedd to be safe */
+> int memcg_start_filecache_accounting(struct page_cgroup *pc)
+> {
+> 	rcu_read_lock();
+> 	smp_rmb();
+> 	if (!this_cpu_read(move_account_ongoing))
+> 		return 0; /* no move account is ongoing */
+> 	lock_page_cgroup(pc);
+> 	return 1;
+> }
+> 
+> void memcg_end_filecache_accounting(struct page_cgroup *pc, int unlock)
+> {
+> 	if (unlock)
+> 		unlock_page_cgroup(pc);
+> 
+> 	rcu_read_unlock();
+> }
+> 
+> and call memcg_start_account_move()/end_account_move() in the start/end of
+> migrainting chunk of pages.
+> 
 
---8323328-73982546-1271253922=:1535
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Hi Kame-san,
 
+May be I am missing something but how does it solve the issue of making sure
+lock_page_cgroup() is not held in interrupt context? IIUC, above code will
+make sure that for file cache accouting, lock_page_cgroup() is taken only
+if task migration is on. But say task migration is on, and then some IO
+completes and we update WRITEBACK stat (i think this is the one which can
+be called from interrupt context), then we will still take the
+lock_page_cgroup() and again run into the issue of deadlocks?
 
-On Wed, 14 Apr 2010, Alexey Starikovskiy wrote:
-
-> 14.04.2010 17:50, Tero Roponen Ð¿Ð¸ÑˆÐµÑ‚:
-> > 
-> > On Wed, 14 Apr 2010, Luca Tettamanti wrote:
-> > 
-> > > Hello,
-> > > I'm seeing a similar bug on my notebook (Asus F3Sa) with current git.
-> > > -rc4 does not work, while -rc3 does work.
-> > > 
-> > > The error (at least in my case) is a division by zero in
-> > > acpi_ex_insert_into_field.
-> > 
-> > I have a similar problem with Asus M50Vm. git-bisect found
-> > the following commit and reverting it does indeed fix the
-> > problem.
-> > 
-> > commit dadf28a10c3eb29421837a2e413ab869ebd9e168
-> > Author: Alexey Starikovskiy<astarikovskiy@suse.de>
-> > Date:   Wed Mar 17 13:14:13 2010 -0400
-> > 
-> >      ACPI: EC: Allow multibyte access to EC
-> > 
-> >      http://bugzilla.kernel.org/show_bug.cgi?id=14667
-> > 
-> >      Signed-off-by: Alexey Starikovskiy<astarikovskiy@suse.de>
-> >      Signed-off-by: Len Brown<len.brown@intel.com>
-> > 
-> Please see the patch in https://bugzilla.kernel.org/show_bug.cgi?id=15749
-
-Work for me. Thanks.
-
-Tested-by: Tero Roponen <tero.roponen@gmail.com>
---8323328-73982546-1271253922=:1535--
+Thanks
+Vivek
