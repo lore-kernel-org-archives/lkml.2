@@ -1,106 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab0DNHfx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 03:35:53 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:52059 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751597Ab0DNHfw (ORCPT
+	id S1753825Ab0DNHgV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 03:36:21 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:57151 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753516Ab0DNHgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 03:35:52 -0400
-X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Apr 2010 03:35:52 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApsEANcLxUs7p+/x/2dsb2JhbACcR7x8hQ0Ehjw
-Message-ID: <4BC56F21.6040909@call-direct.com.au>
-Date: Wed, 14 Apr 2010 17:30:41 +1000
-From: Iwo Mergler <iwo@call-direct.com.au>
-User-Agent: Thunderbird 2.0.0.12 (X11/20080302)
+	Wed, 14 Apr 2010 03:36:20 -0400
+Date: Wed, 14 Apr 2010 17:36:12 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-ID: <20100414073612.GL2493@dastard>
+References: <20100413201635.D119.A69D9226@jp.fujitsu.com>
+ <20100413143659.GA2493@dastard>
+ <20100414155201.D14A.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Anders Larsen <al@alarsen.net>
-CC: linux-mtd@lists.infradead.org,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-       Ian McDonnell <ian@brightstareng.com>, Nicolas Pitre <nico@fluxnic.net>,
-       linux-kernel@vger.kernel.org, Matthias Kaehlcke <matthias@kaehlcke.net>,
-       David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] Fix Oops with Atmel SPI
-References: <1271158315l.25331l.9l@i-dmzi_al.realan.de>
-In-Reply-To: <1271158315l.25331l.9l@i-dmzi_al.realan.de>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100414155201.D14A.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anders,
-
-I wouldn't recommend that. MTD erase blocks are 64K or more. In a typical
-embedded system you will not be able to kmalloc that much memory after
-a few day's of operation - the page pool gets fragmented.
-
-A possibly better approach is to arrange for that memory to get allocated
-at driver start time.
-
-An even better approach would be to change the algorithm to operate on
-a list of smaller allocations, e.g. MTD page size.
-
-
-Best regards,
-
-Iwo
-
-
-Anders Larsen wrote:
-> Tweak MTD's cache allocation to make it work with the atmel DMA'ed SPI.
-> Substitute kmalloc for vmalloc so the cache buffer is mappable as per
-> the Atmel SPI driver's requirements, otherwise an Oops would occur.
+On Wed, Apr 14, 2010 at 03:52:10PM +0900, KOSAKI Motohiro wrote:
+> > On Tue, Apr 13, 2010 at 08:39:29PM +0900, KOSAKI Motohiro wrote:
+> > > Thanks explanation. I haven't noticed direct reclaim consume
+> > > 2k stack. I'll investigate it and try diet it.
+> > > But XFS 3.5K stack consumption is too large too. please diet too.
+> > 
+> > It hasn't grown in the last 2 years after the last major diet where
+> > all the fat was trimmed from it in the last round of the i386 4k
+> > stack vs XFS saga. it seems that everything else around XFS has
+> > grown in that time, and now we are blowing stacks again....
 > 
-> The original patch by Ian McDonnell <ian@brightstareng.com> was found here:
-> http://lists.infradead.org/pipermail/linux-mtd/2007-December/020184.html
-> 
-> Signed-off-by: Anders Larsen <al@alarsen.net>
-> Cc: Ian McDonnell <ian@brightstareng.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Matthias Kaehlcke <matthias@kaehlcke.net>
-> Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> Cc: Nicolas Pitre <nico@fluxnic.net>
-> ---
->  drivers/mtd/mtdblock.c |    8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> Index: b/drivers/mtd/mtdblock.c
-> ===================================================================
-> --- a/drivers/mtd/mtdblock.c
-> +++ b/drivers/mtd/mtdblock.c
-> @@ -253,7 +253,11 @@ static int mtdblock_writesect(struct mtd
->  {
->  	struct mtdblk_dev *mtdblk = mtdblks[dev->devnum];
->  	if (unlikely(!mtdblk->cache_data && mtdblk->cache_size)) {
-> +#ifdef CONFIG_SPI_ATMEL
-> +		mtdblk->cache_data = kmalloc(mtdblk->mtd->erasesize, GFP_KERNEL);
-> +#else
->  		mtdblk->cache_data = vmalloc(mtdblk->mtd->erasesize);
-> +#endif
->  		if (!mtdblk->cache_data)
->  			return -EINTR;
->  		/* -EINTR is not really correct, but it is the best match
-> @@ -322,7 +326,11 @@ static int mtdblock_release(struct mtd_b
->  		mtdblks[dev] = NULL;
->  		if (mtdblk->mtd->sync)
->  			mtdblk->mtd->sync(mtdblk->mtd);
-> +#ifdef CONFIG_SPI_ATMEL
-> +		kfree(mtdblk->cache_data);
-> +#else
->  		vfree(mtdblk->cache_data);
-> +#endif
->  		kfree(mtdblk);
->  	}
->  
-> 
-> 
-> ______________________________________________________
-> Linux MTD discussion mailing list
-> http://lists.infradead.org/mailman/listinfo/linux-mtd/
-> 
-> 
+> I have dumb question, If xfs haven't bloat stack usage, why 3.5
+> stack usage works fine on 4k stack kernel? It seems impossible.
 
+Because on a 32 bit kernel it's somewhere between 2-2.5k of stack
+space. That being said, XFS _will_ blow a 4k stack on anything other
+than the most basic storage configurations, and if you run out of
+memory it is almost guaranteed to do so.
 
+> Please don't think I blame you. I don't know what is "4k stack vs XFS saga".
+> I merely want to understand what you said.
+
+Over a period of years there were repeated attempts to make the
+default stack size on i386 4k, despite it being known to cause
+problems one relatively common configurations. Every time it was
+brought up it was rejected, but every few months somebody else made
+an attempt to make it the default. There was a lot of flamage
+directed at XFS because it was seen as the reason that 4k stacks
+were not made the default....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
