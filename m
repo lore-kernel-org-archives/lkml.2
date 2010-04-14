@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555Ab0DNSvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 14:51:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38074 "EHLO mx1.redhat.com"
+	id S1756630Ab0DNSwp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 14:52:45 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:35993 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755243Ab0DNSvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 14:51:22 -0400
-Subject: Re: [REGRESSION PATCH V2] vsprintf: Change struct
- printf_spec.precision from s8 to s16
-From: Eric Paris <eparis@redhat.com>
-To: Joe Perches <joe@perches.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, fweisbec@gmail.com
-In-Reply-To: <1271262460.1578.53.camel@Joe-Laptop.home>
-References: <20100414011336.16139.68030.stgit@paris.rdu.redhat.com>
-	 <1271262460.1578.53.camel@Joe-Laptop.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Apr 2010 14:50:54 -0400
-Message-ID: <1271271054.3042.4.camel@dhcp235-240.rdu.redhat.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755900Ab0DNSwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 14:52:44 -0400
+Date: Wed, 14 Apr 2010 20:52:42 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>, Hannes Reinecke <hare@suse.de>,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] block: blk-timeout.c  ensure jiffies wrap is handled
+	correctly in blk_rq_timed_out_timer
+Message-ID: <20100414185242.GN27497@kernel.dk>
+References: <1271242645.2132.22.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271242645.2132.22.camel@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-14 at 09:27 -0700, Joe Perches wrote:
-> Commit ef0658f3de484bf9b173639cd47544584e01efa5 changed precision
-> from int to s8.
+On Wed, Apr 14 2010, Richard Kennedy wrote:
+> blk_rq_timed_out_timer() relied on blk_add_timer() never returning a
+> timer value of zero, but commit 7838c15b8dd18e78a523513749e5b54bda07b0cb
+> removed the code that bumped this value when it was zero.
+> Therefore when jiffies is near wrap we could get unlucky & not set the
+> timeout value correctly.
 > 
-> There is existing kernel code that uses a larger precision.
-> 
-> An example from the audit code:
-> 	vsnprintf(...,..., " msg='%.1024s'", (char *)data);
-> which overflows precision and truncates to nothing.
-> 
-> Extending precision size fixes the audit system issue.
-> 
-> Other changes:
-> 
-> Change the size of the struct printf_spec.type from u16 to u8 so
-> sizeof(struct printf_spec) stays as small as possible.
-> Reorder the struct members so sizeof(struct printf_spec) remains 64 bits
-> without alignment holes.
-> Document the struct members a bit more.
-> 
-> Original-patch-by: Eric Paris <eparis@redhat.com>
-> Signed-off-by: Joe Perches <joe@perches.com>
+> This patch uses a flag to indicate that the timeout value was set and so
+> handles jiffies wrap correctly, and it keeps all the logic in one
+> function so should be easier to maintain in the future. 
 
-Sorry slow today
+Thanks applied, it also makes it a bit clearer.
 
-Acked-by: Eric Paris <eparis@redhat.com>
-Tested-by:
-Review-by:
-anything else?
+-- 
+Jens Axboe
 
