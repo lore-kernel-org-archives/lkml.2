@@ -1,71 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab0DNHhm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 03:37:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56646 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076Ab0DNHhl (ORCPT
+	id S1753950Ab0DNHmu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 03:42:50 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:34924 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151Ab0DNHms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 03:37:41 -0400
-Date: Wed, 14 Apr 2010 09:37:39 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: Nguyen Dinh-R00091 <R00091@freescale.com>, linux-kernel@vger.kernel.org,
-       amit.kucheria@canonical.com, linux@arm.linux.org.uk,
-       grant.likely@secretlab.ca, Herring Robert-RA7055 <RA7055@freescale.com>,
-       linux-arm-kernel@lists.infradead.org, bryan.wu@canonical.com,
-       valentin.longchamp@epfl.ch
-Subject: Re: [PATCH 2.6.34-rc4 1/8] mx5: Add registration of GPIOs for MX51
-	Babbage board.
-Message-ID: <20100414073739.GH7882@pengutronix.de>
-References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com> <20100413164532.GM30801@buzzloop.caiaq.de> <86A0E76937111F4C92FABEC0A2098851046C7A62@az33exm21> <20100414065131.GD7882@pengutronix.de> <20100414073138.GZ30801@buzzloop.caiaq.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100414073138.GZ30801@buzzloop.caiaq.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:35:56 up 24 days, 20:25, 25 users,  load average: 5.71, 5.70,
-	5.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 14 Apr 2010 03:42:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=DUL+jQHy/2SCpzgO0rpdt9RlUycP4GRpQy0VxPwO1/w9DjVswK0FJKSfe/xhWwN77Y
+         xyfTsPokjGENKN02mrNCA+a2TjaRDQ6n2FmE55ITn6a6ljcttin16I35OPSd291nCcr2
+         9IueBIiHWcO9TlzNCc8MbVaW1RDKUUY9xKpfk=
+Subject: [PATCH net-next-2.6] fasync: RCU locking
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: netdev <netdev@vger.kernel.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Apr 2010 09:42:41 +0200
+Message-ID: <1271230961.16881.630.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 09:31:38AM +0200, Daniel Mack wrote:
-> On Wed, Apr 14, 2010 at 08:51:31AM +0200, Sascha Hauer wrote:
-> > On Tue, Apr 13, 2010 at 12:36:07PM -0700, Nguyen Dinh-R00091 wrote:
-> > > > +
-> > > > +#ifdef MXC_GPIO_SPLIT_IRQ_2
-> > > 
-> > > Where is that macro defined?
-> > > [Dinh-FSL] - This macro is optional so that the interrupts can be broken
-> > > up into 2 sets.
-> > 
-> > What's the purpose of doing so?
-> > 
-> > Such compile time depencies are not a good idea since the board may want
-> > to decide whether to split the interrupts or not. Note that we support
-> > kernels for more than one board.
-> 
-> And I would have expected at least one active user. As it stands, it's
-> just dead code.
+Paul, could you please check this patch, I am not sure
+of the IRQ safety thing...
 
-Ack, this should be removed. Anyone wanting this code will send a
-seperate patch and can explain what and why he wants to do.
+Is call_rcu() the right method to use in this case ?
 
-Sascha
+Thanks
+
+[PATCH net-next-2.6] fasync: RCU locking
+
+kill_fasync() uses a central rwlock, candidate for RCU conversion.
+
+We can remove __kill_fasync() direct use in net, and rename it to
+kill_fasync_rcu()
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ fs/fcntl.c         |   36 +++++++++++++++++++++---------------
+ include/linux/fs.h |   11 +++++------
+ net/socket.c       |    4 ++--
+ 3 files changed, 28 insertions(+), 23 deletions(-)
+
+diff --git a/fs/fcntl.c b/fs/fcntl.c
+index 452d02f..33cb3ee 100644
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -614,9 +614,15 @@ int send_sigurg(struct fown_struct *fown)
+ 	return ret;
+ }
+ 
+-static DEFINE_RWLOCK(fasync_lock);
++static DEFINE_SPINLOCK(fasync_lock);
+ static struct kmem_cache *fasync_cache __read_mostly;
+ 
++static void fasync_free_rcu(struct rcu_head *head)
++{
++	kmem_cache_free(fasync_cache,
++			container_of(head, struct fasync_struct, fa_rcu));
++}
++
+ /*
+  * Remove a fasync entry. If successfully removed, return
+  * positive and clear the FASYNC flag. If no entry exists,
+@@ -634,17 +640,17 @@ static int fasync_remove_entry(struct file *filp, struct fasync_struct **fapp)
+ 	int result = 0;
+ 
+ 	spin_lock(&filp->f_lock);
+-	write_lock_irq(&fasync_lock);
++	spin_lock_irq(&fasync_lock);
+ 	for (fp = fapp; (fa = *fp) != NULL; fp = &fa->fa_next) {
+ 		if (fa->fa_file != filp)
+ 			continue;
+ 		*fp = fa->fa_next;
+-		kmem_cache_free(fasync_cache, fa);
++		call_rcu(&fa->fa_rcu, fasync_free_rcu);
+ 		filp->f_flags &= ~FASYNC;
+ 		result = 1;
+ 		break;
+ 	}
+-	write_unlock_irq(&fasync_lock);
++	spin_unlock_irq(&fasync_lock);
+ 	spin_unlock(&filp->f_lock);
+ 	return result;
+ }
+@@ -666,7 +672,7 @@ static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fa
+ 		return -ENOMEM;
+ 
+ 	spin_lock(&filp->f_lock);
+-	write_lock_irq(&fasync_lock);
++	spin_lock_irq(&fasync_lock);
+ 	for (fp = fapp; (fa = *fp) != NULL; fp = &fa->fa_next) {
+ 		if (fa->fa_file != filp)
+ 			continue;
+@@ -679,12 +685,12 @@ static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fa
+ 	new->fa_file = filp;
+ 	new->fa_fd = fd;
+ 	new->fa_next = *fapp;
+-	*fapp = new;
++	rcu_assign_pointer(*fapp, new);
+ 	result = 1;
+ 	filp->f_flags |= FASYNC;
+ 
+ out:
+-	write_unlock_irq(&fasync_lock);
++	spin_unlock_irq(&fasync_lock);
+ 	spin_unlock(&filp->f_lock);
+ 	return result;
+ }
+@@ -704,7 +710,10 @@ int fasync_helper(int fd, struct file * filp, int on, struct fasync_struct **fap
+ 
+ EXPORT_SYMBOL(fasync_helper);
+ 
+-void __kill_fasync(struct fasync_struct *fa, int sig, int band)
++/*
++ * rcu_read_lock() is held
++ */
++static void kill_fasync_rcu(struct fasync_struct *fa, int sig, int band)
+ {
+ 	while (fa) {
+ 		struct fown_struct * fown;
+@@ -719,22 +728,19 @@ void __kill_fasync(struct fasync_struct *fa, int sig, int band)
+ 		   mechanism. */
+ 		if (!(sig == SIGURG && fown->signum == 0))
+ 			send_sigio(fown, fa->fa_fd, band);
+-		fa = fa->fa_next;
++		fa = rcu_dereference(fa->fa_next);
+ 	}
+ }
+ 
+-EXPORT_SYMBOL(__kill_fasync);
+-
+ void kill_fasync(struct fasync_struct **fp, int sig, int band)
+ {
+ 	/* First a quick test without locking: usually
+ 	 * the list is empty.
+ 	 */
+ 	if (*fp) {
+-		read_lock(&fasync_lock);
+-		/* reread *fp after obtaining the lock */
+-		__kill_fasync(*fp, sig, band);
+-		read_unlock(&fasync_lock);
++		rcu_read_lock();
++		kill_fasync_rcu(rcu_dereference(*fp), sig, band);
++		rcu_read_unlock();
+ 	}
+ }
+ EXPORT_SYMBOL(kill_fasync);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 39d57bc..158b2cc 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1280,10 +1280,11 @@ static inline int lock_may_write(struct inode *inode, loff_t start,
+ 
+ 
+ struct fasync_struct {
+-	int	magic;
+-	int	fa_fd;
+-	struct	fasync_struct	*fa_next; /* singly linked list */
+-	struct	file 		*fa_file;
++	int			magic;
++	int			fa_fd;
++	struct fasync_struct	*fa_next; /* singly linked list */
++	struct file		*fa_file;
++	struct rcu_head		fa_rcu;
+ };
+ 
+ #define FASYNC_MAGIC 0x4601
+@@ -1292,8 +1293,6 @@ struct fasync_struct {
+ extern int fasync_helper(int, struct file *, int, struct fasync_struct **);
+ /* can be called from interrupts */
+ extern void kill_fasync(struct fasync_struct **, int, int);
+-/* only for net: no internal synchronization */
+-extern void __kill_fasync(struct fasync_struct *, int, int);
+ 
+ extern int __f_setown(struct file *filp, struct pid *, enum pid_type, int force);
+ extern int f_setown(struct file *filp, unsigned long arg, int force);
+diff --git a/net/socket.c b/net/socket.c
+index 35bc198..846739c 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1159,10 +1159,10 @@ int sock_wake_async(struct socket *sock, int how, int band)
+ 		/* fall through */
+ 	case SOCK_WAKE_IO:
+ call_kill:
+-		__kill_fasync(sock->fasync_list, SIGIO, band);
++		kill_fasync(sock->fasync_list, SIGIO, band);
+ 		break;
+ 	case SOCK_WAKE_URG:
+-		__kill_fasync(sock->fasync_list, SIGURG, band);
++		kill_fasync(sock->fasync_list, SIGURG, band);
+ 	}
+ 	return 0;
+ }
 
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
