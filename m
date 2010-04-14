@@ -1,134 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755770Ab0DNOxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 10:53:18 -0400
-Received: from smtp.opengridcomputing.com ([209.198.142.2]:36351 "EHLO
-	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754426Ab0DNOxP (ORCPT
+	id S1755791Ab0DNOzf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 10:55:35 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48367 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426Ab0DNOzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 10:53:15 -0400
-Message-ID: <4BC5D727.4090400@opengridcomputing.com>
-Date: Wed, 14 Apr 2010 09:54:31 -0500
-From: Steve Wise <swise@opengridcomputing.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	Wed, 14 Apr 2010 10:55:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=QhpAodogKYCgbrMc+WSIGmKg0m3Ebz3GbnXdGOCsbz7ZoYnbnWUl3B33CBKzM9gFaw
+         vERuf0QuU13D5XFD3SQVX8jPfd5/vDHy7iBlRbRn5Z1F7V6hLdFt4JLN2RqErkclk2ow
+         MELL73YECeWtHuRAIslYTzfUCY1dl0l+hMA9U=
+Date: Wed, 14 Apr 2010 16:55:28 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] perf: Fix accidentally preprocessed snprintf callback
+Message-ID: <20100414145526.GC5142@nowhere>
+References: <1271205468-8202-1-git-send-regression-fweisbec@gmail.com> <20100414004115.GI5602@nowhere> <20100414022800.GE25649@ghostprotocols.net>
 MIME-Version: 1.0
-To: Amir Vadai <amirv@mellanox.co.il>
-CC: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
-       "Tung, Chien Tin" <chien.tin.tung@intel.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-       "rolandd@cisco.com" <rolandd@cisco.com>,
-       "peterz@infradead.org" <peterz@infradead.org>,
-       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
-       Eric B Munson <ebmunson@us.ibm.com>
-Subject: Re: Socket Direct Protocol: help (2)
-References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>	<1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it>	<2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com>	<4BC49E2B.3000804@opengridcomputing.com>	<2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com>	<4BC4D22A.6020700@opengridcomputing.com>	<2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>	<7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <4BC5D1D3.3020004@mellanox.co.il>
-In-Reply-To: <4BC5D1D3.3020004@mellanox.co.il>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100414022800.GE25649@ghostprotocols.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Amir,
+On Tue, Apr 13, 2010 at 11:28:00PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Apr 14, 2010 at 02:41:16AM +0200, Frederic Weisbecker escreveu:
+> > On Wed, Apr 14, 2010 at 02:37:48AM +0200, Frederic Weisbecker wrote:
+> > > struct sort_entry has a callback named snprintf that turns an
+> > > entry into a string result.
+> > > 
+> > > But there are glibc versions that implement snprintf through a
+> > > macro. The following expression is then going to get the snprintf
+> > > call preprocessed:
+> > > 
+> > > 	ent->snprintf(...)
+> > > 
+> > > to finally end up in a build error:
+> > > 
+> > > 	util/hist.c: Dans la fonction «hist_entry__snprintf» :
+> > > 	util/hist.c:539: erreur: «struct sort_entry» has no member named «__builtin___snprintf_chk»
+> > > 
+> > > To fix this, rename struct sort_entry::snprintf() callback to
+> > > to_string(), assuming at least Java methods naming won't ever
+> > > conflict with perf.
+> > 
+> > 
+> > Note I'm not entirely happy with this to_string() renaming.
+> > May be append_string() would have been better. I don't know.
+> > snprintf() was just too good.
+> > If you think about something else, don't hesistate to change,
+> > or I can change it myself if you want.
+> 
+> psnprintf() I guess, the intent was exactly to mean that it is indeed
+> similar to snprintf... dammit, there is already a psnprintf out there
+> :-\
+> 
+> Perhaps just do it as ->he_snprintf and have the other methods as well
+> prefixed with he as a shorthand for hist_entry, that is what the methods
+> operate, besides the string, ok?
 
-I don't think this helps because sdp_add_device() will not add rdma 
-devices that fail to create fmr pools. 
 
-So I guess you could key off of fmr pool failures and set 
-sdp_zcopy_thresh to 0 and allow the device to be used?
+Sure, I'll resend.
 
-But what we really need is sdp support for fastreg_mrs  as an 
-alternative to fmrs.
+This is going to be se_sprintf() though, as it's about sort_entry, not
+hist_entry :)
 
-
-Steve.
-
-
-Amir Vadai wrote:
-> Hi,
->
-> FMR are being used only in a special mode called ZCopy.
->
-> You could disable this mode by setting the module paramter
-> sdp_zcopy_thresh to 0, or by issuing:
-> # echo 0 > /sys/module/ib_sdp/parameters/sdp_zcopy_thresh
->
-> This means that you won't get the benefits of Zero-copy.
->
-> - Amir
->
-> On 04/14/2010 11:51 AM, Andrea Gozzelino wrote:
->   
->> On Apr 13, 2010 10:22 PM, "Tung, Chien Tin" <chien.tin.tung@intel.com>
->> wrote:
->>
->>   
->>     
->>>>>> Chien, does the NE020 support FMRs? I looked at the nes ofed-1.5
->>>>>> code
->>>>>> and it appears to do nothing in the map_phys_fmr functions.
->>>>>>
->>>>>>           
->>>>>>             
->>>>> We never implemented map_phys_fmr. Is it relevant to the # of SGEs?
->>>>>
->>>>>         
->>>>>           
->>>> No, but SDP uses FMRs. I don't think it will run without FMR support.
->>>>
->>>>       
->>>>         
->>> Good to know.  Thanks.
->>>
->>> Chien
->>>
->>>
->>>     
->>>       
->> Hi Steve and Chien,
->>
->> I understand that NE020 cards have problem with SDP connected with
->> map_phy_fmr (FMR stands for Fast Memory Region).
->> Is it possible to solve/fix this point?
->> If yes, have you an idea about the time that is necessary to code
->> development/build?
->> If no, can you suggest me a card that supports SDP protocol?
->>
->> I work on NE020 cards from February 2010 for an INFN experimental
->> proposal, called REDIGO (Read out at 10 Gbits/s), about the data
->> acquisition and movement systems. The covergence of storage protocols
->> around 10 Gigabits/s Ethernet protocols shows that one way could be the
->> Remote Direct Memory Access (RDMA). The goals are the investigations of
->> latency time, the throughput, the buffer size schemes and finally the
->> global event building bandwidth.
->>
->> Do you know if NE020 cards have problems with librdma (RDMA procedures,
->> in general) and / or with MPI versions?
->>
->> Thank you very much,
->> Andrea
->>
->> Andrea Gozzelino
->>
->> INFN - Laboratori Nazionali di Legnaro	(LNL)
->> Viale dell'Universita' 2
->> I-35020 - Legnaro (PD)- ITALIA
->> Tel: +39 049 8068346
->> Fax: +39 049 641925
->> Mail: andrea.gozzelino@lnl.infn.it			
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>   
->>     
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->   
+Thanks.
 
