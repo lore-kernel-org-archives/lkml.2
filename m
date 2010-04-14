@@ -1,81 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab0DNPOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:14:52 -0400
-Received: from mail-qy0-f189.google.com ([209.85.221.189]:60985 "EHLO
-	mail-qy0-f189.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab0DNPOu (ORCPT
+	id S1756110Ab0DNPO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 11:14:58 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60022 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756019Ab0DNPOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 11:14:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=wiE5Zjhv/dKGM/F/aibAcWbi26I7wLB2Nduzd0Q5QKXygkZ8ViSIFQHSPHs5eTpx+H
-         y3M7kYUnMrFv5EPiOTvnJJFBLl286YvNaVm2fsiS1oL2EykMGRj8kg1yHZTP15x36mzS
-         G4EkS5k58+F2pwDsduN/gBMbCnLbTpui1gEYw=
-Message-ID: <4BC5DC34.2010004@gmail.com>
-Date: Wed, 14 Apr 2010 08:16:04 -0700
-From: "Justin P. mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Tero Roponen <tero.roponen@gmail.com>
-CC: Alexey Starikovskiy <astarikovskiy@suse.de>,
-       Luca Tettamanti <kronos.it@gmail.com>, linux-acpi@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, len.brown@intel.com
-Subject: Re: [acpi:battery?] kernel oops on boot
-References: <20100414095750.GA3304@swordfish.minsk.epam.com> <20100414131324.GA6598@nb-core2.darkstar.lan> <alpine.LFD.2.00.1004141641010.3640@terrop> <4BC5CA13.3070801@suse.de> <alpine.LFD.2.00.1004141704350.1535@terrop>
-In-Reply-To: <alpine.LFD.2.00.1004141704350.1535@terrop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 14 Apr 2010 11:14:54 -0400
+Date: Wed, 14 Apr 2010 16:19:04 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] hmc6352: Add driver for the HMC6352 compass
+Message-ID: <20100414161904.713eef78@lxorguk.ukuu.org.uk>
+In-Reply-To: <4BC5D681.20707@jic23.retrosnub.co.uk>
+References: <20100414124913.23181.75903.stgit@localhost.localdomain>
+	<20100414125136.23181.16788.stgit@localhost.localdomain>
+	<4BC5C7A8.1040807@cam.ac.uk>
+	<20100414153234.22765666@lxorguk.ukuu.org.uk>
+	<4BC5D681.20707@jic23.retrosnub.co.uk>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2010 07:05 AM, Tero Roponen wrote:
->
-> On Wed, 14 Apr 2010, Alexey Starikovskiy wrote:
->
->> 14.04.2010 17:50, Tero Roponen пишет:
->>>
->>> On Wed, 14 Apr 2010, Luca Tettamanti wrote:
->>>
->>>> Hello,
->>>> I'm seeing a similar bug on my notebook (Asus F3Sa) with current git.
->>>> -rc4 does not work, while -rc3 does work.
->>>>
->>>> The error (at least in my case) is a division by zero in
->>>> acpi_ex_insert_into_field.
->>>
->>> I have a similar problem with Asus M50Vm. git-bisect found
->>> the following commit and reverting it does indeed fix the
->>> problem.
->>>
->>> commit dadf28a10c3eb29421837a2e413ab869ebd9e168
->>> Author: Alexey Starikovskiy<astarikovskiy@suse.de>
->>> Date:   Wed Mar 17 13:14:13 2010 -0400
->>>
->>>       ACPI: EC: Allow multibyte access to EC
->>>
->>>       http://bugzilla.kernel.org/show_bug.cgi?id=14667
->>>
->>>       Signed-off-by: Alexey Starikovskiy<astarikovskiy@suse.de>
->>>       Signed-off-by: Len Brown<len.brown@intel.com>
->>>
->> Please see the patch in https://bugzilla.kernel.org/show_bug.cgi?id=15749
->
-> Work for me. Thanks.
->
-> Tested-by: Tero Roponen<tero.roponen@gmail.com>
+Ripping it out of hwmon and applying the hedge trimmers to everything not
+needed and we get this for drivers/misc. I've also swapped the command
+codes to characters as the datasheet specifies them in ascii.
+
+--------------------------------8<------------------------------
+
+hmc6352: Add driver for the HMC6352 compass
+
+From: Kalhan Trisal <kalhan.trisal@intel.com>
+
+This driver will report the heading values in degrees to the sysfs interface.
+The values returned are headings . e.g. 245.6
+
+(Some cleanups from Alan Cox)
+
+Signed-off-by: Kalhan Trisal <kalhan.trisal@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ drivers/misc/Kconfig   |    7 ++
+ drivers/misc/Makefile  |    1 
+ drivers/misc/hmc6352.c |  199 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 207 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/hmc6352.c
 
 
-same here(just posted the Oops).
-patch works:
-
-Tested-by: Justin P. Mattock <justinmattock@gmail.com>
-
-I actually was getting excited to do a bisect
-(I'm a glutton for pain!!).
-
-Justin P. Mattock
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 2191c8d..e626bac 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -278,6 +278,13 @@ config SENSORS_TSL2550
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called tsl2550.
+ 
++config HMC6352
++	tristate "Honeywell HMC6352 compass"
++	depends on I2C
++	help
++	  This driver provides support for the Honeywell HMC6352 compass,
++	  providing configuration and heading data via sysfs.
++
+ config EP93XX_PWM
+ 	tristate "EP93xx PWM support"
+ 	depends on ARCH_EP93XX
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 208ae30..620cf0b 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -26,5 +26,6 @@ obj-$(CONFIG_DS1682)		+= ds1682.o
+ obj-$(CONFIG_TI_DAC7512)	+= ti_dac7512.o
+ obj-$(CONFIG_C2PORT)		+= c2port/
+ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
++obj-$(CONFIG_HMC6352)		+= hmc6352.o
+ obj-y				+= eeprom/
+ obj-y				+= cb710/
+diff --git a/drivers/misc/hmc6352.c b/drivers/misc/hmc6352.c
+new file mode 100644
+index 0000000..f4162ea
+--- /dev/null
++++ b/drivers/misc/hmc6352.c
+@@ -0,0 +1,199 @@
++/*
++ * hmc6352.c - Honeywell Compass Driver
++ *
++ * Copyright (C) 2009 Intel Corp
++ *
++ *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/sysfs.h>
++
++static ssize_t compass_calibration_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int ret;
++	unsigned long val;
++	char  cmd = 'C';	/* Calibrate */
++	char  cmd1 = 'E';	/* Exit calibration mode */
++	struct i2c_msg msg[] = {
++		{ client->addr, 0, 1, &cmd },
++	};
++	struct i2c_msg msg1[] = {
++		{ client->addr, 0, 1, &cmd1 },
++	};
++
++	if (strict_strtoul(buf, 10, &val))
++		return -EINVAL;
++	if (val == 1) {
++		ret = i2c_transfer(client->adapter, msg, 1);
++		if (ret != 1) {
++			dev_warn(dev, "hmc6352_comp: i2c calib start cmd failed\n");
++			return ret;
++		}
++	} else if (val == 2) {
++		ret = i2c_transfer(client->adapter, msg1, 1);
++		if (ret != 1) {
++			dev_warn(dev, "hmc6352_comp: i2c calib stop cmd failed\n");
++			return ret;
++		}
++	} else
++		return -EINVAL;
++
++	return count;
++}
++
++static ssize_t compass_heading_data_show(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++
++	struct i2c_client *client = to_i2c_client(dev);
++	static char cmd = 'A';		/* Get Data */
++	unsigned char i2c_data[2];
++	unsigned int ret, ret_val;
++	struct i2c_msg msg[] = {
++		{ client->addr, 0, 1, &cmd },
++	};
++	struct i2c_msg msg1[] = {
++		{ client->addr, I2C_M_RD, 2, i2c_data },
++	};
++
++	ret = i2c_transfer(client->adapter, msg, 1);
++	if (ret != 1) {
++		dev_warn(dev, "hmc6352: i2c cmd 0x41 failed\n");
++		return ret;
++	}
++	msleep(10); /* sending 0x41 cmd we need to wait for 7-10 milli second*/
++	ret = i2c_transfer(client->adapter, msg1, 1);
++	if (ret != 1) {
++		dev_warn(dev, "hmc6352: i2c read data cmd failed\n");
++		return ret;
++	}
++	ret_val = i2c_data[0];
++	ret_val = ((ret_val << 8) | i2c_data[1]);
++	return sprintf(buf, "%d.%d\n", ret_val/10, ret_val%10);
++}
++
++static ssize_t compass_power_mode_store(struct device *dev,
++		struct device_attribute *attr, const  char *buf, size_t count)
++{
++
++	struct i2c_client *client = to_i2c_client(dev);
++	unsigned long val;
++	unsigned int ret;
++	static char cmd = 'S';		/* Sleep mode */
++	static char cmd1 = 'W';		/* Wake up */
++	struct i2c_msg msg[] = {
++		{ client->addr, 0, 1, &cmd },
++	};
++	struct i2c_msg msg1[] = {
++		{ client->addr, 0, 1, &cmd1 },
++	};
++
++	if (strict_strtoul(buf, 10, &val))
++		return -EINVAL;
++
++	if (val == 0) {
++		ret = i2c_transfer(client->adapter, msg, 1);
++		if (ret != 1)
++			dev_warn(dev, "hmc6352: i2c cmd  sleep mode failed\n");
++	} else if (val == 1) {
++		ret = i2c_transfer(client->adapter, msg1, 1);
++		if (ret != 1)
++			dev_warn(dev, "hmc6352: i2c cmd active mode failed\n");
++	} else
++		return -EINVAL;
++
++	return count;
++}
++
++static DEVICE_ATTR(heading, S_IRUGO, compass_heading_data_show, NULL);
++static DEVICE_ATTR(calibration, S_IWUSR, NULL, compass_calibration_store);
++static DEVICE_ATTR(power_state, S_IWUSR, NULL, compass_power_mode_store);
++
++static struct attribute *mid_att_compass[] = {
++	&dev_attr_heading.attr,
++	&dev_attr_calibration.attr,
++	&dev_attr_power_state.attr,
++	NULL
++};
++
++static struct attribute_group m_compass_gr = {
++	.name = "hmc6352",
++	.attrs = mid_att_compass
++};
++
++static int  hmc6352_probe(struct i2c_client *client,
++					const struct i2c_device_id *id)
++{
++	int res;
++
++	res = sysfs_create_group(&client->dev.kobj, &m_compass_gr);
++	if (res) {
++		dev_err(&client->dev, "hmc6352: device_create_file failed\n");
++		return res;
++	}
++	dev_info(&client->dev, "%s HMC6352 compass chip found\n",
++		client->name);
++	return 0;
++}
++
++static int hmc6352_remove(struct i2c_client *client)
++{
++	sysfs_remove_group(&client->dev.kobj, &m_compass_gr);
++	return 0;
++}
++
++static struct i2c_device_id hmc6352_id[] = {
++	{ "hmc6352", 0 },
++	{ }
++};
++
++MODULE_DEVICE_TABLE(i2c, hmc6352_id);
++
++static struct i2c_driver hmc6352_driver = {
++	.driver = {
++	.name = "hmc6352",
++	},
++	.probe = hmc6352_probe,
++	.remove = hmc6352_remove,
++	.id_table = hmc6352_id,
++};
++
++static int __init sensor_hmc6352_init(void)
++{
++	return i2c_add_driver(&hmc6352_driver);
++}
++
++static void  __exit sensor_hmc6352_exit(void)
++{
++	i2c_del_driver(&hmc6352_driver);
++}
++
++module_init(sensor_hmc6352_init);
++module_exit(sensor_hmc6352_exit);
++
++MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com");
++MODULE_DESCRIPTION("hmc6352 Compass Driver");
++MODULE_LICENSE("GPL v2");
