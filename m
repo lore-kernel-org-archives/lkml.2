@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab0DNIOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 04:14:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33241 "EHLO mx1.redhat.com"
+	id S1754254Ab0DNIO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 04:14:56 -0400
+Received: from mail.atmel.fr ([81.80.104.162]:35355 "EHLO atmel-es2.atmel.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939Ab0DNIOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 04:14:21 -0400
-Message-ID: <4BC57949.2090003@redhat.com>
-Date: Wed, 14 Apr 2010 11:14:01 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1752542Ab0DNIOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 04:14:54 -0400
+Message-ID: <4BC57977.7000705@atmel.com>
+Date: Wed, 14 Apr 2010 10:14:47 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: "Zhang, Xiantao" <xiantao.zhang@intel.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       "Yang, Xiaowei" <xiaowei.yang@intel.com>,
-       "Dong, Eddie" <eddie.dong@intel.com>, "Li, Xin" <xin.li@intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Mike Galbraith <efault@gmx.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: VM performance issue in KVM guests.
-References: <EB8593BCECAB3D40A8248BE0B6400A3846903F4C@shzsmsx502.ccr.corp.intel.com> <4BC0D125.9050108@redhat.com> <EB8593BCECAB3D40A8248BE0B6400A384690419B@shzsmsx502.ccr.corp.intel.com> <4BC2C07B.4040607@redhat.com> <EB8593BCECAB3D40A8248BE0B6400A38469046C1@shzsmsx502.ccr.corp.intel.com> <4BC41338.80206@redhat.com> <EB8593BCECAB3D40A8248BE0B6400A38469C6790@shzsmsx502.ccr.corp.intel.com>
-In-Reply-To: <EB8593BCECAB3D40A8248BE0B6400A38469C6790@shzsmsx502.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Andrew Victor <avictor.za@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] AT91: at91sam9g10 chip identification changed
+References: <1270115336-19488-1-git-send-email-nicolas.ferre@atmel.com> <l2ocd73a99e1004130042qfe9aba83l512a0fad50112d19@mail.gmail.com>
+In-Reply-To: <l2ocd73a99e1004130042qfe9aba83l512a0fad50112d19@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2010 06:24 AM, Zhang, Xiantao wrote:
->
->>>> Spin loops need to be addressed first, they are known to kill
->>>> performance in overcommit situations.
->>>>
->>>>          
->>> Even in overcommit case, if vcpu threads of one qemu are not
->>> scheduled or pulled to the same logical processor, the performance
->>> drop is tolerant like Xen's case today. But for KVM, it has to
->>> suffer from additional performance loss, since host's scheduler
->>> actively pulls these vcpu threads together.
->>>
->>>
->>>        
->> Can you quantify this loss?  Give examples of what happens?
->>      
-> For example, one machine is configured with 2 pCPUs and there are two Windows guests running on the machine, and each guest is cconfigured with 2 vcpus and one webbench server runs in it.
-> If use host's default scheduler, webbench's performance is very bad, but if pin each geust's vCPU0 to pCPU0 and vCPU1 to pCPU1, we can see 5-10X performance improvement with same CPU utilization.
-> In addition, we also see kvm's perf scalability is also impacted in large systems, for some performance experiments, kvm's perf begins to drop when vCPU is overcommitted and pCPU are saturated, but once the wake_up_affine feature is switched off in scheduler, kvm's perf can keep rising in this case.
->    
+Le 13/04/2010 09:42, Andrew Victor :
+> hi Nicolas,
+> 
+>> A bit in the at91sam9g10 identification number changed between Engineering
+>> Sample and final product. This patch will identify both as being at91sam9g10.
+> 
+>> -#define ARCH_ID_AT91SAM9G10    0x819903a0
+>> +#define ARCH_ID_AT91SAM9G10    0x019903a0
+> 
+>> -#define cpu_is_at91sam9g10()   (at91_cpu_identify() == ARCH_ID_AT91SAM9G10)
+>> +#define cpu_is_at91sam9g10()   ((at91_cpu_identify() & ~AT91_CIDR_EXT) == ARCH_ID_AT91SAM9G10)
+> 
+> 
+> Wouldn't it be better to just mask out the AT91_CIDR_EXT bit in
+> at91_cpu_identify()?
+> That bit isn't really useful for "version" information.
+> 
+> We'd then just need to modify:
+>   #define ARCH_ID_AT91SAM9G10          0x019903a0
+>   #define ARCH_ID_AT91SAM9G45          0x019b05a0
+>   #define ARCH_ID_AT91SAM9G45MRL  0x019b05a2      /* aka 9G45-ES2 &
+> non ES lots */
+>   #define ARCH_ID_AT91SAM9G45ES     0x019b05a1      /* 9G45-ES
+> (Engineering Sample) */
+> (ie, drop bit AT91_CIDR_EXT)
 
-Ok.  This is probably due to spinlock contention.
+I do not think it is a good idea:
+1/ a little issue appears with AT91SAM9G45ES that is using the
+at91_cpu_fully_identify() functions.
+2/ we do not exclude raising the extended bit after a chip has been
+created to introduce a variant of this chip. If we mask out the
+AT91_CIDR_EXT bit in at91_cpu_identify() we will not be able to identify
+this new variant as being different from the original chip.
 
-When vcpus are pinned to pcpus, there is a 50% chance that a guest's 
-vcpus will be co-scheduled and spinlocks will perform will.
-
-When vcpus are not pinned, but affine wakeups are disabled, there is a 
-33% chance that vcpus will be co-scheduled.
-
-When vcpus are not pinned and affine wakeups are enabled there is a 0% 
-chance that vcpus will be co-scheduled.
-
-Keeping both vcpus on the same core actually makes sense since they can 
-communicate through the local cache faster than across cores.  What we 
-need is to make sure that they don't spin.
-
-Windows 2008 can report spinlock spinning through a hypercall.  Can you 
-hook to that interface and see if it happens regularly?  Altenatively 
-use a PLE capable host and trace the kvm_vcpu_on_spin() function.
-
+Best regards,
 -- 
-error compiling committee.c: too many arguments to function
+Nicolas Ferre
 
