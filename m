@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab0DNKEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 06:04:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32923 "EHLO hera.kernel.org"
+	id S1755038Ab0DNKEi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 06:04:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:32932 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754993Ab0DNKES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 06:04:18 -0400
-Date: Wed, 14 Apr 2010 10:03:56 GMT
+	id S1754886Ab0DNKEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 06:04:36 -0400
+Date: Wed, 14 Apr 2010 10:04:13 GMT
 From: tip-bot for Tom Zanussi <tzanussi@gmail.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
        tzanussi@gmail.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
        tzanussi@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1270184365-8281-3-git-send-email-tzanussi@gmail.com>
-References: <1270184365-8281-3-git-send-email-tzanussi@gmail.com>
+In-Reply-To: <1270184365-8281-4-git-send-email-tzanussi@gmail.com>
+References: <1270184365-8281-4-git-send-email-tzanussi@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/live] perf record: Introduce special handling for pipe output
-Message-ID: <tip-529870e37473a9fc609078f03cc5b4148cf06a87@git.kernel.org>
-Git-Commit-ID: 529870e37473a9fc609078f03cc5b4148cf06a87
+Subject: [tip:perf/live] perf report: Introduce special handling for pipe input
+Message-ID: <tip-46656ac7fb3252f8a3db29b18638e0e8067849ba@git.kernel.org>
+Git-Commit-ID: 46656ac7fb3252f8a3db29b18638e0e8067849ba
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Apr 2010 10:03:57 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Apr 2010 10:04:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  529870e37473a9fc609078f03cc5b4148cf06a87
-Gitweb:     http://git.kernel.org/tip/529870e37473a9fc609078f03cc5b4148cf06a87
+Commit-ID:  46656ac7fb3252f8a3db29b18638e0e8067849ba
+Gitweb:     http://git.kernel.org/tip/46656ac7fb3252f8a3db29b18638e0e8067849ba
 Author:     Tom Zanussi <tzanussi@gmail.com>
-AuthorDate: Thu, 1 Apr 2010 23:59:16 -0500
+AuthorDate: Thu, 1 Apr 2010 23:59:17 -0500
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Wed, 14 Apr 2010 11:56:06 +0200
 
-perf record: Introduce special handling for pipe output
+perf report: Introduce special handling for pipe input
 
-Adds special treatment for stdout - if the user specifies '-o -'
-to perf record, the intent is that the event stream be written
-to stdout rather than to a disk file.
+Adds special treatment for stdin - if the user specifies '-i -'
+to perf report, the intent is that the event stream be written
+to stdin rather than from a disk file.
 
-Also, redirect stdout of forked child to stderr - in pipe mode,
-stdout of the forked child interferes with the stdout perf
-stream, so redirect it to stderr where it can still be seen but
-won't be mixed in with the perf output.
+The actual handling of the '-' filename is done by the session;
+this just adds a signal handler to stop reporting, and turns off
+interference by the pager.
 
 Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
 Acked-by: Thomas Gleixner <tglx@linutronix.de>
@@ -51,66 +50,46 @@ Cc: fweisbec@gmail.com
 Cc: rostedt@goodmis.org
 Cc: k-keiichi@bx.jp.nec.com
 Cc: acme@ghostprotocols.net
-LKML-Reference: <1270184365-8281-3-git-send-email-tzanussi@gmail.com>
+LKML-Reference: <1270184365-8281-4-git-send-email-tzanussi@gmail.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/builtin-record.c |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
+ tools/perf/builtin-report.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index d060fc5..d4464f7 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -35,6 +35,7 @@ static unsigned int		page_size;
- static unsigned int		mmap_pages			=    128;
- static int			freq				=   1000;
- static int			output;
-+static int			pipe_output			=      0;
- static const char		*output_name			= "perf.data";
- static int			group				=      0;
- static unsigned int		realtime_prio			=      0;
-@@ -449,7 +450,9 @@ static int __cmd_record(int argc, const char **argv)
- 		exit(-1);
- 	}
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index daee082..00b358f 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -269,6 +269,13 @@ static struct perf_event_ops event_ops = {
+ 	.read	= process_read_event,
+ };
  
--	if (!stat(output_name, &st) && st.st_size) {
-+	if (!strcmp(output_name, "-"))
-+		pipe_output = 1;
-+	else if (!stat(output_name, &st) && st.st_size) {
- 		if (!force) {
- 			if (!append_file) {
- 				pr_err("Error, output file %s exists, use -A "
-@@ -474,7 +477,10 @@ static int __cmd_record(int argc, const char **argv)
- 	else
- 		flags |= O_TRUNC;
++extern volatile int session_done;
++
++static void sig_handler(int sig __attribute__((__unused__)))
++{
++	session_done = 1;
++}
++
+ static int __cmd_report(void)
+ {
+ 	int ret = -EINVAL;
+@@ -276,6 +283,8 @@ static int __cmd_report(void)
+ 	struct rb_node *next;
+ 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
  
--	output = open(output_name, flags, S_IRUSR|S_IWUSR);
-+	if (pipe_output)
-+		output = STDOUT_FILENO;
-+	else
-+		output = open(output_name, flags, S_IRUSR | S_IWUSR);
- 	if (output < 0) {
- 		perror("failed to create output file");
- 		exit(-1);
-@@ -513,6 +519,8 @@ static int __cmd_record(int argc, const char **argv)
- 		}
++	signal(SIGINT, sig_handler);
++
+ 	session = perf_session__new(input_name, O_RDONLY, force);
+ 	if (session == NULL)
+ 		return -ENOMEM;
+@@ -465,7 +474,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ {
+ 	argc = parse_options(argc, argv, options, report_usage, 0);
  
- 		if (!child_pid) {
-+			if (pipe_output)
-+				dup2(2, 1);
- 			close(child_ready_pipe[0]);
- 			close(go_pipe[1]);
- 			fcntl(go_pipe[0], F_SETFD, FD_CLOEXEC);
-@@ -564,7 +572,11 @@ static int __cmd_record(int argc, const char **argv)
- 			open_counters(cpumap[i]);
- 	}
+-	setup_browser();
++	if (strcmp(input_name, "-") != 0)
++		setup_browser();
  
--	if (file_new) {
-+	if (pipe_output) {
-+		err = perf_header__write_pipe(output);
-+		if (err < 0)
-+			return err;
-+	} else if (file_new) {
- 		err = perf_header__write(&session->header, output, false);
- 		if (err < 0)
- 			return err;
+ 	if (symbol__init() < 0)
+ 		return -1;
