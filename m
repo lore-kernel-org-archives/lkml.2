@@ -1,89 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab0DNPlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:41:39 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:8638 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756057Ab0DNPlg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 11:41:36 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=lg0uDkThEwewh6tDT1ori+neqbbsvt9XyCcIKG/M+tkbjKNwXT11fXt24VW6dgpw2
-	6PBI1b/DA2HJACwY8PwsA==
+	id S1756191Ab0DNPnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 11:43:09 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:41950 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756094Ab0DNPnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 11:43:07 -0400
+Date: Wed, 14 Apr 2010 08:43:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: David Miller <davem@davemloft.net>, fweisbec@gmail.com,
+       a.p.zijlstra@chello.nl, mingo@elte.hu, sparclinux@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: Weird rcu lockdep warning
+Message-ID: <20100414154302.GC2516@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100413200432.GB5099@nowhere>
+ <20100413234043.GG2538@linux.vnet.ibm.com>
+ <20100414000226.GH5602@nowhere>
+ <20100413.171306.25868761.davem@davemloft.net>
+ <20100414014930.GI2538@linux.vnet.ibm.com>
+ <4BC537C9.8050600@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <87fx2y9xdn.fsf@basil.nowhere.org>
-References: <20100413234902.29004.41655.stgit@bumblebee1.mtv.corp.google.com>
-	 <20100414000823.29004.98991.stgit@bumblebee1.mtv.corp.google.com>
-	 <87fx2y9xdn.fsf@basil.nowhere.org>
-Date: Wed, 14 Apr 2010 08:41:30 -0700
-Message-ID: <o2y4352991a1004140841w7f37b84cnedcd91c2638a07ea@mail.gmail.com>
-Subject: Re: [PATCH 1/3] [kidled]: introduce kidled.
-From: Salman Qazi <sqazi@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: peterz@infradead.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, svaidy@linux.vnet.ibm.com,
-       linux-pm@lists.linux-foundation.org, arjan@infradead.org,
-       csadler@google.com, ranjitm@google.com, kenchen@google.com,
-       dawnchen@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BC537C9.8050600@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 2:49 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> Salman <sqazi@google.com> writes:
->> +
->> +static int proc_stats(struct ctl_table *table, int write,
->> +                   void __user *buffer, size_t *lenp, loff_t *ppos)
->> +{
->> +     int ret;
->> +     unsigned long stats[3];
->> +     int cpu = (int)((long)table->extra1);
->> +     struct ctl_table fake = {};
->> +
->> +     if (write)
->> +             return -EINVAL;
->> +
->> +     fake.data = stats;
->> +     fake.maxlen = 3*sizeof(unsigned long);
->> +
->> +     ret = smp_call_function_single(cpu, getstats, &stats, 1);
->> +     if (ret)
->> +             return ret;
->
-> Haven't read the whole thing, but do any of these stats really
-> need to execute on the target CPU? They seem to be just readable
-> fields.
+On Wed, Apr 14, 2010 at 11:34:33AM +0800, Lai Jiangshan wrote:
+> Paul E. McKenney wrote:
+> > On Tue, Apr 13, 2010 at 05:13:06PM -0700, David Miller wrote:
+> >> From: Frederic Weisbecker <fweisbec@gmail.com>
+> >> Date: Wed, 14 Apr 2010 02:02:27 +0200
+> >>
+> >>> I just have a guess though....
+> >>> This seems to always happen from NMI path, and lockdep is disabled on NMI.
+> >>> I suspect the lock_acquire() performed by rcu_read_lock() is just ignored
+> >>> and then the rcu_read_lock_held() check has the wrong result...
+> >> Yeah, I bet that's it too.
+> >>
+> >> lock_is_held() can't return anything meaningful while lockdep is
+> >> disabled, which it is during NMIs.
+> > 
+> > Ah!  So I just need to add a "current->lockdep_recursion"
+> > check to debug_lockdep_rcu_enabled().  And move the function to
+> > kernel/rcutree_plugin.h to avoid #include hell.
+> > 
+> > See below for (untested) patch.
+> > 
+> > 						Thanx, Paul
+> > 
+> > ------------------------------------------------------------------------
+> > 
+> >  include/linux/rcupdate.h |    5 +----
+> >  kernel/rcutree_plugin.h  |   11 +++++++++++
+> >  2 files changed, 12 insertions(+), 4 deletions(-)
+> > 
+> > commit 304d8da6cd791a81ce3164f867e1b3ef4f9af1d1
+> > Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Date:   Tue Apr 13 18:45:51 2010 -0700
+> > 
+> >     rcu: Make RCU lockdep check the lockdep_recursion variable
+> >     
+> >     The lockdep facility temporarily disables lockdep checking by incrementing
+> >     the current->lockdep_recursion variable.  Such disabling happens in NMIs
+> >     and in other situations where lockdep might expect to recurse on itself.
+> >     This patch therefore checks current->lockdep_recursion, disabling RCU
+> >     lockdep splats when this variable is non-zero.
+> >     
+> >     Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+> >     Reported-by: David Miller <davem@davemloft.net>
+> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 9f1ddfe..07db2fe 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -101,10 +101,7 @@ extern struct lockdep_map rcu_sched_lock_map;
+> >  # define rcu_read_release_sched() \
+> >  		lock_release(&rcu_sched_lock_map, 1, _THIS_IP_)
+> >  
+> > -static inline int debug_lockdep_rcu_enabled(void)
+> > -{
+> > -	return likely(rcu_scheduler_active && debug_locks);
+> > -}
+> > +extern int debug_lockdep_rcu_enabled(void);
+> >  
+> >  /**
+> >   * rcu_read_lock_held - might we be in RCU read-side critical section?
+> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> > index 79b53bd..2169abe 100644
+> > --- a/kernel/rcutree_plugin.h
+> > +++ b/kernel/rcutree_plugin.h
+> > @@ -1067,3 +1067,14 @@ static void rcu_needs_cpu_flush(void)
+> >  }
+> >  
+> >  #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
+> > +
+> > +#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> > +
+> > +int debug_lockdep_rcu_enabled(void)
+> > +{
+> > +	return likely(rcu_scheduler_active &&
+> > +		      debug_locks &&
+> > +		      current->lockdep_recursion == 0);
+> > +}
+> > +
+> 
+> Looks good to me too, but I think
+> 'likely' is needless since the function is not inline.
 
-To capture all the quantities for a CPU atomically, they must be read
-on the CPU.  Basically, reading them on that CPU prevents them from
-changing as we read them.
+Good point.  And to add injury to insult, I forgot EXPORT_SYMBOL_GPL().
 
-Also, if the CPU is idle (injected or otherwise), the quantities won't
-get updated.
+Updated patch in the works.
 
->
-> Or does it simply not matter because this proc call is too infrequent?
-
-It should be infrequent.  The idle cycle injector does all the hard
-work.  These interfaces are for monitoring.
-
->
-> Anyways global broadcasts are discouraged, there is typically
-> always someone who feels their RT latency be messed up by them.
-
-
-I will look at it one more time to see if there is something else that
-can be done.
-
->
-> -Andi
->
->
-> --
-> ak@linux.intel.com -- Speaking for myself only.
->
+							Thanx, Paul
