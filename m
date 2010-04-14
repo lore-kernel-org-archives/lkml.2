@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597Ab0DNEnt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 00:43:49 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:51414 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab0DNEns convert rfc822-to-8bit (ORCPT
+	id S1751960Ab0DNEoX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 00:44:23 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:62597 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab0DNEoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 00:43:48 -0400
+	Wed, 14 Apr 2010 00:44:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=MtRC6zgTrU8nOE1MlG5auR2Sz/6kqa5O6Ns/YY7V6dmYXv8j/5HsPVX7OZG8wkxt2h
-         dIXiGHpaTwWjRvC4U4DnI5xK+Ixw0jYBPSEkvjZXsDzUmMu6fatR41bkQrttTD9jIxmr
-         Rw0p50z7hXtTHPhTcZUDa3JqTYHT7zqJHEcPU=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=xo2JJpreSllrxKdxKZTDLrFdjY+Ki+AZAIa0ftNyjsVYIqhIWyqt9PTbTzdiETCYQu
+         qzgul2dqBlzKs258BlHIB8Gs7NAeev2m9lFX2VRypB3D33uApMy39W4xUOpR1zTPUKTl
+         U6LCAiFmVtvTSTRf3U41IAeENhl/fvhKbI/Ic=
+Date: Wed, 14 Apr 2010 12:48:05 +0800
+From: Amerigo Wang <xiyou.wangcong@gmail.com>
+To: Huang Shijie <shijie8@gmail.com>
+Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][resend] namei.c : update mnt when it needed
+Message-ID: <20100414044805.GE3919@cr0.nay.redhat.com>
+References: <1271211369-27419-1-git-send-email-shijie8@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <n2wff6de6f21004121405xd33676f8s81c12e23747b88b0@mail.gmail.com>
-References: <q2lff6de6f21004120834k72cfd554v188b9d2b5a01012c@mail.gmail.com>
-	 <20100412174352.4e13113f@lxorguk.ukuu.org.uk>
-	 <n2wff6de6f21004121405xd33676f8s81c12e23747b88b0@mail.gmail.com>
-Date: Wed, 14 Apr 2010 00:43:29 -0400
-Message-ID: <w2jff6de6f21004132143v3a5fbc3aqe7b4e7966d569392@mail.gmail.com>
-Subject: Re: Trying to fix ITE-887x parallel/serial driver bugs (including 
-	unhandled IRQs)
-From: Joseph Krahn <joseph.krahn@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271211369-27419-1-git-send-email-shijie8@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 12, 2010 at 5:05 PM, Joseph Krahn <joseph.krahn@gmail.com> wrote:
-> On Mon, Apr 12, 2010 at 12:43 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-...
->> I don't think your description is accurate entirely. The device is picked
->> up by PCi scans and the INTCBAR is then set up by Linux having checked
->> for free address ranges. It's hardly 'random probing' and it isn't a
->> normal BAR or guaranteed to have been configured by anything beforehand.
-> Yes, but the drivers don't use INTCBAR. They scan through a herd-coded
-> list of possible port ranges:
+On Wed, Apr 14, 2010 at 10:16:09AM +0800, Huang Shijie wrote:
+>update the mnt of the path when it is not equal to the new one.
 >
-> static int __devinit sio_ite_8872_probe(struct pci_dev *pdev, int autoirq,
->                                         int autodma,
->                                         const struct parport_pc_via_data *via)
+>Signed-off-by: Huang Shijie <shijie8@gmail.com>
+
+
+This change is trivial, and it looks fine for me.
+
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+Thanks!
+
+
+>---
+> fs/namei.c |    5 +++--
+> 1 files changed, 3 insertions(+), 2 deletions(-)
+>
+>diff --git a/fs/namei.c b/fs/namei.c
+>index a7dce91..9c3a040 100644
+>--- a/fs/namei.c
+>+++ b/fs/namei.c
+>@@ -523,9 +523,10 @@ static void path_put_conditional(struct path *path, struct nameidata *nd)
+> static inline void path_to_nameidata(struct path *path, struct nameidata *nd)
 > {
->        short inta_addr[6] = { 0x2A0, 0x2C0, 0x220, 0x240, 0x1E0 };
-> ...
->        for (i = 0; i < 5; i++) {
->                base_res = request_region(inta_addr[i], 32, "it887x");
->                if (base_res) {
-> ...
-Oops. I meant that INTCBAR should just be mapped to PCI BAR 0, which
-has already been mapped to an available range. The problem with the
-recent 8250_pci driver is that it repeats the above process,
-requesting an I/O range while the existing range was never released.
-This is how I think it should be done:
-
-        /* Map INTC control to BAR 0 */
-        intc_base = pci_resource_start(pdev,0);
-        intc_res = request_region(intc_base, ITE_887x_POSIO0_IOSIZE,
-"it887x_intc");
-
-...
-> One possibility is to install custom io_serial_in/out functions. When
-> the value of IIR is requested, the INTC can be checked, and modify the
-> result to what it should be for a normal UART. That is a bit of a
-> hack, but makes it much easier to fit into the existing code.
-I am testing a custom io_serial_in() to translate IRQ info. It looks
-like a good solution. Based on the current parport_pc driver, the
-partport I/O may work like a standard port, and not need any extra IRQ
-code.
-
-Instead of adding another UPIO_ definition, it should be possible to
-define serial_in and serial_out in the 8250_pci.c quirks init
-function. In some cases, but not all, the result from
-set_io_from_upio() is allowed to be overridden, so this may be the
-intended design. It appears that UPIO_TSI exists only to map
-serial_in/out functions.
-
-Thanks,
-Joe
+> 	dput(nd->path.dentry);
+>-	if (nd->path.mnt != path->mnt)
+>+	if (nd->path.mnt != path->mnt) {
+> 		mntput(nd->path.mnt);
+>-	nd->path.mnt = path->mnt;
+>+		nd->path.mnt = path->mnt;
+>+	}
+> 	nd->path.dentry = path->dentry;
+> }
+> 
+>-- 
+>1.6.6
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
