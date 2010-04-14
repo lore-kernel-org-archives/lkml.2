@@ -1,111 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab0DNOHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 10:07:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39353 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755501Ab0DNOHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 10:07:50 -0400
-Date: Wed, 14 Apr 2010 10:05:23 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       balbir@linux.vnet.ibm.com, Andrea Righi <arighi@develer.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
-Message-ID: <20100414140523.GC13535@redhat.com>
-References: <1268609202-15581-2-git-send-email-arighi@develer.com> <20100317115855.GS18054@balbir.in.ibm.com> <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com> <20100318041944.GA18054@balbir.in.ibm.com> <20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com> <20100318162855.GG18054@balbir.in.ibm.com> <20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com> <20100319024039.GH18054@balbir.in.ibm.com> <20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com> <xr931veiplpr.fsf@ninji.mtv.corp.google.com>
+	id S1755678Ab0DNOIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 10:08:49 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:60809 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751127Ab0DNOIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 10:08:48 -0400
+Date: Wed, 14 Apr 2010 10:08:47 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Pedro Ribeiro <pedrib@gmail.com>
+cc: linux-usb@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+       <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+       Greg KH <gregkh@suse.de>, <alsa-devel@alsa-project.org>
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+In-Reply-To: <t2w74fd948d1004140347k3447bffapb73856eacddfde55@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1004141003170.1716-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <xr931veiplpr.fsf@ninji.mtv.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 11:55:12PM -0700, Greg Thelen wrote:
-> On Thu, Mar 18, 2010 at 8:00 PM, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Fri, 19 Mar 2010 08:10:39 +0530
-> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> >
-> >> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-19 10:23:32]:
-> >>
-> >> > On Thu, 18 Mar 2010 21:58:55 +0530
-> >> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> >> >
-> >> > > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:35:27]:
-> >> >
-> >> > > > Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
-> >> > > > mem_cgroup_update_file_mapped(). The look may be messy but it's not your
-> >> > > > fault. But please write "why add new function" to patch description.
-> >> > > >
-> >> > > > I'm sorry for wasting your time.
-> >> > >
-> >> > > Do we need to go down this route? We could check the stat and do the
-> >> > > correct thing. In case of FILE_MAPPED, always grab page_cgroup_lock
-> >> > > and for others potentially look at trylock. It is OK for different
-> >> > > stats to be protected via different locks.
-> >> > >
-> >> >
-> >> > I _don't_ want to see a mixture of spinlock and trylock in a function.
-> >> >
-> >>
-> >> A well documented well written function can help. The other thing is to
-> >> of-course solve this correctly by introducing different locking around
-> >> the statistics. Are you suggesting the later?
-> >>
-> >
-> > No. As I wrote.
-> >        - don't modify codes around FILE_MAPPED in this series.
-> >        - add a new functions for new statistics
-> > Then,
-> >        - think about clean up later, after we confirm all things work as expected.
-> 
-> I have ported Andrea Righi's memcg dirty page accounting patches to latest
-> mmtom-2010-04-05-16-09.  In doing so I have to address this locking issue.  Does
-> the following look good?  I will (of course) submit the entire patch for review,
-> but I wanted make sure I was aiming in the right direction.
-> 
-> void mem_cgroup_update_page_stat(struct page *page,
-> 			enum mem_cgroup_write_page_stat_item idx, bool charge)
-> {
-> 	static int seq;
-> 	struct page_cgroup *pc;
-> 
-> 	if (mem_cgroup_disabled())
-> 		return;
-> 	pc = lookup_page_cgroup(page);
-> 	if (!pc || mem_cgroup_is_root(pc->mem_cgroup))
-> 		return;
-> 
-> 	/*
-> 	 * This routine does not disable irq when updating stats.  So it is
-> 	 * possible that a stat update from within interrupt routine, could
-> 	 * deadlock.  Use trylock_page_cgroup() to avoid such deadlock.  This
-> 	 * makes the memcg counters fuzzy.  More complicated, or lower
-> 	 * performing locking solutions avoid this fuzziness, but are not
-> 	 * currently needed.
-> 	 */
-> 	if (irqs_disabled()) {
-            ^^^^^^^^^
-Or may be in_interrupt()?
+On Wed, 14 Apr 2010, Pedro Ribeiro wrote:
 
-> 		if (! trylock_page_cgroup(pc))
-> 			return;
-> 	} else
-> 		lock_page_cgroup(pc);
+> On 14 April 2010 11:09, Daniel Mack <daniel@caiaq.de> wrote:
 > 
-> 	__mem_cgroup_update_page_stat(pc, idx, charge);
-> 	unlock_page_cgroup(pc);
-> }
+> > Thanks! So the only thing I can do for now is submit exactly this patch.
+> > At least, it helps you and it shouldn't break anything. The question
+> > remains whether this type of memory should be used for all
+> > transfer_buffers.
+> >
+> 
+> Is there any chance you could push this to -stable? I don't care
+> because I always use the latest kernel, but the next Debian stable and
+> Ubuntu LTS are going to use 2.6.32.
 
-Vivek
+No!  Please don't do it: Don't submit the patch and _certainly_ don't
+submit it to -stable.  It doesn't fix anything; it only works around a
+bug, and at the moment we don't even know if the bug is in the kernel
+or in Pedro's hardware (and even though it affects two different
+systems of his, nobody else has reported a similar problem).  Papering
+over it will only remove the incentive to fix it properly.
+
+In addition, you'll most likely find that lots of Linux developers will
+object vociferously to any proposed patch that uses GFP_DMA.  That flag
+is supposed to be _only_ for ISA devices, which really need it.  By 
+limiting the memory allocation to the lowest 16 MB of physical memory, 
+it greatly increases the chances that the allocation will fail.
+
+Alan Stern
+
