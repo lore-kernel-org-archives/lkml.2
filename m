@@ -1,203 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab0DNIvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 04:51:54 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:51014 "EHLO gir.skynet.ie"
+	id S1754630Ab0DNIw3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 04:52:29 -0400
+Received: from pmx3.lnl.infn.it ([192.135.30.243]:58919 "EHLO pmx3.lnl.infn.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753134Ab0DNIvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 04:51:52 -0400
-Date: Wed, 14 Apr 2010 09:51:33 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Dave Chinner <david@fromorbit.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100414085132.GJ25756@csn.ul.ie>
-References: <20100413202021.GZ13327@think> <20100414014041.GD2493@dastard> <20100414155233.D153.A69D9226@jp.fujitsu.com> <20100414072830.GK2493@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100414072830.GK2493@dastard>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1754126Ab0DNIwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 04:52:25 -0400
+Message-ID: <7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+Date: Wed, 14 Apr 2010 10:51:45 +0200 (CEST)
+From: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>
+To: "Tung, Chien Tin" <chien.tin.tung@intel.com>,
+       Steve Wise <swise@opengridcomputing.com>
+Subject: RE: Socket Direct Protocol: help (2)
+Cc: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+       "rolandd@cisco.com" <rolandd@cisco.com>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
+       Eric B Munson <ebmunson@us.ibm.com>
+In-Reply-To: <2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (normal)
+X-Mailer: SuSE Linux Openexchange Server 4 - WebMail (Build 2.4160)
+X-Operating-System: Linux 2.4.21-314-smp i386 (JVM 1.3.1_20)
+Organization: INFN - Laboratori Nazionali Legnaro
+References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com> <4BC49E2B.3000804@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com> <4BC4D22A.6020700@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>
+X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.14.83915 (i)
+X-Spam-Flag: NO
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 05:28:30PM +1000, Dave Chinner wrote:
-> On Wed, Apr 14, 2010 at 03:52:44PM +0900, KOSAKI Motohiro wrote:
-> > > On Tue, Apr 13, 2010 at 04:20:21PM -0400, Chris Mason wrote:
-> > > > On Tue, Apr 13, 2010 at 08:34:29PM +0100, Mel Gorman wrote:
-> > > > > > Basically, there is not enough stack space available to allow direct
-> > > > > > reclaim to enter ->writepage _anywhere_ according to the stack usage
-> > > > > > profiles we are seeing here....
-> > > > > > 
-> > > > > 
-> > > > > I'm not denying the evidence but how has it been gotten away with for years
-> > > > > then? Prevention of writeback isn't the answer without figuring out how
-> > > > > direct reclaimers can queue pages for IO and in the case of lumpy reclaim
-> > > > > doing sync IO, then waiting on those pages.
-> > > > 
-> > > > So, I've been reading along, nodding my head to Dave's side of things
-> > > > because seeks are evil and direct reclaim makes seeks.  I'd really loev
-> > > > for direct reclaim to somehow trigger writepages on large chunks instead
-> > > > of doing page by page spatters of IO to the drive.
-> > 
-> > I agree that "seeks are evil and direct reclaim makes seeks". Actually,
-> > making 4k io is not must for pageout. So, probably we can improve it.
-> > 
-> > 
-> > > Perhaps drop the lock on the page if it is held and call one of the
-> > > helpers that filesystems use to do this, like:
-> > > 
-> > > 	filemap_write_and_wait(page->mapping);
-> > 
-> > Sorry, I'm lost what you talk about. Why do we need per-file
-> > waiting? If file is 1GB file, do we need to wait 1GB writeout?
+On Apr 13, 2010 10:22 PM, "Tung, Chien Tin" <chien.tin.tung@intel.com>
+wrote:
+
+> >>> Chien, does the NE020 support FMRs? I looked at the nes ofed-1.5
+> >>> code
+> >>> and it appears to do nothing in the map_phys_fmr functions.
+> >>>
+> >>
+> >> We never implemented map_phys_fmr. Is it relevant to the # of SGEs?
+> >>
+> >No, but SDP uses FMRs. I don't think it will run without FMR support.
+> >
 > 
-> So use filemap_fdatawrite(page->mapping), or if it's better only
-> to start IO on a segment of the file, use
-> filemap_fdatawrite_range(page->mapping, start, end)....
+> 
+> Good to know.  Thanks.
+> 
+> Chien
+> 
 > 
 
-That does not help the stack usage issue, the caller ends up in
-->writepages. From an IO perspective, it'll be better from a seek point of
-view but from a VM perspective, it may or may not be cleaning the right pages.
-So I think this is a red herring.
+Hi Steve and Chien,
 
-> > > > But, somewhere along the line I overlooked the part of Dave's stack trace
-> > > > that said:
-> > > > 
-> > > > 43)     1568     912   do_select+0x3d6/0x700
-> > > > 
-> > > > Huh, 912 bytes...for select, really?  From poll.h:
-> > > 
-> > > Sure, it's bad, but we focussing on the specific case misses the
-> > > point that even code that is using minimal stack can enter direct
-> > > reclaim after consuming 1.5k of stack. e.g.:
-> > 
-> > checkstack.pl says do_select() and __generic_file_splice_read() are one
-> > of worstest stack consumer. both sould be fixed.
-> 
-> the deepest call chain in queue_work() needs 700 bytes of stack
-> to complete, wait_for_completion() requires almost 2k of stack space
-> at it's deepest, the scheduler has some heavy stack users, etc,
-> and these are all functions that appear at the top of the stack.
-> 
+I understand that NE020 cards have problem with SDP connected with
+map_phy_fmr (FMR stands for Fast Memory Region).
+Is it possible to solve/fix this point?
+If yes, have you an idea about the time that is necessary to code
+development/build?
+If no, can you suggest me a card that supports SDP protocol?
 
-The real issue here then is that stack usage has gone out of control.
-Disabling ->writepage in direct reclaim does not guarantee that stack
-usage will not be a problem again. From your traces, page reclaim itself
-seems to be a big dirty hog.
+I work on NE020 cards from February 2010 for an INFN experimental
+proposal, called REDIGO (Read out at 10 Gbits/s), about the data
+acquisition and movement systems. The covergence of storage protocols
+around 10 Gigabits/s Ethernet protocols shows that one way could be the
+Remote Direct Memory Access (RDMA). The goals are the investigations of
+latency time, the throughput, the buffer size schemes and finally the
+global event building bandwidth.
 
-Differences in what people see in their machines may be down to architecture,
-compiler but most likely inlining. Changing inlining will not fix the problem,
-it'll just move the stack usage around.
+Do you know if NE020 cards have problems with librdma (RDMA procedures,
+in general) and / or with MPI versions?
 
-> > also, checkstack.pl says such stack eater aren't so much.
-> 
-> Yeah, but when we have ia callchain 70 or more functions deep,
-> even 100 bytes of stack is a lot....
-> 
-> > > > So, select is intentionally trying to use that much stack.  It should be using
-> > > > GFP_NOFS if it really wants to suck down that much stack...
-> > > 
-> > > The code that did the allocation is called from multiple different
-> > > contexts - how is it supposed to know that in some of those contexts
-> > > it is supposed to treat memory allocation differently?
-> > > 
-> > > This is my point - if you introduce a new semantic to memory allocation
-> > > that is "use GFP_NOFS when you are using too much stack" and too much
-> > > stack is more than 15% of the stack, then pretty much every code path
-> > > will need to set that flag...
-> > 
-> > Nodding my head to Dave's side. changing caller argument seems not good
-> > solution. I mean
-> >  - do_select() should use GFP_KERNEL instead stack (as revert 70674f95c0)
-> >  - reclaim and xfs (and other something else) need to diet.
-> 
-> The list I'm seeing so far includes:
-> 	- scheduler
-> 	- completion interfaces
-> 	- radix tree
-> 	- memory allocation, memory reclaim
-> 	- anything that implements ->writepage
-> 	- select
-> 	- splice read
-> 
-> > Also, I believe stack eater function should be created waring. patch attached.
-> 
-> Good start, but 512 bytes will only catch select and splice read,
-> and there are 300-400 byte functions in the above list that sit near
-> the top of the stack....
-> 
+Thank you very much,
+Andrea
 
-They will need to be tackled in turn then but obviously there should be
-a focus on the common paths. The reclaim paths do seem particularly
-heavy and it's down to a lot of temporary variables. I might not get the
-time today but what I'm going to try do some time this week is
+Andrea Gozzelino
 
-o Look at what temporary variables are copies of other pieces of information
-o See what variables live for the duration of reclaim but are not needed
-  for all of it (i.e. uninline parts of it so variables do not persist)
-o See if it's possible to dynamically allocate scan_control
+INFN - Laboratori Nazionali di Legnaro	(LNL)
+Viale dell'Universita' 2
+I-35020 - Legnaro (PD)- ITALIA
+Tel: +39 049 8068346
+Fax: +39 049 641925
+Mail: andrea.gozzelino@lnl.infn.it			
 
-The last one is the trickiest. Basically, the idea would be to move as much
-into scan_control as possible. Then, instead of allocating it on the stack,
-allocate a fixed number of them at boot-time (NR_CPU probably) protected by
-a semaphore. Limit the number of direct reclaimers that can be active at a
-time to the number of scan_control variables. kswapd could still allocate
-its on the stack or with kmalloc.
-
-If it works out, it would have two main benefits. Limits the number of
-processes in direct reclaim - if there is NR_CPU-worth of proceses in direct
-reclaim, there is too much going on. It would also shrink the stack usage
-particularly if some of the stack variables are moved into scan_control.
-
-Maybe someone will beat me to looking at the feasibility of this.
-
-> > > We need at least _700_ bytes of stack free just to call queue_work(),
-> > > and that now happens deep in the guts of the driver subsystem below XFS.
-> > > This trace shows 1.8k of stack usage on a simple, single sata disk
-> > > storage subsystem, so my estimate of 2k of stack for the storage system
-> > > below XFS is too small - a worst case of 2.5-3k of stack space is probably
-> > > closer to the mark.
-> > 
-> > your explanation is very interesting. I have a (probably dumb) question.
-> > Why nobody faced stack overflow issue in past? now I think every users
-> > easily get stack overflow if your explanation is correct.
-> 
-> It's always a problem, but the focus on minimising stack usage has
-> gone away since i386 has mostly disappeared from server rooms.
-> 
-> XFS has always been the thing that triggered stack usage problems
-> first - the first reports of problems on x86_64 with 8k stacks in low
-> memory situations have only just come in, and this is the first time
-> in a couple of years I've paid close attention to stack usage
-> outside XFS. What I'm seeing is not pretty....
-> 
-> > > This is the sort of thing I'm pointing at when I say that stack
-> > > usage outside XFS has grown significantly significantly over the
-> > > past couple of years. Given XFS has remained pretty much the same or
-> > > even reduced slightly over the same time period, blaming XFS or
-> > > saying "callers should use GFP_NOFS" seems like a cop-out to me.
-> > > Regardless of the IO pattern performance issues, writeback via
-> > > direct reclaim just uses too much stack to be safe these days...
-> > 
-> > Yeah, My answer is simple, All stack eater should be fixed.
-> > but XFS seems not innocence too. 3.5K is enough big although
-> > xfs have use such amount since very ago.
-> 
-> XFS used to use much more than that - significant effort has been
-> put into reduce the stack footprint over many years. There's not
-> much left to trim without rewriting half the filesystem...
-> 
-
-I don't think he is levelling a complain at XFS in particular - just pointing
-out that it's heavy too. Still, we should be gratful that XFS is sort of
-a "Stack Canary". If it dies, everyone else could be in trouble soon :)
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
