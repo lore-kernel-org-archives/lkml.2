@@ -1,157 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab0DNBHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 21:07:10 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54891 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab0DNBHI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 21:07:08 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Apr 2010 10:03:08 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][BUGFIX][PATCH] memcg: fix underflow of mapped_file stat
-Message-Id: <20100414100308.693c5650.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100414095408.d7b352f1.nishimura@mxp.nes.nec.co.jp>
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
-	<20100413151400.cb89beb7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100414095408.d7b352f1.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754323Ab0DNBNs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 21:13:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6404 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752711Ab0DNBNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 21:13:47 -0400
+From: Eric Paris <eparis@redhat.com>
+Subject: [REGRESSION PATCH] vsprintf: increase sizeof precision in printf_spec
+To: linux-kernel@vger.kernel.org
+Cc: joe@perches.com, fweisbec@gmail.com
+Date: Tue, 13 Apr 2010 21:13:36 -0400
+Message-ID: <20100414011336.16139.68030.stgit@paris.rdu.redhat.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Apr 2010 09:54:08 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+Patch ef0658f3de484bf9b173639cd47544584e01efa5 changed the precision field
+from and int to an s8.  Problem is that we have code which uses a much larger
+precision in the kernel.  An example would in the audit code where we have:
 
-> On Tue, 13 Apr 2010 15:14:00 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Tue, 13 Apr 2010 13:42:07 +0900
-> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> > 
-> > > Hi.
-> > > 
-> > > When I was testing page migration, I found underflow problem of "mapped_file" field
-> > > in memory.stat. This is a fix for the problem.
-> > > 
-> > > This patch is based on mmotm-2010-04-05-16-09, and IIUC it conflicts with Mel's
-> > > compaction patches, so I send it as RFC for now. After next mmotm, which will
-> > > include those patches, I'll update and resend this patch.
-> > > 
-> > > ===
-> > > From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> > > 
-> > > page_add_file_rmap(), which can be called from remove_migration_ptes(), is
-> > > assumed to increment memcg's stat of mapped file. But on success of page
-> > > migration, the newpage(mapped file) has not been charged yet, so the stat will
-> > > not be incremented. This behavior leads to underflow of memcg's stat because
-> > > when the newpage is unmapped afterwards, page_remove_rmap() decrements the stat.
-> > > This problem doesn't happen on failure path of page migration, because the old
-> > > page(mapped file) hasn't been uncharge at the point of remove_migration_ptes().
-> > > This patch fixes this problem by calling commit_charge(mem_cgroup_end_migration)
-> > > before remove_migration_ptes().
-> > > 
-> > > Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> > 
-> > Nice catch. but...I want to make all kind of complicated things under
-> > prepare/end migration. (And I want to avoid changes in migrate.c...)
-> > 
-> hmm, I want to call mem_cgroup_update_file_mapped() only where we update
-> NR_FILE_MAPPED, but, okey, I see your concern.
-> 
+vsnprintf(...,..., " msg='%.1024s'", (char *)data);
 
-Thank you. 
+which causes precision to be too large and end up truncating to nothing.
+Raising the size of the precision fixes the audit system issue.  It also does
+not affect the alignment of the struct according to pahole and is still
+approprietely packed.
 
+Signed-off-by: Eric Paris <eparis@redhat.com>
+---
 
-> > Considering some racy condistions, I wonder memcg_update_file_mapped() itself
-> > still need fixes..
-> > 
-> > So, how about this ? We already added FILE_MAPPED flags, then, make use of it.
-> > ==
-> > 
-> > 
-> > At migrating mapped file, events happens in following sequence.
-> > 
-> >  1. allocate a new page.
-> >  2. get memcg of an old page.
-> >  3. charge ageinst new page, before migration. But at this point
-> >     no changes to page_cgroup, no commit-charge.
-> >  4. page migration replaces radix-tree, old-page and new-page.
-> >  5. page migration remaps the new page if the old page was mapped.
-> >  6. memcg commits the charge for newpage.
-> > 
-> > Because "commit" happens after page-remap, we lose file_mapped
-> > accounting information at migration.
-> > 
-> > This patch fixes it by accounting file_mapped information at
-> > commiting charge.
-> > 
-> > Reported-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  mm/memcontrol.c |   15 +++++++++++++--
-> >  1 file changed, 13 insertions(+), 2 deletions(-)
-> > 
-> > Index: mmotm-temp/mm/memcontrol.c
-> > ===================================================================
-> > --- mmotm-temp.orig/mm/memcontrol.c
-> > +++ mmotm-temp/mm/memcontrol.c
-> > @@ -1435,11 +1435,13 @@ void mem_cgroup_update_file_mapped(struc
-> >  
-> >  	/*
-> >  	 * Preemption is already disabled. We can use __this_cpu_xxx
-> > +	 * We have no lock per page at inc/dec mapcount of pages. We have to do
-> > +	 * check by ourselves under lock_page_cgroup().
-> >  	 */
-> > -	if (val > 0) {
-> > +	if (val > 0 && !PageCgroupFileMapped(pc)) {
-> >  		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> >  		SetPageCgroupFileMapped(pc);
-> > -	} else {
-> > +	} else if (PageCgroupFileMapped(pc)) {
-> >  		__this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> >  		ClearPageCgroupFileMapped(pc);
-> >  	}
-> Adding likely() is better ? IIUC, these conditions are usually met except for
-> the case of page migration. And, can you add a comment about it ?
-> 
-Sure.
+ lib/vsprintf.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-> > @@ -2563,6 +2565,15 @@ void mem_cgroup_end_migration(struct mem
-> >  	 */
-> >  	if (ctype == MEM_CGROUP_CHARGE_TYPE_MAPPED)
-> >  		mem_cgroup_uncharge_page(target);
-> > +	else {
-> > +		/*
-> > +		 * When a migrated file cache is remapped, it's not charged.
-> > +		 * Verify it. Because we're under lock_page(), there are
-> > +		 * no race with uncharge.
-> > +		 */
-> > +		if (page_mapped(target))
-> > +			mem_cgroup_update_file_mapped(mem, target, 1);
-> > +	}
-> We cannot rely on page lock, because when we succeeded in page migration,
-> "target" = "newpage" has already unlocked in move_to_new_page(). So the "target"
-> can be removed from the radix-tree theoretically(it's not related to this
-> underflow problem, though).
-> Shouldn't we call lock_page(target) and check "if (!target->mapping)" to handle
-> this case(maybe in another patch) ?
-> 
-Sounds reasonable. I think about that.
-
-Thanks,
--Kame
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 24112e5..a957d3f 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -412,7 +412,7 @@ struct printf_spec {
+ 	s16	field_width;	/* width of output field */
+ 	u8	flags;		/* flags to number() */
+ 	u8	base;
+-	s8	precision;	/* # of digits/chars */
++	s16	precision;	/* # of digits/chars */
+ 	u8	qualifier;
+ };
+ 
 
