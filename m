@@ -1,143 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909Ab0DNHTH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 03:19:07 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63126 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab0DNHTD convert rfc822-to-8bit (ORCPT
+	id S1753076Ab0DNH2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 03:28:36 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:35326 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750851Ab0DNH2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 03:19:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DetDiWnaB8VIJcW/6erfm5gxGJg6eHALAHVTviGsamFe8t+Cz+NoBelot/y/S0GjkZ
-         nmeLsF+4jaAKSSpih/wp8UO3VljJHYuj15cKjqHknhkbHzmNq02ADbK8PXaElNAkKCS0
-         Y+aY8AH9WSX9o3MUVs6DTik10jaFA7FyffY9g=
-MIME-Version: 1.0
-In-Reply-To: <y2x28c262361004132313r1e2ca71frd042d5460d897730@mail.gmail.com>
-References: <20100414135945.2b0a1e0d.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100414054144.GH2493@dastard>
-	 <20100414145056.D147.A69D9226@jp.fujitsu.com>
-	 <y2x28c262361004132313r1e2ca71frd042d5460d897730@mail.gmail.com>
-Date: Wed, 14 Apr 2010 16:19:02 +0900
-Message-ID: <w2u28c262361004140019pd8fe696ez609ece4a35527658@mail.gmail.com>
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-From: Minchan Kim <minchan.kim@gmail.com>
+	Wed, 14 Apr 2010 03:28:34 -0400
+Date: Wed, 14 Apr 2010 17:28:30 +1000
+From: Dave Chinner <david@fromorbit.com>
 To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Dave Chinner <david@fromorbit.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+Cc: Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-ID: <20100414072830.GK2493@dastard>
+References: <20100413202021.GZ13327@think>
+ <20100414014041.GD2493@dastard>
+ <20100414155233.D153.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100414155233.D153.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 3:13 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> On Wed, Apr 14, 2010 at 2:54 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
->>> On Wed, Apr 14, 2010 at 01:59:45PM +0900, KAMEZAWA Hiroyuki wrote:
->>> > On Wed, 14 Apr 2010 11:40:41 +1000
->>> > Dave Chinner <david@fromorbit.com> wrote:
->>> >
->>> > >  50)     3168      64   xfs_vm_writepage+0xab/0x160 [xfs]
->>> > >  51)     3104     384   shrink_page_list+0x65e/0x840
->>> > >  52)     2720     528   shrink_zone+0x63f/0xe10
->>> >
->>> > A bit OFF TOPIC.
->>> >
->>> > Could you share disassemble of shrink_zone() ?
->>> >
->>> > In my environ.
->>> > 00000000000115a0 <shrink_zone>:
->>> >    115a0:       55                      push   %rbp
->>> >    115a1:       48 89 e5                mov    %rsp,%rbp
->>> >    115a4:       41 57                   push   %r15
->>> >    115a6:       41 56                   push   %r14
->>> >    115a8:       41 55                   push   %r13
->>> >    115aa:       41 54                   push   %r12
->>> >    115ac:       53                      push   %rbx
->>> >    115ad:       48 83 ec 78             sub    $0x78,%rsp
->>> >    115b1:       e8 00 00 00 00          callq  115b6 <shrink_zone+0x16>
->>> >    115b6:       48 89 75 80             mov    %rsi,-0x80(%rbp)
->>> >
->>> > disassemble seems to show 0x78 bytes for stack. And no changes to %rsp
->>> > until retrun.
->>>
->>> I see the same. I didn't compile those kernels, though. IIUC,
->>> they were built through the Ubuntu build infrastructure, so there is
->>> something different in terms of compiler, compiler options or config
->>> to what we are both using. Most likely it is the compiler inlining,
->>> though Chris's patches to prevent that didn't seem to change the
->>> stack usage.
->>>
->>> I'm trying to get a stack trace from the kernel that has shrink_zone
->>> in it, but I haven't succeeded yet....
->>
->> I also got 0x78 byte stack usage. Umm.. Do we discussed real issue now?
->>
->
-> In my case, 0x110 byte in 32 bit machine.
-> I think it's possible in 64 bit machine.
->
-> 00001830 <shrink_zone>:
->    1830:       55                      push   %ebp
->    1831:       89 e5                   mov    %esp,%ebp
->    1833:       57                      push   %edi
->    1834:       56                      push   %esi
->    1835:       53                      push   %ebx
->    1836:       81 ec 10 01 00 00       sub    $0x110,%esp
->    183c:       89 85 24 ff ff ff       mov    %eax,-0xdc(%ebp)
->    1842:       89 95 20 ff ff ff       mov    %edx,-0xe0(%ebp)
->    1848:       89 8d 1c ff ff ff       mov    %ecx,-0xe4(%ebp)
->    184e:       8b 41 04                mov    0x4(%ecx)
->
-> my gcc is following as.
->
-> barrios@barriostarget:~/mmotm$ gcc -v
-> Using built-in specs.
-> Target: i486-linux-gnu
-> Configured with: ../src/configure -v --with-pkgversion='Ubuntu
-> 4.3.3-5ubuntu4'
-> --with-bugurl=file:///usr/share/doc/gcc-4.3/README.Bugs
-> --enable-languages=c,c++,fortran,objc,obj-c++ --prefix=/usr
-> --enable-shared --with-system-zlib --libexecdir=/usr/lib
-> --without-included-gettext --enable-threads=posix --enable-nls
-> --with-gxx-include-dir=/usr/include/c++/4.3 --program-suffix=-4.3
-> --enable-clocale=gnu --enable-libstdcxx-debug --enable-objc-gc
-> --enable-mpfr --enable-targets=all --with-tune=generic
-> --enable-checking=release --build=i486-linux-gnu --host=i486-linux-gnu
-> --target=i486-linux-gnu
-> Thread model: posix
-> gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4)
->
->
-> Is it depends on config?
-> I attach my config.
+On Wed, Apr 14, 2010 at 03:52:44PM +0900, KOSAKI Motohiro wrote:
+> > On Tue, Apr 13, 2010 at 04:20:21PM -0400, Chris Mason wrote:
+> > > On Tue, Apr 13, 2010 at 08:34:29PM +0100, Mel Gorman wrote:
+> > > > > Basically, there is not enough stack space available to allow direct
+> > > > > reclaim to enter ->writepage _anywhere_ according to the stack usage
+> > > > > profiles we are seeing here....
+> > > > > 
+> > > > 
+> > > > I'm not denying the evidence but how has it been gotten away with for years
+> > > > then? Prevention of writeback isn't the answer without figuring out how
+> > > > direct reclaimers can queue pages for IO and in the case of lumpy reclaim
+> > > > doing sync IO, then waiting on those pages.
+> > > 
+> > > So, I've been reading along, nodding my head to Dave's side of things
+> > > because seeks are evil and direct reclaim makes seeks.  I'd really loev
+> > > for direct reclaim to somehow trigger writepages on large chunks instead
+> > > of doing page by page spatters of IO to the drive.
+> 
+> I agree that "seeks are evil and direct reclaim makes seeks". Actually,
+> making 4k io is not must for pageout. So, probably we can improve it.
+> 
+> 
+> > Perhaps drop the lock on the page if it is held and call one of the
+> > helpers that filesystems use to do this, like:
+> > 
+> > 	filemap_write_and_wait(page->mapping);
+> 
+> Sorry, I'm lost what you talk about. Why do we need per-file
+> waiting? If file is 1GB file, do we need to wait 1GB writeout?
 
-I changed shrink list by noinline_for_stack.
-The result is following as.
+So use filemap_fdatawrite(page->mapping), or if it's better only
+to start IO on a segment of the file, use
+filemap_fdatawrite_range(page->mapping, start, end)....
 
+> > > But, somewhere along the line I overlooked the part of Dave's stack trace
+> > > that said:
+> > > 
+> > > 43)     1568     912   do_select+0x3d6/0x700
+> > > 
+> > > Huh, 912 bytes...for select, really?  From poll.h:
+> > 
+> > Sure, it's bad, but we focussing on the specific case misses the
+> > point that even code that is using minimal stack can enter direct
+> > reclaim after consuming 1.5k of stack. e.g.:
+> 
+> checkstack.pl says do_select() and __generic_file_splice_read() are one
+> of worstest stack consumer. both sould be fixed.
 
-00001fe0 <shrink_zone>:
-    1fe0:       55                      push   %ebp
-    1fe1:       89 e5                   mov    %esp,%ebp
-    1fe3:       57                      push   %edi
-    1fe4:       56                      push   %esi
-    1fe5:       53                      push   %ebx
-    1fe6:       83 ec 4c                sub    $0x4c,%esp
-    1fe9:       89 45 c0                mov    %eax,-0x40(%ebp)
-    1fec:       89 55 bc                mov    %edx,-0x44(%ebp)
-    1fef:       89 4d b8                mov    %ecx,-0x48(%ebp)
+the deepest call chain in queue_work() needs 700 bytes of stack
+to complete, wait_for_completion() requires almost 2k of stack space
+at it's deepest, the scheduler has some heavy stack users, etc,
+and these are all functions that appear at the top of the stack.
 
-0x110 -> 0x4c.
+> also, checkstack.pl says such stack eater aren't so much.
 
-Should we have to add noinline_for_stack for shrink_list?
+Yeah, but when we have ia callchain 70 or more functions deep,
+even 100 bytes of stack is a lot....
 
+> > > So, select is intentionally trying to use that much stack.  It should be using
+> > > GFP_NOFS if it really wants to suck down that much stack...
+> > 
+> > The code that did the allocation is called from multiple different
+> > contexts - how is it supposed to know that in some of those contexts
+> > it is supposed to treat memory allocation differently?
+> > 
+> > This is my point - if you introduce a new semantic to memory allocation
+> > that is "use GFP_NOFS when you are using too much stack" and too much
+> > stack is more than 15% of the stack, then pretty much every code path
+> > will need to set that flag...
+> 
+> Nodding my head to Dave's side. changing caller argument seems not good
+> solution. I mean
+>  - do_select() should use GFP_KERNEL instead stack (as revert 70674f95c0)
+>  - reclaim and xfs (and other something else) need to diet.
 
+The list I'm seeing so far includes:
+	- scheduler
+	- completion interfaces
+	- radix tree
+	- memory allocation, memory reclaim
+	- anything that implements ->writepage
+	- select
+	- splice read
+
+> Also, I believe stack eater function should be created waring. patch attached.
+
+Good start, but 512 bytes will only catch select and splice read,
+and there are 300-400 byte functions in the above list that sit near
+the top of the stack....
+
+> > We need at least _700_ bytes of stack free just to call queue_work(),
+> > and that now happens deep in the guts of the driver subsystem below XFS.
+> > This trace shows 1.8k of stack usage on a simple, single sata disk
+> > storage subsystem, so my estimate of 2k of stack for the storage system
+> > below XFS is too small - a worst case of 2.5-3k of stack space is probably
+> > closer to the mark.
+> 
+> your explanation is very interesting. I have a (probably dumb) question.
+> Why nobody faced stack overflow issue in past? now I think every users
+> easily get stack overflow if your explanation is correct.
+
+It's always a problem, but the focus on minimising stack usage has
+gone away since i386 has mostly disappeared from server rooms.
+
+XFS has always been the thing that triggered stack usage problems
+first - the first reports of problems on x86_64 with 8k stacks in low
+memory situations have only just come in, and this is the first time
+in a couple of years I've paid close attention to stack usage
+outside XFS. What I'm seeing is not pretty....
+
+> > This is the sort of thing I'm pointing at when I say that stack
+> > usage outside XFS has grown significantly significantly over the
+> > past couple of years. Given XFS has remained pretty much the same or
+> > even reduced slightly over the same time period, blaming XFS or
+> > saying "callers should use GFP_NOFS" seems like a cop-out to me.
+> > Regardless of the IO pattern performance issues, writeback via
+> > direct reclaim just uses too much stack to be safe these days...
+> 
+> Yeah, My answer is simple, All stack eater should be fixed.
+> but XFS seems not innocence too. 3.5K is enough big although
+> xfs have use such amount since very ago.
+
+XFS used to use much more than that - significant effort has been
+put into reduce the stack footprint over many years. There's not
+much left to trim without rewriting half the filesystem...
+
+Cheers,
+
+Dave.
 -- 
-Kind regards,
-Minchan Kim
+Dave Chinner
+david@fromorbit.com
