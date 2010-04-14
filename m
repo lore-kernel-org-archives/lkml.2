@@ -1,73 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab0DNXi5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 19:38:57 -0400
-Received: from sous-sol.org ([216.99.217.87]:42117 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751597Ab0DNXiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 19:38:55 -0400
-Date: Wed, 14 Apr 2010 16:37:13 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Pedro Ribeiro <pedrib@gmail.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, David Woodhouse <dwmw2@infradead.org>,
-       Alan Stern <stern@rowland.harvard.edu>, Daniel Mack <daniel@caiaq.de>,
-       USB list <linux-usb@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>,
-       iommu@lists.linux-foundation.org
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-Message-ID: <20100414233713.GC25962@sequoia.sous-sol.org>
-References: <Pine.LNX.4.44L0.1004141300180.1716-100000@iolanthe.rowland.org>
- <1271270197.31006.2133.camel@macbook.infradead.org>
- <u2l74fd948d1004141412we3597f40q9ad5a29253c69164@mail.gmail.com>
- <20100414222550.GB25962@sequoia.sous-sol.org>
- <p2z74fd948d1004141556r9d2cc7a9sfe40a3d68661669@mail.gmail.com>
+	id S1755633Ab0DNXkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 19:40:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51100 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752160Ab0DNXkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 19:40:12 -0400
+Date: Wed, 14 Apr 2010 23:39:41 GMT
+From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
+       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+       fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+       linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1271281338-23491-1-git-send-regression-fweisbec@gmail.com>
+References: <1271281338-23491-1-git-send-regression-fweisbec@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Fix hlist related build error
+Message-ID: <tip-95476b64ab11d528de2557366ec584977c215b9e@git.kernel.org>
+Git-Commit-ID: 95476b64ab11d528de2557366ec584977c215b9e
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <p2z74fd948d1004141556r9d2cc7a9sfe40a3d68661669@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Apr 2010 23:39:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pedro Ribeiro (pedrib@gmail.com) wrote:
-> On 14 April 2010 23:25, Chris Wright <chrisw@sous-sol.org> wrote:
-> > * Pedro Ribeiro (pedrib@gmail.com) wrote:
-> >> Turns out CONFIG_DMAR was disabled because of PREEMPT_RT. I disabled
-> >> the later and enabled _DMAR. It took a long time to boot, something
-> >> wrong with the usb ports. You can see it in the appended dmesg from
-> >> time 11s to 100s.
-> >>
-> >> Then after it booted, I could barely move my USB mouse and lots of
-> >> errors appeared on dmesg. I tried to connect the DVB card but it
-> >> wouldn't even initialize.
-> >
-> > [  316.360045] DMAR:[DMA Write] Request device [00:02.0] fault addr 23c00000
-> > [  316.360046] DMAR:[fault reason 05] PTE Write access is not set
-> >
-> > That's your video device.  Do you have CONFIG_DMAR_BROKEN_GFX_WA=y?
-> 
-> Where do I find this option in make menuconfig? Doesn't seem to be available...
+Commit-ID:  95476b64ab11d528de2557366ec584977c215b9e
+Gitweb:     http://git.kernel.org/tip/95476b64ab11d528de2557366ec584977c215b9e
+Author:     Frederic Weisbecker <fweisbec@gmail.com>
+AuthorDate: Wed, 14 Apr 2010 23:42:18 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 15 Apr 2010 01:34:46 +0200
 
-It's hidden behind CONFIG_BROKEN.  The iommu=pt test puts all devices in
-a 1:1 mapping (the broken graphics workaround does that just for all
-graphics devices).
+perf: Fix hlist related build error
 
-> >> Enabling it with iommu=pt seemed to make no difference.
-> >
-> > It should (it should at least eliminate the video device problem).
-> 
-> You are right, it does eliminate that problem. However I can't get any
-> of the USB devices to work, and the mouse is terribly slow. One more
-> dmesg attached.
+hlist helpers need to be available for all software events, not
+only trace events.
 
-Thanks.  It works for me here.  I just booted 2.6.33-rt4 on my T400 w/
-iommu on, and an external USB mouse is working fine (I don't have the
-same number of devices plugged in as you do).  You are not seeing DMA
-faults which suggest that the IOMMU mappings are correct w.r.t. the DMA
-transactions that the controller is initiating.
+Pull them out outside the ifdef CONFIG_EVENT_TRACING section.
 
-thanks,
--chris
+Fixes:
+	kernel/perf_event.c:4573: error: implicit declaration of function 'swevent_hlist_put'
+	kernel/perf_event.c:4614: error: implicit declaration of function 'swevent_hlist_get'
+	kernel/perf_event.c:5534: error: implicit declaration of function 'swevent_hlist_release
+
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+LKML-Reference: <1271281338-23491-1-git-send-regression-fweisbec@gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |   60 +++++++++++++++++++++++++-------------------------
+ 1 files changed, 30 insertions(+), 30 deletions(-)
+
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 095101d..07b7a43 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4313,36 +4313,6 @@ static const struct pmu perf_ops_task_clock = {
+ 	.read		= task_clock_perf_event_read,
+ };
+ 
+-#ifdef CONFIG_EVENT_TRACING
+-
+-void perf_tp_event(int event_id, u64 addr, u64 count, void *record,
+-		   int entry_size, struct pt_regs *regs)
+-{
+-	struct perf_sample_data data;
+-	struct perf_raw_record raw = {
+-		.size = entry_size,
+-		.data = record,
+-	};
+-
+-	perf_sample_data_init(&data, addr);
+-	data.raw = &raw;
+-
+-	/* Trace events already protected against recursion */
+-	do_perf_sw_event(PERF_TYPE_TRACEPOINT, event_id, count, 1,
+-			 &data, regs);
+-}
+-EXPORT_SYMBOL_GPL(perf_tp_event);
+-
+-static int perf_tp_event_match(struct perf_event *event,
+-				struct perf_sample_data *data)
+-{
+-	void *record = data->raw->data;
+-
+-	if (likely(!event->filter) || filter_match_preds(event->filter, record))
+-		return 1;
+-	return 0;
+-}
+-
+ static void swevent_hlist_release_rcu(struct rcu_head *rcu_head)
+ {
+ 	struct swevent_hlist *hlist;
+@@ -4442,6 +4412,36 @@ static int swevent_hlist_get(struct perf_event *event)
+ 	return err;
+ }
+ 
++#ifdef CONFIG_EVENT_TRACING
++
++void perf_tp_event(int event_id, u64 addr, u64 count, void *record,
++		   int entry_size, struct pt_regs *regs)
++{
++	struct perf_sample_data data;
++	struct perf_raw_record raw = {
++		.size = entry_size,
++		.data = record,
++	};
++
++	perf_sample_data_init(&data, addr);
++	data.raw = &raw;
++
++	/* Trace events already protected against recursion */
++	do_perf_sw_event(PERF_TYPE_TRACEPOINT, event_id, count, 1,
++			 &data, regs);
++}
++EXPORT_SYMBOL_GPL(perf_tp_event);
++
++static int perf_tp_event_match(struct perf_event *event,
++				struct perf_sample_data *data)
++{
++	void *record = data->raw->data;
++
++	if (likely(!event->filter) || filter_match_preds(event->filter, record))
++		return 1;
++	return 0;
++}
++
+ static void tp_perf_event_destroy(struct perf_event *event)
+ {
+ 	perf_trace_disable(event->attr.config);
