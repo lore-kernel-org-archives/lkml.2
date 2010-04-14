@@ -1,550 +1,423 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab0DNUg4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 16:36:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:53793 "EHLO
+	id S1756707Ab0DNUhS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 16:37:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61022 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756537Ab0DNUgy (ORCPT
+	with ESMTP id S1755992Ab0DNUhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 16:36:54 -0400
+	Wed, 14 Apr 2010 16:37:15 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Arnd Bergmann <arnd@arndb.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jens Axboe <axboe@kernel.dk>,
-       Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
+Cc: Matthew Wilcox <willy@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+       Christoph Hellwig <hch@lst.de>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       "J. Bruce Fields" <bfields@fieldses.org>,
+       Miklos Szeredi <mszeredi@suse.cz>,
        Frederic Weisbecker <fweisbec@gmail.com>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       John Kacur <jkacur@redhat.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] [RFC] block: replace BKL with global mutex
-Date: Wed, 14 Apr 2010 22:36:23 +0200
-Message-Id: <1271277384-7627-1-git-send-email-arnd@arndb.de>
+       Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH 2/2] [RFC] Remove BKL from fs/locks.c
+Date: Wed, 14 Apr 2010 22:36:24 +0200
+Message-Id: <1271277384-7627-2-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.0.4
-X-Provags-ID: V01U2FsdGVkX1/HIsAoqVPYaiZ6FXAgKQZvP9eId6JNXuymGf3
- CgZhcwmDozIa/EuIl3jkTZzFDR+HnXa0Cd3E+sfF9DjjdLSCcV
- HYYpgTCvIzM9l8U+fHtOw==
+In-Reply-To: <1271277384-7627-1-git-send-email-arnd@arndb.de>
+References: <1271277384-7627-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/Z7TZwQKGBENyY4a1eXV1Q9cFIkaxMG6GTusP
+ KG39QsE0tX+MeOVF75OGIPLkPfTHP0MOWGB8vHYHY8VOHeB/6X
+ VrjXcogsNHQlwmwMYE5Xg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The block layer is one of the remaining users
-of the Big Kernel Lock. In there, it is used
-mainly for serializing the blkdev_get and
-blkdev_put functions and some ioctl implementations
-as well as some less common open functions of
-related character devices following a previous
-pushdown and parts of the blktrace code.
+From: Matthew Wilcox <willy@linux.intel.com>
 
-The only one that seems to be a bit nasty is the
-blkdev_get function which is actually recursive
-and may try to get the BKL twice.
+I've taken a patch originally written by Matthew Wilcox and
+ported it to the current version. It seems that there were
+originally concerns that this breaks NFS, but since Trond
+has recently removed the BKL from NFS, my naive assumption
+would be that it's all good now, despite not having tried to
+understand what it does.
 
-All users except the one in blkdev_get seem to
-be outermost locks, meaning we don't rely on
-the release-on-sleep semantics to avoid deadlocks.
+Original introduction from Willy:
 
-The ctl_mutex (pktcdvd.ko), raw_mutex (raw.ko),
-state_mutex (dasd.ko), reconfig_mutex (md.ko),
-and jfs_log_mutex (jfs.ko) may be held when
-blkdev_get is called, but as far as I can tell,
-these mutexes are never acquired from any of the
-functions that get converted in this patch.
+   I've been promising to do this for about seven years now.
 
-In order to get rid of the BKL, this introduces
-a new global mutex called blkdev_mutex, which
-replaces the BKL in all drivers that directly
-interact with the block layer. In case of blkdev_get,
-the mutex is moved outside of the function itself
-in order to avoid the recursive taking of blkdev_mutex.
+   It seems to work well enough, but I haven't run any serious stress
+   tests on it.  This implementation uses one spinlock to protect both lock
+   lists and all the i_flock chains.  It doesn't seem worth splitting up
+   the locking any further.
 
-Testing so far has shown no problems whatsoever
-from this patch, but the usage in blkdev_get
-may introduce extra latencies, and I may have
-missed corner cases where an block device ioctl
-function sleeps for a significant amount of time,
-which may be harmful to the performance of other
-threads.
+   I had to move one memory allocation out from under the file_lock_lock.
+   I hope I got that logic right.  I'm rather tempted to split out the
+   find_conflict algorithm from that function into something that can be
+   called separately for the FL_ACCESS case.
+
+   I also have to drop and reacquire the file_lock_lock around the call
+   to cond_resched().  This was done automatically for us before by the
+   special BKL semantics.
+
+   I had to change vfs_setlease() as it relied on the special BKL ability
+   to recursively acquire the same lock.  The internal caller now calls
+   __vfs_setlease and the exported interface acquires and releases the
+   file_lock_lock around calling __vfs_setlease.
+
+   I should probably split out the removal of interruptible_sleep_on_locked()
+   as it's basically unrelated to all this.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
+Cc: Matthew Wilcox <willy@linux.intel.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Miklos Szeredi <mszeredi@suse.cz>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: John Kacur <jkacur@redhat.com>
-Cc: linux-scsi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
 ---
- block/bsg.c               |    2 --
- block/compat_ioctl.c      |    8 ++++----
- block/ioctl.c             |   24 ++++++++++++------------
- drivers/block/DAC960.c    |    4 ++--
- drivers/block/cciss.c     |    4 ++--
- drivers/block/paride/pg.c |    4 ++--
- drivers/block/paride/pt.c |   16 ++++++++--------
- drivers/scsi/sg.c         |   22 ++++++++++++++++------
- fs/block_dev.c            |   20 +++++++++++++-------
- include/linux/blkdev.h    |    6 ++++++
- kernel/trace/blktrace.c   |   14 ++++++++------
- 11 files changed, 73 insertions(+), 51 deletions(-)
+ fs/locks.c |  110 ++++++++++++++++++++++++++++++++++++------------------------
+ 1 files changed, 66 insertions(+), 44 deletions(-)
 
-diff --git a/block/bsg.c b/block/bsg.c
-index 82d5882..7c50a26 100644
---- a/block/bsg.c
-+++ b/block/bsg.c
-@@ -843,9 +843,7 @@ static int bsg_open(struct inode *inode, struct file *file)
- {
- 	struct bsg_device *bd;
+diff --git a/fs/locks.c b/fs/locks.c
+index ab24d49..87f1c60 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -140,9 +140,23 @@ int lease_break_time = 45;
+ #define for_each_lock(inode, lockp) \
+ 	for (lockp = &inode->i_flock; *lockp != NULL; lockp = &(*lockp)->fl_next)
  
--	lock_kernel();
- 	bd = bsg_get_device(inode, file);
--	unlock_kernel();
++/*
++ * Protects the two list heads below, plus the inode->i_flock list
++ */
++static DEFINE_SPINLOCK(file_lock_lock);
+ static LIST_HEAD(file_lock_list);
+ static LIST_HEAD(blocked_list);
  
- 	if (IS_ERR(bd))
- 		return PTR_ERR(bd);
-diff --git a/block/compat_ioctl.c b/block/compat_ioctl.c
-index f26051f..11cfd3c 100644
---- a/block/compat_ioctl.c
-+++ b/block/compat_ioctl.c
-@@ -802,16 +802,16 @@ long compat_blkdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
- 		return compat_put_u64(arg, bdev->bd_inode->i_size);
- 
- 	case BLKTRACESETUP32:
--		lock_kernel();
-+		mutex_lock(&blkdev_mutex);
- 		ret = compat_blk_trace_setup(bdev, compat_ptr(arg));
--		unlock_kernel();
-+		mutex_unlock(&blkdev_mutex);
- 		return ret;
- 	case BLKTRACESTART: /* compatible */
- 	case BLKTRACESTOP:  /* compatible */
- 	case BLKTRACETEARDOWN: /* compatible */
--		lock_kernel();
-+		mutex_lock(&blkdev_mutex);
- 		ret = blk_trace_ioctl(bdev, cmd, compat_ptr(arg));
--		unlock_kernel();
-+		mutex_unlock(&blkdev_mutex);
- 		return ret;
- 	default:
- 		if (disk->fops->compat_ioctl)
-diff --git a/block/ioctl.c b/block/ioctl.c
-index 8905d2a..272cdce 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -169,9 +169,9 @@ int __blkdev_driver_ioctl(struct block_device *bdev, fmode_t mode,
- 		return disk->fops->ioctl(bdev, mode, cmd, arg);
- 
- 	if (disk->fops->locked_ioctl) {
--		lock_kernel();
-+		mutex_lock(&blkdev_mutex);
- 		ret = disk->fops->locked_ioctl(bdev, mode, cmd, arg);
--		unlock_kernel();
-+		mutex_unlock(&blkdev_mutex);
- 		return ret;
- 	}
- 
-@@ -206,10 +206,10 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 		if (ret != -EINVAL && ret != -ENOTTY)
- 			return ret;
- 
--		lock_kernel();
-+		mutex_lock(&blkdev_mutex);
- 		fsync_bdev(bdev);
- 		invalidate_bdev(bdev);
--		unlock_kernel();
-+		mutex_unlock(&blkdev_mutex);
- 		return 0;
- 
- 	case BLKROSET:
-@@ -221,9 +221,9 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 			return -EACCES;
- 		if (get_user(n, (int __user *)(arg)))
- 			return -EFAULT;
--		lock_kernel();
-+		mutex_lock(&blkdev_mutex);
- 		set_device_ro(bdev, n);
--		unlock_kernel();
-+		mutex_unlock(&blkdev_mutex);
- 		return 0;
- 
- 	case BLKDISCARD: {
-@@ -309,14 +309,14 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 			bd_release(bdev);
- 		return ret;
- 	case BLKPG:
--		lock_kernel();
-+		mutex_lock(&blkdev_mutex);
- 		ret = blkpg_ioctl(bdev, (struct blkpg_ioctl_arg __user *) arg);
--		unlock_kernel();
-+		mutex_unlock(&blkdev_mutex);
- 		break;
- 	case BLKRRPART:
--		lock_kernel();
-+		mutex_lock(&blkdev_mutex);
- 		ret = blkdev_reread_part(bdev);
--		unlock_kernel();
-+		mutex_unlock(&blkdev_mutex);
- 		break;
- 	case BLKGETSIZE:
- 		size = bdev->bd_inode->i_size;
-@@ -329,9 +329,9 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 	case BLKTRACESTOP:
- 	case BLKTRACESETUP:
- 	case BLKTRACETEARDOWN:
--		lock_kernel();
-+		mutex_lock(&blkdev_mutex);
- 		ret = blk_trace_ioctl(bdev, cmd, (char __user *) arg);
--		unlock_kernel();
-+		mutex_unlock(&blkdev_mutex);
- 		break;
- 	default:
- 		ret = __blkdev_driver_ioctl(bdev, mode, cmd, arg);
-diff --git a/drivers/block/DAC960.c b/drivers/block/DAC960.c
-index c5f22bb..8faaa12 100644
---- a/drivers/block/DAC960.c
-+++ b/drivers/block/DAC960.c
-@@ -6620,7 +6620,7 @@ static long DAC960_gam_ioctl(struct file *file, unsigned int Request,
-   long ErrorCode = 0;
-   if (!capable(CAP_SYS_ADMIN)) return -EACCES;
- 
--  lock_kernel();
-+  mutex_lock(&blkdev_mutex);
-   switch (Request)
-     {
-     case DAC960_IOCTL_GET_CONTROLLER_COUNT:
-@@ -7051,7 +7051,7 @@ static long DAC960_gam_ioctl(struct file *file, unsigned int Request,
-       default:
- 	ErrorCode = -ENOTTY;
-     }
--  unlock_kernel();
-+  mutex_unlock(&blkdev_mutex);
-   return ErrorCode;
- }
- 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index eb5ff05..0e21a9d 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -1027,9 +1027,9 @@ static int do_ioctl(struct block_device *bdev, fmode_t mode,
- 		    unsigned cmd, unsigned long arg)
- {
- 	int ret;
--	lock_kernel();
-+	mutex_lock(&blkdev_mutex);
- 	ret = cciss_ioctl(bdev, mode, cmd, arg);
--	unlock_kernel();
-+	mutex_unlock(&blkdev_mutex);
- 	return ret;
- }
- 
-diff --git a/drivers/block/paride/pg.c b/drivers/block/paride/pg.c
-index c397b3d..81660d0 100644
---- a/drivers/block/paride/pg.c
-+++ b/drivers/block/paride/pg.c
-@@ -518,7 +518,7 @@ static int pg_open(struct inode *inode, struct file *file)
- 	struct pg *dev = &devices[unit];
- 	int ret = 0;
- 
--	lock_kernel();
-+	mutex_lock(&blkdev_mutex);
- 	if ((unit >= PG_UNITS) || (!dev->present)) {
- 		ret = -ENODEV;
- 		goto out;
-@@ -547,7 +547,7 @@ static int pg_open(struct inode *inode, struct file *file)
- 	file->private_data = dev;
- 
- out:
--	unlock_kernel();
-+	mutex_unlock(&blkdev_mutex);
- 	return ret;
- }
- 
-diff --git a/drivers/block/paride/pt.c b/drivers/block/paride/pt.c
-index bc5825f..05e272e 100644
---- a/drivers/block/paride/pt.c
-+++ b/drivers/block/paride/pt.c
-@@ -650,9 +650,9 @@ static int pt_open(struct inode *inode, struct file *file)
- 	struct pt_unit *tape = pt + unit;
- 	int err;
- 
--	lock_kernel();
-+	mutex_lock(&blkdev_mutex);
- 	if (unit >= PT_UNITS || (!tape->present)) {
--		unlock_kernel();
-+		mutex_unlock(&blkdev_mutex);
- 		return -ENODEV;
- 	}
- 
-@@ -681,12 +681,12 @@ static int pt_open(struct inode *inode, struct file *file)
- 	}
- 
- 	file->private_data = tape;
--	unlock_kernel();
-+	mutex_unlock(&blkdev_mutex);
- 	return 0;
- 
- out:
- 	atomic_inc(&tape->available);
--	unlock_kernel();
-+	mutex_unlock(&blkdev_mutex);
- 	return err;
- }
- 
-@@ -704,15 +704,15 @@ static long pt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 		switch (mtop.mt_op) {
- 
- 		case MTREW:
--			lock_kernel();
-+			mutex_lock(&blkdev_mutex);
- 			pt_rewind(tape);
--			unlock_kernel();
-+			mutex_unlock(&blkdev_mutex);
- 			return 0;
- 
- 		case MTWEOF:
--			lock_kernel();
-+			mutex_lock(&blkdev_mutex);
- 			pt_write_fm(tape);
--			unlock_kernel();
-+			mutex_unlock(&blkdev_mutex);
- 			return 0;
- 
- 		default:
-diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-index dee1c96..ec5b43e 100644
---- a/drivers/scsi/sg.c
-+++ b/drivers/scsi/sg.c
-@@ -229,7 +229,7 @@ sg_open(struct inode *inode, struct file *filp)
- 	int res;
- 	int retval;
- 
--	lock_kernel();
-+	mutex_lock(&blkdev_mutex);
- 	nonseekable_open(inode, filp);
- 	SCSI_LOG_TIMEOUT(3, printk("sg_open: dev=%d, flags=0x%x\n", dev, flags));
- 	sdp = sg_get_dev(dev);
-@@ -307,7 +307,7 @@ error_out:
- sg_put:
- 	if (sdp)
- 		sg_put_dev(sdp);
--	unlock_kernel();
-+	mutex_unlock(&blkdev_mutex);
- 	return retval;
- }
- 
-@@ -757,9 +757,7 @@ sg_common_write(Sg_fd * sfp, Sg_request * srp,
- 	return 0;
- }
- 
--static int
--sg_ioctl(struct inode *inode, struct file *filp,
--	 unsigned int cmd_in, unsigned long arg)
-+static long sg_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
- {
- 	void __user *p = (void __user *)arg;
- 	int __user *ip = p;
-@@ -1078,6 +1076,17 @@ sg_ioctl(struct inode *inode, struct file *filp,
- 	}
- }
- 
-+static long sg_unlocked_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
++static inline void lock_flocks(void)
 +{
-+	int ret;
-+
-+	mutex_lock(&blkdev_mutex);
-+	ret = sg_ioctl(filp, cmd_in, arg);
-+	mutex_unlock(&blkdev_mutex);
-+
-+	return ret;
++	spin_lock(&file_lock_lock);
 +}
 +
- #ifdef CONFIG_COMPAT
- static long sg_compat_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
- {
-@@ -1322,7 +1331,8 @@ static const struct file_operations sg_fops = {
- 	.read = sg_read,
- 	.write = sg_write,
- 	.poll = sg_poll,
--	.ioctl = sg_ioctl,
-+	.llseek = generic_file_llseek,
-+	.unlocked_ioctl = sg_unlocked_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl = sg_compat_ioctl,
- #endif
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 2a6d019..f43d24f 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -29,6 +29,9 @@
- #include <asm/uaccess.h>
- #include "internal.h"
- 
-+DEFINE_MUTEX(blkdev_mutex);
-+EXPORT_SYMBOL_GPL(blkdev_mutex);
++static inline void unlock_flocks(void)
++{
++	spin_unlock(&file_lock_lock);
++}
 +
- struct bdev_inode {
- 	struct block_device bdev;
- 	struct inode vfs_inode;
-@@ -1191,7 +1194,6 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 		return ret;
+ static struct kmem_cache *filelock_cache __read_mostly;
+ 
+ /* Allocate an empty lock structure. */
+@@ -511,9 +525,9 @@ static void __locks_delete_block(struct file_lock *waiter)
+  */
+ static void locks_delete_block(struct file_lock *waiter)
+ {
+-	lock_kernel();
++	lock_flocks();
+ 	__locks_delete_block(waiter);
+-	unlock_kernel();
++	unlock_flocks();
+ }
+ 
+ /* Insert waiter into blocker's block list.
+@@ -644,7 +658,7 @@ posix_test_lock(struct file *filp, struct file_lock *fl)
+ {
+ 	struct file_lock *cfl;
+ 
+-	lock_kernel();
++	lock_flocks();
+ 	for (cfl = filp->f_path.dentry->d_inode->i_flock; cfl; cfl = cfl->fl_next) {
+ 		if (!IS_POSIX(cfl))
+ 			continue;
+@@ -657,7 +671,7 @@ posix_test_lock(struct file *filp, struct file_lock *fl)
+ 			fl->fl_pid = pid_vnr(cfl->fl_nspid);
+ 	} else
+ 		fl->fl_type = F_UNLCK;
+-	unlock_kernel();
++	unlock_flocks();
+ 	return;
+ }
+ EXPORT_SYMBOL(posix_test_lock);
+@@ -730,18 +744,16 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
+ 	int error = 0;
+ 	int found = 0;
+ 
+-	lock_kernel();
+-	if (request->fl_flags & FL_ACCESS)
+-		goto find_conflict;
+-
+-	if (request->fl_type != F_UNLCK) {
+-		error = -ENOMEM;
++	if (!(request->fl_flags & FL_ACCESS) && (request->fl_type != F_UNLCK)) {
+ 		new_fl = locks_alloc_lock();
+-		if (new_fl == NULL)
+-			goto out;
+-		error = 0;
++		if (!new_fl)
++			return -ENOMEM;
  	}
  
--	lock_kernel();
-  restart:
- 
- 	ret = -ENXIO;
-@@ -1277,7 +1279,6 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 	if (for_part)
- 		bdev->bd_part_count++;
- 	mutex_unlock(&bdev->bd_mutex);
--	unlock_kernel();
- 	return 0;
- 
-  out_clear:
-@@ -1291,7 +1292,6 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
-  out_unlock_bdev:
- 	mutex_unlock(&bdev->bd_mutex);
-  out_unlock_kernel:
--	unlock_kernel();
- 
- 	if (disk)
- 		module_put(disk->fops->owner);
-@@ -1303,7 +1303,11 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 
- int blkdev_get(struct block_device *bdev, fmode_t mode)
- {
--	return __blkdev_get(bdev, mode, 0);
-+	int ret;
-+	mutex_lock(&blkdev_mutex);
-+	ret = __blkdev_get(bdev, mode, 0);
-+	mutex_unlock(&blkdev_mutex);
-+	return ret;
- }
- EXPORT_SYMBOL(blkdev_get);
- 
-@@ -1357,7 +1361,6 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
- 	struct block_device *victim = NULL;
- 
- 	mutex_lock_nested(&bdev->bd_mutex, for_part);
--	lock_kernel();
- 	if (for_part)
- 		bdev->bd_part_count--;
- 
-@@ -1382,7 +1385,6 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
- 			victim = bdev->bd_contains;
- 		bdev->bd_contains = NULL;
- 	}
--	unlock_kernel();
- 	mutex_unlock(&bdev->bd_mutex);
- 	bdput(bdev);
- 	if (victim)
-@@ -1392,7 +1394,11 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
- 
- int blkdev_put(struct block_device *bdev, fmode_t mode)
- {
--	return __blkdev_put(bdev, mode, 0);
-+	int ret;
-+	mutex_lock(&blkdev_mutex);
-+	ret = __blkdev_put(bdev, mode, 0);
-+	mutex_unlock(&blkdev_mutex);
-+	return ret;
- }
- EXPORT_SYMBOL(blkdev_put);
- 
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 6690e8b..7810a2d 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1292,6 +1292,12 @@ struct block_device_operations {
- 
- extern int __blkdev_driver_ioctl(struct block_device *, fmode_t, unsigned int,
- 				 unsigned long);
++	lock_flocks();
++	if (request->fl_flags & FL_ACCESS)
++		goto find_conflict;
 +
-+/*
-+ * replaces the big kernel lock in the block subsystem
-+ */
-+extern struct mutex blkdev_mutex;
-+
- #else /* CONFIG_BLOCK */
- /*
-  * stubs for when the block layer is configured out
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index b3bc91a..5012fe1 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -305,7 +305,7 @@ static int blk_dropped_open(struct inode *inode, struct file *filp)
- {
- 	filp->private_data = inode->i_private;
+ 	for_each_lock(inode, before) {
+ 		struct file_lock *fl = *before;
+ 		if (IS_POSIX(fl))
+@@ -767,8 +779,11 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
+ 	 * If a higher-priority process was blocked on the old file lock,
+ 	 * give it the opportunity to lock the file.
+ 	 */
+-	if (found)
++	if (found) {
++		unlock_flocks();
+ 		cond_resched();
++		lock_flocks();
++	}
  
--	return 0;
-+	return nonseekable_open(inode, filp);
- }
+ find_conflict:
+ 	for_each_lock(inode, before) {
+@@ -794,7 +809,7 @@ find_conflict:
+ 	error = 0;
  
- static ssize_t blk_dropped_read(struct file *filp, char __user *buffer,
-@@ -323,13 +323,14 @@ static const struct file_operations blk_dropped_fops = {
- 	.owner =	THIS_MODULE,
- 	.open =		blk_dropped_open,
- 	.read =		blk_dropped_read,
-+	.llseek =	no_llseek,
- };
- 
- static int blk_msg_open(struct inode *inode, struct file *filp)
- {
- 	filp->private_data = inode->i_private;
- 
--	return 0;
-+	return nonseekable_open(inode, filp);
- }
- 
- static ssize_t blk_msg_write(struct file *filp, const char __user *buffer,
-@@ -362,6 +363,7 @@ static const struct file_operations blk_msg_fops = {
- 	.owner =	THIS_MODULE,
- 	.open =		blk_msg_open,
- 	.write =	blk_msg_write,
-+	.llseek =	no_llseek,
- };
- 
- /*
-@@ -1581,7 +1583,7 @@ static ssize_t sysfs_blk_trace_attr_show(struct device *dev,
- 	struct block_device *bdev;
- 	ssize_t ret = -ENXIO;
- 
--	lock_kernel();
-+	mutex_lock(&blkdev_mutex);
- 	bdev = bdget(part_devt(p));
- 	if (bdev == NULL)
- 		goto out_unlock_kernel;
-@@ -1613,7 +1615,7 @@ out_unlock_bdev:
- out_bdput:
- 	bdput(bdev);
- out_unlock_kernel:
--	unlock_kernel();
-+	mutex_unlock(&blkdev_mutex);
- 	return ret;
- }
- 
-@@ -1643,7 +1645,7 @@ static ssize_t sysfs_blk_trace_attr_store(struct device *dev,
- 
- 	ret = -ENXIO;
- 
--	lock_kernel();
-+	mutex_unlock(&blkdev_mutex);
- 	p = dev_to_part(dev);
- 	bdev = bdget(part_devt(p));
- 	if (bdev == NULL)
-@@ -1683,7 +1685,7 @@ out_unlock_bdev:
- out_bdput:
- 	bdput(bdev);
- out_unlock_kernel:
--	unlock_kernel();
-+	mutex_unlock(&blkdev_mutex);
  out:
- 	return ret ? ret : count;
+-	unlock_kernel();
++	unlock_flocks();
+ 	if (new_fl)
+ 		locks_free_lock(new_fl);
+ 	return error;
+@@ -823,7 +838,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 		new_fl2 = locks_alloc_lock();
+ 	}
+ 
+-	lock_kernel();
++	lock_flocks();
+ 	if (request->fl_type != F_UNLCK) {
+ 		for_each_lock(inode, before) {
+ 			fl = *before;
+@@ -991,7 +1006,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 		locks_wake_up_blocks(left);
+ 	}
+  out:
+-	unlock_kernel();
++	unlock_flocks();
+ 	/*
+ 	 * Free any unused locks.
+ 	 */
+@@ -1066,14 +1081,14 @@ int locks_mandatory_locked(struct inode *inode)
+ 	/*
+ 	 * Search the lock list for this inode for any POSIX locks.
+ 	 */
+-	lock_kernel();
++	lock_flocks();
+ 	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+ 		if (!IS_POSIX(fl))
+ 			continue;
+ 		if (fl->fl_owner != owner)
+ 			break;
+ 	}
+-	unlock_kernel();
++	unlock_flocks();
+ 	return fl ? -EAGAIN : 0;
  }
+ 
+@@ -1186,7 +1201,7 @@ int __break_lease(struct inode *inode, unsigned int mode)
+ 
+ 	new_fl = lease_alloc(NULL, want_write ? F_WRLCK : F_RDLCK);
+ 
+-	lock_kernel();
++	lock_flocks();
+ 
+ 	time_out_leases(inode);
+ 
+@@ -1247,8 +1262,10 @@ restart:
+ 			break_time++;
+ 	}
+ 	locks_insert_block(flock, new_fl);
++	unlock_flocks();
+ 	error = wait_event_interruptible_timeout(new_fl->fl_wait,
+ 						!new_fl->fl_next, break_time);
++	lock_flocks();
+ 	__locks_delete_block(new_fl);
+ 	if (error >= 0) {
+ 		if (error == 0)
+@@ -1263,7 +1280,7 @@ restart:
+ 	}
+ 
+ out:
+-	unlock_kernel();
++	unlock_flocks();
+ 	if (!IS_ERR(new_fl))
+ 		locks_free_lock(new_fl);
+ 	return error;
+@@ -1319,7 +1336,7 @@ int fcntl_getlease(struct file *filp)
+ 	struct file_lock *fl;
+ 	int type = F_UNLCK;
+ 
+-	lock_kernel();
++	lock_flocks();
+ 	time_out_leases(filp->f_path.dentry->d_inode);
+ 	for (fl = filp->f_path.dentry->d_inode->i_flock; fl && IS_LEASE(fl);
+ 			fl = fl->fl_next) {
+@@ -1328,7 +1345,7 @@ int fcntl_getlease(struct file *filp)
+ 			break;
+ 		}
+ 	}
+-	unlock_kernel();
++	unlock_flocks();
+ 	return type;
+ }
+ 
+@@ -1341,7 +1358,7 @@ int fcntl_getlease(struct file *filp)
+  *	The (input) flp->fl_lmops->fl_break function is required
+  *	by break_lease().
+  *
+- *	Called with kernel lock held.
++ *	Called with file_lock_lock held.
+  */
+ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
+ {
+@@ -1436,7 +1453,15 @@ out:
+ }
+ EXPORT_SYMBOL(generic_setlease);
+ 
+- /**
++static int __vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
++{
++	if (filp->f_op && filp->f_op->setlease)
++		return filp->f_op->setlease(filp, arg, lease);
++	else
++		return generic_setlease(filp, arg, lease);
++}
++
++/**
+  *	vfs_setlease        -       sets a lease on an open file
+  *	@filp: file pointer
+  *	@arg: type of lease to obtain
+@@ -1467,12 +1492,9 @@ int vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
+ {
+ 	int error;
+ 
+-	lock_kernel();
+-	if (filp->f_op && filp->f_op->setlease)
+-		error = filp->f_op->setlease(filp, arg, lease);
+-	else
+-		error = generic_setlease(filp, arg, lease);
+-	unlock_kernel();
++	lock_flocks();
++	error = __vfs_setlease(filp, arg, lease);
++	unlock_flocks();
+ 
+ 	return error;
+ }
+@@ -1499,9 +1521,9 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
+ 	if (error)
+ 		return error;
+ 
+-	lock_kernel();
++	lock_flocks();
+ 
+-	error = vfs_setlease(filp, arg, &flp);
++	error = __vfs_setlease(filp, arg, &flp);
+ 	if (error || arg == F_UNLCK)
+ 		goto out_unlock;
+ 
+@@ -1516,7 +1538,7 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
+ 
+ 	error = __f_setown(filp, task_pid(current), PIDTYPE_PID, 0);
+ out_unlock:
+-	unlock_kernel();
++	unlock_flocks();
+ 	return error;
+ }
+ 
+@@ -2020,7 +2042,7 @@ void locks_remove_flock(struct file *filp)
+ 			fl.fl_ops->fl_release_private(&fl);
+ 	}
+ 
+-	lock_kernel();
++	lock_flocks();
+ 	before = &inode->i_flock;
+ 
+ 	while ((fl = *before) != NULL) {
+@@ -2038,7 +2060,7 @@ void locks_remove_flock(struct file *filp)
+  		}
+ 		before = &fl->fl_next;
+ 	}
+-	unlock_kernel();
++	unlock_flocks();
+ }
+ 
+ /**
+@@ -2053,12 +2075,12 @@ posix_unblock_lock(struct file *filp, struct file_lock *waiter)
+ {
+ 	int status = 0;
+ 
+-	lock_kernel();
++	lock_flocks();
+ 	if (waiter->fl_next)
+ 		__locks_delete_block(waiter);
+ 	else
+ 		status = -ENOENT;
+-	unlock_kernel();
++	unlock_flocks();
+ 	return status;
+ }
+ 
+@@ -2172,7 +2194,7 @@ static int locks_show(struct seq_file *f, void *v)
+ 
+ static void *locks_start(struct seq_file *f, loff_t *pos)
+ {
+-	lock_kernel();
++	lock_flocks();
+ 	f->private = (void *)1;
+ 	return seq_list_start(&file_lock_list, *pos);
+ }
+@@ -2184,7 +2206,7 @@ static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
+ 
+ static void locks_stop(struct seq_file *f, void *v)
+ {
+-	unlock_kernel();
++	unlock_flocks();
+ }
+ 
+ static const struct seq_operations locks_seq_operations = {
+@@ -2231,7 +2253,7 @@ int lock_may_read(struct inode *inode, loff_t start, unsigned long len)
+ {
+ 	struct file_lock *fl;
+ 	int result = 1;
+-	lock_kernel();
++	lock_flocks();
+ 	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+ 		if (IS_POSIX(fl)) {
+ 			if (fl->fl_type == F_RDLCK)
+@@ -2248,7 +2270,7 @@ int lock_may_read(struct inode *inode, loff_t start, unsigned long len)
+ 		result = 0;
+ 		break;
+ 	}
+-	unlock_kernel();
++	unlock_flocks();
+ 	return result;
+ }
+ 
+@@ -2271,7 +2293,7 @@ int lock_may_write(struct inode *inode, loff_t start, unsigned long len)
+ {
+ 	struct file_lock *fl;
+ 	int result = 1;
+-	lock_kernel();
++	lock_flocks();
+ 	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+ 		if (IS_POSIX(fl)) {
+ 			if ((fl->fl_end < start) || (fl->fl_start > (start + len)))
+@@ -2286,7 +2308,7 @@ int lock_may_write(struct inode *inode, loff_t start, unsigned long len)
+ 		result = 0;
+ 		break;
+ 	}
+-	unlock_kernel();
++	unlock_flocks();
+ 	return result;
+ }
+ 
 -- 
 1.7.0.4
 
