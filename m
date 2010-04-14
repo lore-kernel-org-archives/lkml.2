@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab0DMLnj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 07:43:39 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45840
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751797Ab0DMLnh (ORCPT
+	id S1751468Ab0DMLtn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 07:49:43 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:62388 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab0DMLtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 07:43:37 -0400
-Date: Tue, 13 Apr 2010 04:43:41 -0700 (PDT)
-Message-Id: <20100413.044341.94138285.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Apr 2010 07:49:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IRZIcTUQaO0u4+swIHCan5T9De2rKFMKFEpWoKKPzcFDnKv+qs/neGFKaMFWSPtVwv
+         k/QEa6h5LwpYLInWvg+WDKqiDkTX9A/BqrikLYahkL5WQedDjVsD4/OsYKyVn1LxiaoO
+         7Vg1VxlVFqvHrloY/XEcLIV0uDRLQk0Yapav0=
+Date: Wed, 14 Apr 2010 15:50:07 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Patrick McHardy <kaber@trash.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       shemminger@vyatta.com, bhutchings@solarflare.com, andreas@fatal.se,
+       hadi@cyberus.ca, hideaki@yoshifuji.org
+Subject: Re: [PATCH v2] xtables: make XT_ALIGN() usable in exported headers
+ by exporting __ALIGN_KERNEL()
+Message-ID: <20100414125007.GB25686@x200>
+References: <20100407162245.GA4557@x200>
+ <4BC437C6.8020602@trash.net>
+ <4BC44117.80901@trash.net>
+ <20100414120712.GA25686@x200>
+ <4BC450A4.1010200@trash.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BC450A4.1010200@trash.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 13, 2010 at 01:08:20PM +0200, Patrick McHardy wrote:
+> Alexey Dobriyan wrote:
+> > XT_ALIGN() was rewritten through ALIGN() by commit 42107f5009da223daa800d6da6904d77297ae829
+> > "netfilter: xtables: symmetric COMPAT_XT_ALIGN definition".
+> > ALIGN() is not exported in userspace headers, which created compile problem for tc(8)
+> > and will create problem for iptables(8).
+> > 
+> > We can't export generic looking name ALIGN() but we can export less generic
+> > __ALIGN_KERNEL() (suggested by Ben Hutchings).
+> > Google knows nothing about __ALIGN_KERNEL().
+> > 
+> > COMPAT_XT_ALIGN() changed for symmetry.
+> 
+> I've already pushed your change out, could you send me an incremental
+> fix please?
+> 
+> master.kernel.org:/pub/scm/linux/kernel/git/kaber/nf-next-2.6.git
 
-I've spent the last week or so getting ftrace et al. working
-again on sparc64.  The NMI scheme I use there was causing all
-sorts of issues, but luckily the final fix was very simple.
+[PATCH] Restore __ALIGN_MASK()
 
-While I was here debugging this stuff I added function graph
-tracer support, as well as support for kmemleak.  Kmemleak
-even found a bug :-)
+Fix lib/bitmap.c compile failure due to __ALIGN_KERNEL changes.
 
-All combinations of features seems to work (perf top with tracers,
-lockdep, and kmemleak all enabled for example) and wow is this stuff
-super-useful :-)
-
-I merged in your tree to resolve a conflict in lib/Kconfig.debug
-since Microblaze added kmemleak support recently too.
-
-Please pull, thanks a lot!
-
-The following changes since commit 0d0fb0f9c5fddef4a10242fe3337f00f528a3099:
-  Linus Torvalds (1):
-        Linux 2.6.34-rc4
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-2.6.git master
-
-David S. Miller (14):
-      sparc64: Use kstack_valid() in die_if_kernel().
-      sparc64: Adjust __raw_local_irq_save() to cooperate in NMIs.
-      sparc64: Add HAVE_FUNCTION_TRACE_MCOUNT_TEST and tidy up.
-      sparc64: Kill CONFIG_STACK_DEBUG code.
-      sparc64: Kill unnecessary static on local var in ftrace_call_replace().
-      sparc64: Remove profiling from some low-level bits.
-      sparc64: Use a seperate counter for timer interrupts and NMI checks, like x86.
-      sparc64: Give a stack frame to the ftrace call sites.
-      sparc64: Add function graph tracer support.
-      sparc64: Support kmemleak.
-      sparc64: Add kmemleak annotation to sun4v_build_virq()
-      sparc64: Fix memory leak in pci_register_iommu_region().
-      Merge branch 'master' of /home/davem/src/GIT/linux-2.6/
-      sparc64: Add some more commentary to __raw_local_irq_save()
-
- arch/sparc/Kconfig                   |    3 +
- arch/sparc/Kconfig.debug             |    5 +-
- arch/sparc/include/asm/cpudata_64.h  |    2 +-
- arch/sparc/include/asm/irqflags_64.h |   23 ++++-
- arch/sparc/kernel/Makefile           |   10 ++-
- arch/sparc/kernel/ftrace.c           |   60 +++++++++++++-
- arch/sparc/kernel/irq_64.c           |   11 ++-
- arch/sparc/kernel/kgdb_64.c          |    3 +-
- arch/sparc/kernel/nmi.c              |    3 +-
- arch/sparc/kernel/pci_common.c       |   11 ++-
- arch/sparc/kernel/pcr.c              |    3 +-
- arch/sparc/kernel/smp_64.c           |   11 ++-
- arch/sparc/kernel/time_64.c          |    4 +-
- arch/sparc/kernel/traps_64.c         |   26 +-----
- arch/sparc/kernel/vmlinux.lds.S      |    5 +
- arch/sparc/lib/mcount.S              |  159 +++++++++++++++------------------
- lib/Kconfig.debug                    |    2 +-
- 17 files changed, 206 insertions(+), 135 deletions(-)
+---
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -40,6 +40,7 @@ extern const char linux_proc_banner[];
+ #define STACK_MAGIC	0xdeadbeef
+ 
+ #define ALIGN(x, a)		__ALIGN_KERNEL((x), (a))
++#define __ALIGN_MASK(x, mask)	__ALIGN_KERNEL_MASK((x), (mask))
+ #define PTR_ALIGN(p, a)		((typeof(p))ALIGN((unsigned long)(p), (a)))
+ #define IS_ALIGNED(x, a)		(((x) & ((typeof(x))(a) - 1)) == 0)
+ 
