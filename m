@@ -1,72 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab0DNQQv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 12:16:51 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:46562 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756228Ab0DNQQu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 12:16:50 -0400
-Message-ID: <4BC5EA75.9090803@colorfullife.com>
-Date: Wed, 14 Apr 2010 18:16:53 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1756289Ab0DNQUH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 12:20:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41625 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755128Ab0DNQUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 12:20:04 -0400
+Date: Wed, 14 Apr 2010 19:16:10 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
+       jdike@linux.intel.com
+Subject: Re: [RFC][PATCH v3 1/3] A device for zero-copy based on KVM
+	virtio-net.
+Message-ID: <20100414161610.GA10897@redhat.com>
+References: <1270805865-16901-1-git-send-email-xiaohui.xin@intel.com> <201004141655.21885.arnd@arndb.de> <20100414152615.GA8079@redhat.com> <201004141757.54829.arnd@arndb.de>
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       zach.brown@oracle.com, jens.axboe@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ipc semaphores: reduce ipc_lock contention in semtimedop
-References: <1271098163-3663-1-git-send-email-chris.mason@oracle.com> <1271098163-3663-2-git-send-email-chris.mason@oracle.com> <4BC4A6B2.1090906@colorfullife.com> <20100413173941.GI13327@think> <20100413180945.GD5683@laptop> <20100413181937.GM13327@think>
-In-Reply-To: <20100413181937.GM13327@think>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004141757.54829.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2010 08:19 PM, Chris Mason wrote:
-> On Wed, Apr 14, 2010 at 04:09:45AM +1000, Nick Piggin wrote:
->    
->> On Tue, Apr 13, 2010 at 01:39:41PM -0400, Chris Mason wrote:
->>      
->> The other thing I don't know if your patch gets right is requeueing on
->> of the operations. When you requeue from one list to another, then you
->> seem to lose ordering with other pending operations, so that would
->> seem to break the API as well (can't remember if the API strictly
->> mandates FIFO, but anyway it can open up starvation cases).
->>      
-> I don't see anything in the docs about the FIFO order.  I could add an
-> extra sort on sequence number pretty easily, but is the starvation case
-> really that bad?
->
->    
-How do you want to determine the sequence number?
-Is atomic_inc_return() on a per-semaphore array counter sufficiently fast?
+On Wed, Apr 14, 2010 at 05:57:54PM +0200, Arnd Bergmann wrote:
+> On Wednesday 14 April 2010, Michael S. Tsirkin wrote:
+> > On Wed, Apr 14, 2010 at 04:55:21PM +0200, Arnd Bergmann wrote:
+> > > On Friday 09 April 2010, xiaohui.xin@intel.com wrote:
+> > > > From: Xin Xiaohui <xiaohui.xin@intel.com>
+> >
+> > > It seems that you are duplicating a lot of functionality that
+> > > is already in macvtap. I've asked about this before but then
+> > > didn't look at your newer versions. Can you explain the value
+> > > of introducing another interface to user land?
+> > 
+> > Hmm, I have not noticed a lot of duplication.
+> 
+> The code is indeed quite distinct, but the idea of adding another
+> character device to pass into vhost for direct device access is.
 
->> I was looking at doing a sequence number to be able to sort these, but
->> it ended up getting over complex (and SAP was only using simple ops so
->> it didn't seem to need much better).
->>
->> We want to be careful not to change semantics at all. And it gets
->> tricky quickly :( What about Zach's simpler wakeup API?
->>      
-> Yeah, that's why my patches include code to handle userland sending
-> duplicate semids.  Zach's simpler API is cooking too, but if I can get
-> this done without insane complexity it helps with more than just the
-> post/wait oracle workload.
->
->    
-What is the oracle workload, which multi-sembuf operations does it use?
-How many semaphores are in one array?
+All backends besides tap seem to do this, btw :)
 
-When the last optimizations were written, I've searched a bit:
-- postgres uses per-process semaphores, with small semaphore arrays.
-     [process sleeps on it's own semaphore and is woken up by someone 
-else when it can make progress]
-- with google, I couldn't find anything relevant that uses multi-sembuf 
-semop() calls.
+> > BTW macvtap also duplicates tun code, it might be
+> > a good idea for tun to export some functionality.
+> 
+> Yes, that's something I plan to look into.
+> 
+> > > I'm still planning to add zero-copy support to macvtap,
+> > > hopefully reusing parts of your code, but do you think there
+> > > is value in having both?
+> > 
+> > If macvtap would get zero copy tx and rx, maybe not. But
+> > it's not immediately obvious whether zero-copy support
+> > for macvtap might work, though, especially for zero copy rx.
+> > The approach with mpassthru is much simpler in that
+> > it takes complete control of the device.
+> 
+> As far as I can tell, the most significant limitation of mpassthru
+> is that there can only ever be a single guest on a physical NIC.
+> 
+> Given that limitation, I believe we can do the same on macvtap,
+> and simply disable zero-copy RX when you want to use more than one
+> guest, or both guest and host on the same NIC.
+> 
+> The logical next step here would be to allow VMDq and similar
+> technologies to separate out the RX traffic in the hardware.
+> We don't have a configuration interface for that yet, but
+> since this is logically the same as macvlan, I think we should
+> use the same interfaces for both, essentially treating VMDq
+> as a hardware acceleration for macvlan. We can probably handle
+> it in similar ways to how we handle hardware support for vlan.
+> 
+> At that stage, macvtap would be the logical interface for
+> connecting a VMDq (hardware macvlan) device to a guest!
 
-And I agree with Nick: We should be careful about changing the API.
+I won't object to that but ... code walks.
 
---
-     Manfred
+> > > > +static ssize_t mp_chr_aio_write(struct kiocb *iocb, const struct iovec *iov,
+> > > > +				unsigned long count, loff_t pos)
+> > > > +{
+> > > > +	struct file *file = iocb->ki_filp;
+> > > > +	struct mp_struct *mp = mp_get(file->private_data);
+> > > > +	struct sock *sk = mp->socket.sk;
+> > > > +	struct sk_buff *skb;
+> > > > +	int len, err;
+> > > > +	ssize_t result;
+> > > 
+> > > Can you explain what this function is even there for? AFAICT, vhost-net
+> > > doesn't call it, the interface is incompatible with the existing
+> > > tap interface, and you don't provide a read function.
+> > 
+> > qemu needs the ability to inject raw packets into device
+> > from userspace, bypassing vhost/virtio (for live migration).
+> 
+> Ok, but since there is only a write callback and no read, it won't
+> actually be able to do this with the current code, right?
+
+I think it'll work as is, with vhost qemu only ever writes,
+never reads from device. We'll also never need GSO etc
+which is a large part of what tap does (and macvtap will
+have to do).
+
+> Moreover, it seems weird to have a new type of interface here that
+> duplicates tap/macvtap with less functionality. Coming back
+> to your original comment, this means that while mpassthru is currently
+> not duplicating the actual code from macvtap, it would need to do
+> exactly that to get the qemu interface right!
+> 
+> 	Arnd
+
+I don't think so, see above. anyway, both can reuse tun.c :)
+
+-- 
+MST
