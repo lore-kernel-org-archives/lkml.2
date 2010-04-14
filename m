@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab0DNMHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 08:07:21 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34637 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755031Ab0DNMHT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 08:07:19 -0400
-Date: Wed, 14 Apr 2010 13:11:40 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Joseph Krahn <joseph.krahn@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Trying to fix ITE-887x parallel/serial driver bugs (including 
- unhandled IRQs)
-Message-ID: <20100414131140.5c6187ab@lxorguk.ukuu.org.uk>
-In-Reply-To: <n2wff6de6f21004121405xd33676f8s81c12e23747b88b0@mail.gmail.com>
-References: <q2lff6de6f21004120834k72cfd554v188b9d2b5a01012c@mail.gmail.com>
-	<20100412174352.4e13113f@lxorguk.ukuu.org.uk>
-	<n2wff6de6f21004121405xd33676f8s81c12e23747b88b0@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1755255Ab0DNMLN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 08:11:13 -0400
+Received: from ozlabs.org ([203.10.76.45]:48732 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754797Ab0DNMLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 08:11:11 -0400
+Subject: Re: [PATCH] powerpc/perf_event: Fix oops due to
+ perf_event_do_pending call
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Paul Mackerras <paulus@samba.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+       Anton Blanchard <anton@samba.org>
+In-Reply-To: <20100414064603.GA4714@drongo>
+References: <20100414064603.GA4714@drongo>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-PVasO5QlV5XfeYA5Awxf"
+Date: Wed, 14 Apr 2010 22:11:09 +1000
+Message-ID: <1271247069.3727.1.camel@concordia>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > for free address ranges. It's hardly 'random probing' and it isn't a
-> > normal BAR or guaranteed to have been configured by anything beforehand.
 
-> Yes, but the drivers don't use INTCBAR. They scan through a herd-coded
-> list of possible port ranges:
+--=-PVasO5QlV5XfeYA5Awxf
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-They can't just use INTCBAR as it may not have been configured by anything
-before the device is probed. We do need to find and assign suitable ports
-although this should probably be done via the PCI quirks on PCI setup.
+On Wed, 2010-04-14 at 16:46 +1000, Paul Mackerras wrote:
+> Anton Blanchard found that large POWER systems would occasionally
+> crash in the exception exit path when profiling with perf_events.
+> The symptom was that an interrupt would occur late in the exit path
+> when the MSR[RI] (recoverable interrupt) bit was clear.  Interrupts
+> should be hard-disabled at this point but they were enabled.  Because
+> the interrupt was not recoverable the system panicked.
+>=20
+...
+> diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+> index 1b16b9a..0441bbd 100644
+> --- a/arch/powerpc/kernel/time.c
+> +++ b/arch/powerpc/kernel/time.c
+> @@ -532,25 +532,60 @@ void __init iSeries_time_init_early(void)
+>  }
+>  #endif /* CONFIG_PPC_ISERIES */
+> =20
+> -#if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_PPC32)
+> -DEFINE_PER_CPU(u8, perf_event_pending);
+> +#ifdef CONFIG_PERF_EVENTS
+> =20
+> -void set_perf_event_pending(void)
+> +/*
+> + * 64-bit uses a byte in the PACA, 32-bit uses a per-cpu variable...
+> + */
 
-> The interrupt controller (INTC) provides IRQ status bits in a single
-> I/O port byte. I only have the datasheet for IT8875F, which is 1
-> parallel and no serial ports, so my understanding of UART IRQs is sort
-> of reverse engineering. Polling the UART IIR register shows that it
-> acts like a normal 16550 UART when set to SERIRQ mode, but I get no
-> IRQs generated. Setting to standard PCI INTA interrupts, the IRQs are
-> generated, but the UART IIR registers do not set the IRQ bits.
+Any reason not to switch to per-cpu for both, now that you don't need to
+access it from asm?
 
-Weird design.
+cheers
 
-http://kr.ic-on-line.cn/IOL/viewpdf/IT8871F_200216.htm
+--=-PVasO5QlV5XfeYA5Awxf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-provides a tiny bit of info on the uart side but I've not found any
-complete documentation.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-> One possibility is to install custom io_serial_in/out functions. When
-> the value of IIR is requested, the INTC can be checked, and modify the
-> result to what it should be for a normal UART. That is a bit of a
-> hack, but makes it much easier to fit into the existing code.
+iEYEABECAAYFAkvFsNkACgkQdSjSd0sB4dKXtwCdFSWKKxxitwjJwM+QXzgKad1z
+jIIAoLprKHTqhJiKzFSAHbBV9HvoVcRs
+=9xj3
+-----END PGP SIGNATURE-----
 
-Seems a good starting point. The serial side code is robust for shared
-IRQs.
+--=-PVasO5QlV5XfeYA5Awxf--
 
-Alan
