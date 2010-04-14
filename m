@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab0DNTgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 15:36:55 -0400
-Received: from isilmar.linta.de ([213.133.102.198]:48105 "EHLO linta.de"
+	id S1755992Ab0DNTgy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 15:36:54 -0400
+Received: from isilmar.linta.de ([213.133.102.198]:48104 "EHLO linta.de"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752428Ab0DNTgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752934Ab0DNTgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Apr 2010 15:36:53 -0400
-Date: Wed, 14 Apr 2010 21:23:02 +0200
+Date: Wed, 14 Apr 2010 21:36:42 +0200
 From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Timur Maximov <xcom.org@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: Re: [PATCH] serial_cs: MD55x support (PCMCIA GPRS/EDGE modem)
- (kernel 2.6.33)
-Message-ID: <20100414192302.GK30734@comet.dominikbrodowski.net>
+To: =?utf-8?B?UGF3ZcWC?= Drobek <pawel.drobek@gmail.com>,
+       Matthias Urlichs <smurf@smurf.noris.de>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] usb-serial: add ID for ZTE MF 330
+Message-ID: <20100414193642.GL30734@comet.dominikbrodowski.net>
 Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Timur Maximov <xcom.org@gmail.com>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-	greg@kroah.com
+	=?utf-8?B?UGF3ZcWC?= Drobek <pawel.drobek@gmail.com>,
+	Matthias Urlichs <smurf@smurf.noris.de>,
+	Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+References: <201004132044.42056.pawel.drobek@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100414161947.18968240@lxorguk.ukuu.org.uk>
- <20100414190657.50a245f8.xcom.org@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201004132044.42056.pawel.drobek@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 07:06:57PM +0400, Timur Maximov wrote:
-> Many PCMCIA GPRS modems like: Onda Edge N100E, Novaway PC98 (OEM SPC98Z),
-> Rovermate Edgus Adaptmate-039 and others have same construction and
-> identification:
-> 
-> lspcmcia -vvv
-> Product Name:   Generic Modem: MD55x 1.00 Serial number: xxxxx-xxx 
-> Identification: manf_id: 0x015d card_id: 0x4c45
->                 function: 2 (serial)
->                 prod_id(1): "Generic" (0xc49e4731)
->                 prod_id(2): "Modem: MD55x" (0x8913b110)
->                 prod_id(3): "1.00" (0x83dbf271)
->                 prod_id(4): "Serial number: xxxxx-xxx" (0x73ee9514)
-> 
-> Serial connection to GSM module based on Elan VPU16551 PCMCIA UART with
-> datasheet recommeded 14.7456MHz crystal oscillator.
-> 
-> By default serial_cs set UART clock == 1843200 Hz
-> For correct work need set clock 14745600 Hz.
-> This quirk already present in driver, only need add device in quirk list.
-> 
-> Signed-off-by: Timur Maximov <xcom.org@gmail.com>
-...
-> Acked-by: Alan Cox <alan@linux.intel.com>
+Based on the information provided for by Paweł Drobek, add
+a second vendor ID and the correct product ID for ZTE MF 330.
 
-Thanks, will pick this up in the PCMCIA git tree unless someone objects.
+Reported-by: Paweł Drobek <pawel.drobek@gmail.com>
+Signed-off: Dominik Brodowski <linux@dominikbrodowski.net>
 
-Best,
-	Dominik
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index ca9d866..a7f24f2 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -306,6 +306,10 @@ static int  option_resume(struct usb_serial *serial);
+ #define ZTE_PRODUCT_AC8710			0xfff1
+ #define ZTE_PRODUCT_AC2726			0xfff5
+ 
++/* ZTE PRODUCTS -- alternate vendor ID */
++#define ZTE_VENDOR_ID2				0x1d6b
++#define ZTE_PRODUCT_MF_330			0x0002
++
+ #define BENQ_VENDOR_ID				0x04a5
+ #define BENQ_PRODUCT_H10			0x4068
+ 
+@@ -679,6 +683,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE(ZTE_VENDOR_ID2, ZTE_PRODUCT_MF_330) },
+ 	{ USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
+ 	{ USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
+ 	{ USB_DEVICE(ALINK_VENDOR_ID, DLINK_PRODUCT_DWM_652_U5) }, /* Yes, ALINK_VENDOR_ID */
