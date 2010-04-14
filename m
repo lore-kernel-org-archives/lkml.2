@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab0DNJ3Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 05:29:25 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:57146 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754254Ab0DNJ3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 05:29:24 -0400
-Date: Wed, 14 Apr 2010 11:28:43 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Miller <davem@davemloft.net>, git@vger.kernel.org
-Cc: imunsie@au1.ibm.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-       paulus@samba.org, acme@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-       mitake@dcl.info.waseda.ac.jp, rusty@rustcorp.com.au, fweisbec@gmail.com,
-       ebmunson@us.ibm.com, Valdis.Kletnieks@vt.edu, amwang@redhat.com,
-       tfransosi@gmail.com, mhiramat@redhat.com, xiaoguangrong@cn.fujitsu.com,
-       jaswinderrajput@gmail.com, arjan@linux.intel.com,
-       hirofumi@mail.parknet.co.jp, efault@gmx.de, tzanussi@gmail.com,
-       anton@samba.org, jkacur@redhat.com, lizf@cn.fujitsu.com,
-       rostedt@goodmis.org
-Subject: Re: [PATCH] perf: Fix endianness argument compatibility
-Message-ID: <20100414092843.GD10537@elte.hu>
-References: <1271147857-11604-1-git-send-email-imunsie@au.ibm.com>
- <20100413.014821.34906166.davem@davemloft.net>
+	id S1754691Ab0DNJcB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 05:32:01 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:40478 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754423Ab0DNJb7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 05:31:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=N7Spc2ePri9Zjh/8IgY0zAgZwwiCqM2tmpIHtBfDzjMslqn2U/vYwQKTjRiknZFLpp
+         UoZPIDWbkJ22WFpYA1ml7ZjnTeYBhUihFL++yYVsyo6BORCYDnMgyfWfzLJG/s/ptymX
+         r5bIWwAxZby8uyHTk8J6iAYl6FeYe01TbQCcQ=
+Message-ID: <4BC58B85.1020204@gmail.com>
+Date: Wed, 14 Apr 2010 11:31:49 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.2 Thunderbird/3.1b1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100413.014821.34906166.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Neil Horman <nhorman@tuxdriver.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [git pull] pull request for writable limits for 2.6.34-rc0
+References: <4B1D32D1.4090404@gmail.com> <4B9136F4.4010007@gmail.com> <alpine.LFD.2.00.1003201207160.18017@i5.linux-foundation.org> <20100321060607.GA4062@x200> <alpine.LFD.2.00.1003211128520.18017@i5.linux-foundation.org> <4BAA4595.3050203@gmail.com>
+In-Reply-To: <4BAA4595.3050203@gmail.com>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Miller <davem@davemloft.net> wrote:
-
-> From: "Ian Munsie" <imunsie@au1.ibm.com>
-> Date: Tue, 13 Apr 2010 18:37:33 +1000
+On 03/24/2010 06:02 PM, Jiri Slaby wrote:
+> On 03/21/2010 07:38 PM, Linus Torvalds wrote:
+>> Or even just _one_ system call that takes two pointers, and can do an 
+>> atomic replace-and-return-the-old-value, like 'sigaction()' does, ie 
+>> something like
+>>
+>> 	int prlimit64(pid, limit, const struct rlimit64 *new, struct rlimit64 *old);
+>>
+>> wouldn't that be a nice generic interface?
 > 
-> > From: Ian Munsie <imunsie@au.ibm.com>
-> > 
-> > Parsing an option from the command line with OPT_BOOLEAN on a bool data
-> > type would not work on a big-endian machine due to the manner in which
-> > the boolean was being cast into an int and incremented. For example,
-> > running 'perf probe --list' on a PowerPC machine would fail to properly
-> > set the list_events bool and would therefore print out the usage
-> > information and terminate.
-> > 
-> > This patch makes OPT_BOOLEAN work as expected with a bool datatype. For
-> > cases where the original OPT_BOOLEAN was intentionally being used to
-> > increment an int each time it was passed in on the command line, this
-> > patch introduces OPT_INCR with the old behaviour of OPT_BOOLEAN (the
-> > verbose variable is currently the only such example of this).
-> > 
-> > I have reviewed every use of OPT_BOOLEAN to verify that a true C99 bool
-> > was passed. Where integers were used, I verified that they were only
-> > being used for boolean logic and changed them to bools to ensure that
-> > they would not be mistakenly used as ints. The major exception was the
-> > verbose variable which now uses OPT_INCR instead of OPT_BOOLEAN.
-> > 
-> > Signed-off-by: Ian Munsie <imunsie@au.ibm.com>
-> 
-> Thanks for finding and fixing this bug.
+> Seconded. But should the limits be by default 64-bit even on 32-bit? I
+> mean: switch 'struct limit' in signal_struct to 'struct rlimit64'? This
+> would make the limits non-atomic on 32-bit. Oh, they are not already if
+> reader wants both cur and max without any locks, but I'm not sure now
+> what implications this will have (I haven't checked compilers, but I
+> think a store of 00000001 0000000 in place of 00000000 ffffffff may
+> result in a read of 00000001 ffffffff or alike). Or did I misunderstand you?
 
-Nice fix!
+Maybe it is a silly question or you was just busy at that time?
 
-Btw., perf got the option parser from the Git project - i'm wondering how the 
-Git folks solved this endianness problem?
-
-	Ingo
+thanks,
+-- 
+js
