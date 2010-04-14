@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab0DNHgV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 03:36:21 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:57151 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753516Ab0DNHgU (ORCPT
+	id S1753764Ab0DNHhm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 03:37:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56646 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076Ab0DNHhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 03:36:20 -0400
-Date: Wed, 14 Apr 2010 17:36:12 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100414073612.GL2493@dastard>
-References: <20100413201635.D119.A69D9226@jp.fujitsu.com>
- <20100413143659.GA2493@dastard>
- <20100414155201.D14A.A69D9226@jp.fujitsu.com>
+	Wed, 14 Apr 2010 03:37:41 -0400
+Date: Wed, 14 Apr 2010 09:37:39 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Nguyen Dinh-R00091 <R00091@freescale.com>, linux-kernel@vger.kernel.org,
+       amit.kucheria@canonical.com, linux@arm.linux.org.uk,
+       grant.likely@secretlab.ca, Herring Robert-RA7055 <RA7055@freescale.com>,
+       linux-arm-kernel@lists.infradead.org, bryan.wu@canonical.com,
+       valentin.longchamp@epfl.ch
+Subject: Re: [PATCH 2.6.34-rc4 1/8] mx5: Add registration of GPIOs for MX51
+	Babbage board.
+Message-ID: <20100414073739.GH7882@pengutronix.de>
+References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com> <20100413164532.GM30801@buzzloop.caiaq.de> <86A0E76937111F4C92FABEC0A2098851046C7A62@az33exm21> <20100414065131.GD7882@pengutronix.de> <20100414073138.GZ30801@buzzloop.caiaq.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100414155201.D14A.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100414073138.GZ30801@buzzloop.caiaq.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:35:56 up 24 days, 20:25, 25 users,  load average: 5.71, 5.70,
+	5.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 03:52:10PM +0900, KOSAKI Motohiro wrote:
-> > On Tue, Apr 13, 2010 at 08:39:29PM +0900, KOSAKI Motohiro wrote:
-> > > Thanks explanation. I haven't noticed direct reclaim consume
-> > > 2k stack. I'll investigate it and try diet it.
-> > > But XFS 3.5K stack consumption is too large too. please diet too.
+On Wed, Apr 14, 2010 at 09:31:38AM +0200, Daniel Mack wrote:
+> On Wed, Apr 14, 2010 at 08:51:31AM +0200, Sascha Hauer wrote:
+> > On Tue, Apr 13, 2010 at 12:36:07PM -0700, Nguyen Dinh-R00091 wrote:
+> > > > +
+> > > > +#ifdef MXC_GPIO_SPLIT_IRQ_2
+> > > 
+> > > Where is that macro defined?
+> > > [Dinh-FSL] - This macro is optional so that the interrupts can be broken
+> > > up into 2 sets.
 > > 
-> > It hasn't grown in the last 2 years after the last major diet where
-> > all the fat was trimmed from it in the last round of the i386 4k
-> > stack vs XFS saga. it seems that everything else around XFS has
-> > grown in that time, and now we are blowing stacks again....
+> > What's the purpose of doing so?
+> > 
+> > Such compile time depencies are not a good idea since the board may want
+> > to decide whether to split the interrupts or not. Note that we support
+> > kernels for more than one board.
 > 
-> I have dumb question, If xfs haven't bloat stack usage, why 3.5
-> stack usage works fine on 4k stack kernel? It seems impossible.
+> And I would have expected at least one active user. As it stands, it's
+> just dead code.
 
-Because on a 32 bit kernel it's somewhere between 2-2.5k of stack
-space. That being said, XFS _will_ blow a 4k stack on anything other
-than the most basic storage configurations, and if you run out of
-memory it is almost guaranteed to do so.
+Ack, this should be removed. Anyone wanting this code will send a
+seperate patch and can explain what and why he wants to do.
 
-> Please don't think I blame you. I don't know what is "4k stack vs XFS saga".
-> I merely want to understand what you said.
+Sascha
 
-Over a period of years there were repeated attempts to make the
-default stack size on i386 4k, despite it being known to cause
-problems one relatively common configurations. Every time it was
-brought up it was rejected, but every few months somebody else made
-an attempt to make it the default. There was a lot of flamage
-directed at XFS because it was seen as the reason that 4k stacks
-were not made the default....
 
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
