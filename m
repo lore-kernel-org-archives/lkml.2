@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab0DNWd2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 18:33:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7086 "EHLO mx1.redhat.com"
+	id S1757106Ab0DNWdf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 18:33:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28559 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757027Ab0DNWdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 18:33:25 -0400
+	id S1757111Ab0DNWdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 18:33:33 -0400
 From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip 5/6] perf probe: Support DW_OP_plus_uconst in
-	DW_AT_data_member_location
+Subject: [PATCH -tip 6/6] perf probe: Show function entry line as probe-able
 To: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
        lkml <linux-kernel@vger.kernel.org>
 Cc: systemtap <systemtap@sources.redhat.com>,
@@ -18,8 +17,8 @@ Cc: systemtap <systemtap@sources.redhat.com>,
        Paul Mackerras <paulus@samba.org>, Paul Mackerras <paulus@samba.org>,
        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Date: Wed, 14 Apr 2010 18:39:58 -0400
-Message-ID: <20100414223958.14630.5230.stgit@localhost6.localdomain6>
+Date: Wed, 14 Apr 2010 18:40:07 -0400
+Message-ID: <20100414224007.14630.96915.stgit@localhost6.localdomain6>
 In-Reply-To: <20100414223921.14630.62353.stgit@localhost6.localdomain6>
 References: <20100414223921.14630.62353.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -30,9 +29,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DW_OP_plus_uconst can be used for DW_AT_data_member_location.
-This patch adds DW_OP_plus_uconst support when getting
-structure member offset.
+Function entry line should be shown as probe-able line,
+because each function has declared line attribute.
 
 Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -44,80 +42,121 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 ---
 
- tools/perf/util/probe-finder.c |   37 ++++++++++++++++++++++++++++++++-----
- 1 files changed, 32 insertions(+), 5 deletions(-)
+ tools/perf/util/probe-finder.c |   74 ++++++++++++++++++++++++++++++++++------
+ 1 files changed, 63 insertions(+), 11 deletions(-)
 
 diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index b4c9365..4f83121 100644
+index 4f83121..aff8a04 100644
 --- a/tools/perf/util/probe-finder.c
 +++ b/tools/perf/util/probe-finder.c
-@@ -249,6 +249,33 @@ static int die_get_byte_size(Dwarf_Die *tp_die)
- 	return (int)ret;
+@@ -1127,6 +1127,45 @@ end:
+ 	return ret;
  }
  
-+/* Get data_member_location offset */
-+static int die_get_data_member_location(Dwarf_Die *mb_die, Dwarf_Word *offs)
++/* Add a line and store the src path */
++static int line_range_add_line(const char *src, unsigned int lineno,
++			       struct line_range *lr)
 +{
-+	Dwarf_Attribute attr;
-+	Dwarf_Op *expr;
-+	size_t nexpr;
-+	int ret;
-+
-+	if (dwarf_attr(mb_die, DW_AT_data_member_location, &attr) == NULL)
-+		return -ENOENT;
-+
-+	if (dwarf_formudata(&attr, offs) != 0) {
-+		/* DW_AT_data_member_location should be DW_OP_plus_uconst */
-+		ret = dwarf_getlocation(&attr, &expr, &nexpr);
-+		if (ret < 0 || nexpr == 0)
-+			return -ENOENT;
-+
-+		if (expr[0].atom != DW_OP_plus_uconst || nexpr != 1) {
-+			pr_debug("Unable to get offset:Unexpected OP %x (%d)\n",
-+				 expr[0].atom, nexpr);
-+			return -ENOTSUP;
-+		}
-+		*offs = (Dwarf_Word)expr[0].number;
++	/* Copy real path */
++	if (!lr->path) {
++		lr->path = strdup(src);
++		if (lr->path == NULL)
++			return -ENOMEM;
 +	}
-+	return 0;
++	return line_list__add_line(&lr->line_list, lineno);
 +}
 +
- /* Return values for die_find callbacks */
- enum {
- 	DIE_FIND_CB_FOUND = 0,		/* End of Search */
-@@ -482,9 +509,9 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 				    Dwarf_Die *die_mem)
- {
- 	struct kprobe_trace_arg_ref *ref = *ref_ptr;
--	Dwarf_Attribute attr;
- 	Dwarf_Die type;
- 	Dwarf_Word offs;
-+	int ret;
++/* Search function declaration lines */
++static int line_range_funcdecl_cb(Dwarf_Die *sp_die, void *data)
++{
++	struct dwarf_callback_param *param = data;
++	struct line_finder *lf = param->data;
++	const char *src;
++	int lineno;
++
++	src = dwarf_decl_file(sp_die);
++	if (src && strtailcmp(src, lf->fname) != 0)
++		return DWARF_CB_OK;
++
++	if (dwarf_decl_line(sp_die, &lineno) != 0 ||
++	    (lf->lno_s > lineno || lf->lno_e < lineno))
++		return DWARF_CB_OK;
++
++	param->retval = line_range_add_line(src, lineno, lf->lr);
++	return DWARF_CB_OK;
++}
++
++static int find_line_range_func_decl_lines(struct line_finder *lf)
++{
++	struct dwarf_callback_param param = {.data = (void *)lf, .retval = 0};
++	dwarf_getfuncs(&lf->cu_die, line_range_funcdecl_cb, &param, 0);
++	return param.retval;
++}
  
- 	pr_debug("converting %s in %s\n", field->name, varname);
- 	if (die_get_real_type(vr_die, &type) == NULL) {
-@@ -542,17 +569,17 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
+ /* Find line range from its line number */
+ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
+@@ -1135,7 +1174,7 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
+ 	Dwarf_Line *line;
+ 	size_t nlines, i;
+ 	Dwarf_Addr addr;
+-	int lineno;
++	int lineno, ret = 0;
+ 	const char *src;
+ 	Dwarf_Die die_mem;
+ 
+@@ -1145,6 +1184,7 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
+ 		return -ENOENT;
  	}
  
- 	/* Get the offset of the field */
--	if (dwarf_attr(die_mem, DW_AT_data_member_location, &attr) == NULL ||
--	    dwarf_formudata(&attr, &offs) != 0) {
-+	ret = die_get_data_member_location(die_mem, &offs);
-+	if (ret < 0) {
- 		pr_warning("Failed to get the offset of %s.\n", field->name);
--		return -ENOENT;
-+		return ret;
- 	}
- 	ref->offset += (long)offs;
++	/* Search probable lines on lines list */
+ 	for (i = 0; i < nlines; i++) {
+ 		line = dwarf_onesrcline(lines, i);
+ 		if (dwarf_lineno(line, &lineno) != 0 ||
+@@ -1167,22 +1207,34 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
+ 		if (strtailcmp(src, lf->fname) != 0)
+ 			continue;
  
- 	/* Converting next field */
- 	if (field->next)
- 		return convert_variable_fields(die_mem, field->name,
--					       field->next, &ref, die_mem);
-+					field->next, &ref, die_mem);
- 	else
- 		return 0;
+-		/* Copy real path */
+-		if (!lf->lr->path) {
+-			lf->lr->path = strdup(src);
+-			if (lf->lr->path == NULL)
+-				return -ENOMEM;
+-		}
+-		line_list__add_line(&lf->lr->line_list, lineno);
++		ret = line_range_add_line(src, lineno, lf->lr);
++		if (ret < 0)
++			return ret;
+ 	}
++
++	/*
++	 * Dwarf lines doesn't include function declarations. We have to
++	 * check functions list or given function.
++	 */
++	if (sp_die) {
++		src = dwarf_decl_file(sp_die);
++		if (src && dwarf_decl_line(sp_die, &lineno) == 0 &&
++		    (lf->lno_s <= lineno && lf->lno_e >= lineno))
++			ret = line_range_add_line(src, lineno, lf->lr);
++	} else
++		ret = find_line_range_func_decl_lines(lf);
++
+ 	/* Update status */
+-	if (!list_empty(&lf->lr->line_list))
+-		lf->found = 1;
++	if (ret >= 0)
++		if (!list_empty(&lf->lr->line_list))
++			ret = lf->found = 1;
++		else
++			ret = 0;	/* Lines are not found */
+ 	else {
+ 		free(lf->lr->path);
+ 		lf->lr->path = NULL;
+ 	}
+-	return lf->found;
++	return ret;
  }
+ 
+ static int line_range_inline_cb(Dwarf_Die *in_die, void *data)
 
 
 -- 
