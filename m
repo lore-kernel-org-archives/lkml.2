@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab0DNHcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 03:32:14 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:54133 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab0DNHcL (ORCPT
+	id S1753495Ab0DNHfx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 03:35:53 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:52059 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751597Ab0DNHfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 03:32:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jdq1dnpEdncc2DT4WGOwNtjPClNsqP44yeP8Njsg3l1SA7pHASTvkB8V8KBxK9+z/2
-         XkOCjhor8nrNG+g1raWzZaM5tyCJOK3S4i/3xy9ZUbZ4MueCOvfH9WcbowA/WZJ2+QkG
-         IdghUD31FBaQEWn3mqwiwxlQHPxrh2ngN+Hk4=
-Date: Wed, 14 Apr 2010 15:35:54 +0800
-From: Amerigo Wang <xiyou.wangcong@gmail.com>
-To: wzt wzt <wzt.wzt@gmail.com>
-Cc: Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, jmorris@namei.org
-Subject: Re: Security: Replace dac_mmap_min_addr to mmap_min_addr in
- cap_file_mmap()
-Message-ID: <20100414073554.GB4503@cr0.nay.redhat.com>
-References: <20100414024842.GB3718@localhost.localdomain>
- <j2z7e0fb38c1004132002sba54d278xc0337bed6e09dec5@mail.gmail.com>
- <v2l628d1651004132250nf7df1f63y2494df724adda489@mail.gmail.com>
+	Wed, 14 Apr 2010 03:35:52 -0400
+X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Apr 2010 03:35:52 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApsEANcLxUs7p+/x/2dsb2JhbACcR7x8hQ0Ehjw
+Message-ID: <4BC56F21.6040909@call-direct.com.au>
+Date: Wed, 14 Apr 2010 17:30:41 +1000
+From: Iwo Mergler <iwo@call-direct.com.au>
+User-Agent: Thunderbird 2.0.0.12 (X11/20080302)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <v2l628d1651004132250nf7df1f63y2494df724adda489@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Anders Larsen <al@alarsen.net>
+CC: linux-mtd@lists.infradead.org,
+       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+       Ian McDonnell <ian@brightstareng.com>, Nicolas Pitre <nico@fluxnic.net>,
+       linux-kernel@vger.kernel.org, Matthias Kaehlcke <matthias@kaehlcke.net>,
+       David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] Fix Oops with Atmel SPI
+References: <1271158315l.25331l.9l@i-dmzi_al.realan.de>
+In-Reply-To: <1271158315l.25331l.9l@i-dmzi_al.realan.de>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 01:50:40PM +0800, wzt wzt wrote:
->still not understand,  if CONFIG_LSM_MMAP_MIN_ADDR is not set,
->mmap_min_addr is equal dac_mmap_min_addr, right?
->if not, mmap_min_addr is set as CONFIG_LSM_MMAP_MIN_ADDR.  what's the
->effect of mmap_min_addr?  except round_hint_to_min() will use
->mmap_min_addr, any other functions will call it?
+Hi Anders,
 
-round_hint_to_min() will be called by mmap().
+I wouldn't recommend that. MTD erase blocks are 64K or more. In a typical
+embedded system you will not be able to kmalloc that much memory after
+a few day's of operation - the page pool gets fragmented.
 
-As the names tell you, mmap_min_addr will be checked by mmap(),
-dac_mmap_min_addr will be checked for CAP_SYS_RAWIO.
+A possibly better approach is to arrange for that memory to get allocated
+at driver start time.
 
-Please check commit 788084ab, as Eric suggested.
+An even better approach would be to change the algorithm to operate on
+a list of smaller allocations, e.g. MTD page size.
 
->Anyway, the comments need change mmap_min_addr as dac_mmap_min_addr,
->right? If i'm wrong, please point it, thanks.
->/*
-> * If the process is attempting to map memory below mmap_min_addr they need   |{
-> * CAP_SYS_RAWIO.
-> */
->
 
-Yes, I think the comment needs to be fixed.
+Best regards,
 
-Thanks.
+Iwo
+
+
+Anders Larsen wrote:
+> Tweak MTD's cache allocation to make it work with the atmel DMA'ed SPI.
+> Substitute kmalloc for vmalloc so the cache buffer is mappable as per
+> the Atmel SPI driver's requirements, otherwise an Oops would occur.
+> 
+> The original patch by Ian McDonnell <ian@brightstareng.com> was found here:
+> http://lists.infradead.org/pipermail/linux-mtd/2007-December/020184.html
+> 
+> Signed-off-by: Anders Larsen <al@alarsen.net>
+> Cc: Ian McDonnell <ian@brightstareng.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Matthias Kaehlcke <matthias@kaehlcke.net>
+> Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> Cc: Nicolas Pitre <nico@fluxnic.net>
+> ---
+>  drivers/mtd/mtdblock.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> Index: b/drivers/mtd/mtdblock.c
+> ===================================================================
+> --- a/drivers/mtd/mtdblock.c
+> +++ b/drivers/mtd/mtdblock.c
+> @@ -253,7 +253,11 @@ static int mtdblock_writesect(struct mtd
+>  {
+>  	struct mtdblk_dev *mtdblk = mtdblks[dev->devnum];
+>  	if (unlikely(!mtdblk->cache_data && mtdblk->cache_size)) {
+> +#ifdef CONFIG_SPI_ATMEL
+> +		mtdblk->cache_data = kmalloc(mtdblk->mtd->erasesize, GFP_KERNEL);
+> +#else
+>  		mtdblk->cache_data = vmalloc(mtdblk->mtd->erasesize);
+> +#endif
+>  		if (!mtdblk->cache_data)
+>  			return -EINTR;
+>  		/* -EINTR is not really correct, but it is the best match
+> @@ -322,7 +326,11 @@ static int mtdblock_release(struct mtd_b
+>  		mtdblks[dev] = NULL;
+>  		if (mtdblk->mtd->sync)
+>  			mtdblk->mtd->sync(mtdblk->mtd);
+> +#ifdef CONFIG_SPI_ATMEL
+> +		kfree(mtdblk->cache_data);
+> +#else
+>  		vfree(mtdblk->cache_data);
+> +#endif
+>  		kfree(mtdblk);
+>  	}
+>  
+> 
+> 
+> ______________________________________________________
+> Linux MTD discussion mailing list
+> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+> 
+> 
+
+
