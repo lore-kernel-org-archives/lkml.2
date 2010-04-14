@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab0DNPPH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 11:15:07 -0400
-Received: from pmx3.lnl.infn.it ([192.135.30.243]:56908 "EHLO pmx3.lnl.infn.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756100Ab0DNPO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 11:14:58 -0400
-Message-ID: <6626405.1271258063560.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-Date: Wed, 14 Apr 2010 17:14:23 +0200 (CEST)
-From: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>
-To: Steve Wise <swise@opengridcomputing.com>
-Subject: Re: Socket Direct Protocol: help (2)
-Cc: "Tung, Chien Tin" <chien.tin.tung@intel.com>,
-       Amir Vadai <amirv@mellanox.co.il>,
-       Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-       "rolandd@cisco.com" <rolandd@cisco.com>,
-       "peterz@infradead.org" <peterz@infradead.org>,
-       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
-       Eric B Munson <ebmunson@us.ibm.com>
-In-Reply-To: <4BC5D9D4.7020702@opengridcomputing.com>
+	id S1756131Ab0DNPP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 11:15:28 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60026 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755734Ab0DNPP0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 11:15:26 -0400
+Date: Wed, 14 Apr 2010 16:19:47 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Timur Maximov <xcom.org@gmail.com>
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com
+Subject: Re: [PATCH] serial_cs: MD55x support (PCMCIA GPRS/EDGE modem)
+ (kernel 2.6.33)
+Message-ID: <20100414161947.18968240@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100414190657.50a245f8.xcom.org@gmail.com>
+References: <20100414190657.50a245f8.xcom.org@gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3 (normal)
-X-Mailer: SuSE Linux Openexchange Server 4 - WebMail (Build 2.4160)
-X-Operating-System: Linux 2.4.21-314-smp i386 (JVM 1.3.1_20)
-Organization: INFN - Laboratori Nazionali Legnaro
-References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com> <4BC49E2B.3000804@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com> <4BC4D22A.6020700@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com> <7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <4BC5D1D3.3020004@mellanox.co.il> <4BC5D529.1060701@mellanox.co.il> <2EFBCAEF10980645BBCFB605689E08E9047C79B918@azsmsx506.amr.corp.intel.com> <4BC5D9D4.7020702@opengridcomputing.com>
-X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.14.141216 (i)
-X-Spam-Flag: NO
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you very much.
-I check the status of 2027 and 2028 bugs.
+On Wed, 14 Apr 2010 19:06:57 +0400
+Timur Maximov <xcom.org@gmail.com> wrote:
 
-Andrea
-
-
-n Apr 14, 2010 05:05 PM, Steve Wise <swise@opengridcomputing.com> wrote:
-
-> Tung, Chien Tin wrote:
-> >> One more thing - Please open a bug regarding the num_sge limitation
-> >> at:
-> >> https://bugs.openfabrics.org/
-> >>     
-> >
-> > Done, Bug 2027.
-> >
-> > Chien
-> >   
+> Many PCMCIA GPRS modems like: Onda Edge N100E, Novaway PC98 (OEM SPC98Z),
+> Rovermate Edgus Adaptmate-039 and others have same construction and
+> identification:
 > 
-> And 2028 opened to request fastreg support.
+> lspcmcia -vvv
+> Product Name:   Generic Modem: MD55x 1.00 Serial number: xxxxx-xxx 
+> Identification: manf_id: 0x015d card_id: 0x4c45
+>                 function: 2 (serial)
+>                 prod_id(1): "Generic" (0xc49e4731)
+>                 prod_id(2): "Modem: MD55x" (0x8913b110)
+>                 prod_id(3): "1.00" (0x83dbf271)
+>                 prod_id(4): "Serial number: xxxxx-xxx" (0x73ee9514)
 > 
-> Steve.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rdma"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Serial connection to GSM module based on Elan VPU16551 PCMCIA UART with
+> datasheet recommeded 14.7456MHz crystal oscillator.
 > 
+> By default serial_cs set UART clock == 1843200 Hz
+> For correct work need set clock 14745600 Hz.
+> This quirk already present in driver, only need add device in quirk list.
+> 
+> Signed-off-by: Timur Maximov <xcom.org@gmail.com>
 
-
-Andrea Gozzelino
-
-INFN - Laboratori Nazionali di Legnaro	(LNL)
-Viale dell'Universita' 2
-I-35020 - Legnaro (PD)- ITALIA
-Tel: +39 049 8068346
-Fax: +39 049 641925
-Mail: andrea.gozzelino@lnl.infn.it			
-
+Acked-by: Alan Cox <alan@linux.intel.com>
