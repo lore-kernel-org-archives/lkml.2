@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab0DOCln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 22:41:43 -0400
-Received: from dns.bangla.net ([203.188.252.6]:61108 "EHLO smtp.bangla.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756408Ab0DOCll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 22:41:41 -0400
-Message-ID: <11855.41.220.68.1.1271299266.squirrel@webmail.khulna.bangla.net>
-Date: Thu, 15 Apr 2010 03:41:06 +0100 (BST)
-Subject: Please Respond
-From: "Mr. Ming Yang" <info.ming@discuz.org>
-Reply-To: mr.mingyang@discuz.org
-User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-banglanet-MailScanner-Information: Please contact the ISP for more information
-X-banglanet-MailScanner-ID: 7C5426A5295.A893B
-X-banglanet-MailScanner: Found to be clean
-X-banglanet-MailScanner-SpamScore: ss
-X-banglanet-MailScanner-From: info.ming@discuz.org
+	id S1756608Ab0DOCma (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 22:42:30 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40727 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756408Ab0DOCm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 22:42:28 -0400
+Date: Thu, 15 Apr 2010 12:42:22 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Divyesh Shah <dpshah@google.com>
+Subject: linux-next: build failure after merge of the block tree
+Message-Id: <20100415124222.8e0e7132.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__15_Apr_2010_12_42_22_+1000_15=DJSsZ0Rvv5DeR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__15_Apr_2010_12_42_22_+1000_15=DJSsZ0Rvv5DeR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Jens,
 
+After merging the block tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Greetings from Hong Kong
+ERROR: "get_gendisk" [block/blk-cgroup.ko] undefined!
+ERROR: "sched_clock" [block/blk-cgroup.ko] undefined!
 
-Dear Friend, this is Mr. Ming Yang from Hong Kong. I am sending you this
-message concerning a Business Proposal of 24.5MUSD and I want you to partner
-with me in this project. This business with benefit you a lot.
+Probably caused by commits 34d0f179d6dd711d3fc13c0820a456c59aae8048
+("io-controller: Add a new interface "weight_device" for IO-Controller"),
+9195291e5f05e01d67f9a09c756b8aca8f009089 ("blkio: Increment the blkio
+cgroup stats for real now") and 812df48d127365ffd0869aa139738f572a86759c
+("blkio: Add more debug-only per-cgroup stats").
 
-Please contact me back with the below address for details.
-mr.mingyang@discuz.org
-Thanks.
-I await your prompt response.
-Mr. Ming Yang
+I have used the version of the block tree from next-20100414 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
--- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
+--Signature=_Thu__15_Apr_2010_12_42_22_+1000_15=DJSsZ0Rvv5DeR
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvGfQ4ACgkQjjKRsyhoI8wgbgCfaXMdyMN12sOnnqQMsdqUhikL
+IokAnRYmz+TRmP4hx5dX4wBa9pe8aHlu
+=XGmK
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__15_Apr_2010_12_42_22_+1000_15=DJSsZ0Rvv5DeR--
