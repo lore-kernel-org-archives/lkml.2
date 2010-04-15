@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757687Ab0DOJlq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 05:41:46 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:54125 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757641Ab0DOJlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 05:41:45 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 1/4] vmscan: delegate pageout io to flusher thread if current is kswapd
-Cc: kosaki.motohiro@jp.fujitsu.com, Suleiman Souhlal <ssouhlal@freebsd.org>,
-       Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, suleiman@google.com
-In-Reply-To: <20100415093214.GV2493@dastard>
-References: <64BE60A8-EEF9-4AC6-AF0A-0ED3CB544726@freebsd.org> <20100415093214.GV2493@dastard>
-Message-Id: <20100415183425.D19E.A69D9226@jp.fujitsu.com>
+	id S932118Ab0DOJoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 05:44:10 -0400
+Received: from 8bytes.org ([88.198.83.132]:54978 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757666Ab0DOJoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 05:44:09 -0400
+Date: Thu, 15 Apr 2010 11:44:07 +0200
+From: oerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com, Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH V3] perf & kvm: Enhance perf to collect KVM guest os
+	statistics from host side
+Message-ID: <20100415094407.GB12697@8bytes.org>
+References: <1902387910.2078.435.camel@ymzhang.sh.intel.com> <4BC588CF.5010507@redhat.com> <1902445479.2078.458.camel@ymzhang.sh.intel.com> <4BC6C8CD.1020801@redhat.com> <1902473858.2078.481.camel@ymzhang.sh.intel.com> <20100415090403.GA12697@8bytes.org> <4BC6D7C8.9060302@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 15 Apr 2010 18:41:39 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BC6D7C8.9060302@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Apr 15, 2010 at 01:05:57AM -0700, Suleiman Souhlal wrote:
-> > 
-> > On Apr 14, 2010, at 9:11 PM, KOSAKI Motohiro wrote:
-> > 
-> > >Now, vmscan pageout() is one of IO throuput degression source.
-> > >Some IO workload makes very much order-0 allocation and reclaim
-> > >and pageout's 4K IOs are making annoying lots seeks.
-> > >
-> > >At least, kswapd can avoid such pageout() because kswapd don't
-> > >need to consider OOM-Killer situation. that's no risk.
-> > >
-> > >Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > 
-> > What's your opinion on trying to cluster the writes done by pageout,
-> > instead of not doing any paging out in kswapd?
-> 
-> XFS already does this in ->writepage to try to minimise the impact
-> of the way pageout issues IO. It helps, but it is still not as good
-> as having all the writeback come from the flusher threads because
-> it's still pretty much random IO.
+On Thu, Apr 15, 2010 at 12:09:28PM +0300, Avi Kivity wrote:
+> On 04/15/2010 12:04 PM, oerg Roedel wrote:
+>> On Mon, Apr 15, 2030 at 04:57:38PM +0800, Zhang, Yanmin wrote:
+>>
+>>    
+>>> I checked svm.c and it seems svm.c doesn't trigger a NMI to host if the NMI
+>>> happens in guest os. In addition, svm_complete_interrupts is called after
+>>> interrupt is enabled.
+>>>      
+>> Yes. The NMI is held pending by the hardware until the STGI instruction
+>> is executed.
+>> And for nested svm the svm_complete_interrupts function needs to be
+>> executed after the nested exit handling. Therefore it is done late on
+>> svm.
+>>    
+>
+> So, we'd need something like the following:
+>
+>    if (exit == NMI)
+>        __get_cpu_var(nmi_vcpu) = vcpu;
+>
+>    stgi();
+>
+>    if (exit == NMI) {
+>        while (!nmi_handled())
+>            cpu_relax();
+>        __get_cpu_var(nmi_vcpu) = NULL;
+>    }
 
-I havent review such patch yet. then, I'm talking about generic thing.
-pageout() doesn't only writeout file backed page, but also write
-swap backed page. so, filesystem optimization nor flusher thread
-doesn't erase pageout clusterring worth.
+Hmm, looks a bit complicated to me. The NMI should happen shortly after
+the stgi instruction. Interrupts are still disabled so we stay on this
+cpu. Can't we just set and erase the cpu_var at vcpu_load/vcpu_put time?
 
-
-> And, FWIW, it doesn't solve the stack usage problems, either. In
-> fact, it will make them worse as write_one_page() puts another
-> struct writeback_control on the stack...
-
-Correct. we need to avoid double writeback_control on stack.
-probably, we need to divide pageout() some piece.
-
-
+	Joerg
 
