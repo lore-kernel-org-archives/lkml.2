@@ -1,94 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab0DOLMf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 07:12:35 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:51583 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab0DOLMe (ORCPT
+	id S1752883Ab0DOLNM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 07:13:12 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40389 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752040Ab0DOLNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 07:12:34 -0400
-Date: Thu, 15 Apr 2010 16:42:27 +0530
-From: Arun R Bharadwaj <arun@linux.vnet.ibm.com>
-To: peterz@infradead.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-       Dipankar Sarma <dipankar@in.ibm.com>, Balbir Singh <balbir@in.ibm.com>,
-       Arun Bharadwaj <arun@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [v12 PATCH 8/8]: POWER: Enable default_idle when power_save=off.
-Message-ID: <20100415111227.GI16760@linux.vnet.ibm.com>
-Reply-To: arun@linux.vnet.ibm.com
-References: <20100415110046.GA16760@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100415110046.GA16760@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 15 Apr 2010 07:13:11 -0400
+Date: Thu, 15 Apr 2010 12:17:26 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+Cc: Greg KH <greg@kroah.com>, Alan Cox <alan@linux.intel.com>,
+       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: isl29020: ALS driver as misc device
+Message-ID: <20100415121726.1b2a5a87@lxorguk.ukuu.org.uk>
+In-Reply-To: <4BC6E5CF.9070302@jic23.retrosnub.co.uk>
+References: <20100414124913.23181.75903.stgit@localhost.localdomain>
+	<20100414125136.23181.16788.stgit@localhost.localdomain>
+	<4BC5C7A8.1040807@cam.ac.uk>
+	<20100414153234.22765666@lxorguk.ukuu.org.uk>
+	<4BC5D681.20707@jic23.retrosnub.co.uk>
+	<20100414175602.44580f3c@lxorguk.ukuu.org.uk>
+	<20100414170153.GA7494@kroah.com>
+	<4BC6E5CF.9070302@jic23.retrosnub.co.uk>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arun R Bharadwaj <arun@linux.vnet.ibm.com> [2010-04-15 16:30:46]:
+> lux-> illuminance0_input  (or I guess lux0_input would also work, I can change
+> the iio abi to match this as well).
+> 
+> It also occurs to me that we might want to associate the calibration with the
+> particular channel? There's sure to be a dual ALS chip along at some point.
+> 
+> Obviously the isl29020 would need updating as well.  Everyone was happy to do
+> that when were writing the ALS subsystem, so I guess that won't have changed!
 
-This patch enables default_idle when power_save=off kernel boot
-option is specified.
-
-Earlier, this was done by setting ppc_md.power_save = NULL and hence
-HMT_low() and HMT_very_low() was called. Now this is defined under
-default_idle() and hence by setting boot_option_idle_override = 1,
-the cpuidle registration stuff does not happen and hence default_idle
-is chosen in cpuidle_idle_call.
-
-Signed-off-by: Arun R Bharadwaj <arun@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/processor.h            |    2 ++
- arch/powerpc/kernel/idle.c                      |    4 +++-
- arch/powerpc/platforms/pseries/processor_idle.c |    5 +++++
- 3 files changed, 10 insertions(+), 1 deletion(-)
-
-Index: linux.trees.git/arch/powerpc/include/asm/processor.h
-===================================================================
---- linux.trees.git.orig/arch/powerpc/include/asm/processor.h
-+++ linux.trees.git/arch/powerpc/include/asm/processor.h
-@@ -364,6 +364,8 @@ static inline unsigned long get_clean_sp
- }
- #endif
- 
-+extern int boot_option_idle_override;
-+
- #endif /* __KERNEL__ */
- #endif /* __ASSEMBLY__ */
- #endif /* _ASM_POWERPC_PROCESSOR_H */
-Index: linux.trees.git/arch/powerpc/kernel/idle.c
-===================================================================
---- linux.trees.git.orig/arch/powerpc/kernel/idle.c
-+++ linux.trees.git/arch/powerpc/kernel/idle.c
-@@ -40,9 +40,11 @@
- #define cpu_should_die()	0
- #endif
- 
-+int boot_option_idle_override;
-+
- static int __init powersave_off(char *arg)
- {
--	ppc_md.power_save = NULL;
-+	boot_option_idle_override = 1;
- 	return 0;
- }
- __setup("powersave=off", powersave_off);
-Index: linux.trees.git/arch/powerpc/platforms/pseries/processor_idle.c
-===================================================================
---- linux.trees.git.orig/arch/powerpc/platforms/pseries/processor_idle.c
-+++ linux.trees.git/arch/powerpc/platforms/pseries/processor_idle.c
-@@ -167,6 +167,11 @@ static int __init pseries_processor_idle
- 	struct cpuidle_subsystem *pseries_subsys = &cpuidle_subsys;
- 
- 
-+	if (boot_option_idle_override) {
-+		printk(KERN_DEBUG "Using default idle\n");
-+		return 0;
-+	}
-+
- 	result = cpuidle_register_driver(&pseries_idle_driver);
- 
- 	if (result < 0)
+I'm happy to make the 29020 comply, and I guess it wouldn't take long for
+someone to run over the others. Just let me know what the sysfs interface
+should look like.
