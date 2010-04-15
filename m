@@ -1,131 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab0DOOEa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 10:04:30 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52950 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754357Ab0DOOE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 10:04:28 -0400
-Date: Thu, 15 Apr 2010 16:03:58 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: PowerPC WARN_ON_ONCE() after merge of the final tree
- (tip related)
-Message-ID: <20100415140358.GA19981@elte.hu>
-References: <20100415161214.04637496.sfr@canb.auug.org.au>
- <20100415064940.GA9240@elte.hu>
- <20100415130032.GA6789@nowhere>
+	id S1754195Ab0DOOIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 10:08:22 -0400
+Received: from mga10.intel.com ([192.55.52.92]:61244 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753091Ab0DOOIV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 10:08:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,212,1270450800"; 
+   d="scan'208";a="789562160"
+From: Sheng Yang <sheng@linux.intel.com>
+Organization: Intel Opensource Technology Center
+To: Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH V3] perf & kvm: Enhance perf to collect KVM guest 
+ =?iso-8859-1?q?os=09statistics_from_host?= side
+Date: Thu, 15 Apr 2010 22:08:08 +0800
+User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
+Cc: Joerg Roedel <joro@8bytes.org>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com, Arnaldo Carvalho de Melo <acme@infradead.org>
+References: <1902387910.2078.435.camel@ymzhang.sh.intel.com> <20100415104051.GC12697@8bytes.org> <4BC6EDFF.3000702@redhat.com>
+In-Reply-To: <4BC6EDFF.3000702@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100415130032.GA6789@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004152208.08409.sheng@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> On Thu, Apr 15, 2010 at 08:49:40AM +0200, Ingo Molnar wrote:
-> > 
-> > * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > Yesterday's (and today's) linux-next boot (PowerPC) failed like this:
-> > > 
-> > > ------------[ cut here ]------------
-> > > Badness at kernel/lockdep.c:2301
-> > > NIP: c0000000000a35c8 LR: c0000000000084c4 CTR: 0000000000000000
-> > > REGS: c000000000bf77e0 TRAP: 0700   Not tainted  (2.6.34-rc4-autokern1)
-> > > MSR: 8000000000021032 <ME,CE,IR,DR>  CR: 24000044  XER: 00000004
-> > > TASK = c000000000aa3d30[0] 'swapper' THREAD: c000000000bf4000 CPU: 0
-> > > GPR00: 0000000000000001 c000000000bf7a60 c000000000bf32f0 c0000000000084c4 
-> > > GPR04: 0000000000000000 0000000000000a00 0000000000000000 0000000000000068 
-> > > GPR08: 0000000000000008 c000000000c4fabe 0000000000000000 7265677368657265 
-> > > GPR12: 8000000000009032 c000000007691000 0000000001c00000 c000000000770bf8 
-> > > GPR16: c00000000076f390 0000000000000000 0000000000430000 00000000024876f0 
-> > > GPR20: c000000000887480 0000000002487480 c0000000008876f0 0000000001b5f8d0 
-> > > GPR24: c000000000770478 0000000003300000 c000000000c1f1c8 c000000000884610 
-> > > GPR28: c000000000c1b290 c0000000000084c4 c000000000b45068 c000000000aa3d30 
-> > > NIP [c0000000000a35c8] .trace_hardirqs_on_caller+0xb0/0x224
-> > > LR [c0000000000084c4] system_call_common+0xc4/0x114
-> > > Call Trace:
-> > > [c000000000bf7a60] [c000000000bf7ba0] init_thread_union+0x3ba0/0x4000 (unreliable)
-> > > [c000000000bf7af0] [c0000000000084c4] system_call_common+0xc4/0x114
-> > > --- Exception: c01 at .kernel_thread+0x28/0x70
-> > >     LR = .rest_init+0x34/0xf8
-> > > [c000000000bf7de0] [c00000000086916c] .proc_sys_init+0x20/0x64 (unreliable)
-> > > [c000000000bf7e50] [c0000000000099c0] .rest_init+0x20/0xf8
-> > > [c000000000bf7ee0] [c000000000848af0] .start_kernel+0x484/0x4a8
-> > > [c000000000bf7f90] [c0000000000083c0] .start_here_common+0x1c/0x5c
-> > > Instruction dump:
-> > > 409e0188 0fe00000 48000180 801f08d8 2f800000 41be0050 880d01da 2fa00000 
-> > > 41be0028 e93e8538 88090000 68000001 <0b000000> 2fa00000 41be0010 e93e8538 
-> > > ------------[ cut here ]------------
-> > > 
-> > > Caused by commit bd6d29c25bb1a24a4c160ec5de43e0004e01f72b ("lockstat:
-> > > Make lockstat counting per cpu").  This added a WARN_ON_ONCE to
-> > > debug_atomic_inc() which is called from trace_hardirqs_on_caller() with
-> > > irqs enabled.
-> > > 
-> > > Line 2301 is:
-> > > 
-> > >         if (unlikely(curr->hardirqs_enabled)) {
-> > >                 debug_atomic_inc(redundant_hardirqs_on);   <--- 2301
-> > >                 return;
-> > >         }
-> > > 
-> > > This is especially bad since on PowerPC, WARN_ON is a TRAP and the return
-> > > path from the TRAP also calls trace_hardirqs_on_caller(), so the TRAP
-> > > recurses ...
-> > 
-> > Ok, we'll fix the warning.
-> > 
-> > Btw., WARN_ON trapping on PowerPC is clearly a PowerPC bug - there's a good 
-> > reason we have WARN_ON versus BUG_ON - it should be fixed.
+On Thursday 15 April 2010 18:44:15 Avi Kivity wrote:
+> On 04/15/2010 01:40 PM, Joerg Roedel wrote:
+> >> That means an NMI that happens outside guest code (for example, in the
+> >> mmu, or during the exit itself) would be counted as if in guest code.
+> >
+> > Hmm, true. The same is true for an NMI that happens between VMSAVE and
+> > STGI but that window is smaller. Anyway, I think we don't need the
+> > busy-wait loop. The NMI should be executed at a well defined point and
+> > we set the cpu_var back to NULL after that point.
 > 
+> The point is not well defined.  Considering there are already at least
+> two implementations svm, I don't want to rely on implementation details.
+
+After more investigating, I realized that I had interpreted the SDM wrong. 
+Sorry.
+
+There is *no* risk with the original method of calling "int $2". 
+
+According to the SDM 24.1:
+
+> The following bullets detail when architectural state is and is not updated 
+in response to VM exits:
+[...]
+> - An NMI causes subsequent NMIs to be blocked, but only after the VM exit 
+completes.
+
+So the truth is, after NMI directly caused VMExit, the following NMIs would be 
+blocked, until encountered next "iret". So execute "int $2" is safe in 
+vmx_complete_interrupts(), no risk in causing nested NMI. And it would unblock 
+the following NMIs as well due to "iret" it executed.
+
+So there is unnecessary to make change to avoid "potential nested NMI".
+
+Sorry for the mistake and caused confusing.
+
+-- 
+regards
+Yang, Sheng
+
 > 
-> In this case, I guess the following fix should be sufficient?
-> I'm going to test it and provide a sane changelog.
+> We could tune the position of the loop so that zero iterations are
+> executed on the implementations we know about.
 > 
-> 
-> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> index 78325f8..65d4336 100644
-> --- a/kernel/lockdep.c
-> +++ b/kernel/lockdep.c
-> @@ -2298,7 +2298,11 @@ void trace_hardirqs_on_caller(unsigned long ip)
->  		return;
->  
->  	if (unlikely(curr->hardirqs_enabled)) {
-> +		unsigned long flags;
-> +
-> +		raw_local_irq_save(flags);
->  		debug_atomic_inc(redundant_hardirqs_on);
-> +		raw_local_irq_restore(flags);
->  		return;
->  	}
->  	/* we'll do an OFF -> ON transition: */
-
-that looks rather ugly. Why not do a raw:
-
-	this_cpu_inc(lockdep_stats.redundant_hardirqs_on);
-
-which basically open-codes debug_atomic_inc(), but without the warning?
-
-Btw., using the this_cpu() methods might result in faster code for all the 
-debug_atomic_inc() macros as well?
-
-	Ingo
