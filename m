@@ -1,212 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab0DORSX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 13:18:23 -0400
-Received: from mail-qy0-f189.google.com ([209.85.221.189]:59824 "EHLO
-	mail-qy0-f189.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106Ab0DORSS (ORCPT
+	id S1754987Ab0DORUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 13:20:50 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:35763 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841Ab0DORUs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 13:18:18 -0400
+	Thu, 15 Apr 2010 13:20:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :organization:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=aw3LJB5kqdUwHvxfE/3/nvdd5eIzspp9XOnSp3+a/sI4e2Oz1BRu6cYBI7PkFuv6Ft
-         tSLIbRy4Vnq1F6WSSyziR9a8nHikRwstcyVRLvnQkI1T4vHZS1SBVkmz9Vd0EvsC77D7
-         OHzzRMN5xswANzmz5SJ24AzX5XBkjUHzonuEE=
-Subject: Re: sched_clock - microblaze
-From: Wu Zhangjin <wuzhangjin@gmail.com>
-Reply-To: wuzhangjin@gmail.com
-To: michal.simek@petalogix.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4BC728DD.5020404@petalogix.com>
-References: <4BC728DD.5020404@petalogix.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: DSLab, Lanzhou University, China
-Date: Fri, 16 Apr 2010 01:18:07 +0800
-Message-ID: <1271351887.20625.77.camel@falcon>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=AZ2rJ4xbAItIfUSGEF7d6Vh1yggJ9dwo6jwvPobA3WRNc8WPAKTpm7Zu17vksMLGPC
+         M+VdsxtE7M0D5OfpY/7N71YtFz5pyZVcDvea1524zVypnfzmNcMDtz6u7QUSLkYijqIr
+         48SJOMdVEgKx1P2gskcWBqJqNhUVNEhNQcigI=
+MIME-Version: 1.0
+In-Reply-To: <20100415171111.GA32023@caffeine.csclub.uwaterloo.ca>
+References: <40101cc31003011403x4423cb3em1f6fcb04d64dd2bb@mail.gmail.com> 
+	<20100415171111.GA32023@caffeine.csclub.uwaterloo.ca>
+From: Matteo Croce <technoboy85@gmail.com>
+Date: Thu, 15 Apr 2010 19:20:27 +0200
+Message-ID: <i2s40101cc31004151020h4d3bbab3o1f1ed67bc3b45045@mail.gmail.com>
+Subject: Re: AMD Geode i686
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-15 at 16:55 +0200, Michal Simek wrote:
-> Hi Thomas and Steven,
-> 
-> I would like to improve time measuring for ftrace (Log below)
-> 
-> I looked at http://lkml.org/lkml/2009/11/16/181
-> where Thomas suggested to create sched_clock() function.
-> I used the same solution as Wu proposed but it is not nice.
+On Thu, Apr 15, 2010 at 7:11 PM, Lennart Sorensen
+<lsorense@csclub.uwaterloo.ca> wrote:
+> On Mon, Mar 01, 2010 at 11:03:09PM +0100, Matteo Croce wrote:
+>> Hi,
+>> I have refreshed my AMD Geode i686 patch with NOPL and I have added a
+>> new nice feature.
+>> When a NOPL is found the parser looks for any NOPL after the current
+>> one, so they are emulated in bulk.
+>> Tested ok on a Pcengines Alix.
+>>
+>> Signed-off-by: Matteo Croce <technoboy85@gmail.com>
+>>
+>> --- a/arch/x86/kernel/Makefile        2010-03-01 01:18:51.697166322 +0100
+>> +++ b/arch/x86/kernel/Makefile        2010-03-01 01:19:45.727095700 +0100
+>> @@ -89,6 +89,8 @@
+>>  obj-$(CONFIG_HPET_TIMER)     += hpet.o
+>>
+>>  obj-$(CONFIG_K8_NB)          += k8.o
+>> +obj-$(CONFIG_MGEODEGX1)              += nopl_emu.o
+>> +obj-$(CONFIG_MGEODE_LX)              += nopl_emu.o
+>>  obj-$(CONFIG_DEBUG_RODATA_TEST)      += test_rodata.o
+>>  obj-$(CONFIG_DEBUG_NX_TEST)  += test_nx.o
+>>
+>> --- a/arch/x86/kernel/cpu/amd.c       2010-03-01 01:18:51.737097341 +0100
+>> +++ b/arch/x86/kernel/cpu/amd.c       2010-03-01 01:19:27.867865836 +0100
+>> @@ -138,8 +138,10 @@
+>>       }
+>>
+>>       if (c->x86_model == 10) {
+>> -             /Index: linux-2.6.33/arch/x86/kernel/Makefile
+>> ===================================================================
+>> * AMD Geode LX is model 10 */
+>> -             /* placeholder for any needed mods */
+>> +             /* Geode only lacks the NOPL instruction to be i686,
+>> +                but we can emulate it in the exception handler
+>> +                and promote it to a class 6 cpu */
+>> +             boot_cpu_data.x86 = 6;
+>>               return;
+>>       }
+>>  }
+>> --- a/arch/x86/kernel/entry_32.S      2010-03-01 01:18:51.717096708 +0100
+>> +++ b/arch/x86/kernel/entry_32.S      2010-03-01 01:19:27.867865836 +0100
+>> @@ -960,7 +960,11 @@
+>>       RING0_INT_FRAME
+>>       pushl $0
+>>       CFI_ADJUST_CFA_OFFSET 4
+>> +#ifdef CONFIG_MGEODE_LX
+>> +     pushl $do_nopl_emu
+>> +#else
+>>       pushl $do_invalid_op
+>> +#endif
+>
+> How does this work for MGEODEGX1 when it looks for MGEODE_LX?  It seems
+> you made both link against the code above after all.  Is this wrong or
+> the above?
+>
+> Can it not work if you want to run a generic kernel on your Geode rather
+> than one built explicitly for the LX?  I build one kernel to run on
+> Geode SC1200 and Geode LX.
+>
+> --
+> Len Sorensen
+>
 
-Which solution did you use?
+This code should work for Geode GX too.
+Try it and report success please
 
->From my point of view, the basic idea of high resolution sched_clock()
-looks like:
-
-0. read the clock cycles from the hardware clock counter
-
-cyc = read_clock_counter()
-
-read_clock_counter() is processor specific, for example, in X86, there
-is a tsc register, and in a r4k MIPS, there is a c0 counter. such
-counters can provide a high resolution of time counting: the tsc
-register's frequency is equal to the frequency of the processor, if the
-frequency of the processor is 1G, then one cycle of the counter gives us
-1ns.
-
-1. convert the clock cycles to ns
-
-ns = cyc * NSEC_PER_SEC / freq (freq is clock freq of the counter)
-   = use the scaling math. (please refer to arch/x86/kernel/tsc.c)
-   = (cyc * mult) >> shift   (refer to clocksource_calc_mult_shift() )
-
-so, you need to implement the arch specific cyc2ns(), now, we get:
-
-cyc = read_clock_counter();
-ns = cyc2ns(cyc);
-
-2. handle the overflow problems
-
-+ overflow of 32bit counter, solution: cnt32_to_63()
-
-If the hardware clock counter is 32bit long, you need to 'avoid' its
-counting overflow via cnt32_to_63() defined in
-include/linux/cnt32_to_63()
-
-Please ensure the cnt32_to_63() is called every less than half of the
-overflow period(the max time the counter can record) of the hardware
-clock counter, now, we get:
-
-#ifdef CONFIG_64BIT
-cyc = read_clock_counter();
-#else /* CONFIG_32BIT */
-cyc = cnt32_to_63(read_clock_counter());
-#endif
-ns = cyc2ns(cyc);
-
-and a kernel software timer(setup_timer(), mod_timer()) is needed to
-update call the cnt32_to_63() automatically.
-
-[why cnt32_to_63()? it has less overhead than the other methods, will
-talk about it later.]
-
-'avoid' above means avoid it overflow too quickly, for example, a 32bit
-clock counter with 400MHz may overflow after about 10+ seconds, which is
-not enough for Ftrace since a function may be executed for more 200+
-seconds, we need a bigger 'counter', that is why cnt32_to_63() is
-needed, it tries to convert the 32bit counter to a virtual 63bit(the
-highest bit is used to sync the virtual high 32bit with the low real
-32bit in the hardware counter) long, then with the 63bit counter, it
-will overflow after several hundreds of days, which is enough for
-generic debugging.
-
-+ overflow of (cyc * mult), solution: smaller shift OR 128bit arithmetic
-
-And please ensure the shift is not too big(Seems ARM use 8 as the shift,
-and X86 use 10), otherwise, the 64bit arithmetic (cyc * mult) will
-overflow quickly.
-
-As we can see, the type of the return value of sched_clock() is unsigned
-long long, 64bit, so, the value of (cyc * mult) is limited to 64bit. And
-because cyc is also in 64bit (63bit if using cnt32_to_63()), mult can
-not be too big, otherwise, (cyc * mult) will overflow quickly, mult is
-relative to shift, then shift can not be too big.
-
-In another aspect, the shift can not be too small, otherwise, the
-precision will be lost. to learn how to choose such a shift, please
-refer to arch/arm/plat-orion/time.c and arch/x86/kernel/tsc.c.
-
-By default, the mult and shift in struct clocksource is calculated by
-clocksource_calc_mult_shift(), both of them are in 32bit, and in some
-platforms, for a 32bit counter, the shift is calculated from 32 to 0 and
-will be set as 31 for getting a good precision, but it is too big a
-value for a virtual 63bit counter, so, we need to manually set it a
-smaller one, the same to a real 64bit hardware counter.
-
-In some platforms, they have used the 128bit arithmetic to handle the
-overflow problem for a real 64bit hardware counter(please refer to
-arch/mips/cavium-octeon/csrc-octeon.c), perhaps we also need to use it
-for clocksource_cyc2ns() too(I did not check the potential overflow
-problem in such processor yet, it should overflow if the shift is too
-big!), but we also need to notice that, 128bit arithmetic may not be
-supported directly in some processors or it may increase the overhead
-obviously.
-
-3. why not getnstimeofday()
-
-we need a lower overhead of clock func (please refer to
-kernel/trace/trace_clock.c) to make Ftrace has lower overhead for the
-clock func is a basic function needed to get the timestamp of entering
-into and exiting from a kernel function.
-
-I have done some overhead benchmarking of the cnt32_to_63() based
-sched_clock() and getnstimeofday() on a MIPS machine with 64bit kernel:
-
-Clock func/overhead(ns) Min Avg Max Jitter Std.Dev.
-----------------------------------------------
-  sched_clock(cnt32_to_63) 105 116.2 236 131 9.5
-  getnstimeofday()      160 167.1 437 277 15
-  sched_clock(Accumulation method[1])  193 200.9 243 50 2.9
-----------------------------------------------
-
-'Overhead' above means the time spent on calling clock func themselves,
-as we can see, the result of cnt32_to_63() base method is better than
-the other two.
-
-[1] the algorithm looks like this:
-
-static inline unsigned long long notrace read_clock_counter(void)
-{
-        static u64 clock;
-        static u32 old_clock;
-        u32 current_clock;
-
-        raw_spin_lock(&clock_lock);
-        current_clock = read_c0_count();
-        clock += ((current_clock - old_clock) & MASK);
-        old_clock = current_clock;
-        raw_spin_unlock(&clock_lock);
-
-        return clock;
-}
-
-Regards,
-	Wu Zhangjin
-
-> 
-> Is unimplemented sched_clock the reason why ftrace not show fine grain time?
-> 
-> Or is there any other thing which is wrong?
-> 
-> Thanks,
-> Michal
-> 
-> 
-> 
-> Dumping ftrace buffer:
-> ---------------------------------
->   0) ! 10000.00 us |                                }
->   0)   <========== |
->   0) ! 10000.00 us |                            }
->   0) ! 10000.00 us |                          }
->   0)   0.000 us    |                          get_seconds();
->   0)   0.000 us    |                          tcp_rcv_rtt_update();
->   0)   0.000 us    |                          tcp_ack();
->   0)   0.000 us    |                          tcp_rcv_rtt_update();
->   0)   0.000 us    |                          tcp_urg();
->   0)               |                          tcp_data_queue() {
->   0)   0.000 us    |                            __sk_mem_schedule();
->   0)   0.000 us    |                            tcp_event_data_recv();
->   0)   0.000 us    |                            sock_def_readable();
->   0)   0.000 us    |                          }
->   0)   0.000 us    |                          tcp_check_space();
->   0)               |                          __tcp_ack_snd_check() {
-> 
-> 
-
-
+-- 
+Matteo Croce
+OpenWrt developer
+  _______                     ________        __
+ |       |.-----.-----.-----.|  |  |  |.----.|  |_
+ |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
+ |_______||   __|_____|__|__||________||__|  |____|
+          |__| W I R E L E S S   F R E E D O M
+ KAMIKAZE (bleeding edge) ------------------
+  * 10 oz Vodka       Shake well with ice and strain
+  * 10 oz Triple sec  mixture into 10 shot glasses.
+  * 10 oz lime juice  Salute!
+ ---------------------------------------------------
