@@ -1,117 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab0DOUv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 16:51:56 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54511 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756539Ab0DOUvz (ORCPT
+	id S1756871Ab0DOUy3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 16:54:29 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:6498 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756795Ab0DOUy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 16:51:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kai Makisara <Kai.Makisara@kolumbus.fi>
-Subject: [PATCH] scsi/st: remove BKL from open
-Date: Thu, 15 Apr 2010 22:51:38 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
-Cc: dgilbert@interlog.com, Jens Axboe <axboe@kernel.dk>,
-       Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       John Kacur <jkacur@redhat.com>, linux-scsi@vger.kernel.org,
+	Thu, 15 Apr 2010 16:54:27 -0400
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ah8MAJsZx0tAaHte/2dsb2JhbACbbXEcAQGkepoohQ4Egyk
+X-IronPort-AV: E=Sophos;i="4.52,214,1270425600"; 
+   d="scan'208";a="115977610"
+Date: Thu, 15 Apr 2010 13:51:34 -0700
+From: "Tom Lyon" <pugs@cisco.com>
+To: mst@redhat.com, hjk@linutronix.de, gregkh@suse.de, chrisw@sous-sol.org,
+       joro@8bytes.org, avi@redhat.com, kvm@vger.kernel.org,
        linux-kernel@vger.kernel.org
-References: <1271277384-7627-1-git-send-email-arnd@arndb.de> <201004151629.45029.arnd@arndb.de> <alpine.LNX.2.00.1004152244160.5127@kai.makisara.local>
-In-Reply-To: <alpine.LNX.2.00.1004152244160.5127@kai.makisara.local>
+Subject: [PATCH V2] drivers/uio/uio_pci_generic.c: allow access for
+ non-privileged processes
+Message-ID: <4bc77c56.HDpFJH76e7Og+o/S%pugs@cisco.com>
+User-Agent: Heirloom mailx 12.2 01/07/07
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004152251.39636.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX193/0aRw53K3xDSP1zwkxkYY8ql8oqfn+cS8lR
- 5e6FEQb6cX5x4C555lSFygp4Xq7VMk3q1LW7DXQZX2xl4W8L+p
- JjEvWCgddn5oeBzBA/Mhw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The st_open function is serialized through the st_dev_arr_lock
-and the STp->in_use flag, so there is no race that the BKL
-can protect against in the driver itself, and the function
-does not access any global state outside of the driver that
-might be protected with the BKL.
+This is the firt of 2 related, but independent, patches. This is for 
+uio_pci_generic.c, the next is for uio.c.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/scsi/st.c |    9 +--------
- 1 files changed, 1 insertions(+), 8 deletions(-)
+The 2 patches were previously one large patch. Changes for this version:
+- uio_pci_generic.c just gets extensions so that a single fd can be used
+  by non-privileged processes for interrupt control and mmaps
+- All of the DMA and IOMMU related stuff move to uio.c; no longer a need
+  to pass ioctls to individual uio drivers. It turns out that the code 
+  is not PCI specific anyways.
+- A new ioctl to pin DMA buffers to certain IO virtual addresses for KVM.
+- New eventfd based interrupt notifications, including support for PCI
+  specific MSI and MSI-X interrupts.
+- PCI specific code to reset PCI functions before and after use
 
-On Thursday 15 April 2010 22:03:24 Kai Makisara wrote:
+--- linux-2.6.33/drivers/uio/uio_pci_generic.c	2010-02-24 10:52:17.000000000 -0800
++++ uio-2.6.33/drivers/uio/uio_pci_generic.c	2010-04-15 13:44:25.000000000 -0700
+@@ -14,9 +14,9 @@
+  * # ls -l /sys/bus/pci/devices/0000:00:19.0/driver
+  * .../0000:00:19.0/driver -> ../../../bus/pci/drivers/uio_pci_generic
+  *
+- * Driver won't bind to devices which do not support the Interrupt Disable Bit
++ * Driver won't bind to devices which do not support MSI, MSI-x, or the Interrupt Disable Bit
+  * in the command register. All devices compliant to PCI 2.3 (circa 2002) and
+- * all compliant PCI Express devices should support this bit.
++ * all compliant PCI Express devices should support one of these.
+  */
  
-> BKL does not have any "hidden duties" in open() in st.c. I don't know any 
-> reason why it would be needed, but, because I have not been absolutely 
-> sure, I have not removed it. (The tape devices are not opened often and so 
-> the overhead has been negligible. That is, while BKL has been available.) 
-> If you don't see any reason for BKL in open(), go ahead and remove it.
-
-Ok, that certainly simplifies the sg.c conversion. Thanks!
-
-	Arnd
-
-diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-index 3ea1a71..b1462e0 100644
---- a/drivers/scsi/st.c
-+++ b/drivers/scsi/st.c
-@@ -39,7 +39,6 @@ static const char *verstr = "20081215";
- #include <linux/cdev.h>
- #include <linux/delay.h>
- #include <linux/mutex.h>
--#include <linux/smp_lock.h>
- 
- #include <asm/uaccess.h>
- #include <asm/dma.h>
-@@ -1180,7 +1179,6 @@ static int st_open(struct inode *inode, struct file *filp)
- 	int dev = TAPE_NR(inode);
- 	char *name;
- 
--	lock_kernel();
- 	/*
- 	 * We really want to do nonseekable_open(inode, filp); here, but some
- 	 * versions of tar incorrectly call lseek on tapes and bail out if that
-@@ -1188,10 +1186,8 @@ static int st_open(struct inode *inode, struct file *filp)
- 	 */
- 	filp->f_mode &= ~(FMODE_PREAD | FMODE_PWRITE);
- 
--	if (!(STp = scsi_tape_get(dev))) {
--		unlock_kernel();
-+	if (!(STp = scsi_tape_get(dev)))
- 		return -ENXIO;
--	}
- 
- 	write_lock(&st_dev_arr_lock);
- 	filp->private_data = STp;
-@@ -1200,7 +1196,6 @@ static int st_open(struct inode *inode, struct file *filp)
- 	if (STp->in_use) {
- 		write_unlock(&st_dev_arr_lock);
- 		scsi_tape_put(STp);
--		unlock_kernel();
- 		DEB( printk(ST_DEB_MSG "%s: Device already in use.\n", name); )
- 		return (-EBUSY);
- 	}
-@@ -1249,14 +1244,12 @@ static int st_open(struct inode *inode, struct file *filp)
- 			retval = (-EIO);
- 		goto err_out;
- 	}
--	unlock_kernel();
- 	return 0;
- 
-  err_out:
- 	normalize_buffer(STp->buffer);
- 	STp->in_use = 0;
- 	scsi_tape_put(STp);
--	unlock_kernel();
- 	return retval;
- 
+ #include <linux/device.h>
+@@ -41,6 +41,39 @@
+ 	return container_of(info, struct uio_pci_generic_dev, info);
  }
--- 
-1.7.0.4
-
+ 
++/* Read/modify/write command register to disable interrupts.
++ * Note: we could cache the value and optimize the read if there was a way to
++ * get notified of user changes to command register through sysfs.
++ * */
++static void irqtoggle(struct uio_pci_generic_dev *gdev, int irq_on)
++{
++       struct pci_dev *pdev = gdev->pdev;
++       unsigned long flags;
++       u16 orig, new;
++
++       spin_lock_irqsave(&gdev->lock, flags);
++       pci_block_user_cfg_access(pdev);
++       pci_read_config_word(pdev, PCI_COMMAND, &orig);
++       new = irq_on ? (orig & ~PCI_COMMAND_INTX_DISABLE)
++		    : (orig | PCI_COMMAND_INTX_DISABLE);
++       if (new != orig)
++               pci_write_config_word(gdev->pdev, PCI_COMMAND, new);
++       pci_unblock_user_cfg_access(pdev);
++       spin_unlock_irqrestore(&gdev->lock, flags);
++}
++
++/* irqcontrol is use by userspace to enable/disable interrupts. */
++/* A privileged app can write the PCI_COMMAND register directly,
++ * but we need this for normal apps
++ */
++static int irqcontrol(struct uio_info *info, s32 irq_on)
++{
++	struct uio_pci_generic_dev *gdev = to_uio_pci_generic_dev(info);
++
++	irqtoggle(gdev, irq_on);
++	return 0;
++}
++
+ /* Interrupt handler. Read/modify/write the command register to disable
+  * the interrupt. */
+ static irqreturn_t irqhandler(int irq, struct uio_info *info)
+@@ -89,7 +122,7 @@
+ /* Verify that the device supports Interrupt Disable bit in command register,
+  * per PCI 2.3, by flipping this bit and reading it back: this bit was readonly
+  * in PCI 2.2. */
+-static int __devinit verify_pci_2_3(struct pci_dev *pdev)
++static int verify_pci_2_3(struct pci_dev *pdev)
+ {
+ 	u16 orig, new;
+ 	int err = 0;
+@@ -121,17 +154,51 @@
+ 	return err;
+ }
+ 
+-static int __devinit probe(struct pci_dev *pdev,
++/* we could've used the generic pci sysfs stuff for mmap,
++ * but this way we can allow non-privileged users as long
++ * as /dev/uio* has the right permissions
++ */
++static void uio_do_maps(struct uio_pci_generic_dev *gdev)
++{
++	struct pci_dev *pdev = gdev->pdev;
++	struct uio_info *info = &gdev->info;
++	int i, j;
++	char *name;
++
++	for (i=0, j=0; i<PCI_STD_RESOURCE_END && j<MAX_UIO_MAPS; i++) {
++		if (pci_resource_flags(pdev, i) & IORESOURCE_MEM) {
++			name = kmalloc(8, GFP_KERNEL);
++			if (name == NULL)
++				break;
++			sprintf(name, "membar%d", i);
++			info->mem[j].name = name; 
++			info->mem[j].addr = pci_resource_start(pdev, i); 
++			info->mem[j].size = pci_resource_len(pdev, i);
++			info->mem[j].memtype = UIO_MEM_PHYS; 
++			j++;
++		}
++	}
++	for (i=0, j=0; i<PCI_STD_RESOURCE_END && j<MAX_UIO_PORT_REGIONS; i++) {
++		if (pci_resource_flags(pdev, i) & IORESOURCE_IO) {
++			name = kmalloc(8, GFP_KERNEL);
++			if (name == NULL)
++				break;
++			sprintf(name, "iobar%d", i);
++			info->port[j].name = name;
++			info->port[j].start = pci_resource_start(pdev, i);
++			info->port[j].size = pci_resource_len(pdev, i);
++			info->port[j].porttype = UIO_PORT_X86;
++			j++;
++		}
++	}
++}
++
++static int probe(struct pci_dev *pdev,
+ 			   const struct pci_device_id *id)
+ {
+ 	struct uio_pci_generic_dev *gdev;
+ 	int err;
+-
+-	if (!pdev->irq) {
+-		dev_warn(&pdev->dev, "No IRQ assigned to device: "
+-			 "no support for interrupts?\n");
+-		return -ENODEV;
+-	}
++	int msi=0;
+ 
+ 	err = pci_enable_device(pdev);
+ 	if (err) {
+@@ -140,9 +207,26 @@
+ 		return err;
+ 	}
+ 
+-	err = verify_pci_2_3(pdev);
+-	if (err)
+-		goto err_verify;
++	if (pci_find_capability(pdev, PCI_CAP_ID_MSI)) {
++		msi++;
++		pci_disable_msi(pdev);
++	}
++	if (pci_find_capability(pdev, PCI_CAP_ID_MSIX)) {
++		msi++;
++		pci_disable_msix(pdev);
++	}
++
++	if (!msi && !pdev->irq) {
++		dev_warn(&pdev->dev, "No MSI, MSIX, or IRQ assigned to device: "
++			 "no support for interrupts?\n");
++		return -ENODEV;
++	}
++
++	if (pdev->irq) {
++		err = verify_pci_2_3(pdev);
++		if (err)
++			goto err_verify;
++	}
+ 
+ 	gdev = kzalloc(sizeof(struct uio_pci_generic_dev), GFP_KERNEL);
+ 	if (!gdev) {
+@@ -152,10 +236,15 @@
+ 
+ 	gdev->info.name = "uio_pci_generic";
+ 	gdev->info.version = DRIVER_VERSION;
+-	gdev->info.irq = pdev->irq;
+-	gdev->info.irq_flags = IRQF_SHARED;
+-	gdev->info.handler = irqhandler;
++	if (pdev->irq) {
++		gdev->info.irq = pdev->irq;
++		gdev->info.irq_flags = IRQF_SHARED;
++		gdev->info.handler = irqhandler;
++		gdev->info.irqcontrol = irqcontrol;
++	} else
++		gdev->info.irq = -1;
+ 	gdev->pdev = pdev;
++	uio_do_maps(gdev);
+ 	spin_lock_init(&gdev->lock);
+ 
+ 	if (uio_register_device(&pdev->dev, &gdev->info))
