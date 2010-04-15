@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758191Ab0DPAWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 20:22:09 -0400
-Received: from www.tglx.de ([62.245.132.106]:56883 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758178Ab0DPAWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 20:22:07 -0400
-Date: Fri, 16 Apr 2010 02:21:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chase Douglas <chase.douglas@canonical.com>
-cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH 3/3] Stop tracing on a schedule bug
-In-Reply-To: <alpine.LFD.2.00.1004160138200.3625@localhost.localdomain>
-Message-ID: <alpine.LFD.2.00.1004160204510.3625@localhost.localdomain>
-References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>  <1271262016-18650-3-git-send-email-chase.douglas@canonical.com>  <20100415210357.GG5069@nowhere>  <k2u40ec3ea41004151445je53e7ef2u5c0e48e038e4efca@mail.gmail.com> 
- <alpine.LFD.2.00.1004160051390.3625@localhost.localdomain> <p2n40ec3ea41004151627u11ca4d7dw46cbd6b58df9f1c8@mail.gmail.com> <alpine.LFD.2.00.1004160138200.3625@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758196Ab0DPAZd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 20:25:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58135 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751403Ab0DPAZb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 20:25:31 -0400
+Date: Thu, 15 Apr 2010 17:22:05 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ben Gamari <bgamari.foss@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>, linux-kernel@vger.kernel.org,
+       linux-wireless@vger.kernel.org, ath9k@venema.h4ckr.net,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: Lockup inside of stop_machine() during modprobe aes (was Re:
+ Another AR5008 hang)
+Message-Id: <20100415172205.c1e57636.akpm@linux-foundation.org>
+In-Reply-To: <4bbb7896.48c3f10a.30b9.365b@mx.google.com>
+References: <4bb0e2da.04c2f10a.32b2.11ae@mx.google.com>
+	<1269928986.3927.5.camel@jlt3.sipsolutions.net>
+	<4bb1f940.47c2f10a.3469.609b@mx.google.com>
+	<4bb235fb.0baa660a.5b56.ffffa9c2@mx.google.com>
+	<4bbb7896.48c3f10a.30b9.365b@mx.google.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Apr 2010, Thomas Gleixner wrote:
-> BTW, if interacting with grub is that hard: how does an user start the
-> tracer at all ?
+On Tue, 06 Apr 2010 11:08:22 -0700 (PDT) Ben Gamari <bgamari.foss@gmail.com> wrote:
 
-Just looked through the other patches and noticed that the patch which
-provides the tracing_off(level) stuff is incomplete as it provides
-only a command line option to change that tracing off level.
+> 
+> ...
+>
+> I just built 2.6.34-rc3 with the appropriate fixes for the ACPI thermal lockdep
+> issues and have attached the dmesg output of the crash below. It appears that
+> modprobe is freezing with a few locks held while inserting aes.ko. In
+> particular, it seems that the kernel is deadlocking inside of stop_machine()
+> while flushing workqueues.
+> 
+> ...
+>
 
-The command line option is merily for tracing which happens to be
-started on the command line i.e. _BEFORE_ we have usable user space.
+My guess would be that ieee80211 is calling crypto->request_module()
+under rtnl_lock, and the fact that rtnl_lock is held is causing
+modprobe->stop_machine to not complete.
 
-So your grub argument is just crap. If the user cannot change this
-setting w/o fiddling with the obscured grub then he can not start the
-tracer on the command line either.
+> P.S. I am now quite certain that I was mistaken in saying that 2.6.33 was
+> affected. This seems to just be a 2.6.34 issue.
 
-But somehow he can start the tracer later when user space is up and
-running, but there is no way to change that setting anymore. Therefor
-you go through the kernel and impose settings at will.
+OK, thanks, I'll ask Rafael and Maciej to track this as a post-2.6.33
+regression, probably wireless.
 
-1) Your patch simply lacks an interface to change that setting via
-   debugfs/tracing/wtf
-
-   WTF should I reboot my machine to change that setting from the
-   default BUG to WARN or NONE ? There is no reason at all.
-
-2) tracing off can be done via filters on functions and/or events
-   already - so I doubt that the tracing_off_event(level) is necessary
-   at all.
-
-   schedule_bug() definitely deserves a separate trace_schedule_bug()
-   event which can be used to stop the tracer by already existing
-   functionality.
-
-Thanks,
-
-	tglx
