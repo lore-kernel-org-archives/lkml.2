@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab0DOXZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 19:25:40 -0400
-Received: from mail-yw0-f194.google.com ([209.85.211.194]:63981 "EHLO
-	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818Ab0DOXZi (ORCPT
+	id S1758015Ab0DOX1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 19:27:47 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:46750 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478Ab0DOX1p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 19:25:38 -0400
+	Thu, 15 Apr 2010 19:27:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YBWf/MlwELiad+DEGl90u6xGjzOU11/GvsWv7PuHaFD8zZWQE2ApbkTBQ7Sdo8gwmR
-         kYS2uiDh0GwBbGfdU+U576j84jIR+8SIP5xV1a0tT4cy6wx1ToWQtLQRzx/qIoJv1Led
-         kiryLDxrSxoArYQsJqxCGJFoyofXgZ1ZvTwI8=
-Date: Thu, 15 Apr 2010 16:25:25 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: introduce MT event slots
-Message-ID: <20100415232523.GA18263@core.coreip.homeip.net>
-References: <1270685590-2204-1-git-send-email-rydberg@euromail.se>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=c/YorBra4DSSSLc7f44wQefhESC+eH+a9/svcFgTYle5DUxc3QcuQz+zK9JGI2ztZa
+         9M4JiHdccZhWzgygJduyWXpSGt2xUeS+66EeRk75Q5I5wxQuA3hITxElmFb9dooFwyP3
+         lLeYssziY4RGQCzmWMg0Ct2wQ8zYXzObxeEtQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270685590-2204-1-git-send-email-rydberg@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <alpine.LFD.2.00.1004160051390.3625@localhost.localdomain>
+References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
+	 <1271262016-18650-3-git-send-email-chase.douglas@canonical.com>
+	 <20100415210357.GG5069@nowhere>
+	 <k2u40ec3ea41004151445je53e7ef2u5c0e48e038e4efca@mail.gmail.com>
+	 <alpine.LFD.2.00.1004160051390.3625@localhost.localdomain>
+Date: Thu, 15 Apr 2010 16:27:45 -0700
+X-Google-Sender-Auth: e26f655578a14811
+Message-ID: <p2n40ec3ea41004151627u11ca4d7dw46cbd6b58df9f1c8@mail.gmail.com>
+Subject: Re: [PATCH 3/3] Stop tracing on a schedule bug
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+       Randy Dunlap <randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+On Thu, Apr 15, 2010 at 4:01 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Thu, 15 Apr 2010, Chase Douglas wrote:
+>> On Thu, Apr 15, 2010 at 2:03 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> > On Wed, Apr 14, 2010 at 12:20:16PM -0400, Chase Douglas wrote:
+>> >> This change adds a tracing_off_event() call to stop tracing on schedule
+>> >> bugs unless tracing_off=none was specified on the commandline.
+>> >>
+>> >> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+>> >> ---
+>> >>  kernel/sched.c |    2 ++
+>> >>  1 files changed, 2 insertions(+), 0 deletions(-)
+>> >>
+>> >> diff --git a/kernel/sched.c b/kernel/sched.c
+>> >> index 6af210a..439f036 100644
+>> >> --- a/kernel/sched.c
+>> >> +++ b/kernel/sched.c
+>> >> @@ -3590,6 +3590,8 @@ static noinline void __schedule_bug(struct task_struct *prev)
+>> >>  {
+>> >>       struct pt_regs *regs = get_irq_regs();
+>> >>
+>> >> +     tracing_off_event(TRACE_EVENT_BUG);
+>> >> +
+>> >>       printk(KERN_ERR "BUG: scheduling while atomic: %s/%d/0x%08x\n",
+>> >>               prev->comm, prev->pid, preempt_count());
+>> >
+>> >
+>> >
+>> > I would rather call that a TRACE_EVENT_WARN as this is what happens: we
+>> > warn but we continue.
+>>
+>> I tend to think of the TRACE_EVENT_* as an indication of severity and
+>> whether we want to stop the trace by default. From a distro
+>> standpoint, the likelihood that we want to continue tracing after a
+>> __schedule_bug is pretty low. It's easiest if we don't have to tell
+>
+> Well, scheduling while atomic is a BUG, but one of the category which
+> allows the kernel to continue. So in fact it's treated like a WARN_ON.
+> So the tracing_off_event() qualifier should be *_WARN.
+>
+> That's independent of the question whether you want to stop tracing in
+> that very case. Though I agree that the tracer should stop here.
 
-On Thu, Apr 08, 2010 at 02:13:10AM +0200, Henrik Rydberg wrote:
-> With the rapidly increasing number of intelligent multi-contact and
-> multi-user devices, the need to send digested, filtered information
-> from a set of different sources within the same device is imminent.
-> This patch adds the concept of slots to the MT protocol. The slots
-> enumerate a set of identified sources, such that all MT events
-> can be passed independently and selectively per identified source.
-> 
-> The protocol works like this: Instead of sending a SYN_MT_REPORT
-> event immediately after the contact data, one sends a SYN_MT_SLOT
-> event immediately before the contact data. The input core will only
-> emit events for the slots corresponding to the contacts that have
-> changed. It is assumed that the same slot is used for the duration
-> of an initiated contact.
-> 
+We seem to be agreeing on the functionality. The disagreement seems to
+be in the macro name/functionality mapping. However, the name of the
+function itself is *_bug. I don't see how things are clearer or more
+useful by inserting a *_WARN level macro in a *_bug named function.
 
-I see the reason for doing this however I would like to hold off
-applying it till we get a couple of users and prove that the scheme
-works well for them.
+Essentially, it makes more sense to me for the macro to represent the
+severity of the case, and not be coupled somehow to what the kernel
+decides to do outside of the tracing.
 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
->  drivers/input/input.c |   62 +++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/input.h |   26 ++++++++++++++++++++
->  2 files changed, 88 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/input/input.c b/drivers/input/input.c
-> index afd4e2b..217e976 100644
-> --- a/drivers/input/input.c
-> +++ b/drivers/input/input.c
-> @@ -181,6 +181,22 @@ static void input_stop_autorepeat(struct input_dev *dev)
->  #define INPUT_PASS_TO_DEVICE	2
->  #define INPUT_PASS_TO_ALL	(INPUT_PASS_TO_HANDLERS | INPUT_PASS_TO_DEVICE)
->  
-> +static void input_handle_mt_event(struct input_dev *dev,
-> +				  unsigned int code, int value)
-> +{
-> +	int oldval = dev->mt[dev->slot].abs[code];
+Is it the case that you really feel it should be *_WARN, or that the
+macro name/functionality should be different?
 
-A temp for dev->mt[dev->slot] might be nice.
-
->  
-> +/**
-> + * struct input_mt_slot - represents the state of an MT input slot
-> + * @abs: current values from absolute axes for this slot
-> + */
-> +struct input_mt_slot {
-> +	int abs[ABS_MAX + 1];
-> +};
-
-It would be nice to use abs[ABS_MT_MAX - ABS_MT_TOUCH_MAJOR] to save
-some memory.
-
--- 
-Dmitry
+-- Chase
