@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab0DOHfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 03:35:09 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:50990 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab0DOHfH (ORCPT
+	id S1757402Ab0DOHfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 03:35:47 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41539 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757345Ab0DOHfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 03:35:07 -0400
-Date: Thu, 15 Apr 2010 09:35:01 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Pedro Ribeiro <pedrib@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
-       alsa-devel@alsa-project.org
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-Message-ID: <20100415073501.GY30807@buzzloop.caiaq.de>
-References: <t2w74fd948d1004140347k3447bffapb73856eacddfde55@mail.gmail.com>
- <Pine.LNX.4.44L0.1004141003170.1716-100000@iolanthe.rowland.org>
- <20100414163637.GV30807@buzzloop.caiaq.de>
- <n2k74fd948d1004141021r8815647cx2b74085fc37a27b2@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <n2k74fd948d1004141021r8815647cx2b74085fc37a27b2@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 15 Apr 2010 03:35:45 -0400
+Subject: Re: [tip:irq/core] genirq: Run irq handlers with interrupts
+ disabled
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+       linux-kernel@vger.kernel.org, andi@firstfloor.org,
+       alan@lxorguk.ukuu.org.uk, davem@davemloft.net, torvalds@osdl.org,
+       gregkh@suse.de, tglx@linutronix.de, mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-e58aa3d2d0cc01ad8d6f7f640a0670433f794922@git.kernel.org>
+References: <20100326000405.758579387@linutronix.de>
+	 <tip-e58aa3d2d0cc01ad8d6f7f640a0670433f794922@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Apr 2010 09:35:40 +0200
+Message-ID: <1271316940.32749.61.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 06:21:05PM +0100, Pedro Ribeiro wrote:
-> On 14 April 2010 17:36, Daniel Mack <daniel@caiaq.de> wrote:
-> > No worries - I agree. But unfortunately, I'm out of ideas now, and my
-> > initial thoughts about what might cause the trouble were abviously not
-> > able to explain the issue. Does anyone see further steps of tracking
-> > this issue down?
-> >
-> > Thanks,
-> > Daniel
-> >
+On Tue, 2010-04-13 at 19:33 +0000, tip-bot for Ingo Molnar wrote:
+> Commit-ID:  e58aa3d2d0cc01ad8d6f7f640a0670433f794922
+> Gitweb:     http://git.kernel.org/tip/e58aa3d2d0cc01ad8d6f7f640a0670433f794922
+> Author:     Ingo Molnar <mingo@elte.hu>
+> AuthorDate: Fri, 26 Mar 2010 00:06:51 +0000
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Tue, 13 Apr 2010 16:36:40 +0200
 > 
-> Well if this is a dirty / dangerous hack, what about your first patch?
-> I've been testing it for days and has given me no problems.
+> genirq: Run irq handlers with interrupts disabled
+> 
+> Running interrupt handlers with interrupts enabled can cause stack
+> overflows. That has been observed with multiqueue NICs delivering all
+> their interrupts to a single core. We might band aid that somehow by
+> checking the interrupt stacks, but the real safe fix is to run the irq
+> handlers with interrupts disabled.
+> 
+> Drivers for whacky hardware still can reenable them in the handler
+> itself, if the need arises. (They do already due to lockdep)
+> 
+> The risk of doing this is rather low:
+> 
+>  - lockdep already enforces this
+>  - CONFIG_NOHZ has shaken out the drivers which relied on jiffies updates
+>  - time keeping is not longer sensitive to the timer interrupt being delayed
 
-[For those who haven't followed all the discussions - this patch used
- usb_buffer_alloc() instead of kmalloc() in the audio USB driver]
+Clearly I don't mind this, but shouldn't we at least first convert the
+known problematic drivers to an alternative strategy?
 
-No, Alan is right. As long as we don't know what's going on, it
-shouldn't be fixed that way.
+IDE-PIO, that one ancient NIC etc..
 
-There might be an update to all USB drivers to use a special allocation
-function in order to avoid DMA bounce buffers for non-64-bit aware host
-controllers, but that's certainly a second step. First, the bug that you
-see needs attention, and the longer you can reproduce it, the better :)
+> ---
+>  kernel/irq/handle.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
+> index 76d5a67..27e5c69 100644
+> --- a/kernel/irq/handle.c
+> +++ b/kernel/irq/handle.c
+> @@ -370,9 +370,6 @@ irqreturn_t handle_IRQ_event(unsigned int irq, struct irqaction *action)
+>  	irqreturn_t ret, retval = IRQ_NONE;
+>  	unsigned int status = 0;
+>  
+> -	if (!(action->flags & IRQF_DISABLED))
+> -		local_irq_enable_in_hardirq();
+> -
+>  	do {
+>  		trace_irq_handler_entry(irq, action);
+>  		ret = action->handler(irq, action->dev_id);
 
-Daniel
+
+
