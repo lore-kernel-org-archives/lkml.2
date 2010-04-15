@@ -1,143 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab0DONrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 09:47:10 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:48424 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753714Ab0DONrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 09:47:08 -0400
-Date: Thu, 15 Apr 2010 14:46:48 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 3/4] mm: introduce free_pages_bulk
-Message-ID: <20100415134648.GF10966@csn.ul.ie>
-References: <20100415085420.GT2493@dastard> <20100415185310.D1A1.A69D9226@jp.fujitsu.com> <20100415192412.D1AA.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100415192412.D1AA.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1754219Ab0DONsr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 09:48:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46174 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714Ab0DONsq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 09:48:46 -0400
+Subject: Re: [PATCH] ummunotify: Userspace support for MMU notifications
+From: Peter Zijlstra <peterz@infradead.org>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Roland Dreier <rdreier@cisco.com>,
+       =?ISO-8859-1?Q?H=E5kon?= Bugge <Haakon.Bugge@Sun.COM>,
+       Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Eric B Munson <ebmunson@us.ibm.com>, linux-kernel@vger.kernel.org,
+       linux-rdma@vger.kernel.org, rolandd@cisco.com, pavel@ucw.cz,
+       mingo@elte.hu, jsquyres@cisco.com
+In-Reply-To: <20100414085228.GL23554@redhat.com>
+References: <1271053337-7121-1-git-send-email-ebmunson@us.ibm.com>
+	 <20100412160359.1d9074dc.akpm@linux-foundation.org>
+	 <20100412235937.GF15629@obsidianresearch.com>
+	 <3251DDDA-D705-4B1E-9595-9C24709EF146@Sun.com>
+	 <adahbnfme0j.fsf@roland-alpha.cisco.com> <1271181774.4807.1868.camel@twins>
+	 <20100414085228.GL23554@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Apr 2010 15:48:42 +0200
+Message-ID: <1271339322.1674.16.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 07:24:53PM +0900, KOSAKI Motohiro wrote:
-> Now, vmscan is using __pagevec_free() for batch freeing. but
-> pagevec consume slightly lots stack (sizeof(long)*8), and x86_64
-> stack is very strictly limited.
-> 
-> Then, now we are planning to use page->lru list instead pagevec
-> for reducing stack. and introduce new helper function.
-> 
-> This is similar to __pagevec_free(), but receive list instead
-> pagevec. and this don't use pcp cache. it is good characteristics
-> for vmscan.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  include/linux/gfp.h |    1 +
->  mm/page_alloc.c     |   44 ++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 45 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-> index 4c6d413..dbcac56 100644
-> --- a/include/linux/gfp.h
-> +++ b/include/linux/gfp.h
-> @@ -332,6 +332,7 @@ extern void free_hot_cold_page(struct page *page, int cold);
->  #define __free_page(page) __free_pages((page), 0)
->  #define free_page(addr) free_pages((addr),0)
->  
-> +void free_pages_bulk(struct zone *zone, struct list_head *list);
->  void page_alloc_init(void);
->  void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp);
->  void drain_all_pages(void);
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index ba9aea7..1f68832 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2049,6 +2049,50 @@ void free_pages(unsigned long addr, unsigned int order)
->  
->  EXPORT_SYMBOL(free_pages);
->  
-> +/*
-> + * Frees a number of pages from the list
-> + * Assumes all pages on list are in same zone and order==0.
-> + *
-> + * This is similar to __pagevec_free(), but receive list instead pagevec.
-> + * and this don't use pcp cache. it is good characteristics for vmscan.
-> + */
-> +void free_pages_bulk(struct zone *zone, struct list_head *list)
-> +{
-> +	unsigned long flags;
-> +	struct page *page;
-> +	struct page *page2;
-> +	int nr_pages = 0;
-> +
-> +	list_for_each_entry_safe(page, page2, list, lru) {
-> +		int wasMlocked = __TestClearPageMlocked(page);
-> +
-> +		if (free_pages_prepare(page, 0)) {
-> +			/* Make orphan the corrupted page. */
-> +			list_del(&page->lru);
-> +			continue;
-> +		}
-> +		if (unlikely(wasMlocked)) {
-> +			local_irq_save(flags);
-> +			free_page_mlock(page);
-> +			local_irq_restore(flags);
-> +		}
+On Wed, 2010-04-14 at 11:52 +0300, Gleb Natapov wrote:
+> On Tue, Apr 13, 2010 at 08:02:54PM +0200, Peter Zijlstra wrote:
+> > On Tue, 2010-04-13 at 10:57 -0700, Roland Dreier wrote:
+> > > Are those system calls the only possible way that virtual to physical
+> > > mappings can change?  Can't page migration or something like that
+> > > potentially affect things?  And even if you did have hooks into every
+> > > system call that mattered (keep in mind that relying on glibc is not
+> > > enough, since an MPI application may not use glibc) would decoding them
+> > > and figuring out what happened really be preferable to a single event
+> > > type that tells you exactly what address range was affected? 
+> > 
+> > Yeah, virtual<->physical maps can change through swapping, page
+> > migration, memory compaction, huge-page aggregation (the latter two not
+> > yet being upstream).
+> > 
+> > Even mlock() doesn't pin virtual<->physical maps.
+> Pages registered for RDMA are GUPed so no method above should touch
+> them. Fork+cow or unmap/map on the other hand can change
+> virtual<->physical maps. GUPed pages are still GUPed, but they are no
+> longer mapped into process' virtual address space. MPI copes with
+> Fork+cow by marking registered memory as MADV_DONTFORK.
 
-You could clear this under the zone->lock below before calling
-__free_one_page. It'd avoid a large number of IRQ enables and disables which
-are a problem on some CPUs (P4 and Itanium both blow in this regard according
-to PeterZ).
+Sure, holding a page-ref will pin the physical page, but that is not
+something userspace usually has means to.
 
-> +		nr_pages++;
-> +	}
-> +
-> +	spin_lock_irqsave(&zone->lock, flags);
-> +	__count_vm_events(PGFREE, nr_pages);
-> +	zone->all_unreclaimable = 0;
-> +	zone->pages_scanned = 0;
-> +	__mod_zone_page_state(zone, NR_FREE_PAGES, nr_pages);
-> +
-> +	list_for_each_entry_safe(page, page2, list, lru) {
-> +		/* have to delete it as __free_one_page list manipulates */
-> +		list_del(&page->lru);
-> +		__free_one_page(page, zone, 0, page_private(page));
-> +	}
-
-This has the effect of bypassing the per-cpu lists as well as making the
-zone lock hotter. The cache hotness of the data within the page is
-probably not a factor but the cache hotness of the stuct page is.
-
-The zone lock getting hotter is a greater problem. Large amounts of page
-reclaim or dumping of page cache will now contend on the zone lock where
-as previously it would have dumped into the per-cpu lists (potentially
-but not necessarily avoiding the zone lock).
-
-While there might be a stack saving in the next patch, there would appear
-to be definite performance implications in taking this patch.
-
-Functionally, I see no problem but I'd put this sort of patch on the
-very long finger until the performance aspects of it could be examined.
-
-> +	spin_unlock_irqrestore(&zone->lock, flags);
-> +}
-> +
->  /**
->   * alloc_pages_exact - allocate an exact number physically-contiguous pages.
->   * @size: the number of bytes to allocate
-> -- 
-> 1.6.5.2
-> 
-> 
-> 
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
