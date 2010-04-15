@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab0DOXd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 19:33:57 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:41716 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753527Ab0DOXdz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 19:33:55 -0400
-Date: Fri, 16 Apr 2010 09:33:39 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Suleiman Souhlal <ssouhlal@freebsd.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, suleiman@google.com
-Subject: Re: [PATCH 1/4] vmscan: delegate pageout io to flusher thread if
- current is kswapd
-Message-ID: <20100415233339.GW2493@dastard>
-References: <20100415013436.GO2493@dastard>
- <20100415130212.D16E.A69D9226@jp.fujitsu.com>
- <20100415131106.D174.A69D9226@jp.fujitsu.com>
- <64BE60A8-EEF9-4AC6-AF0A-0ED3CB544726@freebsd.org>
- <20100415093214.GV2493@dastard>
- <85DB7083-8E78-4884-9E76-5BD803C530EF@freebsd.org>
+	id S1756080Ab0DOXkR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 19:40:17 -0400
+Received: from threatwall.zlynx.org ([199.45.143.218]:35531 "EHLO zlynx.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754326Ab0DOXkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 19:40:15 -0400
+X-Greylist: delayed 1112 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Apr 2010 19:40:14 EDT
+Message-ID: <4BC79F75.2090704@acm.org>
+Date: Thu, 15 Apr 2010 17:21:25 -0600
+From: Zan Lynx <zlynx@acm.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <85DB7083-8E78-4884-9E76-5BD803C530EF@freebsd.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Taras Glek <tglek@mozilla.com>, linux-kernel@vger.kernel.org
+Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
+References: <4BBA6776.5060804@mozilla.com> <20100415155309.2649a29b.akpm@linux-foundation.org>
+In-Reply-To: <20100415155309.2649a29b.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Envelope-From: zlynx@acm.org
+X-Spam-Id: 20100415/1O2YNC-0000yn-Jr-linux-kernel@vger.kernel.org:zlynx@acm.org:199.45.143.218
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 10:27:09AM -0700, Suleiman Souhlal wrote:
-> 
-> On Apr 15, 2010, at 2:32 AM, Dave Chinner wrote:
-> 
-> >On Thu, Apr 15, 2010 at 01:05:57AM -0700, Suleiman Souhlal wrote:
-> >>
-> >>On Apr 14, 2010, at 9:11 PM, KOSAKI Motohiro wrote:
-> >>
-> >>>Now, vmscan pageout() is one of IO throuput degression source.
-> >>>Some IO workload makes very much order-0 allocation and reclaim
-> >>>and pageout's 4K IOs are making annoying lots seeks.
-> >>>
-> >>>At least, kswapd can avoid such pageout() because kswapd don't
-> >>>need to consider OOM-Killer situation. that's no risk.
-> >>>
-> >>>Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> >>
-> >>What's your opinion on trying to cluster the writes done by pageout,
-> >>instead of not doing any paging out in kswapd?
-> >
-> >XFS already does this in ->writepage to try to minimise the impact
-> >of the way pageout issues IO. It helps, but it is still not as good
-> >as having all the writeback come from the flusher threads because
-> >it's still pretty much random IO.
-> 
-> Doesn't the randomness become irrelevant if you can cluster enough
-> pages?
+On 4/15/10 4:53 PM, Andrew Morton wrote:
 
-No. If you are doing full disk seeks between random chunks, then you
-still lose a large amount of throughput. e.g. if the seek time is
-10ms and your IO time is 10ms for each 4k page, then increasing the
-size ito 64k makes it 10ms seek and 12ms for the IO. We might increase
-throughput but we are still limited to 100 IOs per second. We've
-gone from 400kB/s to 6MB/s, but that's still an order of magnitude
-short of the 100MB/s full size IOs with little in way of seeks
-between them will acheive on the same spindle...
+> This just isn't an interesting case.  World-wide, the number of people
+> who compile their own web browser and execute it from the file which ld
+> produced is, umm, seven.
 
-Cheers,
+Gentoo users? Linux From Scratch?
 
-Dave.
+There are many more than 7 of us. Unless you are talking about the build 
+environments always running some tool after ld which I am not aware of.
+
+
 -- 
-Dave Chinner
-david@fromorbit.com
+Zan Lynx
+zlynx@acm.org
+
+"Knowledge is Power.  Power Corrupts.  Study Hard.  Be Evil."
