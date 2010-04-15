@@ -1,84 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab0DOUSo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 16:18:44 -0400
-Received: from mail-qy0-f189.google.com ([209.85.221.189]:40080 "EHLO
-	mail-qy0-f189.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755339Ab0DOUSm (ORCPT
+	id S1756767Ab0DOUac (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 16:30:32 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:47215 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756706Ab0DOUab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 16:18:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=oi22CardB58MylFQPGo/TnA+xt9d+MgmOp2Vvh3hrfbTSSlKFyyohpAg0vl80/9ivX
-         LEbFyzmLnK1EhsvN00NcJnnKU637zl7O4geK+quXkk1pV7mEJGhZqtX/kgpBLS70S20N
-         wA7KPiVwK4/qlHdEx3E9a30BzS0Wkt/E6CGCw=
-Message-ID: <4BC774EA.1020002@gmail.com>
-Date: Thu, 15 Apr 2010 13:19:54 -0700
-From: "Justin P. mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Thu, 15 Apr 2010 16:30:31 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Thu, 15 Apr 2010 22:30:08 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: [git pull] FireWire fixes and documentation update
+To: "Daniel K." <dk@uw.no>, Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       linux1394-devel@lists.sourceforge.net
+In-Reply-To: <4BC76BDD.1020509@uw.no>
+Message-ID: <tkrat.abecf43dc6ad55ec@s5r6.in-berlin.de>
+References: <tkrat.671196999e56464f@s5r6.in-berlin.de>
+ <tkrat.e3130c87f5d2851a@s5r6.in-berlin.de>
+ <tkrat.66ea5df34ac46da2@s5r6.in-berlin.de>
+ <tkrat.fecd1b8fd085f0f8@s5r6.in-berlin.de> <4BC76BDD.1020509@uw.no>
 MIME-Version: 1.0
-To: Mikael Pettersson <mikpe@it.uu.se>
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] 2.6.34-rc4: acpi boot-time oops on FSC Amilo Pa 3553
-References: <19399.23074.26023.534765@pilspetsen.it.uu.se>	<4BC76645.50401@gmail.com> <19399.29421.508520.647456@pilspetsen.it.uu.se>
-In-Reply-To: <19399.29421.508520.647456@pilspetsen.it.uu.se>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2010 01:11 PM, Mikael Pettersson wrote:
-> Justin P. mattock writes:
->   >  On 04/15/2010 11:25 AM, Mikael Pettersson wrote:
->   >  >  Kernels up to and including 2.6.34-rc3 boot fine on my Amilo Pa 3553,
->   >  >  but 2.6.34-rc4 always oopses during boot in acpi.  Without a serial port
->   >  >  I cannot capture the entire oops, but it goes something like this:
->   >  >
->   >  >  __driver_attach
->   >  >  bus_for_each_dev
->   >  >  driver_attach
->   >  >  __driver_attach
->   >  >  bus_add_driver
->   >  >  acpi_device_remove
->   >  >  driver_register
->   >  >  async_thread
->   >  >  proc_mkdir_mode
->   >  >  async_thread
->   >  >  acpi_battery_init_async
->   >  >  async_thread
->   >  >  schedule
->   >  >  default_wake_function
->   >  >  async_thread
->   >  >  kthread
->   >  >  kthread
->   >  >  kernel_thread_helper
->   >  >  EIP: acpi_ex_read_data_from_field+0x16e
->   >  >
->   >  >  Any suggestions for revisions to try to revert?
->   >  >  --
->   >  >  To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->   >  >  the body of a message to majordomo@vger.kernel.org
->   >  >  More majordomo info at  http://vger.kernel.org/majordomo-info.html
->   >  >  Please read the FAQ at  http://www.tux.org/lkml/
->   >  >
->   >
->   >
->   >  sounds similar to this:
->   >  https://bugzilla.kernel.org/show_bug.cgi?id=%2015749
->   >  if so try the patch there and see if
->   >  you can boot.
->
-> Yes, that patch (https://bugzilla.kernel.org/attachment.cgi?id=25962)
-> fixed the problem.  Thanks.
->
-> /Mikael
->
+On 15 Apr, Daniel K. wrote:
+> Stefan Richter wrote:
+>>     firewire: cdev: change license of exported header files to MIT license
+>> [...]
+>> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+>> + * PRECISION INSIGHT AND/OR ITS SUPPLIERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+> 
+> Where exactly does PRECISION INSIGHT AND/OR ITS SUPPLIERS enter the picture?
+> Are any of you employed there?
 
-cool.. if you can send a post on the bug report
-so they know, and can push that patch forward
-and so forth.
+No, this was a copy & waste error.
+Thanks, fixed.
 
-Justin P. Mattock
+Linus, I updated linux1394-2.6.git's for-linus branch for you to pull:
+
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git for-linus
+
+Clemens Ladisch (3):
+      firewire: cdev: disallow receive packets without header
+      firewire: cdev: require quadlet-aligned headers for transmit packets
+      firewire: cdev: iso packet documentation
+
+Stefan Richter (4):
+      firewire: cdev: fix information leak
+      firewire: cdev: comment fixlet
+      firewire: cdev: change license of exported header files to MIT license
+      firewire: cdev: fix cut+paste mistake in disclaimer
+
+ drivers/firewire/core-cdev.c       |   23 ++++++-----
+ include/linux/firewire-cdev.h      |   78 +++++++++++++++++++++++++-----------
+ include/linux/firewire-constants.h |   29 ++++++++++++-
+ 3 files changed, 95 insertions(+), 35 deletions(-)
+
+
+Added:
+
+>From a2612cb16d4d8447793609cbdd2a2f4f156c0020 Mon Sep 17 00:00:00 2001
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Date: Thu, 15 Apr 2010 22:16:04 +0200
+Subject: [PATCH] firewire: cdev: fix cut+paste mistake in disclaimer
+
+This was supposed to be generic "authors or copyright holders";
+I mistakenly picked up text from a wrong file.
+
+Reported-by: Daniel K. <dk@uw.no>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ include/linux/firewire-cdev.h      |    2 +-
+ include/linux/firewire-constants.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/firewire-cdev.h b/include/linux/firewire-cdev.h
+index 81f3b14..68f883b 100644
+--- a/include/linux/firewire-cdev.h
++++ b/include/linux/firewire-cdev.h
+@@ -17,7 +17,7 @@
+  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+- * PRECISION INSIGHT AND/OR ITS SUPPLIERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+  * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  * DEALINGS IN THE SOFTWARE.
+diff --git a/include/linux/firewire-constants.h b/include/linux/firewire-constants.h
+index 9c63f06..9b4bb5f 100644
+--- a/include/linux/firewire-constants.h
++++ b/include/linux/firewire-constants.h
+@@ -17,7 +17,7 @@
+  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+- * PRECISION INSIGHT AND/OR ITS SUPPLIERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+  * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  * DEALINGS IN THE SOFTWARE.
+-- 
+Stefan Richter
+-=====-==-=- -=-- -====
+http://arcgraph.de/sr/
+
