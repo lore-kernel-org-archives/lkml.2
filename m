@@ -1,95 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab0DOETj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 00:19:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57529 "EHLO mga03.intel.com"
+	id S1753642Ab0DOEYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 00:24:31 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:60355 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750972Ab0DOETi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 00:19:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,209,1270450800"; 
-   d="scan'208";a="265917459"
-Date: Thu, 15 Apr 2010 12:19:31 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andreas Mohr <andi@lisas.de>, Jens Axboe <axboe@kernel.dk>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Memory Management List <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: 32GB SSD on USB1.1 P3/700 == ___HELL___ (2.6.34-rc3)
-Message-ID: <20100415041931.GA14215@localhost>
-References: <20100407070050.GA10527@localhost> <20100407070842.GA18215@localhost> <20100415122928.D168.A69D9226@jp.fujitsu.com>
+	id S1753315Ab0DOEY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 00:24:29 -0400
+Date: Wed, 14 Apr 2010 21:24:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, David Miller <davem@davemloft.net>,
+       a.p.zijlstra@chello.nl, mingo@elte.hu, sparclinux@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: Weird rcu lockdep warning
+Message-ID: <20100415042426.GA4254@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100413200432.GB5099@nowhere>
+ <20100413234043.GG2538@linux.vnet.ibm.com>
+ <20100414000226.GH5602@nowhere>
+ <20100413.171306.25868761.davem@davemloft.net>
+ <20100414014930.GI2538@linux.vnet.ibm.com>
+ <4BC537C9.8050600@cn.fujitsu.com>
+ <20100414154302.GC2516@linux.vnet.ibm.com>
+ <20100414155110.GG5142@nowhere>
+ <20100414160057.GD2516@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100415122928.D168.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100414160057.GD2516@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 11:31:52AM +0800, KOSAKI Motohiro wrote:
-> > > Many applications (this one and below) are stuck in
-> > > wait_on_page_writeback(). I guess this is why "heavy write to
-> > > irrelevant partition stalls the whole system".  They are stuck on page
-> > > allocation. Your 512MB system memory is a bit tight, so reclaim
-> > > pressure is a bit high, which triggers the wait-on-writeback logic.
-> > 
-> > I wonder if this hacking patch may help.
-> > 
-> > When creating 300MB dirty file with dd, it is creating continuous
-> > region of hard-to-reclaim pages in the LRU list. priority can easily
-> > go low when irrelevant applications' direct reclaim run into these
-> > regions..
+On Wed, Apr 14, 2010 at 09:00:57AM -0700, Paul E. McKenney wrote:
+> On Wed, Apr 14, 2010 at 05:51:11PM +0200, Frederic Weisbecker wrote:
+
+[ . . .]
+
+> > Note I just tested the patch the previous one and it looks fine now.
+> > You can then safely consider the "general idea" fixes the problem :)
 > 
-> Sorry I'm confused not. can you please tell us more detail explanation?
-> Why did lumpy reclaim cause OOM? lumpy reclaim might cause
-> direct reclaim slow down. but IIUC it's not cause OOM because OOM is
-> only occur when priority-0 reclaim failure.
+> Thank you, Frederic!!!
 
-No I'm not talking OOM. Nor lumpy reclaim.
+And here is what I hope is the official fix.
 
-I mean the direct reclaim can get stuck for long time, when we do
-wait_on_page_writeback() on lumpy_reclaim=1.
+Could you please test it?
 
-> IO get stcking also prevent priority reach to 0.
+							Thanx, Paul
 
-Sure. But we can wait for IO a bit later -- after scanning 1/64 LRU
-(the below patch) instead of the current 1/1024.
+------------------------------------------------------------------------
 
-In Andreas' case, 512MB/1024 = 512KB, this is way too low comparing to
-the 22MB writeback pages. There can easily be a continuous range of
-512KB dirty/writeback pages in the LRU, which will trigger the wait
-logic.
+commit 9be39c445a41e458d53cf9a57d25dbfa4b74c970
+Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date:   Tue Apr 13 18:45:51 2010 -0700
 
-Thanks,
-Fengguang
+    rcu: Make RCU lockdep check the lockdep_recursion variable
+    
+    The lockdep facility temporarily disables lockdep checking by incrementing
+    the current->lockdep_recursion variable.  Such disabling happens in NMIs
+    and in other situations where lockdep might expect to recurse on itself.
+    This patch therefore checks current->lockdep_recursion, disabling RCU
+    lockdep splats when this variable is non-zero.  In addition, this patch
+    removes the "likely()", as suggested by Lai Jiangshan.
+    
+    Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+    Reported-by: David Miller <davem@davemloft.net>
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> 
-> 
-> > 
-> > Thanks,
-> > Fengguang
-> > ---
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index e0e5f15..f7179cf 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1149,7 +1149,7 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
-> >  	 */
-> >  	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-> >  		lumpy_reclaim = 1;
-> > -	else if (sc->order && priority < DEF_PRIORITY - 2)
-> > +	else if (sc->order && priority < DEF_PRIORITY / 2)
-> >  		lumpy_reclaim = 1;
-> >  
-> >  	pagevec_init(&pvec, 1);
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 9f1ddfe..07db2fe 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -101,10 +101,7 @@ extern struct lockdep_map rcu_sched_lock_map;
+ # define rcu_read_release_sched() \
+ 		lock_release(&rcu_sched_lock_map, 1, _THIS_IP_)
+ 
+-static inline int debug_lockdep_rcu_enabled(void)
+-{
+-	return likely(rcu_scheduler_active && debug_locks);
+-}
++extern int debug_lockdep_rcu_enabled(void);
+ 
+ /**
+  * rcu_read_lock_held - might we be in RCU read-side critical section?
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index 63fe254..03a7ea1 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -69,6 +69,13 @@ EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 
++int debug_lockdep_rcu_enabled(void)
++{
++	return rcu_scheduler_active && debug_locks &&
++	       current->lockdep_recursion == 0;
++}
++EXPORT_SYMBOL_GPL(debug_lockdep_rcu_enabled);
++
+ /**
+  * rcu_read_lock_bh_held - might we be in RCU-bh read-side critical section?
+  *
