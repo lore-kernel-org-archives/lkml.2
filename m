@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab0DOKVx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 06:21:53 -0400
-Received: from 69-64-69-152.dedicated.abac.net ([69.64.69.152]:51370 "EHLO
-	imedia.com.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752491Ab0DOKVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 06:21:51 -0400
-X-Antivirus-MYDOMAIN-Mail-From: info@upgrade.com via imedia.com.my
-X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:1(127.0.0.1):. Processed in 0.040595 secs Process 30270)
-Message-ID: <476c575c0f58d2eaaef43dc00a0bc702.squirrel@mail.pemuda.com.my>
-Date: Thu, 15 Apr 2010 10:15:09 -0000 (GMT)
-Subject: Dear valued customer
-From: "UP-GRADE SUPPORT TEAM" <info@upgrade.com>
-Reply-To: teamupgrade08@bbs.ctex.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+	id S1752268Ab0DOKXG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 06:23:06 -0400
+Received: from systemlinux.org ([83.151.29.59]:36805 "EHLO m18s25.vlinux.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464Ab0DOKXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 06:23:04 -0400
+X-Greylist: delayed 1414 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Apr 2010 06:23:04 EDT
+Date: Thu, 15 Apr 2010 11:59:26 +0200
+From: Steffen Klassert <klassert@mathematik.tu-chemnitz.de>
+To: Martin Buck <mb-tmp-yvahk-argqri@gromit.dyndns.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Speedup link loss detection for 3c59x
+Message-ID: <20100415095926.GP25086@skl-net.de>
+References: <20100415091134.GA9574@gromit.at.home>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100415091134.GA9574@gromit.at.home>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear valued customer,
+On Thu, Apr 15, 2010 at 11:11:34AM +0200, Martin Buck wrote:
+> From: Martin Buck <mb-tmp-yvahk-argqri@gromit.dyndns.org>
+> 
+> Change the timer used for link status checking to check link every 5s,
+> regardless of the current link state. This way, link loss is detected as
+> fast as new link, whereas this took up to 60s previously (which is pretty
+> inconvenient when trying to react on link loss using e.g. ifplugd). This
+> also matches behaviour of most other Ethernet drivers which typically have
+> link check intervals in the low second range.
+> 
 
-We are currently performing maintenance for our Digital email Customers.
-We intend upgrading our Digital email
-Security Server for better online services.
+We discussed this issue already some years ago. The 3c59x does polling
+for external environment changes which is quite expensive. Firing a
+timer that disables the interrupts on a running interface every 5
+seconds is not reasonable for checking for external environment changes.
+So we decided to let it depend on the link status, 5 seconds if the link
+is down and 60 seconds if the link is up.
 
-In order to ensure you do not experience service interruption,Please you
-must reply to this email immediately and enter your password here
-(*******) and Check out your new features and enhancements with your new
-and improved
-email Account,To enable us upgrade your email Account for better online
-services please reply to this mail.
-
-Thank You For Using our email Account.
-
+Steffen
