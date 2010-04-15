@@ -1,48 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090Ab0DOXoa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 19:44:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47542 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755843Ab0DOXo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 19:44:28 -0400
-Date: Thu, 15 Apr 2010 16:42:16 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Zan Lynx <zlynx@acm.org>
-Cc: Taras Glek <tglek@mozilla.com>, linux-kernel@vger.kernel.org
-Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
-Message-Id: <20100415164216.26848906.akpm@linux-foundation.org>
-In-Reply-To: <4BC79F75.2090704@acm.org>
-References: <4BBA6776.5060804@mozilla.com>
-	<20100415155309.2649a29b.akpm@linux-foundation.org>
-	<4BC79F75.2090704@acm.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755843Ab0DOXqD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 19:46:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19686 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756328Ab0DOXp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 19:45:59 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       Jan Blunck <jblunck@suse.de>, Valerie Aurora <vaurora@redhat.com>,
+       autofs@linux.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 03/35] autofs4: Save autofs trigger's vfsmount in super block info
+Date: Thu, 15 Apr 2010 16:45:33 -0700
+Message-Id: <1271375133-23641-1-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1271372682-21225-3-git-send-email-vaurora@redhat.com>
+References: <1271372682-21225-3-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Apr 2010 17:21:25 -0600 Zan Lynx <zlynx@acm.org> wrote:
+From: Jan Blunck <jblunck@suse.de>
 
-> On 4/15/10 4:53 PM, Andrew Morton wrote:
-> 
-> > This just isn't an interesting case.  World-wide, the number of people
-> > who compile their own web browser and execute it from the file which ld
-> > produced is, umm, seven.
-> 
-> Gentoo users? Linux From Scratch?
-> 
-> There are many more than 7 of us. Unless you are talking about the build 
-> environments always running some tool after ld which I am not aware of.
-> 
+(Resend due to kernel.org complaining about XXX in original subject)
 
-OK, eight then.
+XXX - This is broken and included just to make union mounts work.  See
+discussion at:
 
-But I still don't think it's the case we should optimise for.  Not if
-it impacts the common case even the slightest.  It'd be far far better
-to change those distros to perform the very cheap, once-off step of
-straightening out their executables (including shared libraries).
+http://kerneltrap.org/mailarchive/linux-fsdevel/2010/1/15/6708053/thread
+
+Original commit message:
+
+This is a bugfix/replacement for commit
+051d381259eb57d6074d02a6ba6e90e744f1a29f:
+
+    During a path walk if an autofs trigger is mounted on a dentry,
+    when the follow_link method is called, the nameidata struct
+    contains the vfsmount and mountpoint dentry of the parent mount
+    while the dentry that is passed in is the root of the autofs
+    trigger mount.  I believe it is impossible to get the vfsmount of
+    the trigger mount, within the follow_link method, when only the
+    parent vfsmount and the root dentry of the trigger mount are
+    known.
+
+The solution in this commit was to replace the path embedded in the
+parent's nameidata with the path of the link itself in
+__do_follow_link().  This is a relatively harmless misuse of the
+field, but union mounts ran into a bug during follow_link() caused by
+the nameidata containing the wrong path (we count on it being what it
+is all other places - the path of the parent).
+
+A cleaner and easier to understand solution is to save the necessary
+vfsmount in the autofs superblock info when it is mounted.  Then we
+can easily update the vfsmount in autofs4_follow_link().
+
+Signed-off-by: Jan Blunck <jblunck@suse.de>
+Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+Acked-by: Ian Kent <raven@themaw.net>
+Cc: autofs@linux.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+---
+ fs/autofs4/autofs_i.h |    1 +
+ fs/autofs4/init.c     |   11 ++++++++++-
+ fs/autofs4/root.c     |    6 ++++++
+ fs/namei.c            |    7 ++-----
+ 4 files changed, 19 insertions(+), 6 deletions(-)
+
+diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
+index 3d283ab..de3af64 100644
+--- a/fs/autofs4/autofs_i.h
++++ b/fs/autofs4/autofs_i.h
+@@ -133,6 +133,7 @@ struct autofs_sb_info {
+ 	int reghost_enabled;
+ 	int needs_reghost;
+ 	struct super_block *sb;
++	struct vfsmount *mnt;
+ 	struct mutex wq_mutex;
+ 	spinlock_t fs_lock;
+ 	struct autofs_wait_queue *queues; /* Wait queue pointer */
+diff --git a/fs/autofs4/init.c b/fs/autofs4/init.c
+index 9722e4b..5e0dcd7 100644
+--- a/fs/autofs4/init.c
++++ b/fs/autofs4/init.c
+@@ -17,7 +17,16 @@
+ static int autofs_get_sb(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
+ {
+-	return get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
++	struct autofs_sb_info *sbi;
++	int ret;
++
++	ret = get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
++	if (ret)
++		return ret;
++
++	sbi = autofs4_sbi(mnt->mnt_sb);
++	sbi->mnt = mnt;
++	return 0;
+ }
+ 
+ static struct file_system_type autofs_fs_type = {
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index a015b49..267fe6d 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -219,6 +219,12 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
+ 	DPRINTK("dentry=%p %.*s oz_mode=%d nd->flags=%d",
+ 		dentry, dentry->d_name.len, dentry->d_name.name, oz_mode,
+ 		nd->flags);
++
++	dput(nd->path.dentry);
++	mntput(nd->path.mnt);
++	nd->path.mnt = mntget(sbi->mnt);
++	nd->path.dentry = dget(dentry);
++
+ 	/*
+ 	 * For an expire of a covered direct or offset mount we need
+ 	 * to break out of follow_down() at the autofs mount trigger
+diff --git a/fs/namei.c b/fs/namei.c
+index 9013d17..8e4c75f 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -538,11 +538,8 @@ __do_follow_link(struct path *path, struct nameidata *nd, void **p)
+ 	touch_atime(path->mnt, dentry);
+ 	nd_set_link(nd, NULL);
+ 
+-	if (path->mnt != nd->path.mnt) {
+-		path_to_nameidata(path, nd);
+-		dget(dentry);
+-	}
+-	mntget(path->mnt);
++	if (path->mnt == nd->path.mnt)
++		mntget(nd->path.mnt);
+ 	nd->last_type = LAST_BIND;
+ 	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
+ 	error = PTR_ERR(*p);
+-- 
+1.6.3.3
 
