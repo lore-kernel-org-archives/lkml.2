@@ -1,82 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab0DORP7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 13:15:59 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:49509 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754623Ab0DORP4 (ORCPT
+	id S1755007Ab0DORSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 13:18:09 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35424 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab0DORSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 13:15:56 -0400
+	Thu, 15 Apr 2010 13:18:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=odWdh9Q8uXFVhtxI5/Oa7KLzh3pOEK6kl1V808CJtHW3DfvMwAutHxhtJcIhRCCNjy
-         WAasWIPjOgN5Talmc5Vjj2JwOFYg1+K4S7Nj7ch4ccRzHps1Wdwx9hP9DbLlZ+/w0uRR
-         uHzUkuWb1uh6I5W1KNtzS4Q2Ttya5NIAhZb2c=
-Date: Thu, 15 Apr 2010 19:15:55 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: PowerPC WARN_ON_ONCE() after merge of the final
-	tree (tip related)
-Message-ID: <20100415171551.GA5069@nowhere>
-References: <20100415161214.04637496.sfr@canb.auug.org.au> <20100415064940.GA9240@elte.hu> <20100415130032.GA6789@nowhere> <20100415140358.GA19981@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100415140358.GA19981@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=LGpVrqFWTDUWCtGGmDQ+Fb+8JNC5C/GN8dcmw+tOmYF1XStZUbAuUZiFs0DnsNRwG0
+         8HGwmpH7+2331GDKEuUrukPZ9O9OLa+yCfcuzkq5ggb5rq936L/TTGA0jHZ9h3/aLGQt
+         T87wCZF1BW06sDo3q0xr0Ogl8eurkXFuafr+Q=
+From: Chihau Chau <chihau@gmail.com>
+To: herbert@gondor.hengli.com.au
+Cc: davem@davemloft.net, roel.kluin@gmail.com, sebastian@breakpoint.cc,
+       linux-geode@lists.infradead.org, linux-crypto@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Chihau Chau <chihau@gmail.com>
+Subject: [PATCH] Crypto: geode-aes: Fix some code style issues
+Date: Thu, 15 Apr 2010 13:17:59 -0400
+Message-Id: <1271351879-22805-1-git-send-email-chihau@gmail.com>
+X-Mailer: git-send-email 1.5.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 04:03:58PM +0200, Ingo Molnar wrote:
-> > In this case, I guess the following fix should be sufficient?
-> > I'm going to test it and provide a sane changelog.
-> > 
-> > 
-> > diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> > index 78325f8..65d4336 100644
-> > --- a/kernel/lockdep.c
-> > +++ b/kernel/lockdep.c
-> > @@ -2298,7 +2298,11 @@ void trace_hardirqs_on_caller(unsigned long ip)
-> >  		return;
-> >  
-> >  	if (unlikely(curr->hardirqs_enabled)) {
-> > +		unsigned long flags;
-> > +
-> > +		raw_local_irq_save(flags);
-> >  		debug_atomic_inc(redundant_hardirqs_on);
-> > +		raw_local_irq_restore(flags);
-> >  		return;
-> >  	}
-> >  	/* we'll do an OFF -> ON transition: */
-> 
-> that looks rather ugly. Why not do a raw:
-> 
-> 	this_cpu_inc(lockdep_stats.redundant_hardirqs_on);
-> 
-> which basically open-codes debug_atomic_inc(), but without the warning?
+From: Chihau Chau <chihau@gmail.com>
 
+This fixes some code style issues like:
 
-Because that would open a race against interrupts that might
-touch lockdep_stats.redundant_hardirqs_on too.
+- Use #include <linux/io.h> instead of <asm/io.h> and #include
+  <linux/delay.h> instead of <asm/delay.h>
 
-If you think it's not very important (this race must be pretty rare I guess),
-I can use your solution.
+- Use "foo *bar" instead of "foo * bar"
 
+- Add a space after the for or while sentence and before the open
+  parenthesis '('
 
+- Don't use assignments in a if condition
 
-> 
-> Btw., using the this_cpu() methods might result in faster code for all the 
-> debug_atomic_inc() macros as well?
+Signed-off-by: Chihau Chau <chihau@gmail.com>
+---
+ drivers/crypto/geode-aes.c |   36 ++++++++++++++++++++----------------
+ 1 files changed, 20 insertions(+), 16 deletions(-)
 
-
-Indeed, will change that too.
-
-Thanks.
+diff --git a/drivers/crypto/geode-aes.c b/drivers/crypto/geode-aes.c
+index c7a5a43..09389dd 100644
+--- a/drivers/crypto/geode-aes.c
++++ b/drivers/crypto/geode-aes.c
+@@ -15,14 +15,14 @@
+ #include <crypto/algapi.h>
+ #include <crypto/aes.h>
+ 
+-#include <asm/io.h>
+-#include <asm/delay.h>
++#include <linux/io.h>
++#include <linux/delay.h>
+ 
+ #include "geode-aes.h"
+ 
+ /* Static structures */
+ 
+-static void __iomem * _iobase;
++static void __iomem *_iobase;
+ static spinlock_t lock;
+ 
+ /* Write a 128 bit field (either a writable key or IV) */
+@@ -30,7 +30,7 @@ static inline void
+ _writefield(u32 offset, void *value)
+ {
+ 	int i;
+-	for(i = 0; i < 4; i++)
++	for (i = 0; i < 4; i++)
+ 		iowrite32(((u32 *) value)[i], _iobase + offset + (i * 4));
+ }
+ 
+@@ -39,7 +39,7 @@ static inline void
+ _readfield(u32 offset, void *value)
+ {
+ 	int i;
+-	for(i = 0; i < 4; i++)
++	for (i = 0; i < 4; i++)
+ 		((u32 *) value)[i] = ioread32(_iobase + offset + (i * 4));
+ }
+ 
+@@ -59,7 +59,7 @@ do_crypt(void *src, void *dst, int len, u32 flags)
+ 	do {
+ 		status = ioread32(_iobase + AES_INTR_REG);
+ 		cpu_relax();
+-	} while(!(status & AES_INTRA_PENDING) && --counter);
++	} while (!(status & AES_INTRA_PENDING) && --counter);
+ 
+ 	/* Clear the event */
+ 	iowrite32((status & 0xFF) | AES_INTRA_PENDING, _iobase + AES_INTR_REG);
+@@ -317,7 +317,7 @@ geode_cbc_decrypt(struct blkcipher_desc *desc,
+ 	err = blkcipher_walk_virt(desc, &walk);
+ 	op->iv = walk.iv;
+ 
+-	while((nbytes = walk.nbytes)) {
++	while ((nbytes = walk.nbytes)) {
+ 		op->src = walk.src.virt.addr,
+ 		op->dst = walk.dst.virt.addr;
+ 		op->mode = AES_MODE_CBC;
+@@ -349,7 +349,7 @@ geode_cbc_encrypt(struct blkcipher_desc *desc,
+ 	err = blkcipher_walk_virt(desc, &walk);
+ 	op->iv = walk.iv;
+ 
+-	while((nbytes = walk.nbytes)) {
++	while ((nbytes = walk.nbytes)) {
+ 		op->src = walk.src.virt.addr,
+ 		op->dst = walk.dst.virt.addr;
+ 		op->mode = AES_MODE_CBC;
+@@ -429,7 +429,7 @@ geode_ecb_decrypt(struct blkcipher_desc *desc,
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+ 	err = blkcipher_walk_virt(desc, &walk);
+ 
+-	while((nbytes = walk.nbytes)) {
++	while ((nbytes = walk.nbytes)) {
+ 		op->src = walk.src.virt.addr,
+ 		op->dst = walk.dst.virt.addr;
+ 		op->mode = AES_MODE_ECB;
+@@ -459,7 +459,7 @@ geode_ecb_encrypt(struct blkcipher_desc *desc,
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+ 	err = blkcipher_walk_virt(desc, &walk);
+ 
+-	while((nbytes = walk.nbytes)) {
++	while ((nbytes = walk.nbytes)) {
+ 		op->src = walk.src.virt.addr,
+ 		op->dst = walk.dst.virt.addr;
+ 		op->mode = AES_MODE_ECB;
+@@ -518,11 +518,12 @@ static int __devinit
+ geode_aes_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ {
+ 	int ret;
+-
+-	if ((ret = pci_enable_device(dev)))
++	ret = pci_enable_device(dev);
++	if (ret)
+ 		return ret;
+ 
+-	if ((ret = pci_request_regions(dev, "geode-aes")))
++	ret = pci_request_regions(dev, "geode-aes");
++	if (ret)
+ 		goto eenable;
+ 
+ 	_iobase = pci_iomap(dev, 0, 0);
+@@ -537,13 +538,16 @@ geode_aes_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	/* Clear any pending activity */
+ 	iowrite32(AES_INTR_PENDING | AES_INTR_MASK, _iobase + AES_INTR_REG);
+ 
+-	if ((ret = crypto_register_alg(&geode_alg)))
++	ret = crypto_register_alg(&geode_alg);
++	if (ret)
+ 		goto eiomap;
+ 
+-	if ((ret = crypto_register_alg(&geode_ecb_alg)))
++	ret = crypto_register_alg(&geode_ecb_alg);
++	if (ret)
+ 		goto ealg;
+ 
+-	if ((ret = crypto_register_alg(&geode_cbc_alg)))
++	ret = crypto_register_alg(&geode_cbc_alg);
++	if (ret)
+ 		goto eecb;
+ 
+ 	printk(KERN_NOTICE "geode-aes: GEODE AES engine enabled.\n");
+-- 
+1.5.6.3
 
