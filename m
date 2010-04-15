@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab0DOHIX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 03:08:23 -0400
-Received: from pmx3.lnl.infn.it ([192.135.30.243]:49529 "EHLO pmx3.lnl.infn.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201Ab0DOHIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 03:08:21 -0400
-Message-ID: <1205877.1271315264088.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-Date: Thu, 15 Apr 2010 09:07:44 +0200 (CEST)
-From: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>
-To: Amir Vadai <amirv@mellanox.co.il>
-Subject: Re: Socket Direct Protocol: help (2)
-Cc: "Tung, Chien Tin" <chien.tin.tung@intel.com>,
-       Steve Wise <swise@opengridcomputing.com>,
-       Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-       "rolandd@cisco.com" <rolandd@cisco.com>,
-       "peterz@infradead.org" <peterz@infradead.org>,
-       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
-       Eric B Munson <ebmunson@us.ibm.com>
-In-Reply-To: <4BC6B135.2060004@mellanox.co.il>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753139Ab0DOHM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 03:12:28 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63336 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab0DOHM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 03:12:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: dgilbert@interlog.com
+Subject: Re: [PATCH 1/2] [RFC] block: replace BKL with global mutex
+Date: Thu, 15 Apr 2010 09:11:45 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
+Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+       Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       John Kacur <jkacur@redhat.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+References: <1271277384-7627-1-git-send-email-arnd@arndb.de> <4BC64633.6010407@interlog.com>
+In-Reply-To: <4BC64633.6010407@interlog.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Priority: 3 (normal)
-X-Mailer: SuSE Linux Openexchange Server 4 - WebMail (Build 2.4160)
-X-Operating-System: Linux 2.4.21-314-smp i386 (JVM 1.3.1_20)
-Organization: INFN - Laboratori Nazionali Legnaro
-References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com> <4BC49E2B.3000804@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com> <4BC4D22A.6020700@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com> <7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <4BC5D1D3.3020004@mellanox.co.il> <4BC5D529.1060701@mellanox.co.il> <2EFBCAEF10980645BBCFB605689E08E9047C79B918@azsmsx506.amr.corp.intel.com> <4BC5D9D4.7020702@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C79BD12@azsmsx506.amr.corp.intel.com> <4BC6B135.2060004@mellanox.co.il>
-X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.15.65114 (i)
-X-Spam-Flag: NO
+Message-Id: <201004150911.45842.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1+6QL/rQyfMf/iGe6mpHCmPNrsU+zZDYPM0Vzu
+ 8/yVToEKJUaGceLNPOIOxNitZ5NL9oRp/DAFYWnTtcYnF2FqVC
+ k0T+taUbE1WjeNhdGdIAw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 15, 2010 08:24 AM, Amir Vadai <amirv@mellanox.co.il> wrote:
+On Thursday 15 April 2010 00:48:19 Douglas Gilbert wrote:
 
-> I hope to have a fix next week for the first one.
+> > @@ -1322,7 +1331,8 @@ static const struct file_operations sg_fops = {
+> >  	.read = sg_read,
+> >  	.write = sg_write,
+> >  	.poll = sg_poll,
+> > -	.ioctl = sg_ioctl,
+> > +	.llseek = generic_file_llseek,
 > 
-> Thanks,
-> Amir
+> The sg driver has no seek semantics on its read() and
+> write() calls. And sg_open() calls nonseekable_open(). So
+>      .llseek = no_llseek,
+> seems more appropriate.
+
+Ok, I missed the nonseekable_open here and assumed someone
+might be calling seek on it. I'll use no_llseek then, or
+just leave it alone.
+
+> > +	.unlocked_ioctl = sg_unlocked_ioctl,
+> >  #ifdef CONFIG_COMPAT
+> >  	.compat_ioctl = sg_compat_ioctl,
+> >  #endif
 > 
-> On 04/14/2010 09:48 PM, Tung, Chien Tin wrote:
-> >> Tung, Chien Tin wrote:
-> >>     
-> >>>> One more thing - Please open a bug regarding the num_sge
-> >>>> limitation at:
-> >>>> https://bugs.openfabrics.org/
-> >>>>
-> >>>>         
-> >>> Done, Bug 2027.
-> >>>
-> >>> Chien
-> >>>
-> >>>       
-> >> And 2028 opened to request fastreg support.
-> >>
-> >>     
-> >
-> > I am open to test fixes for these two bugs.
-> >
-> > Chien
-> >
-> >   
-> 
+> And I just checked st.c (SCSI tape driver) and it calls
+> lock_kernel() .
 
-Hi Amir, 
-Hi Chien,
+Ah, good point. So even if the st driver does not need
+any locking against the block layer, it might need to
+lock its ioctl against sg.
 
-I understand that the bug 2027 could be solved next week, so I will test
-SDP protocol performance on NE020 cards.
-Is it correct? 
-If yes, could you point out the code modifies?
+The most simple solution for this would be to let sg
+take both blkdev_mutex and the BKL, which of course
+feels like a step backwards.
 
-Keep in touch and take care.
-Regards,
-Andrea
+A better way is to get rid of the BKL in sg, which requires
+a better understanding of what it's actually protecting.
+It only gets it in the open and ioctl functions, which is a
+result of the pushdown from the respective file operations.
+Chances are that it's not needed at all, but that's really
+hard to tell. Can you shed some more light on this?
 
-
-Andrea Gozzelino
-
-INFN - Laboratori Nazionali di Legnaro	(LNL)
-Viale dell'Universita' 2
-I-35020 - Legnaro (PD)- ITALIA
-Tel: +39 049 8068346
-Fax: +39 049 641925
-Mail: andrea.gozzelino@lnl.infn.it			
-
+	Arnd
