@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab0DOUgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 16:36:33 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:56815 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756682Ab0DOUgb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 16:36:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [PATCH 2/2] [RFC] Remove BKL from fs/locks.c
-Date: Thu, 15 Apr 2010 22:36:19 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
-Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Matthew Wilcox <willy@linux.intel.com>, Christoph Hellwig <hch@lst.de>,
-       Miklos Szeredi <mszeredi@suse.cz>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-References: <1271277384-7627-1-git-send-email-arnd@arndb.de> <1271278334.3159.19.camel@localhost.localdomain> <20100414210403.GA29133@fieldses.org>
-In-Reply-To: <20100414210403.GA29133@fieldses.org>
+	id S1756805Ab0DOUs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 16:48:56 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:59456 "EHLO fanny.its.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756776Ab0DOUsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 16:48:55 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004152236.19732.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18bc5ATljvLkdSgY5LJNPOl/KhsvYlhx/vqEXs
- xlUgN4ykZ5LgQdjiwdUWltD/DWMT13/k/c2nWfZdCCdCtavV1i
- PiujgM2uiZBrrwD7oSMqg==
+Message-ID: <19399.31662.714469.619828@pilspetsen.it.uu.se>
+Date: Thu, 15 Apr 2010 22:48:46 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: "Justin P. mattock" <justinmattock@gmail.com>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-acpi@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [BUG] 2.6.34-rc4: acpi boot-time oops on FSC Amilo Pa 3553
+In-Reply-To: <4BC774EA.1020002@gmail.com>
+References: <19399.23074.26023.534765@pilspetsen.it.uu.se>
+	<4BC76645.50401@gmail.com>
+	<19399.29421.508520.647456@pilspetsen.it.uu.se>
+	<4BC774EA.1020002@gmail.com>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 April 2010 23:04:03 J. Bruce Fields wrote:
-> The lockd thread is entirely under the BKL--it takes it at the top of
-> fs/lockd/svc.c:lockd(), and drops it at the bottom.  It's possible
-> there may be code that lockd runs that assumes mutual exclusion with
-> code in locks.c, but I don't know.
+Justin P. mattock writes:
+ > On 04/15/2010 01:11 PM, Mikael Pettersson wrote:
+ > > Justin P. mattock writes:
+ > >   >  On 04/15/2010 11:25 AM, Mikael Pettersson wrote:
+ > >   >  >  Kernels up to and including 2.6.34-rc3 boot fine on my Amilo Pa 3553,
+ > >   >  >  but 2.6.34-rc4 always oopses during boot in acpi.  Without a serial port
+ > >   >  >  I cannot capture the entire oops, but it goes something like this:
+ > >   >  >
+ > >   >  >  __driver_attach
+ > >   >  >  bus_for_each_dev
+ > >   >  >  driver_attach
+ > >   >  >  __driver_attach
+ > >   >  >  bus_add_driver
+ > >   >  >  acpi_device_remove
+ > >   >  >  driver_register
+ > >   >  >  async_thread
+ > >   >  >  proc_mkdir_mode
+ > >   >  >  async_thread
+ > >   >  >  acpi_battery_init_async
+ > >   >  >  async_thread
+ > >   >  >  schedule
+ > >   >  >  default_wake_function
+ > >   >  >  async_thread
+ > >   >  >  kthread
+ > >   >  >  kthread
+ > >   >  >  kernel_thread_helper
+ > >   >  >  EIP: acpi_ex_read_data_from_field+0x16e
+ > >   >  >
+ > >   >  >  Any suggestions for revisions to try to revert?
+ > >   >  >  --
+ > >   >  >  To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+ > >   >  >  the body of a message to majordomo@vger.kernel.org
+ > >   >  >  More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ > >   >  >  Please read the FAQ at  http://www.tux.org/lkml/
+ > >   >  >
+ > >   >
+ > >   >
+ > >   >  sounds similar to this:
+ > >   >  https://bugzilla.kernel.org/show_bug.cgi?id=%2015749
+ > >   >  if so try the patch there and see if
+ > >   >  you can boot.
+ > >
+ > > Yes, that patch (https://bugzilla.kernel.org/attachment.cgi?id=25962)
+ > > fixed the problem.  Thanks.
+ > >
+ > > /Mikael
+ > >
+ > 
+ > cool.. if you can send a post on the bug report
+ > so they know, and can push that patch forward
+ > and so forth.
 
-That one seems interesting as the lockd thread calls lots of sleeping
-functions as well as file lock code that takes the BKL again, both
-of which of course is not allowed when converting to a spinlock.
-
-I just attempted to blindly convert lockd to taking lock_flocks()
-in place of the BKL and releasing it where necessary, but quickly gave
-up because this seems rather pointless. It basically never does
-anything interesting between places where it would need to drop the
-lock.
-
-	Arnd
+I've added a note to 15749 that the patch also fixed my machine.
