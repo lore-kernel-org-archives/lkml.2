@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab0DOGfT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 02:35:19 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50093 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab0DOGfS (ORCPT
+	id S1751469Ab0DOGgs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 02:36:48 -0400
+Received: from relay.felk.cvut.cz ([147.32.80.7]:53248 "EHLO
+	relay.felk.cvut.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab0DOGgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 02:35:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100415062055.GQ2493@dastard>
-References: <20100415130212.D16E.A69D9226@jp.fujitsu.com> <20100415062055.GQ2493@dastard>
-Message-Id: <20100415152816.D18C.A69D9226@jp.fujitsu.com>
+	Thu, 15 Apr 2010 02:36:47 -0400
+Date: Thu, 15 Apr 2010 08:36:26 +0200
+From: Michal Svoboda <michal.svoboda@agents.felk.cvut.cz>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Kconfig: Make config Filter access to /dev/mem default
+ y
+Message-ID: <20100415063626.GG21894@myhost.felk.cvut.cz>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+References: <20100413025228.GC10860@localhost.localdomain>
+ <m2v7b6bb4a51004142312ze69796ak87d4ee65f6dd5529@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 15 Apr 2010 15:35:14 +0900 (JST)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GdbWtwDHkcXqP16f"
+Content-Disposition: inline
+In-Reply-To: <m2v7b6bb4a51004142312ze69796ak87d4ee65f6dd5529@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-FELK-MailScanner-Information: 
+X-MailScanner-ID: o3F6aQf0077535
+X-FELK-MailScanner: Found to be clean
+X-FELK-MailScanner-SpamCheck: not spam, SpamAssassin (not cached, score=-1.9,
+	required 5, autolearn=not spam, BAYES_00 -1.90)
+X-FELK-MailScanner-From: michal.svoboda@agents.felk.cvut.cz
+X-FELK-MailScanner-To: linux-kernel@vger.kernel.org
+X-FELK-MailScanner-Watermark: 1271918188.85544@9qQc7cEHXa6MsTSi5IiDdA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Apr 15, 2010 at 01:09:01PM +0900, KOSAKI Motohiro wrote:
-> > Hi
-> > 
-> > > How about this? For now, we stop direct reclaim from doing writeback
-> > > only on order zero allocations, but allow it for higher order
-> > > allocations. That will prevent the majority of situations where
-> > > direct reclaim blows the stack and interferes with background
-> > > writeout, but won't cause lumpy reclaim to change behaviour.
-> > > This reduces the scope of impact and hence testing and validation
-> > > the needs to be done.
-> > 
-> > Tend to agree. but I would proposed slightly different algorithm for
-> > avoind incorrect oom.
-> > 
-> > for high order allocation
-> > 	allow to use lumpy reclaim and pageout() for both kswapd and direct reclaim
-> 
-> SO same as current.
 
-Yes. as same as you propsed.
+--GdbWtwDHkcXqP16f
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 
-> 
-> > for low order allocation
-> > 	- kswapd:          always delegate io to flusher thread
-> > 	- direct reclaim:  delegate io to flusher thread only if vm pressure is low
-> 
-> IMO, this really doesn't fix either of the problems - the bad IO
-> patterns nor the stack usage. All it will take is a bit more memory
-> pressure to trigger stack and IO problems, and the user reporting the
-> problems is generating an awful lot of memory pressure...
+Xiaotian Feng wrote:
+> Have you ever successfully attack by this way? If CONFIG_STRICT_DEVMEM
+> is not set, the /dev/mem access is filtered in pat code.
 
-This patch doesn't care stack usage. because
-  - again, I think all stack eater shold be diet.
-  - under allowing lumpy reclaim world, only deny low order reclaim
-    doesn't solve anything.
+If that option doesn't add any protection, what's it good for?
 
-Please don't forget priority=0 recliam failure incvoke OOM-killer.
-I don't imagine anyone want it.
+--GdbWtwDHkcXqP16f
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-And, Which IO workload trigger <6 priority vmscan?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iEYEARECAAYFAkvGs+oACgkQg/fU9pp1uX5uNQCeOUbNUldpqbmMtnW94XXLgGhD
+XREAn0/FfLnb9LZaFfDaJDQjeIT2qIoN
+=cxKh
+-----END PGP SIGNATURE-----
 
-
+--GdbWtwDHkcXqP16f--
