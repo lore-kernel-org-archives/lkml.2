@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab0DODJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 23:09:14 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42817 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756537Ab0DODJM (ORCPT
+	id S1756770Ab0DODKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 23:10:49 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37909 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756408Ab0DODKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 23:09:12 -0400
+	Wed, 14 Apr 2010 23:10:48 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 15 Apr 2010 12:05:16 +0900
+Date: Thu, 15 Apr 2010 12:06:52 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
        Minchan Kim <minchan.kim@gmail.com>,
        Balbir Singh <balbir@linux.vnet.ibm.com>,
@@ -19,11 +20,12 @@ Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
        Christoph Lameter <cl@linux-foundation.org>,
        Andrea Arcangeli <aarcange@redhat.com>,
        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC][BUGFIX][PATCH 1/2] memcg: fix charge bypass route of
- migration
-Message-Id: <20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
+Subject: [RFC][BUGFIX][PATCH 2/2] memcg: fix file mapped underflow at
+ migration (v2)
+Message-Id: <20100415120652.c577846f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
 References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
+	<20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -33,66 +35,215 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd like to wait until next mmotm comes out. (So, [RFC]) I'll rebase
-This patch is based on
- mmotm-2010/04/05
- +
- mm-migration-take-a-reference-to-the-anon_vma-before-migrating.patch
- mm-migration-do-not-try-to-migrate-unmapped-anonymous-pages.patch
- mm-share-the-anon_vma-ref-counts-between-ksm-and-page-migration.patch
- mm-migration-allow-the-migration-of-pageswapcache-pages.patch
- memcg-fix-prepare-migration.patch
 
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+At page migration, the new page is unlocked before calling end_migration().
+This is mis-understanding with page-migration code of memcg.
+And FILE_MAPPED of migrated file cache is not properly updated, now.
 
-This is an additonal fix to memcg-fix-prepare-migration.patch
+At migrating mapped file, events happens in following sequence.
 
-Now, try_charge can bypass charge if TIF_MEMDIE at el are marked on the caller.
-In this case, the charge is bypassed. This makes accounts corrupted.
-(PageCgroup will be marked as PCG_USED even if bypassed, and css->refcnt
- can leak.)
+ 1. allocate a new page.
+ 2. get memcg of an old page.
+ 3. charge ageinst new page, before migration. But at this point
+    no changes to page_cgroup, no commit-charge.
+ 4. page migration replaces radix-tree, old-page and new-page.
+ 5. page migration remaps the new page if the old page was mapped.
+ 6. memcg commits the charge for newpage.
 
-This patch clears passed "*memcg" in bypass route.
+Because "commit" happens after page-remap, we lose file_mapped
+accounting information at migration.
 
-Because usual page allocater passes memcg=NULL, this patch only affects
-some special case as
-  - move account
-  - migration
-  - swapin.
+For fixing all, this changes parepare/end migration.
+New migration sequence with memcg is:
 
+ 1. allocate a new page.
+ 2. charge against a new page onto old page's memcg. (here, new page's pc
+    is marked as PageCgroupUsed.)
+ 3. page migration replaces radix-tree, page table, etc...
+ 4. At remapping, FILE_MAPPED will be properly updated.
+
+Changelog: 2010/04/14
+ - updated onto the latest mmotm + page-compaction, etc...
+ - fixed __try_charge() bypass case.
+ - use CHARGE_TYPE_FORCE for uncharging an unused page.
+
+Reported-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ include/linux/memcontrol.h |    6 +-
+ mm/memcontrol.c            |   96 ++++++++++++++++++++++++---------------------
+ mm/migrate.c               |    2 
+ 3 files changed, 58 insertions(+), 46 deletions(-)
 
 Index: mmotm-temp/mm/memcontrol.c
 ===================================================================
 --- mmotm-temp.orig/mm/memcontrol.c
 +++ mmotm-temp/mm/memcontrol.c
-@@ -1606,8 +1606,12 @@ static int __mem_cgroup_try_charge(struc
- 	 * MEMDIE process.
- 	 */
- 	if (unlikely(test_thread_flag(TIF_MEMDIE)
--		     || fatal_signal_pending(current)))
-+		     || fatal_signal_pending(current))) {
-+		/* Showing we skipped charge */
-+		if (memcg)
-+			*memcg = NULL;
- 		goto bypass;
-+	}
+@@ -2505,10 +2505,12 @@ static inline int mem_cgroup_move_swap_a
+  * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
+  * page belongs to.
+  */
+-int mem_cgroup_prepare_migration(struct page *page, struct mem_cgroup **ptr)
++int mem_cgroup_prepare_migration(struct page *page,
++	struct page *newpage, struct mem_cgroup **ptr)
+ {
+ 	struct page_cgroup *pc;
+ 	struct mem_cgroup *mem = NULL;
++	enum charge_type ctype;
+ 	int ret = 0;
  
- 	/*
- 	 * We always charge the cgroup the mm_struct belongs to.
-@@ -2523,7 +2527,6 @@ int mem_cgroup_prepare_migration(struct 
- 		ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, ptr, false);
- 		css_put(&mem->css);
+ 	if (mem_cgroup_disabled())
+@@ -2521,65 +2523,73 @@ int mem_cgroup_prepare_migration(struct 
+ 		css_get(&mem->css);
  	}
--	*ptr = mem;
+ 	unlock_page_cgroup(pc);
+-
++	/*
++	 * If the page is uncharged before migration (removed from radix-tree)
++	 * we return here.
++	 */
++	if (!mem)
++		return 0;
+ 	*ptr = mem;
+-	if (mem) {
+-		ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, ptr, false);
+-		css_put(&mem->css);
+-	}
++	ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, ptr, false);
++	css_put(&mem->css); /* drop extra refcnt */
++	/*
++	 * When we get *ptr==NULL, it means the current is being killed and
++	 * we skipped account charge, In this case, make migration failed.
++	 */
++	if (ret || *ptr == NULL)
++		return -ENOMEM;
++	/*
++ 	 * The old page is under lock_page().
++ 	 * If the old_page is uncharged and freed while migration, page
++ 	 * migration will fail and newpage will properly uncharged.
++ 	 * This commit_charge against newpage never fails.
++  	 */
++	pc = lookup_page_cgroup(newpage);
++	if (PageAnon(page))
++		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
++	else if (page_is_file_cache(page))
++		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
++	else
++		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
++	__mem_cgroup_commit_charge(mem, pc, ctype);
++	/* FILE_MAPPED of this page will be updated at remap routine */
  	return ret;
  }
  
-
-
-  
+ /* remove redundant charge if migration failed*/
+ void mem_cgroup_end_migration(struct mem_cgroup *mem,
+-		struct page *oldpage, struct page *newpage)
++	struct page *oldpage, struct page *newpage)
+ {
+-	struct page *target, *unused;
+-	struct page_cgroup *pc;
+-	enum charge_type ctype;
++	struct page *used, *unused;
+ 
+ 	if (!mem)
+ 		return;
+ 	cgroup_exclude_rmdir(&mem->css);
+ 	/* at migration success, oldpage->mapping is NULL. */
+ 	if (oldpage->mapping) {
+-		target = oldpage;
+-		unused = NULL;
++		used = oldpage;
++		unused = newpage;
+ 	} else {
+-		target = newpage;
++		used = newpage;
+ 		unused = oldpage;
+ 	}
+-
+-	if (PageAnon(target))
+-		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
+-	else if (page_is_file_cache(target))
+-		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
+-	else
+-		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+-
+-	/* unused page is not on radix-tree now. */
+-	if (unused)
+-		__mem_cgroup_uncharge_common(unused, ctype);
+-
+-	pc = lookup_page_cgroup(target);
++	/* PageCgroupUsed() flag check will do all we want */
++	__mem_cgroup_uncharge_common(unused, MEM_CGROUP_CHARGE_TYPE_FORCE);
+ 	/*
+-	 * __mem_cgroup_commit_charge() check PCG_USED bit of page_cgroup.
+-	 * So, double-counting is effectively avoided.
+-	 */
+-	__mem_cgroup_commit_charge(mem, pc, ctype);
+-
+-	/*
+-	 * Both of oldpage and newpage are still under lock_page().
+-	 * Then, we don't have to care about race in radix-tree.
+-	 * But we have to be careful that this page is unmapped or not.
+-	 *
+-	 * There is a case for !page_mapped(). At the start of
+-	 * migration, oldpage was mapped. But now, it's zapped.
+-	 * But we know *target* page is not freed/reused under us.
+-	 * mem_cgroup_uncharge_page() does all necessary checks.
+-	 */
+-	if (ctype == MEM_CGROUP_CHARGE_TYPE_MAPPED)
+-		mem_cgroup_uncharge_page(target);
++ 	 * If old page was file cache, and removed from radix-tree
++ 	 * before lock_page(), perepare_migration doesn't charge and we never
++ 	 * reach here.
++ 	 *
++ 	 * Considering ANON pages, we can't depend on lock_page.
++ 	 * If a page is unmapped before it's remapped, new page's
++ 	 * mapcount doesn't ncrease. (case that mapcount 0->1 never occur.)
++ 	 * and we have no chance to uncharge it.
++ 	 *
++ 	 * Once mapcount goes to 1, our hook to page_remove_rmap will do
++ 	 * enough jobs.
++ 	 */
++	if (PageAnon(used))
++		mem_cgroup_uncharge_page(used);
+ 	/*
+ 	 * At migration, we may charge account against cgroup which has no tasks
+ 	 * So, rmdir()->pre_destroy() can be called while we do this charge.
+Index: mmotm-temp/mm/migrate.c
+===================================================================
+--- mmotm-temp.orig/mm/migrate.c
++++ mmotm-temp/mm/migrate.c
+@@ -581,7 +581,7 @@ static int unmap_and_move(new_page_t get
+ 	}
+ 
+ 	/* charge against new page */
+-	charge = mem_cgroup_prepare_migration(page, &mem);
++	charge = mem_cgroup_prepare_migration(page, newpage, &mem);
+ 	if (charge == -ENOMEM) {
+ 		rc = -ENOMEM;
+ 		goto unlock;
+Index: mmotm-temp/include/linux/memcontrol.h
+===================================================================
+--- mmotm-temp.orig/include/linux/memcontrol.h
++++ mmotm-temp/include/linux/memcontrol.h
+@@ -89,7 +89,8 @@ int mm_match_cgroup(const struct mm_stru
+ extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *mem);
+ 
+ extern int
+-mem_cgroup_prepare_migration(struct page *page, struct mem_cgroup **ptr);
++mem_cgroup_prepare_migration(struct page *page,
++	struct page *newpage, struct mem_cgroup **ptr);
+ extern void mem_cgroup_end_migration(struct mem_cgroup *mem,
+ 	struct page *oldpage, struct page *newpage);
+ 
+@@ -228,7 +229,8 @@ static inline struct cgroup_subsys_state
+ }
+ 
+ static inline int
+-mem_cgroup_prepare_migration(struct page *page, struct mem_cgroup **ptr)
++mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
++	struct mem_cgroup **ptr)
+ {
+ 	return 0;
+ }
 
