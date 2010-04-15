@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab0DOEc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 00:32:56 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45982 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab0DOEcz (ORCPT
+	id S1753746Ab0DOEdn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 00:33:43 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:39707 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab0DOEdm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 00:32:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: 32GB SSD on USB1.1 P3/700 == ___HELL___ (2.6.34-rc3)
-Cc: kosaki.motohiro@jp.fujitsu.com, Andreas Mohr <andi@lisas.de>,
-       Jens Axboe <axboe@kernel.dk>, Minchan Kim <minchan.kim@gmail.com>,
-       Linux Memory Management List <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Rik van Riel <riel@redhat.com>
-In-Reply-To: <20100415041931.GA14215@localhost>
-References: <20100415122928.D168.A69D9226@jp.fujitsu.com> <20100415041931.GA14215@localhost>
-Message-Id: <20100415132312.D180.A69D9226@jp.fujitsu.com>
+	Thu, 15 Apr 2010 00:33:42 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 15 Apr 2010 13:32:50 +0900 (JST)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 2.6.34-rc4 7/8] mx5: Add USB to Freescale MX51 Babbage
+Date: Wed, 14 Apr 2010 21:33:31 -0700
+Message-ID: <86A0E76937111F4C92FABEC0A2098851047331E1@az33exm21>
+In-Reply-To: <4BC561B5.1020006@canonical.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 2.6.34-rc4 7/8] mx5: Add USB to Freescale MX51 Babbage
+Thread-Index: AcrbnGh0U7muycEgS4ibnVLnlSCIHAAuCraw
+References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com> <1271175030-3635-2-git-send-email-Dinh.Nguyen@freescale.com> <1271175030-3635-3-git-send-email-Dinh.Nguyen@freescale.com> <1271175030-3635-4-git-send-email-Dinh.Nguyen@freescale.com> <1271175030-3635-5-git-send-email-Dinh.Nguyen@freescale.com> <1271175030-3635-6-git-send-email-Dinh.Nguyen@freescale.com> <1271175030-3635-7-git-send-email-Dinh.Nguyen@freescale.com> <4BC561B5.1020006@canonical.com>
+From: "Nguyen Dinh-R00091" <R00091@freescale.com>
+To: <bryan.wu@canonical.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+       <linux@arm.linux.org.uk>, <s.hauer@pengutronix.de>,
+       <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
+       <grant.likely@secretlab.ca>,
+       "Herring Robert-RA7055" <RA7055@freescale.com>,
+       <amit.kucheria@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Apr 15, 2010 at 11:31:52AM +0800, KOSAKI Motohiro wrote:
-> > > > Many applications (this one and below) are stuck in
-> > > > wait_on_page_writeback(). I guess this is why "heavy write to
-> > > > irrelevant partition stalls the whole system".  They are stuck on page
-> > > > allocation. Your 512MB system memory is a bit tight, so reclaim
-> > > > pressure is a bit high, which triggers the wait-on-writeback logic.
-> > > 
-> > > I wonder if this hacking patch may help.
-> > > 
-> > > When creating 300MB dirty file with dd, it is creating continuous
-> > > region of hard-to-reclaim pages in the LRU list. priority can easily
-> > > go low when irrelevant applications' direct reclaim run into these
-> > > regions..
-> > 
-> > Sorry I'm confused not. can you please tell us more detail explanation?
-> > Why did lumpy reclaim cause OOM? lumpy reclaim might cause
-> > direct reclaim slow down. but IIUC it's not cause OOM because OOM is
-> > only occur when priority-0 reclaim failure.
-> 
-> No I'm not talking OOM. Nor lumpy reclaim.
-> 
-> I mean the direct reclaim can get stuck for long time, when we do
-> wait_on_page_writeback() on lumpy_reclaim=1.
-> 
-> > IO get stcking also prevent priority reach to 0.
-> 
-> Sure. But we can wait for IO a bit later -- after scanning 1/64 LRU
-> (the below patch) instead of the current 1/1024.
-> 
-> In Andreas' case, 512MB/1024 = 512KB, this is way too low comparing to
-> the 22MB writeback pages. There can easily be a continuous range of
-> 512KB dirty/writeback pages in the LRU, which will trigger the wait
-> logic.
+The 8th patch was for a USB timeout change that was sent to the USB
+maintainer. Thanks everyone for their comments, I am almost ready with
+another set with review comments taken into consideration.
 
-In my feeling from your explanation, we need auto adjustment mechanism
-instead change default value for special machine. no?
+Dinh 
 
+-----Original Message-----
+From: Bryan Wu [mailto:bryan.wu@canonical.com] 
+Sent: Wednesday, April 14, 2010 1:33 AM
+To: Nguyen Dinh-R00091
+Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+linux@arm.linux.org.uk; s.hauer@pengutronix.de;
+valentin.longchamp@epfl.ch; daniel@caiaq.de; grant.likely@secretlab.ca;
+Herring Robert-RA7055; amit.kucheria@canonical.com
+Subject: Re: [PATCH 2.6.34-rc4 7/8] mx5: Add USB to Freescale MX51
+Babbage
+
+This patch looks OK for me, but I failed to find the 8th patch of this
+patchset.
+Did you forget to send it out?
+
+-Bryan
+
+On 04/13/2010 09:10 AM, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen<Dinh.Nguyen@freescale.com>
+>
+> Updade mx51_defconfig to include USB host support.
+> This patch applies to 2.6.34-rc4.
+>
+> Signed-off-by: Dinh Nguyen<Dinh.Nguyen@freescale.com>
+> ---
+>   arch/arm/configs/mx51_defconfig |   17 ++++++++++++++++-
+>   1 files changed, 16 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/arm/configs/mx51_defconfig 
+> b/arch/arm/configs/mx51_defconfig index c88e952..a708fd6 100644
+> --- a/arch/arm/configs/mx51_defconfig
+> +++ b/arch/arm/configs/mx51_defconfig
+> @@ -809,7 +809,22 @@ CONFIG_SSB_POSSIBLE=y
+>   CONFIG_DUMMY_CONSOLE=y
+>   # CONFIG_SOUND is not set
+>   # CONFIG_HID_SUPPORT is not set
+> -# CONFIG_USB_SUPPORT is not set
+> +CONFIG_USB_SUPPORT=y
+> +CONFIG_USB_ARCH_HAS_HCD=y
+> +# CONFIG_USB_ARCH_HAS_OHCI is not set CONFIG_USB_ARCH_HAS_EHCI=y 
+> +CONFIG_USB=y
+> +
+> +#
+> +# USB Host Controller Drivers
+> +#
+> +# CONFIG_USB_C67X00_HCD is not set
+> +CONFIG_USB_EHCI_HCD=y
+> +CONFIG_USB_EHCI_ROOT_HUB_TT=y
+> +# CONFIG_USB_EHCI_TT_NEWSCHED is not set CONFIG_USB_EHCI_MXC=y
+> +
+> +
+>   CONFIG_MMC=y
+>   # CONFIG_MMC_DEBUG is not set
+>   # CONFIG_MMC_UNSAFE_RESUME is not set
 
 
