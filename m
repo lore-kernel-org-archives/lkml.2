@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab0DOJse (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 05:48:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37965 "EHLO mx1.redhat.com"
+	id S1751981Ab0DOKES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 06:04:18 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54039 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932069Ab0DOJsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 05:48:32 -0400
-Message-ID: <4BC6E0D9.1090202@redhat.com>
-Date: Thu, 15 Apr 2010 12:48:09 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1751672Ab0DOKER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 06:04:17 -0400
+Date: Thu, 15 Apr 2010 12:04:15 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Anton Blanchard <anton@samba.org>
+Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix regression in O_DIRECT|O_SYNC writes to block
+	devices
+Message-ID: <20100415100415.GU27497@kernel.dk>
+References: <20100415044039.GJ11751@kryten>
 MIME-Version: 1.0
-To: oerg Roedel <joro@8bytes.org>
-CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com, Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH V3] perf & kvm: Enhance perf to collect KVM guest os	statistics
- from host side
-References: <1902387910.2078.435.camel@ymzhang.sh.intel.com> <4BC588CF.5010507@redhat.com> <1902445479.2078.458.camel@ymzhang.sh.intel.com> <4BC6C8CD.1020801@redhat.com> <1902473858.2078.481.camel@ymzhang.sh.intel.com> <20100415090403.GA12697@8bytes.org> <4BC6D7C8.9060302@redhat.com> <20100415094407.GB12697@8bytes.org>
-In-Reply-To: <20100415094407.GB12697@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100415044039.GJ11751@kryten>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2010 12:44 PM, oerg Roedel wrote:
->
->> So, we'd need something like the following:
->>
->>     if (exit == NMI)
->>         __get_cpu_var(nmi_vcpu) = vcpu;
->>
->>     stgi();
->>
->>     if (exit == NMI) {
->>         while (!nmi_handled())
->>             cpu_relax();
->>         __get_cpu_var(nmi_vcpu) = NULL;
->>     }
->>      
-> Hmm, looks a bit complicated to me. The NMI should happen shortly after
-> the stgi instruction. Interrupts are still disabled so we stay on this
-> cpu. Can't we just set and erase the cpu_var at vcpu_load/vcpu_put time?
->
->    
+On Thu, Apr 15 2010, Anton Blanchard wrote:
+> 
+> We are seeing a large regression in database performance on recent kernels.
+> The database opens a block device with O_DIRECT|O_SYNC and a number of threads
+> write to different regions of the file at the same time.
+> 
+> A simple test case is below. I haven't defined DEVICE to anything since getting
+> it wrong will destroy your data :) On an 3 disk LVM with a 64k chunk size we
+> see about 17MB/sec and only a few threads in IO wait:
+> 
+> procs  -----io---- -system-- -----cpu------
+>  r  b     bi    bo   in   cs us sy id wa st
+>  0  3      0 16170  656 2259  0  0 86 14  0
+>  0  2      0 16704  695 2408  0  0 92  8  0
+>  0  2      0 17308  744 2653  0  0 86 14  0
+>  0  2      0 17933  759 2777  0  0 89 10  0
+> 
+> Most threads are blocking in vfs_fsync_range, which has:
+> 
+>         mutex_lock(&mapping->host->i_mutex);
+>         err = fop->fsync(file, dentry, datasync);
+>         if (!ret)
+>                 ret = err;
+>         mutex_unlock(&mapping->host->i_mutex);
+> 
+> Commit 148f948ba877f4d3cdef036b1ff6d9f68986706a (vfs: Introduce new helpers for
+> syncing after writing to O_SYNC file or IS_SYNC inode) offers some explanation
+> of what is going on:
+> 
+>     Use these new helpers for syncing from generic VFS functions. This makes
+>     O_SYNC writes to block devices acquire i_mutex for syncing. If we really
+>     care about this, we can make block_fsync() drop the i_mutex and reacquire
+>     it before it returns.
+> 
+> Thanks Jan for such a good commit message! The patch below drops the i_mutex
+> in blkdev_fsync as suggested. With it the testcase improves from 17MB/s to
+> 68M/sec:
+> 
+> procs  -----io---- -system-- -----cpu------
+>  r  b     bi    bo   in   cs us sy id wa st
+>  0  7      0 65536 1000 3878  0  0 70 30  0
+>  0 34      0 69632 1016 3921  0  1 46 53  0
+>  0 57      0 69632 1000 3921  0  0 55 45  0
+>  0 53      0 69640  754 4111  0  0 81 19  0
+> 
+> I'd appreciate any comments from the I/O guys on if this is the right approach.
 
-That means an NMI that happens outside guest code (for example, in the 
-mmu, or during the exit itself) would be counted as if in guest code.
+Looks good to me, I see Jan already made a few style suggestions.
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Jens Axboe
 
