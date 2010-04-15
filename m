@@ -1,151 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757016Ab0DOD6W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 23:58:22 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:34200 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757157Ab0DOD6S (ORCPT
+	id S1757133Ab0DOD7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 23:59:13 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:37804 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756974Ab0DOD7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 23:58:18 -0400
-From: "Ian Munsie" <imunsie@au1.ibm.com>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Cc: benh@kernel.crashing.org, Masami Hiramatsu <mhiramat@redhat.com>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>,
-       Ian Munsie <imunsie@au1.ibm.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH v3 2/2] perf probe: Add PowerPC DWARF register number mappings
-Date: Thu, 15 Apr 2010 13:57:02 +1000
-Message-Id: <1271303822-11542-3-git-send-email-imunsie@au.ibm.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1271303822-11542-2-git-send-email-imunsie@au.ibm.com>
-References: <1271303822-11542-1-git-send-email-imunsie@au.ibm.com>
- <1271303822-11542-2-git-send-email-imunsie@au.ibm.com>
+	Wed, 14 Apr 2010 23:59:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type;
+        b=yIIqkbwPwI+U0R40K9RcIwTXyRqLoayn47mC5PTpvUC33Rx2K4s3kDmu0vl5Ishd6+
+         5I+Vf7vstgh0e4I3i5ck+c9LKlg9RQsbwr7LSu8/uPsOuI71FL7BZOIOdbvMUB6bI6We
+         s4CJ7VhtPDMCVcX+xlfvO5Iwaqfoxg1J7WVzc=
+MIME-Version: 1.0
+Date: Thu, 15 Apr 2010 15:59:10 +1200
+X-Google-Sender-Auth: 18e193a02997e317
+Message-ID: <u2l7dc909981004142059p9a453a0gf761e496a65a77d3@mail.gmail.com>
+Subject: [PATCH] fixed book E watchdog period register mask.
+From: Luuk Paulussen <luuk.paulussen@alliedtelesis.co.nz>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Chris Friesen <cfriesen@nortel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Luuk Paulussen <luuk.paulussen@alliedtelesis.co.nz>,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au.ibm.com>
+A previous fix changed the WDTP function to use the period directly,
+rather than subtracting from 63.  However the mask generation was
+not changed, so the mask was coming out as 0.  This patch fixes it.
 
-This patch adds mappings from the register numbers from DWARF to the
-register names used in the PowerPC Regs and Stack Access API. This
-allows perf probe to be used to record variable contents on PowerPC.
-
-This patch depends on functionality in the powerpc/next tree, though it
-will compile fine without it. Specifically this patch depends on commit
-"powerpc: Add kprobe-based event tracer"
-
-Signed-off-by: Ian Munsie <imunsie@au.ibm.com>
+Signed-off-by: Luuk Paulussen <luuk.paulussen@alliedtelesis.co.nz>
 ---
- tools/perf/arch/powerpc/Makefile          |    2 +
- tools/perf/arch/powerpc/util/dwarf-regs.c |   88 +++++++++++++++++++++++++++++
- 2 files changed, 90 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/arch/powerpc/Makefile
- create mode 100644 tools/perf/arch/powerpc/util/dwarf-regs.c
+ drivers/watchdog/booke_wdt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/arch/powerpc/Makefile b/tools/perf/arch/powerpc/Makefile
-new file mode 100644
-index 0000000..cbd7833
---- /dev/null
-+++ b/tools/perf/arch/powerpc/Makefile
-@@ -0,0 +1,2 @@
-+PERF_HAVE_DWARF_REGS := 1
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
-diff --git a/tools/perf/arch/powerpc/util/dwarf-regs.c b/tools/perf/arch/powerpc/util/dwarf-regs.c
-new file mode 100644
-index 0000000..48ae0c5
---- /dev/null
-+++ b/tools/perf/arch/powerpc/util/dwarf-regs.c
-@@ -0,0 +1,88 @@
-+/*
-+ * Mapping of DWARF debug register numbers into register names.
-+ *
-+ * Copyright (C) 2010 Ian Munsie, IBM Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <libio.h>
-+#include <dwarf-regs.h>
-+
-+
-+struct pt_regs_dwarfnum {
-+	const char *name;
-+	unsigned int dwarfnum;
-+};
-+
-+#define STR(s) #s
-+#define REG_DWARFNUM_NAME(r, num) {.name = r, .dwarfnum = num}
-+#define GPR_DWARFNUM_NAME(num)	\
-+	{.name = STR(%gpr##num), .dwarfnum = num}
-+#define REG_DWARFNUM_END {.name = NULL, .dwarfnum = 0}
-+
-+/*
-+ * Reference:
-+ * http://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi-1.9.html
-+ */
-+static const struct pt_regs_dwarfnum regdwarfnum_table[] = {
-+	GPR_DWARFNUM_NAME(0),
-+	GPR_DWARFNUM_NAME(1),
-+	GPR_DWARFNUM_NAME(2),
-+	GPR_DWARFNUM_NAME(3),
-+	GPR_DWARFNUM_NAME(4),
-+	GPR_DWARFNUM_NAME(5),
-+	GPR_DWARFNUM_NAME(6),
-+	GPR_DWARFNUM_NAME(7),
-+	GPR_DWARFNUM_NAME(8),
-+	GPR_DWARFNUM_NAME(9),
-+	GPR_DWARFNUM_NAME(10),
-+	GPR_DWARFNUM_NAME(11),
-+	GPR_DWARFNUM_NAME(12),
-+	GPR_DWARFNUM_NAME(13),
-+	GPR_DWARFNUM_NAME(14),
-+	GPR_DWARFNUM_NAME(15),
-+	GPR_DWARFNUM_NAME(16),
-+	GPR_DWARFNUM_NAME(17),
-+	GPR_DWARFNUM_NAME(18),
-+	GPR_DWARFNUM_NAME(19),
-+	GPR_DWARFNUM_NAME(20),
-+	GPR_DWARFNUM_NAME(21),
-+	GPR_DWARFNUM_NAME(22),
-+	GPR_DWARFNUM_NAME(23),
-+	GPR_DWARFNUM_NAME(24),
-+	GPR_DWARFNUM_NAME(25),
-+	GPR_DWARFNUM_NAME(26),
-+	GPR_DWARFNUM_NAME(27),
-+	GPR_DWARFNUM_NAME(28),
-+	GPR_DWARFNUM_NAME(29),
-+	GPR_DWARFNUM_NAME(30),
-+	GPR_DWARFNUM_NAME(31),
-+	REG_DWARFNUM_NAME("%msr",   66),
-+	REG_DWARFNUM_NAME("%ctr",   109),
-+	REG_DWARFNUM_NAME("%link",  108),
-+	REG_DWARFNUM_NAME("%xer",   101),
-+	REG_DWARFNUM_NAME("%dar",   119),
-+	REG_DWARFNUM_NAME("%dsisr", 118),
-+	REG_DWARFNUM_END,
-+};
-+
-+/**
-+ * get_arch_regstr() - lookup register name from it's DWARF register number
-+ * @n:	the DWARF register number
-+ *
-+ * get_arch_regstr() returns the name of the register in struct
-+ * regdwarfnum_table from it's DWARF register number. If the register is not
-+ * found in the table, this returns NULL;
-+ */
-+const char *get_arch_regstr(unsigned int n)
-+{
-+	const struct pt_regs_dwarfnum *roff;
-+	for (roff = regdwarfnum_table; roff->name != NULL; roff++)
-+		if (roff->dwarfnum == n)
-+			return roff->name;
-+	return NULL;
-+}
+diff --git a/drivers/watchdog/booke_wdt.c b/drivers/watchdog/booke_wdt.c
+index 8b724aa..500d383 100644
+--- a/drivers/watchdog/booke_wdt.c
++++ b/drivers/watchdog/booke_wdt.c
+@@ -44,7 +44,7 @@ u32 booke_wdt_period = WDT_PERIOD_DEFAULT;
+
+ #ifdef	CONFIG_FSL_BOOKE
+ #define WDTP(x)		((((x)&0x3)<<30)|(((x)&0x3c)<<15))
+-#define WDTP_MASK	(WDTP(0))
++#define WDTP_MASK	(WDTP(0x3f))
+ #else
+ #define WDTP(x)		(TCR_WP(x))
+ #define WDTP_MASK	(TCR_WP_MASK)
 -- 
-1.7.0
-
+1.6.3.4
