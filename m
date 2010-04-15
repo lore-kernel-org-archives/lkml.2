@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab0DORNT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 13:13:19 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36016 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754519Ab0DORNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 13:13:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [Bug #15704] [r8169] WARNING: at net/sched/sch_generic.c
-Date: Thu, 15 Apr 2010 19:16:08 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-References: <6Pphclm24fK.A.lSF.qsPvLB@chimera> <JVS2s9dmTsP.A.YhG.FtPvLB@chimera> <20100414101220.GA3681@swordfish.minsk.epam.com>
-In-Reply-To: <20100414101220.GA3681@swordfish.minsk.epam.com>
+	id S1754960Ab0DORP7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 13:15:59 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:49509 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754623Ab0DORP4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 13:15:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=odWdh9Q8uXFVhtxI5/Oa7KLzh3pOEK6kl1V808CJtHW3DfvMwAutHxhtJcIhRCCNjy
+         WAasWIPjOgN5Talmc5Vjj2JwOFYg1+K4S7Nj7ch4ccRzHps1Wdwx9hP9DbLlZ+/w0uRR
+         uHzUkuWb1uh6I5W1KNtzS4Q2Ttya5NIAhZb2c=
+Date: Thu, 15 Apr 2010 19:15:55 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: PowerPC WARN_ON_ONCE() after merge of the final
+	tree (tip related)
+Message-ID: <20100415171551.GA5069@nowhere>
+References: <20100415161214.04637496.sfr@canb.auug.org.au> <20100415064940.GA9240@elte.hu> <20100415130032.GA6789@nowhere> <20100415140358.GA19981@elte.hu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004151916.08821.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100415140358.GA19981@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 April 2010, Sergey Senozhatsky wrote:
-> Hello,
-> Sorry for the delay, I've been away.
-> 
-> On (04/07/10 23:13), Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.33.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
+On Thu, Apr 15, 2010 at 04:03:58PM +0200, Ingo Molnar wrote:
+> > In this case, I guess the following fix should be sufficient?
+> > I'm going to test it and provide a sane changelog.
 > > 
 > > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15704
-> > Subject		: [r8169] WARNING: at net/sched/sch_generic.c
-> > Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > Date		: 2010-03-31 10:21 (8 days old)
-> > Message-ID	: <20100331102142.GA3294@swordfish.minsk.epam.com>
-> > References	: http://marc.info/?l=linux-kernel&m=127003090406108&w=2
-> > 
-> > 
+> > diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> > index 78325f8..65d4336 100644
+> > --- a/kernel/lockdep.c
+> > +++ b/kernel/lockdep.c
+> > @@ -2298,7 +2298,11 @@ void trace_hardirqs_on_caller(unsigned long ip)
+> >  		return;
+> >  
+> >  	if (unlikely(curr->hardirqs_enabled)) {
+> > +		unsigned long flags;
+> > +
+> > +		raw_local_irq_save(flags);
+> >  		debug_atomic_inc(redundant_hardirqs_on);
+> > +		raw_local_irq_restore(flags);
+> >  		return;
+> >  	}
+> >  	/* we'll do an OFF -> ON transition: */
 > 
+> that looks rather ugly. Why not do a raw:
 > 
-> Yes, bug is still here (though I'm not sure whether it's correct to test with frame size 2048).
+> 	this_cpu_inc(lockdep_stats.redundant_hardirqs_on);
 > 
-> Here it is:
-> 
-> kernel: [ 2292.172886] pktgen 2.72: Packet Generator for packet performance testing.
-> kernel: [ 2339.999788] ------------[ cut here ]------------
-> kernel: [ 2339.999800] WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0xc1/0x125()
-> kernel: [ 2339.999803] Hardware name: F3JC                
-> kernel: [ 2339.999806] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-> kernel: [ 2339.999809] Modules linked in: pktgen ipv6 snd_hwdep snd_hda_codec_si3054 snd_hda_codec_realtek sdhci_pci sdhci asus_laptop sparse_keymap snd_hda_intel mmc_core
-> led_class snd_hda_codec psmouse snd_pcm snd_timer snd soundcore snd_page_alloc i2c_i801 serio_raw sg evdev rng_core r8169 mii usbhid hid uhci_hcd ehci_hcd sr_mod cdrom sd_mod
-> usbcore ata_piix
-> kernel: [ 2339.999857] Pid: 3720, comm: kpktgend_0 Not tainted 2.6.34-rc3-dbg-r8169-git6 #81
-> kernel: [ 2339.999861] Call Trace:
-> kernel: [ 2339.999868]  [<c102e7f7>] warn_slowpath_common+0x65/0x7c
-> kernel: [ 2339.999874]  [<c126e4f8>] ? dev_watchdog+0xc1/0x125
-> kernel: [ 2339.999879]  [<c102e842>] warn_slowpath_fmt+0x24/0x27
-> kernel: [ 2339.999884]  [<c126e4f8>] dev_watchdog+0xc1/0x125
-> kernel: [ 2339.999891]  [<c1040039>] ? abort_exclusive_wait+0x26/0x63
-> kernel: [ 2339.999897]  [<c103712b>] ? run_timer_softirq+0x120/0x1eb
-> kernel: [ 2339.999902]  [<c1037181>] run_timer_softirq+0x176/0x1eb
-> kernel: [ 2339.999907]  [<c103712b>] ? run_timer_softirq+0x120/0x1eb
-> kernel: [ 2339.999913]  [<c126e437>] ? dev_watchdog+0x0/0x125
-> kernel: [ 2339.999919]  [<c10332a1>] __do_softirq+0x8d/0x117
-> kernel: [ 2339.999925]  [<c1033356>] do_softirq+0x2b/0x43
-> kernel: [ 2339.999929]  [<c103347b>] irq_exit+0x38/0x75
-> kernel: [ 2339.999936]  [<c1015200>] smp_apic_timer_interrupt+0x6d/0x7b
-> kernel: [ 2339.999943]  [<c12cbcda>] apic_timer_interrupt+0x36/0x3c
-> kernel: [ 2339.999948]  [<c104007b>] ? finish_wait+0x5/0x49
-> kernel: [ 2339.999953]  [<c10400d8>] ? prepare_to_wait_exclusive+0x19/0x5b
-> kernel: [ 2339.999959]  [<c105106d>] ? lock_release+0x19a/0x1a1
-> kernel: [ 2339.999965]  [<c12cb259>] _raw_spin_unlock+0x16/0x3f
-> kernel: [ 2339.999972]  [<f80ea460>] pktgen_thread_worker+0xe0/0x631 [pktgen]
-> kernel: [ 2339.999978]  [<c103ffad>] ? autoremove_wake_function+0x0/0x2f
-> kernel: [ 2339.999983]  [<c103ffad>] ? autoremove_wake_function+0x0/0x2f
-> kernel: [ 2339.999989]  [<f80ea380>] ? pktgen_thread_worker+0x0/0x631 [pktgen]
-> kernel: [ 2339.999994]  [<c103fc8a>] kthread+0x6a/0x6f
-> kernel: [ 2339.999999]  [<c103fc20>] ? kthread+0x0/0x6f
-> kernel: [ 2340.000005]  [<c1002e82>] kernel_thread_helper+0x6/0x1a
-> kernel: [ 2340.000008] ---[ end trace 25113681b662d02f ]---
+> which basically open-codes debug_atomic_inc(), but without the warning?
 
-Thanks for the update.
 
-Rafael
+Because that would open a race against interrupts that might
+touch lockdep_stats.redundant_hardirqs_on too.
+
+If you think it's not very important (this race must be pretty rare I guess),
+I can use your solution.
+
+
+
+> 
+> Btw., using the this_cpu() methods might result in faster code for all the 
+> debug_atomic_inc() macros as well?
+
+
+Indeed, will change that too.
+
+Thanks.
+
