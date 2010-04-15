@@ -1,56 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab0DOPGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 11:06:16 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:35409 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822Ab0DOPGP (ORCPT
+	id S1754444Ab0DOPHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 11:07:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50439 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753832Ab0DOPHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 11:06:15 -0400
-X-Spam-Processed: digidescorp.com, Thu, 15 Apr 2010 10:06:12 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=172187e3a9=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Subject: Re: sched_clock - microblaze
-From: "Steven J. Magnani" <steve@digidescorp.com>
-Reply-To: steve@digidescorp.com
-To: michal.simek@petalogix.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>, Wu Zhangjin <wuzhangjin@gmail.com>
-In-Reply-To: <4BC728DD.5020404@petalogix.com>
-References: <4BC728DD.5020404@petalogix.com>
-Content-Type: text/plain
-Organization: Digital Design Corporation
-Date: Thu, 15 Apr 2010 10:06:10 -0500
-Message-Id: <1271343970.3856.7.camel@iscandar.digidescorp.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	Thu, 15 Apr 2010 11:07:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Subject: Re: [RFC][PATCH v3 1/3] A device for zero-copy based on KVM virtio-net.
+Date: Thu, 15 Apr 2010 17:06:43 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>
+References: <1270805865-16901-1-git-send-email-xiaohui.xin@intel.com> <201004141655.21885.arnd@arndb.de> <97F6D3BD476C464182C1B7BABF0B0AF5C18969A5@shzsmsx502.ccr.corp.intel.com>
+In-Reply-To: <97F6D3BD476C464182C1B7BABF0B0AF5C18969A5@shzsmsx502.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004151706.43582.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19+M4EACKRVn94J8SqSLimYsUNOHqCvZa0gQ/e
+ p8omgai5v1lITKGR/cz3Nc29S5yZfYM7PdezQMBleC0O5au2J+
+ R53EHTqlXTmVY3AvdcIKQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal,
-
-On Thu, 2010-04-15 at 16:55 +0200, Michal Simek wrote:
-
-> Is unimplemented sched_clock the reason why ftrace not show fine grain time?
+On Thursday 15 April 2010, Xin, Xiaohui wrote:
 > 
-> Or is there any other thing which is wrong?
+> >It seems that you are duplicating a lot of functionality that
+> >is already in macvtap. I've asked about this before but then
+> >didn't look at your newer versions. Can you explain the value
+> >of introducing another interface to user land?
 > 
+> >I'm still planning to add zero-copy support to macvtap,
+> >hopefully reusing parts of your code, but do you think there
+> >is value in having both?
+> 
+> I have not looked into your macvtap code in detail before.
+> Does the two interface exactly the same? We just want to create a simple
+> way to do zero-copy. Now it can only support vhost, but in future
+> we also want it to support directly read/write operations from user space too.
 
-I think that's it. On my platform we have a free-running 1 MHz counter
-so I implemented a platform sched_clock for that, and I get nice ftrace
-times.
+Right now, the features are mostly distinct. Macvtap first of all provides
+a "tap" style interface for users, and can also be used by vhost-net.
+It also provides a way to share a NIC among a number of guests by software,
+though I indent to add support for VMDq and SR-IOV as well. Zero-copy
+is also not yet done in macvtap but should be added.
 
- 0) + 65.000 us   |  finish_task_switch();
- 0)               |  lock_sock_nested() {
- 0) + 52.000 us   |    local_bh_disable();
- 0) + 53.000 us   |    local_bh_enable();
- 0) ! 264.000 us  |  }
+mpassthru right now does not allow sharing a NIC between guests, and
+does not have a tap interface for non-vhost operation, but does the
+zero-copy that is missing in macvtap.
 
-Steve
+> Basically, compared to the interface, I'm more worried about the modification
+> to net core we have made to implement zero-copy now. If this hardest part
+> can be done, then any user space interface modifications or integrations are 
+> more easily to be done after that.
 
+I agree that the network stack modifications are the hard part for zero-copy,
+and your work on that looks very promising and is complementary to what I've
+done with macvtap. Your current user interface looks good for testing this out,
+but I think we should not merge it (the interface) upstream if we can get the
+same or better result by integrating your buffer management code into macvtap.
 
+I can try to merge your code into macvtap myself if you agree, so you
+can focus on getting the internals right.
 
+> >Not sure what I'm missing, but who calls the vq->receiver? This seems
+> >to be neither in the upstream version of vhost nor introduced by your
+> >patch.
+> 
+> See Patch v3 2/3 I have sent out, it is called by handle_rx() in vhost.
+
+Ok, I see. As a general rule, it's preferred to split a patch series
+in a way that makes it possible to apply each patch separately and still
+get a working kernel, ideally with more features than the version before
+the patch. I believe you could get there by reordering your patches to
+make the actual driver the last one in the series.
+
+Not a big problem though, I was mostly looking in the wrong place.
+
+> >> +		ifr.ifr_name[IFNAMSIZ-1] = '\0';
+> >> +
+> >> +		ret = -EBUSY;
+> >> +
+> >> +		if (ifr.ifr_flags & IFF_MPASSTHRU_EXCL)
+> >> +			break;
+> 
+> >Your current use of the IFF_MPASSTHRU* flags does not seem to make
+> >any sense whatsoever. You check that this flag is never set, but set
+> >it later yourself and then ignore all flags.
+> 
+> Using that flag is tried to prevent if another one wants to bind the same device
+> Again. But I will see if it really ignore all other flags.
+
+The ifr variable is on the stack of the mp_chr_ioctl function, and you never
+look at the value after setting it. In order to prevent multiple opens
+of that device, you probably need to lock out any other users as well,
+and make it a property of the underlying device. E.g. you also want to
+prevent users on the host from setting an IP address on the NIC and
+using it to send and receive data there.
+
+	Arnd
