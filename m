@@ -1,91 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab0DOB4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 21:56:39 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:45038 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755981Ab0DOB4i (ORCPT
+	id S1756424Ab0DOC37 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 22:29:59 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:53093 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755493Ab0DOC35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 21:56:38 -0400
-Date: Thu, 15 Apr 2010 11:56:25 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100415015625.GP2493@dastard>
-References: <20100413143659.GA2493@dastard>
- <20100414031205.GE2493@dastard>
- <20100414155222.D150.A69D9226@jp.fujitsu.com>
+	Wed, 14 Apr 2010 22:29:57 -0400
+Message-Id: <201004150229.o3F2T4dZ054768@www262.sakura.ne.jp>
+Subject: RE: [PATCH] Infiniband: Randomize local port allocation.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: sean.hefty@intel.com
+Cc: amwang@redhat.com, opurdila@ixiacom.com, eric.dumazet@gmail.com,
+       netdev@vger.kernel.org, nhorman@tuxdriver.com, davem@davemloft.net,
+       ebiederm@xmission.com, linux-kernel@vger.kernel.org, rolandd@cisco.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100414155222.D150.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+Date: Thu, 15 Apr 2010 11:29:04 +0900
+References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain>	<20100412100816.5302.74919.sendpatchset@localhost.localdomain>	<201004130121.o3D1Lhh7099571@www262.sakura.ne.jp>	<4BC41994.7030707@redhat.com>	<4BC42FE0.4040601@redhat.com> <201004132207.GAJ52684.OJFtMQVFHOSFLO@I-love.SAKURA.ne.jp> <21DAC78125424ED291B5D6477CFF9657@amr.corp.intel.com> <201004140201.o3E21Aqn075978@www262.sakura.ne.jp> <195EB1AD388F455AA386EB214FCD09F4@amr.corp.intel.com>
+In-Reply-To: <195EB1AD388F455AA386EB214FCD09F4@amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 14042010 #3708889, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 03:52:32PM +0900, KOSAKI Motohiro wrote:
-> > On Wed, Apr 14, 2010 at 12:36:59AM +1000, Dave Chinner wrote:
-> > > On Tue, Apr 13, 2010 at 08:39:29PM +0900, KOSAKI Motohiro wrote:
-> > > > > FWIW, the biggest problem here is that I have absolutely no clue on
-> > > > > how to test what the impact on lumpy reclaim really is. Does anyone
-> > > > > have a relatively simple test that can be run to determine what the
-> > > > > impact is?
-> > > > 
-> > > > So, can you please run two workloads concurrently?
-> > > >  - Normal IO workload (fio, iozone, etc..)
-> > > >  - echo $NUM > /proc/sys/vm/nr_hugepages
-> > > 
-> > > What do I measure/observe/record that is meaningful?
-> > 
-> > So, a rough as guts first pass - just run a large dd (8 times the
-> > size of memory - 8GB file vs 1GB RAM) and repeated try to allocate
-> > the entire of memory in huge pages (500) every 5 seconds. The IO
-> > rate is roughly 100MB/s, so it takes 75-85s to complete the dd.
-.....
-> > Basically, with my patch lumpy reclaim was *substantially* more
-> > effective with only a slight increase in average allocation latency
-> > with this test case.
-....
-> > I know this is a simple test case, but it shows much better results
-> > than I think anyone (even me) is expecting...
+Sean Hefty wrote:
+> >+	remaining = (high - low) + 1;
+> >+	rover = net_random() % remaining + low;
+> >+	do {
+> >+		rover++;
+> >+		if ((rover < low) || (rover > high))
+> >+			rover = low;
 > 
-> Ummm...
+> Assuming that we're likely to pick a valid port on the first try, it would be
+> more efficient to move the above 3 lines to the end of the while loop.
 > 
-> Probably, I have to say I'm sorry. I guess my last mail give you
-> a misunderstand.
-> To be honest, I'm not interest this artificial non fragmentation case.
+Indeed. I moved these lines to "if (--remaining) { ... }" block.
+--------------------
+[PATCH] Infiniband: Randomize local port allocation.
 
-And to be brutally honest, I'm not interested in wasting my time
-trying to come up with a test case that you are interested in.
+Randomize local port allocation in a way sctp_get_port_local() does.
+Update rover at the end of loop since we're likely to pick a valid port
+on the first try.
 
-Instead, can you please you provide me with your test cases
-(scripts, preferably) that you use to measure the effectiveness of
-reclaim changes and I'll run them.
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ drivers/infiniband/core/cma.c |   70 +++++++++++++++---------------------------
+ 1 file changed, 25 insertions(+), 45 deletions(-)
 
-> The above test-case does 1) discard all cache 2) fill pages by streaming
-> io. then, it makes artificial "file offset neighbor == block neighbor == PFN neighbor"
-> situation. then, file offset order writeout by flusher thread can make
-> PFN contenious pages effectively.
-
-Yes, that's true, but it does indicate that in that situation, it is
-more effective than the current code. FWIW, in the case of HPC
-applications (which often use huge pages and clear the cache before
-starting anew job), large streaming IO is a pretty common IO
-pattern, so I don't think this situation is as artificial as you are
-indicating.
-
-> Why I dont interest it? because lumpy reclaim is a technique for
-> avoiding external fragmentation mess. IOW, it is for avoiding
-> worst case. but your test case seems to mesure best one.
-
-Then please provide test cases that you consider valid.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--- linux-2.6.34-rc4.orig/drivers/infiniband/core/cma.c
++++ linux-2.6.34-rc4/drivers/infiniband/core/cma.c
+@@ -79,7 +79,6 @@ static DEFINE_IDR(sdp_ps);
+ static DEFINE_IDR(tcp_ps);
+ static DEFINE_IDR(udp_ps);
+ static DEFINE_IDR(ipoib_ps);
+-static int next_port;
+ 
+ struct cma_device {
+ 	struct list_head	list;
+@@ -1970,47 +1969,33 @@ err1:
+ 
+ static int cma_alloc_any_port(struct idr *ps, struct rdma_id_private *id_priv)
+ {
+-	struct rdma_bind_list *bind_list;
+-	int port, ret, low, high;
+-
+-	bind_list = kzalloc(sizeof *bind_list, GFP_KERNEL);
+-	if (!bind_list)
+-		return -ENOMEM;
+-
+-retry:
+-	/* FIXME: add proper port randomization per like inet_csk_get_port */
+-	do {
+-		ret = idr_get_new_above(ps, bind_list, next_port, &port);
+-	} while ((ret == -EAGAIN) && idr_pre_get(ps, GFP_KERNEL));
+-
+-	if (ret)
+-		goto err1;
++	static unsigned int last_used_port;
++	int low, high, remaining;
++	unsigned int rover;
+ 
+ 	inet_get_local_port_range(&low, &high);
+-	if (port > high) {
+-		if (next_port != low) {
+-			idr_remove(ps, port);
+-			next_port = low;
+-			goto retry;
+-		}
+-		ret = -EADDRNOTAVAIL;
+-		goto err2;
++	remaining = (high - low) + 1;
++	rover = net_random() % remaining + low;
++retry:
++	if (last_used_port != rover &&
++	    !idr_find(ps, (unsigned short) rover)) {
++		int ret = cma_alloc_port(ps, id_priv, rover);
++		/*
++		 * Remember previously used port number in order to avoid
++		 * re-using same port immediately after it is closed.
++		 */
++		if (!ret)
++			last_used_port = rover;
++		if (ret != -EADDRNOTAVAIL)
++			return ret;
+ 	}
+-
+-	if (port == high)
+-		next_port = low;
+-	else
+-		next_port = port + 1;
+-
+-	bind_list->ps = ps;
+-	bind_list->port = (unsigned short) port;
+-	cma_bind_port(bind_list, id_priv);
+-	return 0;
+-err2:
+-	idr_remove(ps, port);
+-err1:
+-	kfree(bind_list);
+-	return ret;
++	if (--remaining) {
++		rover++;
++		if ((rover < low) || (rover > high))
++			rover = low;
++		goto retry;
++	}
++	return -EADDRNOTAVAIL;
+ }
+ 
+ static int cma_use_port(struct idr *ps, struct rdma_id_private *id_priv)
+@@ -2995,12 +2980,7 @@ static void cma_remove_one(struct ib_dev
+ 
+ static int __init cma_init(void)
+ {
+-	int ret, low, high, remaining;
+-
+-	get_random_bytes(&next_port, sizeof next_port);
+-	inet_get_local_port_range(&low, &high);
+-	remaining = (high - low) + 1;
+-	next_port = ((unsigned int) next_port % remaining) + low;
++	int ret;
+ 
+ 	cma_wq = create_singlethread_workqueue("rdma_cm");
+ 	if (!cma_wq)
