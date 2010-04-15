@@ -1,418 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab0DOK0L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 06:26:11 -0400
-Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:49120 "EHLO
-	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab0DOK0I (ORCPT
+	id S1752821Ab0DOK0T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 06:26:19 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55702 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab0DOK0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 06:26:08 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4BC6EA64.4070308@cam.ac.uk>
-Date: Thu, 15 Apr 2010 11:28:52 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20100109 Thunderbird/3.0
+	Thu, 15 Apr 2010 06:26:15 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH 4/4] vmscan: replace the pagevec in shrink_inactive_list() with list
+Cc: kosaki.motohiro@jp.fujitsu.com, Dave Chinner <david@fromorbit.com>,
+       Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org
+In-Reply-To: <20100415185310.D1A1.A69D9226@jp.fujitsu.com>
+References: <20100415085420.GT2493@dastard> <20100415185310.D1A1.A69D9226@jp.fujitsu.com>
+Message-Id: <20100415192501.D1AD.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?w4lyaWMgUGllbA==?= <E.A.B.Piel@tudelft.nl>
-CC: Alan Cox <alan@linux.intel.com>, linux-i2c@vger.kernel.org,
-       khali@linux-fr.org, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] liss331d1: accelerometer driver
-References: <20100414124913.23181.75903.stgit@localhost.localdomain> <20100414125155.23181.56610.stgit@localhost.localdomain> <4BC63DC5.8040501@tudelft.nl>
-In-Reply-To: <4BC63DC5.8040501@tudelft.nl>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 15 Apr 2010 19:26:11 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/10 23:12, Éric Piel wrote:
-> Op 14-04-10 14:52, Alan Cox schreef:
->> From: Kalhan Trisal <kalhan.trisal@intel.com>
->>
->> The acceleremeter driver reads the x,y,z coordinate registers and provides
->> the information to user through the input layer
->>
->> Conversion to input device, clean up and porting of retry fixes needed
->> for AAVA done by Alan Cox.
-> Hello,
-> 
-> I wouldn't want to be too picky, if this driver works fine with your
-> hardware and it's tested, why not, but from looking at the spec of this
-> chip (and at the code of this driver), it looks like it could be
-> completely compatible with the lis3lv02d driver (with lis3lv02d_i2c).
-> Same registers, including the WHO_AM_I register which returns 0x3B
-> (which is a supported version).
-> 
-> Have you tried and there were some specific incompatibilities? To me, it
-> looks like the only thing not in the lis3lv02d is the read with multiple
-> retries, and it could be easily added if necessary for your hardware.
-> 
-> Cheers,
-> Eric
-Err. Anyone get a feeling of deja vu here?
+On x86_64, sizeof(struct pagevec) is 8*16=128, but
+sizeof(struct list_head) is 8*2=16. So, to replace pagevec with list
+makes to reduce 112 bytes stack.
 
-http://lists.lm-sensors.org/pipermail/lm-sensors/2009-September/026706.html
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/vmscan.c |   22 ++++++++++++++--------
+ 1 files changed, 14 insertions(+), 8 deletions(-)
 
-When Kalhan originally posted this driver it was pointed out that it was compatible
-with the existing one.  A complete lack of communications lead to Kalhan (and someone
-else, might have been Eric or Samu, can't recall) both implementing i2c support
-in the driver. Can't find it right now but I'm fairly sure Kahlan reported that worked
-fine for this chip as well?
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 4de4029..fbc26d8 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -93,6 +93,8 @@ struct scan_control {
+ 			unsigned long *scanned, int order, int mode,
+ 			struct zone *z, struct mem_cgroup *mem_cont,
+ 			int active, int file);
++
++	struct list_head free_batch_list;
+ };
+ 
+ #define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
+@@ -641,13 +643,11 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 					enum pageout_io sync_writeback)
+ {
+ 	LIST_HEAD(ret_pages);
+-	struct pagevec freed_pvec;
+ 	int pgactivate = 0;
+ 	unsigned long nr_reclaimed = 0;
+ 
+ 	cond_resched();
+ 
+-	pagevec_init(&freed_pvec, 1);
+ 	while (!list_empty(page_list)) {
+ 		enum page_references references;
+ 		struct address_space *mapping;
+@@ -822,10 +822,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		__clear_page_locked(page);
+ free_it:
+ 		nr_reclaimed++;
+-		if (!pagevec_add(&freed_pvec, page)) {
+-			__pagevec_free(&freed_pvec);
+-			pagevec_reinit(&freed_pvec);
+-		}
++		list_add(&page->lru, &sc->free_batch_list);
+ 		continue;
+ 
+ cull_mlocked:
+@@ -849,8 +846,6 @@ keep:
+ 		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+ 	}
+ 	list_splice(&ret_pages, page_list);
+-	if (pagevec_count(&freed_pvec))
+-		__pagevec_free(&freed_pvec);
+ 	count_vm_events(PGACTIVATE, pgactivate);
+ 	return nr_reclaimed;
+ }
+@@ -1238,6 +1233,11 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+ 						 PAGEOUT_IO_SYNC);
+ 	}
+ 
++	/*
++	 * Free unused pages.
++	 */
++	free_pages_bulk(zone, &sc->free_batch_list);
++
+ 	local_irq_disable();
+ 	if (current_is_kswapd())
+ 		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
+@@ -1844,6 +1844,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 		.mem_cgroup = NULL,
+ 		.isolate_pages = isolate_pages_global,
+ 		.nodemask = nodemask,
++		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
+ 	};
+ 
+ 	return do_try_to_free_pages(zonelist, &sc);
+@@ -1864,6 +1865,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+ 		.order = 0,
+ 		.mem_cgroup = mem,
+ 		.isolate_pages = mem_cgroup_isolate_pages,
++		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
+ 	};
+ 	nodemask_t nm  = nodemask_of_node(nid);
+ 
+@@ -1900,6 +1902,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+ 		.mem_cgroup = mem_cont,
+ 		.isolate_pages = mem_cgroup_isolate_pages,
+ 		.nodemask = NULL, /* we don't care the placement */
++		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
+ 	};
+ 
+ 	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
+@@ -1976,6 +1979,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
+ 		.order = order,
+ 		.mem_cgroup = NULL,
+ 		.isolate_pages = isolate_pages_global,
++		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
+ 	};
+ loop_again:
+ 	total_scanned = 0;
+@@ -2333,6 +2337,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+ 		.swappiness = vm_swappiness,
+ 		.order = 0,
+ 		.isolate_pages = isolate_pages_global,
++		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
+ 	};
+ 	struct zonelist * zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
+ 	struct task_struct *p = current;
+@@ -2517,6 +2522,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 		.swappiness = vm_swappiness,
+ 		.order = order,
+ 		.isolate_pages = isolate_pages_global,
++		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
+ 	};
+ 	unsigned long slab_reclaimable;
+ 
+-- 
+1.6.5.2
 
-So looks like a lack of communications here and that Alan has picked up an unnecessary
-driver.
 
-Jonathan
-> 
->>
->> Signed-off-by: Kalhan Trisal <kalhan.trisal@intel.com>
->> Signed-off-by: Alan Cox <alan@linux.intel.com>
->> ---
->>
->>  drivers/hwmon/Kconfig    |    8 +
->>  drivers/hwmon/Makefile   |    1 
->>  drivers/hwmon/lis331dl.c |  286 ++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 295 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/hwmon/lis331dl.c
->>
->>
->> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
->> index 1fa2533..6868b9d 100644
->> --- a/drivers/hwmon/Kconfig
->> +++ b/drivers/hwmon/Kconfig
->> @@ -1104,6 +1104,14 @@ config SENSORS_ISL29020
->>  	  Range values can be configured using sysfs.
->>  	  Lux data is accessible via sysfs.
->>  
->> +config SENSORS_LIS331DL
->> +	tristate "STMicroeletronics LIS331DL three-axis digital accelerometer"
->> +	depends on I2C
->> +	help
->> +	  If you say yes here you get support for the Accelerometer  Devices
->> +	  Device can be configured using sysfs.
->> +	  x y Z data can be   accessible via sysfs.
->> +
->>  if ACPI
->>  
->>  comment "ACPI drivers"
->> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
->> index 13d6832..ebeb2a2 100644
->> --- a/drivers/hwmon/Makefile
->> +++ b/drivers/hwmon/Makefile
->> @@ -60,6 +60,7 @@ obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
->>  obj-$(CONFIG_SENSORS_LIS3LV02D) += lis3lv02d.o hp_accel.o
->>  obj-$(CONFIG_SENSORS_LIS3_SPI)	+= lis3lv02d.o lis3lv02d_spi.o
->>  obj-$(CONFIG_SENSORS_LIS3_I2C)	+= lis3lv02d.o lis3lv02d_i2c.o
->> +obj-$(CONFIG_SENSORS_LIS331DL)	+= lis331dl.o
->>  obj-$(CONFIG_SENSORS_LM63)	+= lm63.o
->>  obj-$(CONFIG_SENSORS_LM70)	+= lm70.o
->>  obj-$(CONFIG_SENSORS_LM73)	+= lm73.o
->> diff --git a/drivers/hwmon/lis331dl.c b/drivers/hwmon/lis331dl.c
->> new file mode 100644
->> index 0000000..34009eb
->> --- /dev/null
->> +++ b/drivers/hwmon/lis331dl.c
->> @@ -0,0 +1,286 @@
->> +/*
->> + * lis331dl.c - ST LIS331DL  Accelerometer Driver
->> + *
->> + * Copyright (C) 2009 Intel Corp
->> + *
->> + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; version 2 of the License.
->> + *
->> + * This program is distributed in the hope that it will be useful, but
->> + * WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
->> + * General Public License for more details.
->> + *
->> + * You should have received a copy of the GNU General Public License along
->> + * with this program; if not, write to the Free Software Foundation, Inc.,
->> + * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
->> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->> + *
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/init.h>
->> +#include <linux/slab.h>
->> +#include <linux/i2c.h>
->> +#include <linux/err.h>
->> +#include <linux/delay.h>
->> +#include <linux/mutex.h>
->> +#include <linux/sysfs.h>
->> +#include <linux/input-polldev.h>
->> +
->> +
->> +#define POLL_INTERVAL	50
->> +
->> +struct lis331dl {
->> +	struct input_polled_dev *idev;
->> +	struct i2c_client *client;
->> +	struct mutex update_lock;
->> +};
->> +
->> +static ssize_t data_rate_show(struct device *dev,
->> +			struct device_attribute *attr, char *buf)
->> +{
->> +	struct i2c_client *client = to_i2c_client(dev);
->> +	int val;
->> +	int speed = 100;
->> +
->> +	val = i2c_smbus_read_byte_data(client, 0x20);
->> +	if (val & 0x80); /* 1= 400HZ 0= 100HZ */
->> +		speed = 400;
->> +	return sprintf(buf, "%d\n", speed);
->> +}
->> +
->> +static ssize_t power_mode_show(struct device *dev,
->> +			struct device_attribute *attr, char *buf)
->> +{
->> +	struct i2c_client *client = to_i2c_client(dev);
->> +	int val;
->> +
->> +	val = i2c_smbus_read_byte_data(client, 0x20) & 0x40;
->> +	if (val == 0x40)
->> +		val = 1;
->> +	return sprintf(buf, "%d\n", val);
->> +}
->> +
->> +static int read_with_retries(struct i2c_client *client, int r)
->> +{
->> +	int retries;
->> +	int ret;
->> +	
->> +	for (retries = 0; retries < 5; retries++) {
->> +		ret = i2c_smbus_read_byte_data(client, r);
->> +		if (ret != -ETIMEDOUT)
->> +			break;
->> +		msleep(10);
->> +	}
->> +	return ret;
->> +}
->> +
->> +static void lis331dl_poll(struct input_polled_dev *idev)
->> +{
->> +	struct input_dev *input = idev->input;
->> +	struct lis331dl *data = idev->private;
->> +	int x, y, z;
->> +	struct i2c_client *client = data->client;
->> +
->> +	x = read_with_retries(client, 0x29);
->> +	y = read_with_retries(client, 0x2B);
->> +	z = read_with_retries(client, 0x2D);
->> +
->> +	input_report_abs(input, ABS_X, x);
->> +	input_report_abs(input, ABS_Y, y);
->> +	input_report_abs(input, ABS_Z, z);
->> +	input_sync(input);
->> +}
->> +
->> +static ssize_t data_rate_store(struct device *dev,
->> +		struct device_attribute *attr, const char *buf, size_t count)
->> +{
->> +	struct i2c_client *client = to_i2c_client(dev);
->> +	struct lis331dl *data = i2c_get_clientdata(client);
->> +	unsigned int ret_val;
->> +	unsigned long val;
->> +
->> +	if (strict_strtoul(buf, 10, &val))
->> +		return -EINVAL;
->> +
->> +	mutex_lock(&data->update_lock);
->> +
->> +	ret_val = i2c_smbus_read_byte_data(client, 0x20);
->> +	ret_val &= 0x7F;
->> +
->> +	switch (val) {
->> +	case 400:
->> +		ret_val |= 0x80;
->> +	case 100:
->> +		i2c_smbus_write_byte_data(client, 0x20, ret_val);
->> +		break;
->> +	default:		
->> +		mutex_unlock(&data->update_lock);
->> +		return -EINVAL;
->> +	}
->> +	mutex_unlock(&data->update_lock);
->> +	return count;
->> +}
->> +
->> +static ssize_t power_mode_store(struct device *dev,
->> +		struct device_attribute *attr, const  char *buf, size_t count)
->> +{
->> +	struct i2c_client *client = to_i2c_client(dev);
->> +	struct lis331dl *data = i2c_get_clientdata(client);
->> +	unsigned int ret_val;
->> +	unsigned long val;
->> +
->> +	if (strict_strtoul(buf, 10, &val))
->> +		return -EINVAL;
->> +
->> +	mutex_lock(&data->update_lock);
->> +
->> +	ret_val = i2c_smbus_read_byte_data(client, 0x20);
->> +	ret_val &= 0xBF;
->> +	
->> +	switch(val) {
->> +	case 1:
->> +		ret_val |= 0x40;
->> +	case 0:
->> +		i2c_smbus_write_byte_data(client, 0x20, ret_val);
->> +		break;
->> +	default:
->> +		mutex_unlock(&data->update_lock);
->> +		return -EINVAL;
->> +	}
->> +	mutex_unlock(&data->update_lock);
->> +	return count;
->> +}
->> +
->> +static DEVICE_ATTR(data_rate, S_IRUGO | S_IWUSR,
->> +	data_rate_show, data_rate_store);
->> +static DEVICE_ATTR(power_state, S_IRUGO | S_IWUSR,
->> +	power_mode_show, power_mode_store);
->> +
->> +static struct attribute *mid_att_accelero[] = {
->> +	&dev_attr_data_rate.attr,
->> +	&dev_attr_power_state.attr,
->> +	NULL
->> +};
->> +
->> +static struct attribute_group m_accelero_gr = {
->> +	.name = "lis331dl",
->> +	.attrs = mid_att_accelero
->> +};
->> +
->> +static void accel_set_default_config(struct i2c_client *client)
->> +{
->> +	i2c_smbus_write_byte_data(client, 0x20, 0x47);
->> +}
->> +
->> +static int  lis331dl_probe(struct i2c_client *client,
->> +					const struct i2c_device_id *id)
->> +{
->> +	int res;
->> +	struct lis331dl *data;
->> +	struct input_polled_dev *idev;
->> +	struct input_dev *input;
->> +
->> +	data = kzalloc(sizeof(struct lis331dl), GFP_KERNEL);
->> +	if (data == NULL) {
->> +		dev_err(&client->dev, "lis331dl: out of memory\n");
->> +		return -ENOMEM;
->> +	}
->> +	mutex_init(&data->update_lock);
->> +	i2c_set_clientdata(client, data);
->> +	data->client = client;
->> +
->> +	res = sysfs_create_group(&client->dev.kobj, &m_accelero_gr);
->> +	if (res) {
->> +		dev_err(&client->dev, "lis331dl: sysfs  group failed\n");
->> +		goto accelero_error1;
->> +	}
->> +	idev = input_allocate_polled_device();
->> +	if (!idev) {
->> +		res = -ENOMEM;
->> +		dev_err(&client->dev,
->> +			"lis331dl: unable to register input device\n");
->> +		goto accelero_error2;
->> +	}
->> +	idev->poll = lis331dl_poll;
->> +	idev->poll_interval = POLL_INTERVAL;
->> +
->> +	idev->private = data;
->> +	data->idev =  idev;
->> +
->> +	input = idev->input;
->> +	input->name = "lis331dl";
->> +	input->phys = "lis331dl/input0";
->> +	input->id.bustype = BUS_I2C;
->> +	input->dev.parent = &client->dev;
->> +	input->evbit[0] = BIT_MASK(EV_ABS);
->> +	input_set_abs_params(input, ABS_X, 0, 255, 2, 2);
->> +	input_set_abs_params(input, ABS_Y, 0, 255, 2, 2);
->> +	input_set_abs_params(input, ABS_Z, 0, 255, 2, 2);
->> +
->> +	res = input_register_polled_device(idev);
->> +	if (res == 0) {
->> +		dev_info(&client->dev,
->> +			"%s lis331dl:  Accelerometer chip found",
->> +							client->name);
->> +		return 0;
->> +	}
->> +	input_free_polled_device(idev);
->> +accelero_error2:
->> +	sysfs_remove_group(&client->dev.kobj, &m_accelero_gr);
->> +accelero_error1:
->> +	i2c_set_clientdata(client, NULL);
->> +	kfree(data);
->> +	return res;
->> +}
->> +
->> +static int lis331dl_remove(struct i2c_client *client)
->> +{
->> +	struct lis331dl *data = i2c_get_clientdata(client);
->> +
->> +	input_unregister_polled_device(data->idev);
->> +	input_free_polled_device(data->idev);
->> +	sysfs_remove_group(&client->dev.kobj, &m_accelero_gr);
->> +	kfree(data);
->> +	return 0;
->> +}
->> +
->> +static struct i2c_device_id lis331dl_id[] = {
->> +	{ "i2c_accel", 0 },
->> +	{ }
->> +};
->> +
->> +MODULE_DEVICE_TABLE(i2c, lis331dl_id);
->> +
->> +static struct i2c_driver lis331dl_driver = {
->> +	.driver = {
->> +	.name = "lis331dl",
->> +	},
->> +	.probe = lis331dl_probe,
->> +	.remove = lis331dl_remove,
->> +	.id_table = lis331dl_id,
->> +};
->> +
->> +static int __init sensor_lis331dl_init(void)
->> +{
->> +	int res;
->> +
->> +	res = i2c_add_driver(&lis331dl_driver);
->> +	return res;
->> +}
->> +
->> +static void  __exit sensor_lis331dl_exit(void)
->> +{
->> +	i2c_del_driver(&lis331dl_driver);
->> +}
->> +
->> +module_init(sensor_lis331dl_init);
->> +module_exit(sensor_lis331dl_exit);
->> +
->> +MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com>, Alan Cox");
->> +MODULE_DESCRIPTION("STMicroelectronics LIS331DL Accelerometer Driver");
->> +MODULE_LICENSE("GPL v2");
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
 
