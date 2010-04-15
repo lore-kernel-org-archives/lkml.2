@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab0DOS1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 14:27:33 -0400
-Received: from www.tglx.de ([62.245.132.106]:37183 "EHLO www.tglx.de"
+	id S1754874Ab0DOSdE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 14:33:04 -0400
+Received: from www.tglx.de ([62.245.132.106]:52272 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752494Ab0DOS1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 14:27:31 -0400
-Date: Thu, 15 Apr 2010 20:26:57 +0200 (CEST)
+	id S1753046Ab0DOSdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 14:33:01 -0400
+Date: Thu, 15 Apr 2010 20:32:05 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Michal Simek <michal.simek@petalogix.com>
-cc: steve@digidescorp.com, Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>, Wu Zhangjin <wuzhangjin@gmail.com>
-Subject: Re: sched_clock - microblaze
-In-Reply-To: <4BC73D02.5090108@petalogix.com>
-Message-ID: <alpine.LFD.2.00.1004152025240.3625@localhost.localdomain>
-References: <4BC728DD.5020404@petalogix.com> <1271343970.3856.7.camel@iscandar.digidescorp.com> <4BC73D02.5090108@petalogix.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+       laijs@cn.fujitsu.com, dipankar@in.ibm.com, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com, adobriyan@gmail.com,
+       "David S. Miller" <davem@davemloft.net>
+Subject: Re: [patch 1/5] Debugobjects transition check (updated changelog)
+In-Reply-To: <20100406125302.GA22529@Krystal>
+Message-ID: <alpine.LFD.2.00.1004152028000.3625@localhost.localdomain>
+References: <20100329143405.252313609@efficios.com> <20100329143701.765545140@efficios.com> <alpine.LFD.2.00.1003301819060.32352@localhost.localdomain> <20100331133100.GA25453@Krystal> <alpine.LFD.2.00.1003311549250.32352@localhost.localdomain>
+ <20100331142736.GA26207@Krystal> <alpine.LFD.2.00.1004061013340.32352@localhost.localdomain> <20100406125302.GA22529@Krystal>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -22,37 +28,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Apr 2010, Michal Simek wrote:
-
-> Steven J. Magnani wrote:
-> > Michal,
-> > 
-> > On Thu, 2010-04-15 at 16:55 +0200, Michal Simek wrote:
-> > 
-> > > Is unimplemented sched_clock the reason why ftrace not show fine grain
-> > > time?
-> > > 
-> > > Or is there any other thing which is wrong?
-> > > 
-> > 
-> > I think that's it. On my platform we have a free-running 1 MHz counter
-> > so I implemented a platform sched_clock for that, and I get nice ftrace
-> > times.
-> > 
-> >  0) + 65.000 us   |  finish_task_switch();
-> >  0)               |  lock_sock_nested() {
-> >  0) + 52.000 us   |    local_bh_disable();
-> >  0) + 53.000 us   |    local_bh_enable();
-> >  0) ! 264.000 us  |  }
+B1;2005;0cOn Tue, 6 Apr 2010, Mathieu Desnoyers wrote:
+> Implement a basic state machine checker in the debugobjects.
 > 
-> I don't understand why I should add any "new" free running counter because we
-> have one free running counter which do it (clocksource timer - timer1). Or am
-> I missing something?
+> This state machine checker detects races and inconsistencies within the "active"
+> life of a debugobject. The checker only keeps track of the current state; all
+> the state machine logic is kept at the object instance level.
+> 
+> The checker works by adding a supplementary "unsigned int astate" field to the
+> debug_obj structure. It keeps track of the current "active state" of the object.
+> 
+> The only constraints that are imposed on the states by the debugobjects system
+> is that:
+> 
+> - activation of an object sets the current active state to 0,
+> - deactivation of an object expects the current active state to be 0.
+> 
+> For the rest of the states, the state mapping is determined by the specific
+> object instance. Therefore, the logic keeping track of the state machine is
+> within the specialized instance, without any need to know about it at the
+> debugobject level.
+> 
+> The current object active state is changed by calling:
+> 
+> debug_object_active_state(addr, descr, expect, next)
+> 
+> where "expect" is the expected state and "next" is the next state to move to if
+> the expected state is found. A warning is generated if the expected is not
+> found.
 
-No, you just can use the clocksource for it. We have that separation
-as on x86 we want to use the TSC even if it is not usable for time
-keeping as it is the fastest accesible clock in x86. So for your case
-you can just use your main clocksource as sched_clock and be done.
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+
+Please feel free to pull that into the rcu branch where the users are
+going to be.
 
 Thanks,
 
