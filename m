@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab0DPEeS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 00:34:18 -0400
-Received: from mail.perches.com ([173.55.12.10]:1511 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751170Ab0DPEeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 00:34:17 -0400
-Subject: Re: [PATCH] mac8390: fix pr_info() calls and change return code
-From: Joe Perches <joe@perches.com>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: David Miller <davem@davemloft.net>, p_gortmaker@yahoo.com,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-m68k@vger.kernel.org
-In-Reply-To: <alpine.OSX.2.00.1004161403160.271@localhost>
-References: <alpine.OSX.2.00.1004161214270.271@localhost>
-	 <20100415.200113.215578006.davem@davemloft.net>
-	 <alpine.OSX.2.00.1004161323340.271@localhost>
-	 <alpine.OSX.2.00.1004161403160.271@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Apr 2010 21:34:14 -0700
-Message-ID: <1271392454.2298.37.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752851Ab0DPFWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 01:22:51 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:42284 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752254Ab0DPFWu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 01:22:50 -0400
+Date: Thu, 15 Apr 2010 21:12:18 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] input: Add LED support to Synaptics device
+Message-ID: <20100415191217.GA1495@ucw.cz>
+References: <1271257823-23566-1-git-send-email-tiwai@suse.de> <1271257823-23566-3-git-send-email-tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271257823-23566-3-git-send-email-tiwai@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-16 at 14:21 +1000, Finn Thain wrote:
-> Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+Hi!
+
+> The new Synaptics devices have an LED on the top-left corner.
+> This is controlled via the command 0x0a with parameters 0x88 or 0x10.
 > 
-> --- a/drivers/net/mac8390.c	2010-04-16 13:31:04.000000000 +1000
-> +++ b/drivers/net/mac8390.c	2010-04-16 14:02:29.000000000 +1000
-> @@ -554,7 +554,7 @@
->  	case MAC8390_APPLE:
->  		switch (mac8390_testio(dev->mem_start)) {
->  		case ACCESS_UNKNOWN:
-> -			pr_info("Don't know how to access card memory!\n");
-> +			pr_err("Don't know how to access card memory!\n");
->  			return -ENODEV;
->  			break;
->  
-> @@ -643,8 +643,8 @@
->  {
->  	__ei_open(dev);
->  	if (request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev)) {
-> -		pr_info("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
-> -		return -EAGAIN;
-> +		pr_err("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
-> +		return -EBUSY;
+> The detection of the LED isn't clear yet.  It should have been the new
+> capability bits that indicate the presence, but on real machines, it
+> doesn't fit.  So, for the time being, the driver checks the product id
+> in the ext capability bits and assumes that LED exists on the known
+> devices.
+> 
+> The support of LED is controlled via a normal input event with EV_LED
+> bit mask.  It supports LED_MUTE bit.  X driver can detect the LED
+> support by checking these bits.
 
-You should document the reason for the
-return code change in the changelog.
-Why is it better to use -EBUSY?
+Could we use generic LED API for this? It is not really 'mute' led
+after all...
+								Pavel
 
->  	}
->  	return 0;
->  }
-> @@ -660,7 +660,7 @@
->  {
->  	ei_status.txing = 0;
->  	if (ei_debug > 1)
-> -		pr_info("reset not supported\n");
-> +		printk(KERN_DEBUG "reset not supported\n");
-
-It'd be better to prefix this with the driver name
-or use something like netdev_dbg with #define DEBUG
-otherwise it's "huh? what device emits this message?"
-when reading the logs.
-
-Something like:
-	printk(KERN_DEBUG pr_fmt("reset not supported\n"));
-or
-#define DEBUG
-	netdev_dbg(dev, "reset not supported\n");
-or
-#define DEBUG
-	pr_debug("reset not supported\n");
-
->  	if (ei_debug > 1)
-> -		pr_cont("reset complete\n");
-> +		printk(KERN_CONT "reset complete\n");
-
-unnecessary conversion.
-
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
