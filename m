@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab0DOPor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 11:44:47 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35550 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540Ab0DOPop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 11:44:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=eHytYbympRGF5BdRFcU4VbSnUWrSZ2161LAFYJoR/VDq96oqqeZGJB0QcVtCiO+icP
-         K3yxLvbdPmeOzc1UMNlYtzWYXu8CoRTPU5du2UrYQhWW/ET2pt2B62xNrJN7k/gUI2XE
-         nIZUA+Gmq3lisqFL04WecrSWzFuXEaJN28A2M=
+	id S1754776Ab0DOPpR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 11:45:17 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:51110 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754720Ab0DOPpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 11:45:04 -0400
+Date: Thu, 15 Apr 2010 16:44:42 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/4] vmscan: simplify shrink_inactive_list()
+Message-ID: <20100415154442.GG10966@csn.ul.ie>
+References: <20100415085420.GT2493@dastard> <20100415185310.D1A1.A69D9226@jp.fujitsu.com> <20100415192140.D1A4.A69D9226@jp.fujitsu.com> <20100415131532.GD10966@csn.ul.ie> <87tyrc92un.fsf@basil.nowhere.org>
 MIME-Version: 1.0
-Date: Thu, 15 Apr 2010 10:44:44 -0500
-Message-ID: <q2gfa1e4ce71004150844of9c3aaaeh5e5cc7c20d263a41@mail.gmail.com>
-Subject: Poor localhost net performance on recent stable kernel
-From: Kelly Burkhart <kelly.burkhart@gmail.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <87tyrc92un.fsf@basil.nowhere.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Apr 15, 2010 at 05:01:36PM +0200, Andi Kleen wrote:
+> Mel Gorman <mel@csn.ul.ie> writes:
+> >
+> > $ stack-o-meter vmlinux-vanilla vmlinux-2-simplfy-shrink 
+> > add/remove: 0/0 grow/shrink: 0/2 up/down: 0/-144 (-144)
+> > function                                     old     new   delta
+> > shrink_zone                                 1232    1160     -72
+> > kswapd                                       748     676     -72
+> 
+> And the next time someone adds a new feature to these code paths or
+> the compiler inlines differently these 72 bytes are easily there
+> again. It's not really a long term solution. Code is tending to get
+> more complicated all the time. I consider it unlikely this trend will
+> stop any time soon.
+> 
 
-While working on upgrading distributions, I've noticed that local
-network communication is much slower on 2.6.33.2 than on our old
-kernel 2.6.16.60 (sles 10.2).
+The same logic applies when/if page writeback is split so that it is
+handled by a separate thread.
 
-Results of netperf, UDP_RR against localhost I get around 150000 tps
-on the new kernel vs. 290000 tps with the old kernel.  The netperf
-command:
+> So just doing some stack micro optimizations doesn't really help 
+> all that much.
+> 
 
-netperf -T 1 -H 127.0.0.1 -t UDP_RR -c -C -- -r 100
+It's a buying-time venture, I'll agree but as both approaches are only
+about reducing stack stack they wouldn't be long-term solutions by your
+criteria. What do you suggest?
 
-TCP_RR had similar results.  The problem did not exist with TCP_STREAM.
 
-While trying to track this down, I wrote a test program that writes
-then reads a 32 bit integer to a pipe:
-
-static void tst_pipe0( int sleep_us )
-{
-    int pipefd[2];
-    int idx;
-    uint32_t tarr[ITERS];
-
-    printf("tst_pipe0 -- sleep %dus\n", sleep_us);
-
-    if (pipe(pipefd) < 0)
-        err_exit("pipe");
-
-    for(idx=0; idx<ITERS; ++idx) {
-        uint32_t btsc;
-        uint32_t rtsc;
-        uint32_t etsc;
-        get_tscl(btsc);
-        write(pipefd[1], (char *)&btsc, sizeof(btsc));
-        read(pipefd[0], (char *)&rtsc, sizeof(rtsc));
-        get_tscl(etsc);
-        tarr[idx] = etsc-btsc;
-        do_sleep(sleep_us);
-    }
-    prt_avg(tarr, ITERS);
-    close(pipefd[0]);
-    close(pipefd[1]);
-    printf("\n");
-}
-
-There's a dramatic difference if there's a sleep between iterations on
-the new kernel.  On the old kernel the write/read round trip takes
-1100-1300 cycles with or without sleep.  On the new kernel, with no
-sleep the round trip is about 1400 cycles.  It doubles with a 1us
-sleep then gradually increases to 12000-14000 cycles then stabilizes
-as I increase the sleep time to 1500us.  I'm not sure if this is
-related to the netperf difference or is a completely different
-scheduling issue.
-
-I'm running on an Intel Xeon X5570 @ 2.93GHz.  Different tick/notick,
-preemption, HZ kernel config option values doesn't substantially change
-the magnitude of the difference.
-
-Does anyone have any ideas regarding what could be causing the netperf
-issue?  And is the pipe microbenchmark meaningful and if so what does
-it mean?
-
-Thanks,
-
--Kelly
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
