@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab0DONsr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 09:48:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46174 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714Ab0DONsq (ORCPT
+	id S1754245Ab0DONzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 09:55:17 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41627 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753486Ab0DONzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 09:48:46 -0400
-Subject: Re: [PATCH] ummunotify: Userspace support for MMU notifications
-From: Peter Zijlstra <peterz@infradead.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Roland Dreier <rdreier@cisco.com>,
-       =?ISO-8859-1?Q?H=E5kon?= Bugge <Haakon.Bugge@Sun.COM>,
-       Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Eric B Munson <ebmunson@us.ibm.com>, linux-kernel@vger.kernel.org,
-       linux-rdma@vger.kernel.org, rolandd@cisco.com, pavel@ucw.cz,
-       mingo@elte.hu, jsquyres@cisco.com
-In-Reply-To: <20100414085228.GL23554@redhat.com>
-References: <1271053337-7121-1-git-send-email-ebmunson@us.ibm.com>
-	 <20100412160359.1d9074dc.akpm@linux-foundation.org>
-	 <20100412235937.GF15629@obsidianresearch.com>
-	 <3251DDDA-D705-4B1E-9595-9C24709EF146@Sun.com>
-	 <adahbnfme0j.fsf@roland-alpha.cisco.com> <1271181774.4807.1868.camel@twins>
-	 <20100414085228.GL23554@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Apr 2010 15:48:42 +0200
-Message-ID: <1271339322.1674.16.camel@laptop>
+	Thu, 15 Apr 2010 09:55:15 -0400
+Date: Thu, 15 Apr 2010 14:59:40 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Michal Svoboda <michal.svoboda@agents.felk.cvut.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Kconfig: Make config Filter access to /dev/mem default
+ y
+Message-ID: <20100415145940.243723b7@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100415134152.GK21894@myhost.felk.cvut.cz>
+References: <20100413025228.GC10860@localhost.localdomain>
+	<m2v7b6bb4a51004142312ze69796ak87d4ee65f6dd5529@mail.gmail.com>
+	<20100415063626.GG21894@myhost.felk.cvut.cz>
+	<alpine.LRH.2.00.1004151233010.28179@twin.jikos.cz>
+	<20100415134152.GK21894@myhost.felk.cvut.cz>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-14 at 11:52 +0300, Gleb Natapov wrote:
-> On Tue, Apr 13, 2010 at 08:02:54PM +0200, Peter Zijlstra wrote:
-> > On Tue, 2010-04-13 at 10:57 -0700, Roland Dreier wrote:
-> > > Are those system calls the only possible way that virtual to physical
-> > > mappings can change?  Can't page migration or something like that
-> > > potentially affect things?  And even if you did have hooks into every
-> > > system call that mattered (keep in mind that relying on glibc is not
-> > > enough, since an MPI application may not use glibc) would decoding them
-> > > and figuring out what happened really be preferable to a single event
-> > > type that tells you exactly what address range was affected? 
-> > 
-> > Yeah, virtual<->physical maps can change through swapping, page
-> > migration, memory compaction, huge-page aggregation (the latter two not
-> > yet being upstream).
-> > 
-> > Even mlock() doesn't pin virtual<->physical maps.
-> Pages registered for RDMA are GUPed so no method above should touch
-> them. Fork+cow or unmap/map on the other hand can change
-> virtual<->physical maps. GUPed pages are still GUPed, but they are no
-> longer mapped into process' virtual address space. MPI copes with
-> Fork+cow by marking registered memory as MADV_DONTFORK.
+On Thu, 15 Apr 2010 15:41:53 +0200
+Michal Svoboda <michal.svoboda@agents.felk.cvut.cz> wrote:
 
-Sure, holding a page-ref will pin the physical page, but that is not
-something userspace usually has means to.
+> Jiri Kosina wrote:
+> > Access to /dev/mem being filtered in PAT obviously applies only to x86. 
+> > 
+> > Architectures which don't do such filtering in their respective 
+> > phys_mem_access_prot_allowed() still need this option.
+> 
+> So why not use it for all archs uniformly? Is PAT filtering better in
+> some ways? 
 
+PAT is an x86 specific hardware feature. The x86 processors can set per
+page caching properties as with some other CPU designs. In the x86 case
+all references to the page must have the same cache settings so the PAT
+implementation has to filter /dev/mem access to avoid machine check
+errors.
+
+It's not implemented as a security feature, its a side effect of the
+hardware requirements on that CPU range.
+
+Alan
