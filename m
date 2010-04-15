@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757826Ab0DOVr6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 17:47:58 -0400
-Received: from mailsrvr2.bull.com ([192.90.162.8]:49722 "EHLO
-	mailsrvr2.bull.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757474Ab0DOVr5 (ORCPT
+	id S1757837Ab0DOVtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 17:49:09 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55069 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757293Ab0DOVtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 17:47:57 -0400
-X-Greylist: delayed 1877 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Apr 2010 17:47:48 EDT
-In-Reply-To: <1269969305.5258.479.camel@laptop>
-Subject: Re: [RFC] perf_events: support for uncore a.k.a. nest units
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Stephane Eranian <eranian@googlemail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-X-Mailer: Lotus Notes Release 7.0.1 January 17, 2006
-Message-ID: <OFA47E1D5E.A81B0A43-ON07257706.00721254-07257706.0074D40F@us-phx1.az05.bull.com>
-From: Gary.Mohr@Bull.com
-Date: Thu, 15 Apr 2010 14:16:04 -0700
-X-MIMETrack: Serialize by Router on US-PHX1/US/BULL(Release 7.0.2FP2 HF144|July 27, 2007) at
- 04/15/2010 02:16:07 PM
+	Thu, 15 Apr 2010 17:49:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=SKW9TIYZu0PfAQk9Tw9vgUXjHcQJXZAmD8bwsYZbo+uKyig4HyCtrY43HYHHl2efEq
+         RoWuPlaFEAd6DSAZvi8RdyuMfQcvM7ZgiNF9G2uGETNIiCrN6xo3OFOr/9zX/GGM6SUk
+         N4j8ngem1RgQ0z0zTm2vvShB6bcQwIKCZi9lU=
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+In-Reply-To: <20100415205739.GF5069@nowhere>
+References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
+	 <1271262016-18650-2-git-send-email-chase.douglas@canonical.com>
+	 <20100415205739.GF5069@nowhere>
+Date: Thu, 15 Apr 2010 14:49:05 -0700
+X-Google-Sender-Auth: 2d0dad9dc5ae102f
+Message-ID: <v2t40ec3ea41004151449x70e7077flb8d1fea5e8d46167@mail.gmail.com>
+Subject: Re: [PATCH 2/3] Add tracing_off_event() calls to BUG() and WARN() 
+	paths
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Randy Dunlap <randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 15, 2010 at 1:57 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Wed, Apr 14, 2010 at 12:20:15PM -0400, Chase Douglas wrote:
+>> This change adds tracing_off_event() calls, which stop debug tracing,
+>> when a BUG() or WARN() function is called. The stoppage depends on
+>> commandline paramenter tracing_off={bug,warn,none}. The default is
+>> "bug", so only the BUG() paths will stop tracing.
+>>
+>> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+>
+>
+> ACK
+>
+> But I can't find where we call oops_enter() from panic()
+> I see it called in x86 from oops_begin() that is called
+> in various places like die(), but couldn't find how it
+> ends up beeing called from panic().
 
-> On Tue, 2010-03-30 at 09:49 -0700, Corey Ashford wrote:
->
-> Right, I've got some definite ideas on how to go here, just need some
-> time to implement them.
->
-> The first thing that needs to be done is get rid of all the __weak
-> functions (with exception of perf_callchain*, since that really is arch
-> specific).
->
-> For hw_perf_event_init() we need to create a pmu registration facility
-> and lookup a pmu_id, either passed as an actual id found in sysfs or an
-> open file handle from sysfs (the cpu pmu would be pmu_id 0 for backwards
-> compat).
->
-> hw_perf_disable/enable() would become struct pmu functions and
-> perf_disable/enable need to become per-pmu, most functions operate on a
-> specific event, for those we know the pmu and hence can call the per-pmu
-> version. (XXX find those sites where this is not true).
->
-> Then we can move to context, yes I think we want new context for new
-> PMUs, otherwise we get very funny RR interleaving problems. My idea was
-> to move find_get_context() into struct pmu as well, this allows you to
-> have per-pmu contexts. Initially I'd not allow per-pmu-per-task contexts
-> because then things like perf_event_task_sched_out() would get rather
-> complex.
->
-> For RR we can move away from perf_event_task_tick and let the pmu
-> install a (hr)timer for this on their own.
->
-> I've been planning to implement this for more than a week now, its just
-> that other stuff keeps getting in the way.
->
+I did not test the panic() path, but when that happens the system goes
+down anyways. You won't be able to get the ftrace unless you enable
+the ftrace on oops option, in which case the end of the trace will
+likely be close enough to what you are looking for anyways.
 
-Hi Peter,
-
-My name is Gary Mohr and I work for Bull Information Systems.  I have been
-following your discussions with Corey (and others) about how to implement
-support for nest PMU's in the linux kernel.
-
-My company feels that support for Intel Nehalem uncore events is very
-important
-to our customers.  Has the "other stuff" mentioned above quited down to
-allow
-you to get started on building support for these features ??  If
-development
-is actually in progress, would you be willing to make a guess as to which
-version of the kernel may offer the new capabilities ??
-
-As I said we are interested so if there is any way we can assist you,
-please
-let us know.  We would be happy to take experimental patch sets and
-validate,
-test, and debug any problems we encounter if that would help your
-development.
-
-Thanks for your time.
-Gary
-
+-- Chase
