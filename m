@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab0DOClT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 22:41:19 -0400
-Received: from dns.bangla.net ([203.188.252.6]:60865 "EHLO smtp.bangla.net"
+	id S1756574Ab0DOCln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 22:41:43 -0400
+Received: from dns.bangla.net ([203.188.252.6]:61108 "EHLO smtp.bangla.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756405Ab0DOClS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 22:41:18 -0400
-Message-ID: <33875.41.220.68.1.1271299266.squirrel@webmail.khulna.bangla.net>
+	id S1756408Ab0DOCll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Apr 2010 22:41:41 -0400
+Message-ID: <11855.41.220.68.1.1271299266.squirrel@webmail.khulna.bangla.net>
 Date: Thu, 15 Apr 2010 03:41:06 +0100 (BST)
 Subject: Please Respond
 From: "Mr. Ming Yang" <info.ming@discuz.org>
@@ -19,7 +19,7 @@ X-Priority: 3 (Normal)
 Importance: Normal
 To: undisclosed-recipients:;
 X-banglanet-MailScanner-Information: Please contact the ISP for more information
-X-banglanet-MailScanner-ID: 4E7926A5294.A8703
+X-banglanet-MailScanner-ID: 7C5426A5295.A893B
 X-banglanet-MailScanner: Found to be clean
 X-banglanet-MailScanner-SpamScore: ss
 X-banglanet-MailScanner-From: info.ming@discuz.org
