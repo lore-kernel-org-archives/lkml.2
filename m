@@ -1,118 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab0DONcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 09:32:13 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60590 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753567Ab0DONcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 09:32:11 -0400
-Message-ID: <4BC8662D.8010001@cn.fujitsu.com>
-Date: Fri, 16 Apr 2010 21:29:17 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20090922 Fedora/3.0-3.9.b4.fc12 Thunderbird/3.0b4
-MIME-Version: 1.0
+	id S1753902Ab0DONdX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 09:33:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40100 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab0DONdW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 09:33:22 -0400
+Subject: Re: VM performance issue in KVM guests.
+From: Peter Zijlstra <peterz@infradead.org>
 To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 5/5] KVM MMU: remove unused parameter in mmu_parent_walk()
-References: <4BC864DD.3000606@cn.fujitsu.com> <4BC8652F.5010006@cn.fujitsu.com> <4BC86591.3050803@cn.fujitsu.com> <4BC865DA.8020705@cn.fujitsu.com>
-In-Reply-To: <4BC865DA.8020705@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+Cc: Srivatsa Vaddagiri <vatsa.ml@gmail.com>,
+       "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       "Yang, Xiaowei" <xiaowei.yang@intel.com>,
+       "Dong, Eddie" <eddie.dong@intel.com>, "Li, Xin" <xin.li@intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       vatsa@linux.vnet.ibm.com
+In-Reply-To: <4BC6CBE3.8020207@redhat.com>
+References: <EB8593BCECAB3D40A8248BE0B6400A3846903F4C@shzsmsx502.ccr.corp.intel.com>
+	 <4BC0D125.9050108@redhat.com>
+	 <EB8593BCECAB3D40A8248BE0B6400A384690419B@shzsmsx502.ccr.corp.intel.com>
+	 <4BC2C07B.4040607@redhat.com>
+	 <p2o2eae271004142158xaa5da968ueff0c2afe6894f9d@mail.gmail.com>
+	 <4BC6CBE3.8020207@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Apr 2010 15:33:18 +0200
+Message-ID: <1271338398.1674.13.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'vcpu' is unused, remove it
+On Thu, 2010-04-15 at 11:18 +0300, Avi Kivity wrote:
+> 
+> Certainly that has even greater potential for Linux guests.  Note that 
+> we spin on mutexes now, so we need to prevent preemption while the lock 
+> owner is running. 
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c |   24 +++++++++++-------------
- 1 files changed, 11 insertions(+), 13 deletions(-)
-
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a32c60c..2f8ae9e 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -172,7 +172,7 @@ struct kvm_shadow_walk_iterator {
- 	     shadow_walk_okay(&(_walker));			\
- 	     shadow_walk_next(&(_walker)))
- 
--typedef int (*mmu_parent_walk_fn) (struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp);
-+typedef int (*mmu_parent_walk_fn) (struct kvm_mmu_page *sp);
- 
- static struct kmem_cache *pte_chain_cache;
- static struct kmem_cache *rmap_desc_cache;
-@@ -1000,8 +1000,7 @@ static void mmu_page_remove_parent_pte(struct kvm_mmu_page *sp,
- }
- 
- 
--static void mmu_parent_walk(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
--			    mmu_parent_walk_fn fn)
-+static void mmu_parent_walk(struct kvm_mmu_page *sp, mmu_parent_walk_fn fn)
- {
- 	struct kvm_pte_chain *pte_chain;
- 	struct hlist_node *node;
-@@ -1010,8 +1009,8 @@ static void mmu_parent_walk(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 
- 	if (!sp->multimapped && sp->parent_pte) {
- 		parent_sp = page_header(__pa(sp->parent_pte));
--		fn(vcpu, parent_sp);
--		mmu_parent_walk(vcpu, parent_sp, fn);
-+		fn(parent_sp);
-+		mmu_parent_walk(parent_sp, fn);
- 		return;
- 	}
- 	hlist_for_each_entry(pte_chain, node, &sp->parent_ptes, link)
-@@ -1019,8 +1018,8 @@ static void mmu_parent_walk(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 			if (!pte_chain->parent_ptes[i])
- 				break;
- 			parent_sp = page_header(__pa(pte_chain->parent_ptes[i]));
--			fn(vcpu, parent_sp);
--			mmu_parent_walk(vcpu, parent_sp, fn);
-+			fn(parent_sp);
-+			mmu_parent_walk(parent_sp, fn);
- 		}
- }
- 
-@@ -1057,16 +1056,15 @@ static void kvm_mmu_update_parents_unsync(struct kvm_mmu_page *sp)
- 		}
- }
- 
--static int unsync_walk_fn(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
-+static int unsync_walk_fn(struct kvm_mmu_page *sp)
- {
- 	kvm_mmu_update_parents_unsync(sp);
- 	return 1;
- }
- 
--static void kvm_mmu_mark_parents_unsync(struct kvm_vcpu *vcpu,
--					struct kvm_mmu_page *sp)
-+static void kvm_mmu_mark_parents_unsync(struct kvm_mmu_page *sp)
- {
--	mmu_parent_walk(vcpu, sp, unsync_walk_fn);
-+	mmu_parent_walk(sp, unsync_walk_fn);
- 	kvm_mmu_update_parents_unsync(sp);
- }
- 
-@@ -1344,7 +1342,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 			mmu_page_add_parent_pte(vcpu, sp, parent_pte);
- 			if (sp->unsync_children) {
- 				set_bit(KVM_REQ_MMU_SYNC, &vcpu->requests);
--				kvm_mmu_mark_parents_unsync(vcpu, sp);
-+				kvm_mmu_mark_parents_unsync(sp);
- 			}
- 			trace_kvm_mmu_get_page(sp, false);
- 			return sp;
-@@ -1761,7 +1759,7 @@ static int kvm_unsync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- 	++vcpu->kvm->stat.mmu_unsync;
- 	sp->unsync = 1;
- 
--	kvm_mmu_mark_parents_unsync(vcpu, sp);
-+	kvm_mmu_mark_parents_unsync(sp);
- 
- 	mmu_convert_notrap(sp);
- 	return 0;
--- 
-1.6.1.2
+either that, or disable spinning on (para) virt kernels. Para virt
+kernels could possibly extend the thing by also checking to see if the
+owner's vcpu is running.
 
