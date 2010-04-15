@@ -1,118 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab0DOSjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 14:39:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33868 "EHLO mx1.redhat.com"
+	id S1756109Ab0DOSkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 14:40:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21572 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754802Ab0DOSjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 14:39:09 -0400
+	id S1755450Ab0DOSjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 14:39:11 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com,
-       Jeremy Fitzhardinge <jeremy@goop.org>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>
-Subject: [PATCH 1/5] Add a global synchronization point for pvclock
-Date: Thu, 15 Apr 2010 14:37:24 -0400
-Message-Id: <1271356648-5108-2-git-send-email-glommer@redhat.com>
-In-Reply-To: <1271356648-5108-1-git-send-email-glommer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com
+Subject: [PATCH 5/5] add documentation about kvmclock
+Date: Thu, 15 Apr 2010 14:37:28 -0400
+Message-Id: <1271356648-5108-6-git-send-email-glommer@redhat.com>
+In-Reply-To: <1271356648-5108-5-git-send-email-glommer@redhat.com>
 References: <1271356648-5108-1-git-send-email-glommer@redhat.com>
+ <1271356648-5108-2-git-send-email-glommer@redhat.com>
+ <1271356648-5108-3-git-send-email-glommer@redhat.com>
+ <1271356648-5108-4-git-send-email-glommer@redhat.com>
+ <1271356648-5108-5-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In recent stress tests, it was found that pvclock-based systems
-could seriously warp in smp systems. Using ingo's time-warp-test.c,
-I could trigger a scenario as bad as 1.5mi warps a minute in some systems.
-(to be fair, it wasn't that bad in most of them). Investigating further, I
-found out that such warps were caused by the very offset-based calculation
-pvclock is based on.
-
-This happens even on some machines that report constant_tsc in its tsc flags,
-specially on multi-socket ones.
-
-Two reads of the same kernel timestamp at approx the same time, will likely
-have tsc timestamped in different occasions too. This means the delta we
-calculate is unpredictable at best, and can probably be smaller in a cpu
-that is legitimately reading clock in a forward ocasion.
-
-Some adjustments on the host could make this window less likely to happen,
-but still, it pretty much poses as an intrinsic problem of the mechanism.
-
-A while ago, I though about using a shared variable anyway, to hold clock
-last state, but gave up due to the high contention locking was likely
-to introduce, possibly rendering the thing useless on big machines. I argue,
-however, that locking is not necessary.
-
-We do a read-and-return sequence in pvclock, and between read and return,
-the global value can have changed. However, it can only have changed
-by means of an addition of a positive value. So if we detected that our
-clock timestamp is less than the current global, we know that we need to
-return a higher one, even though it is not exactly the one we compared to.
-
-OTOH, if we detect we're greater than the current time source, we atomically
-replace the value with our new readings. This do causes contention on big
-boxes (but big here means *BIG*), but it seems like a good trade off, since
-it provide us with a time source guaranteed to be stable wrt time warps.
-
-After this patch is applied, I don't see a single warp in time during 5 days
-of execution, in any of the machines I saw them before.
+This patch adds a new file, kvm/kvmclock.txt, describing
+the mechanism we use in kvmclock.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/kernel/pvclock.c |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
+ Documentation/kvm/kvmclock.txt |  138 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 138 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/kvm/kvmclock.txt
 
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 03801f2..b7de0e6 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -109,11 +109,14 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src)
- 	return pv_tsc_khz;
- }
- 
-+static u64 last_value = 0;
+diff --git a/Documentation/kvm/kvmclock.txt b/Documentation/kvm/kvmclock.txt
+new file mode 100644
+index 0000000..21008bb
+--- /dev/null
++++ b/Documentation/kvm/kvmclock.txt
+@@ -0,0 +1,138 @@
++KVM Paravirtual Clocksource driver
++Glauber Costa, Red Hat Inc.
++==================================
 +
- cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
- {
- 	struct pvclock_shadow_time shadow;
- 	unsigned version;
- 	cycle_t ret, offset;
-+	u64 last;
- 
- 	do {
- 		version = pvclock_get_time_values(&shadow, src);
-@@ -123,6 +126,26 @@ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
- 		barrier();
- 	} while (version != src->version);
- 
-+	/*
-+	 * Assumption here is that last_value, a global accumulator, always goes
-+	 * forward. If we are less than that, we should not be much smaller.
-+	 * We assume there is an error marging we're inside, and then the correction
-+	 * does not sacrifice accuracy.
-+	 *
-+	 * For reads: global may have changed between test and return,
-+	 * but this means someone else updated poked the clock at a later time.
-+	 * We just need to make sure we are not seeing a backwards event.
-+	 *
-+	 * For updates: last_value = ret is not enough, since two vcpus could be
-+	 * updating at the same time, and one of them could be slightly behind,
-+	 * making the assumption that last_value always go forward fail to hold.
-+	 */
-+	do {
-+		last = last_value;
-+		if (ret < last)
-+			return last;
-+	} while (unlikely(cmpxchg64(&last_value, last, ret) != ret));
++1. General Description
++=======================
 +
- 	return ret;
- }
- 
++Keeping time in virtual machine is acknowledged as a hard problem. The most
++basic mode of operation, usually done by older guests, assumes a fixed length
++between timer interrupts. It then counts the number of interrupts and
++calculates elapsed time. This method fails easily in virtual machines, since
++we can't guarantee that the virtual interrupt will be delivered in time.
++
++Another possibility is to emulate modern devices like HPET, or any other we
++see fit. A modern guest which implements something like the clocksource
++infrastructure, can then ask this virtual device about current time when it
++needs to. The problem with this approach, is that it bumps the guest out
++of guest mode operation, and in some cases, even to userspace very frequently.
++
++In this context, the best approach is to provide the guest with a
++virtualization-aware (paravirtual) clock device. It the asks the hypervisor
++about current time, guaranteeing both stable and accurate timekeeping.
++
++2. kvmclock basics 
++===========================
++
++When supported by the hypervisor, guests can register a memory page
++to contain kvmclock data. This page has to be present in guest's address space
++throughout its whole life. The hypervisor continues to write to it until it is
++explicitly disabled or the guest is turned off.
++
++2.1 kvmclock availability
++-------------------------
++
++Guests that want to take advantage of kvmclock should first check its
++availability through cpuid.
++
++kvm features are presented to the guest in leaf 0x40000001. Bit 3 indicates
++the present of kvmclock. Bit 0 indicates that kvmclock is present, but the
++old MSR set must be used. See section 2.3 for details.
++
++2.2 kvmclock functionality
++--------------------------
++
++Two MSRs are provided by the hypervisor, controlling kvmclock operation:
++
++ * MSR_KVM_WALL_CLOCK, value 0x4b564d00 and
++ * MSR_KVM_SYSTEM_TIME, value 0x4b564d01.
++
++The first one is only used in rare situations, like boot-time and a
++suspend-resume cycle. Data is disposable, and after used, the guest
++may use it for something else. This is hardly a hot path for anything.
++The Hypervisor fills in the address provided through this MSR with the
++following structure:
++
++struct pvclock_wall_clock {
++        u32   version;
++        u32   sec;
++        u32   nsec;
++} __attribute__((__packed__));
++
++Guest should only trust data to be valid when version haven't changed before
++and after reads of sec and nsec. Besides not changing, it has to be an even
++number. Hypervisor may write an odd number to version field to indicate that
++an update is in progress.
++
++MSR_KVM_SYSTEM_TIME, on the other hand, has persistent data, and is
++constantly updated by the hypervisor with time information. The data
++written in this MSR contains two pieces of information: the address in which
++the guests expects time data to be present 4-byte aligned or'ed with an
++enabled bit. If one wants to shutdown kvmclock, it just needs to write
++anything that has 0 as its last bit.
++
++Time information presented by the hypervisor follows the structure:
++
++struct pvclock_vcpu_time_info {
++        u32   version;
++        u32   pad0;
++        u64   tsc_timestamp;
++        u64   system_time;
++        u32   tsc_to_system_mul;
++        s8    tsc_shift;
++        u8    pad[3];
++} __attribute__((__packed__)); 
++
++The version field plays the same role as with the one in struct
++pvclock_wall_clock. The other fields, are:
++
++ a. tsc_timestamp: the guest-visible tsc (result of rdtsc + tsc_offset) of
++    this cpu at the moment we recorded system_time. Note that some time is
++    inevitably spent between system_time and tsc_timestamp measurements.
++    Guests can subtract this quantity from the current value of tsc to obtain
++    a delta to be added to system_time
++
++ b. system_time: this is the most recent host-time we could be provided with.
++    host gets it through ktime_get_ts, using whichever clocksource is
++    registered at the moment
++
++ c. tsc_to_system_mul: this is the number that tsc delta has to be multiplied
++    by in order to obtain time in nanoseconds. Hypervisor is free to change
++    this value in face of events like cpu frequency change, pcpu migration,
++    etc.
++ 
++ d. tsc_shift: guests must shift 
++
++With this information available, guest calculates current time as:
++
++  T = kt + to_nsec(tsc - tsc_0)
++
++2.3 Compatibility MSRs
++----------------------
++
++Guests running on top of older hypervisors may have to use a different set of
++MSRs. This is because originally, kvmclock MSRs were exported within a
++reserved range by accident. Guests should check cpuid leaf 0x40000001 for the
++presence of kvmclock. If bit 3 is disabled, but bit 0 is enabled, guests can
++have access to kvmclock functionality through
++
++ * MSR_KVM_WALL_CLOCK_OLD, value 0x11 and
++ * MSR_KVM_SYSTEM_TIME_OLD, value 0x12.
++
++Note, however, that this is deprecated.
++
++3. Migration
++============
++
++Two ioctls are provided to aid the task of migration: 
++
++ * KVM_GET_CLOCK and
++ * KVM_SET_CLOCK
++
++Their aim is to control an offset that can be summed to system_time, in order
++to guarantee monotonicity on the time over guest migration. Source host
++executes KVM_GET_CLOCK, obtaining the last valid timestamp in this host, while
++destination sets it with KVM_SET_CLOCK. It's the destination responsibility to
++never return time that is less than that.
++
++
 -- 
 1.6.2.2
 
