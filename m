@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab0DOFTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 01:19:18 -0400
-Received: from mga14.intel.com ([143.182.124.37]:28615 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751876Ab0DOFTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 01:19:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,210,1270450800"; 
-   d="scan'208";a="265930477"
-Date: Thu, 15 Apr 2010 13:19:11 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andreas Mohr <andi@lisas.de>, Jens Axboe <axboe@kernel.dk>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Memory Management List <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Rik van Riel <riel@redhat.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: 32GB SSD on USB1.1 P3/700 == ___HELL___ (2.6.34-rc3)
-Message-ID: <20100415051911.GA17110@localhost>
-References: <20100415132312.D180.A69D9226@jp.fujitsu.com> <20100415044111.GA15682@localhost> <20100415135031.D186.A69D9226@jp.fujitsu.com>
+	id S1754610Ab0DOFXv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 01:23:51 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:61824 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab0DOFXt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 01:23:49 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=XmbaapDEnT7ll34t9qE2nNB97rXvrvlII4ttnIhlv7m6gGyb6jS/p+/BWq2vqrtH+
+	ZY95jRaz/SUPfYgz58PfQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100415135031.D186.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100415124222.8e0e7132.sfr@canb.auug.org.au>
+References: <20100415124222.8e0e7132.sfr@canb.auug.org.au>
+From: Divyesh Shah <dpshah@google.com>
+Date: Wed, 14 Apr 2010 22:23:25 -0700
+Message-ID: <r2kaf41c7c41004142223m1464fd07u5617fe7332cb2ea@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the block tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jens Axboe <jens.axboe@oracle.com>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 12:55:30PM +0800, KOSAKI Motohiro wrote:
-> > On Thu, Apr 15, 2010 at 12:32:50PM +0800, KOSAKI Motohiro wrote:
-> > > > On Thu, Apr 15, 2010 at 11:31:52AM +0800, KOSAKI Motohiro wrote:
-> > > > > > > Many applications (this one and below) are stuck in
-> > > > > > > wait_on_page_writeback(). I guess this is why "heavy write to
-> > > > > > > irrelevant partition stalls the whole system".  They are stuck on page
-> > > > > > > allocation. Your 512MB system memory is a bit tight, so reclaim
-> > > > > > > pressure is a bit high, which triggers the wait-on-writeback logic.
-> > > > > > 
-> > > > > > I wonder if this hacking patch may help.
-> > > > > > 
-> > > > > > When creating 300MB dirty file with dd, it is creating continuous
-> > > > > > region of hard-to-reclaim pages in the LRU list. priority can easily
-> > > > > > go low when irrelevant applications' direct reclaim run into these
-> > > > > > regions..
-> > > > > 
-> > > > > Sorry I'm confused not. can you please tell us more detail explanation?
-> > > > > Why did lumpy reclaim cause OOM? lumpy reclaim might cause
-> > > > > direct reclaim slow down. but IIUC it's not cause OOM because OOM is
-> > > > > only occur when priority-0 reclaim failure.
-> > > > 
-> > > > No I'm not talking OOM. Nor lumpy reclaim.
-> > > > 
-> > > > I mean the direct reclaim can get stuck for long time, when we do
-> > > > wait_on_page_writeback() on lumpy_reclaim=1.
-> > > > 
-> > > > > IO get stcking also prevent priority reach to 0.
-> > > > 
-> > > > Sure. But we can wait for IO a bit later -- after scanning 1/64 LRU
-> > > > (the below patch) instead of the current 1/1024.
-> > > > 
-> > > > In Andreas' case, 512MB/1024 = 512KB, this is way too low comparing to
-> > > > the 22MB writeback pages. There can easily be a continuous range of
-> > > > 512KB dirty/writeback pages in the LRU, which will trigger the wait
-> > > > logic.
-> > > 
-> > > In my feeling from your explanation, we need auto adjustment mechanism
-> > > instead change default value for special machine. no?
-> > 
-> > You mean the dumb DEF_PRIORITY/2 may be too large for a 1TB memory box?
-> > 
-> > However for such boxes, whether it be DEF_PRIORITY-2 or DEF_PRIORITY/2
-> > shall be irrelevant: it's trivial anyway to reclaim an order-1 or
-> > order-2 page. In other word, lumpy_reclaim will hardly go 1.  Do you
-> > think so?
-> 
-> If my remember is correct, Its order-1 lumpy reclaim was introduced
-> for solving such big box + AIM7 workload made kernel stack (order-1 page)
-> allocation failure.
-> 
-> Now, We are living on moore's law. so probably we need to pay attention
-> scalability always. today's big box is going to become desktop box after
-> 3-5 years.
-> 
-> Probably, Lee know such problem than me. cc to him.
+On Wed, Apr 14, 2010 at 7:42 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Jens,
+>
+> After merging the block tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>
+> ERROR: "get_gendisk" [block/blk-cgroup.ko] undefined!
+> ERROR: "sched_clock" [block/blk-cgroup.ko] undefined!
 
-In Andreas' trace, the processes are blocked in
-- do_fork:              console-kit-d
-- __alloc_skb:          x-terminal-em, konqueror
-- handle_mm_fault:      tclsh
-- filemap_fault:        ls
+Hi Stephen,
+     These errors seem to show up because the 2 symbols aren't
+exported and hence when building as a module we don't have access to
+these symbols. I'll send a patch to fix that shortly. Sorry for the
+build breakage.
 
-I'm a bit confused by the last one, and wonder what's the typical
-gfp order of __alloc_skb().
+-Divyesh
 
-Thanks,
-Fengguang
+>
+> Probably caused by commits 34d0f179d6dd711d3fc13c0820a456c59aae8048
+> ("io-controller: Add a new interface "weight_device" for IO-Controller"),
+> 9195291e5f05e01d67f9a09c756b8aca8f009089 ("blkio: Increment the blkio
+> cgroup stats for real now") and 812df48d127365ffd0869aa139738f572a86759c
+> ("blkio: Add more debug-only per-cgroup stats").
+>
+> I have used the version of the block tree from next-20100414 for today.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+>
