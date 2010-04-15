@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab0DOQdY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 12:33:24 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:35649 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754236Ab0DOQdH (ORCPT
+	id S1754744Ab0DOQgP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 12:36:15 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:23871 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab0DOQgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 12:33:07 -0400
-Message-ID: <4BC73FB9.9060303@petalogix.com>
-Date: Thu, 15 Apr 2010 18:32:57 +0200
-From: Michal Simek <michal.simek@petalogix.com>
-Reply-To: michal.simek@petalogix.com
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Thu, 15 Apr 2010 12:36:13 -0400
+Date: Thu, 15 Apr 2010 12:34:55 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Nick Piggin <npiggin@suse.de>, zach.brown@oracle.com,
+       jens.axboe@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ipc semaphores: reduce ipc_lock contention in
+ semtimedop
+Message-ID: <20100415163455.GD3794@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Manfred Spraul <manfred@colorfullife.com>,
+	Nick Piggin <npiggin@suse.de>, zach.brown@oracle.com,
+	jens.axboe@oracle.com, linux-kernel@vger.kernel.org
+References: <1271098163-3663-2-git-send-email-chris.mason@oracle.com>
+ <4BC4A6B2.1090906@colorfullife.com>
+ <20100413173941.GI13327@think>
+ <20100413180945.GD5683@laptop>
+ <20100413181937.GM13327@think>
+ <4BC5EA75.9090803@colorfullife.com>
+ <20100414173319.GA3228@think>
+ <4BC61370.7020700@colorfullife.com>
+ <20100414195003.GE3228@think>
+ <4BC73FC9.1090007@colorfullife.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-       Wu Zhangjin <wuzhangjin@gmail.com>
-Subject: Re: sched_clock - microblaze
-References: <4BC728DD.5020404@petalogix.com> <1271343888.1880.1.camel@localhost>
-In-Reply-To: <1271343888.1880.1.camel@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BC73FC9.1090007@colorfullife.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4BC74077.009A:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> On Thu, 2010-04-15 at 16:55 +0200, Michal Simek wrote:
->> Hi Thomas and Steven,
->>
->> I would like to improve time measuring for ftrace (Log below)
->>
->> I looked at http://lkml.org/lkml/2009/11/16/181
->> where Thomas suggested to create sched_clock() function.
->> I used the same solution as Wu proposed but it is not nice.
->>
->> Is unimplemented sched_clock the reason why ftrace not show fine grain time?
-> 
-> Yeah, sched_clock is used by ftrace for timings, so if it only returns
-> jiffies, then that will, unfortunately, be the resolution of the tracer.
-> 
-> I've been told that if you make a higher resolution timer for sched
-> clock, it will improve the scheduling in CFS.
+On Thu, Apr 15, 2010 at 06:33:13PM +0200, Manfred Spraul wrote:
+> On 04/14/2010 09:50 PM, Chris Mason wrote:
+> >On a big system I saw about 4000 semaphores total.  The database will
+> >just allocate as many as it can into a single array and keep creating
+> >arrays until it has all it needs.
+> >
+> What happens if SEMMSL is reduced (first entry in /proc/sys/kernel/sem)?
 
-We have two timers (in one IP).
-timer0 - in IRQ mode - clock event
-timer1 - free running up counter without IRQ - clock source
+Performance improves slightly but the ipc lock is still at the top of the
+profile ;)
 
-I hope that I can use timer1 in sched_clock too.
+-chris
 
-Anyway. I played with it a little bit and I also implemented microblaze 
-specific sched_clock function (inspired by arch/arm/mach-ixp4xx/common.c)
-
-unsigned long long notrace sched_clock(void)
-{
-	printk("%s\n", __func__);
-	cycle_t cyc = microblaze_read(NULL);
-	struct clocksource *cs = &clocksource_microblaze;
-	return clocksource_cyc2ns(cyc, cs->mult, cs->shift);
-}
-
-(And comment sched_clock in kernel/sched_clock.c because our toolchain 
-has the problem with weak symbols)
-
-Recompile the kernel and then show the log_buf
-
-<4>Ramdisk addr 0x00000003, Compiled-in FDT at 0xc0242a28
-<5>Linux version 2.6.34-rc4-00053-gbc6ce8a-dirty (monstr@monstr.eu) (gcc 
-version 4.1.2) #27 Thu Apr 15 16:38:16 CEST 2010
-<6>setup_cpuinfo: initialising
-<6>setup_cpuinfo: Using full CPU PVR support
-<6>cache: wb_msr
-<6>setup_memory: Main mem: 0x48000000-0x50000000, size 0x08000000, 
-klimit 0xc09c7000
-<6>setup_memory: max_mapnr: 0x8000
-<6>setup_memory: min_low_pfn: 0x48000
-<6>setup_memory: max_low_pfn: 0x50000
-<4>reserved 0 - 0x48000000-0x009c8000
-<4>reserved 1 - 0x48fe0000-0x00020000
-<4>reserved 2 - 0x4fffd8c8-0x00002738
-<7>On node 0 totalpages: 32768
-<7>free_area_init_node: node 0, pgdat c02bc70c, node_mem_map c09c8000
-<7>  Normal zone: 256 pages used for memmap
-<7>  Normal zone: 32512 pages, LIFO batch:7
-<4>Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 
-32512
-<5>Kernel command line:  console=ttyS0,115200
-<6>PID hash table entries: 512 (order: -1, 2048 bytes)
-<6>Dentry cache hash table entries: 16384 (order: 4, 65536 bytes)
-<6>Inode-cache hash table entries: 8192 (order: 3, 32768 bytes)
-<6>Memory: 119796k/131072k available
-<4>sched_clock
-
-The problem I see is that scheck_clock is used before our timer 
-subsystem is initialized.
-What am I missing?
-
-Thanks,
-Michal
-
--- 
-Michal Simek, Ing. (M.Eng)
-PetaLogix - Linux Solutions for a Reconfigurable World
-w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
