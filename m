@@ -1,119 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab0DOLfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 07:35:09 -0400
-Received: from ppsw-43.csi.cam.ac.uk ([131.111.8.143]:39947 "EHLO
-	ppsw-43.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab0DOLfH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 07:35:07 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4BC6FA95.1070106@cam.ac.uk>
-Date: Thu, 15 Apr 2010 12:37:57 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20100109 Thunderbird/3.0
+	id S1753215Ab0DOLkf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 07:40:35 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42115 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753029Ab0DOLke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 07:40:34 -0400
+Message-ID: <4BC6FBC8.9090204@kernel.org>
+Date: Thu, 15 Apr 2010 20:43:04 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Samu Onkalo <samu.p.onkalo@nokia.com>
-CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-       lm-sensors@lm-sensors.org
-Subject: Re: [PATCH 0/1] BH1770GLC / SFH7770 combined ambient light / proximity
- sensor
-References: <1271327648-13497-1-git-send-email-samu.p.onkalo@nokia.com>
-In-Reply-To: <1271327648-13497-1-git-send-email-samu.p.onkalo@nokia.com>
-X-Enigmail-Version: 1.0
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>	 <d5d70d4b57376bc89f178834cf0e424eaa681ab4.1271171877.git.minchan.kim@gmail.com>	 <20100413154820.GC25756@csn.ul.ie> <4BC65237.5080408@kernel.org>	 <v2j28c262361004141831h8f2110d5pa7a1e3063438cbf8@mail.gmail.com>	 <4BC6BE78.1030503@kernel.org>	 <h2w28c262361004150100ne936d943u28f76c0f171d3db8@mail.gmail.com>	 <4BC6CB30.7030308@kernel.org>	 <l2u28c262361004150240q8a873b6axb73eaa32fd6e65e6@mail.gmail.com>	 <4BC6E581.1000604@kernel.org> <z2p28c262361004150321sc65e84b4w6cc99927ea85a52b@mail.gmail.com>
+In-Reply-To: <z2p28c262361004150321sc65e84b4w6cc99927ea85a52b@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 15 Apr 2010 11:39:32 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samu,
+Hello,
 
-> This patch introduces driver for Rohm BH1770GLC and Osram SFH7770
-> combined ambient light and proximity sensor.
-> 
-> Driver is divided to 3 parts. Core-part contains common functionality for
-> both parts of the chips. ALS and PS specific functionalities are
-> in separate files.
-> 
-> ALS part is fully based on threshold interrupts. Driver doesn't provide
-> direct control for threshold levels. Instead, based on sensitivity setting,
-> threshold levels are updated after every interrupt. This method keeps sensor
-> to follow changes in the lightning.
-> 
-> PS part uses interrupt for high threshold events and delayed work to simulate
-> missing low threshold interrupts. This way driver is able to react proximity
-> on / off events using only high threshold interrupt. Proximity sensing can
-> utilize up to 3 IR leds for movement detection. Driver supports 1-3 leds
-> configurations.
-> 
-> Platform data is used to provide IR led configuration: number of channels and
-> absolute maximum operating currents for the leds.
-> 
-> Chip is kept running only when someone keeps device handles open.
-> Otherwise chip is powered down and optionally power supplies are turned off.
-> 
-> Interfaces:
-> Both parts of the driver provides results via separate misc char device.
-> 
-> sysfs interface:
-> als_calib - (RW) calibration coeffient (default is neutral value)
-> als_mode  - (R)  returns current chip operational state for ALS
-> als_rate  - (RW) ALS side measurement rate in ms
-> als_sens  - (RW) sensitivity for changes in lightning level
+On 04/15/2010 07:21 PM, Minchan Kim wrote:
+> kill alloc_pages_exact_node?
+> Sorry but I can't understand your point.
+> I don't want to kill user of alloc_pages_exact_node.
+> That's opposite.
+> I want to kill user of alloc_pages_node and change it with
+> alloc_pages_any_node or alloc_pages_exact_node. :)
 
-This ALS stuff feeds in pretty directly to the discussion just started in response
-to Alan Cox's post of the isl20920 driver.  Basically we need to try and match
-as much of the sysfs interface across these chips as possible.  Obviously this
-one is different to the ALS sensors already in kernel in that it doesn't allow
-direct reading of the value.  For his driver I suggested
+I see, so...
 
-illuminance0_input (not matched here)
-illuminance0_calib
+ alloc_pages()		-> alloc_pages_any_node()
+ alloc_pages_node()	-> alloc_pages_exact_node()
 
-(these also happen to match the new IIO spec by amazing coincidence :)
+right?  It just seems strange to me and different from usual naming
+convention - ie. something which doesn't care about nodes usually
+doesn't carry _node postfix.  Anyways, no big deal, those names just
+felt a bit strange to me.
 
-I'll put some related comments in a review of the patch.
+Thanks.
 
-  
-
-> ps_calib  - (RW) calibration coeffient
-> ps_leds   - (RW) IR led currents in mA
-> ps_mode   - (R)  returns current chip operational state for PS
-> ps_rate   - (RW) PS side measurement rates (separate rates for below /
-> 	         above threshold condition)
-> ps_threshold - (RW) threshold level
-
-Likewise with the proximity sensing.  If nothing else, please allow for
-a chip with multiple proximity sensors with separate parameters.
-> chip_id   - (R)  chip version and revision information
-
-
-> 
-> Tested in top of 2.6.32 kernel. Applies to 2.6.34-RC3.
-> 
-> Samu Onkalo (1):
->   misc: bh1770glc: Driver for bh1770glc combined als and ps sensor
-> 
->  drivers/misc/Kconfig          |   12 +
->  drivers/misc/Makefile         |    3 +
->  drivers/misc/bh1770glc.h      |  169 ++++++++++++
->  drivers/misc/bh1770glc_als.c  |  424 +++++++++++++++++++++++++++++
->  drivers/misc/bh1770glc_core.c |  301 +++++++++++++++++++++
->  drivers/misc/bh1770glc_ps.c   |  585 +++++++++++++++++++++++++++++++++++++++++
->  include/linux/bh1770glc.h     |   39 +++
->  7 files changed, 1533 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/misc/bh1770glc.h
->  create mode 100644 drivers/misc/bh1770glc_als.c
->  create mode 100644 drivers/misc/bh1770glc_core.c
->  create mode 100644 drivers/misc/bh1770glc_ps.c
->  create mode 100644 include/linux/bh1770glc.h
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+-- 
+tejun
