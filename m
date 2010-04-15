@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937Ab0DOITB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 04:19:01 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54919 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925Ab0DOIS7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 04:18:59 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 1/4] vmscan: delegate pageout io to flusher thread if current is kswapd
-Cc: kosaki.motohiro@jp.fujitsu.com, Dave Chinner <david@fromorbit.com>,
-       Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100415131106.D174.A69D9226@jp.fujitsu.com>
-References: <20100415130212.D16E.A69D9226@jp.fujitsu.com> <20100415131106.D174.A69D9226@jp.fujitsu.com>
-Message-Id: <20100415171750.D195.A69D9226@jp.fujitsu.com>
+	id S1757268Ab0DOITQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 04:19:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63223 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756972Ab0DOITK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 04:19:10 -0400
+Message-ID: <4BC6CBE3.8020207@redhat.com>
+Date: Thu, 15 Apr 2010 11:18:43 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 15 Apr 2010 17:18:56 +0900 (JST)
+To: Srivatsa Vaddagiri <vatsa.ml@gmail.com>
+CC: "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       "Yang, Xiaowei" <xiaowei.yang@intel.com>,
+       "Dong, Eddie" <eddie.dong@intel.com>, "Li, Xin" <xin.li@intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Mike Galbraith <efault@gmx.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       vatsa@linux.vnet.ibm.com
+Subject: Re: VM performance issue in KVM guests.
+References: <EB8593BCECAB3D40A8248BE0B6400A3846903F4C@shzsmsx502.ccr.corp.intel.com>	 <4BC0D125.9050108@redhat.com>	 <EB8593BCECAB3D40A8248BE0B6400A384690419B@shzsmsx502.ccr.corp.intel.com>	 <4BC2C07B.4040607@redhat.com> <p2o2eae271004142158xaa5da968ueff0c2afe6894f9d@mail.gmail.com>
+In-Reply-To: <p2o2eae271004142158xaa5da968ueff0c2afe6894f9d@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Now, vmscan pageout() is one of IO throuput degression source.
-> Some IO workload makes very much order-0 allocation and reclaim
-> and pageout's 4K IOs are making annoying lots seeks.
-> 
-> At least, kswapd can avoid such pageout() because kswapd don't
-> need to consider OOM-Killer situation. that's no risk.
+On 04/15/2010 07:58 AM, Srivatsa Vaddagiri wrote:
+> On Sun, Apr 11, 2010 at 11:40 PM, Avi Kivity <avi@redhat.com 
+> <mailto:avi@redhat.com>> wrote:
+>
+>     The current handing of PLE is very suboptimal.  With proper
+>     directed yield we should be much better there.
+>
+>
+>
+> Hi Avi,
+>               By directed yield, do you mean transfer the timeslice of 
+> one thread (which is contending for a lock) to another thread (which 
+> is holding a lock)?
 
-I've found one bug in this patch myself. flusher thread don't
-pageout anon pages. then, we need PageAnon() check ;)
+It's a priority transfer (in CFS terms, vruntime) (we don't know who 
+holds the lock, so we pick a co-vcpu at random).
 
+> If at that point in time, the lock-holder thread/VCPU is actually not 
+> running currently, ie it is at the back of the runqueue, would it help 
+> much? In such case, it will take time for the lock holder to run again 
+> and the default timeslice it would have got could have been sufficient 
+> to release the lock?
 
+The idea is to increase the chances to the target vcpu to run, and to 
+decrease the changes of the spinner to run (hopefully they change places).
 
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/vmscan.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 3ff3311..d392a50 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -614,6 +614,13 @@ static enum page_references page_check_references(struct page *page,
->  	if (referenced_page)
->  		return PAGEREF_RECLAIM_CLEAN;
->  
-> +	/*
-> +	 * Delegate pageout IO to flusher thread. They can make more
-> +	 * effective IO pattern.
-> +	 */
-> +	if (current_is_kswapd())
-> +		return PAGEREF_RECLAIM_CLEAN;
-> +
->  	return PAGEREF_RECLAIM;
->  }
->  
-> -- 
-> 1.6.5.2
-> 
-> 
-> 
+>
+> I am also working on a prototype for some other technique here - to 
+> avoid preempting guest threads/VCPUs in the middle of their 
+> (spin-lock) critical section. This requires guest to hint host when 
+> there are in such a section. [1] has shown 33% improvement to an 
+> apache benchmark based on this idea.
+>
+
+Certainly that has even greater potential for Linux guests.  Note that 
+we spin on mutexes now, so we need to prevent preemption while the lock 
+owner is running.
 
 
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
