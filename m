@@ -1,63 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab0DOIRm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 04:17:42 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57286 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab0DOIRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 04:17:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Suleiman Souhlal <ssouhlal@freebsd.org>
-Subject: Re: [PATCH 1/4] vmscan: delegate pageout io to flusher thread if current is kswapd
-Cc: kosaki.motohiro@jp.fujitsu.com, Dave Chinner <david@fromorbit.com>,
-       Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, suleiman@google.com
-In-Reply-To: <64BE60A8-EEF9-4AC6-AF0A-0ED3CB544726@freebsd.org>
-References: <20100415131106.D174.A69D9226@jp.fujitsu.com> <64BE60A8-EEF9-4AC6-AF0A-0ED3CB544726@freebsd.org>
-Message-Id: <20100415171142.D192.A69D9226@jp.fujitsu.com>
+	id S1756094Ab0DOIS0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 04:18:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51377 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752325Ab0DOISX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 04:18:23 -0400
+Date: Thu, 15 Apr 2010 10:17:43 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][BUGFIX][PATCH 1/2] memcg: fix charge bypass route of
+ migration
+Message-ID: <20100415081743.GP32034@random.random>
+References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
+ <20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100415154324.834dace9.nishimura@mxp.nes.nec.co.jp>
+ <20100415155611.da707913.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 15 Apr 2010 17:17:33 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100415155611.da707913.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> On Apr 14, 2010, at 9:11 PM, KOSAKI Motohiro wrote:
-> 
-> > Now, vmscan pageout() is one of IO throuput degression source.
-> > Some IO workload makes very much order-0 allocation and reclaim
-> > and pageout's 4K IOs are making annoying lots seeks.
-> >
-> > At least, kswapd can avoid such pageout() because kswapd don't
-> > need to consider OOM-Killer situation. that's no risk.
-> >
-> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> What's your opinion on trying to cluster the writes done by pageout,  
-> instead of not doing any paging out in kswapd?
-> Something along these lines:
+On Thu, Apr 15, 2010 at 03:56:11PM +0900, KAMEZAWA Hiroyuki wrote:
+> Ok, ignore this patch.
 
-Interesting. 
-So, I'd like to review your patch carefully. can you please give me one
-day? :)
+Ok so I'll stick to my original patch on aa.git:
 
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=patch;h=f0a05fea58501298ab7b800ac8220f017c66f427
 
-> 
->      Cluster writes to disk due to memory pressure.
-> 
->      Write out logically adjacent pages to the one we're paging out
->      so that we may get better IOs in these situations:
->      These pages are likely to be contiguous on disk to the one we're
->      writing out, so they should get merged into a single disk IO.
-> 
->      Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+I already also merged the move from /proc to debugfs from Mel of two
+files. So now I've to:
 
+1) finish the generic doc in Documentation/ (mostly taken from
+   transparent hugepage core changeset comments here:
+   http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commit;h=b901f7e1ab412241d4299954ae28505f2206af1d
+   )
 
+2) add alloc_pages_vma for numa awareness in the huge page faults
 
+3) have the kernel stack 2m aligned and growsdown the vm_start in 2m
+   chunks when enabled=always. I doubt it makes sense to decouple this
+   feature from enabled=always and to add a special sysfs control for
+   it, plus I don't like adding too many apis and it can always
+   decoupled later.
 
+4) I think I will not add a prctl to achieve Ingo's per-process enable
+   for now. I'm quite convinced in real life madvise is enough and
+   enabled=always|madvise|never is more than enough for the testing
+   without having to add a prctl. This is identical issue to KSM after
+   all, in the end also KSM is missing a prctl to enabled merging on a
+   per process basis and that's fine. prctl really looks very much
+   like libhugetlbfs to me so I'm not very attracted to it as I doubt
+   its usefulness strongly and if I add it, it becomes a
+   forever-existing API (actually even worse than the sysfs layout
+   from the kernel API point of view) so there has to be a strong
+   reason for it. And I don't think there's any point to add a
+   madvise(MADV_NO_HUGEPAGE) or a prctl to selectively _disable_
+   hugepages on mappings or processes when enabled=always. It makes no
+   sense to use enabled=always and then to disable hugepages in a few
+   apps. The opposite makes sense to save memory of course! I don't
+   want to add kernel APIs in prctl useful only for testing and
+   benchmarking. It can always be added later anyway...
+
+5) Ulrich sent me a _three_ liner that will make glibc fully cooperate
+   and guarantee all anon ram goes in hugepages without using
+   khugepaged (just like libhugetlbfs would cooperate with
+   hugetlbfs). For the posix threads it won't work yet and for that we
+   may need to add a MAP_ALIGN flag to mmap (suggested by him) to be
+   optimal and not waste address space on 32bit archs. That's no big
+   deal, it's still orders of magnitude simpler that backing an
+   mmap(4k) with a 2M page and collect the still unmapped parts of
+   the 2M pages when system is low on memory. Furthermore MAP_ALIGN
+   will involve the mmap paths with mmap_sem write mode, that aren't
+   really fast paths, while the mmap(4k) backed by 2M would slowdown
+   do_anonymous_pages and other core fast paths that are much more
+   performance critical than the mmap paths. So I think this is the
+   way to go. And if somebody don't want to risk wasting memory the
+   default should be enabled=madvise and then add madvise where
+   needed. One either has to choose between performance and memory,
+   and I don't want intermediate terms like "a bit faster but not as
+   fast as it can be, but waste a little less memory" which also
+   complicates the code a lot and microslowdown the fast paths.
+
+6) add a config option at kernel configuration time to select the
+   transparent hugepage default between always/madvise/never
+   (in-kernel set_recommended_min_free_kbytes late_initcall() will be
+   running only for always/madvise, as it already checks the built time
+   default and it won't run unless enabled=always|madvise).
