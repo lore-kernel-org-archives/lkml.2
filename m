@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab0DOGQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 02:16:27 -0400
-Received: from lazybastard.de ([212.112.238.170]:49465 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755423Ab0DOGQ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 02:16:26 -0400
-Date: Thu, 15 Apr 2010 08:16:15 +0200
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: linux-kernel@vger.kernel.org, logfs@logfs.org
-Subject: Re: [PATCH] LogFS: Fix oops on failed mount
-Message-ID: <20100415061615.GA2382@logfs.org>
-References: <621ed5fa50005b6ea02cff222037d3702a4d59b0@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <621ed5fa50005b6ea02cff222037d3702a4d59b0@localhost.localdomain>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	id S1756817Ab0DOGQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 02:16:47 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52244 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755423Ab0DOGQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 02:16:45 -0400
+Date: Thu, 15 Apr 2010 16:16:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Divyesh Shah <dpshah@google.com>
+Cc: Jens Axboe <jens.axboe@oracle.com>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Subject: Re: linux-next: build failure after merge of the block tree
+Message-Id: <20100415161633.a7950127.sfr@canb.auug.org.au>
+In-Reply-To: <r2kaf41c7c41004142223m1464fd07u5617fe7332cb2ea@mail.gmail.com>
+References: <20100415124222.8e0e7132.sfr@canb.auug.org.au>
+	<r2kaf41c7c41004142223m1464fd07u5617fe7332cb2ea@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__15_Apr_2010_16_16_33_+1000_ewFSoxtuYBNq+MTA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 April 2010 17:56:10 -0700, Kevin Cernekee wrote:
-> 
-> logfs_kill_sb() calls mempool_destroy() on super->s_alias_pool .  But if
-> logfs_kill_sb() is being called because the mount failed (e.g.
-> __logfs_read_sb() returned -EIO) this pointer will still be NULL,
-> resulting in a kernel oops.
-> 
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-> ---
->  fs/logfs/super.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/logfs/super.c b/fs/logfs/super.c
-> index b60bfac..f817713 100644
-> --- a/fs/logfs/super.c
-> +++ b/fs/logfs/super.c
-> @@ -517,7 +517,8 @@ static void logfs_kill_sb(struct super_block *sb)
->  		__free_page(super->s_erase_page);
->  	super->s_devops->put_device(sb);
->  	mempool_destroy(super->s_btree_pool);
-> -	mempool_destroy(super->s_alias_pool);
-> +	if (super->s_alias_pool)
-> +		mempool_destroy(super->s_alias_pool);
->  	kfree(super);
->  	log_super("LogFS: Finished unmounting\n");
->  }
+--Signature=_Thu__15_Apr_2010_16_16_33_+1000_ewFSoxtuYBNq+MTA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That shouldn't have happened.  I fixed this bug in a patch from almost
-exactly one month ago.  But when moving patches from a test tree, this
-one patch got lost.  Added to my release tree now - finally:
+Hi Divyesh,
 
-git://git.kernel.org/pub/scm/linux/kernel/git/joern/logfs.git
+On Wed, 14 Apr 2010 22:23:25 -0700 Divyesh Shah <dpshah@google.com> wrote:
+>
+>      These errors seem to show up because the 2 symbols aren't
+> exported and hence when building as a module we don't have access to
+> these symbols. I'll send a patch to fix that shortly. Sorry for the
+> build breakage.
 
-Sorry that you had to step into that turd and thank you for shoving my
-nose into it.  I'll try to be a good dog and not do it again.
+Thanks.
 
-Jörn
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
--- 
-When you close your hand, you own nothing. When you open it up, you
-own the whole world.
--- Li Mu Bai in Tiger & Dragon
+--Signature=_Thu__15_Apr_2010_16_16_33_+1000_ewFSoxtuYBNq+MTA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvGr0EACgkQjjKRsyhoI8x7hgCfXFFXPpwFu1OObCHdULw/lzar
+ZWcAn2qmNnc4qNjcnjGQfvYiu7UJch+s
+=mhlk
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__15_Apr_2010_16_16_33_+1000_ewFSoxtuYBNq+MTA--
