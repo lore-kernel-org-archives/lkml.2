@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab0DOPSF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 11:18:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60021 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab0DOPSD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 11:18:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Steven Whitehouse <steve@chygwyn.com>
-Subject: Re: [PATCH 2/2] [RFC] Remove BKL from fs/locks.c
-Date: Thu, 15 Apr 2010 17:17:15 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Matthew Wilcox <willy@linux.intel.com>, Christoph Hellwig <hch@lst.de>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       "J. Bruce Fields" <bfields@fieldses.org>,
-       Miklos Szeredi <mszeredi@suse.cz>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       Steve French <sfrench@us.ibm.com>
-References: <1271277384-7627-1-git-send-email-arnd@arndb.de> <1271277384-7627-2-git-send-email-arnd@arndb.de> <1271342931.7196.120.camel@localhost.localdomain>
-In-Reply-To: <1271342931.7196.120.camel@localhost.localdomain>
+	id S1754629Ab0DOPUi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 11:20:38 -0400
+Received: from mail.cs.nmsu.edu ([128.123.64.3]:49709 "EHLO mail.cs.nmsu.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754487Ab0DOPUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 11:20:36 -0400
+Message-ID: <cb42bb0ece8066ff0c4a1b69d11e8e56.squirrel@intranet.cs.nmsu.edu>
+In-Reply-To: <20100414225608.GB12143@core.coreip.homeip.net>
+References: <054d04d6a47f4ba368c8d75f8d8fb08f.squirrel@intranet.cs.nmsu.edu>
+    <20100414225608.GB12143@core.coreip.homeip.net>
+Date: Thu, 15 Apr 2010 09:20:31 -0600
+Subject: Re: Handling macros with input devices
+From: "Rick L. Vinyard, Jr." <rvinyard@cs.nmsu.edu>
+To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
+Cc: liux-input@vger.kernel.org, "Jiri Kosina" <jkosina@suse.cz>,
+       "Linux" <linux-kernel@vger.kernel.org>,
+       "Linux USB" <linux-usb@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004151717.15881.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX195I6iqx9yKhjD3ArYdG8AsXhaMiizRbVAV98J
- LWVT+yu4CWAlBJQDJ3XVmzu6zE5MXYQbE7hcpAoO73mOgS0XX1
- W1MNLVA3OU0La2Zcf22ag==
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 April 2010, Steven Whitehouse wrote:
 
-> Some comments...
+Dmitry Torokhov wrote:
+> Hi Rick,
+>
+> On Wed, Apr 14, 2010 at 12:19:30PM -0600, Rick L. Vinyard, Jr. wrote:
+>> One of the sticking points I have with the G13 driver is that I'd like
+>> it
+>> to have support for macros. The reason I'd like to support macros is
+>> that
+>> the G13's raison d'etre is to allow the end user to customize the device
+>> with their own macros.
+>>
+>> However, I've been looking around and I can't find any support for
+>> macros
+>> within the kernel.
+>>
+>> In particular, I have support for getkeycode and setkeycode ioctl's. I
+>> was
+>> thinking of supporting at least setkeycode to allow a standard way to
+>> set
+>> a one key macro. Supporting getkeycode and setting keybit are more
+>> problematic.
+>>
+>> If someone has already brought this issue up I apologize, but I couldn't
+>> find any discussion on the linux-input list relating to macros (at least
+>> other than preprocessor macros).
+>>
+>> Any suggestions?
+>>
+>
+> I consider macro handling to be userspace task. If needed, macro
+> sequences can be injected back into the kernel via uinput devices to be
+> consumed by regualar applications.
 
-I'll wait for Willy to comment on most of these, except
+That clarifies alot. Thanks.
 
-> On Wed, 2010-04-14 at 22:36 +0200, Arnd Bergmann wrote:
-> > @@ -1467,12 +1492,9 @@ int vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
-> >  {
-> >  	int error;
-> >  
-> > -	lock_kernel();
-> > -	if (filp->f_op && filp->f_op->setlease)
-> > -		error = filp->f_op->setlease(filp, arg, lease);
-> > -	else
-> > -		error = generic_setlease(filp, arg, lease);
-> > -	unlock_kernel();
-> > +	lock_flocks();
-> > +	error = __vfs_setlease(filp, arg, lease);
-> > +	unlock_flocks();
-> >  
-> This looks to me like generic_setlease() or whatever fs specific
-> ->setlease() there might be will be called under a spin lock. That
-> doesn't look right to me.
-> 
-> Rather than adding locking here, why not push the BKL down into
-> generic_setlease() and ->setlease() first, and then eliminate it on a
-> case by case basis later on? That is the pattern that has been followed
-> elsewhere in the kernel.
+-- 
 
-Sounds fair. Besides generic_setlease (which is in this file as well),
-the only non-trivial one is cifs_setlease (Cc'ing Steve French now)
-and that calls generic_setlease in the end.
+Rick
 
-If we can show that cifs_setlease does not need locking, the new lock
-could be put into generic_setlease directly.
-
-	Arnd
