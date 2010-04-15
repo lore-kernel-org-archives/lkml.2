@@ -1,38 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab0DOKjp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 06:39:45 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39314 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753219Ab0DOKjo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 06:39:44 -0400
-Date: Thu, 15 Apr 2010 11:44:09 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Joseph Krahn <joseph.krahn@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Trying to fix ITE-887x parallel/serial driver bugs (including 
- unhandled IRQs)
-Message-ID: <20100415114409.466cbf60@lxorguk.ukuu.org.uk>
-In-Reply-To: <z2qff6de6f21004141046ke8eb9f62q4cdd87dc136f76a1@mail.gmail.com>
-References: <q2lff6de6f21004120834k72cfd554v188b9d2b5a01012c@mail.gmail.com>
-	<20100412174352.4e13113f@lxorguk.ukuu.org.uk>
-	<n2wff6de6f21004121405xd33676f8s81c12e23747b88b0@mail.gmail.com>
-	<20100414131140.5c6187ab@lxorguk.ukuu.org.uk>
-	<z2qff6de6f21004141046ke8eb9f62q4cdd87dc136f76a1@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753377Ab0DOKky (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 06:40:54 -0400
+Received: from 8bytes.org ([88.198.83.132]:57481 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753219Ab0DOKkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 06:40:52 -0400
+Date: Thu, 15 Apr 2010 12:40:51 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com, Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH V3] perf & kvm: Enhance perf to collect KVM guest os
+	statistics from host side
+Message-ID: <20100415104051.GC12697@8bytes.org>
+References: <1902387910.2078.435.camel@ymzhang.sh.intel.com> <4BC588CF.5010507@redhat.com> <1902445479.2078.458.camel@ymzhang.sh.intel.com> <4BC6C8CD.1020801@redhat.com> <1902473858.2078.481.camel@ymzhang.sh.intel.com> <20100415090403.GA12697@8bytes.org> <4BC6D7C8.9060302@redhat.com> <20100415094407.GB12697@8bytes.org> <4BC6E0D9.1090202@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BC6E0D9.1090202@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> but all have the same PCI id. My code just lets parport_serial handle
-> the serial-only and parallel-only cases. Is that approach better than
-> having two modules that both match the same PCI id?
+On Thu, Apr 15, 2010 at 12:48:09PM +0300, Avi Kivity wrote:
+> On 04/15/2010 12:44 PM, oerg Roedel wrote:
+>>
+>>> So, we'd need something like the following:
+>>>
+>>>     if (exit == NMI)
+>>>         __get_cpu_var(nmi_vcpu) = vcpu;
+>>>
+>>>     stgi();
+>>>
+>>>     if (exit == NMI) {
+>>>         while (!nmi_handled())
+>>>             cpu_relax();
+>>>         __get_cpu_var(nmi_vcpu) = NULL;
+>>>     }
+>>>      
+>> Hmm, looks a bit complicated to me. The NMI should happen shortly after
+>> the stgi instruction. Interrupts are still disabled so we stay on this
+>> cpu. Can't we just set and erase the cpu_var at vcpu_load/vcpu_put time?
+>>
+>>    
+>
+> That means an NMI that happens outside guest code (for example, in the  
+> mmu, or during the exit itself) would be counted as if in guest code.
 
-Most distributions load each driver that matches an id anyway so I think
-so - puts the complexity in one place.
+Hmm, true. The same is true for an NMI that happens between VMSAVE and
+STGI but that window is smaller. Anyway, I think we don't need the
+busy-wait loop. The NMI should be executed at a well defined point and
+we set the cpu_var back to NULL after that point.
 
-Alan
+	Joerg
+
