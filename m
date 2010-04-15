@@ -1,163 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab0DOXO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 19:14:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54507 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932076Ab0DOXFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 19:05:42 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       Jan Blunck <jblunck@suse.de>, David Woodhouse <dwmw2@infradead.org>,
-       Valerie Aurora <vaurora@redhat.com>, linux-nfs@vger.kernel.org,
-       "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
-Subject: [PATCH 04/35] whiteout/NFSD: Don't return information about whiteouts to userspace
-Date: Thu, 15 Apr 2010 16:04:11 -0700
-Message-Id: <1271372682-21225-5-git-send-email-vaurora@redhat.com>
-In-Reply-To: <1271372682-21225-4-git-send-email-vaurora@redhat.com>
-References: <1271372682-21225-1-git-send-email-vaurora@redhat.com>
- <1271372682-21225-2-git-send-email-vaurora@redhat.com>
- <1271372682-21225-3-git-send-email-vaurora@redhat.com>
- <1271372682-21225-4-git-send-email-vaurora@redhat.com>
+	id S1758116Ab0DOXPd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 19:15:33 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61479 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757971Ab0DOXPb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 19:15:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fiyX7PMay528JMqkEgoVoD8olF0xLsLgGUkOTqEgef2MdPn6TrmWFBfbW9QtSAjben
+         QUBFGzhe9IVTemaSyHqzeBPwYqlnH8i9fAFjIcrcK6LcJCUgEwPeL6CN55AmmjoqxgFK
+         Em1xQIuWb5sVJXDpjMBEfFnrklc62XxsG/cMY=
+Date: Fri, 16 Apr 2010 01:15:30 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [PATCH 2/3] Add tracing_off_event() calls to BUG() and WARN()
+	paths
+Message-ID: <20100415231529.GB15570@nowhere>
+References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com> <1271262016-18650-2-git-send-email-chase.douglas@canonical.com> <20100415205739.GF5069@nowhere> <v2t40ec3ea41004151449x70e7077flb8d1fea5e8d46167@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <v2t40ec3ea41004151449x70e7077flb8d1fea5e8d46167@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
+On Thu, Apr 15, 2010 at 02:49:05PM -0700, Chase Douglas wrote:
+> On Thu, Apr 15, 2010 at 1:57 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > On Wed, Apr 14, 2010 at 12:20:15PM -0400, Chase Douglas wrote:
+> >> This change adds tracing_off_event() calls, which stop debug tracing,
+> >> when a BUG() or WARN() function is called. The stoppage depends on
+> >> commandline paramenter tracing_off={bug,warn,none}. The default is
+> >> "bug", so only the BUG() paths will stop tracing.
+> >>
+> >> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> >
+> >
+> > ACK
+> >
+> > But I can't find where we call oops_enter() from panic()
+> > I see it called in x86 from oops_begin() that is called
+> > in various places like die(), but couldn't find how it
+> > ends up beeing called from panic().
+> 
+> I did not test the panic() path, but when that happens the system goes
+> down anyways. You won't be able to get the ftrace unless you enable
+> the ftrace on oops option, in which case the end of the trace will
+> likely be close enough to what you are looking for anyways.
 
-Userspace isn't ready for handling another file type, so silently drop
-whiteout directory entries before they leave the kernel.
 
-Signed-off-by: Jan Blunck <jblunck@suse.de>
-Signed-off-by: David Woodhouse <dwmw2@infradead.org>
-Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
----
- fs/compat.c       |    9 +++++++++
- fs/nfsd/nfs3xdr.c |    5 +++++
- fs/nfsd/nfs4xdr.c |    5 +++++
- fs/nfsd/nfsxdr.c  |    4 ++++
- fs/readdir.c      |    9 +++++++++
- 5 files changed, 32 insertions(+), 0 deletions(-)
-
-diff --git a/fs/compat.c b/fs/compat.c
-index 00d90c2..624e1a5 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -838,6 +838,9 @@ static int compat_fillonedir(void *__buf, const char *name, int namlen,
- 	struct compat_old_linux_dirent __user *dirent;
- 	compat_ulong_t d_ino;
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	if (buf->result)
- 		return -EINVAL;
- 	d_ino = ino;
-@@ -909,6 +912,9 @@ static int compat_filldir(void *__buf, const char *name, int namlen,
- 	compat_ulong_t d_ino;
- 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(compat_long_t));
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-@@ -998,6 +1004,9 @@ static int compat_filldir64(void * __buf, const char * name, int namlen, loff_t
- 	int reclen = ALIGN(jj + namlen + 1, sizeof(u64));
- 	u64 off;
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-diff --git a/fs/nfsd/nfs3xdr.c b/fs/nfsd/nfs3xdr.c
-index 2a533a0..9b96f5a 100644
---- a/fs/nfsd/nfs3xdr.c
-+++ b/fs/nfsd/nfs3xdr.c
-@@ -885,6 +885,11 @@ encode_entry(struct readdir_cd *ccd, const char *name, int namlen,
- 	int		elen;		/* estimated entry length in words */
- 	int		num_entry_words = 0;	/* actual number of words */
- 
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
-+
- 	if (cd->offset) {
- 		u64 offset64 = offset;
- 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 78c7e24..8839ba8 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2268,6 +2268,11 @@ nfsd4_encode_dirent(void *ccdv, const char *name, int namlen,
- 		return 0;
- 	}
- 
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
-+
- 	if (cd->offset)
- 		xdr_encode_hyper(cd->offset, (u64) offset);
- 
-diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
-index 4ce005d..0e57d4b 100644
---- a/fs/nfsd/nfsxdr.c
-+++ b/fs/nfsd/nfsxdr.c
-@@ -503,6 +503,10 @@ nfssvc_encode_entry(void *ccdv, const char *name,
- 			namlen, name, offset, ino);
- 	 */
- 
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
- 	if (offset > ~((u32) 0)) {
- 		cd->common.err = nfserr_fbig;
- 		return -EINVAL;
-diff --git a/fs/readdir.c b/fs/readdir.c
-index 7723401..3a48491 100644
---- a/fs/readdir.c
-+++ b/fs/readdir.c
-@@ -77,6 +77,9 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
- 	struct old_linux_dirent __user * dirent;
- 	unsigned long d_ino;
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	if (buf->result)
- 		return -EINVAL;
- 	d_ino = ino;
-@@ -154,6 +157,9 @@ static int filldir(void * __buf, const char * name, int namlen, loff_t offset,
- 	unsigned long d_ino;
- 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(long));
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-@@ -239,6 +245,9 @@ static int filldir64(void * __buf, const char * name, int namlen, loff_t offset,
- 	struct getdents_callback64 * buf = (struct getdents_callback64 *) __buf;
- 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 1, sizeof(u64));
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
--- 
-1.6.3.3
+Yeah but there is also a sysrq that can trigger an ftrace dump.
+So if you forgot ftrace dump on oops and you want to use the sysrq
+then you don't want the tracing to continue between the panic and
+the time for your fingers to reach the keyboard (that notwithstanding
+the time to remember the right combination...which I always forget).
 
