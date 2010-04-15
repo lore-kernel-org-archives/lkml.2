@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab0DOXXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 19:23:13 -0400
-Received: from www.tglx.de ([62.245.132.106]:37464 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464Ab0DOXXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 19:23:09 -0400
-Date: Fri, 16 Apr 2010 01:22:23 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christian Pellegrin <chripell@fsfe.org>
-cc: feng.tang@intel.com, akpm@linux-foundation.org, greg@kroah.com,
-       david-b@pacbell.net, grant.likely@secretlab.ca,
-       alan@lxorguk.ukuu.org.uk, spi-devel-general@lists.sourceforge.net,
-       linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 1/4] max3100: added raise_threaded_irq
-In-Reply-To: <1269340105-6503-1-git-send-email-chripell@fsfe.org>
-Message-ID: <alpine.LFD.2.00.1004160110360.3625@localhost.localdomain>
-References: <cabda6421003230329w3fe596dbn8e4b37cc36118f9f@mail.gmail.com> <1269340105-6503-1-git-send-email-chripell@fsfe.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757978Ab0DOXZk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 19:25:40 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:63981 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab0DOXZi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 19:25:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YBWf/MlwELiad+DEGl90u6xGjzOU11/GvsWv7PuHaFD8zZWQE2ApbkTBQ7Sdo8gwmR
+         kYS2uiDh0GwBbGfdU+U576j84jIR+8SIP5xV1a0tT4cy6wx1ToWQtLQRzx/qIoJv1Led
+         kiryLDxrSxoArYQsJqxCGJFoyofXgZ1ZvTwI8=
+Date: Thu, 15 Apr 2010 16:25:25 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: mt: introduce MT event slots
+Message-ID: <20100415232523.GA18263@core.coreip.homeip.net>
+References: <1270685590-2204-1-git-send-email-rydberg@euromail.se>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1270685590-2204-1-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Mar 2010, Christian Pellegrin wrote:
+Hi Henrik,
 
-> raise_threaded_irq schedules the execution of an interrupt thread
+On Thu, Apr 08, 2010 at 02:13:10AM +0200, Henrik Rydberg wrote:
+> With the rapidly increasing number of intelligent multi-contact and
+> multi-user devices, the need to send digested, filtered information
+> from a set of different sources within the same device is imminent.
+> This patch adds the concept of slots to the MT protocol. The slots
+> enumerate a set of identified sources, such that all MT events
+> can be passed independently and selectively per identified source.
+> 
+> The protocol works like this: Instead of sending a SYN_MT_REPORT
+> event immediately after the contact data, one sends a SYN_MT_SLOT
+> event immediately before the contact data. The input core will only
+> emit events for the slots corresponding to the contacts that have
+> changed. It is assumed that the same slot is used for the duration
+> of an initiated contact.
+> 
 
-I really have a hard time to understand _WHY_ we want to have that
-function.
+I see the reason for doing this however I would like to hold off
+applying it till we get a couple of users and prove that the scheme
+works well for them.
 
-Interrupt threads are woken up either by the primary handler or by a
-interrupt demultiplexer and the code has all interfaces for that
-already.
-
-Can you please explain, what you are trying to achieve and why it
-can't be done with the existing interfaces ?
-
-> +
-> +/**
-> + *	raise_threaded_irq - triggers a threded interrupt
-> + *	@irq: Interrupt line to trigger
-> + */
-> +int raise_threaded_irq(unsigned int irq)
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>  drivers/input/input.c |   62 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/input.h |   26 ++++++++++++++++++++
+>  2 files changed, 88 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/input/input.c b/drivers/input/input.c
+> index afd4e2b..217e976 100644
+> --- a/drivers/input/input.c
+> +++ b/drivers/input/input.c
+> @@ -181,6 +181,22 @@ static void input_stop_autorepeat(struct input_dev *dev)
+>  #define INPUT_PASS_TO_DEVICE	2
+>  #define INPUT_PASS_TO_ALL	(INPUT_PASS_TO_HANDLERS | INPUT_PASS_TO_DEVICE)
+>  
+> +static void input_handle_mt_event(struct input_dev *dev,
+> +				  unsigned int code, int value)
 > +{
-> +	struct irq_desc *desc = irq_to_desc(irq);
-> +	struct irqaction *action;
-> +
-> +	if (!desc)
-> +		return -ENOENT;
-> +	action = desc->action;
+> +	int oldval = dev->mt[dev->slot].abs[code];
 
-That's racy. You cannot access desc->action w/o holding desc->lock or
-having set the IRQ_INPROGRESS flag in desc->status under desc->lock.
+A temp for dev->mt[dev->slot] might be nice.
 
-> +	if (!action)
-> +		return -ENOENT;
-> +	if (unlikely(!action->thread_fn))
-> +		return -EINVAL;
-> +	if (likely(!test_bit(IRQTF_DIED,
-> +			     &action->thread_flags))) {
-> +		set_bit(IRQTF_RUNTHREAD, &action->thread_flags);
-> +		wake_up_process(action->thread);
-> +	} else {
-> +		return -ECHILD;
-> +	}
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(raise_threaded_irq);
+>  
+> +/**
+> + * struct input_mt_slot - represents the state of an MT input slot
+> + * @abs: current values from absolute axes for this slot
+> + */
+> +struct input_mt_slot {
+> +	int abs[ABS_MAX + 1];
+> +};
 
-EXPORT_SYMBOL_GPL if at all.
+It would be nice to use abs[ABS_MT_MAX - ABS_MT_TOUCH_MAJOR] to save
+some memory.
 
-Aside of that the name of of the function sucks: irq_wake_thread()
-perhaps ?
-
-But I still have no idea why we would need it at all.
-
-Thanks,
-
-	tglx
+-- 
+Dmitry
