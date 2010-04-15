@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402Ab0DOHfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 03:35:47 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41539 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757345Ab0DOHfp (ORCPT
+	id S1757439Ab0DOHha (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 03:37:30 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47298 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756704Ab0DOHh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 03:35:45 -0400
-Subject: Re: [tip:irq/core] genirq: Run irq handlers with interrupts
- disabled
-From: Peter Zijlstra <peterz@infradead.org>
-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-       linux-kernel@vger.kernel.org, andi@firstfloor.org,
-       alan@lxorguk.ukuu.org.uk, davem@davemloft.net, torvalds@osdl.org,
-       gregkh@suse.de, tglx@linutronix.de, mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-In-Reply-To: <tip-e58aa3d2d0cc01ad8d6f7f640a0670433f794922@git.kernel.org>
-References: <20100326000405.758579387@linutronix.de>
-	 <tip-e58aa3d2d0cc01ad8d6f7f640a0670433f794922@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Apr 2010 09:35:40 +0200
-Message-ID: <1271316940.32749.61.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Apr 2010 03:37:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=SSx2wE9fS7qkGnroheqa5IBs6N69Pi7y2rtNjBtM2Q40/MFBQbhD928QdyToeBP3fW
+         iR9O1phkRHS7eDGZxkf8RvXo4h86jEN+CtC2pUjVULa4URMDtJRpX7ttDoWvozD+w6Zv
+         atcl2zBqPn6vMORS5lFPnZs1vlAW+9KdlyHkk=
+MIME-Version: 1.0
+In-Reply-To: <s2g7b6bb4a51004150012zc6145d27v913dfe55924fff0a@mail.gmail.com>
+References: <20100413025228.GC10860@localhost.localdomain>
+	 <m2v7b6bb4a51004142312ze69796ak87d4ee65f6dd5529@mail.gmail.com>
+	 <o2w628d1651004142317n438d21e4t359c9661c2c00926@mail.gmail.com>
+	 <s2g7b6bb4a51004150012zc6145d27v913dfe55924fff0a@mail.gmail.com>
+Date: Thu, 15 Apr 2010 15:37:25 +0800
+Message-ID: <u2p628d1651004150037tceb61055t7633c1902716f8b3@mail.gmail.com>
+Subject: Re: [PATCH] Kconfig: Make config Filter access to /dev/mem default y
+From: wzt wzt <wzt.wzt@gmail.com>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+       x86@kernel.org, zippel@linux-m68k.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-13 at 19:33 +0000, tip-bot for Ingo Molnar wrote:
-> Commit-ID:  e58aa3d2d0cc01ad8d6f7f640a0670433f794922
-> Gitweb:     http://git.kernel.org/tip/e58aa3d2d0cc01ad8d6f7f640a0670433f794922
-> Author:     Ingo Molnar <mingo@elte.hu>
-> AuthorDate: Fri, 26 Mar 2010 00:06:51 +0000
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Tue, 13 Apr 2010 16:36:40 +0200
-> 
-> genirq: Run irq handlers with interrupts disabled
-> 
-> Running interrupt handlers with interrupts enabled can cause stack
-> overflows. That has been observed with multiqueue NICs delivering all
-> their interrupts to a single core. We might band aid that somehow by
-> checking the interrupt stacks, but the real safe fix is to run the irq
-> handlers with interrupts disabled.
-> 
-> Drivers for whacky hardware still can reenable them in the handler
-> itself, if the need arises. (They do already due to lockdep)
-> 
-> The risk of doing this is rather low:
-> 
->  - lockdep already enforces this
->  - CONFIG_NOHZ has shaken out the drivers which relied on jiffies updates
->  - time keeping is not longer sensitive to the timer interrupt being delayed
+> I'm curious about the result if you open this option to yes.
+here is the result you want see:
 
-Clearly I don't mind this, but shouldn't we at least first convert the
-known problematic drivers to an alternative strategy?
+Program zealot tried to access /dev/mem between 407000->409000.
 
-IDE-PIO, that one ancient NIC etc..
+my ids can't work around.
 
-> ---
->  kernel/irq/handle.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-> index 76d5a67..27e5c69 100644
-> --- a/kernel/irq/handle.c
-> +++ b/kernel/irq/handle.c
-> @@ -370,9 +370,6 @@ irqreturn_t handle_IRQ_event(unsigned int irq, struct irqaction *action)
->  	irqreturn_t ret, retval = IRQ_NONE;
->  	unsigned int status = 0;
->  
-> -	if (!(action->flags & IRQF_DISABLED))
-> -		local_irq_enable_in_hardirq();
-> -
->  	do {
->  		trace_irq_handler_entry(irq, action);
->  		ret = action->handler(irq, action->dev_id);
-
-
-
+> What's the result for kernel w/ CONFIG_STRICT_DEVMEM ? does it prevent
+> your rootkit?
+my program is not a rootkit, if you want to see some backdoors, please
+read the Mood-nt2.3 or suckit source code, have fun.
