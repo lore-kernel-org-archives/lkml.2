@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab0DOB1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 21:27:55 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43828 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753410Ab0DOB1y (ORCPT
+	id S1756176Ab0DOBbZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 21:31:25 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37628 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab0DOBbY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 21:27:54 -0400
-Date: Wed, 14 Apr 2010 22:27:43 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, mhiramat@infradead.org,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: [GIT PULL] perf probe batch and a fix for sort_entries
-Message-ID: <20100415012743.GP25649@ghostprotocols.net>
+	Wed, 14 Apr 2010 21:31:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=A3ayDIULRn+iSk1Gg94uZWwqAu4+CGyarlg3m/0LFIeuI50uhkR00GnbBcJ3k43gyw
+         mzXd5v2eRCK7AYxZv28g+PZCrfg1yHnf+njk3nKEYlvVTrRPAwTBVZly14oAvrT0JiYB
+         EIvJxAbOEl4NtlNcvkaO6bARfy3/NIlESOp0U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <4BC65237.5080408@kernel.org>
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
+	 <d5d70d4b57376bc89f178834cf0e424eaa681ab4.1271171877.git.minchan.kim@gmail.com>
+	 <20100413154820.GC25756@csn.ul.ie> <4BC65237.5080408@kernel.org>
+Date: Thu, 15 Apr 2010 10:31:23 +0900
+Message-ID: <v2j28c262361004141831h8f2110d5pa7a1e3063438cbf8@mail.gmail.com>
+Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Christoph Lameter <cl@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+Hi, Tejun.
 
-	Please consider pulling from:
+On Thu, Apr 15, 2010 at 8:39 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On 04/14/2010 12:48 AM, Mel Gorman wrote:
+>> and the mapping table on x86 at least is based on possible CPUs in
+>> init_cpu_to_node() leaves the mapping as 0 if the APIC is bad or the numa
+>> node is reported in apicid_to_node as -1. It would appear on power that
+>> the node will be 0 for possible CPUs as well.
+>>
+>> Hence, I believe this to be safe but a confirmation from Tejun would be
+>> nice. I would continue digging but this looks like an initialisation path
+>> so I'll move on to the next patch rather than spending more time.
+>
+> This being a pretty cold path, I don't really see much benefit in
+> converting it to alloc_pages_node_exact().  It ain't gonna make any
+> difference.  I'd rather stay with the safer / boring one unless
+> there's a pressing reason to convert.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
+Actually, It's to weed out not-good API usage as well as some performance gain.
+But I don't think to need it strongly.
+Okay. Please keep in mind about this and correct it if you confirms it
+in future. :)
 
-	All patches already appeared on lkml,
+>
+> Thanks.
+>
+> --
+> tejun
+>
 
-Best Regards,
 
-- Arnaldo
 
-Frederic Weisbecker (1):
-  perf tools: Fix accidentally preprocessed snprintf callback
-
-Masami Hiramatsu (16):
-  perf probe: Support argument name
-  perf probe: Use the last field name as the argument name
-  tracing/kprobes: Support basic types on dynamic events
-  perf probe: Query basic types from debuginfo
-  perf probe: Support basic type casting
-  perf probe: Support DW_OP_call_frame_cfa in debuginfo
-  perf probe: Remove die() from probe-finder code
-  perf probe: Remove die() from probe-event code
-  perf probe: Remove xzalloc() from util/probe-{event, finder}.c
-  perf probe: Remove xstrdup()/xstrndup() from util/probe-{event, finder}.c
-  perf probe: Fix to use correct debugfs path finder
-  perf probe: Fix mis-estimation for shortening filename
-  perf probe: Fix a bug that --line range can be overflow
-  perf probe: Fix line range to show end line
-  perf probe: Support DW_OP_plus_uconst in DW_AT_data_member_location
-  perf probe: Show function entry line as probe-able
-
- Documentation/trace/kprobetrace.txt     |    4 +-
- kernel/trace/trace.h                    |   16 +-
- kernel/trace/trace_kprobe.c             |  535 +++++++++++-------
- tools/perf/Documentation/perf-probe.txt |   11 +-
- tools/perf/builtin-probe.c              |   78 ++-
- tools/perf/util/hist.c                  |   28 +-
- tools/perf/util/probe-event.c           |  898 ++++++++++++++++++++++---------
- tools/perf/util/probe-event.h           |   33 +-
- tools/perf/util/probe-finder.c          |  753 ++++++++++++++++++--------
- tools/perf/util/probe-finder.h          |    1 +
- tools/perf/util/sort.c                  |   42 +-
- tools/perf/util/sort.h                  |   12 +-
- 12 files changed, 1634 insertions(+), 777 deletions(-)
-
+-- 
+Kind regards,
+Minchan Kim
