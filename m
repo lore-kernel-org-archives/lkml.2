@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab0DOKfY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 06:35:24 -0400
-Received: from mga10.intel.com ([192.55.52.92]:13429 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752832Ab0DOKfV (ORCPT
+	id S1753347Ab0DOKjp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 06:39:45 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39314 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753219Ab0DOKjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 06:35:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,211,1270450800"; 
-   d="scan'208";a="789502603"
-Date: Thu, 15 Apr 2010 11:02:32 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: =?UTF-8?B?w4lyaWM=?= Piel <E.A.B.Piel@tudelft.nl>,
-       linux-i2c@vger.kernel.org, khali@linux-fr.org,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] liss331d1: accelerometer driver
-Message-ID: <20100415110232.7fc80ac1@linux.intel.com>
-In-Reply-To: <4BC6EA64.4070308@cam.ac.uk>
-References: <20100414124913.23181.75903.stgit@localhost.localdomain>
-	<20100414125155.23181.56610.stgit@localhost.localdomain>
-	<4BC63DC5.8040501@tudelft.nl>
-	<4BC6EA64.4070308@cam.ac.uk>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
+	Thu, 15 Apr 2010 06:39:44 -0400
+Date: Thu, 15 Apr 2010 11:44:09 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Joseph Krahn <joseph.krahn@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Trying to fix ITE-887x parallel/serial driver bugs (including 
+ unhandled IRQs)
+Message-ID: <20100415114409.466cbf60@lxorguk.ukuu.org.uk>
+In-Reply-To: <z2qff6de6f21004141046ke8eb9f62q4cdd87dc136f76a1@mail.gmail.com>
+References: <q2lff6de6f21004120834k72cfd554v188b9d2b5a01012c@mail.gmail.com>
+	<20100412174352.4e13113f@lxorguk.ukuu.org.uk>
+	<n2wff6de6f21004121405xd33676f8s81c12e23747b88b0@mail.gmail.com>
+	<20100414131140.5c6187ab@lxorguk.ukuu.org.uk>
+	<z2qff6de6f21004141046ke8eb9f62q4cdd87dc136f76a1@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -32,23 +28,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Err. Anyone get a feeling of deja vu here?
-> 
-> http://lists.lm-sensors.org/pipermail/lm-sensors/2009-September/026706.html
-> 
-> When Kalhan originally posted this driver it was pointed out that it
-> was compatible with the existing one.  A complete lack of
-> communications lead to Kalhan (and someone else, might have been Eric
-> or Samu, can't recall) both implementing i2c support in the driver.
-> Can't find it right now but I'm fairly sure Kahlan reported that
-> worked fine for this chip as well?
-> 
-> So looks like a lack of communications here and that Alan has picked
-> up an unnecessary driver.
+> but all have the same PCI id. My code just lets parport_serial handle
+> the serial-only and parallel-only cases. Is that approach better than
+> having two modules that both match the same PCI id?
 
-Thanks it does indeed - except for the retry logic which has come from
-another platform source and can be submitted in turn. Only other thing I
-see odd is that the existing driver prints a scary error message when
-there is no IRQ rather than just an info message.
+Most distributions load each driver that matches an id anyway so I think
+so - puts the complexity in one place.
 
 Alan
