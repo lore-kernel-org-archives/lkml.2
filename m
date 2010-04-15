@@ -1,49 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab0DOIuX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 04:50:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62805 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757513Ab0DOIuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 04:50:21 -0400
-Message-ID: <4BC6D334.8050607@redhat.com>
-Date: Thu, 15 Apr 2010 11:49:56 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1757566Ab0DOIy1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 04:54:27 -0400
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:53537 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757499Ab0DOIyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 04:54:25 -0400
+Date: Thu, 15 Apr 2010 18:54:20 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-ID: <20100415085420.GT2493@dastard>
+References: <20100415130212.D16E.A69D9226@jp.fujitsu.com>
+ <20100415062055.GQ2493@dastard>
+ <20100415152816.D18C.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-       Matthew Wilcox <matthew@wil.cx>, Ralf Baechle <ralf@linux-mips.org>,
-       mingo@elte.hu, tglx@linutronix.de, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] X86: Optimise fls(), ffs() and fls64()
-References: <4BC5D19A.8000605@redhat.com> <20100406133026.GD20577@parisc-linux.org> <alpine.LFD.2.00.1003261005490.3721@i5.linux-foundation.org> <20100326144241.8583.95617.stgit@warthog.procyon.org.uk> <28287.1269625325@redhat.com> <alpine.LFD.2.00.1003261042580.3721@i5.linux-foundation.org> <20100326175827.GD20055@linux-mips.org> <alpine.LFD.2.00.1003261100440.3721@i5.linux-foundation.org> <17213.1271245760@redhat.com> <3879.1271321292@redhat.com>
-In-Reply-To: <3879.1271321292@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100415152816.D18C.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2010 11:48 AM, David Howells wrote:
-> Avi Kivity<avi@redhat.com>  wrote:
->
->    
->> Even if Intel processors behave that way, other processors (real and
->> emulated) use those manuals as a specification.  Emulated processors are
->> unlikely to touch an undefined register, but real processors may.
->>
->> (qemu tcg appears not to touch the output)
->>      
-> Possibly because the AMD64 spec specifies that the destination will be
-> unchanged if the source was 0.
->    
+On Thu, Apr 15, 2010 at 03:35:14PM +0900, KOSAKI Motohiro wrote:
+> > On Thu, Apr 15, 2010 at 01:09:01PM +0900, KOSAKI Motohiro wrote:
+> > > Hi
+> > > 
+> > > > How about this? For now, we stop direct reclaim from doing writeback
+> > > > only on order zero allocations, but allow it for higher order
+> > > > allocations. That will prevent the majority of situations where
+> > > > direct reclaim blows the stack and interferes with background
+> > > > writeout, but won't cause lumpy reclaim to change behaviour.
+> > > > This reduces the scope of impact and hence testing and validation
+> > > > the needs to be done.
+> > > 
+> > > Tend to agree. but I would proposed slightly different algorithm for
+> > > avoind incorrect oom.
+> > > 
+> > > for high order allocation
+> > > 	allow to use lumpy reclaim and pageout() for both kswapd and direct reclaim
+> > 
+> > SO same as current.
+> 
+> Yes. as same as you propsed.
+> 
+> > 
+> > > for low order allocation
+> > > 	- kswapd:          always delegate io to flusher thread
+> > > 	- direct reclaim:  delegate io to flusher thread only if vm pressure is low
+> > 
+> > IMO, this really doesn't fix either of the problems - the bad IO
+> > patterns nor the stack usage. All it will take is a bit more memory
+> > pressure to trigger stack and IO problems, and the user reporting the
+> > problems is generating an awful lot of memory pressure...
+> 
+> This patch doesn't care stack usage. because
+>   - again, I think all stack eater shold be diet.
 
-Likely.  But we haven't tested all current and future x86 clones, and 
-they may be based off the Intel documentation instead of the AMD 
-documentation.
+Agreed (again), but we've already come to the conclusion that a
+stack diet is not enough.
 
+>   - under allowing lumpy reclaim world, only deny low order reclaim
+>     doesn't solve anything.
+
+Yes, I suggested it *as a first step*, not as the end goal. Your
+patches don't reach the first step which is fixing the reported
+stack problem for order-0 allocations...
+
+> Please don't forget priority=0 recliam failure incvoke OOM-killer.
+> I don't imagine anyone want it.
+
+Given that I haven't been able to trigger OOM without writeback from
+direct reclaim so far (*) I'm not finding any evidence that it is a
+problem or that there are regressions.  I want to be able to say
+that this change has no known regressions. I want to find the
+regression and  work to fix them, but without test cases there's no
+way I can do this.
+
+This is what I'm getting frustrated about - I want to fix this
+problem once and for all, but I can't find out what I need to do to
+robustly test such a change so we can have a high degree of
+confidence that it doesn't introduce major regressions. Can anyone
+help here?
+
+(*) except in one case I've already described where it mananged to
+allocate enough huge pages to starve the system of order zero pages,
+which is what I asked it to do.
+
+> And, Which IO workload trigger <6 priority vmscan?
+
+You're asking me? I've been asking you for workloads that wind up
+reclaim priority.... :/
+
+All I can say is that the most common trigger I see for OOM is
+copying a large file on a busy system that is running off a single
+spindle.  When that happens on my laptop I walk away and get a cup
+of coffee when that happens and when I come back I pick up all the
+broken bits the OOM killer left behind.....
+
+Cheers,
+
+Dave.
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+Dave Chinner
+david@fromorbit.com
