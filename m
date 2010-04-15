@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab0DOP5U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 11:57:20 -0400
-Received: from mail.perches.com ([173.55.12.10]:1490 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753592Ab0DOP5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 11:57:18 -0400
-Subject: Re: [PATCH 1/4] hmc6352: Add driver for the HMC6352 compass
-From: Joe Perches <joe@perches.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kalhan Trisal <kalhan.trisal@intel.com>,
-       Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100415131153.0e383ef3@lxorguk.ukuu.org.uk>
-References: <20100414124913.23181.75903.stgit@localhost.localdomain>
-	 <20100414125136.23181.16788.stgit@localhost.localdomain>
-	 <4BC5C7A8.1040807@cam.ac.uk> <20100414153234.22765666@lxorguk.ukuu.org.uk>
-	 <4BC5D681.20707@jic23.retrosnub.co.uk>
-	 <20100414161904.713eef78@lxorguk.ukuu.org.uk>
-	 <1271280993.1833.36.camel@Joe-Laptop.home>
-	 <20100415131153.0e383ef3@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Apr 2010 08:57:16 -0700
-Message-ID: <1271347036.1726.57.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754300Ab0DOP6t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 11:58:49 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49245 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592Ab0DOP6s convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 11:58:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=CAI3eoTwRDWWgsJQuuI0PSeulxUqn2M+RkwK1jP1N2YJ+vJ/LZCpEaFEDMKA4qXIPD
+         UejvSf2SXxcLSpwEKs6n+E7/DynRgo8tQmm/F43fPqBHCvi8mhyGdgTMiw8wfRIZOzGe
+         AD50FKA4xXG7H+0LKJg86AbCrcFy2++vNYeao=
+MIME-Version: 1.0
+In-Reply-To: <j2i121039231004150213i76ecc96ahb5d9af96c46b27ae@mail.gmail.com>
+References: <x2i121039231004132342sa230bfd4k832950fce534113f@mail.gmail.com>
+	 <i2ge9c3a7c21004141708y87d01ab6h94c653e4efa11b8d@mail.gmail.com>
+	 <j2i121039231004150213i76ecc96ahb5d9af96c46b27ae@mail.gmail.com>
+Date: Thu, 15 Apr 2010 08:58:47 -0700
+X-Google-Sender-Auth: d498dae864709b8f
+Message-ID: <v2he9c3a7c21004150858t917f44d6q15b5eaa3247d6fff@mail.gmail.com>
+Subject: Re: DMA Engine API performance issues
+From: Dan Williams <dan.j.williams@intel.com>
+To: melwyn lobo <linux.melwyn@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-15 at 13:11 +0100, Alan Cox wrote:
-> > Argument alignment
-> Makes it take more space
+On Thu, Apr 15, 2010 at 2:13 AM, melwyn lobo <linux.melwyn@gmail.com> wrote:
+> Thanks so much for your explanation.
+> OK..Looking at IPU implementation, irq handling is enrtirely in the
+> interrupt routine, therefore no need for spin_lock_bh stuff.
+> But for lower interrupt latency reasons we need to stick with the
+> tasklet handling for processing interrupts.
+>
+> We were contemplating another solution for locking at our end for DMA
+> implementation
+> For locking
+> if(irqs_disabled())
+>    spin_lock(&chan->lock);
+> else
+>    spin_lock_bh(&chan->lock);
+>
+> for unlocking:
+> if(irqs_disabled())
+>    spin_unlock(&chan->lock);
+> else
+>    spin_unlock_bh(&chan->lock);
+>
+> Although this works  fine, but will this be OK when we submit the driver.
+>
 
-Makes it look more like most kernel code.
+This won't work and lockdep should complain about this situation.  The
+minute you need to take the lock in the interrupt handler then all
+other occurrences of the lock need to be promoted to _irq or
+_irqsave() [1].
 
-> > Make chars static
-> Not sure I see the point (compiler generates good code anyway)
+--
+Dan
 
-Internal consistency.  2 use areas had it, 1 didn't.
-
-
-
+[1]: http://www.kernel.org/pub/linux/kernel/people/rusty/kernel-locking/c214.html
