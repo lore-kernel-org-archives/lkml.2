@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab0DOGmk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 02:42:40 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60208
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751332Ab0DOGmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 02:42:39 -0400
-Date: Wed, 14 Apr 2010 23:42:42 -0700 (PDT)
-Message-Id: <20100414.234242.159666963.davem@davemloft.net>
-To: cpeterso@cpeterso.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mpm@selenic.com
-Subject: Re: [PATCH] drivers/net: remove network drivers' last few uses of
- IRQF_SAMPLE_RANDOM
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1270877380-23813-1-git-send-email-cpeterso@cpeterso.com>
-References: <1270877380-23813-1-git-send-email-cpeterso@cpeterso.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1752069Ab0DOGoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 02:44:19 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:54122 "EHLO poutre.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332Ab0DOGoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 02:44:18 -0400
+Date: Thu, 15 Apr 2010 08:44:15 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hwmon: Add driver for intel PCI thermal subsystem
+Message-ID: <20100415084415.1e2a2e67@hyperion.delvare>
+In-Reply-To: <20100414212748.ad4c3187.akpm@linux-foundation.org>
+References: <1260546750-6206-1-git-send-email-mjg@redhat.com>
+	<20100403170917.GA11397@srcf.ucam.org>
+	<20100411102414.15b9b394@hyperion.delvare>
+	<20100414212748.ad4c3187.akpm@linux-foundation.org>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Peterson <cpeterso@cpeterso.com>
-Date: Sat, 10 Apr 2010 01:29:40 -0400
+Hi Andrew,
 
-> feature-removal-schedule.txt says a new /dev/random entropy model is planned 
-> (for July 2009). Until then, this patch removes the few remaining uses of 
-> IRQF_SAMPLE_RANDOM from drivers/net/*. 12 network drivers are affected, one 
-> more than last year (netxen_nic_main.c). If idle servers need more entropy, 
-> they ought to use a hardware RNG or an entropy-gathering userspace daemon.
+On Wed, 14 Apr 2010 21:27:48 -0400, Andrew Morton wrote:
+> On Sun, 11 Apr 2010 10:24:14 +0200 Jean Delvare <khali@linux-fr.org> wrote:
+> > On Sat, 3 Apr 2010 18:09:17 +0100, Matthew Garrett wrote:
+> > > Jean, did you pick this up at any point? I can't see it in your git 
+> > > tree.
+> > 
+> > Maybe because I don't have a git tree ;) I'm using quilt for my hwmon
+> > patches.
+> > 
+> > Anyway, no, I did not pick this driver, I don't think I saw a public
+> > review of it, and normally I only pick patches which have been reviewed
+> > by someone I trust. Remember I am not the maintainet of the hwmon
+> > subsystem any longer. I'm trying to help as my time permits, but I make
+> > no guarantee.
 > 
-> Signed-off-by: Chris Peterson <cpeterso@cpeterso.com>
+> I handle hwmon patches which Jean doesn't take or nack.
 
-Well, that feature-removal-schedule.txt entry states that new
-add_*_randomness() interfaces will be created such that things
-like network devices can indicate what kind of entropy they
-are providing.
+I've reviewed the driver meanwhile, now waiting for Matthew to submit
+an updated patch.
 
-Those interfaces have not yet been created as far as I can tell, and
-the idea is that network drivers could use those not-yet-written new
-interfaces.
-
-Until that time I feel it does more harm than good to remove these
-annotations since frankly there never ever was good agreement about
-whether we should do this or not.
-
-It may seem stupid and pointless to just do nothing, but at this time
-I think that's still the best thing to do.
-
-Therefore, I'm not applying your patch, sorry.
+-- 
+Jean Delvare
