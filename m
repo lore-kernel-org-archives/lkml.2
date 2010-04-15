@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab0DOXG1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 19:06:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58387 "EHLO mx1.redhat.com"
+	id S932254Ab0DOXGm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 19:06:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12255 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932178Ab0DOXGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 19:06:10 -0400
+	id S932224Ab0DOXGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 19:06:32 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       Jan Blunck <jblunck@suse.de>, Valerie Aurora <vaurora@redhat.com>,
-       Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org
-Subject: [PATCH 09/35] whiteout: Split of ext2_append_link() from ext2_add_link()
-Date: Thu, 15 Apr 2010 16:04:16 -0700
-Message-Id: <1271372682-21225-10-git-send-email-vaurora@redhat.com>
-In-Reply-To: <1271372682-21225-9-git-send-email-vaurora@redhat.com>
+       Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 15/35] fallthru: tmpfs fallthru support
+Date: Thu, 15 Apr 2010 16:04:22 -0700
+Message-Id: <1271372682-21225-16-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1271372682-21225-15-git-send-email-vaurora@redhat.com>
 References: <1271372682-21225-1-git-send-email-vaurora@redhat.com>
  <1271372682-21225-2-git-send-email-vaurora@redhat.com>
  <1271372682-21225-3-git-send-email-vaurora@redhat.com>
@@ -24,157 +23,197 @@ References: <1271372682-21225-1-git-send-email-vaurora@redhat.com>
  <1271372682-21225-7-git-send-email-vaurora@redhat.com>
  <1271372682-21225-8-git-send-email-vaurora@redhat.com>
  <1271372682-21225-9-git-send-email-vaurora@redhat.com>
+ <1271372682-21225-10-git-send-email-vaurora@redhat.com>
+ <1271372682-21225-11-git-send-email-vaurora@redhat.com>
+ <1271372682-21225-12-git-send-email-vaurora@redhat.com>
+ <1271372682-21225-13-git-send-email-vaurora@redhat.com>
+ <1271372682-21225-14-git-send-email-vaurora@redhat.com>
+ <1271372682-21225-15-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
+Add support for fallthru directory entries to tmpfs
 
-The ext2_append_link() is later used to find or append a directory
-entry to whiteout.
+XXX - Makes up inode number for dirent
 
-Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: Theodore Tso <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org
 ---
- fs/ext2/dir.c |   70 ++++++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 50 insertions(+), 20 deletions(-)
+ fs/dcache.c |    3 +-
+ fs/libfs.c  |   21 +++++++++++++++++--
+ mm/shmem.c  |   60 ++++++++++++++++++++++++++++++++++++++++++++++++++++------
+ 3 files changed, 73 insertions(+), 11 deletions(-)
 
-diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
-index 7516957..57207a9 100644
---- a/fs/ext2/dir.c
-+++ b/fs/ext2/dir.c
-@@ -472,9 +472,10 @@ void ext2_set_link(struct inode *dir, struct ext2_dir_entry_2 *de,
- }
+diff --git a/fs/dcache.c b/fs/dcache.c
+index b76f9e4..1575af4 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2240,7 +2240,8 @@ resume:
+ 		 * we can evict it.
+ 		 */
+ 		if (d_unhashed(dentry)||(!dentry->d_inode &&
+-					 !d_is_whiteout(dentry)))
++					 !d_is_whiteout(dentry) &&
++					 !d_is_fallthru(dentry)))
+ 			continue;
+ 		if (!list_empty(&dentry->d_subdirs)) {
+ 			this_parent = dentry;
+diff --git a/fs/libfs.c b/fs/libfs.c
+index 9e50bcf..cb24772 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -133,6 +133,7 @@ int dcache_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ 	struct dentry *cursor = filp->private_data;
+ 	struct list_head *p, *q = &cursor->d_u.d_child;
+ 	ino_t ino;
++	int d_type;
+ 	int i = filp->f_pos;
+ 
+ 	switch (i) {
+@@ -158,14 +159,28 @@ int dcache_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ 			for (p=q->next; p != &dentry->d_subdirs; p=p->next) {
+ 				struct dentry *next;
+ 				next = list_entry(p, struct dentry, d_u.d_child);
+-				if (d_unhashed(next) || !next->d_inode)
++				if (d_unhashed(next) || (!next->d_inode && !d_is_fallthru(next)))
+ 					continue;
+ 
++				if (d_is_fallthru(next)) {
++					/* XXX We don't know the inode
++					 * number of the directory
++					 * entry in the underlying
++					 * file system.  Should look
++					 * it up, either on fallthru
++					 * creation at first readdir
++					 * or now at filldir time. */
++					ino = 123; /* Made up ino */
++					d_type = DT_UNKNOWN;
++				} else {
++					ino = next->d_inode->i_ino;
++					d_type = dt_type(next->d_inode);
++				}
++
+ 				spin_unlock(&dcache_lock);
+ 				if (filldir(dirent, next->d_name.name, 
+ 					    next->d_name.len, filp->f_pos, 
+-					    next->d_inode->i_ino, 
+-					    dt_type(next->d_inode)) < 0)
++					    ino, d_type) < 0)
+ 					return 0;
+ 				spin_lock(&dcache_lock);
+ 				/* next is still alive */
+diff --git a/mm/shmem.c b/mm/shmem.c
+index c58ecf4..163957b 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1809,8 +1809,7 @@ static int shmem_rmdir(struct inode *dir, struct dentry *dentry);
+ static int shmem_unlink(struct inode *dir, struct dentry *dentry);
  
  /*
-- *	Parent is locked.
-+ * Find or append a given dentry to the parent directory
+- * This is the whiteout support for tmpfs. It uses one singleton whiteout
+- * inode per superblock thus it is very similar to shmem_link().
++ * Create a dentry to signify a whiteout.
   */
--int ext2_add_link (struct dentry *dentry, struct inode *inode)
-+static ext2_dirent * ext2_append_entry(struct dentry * dentry,
-+				       struct page ** page)
- {
- 	struct inode *dir = dentry->d_parent->d_inode;
- 	const char *name = dentry->d_name.name;
-@@ -482,13 +483,10 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 	unsigned chunk_size = ext2_chunk_size(dir);
- 	unsigned reclen = EXT2_DIR_REC_LEN(namelen);
- 	unsigned short rec_len, name_len;
--	struct page *page = NULL;
--	ext2_dirent * de;
-+	ext2_dirent * de = NULL;
- 	unsigned long npages = dir_pages(dir);
- 	unsigned long n;
- 	char *kaddr;
--	loff_t pos;
--	int err;
- 
- 	/*
- 	 * We take care of directory expansion in the same loop.
-@@ -498,20 +496,19 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 	for (n = 0; n <= npages; n++) {
- 		char *dir_end;
- 
--		page = ext2_get_page(dir, n, 0);
--		err = PTR_ERR(page);
--		if (IS_ERR(page))
-+		*page = ext2_get_page(dir, n, 0);
-+		de = ERR_PTR(PTR_ERR(*page));
-+		if (IS_ERR(*page))
- 			goto out;
--		lock_page(page);
--		kaddr = page_address(page);
-+		lock_page(*page);
-+		kaddr = page_address(*page);
- 		dir_end = kaddr + ext2_last_byte(dir, n);
- 		de = (ext2_dirent *)kaddr;
- 		kaddr += PAGE_CACHE_SIZE - reclen;
- 		while ((char *)de <= kaddr) {
- 			if ((char *)de == dir_end) {
- 				/* We hit i_size */
--				name_len = 0;
--				rec_len = chunk_size;
-+				de->name_len = 0;
- 				de->rec_len = ext2_rec_len_to_disk(chunk_size);
- 				de->inode = 0;
- 				goto got_it;
-@@ -519,12 +516,11 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 			if (de->rec_len == 0) {
- 				ext2_error(dir->i_sb, __func__,
- 					"zero-length directory entry");
--				err = -EIO;
-+				de = ERR_PTR(-EIO);
- 				goto out_unlock;
- 			}
--			err = -EEXIST;
- 			if (ext2_match (namelen, name, de))
--				goto out_unlock;
-+				goto got_it;
- 			name_len = EXT2_DIR_REC_LEN(de->name_len);
- 			rec_len = ext2_rec_len_from_disk(de->rec_len);
- 			if (!de->inode && rec_len >= reclen)
-@@ -533,13 +529,48 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 				goto got_it;
- 			de = (ext2_dirent *) ((char *) de + rec_len);
- 		}
--		unlock_page(page);
--		ext2_put_page(page);
-+		unlock_page(*page);
-+		ext2_put_page(*page);
+ static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
+ 			  struct dentry *new_dentry)
+@@ -1841,8 +1840,10 @@ static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
+ 		spin_unlock(&sbinfo->stat_lock);
  	}
-+
- 	BUG();
--	return -EINVAL;
  
- got_it:
-+	return de;
-+	/* OFFSET_CACHE */
-+out_unlock:
-+	unlock_page(*page);
-+	ext2_put_page(*page);
-+out:
-+	return de;
-+}
+-	if (old_dentry->d_inode) {
+-		if (S_ISDIR(old_dentry->d_inode->i_mode))
++	if (old_dentry->d_inode || d_is_fallthru(old_dentry)) {
++		/* A fallthru for a dir is treated like a regular link */
++		if (old_dentry->d_inode &&
++		    S_ISDIR(old_dentry->d_inode->i_mode))
+ 			shmem_rmdir(dir, old_dentry);
+ 		else
+ 			shmem_unlink(dir, old_dentry);
+@@ -1859,6 +1860,48 @@ static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
+ }
+ 
+ static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
++				struct inode *inode);
 +
 +/*
-+ *	Parent is locked.
++ * Create a dentry to signify a fallthru.  A fallthru in tmpfs is the
++ * logical equivalent of an in-kernel readdir() cache.  It can't be
++ * deleted until the file system is unmounted.
 + */
-+int ext2_add_link (struct dentry *dentry, struct inode *inode)
++static int shmem_fallthru(struct inode *dir, struct dentry *dentry)
 +{
-+	struct inode *dir = dentry->d_parent->d_inode;
-+	const char *name = dentry->d_name.name;
-+	int namelen = dentry->d_name.len;
-+	unsigned short rec_len, name_len;
-+	ext2_dirent * de;
-+	struct page *page;
-+	loff_t pos;
-+	int err;
++	struct shmem_sb_info *sbinfo = SHMEM_SB(dir->i_sb);
 +
-+	de = ext2_append_entry(dentry, &page);
-+	if (IS_ERR(de))
-+		return PTR_ERR(de);
++	/* FIXME: this is stupid */
++	if (!(dir->i_sb->s_flags & MS_WHITEOUT))
++		return -EPERM;
 +
-+	err = -EEXIST;
-+	if (ext2_match (namelen, name, de))
-+		goto out_unlock;
++	if (dentry->d_inode || d_is_fallthru(dentry) || d_is_whiteout(dentry))
++		return -EEXIST;
 +
-+got_it:
-+	name_len = EXT2_DIR_REC_LEN(de->name_len);
-+	rec_len = ext2_rec_len_from_disk(de->rec_len);
++	/*
++	 * Each new link needs a new dentry, pinning lowmem, and tmpfs
++	 * dentries cannot be pruned until they are unlinked.
++	 */
++	if (sbinfo->max_inodes) {
++		spin_lock(&sbinfo->stat_lock);
++		if (!sbinfo->free_inodes) {
++			spin_unlock(&sbinfo->stat_lock);
++			return -ENOSPC;
++		}
++		sbinfo->free_inodes--;
++		spin_unlock(&sbinfo->stat_lock);
++	}
 +
- 	pos = page_offset(page) +
- 		(char*)de - (char*)page_address(page);
- 	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
-@@ -563,7 +594,6 @@ got_it:
- 	/* OFFSET_CACHE */
- out_put:
- 	ext2_put_page(page);
--out:
- 	return err;
- out_unlock:
- 	unlock_page(page);
++	shmem_d_instantiate(dir, dentry, NULL);
++	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
++
++	spin_lock(&dentry->d_lock);
++	dentry->d_flags |= DCACHE_FALLTHRU;
++	spin_unlock(&dentry->d_lock);
++	return 0;
++}
++
++static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
+ 				struct inode *inode)
+ {
+ 	if (d_is_whiteout(dentry)) {
+@@ -1866,14 +1909,15 @@ static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
+ 		shmem_free_inode(dir->i_sb);
+ 		if (S_ISDIR(inode->i_mode))
+ 			inode->i_mode |= S_OPAQUE;
++	} else if (d_is_fallthru(dentry)) {
++		shmem_free_inode(dir->i_sb);
+ 	} else {
+ 		/* New dentry */
+ 		dir->i_size += BOGO_DIRENT_SIZE;
+ 		dget(dentry); /* Extra count - pin the dentry in core */
+ 	}
+-	/* Will clear DCACHE_WHITEOUT flag */
++	/* Will clear DCACHE_WHITEOUT and DCACHE_FALLTHRU flags */
+ 	d_instantiate(dentry, inode);
+-
+ }
+ /*
+  * File creation. Allocate an inode, and we're done..
+@@ -1962,7 +2006,8 @@ static int shmem_unlink(struct inode *dir, struct dentry *dentry)
+ {
+ 	struct inode *inode = dentry->d_inode;
+ 
+-	if (d_is_whiteout(dentry) || (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
++	if (d_is_whiteout(dentry) || d_is_fallthru(dentry) ||
++	    (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
+ 		shmem_free_inode(dir->i_sb);
+ 
+ 	if (inode) {
+@@ -2596,6 +2641,7 @@ static const struct inode_operations shmem_dir_inode_operations = {
+ 	.mknod		= shmem_mknod,
+ 	.rename		= shmem_rename,
+ 	.whiteout       = shmem_whiteout,
++	.fallthru       = shmem_fallthru,
+ #endif
+ #ifdef CONFIG_TMPFS_POSIX_ACL
+ 	.setattr	= shmem_notify_change,
 -- 
 1.6.3.3
 
