@@ -1,196 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab0DOJgQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 05:36:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8677 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757640Ab0DOJgO convert rfc822-to-8bit (ORCPT
+	id S1757675Ab0DOJkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 05:40:11 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:60813 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757640Ab0DOJkJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 05:36:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,211,1270450800"; 
-   d="scan'208";a="509341946"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>,
-       "davem@davemloft.net" <davem@davemloft.net>
-Date: Thu, 15 Apr 2010 17:36:07 +0800
-Subject: RE: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
-	virtio-net.
-Thread-Topic: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
-	virtio-net.
-Thread-Index: Acrb50fTv4A80S1TT4e2XlFnq5QcTQAkzG9w
-Message-ID: <97F6D3BD476C464182C1B7BABF0B0AF5C18969CC@shzsmsx502.ccr.corp.intel.com>
-References: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com>
- <20100414152519.GA10792@redhat.com>
-In-Reply-To: <20100414152519.GA10792@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 15 Apr 2010 05:40:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=I8TwFJyBlYqsBKyuD2Kz7t4enAaWsaJdO2pQvgOqk+kEWQsIN9oW+IYjLd8TlhEWYA
+         q2NmK01mYcPQSslYDhfXXsyj+V+wXCjxRM/SlZ1LTDJvuOe7BFoDuZJbs7EDmouDYWBG
+         4Wiw8LVffJPvBsCaSS6wdVLu7OVSthTnBDmFI=
 MIME-Version: 1.0
+In-Reply-To: <4BC6CB30.7030308@kernel.org>
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
+	 <d5d70d4b57376bc89f178834cf0e424eaa681ab4.1271171877.git.minchan.kim@gmail.com>
+	 <20100413154820.GC25756@csn.ul.ie> <4BC65237.5080408@kernel.org>
+	 <v2j28c262361004141831h8f2110d5pa7a1e3063438cbf8@mail.gmail.com>
+	 <4BC6BE78.1030503@kernel.org>
+	 <h2w28c262361004150100ne936d943u28f76c0f171d3db8@mail.gmail.com>
+	 <4BC6CB30.7030308@kernel.org>
+Date: Thu, 15 Apr 2010 18:40:09 +0900
+Message-ID: <l2u28c262361004150240q8a873b6axb73eaa32fd6e65e6@mail.gmail.com>
+Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Christoph Lameter <cl@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 15, 2010 at 5:15 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On 04/15/2010 05:00 PM, Minchan Kim wrote:
+>> Yes. I don't like it.
+>> With it, someone who does care about API usage uses alloc_pages_exact_node but
+>> someone who don't have a time or careless uses alloc_pages_node.
+>> It would make API fragmentation and not good.
+>> Maybe we can weed out -1 and make new API which is more clear.
+>>
+>> * struct page *alloc_pages_any_node(gfp_t gfp_mask, unsigned int order);
+>> * struct page *alloc_pages_exact_node(int nid, gfp_mask, unsigned int order);
+>
+> I'm not an expert on that part of the kernel but isn't
+> alloc_pages_any_node() identical to alloc_pages_exact_node()?  All
 
-Michael,
->> The idea is simple, just to pin the guest VM user space and then
->> let host NIC driver has the chance to directly DMA to it. 
->> The patches are based on vhost-net backend driver. We add a device
->> which provides proto_ops as sendmsg/recvmsg to vhost-net to
->> send/recv directly to/from the NIC driver. KVM guest who use the
->> vhost-net backend may bind any ethX interface in the host side to
->> get copyless data transfer thru guest virtio-net frontend.
->> 
->> The scenario is like this:
->> 
->> The guest virtio-net driver submits multiple requests thru vhost-net
->> backend driver to the kernel. And the requests are queued and then
->> completed after corresponding actions in h/w are done.
->> 
->> For read, user space buffers are dispensed to NIC driver for rx when
->> a page constructor API is invoked. Means NICs can allocate user buffers
->> from a page constructor. We add a hook in netif_receive_skb() function
->> to intercept the incoming packets, and notify the zero-copy device.
->> 
->> For write, the zero-copy deivce may allocates a new host skb and puts
->> payload on the skb_shinfo(skb)->frags, and copied the header to skb->data.
->> The request remains pending until the skb is transmitted by h/w.
->> 
->> Here, we have ever considered 2 ways to utilize the page constructor
->> API to dispense the user buffers.
->> 
->> One:	Modify __alloc_skb() function a bit, it can only allocate a 
->> 	structure of sk_buff, and the data pointer is pointing to a 
->> 	user buffer which is coming from a page constructor API.
->> 	Then the shinfo of the skb is also from guest.
->> 	When packet is received from hardware, the skb->data is filled
->> 	directly by h/w. What we have done is in this way.
->> 
->> 	Pros:	We can avoid any copy here.
->> 	Cons:	Guest virtio-net driver needs to allocate skb as almost
->> 		the same method with the host NIC drivers, say the size
->> 		of netdev_alloc_skb() and the same reserved space in the
->> 		head of skb. Many NIC drivers are the same with guest and
->> 		ok for this. But some lastest NIC drivers reserves special
->> 		room in skb head. To deal with it, we suggest to provide
->> 		a method in guest virtio-net driver to ask for parameter
->> 		we interest from the NIC driver when we know which device 
->> 		we have bind to do zero-copy. Then we ask guest to do so.
->> 		Is that reasonable?
+alloc_pages_any_node means user allows allocated pages in any
+node(most likely current node)
+alloc_pages_exact_node means user allows allocated pages in nid node
+if he doesn't use __GFP_THISNODE.
 
->Unfortunately, this would break compatibility with existing virtio.
->This also complicates migration. 
+> that's necessary to do now is to weed out callers which pass in
+> negative nid to alloc_pages_node(), right?  If so, why not just do a
 
-You mean any modification to the guest virtio-net driver will break the
-compatibility? We tried to enlarge the virtio_net_config to contains the
-2 parameter, and add one VIRTIO_NET_F_PASSTHRU flag, virtionet_probe()
-will check the feature flag, and get the parameters, then virtio-net driver use
-it to allocate buffers. How about this?
+It might be my final goal. I hope user uses alloc_pages_any_node
+instead of nid == -1.
 
->What is the room in skb head used for?
-I'm not sure, but the latest ixgbe driver does this, it reserves 32 bytes compared to
-NET_IP_ALIGN.
+> clean sweep of alloc_pages_node() users and update them so that they
+> don't call in w/ -1 nid and add WARN_ON_ONCE() in alloc_pages_node()?
+> Is there any reason to keep both variants going forward?  If not,
 
->> Two:	Modify driver to get user buffer allocated from a page constructor
->> 	API(to substitute alloc_page()), the user buffer are used as payload
->> 	buffers and filled by h/w directly when packet is received. Driver
->> 	should associate the pages with skb (skb_shinfo(skb)->frags). For 
->> 	the head buffer side, let host allocates skb, and h/w fills it. 
->> 	After that, the data filled in host skb header will be copied into
->> 	guest header buffer which is submitted together with the payload buffer.
->> 
->> 	Pros:	We could less care the way how guest or host allocates their
->> 		buffers.
->> 	Cons:	We still need a bit copy here for the skb header.
->> 
->> We are not sure which way is the better here.
+I am not sure someone still need alloc_pages_node. That's because
+sometime he want to allocate page from specific node but sometime not.
+I hope it doesn't happen. Anyway I have to identify the situation.
 
->The obvious question would be whether you see any speed difference
->with the two approaches. If no, then the second approach would be
->better.
+> introducing new API just to weed out invalid usages seems like an
+> overkill.
 
-I remember the second approach is a bit slower in 1500MTU. 
-But we did not tested too much.
+It might be.
 
->> This is the first thing we want
->> to get comments from the community. We wish the modification to the network
->> part will be generic which not used by vhost-net backend only, but a user
->> application may use it as well when the zero-copy device may provides async
->> read/write operations later.
->> 
->> Please give comments especially for the network part modifications.
->> 
->> 
->> We provide multiple submits and asynchronous notifiicaton to 
->>vhost-net too.
->> 
->> Our goal is to improve the bandwidth and reduce the CPU usage.
->> Exact performance data will be provided later. But for simple
->> test with netperf, we found bindwidth up and CPU % up too,
->> but the bindwidth up ratio is much more than CPU % up ratio.
->> 
->> What we have not done yet:
->> 	packet split support
+It think it's almost same add_to_page_cache and add_to_page_cache_locked.
+If user knows the page is already locked, he can use
+add_to_page_cache_locked for performance gain and code readability
+which we need to lock the page before calling it.
+The important point is that user uses it as he is conscious of locked page.
+I think if user already know to want page where from specific node, it
+would be better to use alloc_pages_exact_node instead of
+alloc_pages_node.
 
->What does this mean, exactly?
-We can support 1500MTU, but for jumbo frame, since vhost driver before don't 
-support mergeable buffer, we cannot try it for multiple sg. A jumbo frame will split 5
-frags and hook them once a descriptor, so the user buffer allocation is greatly dependent
-on how guest virtio-net drivers submits buffers. We think mergeable buffer is suitable for it. 
+If he want to allocate page from any node[current..fallback list], he
+have to use alloc_pages_any_node without nid argument. It would make a
+little performance gain(reduce passing argument) and good readbility.
+:)
 
->> 	To support GRO
-Actually, I think if the mergeable buffer may get good performance, then GRO is not 
-so important then.
->And TSO/GSO?
-Do we really need them?
+Now, most of user uses alloc_pages_exact_node. So I think we can do it.
+But someone else also might think of overkill. :)
+It's a not urgent issue. So I will take it easy.
 
->> 	Performance tuning
->> 
->> what we have done in v1:
->> 	polish the RCU usage
->> 	deal with write logging in asynchroush mode in vhost
->> 	add notifier block for mp device
->> 	rename page_ctor to mp_port in netdevice.h to make it looks generic
->> 	add mp_dev_change_flags() for mp device to change NIC state
->> 	add CONIFG_VHOST_MPASSTHRU to limit the usage when module is not load
->> 	a small fix for missing dev_put when fail
->> 	using dynamic minor instead of static minor number
->> 	a __KERNEL__ protect to mp_get_sock()
->> 
->> what we have done in v2:
->> 	
->> 	remove most of the RCU usage, since the ctor pointer is only
->> 	changed by BIND/UNBIND ioctl, and during that time, NIC will be
->> 	stopped to get good cleanup(all outstanding requests are finished),
->> 	so the ctor pointer cannot be raced into wrong situation.
->> 
->> 	Remove the struct vhost_notifier with struct kiocb.
->> 	Let vhost-net backend to alloc/free the kiocb and transfer them
->> 	via sendmsg/recvmsg.
->> 
->> 	use get_user_pages_fast() and set_page_dirty_lock() when read.
->> 
->> 	Add some comments for netdev_mp_port_prep() and handle_mpassthru().
->> 
->> 
->> Comments not addressed yet in this time:
->> 	the async write logging is not satified by vhost-net
->> 	Qemu needs a sync write
->> 	a limit for locked pages from get_user_pages_fast()
->> 	
->> 		
->> performance:
->> 	using netperf with GSO/TSO disabled, 10G NIC, 
->> 	disabled packet split mode, with raw socket case compared to vhost.
->> 
->> 	bindwidth will be from 1.1Gbps to 1.7Gbps
->> 	CPU % from 120%-140% to 140%-160%
+Thanks.
+
+-- 
+Kind regards,
+Minchan Kim
