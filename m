@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab0DOFXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 01:23:51 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:61824 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab0DOFXt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 01:23:49 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=XmbaapDEnT7ll34t9qE2nNB97rXvrvlII4ttnIhlv7m6gGyb6jS/p+/BWq2vqrtH+
-	ZY95jRaz/SUPfYgz58PfQ==
-MIME-Version: 1.0
-In-Reply-To: <20100415124222.8e0e7132.sfr@canb.auug.org.au>
-References: <20100415124222.8e0e7132.sfr@canb.auug.org.au>
-From: Divyesh Shah <dpshah@google.com>
-Date: Wed, 14 Apr 2010 22:23:25 -0700
-Message-ID: <r2kaf41c7c41004142223m1464fd07u5617fe7332cb2ea@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the block tree
+	id S1754673Ab0DOFaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 01:30:06 -0400
+Received: from mail.gmx.net ([213.165.64.20]:59429 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754204Ab0DOFaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 01:30:03 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+cFtZ3zLac2ro3ftTBi4PYLjisBkwGUk0UodOec3
+	eFjb31bEW1Z5hj
+Subject: Re: linux-next: build warning after merge of the final tree (tip
+ tree related)
+From: Mike Galbraith <efault@gmx.de>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jens Axboe <jens.axboe@oracle.com>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100415143609.834da268.sfr@canb.auug.org.au>
+References: <20100415143609.834da268.sfr@canb.auug.org.au>
+Content-Type: text/plain
+Date: Thu, 15 Apr 2010 07:29:59 +0200
+Message-Id: <1271309399.14779.17.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.46000000000000002
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 7:42 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Jens,
->
-> After merging the block tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->
-> ERROR: "get_gendisk" [block/blk-cgroup.ko] undefined!
-> ERROR: "sched_clock" [block/blk-cgroup.ko] undefined!
+On Thu, 2010-04-15 at 14:36 +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allnoconfig) produced this warning:
+> 
+> kernel/sched.c:1875: warning: 'update_avg' defined but not used
+> 
+> Introduced by commit e12f31d3e5d36328c7fbd0fce40a95e70b59152c ("sched:
+> Remove avg_overlap") which left the only call to this function protected
+> by CONFIG_SMP.
 
-Hi Stephen,
-     These errors seem to show up because the 2 symbols aren't
-exported and hence when building as a module we don't have access to
-these symbols. I'll send a patch to fix that shortly. Sorry for the
-build breakage.
+Oops.
 
--Divyesh
+sched: fix UP update_avg() build warning.
 
->
-> Probably caused by commits 34d0f179d6dd711d3fc13c0820a456c59aae8048
-> ("io-controller: Add a new interface "weight_device" for IO-Controller"),
-> 9195291e5f05e01d67f9a09c756b8aca8f009089 ("blkio: Increment the blkio
-> cgroup stats for real now") and 812df48d127365ffd0869aa139738f572a86759c
-> ("blkio: Add more debug-only per-cgroup stats").
->
-> I have used the version of the block tree from next-20100414 for today.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
->
+update_avg() is only used for SMP builds, move it to the nearest SMP block.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3acf694..95eaecc 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1872,12 +1872,6 @@ static void set_load_weight(struct task_struct *p)
+ 	p->se.load.inv_weight = prio_to_wmult[p->static_prio - MAX_RT_PRIO];
+ }
+ 
+-static void update_avg(u64 *avg, u64 sample)
+-{
+-	s64 diff = sample - *avg;
+-	*avg += diff >> 3;
+-}
+-
+ static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
+ {
+ 	update_rq_clock(rq);
+@@ -2289,6 +2283,12 @@ int select_task_rq(struct rq *rq, struct task_struct *p, int sd_flags, int wake_
+ 
+ 	return cpu;
+ }
++
++static void update_avg(u64 *avg, u64 sample)
++{
++	s64 diff = sample - *avg;
++	*avg += diff >> 3;
++}
+ #endif
+ 
+ /***
+
+
