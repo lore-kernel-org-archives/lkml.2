@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab0DORLN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 13:11:13 -0400
-Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:52257 "EHLO
-	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751949Ab0DORLM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 13:11:12 -0400
-Date: Thu, 15 Apr 2010 13:11:11 -0400
-To: Matteo Croce <technoboy85@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: AMD Geode i686
-Message-ID: <20100415171111.GA32023@caffeine.csclub.uwaterloo.ca>
-References: <40101cc31003011403x4423cb3em1f6fcb04d64dd2bb@mail.gmail.com>
+	id S1754894Ab0DORNT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 13:13:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36016 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754519Ab0DORNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 13:13:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [Bug #15704] [r8169] WARNING: at net/sched/sch_generic.c
+Date: Thu, 15 Apr 2010 19:16:08 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <6Pphclm24fK.A.lSF.qsPvLB@chimera> <JVS2s9dmTsP.A.YhG.FtPvLB@chimera> <20100414101220.GA3681@swordfish.minsk.epam.com>
+In-Reply-To: <20100414101220.GA3681@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <40101cc31003011403x4423cb3em1f6fcb04d64dd2bb@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-From: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004151916.08821.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 01, 2010 at 11:03:09PM +0100, Matteo Croce wrote:
-> Hi,
-> I have refreshed my AMD Geode i686 patch with NOPL and I have added a
-> new nice feature.
-> When a NOPL is found the parser looks for any NOPL after the current
-> one, so they are emulated in bulk.
-> Tested ok on a Pcengines Alix.
+On Wednesday 14 April 2010, Sergey Senozhatsky wrote:
+> Hello,
+> Sorry for the delay, I've been away.
 > 
-> Signed-off-by: Matteo Croce <technoboy85@gmail.com>
+> On (04/07/10 23:13), Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15704
+> > Subject		: [r8169] WARNING: at net/sched/sch_generic.c
+> > Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > Date		: 2010-03-31 10:21 (8 days old)
+> > Message-ID	: <20100331102142.GA3294@swordfish.minsk.epam.com>
+> > References	: http://marc.info/?l=linux-kernel&m=127003090406108&w=2
+> > 
+> > 
 > 
-> --- a/arch/x86/kernel/Makefile	2010-03-01 01:18:51.697166322 +0100
-> +++ b/arch/x86/kernel/Makefile	2010-03-01 01:19:45.727095700 +0100
-> @@ -89,6 +89,8 @@
->  obj-$(CONFIG_HPET_TIMER) 	+= hpet.o
 > 
->  obj-$(CONFIG_K8_NB)		+= k8.o
-> +obj-$(CONFIG_MGEODEGX1)		+= nopl_emu.o
-> +obj-$(CONFIG_MGEODE_LX)		+= nopl_emu.o
->  obj-$(CONFIG_DEBUG_RODATA_TEST)	+= test_rodata.o
->  obj-$(CONFIG_DEBUG_NX_TEST)	+= test_nx.o
+> Yes, bug is still here (though I'm not sure whether it's correct to test with frame size 2048).
 > 
-> --- a/arch/x86/kernel/cpu/amd.c	2010-03-01 01:18:51.737097341 +0100
-> +++ b/arch/x86/kernel/cpu/amd.c	2010-03-01 01:19:27.867865836 +0100
-> @@ -138,8 +138,10 @@
->  	}
+> Here it is:
 > 
->  	if (c->x86_model == 10) {
-> -		/Index: linux-2.6.33/arch/x86/kernel/Makefile
-> ===================================================================
-> * AMD Geode LX is model 10 */
-> -		/* placeholder for any needed mods */
-> +		/* Geode only lacks the NOPL instruction to be i686,
-> +		   but we can emulate it in the exception handler
-> +		   and promote it to a class 6 cpu */
-> +		boot_cpu_data.x86 = 6;
->  		return;
->  	}
->  }
-> --- a/arch/x86/kernel/entry_32.S	2010-03-01 01:18:51.717096708 +0100
-> +++ b/arch/x86/kernel/entry_32.S	2010-03-01 01:19:27.867865836 +0100
-> @@ -960,7 +960,11 @@
->  	RING0_INT_FRAME
->  	pushl $0
->  	CFI_ADJUST_CFA_OFFSET 4
-> +#ifdef CONFIG_MGEODE_LX
-> +	pushl $do_nopl_emu
-> +#else
->  	pushl $do_invalid_op
-> +#endif
+> kernel: [ 2292.172886] pktgen 2.72: Packet Generator for packet performance testing.
+> kernel: [ 2339.999788] ------------[ cut here ]------------
+> kernel: [ 2339.999800] WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0xc1/0x125()
+> kernel: [ 2339.999803] Hardware name: F3JC                
+> kernel: [ 2339.999806] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
+> kernel: [ 2339.999809] Modules linked in: pktgen ipv6 snd_hwdep snd_hda_codec_si3054 snd_hda_codec_realtek sdhci_pci sdhci asus_laptop sparse_keymap snd_hda_intel mmc_core
+> led_class snd_hda_codec psmouse snd_pcm snd_timer snd soundcore snd_page_alloc i2c_i801 serio_raw sg evdev rng_core r8169 mii usbhid hid uhci_hcd ehci_hcd sr_mod cdrom sd_mod
+> usbcore ata_piix
+> kernel: [ 2339.999857] Pid: 3720, comm: kpktgend_0 Not tainted 2.6.34-rc3-dbg-r8169-git6 #81
+> kernel: [ 2339.999861] Call Trace:
+> kernel: [ 2339.999868]  [<c102e7f7>] warn_slowpath_common+0x65/0x7c
+> kernel: [ 2339.999874]  [<c126e4f8>] ? dev_watchdog+0xc1/0x125
+> kernel: [ 2339.999879]  [<c102e842>] warn_slowpath_fmt+0x24/0x27
+> kernel: [ 2339.999884]  [<c126e4f8>] dev_watchdog+0xc1/0x125
+> kernel: [ 2339.999891]  [<c1040039>] ? abort_exclusive_wait+0x26/0x63
+> kernel: [ 2339.999897]  [<c103712b>] ? run_timer_softirq+0x120/0x1eb
+> kernel: [ 2339.999902]  [<c1037181>] run_timer_softirq+0x176/0x1eb
+> kernel: [ 2339.999907]  [<c103712b>] ? run_timer_softirq+0x120/0x1eb
+> kernel: [ 2339.999913]  [<c126e437>] ? dev_watchdog+0x0/0x125
+> kernel: [ 2339.999919]  [<c10332a1>] __do_softirq+0x8d/0x117
+> kernel: [ 2339.999925]  [<c1033356>] do_softirq+0x2b/0x43
+> kernel: [ 2339.999929]  [<c103347b>] irq_exit+0x38/0x75
+> kernel: [ 2339.999936]  [<c1015200>] smp_apic_timer_interrupt+0x6d/0x7b
+> kernel: [ 2339.999943]  [<c12cbcda>] apic_timer_interrupt+0x36/0x3c
+> kernel: [ 2339.999948]  [<c104007b>] ? finish_wait+0x5/0x49
+> kernel: [ 2339.999953]  [<c10400d8>] ? prepare_to_wait_exclusive+0x19/0x5b
+> kernel: [ 2339.999959]  [<c105106d>] ? lock_release+0x19a/0x1a1
+> kernel: [ 2339.999965]  [<c12cb259>] _raw_spin_unlock+0x16/0x3f
+> kernel: [ 2339.999972]  [<f80ea460>] pktgen_thread_worker+0xe0/0x631 [pktgen]
+> kernel: [ 2339.999978]  [<c103ffad>] ? autoremove_wake_function+0x0/0x2f
+> kernel: [ 2339.999983]  [<c103ffad>] ? autoremove_wake_function+0x0/0x2f
+> kernel: [ 2339.999989]  [<f80ea380>] ? pktgen_thread_worker+0x0/0x631 [pktgen]
+> kernel: [ 2339.999994]  [<c103fc8a>] kthread+0x6a/0x6f
+> kernel: [ 2339.999999]  [<c103fc20>] ? kthread+0x0/0x6f
+> kernel: [ 2340.000005]  [<c1002e82>] kernel_thread_helper+0x6/0x1a
+> kernel: [ 2340.000008] ---[ end trace 25113681b662d02f ]---
 
-How does this work for MGEODEGX1 when it looks for MGEODE_LX?  It seems
-you made both link against the code above after all.  Is this wrong or
-the above?
+Thanks for the update.
 
-Can it not work if you want to run a generic kernel on your Geode rather
-than one built explicitly for the LX?  I build one kernel to run on
-Geode SC1200 and Geode LX.
-
--- 
-Len Sorensen
+Rafael
