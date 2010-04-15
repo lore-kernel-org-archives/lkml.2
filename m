@@ -1,147 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756415Ab0DOTyL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 15:54:11 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:40285 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755998Ab0DOTyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 15:54:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pfbLmmyME3sYFwDMZGfuYnCNef/PzrhV4d05a/iCEvBYmHw7JhRJr4VCuqgsZqP/sU
-         sPgaSmoicjoB7NCUnOIpeJumC9CresjmbNmVztBwP4XZ37kNkOcjgCMtKHPhQUtZgZJs
-         F2Uer5JOuc0Q4hdiFQKtgSI2k9/JCO+FpD6Cs=
-Date: Thu, 15 Apr 2010 21:50:45 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 3/4] tracing: graph output support for irqsoff tracer
-Message-ID: <20100415195042.GD5069@nowhere>
-References: <1270227683-14631-1-git-send-email-jolsa@redhat.com> <1270227683-14631-4-git-send-email-jolsa@redhat.com> <20100412233332.GH8285@nowhere> <20100414075052.GA2021@jolsa.lab.eng.brq.redhat.com>
+	id S1756481Ab0DOTzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 15:55:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54943 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756326Ab0DOTzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 15:55:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,214,1270450800"; 
+   d="scan'208";a="509503000"
+From: "Sean Hefty" <sean.hefty@intel.com>
+To: "'Tetsuo Handa'" <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: <amwang@redhat.com>, <opurdila@ixiacom.com>, <eric.dumazet@gmail.com>,
+       <netdev@vger.kernel.org>, <nhorman@tuxdriver.com>,
+       <davem@davemloft.net>, <ebiederm@xmission.com>,
+       <linux-kernel@vger.kernel.org>, <rolandd@cisco.com>,
+       <linux-rdma@vger.kernel.org>
+References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain>	<20100412100816.5302.74919.sendpatchset@localhost.localdomain>	<201004130121.o3D1Lhh7099571@www262.sakura.ne.jp>	<4BC41994.7030707@redhat.com>	<4BC42FE0.4040601@redhat.com> <201004132207.GAJ52684.OJFtMQVFHOSFLO@I-love.SAKURA.ne.jp> <21DAC78125424ED291B5D6477CFF9657@amr.corp.intel.com> <201004140201.o3E21Aqn075978@www262.sakura.ne.jp> <195EB1AD388F455AA386EB214FCD09F4@amr.corp.intel.com> <201004150229.o3F2T4dZ054768@www262.sakura.ne.jp>
+Subject: [PATCH] rdma/cm: Randomize local port allocation.
+Date: Thu, 15 Apr 2010 12:55:29 -0700
+Message-ID: <5CE6BC7B954643FAAFFD2AD66F673CBD@amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100414075052.GA2021@jolsa.lab.eng.brq.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcrcQ38KvNo+aevSRBm7uT3ZGNfyHwAkNqww
+In-Reply-To: <201004150229.o3F2T4dZ054768@www262.sakura.ne.jp>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 09:50:52AM +0200, Jiri Olsa wrote:
-> On Tue, Apr 13, 2010 at 01:33:37AM +0200, Frederic Weisbecker wrote:
-> > On Fri, Apr 02, 2010 at 07:01:22PM +0200, Jiri Olsa wrote:
-> > > +#define GRAPH_TRACER_FLAGS (TRACE_GRAPH_PRINT_CPU | \
-> > > +			    TRACE_GRAPH_PRINT_PROC)
-> > > +
-> > > +static enum print_line_t irqsoff_print_line(struct trace_iterator *iter)
-> > > +{
-> > > +	u32 flags = GRAPH_TRACER_FLAGS;
-> > > +
-> > > +	if (trace_flags & TRACE_ITER_LATENCY_FMT)
-> > > +		flags |= TRACE_GRAPH_PRINT_DURATION;
-> > > +	else
-> > > +		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
-> > 
-> > 
-> > 
-> > Why not having ABS_TIME in any case?
-> > 
-> > And more important, you probably want to add TRACE_ITER_LATENCY_FMT
-> > as well to get the contexts (need-resched, hardirq/softirq, preempt-depth,
-> > lock-depth)
-> 
-> hi,
-> 
-> latency info
-> 	The latency info is governed by global 'trace_flags', the graph tracers
-> 	follows that as well.
-> 
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
+>Randomize local port allocation in a way sctp_get_port_local() does.
+>Update rover at the end of loop since we're likely to pick a valid port
+>on the first try.
+>
+>Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Reviewed-by: Sean Hefty <sean.hefty@intel.com>
 
-Doh, right.
+>---
 
+I like this version, thanks!  I'm not sure which tree to merge it through.
+Are you needing this for 2.6.34, or is 2.6.35 okay?
 
- 
-> absolute time
-> 	The idea was to follow the current irqsoff function trace format. Though
-> 	it cannot be exatly the same, it can print the same info.
-> 
-> 	By default I added TRACE_GRAPH_PRINT_CPU and TRACE_GRAPH_PRINT_PROC,
-> 	since they are always there for current irqsoff trace.
-> 
-> 	Then the absolute time is printed only in the case when the
-> 	latency info is switched off.
-> 
-> 	AFAICS the 'time' field in the output (for latency enabled) actually
-> 	represents the duration	(computed/printed in trace_print_lat_context function).
-> 	Hence I added TRACE_GRAPH_PRINT_DURATION to graph output for the latency case.
-> 
-> 	So the answer to your question is, the absolute time is not part
-> 	of the output, since it's not part of the original trace output.
-> 	My opinion is the absolute time is not be that important
-> 	for this tracer, the duration is.
-
-
-
-I agree, I've actually made a confusion between both :)
-
-
-
-> 
-> 
-> 	latency output OFF:
-> 
-> 		current tracer:
-> 		TASK-PID    CPU#    TIMESTAMP FUNCTION
-> 
-> 
-> 		graph tracer:
-> 		TIME        CPU  TASK/PID                      FUNCTION CALLS
-> 
-> 
-> 	latency output ON:
-> 
-> 		current tracer:
-> 				_------=> CPU#
-> 			       / _-----=> irqs-off
-> 			      | / _----=> need-resched
-> 			      || / _---=> hardirq/softirq
-> 			      ||| / _--=> preempt-depth
-> 			      |||| /_--=> lock-depth
-> 			      |||||/       delay
-> 		cmd     pid   |||||| time    |   caller
-> 		   \\   /      ||||||   \\   |   /
-> 
-> 
-> 
-> 		graph tracer:
-> 				      _-----=> irqs-off        
-> 				     / _----=> need-resched    
-> 				    | / _---=> hardirq/softirq 
-> 				    || / _--=> preempt-depth   
-> 				    ||| / _-=> lock-depth      
-> 				    |||| /                     
-> 		CPU  TASK/PID       |||||  DURATION                  FUNCTION CALLS
-> 
-> 
-> 	Also the non-latency case covers the 'verbose' option output.
-> 
-> 
-> 
-> 
-> thanks for your comments,
-> hopefully I haven't missed anything.. ;)
-
-
-
-And thanks for your work!
-
-For me it's ok.
-
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-
-Steve?
+> drivers/infiniband/core/cma.c |   70 +++++++++++++++--------------------------
+>-
+> 1 file changed, 25 insertions(+), 45 deletions(-)
+>
+>--- linux-2.6.34-rc4.orig/drivers/infiniband/core/cma.c
+>+++ linux-2.6.34-rc4/drivers/infiniband/core/cma.c
+>@@ -79,7 +79,6 @@ static DEFINE_IDR(sdp_ps);
+> static DEFINE_IDR(tcp_ps);
+> static DEFINE_IDR(udp_ps);
+> static DEFINE_IDR(ipoib_ps);
+>-static int next_port;
+>
+> struct cma_device {
+> 	struct list_head	list;
+>@@ -1970,47 +1969,33 @@ err1:
+>
+> static int cma_alloc_any_port(struct idr *ps, struct rdma_id_private *id_priv)
+> {
+>-	struct rdma_bind_list *bind_list;
+>-	int port, ret, low, high;
+>-
+>-	bind_list = kzalloc(sizeof *bind_list, GFP_KERNEL);
+>-	if (!bind_list)
+>-		return -ENOMEM;
+>-
+>-retry:
+>-	/* FIXME: add proper port randomization per like inet_csk_get_port */
+>-	do {
+>-		ret = idr_get_new_above(ps, bind_list, next_port, &port);
+>-	} while ((ret == -EAGAIN) && idr_pre_get(ps, GFP_KERNEL));
+>-
+>-	if (ret)
+>-		goto err1;
+>+	static unsigned int last_used_port;
+>+	int low, high, remaining;
+>+	unsigned int rover;
+>
+> 	inet_get_local_port_range(&low, &high);
+>-	if (port > high) {
+>-		if (next_port != low) {
+>-			idr_remove(ps, port);
+>-			next_port = low;
+>-			goto retry;
+>-		}
+>-		ret = -EADDRNOTAVAIL;
+>-		goto err2;
+>+	remaining = (high - low) + 1;
+>+	rover = net_random() % remaining + low;
+>+retry:
+>+	if (last_used_port != rover &&
+>+	    !idr_find(ps, (unsigned short) rover)) {
+>+		int ret = cma_alloc_port(ps, id_priv, rover);
+>+		/*
+>+		 * Remember previously used port number in order to avoid
+>+		 * re-using same port immediately after it is closed.
+>+		 */
+>+		if (!ret)
+>+			last_used_port = rover;
+>+		if (ret != -EADDRNOTAVAIL)
+>+			return ret;
+> 	}
+>-
+>-	if (port == high)
+>-		next_port = low;
+>-	else
+>-		next_port = port + 1;
+>-
+>-	bind_list->ps = ps;
+>-	bind_list->port = (unsigned short) port;
+>-	cma_bind_port(bind_list, id_priv);
+>-	return 0;
+>-err2:
+>-	idr_remove(ps, port);
+>-err1:
+>-	kfree(bind_list);
+>-	return ret;
+>+	if (--remaining) {
+>+		rover++;
+>+		if ((rover < low) || (rover > high))
+>+			rover = low;
+>+		goto retry;
+>+	}
+>+	return -EADDRNOTAVAIL;
+> }
+>
+> static int cma_use_port(struct idr *ps, struct rdma_id_private *id_priv)
+>@@ -2995,12 +2980,7 @@ static void cma_remove_one(struct ib_dev
+>
+> static int __init cma_init(void)
+> {
+>-	int ret, low, high, remaining;
+>-
+>-	get_random_bytes(&next_port, sizeof next_port);
+>-	inet_get_local_port_range(&low, &high);
+>-	remaining = (high - low) + 1;
+>-	next_port = ((unsigned int) next_port % remaining) + low;
+>+	int ret;
+>
+> 	cma_wq = create_singlethread_workqueue("rdma_cm");
+> 	if (!cma_wq)
 
