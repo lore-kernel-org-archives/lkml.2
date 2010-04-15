@@ -1,117 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab0DOIid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 04:38:33 -0400
-Received: from mail.mellanox.co.il ([194.90.237.43]:57882 "EHLO mellanox.co.il"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756053Ab0DOIia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 04:38:30 -0400
-Message-ID: <4BC6D075.1070405@mellanox.co.il>
-Date: Thu, 15 Apr 2010 11:38:13 +0300
-From: Amir Vadai <amirv@mellanox.co.il>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre)
-	Gecko/20100217 Lightning/1.0b1 Shredder/3.0.3pre
+	id S1757505Ab0DOIrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 04:47:55 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59586 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756053Ab0DOIrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 04:47:53 -0400
+Date: Thu, 15 Apr 2010 10:47:57 +0200
+From: Jan Kara <jack@suse.cz>
+To: Anton Blanchard <anton@samba.org>
+Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix regression in O_DIRECT|O_SYNC writes to block
+ devices
+Message-ID: <20100415084757.GA3561@quack.suse.cz>
+References: <20100415044039.GJ11751@kryten>
 MIME-Version: 1.0
-To: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>
-CC: "Tung, Chien Tin" <chien.tin.tung@intel.com>,
-       Steve Wise <swise@opengridcomputing.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-       "rolandd@cisco.com" <rolandd@cisco.com>,
-       "peterz@infradead.org" <peterz@infradead.org>,
-       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
-       Eric B Munson <ebmunson@us.ibm.com>
-Subject: Re: Socket Direct Protocol: help (2)
-References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-	<1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-	<2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com>
-	<4BC49E2B.3000804@opengridcomputing.com>
-	<2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com>
-	<4BC4D22A.6020700@opengridcomputing.com>
-	<2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>
-	<7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-	<4BC5D1D3.3020004@mellanox.co.il> <4BC5D529.1060701@mellanox.co.il>
-	<2EFBCAEF10980645BBCFB605689E08E9047C79B918@azsmsx506.amr.corp.intel.com>
-	<4BC5D9D4.7020702@opengridcomputing.com>
-	<2EFBCAEF10980645BBCFB605689E08E9047C79BD12@azsmsx506.amr.corp.intel.com>
-	<4BC6B135.2060004@mellanox.co.il>
-	<1205877.1271315264088.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-In-Reply-To: <1205877.1271315264088.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Apr 2010 08:38:27.0076 (UTC)
-	FILETIME=[04A71C40:01CADC77]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17320.004
-X-TM-AS-Result: No--17.594200-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100415044039.GJ11751@kryten>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It should be a simple fix and I plan to do soon - just add yourself as
-CC in bugzilla  - that way I won't forget to notify you.
+On Thu 15-04-10 14:40:39, Anton Blanchard wrote:
+> 
+> We are seeing a large regression in database performance on recent kernels.
+> The database opens a block device with O_DIRECT|O_SYNC and a number of threads
+> write to different regions of the file at the same time.
+> 
+> A simple test case is below. I haven't defined DEVICE to anything since getting
+> it wrong will destroy your data :) On an 3 disk LVM with a 64k chunk size we
+> see about 17MB/sec and only a few threads in IO wait:
+> 
+> procs  -----io---- -system-- -----cpu------
+>  r  b     bi    bo   in   cs us sy id wa st
+>  0  3      0 16170  656 2259  0  0 86 14  0
+>  0  2      0 16704  695 2408  0  0 92  8  0
+>  0  2      0 17308  744 2653  0  0 86 14  0
+>  0  2      0 17933  759 2777  0  0 89 10  0
+> 
+> Most threads are blocking in vfs_fsync_range, which has:
+> 
+>         mutex_lock(&mapping->host->i_mutex);
+>         err = fop->fsync(file, dentry, datasync);
+>         if (!ret)
+>                 ret = err;
+>         mutex_unlock(&mapping->host->i_mutex);
+  ...
+  Just a few style nitpicks:
 
-- amir
+> Index: linux-2.6/fs/block_dev.c
+> ===================================================================
+> --- linux-2.6.orig/fs/block_dev.c	2010-04-14 12:55:50.000000000 +1000
+> +++ linux-2.6/fs/block_dev.c	2010-04-14 13:17:45.000000000 +1000
+> @@ -406,16 +406,24 @@ static loff_t block_llseek(struct file *
+>   
+>  int blkdev_fsync(struct file *filp, struct dentry *dentry, int datasync)
+>  {
+> -	struct block_device *bdev = I_BDEV(filp->f_mapping->host);
+> +	struct inode *bd_inode = filp->f_mapping->host;
+> +	struct block_device *bdev = I_BDEV(bd_inode);
+>  	int error;
+>  
+  Could you please add a comment here? Like "There is no need to
+protect syncing of the block device by i_mutex and it unnecessarily
+serializes workloads with several O_SYNC writers to the block device"
 
-On 04/15/2010 10:07 AM, Andrea Gozzelino wrote:
-> On Apr 15, 2010 08:24 AM, Amir Vadai <amirv@mellanox.co.il> wrote:
->
->   
->> I hope to have a fix next week for the first one.
->>
->> Thanks,
->> Amir
->>
->> On 04/14/2010 09:48 PM, Tung, Chien Tin wrote:
->>     
->>>> Tung, Chien Tin wrote:
->>>>     
->>>>         
->>>>>> One more thing - Please open a bug regarding the num_sge
->>>>>> limitation at:
->>>>>> https://bugs.openfabrics.org/
->>>>>>
->>>>>>         
->>>>>>             
->>>>> Done, Bug 2027.
->>>>>
->>>>> Chien
->>>>>
->>>>>       
->>>>>           
->>>> And 2028 opened to request fastreg support.
->>>>
->>>>     
->>>>         
->>> I am open to test fixes for these two bugs.
->>>
->>> Chien
->>>
->>>   
->>>       
->>     
-> Hi Amir, 
-> Hi Chien,
->
-> I understand that the bug 2027 could be solved next week, so I will test
-> SDP protocol performance on NE020 cards.
-> Is it correct? 
-> If yes, could you point out the code modifies?
->
-> Keep in touch and take care.
-> Regards,
-> Andrea
->
->
-> Andrea Gozzelino
->
-> INFN - Laboratori Nazionali di Legnaro	(LNL)
-> Viale dell'Universita' 2
-> I-35020 - Legnaro (PD)- ITALIA
-> Tel: +39 049 8068346
-> Fax: +39 049 641925
-> Mail: andrea.gozzelino@lnl.infn.it			
->
->
->   
+> +	mutex_unlock(&bd_inode->i_mutex);
+> +
+>  	error = sync_blockdev(bdev);
+> -	if (error)
+> +	if (error) {
+> +		mutex_lock(&bd_inode->i_mutex);
+>  		return error;
+  Usually, "goto out" is preferred instead of the above.
+
+> +	}
+>  	
+>  	error = blkdev_issue_flush(bdev, NULL);
+>  	if (error == -EOPNOTSUPP)
+>  		error = 0;
+> +
+And define out: here.
+
+> +	mutex_lock(&bd_inode->i_mutex);
+> +
+>  	return error;
+>  }
+>  EXPORT_SYMBOL(blkdev_fsync);
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
