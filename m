@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab0DOPpR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 11:45:17 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:51110 "EHLO gir.skynet.ie"
+	id S1754744Ab0DOPrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 11:47:21 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:34449 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754720Ab0DOPpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 11:45:04 -0400
-Date: Thu, 15 Apr 2010 16:44:42 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/4] vmscan: simplify shrink_inactive_list()
-Message-ID: <20100415154442.GG10966@csn.ul.ie>
-References: <20100415085420.GT2493@dastard> <20100415185310.D1A1.A69D9226@jp.fujitsu.com> <20100415192140.D1A4.A69D9226@jp.fujitsu.com> <20100415131532.GD10966@csn.ul.ie> <87tyrc92un.fsf@basil.nowhere.org>
+	id S1752990Ab0DOPrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 11:47:19 -0400
+Date: Thu, 15 Apr 2010 08:47:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Eric Paris <eparis@parisplace.org>, Miles Lane <miles.lane@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: INFO: suspicious rcu_dereference_check() usage -
+ include/linux/cgroup.h:492 invoked rcu_dereference_check() without
+ protection!
+Message-ID: <20100415154715.GI2471@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <a44ae5cd1003071726u1f94336h7ab6c7b80d16723b@mail.gmail.com>
+ <20100311032843.GE6767@linux.vnet.ibm.com>
+ <q2x7e0fb38c1004121144rb097e521hd2a7d8cea77c54b7@mail.gmail.com>
+ <1271098032.4807.137.camel@twins>
+ <1271242058.32749.19.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87tyrc92un.fsf@basil.nowhere.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1271242058.32749.19.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 05:01:36PM +0200, Andi Kleen wrote:
-> Mel Gorman <mel@csn.ul.ie> writes:
-> >
-> > $ stack-o-meter vmlinux-vanilla vmlinux-2-simplfy-shrink 
-> > add/remove: 0/0 grow/shrink: 0/2 up/down: 0/-144 (-144)
-> > function                                     old     new   delta
-> > shrink_zone                                 1232    1160     -72
-> > kswapd                                       748     676     -72
+On Wed, Apr 14, 2010 at 12:47:38PM +0200, Peter Zijlstra wrote:
+> On Mon, 2010-04-12 at 20:47 +0200, Peter Zijlstra wrote:
+> > On Mon, 2010-04-12 at 14:44 -0400, Eric Paris wrote:
+> > > On Wed, Mar 10, 2010 at 11:28 PM, Paul E. McKenney
+> > > <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > > I know you indicated this was fixed in mainline and I see that set of
+> > > commits objects, but I'm seeing the below spew from linux-next today.
+> > > 
+> > > tree: git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> > > tag: next-20100412
+> > > commit: bbeecf185fe464ccd7ee97ce6d3646ad686995b4
+> > > 
+> > > [    0.035602] ===================================================
+> > > [    0.036003] [ INFO: suspicious rcu_dereference_check() usage. ]
+> > > [    0.037006] ---------------------------------------------------
+> > > [    0.038004] include/linux/cgroup.h:533 invoked
+> > > rcu_dereference_check() without protection!
+> > > [    0.039003]
+> > > [    0.039004] other info that might help us debug this:
+> > > [    0.039004]
+> > > [    0.040003]
+> > > [    0.040004] rcu_scheduler_active = 1, debug_locks = 0
+> > > [    0.041004] no locks held by swapper/0.
+> > > [    0.042003]
+> > > [    0.042004] stack backtrace:
+> > > [    0.043005] Pid: 0, comm: swapper Not tainted 2.6.34-rc3-next-20100412+ #65
+> > > [    0.044003] Call Trace:
+> > > [    0.045015]  [<ffffffff8108584f>] lockdep_rcu_dereference+0xaf/0xc0
+> > > [    0.046010]  [<ffffffff81044812>] set_task_cpu+0x2d2/0x370
+> > 
+> > Oh, right, I still have to sort that out.
+> > 
+> > I need to figure out how all that scheduler and cgroup muck interact to
+> > fix this.
 > 
-> And the next time someone adds a new feature to these code paths or
-> the compiler inlines differently these 72 bytes are easily there
-> again. It's not really a long term solution. Code is tending to get
-> more complicated all the time. I consider it unlikely this trend will
-> stop any time soon.
+> I think the below should cure this..
+
+Looks reasonable to me!
+
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  kernel/sched.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
 > 
-
-The same logic applies when/if page writeback is split so that it is
-handled by a separate thread.
-
-> So just doing some stack micro optimizations doesn't really help 
-> all that much.
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 3acf694..2e06d87 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -323,6 +323,15 @@ static inline struct task_group *task_group(struct task_struct *p)
+>  /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
+>  static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
+>  {
+> +	/*
+> +	 * Strictly speaking this rcu_read_lock() is not needed since the
+> +	 * task_group is tied to the cgroup, which in turn can never go away
+> +	 * as long as there are tasks attached to it.
+> +	 *
+> +	 * However since task_group() uses task_subsys_state() which is an
+> +	 * rcu_dereference() user, this quiets CONFIG_PROVE_RCU.
+> +	 */
+> +	rcu_read_lock();
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>  	p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
+>  	p->se.parent = task_group(p)->se[cpu];
+> @@ -332,6 +341,7 @@ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
+>  	p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
+>  	p->rt.parent = task_group(p)->rt_se[cpu];
+>  #endif
+> +	rcu_read_unlock();
+>  }
 > 
-
-It's a buying-time venture, I'll agree but as both approaches are only
-about reducing stack stack they wouldn't be long-term solutions by your
-criteria. What do you suggest?
-
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+>  #else
+> 
+> 
