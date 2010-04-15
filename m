@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab0DOEzf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 00:55:35 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46998 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab0DOEze (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 00:55:34 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: 32GB SSD on USB1.1 P3/700 == ___HELL___ (2.6.34-rc3)
-Cc: kosaki.motohiro@jp.fujitsu.com, Andreas Mohr <andi@lisas.de>,
-       Jens Axboe <axboe@kernel.dk>, Minchan Kim <minchan.kim@gmail.com>,
-       Linux Memory Management List <linux-mm@kvack.org>,
+	id S1754610Ab0DOFGf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 01:06:35 -0400
+Received: from ozlabs.org ([203.10.76.45]:55482 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754085Ab0DOFGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 01:06:34 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Rik van Riel <riel@redhat.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-In-Reply-To: <20100415044111.GA15682@localhost>
-References: <20100415132312.D180.A69D9226@jp.fujitsu.com> <20100415044111.GA15682@localhost>
-Message-Id: <20100415135031.D186.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 15 Apr 2010 13:55:30 +0900 (JST)
+       Ingo Molnar <mingo@elte.hu>, Gautham R Shenoy <ego@in.ibm.com>
+Subject: Re: [PATCH 5/5] sched: make fix_small_imbalance work with asymmetric packing
+In-reply-to: <1271208670.2834.55.camel@sbs-t61.sc.intel.com>
+References: <20100409062119.10AC5CBB6D@localhost.localdomain> <1271161769.4807.1283.camel@twins> <1271208670.2834.55.camel@sbs-t61.sc.intel.com>
+Comments: In-reply-to Suresh Siddha <suresh.b.siddha@intel.com>
+   message dated "Tue, 13 Apr 2010 18:31:10 -0700."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
+Date: Thu, 15 Apr 2010 15:06:31 +1000
+Message-ID: <10091.1271307991@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Apr 15, 2010 at 12:32:50PM +0800, KOSAKI Motohiro wrote:
-> > > On Thu, Apr 15, 2010 at 11:31:52AM +0800, KOSAKI Motohiro wrote:
-> > > > > > Many applications (this one and below) are stuck in
-> > > > > > wait_on_page_writeback(). I guess this is why "heavy write to
-> > > > > > irrelevant partition stalls the whole system".  They are stuck on page
-> > > > > > allocation. Your 512MB system memory is a bit tight, so reclaim
-> > > > > > pressure is a bit high, which triggers the wait-on-writeback logic.
-> > > > > 
-> > > > > I wonder if this hacking patch may help.
-> > > > > 
-> > > > > When creating 300MB dirty file with dd, it is creating continuous
-> > > > > region of hard-to-reclaim pages in the LRU list. priority can easily
-> > > > > go low when irrelevant applications' direct reclaim run into these
-> > > > > regions..
-> > > > 
-> > > > Sorry I'm confused not. can you please tell us more detail explanation?
-> > > > Why did lumpy reclaim cause OOM? lumpy reclaim might cause
-> > > > direct reclaim slow down. but IIUC it's not cause OOM because OOM is
-> > > > only occur when priority-0 reclaim failure.
+In message <1271208670.2834.55.camel@sbs-t61.sc.intel.com> you wrote:
+> On Tue, 2010-04-13 at 05:29 -0700, Peter Zijlstra wrote:
+> > On Fri, 2010-04-09 at 16:21 +1000, Michael Neuling wrote:
+> > > With the asymmetric packing infrastructure, fix_small_imbalance is
+> > > causing idle higher threads to pull tasks off lower threads.  
 > > > 
-> > > No I'm not talking OOM. Nor lumpy reclaim.
+> > > This is being caused by an off-by-one error.  
 > > > 
-> > > I mean the direct reclaim can get stuck for long time, when we do
-> > > wait_on_page_writeback() on lumpy_reclaim=1.
-> > > 
-> > > > IO get stcking also prevent priority reach to 0.
-> > > 
-> > > Sure. But we can wait for IO a bit later -- after scanning 1/64 LRU
-> > > (the below patch) instead of the current 1/1024.
-> > > 
-> > > In Andreas' case, 512MB/1024 = 512KB, this is way too low comparing to
-> > > the 22MB writeback pages. There can easily be a continuous range of
-> > > 512KB dirty/writeback pages in the LRU, which will trigger the wait
-> > > logic.
+> > > Signed-off-by: Michael Neuling <mikey@neuling.org>
+> > > ---
+> > > I'm not sure this is the right fix but without it, higher threads pull
+> > > tasks off the lower threads, then the packing pulls it back down, etc
+> > > etc and tasks bounce around constantly.
 > > 
-> > In my feeling from your explanation, we need auto adjustment mechanism
-> > instead change default value for special machine. no?
+> > Would help if you expand upon the why/how it manages to get pulled up.
+> > 
+> > I can't immediately spot anything wrong with the patch, but then that
+> > isn't my favourite piece of code either.. Suresh, any comments?
+> > 
 > 
-> You mean the dumb DEF_PRIORITY/2 may be too large for a 1TB memory box?
+> Sorry didn't pay much attention to this patchset. But based on the
+> comments from Michael and looking at this patchset, it has SMT/MC
+> implications. I will review and run some tests and get back in a day.
 > 
-> However for such boxes, whether it be DEF_PRIORITY-2 or DEF_PRIORITY/2
-> shall be irrelevant: it's trivial anyway to reclaim an order-1 or
-> order-2 page. In other word, lumpy_reclaim will hardly go 1.  Do you
-> think so?
+> As far as this particular patch is concerned, original code is coming
+> from Ingo's original CFS code commit (dd41f596) and the below hunk
+> pretty much explains what the change is about.
+> 
+> -               if (max_load - this_load >= busiest_load_per_task * imbn) {
+> +               if (max_load - this_load + SCHED_LOAD_SCALE_FUZZ >=
+> +                                       busiest_load_per_task * imbn) {
+> 
+> So the below proposed change will probably break what the above
+> mentioned commit was trying to achieve, which is: for fairness reasons
+> we were bouncing the small extra load (between the max_load and
+> this_load) around.
 
-If my remember is correct, Its order-1 lumpy reclaim was introduced
-for solving such big box + AIM7 workload made kernel stack (order-1 page)
-allocation failure.
+Actually, you can drop this patch.  
 
-Now, We are living on moore's law. so probably we need to pay attention
-scalability always. today's big box is going to become desktop box after
-3-5 years.
+In the process of clarifying why it was needed for the changelog, I
+discovered I don't actually need it.  
 
-Probably, Lee know such problem than me. cc to him.
+Sorry about that.
 
+Mikey
 
-
+> 
+> > > ---
+> > > 
+> > >  kernel/sched_fair.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > Index: linux-2.6-ozlabs/kernel/sched_fair.c
+> > > ===================================================================
+> > > --- linux-2.6-ozlabs.orig/kernel/sched_fair.c
+> > > +++ linux-2.6-ozlabs/kernel/sched_fair.c
+> > > @@ -2652,7 +2652,7 @@ static inline void fix_small_imbalance(s
+> > >  						 * SCHED_LOAD_SCALE;
+> > >  	scaled_busy_load_per_task /= sds->busiest->cpu_power;
+> > >  
+> > > -	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >=
+> > > +	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >
+> > >  			(scaled_busy_load_per_task * imbn)) {
+> > >  		*imbalance = sds->busiest_load_per_task;
+> > >  		return;
+> > 
+> 
+> thanks,
+> suresh
+> 
