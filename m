@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab0DOPBk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 11:01:40 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:52608 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab0DOPBi (ORCPT
+	id S1754215Ab0DOPFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 11:05:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57577 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753779Ab0DOPFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 11:01:38 -0400
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/4] vmscan: simplify shrink_inactive_list()
-From: Andi Kleen <andi@firstfloor.org>
-References: <20100415085420.GT2493@dastard>
-	<20100415185310.D1A1.A69D9226@jp.fujitsu.com>
-	<20100415192140.D1A4.A69D9226@jp.fujitsu.com>
-	<20100415131532.GD10966@csn.ul.ie>
-Date: Thu, 15 Apr 2010 17:01:36 +0200
-In-Reply-To: <20100415131532.GD10966@csn.ul.ie> (Mel Gorman's message of "Thu, 15 Apr 2010 14:15:33 +0100")
-Message-ID: <87tyrc92un.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 15 Apr 2010 11:05:54 -0400
+X-Authority-Analysis: v=1.1 cv=wzQuF8Yqs4IO6CYUtTy28yZyBjSHZbbofww7aEg0rsQ= c=1 sm=0 a=IkcTkHD0fZMA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=D19gQVrFAAAA:8 a=PpKaerNTvt2m38JixWMA:9 a=DpBJh3Lxepyrfg9d6BrlnNs7YpgA:4 a=QEXdDO2ut3YA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: sched_clock - microblaze
+From: Steven Rostedt <rostedt@goodmis.org>
+To: michal.simek@petalogix.com
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+       Wu Zhangjin <wuzhangjin@gmail.com>
+In-Reply-To: <4BC728DD.5020404@petalogix.com>
+References: <4BC728DD.5020404@petalogix.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Apr 2010 11:04:48 -0400
+Message-ID: <1271343888.1880.1.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman <mel@csn.ul.ie> writes:
->
-> $ stack-o-meter vmlinux-vanilla vmlinux-2-simplfy-shrink 
-> add/remove: 0/0 grow/shrink: 0/2 up/down: 0/-144 (-144)
-> function                                     old     new   delta
-> shrink_zone                                 1232    1160     -72
-> kswapd                                       748     676     -72
+On Thu, 2010-04-15 at 16:55 +0200, Michal Simek wrote:
+> Hi Thomas and Steven,
+> 
+> I would like to improve time measuring for ftrace (Log below)
+> 
+> I looked at http://lkml.org/lkml/2009/11/16/181
+> where Thomas suggested to create sched_clock() function.
+> I used the same solution as Wu proposed but it is not nice.
+> 
+> Is unimplemented sched_clock the reason why ftrace not show fine grain time?
 
-And the next time someone adds a new feature to these code paths or
-the compiler inlines differently these 72 bytes are easily there
-again. It's not really a long term solution. Code is tending to get
-more complicated all the time. I consider it unlikely this trend will
-stop any time soon.
+Yeah, sched_clock is used by ftrace for timings, so if it only returns
+jiffies, then that will, unfortunately, be the resolution of the tracer.
 
-So just doing some stack micro optimizations doesn't really help 
-all that much.
+I've been told that if you make a higher resolution timer for sched
+clock, it will improve the scheduling in CFS.
 
--Andi
+-- Steve
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+> 
+> Or is there any other thing which is wrong?
+> 
+> Thanks,
+> Michal
+> 
+> 
+> 
+> Dumping ftrace buffer:
+> ---------------------------------
+>   0) ! 10000.00 us |                                }
+>   0)   <========== |
+>   0) ! 10000.00 us |                            }
+>   0) ! 10000.00 us |                          }
+>   0)   0.000 us    |                          get_seconds();
+>   0)   0.000 us    |                          tcp_rcv_rtt_update();
+>   0)   0.000 us    |                          tcp_ack();
+>   0)   0.000 us    |                          tcp_rcv_rtt_update();
+>   0)   0.000 us    |                          tcp_urg();
+>   0)               |                          tcp_data_queue() {
+>   0)   0.000 us    |                            __sk_mem_schedule();
+>   0)   0.000 us    |                            tcp_event_data_recv();
+>   0)   0.000 us    |                            sock_def_readable();
+>   0)   0.000 us    |                          }
+>   0)   0.000 us    |                          tcp_check_space();
+>   0)               |                          __tcp_ack_snd_check() {
+> 
+> 
+
+
