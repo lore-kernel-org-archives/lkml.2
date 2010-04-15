@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab0DOO3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 10:29:10 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53918 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806Ab0DOO3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 10:29:05 -0400
-Date: Thu, 15 Apr 2010 07:28:52 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
- implementation
-Message-ID: <20100415142852.GA2471@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100408191737.296180458@chello.nl>
- <20100408192722.643778654@chello.nl>
- <1271120731.13059.6.camel@pasglop>
- <20100413034311.GB2772@linux.vnet.ibm.com>
- <1271253110.32749.47.camel@laptop>
+	id S1754527Ab0DOO3x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 10:29:53 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64768 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127Ab0DOO3v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 10:29:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: dgilbert@interlog.com
+Subject: Re: [PATCH 1/2] [RFC] block: replace BKL with global mutex
+Date: Thu, 15 Apr 2010 16:29:44 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+       Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       John Kacur <jkacur@redhat.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Kai Makisara <Kai.Makisara@kolumbus.fi>
+References: <1271277384-7627-1-git-send-email-arnd@arndb.de> <201004150911.45842.arnd@arndb.de> <4BC7117C.7090208@interlog.com>
+In-Reply-To: <4BC7117C.7090208@interlog.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271253110.32749.47.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004151629.45029.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19Z225+Nm1PsHdaLc6svbQX1OUC8ap1NHUQ8W0
+ 96gGp0/z6rrIGqy8fXdbHBekd7iCd9nP+baR1i04uwzb7OCBGj
+ t6yMDgQTNyuI6jog3vlmw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 03:51:50PM +0200, Peter Zijlstra wrote:
-> On Mon, 2010-04-12 at 20:43 -0700, Paul E. McKenney wrote:
-> > > So we might have to support the interrupt assumption, at least in some
-> > > form, with those guys...
+On Thursday 15 April 2010, Douglas Gilbert wrote:
+> At the level of SCSI commands, tape device state assumptions
+> made by the st driver could be compromised by SCSI commands
+> sent by the sg driver. However the BKL was never meant
+> to address that concern.
+> 
+>  From the comment in st_open() [st.c] it would be using
+> nonseekable_open() as well but there are apps out there
+> that do lseek()s on its file descriptors. Not sure
+> how long nonseekable_open() has been in the sg driver
+> but no-one has complained to me about it.
+
+It's been there for a long time, at least since the start of
+the git history, and it's very likely correct this way.
+
+> > The most simple solution for this would be to let sg
+> > take both blkdev_mutex and the BKL, which of course
+> > feels like a step backwards.
 > > 
-> > One way to make the interrupt assumption official is to use
-> > synchronize_sched() rather than synchronize_rcu().
+> > A better way is to get rid of the BKL in sg, which requires
+> > a better understanding of what it's actually protecting.
+> > It only gets it in the open and ioctl functions, which is a
+> > result of the pushdown from the respective file operations.
+> > Chances are that it's not needed at all, but that's really
+> > hard to tell. Can you shed some more light on this?
 > 
-> Well, call_rcu_sched() then, because the current usage is to use
-> call_rcu() to free the page directories.
-> 
-> Paul, here is a call_rcu_sched() available in kernel/rcutree.c, but am I
-> right in reading that code that that would not be available for
-> preemptible RCU?
+> The BKL is not used to protect any of the internal
+> objects within the sg driver. From memory it was added
+> in some large code sweep through, not unlike what you
+> are proposing now.
 
-Both call_rcu_sched() and call_rcu() are always there for you.  ;-)
+The one in the open function was moved there when the
+BKL was moved out from vfs_open(), while the use in ioctl is
+implicit by never having been converted to unlocked_ioctl.
 
-o	If CONFIG_TREE_RCU (or CONFIG_TINY_RCU), they both have the same
-	implementation.
+I don't see anything that really needs BKL protection in
+sg_open, so that can probably just be killed. For sg_ioctl,
+at least the blk_trace_* and scsi_ioctl stuff is currently
+called with BKL held everywhere else (not in st_ioctl though)
+and may still need that.
 
-o	If CONFIG_TREE_PREEMPT_RCU, call_rcu_sched() is preemptible and
-	call_rcu() is not.
+> So I would not be concerned about any kernel locking
+> interactions between the sg and st drivers. I have
+> added Kai Makisara (st maintainer) to the cc list.
 
-Of course, with call_rcu_sched(), the corresponding RCU read-side critical
-sections are non-preemptible.  Therefore, in CONFIG_PREEMPT_RT, these
-read-side critical sections must use raw spinlocks.
+Ok. I've also checked st.c again and noticed that it
+doesn't use use the BKL in ioctl() but only in open(),
+which is very unlikely to race against anything in sg.c
+or the block subsystem.
 
-Can the code in question accommodate these restrictions?
-
-							Thanx, Paul
+	Arnd
