@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab0DOUNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 16:13:25 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:62540 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756137Ab0DOUNX (ORCPT
+	id S1756603Ab0DOUPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 16:15:13 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:56138 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756317Ab0DOUPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 16:13:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=G4BefwrODDrRP4S+BqpBSJiriVArPgHt1Ia2nmrYJtV4EG0LZlJEivasofIDWhCpoA
-         OBAxdb9ajfaq54EfBC1ORaGtSkFfOX7SrYHtPfU7H6bmHjBtSJvNrai2DfSs47TJHq4F
-         MB3AfYNpJW2E35T8Hm6o/Zws7spuSt8GhZVp0=
-Date: Thu, 15 Apr 2010 22:13:22 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH 1/3 v4] Add tracing_off_event() to stop tracing when a
-	bug or warning occur
-Message-ID: <20100415201319.GE5069@nowhere>
-References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
+	Thu, 15 Apr 2010 16:15:11 -0400
+Date: Thu, 15 Apr 2010 16:03:31 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2010-04-15
+Message-ID: <20100415200331.GD3020@tuxdriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 12:20:14PM -0400, Chase Douglas wrote:
-> The tracing_off_event() function calls tracing_off() to stop tracing
-> when an event occurs. By default, only BUG-type events stop tracing,
-> while WARNING type events do not. This is controlled through the
-> tracing_off={none,warn,bug} commandline parameter.
-> 
-> Call this function from bug and warning event handlers to enable a user
-> to debug their kernel by starting a trace, hitting an event, and then
-> retrieving trace info knowing that the trace was stopped right after the
-> event was hit.
+Dave,
 
+Another fix intended for 2.6.34...without it some firmware wierdness can
+induce the driver into hanging the box... :-(
 
-That's a good idea!
+Please let me know if there are problems!
 
+Thanks,
 
-> 
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+John
 
+---
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+The following changes since commit 4eaa0e3c869acd5dbc7c2e3818a9ae9cbf221d27:
+  Eric Dumazet (1):
+        fib: suppress lockdep-RCU false positive in FIB trie.
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
+
+Johannes Berg (1):
+      iwlwifi: work around bogus active chains detection
+
+ drivers/net/wireless/iwlwifi/iwl-calib.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/iwl-calib.c b/drivers/net/wireless/iwlwifi/iwl-calib.c
+index 845831a..64de42b 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-calib.c
++++ b/drivers/net/wireless/iwlwifi/iwl-calib.c
+@@ -807,6 +807,18 @@ void iwl_chain_noise_calibration(struct iwl_priv *priv,
+ 		}
+ 	}
+ 
++	/*
++	 * The above algorithm sometimes fails when the ucode
++	 * reports 0 for all chains. It's not clear why that
++	 * happens to start with, but it is then causing trouble
++	 * because this can make us enable more chains than the
++	 * hardware really has.
++	 *
++	 * To be safe, simply mask out any chains that we know
++	 * are not on the device.
++	 */
++	active_chains &= priv->hw_params.valid_rx_ant;
++
+ 	num_tx_chains = 0;
+ 	for (i = 0; i < NUM_RX_CHAINS; i++) {
+ 		/* loops on all the bits of
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
