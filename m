@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276Ab0DOXGv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 19:06:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38839 "EHLO mx1.redhat.com"
+	id S1758103Ab0DOXM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 19:12:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21487 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932223Ab0DOXGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932204Ab0DOXGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Apr 2010 19:06:32 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       Felix Fietkau <nbd@openwrt.org>, David Woodhouse <dwmw2@infradead.org>,
-       linux-mtd@lists.infradead.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 14/35] fallthru: jffs2 fallthru support
-Date: Thu, 15 Apr 2010 16:04:21 -0700
-Message-Id: <1271372682-21225-15-git-send-email-vaurora@redhat.com>
-In-Reply-To: <1271372682-21225-14-git-send-email-vaurora@redhat.com>
+       Valerie Aurora <vaurora@redhat.com>, Theodore Tso <tytso@mit.edu>,
+       linux-ext4@vger.kernel.org, Jan Blunck <jblunck@suse.de>
+Subject: [PATCH 13/35] fallthru: ext2 fallthru support
+Date: Thu, 15 Apr 2010 16:04:20 -0700
+Message-Id: <1271372682-21225-14-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1271372682-21225-13-git-send-email-vaurora@redhat.com>
 References: <1271372682-21225-1-git-send-email-vaurora@redhat.com>
  <1271372682-21225-2-git-send-email-vaurora@redhat.com>
  <1271372682-21225-3-git-send-email-vaurora@redhat.com>
@@ -28,125 +28,263 @@ References: <1271372682-21225-1-git-send-email-vaurora@redhat.com>
  <1271372682-21225-11-git-send-email-vaurora@redhat.com>
  <1271372682-21225-12-git-send-email-vaurora@redhat.com>
  <1271372682-21225-13-git-send-email-vaurora@redhat.com>
- <1271372682-21225-14-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felix Fietkau <nbd@openwrt.org>
+Add support for fallthru directory entries to ext2.
 
-Add support for fallthru dentries to jffs2.
+XXX - Makes up inode number for fallthru entry
+XXX - Might be better implemented as special symlinks
 
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Cc: Theodore Tso <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+Signed-off-by: Jan Blunck <jblunck@suse.de>
 ---
- fs/jffs2/dir.c        |   36 +++++++++++++++++++++++++++++++++---
- include/linux/jffs2.h |    6 ++++++
- 2 files changed, 39 insertions(+), 3 deletions(-)
+ fs/ext2/dir.c           |   92 ++++++++++++++++++++++++++++++++++++++++++++--
+ fs/ext2/ext2.h          |    1 +
+ fs/ext2/namei.c         |   22 +++++++++++
+ include/linux/ext2_fs.h |    1 +
+ 4 files changed, 112 insertions(+), 4 deletions(-)
 
-diff --git a/fs/jffs2/dir.c b/fs/jffs2/dir.c
-index c259193..98397b3 100644
---- a/fs/jffs2/dir.c
-+++ b/fs/jffs2/dir.c
-@@ -35,6 +35,7 @@ static int jffs2_rename (struct inode *, struct dentry *,
- 			 struct inode *, struct dentry *);
- 
- static int jffs2_whiteout (struct inode *, struct dentry *, struct dentry *);
-+static int jffs2_fallthru (struct inode *, struct dentry *);
- 
- const struct file_operations jffs2_dir_operations =
+diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
+index 030bd46..f3b4aff 100644
+--- a/fs/ext2/dir.c
++++ b/fs/ext2/dir.c
+@@ -219,7 +219,8 @@ static inline int ext2_match (int len, const char * const name,
  {
-@@ -59,6 +60,7 @@ const struct inode_operations jffs2_dir_inode_operations =
- 	.rename =	jffs2_rename,
- 	.check_acl =	jffs2_check_acl,
- 	.whiteout =     jffs2_whiteout,
-+	.fallthru =     jffs2_fallthru,
- 	.setattr =	jffs2_setattr,
- 	.setxattr =	jffs2_setxattr,
- 	.getxattr =	jffs2_getxattr,
-@@ -103,10 +105,14 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
- 	}
- 	if (fd) {
- 		spin_lock(&target->d_lock);
--		if (fd->type == DT_WHT)
-+		switch (fd->type) {
-+		case DT_WHT:
- 			target->d_flags |= DCACHE_WHITEOUT;
--		else
-+		case JFFS2_DT_FALLTHRU:
-+			target->d_flags |= DCACHE_FALLTHRU;
-+		default:
- 			ino = fd->ino;
-+		}
- 		spin_unlock(&target->d_lock);
- 	}
- 	mutex_unlock(&dir_f->sem);
-@@ -164,7 +170,10 @@ static int jffs2_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 				  fd->name, fd->ino, fd->type, curofs, offset));
- 			continue;
+ 	if (len != de->name_len)
+ 		return 0;
+-	if (!de->inode && (de->file_type != EXT2_FT_WHT))
++	if (!de->inode && ((de->file_type != EXT2_FT_WHT) &&
++			   (de->file_type != EXT2_FT_FALLTHRU)))
+ 		return 0;
+ 	return !memcmp(name, de->name, len);
+ }
+@@ -256,6 +257,7 @@ static unsigned char ext2_filetype_table[EXT2_FT_MAX] = {
+ 	[EXT2_FT_SOCK]		= DT_SOCK,
+ 	[EXT2_FT_SYMLINK]	= DT_LNK,
+ 	[EXT2_FT_WHT]		= DT_WHT,
++	[EXT2_FT_FALLTHRU]	= DT_UNKNOWN,
+ };
+ 
+ #define S_SHIFT 12
+@@ -342,6 +344,24 @@ ext2_readdir (struct file * filp, void * dirent, filldir_t filldir)
+ 					ext2_put_page(page);
+ 					return 0;
+ 				}
++			} else if (de->file_type == EXT2_FT_FALLTHRU) {
++				int over;
++				unsigned char d_type = DT_UNKNOWN;
++
++				offset = (char *)de - kaddr;
++				/* XXX We don't know the inode number
++				 * of the directory entry in the
++				 * underlying file system.  Should
++				 * look it up, either on fallthru
++				 * creation at first readdir or now at
++				 * filldir time. */
++				over = filldir(dirent, de->name, de->name_len,
++					       (n<<PAGE_CACHE_SHIFT) | offset,
++					       123 /* Made up ino */, d_type);
++				if (over) {
++					ext2_put_page(page);
++					return 0;
++				}
+ 			}
+ 			filp->f_pos += ext2_rec_len_from_disk(de->rec_len);
  		}
--		if (!fd->ino) {
-+		if (fd->type == JFFS2_DT_FALLTHRU)
-+			/* XXX Should really do a lookup for the real inode number here */
-+			fd->ino = 100;
-+		else if (!fd->ino && (fd->type != DT_WHT)) {
- 			D2(printk(KERN_DEBUG "Skipping deletion dirent \"%s\"\n", fd->name));
- 			offset++;
- 			continue;
-@@ -793,6 +802,26 @@ static int jffs2_mknod (struct inode *dir_i, struct dentry *dentry, int mode, de
- 	return 0;
+@@ -463,6 +483,10 @@ ino_t ext2_inode_by_dentry(struct inode *dir, struct dentry *dentry)
+ 			spin_lock(&dentry->d_lock);
+ 			dentry->d_flags |= DCACHE_WHITEOUT;
+ 			spin_unlock(&dentry->d_lock);
++		} else if(!res && de->file_type == EXT2_FT_FALLTHRU) {
++			spin_lock(&dentry->d_lock);
++			dentry->d_flags |= DCACHE_FALLTHRU;
++			spin_unlock(&dentry->d_lock);
+ 		}
+ 		ext2_put_page(page);
+ 	}
+@@ -532,6 +556,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
+ 				de->name_len = 0;
+ 				de->rec_len = ext2_rec_len_to_disk(chunk_size);
+ 				de->inode = 0;
++				de->file_type = 0;
+ 				goto got_it;
+ 			}
+ 			if (de->rec_len == 0) {
+@@ -545,6 +570,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
+ 			name_len = EXT2_DIR_REC_LEN(de->name_len);
+ 			rec_len = ext2_rec_len_from_disk(de->rec_len);
+ 			if (!de->inode && (de->file_type != EXT2_FT_WHT) &&
++			    (de->file_type != EXT2_FT_FALLTHRU) &&
+ 			    (rec_len >= reclen))
+ 				goto got_it;
+ 			if (rec_len >= name_len + reclen)
+@@ -587,7 +613,8 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 
+ 	err = -EEXIST;
+ 	if (ext2_match (namelen, name, de)) {
+-		if (de->file_type == EXT2_FT_WHT)
++		if ((de->file_type == EXT2_FT_WHT) ||
++		    (de->file_type == EXT2_FT_FALLTHRU))
+ 			goto got_it;
+ 		goto out_unlock;
+ 	}
+@@ -602,7 +629,8 @@ got_it:
+ 							&page, NULL);
+ 	if (err)
+ 		goto out_unlock;
+-	if (de->inode || ((de->file_type == EXT2_FT_WHT) &&
++	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
++			   (de->file_type == EXT2_FT_FALLTHRU)) &&
+ 			  !ext2_match (namelen, name, de))) {
+ 		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
+ 		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
+@@ -627,6 +655,60 @@ out_unlock:
  }
  
-+static int jffs2_fallthru (struct inode *dir, struct dentry *dentry)
+ /*
++ * Create a fallthru entry.
++ */
++int ext2_fallthru_entry (struct inode *dir, struct dentry *dentry)
 +{
-+	struct jffs2_sb_info *c = JFFS2_SB_INFO(dir->i_sb);
-+	uint32_t now;
-+	int ret;
++	const char *name = dentry->d_name.name;
++	int namelen = dentry->d_name.len;
++	unsigned short rec_len, name_len;
++	ext2_dirent * de;
++	struct page *page;
++	loff_t pos;
++	int err;
 +
-+	now = get_seconds();
-+	ret = jffs2_do_link(c, JFFS2_INODE_INFO(dir), 0, DT_UNKNOWN,
-+			    dentry->d_name.name, dentry->d_name.len, now);
-+	if (ret)
-+		return ret;
++	de = ext2_append_entry(dentry, &page);
++	if (IS_ERR(de))
++		return PTR_ERR(de);
 +
-+	d_instantiate(dentry, NULL);
-+	spin_lock(&dentry->d_lock);
-+	dentry->d_flags |= DCACHE_FALLTHRU;
-+	spin_unlock(&dentry->d_lock);
++	err = -EEXIST;
++	if (ext2_match (namelen, name, de))
++		goto out_unlock;
 +
-+	return 0;
++	name_len = EXT2_DIR_REC_LEN(de->name_len);
++	rec_len = ext2_rec_len_from_disk(de->rec_len);
++
++	pos = page_offset(page) +
++		(char*)de - (char*)page_address(page);
++	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
++							&page, NULL);
++	if (err)
++		goto out_unlock;
++	if (de->inode || (de->file_type == EXT2_FT_WHT) ||
++	    (de->file_type == EXT2_FT_FALLTHRU)) {
++		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
++		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
++		de->rec_len = ext2_rec_len_to_disk(name_len);
++		de = de1;
++	}
++	de->name_len = namelen;
++	memcpy(de->name, name, namelen);
++	de->inode = 0;
++	de->file_type = EXT2_FT_FALLTHRU;
++	err = ext2_commit_chunk(page, pos, rec_len);
++	dir->i_mtime = dir->i_ctime = CURRENT_TIME_SEC;
++	EXT2_I(dir)->i_flags &= ~EXT2_BTREE_FL;
++	mark_inode_dirty(dir);
++	/* OFFSET_CACHE */
++out_put:
++	ext2_put_page(page);
++	return err;
++out_unlock:
++	unlock_page(page);
++	goto out_put;
 +}
 +
- static int jffs2_whiteout (struct inode *dir, struct dentry *old_dentry,
- 			   struct dentry *new_dentry)
- {
-@@ -825,6 +854,7 @@ static int jffs2_whiteout (struct inode *dir, struct dentry *old_dentry,
- 		return ret;
++/*
+  * ext2_delete_entry deletes a directory entry by merging it with the
+  * previous entry. Page is up-to-date. Releases the page.
+  */
+@@ -711,7 +793,9 @@ int ext2_whiteout_entry (struct inode * dir, struct dentry * dentry,
+ 	 */
+ 	if (ext2_match (namelen, name, de))
+ 		de->inode = 0;
+-	if (de->inode || (de->file_type == EXT2_FT_WHT)) {
++	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
++			   (de->file_type == EXT2_FT_FALLTHRU)) &&
++			  !ext2_match (namelen, name, de))) {
+ 		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
+ 		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
+ 		de->rec_len = ext2_rec_len_to_disk(name_len);
+diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+index 44d190c..2fa32b3 100644
+--- a/fs/ext2/ext2.h
++++ b/fs/ext2/ext2.h
+@@ -108,6 +108,7 @@ extern struct ext2_dir_entry_2 * ext2_find_entry (struct inode *,struct qstr *,
+ extern int ext2_delete_entry (struct ext2_dir_entry_2 *, struct page *);
+ extern int ext2_whiteout_entry (struct inode *, struct dentry *,
+ 				struct ext2_dir_entry_2 *, struct page *);
++extern int ext2_fallthru_entry (struct inode *, struct dentry *);
+ extern int ext2_empty_dir (struct inode *);
+ extern struct ext2_dir_entry_2 * ext2_dotdot (struct inode *, struct page **);
+ extern void ext2_set_link(struct inode *, struct ext2_dir_entry_2 *, struct page *, struct inode *, int);
+diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+index 12195a5..f28154c 100644
+--- a/fs/ext2/namei.c
++++ b/fs/ext2/namei.c
+@@ -349,6 +349,7 @@ static int ext2_whiteout(struct inode *dir, struct dentry *dentry,
+ 		goto out;
  
  	spin_lock(&new_dentry->d_lock);
 +	new_dentry->d_flags &= ~DCACHE_FALLTHRU;
  	new_dentry->d_flags |= DCACHE_WHITEOUT;
  	spin_unlock(&new_dentry->d_lock);
  	d_add(new_dentry, NULL);
-diff --git a/include/linux/jffs2.h b/include/linux/jffs2.h
-index 65533bb..dbe8c93 100644
---- a/include/linux/jffs2.h
-+++ b/include/linux/jffs2.h
-@@ -114,6 +114,12 @@ struct jffs2_unknown_node
- 	jint32_t hdr_crc;
- };
+@@ -367,6 +368,26 @@ out:
+ 	return err;
+ }
  
 +/*
-+ * Non-standard directory entry type(s), for on-disk use
++ * Create a fallthru entry.
 + */
++static int ext2_fallthru (struct inode *dir, struct dentry *dentry)
++{
++	int err;
 +
-+#define                JFFS2_DT_FALLTHRU       (DT_WHT + 1)
++	dquot_initialize(dir);
 +
- struct jffs2_raw_dirent
++	err = ext2_fallthru_entry(dir, dentry);
++	if (err)
++		return err;
++
++	d_instantiate(dentry, NULL);
++	spin_lock(&dentry->d_lock);
++	dentry->d_flags |= DCACHE_FALLTHRU;
++	spin_unlock(&dentry->d_lock);
++	return 0;
++}
++
+ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+ 	struct inode * new_dir,	struct dentry * new_dentry )
  {
- 	jint16_t magic;
+@@ -470,6 +491,7 @@ const struct inode_operations ext2_dir_inode_operations = {
+ 	.rmdir		= ext2_rmdir,
+ 	.mknod		= ext2_mknod,
+ 	.whiteout	= ext2_whiteout,
++	.fallthru	= ext2_fallthru,
+ 	.rename		= ext2_rename,
+ #ifdef CONFIG_EXT2_FS_XATTR
+ 	.setxattr	= generic_setxattr,
+diff --git a/include/linux/ext2_fs.h b/include/linux/ext2_fs.h
+index 20468bd..cb3d400 100644
+--- a/include/linux/ext2_fs.h
++++ b/include/linux/ext2_fs.h
+@@ -577,6 +577,7 @@ enum {
+ 	EXT2_FT_SOCK		= 6,
+ 	EXT2_FT_SYMLINK		= 7,
+ 	EXT2_FT_WHT		= 8,
++	EXT2_FT_FALLTHRU	= 9,
+ 	EXT2_FT_MAX
+ };
+ 
 -- 
 1.6.3.3
 
