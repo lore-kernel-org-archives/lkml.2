@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab0DORz4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 13:55:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1885 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754894Ab0DORzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 13:55:55 -0400
-Date: Thu, 15 Apr 2010 14:54:46 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/5] KVM MMU: fix kvm_mmu_zap_page() and its calling
- path
-Message-ID: <20100415175446.GA32413@amt.cnet>
-References: <4BC864DD.3000606@cn.fujitsu.com>
- <4BC8652F.5010006@cn.fujitsu.com>
+	id S1755330Ab0DOSCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 14:02:13 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:41037 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753395Ab0DOSCM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 14:02:12 -0400
+Date: Thu, 15 Apr 2010 20:02:01 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Low-Level and Long-Term Battery Control
+Message-ID: <20100415180200.GA1443@ucw.cz>
+References: <h2i45cc95261004120628kb38aabecr2552668f9e60d7c5@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BC8652F.5010006@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <h2i45cc95261004120628kb38aabecr2552668f9e60d7c5@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 09:25:03PM +0800, Xiao Guangrong wrote:
-> - calculate zapped page number properly in mmu_zap_unsync_children()
-> - calculate freeed page number properly kvm_mmu_change_mmu_pages()
+Hi!
+
+> Is there any function in the Linux kernel that control the
+> charging/discharging of the battery to provide better lifespan ?
+> (add some years to its life ?)
+
+No, I don't think so.
+
+> For Laptops, it is better to extract the battery from the Laptop when
+> the computer will be on power for a long period.
+> I ask if the kernel can do such control without the user intention and
+> in an automatic way.
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/kvm/mmu.c |   12 ++++++++----
->  1 files changed, 8 insertions(+), 4 deletions(-)
+> Some BIOS provide to the user to select whether to block the battery
+> charging to 50% to make it stand for more time.
+
+Where have you seen that?
+
+> And Many people (like me) forget their laptops on power until the
+> battery no more can hold energy after 2minutes of no power.
 > 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index a23ca75..41cccd4 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1481,13 +1481,16 @@ static int mmu_zap_unsync_children(struct kvm *kvm,
->  		struct kvm_mmu_page *sp;
->  
->  		for_each_sp(pages, sp, parents, i) {
-> +			if (list_empty(&kvm->arch.active_mmu_pages))
-> +				goto exit;
+> I am not sure for the MacBook side, but it seems they don't suffer
+> from such problem in the same degree as other laptop users.
 
-I meant to check for list_empty in kvm_mmu_change_mmu_pages, instead of
-relying on the count returned by kvm_mmu_zap_page. Similarly to what 
-__kvm_mmu_free_some_pages does.
+Normally, smart battery should control charging itself; and it usually
+does pretty well.
 
-Checking here is not needed because the pages returned in the array 
-will not be zapped (mmu_lock is held).
-
-Applied 1, 4 and 5 (so please regenerate against kvm.git -next branch),
-thanks.
-
+Exceptions are very small devices such as spitz, but for those
+batteries CCCV charging with temperature monitor is usually enough.
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
