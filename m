@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab0DOULL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 16:11:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40610 "EHLO mx1.redhat.com"
+	id S1756664Ab0DOULc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 16:11:32 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:56301 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755799Ab0DOULI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 16:11:08 -0400
-Date: Thu, 15 Apr 2010 17:10:58 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com
-Subject: Re: [PATCH 5/5] add documentation about kvmclock
-Message-ID: <20100415201057.GB14158@mothafucka.localdomain>
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>
- <1271356648-5108-2-git-send-email-glommer@redhat.com>
- <1271356648-5108-3-git-send-email-glommer@redhat.com>
- <1271356648-5108-4-git-send-email-glommer@redhat.com>
- <1271356648-5108-5-git-send-email-glommer@redhat.com>
- <1271356648-5108-6-git-send-email-glommer@redhat.com>
- <20100415122836.27f1e255.randy.dunlap@oracle.com>
+	id S1756491Ab0DOULa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 16:11:30 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100415122836.27f1e255.randy.dunlap@oracle.com>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+Content-Transfer-Encoding: 7bit
+Message-ID: <19399.29421.508520.647456@pilspetsen.it.uu.se>
+Date: Thu, 15 Apr 2010 22:11:25 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: "Justin P. mattock" <justinmattock@gmail.com>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-acpi@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [BUG] 2.6.34-rc4: acpi boot-time oops on FSC Amilo Pa 3553
+In-Reply-To: <4BC76645.50401@gmail.com>
+References: <19399.23074.26023.534765@pilspetsen.it.uu.se>
+	<4BC76645.50401@gmail.com>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 12:28:36PM -0700, Randy Dunlap wrote:
-> On Thu, 15 Apr 2010 14:37:28 -0400 Glauber Costa wrote:
-> 
-Thanks Randy,
+Justin P. mattock writes:
+ > On 04/15/2010 11:25 AM, Mikael Pettersson wrote:
+ > > Kernels up to and including 2.6.34-rc3 boot fine on my Amilo Pa 3553,
+ > > but 2.6.34-rc4 always oopses during boot in acpi.  Without a serial port
+ > > I cannot capture the entire oops, but it goes something like this:
+ > >
+ > > __driver_attach
+ > > bus_for_each_dev
+ > > driver_attach
+ > > __driver_attach
+ > > bus_add_driver
+ > > acpi_device_remove
+ > > driver_register
+ > > async_thread
+ > > proc_mkdir_mode
+ > > async_thread
+ > > acpi_battery_init_async
+ > > async_thread
+ > > schedule
+ > > default_wake_function
+ > > async_thread
+ > > kthread
+ > > kthread
+ > > kernel_thread_helper
+ > > EIP: acpi_ex_read_data_from_field+0x16e
+ > >
+ > > Any suggestions for revisions to try to revert?
+ > > --
+ > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+ > > the body of a message to majordomo@vger.kernel.org
+ > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ > > Please read the FAQ at  http://www.tux.org/lkml/
+ > >
+ > 
+ > 
+ > sounds similar to this:
+ > https://bugzilla.kernel.org/show_bug.cgi?id=%2015749
+ > if so try the patch there and see if
+ > you can boot.
 
-All coments relevant. I'll update the document to cover them.
+Yes, that patch (https://bugzilla.kernel.org/attachment.cgi?id=25962)
+fixed the problem.  Thanks.
 
-As for your question: Both bit 3 and 0 are used, yes. But they
-tell the guest to use a different MSR pair. However, this document
-is intented for people not familiar with kvmclock. If you read it,
-and could not extract that from the text, it definitely needs to
-be augmented.
-
-Thanks!
+/Mikael
