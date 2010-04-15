@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab0DOQVk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 12:21:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37624 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754300Ab0DOQVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 12:21:37 -0400
-Date: Thu, 15 Apr 2010 18:21:33 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Dhaval Giani <dhaval.giani@gmail.com>, a.p.zijlstra@chello.nl,
-       linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at kernel/lockdep.c:2696
- lockdep_init_map+0xd2/0x108()
-In-Reply-To: <20100415152429.GE2471@linux.vnet.ibm.com>
-Message-ID: <alpine.LRH.2.00.1004151820220.28179@twin.jikos.cz>
-References: <1271271162.9281.1.camel@localhost> <20100415152429.GE2471@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1754487Ab0DOQ2i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 12:28:38 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:54661 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab0DOQ2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 12:28:37 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix compat uname machine
+CC: Christoph Hellwig <hch@lst.de>
+X-Yow: Don't hit me!!  I'm in the Twilight Zone!!!
+Date: Thu, 15 Apr 2010 18:28:33 +0200
+Message-ID: <m2wrw8he8e.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.95 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Apr 2010, Paul E. McKenney wrote:
+Mask off personality flags when checking for PER_LINUX32.
 
-> > I seem to be hitting this on bootup on a recent-ish git kernel (post
-> > -rc4).
-> 
-> Is this addressed by ebd09ec93c90c8ec571d7e166832fb1fc705bf5e?
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+---
+On ppc64 you get this error:
 
-That's for a different issue (attribute_container_add_attrs() vs. 
-atk_create_files()).
+$ setarch ppc -R true
+setarch: ppc: Unrecognized architecture
+
+because uname still reports ppc64 as the machine.
+
+Andreas.
+
+---
+ kernel/sys.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 6d1a7e0..7cb426a 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1118,7 +1118,7 @@ DECLARE_RWSEM(uts_sem);
+ 
+ #ifdef COMPAT_UTS_MACHINE
+ #define override_architecture(name) \
+-	(current->personality == PER_LINUX32 && \
++	(personality(current->personality) == PER_LINUX32 && \
+ 	 copy_to_user(name->machine, COMPAT_UTS_MACHINE, \
+ 		      sizeof(COMPAT_UTS_MACHINE)))
+ #else
+-- 
+1.7.0.4
+
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
-
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
