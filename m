@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab0DONLo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 09:11:44 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:4502 "EHLO
-	VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751032Ab0DONLn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 09:11:43 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz1432P98dN936eM62a3Lzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L0X5Z7-01-1NO-02
-X-M-MSG: 
-Date: Thu, 15 Apr 2010 15:11:30 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/12] perf, x86: setup NMI handler for IBS
-Message-ID: <20100415131130.GK11907@erda.amd.com>
-References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
- <1271190201-25705-11-git-send-email-robert.richter@amd.com>
- <1271336255.1674.8.camel@laptop>
+	id S1753720Ab0DONN7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 09:13:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29074 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753486Ab0DONN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 09:13:57 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       vgoyal@redhat.com
+Subject: Re: [PATCH 0/4 v3] ext3/4: enhance fsync performance when using CFQ
+References: <1271279826-30294-1-git-send-email-jmoyer@redhat.com>
+	<20100415103345.GY27497@kernel.dk>
+	<x498w8oj276.fsf@segfault.boston.devel.redhat.com>
+	<20100415130854.GA27497@kernel.dk>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 15 Apr 2010 09:13:51 -0400
+In-Reply-To: <20100415130854.GA27497@kernel.dk> (Jens Axboe's message of "Thu,
+	15 Apr 2010 15:08:55 +0200")
+Message-ID: <x494ojcj1tc.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1271336255.1674.8.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 15 Apr 2010 13:11:30.0751 (UTC) FILETIME=[2A1584F0:01CADC9D]
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.04.10 14:57:35, Peter Zijlstra wrote:
-> > +/* uninitialize the APIC for the IBS interrupts if needed */
-> > +static void clear_ibs_nmi(void)
-> > +{
-> > +	on_each_cpu(apic_clear_ibs_nmi_per_cpu, NULL, 1);
-> > +}
-> 
-> 
-> That on_each_cpu() looks wonky, why isn't this in the hotplug hooks?
+Jens Axboe <jens.axboe@oracle.com> writes:
 
-Right, it should be there. Will update this patch.
+>> > This is starting to look better. Can you share what tests you did? I
+>> > tried reproducing with fs_mark last time and could not.
+>> 
+>> Did you use the fs_mark command line I (think I) had posted?  What
+>> storage were you using?
+>
+> No, I didn't see any references to example command lines. I tested on a
+> few single disks, rotating and SSD. I expected the single spinning disk
+> to show the problem to some extent at least, but there was no difference
+> observed with 64kb blocks.
 
--Robert
+Boy, I'm really slipping.  Try this one:
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
+./fs_mark -S 1 -D 100 -N 1000 -d /mnt/test/fs_mark -s 65536 -t 1 -w 4096
 
+Cheers,
+Jeff
