@@ -1,127 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab0DOCtE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 22:49:04 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:49044 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756451Ab0DOCtA (ORCPT
+	id S1756594Ab0DOCxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 22:53:30 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45622 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755844Ab0DOCx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 22:49:00 -0400
-Date: Thu, 15 Apr 2010 11:40:22 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Greg Thelen <gthelen@google.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       balbir@linux.vnet.ibm.com, Andrea Righi <arighi@develer.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
-Message-Id: <20100415114022.ef01b704.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <xr9339yxyepc.fsf@ninji.mtv.corp.google.com>
-References: <1268609202-15581-2-git-send-email-arighi@develer.com>
-	<20100317115855.GS18054@balbir.in.ibm.com>
-	<20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100318041944.GA18054@balbir.in.ibm.com>
-	<20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100318162855.GG18054@balbir.in.ibm.com>
-	<20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100319024039.GH18054@balbir.in.ibm.com>
-	<20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr931veiplpr.fsf@ninji.mtv.corp.google.com>
-	<20100414140523.GC13535@redhat.com>
-	<xr9339yxyepc.fsf@ninji.mtv.corp.google.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 14 Apr 2010 22:53:29 -0400
+Date: Thu, 15 Apr 2010 04:53:21 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+       saeed.bishara@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 1/2] MTD: cfi_cmdset_0002: Add reboot notifier for
+	AMD flashes
+Message-ID: <20100415025321.GB14954@pengutronix.de>
+References: <1271221078.2532.5.camel@localhost.localdomain> <a00f98bfcda7db841108605ebab8d07363f4aa8b@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="98e8jtXdkpgskNou"
+Content-Disposition: inline
+In-Reply-To: <a00f98bfcda7db841108605ebab8d07363f4aa8b@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Apr 2010 13:14:07 -0700, Greg Thelen <gthelen@google.com> wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
-> 
-> > On Tue, Apr 13, 2010 at 11:55:12PM -0700, Greg Thelen wrote:
-> >> On Thu, Mar 18, 2010 at 8:00 PM, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> >> > On Fri, 19 Mar 2010 08:10:39 +0530
-> >> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> >> >
-> >> >> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-19 10:23:32]:
-> >> >>
-> >> >> > On Thu, 18 Mar 2010 21:58:55 +0530
-> >> >> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> >> >> >
-> >> >> > > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:35:27]:
-> >> >> >
-> >> >> > > > Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
-> >> >> > > > mem_cgroup_update_file_mapped(). The look may be messy but it's not your
-> >> >> > > > fault. But please write "why add new function" to patch description.
-> >> >> > > >
-> >> >> > > > I'm sorry for wasting your time.
-> >> >> > >
-> >> >> > > Do we need to go down this route? We could check the stat and do the
-> >> >> > > correct thing. In case of FILE_MAPPED, always grab page_cgroup_lock
-> >> >> > > and for others potentially look at trylock. It is OK for different
-> >> >> > > stats to be protected via different locks.
-> >> >> > >
-> >> >> >
-> >> >> > I _don't_ want to see a mixture of spinlock and trylock in a function.
-> >> >> >
-> >> >>
-> >> >> A well documented well written function can help. The other thing is to
-> >> >> of-course solve this correctly by introducing different locking around
-> >> >> the statistics. Are you suggesting the later?
-> >> >>
-> >> >
-> >> > No. As I wrote.
-> >> >        - don't modify codes around FILE_MAPPED in this series.
-> >> >        - add a new functions for new statistics
-> >> > Then,
-> >> >        - think about clean up later, after we confirm all things work as expected.
-> >> 
-> >> I have ported Andrea Righi's memcg dirty page accounting patches to latest
-> >> mmtom-2010-04-05-16-09.  In doing so I have to address this locking issue.  Does
-> >> the following look good?  I will (of course) submit the entire patch for review,
-> >> but I wanted make sure I was aiming in the right direction.
-> >> 
-> >> void mem_cgroup_update_page_stat(struct page *page,
-> >> 			enum mem_cgroup_write_page_stat_item idx, bool charge)
-> >> {
-> >> 	static int seq;
-> >> 	struct page_cgroup *pc;
-> >> 
-> >> 	if (mem_cgroup_disabled())
-> >> 		return;
-> >> 	pc = lookup_page_cgroup(page);
-> >> 	if (!pc || mem_cgroup_is_root(pc->mem_cgroup))
-> >> 		return;
-> >> 
-> >> 	/*
-> >> 	 * This routine does not disable irq when updating stats.  So it is
-> >> 	 * possible that a stat update from within interrupt routine, could
-> >> 	 * deadlock.  Use trylock_page_cgroup() to avoid such deadlock.  This
-> >> 	 * makes the memcg counters fuzzy.  More complicated, or lower
-> >> 	 * performing locking solutions avoid this fuzziness, but are not
-> >> 	 * currently needed.
-> >> 	 */
-> >> 	if (irqs_disabled()) {
-> >             ^^^^^^^^^
-> > Or may be in_interrupt()?
-> 
-> Good catch.  I will replace irqs_disabled() with in_interrupt().
-> 
-I think you should check both. __remove_from_page_cache(), which will update
-DIRTY, is called with irq disabled(iow, under mapping->tree_lock) but not in
-interrupt context.
 
-Anyway, I tend to agree with KAMEZAWA-san: use trylock always(except for FILE_MAPPED),
-or add some new interfaces(e.g. mem_cgroup_update_stat_locked/safe...).
+--98e8jtXdkpgskNou
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Daisuke Nishimura.
+On Wed, Apr 14, 2010 at 05:57:33PM -0700, Kevin Cernekee wrote:
+> Ensure that the flash device is in a quiescent state before rebooting.
+> The implementation is closely modeled after the cfe_cmdset_0001 reboot
+> notifier, commit 963a6fb0a0d336d0513083b7e4b5c3ff9d6d2061 .
+>=20
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+
+Yes, if this is present for Intel, it should be present for AMD, IMHO.
+
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+
+Still, the correct solution is to wire the correct reset-line to the flashe=
+s.
+Above patch will not help if a watchdog kicks in. Been there :(
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--98e8jtXdkpgskNou
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkvGf6EACgkQD27XaX1/VRuxvACdGIp8CjRPZTaXtOm7sFBP+5uL
+fFsAn1p7OC/twVIhzbn+tMW3MG1EDyPJ
+=9H/B
+-----END PGP SIGNATURE-----
+
+--98e8jtXdkpgskNou--
