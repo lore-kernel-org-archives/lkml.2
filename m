@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab0DOFaG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 01:30:06 -0400
-Received: from mail.gmx.net ([213.165.64.20]:59429 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754204Ab0DOFaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 01:30:03 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+cFtZ3zLac2ro3ftTBi4PYLjisBkwGUk0UodOec3
-	eFjb31bEW1Z5hj
-Subject: Re: linux-next: build warning after merge of the final tree (tip
- tree related)
-From: Mike Galbraith <efault@gmx.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100415143609.834da268.sfr@canb.auug.org.au>
-References: <20100415143609.834da268.sfr@canb.auug.org.au>
-Content-Type: text/plain
-Date: Thu, 15 Apr 2010 07:29:59 +0200
-Message-Id: <1271309399.14779.17.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+	id S1754853Ab0DOFga (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 01:36:30 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:31355 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754656Ab0DOFg3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 01:36:29 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:subject:to:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=cPkPNCOTEarb08xY8FkUdIk3WhlXDnAjuv6sYlVmI9STCfocWuCWO/is6y1v7TAa9
+	Uq9+PQHQFoFEA5zqRd49Q==
+From: Divyesh Shah <dpshah@google.com>
+Subject: [PATCH] blkio: Fix linux-next build failure after merge of block tree
+To: jens.axboe@oracle.com, sfr@canb.auug.org.au
+Cc: guijianfeng@cn.fujitsu.com, vgoyal@redhat.com, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Date: Wed, 14 Apr 2010 22:36:00 -0700
+Message-ID: <20100415053543.15190.98919.stgit@austin.mtv.corp.google.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.46000000000000002
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-15 at 14:36 +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allnoconfig) produced this warning:
-> 
-> kernel/sched.c:1875: warning: 'update_avg' defined but not used
-> 
-> Introduced by commit e12f31d3e5d36328c7fbd0fce40a95e70b59152c ("sched:
-> Remove avg_overlap") which left the only call to this function protected
-> by CONFIG_SMP.
+After merging the block tree, 20100414's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Oops.
+ERROR: "get_gendisk" [block/blk-cgroup.ko] undefined!
+ERROR: "sched_clock" [block/blk-cgroup.ko] undefined!
 
-sched: fix UP update_avg() build warning.
+This happens because the two symbols aren't exported and hence not available
+when blk-cgroup code is built as a module. I've tried to stay consistent with
+the use of EXPORT_SYMBOL or EXPORT_SYMBOL_GPL with the other symbols in the
+respective files.
 
-update_avg() is only used for SMP builds, move it to the nearest SMP block.
+Signed-off-by: Divyesh Shah <dpshah@google.com>
+---
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
+ block/genhd.c        |    1 +
+ kernel/sched_clock.c |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3acf694..95eaecc 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1872,12 +1872,6 @@ static void set_load_weight(struct task_struct *p)
- 	p->se.load.inv_weight = prio_to_wmult[p->static_prio - MAX_RT_PRIO];
+diff --git a/block/genhd.c b/block/genhd.c
+index d13ba76..154b5f8 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -596,6 +596,7 @@ struct gendisk *get_gendisk(dev_t devt, int *partno)
+ 
+ 	return disk;
  }
++EXPORT_SYMBOL(get_gendisk);
  
--static void update_avg(u64 *avg, u64 sample)
--{
--	s64 diff = sample - *avg;
--	*avg += diff >> 3;
--}
--
- static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
- {
- 	update_rq_clock(rq);
-@@ -2289,6 +2283,12 @@ int select_task_rq(struct rq *rq, struct task_struct *p, int sd_flags, int wake_
- 
- 	return cpu;
+ /**
+  * bdget_disk - do bdget() by gendisk and partition number
+diff --git a/kernel/sched_clock.c b/kernel/sched_clock.c
+index 5b49613..906a0f7 100644
+--- a/kernel/sched_clock.c
++++ b/kernel/sched_clock.c
+@@ -41,6 +41,7 @@ unsigned long long __attribute__((weak)) sched_clock(void)
+ 	return (unsigned long long)(jiffies - INITIAL_JIFFIES)
+ 					* (NSEC_PER_SEC / HZ);
  }
-+
-+static void update_avg(u64 *avg, u64 sample)
-+{
-+	s64 diff = sample - *avg;
-+	*avg += diff >> 3;
-+}
- #endif
++EXPORT_SYMBOL_GPL(sched_clock);
  
- /***
-
+ static __read_mostly int sched_clock_running;
+ 
 
