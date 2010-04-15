@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab0DOSiK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 14:38:10 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:52219 "EHLO e7.ny.us.ibm.com"
+	id S1755925Ab0DOSjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 14:39:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32040 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914Ab0DOSiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 14:38:07 -0400
-Date: Thu, 15 Apr 2010 11:37:58 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-       dhowells@redhat.com, eric.dumazet@gmail.com, adobriyan@gmail.com,
-       "David S. Miller" <davem@davemloft.net>
-Subject: Re: [patch 1/5] Debugobjects transition check (updated changelog)
-Message-ID: <20100415183758.GO2471@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100329143405.252313609@efficios.com>
- <20100329143701.765545140@efficios.com>
- <alpine.LFD.2.00.1003301819060.32352@localhost.localdomain>
- <20100331133100.GA25453@Krystal>
- <alpine.LFD.2.00.1003311549250.32352@localhost.localdomain>
- <20100331142736.GA26207@Krystal>
- <alpine.LFD.2.00.1004061013340.32352@localhost.localdomain>
- <20100406125302.GA22529@Krystal>
- <alpine.LFD.2.00.1004152028000.3625@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004152028000.3625@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755304Ab0DOSjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 14:39:10 -0400
+From: Glauber Costa <glommer@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com
+Subject: [PATCH 4/5] export new cpuid KVM_CAP
+Date: Thu, 15 Apr 2010 14:37:27 -0400
+Message-Id: <1271356648-5108-5-git-send-email-glommer@redhat.com>
+In-Reply-To: <1271356648-5108-4-git-send-email-glommer@redhat.com>
+References: <1271356648-5108-1-git-send-email-glommer@redhat.com>
+ <1271356648-5108-2-git-send-email-glommer@redhat.com>
+ <1271356648-5108-3-git-send-email-glommer@redhat.com>
+ <1271356648-5108-4-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 08:32:05PM +0200, Thomas Gleixner wrote:
-> B1;2005;0cOn Tue, 6 Apr 2010, Mathieu Desnoyers wrote:
-> > Implement a basic state machine checker in the debugobjects.
-> > 
-> > This state machine checker detects races and inconsistencies within the "active"
-> > life of a debugobject. The checker only keeps track of the current state; all
-> > the state machine logic is kept at the object instance level.
-> > 
-> > The checker works by adding a supplementary "unsigned int astate" field to the
-> > debug_obj structure. It keeps track of the current "active state" of the object.
-> > 
-> > The only constraints that are imposed on the states by the debugobjects system
-> > is that:
-> > 
-> > - activation of an object sets the current active state to 0,
-> > - deactivation of an object expects the current active state to be 0.
-> > 
-> > For the rest of the states, the state mapping is determined by the specific
-> > object instance. Therefore, the logic keeping track of the state machine is
-> > within the specialized instance, without any need to know about it at the
-> > debugobject level.
-> > 
-> > The current object active state is changed by calling:
-> > 
-> > debug_object_active_state(addr, descr, expect, next)
-> > 
-> > where "expect" is the expected state and "next" is the next state to move to if
-> > the expected state is found. A warning is generated if the expected is not
-> > found.
-> 
-> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-> 
-> Please feel free to pull that into the rcu branch where the users are
-> going to be.
+Since we're changing the msrs kvmclock uses, we have to communicate
+that to the guest, through cpuid. We can add a new KVM_CAP to the
+hypervisor, and then patch userspace to recognize it.
 
-Thank you, Thomas!!!
+And if we ever add a new cpuid bit in the future, we have to do that again,
+which create some complexity and delay in feature adoption.
 
-							Thanx, Paul
+Instead, what I'm proposing in this patch is a new capability, called
+KVM_CAP_X86_CPUID_FEATURE_LIST, that returns the current feature list
+currently supported by the hypervisor. If we ever want to add or remove
+some feature, we only need to tweak into the HV, leaving userspace untouched.
+
+Signed-off-by: Glauber Costa <glommer@redhat.com>
+---
+ arch/x86/kvm/x86.c  |    6 ++++++
+ include/linux/kvm.h |    1 +
+ 2 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 714aae2..74f0dc3 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1545,6 +1545,12 @@ int kvm_dev_ioctl_check_extension(long ext)
+ 	case KVM_CAP_MCE:
+ 		r = KVM_MAX_MCE_BANKS;
+ 		break;
++	case KVM_CAP_X86_CPUID_FEATURE_LIST:
++		r = (1 << KVM_FEATURE_CLOCKSOURCE) |
++		(1 << KVM_FEATURE_NOP_IO_DELAY) |
++		(1 << KVM_FEATURE_MMU_OP) |
++		(1 << KVM_FEATURE_CLOCKSOURCE2);
++		break;
+ 	default:
+ 		r = 0;
+ 		break;
+diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+index ce28767..1ce124f 100644
+--- a/include/linux/kvm.h
++++ b/include/linux/kvm.h
+@@ -507,6 +507,7 @@ struct kvm_ioeventfd {
+ #define KVM_CAP_DEBUGREGS 50
+ #endif
+ #define KVM_CAP_X86_ROBUST_SINGLESTEP 51
++#define KVM_CAP_X86_CPUID_FEATURE_LIST 52
+ 
+ #ifdef KVM_CAP_IRQ_ROUTING
+ 
+-- 
+1.6.2.2
+
