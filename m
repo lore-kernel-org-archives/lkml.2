@@ -1,171 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab0DORSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 13:18:09 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35424 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab0DORSH (ORCPT
+	id S1755181Ab0DORSX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 13:18:23 -0400
+Received: from mail-qy0-f189.google.com ([209.85.221.189]:59824 "EHLO
+	mail-qy0-f189.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106Ab0DORSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 13:18:07 -0400
+	Thu, 15 Apr 2010 13:18:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=LGpVrqFWTDUWCtGGmDQ+Fb+8JNC5C/GN8dcmw+tOmYF1XStZUbAuUZiFs0DnsNRwG0
-         8HGwmpH7+2331GDKEuUrukPZ9O9OLa+yCfcuzkq5ggb5rq936L/TTGA0jHZ9h3/aLGQt
-         T87wCZF1BW06sDo3q0xr0Ogl8eurkXFuafr+Q=
-From: Chihau Chau <chihau@gmail.com>
-To: herbert@gondor.hengli.com.au
-Cc: davem@davemloft.net, roel.kluin@gmail.com, sebastian@breakpoint.cc,
-       linux-geode@lists.infradead.org, linux-crypto@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Chihau Chau <chihau@gmail.com>
-Subject: [PATCH] Crypto: geode-aes: Fix some code style issues
-Date: Thu, 15 Apr 2010 13:17:59 -0400
-Message-Id: <1271351879-22805-1-git-send-email-chihau@gmail.com>
-X-Mailer: git-send-email 1.5.6.3
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :organization:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=aw3LJB5kqdUwHvxfE/3/nvdd5eIzspp9XOnSp3+a/sI4e2Oz1BRu6cYBI7PkFuv6Ft
+         tSLIbRy4Vnq1F6WSSyziR9a8nHikRwstcyVRLvnQkI1T4vHZS1SBVkmz9Vd0EvsC77D7
+         OHzzRMN5xswANzmz5SJ24AzX5XBkjUHzonuEE=
+Subject: Re: sched_clock - microblaze
+From: Wu Zhangjin <wuzhangjin@gmail.com>
+Reply-To: wuzhangjin@gmail.com
+To: michal.simek@petalogix.com
+Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4BC728DD.5020404@petalogix.com>
+References: <4BC728DD.5020404@petalogix.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: DSLab, Lanzhou University, China
+Date: Fri, 16 Apr 2010 01:18:07 +0800
+Message-ID: <1271351887.20625.77.camel@falcon>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chihau Chau <chihau@gmail.com>
+On Thu, 2010-04-15 at 16:55 +0200, Michal Simek wrote:
+> Hi Thomas and Steven,
+> 
+> I would like to improve time measuring for ftrace (Log below)
+> 
+> I looked at http://lkml.org/lkml/2009/11/16/181
+> where Thomas suggested to create sched_clock() function.
+> I used the same solution as Wu proposed but it is not nice.
 
-This fixes some code style issues like:
+Which solution did you use?
 
-- Use #include <linux/io.h> instead of <asm/io.h> and #include
-  <linux/delay.h> instead of <asm/delay.h>
+>From my point of view, the basic idea of high resolution sched_clock()
+looks like:
 
-- Use "foo *bar" instead of "foo * bar"
+0. read the clock cycles from the hardware clock counter
 
-- Add a space after the for or while sentence and before the open
-  parenthesis '('
+cyc = read_clock_counter()
 
-- Don't use assignments in a if condition
+read_clock_counter() is processor specific, for example, in X86, there
+is a tsc register, and in a r4k MIPS, there is a c0 counter. such
+counters can provide a high resolution of time counting: the tsc
+register's frequency is equal to the frequency of the processor, if the
+frequency of the processor is 1G, then one cycle of the counter gives us
+1ns.
 
-Signed-off-by: Chihau Chau <chihau@gmail.com>
----
- drivers/crypto/geode-aes.c |   36 ++++++++++++++++++++----------------
- 1 files changed, 20 insertions(+), 16 deletions(-)
+1. convert the clock cycles to ns
 
-diff --git a/drivers/crypto/geode-aes.c b/drivers/crypto/geode-aes.c
-index c7a5a43..09389dd 100644
---- a/drivers/crypto/geode-aes.c
-+++ b/drivers/crypto/geode-aes.c
-@@ -15,14 +15,14 @@
- #include <crypto/algapi.h>
- #include <crypto/aes.h>
- 
--#include <asm/io.h>
--#include <asm/delay.h>
-+#include <linux/io.h>
-+#include <linux/delay.h>
- 
- #include "geode-aes.h"
- 
- /* Static structures */
- 
--static void __iomem * _iobase;
-+static void __iomem *_iobase;
- static spinlock_t lock;
- 
- /* Write a 128 bit field (either a writable key or IV) */
-@@ -30,7 +30,7 @@ static inline void
- _writefield(u32 offset, void *value)
- {
- 	int i;
--	for(i = 0; i < 4; i++)
-+	for (i = 0; i < 4; i++)
- 		iowrite32(((u32 *) value)[i], _iobase + offset + (i * 4));
- }
- 
-@@ -39,7 +39,7 @@ static inline void
- _readfield(u32 offset, void *value)
- {
- 	int i;
--	for(i = 0; i < 4; i++)
-+	for (i = 0; i < 4; i++)
- 		((u32 *) value)[i] = ioread32(_iobase + offset + (i * 4));
- }
- 
-@@ -59,7 +59,7 @@ do_crypt(void *src, void *dst, int len, u32 flags)
- 	do {
- 		status = ioread32(_iobase + AES_INTR_REG);
- 		cpu_relax();
--	} while(!(status & AES_INTRA_PENDING) && --counter);
-+	} while (!(status & AES_INTRA_PENDING) && --counter);
- 
- 	/* Clear the event */
- 	iowrite32((status & 0xFF) | AES_INTRA_PENDING, _iobase + AES_INTR_REG);
-@@ -317,7 +317,7 @@ geode_cbc_decrypt(struct blkcipher_desc *desc,
- 	err = blkcipher_walk_virt(desc, &walk);
- 	op->iv = walk.iv;
- 
--	while((nbytes = walk.nbytes)) {
-+	while ((nbytes = walk.nbytes)) {
- 		op->src = walk.src.virt.addr,
- 		op->dst = walk.dst.virt.addr;
- 		op->mode = AES_MODE_CBC;
-@@ -349,7 +349,7 @@ geode_cbc_encrypt(struct blkcipher_desc *desc,
- 	err = blkcipher_walk_virt(desc, &walk);
- 	op->iv = walk.iv;
- 
--	while((nbytes = walk.nbytes)) {
-+	while ((nbytes = walk.nbytes)) {
- 		op->src = walk.src.virt.addr,
- 		op->dst = walk.dst.virt.addr;
- 		op->mode = AES_MODE_CBC;
-@@ -429,7 +429,7 @@ geode_ecb_decrypt(struct blkcipher_desc *desc,
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
- 	err = blkcipher_walk_virt(desc, &walk);
- 
--	while((nbytes = walk.nbytes)) {
-+	while ((nbytes = walk.nbytes)) {
- 		op->src = walk.src.virt.addr,
- 		op->dst = walk.dst.virt.addr;
- 		op->mode = AES_MODE_ECB;
-@@ -459,7 +459,7 @@ geode_ecb_encrypt(struct blkcipher_desc *desc,
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
- 	err = blkcipher_walk_virt(desc, &walk);
- 
--	while((nbytes = walk.nbytes)) {
-+	while ((nbytes = walk.nbytes)) {
- 		op->src = walk.src.virt.addr,
- 		op->dst = walk.dst.virt.addr;
- 		op->mode = AES_MODE_ECB;
-@@ -518,11 +518,12 @@ static int __devinit
- geode_aes_probe(struct pci_dev *dev, const struct pci_device_id *id)
- {
- 	int ret;
--
--	if ((ret = pci_enable_device(dev)))
-+	ret = pci_enable_device(dev);
-+	if (ret)
- 		return ret;
- 
--	if ((ret = pci_request_regions(dev, "geode-aes")))
-+	ret = pci_request_regions(dev, "geode-aes");
-+	if (ret)
- 		goto eenable;
- 
- 	_iobase = pci_iomap(dev, 0, 0);
-@@ -537,13 +538,16 @@ geode_aes_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	/* Clear any pending activity */
- 	iowrite32(AES_INTR_PENDING | AES_INTR_MASK, _iobase + AES_INTR_REG);
- 
--	if ((ret = crypto_register_alg(&geode_alg)))
-+	ret = crypto_register_alg(&geode_alg);
-+	if (ret)
- 		goto eiomap;
- 
--	if ((ret = crypto_register_alg(&geode_ecb_alg)))
-+	ret = crypto_register_alg(&geode_ecb_alg);
-+	if (ret)
- 		goto ealg;
- 
--	if ((ret = crypto_register_alg(&geode_cbc_alg)))
-+	ret = crypto_register_alg(&geode_cbc_alg);
-+	if (ret)
- 		goto eecb;
- 
- 	printk(KERN_NOTICE "geode-aes: GEODE AES engine enabled.\n");
--- 
-1.5.6.3
+ns = cyc * NSEC_PER_SEC / freq (freq is clock freq of the counter)
+   = use the scaling math. (please refer to arch/x86/kernel/tsc.c)
+   = (cyc * mult) >> shift   (refer to clocksource_calc_mult_shift() )
+
+so, you need to implement the arch specific cyc2ns(), now, we get:
+
+cyc = read_clock_counter();
+ns = cyc2ns(cyc);
+
+2. handle the overflow problems
+
++ overflow of 32bit counter, solution: cnt32_to_63()
+
+If the hardware clock counter is 32bit long, you need to 'avoid' its
+counting overflow via cnt32_to_63() defined in
+include/linux/cnt32_to_63()
+
+Please ensure the cnt32_to_63() is called every less than half of the
+overflow period(the max time the counter can record) of the hardware
+clock counter, now, we get:
+
+#ifdef CONFIG_64BIT
+cyc = read_clock_counter();
+#else /* CONFIG_32BIT */
+cyc = cnt32_to_63(read_clock_counter());
+#endif
+ns = cyc2ns(cyc);
+
+and a kernel software timer(setup_timer(), mod_timer()) is needed to
+update call the cnt32_to_63() automatically.
+
+[why cnt32_to_63()? it has less overhead than the other methods, will
+talk about it later.]
+
+'avoid' above means avoid it overflow too quickly, for example, a 32bit
+clock counter with 400MHz may overflow after about 10+ seconds, which is
+not enough for Ftrace since a function may be executed for more 200+
+seconds, we need a bigger 'counter', that is why cnt32_to_63() is
+needed, it tries to convert the 32bit counter to a virtual 63bit(the
+highest bit is used to sync the virtual high 32bit with the low real
+32bit in the hardware counter) long, then with the 63bit counter, it
+will overflow after several hundreds of days, which is enough for
+generic debugging.
+
++ overflow of (cyc * mult), solution: smaller shift OR 128bit arithmetic
+
+And please ensure the shift is not too big(Seems ARM use 8 as the shift,
+and X86 use 10), otherwise, the 64bit arithmetic (cyc * mult) will
+overflow quickly.
+
+As we can see, the type of the return value of sched_clock() is unsigned
+long long, 64bit, so, the value of (cyc * mult) is limited to 64bit. And
+because cyc is also in 64bit (63bit if using cnt32_to_63()), mult can
+not be too big, otherwise, (cyc * mult) will overflow quickly, mult is
+relative to shift, then shift can not be too big.
+
+In another aspect, the shift can not be too small, otherwise, the
+precision will be lost. to learn how to choose such a shift, please
+refer to arch/arm/plat-orion/time.c and arch/x86/kernel/tsc.c.
+
+By default, the mult and shift in struct clocksource is calculated by
+clocksource_calc_mult_shift(), both of them are in 32bit, and in some
+platforms, for a 32bit counter, the shift is calculated from 32 to 0 and
+will be set as 31 for getting a good precision, but it is too big a
+value for a virtual 63bit counter, so, we need to manually set it a
+smaller one, the same to a real 64bit hardware counter.
+
+In some platforms, they have used the 128bit arithmetic to handle the
+overflow problem for a real 64bit hardware counter(please refer to
+arch/mips/cavium-octeon/csrc-octeon.c), perhaps we also need to use it
+for clocksource_cyc2ns() too(I did not check the potential overflow
+problem in such processor yet, it should overflow if the shift is too
+big!), but we also need to notice that, 128bit arithmetic may not be
+supported directly in some processors or it may increase the overhead
+obviously.
+
+3. why not getnstimeofday()
+
+we need a lower overhead of clock func (please refer to
+kernel/trace/trace_clock.c) to make Ftrace has lower overhead for the
+clock func is a basic function needed to get the timestamp of entering
+into and exiting from a kernel function.
+
+I have done some overhead benchmarking of the cnt32_to_63() based
+sched_clock() and getnstimeofday() on a MIPS machine with 64bit kernel:
+
+Clock func/overhead(ns) Min Avg Max Jitter Std.Dev.
+----------------------------------------------
+  sched_clock(cnt32_to_63) 105 116.2 236 131 9.5
+  getnstimeofday()      160 167.1 437 277 15
+  sched_clock(Accumulation method[1])  193 200.9 243 50 2.9
+----------------------------------------------
+
+'Overhead' above means the time spent on calling clock func themselves,
+as we can see, the result of cnt32_to_63() base method is better than
+the other two.
+
+[1] the algorithm looks like this:
+
+static inline unsigned long long notrace read_clock_counter(void)
+{
+        static u64 clock;
+        static u32 old_clock;
+        u32 current_clock;
+
+        raw_spin_lock(&clock_lock);
+        current_clock = read_c0_count();
+        clock += ((current_clock - old_clock) & MASK);
+        old_clock = current_clock;
+        raw_spin_unlock(&clock_lock);
+
+        return clock;
+}
+
+Regards,
+	Wu Zhangjin
+
+> 
+> Is unimplemented sched_clock the reason why ftrace not show fine grain time?
+> 
+> Or is there any other thing which is wrong?
+> 
+> Thanks,
+> Michal
+> 
+> 
+> 
+> Dumping ftrace buffer:
+> ---------------------------------
+>   0) ! 10000.00 us |                                }
+>   0)   <========== |
+>   0) ! 10000.00 us |                            }
+>   0) ! 10000.00 us |                          }
+>   0)   0.000 us    |                          get_seconds();
+>   0)   0.000 us    |                          tcp_rcv_rtt_update();
+>   0)   0.000 us    |                          tcp_ack();
+>   0)   0.000 us    |                          tcp_rcv_rtt_update();
+>   0)   0.000 us    |                          tcp_urg();
+>   0)               |                          tcp_data_queue() {
+>   0)   0.000 us    |                            __sk_mem_schedule();
+>   0)   0.000 us    |                            tcp_event_data_recv();
+>   0)   0.000 us    |                            sock_def_readable();
+>   0)   0.000 us    |                          }
+>   0)   0.000 us    |                          tcp_check_space();
+>   0)               |                          __tcp_ack_snd_check() {
+> 
+> 
+
 
