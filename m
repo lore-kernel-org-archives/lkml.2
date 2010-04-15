@@ -1,165 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab0DOG2c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 02:28:32 -0400
-Received: from qw-out-2122.google.com ([74.125.92.26]:60454 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755257Ab0DOG2b convert rfc822-to-8bit (ORCPT
+	id S1751925Ab0DOG3s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 02:29:48 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:33997 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab0DOG3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 02:28:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qevmCVAepfkfIvQRf7PUjMXMI17SNjkEv+JvK6pxJXRRaw6z802KSjRKkSLVka1a54
-         uuQZ+JNx3wZljJtZ3K2NIcYy4ac+VsuExuscok8m7aMVmYBN7laHBCpixkq/vkYjiJLv
-         Oe21LVUEctd3NvhZ1jgG/73CN+Je52DzdCxJI=
-MIME-Version: 1.0
-In-Reply-To: <o2w628d1651004142317n438d21e4t359c9661c2c00926@mail.gmail.com>
-References: <20100413025228.GC10860@localhost.localdomain>
-	 <m2v7b6bb4a51004142312ze69796ak87d4ee65f6dd5529@mail.gmail.com>
-	 <o2w628d1651004142317n438d21e4t359c9661c2c00926@mail.gmail.com>
-Date: Thu, 15 Apr 2010 14:28:30 +0800
-Message-ID: <q2m7b6bb4a51004142328jf5a16efei859d5cd90f2911d@mail.gmail.com>
-Subject: Re: [PATCH] Kconfig: Make config Filter access to /dev/mem default y
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: wzt wzt <wzt.wzt@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-       x86@kernel.org, zippel@linux-m68k.org
+	Thu, 15 Apr 2010 02:29:47 -0400
+Date: Thu, 15 Apr 2010 15:21:04 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Greg Thelen <gthelen@google.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       balbir@linux.vnet.ibm.com, Andrea Righi <arighi@develer.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-Id: <20100415152104.62593f37.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <g2u49b004811004142148i3db9fefaje1f20760426e0c7e@mail.gmail.com>
+References: <1268609202-15581-2-git-send-email-arighi@develer.com>
+	<20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100318162855.GG18054@balbir.in.ibm.com>
+	<20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100319024039.GH18054@balbir.in.ibm.com>
+	<20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com>
+	<xr931veiplpr.fsf@ninji.mtv.corp.google.com>
+	<20100414140523.GC13535@redhat.com>
+	<xr9339yxyepc.fsf@ninji.mtv.corp.google.com>
+	<20100415114022.ef01b704.nishimura@mxp.nes.nec.co.jp>
+	<g2u49b004811004142148i3db9fefaje1f20760426e0c7e@mail.gmail.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 2:17 PM, wzt wzt <wzt.wzt@gmail.com> wrote:
-> On Thu, Apr 15, 2010 at 2:12 PM, Xiaotian Feng <xtfeng@gmail.com> wrote:
->> On Tue, Apr 13, 2010 at 10:52 AM,  <wzt.wzt@gmail.com> wrote:
->>> Recently, most company start use >=2.6.31 kernels to replace redhat kernels.
->>> But the config "Filter access to /dev/mem" is "default n", that allows kernel
->>> rootkit using /dev/mem again. it could access all kernel memory default. Most
->>> administrator don't known the "Filter access to /dev/mem" is "defult N", when
->>> he compiles the kernel, it's easily to be attacked by rootkit.
->>
->> Have you ever successfully attack by this way?
->
-> [root@localhost zealot]# ./zealot
+On Wed, 14 Apr 2010 21:48:25 -0700, Greg Thelen <gthelen@google.com> wrote:
+> On Wed, Apr 14, 2010 at 7:40 PM, Daisuke Nishimura
+> <nishimura@mxp.nes.nec.co.jp> wrote:
+> > On Wed, 14 Apr 2010 13:14:07 -0700, Greg Thelen <gthelen@google.com> wrote:
+> >> Vivek Goyal <vgoyal@redhat.com> writes:
+> >>
+> >> > On Tue, Apr 13, 2010 at 11:55:12PM -0700, Greg Thelen wrote:
+> >> >> On Thu, Mar 18, 2010 at 8:00 PM, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >> >> > On Fri, 19 Mar 2010 08:10:39 +0530
+> >> >> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> >> >> >
+> >> >> >> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-19 10:23:32]:
+> >> >> >>
+> >> >> >> > On Thu, 18 Mar 2010 21:58:55 +0530
+> >> >> >> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> >> >> >> >
+> >> >> >> > > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:35:27]:
+> >> >> >> >
+> >> >> >> > > > Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
+> >> >> >> > > > mem_cgroup_update_file_mapped(). The look may be messy but it's not your
+> >> >> >> > > > fault. But please write "why add new function" to patch description.
+> >> >> >> > > >
+> >> >> >> > > > I'm sorry for wasting your time.
+> >> >> >> > >
+> >> >> >> > > Do we need to go down this route? We could check the stat and do the
+> >> >> >> > > correct thing. In case of FILE_MAPPED, always grab page_cgroup_lock
+> >> >> >> > > and for others potentially look at trylock. It is OK for different
+> >> >> >> > > stats to be protected via different locks.
+> >> >> >> > >
+> >> >> >> >
+> >> >> >> > I _don't_ want to see a mixture of spinlock and trylock in a function.
+> >> >> >> >
+> >> >> >>
+> >> >> >> A well documented well written function can help. The other thing is to
+> >> >> >> of-course solve this correctly by introducing different locking around
+> >> >> >> the statistics. Are you suggesting the later?
+> >> >> >>
+> >> >> >
+> >> >> > No. As I wrote.
+> >> >> >        - don't modify codes around FILE_MAPPED in this series.
+> >> >> >        - add a new functions for new statistics
+> >> >> > Then,
+> >> >> >        - think about clean up later, after we confirm all things work as expected.
+> >> >>
+> >> >> I have ported Andrea Righi's memcg dirty page accounting patches to latest
+> >> >> mmtom-2010-04-05-16-09.  In doing so I have to address this locking issue.  Does
+> >> >> the following look good?  I will (of course) submit the entire patch for review,
+> >> >> but I wanted make sure I was aiming in the right direction.
+> >> >>
+> >> >> void mem_cgroup_update_page_stat(struct page *page,
+> >> >>                    enum mem_cgroup_write_page_stat_item idx, bool charge)
+> >> >> {
+> >> >>    static int seq;
+> >> >>    struct page_cgroup *pc;
+> >> >>
+> >> >>    if (mem_cgroup_disabled())
+> >> >>            return;
+> >> >>    pc = lookup_page_cgroup(page);
+> >> >>    if (!pc || mem_cgroup_is_root(pc->mem_cgroup))
+> >> >>            return;
+> >> >>
+> >> >>    /*
+> >> >>     * This routine does not disable irq when updating stats.  So it is
+> >> >>     * possible that a stat update from within interrupt routine, could
+> >> >>     * deadlock.  Use trylock_page_cgroup() to avoid such deadlock.  This
+> >> >>     * makes the memcg counters fuzzy.  More complicated, or lower
+> >> >>     * performing locking solutions avoid this fuzziness, but are not
+> >> >>     * currently needed.
+> >> >>     */
+> >> >>    if (irqs_disabled()) {
+> >> >             ^^^^^^^^^
+> >> > Or may be in_interrupt()?
+> >>
+> >> Good catch.  I will replace irqs_disabled() with in_interrupt().
+> >>
+> > I think you should check both. __remove_from_page_cache(), which will update
+> > DIRTY, is called with irq disabled(iow, under mapping->tree_lock) but not in
+> > interrupt context.
+> 
+> The only reason to use trylock in this case is to prevent deadlock
+> when running in a context that may have preempted or interrupted a
+> routine that already holds the bit locked.  In the
+> __remove_from_page_cache() irqs are disabled, but that does not imply
+> that a routine holding the spinlock has been preempted.  When the bit
+> is locked, preemption is disabled.  The only way to interrupt a holder
+> of the bit for an interrupt to occur (I/O, timer, etc).  So I think
+> that in_interrupt() is sufficient.  Am I missing something?
+> 
+IIUC, it's would be enough to prevent deadlock where one CPU tries to acquire
+the same page cgroup lock. But there is still some possibility where 2 CPUs
+can cause dead lock each other(please see the commit e767e056).
+IOW, my point is "don't call lock_page_cgroup() under mapping->tree_lock". 
 
-so you're running rootkit as a root user?
-
-> [+] Found HISTSIZE.                             [SAFE]
-> [+] Check md5 values.                           [SAFE]
-> [+] eth0 was not set promsic.                   [SAFE]
-> [+] Not found raw socket.                       [SAFE]
-> system_call addr changed to 0xc04028a0,sys_call_table addr changed to
-> 0xc0675130,Found dr rootkit!,system call sys_execve addr changed to
-> 0xc0401582,system call sys_olduname addr changed to 0xc0405989,system
-> call sys_fork addr changed to 0xc0407bbb
->
-> It's a host ids i wrote,  it could search all kernel memory using /dev/mem. ok?
->
-> some of the code here:
-> static void *kmap(unsigned long off, unsigned long count)
-> {
->        int fd;
->        void *p;
->
->        fd = open(DEV_MEM, O_RDWR);
->        if (fd < 3) {
->                DbgPrint("open %s failed.\n", DEV_MEM);
->                dup2(fd, 3);
->                close(fd);
->                fd = 3;
->        }
->
->        p = mmap(NULL, ALIGNUP(count + 4097), PROT_READ | PROT_WRITE,
->                MAP_SHARED, fd, ALIGNDOWN(off) & 0x0fffffff);
->        if (p == MAP_FAILED)
->        {
->                mem_support_flag = 1;
->                fprintf(stdout, "[-] /dev/mem cannot be read or write.\n");
->
->                DbgPrint("mmap failture, errno %d\n", errno);
->                close(fd);
->                return NULL;
->        }
->
->        close(fd);
->        return p;
-> }
->
->>If CONFIG_STRICT_DEVMEM
->> is not set, the /dev/mem access is filtered in pat code.
-> please point it, thanks.
->
-
-Years ago, someone sent the same patch.
-check http://lkml.org/lkml/2008/11/7/361
-
->>>
->>> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
->>>
->>> ---
->>>  arch/x86/Kconfig.debug            |    3 ++-
->>>  arch/x86/configs/i386_defconfig   |    2 +-
->>>  arch/x86/configs/x86_64_defconfig |    2 +-
->>>  3 files changed, 4 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
->>> index bc01e3e..733aea6 100644
->>> --- a/arch/x86/Kconfig.debug
->>> +++ b/arch/x86/Kconfig.debug
->>> @@ -7,6 +7,7 @@ source "lib/Kconfig.debug"
->>>
->>>  config STRICT_DEVMEM
->>>        bool "Filter access to /dev/mem"
->>> +       default y
->>>        ---help---
->>>          If this option is disabled, you allow userspace (root) access to all
->>>          of memory, including kernel and userspace memory. Accidental
->>> @@ -20,7 +21,7 @@ config STRICT_DEVMEM
->>>          This is sufficient for dosemu and X and all common users of
->>>          /dev/mem.
->>>
->>> -         If in doubt, say Y.
->>> +         If in doubt, say N.
->>>
->>>  config X86_VERBOSE_BOOTUP
->>>        bool "Enable verbose x86 bootup info messages"
->>> diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
->>> index d28fad1..95c85a8 100644
->>> --- a/arch/x86/configs/i386_defconfig
->>> +++ b/arch/x86/configs/i386_defconfig
->>> @@ -2386,7 +2386,7 @@ CONFIG_PROVIDE_OHCI1394_DMA_INIT=y
->>>  # CONFIG_SAMPLES is not set
->>>  CONFIG_HAVE_ARCH_KGDB=y
->>>  # CONFIG_KGDB is not set
->>> -# CONFIG_STRICT_DEVMEM is not set
->>> +CONFIG_STRICT_DEVMEM=y
->>>  CONFIG_X86_VERBOSE_BOOTUP=y
->>>  CONFIG_EARLY_PRINTK=y
->>>  CONFIG_EARLY_PRINTK_DBGP=y
->>> diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
->>> index 6c86acd..659bfe7 100644
->>> --- a/arch/x86/configs/x86_64_defconfig
->>> +++ b/arch/x86/configs/x86_64_defconfig
->>> @@ -2360,7 +2360,7 @@ CONFIG_PROVIDE_OHCI1394_DMA_INIT=y
->>>  # CONFIG_SAMPLES is not set
->>>  CONFIG_HAVE_ARCH_KGDB=y
->>>  # CONFIG_KGDB is not set
->>> -# CONFIG_STRICT_DEVMEM is not set
->>> +CONFIG_STRICT_DEVMEM=y
->>>  CONFIG_X86_VERBOSE_BOOTUP=y
->>>  CONFIG_EARLY_PRINTK=y
->>>  CONFIG_EARLY_PRINTK_DBGP=y
->>> --
->>> 1.6.5.3
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->
+Thanks,
+Daisuke Nishimura.
