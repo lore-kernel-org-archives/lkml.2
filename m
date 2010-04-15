@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab0DORY3 (ORCPT <rfc822;w@1wt.eu>);
+	id S1755826Ab0DORYe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 13:24:34 -0400
+Received: from elvis.mu.org ([192.203.228.196]:55180 "EHLO elvis.mu.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755618Ab0DORY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Apr 2010 13:24:29 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:40443 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152Ab0DORY0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 13:24:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Eu3HlE77R8y1C0+MQsJqR4Unx0uRKqKYr8KY+4Jy6v0jxQeNqPQQEoVjHxuXPhupRq
-         iG+ZKYf74KqTEjj32yEVUBhRU1QEYXyZEV9nnpcna3R2o/xHroPUS/Ks9Sxend8QnV6r
-         VHGlOU04GRXXPW7Nd4IKzCs2gJOZNM6SVy9L8=
-Date: Thu, 15 Apr 2010 19:24:22 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: PowerPC WARN_ON_ONCE() after merge of the final
-	tree (tip related)
-Message-ID: <20100415172421.GB5069@nowhere>
-References: <20100415161214.04637496.sfr@canb.auug.org.au> <20100415064940.GA9240@elte.hu> <20100415130032.GA6789@nowhere> <20100415140358.GA19981@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100415140358.GA19981@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Dave Chinner <david@fromorbit.com>, Mel Gorman <mel@csn.ul.ie>,
+       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, suleiman@google.com
+Message-Id: <C8D0756B-9FAC-4D80-A1C1-CD825CAC30E3@freebsd.org>
+From: Suleiman Souhlal <ssouhlal@freebsd.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <20100415103053.GA5336@cmpxchg.org>
+Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: [PATCH 1/4] vmscan: delegate pageout io to flusher thread if current is kswapd
+Date: Thu, 15 Apr 2010 10:24:28 -0700
+References: <64BE60A8-EEF9-4AC6-AF0A-0ED3CB544726@freebsd.org> <20100415171142.D192.A69D9226@jp.fujitsu.com> <20100415172215.D19B.A69D9226@jp.fujitsu.com> <20100415103053.GA5336@cmpxchg.org>
+X-Mailer: Apple Mail (2.936)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 04:03:58PM +0200, Ingo Molnar wrote:
-> > 
-> > 
-> > diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> > index 78325f8..65d4336 100644
-> > --- a/kernel/lockdep.c
-> > +++ b/kernel/lockdep.c
-> > @@ -2298,7 +2298,11 @@ void trace_hardirqs_on_caller(unsigned long ip)
-> >  		return;
-> >  
-> >  	if (unlikely(curr->hardirqs_enabled)) {
-> > +		unsigned long flags;
-> > +
-> > +		raw_local_irq_save(flags);
-> >  		debug_atomic_inc(redundant_hardirqs_on);
-> > +		raw_local_irq_restore(flags);
-> >  		return;
-> >  	}
-> >  	/* we'll do an OFF -> ON transition: */
-> 
-> that looks rather ugly. Why not do a raw:
-> 
-> 	this_cpu_inc(lockdep_stats.redundant_hardirqs_on);
-> 
-> which basically open-codes debug_atomic_inc(), but without the warning?
 
+On Apr 15, 2010, at 3:30 AM, Johannes Weiner wrote:
 
-There is also no guarantee we are in a non-preemptable section. We can then
-also race against another cpu.
+> On Thu, Apr 15, 2010 at 05:26:27PM +0900, KOSAKI Motohiro wrote:
+>>
+>> Hannes, if my remember is correct, you tried similar swap-cluster IO
+>> long time ago. now I can't remember why we didn't merged such patch.
+>> Do you remember anything?
+>
+> Oh, quite vividly in fact :)  For a lot of swap loads the LRU order
+> diverged heavily from swap slot order and readaround was a waste of
+> time.
+>
+> Of course, the patch looked good, too, but it did not match reality
+> that well.
+>
+> I guess 'how about this patch?' won't get us as far as 'how about
+> those numbers/graphs of several real-life workloads?  oh and here
+> is the patch...'.
+>
+>>>>     Cluster writes to disk due to memory pressure.
+>>>>
+>>>>     Write out logically adjacent pages to the one we're paging out
+>>>>     so that we may get better IOs in these situations:
+>>>>     These pages are likely to be contiguous on disk to the one  
+>>>> we're
+>>>>     writing out, so they should get merged into a single disk IO.
+>>>>
+>>>>     Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+>
+> For random IO, LRU order will have nothing to do with mapping/disk  
+> order.
 
-I'm not sure what to do.
+Right, that's why the patch writes out contiguous pages in mapping  
+order.
 
+If they are contiguous on disk with the original page, then writing  
+them out
+as well should be essentially free (when it comes to disk time). There  
+is
+almost no waste of memory regardless of the access patterns, as far as I
+can tell.
+
+This patch is just a proof of concept and could be improved by getting  
+help
+from the filesystem/swap code to ensure that the additional pages we're
+writing out really are contiguous with the original one.
+
+-- Suleiman
