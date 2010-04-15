@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab0DOGzz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 02:55:55 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54163
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751712Ab0DOGzy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 02:55:54 -0400
-Date: Wed, 14 Apr 2010 23:55:57 -0700 (PDT)
-Message-Id: <20100414.235557.123118153.davem@davemloft.net>
-To: mingo@elte.hu
-Cc: sfr@canb.auug.org.au, tglx@linutronix.de, hpa@zytor.com,
-       peterz@infradead.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-       linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next: PowerPC WARN_ON_ONCE() after merge of the final
- tree (tip related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100415064940.GA9240@elte.hu>
-References: <20100415161214.04637496.sfr@canb.auug.org.au>
-	<20100415064940.GA9240@elte.hu>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752791Ab0DOG4T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 02:56:19 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:48877 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751712Ab0DOG4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 02:56:17 -0400
+Date: Thu, 15 Apr 2010 08:56:15 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: sfr@canb.auug.org.au, guijianfeng@cn.fujitsu.com, vgoyal@redhat.com,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] blkio: Fix linux-next build failure after merge of
+	block tree
+Message-ID: <20100415065615.GQ27497@kernel.dk>
+References: <20100415053543.15190.98919.stgit@austin.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100415053543.15190.98919.stgit@austin.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@elte.hu>
-Date: Thu, 15 Apr 2010 08:49:40 +0200
+On Wed, Apr 14 2010, Divyesh Shah wrote:
+> After merging the block tree, 20100414's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> ERROR: "get_gendisk" [block/blk-cgroup.ko] undefined!
+> ERROR: "sched_clock" [block/blk-cgroup.ko] undefined!
+> 
+> This happens because the two symbols aren't exported and hence not available
+> when blk-cgroup code is built as a module. I've tried to stay consistent with
+> the use of EXPORT_SYMBOL or EXPORT_SYMBOL_GPL with the other symbols in the
+> respective files.
 
-> Btw., WARN_ON trapping on PowerPC is clearly a PowerPC bug - there's a good 
-> reason we have WARN_ON versus BUG_ON - it should be fixed.
+Thanks, applied. I changed the subject to say 'fix for modular
+blk-cgroup build', as that is a lot more descriptive than saying you
+fixed linux-next build. It's more informative to note the actual
+problem, not how it was discovered.
 
-I disagree, an implementation should be allowed to use the most
-efficient implementation possible for both interfaces.
+-- 
+Jens Axboe
 
-I would be using traps for both on sparc64 if that were really
-feasible on sparc64 (and actually with gcc-4.5's "asm goto" it might
-actually be now)
-
-The WARN and BUG macros, when implemented without traps, have serious
-implications for overall code size and register pressure.
