@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab0DOVKr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 17:10:47 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:55930 "EHLO
+	id S1757197Ab0DOVKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 17:10:50 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:42647 "EHLO
 	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756696Ab0DOVKq (ORCPT
+	with ESMTP id S1757084Ab0DOVKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 17:10:46 -0400
+	Thu, 15 Apr 2010 17:10:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
-        b=LJOd21+GAoRognPhDu4OmPqYTjgmIjdDIrbTrU8cEQMDbehZIDG8QNn6Zmb+5KwUlu
-         XWirDDrSTMjAC4syQ33y7cGQbO8K28MQ++FHB/zuJgA4u/UUfOX2ztHBkWwuRnb2ClU5
-         r+AkwfYGDhX/4mBI5W/hHo76gDyPNpUwhCyi8=
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :in-reply-to:references;
+        b=A5x3LRO4a/7lB1NyHe5UH0W5haI9TamEBkHsnid8xeiiNC9Zhgl18NR8tBa/vhAV/q
+         rFDhFCHzZLarAAGLRsg6gxQMXQJf2Eo0QzCkDvlEzQM7n8O1rGczRgGa6Bwg+M0kYerb
+         LDixDtOWh/WlYH3X+56hvmavsevihWPoC6dLU=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 1/2 v2] lockdep: Fix redundant_hardirqs_on incremented with irqs enabled
-Date: Thu, 15 Apr 2010 23:10:42 +0200
-Message-Id: <1271365843-17415-1-git-send-regression-fweisbec@gmail.com>
+       Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 2/2] lockdep: Simplify debug atomic ops
+Date: Thu, 15 Apr 2010 23:10:43 +0200
+Message-Id: <1271365843-17415-2-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+In-Reply-To: <1271365843-17415-1-git-send-regression-fweisbec@gmail.com>
+References: <1271365843-17415-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a path restore the flags while irqs are already enabled, we
-update the per cpu var redundant_hardirqs_on in a racy fashion
-and debug_atomic_inc() warns about this situation.
+Simplify debug_atomic_inc/dec by using this_cpu_inc/dec() instead
+of doing it through an indirect get_cpu_var() and a manual
+incrementation.
 
-In this particular case, loosing a few hits in a stat is not a big
-deal, so increment it without protection.
-
-v2: Don't bother with disabling irq, we can miss one count in
-    rare situations
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- kernel/lockdep.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ kernel/lockdep_internals.h |   10 ++--------
+ 1 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 78325f8..1b58a1b 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -2298,7 +2298,12 @@ void trace_hardirqs_on_caller(unsigned long ip)
- 		return;
+diff --git a/kernel/lockdep_internals.h b/kernel/lockdep_internals.h
+index 8d7d4b6..2b17476 100644
+--- a/kernel/lockdep_internals.h
++++ b/kernel/lockdep_internals.h
+@@ -140,19 +140,13 @@ struct lockdep_stats {
+ DECLARE_PER_CPU(struct lockdep_stats, lockdep_stats);
  
- 	if (unlikely(curr->hardirqs_enabled)) {
--		debug_atomic_inc(redundant_hardirqs_on);
-+		/*
-+		 * Neither irq nor preemption are disabled here
-+		 * so this is racy by nature but loosing one hit
-+		 * in a stat is not a big deal.
-+		 */
-+		this_cpu_inc(lockdep_stats.redundant_hardirqs_on);
- 		return;
- 	}
- 	/* we'll do an OFF -> ON transition: */
+ #define debug_atomic_inc(ptr)			{		\
+-	struct lockdep_stats *__cpu_lockdep_stats;		\
+-								\
+ 	WARN_ON_ONCE(!irqs_disabled());				\
+-	__cpu_lockdep_stats = &__get_cpu_var(lockdep_stats);	\
+-	__cpu_lockdep_stats->ptr++;				\
++	this_cpu_inc(lockdep_stats.ptr);			\
+ }
+ 
+ #define debug_atomic_dec(ptr)			{		\
+-	struct lockdep_stats *__cpu_lockdep_stats;		\
+-								\
+ 	WARN_ON_ONCE(!irqs_disabled());				\
+-	__cpu_lockdep_stats = &__get_cpu_var(lockdep_stats);	\
+-	__cpu_lockdep_stats->ptr--;				\
++	this_cpu_inc(lockdep_stats.ptr);			\
+ }
+ 
+ #define debug_atomic_read(ptr)		({				\
 -- 
 1.6.2.3
 
