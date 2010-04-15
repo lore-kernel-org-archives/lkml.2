@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab0DOLFi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 07:05:38 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:36577 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab0DOLFg (ORCPT
+	id S1752356Ab0DOLG5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 07:06:57 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:55567 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab0DOLG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 07:05:36 -0400
-Date: Thu, 15 Apr 2010 16:35:26 +0530
+	Thu, 15 Apr 2010 07:06:56 -0400
+Date: Thu, 15 Apr 2010 16:36:25 +0530
 From: Arun R Bharadwaj <arun@linux.vnet.ibm.com>
 To: peterz@infradead.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Ingo Molnar <mingo@elte.hu>,
        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
        Dipankar Sarma <dipankar@in.ibm.com>, Balbir Singh <balbir@in.ibm.com>,
-       linux-kernel@vger.kernel.org, Arun Bharadwaj <arun@linux.vnet.ibm.com>
-Subject: [v12 PATCH 1/8]: cpuidle: cleanup cpuidle.h header file.
-Message-ID: <20100415110526.GB16760@linux.vnet.ibm.com>
+       Arun Bharadwaj <arun@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [v12 PATCH 2/8]: cpuidle: cleanup drivers/cpuidle/cpuidle.c
+Message-ID: <20100415110625.GC16760@linux.vnet.ibm.com>
 Reply-To: arun@linux.vnet.ibm.com
 References: <20100415110046.GA16760@linux.vnet.ibm.com>
 MIME-Version: 1.0
@@ -30,197 +30,390 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Arun R Bharadwaj <arun@linux.vnet.ibm.com> [2010-04-15 16:30:46]:
 
-This patch re-designs the data structures used in cpuidle infrastructure.
-Currently, we have a per-cpu device structure. Each cpu needs to register
-under cpuidle as a cpuidle_device. This is not desirable and hence the
-per-cpu registration is removed by this patch.
+This patch cleans up cpuidle.c by doing away with per-cpu
+registration for cpuidle. Instead it introduces a single
+registration system to register to cpuidle subsystem.
 
-This patch introduces a cpuidle_subsystem structure. This needs a one-time
-registration to cpuidle. Also the current design has an array of the idle states
-for each of the CPUs. This is changed to have a global array of idle states.
-The statistics data like 'usage' and 'time' which were earlier part of the
-cpuidle_states structure is biforcated to form a new structure cpuidle_stats,
-which is per-cpu.
 
 Signed-off-by: Arun R Bharadwaj <arun@linux.vnet.ibm.com>
 ---
- drivers/cpuidle/cpuidle.h |    6 +--
- include/linux/cpuidle.h   |   70 ++++++++++++++++++++--------------------------
- 2 files changed, 33 insertions(+), 43 deletions(-)
+ drivers/cpuidle/cpuidle.c |  269 ++++++++++------------------------------------
+ 1 file changed, 60 insertions(+), 209 deletions(-)
 
-Index: linux.trees.git/include/linux/cpuidle.h
+Index: linux.trees.git/drivers/cpuidle/cpuidle.c
 ===================================================================
---- linux.trees.git.orig/include/linux/cpuidle.h
-+++ linux.trees.git/include/linux/cpuidle.h
-@@ -20,8 +20,7 @@
- #define CPUIDLE_STATE_MAX	8
- #define CPUIDLE_NAME_LEN	16
- #define CPUIDLE_DESC_LEN	32
+--- linux.trees.git.orig/drivers/cpuidle/cpuidle.c
++++ linux.trees.git/drivers/cpuidle/cpuidle.c
+@@ -21,13 +21,10 @@
+ 
+ #include "cpuidle.h"
+ 
+-DEFINE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
++struct cpuidle_subsystem cpuidle_subsys;
+ 
+ DEFINE_MUTEX(cpuidle_lock);
+-LIST_HEAD(cpuidle_detected_devices);
+-static void (*pm_idle_old)(void);
 -
--struct cpuidle_device;
-+#define	CPUIDLE_MAX_CPUS	128
+-static int enabled_devices;
++DEFINE_PER_CPU(struct cpuidle_stats, stats);
  
+ #if defined(CONFIG_ARCH_HAS_CPU_IDLE_WAIT)
+ static void cpuidle_kick_cpus(void)
+@@ -40,24 +37,20 @@ static void cpuidle_kick_cpus(void)
+ static void cpuidle_kick_cpus(void) {}
+ #endif
  
- /****************************
-@@ -38,11 +37,11 @@ struct cpuidle_state {
- 	unsigned int	power_usage; /* in mW */
- 	unsigned int	target_residency; /* in US */
+-static int __cpuidle_register_device(struct cpuidle_device *dev);
+-
+ /**
+  * cpuidle_idle_call - the main idle loop
+  *
+  * NOTE: no locks or semaphores should be used here
+  */
+-static void cpuidle_idle_call(void)
++void cpuidle_idle_call(void)
+ {
+-	struct cpuidle_device *dev = __get_cpu_var(cpuidle_devices);
++	int cpu = smp_processor_id();
+ 	struct cpuidle_state *target_state;
++	struct cpuidle_stats *state_stats;
+ 	int next_state;
  
--	unsigned long long	usage;
--	unsigned long long	time; /* in US */
-+	int			state_index;
-+	unsigned long long	*usage;
-+	unsigned long long	*time;
+ 	/* check if the device is ready */
+-	if (!dev || !dev->enabled) {
+-		if (pm_idle_old)
+-			pm_idle_old();
+-		else
++	if (!cpuidle_subsys.registered) {
+ #if defined(CONFIG_ARCH_HAS_DEFAULT_IDLE)
+ 			default_idle();
+ #else
+@@ -75,50 +68,36 @@ static void cpuidle_idle_call(void)
+ 	hrtimer_peek_ahead_timers();
+ #endif
+ 	/* ask the governor for the next state */
+-	next_state = cpuidle_curr_governor->select(dev);
++	next_state = cpuidle_curr_governor->select(cpu);
+ 	if (need_resched()) {
+ 		local_irq_enable();
+ 		return;
+ 	}
  
--	int (*enter)	(struct cpuidle_device *dev,
--			 struct cpuidle_state *state);
-+	int (*enter)	(struct cpuidle_state *state);
- };
+-	target_state = &dev->states[next_state];
++	target_state = &cpuidle_subsys.states[next_state];
++	state_stats = &per_cpu(stats, cpu);
  
- /* Idle State Flags */
-@@ -76,30 +75,31 @@ cpuidle_set_statedata(struct cpuidle_sta
+ 	/* enter the state and update stats */
+-	dev->last_state = target_state;
+-	dev->last_residency = target_state->enter(dev, target_state);
+-	if (dev->last_state)
+-		target_state = dev->last_state;
++	cpuidle_subsys.last_state[cpu] = target_state;
++	cpuidle_subsys.last_residency[cpu] = target_state->enter(target_state);
++	if (cpuidle_subsys.last_state[cpu])
++		target_state = cpuidle_subsys.last_state[cpu];
+ 
+-	target_state->time += (unsigned long long)dev->last_residency;
+-	target_state->usage++;
++	state_stats->time[next_state] += (unsigned long long)(cpuidle_subsys.last_residency[cpu]);
++	state_stats->usage[next_state]++;
+ 
+ 	/* give the governor an opportunity to reflect on the outcome */
+ 	if (cpuidle_curr_governor->reflect)
+-		cpuidle_curr_governor->reflect(dev);
++		cpuidle_curr_governor->reflect(cpu);
+ 	trace_power_end(0);
  }
- 
- struct cpuidle_state_kobj {
-+	int	cpuid;
- 	struct cpuidle_state *state;
- 	struct completion kobj_unregister;
- 	struct kobject kobj;
- };
- 
--struct cpuidle_device {
--	unsigned int		registered:1;
--	unsigned int		enabled:1;
--	unsigned int		cpu;
--
--	int			last_residency;
--	int			state_count;
--	struct cpuidle_state	states[CPUIDLE_STATE_MAX];
-+struct cpuidle_stats {
-+	unsigned long long	usage[CPUIDLE_STATE_MAX];
-+	unsigned long long	time[CPUIDLE_STATE_MAX]; /* in US */
- 	struct cpuidle_state_kobj *kobjs[CPUIDLE_STATE_MAX];
--	struct cpuidle_state	*last_state;
--
--	struct list_head 	device_list;
- 	struct kobject		kobj;
- 	struct completion	kobj_unregister;
--	void			*governor_data;
-+};
-+
-+struct cpuidle_subsystem {
-+	unsigned int		registered:1;
-+	int			state_count;
-+	int			last_residency[CPUIDLE_MAX_CPUS];
-+	struct cpuidle_state	*last_state[CPUIDLE_MAX_CPUS];
-+	struct cpuidle_state	states[CPUIDLE_STATE_MAX];
- 	struct cpuidle_state	*safe_state;
- };
- 
--DECLARE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
-+extern struct cpuidle_subsystem cpuidle_subsys;
-+DECLARE_PER_CPU(struct cpuidle_stats, stats);
  
  /**
-  * cpuidle_get_last_residency - retrieves the last state's residency time
-@@ -107,9 +107,9 @@ DECLARE_PER_CPU(struct cpuidle_device *,
-  *
-  * NOTE: this value is invalid if CPUIDLE_FLAG_TIME_VALID isn't set
+- * cpuidle_install_idle_handler - installs the cpuidle idle loop handler
+- */
+-void cpuidle_install_idle_handler(void)
+-{
+-	if (enabled_devices && (pm_idle != cpuidle_idle_call)) {
+-		/* Make sure all changes finished before we switch to new idle */
+-		smp_wmb();
+-		pm_idle = cpuidle_idle_call;
+-	}
+-}
+-
+-/**
+  * cpuidle_uninstall_idle_handler - uninstalls the cpuidle idle loop handler
   */
--static inline int cpuidle_get_last_residency(struct cpuidle_device *dev)
-+static inline int cpuidle_get_last_residency(int cpu)
+ void cpuidle_uninstall_idle_handler(void)
  {
--	return dev->last_residency;
-+	return cpuidle_subsys.last_residency[cpu];
+-	if (enabled_devices && pm_idle_old && (pm_idle != pm_idle_old)) {
+-		pm_idle = pm_idle_old;
+-		cpuidle_kick_cpus();
+-	}
++	cpuidle_kick_cpus();
  }
  
+ /**
+@@ -137,213 +116,87 @@ EXPORT_SYMBOL_GPL(cpuidle_pause_and_lock
+  */
+ void cpuidle_resume_and_unlock(void)
+ {
+-	cpuidle_install_idle_handler();
+ 	mutex_unlock(&cpuidle_lock);
+ }
  
-@@ -123,32 +123,23 @@ struct cpuidle_driver {
- };
+ EXPORT_SYMBOL_GPL(cpuidle_resume_and_unlock);
  
- #ifdef CONFIG_CPU_IDLE
+-/**
+- * cpuidle_enable_device - enables idle PM for a CPU
+- * @dev: the CPU
+- *
+- * This function must be called between cpuidle_pause_and_lock and
+- * cpuidle_resume_and_unlock when used externally.
+- */
+-int cpuidle_enable_device(struct cpuidle_device *dev)
++static void cpuidle_clear_stats(int cpu, int state_count)
+ {
+-	int ret, i;
 -
- extern int cpuidle_register_driver(struct cpuidle_driver *drv);
- extern void cpuidle_unregister_driver(struct cpuidle_driver *drv);
--extern int cpuidle_register_device(struct cpuidle_device *dev);
--extern void cpuidle_unregister_device(struct cpuidle_device *dev);
-+extern int cpuidle_register_subsystem(int state_count);
-+extern void cpuidle_unregister_subsystem(void);
- 
- extern void cpuidle_pause_and_lock(void);
- extern void cpuidle_resume_and_unlock(void);
--extern int cpuidle_enable_device(struct cpuidle_device *dev);
--extern void cpuidle_disable_device(struct cpuidle_device *dev);
+-	if (dev->enabled)
+-		return 0;
+-	if (!cpuidle_curr_driver || !cpuidle_curr_governor)
+-		return -EIO;
+-	if (!dev->state_count)
+-		return -EINVAL;
 -
- #else
+-	if (dev->registered == 0) {
+-		ret = __cpuidle_register_device(dev);
+-		if (ret)
+-			return ret;
+-	}
++	int i;
+ 
+-	if ((ret = cpuidle_add_state_sysfs(dev)))
+-		return ret;
 -
- static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
- {return 0;}
- static inline void cpuidle_unregister_driver(struct cpuidle_driver *drv) { }
--static inline int cpuidle_register_device(struct cpuidle_device *dev)
-+static inline int cpuidle_register_subsystem(int state_count)
- {return 0;}
--static inline void cpuidle_unregister_device(struct cpuidle_device *dev) { }
+-	if (cpuidle_curr_governor->enable &&
+-	    (ret = cpuidle_curr_governor->enable(dev)))
+-		goto fail_sysfs;
 -
-+static inline void cpuidle_unregister_subsystem(void)
-+{ }
- static inline void cpuidle_pause_and_lock(void) { }
- static inline void cpuidle_resume_and_unlock(void) { }
--static inline int cpuidle_enable_device(struct cpuidle_device *dev)
--{return 0;}
--static inline void cpuidle_disable_device(struct cpuidle_device *dev) { }
+-	for (i = 0; i < dev->state_count; i++) {
+-		dev->states[i].usage = 0;
+-		dev->states[i].time = 0;
++	for (i = 0; i < state_count; i++) {
++		per_cpu(stats, cpu).usage[i] = 0;
++		per_cpu(stats, cpu).time[i] = 0;
++		cpuidle_subsys.states[i].state_index = i;
+ 	}
+-	dev->last_residency = 0;
+-	dev->last_state = NULL;
 -
- #endif
+-	smp_wmb();
+-
+-	dev->enabled = 1;
+-
+-	enabled_devices++;
+-	return 0;
+-
+-fail_sysfs:
+-	cpuidle_remove_state_sysfs(dev);
+-
+-	return ret;
+ }
  
- /******************************
-@@ -160,11 +151,11 @@ struct cpuidle_governor {
- 	struct list_head 	governor_list;
- 	unsigned int		rating;
+-EXPORT_SYMBOL_GPL(cpuidle_enable_device);
+-
+ /**
+- * cpuidle_disable_device - disables idle PM for a CPU
+- * @dev: the CPU
+- *
+- * This function must be called between cpuidle_pause_and_lock and
+- * cpuidle_resume_and_unlock when used externally.
++ * cpuidle_register_subsystem - registers a CPU's idle PM feature
++ * @state_count: number of idle states available
+  */
+-void cpuidle_disable_device(struct cpuidle_device *dev)
++int cpuidle_register_subsystem(int state_count)
+ {
+-	if (!dev->enabled)
+-		return;
+-	if (!cpuidle_curr_driver || !cpuidle_curr_governor)
+-		return;
+-
+-	dev->enabled = 0;
+-
+-	if (cpuidle_curr_governor->disable)
+-		cpuidle_curr_governor->disable(dev);
+-
+-	cpuidle_remove_state_sysfs(dev);
+-	enabled_devices--;
+-}
+-
+-EXPORT_SYMBOL_GPL(cpuidle_disable_device);
+-
+-#ifdef CONFIG_ARCH_HAS_CPU_RELAX
+-static int poll_idle(struct cpuidle_device *dev, struct cpuidle_state *st)
+-{
+-	ktime_t	t1, t2;
+-	s64 diff;
+-	int ret;
+-
+-	t1 = ktime_get();
+-	local_irq_enable();
+-	while (!need_resched())
+-		cpu_relax();
+-
+-	t2 = ktime_get();
+-	diff = ktime_to_us(ktime_sub(t2, t1));
+-	if (diff > INT_MAX)
+-		diff = INT_MAX;
+-
+-	ret = (int) diff;
+-	return ret;
+-}
++	int cpu, ret;
++	struct sys_device *sys_dev;
  
--	int  (*enable)		(struct cpuidle_device *dev);
--	void (*disable)		(struct cpuidle_device *dev);
-+	int  (*enable)		(int cpu);
-+	void (*disable)		(int cpu);
+-static void poll_idle_init(struct cpuidle_device *dev)
+-{
+-	struct cpuidle_state *state = &dev->states[0];
+-
+-	cpuidle_set_statedata(state, NULL);
+-
+-	snprintf(state->name, CPUIDLE_NAME_LEN, "C0");
+-	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
+-	state->exit_latency = 0;
+-	state->target_residency = 0;
+-	state->power_usage = -1;
+-	state->flags = CPUIDLE_FLAG_POLL;
+-	state->enter = poll_idle;
+-}
+-#else
+-static void poll_idle_init(struct cpuidle_device *dev) {}
+-#endif /* CONFIG_ARCH_HAS_CPU_RELAX */
+-
+-/**
+- * __cpuidle_register_device - internal register function called before register
+- * and enable routines
+- * @dev: the cpu
+- *
+- * cpuidle_lock mutex must be held before this is called
+- */
+-static int __cpuidle_register_device(struct cpuidle_device *dev)
+-{
+-	int ret;
+-	struct sys_device *sys_dev = get_cpu_sysdev((unsigned long)dev->cpu);
+-
+-	if (!sys_dev)
+-		return -EINVAL;
+-	if (!try_module_get(cpuidle_curr_driver->owner))
+-		return -EINVAL;
+-
+-	init_completion(&dev->kobj_unregister);
++	cpuidle_pause_and_lock();
  
--	int  (*select)		(struct cpuidle_device *dev);
--	void (*reflect)		(struct cpuidle_device *dev);
-+	int  (*select)		(int cpu);
-+	void (*reflect)		(int cpu);
+-	poll_idle_init(dev);
++	cpuidle_subsys.state_count = state_count;
  
- 	struct module 		*owner;
- };
-@@ -187,5 +178,6 @@ static inline void cpuidle_unregister_go
- #else
- #define CPUIDLE_DRIVER_STATE_START	0
- #endif
-+extern void cpuidle_idle_call(void);
+-	per_cpu(cpuidle_devices, dev->cpu) = dev;
+-	list_add(&dev->device_list, &cpuidle_detected_devices);
+-	if ((ret = cpuidle_add_sysfs(sys_dev))) {
+-		module_put(cpuidle_curr_driver->owner);
+-		return ret;
+-	}
+-
+-	dev->registered = 1;
+-	return 0;
+-}
++	for_each_online_cpu(cpu) {
++		init_completion(&per_cpu(stats, cpu).kobj_unregister);
++		sys_dev = get_cpu_sysdev(cpu);
  
- #endif /* _LINUX_CPUIDLE_H */
-Index: linux.trees.git/drivers/cpuidle/cpuidle.h
-===================================================================
---- linux.trees.git.orig/drivers/cpuidle/cpuidle.h
-+++ linux.trees.git/drivers/cpuidle/cpuidle.h
-@@ -11,12 +11,10 @@
- extern struct cpuidle_governor *cpuidle_curr_governor;
- extern struct cpuidle_driver *cpuidle_curr_driver;
- extern struct list_head cpuidle_governors;
--extern struct list_head cpuidle_detected_devices;
- extern struct mutex cpuidle_lock;
- extern spinlock_t cpuidle_driver_lock;
+-/**
+- * cpuidle_register_device - registers a CPU's idle PM feature
+- * @dev: the cpu
+- */
+-int cpuidle_register_device(struct cpuidle_device *dev)
+-{
+-	int ret;
++		cpuidle_clear_stats(cpu, state_count);
++		if ((ret = cpuidle_add_sysfs(sys_dev)))
++			return ret;
  
- /* idle loop */
--extern void cpuidle_install_idle_handler(void);
- extern void cpuidle_uninstall_idle_handler(void);
+-	mutex_lock(&cpuidle_lock);
++		if ((ret = cpuidle_add_state_sysfs(cpu)))
++			return ret;
  
- /* governors */
-@@ -25,8 +23,8 @@ extern int cpuidle_switch_governor(struc
- /* sysfs */
- extern int cpuidle_add_class_sysfs(struct sysdev_class *cls);
- extern void cpuidle_remove_class_sysfs(struct sysdev_class *cls);
--extern int cpuidle_add_state_sysfs(struct cpuidle_device *device);
--extern void cpuidle_remove_state_sysfs(struct cpuidle_device *device);
-+extern int cpuidle_add_state_sysfs(int cpu);
-+extern void cpuidle_remove_state_sysfs(int cpu);
- extern int cpuidle_add_sysfs(struct sys_device *sysdev);
- extern void cpuidle_remove_sysfs(struct sys_device *sysdev);
+-	if ((ret = __cpuidle_register_device(dev))) {
+-		mutex_unlock(&cpuidle_lock);
+-		return ret;
++		if (cpuidle_curr_governor->enable &&
++			(ret = cpuidle_curr_governor->enable(cpu)))
++			return ret;
+ 	}
  
+-	cpuidle_enable_device(dev);
+-	cpuidle_install_idle_handler();
++	cpuidle_subsys.registered = 1;
+ 
+-	mutex_unlock(&cpuidle_lock);
++	cpuidle_resume_and_unlock();
+ 
+ 	return 0;
+-
+ }
+ 
+-EXPORT_SYMBOL_GPL(cpuidle_register_device);
++EXPORT_SYMBOL_GPL(cpuidle_register_subsystem);
+ 
+ /**
+- * cpuidle_unregister_device - unregisters a CPU's idle PM feature
+- * @dev: the cpu
++ * cpuidle_unregister_subsystem - unregisters a CPU's idle PM feature
+  */
+-void cpuidle_unregister_device(struct cpuidle_device *dev)
++void cpuidle_unregister_subsystem(void)
+ {
+-	struct sys_device *sys_dev = get_cpu_sysdev((unsigned long)dev->cpu);
+-
+-	if (dev->registered == 0)
+-		return;
++	int cpu;
++	struct sys_device *sys_dev;
+ 
+ 	cpuidle_pause_and_lock();
+ 
+-	cpuidle_disable_device(dev);
++	cpuidle_subsys.registered = 0;
+ 
+-	cpuidle_remove_sysfs(sys_dev);
+-	list_del(&dev->device_list);
+-	wait_for_completion(&dev->kobj_unregister);
+-	per_cpu(cpuidle_devices, dev->cpu) = NULL;
++	for_each_online_cpu(cpu) {
++		sys_dev = get_cpu_sysdev(cpu);
+ 
+-	cpuidle_resume_and_unlock();
++		if (cpuidle_curr_governor->disable)
++			cpuidle_curr_governor->disable(cpu);
+ 
+-	module_put(cpuidle_curr_driver->owner);
++		cpuidle_remove_state_sysfs(cpu);
++		cpuidle_remove_sysfs(sys_dev);
++		wait_for_completion(&per_cpu(stats, cpu).kobj_unregister);
++	}
++
++	cpuidle_resume_and_unlock();
+ }
+ 
+-EXPORT_SYMBOL_GPL(cpuidle_unregister_device);
++EXPORT_SYMBOL_GPL(cpuidle_unregister_subsystem);
+ 
+ #ifdef CONFIG_SMP
+ 
+@@ -387,8 +240,6 @@ static int __init cpuidle_init(void)
+ {
+ 	int ret;
+ 
+-	pm_idle_old = pm_idle;
+-
+ 	ret = cpuidle_add_class_sysfs(&cpu_sysdev_class);
+ 	if (ret)
+ 		return ret;
