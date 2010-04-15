@@ -1,47 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab0DOODv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 10:03:51 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:38709 "EHLO kernel.dk"
+	id S1754490Ab0DOOEa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 10:04:30 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52950 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754318Ab0DOODu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 10:03:50 -0400
-Date: Thu, 15 Apr 2010 16:03:49 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       vgoyal@redhat.com
-Subject: Re: [PATCH 0/4 v3] ext3/4: enhance fsync performance when using CFQ
-Message-ID: <20100415140348.GB27497@kernel.dk>
-References: <1271279826-30294-1-git-send-email-jmoyer@redhat.com> <20100415103345.GY27497@kernel.dk> <x498w8oj276.fsf@segfault.boston.devel.redhat.com> <20100415130854.GA27497@kernel.dk> <x494ojcj1tc.fsf@segfault.boston.devel.redhat.com>
+	id S1754357Ab0DOOE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 10:04:28 -0400
+Date: Thu, 15 Apr 2010 16:03:58 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: PowerPC WARN_ON_ONCE() after merge of the final tree
+ (tip related)
+Message-ID: <20100415140358.GA19981@elte.hu>
+References: <20100415161214.04637496.sfr@canb.auug.org.au>
+ <20100415064940.GA9240@elte.hu>
+ <20100415130032.GA6789@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <x494ojcj1tc.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <20100415130032.GA6789@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15 2010, Jeff Moyer wrote:
-> Jens Axboe <jens.axboe@oracle.com> writes:
-> 
-> >> > This is starting to look better. Can you share what tests you did? I
-> >> > tried reproducing with fs_mark last time and could not.
-> >> 
-> >> Did you use the fs_mark command line I (think I) had posted?  What
-> >> storage were you using?
-> >
-> > No, I didn't see any references to example command lines. I tested on a
-> > few single disks, rotating and SSD. I expected the single spinning disk
-> > to show the problem to some extent at least, but there was no difference
-> > observed with 64kb blocks.
-> 
-> Boy, I'm really slipping.  Try this one:
-> 
-> ./fs_mark -S 1 -D 100 -N 1000 -d /mnt/test/fs_mark -s 65536 -t 1 -w 4096
 
-Thanks Jeff, I'll give it a spin :-)
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
--- 
-Jens Axboe
+> On Thu, Apr 15, 2010 at 08:49:40AM +0200, Ingo Molnar wrote:
+> > 
+> > * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > 
+> > > Hi all,
+> > > 
+> > > Yesterday's (and today's) linux-next boot (PowerPC) failed like this:
+> > > 
+> > > ------------[ cut here ]------------
+> > > Badness at kernel/lockdep.c:2301
+> > > NIP: c0000000000a35c8 LR: c0000000000084c4 CTR: 0000000000000000
+> > > REGS: c000000000bf77e0 TRAP: 0700   Not tainted  (2.6.34-rc4-autokern1)
+> > > MSR: 8000000000021032 <ME,CE,IR,DR>  CR: 24000044  XER: 00000004
+> > > TASK = c000000000aa3d30[0] 'swapper' THREAD: c000000000bf4000 CPU: 0
+> > > GPR00: 0000000000000001 c000000000bf7a60 c000000000bf32f0 c0000000000084c4 
+> > > GPR04: 0000000000000000 0000000000000a00 0000000000000000 0000000000000068 
+> > > GPR08: 0000000000000008 c000000000c4fabe 0000000000000000 7265677368657265 
+> > > GPR12: 8000000000009032 c000000007691000 0000000001c00000 c000000000770bf8 
+> > > GPR16: c00000000076f390 0000000000000000 0000000000430000 00000000024876f0 
+> > > GPR20: c000000000887480 0000000002487480 c0000000008876f0 0000000001b5f8d0 
+> > > GPR24: c000000000770478 0000000003300000 c000000000c1f1c8 c000000000884610 
+> > > GPR28: c000000000c1b290 c0000000000084c4 c000000000b45068 c000000000aa3d30 
+> > > NIP [c0000000000a35c8] .trace_hardirqs_on_caller+0xb0/0x224
+> > > LR [c0000000000084c4] system_call_common+0xc4/0x114
+> > > Call Trace:
+> > > [c000000000bf7a60] [c000000000bf7ba0] init_thread_union+0x3ba0/0x4000 (unreliable)
+> > > [c000000000bf7af0] [c0000000000084c4] system_call_common+0xc4/0x114
+> > > --- Exception: c01 at .kernel_thread+0x28/0x70
+> > >     LR = .rest_init+0x34/0xf8
+> > > [c000000000bf7de0] [c00000000086916c] .proc_sys_init+0x20/0x64 (unreliable)
+> > > [c000000000bf7e50] [c0000000000099c0] .rest_init+0x20/0xf8
+> > > [c000000000bf7ee0] [c000000000848af0] .start_kernel+0x484/0x4a8
+> > > [c000000000bf7f90] [c0000000000083c0] .start_here_common+0x1c/0x5c
+> > > Instruction dump:
+> > > 409e0188 0fe00000 48000180 801f08d8 2f800000 41be0050 880d01da 2fa00000 
+> > > 41be0028 e93e8538 88090000 68000001 <0b000000> 2fa00000 41be0010 e93e8538 
+> > > ------------[ cut here ]------------
+> > > 
+> > > Caused by commit bd6d29c25bb1a24a4c160ec5de43e0004e01f72b ("lockstat:
+> > > Make lockstat counting per cpu").  This added a WARN_ON_ONCE to
+> > > debug_atomic_inc() which is called from trace_hardirqs_on_caller() with
+> > > irqs enabled.
+> > > 
+> > > Line 2301 is:
+> > > 
+> > >         if (unlikely(curr->hardirqs_enabled)) {
+> > >                 debug_atomic_inc(redundant_hardirqs_on);   <--- 2301
+> > >                 return;
+> > >         }
+> > > 
+> > > This is especially bad since on PowerPC, WARN_ON is a TRAP and the return
+> > > path from the TRAP also calls trace_hardirqs_on_caller(), so the TRAP
+> > > recurses ...
+> > 
+> > Ok, we'll fix the warning.
+> > 
+> > Btw., WARN_ON trapping on PowerPC is clearly a PowerPC bug - there's a good 
+> > reason we have WARN_ON versus BUG_ON - it should be fixed.
+> 
+> 
+> In this case, I guess the following fix should be sufficient?
+> I'm going to test it and provide a sane changelog.
+> 
+> 
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index 78325f8..65d4336 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -2298,7 +2298,11 @@ void trace_hardirqs_on_caller(unsigned long ip)
+>  		return;
+>  
+>  	if (unlikely(curr->hardirqs_enabled)) {
+> +		unsigned long flags;
+> +
+> +		raw_local_irq_save(flags);
+>  		debug_atomic_inc(redundant_hardirqs_on);
+> +		raw_local_irq_restore(flags);
+>  		return;
+>  	}
+>  	/* we'll do an OFF -> ON transition: */
 
+that looks rather ugly. Why not do a raw:
+
+	this_cpu_inc(lockdep_stats.redundant_hardirqs_on);
+
+which basically open-codes debug_atomic_inc(), but without the warning?
+
+Btw., using the this_cpu() methods might result in faster code for all the 
+debug_atomic_inc() macros as well?
+
+	Ingo
