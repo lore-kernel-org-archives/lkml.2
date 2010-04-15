@@ -1,395 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757655Ab0DOJfN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 05:35:13 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:53971 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757636Ab0DOJfK (ORCPT
+	id S932093Ab0DOJgQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 05:36:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8677 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757640Ab0DOJgO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 05:35:10 -0400
-Date: Thu, 15 Apr 2010 15:05:06 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>
-Subject: Re: [PATCH v2 7/11] Uprobes Implementation
-Message-ID: <20100415093506.GA2064@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6>
- <20100331155228.4181.61294.sendpatchset@localhost6.localdomain6>
- <20100413183537.GA17538@redhat.com>
+	Thu, 15 Apr 2010 05:36:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,211,1270450800"; 
+   d="scan'208";a="509341946"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>,
+       "davem@davemloft.net" <davem@davemloft.net>
+Date: Thu, 15 Apr 2010 17:36:07 +0800
+Subject: RE: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
+	virtio-net.
+Thread-Topic: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
+	virtio-net.
+Thread-Index: Acrb50fTv4A80S1TT4e2XlFnq5QcTQAkzG9w
+Message-ID: <97F6D3BD476C464182C1B7BABF0B0AF5C18969CC@shzsmsx502.ccr.corp.intel.com>
+References: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com>
+ <20100414152519.GA10792@redhat.com>
+In-Reply-To: <20100414152519.GA10792@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100413183537.GA17538@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Oleg, Thanks for the review.
+Michael,
+>> The idea is simple, just to pin the guest VM user space and then
+>> let host NIC driver has the chance to directly DMA to it. 
+>> The patches are based on vhost-net backend driver. We add a device
+>> which provides proto_ops as sendmsg/recvmsg to vhost-net to
+>> send/recv directly to/from the NIC driver. KVM guest who use the
+>> vhost-net backend may bind any ethX interface in the host side to
+>> get copyless data transfer thru guest virtio-net frontend.
+>> 
+>> The scenario is like this:
+>> 
+>> The guest virtio-net driver submits multiple requests thru vhost-net
+>> backend driver to the kernel. And the requests are queued and then
+>> completed after corresponding actions in h/w are done.
+>> 
+>> For read, user space buffers are dispensed to NIC driver for rx when
+>> a page constructor API is invoked. Means NICs can allocate user buffers
+>> from a page constructor. We add a hook in netif_receive_skb() function
+>> to intercept the incoming packets, and notify the zero-copy device.
+>> 
+>> For write, the zero-copy deivce may allocates a new host skb and puts
+>> payload on the skb_shinfo(skb)->frags, and copied the header to skb->data.
+>> The request remains pending until the skb is transmitted by h/w.
+>> 
+>> Here, we have ever considered 2 ways to utilize the page constructor
+>> API to dispense the user buffers.
+>> 
+>> One:	Modify __alloc_skb() function a bit, it can only allocate a 
+>> 	structure of sk_buff, and the data pointer is pointing to a 
+>> 	user buffer which is coming from a page constructor API.
+>> 	Then the shinfo of the skb is also from guest.
+>> 	When packet is received from hardware, the skb->data is filled
+>> 	directly by h/w. What we have done is in this way.
+>> 
+>> 	Pros:	We can avoid any copy here.
+>> 	Cons:	Guest virtio-net driver needs to allocate skb as almost
+>> 		the same method with the host NIC drivers, say the size
+>> 		of netdev_alloc_skb() and the same reserved space in the
+>> 		head of skb. Many NIC drivers are the same with guest and
+>> 		ok for this. But some lastest NIC drivers reserves special
+>> 		room in skb head. To deal with it, we suggest to provide
+>> 		a method in guest virtio-net driver to ask for parameter
+>> 		we interest from the NIC driver when we know which device 
+>> 		we have bind to do zero-copy. Then we ask guest to do so.
+>> 		Is that reasonable?
 
-> > ...
-> > +static struct uprobe_process *find_uprocess(struct pid *tg_leader)
-> > +{
-> > +	struct uprobe_process *uproc;
-> > +	struct task_struct *tsk = get_pid_task(tg_leader, PIDTYPE_PID);
-> > +
-> > +	if (!tsk)
-> > +		return NULL;
-> > +
-> > +	if (!tsk->utask || !tsk->utask->uproc) {
-> > +		put_task_struct(tsk);
-> > +		return NULL;
-> > +	}
-> > +
-> > +	uproc = tsk->utask->uproc;
-> > +	BUG_ON(uproc->tg_leader != tg_leader);
-> > +	atomic_inc(&uproc->refcount);
-> > +	put_task_struct(tsk);
-> > +	return uproc;
-> 
-> Looks like, this doesn't need get/put task_struct, you could just
-> use pid_task() under rcu_read_lock().
-Okay.
+>Unfortunately, this would break compatibility with existing virtio.
+>This also complicates migration. 
 
-> 
-> > +static void cleanup_uprocess(struct uprobe_process *uproc,
-> > +					struct task_struct *start)
-> > +{
-> > +	struct task_struct *tsk = start;
-> > +
-> > +	if (!start)
-> > +		return;
-> > +
-> > +	rcu_read_lock();
-> > +	do {
-> > +		if (tsk->utask) {
-> > +			kfree(tsk->utask);
-> > +			tsk->utask = NULL;
-> > +		}
-> > +		tsk = next_thread(tsk);
-> 
-> This doesn't look right. We can't trust ->thread_group list even under
-> rcu_read_lock(). The task can exit and __exit_signal() can remove it
-> from ->thread_group list before we take rcu_read_lock().
+You mean any modification to the guest virtio-net driver will break the
+compatibility? We tried to enlarge the virtio_net_config to contains the
+2 parameter, and add one VIRTIO_NET_F_PASSTHRU flag, virtionet_probe()
+will check the feature flag, and get the parameters, then virtio-net driver use
+it to allocate buffers. How about this?
 
-Oh Okay, I get that the thread could be exiting from the time we
-allocated the utask to the time we are cleaning up here and hence we
-could be leaking utask.
+>What is the room in skb head used for?
+I'm not sure, but the latest ixgbe driver does this, it reserves 32 bytes compared to
+NET_IP_ALIGN.
 
-Would it be okay if we explicitly (instead of the using
-tracehook_report_exit) call uprobe_free_utask() just after we set
-PF_EXITING. We could take the task_lock to synchronize with the
-add_utask() and do_exit().
+>> Two:	Modify driver to get user buffer allocated from a page constructor
+>> 	API(to substitute alloc_page()), the user buffer are used as payload
+>> 	buffers and filled by h/w directly when packet is received. Driver
+>> 	should associate the pages with skb (skb_shinfo(skb)->frags). For 
+>> 	the head buffer side, let host allocates skb, and h/w fills it. 
+>> 	After that, the data filled in host skb header will be copied into
+>> 	guest header buffer which is submitted together with the payload buffer.
+>> 
+>> 	Pros:	We could less care the way how guest or host allocates their
+>> 		buffers.
+>> 	Cons:	We still need a bit copy here for the skb header.
+>> 
+>> We are not sure which way is the better here.
 
-> 
-> > +static struct uprobe_task *add_utask(struct task_struct *t,
-> > +					struct uprobe_process *uproc)
-> > +{
-> > +	struct uprobe_task *utask;
-> > +
-> > +	if (!t)
-> > +		return NULL;
-> > +	utask = kzalloc(sizeof *utask, GFP_USER);
-> > +	if (unlikely(utask == NULL))
-> > +		return ERR_PTR(-ENOMEM);
-> > +
-> > +	utask->uproc = uproc;
-> > +	utask->active_ppt = NULL;
-> > +	t->utask = utask;
-> > +	atomic_inc(&uproc->refcount);
-> > +
-> > +	return utask;
-> > +}
-> 
-> This is called by create_uprocess(). Who will free t->utask if t has
-> already passed tracehook_report_exit() ?
+>The obvious question would be whether you see any speed difference
+>with the two approaches. If no, then the second approach would be
+>better.
 
-Okay. 
-Would it work if we 
+I remember the second approach is a bit slower in 1500MTU. 
+But we did not tested too much.
 
-static struct uprobe_task *add_utask(struct task_struct *t,
-					struct uprobe_process *uproc)
-{
-	struct uprobe_task *utask;
-	int exiting = 0;
+>> This is the first thing we want
+>> to get comments from the community. We wish the modification to the network
+>> part will be generic which not used by vhost-net backend only, but a user
+>> application may use it as well when the zero-copy device may provides async
+>> read/write operations later.
+>> 
+>> Please give comments especially for the network part modifications.
+>> 
+>> 
+>> We provide multiple submits and asynchronous notifiicaton to 
+>>vhost-net too.
+>> 
+>> Our goal is to improve the bandwidth and reduce the CPU usage.
+>> Exact performance data will be provided later. But for simple
+>> test with netperf, we found bindwidth up and CPU % up too,
+>> but the bindwidth up ratio is much more than CPU % up ratio.
+>> 
+>> What we have not done yet:
+>> 	packet split support
 
-	if (!t)
-		return NULL;
+>What does this mean, exactly?
+We can support 1500MTU, but for jumbo frame, since vhost driver before don't 
+support mergeable buffer, we cannot try it for multiple sg. A jumbo frame will split 5
+frags and hook them once a descriptor, so the user buffer allocation is greatly dependent
+on how guest virtio-net drivers submits buffers. We think mergeable buffer is suitable for it. 
 
-	utask = kzalloc(sizeof *utask, GFP_USER);
-	if (unlikely(utask == NULL))
-		return ERR_PTR(-ENOMEM);
+>> 	To support GRO
+Actually, I think if the mergeable buffer may get good performance, then GRO is not 
+so important then.
+>And TSO/GSO?
+Do we really need them?
 
-	task_lock(t);
-	if (unlikely(t->flags & PF_EXITING)) {
-		task_unlock(t);
-		kfree(utask);	
-		return;
-	}
-	t->utask = utask;
-	task_unlock(t);
-	utask->uproc = uproc;
-	utask->active_ppt = NULL;
-	atomic_inc(&uproc->refcount);
-}
-
-
-NORET_TYPE void do_exit(long code)
-{
-...
-	exit_irq_thread();                                                                                                   
-                                                                                                                             
-        exit_signals(tsk);  /* sets PF_EXITING */                                                                            
-	task_lock(tsk)
-	if (tsk->utask);
-		uprobe_free_utask();
-	task_unlock(tsk);
-	
-       ...
-..
-
-}
-
-Something similar would be needed in exec path too.
-> 
-> > +static struct task_struct *find_next_thread(struct uprobe_process *uproc,
-> > +						struct task_struct *start)
-> > +{
-> > +	struct task_struct *next_t = NULL;
-> > +
-> > +	rcu_read_lock();
-> > +	if (start) {
-> > +		struct task_struct *t = start;
-> > +
-> > +		do {
-> > +			if (unlikely(t->flags & PF_EXITING))
-> > +				goto dont_add;
-> 
-> not sure I understand this check. Somehow we should prevent the races
-> with tracehook_report_exit/tracehook_report_exec, but PF_EXITING can't
-> help ?
-
-yeah, PF_EXITING doesnt seem to help us here. But will this be an issue once we
-move uprobe_free_utask() after exit_signals.
-
-> 
-> > +dont_add:
-> > +			t = next_thread(t);
-> > +		} while (t != start);
-> 
-> again, this doesn't look right. Btw, I'd suggest to use while_each_thread().
-> 
-> > +static struct uprobe_process *create_uprocess(struct pid *tg_leader)
-> > +{
-> > ...
-> > +	/*
-> > +	 * Create and populate one utask per thread in this process.  We
-> > +	 * can't call add_utask() while holding RCU lock, so we:
-> > +	 *	1. rcu_read_lock()
-> > +	 *	2. Find the next thread, add_me, in this process that's not
-> > +	 *	having a utask struct allocated.
-> > +	 *	3. rcu_read_unlock()
-> > +	 *	4. add_utask(add_me, uproc)
-> > +	 *	Repeat 1-4 'til we have utasks for all threads.
-> > +	 */
-> > +	cur_t = get_pid_task(tg_leader, PIDTYPE_PID);
-> > +	do {
-> > +		utask = add_utask(cur_t, uproc);
-> > +		if (IS_ERR(utask)) {
-> > +			err = PTR_ERR(utask);
-> > +			goto fail;
-> > +		}
-> > +		add_me = find_next_thread(uproc, cur_t);
-> > +		put_task_struct(cur_t);
-> > +		cur_t = add_me;
-> > +	} while (add_me != NULL);
-> 
-> can't we race with clone(CLONE_THREAD) and miss the new thread? Probably
-> I missed something, but afaics we need some barriers to ensure that either
-> tracehook_report_clone() sees current->utask != NULL or find_next_thread()
-> sees the new thread in ->thread_group.
-
-The tracehook_report_clone is called after the element gets added to the
-thread_group list in copy_process().
-Looking at three cases where current thread could be cloning a new thread.
-
-a) current thread has a utask and tracehook_report_clone is not yet
-called.  
-	utask for the new thread will be created by either
-tracehook_report_clone or the find_next_thread whichever comes first. 
-
-b) current thread has no utask and tracehook_report_clone is already called.
-	new thread is in the thread_group list; so a utask will be created
-by find_next_thread.
-
-c) current thread has no utask yet and tracehook_report_clone is not yet called.
-	If the creation of utask for the current thread completes after
-the current thread called tracehook_report_clone; then its same as case
-b.	
-	If the creation of utask for the current thread completes before
-the current thread calls tracehook_report_clone; then its same as case
-a;
-
-Am I missing any other cases?
-Also if we are using explicit uprobe calls in exec/exit events; I
-propose we use a explicit uprobe_handle_clone call from copy_process.
-
-
-> 
-> > +static struct pid *get_tg_leader(pid_t p)
-> > +{
-> > +	struct pid *pid = NULL;
-> > +
-> > +	rcu_read_lock();
-> > +	if (current->nsproxy)
-> > +		pid = find_vpid(p);
-> 
-> Is it really possible to call register/unregister with nsproxy == NULL?
-> 
-> > +	if (pid) {
-> > +		struct task_struct *t = pid_task(pid, PIDTYPE_PID);
-> > +
-> > +		if (!t || unlikely(t->flags & PF_EXITING))
-> 
-> Why do we check PF_EXITING?
-
-We didnt want to trace process which is exiting but I think what we
-might be doing is not allowing multi-threaded process whose thread group
-leader exited. So I remove this check.
-Do you see a need for checking if the process is exiting before we place
-the probes?
-
-> 
-> > +int register_uprobe(struct uprobe *u)
-> > +{
-> > +	struct uprobe_process *uproc;
-> > +	struct uprobe_probept *ppt;
-> > +	struct pid *p;
-> > +	int ret = 0;
-> > +
-> > +	if (!u || !u->handler)
-> > +		return -EINVAL;
-> > +
-> > +	p = get_tg_leader(u->pid);
-> > +	if (!p)
-> > +		return -ESRCH;
-> > +
-> > +
-> > +	/* Get the uprobe_process for this pid, or make a new one. */
-> > +	mutex_lock(&uprobe_mutex);
-> > +	uproc = find_uprocess(p);
-> > +
-> > +	if (!uproc) {
-> > +		uproc = create_uprocess(p);
-> > +		if (IS_ERR(uproc)) {
-> > +			ret = (int) PTR_ERR(uproc);
-> > +			mutex_unlock(&uprobe_mutex);
-> > +			goto fail_tsk;
-> > +		}
-> > +	}
-> > +	mutex_unlock(&uprobe_mutex);
-> > +	mutex_lock(&uproc->mutex);
-> > +
-> > +	if (uproc->n_ppts >= MAX_USER_BKPT_XOL_SLOTS)
-> > +		goto fail_uproc;
-> > +
-> > +	ret = xol_validate_vaddr(p, u->vaddr, uproc->xol_area);
-> 
-> OK, uproc and p can't go away. But why it is safe to use pid_task(p) ?
-> 
-> I am looking at 6th patch http://marc.info/?l=linux-kernel&m=127005086102256
-> and xol_validate_vaddr() calls pid_task() without rcu and doesn't check
-> the result is not NULL.
-> 
-> We already dropped uprobe_mutex, can't this task exit?
-
-Okay.. Agree, will do changes accordingly.
-
-> 
-> > +void uprobe_handle_clone(unsigned long clone_flags,
-> > +				struct task_struct *child)
-> > +{
-> > +	struct uprobe_process *uproc;
-> > +	struct uprobe_task *ptask, *ctask;
-> > +
-> > +	ptask = current->utask;
-> > +	if (!ptask)
-> > +		return;
-> > +
-> > +	uproc = ptask->uproc;
-> > +
-> > +	if (clone_flags & CLONE_THREAD) {
-> > +		mutex_lock(&uprobe_mutex);
-> > +		/* New thread in the same process. */
-> > +		ctask = child->utask;
-> > +		if (unlikely(ctask)) {
-> > +			/*
-> > +			 * create_uprocess() ran just as this clone
-> > +			 * happened, and has already accounted for the
-> > +			 * new child.
-> > +			 */
-> > +		} else
-> > +			ctask = add_utask(child, uproc);
-> 
-> This looks a bit strange. Why do we need "ctask" at all? It is not used,
-> you could just do
-> 
-> 	if (likely(!child->utask))
-> 		add_utask(child, uproc);
-
-Okay, I agree that we can remove ctask here and in the else branch.
-
-> 
-> The same for "else" branch.
-> 
-> > +	} else {
-> > +		struct uprobe_probept *ppt;
-> > +		int ret;
-> > +
-> > +		/*
-> > +		 * New process spawned by parent.  Remove the probepoints
-> > +		 * in the child's text.
-> > +		 *
-> > +		 * We also hold the uproc->mutex for the parent - so no
-> > +		 * new uprobes will be registered 'til we return.
-> > +		 */
-> > +		mutex_lock(&uproc->mutex);
-> > +		ctask = child->utask;
-> > +		if (unlikely(ctask)) {
-> > +			/*
-> > +			 * create_uprocess() ran just as this fork
-> > +			 * happened, and has already created a new utask.
-> > +			 */
-> > +			mutex_unlock(&uproc->mutex);
-> > +			return;
-> > +		}
-> > +		list_for_each_entry(ppt, &uproc->uprobe_list, ut_node) {
-> > +			ret = user_bkpt_remove_bkpt(child, &ppt->user_bkpt);
-> 
-> OK, iiuc this should restore the original instruction, right?
-> 
-> But what about clone(CLONE_VM)? In this case this child shares ->mm with
-> parent.
-
-Okay, So I will remove the breakpoints only for ! CLONE(CLONE_VM) and
-!CLONE(CLONE_THREAD)
-For CLONE(CLONE_VM) I will create a new uproc and utask structures. 
-Since mm is shared; I guess the XOL vma gets shared between the processes.
-
-Again, Thanks Oleg for your comments. 
-
---
-Thanks and Regards
-Srikar
-> 
+>> 	Performance tuning
+>> 
+>> what we have done in v1:
+>> 	polish the RCU usage
+>> 	deal with write logging in asynchroush mode in vhost
+>> 	add notifier block for mp device
+>> 	rename page_ctor to mp_port in netdevice.h to make it looks generic
+>> 	add mp_dev_change_flags() for mp device to change NIC state
+>> 	add CONIFG_VHOST_MPASSTHRU to limit the usage when module is not load
+>> 	a small fix for missing dev_put when fail
+>> 	using dynamic minor instead of static minor number
+>> 	a __KERNEL__ protect to mp_get_sock()
+>> 
+>> what we have done in v2:
+>> 	
+>> 	remove most of the RCU usage, since the ctor pointer is only
+>> 	changed by BIND/UNBIND ioctl, and during that time, NIC will be
+>> 	stopped to get good cleanup(all outstanding requests are finished),
+>> 	so the ctor pointer cannot be raced into wrong situation.
+>> 
+>> 	Remove the struct vhost_notifier with struct kiocb.
+>> 	Let vhost-net backend to alloc/free the kiocb and transfer them
+>> 	via sendmsg/recvmsg.
+>> 
+>> 	use get_user_pages_fast() and set_page_dirty_lock() when read.
+>> 
+>> 	Add some comments for netdev_mp_port_prep() and handle_mpassthru().
+>> 
+>> 
+>> Comments not addressed yet in this time:
+>> 	the async write logging is not satified by vhost-net
+>> 	Qemu needs a sync write
+>> 	a limit for locked pages from get_user_pages_fast()
+>> 	
+>> 		
+>> performance:
+>> 	using netperf with GSO/TSO disabled, 10G NIC, 
+>> 	disabled packet split mode, with raw socket case compared to vhost.
+>> 
+>> 	bindwidth will be from 1.1Gbps to 1.7Gbps
+>> 	CPU % from 120%-140% to 140%-160%
