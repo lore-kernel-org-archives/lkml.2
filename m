@@ -1,329 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab0DORYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 13:24:03 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:49765 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755033Ab0DORVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 13:21:42 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-       Dave Chinner <david@fromorbit.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>, Johannes Weiner <hannes@cmpxchg.org>,
-       Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 02/10] vmscan: move priority variable into scan_control
-Date: Thu, 15 Apr 2010 18:21:35 +0100
-Message-Id: <1271352103-2280-3-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1271352103-2280-1-git-send-email-mel@csn.ul.ie>
-References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie>
+	id S1755572Ab0DORY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 13:24:29 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:40443 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab0DORY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 13:24:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Eu3HlE77R8y1C0+MQsJqR4Unx0uRKqKYr8KY+4Jy6v0jxQeNqPQQEoVjHxuXPhupRq
+         iG+ZKYf74KqTEjj32yEVUBhRU1QEYXyZEV9nnpcna3R2o/xHroPUS/Ks9Sxend8QnV6r
+         VHGlOU04GRXXPW7Nd4IKzCs2gJOZNM6SVy9L8=
+Date: Thu, 15 Apr 2010 19:24:22 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: PowerPC WARN_ON_ONCE() after merge of the final
+	tree (tip related)
+Message-ID: <20100415172421.GB5069@nowhere>
+References: <20100415161214.04637496.sfr@canb.auug.org.au> <20100415064940.GA9240@elte.hu> <20100415130032.GA6789@nowhere> <20100415140358.GA19981@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100415140358.GA19981@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Thu, Apr 15, 2010 at 04:03:58PM +0200, Ingo Molnar wrote:
+> > 
+> > 
+> > diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> > index 78325f8..65d4336 100644
+> > --- a/kernel/lockdep.c
+> > +++ b/kernel/lockdep.c
+> > @@ -2298,7 +2298,11 @@ void trace_hardirqs_on_caller(unsigned long ip)
+> >  		return;
+> >  
+> >  	if (unlikely(curr->hardirqs_enabled)) {
+> > +		unsigned long flags;
+> > +
+> > +		raw_local_irq_save(flags);
+> >  		debug_atomic_inc(redundant_hardirqs_on);
+> > +		raw_local_irq_restore(flags);
+> >  		return;
+> >  	}
+> >  	/* we'll do an OFF -> ON transition: */
+> 
+> that looks rather ugly. Why not do a raw:
+> 
+> 	this_cpu_inc(lockdep_stats.redundant_hardirqs_on);
+> 
+> which basically open-codes debug_atomic_inc(), but without the warning?
 
-Now very lots function in vmscan have `priority' argument. It consume
-stack slightly. To move it on struct scan_control reduce stack.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/vmscan.c |   83 ++++++++++++++++++++++++++--------------------------------
- 1 files changed, 37 insertions(+), 46 deletions(-)
+There is also no guarantee we are in a non-preemptable section. We can then
+also race against another cpu.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 1db19f8..5c276f0 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -77,6 +77,8 @@ struct scan_control {
- 
- 	int order;
- 
-+	int priority;
-+
- 	/* Which cgroup do we reclaim from */
- 	struct mem_cgroup *mem_cgroup;
- 
-@@ -1123,7 +1125,7 @@ static int too_many_isolated(struct zone *zone, int file,
-  */
- static unsigned long shrink_inactive_list(unsigned long max_scan,
- 			struct zone *zone, struct scan_control *sc,
--			int priority, int file)
-+			int file)
- {
- 	LIST_HEAD(page_list);
- 	struct pagevec pvec;
-@@ -1149,7 +1151,7 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
- 	 */
- 	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
- 		lumpy_reclaim = 1;
--	else if (sc->order && priority < DEF_PRIORITY - 2)
-+	else if (sc->order && sc->priority < DEF_PRIORITY - 2)
- 		lumpy_reclaim = 1;
- 
- 	pagevec_init(&pvec, 1);
-@@ -1328,7 +1330,7 @@ static void move_active_pages_to_lru(struct zone *zone,
- }
- 
- static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
--			struct scan_control *sc, int priority, int file)
-+			struct scan_control *sc, int file)
- {
- 	unsigned long nr_taken;
- 	unsigned long pgscanned;
-@@ -1491,17 +1493,17 @@ static int inactive_list_is_low(struct zone *zone, struct scan_control *sc,
- }
- 
- static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
--	struct zone *zone, struct scan_control *sc, int priority)
-+	struct zone *zone, struct scan_control *sc)
- {
- 	int file = is_file_lru(lru);
- 
- 	if (is_active_lru(lru)) {
- 		if (inactive_list_is_low(zone, sc, file))
--		    shrink_active_list(nr_to_scan, zone, sc, priority, file);
-+		    shrink_active_list(nr_to_scan, zone, sc, file);
- 		return 0;
- 	}
- 
--	return shrink_inactive_list(nr_to_scan, zone, sc, priority, file);
-+	return shrink_inactive_list(nr_to_scan, zone, sc, file);
- }
- 
- /*
-@@ -1608,8 +1610,7 @@ static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
- /*
-  * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
-  */
--static void shrink_zone(int priority, struct zone *zone,
--				struct scan_control *sc)
-+static void shrink_zone(struct zone *zone, struct scan_control *sc)
- {
- 	unsigned long nr[NR_LRU_LISTS];
- 	unsigned long nr_to_scan;
-@@ -1633,8 +1634,8 @@ static void shrink_zone(int priority, struct zone *zone,
- 		unsigned long scan;
- 
- 		scan = zone_nr_lru_pages(zone, sc, l);
--		if (priority || noswap) {
--			scan >>= priority;
-+		if (sc->priority || noswap) {
-+			scan >>= sc->priority;
- 			scan = (scan * percent[file]) / 100;
- 		}
- 		nr[l] = nr_scan_try_batch(scan,
-@@ -1650,7 +1651,7 @@ static void shrink_zone(int priority, struct zone *zone,
- 				nr[l] -= nr_to_scan;
- 
- 				nr_reclaimed += shrink_list(l, nr_to_scan,
--							    zone, sc, priority);
-+							    zone, sc);
- 			}
- 		}
- 		/*
-@@ -1661,7 +1662,8 @@ static void shrink_zone(int priority, struct zone *zone,
- 		 * with multiple processes reclaiming pages, the total
- 		 * freeing target can get unreasonably large.
- 		 */
--		if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
-+		if (nr_reclaimed >= nr_to_reclaim &&
-+		    sc->priority < DEF_PRIORITY)
- 			break;
- 	}
- 
-@@ -1672,7 +1674,7 @@ static void shrink_zone(int priority, struct zone *zone,
- 	 * rebalance the anon lru active/inactive ratio.
- 	 */
- 	if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
--		shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
-+		shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, 0);
- 
- 	throttle_vm_writeout(sc->gfp_mask);
- }
-@@ -1693,8 +1695,7 @@ static void shrink_zone(int priority, struct zone *zone,
-  * If a zone is deemed to be full of pinned pages then just give it a light
-  * scan then give up on it.
-  */
--static void shrink_zones(int priority, struct zonelist *zonelist,
--					struct scan_control *sc)
-+static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
- {
- 	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
- 	struct zoneref *z;
-@@ -1712,7 +1713,8 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
- 		if (scanning_global_lru(sc)) {
- 			if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
- 				continue;
--			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
-+			if (zone->all_unreclaimable &&
-+			    sc->priority != DEF_PRIORITY)
- 				continue;	/* Let kswapd poll it */
- 			sc->all_unreclaimable = 0;
- 		} else
-@@ -1722,7 +1724,7 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
- 			 */
- 			sc->all_unreclaimable = 0;
- 
--		shrink_zone(priority, zone, sc);
-+		shrink_zone(zone, sc);
- 	}
- }
- 
-@@ -1745,7 +1747,6 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
- static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 					struct scan_control *sc)
- {
--	int priority;
- 	unsigned long ret = 0;
- 	unsigned long total_scanned = 0;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
-@@ -1772,11 +1773,11 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		}
- 	}
- 
--	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
-+	for (sc->priority = DEF_PRIORITY; sc->priority >= 0; sc->priority--) {
- 		sc->nr_scanned = 0;
--		if (!priority)
-+		if (!sc->priority)
- 			disable_swap_token();
--		shrink_zones(priority, zonelist, sc);
-+		shrink_zones(zonelist, sc);
- 		/*
- 		 * Don't shrink slabs when reclaiming memory from
- 		 * over limit cgroups
-@@ -1809,23 +1810,14 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 
- 		/* Take a nap, wait for some writeback to complete */
- 		if (!sc->hibernation_mode && sc->nr_scanned &&
--		    priority < DEF_PRIORITY - 2)
-+		    sc->priority < DEF_PRIORITY - 2)
- 			congestion_wait(BLK_RW_ASYNC, HZ/10);
- 	}
- 	/* top priority shrink_zones still had more to do? don't OOM, then */
- 	if (!sc->all_unreclaimable && scanning_global_lru(sc))
- 		ret = sc->nr_reclaimed;
--out:
--	/*
--	 * Now that we've scanned all the zones at this priority level, note
--	 * that level within the zone so that the next thread which performs
--	 * scanning of this zone will immediately start out at this priority
--	 * level.  This affects only the decision whether or not to bring
--	 * mapped pages onto the inactive list.
--	 */
--	if (priority < 0)
--		priority = 0;
- 
-+out:
- 	if (scanning_global_lru(sc))
- 		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
- 			if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-@@ -1885,7 +1877,8 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 	 * will pick up pages from other mem cgroup's as well. We hack
- 	 * the priority and make it zero.
- 	 */
--	shrink_zone(0, zone, &sc);
-+	sc.priority = 0;
-+	shrink_zone(zone, &sc);
- 	return sc.nr_reclaimed;
- }
- 
-@@ -1965,7 +1958,6 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
- static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
- {
- 	int all_zones_ok;
--	int priority;
- 	int i;
- 	unsigned long total_scanned;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
-@@ -1989,13 +1981,13 @@ loop_again:
- 	sc.may_writepage = !laptop_mode;
- 	count_vm_event(PAGEOUTRUN);
- 
--	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
-+	for (sc.priority = DEF_PRIORITY; sc.priority >= 0; sc.priority--) {
- 		int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
- 		unsigned long lru_pages = 0;
- 		int has_under_min_watermark_zone = 0;
- 
- 		/* The swap token gets in the way of swapout... */
--		if (!priority)
-+		if (!sc.priority)
- 			disable_swap_token();
- 
- 		all_zones_ok = 1;
-@@ -2010,7 +2002,7 @@ loop_again:
- 			if (!populated_zone(zone))
- 				continue;
- 
--			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
-+			if (zone->all_unreclaimable && sc.priority != DEF_PRIORITY)
- 				continue;
- 
- 			/*
-@@ -2019,7 +2011,7 @@ loop_again:
- 			 */
- 			if (inactive_anon_is_low(zone, &sc))
- 				shrink_active_list(SWAP_CLUSTER_MAX, zone,
--							&sc, priority, 0);
-+							&sc, 0);
- 
- 			if (!zone_watermark_ok(zone, order,
- 					high_wmark_pages(zone), 0, 0)) {
-@@ -2053,7 +2045,7 @@ loop_again:
- 			if (!populated_zone(zone))
- 				continue;
- 
--			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
-+			if (zone->all_unreclaimable && sc.priority != DEF_PRIORITY)
- 				continue;
- 
- 			sc.nr_scanned = 0;
-@@ -2072,7 +2064,7 @@ loop_again:
- 			 */
- 			if (!zone_watermark_ok(zone, order,
- 					8*high_wmark_pages(zone), end_zone, 0))
--				shrink_zone(priority, zone, &sc);
-+				shrink_zone(zone, &sc);
- 			reclaim_state->reclaimed_slab = 0;
- 			nr_slab = shrink_slab(sc.nr_scanned, GFP_KERNEL,
- 						lru_pages);
-@@ -2112,7 +2104,7 @@ loop_again:
- 		 * OK, kswapd is getting into trouble.  Take a nap, then take
- 		 * another pass across the zones.
- 		 */
--		if (total_scanned && (priority < DEF_PRIORITY - 2)) {
-+		if (total_scanned && (sc.priority < DEF_PRIORITY - 2)) {
- 			if (has_under_min_watermark_zone)
- 				count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
- 			else
-@@ -2513,7 +2505,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 	const unsigned long nr_pages = 1 << order;
- 	struct task_struct *p = current;
- 	struct reclaim_state reclaim_state;
--	int priority;
- 	struct scan_control sc = {
- 		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
- 		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
-@@ -2544,11 +2535,11 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		 * Free memory by calling shrink zone with increasing
- 		 * priorities until we have enough memory freed.
- 		 */
--		priority = ZONE_RECLAIM_PRIORITY;
-+		sc.priority = ZONE_RECLAIM_PRIORITY;
- 		do {
--			shrink_zone(priority, zone, &sc);
--			priority--;
--		} while (priority >= 0 && sc.nr_reclaimed < nr_pages);
-+			shrink_zone(zone, &sc);
-+			sc.priority--;
-+		} while (sc.priority >= 0 && sc.nr_reclaimed < nr_pages);
- 	}
- 
- 	slab_reclaimable = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
--- 
-1.6.5
+I'm not sure what to do.
 
