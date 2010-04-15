@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab0DOGkA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 02:40:00 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:38757 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab0DOGj6 (ORCPT
+	id S1751963Ab0DOGmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 02:42:40 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60208
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751332Ab0DOGmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 02:39:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=jHHQ7GXzZFsLQU42l0xwzAGfQWF6Jxu7GRM55hIyd1jiosBHM7jaI/+4SRf7JIWu1C
-         U+ERHDrpxmYnr/bsjKWNFy66mGsDnAkfFqTMBB8RaeOeB5+qqyurvzHCYxGh4790Cq/9
-         lmt8ELoBGq4LK7zhryUmTR2i3F6NWCs32q5/M=
-MIME-Version: 1.0
-In-Reply-To: <q2m7b6bb4a51004142328jf5a16efei859d5cd90f2911d@mail.gmail.com>
-References: <20100413025228.GC10860@localhost.localdomain>
-	 <m2v7b6bb4a51004142312ze69796ak87d4ee65f6dd5529@mail.gmail.com>
-	 <o2w628d1651004142317n438d21e4t359c9661c2c00926@mail.gmail.com>
-	 <q2m7b6bb4a51004142328jf5a16efei859d5cd90f2911d@mail.gmail.com>
-Date: Thu, 15 Apr 2010 14:39:57 +0800
-Message-ID: <z2w628d1651004142339t166d2003kf86fe83d919e8c95@mail.gmail.com>
-Subject: Re: [PATCH] Kconfig: Make config Filter access to /dev/mem default y
-From: wzt wzt <wzt.wzt@gmail.com>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-       x86@kernel.org, zippel@linux-m68k.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 15 Apr 2010 02:42:39 -0400
+Date: Wed, 14 Apr 2010 23:42:42 -0700 (PDT)
+Message-Id: <20100414.234242.159666963.davem@davemloft.net>
+To: cpeterso@cpeterso.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mpm@selenic.com
+Subject: Re: [PATCH] drivers/net: remove network drivers' last few uses of
+ IRQF_SAMPLE_RANDOM
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1270877380-23813-1-git-send-email-cpeterso@cpeterso.com>
+References: <1270877380-23813-1-git-send-email-cpeterso@cpeterso.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> so you're running rootkit as a root user?
->
-rootkit always run as a root user.
+From: Chris Peterson <cpeterso@cpeterso.com>
+Date: Sat, 10 Apr 2010 01:29:40 -0400
 
+> feature-removal-schedule.txt says a new /dev/random entropy model is planned 
+> (for July 2009). Until then, this patch removes the few remaining uses of 
+> IRQF_SAMPLE_RANDOM from drivers/net/*. 12 network drivers are affected, one 
+> more than last year (netxen_nic_main.c). If idle servers need more entropy, 
+> they ought to use a hardware RNG or an entropy-gathering userspace daemon.
+> 
+> Signed-off-by: Chris Peterson <cpeterso@cpeterso.com>
 
->Years ago, someone sent the same patch.
->check http://lkml.org/lkml/2008/11/7/361
-thanks,  i read it.  But nowadays >= 2.6.26 kernel became more
-popular, more people start use it.  When they compile the kernel, they
-don't change KERNEL_HACKING option, becasue they are not kernel
-prgramer.
+Well, that feature-removal-schedule.txt entry states that new
+add_*_randomness() interfaces will be created such that things
+like network devices can indicate what kind of entropy they
+are providing.
+
+Those interfaces have not yet been created as far as I can tell, and
+the idea is that network drivers could use those not-yet-written new
+interfaces.
+
+Until that time I feel it does more harm than good to remove these
+annotations since frankly there never ever was good agreement about
+whether we should do this or not.
+
+It may seem stupid and pointless to just do nothing, but at this time
+I think that's still the best thing to do.
+
+Therefore, I'm not applying your patch, sorry.
