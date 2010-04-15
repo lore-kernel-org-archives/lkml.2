@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab0DOSOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 14:14:18 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:42162 "EHLO e9.ny.us.ibm.com"
+	id S1756107Ab0DOSOh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 14:14:37 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42157 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755951Ab0DOSN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 14:13:58 -0400
+	id S1755946Ab0DOSN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 14:13:57 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 10/16] rcu: slim down rcutiny by removing rcu_scheduler_active and friends
-Date: Thu, 15 Apr 2010 11:13:33 -0700
-Message-Id: <1271355219-20714-10-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 09/16] rcu: refactor RCU's context-switch handling
+Date: Thu, 15 Apr 2010 11:13:32 -0700
+Message-Id: <1271355219-20714-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100415181255.GA19588@linux.vnet.ibm.com>
 References: <20100415181255.GA19588@linux.vnet.ibm.com>
@@ -24,234 +24,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TINY_RCU does not need rcu_scheduler_active unless CONFIG_DEBUG_LOCK_ALLOC.
-So conditionally compile rcu_scheduler_active in order to slim down
-rcutiny a bit more.  Also gets rid of an EXPORT_SYMBOL_GPL, which is
-responsible for most of the slimming.
+The addition of preemptible RCU to treercu resulted in a bit of
+confusion and inefficiency surrounding the handling of context switches
+for RCU-sched and for RCU-preempt.  For RCU-sched, a context switch
+is a quiescent state, pure and simple, just like it always has been.
+For RCU-preempt, a context switch is in no way a quiescent state, but
+special handling is required when a task blocks in an RCU read-side
+critical section.
 
+However, the callout from the scheduler and the outer loop in ksoftirqd
+still calls something named rcu_sched_qs(), whose name is no longer
+accurate.  Furthermore, when rcu_check_callbacks() notes an RCU-sched
+quiescent state, it ends up unnecessarily (though harmlessly, aside
+from the performance hit) enqueuing the current task if it happens to
+be running in an RCU-preempt read-side critical section.  This not only
+increases the maximum latency of scheduler_tick(), it also needlessly
+increases the overhead of the next outermost rcu_read_unlock() invocation.
+
+This patch addresses this situation by separating the notion of RCU's
+context-switch handling from that of RCU-sched's quiescent states.
+The context-switch handling is covered by rcu_note_context_switch() in
+general and by rcu_preempt_note_context_switch() for preemptible RCU.
+This permits rcu_sched_qs() to handle quiescent states and only quiescent
+states.  It also reduces the maximum latency of scheduler_tick(), though
+probably by much less than a microsecond.  Finally, it means that tasks
+within preemptible-RCU read-side critical sections avoid incurring the
+overhead of queuing unless there really is a context switch.
+
+Suggested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |    4 +---
- include/linux/rcutiny.h  |   13 +++++++++++++
- include/linux/rcutree.h  |    3 +++
- kernel/rcupdate.c        |   19 -------------------
- kernel/rcutiny.c         |    7 +++++++
- kernel/rcutiny_plugin.h  |   39 +++++++++++++++++++++++++++++++++++++++
- kernel/rcutree.c         |   19 +++++++++++++++++++
- 7 files changed, 82 insertions(+), 22 deletions(-)
- create mode 100644 kernel/rcutiny_plugin.h
+ include/linux/rcutiny.h |    4 ++++
+ include/linux/rcutree.h |    1 +
+ kernel/rcutree.c        |   17 ++++++++++++-----
+ kernel/rcutree_plugin.h |   11 +++++++----
+ kernel/sched.c          |    2 +-
+ kernel/softirq.c        |    2 +-
+ 6 files changed, 26 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 56fa2d4..7a411b7 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -64,8 +64,6 @@ extern int sched_expedited_torture_stats(char *page);
- 
- /* Internal to kernel */
- extern void rcu_init(void);
--extern int rcu_scheduler_active;
--extern void rcu_scheduler_starting(void);
- 
- #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
- #include <linux/rcutree.h>
-@@ -181,7 +179,7 @@ static inline int rcu_read_lock_bh_held(void)
- #ifdef CONFIG_PREEMPT
- static inline int rcu_read_lock_sched_held(void)
- {
--	return !rcu_scheduler_active || preempt_count() != 0 || irqs_disabled();
-+	return preempt_count() != 0 || irqs_disabled();
- }
- #else /* #ifdef CONFIG_PREEMPT */
- static inline int rcu_read_lock_sched_held(void)
 diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index ff22b97..14e5a76 100644
+index bbeb55b..ff22b97 100644
 --- a/include/linux/rcutiny.h
 +++ b/include/linux/rcutiny.h
-@@ -128,4 +128,17 @@ static inline int rcu_preempt_depth(void)
- 	return 0;
- }
+@@ -29,6 +29,10 @@
  
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+
-+extern int rcu_scheduler_active __read_mostly;
-+extern void rcu_scheduler_starting(void);
-+
-+#else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-+
-+static inline void rcu_scheduler_starting(void)
+ void rcu_sched_qs(int cpu);
+ void rcu_bh_qs(int cpu);
++static inline void rcu_note_context_switch(int cpu)
 +{
++	rcu_sched_qs(cpu);
 +}
-+
-+#endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-+
- #endif /* __LINUX_RCUTINY_H */
+ 
+ #define __rcu_read_lock()	preempt_disable()
+ #define __rcu_read_unlock()	preempt_enable()
 diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index b9f7460..4828205 100644
+index 7484fe6..b9f7460 100644
 --- a/include/linux/rcutree.h
 +++ b/include/linux/rcutree.h
-@@ -123,4 +123,7 @@ static inline int rcu_blocking_is_gp(void)
- 	return num_online_cpus() == 1;
- }
+@@ -34,6 +34,7 @@ struct notifier_block;
  
-+extern void rcu_scheduler_starting(void);
-+extern int rcu_scheduler_active __read_mostly;
-+
- #endif /* __LINUX_RCUTREE_H */
-diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-index 63fe254..9b19fee 100644
---- a/kernel/rcupdate.c
-+++ b/kernel/rcupdate.c
-@@ -44,7 +44,6 @@
- #include <linux/cpu.h>
- #include <linux/mutex.h>
- #include <linux/module.h>
--#include <linux/kernel_stat.h>
- #include <linux/hardirq.h>
+ extern void rcu_sched_qs(int cpu);
+ extern void rcu_bh_qs(int cpu);
++extern void rcu_note_context_switch(int cpu);
+ extern int rcu_needs_cpu(int cpu);
+ extern int rcu_expedited_torture_stats(char *page);
  
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
-@@ -64,9 +63,6 @@ struct lockdep_map rcu_sched_lock_map =
- EXPORT_SYMBOL_GPL(rcu_sched_lock_map);
- #endif
- 
--int rcu_scheduler_active __read_mostly;
--EXPORT_SYMBOL_GPL(rcu_scheduler_active);
--
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 
- /**
-@@ -90,21 +86,6 @@ EXPORT_SYMBOL_GPL(rcu_read_lock_bh_held);
- #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
- 
- /*
-- * This function is invoked towards the end of the scheduler's initialization
-- * process.  Before this is called, the idle task might contain
-- * RCU read-side critical sections (during which time, this idle
-- * task is booting the system).  After this function is called, the
-- * idle tasks are prohibited from containing RCU read-side critical
-- * sections.
-- */
--void rcu_scheduler_starting(void)
--{
--	WARN_ON(num_online_cpus() != 1);
--	WARN_ON(nr_context_switches() > 0);
--	rcu_scheduler_active = 1;
--}
--
--/*
-  * Awaken the corresponding synchronize_rcu() instance now that a
-  * grace period has elapsed.
-  */
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index d9f8a62..b1804ff 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -54,6 +54,11 @@ static struct rcu_ctrlblk rcu_bh_ctrlblk = {
- 	.curtail	= &rcu_bh_ctrlblk.rcucblist,
- };
- 
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+int rcu_scheduler_active __read_mostly;
-+EXPORT_SYMBOL_GPL(rcu_scheduler_active);
-+#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-+
- #ifdef CONFIG_NO_HZ
- 
- static long rcu_dynticks_nesting = 1;
-@@ -276,3 +281,5 @@ void __init rcu_init(void)
- {
- 	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
- }
-+
-+#include "rcutiny_plugin.h"
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-new file mode 100644
-index 0000000..d223a92
---- /dev/null
-+++ b/kernel/rcutiny_plugin.h
-@@ -0,0 +1,39 @@
-+/*
-+ * Read-Copy Update mechanism for mutual exclusion (tree-based version)
-+ * Internal non-public definitions that provide either classic
-+ * or preemptable semantics.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright IBM Corporation, 2009
-+ *
-+ * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-+ */
-+
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+
-+#include <linux/kernel_stat.h>
-+
-+/*
-+ * During boot, we forgive RCU lockdep issues.  After this function is
-+ * invoked, we start taking RCU lockdep issues seriously.
-+ */
-+void rcu_scheduler_starting(void)
-+{
-+	WARN_ON(nr_context_switches() > 0);
-+	rcu_scheduler_active = 1;
-+}
-+
-+#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e336313..3623f8e 100644
+index 86bb949..e336313 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -46,6 +46,7 @@
- #include <linux/cpu.h>
- #include <linux/mutex.h>
- #include <linux/time.h>
-+#include <linux/kernel_stat.h>
+@@ -97,25 +97,32 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
+  */
+ void rcu_sched_qs(int cpu)
+ {
+-	struct rcu_data *rdp;
++	struct rcu_data *rdp = &per_cpu(rcu_sched_data, cpu);
  
- #include "rcutree.h"
+-	rdp = &per_cpu(rcu_sched_data, cpu);
+ 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
+ 	barrier();
+ 	rdp->passed_quiesc = 1;
+-	rcu_preempt_note_context_switch(cpu);
+ }
  
-@@ -80,6 +81,9 @@ DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
- struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh_state);
- DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+ void rcu_bh_qs(int cpu)
+ {
+-	struct rcu_data *rdp;
++	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
  
-+int rcu_scheduler_active __read_mostly;
-+EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+-	rdp = &per_cpu(rcu_bh_data, cpu);
+ 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
+ 	barrier();
+ 	rdp->passed_quiesc = 1;
+ }
+ 
++/*
++ * Note a context switch.  This is a quiescent state for RCU-sched,
++ * and requires special handling for preemptible RCU.
++ */
++void rcu_note_context_switch(int cpu)
++{
++	rcu_sched_qs(cpu);
++	rcu_preempt_note_context_switch(cpu);
++}
 +
- /*
-  * Return true if an RCU grace period is in progress.  The ACCESS_ONCE()s
-  * permit this function to be invoked without holding the root rcu_node
-@@ -1784,6 +1788,21 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
+ #ifdef CONFIG_NO_HZ
+ DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
+ 	.dynticks_nesting = 1,
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 687c4e9..f9bc83a 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -75,13 +75,19 @@ EXPORT_SYMBOL_GPL(rcu_force_quiescent_state);
+  * that this just means that the task currently running on the CPU is
+  * not in a quiescent state.  There might be any number of tasks blocked
+  * while in an RCU read-side critical section.
++ *
++ * Unlike the other rcu_*_qs() functions, callers to this function
++ * must disable irqs in order to protect the assignment to
++ * ->rcu_read_unlock_special.
+  */
+ static void rcu_preempt_qs(int cpu)
+ {
+ 	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
++
+ 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
+ 	barrier();
+ 	rdp->passed_quiesc = 1;
++	current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
  }
  
  /*
-+ * This function is invoked towards the end of the scheduler's initialization
-+ * process.  Before this is called, the idle task might contain
-+ * RCU read-side critical sections (during which time, this idle
-+ * task is booting the system).  After this function is called, the
-+ * idle tasks are prohibited from containing RCU read-side critical
-+ * sections.  This function also enables RCU lockdep checking.
-+ */
-+void rcu_scheduler_starting(void)
-+{
-+	WARN_ON(num_online_cpus() != 1);
-+	WARN_ON(nr_context_switches() > 0);
-+	rcu_scheduler_active = 1;
-+}
-+
-+/*
-  * Compute the per-level fanout, either using the exact fanout specified
-  * or balancing the tree, depending on CONFIG_RCU_FANOUT_EXACT.
-  */
+@@ -144,9 +150,8 @@ static void rcu_preempt_note_context_switch(int cpu)
+ 	 * grace period, then the fact that the task has been enqueued
+ 	 * means that we continue to block the current grace period.
+ 	 */
+-	rcu_preempt_qs(cpu);
+ 	local_irq_save(flags);
+-	t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
++	rcu_preempt_qs(cpu);
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -236,7 +241,6 @@ static void rcu_read_unlock_special(struct task_struct *t)
+ 	 */
+ 	special = t->rcu_read_unlock_special;
+ 	if (special & RCU_READ_UNLOCK_NEED_QS) {
+-		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
+ 		rcu_preempt_qs(smp_processor_id());
+ 	}
+ 
+@@ -473,7 +477,6 @@ static void rcu_preempt_check_callbacks(int cpu)
+ 	struct task_struct *t = current;
+ 
+ 	if (t->rcu_read_lock_nesting == 0) {
+-		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
+ 		rcu_preempt_qs(cpu);
+ 		return;
+ 	}
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 9ab3cd7..d78a9dd 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3695,7 +3695,7 @@ need_resched:
+ 	preempt_disable();
+ 	cpu = smp_processor_id();
+ 	rq = cpu_rq(cpu);
+-	rcu_sched_qs(cpu);
++	rcu_note_context_switch(cpu);
+ 	prev = rq->curr;
+ 	switch_count = &prev->nivcsw;
+ 
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 7c1a67e..0db913a 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -716,7 +716,7 @@ static int run_ksoftirqd(void * __bind_cpu)
+ 			preempt_enable_no_resched();
+ 			cond_resched();
+ 			preempt_disable();
+-			rcu_sched_qs((long)__bind_cpu);
++			rcu_note_context_switch((long)__bind_cpu);
+ 		}
+ 		preempt_enable();
+ 		set_current_state(TASK_INTERRUPTIBLE);
 -- 
 1.7.0
 
