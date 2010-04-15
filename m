@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab0DOGVC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 02:21:02 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:49645 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751339Ab0DOGVA (ORCPT
+	id S1755827Ab0DOGWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 02:22:16 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41846 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755136Ab0DOGWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 02:21:00 -0400
-Date: Thu, 15 Apr 2010 16:20:55 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100415062055.GQ2493@dastard>
-References: <20100414085132.GJ25756@csn.ul.ie>
- <20100415013436.GO2493@dastard>
- <20100415130212.D16E.A69D9226@jp.fujitsu.com>
+	Thu, 15 Apr 2010 02:22:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=ZwJ3/P22ZrdQEZMoc9+oYgT4FHbhlzLnDbbDKx3DNaoZ0cihcd9qB3wZ6AOKuyuPHg
+         2fe8CuJhblxBH6SBXI6DOd9KKcLEkb3SM+l+tSok+Aan63ZpBruGFG/Es/PTcpH+xBaG
+         9tHHy1DWfjjivr+rek9id/HkCnX6d5qNaZxZk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100415130212.D16E.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Thu, 15 Apr 2010 11:52:11 +0530
+Message-ID: <x2nc27429821004142322i3ce6756dib9c1a3f86000c5f5@mail.gmail.com>
+Subject: [Question] integrating KDB with linux kernel
+From: santosh <santosh.iitg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 01:09:01PM +0900, KOSAKI Motohiro wrote:
-> Hi
-> 
-> > How about this? For now, we stop direct reclaim from doing writeback
-> > only on order zero allocations, but allow it for higher order
-> > allocations. That will prevent the majority of situations where
-> > direct reclaim blows the stack and interferes with background
-> > writeout, but won't cause lumpy reclaim to change behaviour.
-> > This reduces the scope of impact and hence testing and validation
-> > the needs to be done.
-> 
-> Tend to agree. but I would proposed slightly different algorithm for
-> avoind incorrect oom.
-> 
-> for high order allocation
-> 	allow to use lumpy reclaim and pageout() for both kswapd and direct reclaim
+How to integrate KDB with linux-kernel ??
 
-SO same as current.
+What I did was as follow:
 
-> for low order allocation
-> 	- kswapd:          always delegate io to flusher thread
-> 	- direct reclaim:  delegate io to flusher thread only if vm pressure is low
+1.   Used  linux-2.6.21.7.tar.gz
 
-IMO, this really doesn't fix either of the problems - the bad IO
-patterns nor the stack usage. All it will take is a bit more memory
-pressure to trigger stack and IO problems, and the user reporting the
-problems is generating an awful lot of memory pressure...
+ 2.  Downloaded corresponding kdb  from "oss.sgi" site
 
-Cheers,
+    kdb-v4.4-2.6.21-common-3.bz2
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+
+   kdb-v4.4-2.6.21-i386-3.bz2
+
+
+
+3.  build the kernel by enabling CONFIG_KDB and CONFIG_FRAME_POINTER as
+described in "oss.sgi"
+
+4.  installed the kernel and rebooted the system
+
+5. When the system comes up, I check the kdb status
+
+cat /proc/sys/kernel/kdb
+// screen :
+1
+
+I logged in as root then invoke the kdb by press Pause on keyboard, but the
+kdb
+don't invoke. The system hangs  and two leds Caps Lock and Scroll Lock are
+blinking. I had to do hard reboot .
+
+.
+
+please help me to fix this problem
+
+regards
+santosh
