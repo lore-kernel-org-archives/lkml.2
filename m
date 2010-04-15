@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab0DOGgs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 02:36:48 -0400
-Received: from relay.felk.cvut.cz ([147.32.80.7]:53248 "EHLO
-	relay.felk.cvut.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab0DOGgr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 02:36:47 -0400
-Date: Thu, 15 Apr 2010 08:36:26 +0200
-From: Michal Svoboda <michal.svoboda@agents.felk.cvut.cz>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Kconfig: Make config Filter access to /dev/mem default
- y
-Message-ID: <20100415063626.GG21894@myhost.felk.cvut.cz>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-References: <20100413025228.GC10860@localhost.localdomain>
- <m2v7b6bb4a51004142312ze69796ak87d4ee65f6dd5529@mail.gmail.com>
+	id S1751642Ab0DOGjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 02:39:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53529 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751493Ab0DOGjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 02:39:06 -0400
+Message-ID: <4BC6B4B3.8070000@cn.fujitsu.com>
+Date: Thu, 15 Apr 2010 14:39:47 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GdbWtwDHkcXqP16f"
-Content-Disposition: inline
-In-Reply-To: <m2v7b6bb4a51004142312ze69796ak87d4ee65f6dd5529@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-FELK-MailScanner-Information: 
-X-MailScanner-ID: o3F6aQf0077535
-X-FELK-MailScanner: Found to be clean
-X-FELK-MailScanner-SpamCheck: not spam, SpamAssassin (not cached, score=-1.9,
-	required 5, autolearn=not spam, BAYES_00 -1.90)
-X-FELK-MailScanner-From: michal.svoboda@agents.felk.cvut.cz
-X-FELK-MailScanner-To: linux-kernel@vger.kernel.org
-X-FELK-MailScanner-Watermark: 1271918188.85544@9qQc7cEHXa6MsTSi5IiDdA
+To: Paul Menage <menage@google.com>
+CC: paulmck@linux.vnet.ibm.com, Rusty Russell <rusty@rustcorp.com.au>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       containers@lists.linux-foundation.org, balbir@linux.vnet.ibm.com,
+       lizf@cn.fujitsu.com, Oleg Nesterov <oleg@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: Lockdep splat in cpuset code acquiring alloc_lock
+References: <20100414202347.GA26791@linux.vnet.ibm.com> <z2m6599ad831004141410tdc40feb0h529dabe4a39d67d5@mail.gmail.com>
+In-Reply-To: <z2m6599ad831004141410tdc40feb0h529dabe4a39d67d5@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CC Oleg
+CC Ingo
 
---GdbWtwDHkcXqP16f
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+on 2010-4-15 5:10, Paul Menage wrote:
+> Looks like select_fallback_rq() shouldn't be calling
+> cpuset_cpus_allowed_locked(), which does a task_lock(), which isn't
+> IRQ safe. Also, according to its comments that should only be held
+> with the cpuset callback_mutex held, which seems unlikely from a
+> softirq handler.
+> 
+> Also, calling cpuset_cpus_allowed_locked(p, &p->cpus_allowed) stomps
+> on state in p without (AFAICS) synchronization.
+> 
+> The description of commit e76bd8d9850c2296a7e8e24c9dce9b5e6b55fe2f
+> includes the phrase " I'm fairly sure this works, but there might be a
+> deadlock hiding" although I think that the lockdep-reported problem is
+> different than what Rusty had in mind.
 
-Xiaotian Feng wrote:
-> Have you ever successfully attack by this way? If CONFIG_STRICT_DEVMEM
-> is not set, the /dev/mem access is filtered in pat code.
+This problem have been fixed by Oleg Nesterov, and the patchset was merged
+into tip tree, but it's scheduled for .35 ...
 
-If that option doesn't add any protection, what's it good for?
+http://lkml.org/lkml/2010/3/15/73
 
---GdbWtwDHkcXqP16f
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+Thanks!
+Miao
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvGs+oACgkQg/fU9pp1uX5uNQCeOUbNUldpqbmMtnW94XXLgGhD
-XREAn0/FfLnb9LZaFfDaJDQjeIT2qIoN
-=cxKh
------END PGP SIGNATURE-----
-
---GdbWtwDHkcXqP16f--
