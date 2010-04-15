@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab0DOSj0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 14:39:26 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:38263 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755940Ab0DOSjX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 14:39:23 -0400
-Date: Thu, 15 Apr 2010 11:38:56 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-usb@vger.kernel.org,
-       gregkh@suse.de
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] usb/serial/ti_usb: fix printk format warning
-Message-Id: <20100415113856.45564d4f.randy.dunlap@oracle.com>
-In-Reply-To: <20100415144856.659be29e.sfr@canb.auug.org.au>
-References: <20100415144856.659be29e.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4BC75D51.00FD:SCFMA4539814,ss=1,fgs=0
+	id S1755609Ab0DOSjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 14:39:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27214 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753914Ab0DOSjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 14:39:08 -0400
+From: Glauber Costa <glommer@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com
+Subject: [PATCH 0/5] pv clock misc fixes
+Date: Thu, 15 Apr 2010 14:37:23 -0400
+Message-Id: <1271356648-5108-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Hello folks,
 
-Fix printk format warning in usbserial/ti_usb:
+In this series, I present a couple of fixes for kvmclock.
+In patch 1, a guest-side fix is proposed for a problem that is biting us
+for quite a while now. the tsc inside VMs does not seem to be
+that good, (up to now, only single-socket nehalems were stable enough),
+and we're seeing small (but nevertheless wrong) time warps inside SMP guests.
+I am proposing the fix to reside on common code in pvclock.c, but would
+be good to hear Jeremy on this.
 
-drivers/usb/serial/ti_usb_3410_5052.c:1738: warning: format '%d' expects type 'int', but argument 5 has type 'size_t'
+On the other 3 patches, I change kvmclock MSR numbers in a compatible
+fashion. Both MSR sets will be supported for a while.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/usb/serial/ti_usb_3410_5052.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Patch 5 adds documentation about kvmclock, which to date, we lacked.
 
---- linux-next-20100415.orig/drivers/usb/serial/ti_usb_3410_5052.c
-+++ linux-next-20100415/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -1735,7 +1735,7 @@ static int ti_download_firmware(struct t
- 		return -ENOENT;
- 	}
- 	if (fw_p->size > TI_FIRMWARE_BUF_SIZE) {
--		dev_err(&dev->dev, "%s - firmware too large %d \n", __func__, fw_p->size);
-+		dev_err(&dev->dev, "%s - firmware too large %zu\n", __func__, fw_p->size);
- 		return -ENOENT;
- 	}
- 
+Glauber Costa (5):
+  Add a global synchronization point for pvclock
+  change msr numbers for kvmclock
+  Try using new kvm clock msrs
+  export new cpuid KVM_CAP
+  add documentation about kvmclock
+
+ Documentation/kvm/kvmclock.txt  |  138 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/kvm_para.h |   12 +++-
+ arch/x86/kernel/kvmclock.c      |   68 +++++++++++++------
+ arch/x86/kernel/pvclock.c       |   23 +++++++
+ arch/x86/kvm/x86.c              |   13 ++++-
+ include/linux/kvm.h             |    1 +
+ 6 files changed, 231 insertions(+), 24 deletions(-)
+ create mode 100644 Documentation/kvm/kvmclock.txt
+
