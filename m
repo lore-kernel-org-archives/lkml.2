@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab0DOTup (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 15:50:45 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:43206 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755154Ab0DOTun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 15:50:43 -0400
-Date: Thu, 15 Apr 2010 12:50:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: [PATCH tip/core/urgent] rcu: Make RCU lockdep check the
- lockdep_recursion variable
-Message-ID: <20100415195039.GA22623@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S1756427Ab0DOTwL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 15:52:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54429 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755154Ab0DOTwJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 15:52:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: michal.simek@petalogix.com
+Subject: Re: sched_clock - microblaze
+Date: Thu, 15 Apr 2010 21:52:03 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
+Cc: wuzhangjin@gmail.com, Steven Rostedt <rostedt@goodmis.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>
+References: <4BC728DD.5020404@petalogix.com> <1271355179.20625.107.camel@falcon> <4BC76917.9060604@petalogix.com>
+In-Reply-To: <4BC76917.9060604@petalogix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004152152.03883.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX193V5zOrZ1hi+TazB2l44qvReHQy78tv2EJdmY
+ q3Ksh4QzmcJzSO5NCUPzCmpsQwTAL7OERx1z5LNqfK98oHS4Vw
+ BiNXeIWXMVKdMgFhSY4kQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lockdep facility temporarily disables lockdep checking by incrementing
-the current->lockdep_recursion variable.  Such disabling happens in NMIs
-and in other situations where lockdep might expect to recurse on itself.
-This patch therefore checks current->lockdep_recursion, disabling RCU
-lockdep splats when this variable is non-zero.  In addition, this patch
-removes the "likely()", as suggested by Lai Jiangshan.
+On Thursday 15 April 2010 21:29:27 Michal Simek wrote:
+> > sched_clock() {
+> >       ftrace_stop();
+> >       printk(...);
+> >       ftrace_start();
+> >       ...
+> > }
+> 
+> But I am describing different problem. sched_clock is called before 
+> kernel initialized timers. Microblaze takes all information from DTS 
+> that's means that I am not able to read timer because I even don't know 
+> where it is. :-(
 
-Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-Reported-by: David Miller <davem@davemloft.net>
-Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
+You could make sched_clock return zero before the clock is probed, it
+is very unlikely to be needed before that anyway.
 
- include/linux/rcupdate.h |    5 +----
- kernel/rcupdate.c        |    7 +++++++
- 2 files changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 9f1ddfe..07db2fe 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -101,10 +101,7 @@ extern struct lockdep_map rcu_sched_lock_map;
- # define rcu_read_release_sched() \
- 		lock_release(&rcu_sched_lock_map, 1, _THIS_IP_)
- 
--static inline int debug_lockdep_rcu_enabled(void)
--{
--	return likely(rcu_scheduler_active && debug_locks);
--}
-+extern int debug_lockdep_rcu_enabled(void);
- 
- /**
-  * rcu_read_lock_held - might we be in RCU read-side critical section?
-diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-index 63fe254..03a7ea1 100644
---- a/kernel/rcupdate.c
-+++ b/kernel/rcupdate.c
-@@ -69,6 +69,13 @@ EXPORT_SYMBOL_GPL(rcu_scheduler_active);
- 
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 
-+int debug_lockdep_rcu_enabled(void)
-+{
-+	return rcu_scheduler_active && debug_locks &&
-+	       current->lockdep_recursion == 0;
-+}
-+EXPORT_SYMBOL_GPL(debug_lockdep_rcu_enabled);
-+
- /**
-  * rcu_read_lock_bh_held - might we be in RCU-bh read-side critical section?
-  *
+	Arnd
