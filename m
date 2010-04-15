@@ -1,146 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab0DOXF0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 19:05:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33992 "EHLO mx1.redhat.com"
+	id S932145Ab0DOXFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 19:05:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41981 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757871Ab0DOXFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 19:05:20 -0400
+	id S1757957Ab0DOXFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 19:05:22 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       Valerie Aurora <vaurora@redhat.com>,
+       Jan Blunck <jblunck@suse.de>, Valerie Aurora <vaurora@redhat.com>,
        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 02/35] VFS: Add read-only users count to superblock
-Date: Thu, 15 Apr 2010 16:04:09 -0700
-Message-Id: <1271372682-21225-3-git-send-email-vaurora@redhat.com>
-In-Reply-To: <1271372682-21225-2-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 01/35] VFS: Make lookup_hash() return a struct path
+Date: Thu, 15 Apr 2010 16:04:08 -0700
+Message-Id: <1271372682-21225-2-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1271372682-21225-1-git-send-email-vaurora@redhat.com>
 References: <1271372682-21225-1-git-send-email-vaurora@redhat.com>
- <1271372682-21225-2-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While we can check if a file system is currently read-only, we can't
-guarantee that it will stay read-only.  The file system can be
-remounted read-write at any time; it's also conceivable that a file
-system can be mounted a second time and converted to read-write if the
-underlying fs allows it.  This is a problem for union mounts, which
-require the underlying file system be read-only.  Add a read-only
-users count and don't allow remounts to change the file system to
-read-write or read-write mounts if there are any read-only users.
+From: Jan Blunck <jblunck@suse.de>
 
+This patch changes lookup_hash() into returning a struct path.
+
+Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- fs/namespace.c     |   11 +++++++++++
- fs/super.c         |   23 +++++++++++++++++++++++
- include/linux/fs.h |    8 ++++++++
- 3 files changed, 42 insertions(+), 0 deletions(-)
+ fs/namei.c |  113 ++++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 57 insertions(+), 56 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 1cd59a0..9a40282 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -200,6 +200,17 @@ int __mnt_is_readonly(struct vfsmount *mnt)
+diff --git a/fs/namei.c b/fs/namei.c
+index 981f72c..9013d17 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1155,7 +1155,7 @@ int vfs_path_lookup(struct dentry *dentry, struct vfsmount *mnt,
  }
- EXPORT_SYMBOL_GPL(__mnt_is_readonly);
  
-+static void inc_hard_readonly_users(struct vfsmount *mnt)
-+{
-+	mnt->mnt_sb->s_hard_readonly_users++;
-+}
-+
-+static void dec_hard_readonly_users(struct vfsmount *mnt)
-+{
-+	BUG_ON(mnt->mnt_sb->s_hard_readonly_users == 0);
-+	mnt->mnt_sb->s_hard_readonly_users--;
-+}
-+
- static inline void inc_mnt_writers(struct vfsmount *mnt)
+ static struct dentry *__lookup_hash(struct qstr *name,
+-		struct dentry *base, struct nameidata *nd)
++				    struct dentry *base, struct nameidata *nd)
  {
- #ifdef CONFIG_SMP
-diff --git a/fs/super.c b/fs/super.c
-index f35ac60..fa9b40b 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -117,6 +117,7 @@ out:
+ 	struct dentry *dentry;
+ 	struct inode *inode;
+@@ -1212,14 +1212,22 @@ out:
+  * needs parent already locked. Doesn't follow mounts.
+  * SMP-safe.
   */
- static inline void destroy_super(struct super_block *s)
+-static struct dentry *lookup_hash(struct nameidata *nd)
++static int lookup_hash(struct nameidata *nd, struct qstr *name,
++		       struct path *path)
  {
-+	BUG_ON(s->s_hard_readonly_users);
- 	security_sb_free(s);
- 	kfree(s->s_subtype);
- 	kfree(s->s_options);
-@@ -556,6 +557,21 @@ out:
- 	return err;
+ 	int err;
+ 
+ 	err = exec_permission(nd->path.dentry->d_inode);
+ 	if (err)
+-		return ERR_PTR(err);
+-	return __lookup_hash(&nd->last, nd->path.dentry, nd);
++		return err;
++	path->mnt = nd->path.mnt;
++	path->dentry =  __lookup_hash(name, nd->path.dentry, nd);
++	if (IS_ERR(path->dentry)) {
++		err = PTR_ERR(path->dentry);
++		path->dentry = NULL;
++		path->mnt = NULL;
++	}
++	return err;
  }
  
-+/*
-+ * Some uses of file systems require that they never be mounted
-+ * read-write anywhere (e.g., the lower layers of union mounts must
-+ * always be read-only).  If there are any of these "hard" read-only
-+ * mounts, don't permit a transition to read-write.
-+ *
-+ * Must be called while holding the namespace lock.
-+ */
-+
-+int sb_is_hard_readonly(struct super_block *sb)
-+{
-+	return sb->s_hard_readonly_users ? 1 : 0;
-+}
-+EXPORT_SYMBOL(sb_is_hard_readonly);
-+
- /**
-  *	do_remount_sb - asks filesystem to change mount options.
-  *	@sb:	superblock in question
-@@ -598,6 +614,9 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
- 			return -EBUSY;
+ static int __lookup_one_len(const char *name, struct qstr *this,
+@@ -1700,12 +1708,9 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 
+ 	/* OK, it's O_CREAT */
+ 	mutex_lock(&dir->d_inode->i_mutex);
++	error = lookup_hash(nd, &nd->last, path);
+ 
+-	path->dentry = lookup_hash(nd);
+-	path->mnt = nd->path.mnt;
+-
+-	error = PTR_ERR(path->dentry);
+-	if (IS_ERR(path->dentry)) {
++	if (error) {
+ 		mutex_unlock(&dir->d_inode->i_mutex);
+ 		goto exit;
  	}
+@@ -1954,7 +1959,8 @@ EXPORT_SYMBOL(filp_open);
+  */
+ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ {
+-	struct dentry *dentry = ERR_PTR(-EEXIST);
++	struct path path;
++	int err;
  
-+	if (remount_rw && sb_is_hard_readonly(sb))
-+		return -EROFS;
-+
- 	if (sb->s_op->remount_fs) {
- 		retval = sb->s_op->remount_fs(sb, &flags, data);
- 		if (retval)
-@@ -969,6 +988,10 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
- 	WARN((mnt->mnt_sb->s_maxbytes < 0), "%s set sb->s_maxbytes to "
- 		"negative value (%lld)\n", type->name, mnt->mnt_sb->s_maxbytes);
- 
-+	error = -EROFS;
-+	if (!(flags & MS_RDONLY) && sb_is_hard_readonly(mnt->mnt_sb))
-+		goto out_sb;
-+
- 	mnt->mnt_mountpoint = mnt->mnt_root;
- 	mnt->mnt_parent = mnt;
- 	up_write(&mnt->mnt_sb->s_umount);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 10b8ded..234ebc2 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1383,6 +1383,13 @@ struct super_block {
- 	 * generic_show_options()
+ 	mutex_lock_nested(&nd->path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+ 	/*
+@@ -1962,7 +1968,7 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	 * (foo/., foo/.., /////)
  	 */
- 	char *s_options;
-+
-+	/*
-+	 * Some mounts require that the underlying file system never
-+	 * transition to read-write.  They mark the sb itself as
-+	 * read-only.
-+	 */
-+	int s_hard_readonly_users;
- };
+ 	if (nd->last_type != LAST_NORM)
+-		goto fail;
++		return ERR_PTR(-EEXIST);
+ 	nd->flags &= ~LOOKUP_PARENT;
+ 	nd->flags |= LOOKUP_CREATE | LOOKUP_EXCL;
+ 	nd->intent.open.flags = O_EXCL;
+@@ -1970,11 +1976,11 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	/*
+ 	 * Do the final lookup.
+ 	 */
+-	dentry = lookup_hash(nd);
+-	if (IS_ERR(dentry))
+-		goto fail;
++	err = lookup_hash(nd, &nd->last, &path);
++	if (err)
++		return ERR_PTR(err);
  
- extern struct timespec current_fs_time(struct super_block *sb);
-@@ -1767,6 +1774,7 @@ extern int get_sb_nodev(struct file_system_type *fs_type,
- 	int (*fill_super)(struct super_block *, void *, int),
- 	struct vfsmount *mnt);
- void generic_shutdown_super(struct super_block *sb);
-+int sb_is_hard_readonly(struct super_block *sb);
- void kill_block_super(struct super_block *sb);
- void kill_anon_super(struct super_block *sb);
- void kill_litter_super(struct super_block *sb);
+-	if (dentry->d_inode)
++	if (path.dentry->d_inode)
+ 		goto eexist;
+ 	/*
+ 	 * Special case - lookup gave negative, but... we had foo/bar/
+@@ -1983,15 +1989,14 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	 * been asking for (non-existent) directory. -ENOENT for you.
+ 	 */
+ 	if (unlikely(!is_dir && nd->last.name[nd->last.len])) {
+-		dput(dentry);
+-		dentry = ERR_PTR(-ENOENT);
++		dput(path.dentry);
++		return ERR_PTR(-ENOENT);
+ 	}
+-	return dentry;
++
++	return path.dentry;
+ eexist:
+-	dput(dentry);
+-	dentry = ERR_PTR(-EEXIST);
+-fail:
+-	return dentry;
++	path_put_conditional(&path, nd);
++	return ERR_PTR(-EEXIST);
+ }
+ EXPORT_SYMBOL_GPL(lookup_create);
+ 
+@@ -2224,7 +2229,7 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ {
+ 	int error = 0;
+ 	char * name;
+-	struct dentry *dentry;
++	struct path path;
+ 	struct nameidata nd;
+ 
+ 	error = user_path_parent(dfd, pathname, &nd, &name);
+@@ -2246,21 +2251,20 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ 	nd.flags &= ~LOOKUP_PARENT;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	error = PTR_ERR(dentry);
+-	if (IS_ERR(dentry))
++	error = lookup_hash(&nd, &nd.last, &path);
++	if (error)
+ 		goto exit2;
+ 	error = mnt_want_write(nd.path.mnt);
+ 	if (error)
+ 		goto exit3;
+-	error = security_path_rmdir(&nd.path, dentry);
++	error = security_path_rmdir(&nd.path, path.dentry);
+ 	if (error)
+ 		goto exit4;
+-	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
++	error = vfs_rmdir(nd.path.dentry->d_inode, path.dentry);
+ exit4:
+ 	mnt_drop_write(nd.path.mnt);
+ exit3:
+-	dput(dentry);
++	path_put_conditional(&path, &nd);
+ exit2:
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ exit1:
+@@ -2316,7 +2320,7 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ {
+ 	int error;
+ 	char *name;
+-	struct dentry *dentry;
++	struct path path;
+ 	struct nameidata nd;
+ 	struct inode *inode = NULL;
+ 
+@@ -2331,26 +2335,25 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 	nd.flags &= ~LOOKUP_PARENT;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	error = PTR_ERR(dentry);
+-	if (!IS_ERR(dentry)) {
++	error = lookup_hash(&nd, &nd.last, &path);
++	if (!error) {
+ 		/* Why not before? Because we want correct error value */
+ 		if (nd.last.name[nd.last.len])
+ 			goto slashes;
+-		inode = dentry->d_inode;
++		inode = path.dentry->d_inode;
+ 		if (inode)
+ 			atomic_inc(&inode->i_count);
+ 		error = mnt_want_write(nd.path.mnt);
+ 		if (error)
+ 			goto exit2;
+-		error = security_path_unlink(&nd.path, dentry);
++		error = security_path_unlink(&nd.path, path.dentry);
+ 		if (error)
+ 			goto exit3;
+-		error = vfs_unlink(nd.path.dentry->d_inode, dentry);
++		error = vfs_unlink(nd.path.dentry->d_inode, path.dentry);
+ exit3:
+ 		mnt_drop_write(nd.path.mnt);
+ 	exit2:
+-		dput(dentry);
++		path_put_conditional(&path, &nd);
+ 	}
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ 	if (inode)
+@@ -2361,8 +2364,8 @@ exit1:
+ 	return error;
+ 
+ slashes:
+-	error = !dentry->d_inode ? -ENOENT :
+-		S_ISDIR(dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
++	error = !path.dentry->d_inode ? -ENOENT :
++		S_ISDIR(path.dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
+ 	goto exit2;
+ }
+ 
+@@ -2697,7 +2700,7 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 		int, newdfd, const char __user *, newname)
+ {
+ 	struct dentry *old_dir, *new_dir;
+-	struct dentry *old_dentry, *new_dentry;
++	struct path old, new;
+ 	struct dentry *trap;
+ 	struct nameidata oldnd, newnd;
+ 	char *from;
+@@ -2731,16 +2734,15 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 
+ 	trap = lock_rename(new_dir, old_dir);
+ 
+-	old_dentry = lookup_hash(&oldnd);
+-	error = PTR_ERR(old_dentry);
+-	if (IS_ERR(old_dentry))
++	error = lookup_hash(&oldnd, &oldnd.last, &old);
++	if (error)
+ 		goto exit3;
+ 	/* source must exist */
+ 	error = -ENOENT;
+-	if (!old_dentry->d_inode)
++	if (!old.dentry->d_inode)
+ 		goto exit4;
+ 	/* unless the source is a directory trailing slashes give -ENOTDIR */
+-	if (!S_ISDIR(old_dentry->d_inode->i_mode)) {
++	if (!S_ISDIR(old.dentry->d_inode->i_mode)) {
+ 		error = -ENOTDIR;
+ 		if (oldnd.last.name[oldnd.last.len])
+ 			goto exit4;
+@@ -2749,32 +2751,31 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	}
+ 	/* source should not be ancestor of target */
+ 	error = -EINVAL;
+-	if (old_dentry == trap)
++	if (old.dentry == trap)
+ 		goto exit4;
+-	new_dentry = lookup_hash(&newnd);
+-	error = PTR_ERR(new_dentry);
+-	if (IS_ERR(new_dentry))
++	error = lookup_hash(&newnd, &newnd.last, &new);
++	if (error)
+ 		goto exit4;
+ 	/* target should not be an ancestor of source */
+ 	error = -ENOTEMPTY;
+-	if (new_dentry == trap)
++	if (new.dentry == trap)
+ 		goto exit5;
+ 
+ 	error = mnt_want_write(oldnd.path.mnt);
+ 	if (error)
+ 		goto exit5;
+-	error = security_path_rename(&oldnd.path, old_dentry,
+-				     &newnd.path, new_dentry);
++	error = security_path_rename(&oldnd.path, old.dentry,
++				     &newnd.path, new.dentry);
+ 	if (error)
+ 		goto exit6;
+-	error = vfs_rename(old_dir->d_inode, old_dentry,
+-				   new_dir->d_inode, new_dentry);
++	error = vfs_rename(old_dir->d_inode, old.dentry,
++				   new_dir->d_inode, new.dentry);
+ exit6:
+ 	mnt_drop_write(oldnd.path.mnt);
+ exit5:
+-	dput(new_dentry);
++	path_put_conditional(&new, &newnd);
+ exit4:
+-	dput(old_dentry);
++	path_put_conditional(&old, &oldnd);
+ exit3:
+ 	unlock_rename(new_dir, old_dir);
+ exit2:
 -- 
 1.6.3.3
 
