@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab0DOJTU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 05:19:20 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35469 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757601Ab0DOJTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 05:19:17 -0400
-Date: Thu, 15 Apr 2010 09:18:37 GMT
-From: tip-bot for Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       peterz@infradead.org, efault@gmx.de, sfr@canb.auug.org.au,
-       tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       efault@gmx.de, peterz@infradead.org, tglx@linutronix.de,
-       sfr@canb.auug.org.au, mingo@elte.hu
-In-Reply-To: <1271309399.14779.17.camel@marge.simson.net>
-References: <1271309399.14779.17.camel@marge.simson.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix UP update_avg() build warning
-Message-ID: <tip-09a40af5240de02d848247ab82440ad75b31ab11@git.kernel.org>
-Git-Commit-ID: 09a40af5240de02d848247ab82440ad75b31ab11
-X-Mailer: tip-git-log-daemon
+	id S1757619Ab0DOJX6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 05:23:58 -0400
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:53399 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753159Ab0DOJX4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 05:23:56 -0400
+Date: Thu, 15 Apr 2010 19:23:30 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Janos Haar <janos.haar@netcenter.hu>
+Cc: xiyou.wangcong@gmail.com, linux-kernel@vger.kernel.org,
+       kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org, xfs@oss.sgi.com,
+       axboe@kernel.dk
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look
+ please!...)
+Message-ID: <20100415092330.GU2493@dastard>
+References: <20100408025822.GL11036@dastard>
+ <11b701cad9c8$93212530$0400a8c0@dcccs>
+ <20100412001158.GA2493@dastard>
+ <18b101cadadf$5edbb660$0400a8c0@dcccs>
+ <20100413083931.GW2493@dastard>
+ <190201cadaeb$02ec22c0$0400a8c0@dcccs>
+ <20100413113445.GZ2493@dastard>
+ <1cd501cadb62$3a93e790$0400a8c0@dcccs>
+ <20100414001615.GC2493@dastard>
+ <233401cadc69$64c1f4f0$0400a8c0@dcccs>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 15 Apr 2010 09:18:39 +0000 (UTC)
+In-Reply-To: <233401cadc69$64c1f4f0$0400a8c0@dcccs>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  09a40af5240de02d848247ab82440ad75b31ab11
-Gitweb:     http://git.kernel.org/tip/09a40af5240de02d848247ab82440ad75b31ab11
-Author:     Mike Galbraith <efault@gmx.de>
-AuthorDate: Thu, 15 Apr 2010 07:29:59 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 15 Apr 2010 09:36:47 +0200
+On Thu, Apr 15, 2010 at 09:00:49AM +0200, Janos Haar wrote:
+> Dave,
+> 
+> The corruption + crash reproduced. (unfortunately)
+> 
+> http://download.netcenter.hu/bughunt/20100413/messages-15
+> 
+> Apr 14 01:06:33 alfa kernel: XFS mounting filesystem sdb2
+> 
+> This was the point of the xfs_repair more times.
 
-sched: Fix UP update_avg() build warning
+OK, the inodes that are corrupted are different, so there's still
+something funky going on here. I still would suggest replacing the
+RAID controller to rule that out as the cause.
 
-update_avg() is only used for SMP builds, move it to the nearest
-SMP block.
+FWIW, do you have any other servers with similar h/w, s/w and
+workloads? If so, are they seeing problems?
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <1271309399.14779.17.camel@marge.simson.net>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Can you recompile the kernel with CONFIG_XFS_DEBUG enabled and
+reboot into it before you repair and remount the filesystem again?
+(i.e. so that we know that we have started with a clean filesystem
+and the debug kernel) I'm hoping that this will catch the corruption
+much sooner, perhaps before it gets to disk. Note that this will
+cause the machine to panic when corruption is detected, and it is
+much,much more careful about checking in memory structures so there
+is a CPU overhead involved as well.
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index ab562ae..de0da71 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1872,12 +1872,6 @@ static void set_load_weight(struct task_struct *p)
- 	p->se.load.inv_weight = prio_to_wmult[p->static_prio - MAX_RT_PRIO];
- }
- 
--static void update_avg(u64 *avg, u64 sample)
--{
--	s64 diff = sample - *avg;
--	*avg += diff >> 3;
--}
--
- static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
- {
- 	update_rq_clock(rq);
-@@ -2332,6 +2326,12 @@ int select_task_rq(struct rq *rq, struct task_struct *p, int sd_flags, int wake_
- 
- 	return cpu;
- }
-+
-+static void update_avg(u64 *avg, u64 sample)
-+{
-+	s64 diff = sample - *avg;
-+	*avg += diff >> 3;
-+}
- #endif
- 
- /***
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
