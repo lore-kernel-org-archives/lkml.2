@@ -1,321 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab0DOPQS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 11:16:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14311 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753738Ab0DOPQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 11:16:14 -0400
-Message-ID: <4BC72E70.9070401@redhat.com>
-Date: Thu, 15 Apr 2010 08:19:12 -0700
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc11 Thunderbird/3.0.1
+	id S1754641Ab0DOPQv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 11:16:51 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:5783 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738Ab0DOPQt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 11:16:49 -0400
+X-SpamScore: -22
+X-BigFish: VPS-22(zz1432P98dN936eM62a3Lzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 5,
+X-WSS-ID: 0L0XBRO-01-BA7-02
+X-M-MSG: 
+Date: Thu, 15 Apr 2010 17:16:33 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/12] perf: introduce model specific events and AMD IBS
+Message-ID: <20100415151633.GN11907@erda.amd.com>
+References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
+ <1271317461.32749.67.camel@laptop>
 MIME-Version: 1.0
-To: Ian Munsie <imunsie@au1.ibm.com>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-       benh@kernel.crashing.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v3 1/2] perf: Move arch specific code into separate arch
- directory
-References: <1271303822-11542-1-git-send-email-imunsie@au.ibm.com> <1271303822-11542-2-git-send-email-imunsie@au.ibm.com>
-In-Reply-To: <1271303822-11542-2-git-send-email-imunsie@au.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1271317461.32749.67.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 15 Apr 2010 15:16:33.0500 (UTC) FILETIME=[A21229C0:01CADCAE]
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ian Munsie wrote:
-> From: Ian Munsie <imunsie@au.ibm.com>
+On 15.04.10 09:44:21, Peter Zijlstra wrote:
+> On Tue, 2010-04-13 at 22:23 +0200, Robert Richter wrote:
+> > This patch series introduces model specific events and impments AMD
+> > IBS (Instruction Based Sampling) for perf_events.
 > 
-> The perf userspace tool included some architecture specific code to map
-> registers from the DWARF register number into the names used by the regs
-> and stack access API.
-> 
-> This patch moves the architecture specific code out into a separate
-> arch/x86 directory along with the infrastructure required to use it.
-> 
-> Signed-off-by: Ian Munsie <imunsie@au.ibm.com>
+> I would much rather it uses the ->precise thing PEBS also uses,
+> otherwise we keep growing funny arch extensions and end up with a
+> totally fragmented trainwreck of an ABI.
 
-Good work!
+I agree that an exiting flag could be reused. But the naming 'precise'
+could be misleading. Maybe we rename it to 'model_spec' or something
+else that underlines the idea of having model specific setups.
 
-Acked-by: Masami Hiramatsu <mhiramat@redhat.com>
-
-Thank you very much!
-
-> ---
-> Changes since v2: From Masami Hiramatsu's feedback DWARF support is disabled
-> altogether if the architecture specific Makefile does not define
-> PERF_HAVE_DWARF_REGS - ie, DWARF register mappings are missing for the
-> architecture. A message indicating this is printed out during compilation.
+> > The general approach is to introduce a flag to mark an event as model
+> > specific. With that flag set a model specific ibs (raw) config value
+> > can be passed to the pmu for setup. When there are ibs samples
+> > available, it is sent back as a raw data sample to the userland. So we
+> > have a raw config value and raw sampling data. This requires the
+> > userland to setup ibs and further extract and process sampling data.
+> > 
+> > Patches 1-8 rework and refactor the code to prepare the ibs
+> > implementation. This is done in patches 9-12.
+> > 
+> > I will add ibs example code to libpfm4.
 > 
->  tools/perf/Makefile                   |   26 ++++++++++-
->  tools/perf/arch/x86/Makefile          |    2 +
->  tools/perf/arch/x86/util/dwarf-regs.c |   75 +++++++++++++++++++++++++++++++++
->  tools/perf/util/include/dwarf-regs.h  |    8 ++++
->  tools/perf/util/probe-finder.c        |   55 +-----------------------
->  5 files changed, 110 insertions(+), 56 deletions(-)
->  create mode 100644 tools/perf/arch/x86/Makefile
->  create mode 100644 tools/perf/arch/x86/util/dwarf-regs.c
->  create mode 100644 tools/perf/util/include/dwarf-regs.h
-> 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 57b3569..269d5dd 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -173,6 +173,20 @@ uname_R := $(shell sh -c 'uname -r 2>/dev/null || echo not')
->  uname_P := $(shell sh -c 'uname -p 2>/dev/null || echo not')
->  uname_V := $(shell sh -c 'uname -v 2>/dev/null || echo not')
->  
-> +ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
-> +				  -e s/arm.*/arm/ -e s/sa110/arm/ \
-> +				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
-> +				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
-> +				  -e s/sh[234].*/sh/ )
-> +
-> +# Additional ARCH settings for x86
-> +ifeq ($(ARCH),i386)
-> +        ARCH := x86
-> +endif
-> +ifeq ($(ARCH),x86_64)
-> +        ARCH := x86
-> +endif
-> +
->  # CFLAGS and LDFLAGS are for the users to override from the command line.
->  
->  #
-> @@ -285,7 +299,7 @@ endif
->  # Those must not be GNU-specific; they are shared with perl/ which may
->  # be built by a different compiler. (Note that this is an artifact now
->  # but it still might be nice to keep that distinction.)
-> -BASIC_CFLAGS = -Iutil/include
-> +BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include
->  BASIC_LDFLAGS =
->  
->  # Guard against environment variables
-> @@ -367,6 +381,7 @@ LIB_H += util/include/asm/byteorder.h
->  LIB_H += util/include/asm/swab.h
->  LIB_H += util/include/asm/system.h
->  LIB_H += util/include/asm/uaccess.h
-> +LIB_H += util/include/dwarf-regs.h
->  LIB_H += perf.h
->  LIB_H += util/cache.h
->  LIB_H += util/callchain.h
-> @@ -485,6 +500,7 @@ PERFLIBS = $(LIB_FILE)
->  
->  -include config.mak.autogen
->  -include config.mak
-> +-include arch/$(ARCH)/Makefile
->  
->  ifeq ($(uname_S),Darwin)
->  	ifndef NO_FINK
-> @@ -521,12 +537,16 @@ endif
->  ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
->  	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/elfutils-dev);
->  else
-> +ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
-> +	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
-> +else
->  ifndef NO_DWARF
->  	BASIC_CFLAGS += -I/usr/include/elfutils -DDWARF_SUPPORT
->  	EXTLIBS += -lelf -ldw
->  	LIB_OBJS += $(OUTPUT)util/probe-finder.o
-> -endif
-> -endif
-> +endif # NO_DWARF
-> +endif # PERF_HAVE_DWARF_REGS
-> +endif # Dwarf support
->  
->  ifneq ($(shell sh -c "(echo '\#include <newt.h>'; echo 'int main(void) { newtInit(); newtCls(); return newtFinished(); }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -lnewt -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
->  	msg := $(warning newt not found, disables TUI support. Please install newt-devel or libnewt-dev);
-> diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
-> new file mode 100644
-> index 0000000..cbd7833
-> --- /dev/null
-> +++ b/tools/perf/arch/x86/Makefile
-> @@ -0,0 +1,2 @@
-> +PERF_HAVE_DWARF_REGS := 1
-> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
-> diff --git a/tools/perf/arch/x86/util/dwarf-regs.c b/tools/perf/arch/x86/util/dwarf-regs.c
-> new file mode 100644
-> index 0000000..a794d30
-> --- /dev/null
-> +++ b/tools/perf/arch/x86/util/dwarf-regs.c
-> @@ -0,0 +1,75 @@
-> +/*
-> + * dwarf-regs.c : Mapping of DWARF debug register numbers into register names.
-> + * Extracted from probe-finder.c
-> + *
-> + * Written by Masami Hiramatsu <mhiramat@redhat.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-> + *
-> + */
-> +
-> +#include <libio.h>
-> +#include <dwarf-regs.h>
-> +
-> +/*
-> + * Generic dwarf analysis helpers
-> + */
-> +
-> +#define X86_32_MAX_REGS 8
-> +const char *x86_32_regs_table[X86_32_MAX_REGS] = {
-> +	"%ax",
-> +	"%cx",
-> +	"%dx",
-> +	"%bx",
-> +	"$stack",	/* Stack address instead of %sp */
-> +	"%bp",
-> +	"%si",
-> +	"%di",
-> +};
-> +
-> +#define X86_64_MAX_REGS 16
-> +const char *x86_64_regs_table[X86_64_MAX_REGS] = {
-> +	"%ax",
-> +	"%dx",
-> +	"%cx",
-> +	"%bx",
-> +	"%si",
-> +	"%di",
-> +	"%bp",
-> +	"%sp",
-> +	"%r8",
-> +	"%r9",
-> +	"%r10",
-> +	"%r11",
-> +	"%r12",
-> +	"%r13",
-> +	"%r14",
-> +	"%r15",
-> +};
-> +
-> +/* TODO: switching by dwarf address size */
-> +#ifdef __x86_64__
-> +#define ARCH_MAX_REGS X86_64_MAX_REGS
-> +#define arch_regs_table x86_64_regs_table
-> +#else
-> +#define ARCH_MAX_REGS X86_32_MAX_REGS
-> +#define arch_regs_table x86_32_regs_table
-> +#endif
-> +
-> +/* Return architecture dependent register string (for kprobe-tracer) */
-> +const char *get_arch_regstr(unsigned int n)
-> +{
-> +	return (n <= ARCH_MAX_REGS) ? arch_regs_table[n] : NULL;
-> +}
-> diff --git a/tools/perf/util/include/dwarf-regs.h b/tools/perf/util/include/dwarf-regs.h
-> new file mode 100644
-> index 0000000..cf6727e
-> --- /dev/null
-> +++ b/tools/perf/util/include/dwarf-regs.h
-> @@ -0,0 +1,8 @@
-> +#ifndef _PERF_DWARF_REGS_H_
-> +#define _PERF_DWARF_REGS_H_
-> +
-> +#ifdef DWARF_SUPPORT
-> +const char *get_arch_regstr(unsigned int n);
-> +#endif
-> +
-> +#endif
-> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> index a851377..83e5bd8 100644
-> --- a/tools/perf/util/probe-finder.c
-> +++ b/tools/perf/util/probe-finder.c
-> @@ -31,6 +31,7 @@
->  #include <string.h>
->  #include <stdarg.h>
->  #include <ctype.h>
-> +#include <dwarf-regs.h>
->  
->  #include "string.h"
->  #include "event.h"
-> @@ -38,58 +39,6 @@
->  #include "util.h"
->  #include "probe-finder.h"
->  
-> -
-> -/*
-> - * Generic dwarf analysis helpers
-> - */
-> -
-> -#define X86_32_MAX_REGS 8
-> -const char *x86_32_regs_table[X86_32_MAX_REGS] = {
-> -	"%ax",
-> -	"%cx",
-> -	"%dx",
-> -	"%bx",
-> -	"$stack",	/* Stack address instead of %sp */
-> -	"%bp",
-> -	"%si",
-> -	"%di",
-> -};
-> -
-> -#define X86_64_MAX_REGS 16
-> -const char *x86_64_regs_table[X86_64_MAX_REGS] = {
-> -	"%ax",
-> -	"%dx",
-> -	"%cx",
-> -	"%bx",
-> -	"%si",
-> -	"%di",
-> -	"%bp",
-> -	"%sp",
-> -	"%r8",
-> -	"%r9",
-> -	"%r10",
-> -	"%r11",
-> -	"%r12",
-> -	"%r13",
-> -	"%r14",
-> -	"%r15",
-> -};
-> -
-> -/* TODO: switching by dwarf address size */
-> -#ifdef __x86_64__
-> -#define ARCH_MAX_REGS X86_64_MAX_REGS
-> -#define arch_regs_table x86_64_regs_table
-> -#else
-> -#define ARCH_MAX_REGS X86_32_MAX_REGS
-> -#define arch_regs_table x86_32_regs_table
-> -#endif
-> -
-> -/* Return architecture dependent register string (for kprobe-tracer) */
-> -static const char *get_arch_regstr(unsigned int n)
-> -{
-> -	return (n <= ARCH_MAX_REGS) ? arch_regs_table[n] : NULL;
-> -}
-> -
->  /*
->   * Compare the tail of two strings.
->   * Return 0 if whole of either string is same as another's tail part.
-> @@ -397,7 +346,7 @@ static void convert_location(Dwarf_Op *op, struct probe_finder *pf)
->  
->  	regs = get_arch_regstr(regn);
->  	if (!regs)
-> -		die("%u exceeds max register number.", regn);
-> +		die("Mapping for DWARF register number %u missing on this architecture.", regn);
->  
->  	tvar->value = xstrdup(regs);
->  	if (ref) {
+> Please add a valid usecase to tools/perf/ instead.
+
+I will also provide an example for tools/perf but reusing libpfm4 was
+a first quick solution for me.
+
+-Robert
 
 -- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
 
