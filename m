@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab0DOFGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 01:06:35 -0400
-Received: from ozlabs.org ([203.10.76.45]:55482 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754085Ab0DOFGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 01:06:34 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Gautham R Shenoy <ego@in.ibm.com>
-Subject: Re: [PATCH 5/5] sched: make fix_small_imbalance work with asymmetric packing
-In-reply-to: <1271208670.2834.55.camel@sbs-t61.sc.intel.com>
-References: <20100409062119.10AC5CBB6D@localhost.localdomain> <1271161769.4807.1283.camel@twins> <1271208670.2834.55.camel@sbs-t61.sc.intel.com>
-Comments: In-reply-to Suresh Siddha <suresh.b.siddha@intel.com>
-   message dated "Tue, 13 Apr 2010 18:31:10 -0700."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
-Date: Thu, 15 Apr 2010 15:06:31 +1000
-Message-ID: <10091.1271307991@neuling.org>
+	id S1754569Ab0DOFQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 01:16:57 -0400
+Received: from [76.245.85.235] ([76.245.85.235]:52898 "EHLO cynthia.pants.nu"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753558Ab0DOFQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 01:16:55 -0400
+X-Greylist: delayed 3665 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Apr 2010 01:16:55 EDT
+Date: Wed, 14 Apr 2010 21:14:49 -0700
+From: Brad Boyer <flar@allandria.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Matthew Wilcox <willy@linux.intel.com>, Christoph Hellwig <hch@lst.de>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       "J. Bruce Fields" <bfields@fieldses.org>,
+       Miklos Szeredi <mszeredi@suse.cz>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 2/2] [RFC] Remove BKL from fs/locks.c
+Message-ID: <20100415041449.GA4913@cynthia.pants.nu>
+References: <1271277384-7627-1-git-send-email-arnd@arndb.de> <1271277384-7627-2-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271277384-7627-2-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In message <1271208670.2834.55.camel@sbs-t61.sc.intel.com> you wrote:
-> On Tue, 2010-04-13 at 05:29 -0700, Peter Zijlstra wrote:
-> > On Fri, 2010-04-09 at 16:21 +1000, Michael Neuling wrote:
-> > > With the asymmetric packing infrastructure, fix_small_imbalance is
-> > > causing idle higher threads to pull tasks off lower threads.  
-> > > 
-> > > This is being caused by an off-by-one error.  
-> > > 
-> > > Signed-off-by: Michael Neuling <mikey@neuling.org>
-> > > ---
-> > > I'm not sure this is the right fix but without it, higher threads pull
-> > > tasks off the lower threads, then the packing pulls it back down, etc
-> > > etc and tasks bounce around constantly.
-> > 
-> > Would help if you expand upon the why/how it manages to get pulled up.
-> > 
-> > I can't immediately spot anything wrong with the patch, but then that
-> > isn't my favourite piece of code either.. Suresh, any comments?
-> > 
+On Wed, Apr 14, 2010 at 10:36:24PM +0200, Arnd Bergmann wrote:
+> From: Matthew Wilcox <willy@linux.intel.com>
 > 
-> Sorry didn't pay much attention to this patchset. But based on the
-> comments from Michael and looking at this patchset, it has SMT/MC
-> implications. I will review and run some tests and get back in a day.
+> I've taken a patch originally written by Matthew Wilcox and
+> ported it to the current version. It seems that there were
+> originally concerns that this breaks NFS, but since Trond
+> has recently removed the BKL from NFS, my naive assumption
+> would be that it's all good now, despite not having tried to
+> understand what it does.
 > 
-> As far as this particular patch is concerned, original code is coming
-> from Ingo's original CFS code commit (dd41f596) and the below hunk
-> pretty much explains what the change is about.
+> Original introduction from Willy:
 > 
-> -               if (max_load - this_load >= busiest_load_per_task * imbn) {
-> +               if (max_load - this_load + SCHED_LOAD_SCALE_FUZZ >=
-> +                                       busiest_load_per_task * imbn) {
+>    I've been promising to do this for about seven years now.
 > 
-> So the below proposed change will probably break what the above
-> mentioned commit was trying to achieve, which is: for fairness reasons
-> we were bouncing the small extra load (between the max_load and
-> this_load) around.
+>    It seems to work well enough, but I haven't run any serious stress
+>    tests on it.  This implementation uses one spinlock to protect both lock
+>    lists and all the i_flock chains.  It doesn't seem worth splitting up
+>    the locking any further.
+> 
+>    I had to move one memory allocation out from under the file_lock_lock.
+>    I hope I got that logic right.  I'm rather tempted to split out the
+>    find_conflict algorithm from that function into something that can be
+>    called separately for the FL_ACCESS case.
+> 
+>    I also have to drop and reacquire the file_lock_lock around the call
+>    to cond_resched().  This was done automatically for us before by the
+>    special BKL semantics.
+> 
+>    I had to change vfs_setlease() as it relied on the special BKL ability
+>    to recursively acquire the same lock.  The internal caller now calls
+>    __vfs_setlease and the exported interface acquires and releases the
+>    file_lock_lock around calling __vfs_setlease.
+> 
+>    I should probably split out the removal of interruptible_sleep_on_locked()
+>    as it's basically unrelated to all this.
 
-Actually, you can drop this patch.  
+Don't we need to have access to this new lock from modules? In particular,
+nfsd/lockd currently call lock_kernel to be able to safely access i_flock.
+This would seem to imply that they would either need new functions inside
+locks.c to do the same work or export the new lock functions. It seems
+easiest to just do EXPORT_SYMBOL on the new lock/unlock functions added
+in this patch, but I do understand if that isn't desireable.
 
-In the process of clarifying why it was needed for the changelog, I
-discovered I don't actually need it.  
+	Brad Boyer
+	flar@allandria.com
 
-Sorry about that.
-
-Mikey
-
-> 
-> > > ---
-> > > 
-> > >  kernel/sched_fair.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > Index: linux-2.6-ozlabs/kernel/sched_fair.c
-> > > ===================================================================
-> > > --- linux-2.6-ozlabs.orig/kernel/sched_fair.c
-> > > +++ linux-2.6-ozlabs/kernel/sched_fair.c
-> > > @@ -2652,7 +2652,7 @@ static inline void fix_small_imbalance(s
-> > >  						 * SCHED_LOAD_SCALE;
-> > >  	scaled_busy_load_per_task /= sds->busiest->cpu_power;
-> > >  
-> > > -	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >=
-> > > +	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >
-> > >  			(scaled_busy_load_per_task * imbn)) {
-> > >  		*imbalance = sds->busiest_load_per_task;
-> > >  		return;
-> > 
-> 
-> thanks,
-> suresh
-> 
