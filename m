@@ -1,113 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab0DORUu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 13:20:50 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:35763 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841Ab0DORUs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 13:20:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=AZ2rJ4xbAItIfUSGEF7d6Vh1yggJ9dwo6jwvPobA3WRNc8WPAKTpm7Zu17vksMLGPC
-         M+VdsxtE7M0D5OfpY/7N71YtFz5pyZVcDvea1524zVypnfzmNcMDtz6u7QUSLkYijqIr
-         48SJOMdVEgKx1P2gskcWBqJqNhUVNEhNQcigI=
-MIME-Version: 1.0
-In-Reply-To: <20100415171111.GA32023@caffeine.csclub.uwaterloo.ca>
-References: <40101cc31003011403x4423cb3em1f6fcb04d64dd2bb@mail.gmail.com> 
-	<20100415171111.GA32023@caffeine.csclub.uwaterloo.ca>
-From: Matteo Croce <technoboy85@gmail.com>
-Date: Thu, 15 Apr 2010 19:20:27 +0200
-Message-ID: <i2s40101cc31004151020h4d3bbab3o1f1ed67bc3b45045@mail.gmail.com>
-Subject: Re: AMD Geode i686
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755272Ab0DORVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 13:21:45 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49743 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754894Ab0DORVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 13:21:41 -0400
+From: Mel Gorman <mel@csn.ul.ie>
+To: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+       Dave Chinner <david@fromorbit.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andi Kleen <andi@firstfloor.org>, Johannes Weiner <hannes@cmpxchg.org>,
+       Mel Gorman <mel@csn.ul.ie>
+Subject: [RFC PATCH 00/10] Reduce stack usage used by page reclaim V1
+Date: Thu, 15 Apr 2010 18:21:33 +0100
+Message-Id: <1271352103-2280-1-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 7:11 PM, Lennart Sorensen
-<lsorense@csclub.uwaterloo.ca> wrote:
-> On Mon, Mar 01, 2010 at 11:03:09PM +0100, Matteo Croce wrote:
->> Hi,
->> I have refreshed my AMD Geode i686 patch with NOPL and I have added a
->> new nice feature.
->> When a NOPL is found the parser looks for any NOPL after the current
->> one, so they are emulated in bulk.
->> Tested ok on a Pcengines Alix.
->>
->> Signed-off-by: Matteo Croce <technoboy85@gmail.com>
->>
->> --- a/arch/x86/kernel/Makefile        2010-03-01 01:18:51.697166322 +0100
->> +++ b/arch/x86/kernel/Makefile        2010-03-01 01:19:45.727095700 +0100
->> @@ -89,6 +89,8 @@
->>  obj-$(CONFIG_HPET_TIMER)     += hpet.o
->>
->>  obj-$(CONFIG_K8_NB)          += k8.o
->> +obj-$(CONFIG_MGEODEGX1)              += nopl_emu.o
->> +obj-$(CONFIG_MGEODE_LX)              += nopl_emu.o
->>  obj-$(CONFIG_DEBUG_RODATA_TEST)      += test_rodata.o
->>  obj-$(CONFIG_DEBUG_NX_TEST)  += test_nx.o
->>
->> --- a/arch/x86/kernel/cpu/amd.c       2010-03-01 01:18:51.737097341 +0100
->> +++ b/arch/x86/kernel/cpu/amd.c       2010-03-01 01:19:27.867865836 +0100
->> @@ -138,8 +138,10 @@
->>       }
->>
->>       if (c->x86_model == 10) {
->> -             /Index: linux-2.6.33/arch/x86/kernel/Makefile
->> ===================================================================
->> * AMD Geode LX is model 10 */
->> -             /* placeholder for any needed mods */
->> +             /* Geode only lacks the NOPL instruction to be i686,
->> +                but we can emulate it in the exception handler
->> +                and promote it to a class 6 cpu */
->> +             boot_cpu_data.x86 = 6;
->>               return;
->>       }
->>  }
->> --- a/arch/x86/kernel/entry_32.S      2010-03-01 01:18:51.717096708 +0100
->> +++ b/arch/x86/kernel/entry_32.S      2010-03-01 01:19:27.867865836 +0100
->> @@ -960,7 +960,11 @@
->>       RING0_INT_FRAME
->>       pushl $0
->>       CFI_ADJUST_CFA_OFFSET 4
->> +#ifdef CONFIG_MGEODE_LX
->> +     pushl $do_nopl_emu
->> +#else
->>       pushl $do_invalid_op
->> +#endif
->
-> How does this work for MGEODEGX1 when it looks for MGEODE_LX?  It seems
-> you made both link against the code above after all.  Is this wrong or
-> the above?
->
-> Can it not work if you want to run a generic kernel on your Geode rather
-> than one built explicitly for the LX?  I build one kernel to run on
-> Geode SC1200 and Geode LX.
->
-> --
-> Len Sorensen
->
+This is just an RFC to reduce some of the more obvious stack usage in page
+reclaim. It's a bit rushed and I haven't tested this yet but am sending
+it out as there may be others working on similar material and would rather
+avoid overlap. I built on some of Kosaki Motohiro's work.
 
-This code should work for Geode GX too.
-Try it and report success please
+On X86 bit, stack usage figures (generated using a modified bloat-o-meter
+that uses checkstack.pl as its input) change in the following ways after
+the series of patches.
 
--- 
-Matteo Croce
-OpenWrt developer
-  _______                     ________        __
- |       |.-----.-----.-----.|  |  |  |.----.|  |_
- |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
- |_______||   __|_____|__|__||________||__|  |____|
-          |__| W I R E L E S S   F R E E D O M
- KAMIKAZE (bleeding edge) ------------------
-  * 10 oz Vodka       Shake well with ice and strain
-  * 10 oz Triple sec  mixture into 10 shot glasses.
-  * 10 oz lime juice  Salute!
- ---------------------------------------------------
+add/remove: 2/0 grow/shrink: 0/4 up/down: 804/-1688 (-884)
+function                                     old     new   delta
+putback_lru_pages                              -     676    +676
+update_isolated_counts                         -     128    +128
+do_try_to_free_pages                         172     128     -44
+kswapd                                      1324    1168    -156
+shrink_page_list                            1616    1224    -392
+shrink_zone                                 2320    1224   -1096
+
+There are some growths there but critically they are no longer in the path
+that would call writepages. In the main path, there is about 1K of stack
+lopped off giving a small amount of breathing room.
+
+KOSAKI Motohiro (3):
+  vmscan: kill prev_priority completely
+  vmscan: move priority variable into scan_control
+  vmscan: simplify shrink_inactive_list()
+
+Mel Gorman (7):
+  vmscan: Remove useless loop at end of do_try_to_free_pages
+  vmscan: Remove unnecessary temporary vars in do_try_to_free_pages
+  vmscan: Split shrink_zone to reduce stack usage
+  vmscan: Remove unnecessary temporary variables in shrink_zone()
+  vmscan: Setup pagevec as late as possible in shrink_inactive_list()
+  vmscan: Setup pagevec as late as possible in shrink_page_list()
+  vmscan: Update isolated page counters outside of main path in
+    shrink_inactive_list()
+
+ include/linux/mmzone.h |   15 --
+ mm/page_alloc.c        |    2 -
+ mm/vmscan.c            |  447 +++++++++++++++++++++++-------------------------
+ mm/vmstat.c            |    2 -
+ 4 files changed, 210 insertions(+), 256 deletions(-)
+
