@@ -1,151 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab0DOK0T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 06:26:19 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55702 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab0DOK0P (ORCPT
+	id S1752801Ab0DOK2S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 06:28:18 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:42346 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab0DOK2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 06:26:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 4/4] vmscan: replace the pagevec in shrink_inactive_list() with list
-Cc: kosaki.motohiro@jp.fujitsu.com, Dave Chinner <david@fromorbit.com>,
-       Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100415185310.D1A1.A69D9226@jp.fujitsu.com>
-References: <20100415085420.GT2493@dastard> <20100415185310.D1A1.A69D9226@jp.fujitsu.com>
-Message-Id: <20100415192501.D1AD.A69D9226@jp.fujitsu.com>
+	Thu, 15 Apr 2010 06:28:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vnBF2qVMvs39XS5gwt1Xm0/YgcXgIrqJEOMqB6Sa20mZsDfYyD4qImX+lhMxAmjKTU
+         CexS33Uf2OgCcAswMfExYLKC0M5sTOOuYL1DfY4m4ww/4HnCdVM9YM6us3hRruc1bKCN
+         lRVR9AAEeW86qcbGUPXOEzXC/Pe4jSi5QeJGU=
+Date: Thu, 15 Apr 2010 13:28:59 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Alexey Starikovskiy <astarikovskiy@suse.de>
+Cc: Tero Roponen <tero.roponen@gmail.com>,
+       Luca Tettamanti <kronos.it@gmail.com>, linux-acpi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, len.brown@intel.com
+Subject: Re: [acpi:battery?] kernel oops on boot
+Message-ID: <20100415102859.GA3299@swordfish>
+References: <20100414095750.GA3304@swordfish.minsk.epam.com>
+ <20100414131324.GA6598@nb-core2.darkstar.lan>
+ <alpine.LFD.2.00.1004141641010.3640@terrop>
+ <4BC5CA13.3070801@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 15 Apr 2010 19:26:11 +0900 (JST)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
+Content-Disposition: inline
+In-Reply-To: <4BC5CA13.3070801@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86_64, sizeof(struct pagevec) is 8*16=128, but
-sizeof(struct list_head) is 8*2=16. So, to replace pagevec with list
-makes to reduce 112 bytes stack.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/vmscan.c |   22 ++++++++++++++--------
- 1 files changed, 14 insertions(+), 8 deletions(-)
+--+QahgC5+KEYLbs62
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 4de4029..fbc26d8 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -93,6 +93,8 @@ struct scan_control {
- 			unsigned long *scanned, int order, int mode,
- 			struct zone *z, struct mem_cgroup *mem_cont,
- 			int active, int file);
-+
-+	struct list_head free_batch_list;
- };
- 
- #define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
-@@ -641,13 +643,11 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 					enum pageout_io sync_writeback)
- {
- 	LIST_HEAD(ret_pages);
--	struct pagevec freed_pvec;
- 	int pgactivate = 0;
- 	unsigned long nr_reclaimed = 0;
- 
- 	cond_resched();
- 
--	pagevec_init(&freed_pvec, 1);
- 	while (!list_empty(page_list)) {
- 		enum page_references references;
- 		struct address_space *mapping;
-@@ -822,10 +822,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		__clear_page_locked(page);
- free_it:
- 		nr_reclaimed++;
--		if (!pagevec_add(&freed_pvec, page)) {
--			__pagevec_free(&freed_pvec);
--			pagevec_reinit(&freed_pvec);
--		}
-+		list_add(&page->lru, &sc->free_batch_list);
- 		continue;
- 
- cull_mlocked:
-@@ -849,8 +846,6 @@ keep:
- 		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
- 	}
- 	list_splice(&ret_pages, page_list);
--	if (pagevec_count(&freed_pvec))
--		__pagevec_free(&freed_pvec);
- 	count_vm_events(PGACTIVATE, pgactivate);
- 	return nr_reclaimed;
- }
-@@ -1238,6 +1233,11 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
- 						 PAGEOUT_IO_SYNC);
- 	}
- 
-+	/*
-+	 * Free unused pages.
-+	 */
-+	free_pages_bulk(zone, &sc->free_batch_list);
-+
- 	local_irq_disable();
- 	if (current_is_kswapd())
- 		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
-@@ -1844,6 +1844,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 		.mem_cgroup = NULL,
- 		.isolate_pages = isolate_pages_global,
- 		.nodemask = nodemask,
-+		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
- 	};
- 
- 	return do_try_to_free_pages(zonelist, &sc);
-@@ -1864,6 +1865,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 		.order = 0,
- 		.mem_cgroup = mem,
- 		.isolate_pages = mem_cgroup_isolate_pages,
-+		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
- 	};
- 	nodemask_t nm  = nodemask_of_node(nid);
- 
-@@ -1900,6 +1902,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- 		.mem_cgroup = mem_cont,
- 		.isolate_pages = mem_cgroup_isolate_pages,
- 		.nodemask = NULL, /* we don't care the placement */
-+		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
- 	};
- 
- 	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
-@@ -1976,6 +1979,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
- 		.order = order,
- 		.mem_cgroup = NULL,
- 		.isolate_pages = isolate_pages_global,
-+		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
- 	};
- loop_again:
- 	total_scanned = 0;
-@@ -2333,6 +2337,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- 		.swappiness = vm_swappiness,
- 		.order = 0,
- 		.isolate_pages = isolate_pages_global,
-+		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
- 	};
- 	struct zonelist * zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
- 	struct task_struct *p = current;
-@@ -2517,6 +2522,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		.swappiness = vm_swappiness,
- 		.order = order,
- 		.isolate_pages = isolate_pages_global,
-+		.free_batch_list = LIST_HEAD_INIT(sc.free_batch_list),
- 	};
- 	unsigned long slab_reclaimable;
- 
--- 
-1.6.5.2
+Hello,
+
+On (04/14/10 17:58), Alexey Starikovskiy wrote:
+> Please see the patch in https://bugzilla.kernel.org/show_bug.cgi?id=3D157=
+49
+>=20
+
+Seems to work. Thanks.
 
 
+	Sergey
 
+--+QahgC5+KEYLbs62
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iJwEAQECAAYFAkvG6msACgkQfKHnntdSXjTQYwP/b36CW8IQVG+DSJBt7iVVJex8
+S+PoOnwhI7o+VtRgDy4OoCwjjWpemV04qbLXIT6/KDeF3/48aSHTYUOq4k4K28Gs
+cvTQblMkm9L49QR2M6W4ZU4acKwKWfGYXMyc6yYjCmBTuHhIOdr7q9aXVUDcFuBZ
+0lvxPEG4+fUpKv3XgeM=
+=Vi76
+-----END PGP SIGNATURE-----
+
+--+QahgC5+KEYLbs62--
