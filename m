@@ -1,48 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab0DONdX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 09:33:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40100 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862Ab0DONdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 09:33:22 -0400
-Subject: Re: VM performance issue in KVM guests.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Srivatsa Vaddagiri <vatsa.ml@gmail.com>,
-       "Zhang, Xiantao" <xiantao.zhang@intel.com>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       "Yang, Xiaowei" <xiaowei.yang@intel.com>,
-       "Dong, Eddie" <eddie.dong@intel.com>, "Li, Xin" <xin.li@intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       vatsa@linux.vnet.ibm.com
-In-Reply-To: <4BC6CBE3.8020207@redhat.com>
-References: <EB8593BCECAB3D40A8248BE0B6400A3846903F4C@shzsmsx502.ccr.corp.intel.com>
-	 <4BC0D125.9050108@redhat.com>
-	 <EB8593BCECAB3D40A8248BE0B6400A384690419B@shzsmsx502.ccr.corp.intel.com>
-	 <4BC2C07B.4040607@redhat.com>
-	 <p2o2eae271004142158xaa5da968ueff0c2afe6894f9d@mail.gmail.com>
-	 <4BC6CBE3.8020207@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Apr 2010 15:33:18 +0200
-Message-ID: <1271338398.1674.13.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754115Ab0DONeG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 09:34:06 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:59540 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753987Ab0DONeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 09:34:03 -0400
+Date: Thu, 15 Apr 2010 14:33:44 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 2/4] [cleanup] mm: introduce free_pages_prepare
+Message-ID: <20100415133344.GE10966@csn.ul.ie>
+References: <20100415085420.GT2493@dastard> <20100415185310.D1A1.A69D9226@jp.fujitsu.com> <20100415192310.D1A7.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100415192310.D1A7.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-15 at 11:18 +0300, Avi Kivity wrote:
+On Thu, Apr 15, 2010 at 07:24:05PM +0900, KOSAKI Motohiro wrote:
+> This patch is used from [3/4]
 > 
-> Certainly that has even greater potential for Linux guests.  Note that 
-> we spin on mutexes now, so we need to prevent preemption while the lock 
-> owner is running. 
+> ===================================
+> Free_hot_cold_page() and __free_pages_ok() have very similar
+> freeing preparation. This patch make consolicate it.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  mm/page_alloc.c |   40 +++++++++++++++++++++-------------------
+>  1 files changed, 21 insertions(+), 19 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 88513c0..ba9aea7 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -599,20 +599,23 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+>  	spin_unlock(&zone->lock);
+>  }
+>  
+> -static void __free_pages_ok(struct page *page, unsigned int order)
+> +static int free_pages_prepare(struct page *page, unsigned int order)
+>  {
 
-either that, or disable spinning on (para) virt kernels. Para virt
-kernels could possibly extend the thing by also checking to see if the
-owner's vcpu is running.
+You don't appear to do anything with the return value. bool? Otherwise I
+see no problems
 
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+> -	unsigned long flags;
+>  	int i;
+>  	int bad = 0;
+> -	int wasMlocked = __TestClearPageMlocked(page);
+>  
+>  	trace_mm_page_free_direct(page, order);
+>  	kmemcheck_free_shadow(page, order);
+>  
+> -	for (i = 0 ; i < (1 << order) ; ++i)
+> -		bad += free_pages_check(page + i);
+> +	for (i = 0 ; i < (1 << order) ; ++i) {
+> +		struct page *pg = page + i;
+> +
+> +		if (PageAnon(pg))
+> +			pg->mapping = NULL;
+> +		bad += free_pages_check(pg);
+> +	}
+>  	if (bad)
+> -		return;
+> +		return -EINVAL;
+>  
+>  	if (!PageHighMem(page)) {
+>  		debug_check_no_locks_freed(page_address(page),PAGE_SIZE<<order);
+> @@ -622,6 +625,17 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+>  	arch_free_page(page, order);
+>  	kernel_map_pages(page, 1 << order, 0);
+>  
+> +	return 0;
+> +}
+> +
+> +static void __free_pages_ok(struct page *page, unsigned int order)
+> +{
+> +	unsigned long flags;
+> +	int wasMlocked = __TestClearPageMlocked(page);
+> +
+> +	if (free_pages_prepare(page, order))
+> +		return;
+> +
+>  	local_irq_save(flags);
+>  	if (unlikely(wasMlocked))
+>  		free_page_mlock(page);
+> @@ -1107,21 +1121,9 @@ void free_hot_cold_page(struct page *page, int cold)
+>  	int migratetype;
+>  	int wasMlocked = __TestClearPageMlocked(page);
+>  
+> -	trace_mm_page_free_direct(page, 0);
+> -	kmemcheck_free_shadow(page, 0);
+> -
+> -	if (PageAnon(page))
+> -		page->mapping = NULL;
+> -	if (free_pages_check(page))
+> +	if (free_pages_prepare(page, 0))
+>  		return;
+>  
+> -	if (!PageHighMem(page)) {
+> -		debug_check_no_locks_freed(page_address(page), PAGE_SIZE);
+> -		debug_check_no_obj_freed(page_address(page), PAGE_SIZE);
+> -	}
+> -	arch_free_page(page, 0);
+> -	kernel_map_pages(page, 1, 0);
+> -
+>  	migratetype = get_pageblock_migratetype(page);
+>  	set_page_private(page, migratetype);
+>  	local_irq_save(flags);
+> -- 
+> 1.6.5.2
+> 
+> 
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
