@@ -1,110 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab0DOGtV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 02:49:21 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:38842 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab0DOGtU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 02:49:20 -0400
-Date: Thu, 15 Apr 2010 15:43:24 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC][BUGFIX][PATCH 1/2] memcg: fix charge bypass route of
- migration
-Message-Id: <20100415154324.834dace9.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
-	<20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752540Ab0DOGt7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 02:49:59 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33774 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752427Ab0DOGt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 02:49:56 -0400
+Date: Thu, 15 Apr 2010 08:49:40 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+       ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: PowerPC WARN_ON_ONCE() after merge of the final tree
+ (tip related)
+Message-ID: <20100415064940.GA9240@elte.hu>
+References: <20100415161214.04637496.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100415161214.04637496.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Apr 2010 12:05:16 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> I'd like to wait until next mmotm comes out. (So, [RFC]) I'll rebase
-> This patch is based on
->  mmotm-2010/04/05
->  +
->  mm-migration-take-a-reference-to-the-anon_vma-before-migrating.patch
->  mm-migration-do-not-try-to-migrate-unmapped-anonymous-pages.patch
->  mm-share-the-anon_vma-ref-counts-between-ksm-and-page-migration.patch
->  mm-migration-allow-the-migration-of-pageswapcache-pages.patch
->  memcg-fix-prepare-migration.patch
-> 
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> This is an additonal fix to memcg-fix-prepare-migration.patch
-> 
-> Now, try_charge can bypass charge if TIF_MEMDIE at el are marked on the caller.
-> In this case, the charge is bypassed. This makes accounts corrupted.
-> (PageCgroup will be marked as PCG_USED even if bypassed, and css->refcnt
->  can leak.)
-> 
-> This patch clears passed "*memcg" in bypass route.
-> 
-> Because usual page allocater passes memcg=NULL, this patch only affects
-> some special case as
->   - move account
->   - migration
->   - swapin.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |    7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> Index: mmotm-temp/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-temp.orig/mm/memcontrol.c
-> +++ mmotm-temp/mm/memcontrol.c
-> @@ -1606,8 +1606,12 @@ static int __mem_cgroup_try_charge(struc
->  	 * MEMDIE process.
->  	 */
->  	if (unlikely(test_thread_flag(TIF_MEMDIE)
-> -		     || fatal_signal_pending(current)))
-> +		     || fatal_signal_pending(current))) {
-> +		/* Showing we skipped charge */
-> +		if (memcg)
-> +			*memcg = NULL;
->  		goto bypass;
-> +	}
-> 
-I'm sorry, I can't understand what this part fixes.
-We set *memcg to NULL at "bypass" part already:
 
-   1740 bypass:
-   1741         *memcg = NULL;
-   1742         return 0;
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-and __mem_cgroup_try_charge() is never called with @memcg == NULL, IIUC.
+> Hi all,
+> 
+> Yesterday's (and today's) linux-next boot (PowerPC) failed like this:
+> 
+> ------------[ cut here ]------------
+> Badness at kernel/lockdep.c:2301
+> NIP: c0000000000a35c8 LR: c0000000000084c4 CTR: 0000000000000000
+> REGS: c000000000bf77e0 TRAP: 0700   Not tainted  (2.6.34-rc4-autokern1)
+> MSR: 8000000000021032 <ME,CE,IR,DR>  CR: 24000044  XER: 00000004
+> TASK = c000000000aa3d30[0] 'swapper' THREAD: c000000000bf4000 CPU: 0
+> GPR00: 0000000000000001 c000000000bf7a60 c000000000bf32f0 c0000000000084c4 
+> GPR04: 0000000000000000 0000000000000a00 0000000000000000 0000000000000068 
+> GPR08: 0000000000000008 c000000000c4fabe 0000000000000000 7265677368657265 
+> GPR12: 8000000000009032 c000000007691000 0000000001c00000 c000000000770bf8 
+> GPR16: c00000000076f390 0000000000000000 0000000000430000 00000000024876f0 
+> GPR20: c000000000887480 0000000002487480 c0000000008876f0 0000000001b5f8d0 
+> GPR24: c000000000770478 0000000003300000 c000000000c1f1c8 c000000000884610 
+> GPR28: c000000000c1b290 c0000000000084c4 c000000000b45068 c000000000aa3d30 
+> NIP [c0000000000a35c8] .trace_hardirqs_on_caller+0xb0/0x224
+> LR [c0000000000084c4] system_call_common+0xc4/0x114
+> Call Trace:
+> [c000000000bf7a60] [c000000000bf7ba0] init_thread_union+0x3ba0/0x4000 (unreliable)
+> [c000000000bf7af0] [c0000000000084c4] system_call_common+0xc4/0x114
+> --- Exception: c01 at .kernel_thread+0x28/0x70
+>     LR = .rest_init+0x34/0xf8
+> [c000000000bf7de0] [c00000000086916c] .proc_sys_init+0x20/0x64 (unreliable)
+> [c000000000bf7e50] [c0000000000099c0] .rest_init+0x20/0xf8
+> [c000000000bf7ee0] [c000000000848af0] .start_kernel+0x484/0x4a8
+> [c000000000bf7f90] [c0000000000083c0] .start_here_common+0x1c/0x5c
+> Instruction dump:
+> 409e0188 0fe00000 48000180 801f08d8 2f800000 41be0050 880d01da 2fa00000 
+> 41be0028 e93e8538 88090000 68000001 <0b000000> 2fa00000 41be0010 e93e8538 
+> ------------[ cut here ]------------
+> 
+> Caused by commit bd6d29c25bb1a24a4c160ec5de43e0004e01f72b ("lockstat:
+> Make lockstat counting per cpu").  This added a WARN_ON_ONCE to
+> debug_atomic_inc() which is called from trace_hardirqs_on_caller() with
+> irqs enabled.
+> 
+> Line 2301 is:
+> 
+>         if (unlikely(curr->hardirqs_enabled)) {
+>                 debug_atomic_inc(redundant_hardirqs_on);   <--- 2301
+>                 return;
+>         }
+> 
+> This is especially bad since on PowerPC, WARN_ON is a TRAP and the return
+> path from the TRAP also calls trace_hardirqs_on_caller(), so the TRAP
+> recurses ...
 
->  	/*
->  	 * We always charge the cgroup the mm_struct belongs to.
-> @@ -2523,7 +2527,6 @@ int mem_cgroup_prepare_migration(struct 
->  		ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, ptr, false);
->  		css_put(&mem->css);
->  	}
-> -	*ptr = mem;
->  	return ret;
->  }
->  
-I sent a patch to Andrew to fix this part yesterday :)
+Ok, we'll fix the warning.
 
+Btw., WARN_ON trapping on PowerPC is clearly a PowerPC bug - there's a good 
+reason we have WARN_ON versus BUG_ON - it should be fixed.
 
-Thanks,
-Daisuke Nishimura.
+	Ingo
