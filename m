@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab0DOOIW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 10:08:22 -0400
-Received: from mga10.intel.com ([192.55.52.92]:61244 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753091Ab0DOOIV (ORCPT
+	id S1754130Ab0DOOJh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 10:09:37 -0400
+Received: from inca-roads.misterjones.org ([213.251.177.50]:54859 "EHLO
+	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753142Ab0DOOJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 10:08:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,212,1270450800"; 
-   d="scan'208";a="789562160"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH V3] perf & kvm: Enhance perf to collect KVM guest 
- =?iso-8859-1?q?os=09statistics_from_host?= side
-Date: Thu, 15 Apr 2010 22:08:08 +0800
-User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
-Cc: Joerg Roedel <joro@8bytes.org>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com, Arnaldo Carvalho de Melo <acme@infradead.org>
-References: <1902387910.2078.435.camel@ymzhang.sh.intel.com> <20100415104051.GC12697@8bytes.org> <4BC6EDFF.3000702@redhat.com>
-In-Reply-To: <4BC6EDFF.3000702@redhat.com>
+	Thu, 15 Apr 2010 10:09:36 -0400
+To: <wim@iguana.be>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] watchdog/max63xx: be careful when disabling the watchdog
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004152208.08409.sheng@linux.intel.com>
+Date: Thu, 15 Apr 2010 16:09:35 +0200
+From: Marc Zyngier <maz@misterjones.org>
+Organization: Metropolis
+Message-ID: <b618a3827c2a4d627640f260cca3c71a@localhost>
+User-Agent: RoundCube Webmail/0.3.1
+Content-Type: multipart/mixed;
+	boundary="=_62b7f2e7b51a0ccd024024f591abfbf5"
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Rcpt-To: wim@iguana.be, linux-kernel@vger.kernel.org
+X-SA-Exim-Mail-From: maz@misterjones.org
+X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 April 2010 18:44:15 Avi Kivity wrote:
-> On 04/15/2010 01:40 PM, Joerg Roedel wrote:
-> >> That means an NMI that happens outside guest code (for example, in the
-> >> mmu, or during the exit itself) would be counted as if in guest code.
-> >
-> > Hmm, true. The same is true for an NMI that happens between VMSAVE and
-> > STGI but that window is smaller. Anyway, I think we don't need the
-> > busy-wait loop. The NMI should be executed at a well defined point and
-> > we set the cpu_var back to NULL after that point.
-> 
-> The point is not well defined.  Considering there are already at least
-> two implementations svm, I don't want to rely on implementation details.
 
-After more investigating, I realized that I had interpreted the SDM wrong. 
-Sorry.
+--=_62b7f2e7b51a0ccd024024f591abfbf5
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 
-There is *no* risk with the original method of calling "int $2". 
+Wim,
 
-According to the SDM 24.1:
+The attached patch fixes a nasty error with the max63xx driver,
+potentially leaving the platform dead (and watchdog disabled...).
 
-> The following bullets detail when architectural state is and is not updated 
-in response to VM exits:
-[...]
-> - An NMI causes subsequent NMIs to be blocked, but only after the VM exit 
-completes.
+Cheers,
 
-So the truth is, after NMI directly caused VMExit, the following NMIs would be 
-blocked, until encountered next "iret". So execute "int $2" is safe in 
-vmx_complete_interrupts(), no risk in causing nested NMI. And it would unblock 
-the following NMIs as well due to "iret" it executed.
-
-So there is unnecessary to make change to avoid "potential nested NMI".
-
-Sorry for the mistake and caused confusing.
-
+        M.
 -- 
-regards
-Yang, Sheng
+Who you jivin' with that Cosmik Debris?
+--=_62b7f2e7b51a0ccd024024f591abfbf5
+Content-Transfer-Encoding: base64
+Content-Type: text/plain;
+ name*0*="UTF-8''watchdog-max63xx-be-careful-when-disabling-the-watch.pat"
+ name*1*="ch";
+Content-Disposition: attachment;
+ filename*0*="UTF-8''watchdog-max63xx-be-careful-when-disabling-the-watch"
+ filename*1*=".patch";
 
-> 
-> We could tune the position of the loop so that zero iterations are
-> executed on the implementations we know about.
-> 
+RnJvbSA0MjEyZDg0YTA4ODQ1YTZhZGYzZjY3MzY3YTI0ZDlkYmYwNzZmOWQ2IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBNYXJjIFp5bmdpZXIgPG1hekBtaXN0ZXJqb25lcy5vcmc+CkRh
+dGU6IEZyaSwgOSBBcHIgMjAxMCAxNzo0MzozMyArMDEwMApTdWJqZWN0OiBbUEFUQ0hdIHdhdGNo
+ZG9nL21heDYzeHg6IGJlIGNhcmVmdWwgd2hlbiBkaXNhYmxpbmcgdGhlIHdhdGNoZG9nCgpXaGVu
+IHNodXR0aW5nIGRvd24gdGhlIHdhdGNoZG9nIHRpbWVyLCBzcGVjaWFsIGNhcmUgbXVzdCBiZSB0
+YWtlbgpub3QgdG8gb3ZlcndyaXRlIG90aGVyIGJpdHMgaW4gdGhlIHJlZ2lzdGVyLCBhcyBpdCBt
+YXkgYmUgc2hhcmVkCndpdGggb3RoZXIgcGVyaXBoZXJhbHMuCgpGb3IgZXhhbXBsZSwgb24gdGhl
+IEFyY29tIFZ1bGNhbiwgdGhlIHJlZ2lzdGVyIGlzIHNoYXJlZCBiZXR3ZWVuCnRoZSB3YXRjaGRv
+ZyBhbmQgdGhlIFBDSSByZXNldCBsaW5lLi4uCgpTaWduZWQtb2ZmLWJ5OiBNYXJjIFp5bmdpZXIg
+PG1hekBtaXN0ZXJqb25lcy5vcmc+Ci0tLQogZHJpdmVycy93YXRjaGRvZy9tYXg2M3h4X3dkdC5j
+IHwgICAgNyArKysrKystCiAxIGZpbGVzIGNoYW5nZWQsIDYgaW5zZXJ0aW9ucygrKSwgMSBkZWxl
+dGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL3dhdGNoZG9nL21heDYzeHhfd2R0LmMgYi9k
+cml2ZXJzL3dhdGNoZG9nL21heDYzeHhfd2R0LmMKaW5kZXggNzVmM2E4My4uMzA1M2ZmMCAxMDA2
+NDQKLS0tIGEvZHJpdmVycy93YXRjaGRvZy9tYXg2M3h4X3dkdC5jCisrKyBiL2RyaXZlcnMvd2F0
+Y2hkb2cvbWF4NjN4eF93ZHQuYwpAQCAtMTU0LDkgKzE1NCwxNCBAQCBzdGF0aWMgdm9pZCBtYXg2
+M3h4X3dkdF9lbmFibGUoc3RydWN0IG1heDYzeHhfdGltZW91dCAqZW50cnkpCiAKIHN0YXRpYyB2
+b2lkIG1heDYzeHhfd2R0X2Rpc2FibGUodm9pZCkKIHsKKwl1OCB2YWw7CisKIAlzcGluX2xvY2so
+JmlvX2xvY2spOwogCi0JX19yYXdfd3JpdGViKDMsIHdkdF9iYXNlKTsKKwl2YWwgPSBfX3Jhd19y
+ZWFkYih3ZHRfYmFzZSk7CisJdmFsICY9IH5NQVg2MzY5X1dEU0VUOworCXZhbCB8PSAzOworCV9f
+cmF3X3dyaXRlYih2YWwsIHdkdF9iYXNlKTsKIAogCXNwaW5fdW5sb2NrKCZpb19sb2NrKTsKIAot
+LSAKMS43LjAKCg==
+--=_62b7f2e7b51a0ccd024024f591abfbf5--
+
