@@ -1,181 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab0DOQoL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 12:44:11 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47880 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754835Ab0DOQnS (ORCPT
+	id S1754857Ab0DOQv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 12:51:27 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:58697 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab0DOQvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 12:43:18 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: <hpa@zytor.com>, <mingo@elte.hu>, <tglx@linutronix.de>
-Cc: <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-       Frank Arnold <frank.arnold@amd.com>,
-       Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 3/5] x86, cacheinfo: Reorganize AMD L3 cache structure
-Date: Thu, 15 Apr 2010 18:41:01 +0200
-Message-Id: <1271349663-16670-4-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1271349663-16670-1-git-send-email-bp@amd64.org>
-References: <1271349663-16670-1-git-send-email-bp@amd64.org>
+	Thu, 15 Apr 2010 12:51:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Put8drCMDOIY80ktq/H8GletqtmyL9V1l5aPbtXKQsITZ9/rW67k35SjWHqqUcZusp
+         HbfbrJYRFQlkkIN7ouG2TGa052uJ9IDgo3rL7zzd9KyeRoDCo37kiKEs0yQT5h6tCNdT
+         QfYsg6gLOsIQdQ0CDFCjVcS4LYlrd8gnUhBPI=
+Subject: Re: vmalloc performance
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Nick Piggin <npiggin@suse.de>
+In-Reply-To: <1271320388.2537.30.camel@localhost>
+References: <1271089672.7196.63.camel@localhost.localdomain>
+	 <1271249354.7196.66.camel@localhost.localdomain>
+	 <m2g28c262361004140813j5d70a80fy1882d01436d136a6@mail.gmail.com>
+	 <1271262948.2233.14.camel@barrios-desktop>
+	 <1271320388.2537.30.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Apr 2010 01:51:10 +0900
+Message-ID: <1271350270.2013.29.camel@barrios-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Thu, 2010-04-15 at 09:33 +0100, Steven Whitehouse wrote:
+> Hi,
+> 
+> On Thu, 2010-04-15 at 01:35 +0900, Minchan Kim wrote:
+> > On Thu, 2010-04-15 at 00:13 +0900, Minchan Kim wrote:
+> > > Cced Nick.
+> > > He's Mr. Vmalloc.
+> > > 
+> > > On Wed, Apr 14, 2010 at 9:49 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
+> > > >
+> > > > Since this didn't attract much interest the first time around, and at
+> > > > the risk of appearing to be talking to myself, here is the patch from
+> > > > the bugzilla to better illustrate the issue:
+> > > >
+> > > >
+> > > > diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> > > > index ae00746..63c8178 100644
+> > > > --- a/mm/vmalloc.c
+> > > > +++ b/mm/vmalloc.c
+> > > > @@ -605,8 +605,7 @@ static void free_unmap_vmap_area_noflush(struct
+> > > > vmap_area *va)
+> > > >  {
+> > > >        va->flags |= VM_LAZY_FREE;
+> > > >        atomic_add((va->va_end - va->va_start) >> PAGE_SHIFT, &vmap_lazy_nr);
+> > > > -       if (unlikely(atomic_read(&vmap_lazy_nr) > lazy_max_pages()))
+> > > > -               try_purge_vmap_area_lazy();
+> > > > +       try_purge_vmap_area_lazy();
+> > > >  }
+> > > >
+> > > >  /*
+> > > >
+> > > >
+> > > > Steve.
+> > > >
+> > > > On Mon, 2010-04-12 at 17:27 +0100, Steven Whitehouse wrote:
+> > > >> Hi,
+> > > >>
+> > > >> I've noticed that vmalloc seems to be rather slow. I wrote a test kernel
+> > > >> module to track down what was going wrong. The kernel module does one
+> > > >> million vmalloc/touch mem/vfree in a loop and prints out how long it
+> > > >> takes.
+> > > >>
+> > > >> The source of the test kernel module can be found as an attachment to
+> > > >> this bz: https://bugzilla.redhat.com/show_bug.cgi?id=581459
+> > > >>
+> > > >> When this module is run on my x86_64, 8 core, 12 Gb machine, then on an
+> > > >> otherwise idle system I get the following results:
+> > > >>
+> > > >> vmalloc took 148798983 us
+> > > >> vmalloc took 151664529 us
+> > > >> vmalloc took 152416398 us
+> > > >> vmalloc took 151837733 us
+> > > >>
+> > > >> After applying the two line patch (see the same bz) which disabled the
+> > > >> delayed removal of the structures, which appears to be intended to
+> > > >> improve performance in the smp case by reducing TLB flushes across cpus,
+> > > >> I get the following results:
+> > > >>
+> > > >> vmalloc took 15363634 us
+> > > >> vmalloc took 15358026 us
+> > > >> vmalloc took 15240955 us
+> > > >> vmalloc took 15402302 us
+> > 
+> > 
+> > > >>
+> > > >> So thats a speed up of around 10x, which isn't too bad. The question is
+> > > >> whether it is possible to come to a compromise where it is possible to
+> > > >> retain the benefits of the delayed TLB flushing code, but reduce the
+> > > >> overhead for other users. My two line patch basically disables the delay
+> > > >> by forcing a removal on each and every vfree.
+> > > >>
+> > > >> What is the correct way to fix this I wonder?
+> > > >>
+> > > >> Steve.
+> > > >>
+> > 
+> > In my case(2 core, mem 2G system), 50300661 vs 11569357. 
+> > It improves 4 times. 
+> > 
+> Looking at the code, it seems that the limit, against which my patch
+> removes a test, scales according to the number of cpu cores. So with
+> more cores, I'd expect the difference to be greater. I have a feeling
+> that the original reporter had a greater number than the 8 of my test
+> machine.
+> 
+> > It would result from larger number of lazy_max_pages.
+> > It would prevent many vmap_area freed.
+> > So alloc_vmap_area takes long time to find new vmap_area. (ie, lookup
+> > rbtree)
+> > 
+> > How about calling purge_vmap_area_lazy at the middle of loop in
+> > alloc_vmap_area if rbtree lookup were long?
+> > 
+> That may be a good solution - I'm happy to test any patches but my worry
+> is that any change here might result in a regression in whatever
+> workload the lazy purge code was originally designed to improve. Is
+> there any way to test that I wonder?
+> 
+> > BTW, Steve. Is is real issue or some test?
+> > I doubt such vmalloc bomb workload is real. 
+> 
+> Well the answer is both yes and no :-) So this is how I came across the
+> issue. I received a report that GFS2 performance had regressed in recent
+> kernels in relation to a test which basically fires lots of requests at
+> it via NFS. The reporter of this problem gave me two bits of
+> information: firstly that by eliminating all readdir calls from the
+> test, the regression is never seen and secondly that oprofile showed
+> that two functions related to vmalloc (rb_next, find_vmap_area,
+> alloc_vmap_area in that order) were taking between them about 60% of the
+> total cpu time.
+> 
+> Now between the two kernel versions being tested, probably not a single
+> line of GFS2 code for readdir has changed since that code has been
+> stable for a fair while now. So my attention turned to vmalloc, even
+> though it would be unusual for a filesystem to be limited by cpu, it did
+> seem odd that it was so high in the oprofile result. I should also
+> mention at this point that the backing device for the fs is a very high
+> performance disk array, so that increases the chances of cpu being a
+> limiting factor.
+> 
+> Anyway, having looked briefly at the vmalloc code, I spotted that there
+> was a cache of objects which might have an effect, so I wrote the test
+> kernel module in the bz to test the two line patch just to see what
+> effect it had.
+> 
+> Since I got a good speed up, I sent the patch to the reporter who was
+> able to get further on the NFS/GFS2 tests before running into the oops.
+> I hadn't spotted that there had been a fix for that bug in the mean time
+> though, so I'll get that applied. Thanks for pointing it out.
+> 
+> We'll try and get some more testing done in order to try and prove
+> whether the regression we are seeing in GFS2 readdir performance is
+> entirely due to this factor, or only partially. I think it does have a
+> measurable effect though, even if it is not the whole story,
+> 
+> Steve.
+> 
 
-Add a struct representing L3 cache attributes (subcache sizes and
-indices count) and move the respective members out of _cpuid4_info.
-Also, stash the struct pci_dev ptr into the struct simplifying the code
-even more.
+Thanks for the explanation. It seems to be real issue. 
 
-There should be no functionality change resulting from this patch except
-slightly slimming the _cpuid4_info per-cpu vars.
+I tested to see effect with flush during rb tree search.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c |   53 ++++++++++++++++++++-------------
- 1 files changed, 32 insertions(+), 21 deletions(-)
+Before I applied your patch, the time is 50300661 us. 
+After your patch, 11569357 us. 
+After my debug patch, 6104875 us.
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 5ab14c8..ff663ca 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -148,13 +148,19 @@ union _cpuid4_leaf_ecx {
- 	u32 full;
+I tested it as changing threshold value.
+
+threshold	time
+1000		13892809
+500		9062110
+200		6714172
+100		6104875
+50		6758316
+
+And perf shows smp_call_function is very low percentage.
+
+In my cases, 100 is best. 
+
+I have no server machine so can't test TLB effect.
+Could you meaure it with this patch?
+
+Maybe you can see TLB effect with perf record like Nick was done.
+You can refer db64fe02.
+If you can't see sn_send_IPI_phys and smp_call_function in IA64, 
+maybe TLB issue isn't a big problem. 
+
+P.S) 
+I am not a full time developer but just hobbyist. 
+So I can't make patch and test in office. 
+Please, understand lazy response. :)
+
+Here is just for debug patch. 
+
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 8686b0f..ef6beb2 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -933,6 +933,9 @@ static struct ctl_table kern_table[] = {
+ 	{ }
  };
  
-+struct amd_l3_cache {
-+	struct	 pci_dev *dev;
-+	bool	 can_disable;
-+	unsigned indices;
-+	u8	 subcaches[4];
-+};
++extern unsigned long max_lookup_count;
++extern unsigned long threshold_lookup_count;
 +
- struct _cpuid4_info {
- 	union _cpuid4_leaf_eax eax;
- 	union _cpuid4_leaf_ebx ebx;
- 	union _cpuid4_leaf_ecx ecx;
- 	unsigned long size;
--	bool can_disable;
--	unsigned int l3_indices;
-+	struct amd_l3_cache *l3;
- 	DECLARE_BITMAP(shared_cpu_map, NR_CPUS);
- };
- 
-@@ -164,8 +170,7 @@ struct _cpuid4_info_regs {
- 	union _cpuid4_leaf_ebx ebx;
- 	union _cpuid4_leaf_ecx ecx;
- 	unsigned long size;
--	bool can_disable;
--	unsigned int l3_indices;
-+	struct amd_l3_cache *l3;
- };
- 
- unsigned short			num_cache_leaves;
-@@ -302,7 +307,7 @@ struct _cache_attr {
- };
- 
- #ifdef CONFIG_CPU_SUP_AMD
--static unsigned int __cpuinit amd_calc_l3_indices(void)
-+static void __cpuinit amd_calc_l3_indices(struct amd_l3_cache *l3)
- {
- 	/*
- 	 * We're called over smp_call_function_single() and therefore
-@@ -317,12 +322,14 @@ static unsigned int __cpuinit amd_calc_l3_indices(void)
- 	pci_read_config_dword(dev, 0x1C4, &val);
- 
- 	/* calculate subcache sizes */
--	sc0 = !(val & BIT(0));
--	sc1 = !(val & BIT(4));
--	sc2 = !(val & BIT(8))  + !(val & BIT(9));
--	sc3 = !(val & BIT(12)) + !(val & BIT(13));
-+	l3->subcaches[0] = sc0 = !(val & BIT(0));
-+	l3->subcaches[1] = sc1 = !(val & BIT(4));
-+	l3->subcaches[2] = sc2 = !(val & BIT(8))  + !(val & BIT(9));
-+	l3->subcaches[3] = sc3 = !(val & BIT(12)) + !(val & BIT(13));
+ static struct ctl_table vm_table[] = {
+ 	{
+ 		.procname	= "overcommit_memory",
+@@ -1251,6 +1254,22 @@ static struct ctl_table vm_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= scan_unevictable_handler,
+ 	},
++	{
++		.procname	= "max_lookup_count",
++		.data		= &max_lookup_count,
++		.maxlen		= sizeof(max_lookup_count),
++		.mode		= 0644,
++		.proc_handler   = proc_dointvec_minmax,
++	},
 +
-+	l3->indices = (max(max(max(sc0, sc1), sc2), sc3) << 10) - 1;
++	{
++		.procname	= "threshold_lookup_count",
++		.data		= &threshold_lookup_count,
++		.maxlen		= sizeof(threshold_lookup_count),
++		.mode		= 0644,
++		.proc_handler   = proc_dointvec_minmax,
++	},
++
+ #ifdef CONFIG_MEMORY_FAILURE
+ 	{
+ 		.procname	= "memory_failure_early_kill",
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 7abf423..95a1390 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -319,6 +319,9 @@ static void __insert_vmap_area(struct vmap_area *va)
  
--	return (max(max(max(sc0, sc1), sc2), sc3) << 10) - 1;
-+	l3->dev = dev;
- }
+ static void purge_vmap_area_lazy(void);
  
- static void __cpuinit
-@@ -348,19 +355,23 @@ amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
- 	if (num_k8_northbridges == 0)
- 		return;
++unsigned long lookup_count;
++unsigned long max_lookup_count;
++unsigned long threshold_lookup_count = 100000;
+ /*
+  * Allocate a region of KVA of the specified size and alignment, within the
+  * vstart and vend.
+@@ -332,6 +335,7 @@ static struct vmap_area *alloc_vmap_area(unsigned long size,
+ 	struct rb_node *n;
+ 	unsigned long addr;
+ 	int purged = 0;
++	int nlookup = 0;
  
--	this_leaf->can_disable = true;
--	this_leaf->l3_indices  = amd_calc_l3_indices();
-+	this_leaf->l3 = kzalloc(sizeof(struct amd_l3_cache), GFP_ATOMIC);
-+	if (!this_leaf->l3) {
-+		printk(KERN_WARNING "Error allocating L3 struct\n");
-+		return;
+ 	BUG_ON(!size);
+ 	BUG_ON(size & ~PAGE_MASK);
+@@ -344,6 +348,10 @@ static struct vmap_area *alloc_vmap_area(unsigned long size,
+ retry:
+ 	addr = ALIGN(vstart, align);
+ 
++	if (lookup_count > threshold_lookup_count) {
++		purge_vmap_area_lazy();
++		lookup_count = 0;
 +	}
+ 	spin_lock(&vmap_area_lock);
+ 	if (addr + size - 1 < addr)
+ 		goto overflow;
+@@ -364,6 +372,7 @@ retry:
+ 				first = tmp;
+ 				n = n->rb_right;
+ 			}
++			nlookup++;
+ 		} while (n);
+ 
+ 		if (!first)
+@@ -371,6 +380,7 @@ retry:
+ 
+ 		if (first->va_end < addr) {
+ 			n = rb_next(&first->rb_node);
++			nlookup++;
+ 			if (n)
+ 				first = rb_entry(n, struct vmap_area, rb_node);
+ 			else
+@@ -387,6 +397,8 @@ retry:
+ 				first = rb_entry(n, struct vmap_area, rb_node);
+ 			else
+ 				goto found;
++			nlookup++;
 +
-+	this_leaf->l3->can_disable = true;
-+	amd_calc_l3_indices(this_leaf->l3);
- }
+ 		}
+ 	}
+ found:
+@@ -396,6 +408,7 @@ overflow:
+ 		if (!purged) {
+ 			purge_vmap_area_lazy();
+ 			purged = 1;
++			nlookup = 0;
+ 			goto retry;
+ 		}
+ 		if (printk_ratelimit())
+@@ -412,6 +425,9 @@ overflow:
+ 	va->va_end = addr + size;
+ 	va->flags = 0;
+ 	__insert_vmap_area(va);
++	if (nlookup > max_lookup_count)
++		max_lookup_count = nlookup;
++	lookup_count = nlookup;
+ 	spin_unlock(&vmap_area_lock);
  
- static ssize_t show_cache_disable(struct _cpuid4_info *this_leaf, char *buf,
- 				  unsigned int index)
- {
--	int cpu = cpumask_first(to_cpumask(this_leaf->shared_cpu_map));
--	int node = amd_get_nb_id(cpu);
--	struct pci_dev *dev = node_to_k8_nb_misc(node);
-+	struct pci_dev *dev = this_leaf->l3->dev;
- 	unsigned int reg = 0;
- 
--	if (!this_leaf->can_disable)
-+	if (!this_leaf->l3 || !this_leaf->l3->can_disable)
- 		return -EINVAL;
- 
- 	if (!dev)
-@@ -382,15 +393,14 @@ SHOW_CACHE_DISABLE(1)
- static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
- 	const char *buf, size_t count, unsigned int index)
- {
-+	struct pci_dev *dev = this_leaf->l3->dev;
- 	int cpu = cpumask_first(to_cpumask(this_leaf->shared_cpu_map));
--	int node = amd_get_nb_id(cpu);
--	struct pci_dev *dev = node_to_k8_nb_misc(node);
- 	unsigned long val = 0;
- 
- #define SUBCACHE_MASK	(3UL << 20)
- #define SUBCACHE_INDEX	0xfff
- 
--	if (!this_leaf->can_disable)
-+	if (!this_leaf->l3 || !this_leaf->l3->can_disable)
- 		return -EINVAL;
- 
- 	if (!capable(CAP_SYS_ADMIN))
-@@ -404,7 +414,7 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
- 
- 	/* do not allow writes outside of allowed bits */
- 	if ((val & ~(SUBCACHE_MASK | SUBCACHE_INDEX)) ||
--	    ((val & SUBCACHE_INDEX) > this_leaf->l3_indices))
-+	    ((val & SUBCACHE_INDEX) > this_leaf->l3->indices))
- 		return -EINVAL;
- 
- 	val |= BIT(30);
-@@ -708,6 +718,7 @@ static void __cpuinit free_cache_attributes(unsigned int cpu)
- 	for (i = 0; i < num_cache_leaves; i++)
- 		cache_remove_shared_cpu_map(cpu, i);
- 
-+	kfree(per_cpu(ici_cpuid4_info, cpu)->l3);
- 	kfree(per_cpu(ici_cpuid4_info, cpu));
- 	per_cpu(ici_cpuid4_info, cpu) = NULL;
- }
-@@ -992,7 +1003,7 @@ static int __cpuinit cache_add_dev(struct sys_device * sys_dev)
- 
- 		this_leaf = CPUID4_INFO_IDX(cpu, i);
- 
--		if (this_leaf->can_disable)
-+		if (this_leaf->l3 && this_leaf->l3->can_disable)
- 			ktype_cache.default_attrs = default_l3_attrs;
- 		else
- 			ktype_cache.default_attrs = default_attrs;
+ 	return va;
+
+
+
+
+
 -- 
-1.7.1.rc1
+Kind regards,
+Minchan Kim
+
 
