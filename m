@@ -1,202 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab0DOT3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 15:29:10 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:22798 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756199Ab0DOT3I (ORCPT
+	id S1756287Ab0DOT3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 15:29:35 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:41856 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756254Ab0DOT3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 15:29:08 -0400
-Date: Thu, 15 Apr 2010 12:28:36 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com
-Subject: Re: [PATCH 5/5] add documentation about kvmclock
-Message-Id: <20100415122836.27f1e255.randy.dunlap@oracle.com>
-In-Reply-To: <1271356648-5108-6-git-send-email-glommer@redhat.com>
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>
-	<1271356648-5108-2-git-send-email-glommer@redhat.com>
-	<1271356648-5108-3-git-send-email-glommer@redhat.com>
-	<1271356648-5108-4-git-send-email-glommer@redhat.com>
-	<1271356648-5108-5-git-send-email-glommer@redhat.com>
-	<1271356648-5108-6-git-send-email-glommer@redhat.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 15 Apr 2010 15:29:33 -0400
+Message-ID: <4BC76917.9060604@petalogix.com>
+Date: Thu, 15 Apr 2010 21:29:27 +0200
+From: Michal Simek <michal.simek@petalogix.com>
+Reply-To: michal.simek@petalogix.com
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+MIME-Version: 1.0
+To: wuzhangjin@gmail.com
+CC: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched_clock - microblaze
+References: <4BC728DD.5020404@petalogix.com>	 <1271343888.1880.1.camel@localhost>  <4BC73FB9.9060303@petalogix.com> <1271355179.20625.107.camel@falcon>
+In-Reply-To: <1271355179.20625.107.camel@falcon>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4BC768F4.0222:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Apr 2010 14:37:28 -0400 Glauber Costa wrote:
-
-> This patch adds a new file, kvm/kvmclock.txt, describing
-> the mechanism we use in kvmclock.
+Wu Zhangjin wrote:
+> On Thu, 2010-04-15 at 18:32 +0200, Michal Simek wrote:
+>> Steven Rostedt wrote:
+>>> On Thu, 2010-04-15 at 16:55 +0200, Michal Simek wrote:
+>>>> Hi Thomas and Steven,
+>>>>
+>>>> I would like to improve time measuring for ftrace (Log below)
+>>>>
+>>>> I looked at http://lkml.org/lkml/2009/11/16/181
+>>>> where Thomas suggested to create sched_clock() function.
+>>>> I used the same solution as Wu proposed but it is not nice.
+>>>>
+>>>> Is unimplemented sched_clock the reason why ftrace not show fine grain time?
+>>> Yeah, sched_clock is used by ftrace for timings, so if it only returns
+>>> jiffies, then that will, unfortunately, be the resolution of the tracer.
+>>>
+>>> I've been told that if you make a higher resolution timer for sched
+>>> clock, it will improve the scheduling in CFS.
+>> We have two timers (in one IP).
+>> timer0 - in IRQ mode - clock event
+>> timer1 - free running up counter without IRQ - clock source
+>>
+>> I hope that I can use timer1 in sched_clock too.
+>>
+>> Anyway. I played with it a little bit and I also implemented microblaze 
+>> specific sched_clock function (inspired by arch/arm/mach-ixp4xx/common.c)
+>>
+>> unsigned long long notrace sched_clock(void)
+>> {
+>> 	printk("%s\n", __func__);
+>> 	cycle_t cyc = microblaze_read(NULL);
+>> 	struct clocksource *cs = &clocksource_microblaze;
+>> 	return clocksource_cyc2ns(cyc, cs->mult, cs->shift);
+>> }
 > 
-> Signed-off-by: Glauber Costa <glommer@redhat.com>
-> ---
->  Documentation/kvm/kvmclock.txt |  138 ++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 138 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/kvm/kvmclock.txt
+> Hey, I guess you got:
 > 
-> diff --git a/Documentation/kvm/kvmclock.txt b/Documentation/kvm/kvmclock.txt
-> new file mode 100644
-> index 0000000..21008bb
-> --- /dev/null
-> +++ b/Documentation/kvm/kvmclock.txt
-> @@ -0,0 +1,138 @@
-> +KVM Paravirtual Clocksource driver
-> +Glauber Costa, Red Hat Inc.
-> +==================================
-> +
-> +1. General Description
-> +=======================
-> +
-...
-> +
-> +2. kvmclock basics 
-> +===========================
-> +
-> +When supported by the hypervisor, guests can register a memory page
-> +to contain kvmclock data. This page has to be present in guest's address space
-> +throughout its whole life. The hypervisor continues to write to it until it is
-> +explicitly disabled or the guest is turned off.
-> +
-> +2.1 kvmclock availability
-> +-------------------------
-> +
-> +Guests that want to take advantage of kvmclock should first check its
-> +availability through cpuid.
-> +
-> +kvm features are presented to the guest in leaf 0x40000001. Bit 3 indicates
-> +the present of kvmclock. Bit 0 indicates that kvmclock is present, but the
+> sched_clock() -> printk() -> sched_clock() ...
+> 
+> since printk() is not annotated with notrace, it will call mcount() and
+> then sched_clock() and ... so, you can not call printk() in
+> sched_clock().
+> 
+> but you may try this if you want to print something in sched_clock() for
+> debugging.
+> 
+> #include <>
+> 
+> sched_clock() {
+> 	ftrace_stop();
+> 	printk(...);
+> 	ftrace_start();
+> 	...
+> }
 
-       presence
-but it's confusing.  Is it bit 3 or bit 0?  They seem to indicate the same thing.
+But I am describing different problem. sched_clock is called before 
+kernel initialized timers. Microblaze takes all information from DTS 
+that's means that I am not able to read timer because I even don't know 
+where it is. :-(
 
-> +old MSR set must be used. See section 2.3 for details.
-
-"old MSR set":  what does this mean?
-
-> +
-> +2.2 kvmclock functionality
-> +--------------------------
-> +
-> +Two MSRs are provided by the hypervisor, controlling kvmclock operation:
-> +
-> + * MSR_KVM_WALL_CLOCK, value 0x4b564d00 and
-> + * MSR_KVM_SYSTEM_TIME, value 0x4b564d01.
-> +
-> +The first one is only used in rare situations, like boot-time and a
-> +suspend-resume cycle. Data is disposable, and after used, the guest
-> +may use it for something else. This is hardly a hot path for anything.
-> +The Hypervisor fills in the address provided through this MSR with the
-> +following structure:
-> +
-> +struct pvclock_wall_clock {
-> +        u32   version;
-> +        u32   sec;
-> +        u32   nsec;
-> +} __attribute__((__packed__));
-> +
-> +Guest should only trust data to be valid when version haven't changed before
-
-                                                         has not
-
-> +and after reads of sec and nsec. Besides not changing, it has to be an even
-> +number. Hypervisor may write an odd number to version field to indicate that
-> +an update is in progress.
-> +
-> +MSR_KVM_SYSTEM_TIME, on the other hand, has persistent data, and is
-> +constantly updated by the hypervisor with time information. The data
-> +written in this MSR contains two pieces of information: the address in which
-> +the guests expects time data to be present 4-byte aligned or'ed with an
-> +enabled bit. If one wants to shutdown kvmclock, it just needs to write
-> +anything that has 0 as its last bit.
-> +
-> +Time information presented by the hypervisor follows the structure:
-> +
-> +struct pvclock_vcpu_time_info {
-> +        u32   version;
-> +        u32   pad0;
-> +        u64   tsc_timestamp;
-> +        u64   system_time;
-> +        u32   tsc_to_system_mul;
-> +        s8    tsc_shift;
-> +        u8    pad[3];
-> +} __attribute__((__packed__)); 
-> +
-> +The version field plays the same role as with the one in struct
-> +pvclock_wall_clock. The other fields, are:
-> +
-> + a. tsc_timestamp: the guest-visible tsc (result of rdtsc + tsc_offset) of
-> +    this cpu at the moment we recorded system_time. Note that some time is
-
-            CPU (please)
-
-> +    inevitably spent between system_time and tsc_timestamp measurements.
-> +    Guests can subtract this quantity from the current value of tsc to obtain
-> +    a delta to be added to system_time
-
-                           to system_time.
-
-> +
-> + b. system_time: this is the most recent host-time we could be provided with.
-> +    host gets it through ktime_get_ts, using whichever clocksource is
-> +    registered at the moment
-
-                         moment.
-
-> +
-> + c. tsc_to_system_mul: this is the number that tsc delta has to be multiplied
-> +    by in order to obtain time in nanoseconds. Hypervisor is free to change
-> +    this value in face of events like cpu frequency change, pcpu migration,
-
-                                         CPU
-
-> +    etc.
-> + 
-> + d. tsc_shift: guests must shift 
-
-missing text??
-
-> +
-> +With this information available, guest calculates current time as:
-> +
-> +  T = kt + to_nsec(tsc - tsc_0)
-> +
-> +2.3 Compatibility MSRs
-> +----------------------
-> +
-> +Guests running on top of older hypervisors may have to use a different set of
-> +MSRs. This is because originally, kvmclock MSRs were exported within a
-> +reserved range by accident. Guests should check cpuid leaf 0x40000001 for the
-> +presence of kvmclock. If bit 3 is disabled, but bit 0 is enabled, guests can
-> +have access to kvmclock functionality through
-> +
-> + * MSR_KVM_WALL_CLOCK_OLD, value 0x11 and
-> + * MSR_KVM_SYSTEM_TIME_OLD, value 0x12.
-> +
-> +Note, however, that this is deprecated.
-> +
-> +3. Migration
-> +============
-> +
-> +Two ioctls are provided to aid the task of migration: 
-> +
-> + * KVM_GET_CLOCK and
-> + * KVM_SET_CLOCK
-> +
-> +Their aim is to control an offset that can be summed to system_time, in order
-> +to guarantee monotonicity on the time over guest migration. Source host
-> +executes KVM_GET_CLOCK, obtaining the last valid timestamp in this host, while
-> +destination sets it with KVM_SET_CLOCK. It's the destination responsibility to
-> +never return time that is less than that.
+Thanks,
+Michal
 
 
----
-~Randy
+
+
+> 
+> Regards,
+> 	Wu Zhangjin
+> 
+>> (And comment sched_clock in kernel/sched_clock.c because our toolchain 
+>> has the problem with weak symbols)
+>>
+>> Recompile the kernel and then show the log_buf
+>>
+>> <4>Ramdisk addr 0x00000003, Compiled-in FDT at 0xc0242a28
+>> <5>Linux version 2.6.34-rc4-00053-gbc6ce8a-dirty (monstr@monstr.eu) (gcc 
+>> version 4.1.2) #27 Thu Apr 15 16:38:16 CEST 2010
+>> <6>setup_cpuinfo: initialising
+>> <6>setup_cpuinfo: Using full CPU PVR support
+>> <6>cache: wb_msr
+>> <6>setup_memory: Main mem: 0x48000000-0x50000000, size 0x08000000, 
+>> klimit 0xc09c7000
+>> <6>setup_memory: max_mapnr: 0x8000
+>> <6>setup_memory: min_low_pfn: 0x48000
+>> <6>setup_memory: max_low_pfn: 0x50000
+>> <4>reserved 0 - 0x48000000-0x009c8000
+>> <4>reserved 1 - 0x48fe0000-0x00020000
+>> <4>reserved 2 - 0x4fffd8c8-0x00002738
+>> <7>On node 0 totalpages: 32768
+>> <7>free_area_init_node: node 0, pgdat c02bc70c, node_mem_map c09c8000
+>> <7>  Normal zone: 256 pages used for memmap
+>> <7>  Normal zone: 32512 pages, LIFO batch:7
+>> <4>Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 
+>> 32512
+>> <5>Kernel command line:  console=ttyS0,115200
+>> <6>PID hash table entries: 512 (order: -1, 2048 bytes)
+>> <6>Dentry cache hash table entries: 16384 (order: 4, 65536 bytes)
+>> <6>Inode-cache hash table entries: 8192 (order: 3, 32768 bytes)
+>> <6>Memory: 119796k/131072k available
+>> <4>sched_clock
+>>
+>> The problem I see is that scheck_clock is used before our timer 
+>> subsystem is initialized.
+>> What am I missing?
+>>
+>> Thanks,
+>> Michal
+>>
+> 
+> 
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+PetaLogix - Linux Solutions for a Reconfigurable World
+w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
