@@ -1,81 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756805Ab0DOUs4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 16:48:56 -0400
-Received: from fanny.its.uu.se ([130.238.4.241]:59456 "EHLO fanny.its.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756776Ab0DOUsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 16:48:55 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19399.31662.714469.619828@pilspetsen.it.uu.se>
-Date: Thu, 15 Apr 2010 22:48:46 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: "Justin P. mattock" <justinmattock@gmail.com>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-acpi@vger.kernel.org,
+	id S1756826Ab0DOUv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 16:51:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54511 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756539Ab0DOUvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 16:51:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kai Makisara <Kai.Makisara@kolumbus.fi>
+Subject: [PATCH] scsi/st: remove BKL from open
+Date: Thu, 15 Apr 2010 22:51:38 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
+Cc: dgilbert@interlog.com, Jens Axboe <axboe@kernel.dk>,
+       Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       John Kacur <jkacur@redhat.com>, linux-scsi@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] 2.6.34-rc4: acpi boot-time oops on FSC Amilo Pa 3553
-In-Reply-To: <4BC774EA.1020002@gmail.com>
-References: <19399.23074.26023.534765@pilspetsen.it.uu.se>
-	<4BC76645.50401@gmail.com>
-	<19399.29421.508520.647456@pilspetsen.it.uu.se>
-	<4BC774EA.1020002@gmail.com>
-X-Mailer: VM 7.17 under Emacs 20.7.1
+References: <1271277384-7627-1-git-send-email-arnd@arndb.de> <201004151629.45029.arnd@arndb.de> <alpine.LNX.2.00.1004152244160.5127@kai.makisara.local>
+In-Reply-To: <alpine.LNX.2.00.1004152244160.5127@kai.makisara.local>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004152251.39636.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX193/0aRw53K3xDSP1zwkxkYY8ql8oqfn+cS8lR
+ 5e6FEQb6cX5x4C555lSFygp4Xq7VMk3q1LW7DXQZX2xl4W8L+p
+ JjEvWCgddn5oeBzBA/Mhw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin P. mattock writes:
- > On 04/15/2010 01:11 PM, Mikael Pettersson wrote:
- > > Justin P. mattock writes:
- > >   >  On 04/15/2010 11:25 AM, Mikael Pettersson wrote:
- > >   >  >  Kernels up to and including 2.6.34-rc3 boot fine on my Amilo Pa 3553,
- > >   >  >  but 2.6.34-rc4 always oopses during boot in acpi.  Without a serial port
- > >   >  >  I cannot capture the entire oops, but it goes something like this:
- > >   >  >
- > >   >  >  __driver_attach
- > >   >  >  bus_for_each_dev
- > >   >  >  driver_attach
- > >   >  >  __driver_attach
- > >   >  >  bus_add_driver
- > >   >  >  acpi_device_remove
- > >   >  >  driver_register
- > >   >  >  async_thread
- > >   >  >  proc_mkdir_mode
- > >   >  >  async_thread
- > >   >  >  acpi_battery_init_async
- > >   >  >  async_thread
- > >   >  >  schedule
- > >   >  >  default_wake_function
- > >   >  >  async_thread
- > >   >  >  kthread
- > >   >  >  kthread
- > >   >  >  kernel_thread_helper
- > >   >  >  EIP: acpi_ex_read_data_from_field+0x16e
- > >   >  >
- > >   >  >  Any suggestions for revisions to try to revert?
- > >   >  >  --
- > >   >  >  To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
- > >   >  >  the body of a message to majordomo@vger.kernel.org
- > >   >  >  More majordomo info at  http://vger.kernel.org/majordomo-info.html
- > >   >  >  Please read the FAQ at  http://www.tux.org/lkml/
- > >   >  >
- > >   >
- > >   >
- > >   >  sounds similar to this:
- > >   >  https://bugzilla.kernel.org/show_bug.cgi?id=%2015749
- > >   >  if so try the patch there and see if
- > >   >  you can boot.
- > >
- > > Yes, that patch (https://bugzilla.kernel.org/attachment.cgi?id=25962)
- > > fixed the problem.  Thanks.
- > >
- > > /Mikael
- > >
- > 
- > cool.. if you can send a post on the bug report
- > so they know, and can push that patch forward
- > and so forth.
+The st_open function is serialized through the st_dev_arr_lock
+and the STp->in_use flag, so there is no race that the BKL
+can protect against in the driver itself, and the function
+does not access any global state outside of the driver that
+might be protected with the BKL.
 
-I've added a note to 15749 that the patch also fixed my machine.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/scsi/st.c |    9 +--------
+ 1 files changed, 1 insertions(+), 8 deletions(-)
+
+On Thursday 15 April 2010 22:03:24 Kai Makisara wrote:
+ 
+> BKL does not have any "hidden duties" in open() in st.c. I don't know any 
+> reason why it would be needed, but, because I have not been absolutely 
+> sure, I have not removed it. (The tape devices are not opened often and so 
+> the overhead has been negligible. That is, while BKL has been available.) 
+> If you don't see any reason for BKL in open(), go ahead and remove it.
+
+Ok, that certainly simplifies the sg.c conversion. Thanks!
+
+	Arnd
+
+diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
+index 3ea1a71..b1462e0 100644
+--- a/drivers/scsi/st.c
++++ b/drivers/scsi/st.c
+@@ -39,7 +39,6 @@ static const char *verstr = "20081215";
+ #include <linux/cdev.h>
+ #include <linux/delay.h>
+ #include <linux/mutex.h>
+-#include <linux/smp_lock.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/dma.h>
+@@ -1180,7 +1179,6 @@ static int st_open(struct inode *inode, struct file *filp)
+ 	int dev = TAPE_NR(inode);
+ 	char *name;
+ 
+-	lock_kernel();
+ 	/*
+ 	 * We really want to do nonseekable_open(inode, filp); here, but some
+ 	 * versions of tar incorrectly call lseek on tapes and bail out if that
+@@ -1188,10 +1186,8 @@ static int st_open(struct inode *inode, struct file *filp)
+ 	 */
+ 	filp->f_mode &= ~(FMODE_PREAD | FMODE_PWRITE);
+ 
+-	if (!(STp = scsi_tape_get(dev))) {
+-		unlock_kernel();
++	if (!(STp = scsi_tape_get(dev)))
+ 		return -ENXIO;
+-	}
+ 
+ 	write_lock(&st_dev_arr_lock);
+ 	filp->private_data = STp;
+@@ -1200,7 +1196,6 @@ static int st_open(struct inode *inode, struct file *filp)
+ 	if (STp->in_use) {
+ 		write_unlock(&st_dev_arr_lock);
+ 		scsi_tape_put(STp);
+-		unlock_kernel();
+ 		DEB( printk(ST_DEB_MSG "%s: Device already in use.\n", name); )
+ 		return (-EBUSY);
+ 	}
+@@ -1249,14 +1244,12 @@ static int st_open(struct inode *inode, struct file *filp)
+ 			retval = (-EIO);
+ 		goto err_out;
+ 	}
+-	unlock_kernel();
+ 	return 0;
+ 
+  err_out:
+ 	normalize_buffer(STp->buffer);
+ 	STp->in_use = 0;
+ 	scsi_tape_put(STp);
+-	unlock_kernel();
+ 	return retval;
+ 
+ }
+-- 
+1.7.0.4
+
