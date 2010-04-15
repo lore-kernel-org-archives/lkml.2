@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084Ab0DOXI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 19:08:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34932 "EHLO mx1.redhat.com"
+	id S1758029Ab0DOXJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 19:09:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59604 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758005Ab0DOXHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 19:07:38 -0400
+	id S1757996Ab0DOXHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 19:07:37 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 33/35] union-mount: Implement union-aware chmod()/fchmodat()
-Date: Thu, 15 Apr 2010 16:04:40 -0700
-Message-Id: <1271372682-21225-34-git-send-email-vaurora@redhat.com>
-In-Reply-To: <1271372682-21225-33-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 32/35] union-mount: Implement union-aware truncate()
+Date: Thu, 15 Apr 2010 16:04:39 -0700
+Message-Id: <1271372682-21225-33-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1271372682-21225-32-git-send-email-vaurora@redhat.com>
 References: <1271372682-21225-1-git-send-email-vaurora@redhat.com>
  <1271372682-21225-2-git-send-email-vaurora@redhat.com>
  <1271372682-21225-3-git-send-email-vaurora@redhat.com>
@@ -46,21 +46,20 @@ References: <1271372682-21225-1-git-send-email-vaurora@redhat.com>
  <1271372682-21225-30-git-send-email-vaurora@redhat.com>
  <1271372682-21225-31-git-send-email-vaurora@redhat.com>
  <1271372682-21225-32-git-send-email-vaurora@redhat.com>
- <1271372682-21225-33-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---
- fs/open.c |   25 +++++++++++++++++++++----
- 1 files changed, 21 insertions(+), 4 deletions(-)
+ fs/open.c |   24 ++++++++++++++++++++----
+ 1 files changed, 20 insertions(+), 4 deletions(-)
 
 diff --git a/fs/open.c b/fs/open.c
-index dda1b6f..6ec99e9 100644
+index 325852d..dda1b6f 100644
 --- a/fs/open.c
 +++ b/fs/open.c
-@@ -669,18 +669,32 @@ out:
- SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, mode_t, mode)
+@@ -230,14 +230,17 @@ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
+ static long do_sys_truncate(const char __user *pathname, loff_t length)
  {
  	struct path path;
 +	struct nameidata nd;
@@ -68,14 +67,19 @@ index dda1b6f..6ec99e9 100644
  	struct inode *inode;
 +	char *tmp;
  	int error;
- 	struct iattr newattrs;
  
--	error = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
-+	error = user_path_nd(dfd, filename, LOOKUP_FOLLOW, &nd,
-+				     &path, &tmp);
+ 	error = -EINVAL;
+ 	if (length < 0)	/* sorry, but loff_t says... */
+ 		goto out;
+ 
+-	error = user_path(pathname, &path);
++	error = user_path_nd(AT_FDCWD, pathname, 0, &nd, &path, &tmp);
  	if (error)
  		goto out;
--	inode = path.dentry->d_inode;
+ 	inode = path.dentry->d_inode;
+@@ -251,11 +254,16 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ 	if (!S_ISREG(inode->i_mode))
+ 		goto dput_and_out;
  
 -	error = mnt_want_write(path.mnt);
 +	if (IS_UNIONED_DIR(&nd.path))
@@ -86,21 +90,30 @@ index dda1b6f..6ec99e9 100644
 +	error = mnt_want_write(mnt);
  	if (error)
  		goto dput_and_out;
-+
-+	error = union_copyup(&nd, &path);
+ 
+-	error = inode_permission(inode, MAY_WRITE);
++	error = path_permission(&path, &nd.path, MAY_WRITE);
+ 	if (error)
+ 		goto mnt_drop_write_and_out;
+ 
+@@ -263,6 +271,12 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ 	if (IS_APPEND(inode))
+ 		goto mnt_drop_write_and_out;
+ 
++	error = union_copyup_len(&nd, &path, length);
 +	if (error)
 +		goto mnt_drop_write_and_out;
 +
++	/* path may have changed after copyup */
 +	inode = path.dentry->d_inode;
- 	mutex_lock(&inode->i_mutex);
- 	error = security_path_chmod(path.dentry, path.mnt, mode);
+ 	error = get_write_access(inode);
  	if (error)
-@@ -692,9 +706,12 @@ SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, mode_t, mode)
- 	error = notify_change(path.dentry, &newattrs);
- out_unlock:
- 	mutex_unlock(&inode->i_mutex);
+ 		goto mnt_drop_write_and_out;
+@@ -284,9 +298,11 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ put_write_and_out:
+ 	put_write_access(inode);
+ mnt_drop_write_and_out:
 -	mnt_drop_write(path.mnt);
-+mnt_drop_write_and_out:
 +	mnt_drop_write(mnt);
  dput_and_out:
  	path_put(&path);
