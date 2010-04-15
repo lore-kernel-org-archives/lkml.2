@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab0DOXIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 19:08:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3470 "EHLO mx1.redhat.com"
+	id S1758074Ab0DOXIz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 19:08:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1983 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758011Ab0DOXHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 19:07:44 -0400
+	id S1757989Ab0DOXHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 19:07:39 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 35/35] union-mount: Implement union-aware utimensat()
-Date: Thu, 15 Apr 2010 16:04:42 -0700
-Message-Id: <1271372682-21225-36-git-send-email-vaurora@redhat.com>
-In-Reply-To: <1271372682-21225-35-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 34/35] union-mount: Implement union-aware lchown()
+Date: Thu, 15 Apr 2010 16:04:41 -0700
+Message-Id: <1271372682-21225-35-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1271372682-21225-34-git-send-email-vaurora@redhat.com>
 References: <1271372682-21225-1-git-send-email-vaurora@redhat.com>
  <1271372682-21225-2-git-send-email-vaurora@redhat.com>
  <1271372682-21225-3-git-send-email-vaurora@redhat.com>
@@ -48,57 +48,57 @@ References: <1271372682-21225-1-git-send-email-vaurora@redhat.com>
  <1271372682-21225-32-git-send-email-vaurora@redhat.com>
  <1271372682-21225-33-git-send-email-vaurora@redhat.com>
  <1271372682-21225-34-git-send-email-vaurora@redhat.com>
- <1271372682-21225-35-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-XXX - doesn't implement NOFOLLOW correctly
 ---
- fs/utimes.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+ fs/open.c |   23 ++++++++++++++++++++---
+ 1 files changed, 20 insertions(+), 3 deletions(-)
 
-diff --git a/fs/utimes.c b/fs/utimes.c
-index e4c75db..82feca2 100644
---- a/fs/utimes.c
-+++ b/fs/utimes.c
-@@ -8,6 +8,7 @@
- #include <linux/stat.h>
- #include <linux/utime.h>
- #include <linux/syscalls.h>
-+#include <linux/union.h>
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
+diff --git a/fs/open.c b/fs/open.c
+index 6ec99e9..dc65b27 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -812,18 +812,35 @@ out:
+ SYSCALL_DEFINE3(lchown, const char __user *, filename, uid_t, user, gid_t, group)
+ {
+ 	struct path path;
++	struct nameidata nd;
++	struct vfsmount *mnt;
++	char *tmp;
+ 	int error;
  
-@@ -152,18 +153,26 @@ long do_utimes(int dfd, char __user *filename, struct timespec *times, int flags
- 		error = utimes_common(&file->f_path, times);
- 		fput(file);
- 	} else {
-+		struct nameidata nd;
-+		char *tmp;
- 		struct path path;
- 		int lookup_flags = 0;
- 
- 		if (!(flags & AT_SYMLINK_NOFOLLOW))
- 			lookup_flags |= LOOKUP_FOLLOW;
- 
--		error = user_path_at(dfd, filename, lookup_flags, &path);
-+		error = user_path_nd(dfd, filename, lookup_flags, &nd, &path,
-+				     &tmp);
- 		if (error)
- 			goto out;
- 
--		error = utimes_common(&path, times);
-+		error = union_copyup(&nd, &path);
+-	error = user_lpath(filename, &path);
++	error = user_path_nd(AT_FDCWD, filename, 0, &nd, &path, &tmp);
+ 	if (error)
+ 		goto out;
+-	error = mnt_want_write(path.mnt);
 +
-+		if (!error)
-+			error = utimes_common(&path, times);
- 		path_put(&path);
-+		path_put(&nd.path);
-+		putname(tmp);
- 	}
- 
++	if (IS_UNIONED_DIR(&nd.path))
++		mnt = nd.path.mnt;
++	else
++		mnt = path.mnt;
++
++	error = mnt_want_write(mnt);
+ 	if (error)
+ 		goto out_release;
++
++	error = union_copyup(&nd, &path);
++	if (error)
++		goto out_drop_write;
++
+ 	error = chown_common(&path, user, group);
+-	mnt_drop_write(path.mnt);
++out_drop_write:
++	mnt_drop_write(mnt);
+ out_release:
+ 	path_put(&path);
++	path_put(&nd.path);
++	putname(tmp);
  out:
+ 	return error;
+ }
 -- 
 1.6.3.3
 
