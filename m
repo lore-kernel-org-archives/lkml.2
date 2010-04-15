@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab0DOSQs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 14:16:48 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:48737 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755664Ab0DOSNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 14:13:49 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 04/16] rcu: ignore offline CPUs in last non-dyntick-idle CPU check
-Date: Thu, 15 Apr 2010 11:13:27 -0700
-Message-Id: <1271355219-20714-4-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100415181255.GA19588@linux.vnet.ibm.com>
-References: <20100415181255.GA19588@linux.vnet.ibm.com>
+	id S1755635Ab0DOSXL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 14:23:11 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:34925 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab0DOSXJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 14:23:09 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/4] vmscan: simplify shrink_inactive_list()
+In-Reply-To: Your message of "Thu, 15 Apr 2010 14:15:33 BST."
+             <20100415131532.GD10966@csn.ul.ie>
+From: Valdis.Kletnieks@vt.edu
+References: <20100415085420.GT2493@dastard> <20100415185310.D1A1.A69D9226@jp.fujitsu.com> <20100415192140.D1A4.A69D9226@jp.fujitsu.com>
+            <20100415131532.GD10966@csn.ul.ie>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1271355721_4032P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 15 Apr 2010 14:22:01 -0400
+Message-ID: <16363.1271355721@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020205.4BC7594A.011A,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+--==_Exmh_1271355721_4032P
+Content-Type: text/plain; charset=us-ascii
 
-Offline CPUs are not in nohz_cpu_mask, but can be ignored when checking
-for the last non-dyntick-idle CPU.  This patch therefore only checks
-online CPUs for not being dyntick idle, allowing fast entry into
-full-system dyntick-idle state even when there are some offline CPUs.
+On Thu, 15 Apr 2010 14:15:33 BST, Mel Gorman said:
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutree_plugin.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Yep. I modified bloat-o-meter to work with stacks (imaginatively calling it
+> stack-o-meter) and got the following. The prereq patches are from
+> earlier in the thread with the subjects
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 79b53bd..687c4e9 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1016,7 +1016,7 @@ int rcu_needs_cpu(int cpu)
- 
- 	/* Don't bother unless we are the last non-dyntick-idle CPU. */
- 	for_each_cpu_not(thatcpu, nohz_cpu_mask)
--		if (thatcpu != cpu) {
-+		if (cpu_online(thatcpu) && thatcpu != cpu) {
- 			per_cpu(rcu_dyntick_drain, cpu) = 0;
- 			per_cpu(rcu_dyntick_holdoff, cpu) = jiffies - 1;
- 			return rcu_needs_cpu_quick_check(cpu);
--- 
-1.7.0
+Think that's a script worth having in-tree?
+
+--==_Exmh_1271355721_4032P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFLx1lJcC3lWbTT17ARAqyGAKC1f3e2OAbaTieb6RAjylZZcPhsegCgs3Lo
+UCfgZZyeWUYEmBR3Lfn73d4=
+=mkPa
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1271355721_4032P--
 
