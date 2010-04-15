@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155Ab0DOVEE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 17:04:04 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:58955 "EHLO
+	id S1757149Ab0DOVKr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 17:10:47 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:55930 "EHLO
 	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756953Ab0DOVEA (ORCPT
+	with ESMTP id S1756696Ab0DOVKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 17:04:00 -0400
+	Thu, 15 Apr 2010 17:10:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZPrVRiOKRpAuDmy+dpzLHMrMGy51ew+OXGbKZawTUSGr1RgJep+ziMLLtE9veI+1ba
-         VWOPWuMyQxaTTCTQSmq6ViCRu/Vm52cRp+2yCJDtXZ8X/rDL8HuLlpEXhvOjx7+u9J4+
-         hhjibYro+MkpEWkZVhaOGxA/UXANEZBRefk88=
-Date: Thu, 15 Apr 2010 23:03:59 +0200
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=LJOd21+GAoRognPhDu4OmPqYTjgmIjdDIrbTrU8cEQMDbehZIDG8QNn6Zmb+5KwUlu
+         XWirDDrSTMjAC4syQ33y7cGQbO8K28MQ++FHB/zuJgA4u/UUfOX2ztHBkWwuRnb2ClU5
+         r+AkwfYGDhX/4mBI5W/hHo76gDyPNpUwhCyi8=
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH 3/3] Stop tracing on a schedule bug
-Message-ID: <20100415210357.GG5069@nowhere>
-References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com> <1271262016-18650-3-git-send-email-chase.douglas@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271262016-18650-3-git-send-email-chase.douglas@canonical.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 1/2 v2] lockdep: Fix redundant_hardirqs_on incremented with irqs enabled
+Date: Thu, 15 Apr 2010 23:10:42 +0200
+Message-Id: <1271365843-17415-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 12:20:16PM -0400, Chase Douglas wrote:
-> This change adds a tracing_off_event() call to stop tracing on schedule
-> bugs unless tracing_off=none was specified on the commandline.
-> 
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> ---
->  kernel/sched.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 6af210a..439f036 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -3590,6 +3590,8 @@ static noinline void __schedule_bug(struct task_struct *prev)
->  {
->  	struct pt_regs *regs = get_irq_regs();
->  
-> +	tracing_off_event(TRACE_EVENT_BUG);
-> +
->  	printk(KERN_ERR "BUG: scheduling while atomic: %s/%d/0x%08x\n",
->  		prev->comm, prev->pid, preempt_count());
+When a path restore the flags while irqs are already enabled, we
+update the per cpu var redundant_hardirqs_on in a racy fashion
+and debug_atomic_inc() warns about this situation.
 
+In this particular case, loosing a few hits in a stat is not a big
+deal, so increment it without protection.
 
+v2: Don't bother with disabling irq, we can miss one count in
+    rare situations
 
-I would rather call that a TRACE_EVENT_WARN as this is what happens: we
-warn but we continue.
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ kernel/lockdep.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 78325f8..1b58a1b 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -2298,7 +2298,12 @@ void trace_hardirqs_on_caller(unsigned long ip)
+ 		return;
+ 
+ 	if (unlikely(curr->hardirqs_enabled)) {
+-		debug_atomic_inc(redundant_hardirqs_on);
++		/*
++		 * Neither irq nor preemption are disabled here
++		 * so this is racy by nature but loosing one hit
++		 * in a stat is not a big deal.
++		 */
++		this_cpu_inc(lockdep_stats.redundant_hardirqs_on);
+ 		return;
+ 	}
+ 	/* we'll do an OFF -> ON transition: */
+-- 
+1.6.2.3
 
