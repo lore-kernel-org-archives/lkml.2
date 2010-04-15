@@ -1,50 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab0DONN7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 09:13:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29074 "EHLO mx1.redhat.com"
+	id S1753787Ab0DONPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 09:15:54 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:45637 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753486Ab0DONN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 09:13:57 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       vgoyal@redhat.com
-Subject: Re: [PATCH 0/4 v3] ext3/4: enhance fsync performance when using CFQ
-References: <1271279826-30294-1-git-send-email-jmoyer@redhat.com>
-	<20100415103345.GY27497@kernel.dk>
-	<x498w8oj276.fsf@segfault.boston.devel.redhat.com>
-	<20100415130854.GA27497@kernel.dk>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 15 Apr 2010 09:13:51 -0400
-In-Reply-To: <20100415130854.GA27497@kernel.dk> (Jens Axboe's message of "Thu,
-	15 Apr 2010 15:08:55 +0200")
-Message-ID: <x494ojcj1tc.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753527Ab0DONPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 09:15:52 -0400
+Date: Thu, 15 Apr 2010 14:15:33 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/4] vmscan: simplify shrink_inactive_list()
+Message-ID: <20100415131532.GD10966@csn.ul.ie>
+References: <20100415085420.GT2493@dastard> <20100415185310.D1A1.A69D9226@jp.fujitsu.com> <20100415192140.D1A4.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100415192140.D1A4.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <jens.axboe@oracle.com> writes:
+On Thu, Apr 15, 2010 at 07:23:04PM +0900, KOSAKI Motohiro wrote:
+> Now, max_scan of shrink_inactive_list() is always passed less than
+> SWAP_CLUSTER_MAX. then, we can remove scanning pages loop in it.
+> This patch also help stack diet.
+> 
 
->> > This is starting to look better. Can you share what tests you did? I
->> > tried reproducing with fs_mark last time and could not.
->> 
->> Did you use the fs_mark command line I (think I) had posted?  What
->> storage were you using?
->
-> No, I didn't see any references to example command lines. I tested on a
-> few single disks, rotating and SSD. I expected the single spinning disk
-> to show the problem to some extent at least, but there was no difference
-> observed with 64kb blocks.
+Yep. I modified bloat-o-meter to work with stacks (imaginatively calling it
+stack-o-meter) and got the following. The prereq patches are from
+earlier in the thread with the subjects
 
-Boy, I'm really slipping.  Try this one:
+vmscan: kill prev_priority completely
+vmscan: move priority variable into scan_control
 
-./fs_mark -S 1 -D 100 -N 1000 -d /mnt/test/fs_mark -s 65536 -t 1 -w 4096
+It gets
 
-Cheers,
-Jeff
+$ stack-o-meter vmlinux-vanilla vmlinux-1-2patchprereq 
+add/remove: 0/0 grow/shrink: 0/1 up/down: 0/-72 (-72)
+function                                     old     new   delta
+kswapd                                       748     676     -72
+
+and with this patch on top
+
+$ stack-o-meter vmlinux-vanilla vmlinux-2-simplfy-shrink 
+add/remove: 0/0 grow/shrink: 0/2 up/down: 0/-144 (-144)
+function                                     old     new   delta
+shrink_zone                                 1232    1160     -72
+kswapd                                       748     676     -72
+
+X86-32 based config.
+
+> detail
+>  - remove "while (nr_scanned < max_scan)" loop
+>  - remove nr_freed (now, we use nr_reclaimed directly)
+>  - remove nr_scan (now, we use nr_scanned directly)
+>  - rename max_scan to nr_to_scan
+>  - pass nr_to_scan into isolate_pages() directly instead
+>    using SWAP_CLUSTER_MAX
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+I couldn't spot any problems. I'd consider throwing a
+
+WARN_ON(nr_to_scan > SWAP_CLUSTER_MAX) in case some future change breaks
+the assumptions but otherwise.
+
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+> ---
+>  mm/vmscan.c |  190 ++++++++++++++++++++++++++++-------------------------------
+>  1 files changed, 89 insertions(+), 101 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index eab6028..4de4029 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1137,16 +1137,22 @@ static int too_many_isolated(struct zone *zone, int file,
+>   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
+>   * of reclaimed pages
+>   */
+> -static unsigned long shrink_inactive_list(unsigned long max_scan,
+> +static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+>  			struct zone *zone, struct scan_control *sc,
+>  			int file)
+>  {
+>  	LIST_HEAD(page_list);
+>  	struct pagevec pvec;
+> -	unsigned long nr_scanned = 0;
+> +	unsigned long nr_scanned;
+>  	unsigned long nr_reclaimed = 0;
+>  	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+>  	int lumpy_reclaim = 0;
+> +	struct page *page;
+> +	unsigned long nr_taken;
+> +	unsigned long nr_active;
+> +	unsigned int count[NR_LRU_LISTS] = { 0, };
+> +	unsigned long nr_anon;
+> +	unsigned long nr_file;
+>  
+>  	while (unlikely(too_many_isolated(zone, file, sc))) {
+>  		congestion_wait(BLK_RW_ASYNC, HZ/10);
+> @@ -1172,119 +1178,101 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
+>  
+>  	lru_add_drain();
+>  	spin_lock_irq(&zone->lru_lock);
+> -	do {
+> -		struct page *page;
+> -		unsigned long nr_taken;
+> -		unsigned long nr_scan;
+> -		unsigned long nr_freed;
+> -		unsigned long nr_active;
+> -		unsigned int count[NR_LRU_LISTS] = { 0, };
+> -		int mode = lumpy_reclaim ? ISOLATE_BOTH : ISOLATE_INACTIVE;
+> -		unsigned long nr_anon;
+> -		unsigned long nr_file;
+> -
+> -		nr_taken = sc->isolate_pages(SWAP_CLUSTER_MAX,
+> -			     &page_list, &nr_scan, sc->order, mode,
+> -				zone, sc->mem_cgroup, 0, file);
+> +	nr_taken = sc->isolate_pages(nr_to_scan,
+> +				     &page_list, &nr_scanned, sc->order,
+> +				     lumpy_reclaim ? ISOLATE_BOTH : ISOLATE_INACTIVE,
+> +				     zone, sc->mem_cgroup, 0, file);
+>  
+> -		if (scanning_global_lru(sc)) {
+> -			zone->pages_scanned += nr_scan;
+> -			if (current_is_kswapd())
+> -				__count_zone_vm_events(PGSCAN_KSWAPD, zone,
+> -						       nr_scan);
+> -			else
+> -				__count_zone_vm_events(PGSCAN_DIRECT, zone,
+> -						       nr_scan);
+> -		}
+> +	if (scanning_global_lru(sc)) {
+> +		zone->pages_scanned += nr_scanned;
+> +		if (current_is_kswapd())
+> +			__count_zone_vm_events(PGSCAN_KSWAPD, zone, nr_scanned);
+> +		else
+> +			__count_zone_vm_events(PGSCAN_DIRECT, zone, nr_scanned);
+> +	}
+>  
+> -		if (nr_taken == 0)
+> -			goto done;
+> +	if (nr_taken == 0)
+> +		goto done;
+>  
+> -		nr_active = clear_active_flags(&page_list, count);
+> -		__count_vm_events(PGDEACTIVATE, nr_active);
+> +	nr_active = clear_active_flags(&page_list, count);
+> +	__count_vm_events(PGDEACTIVATE, nr_active);
+>  
+> -		__mod_zone_page_state(zone, NR_ACTIVE_FILE,
+> -						-count[LRU_ACTIVE_FILE]);
+> -		__mod_zone_page_state(zone, NR_INACTIVE_FILE,
+> -						-count[LRU_INACTIVE_FILE]);
+> -		__mod_zone_page_state(zone, NR_ACTIVE_ANON,
+> -						-count[LRU_ACTIVE_ANON]);
+> -		__mod_zone_page_state(zone, NR_INACTIVE_ANON,
+> -						-count[LRU_INACTIVE_ANON]);
+> +	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
+> +			      -count[LRU_ACTIVE_FILE]);
+> +	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
+> +			      -count[LRU_INACTIVE_FILE]);
+> +	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
+> +			      -count[LRU_ACTIVE_ANON]);
+> +	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
+> +			      -count[LRU_INACTIVE_ANON]);
+>  
+> -		nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
+> -		nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
+> -		__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
+> -		__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
+> +	nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
+> +	nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
+> +	__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
+> +	__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
+>  
+> -		reclaim_stat->recent_scanned[0] += nr_anon;
+> -		reclaim_stat->recent_scanned[1] += nr_file;
+> +	reclaim_stat->recent_scanned[0] += nr_anon;
+> +	reclaim_stat->recent_scanned[1] += nr_file;
+>  
+> -		spin_unlock_irq(&zone->lru_lock);
+> +	spin_unlock_irq(&zone->lru_lock);
+>  
+> -		nr_scanned += nr_scan;
+> -		nr_freed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
+> +	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
+> +
+> +	/*
+> +	 * If we are direct reclaiming for contiguous pages and we do
+> +	 * not reclaim everything in the list, try again and wait
+> +	 * for IO to complete. This will stall high-order allocations
+> +	 * but that should be acceptable to the caller
+> +	 */
+> +	if (nr_reclaimed < nr_taken && !current_is_kswapd() && lumpy_reclaim) {
+> +		congestion_wait(BLK_RW_ASYNC, HZ/10);
+>  
+>  		/*
+> -		 * If we are direct reclaiming for contiguous pages and we do
+> -		 * not reclaim everything in the list, try again and wait
+> -		 * for IO to complete. This will stall high-order allocations
+> -		 * but that should be acceptable to the caller
+> +		 * The attempt at page out may have made some
+> +		 * of the pages active, mark them inactive again.
+>  		 */
+> -		if (nr_freed < nr_taken && !current_is_kswapd() &&
+> -		    lumpy_reclaim) {
+> -			congestion_wait(BLK_RW_ASYNC, HZ/10);
+> -
+> -			/*
+> -			 * The attempt at page out may have made some
+> -			 * of the pages active, mark them inactive again.
+> -			 */
+> -			nr_active = clear_active_flags(&page_list, count);
+> -			count_vm_events(PGDEACTIVATE, nr_active);
+> -
+> -			nr_freed += shrink_page_list(&page_list, sc,
+> -							PAGEOUT_IO_SYNC);
+> -		}
+> +		nr_active = clear_active_flags(&page_list, count);
+> +		count_vm_events(PGDEACTIVATE, nr_active);
+>  
+> -		nr_reclaimed += nr_freed;
+> +		nr_reclaimed += shrink_page_list(&page_list, sc,
+> +						 PAGEOUT_IO_SYNC);
+> +	}
+>  
+> -		local_irq_disable();
+> -		if (current_is_kswapd())
+> -			__count_vm_events(KSWAPD_STEAL, nr_freed);
+> -		__count_zone_vm_events(PGSTEAL, zone, nr_freed);
+> +	local_irq_disable();
+> +	if (current_is_kswapd())
+> +		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
+> +	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
+>  
+> -		spin_lock(&zone->lru_lock);
+> -		/*
+> -		 * Put back any unfreeable pages.
+> -		 */
+> -		while (!list_empty(&page_list)) {
+> -			int lru;
+> -			page = lru_to_page(&page_list);
+> -			VM_BUG_ON(PageLRU(page));
+> -			list_del(&page->lru);
+> -			if (unlikely(!page_evictable(page, NULL))) {
+> -				spin_unlock_irq(&zone->lru_lock);
+> -				putback_lru_page(page);
+> -				spin_lock_irq(&zone->lru_lock);
+> -				continue;
+> -			}
+> -			SetPageLRU(page);
+> -			lru = page_lru(page);
+> -			add_page_to_lru_list(zone, page, lru);
+> -			if (is_active_lru(lru)) {
+> -				int file = is_file_lru(lru);
+> -				reclaim_stat->recent_rotated[file]++;
+> -			}
+> -			if (!pagevec_add(&pvec, page)) {
+> -				spin_unlock_irq(&zone->lru_lock);
+> -				__pagevec_release(&pvec);
+> -				spin_lock_irq(&zone->lru_lock);
+> -			}
+> +	spin_lock(&zone->lru_lock);
+> +	/*
+> +	 * Put back any unfreeable pages.
+> +	 */
+> +	while (!list_empty(&page_list)) {
+> +		int lru;
+> +		page = lru_to_page(&page_list);
+> +		VM_BUG_ON(PageLRU(page));
+> +		list_del(&page->lru);
+> +		if (unlikely(!page_evictable(page, NULL))) {
+> +			spin_unlock_irq(&zone->lru_lock);
+> +			putback_lru_page(page);
+> +			spin_lock_irq(&zone->lru_lock);
+> +			continue;
+>  		}
+> -		__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
+> -		__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
+> -
+> -  	} while (nr_scanned < max_scan);
+> +		SetPageLRU(page);
+> +		lru = page_lru(page);
+> +		add_page_to_lru_list(zone, page, lru);
+> +		if (is_active_lru(lru)) {
+> +			int file = is_file_lru(lru);
+> +			reclaim_stat->recent_rotated[file]++;
+> +		}
+> +		if (!pagevec_add(&pvec, page)) {
+> +			spin_unlock_irq(&zone->lru_lock);
+> +			__pagevec_release(&pvec);
+> +			spin_lock_irq(&zone->lru_lock);
+> +		}
+> +	}
+> +	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
+> +	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
+>  
+>  done:
+>  	spin_unlock_irq(&zone->lru_lock);
+> -- 
+> 1.6.5.2
+> 
+> 
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
