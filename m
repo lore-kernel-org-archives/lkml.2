@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab0DOASy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Apr 2010 20:18:54 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34322 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246Ab0DOASx (ORCPT
+	id S1755795Ab0DOA07 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Apr 2010 20:26:59 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58951 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab0DOA06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Apr 2010 20:18:53 -0400
+	Wed, 14 Apr 2010 20:26:58 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 15 Apr 2010 09:14:44 +0900
+Date: Thu, 15 Apr 2010 09:22:58 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Greg Thelen <gthelen@google.com>, balbir@linux.vnet.ibm.com,
-       Andrea Righi <arighi@develer.com>,
+To: Greg Thelen <gthelen@google.com>
+Cc: balbir@linux.vnet.ibm.com, Andrea Righi <arighi@develer.com>,
        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Peter Zijlstra <peterz@infradead.org>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
        Trond Myklebust <trond.myklebust@fys.uio.no>,
        Suleiman Souhlal <suleiman@google.com>,
        "Kirill A. Shutemov" <kirill@shutemov.name>,
@@ -22,9 +21,9 @@ Cc: Greg Thelen <gthelen@google.com>, balbir@linux.vnet.ibm.com,
        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        linux-mm@kvack.org
 Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
-Message-Id: <20100415091444.aa743668.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100414140430.GB13535@redhat.com>
-References: <20100317115855.GS18054@balbir.in.ibm.com>
+Message-Id: <20100415092258.9f837c12.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <p2k49b004811004140922v8b6c4c57j2dd435261ff2dd43@mail.gmail.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
 	<20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
 	<20100318041944.GA18054@balbir.in.ibm.com>
 	<20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
@@ -34,56 +33,78 @@ References: <20100317115855.GS18054@balbir.in.ibm.com>
 	<20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com>
 	<xr931veiplpr.fsf@ninji.mtv.corp.google.com>
 	<20100414182904.2f72a63d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100414140430.GB13535@redhat.com>
+	<p2k49b004811004140922v8b6c4c57j2dd435261ff2dd43@mail.gmail.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Apr 2010 10:04:30 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
+On Wed, 14 Apr 2010 09:22:41 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-> On Wed, Apr 14, 2010 at 06:29:04PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Wed, Apr 14, 2010 at 2:29 AM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>
+> >>       if (irqs_disabled()) {
+> >>               if (! trylock_page_cgroup(pc))
+> >>                       return;
+> >>       } else
+> >>               lock_page_cgroup(pc);
+> >>
+> >
+> > I prefer trylock_page_cgroup() always.
+> 
+> What is your reason for preferring trylock_page_cgroup()?  I assume
+> it's for code simplicity, but I wanted to check.
+> 
+> I had though about using trylock_page_cgroup() always, but I think
+> that would make file_mapped accounting even more fuzzy that it already
+> it is.  I was trying to retain the current accuracy of file_mapped and
+> only make new counters, like writeback/dirty/etc (those obtained in
+> interrupt), fuzzy.
+> 
 
+file_mapped should have different interface as mem_cgroup_update_stat_verrrry_safe().
+or some.
+
+I don't think accuracy is important (if it's doesn't go minus) but if people want,
+I agree to keep it accurate.
+
+
+> > I have another idea fixing this up _later_. (But I want to start from simple one.)
+> >
+> > My rough idea is following.  Similar to your idea which you gave me before.
+> 
 > Hi Kame-san,
 > 
-> May be I am missing something but how does it solve the issue of making sure
-> lock_page_cgroup() is not held in interrupt context? IIUC, above code will
-> make sure that for file cache accouting, lock_page_cgroup() is taken only
-> if task migration is on. But say task migration is on, and then some IO
-> completes and we update WRITEBACK stat (i think this is the one which can
-> be called from interrupt context), then we will still take the
-> lock_page_cgroup() and again run into the issue of deadlocks?
+> I like the general approach.  The code I previously gave you appears
+> to work and is faster than non-root memcgs using mmotm due to mostly
+> being lockless.
 > 
-Yes and No.
+I hope so.
 
-At "Set", IIRC, almost all updates against DIRTY and WRITBACK accountings
-can be done under mapping->tree_lock, which disables IRQ always.
-(ex. I don't mention TestSetPageWriteback but account_page_diritied().)
-Then, save/restore irq flags is just a cost and no benefit, in such cases.
-Of course, there are cases irqs doesn't enabled.
+> > ==
+> > DEFINE_PERCPU(account_move_ongoing);
+> 
+> What's the reason for having a per-cpu account_move_ongoing flag?
+> Would a single system-wide global be sufficient?  I assume the
+> majority of the time this value will not be changing because
+> accounting moves are rare.
+> 
+> Perhaps all of the per-cpu variables are packed within a per-cpu
+> cacheline making accessing it more likely to be local, but I'm not
+> sure if this is true.
+> 
 
-About FILE_MAPPED, it's not updated under mapping->tree_lock. 
-So, we'll have race with charge/uncharge. We have to take lock_page_cgroup(), always.
-
-
-So, I think we'll have 2 or 3 interfaces, finally.
-	mem_cgroup_update_stat_fast()  // the caller must disable IRQ and lock_page()
-and
-	mem_cgroup_update_stat_locked() // the caller has lock_page().
-and
-	mem_cgroup_update_stat_safe()  // the caller don't have to do anything.
-
-Why update_stat_fast() is for avoiding _unnecessary_ costs.
-When we lock a page and disables IRQ, we don't have to do anything.
-There are no races. 
-
-But yes, it's complicated. I'd like to see what we can do.
-
+Yes. this value is rarely updated but update is not enough rare to put
+this value to read_mostly section. We see cacheline ping-pong by random
+placement of global variables. This is performance critical.
+Recent updates for percpu variables accessor makes access to percpu 
+very efficient. I'd like to make use of it.
 
 Thanks,
 -Kame
