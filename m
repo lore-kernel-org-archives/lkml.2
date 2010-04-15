@@ -1,38 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab0DOMpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 08:45:25 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:51677 "EHLO
+	id S1753358Ab0DOM4L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 08:56:11 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:18071 "EHLO
 	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab0DOMpX (ORCPT
+	with ESMTP id S1752142Ab0DOM4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 08:45:23 -0400
+	Thu, 15 Apr 2010 08:56:08 -0400
 X-SpamScore: 11
-X-BigFish: VPS11(zz655Lab9bhb3c9m34f5jzz1202hzz6d525hz32i87h2a8h68o)
+X-BigFish: VPS11(zz655Lab9bhb3c9m34f5jzz1202hzz6d525hz32i2a8h68o)
 X-Spam-TCS-SCL: 7:0
-X-FB-SS: 5,
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L0X4R9-02-6AG-02
+X-WSS-ID: 0L0X595-01-0LN-02
 X-M-MSG: 
+Date: Thu, 15 Apr 2010 14:55:51 +0200
 From: Robert Richter <robert.richter@amd.com>
 To: Stephane Eranian <eranian@googlemail.com>
 CC: perfmon2-devel@lists.sourceforge.net,
        Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter@erda.amd.com, "Zijlstra <peterz"@infradead.org,
-       linux-kernel@vger.kernel.org
+       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
 Subject: [PATCH 3/3] libpfm4: perf_event example code for AMD IBS
-Date: Thu, 15 Apr 2010 14:40:21 +0200
-Message-ID: <1271335221-18601-4-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.0.3
-In-Reply-To: <1271335221-18601-1-git-send-email-robert.richter@amd.com>
+Message-ID: <20100415125551.GI11907@erda.amd.com>
 References: <1271335221-18601-1-git-send-email-robert.richter@amd.com>
-X-OriginalArrivalTime: 15 Apr 2010 12:45:06.0348 (UTC) FILETIME=[79B4CEC0:01CADC99]
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1271335221-18601-1-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.0.3
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 15 Apr 2010 12:55:51.0718 (UTC) FILETIME=[FA607460:01CADC9A]
 X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+(resent, fixing cc list)
 
 This patch includes an example to use IBS via perf_event. It is for
 the kernel patches I sent some days ago:
