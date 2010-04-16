@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322Ab0DPRwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 13:52:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44405 "EHLO mx1.redhat.com"
+	id S1757699Ab0DPR5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 13:57:43 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40178 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab0DPRwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 13:52:08 -0400
-Date: Fri, 16 Apr 2010 19:51:26 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Interleave policy on 2M pages (was Re: [RFC][BUGFIX][PATCH
- 1/2] memcg: fix charge bypass route of migration)
-Message-ID: <20100416175126.GP32034@random.random>
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
- <20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
- <20100415154324.834dace9.nishimura@mxp.nes.nec.co.jp>
- <20100415155611.da707913.kamezawa.hiroyu@jp.fujitsu.com>
- <20100415081743.GP32034@random.random>
- <alpine.DEB.2.00.1004161111380.7710@router.home>
+	id S1753871Ab0DPR5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 13:57:41 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Michal Hocko <mhocko@suse.cz>
+Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
+Date: Fri, 16 Apr 2010 20:00:29 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Tony Vroon <tony@linx.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       pm list <linux-pm@lists.linux-foundation.org>
+References: <20100401133923.GA4104@tiehlicka.suse.cz> <201004132253.37432.rjw@sisk.pl> <20100414075808.GA4202@tiehlicka.suse.cz>
+In-Reply-To: <20100414075808.GA4202@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1004161111380.7710@router.home>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004162000.29861.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 11:13:10AM -0500, Christoph Lameter wrote:
-> On Thu, 15 Apr 2010, Andrea Arcangeli wrote:
+On Wednesday 14 April 2010, Michal Hocko wrote:
+> On Tue 13-04-10 22:53:37, Rafael J. Wysocki wrote:
+> > On Tuesday 13 April 2010, Michal Hocko wrote:
+> > > On Tue 13-04-10 01:01:54, Rafael J. Wysocki wrote:
+> > > > On Saturday 10 April 2010, Rafael J. Wysocki wrote:
+> > > > > On Friday 09 April 2010, Tony Vroon wrote:
+> > > > > > On Fri, 2010-04-09 at 22:42 +0200, Rafael J. Wysocki wrote:
+> > > > > > > Please check if the patch below changes anything.
+> > > > > > >  drivers/acpi/wakeup.c |    4 ++--
+> > > > > > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > > > > > 
+> > > > > > That didn't change the behaviour for me, sorry.
+> > > > > 
+> > > > > Well, I would be sorry if it did, because the patch removed some useful code. :-)
+> > > > > 
+> > > > > > (I made sure to go through a full power down session before trying the
+> > > > > > patched kernel)
+> > > > > 
+> > > > > Thanks for testing.  So it looks like we don't disable the GPE during power off.
+> > > > > 
+> > > > > I'll try to figure out what's going on, please stay tuned.
+> > > > 
+> > > > Can you please check if the patch below changes the behavior?
+> > > 
+> > > Unfortunately, it didn't help either (I have tried on top of the fresh
+> > > rc4).
+> > 
+> > That gets really weird.
+> > 
+> > > > ---
+> > > >  drivers/acpi/wakeup.c |    6 +++---
+> > > >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > > > 
+> > > > Index: linux-2.6/drivers/acpi/wakeup.c
+> > > > ===================================================================
+> > > > --- linux-2.6.orig/drivers/acpi/wakeup.c
+> > > > +++ linux-2.6/drivers/acpi/wakeup.c
+> > > > @@ -63,17 +63,17 @@ void acpi_enable_wakeup_device(u8 sleep_
+> > > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
+> > > >  		struct acpi_device *dev =
+> > > >  			container_of(node, struct acpi_device, wakeup_list);
+> > > > +		u8 action = ACPI_GPE_ENABLE;
+> > 
+> > Can you try to change the above to ACPI_GPE_DISABLE and retest, please?
 > 
-> > 2) add alloc_pages_vma for numa awareness in the huge page faults
+> Unfortunately didn't help as well...
+> Just for reference:
 > 
-> How do interleave policies work with alloc_pages_vma? So far the semantics
-> is to spread 4k pages over different nodes. With 2M pages this can no
-> longer work the way is was.
+> diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
+> index 248b473..f23c08f 100644
+> --- a/drivers/acpi/wakeup.c
+> +++ b/drivers/acpi/wakeup.c
+> @@ -63,7 +63,7 @@ void acpi_enable_wakeup_device(u8 sleep_state)
+>  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
+>  		struct acpi_device *dev =
+>  			container_of(node, struct acpi_device, wakeup_list);
+> -		u8 action = ACPI_GPE_ENABLE;
+> +		u8 action = ACPI_GPE_DISABLE;
 
-static struct page *alloc_page_interleave(gfp_t gfp, unsigned order,
-       	      	   				     unsigned nid)
+That probably means the chipset enables the GPEs by itself _after_ we've
+disabled them in acpi_enable_wakeup_device().
 
-See the order parameter, so I hope it's already solved. I assume the
-idea would be to interleave 2M pages to avoid the CPU the memory
-overhead of the pte layer and to decrease the tlb misses, but still
-maxing out the bandwidth of the system when multiple threads accesses
-memory that is stored in different nodes with random access. It should
-be ideal for hugetlbfs too for the large shared memory pools of the
-DB. Surely it'll be better than having all hugepages from the same
-node despite MPOL_INTERLEAVE is set.
+Unfortunately, I can't reproduce the issue on any of my test boxes and it's
+hard to find the source of the problem staring at the code.
 
-Said that, it'd also be possible to disable hugepages if the vma has
-MPOL_INTERLEAVE set, but I doubt we want to do that by default. Maybe
-we can add a sysfs control later for that which can be further tweaked
-at boot time by per-arch quirks, dunno... It's really up to you, you
-know numa better, but I've no doubt that MPOL_INTERLEAVE also can make
-sense with hugepages (both hugetlbfs and transparent hugepage
-support).
-
-Thanks,
-Andrea
+Rafael
