@@ -1,103 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758429Ab0DPNX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 09:23:59 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:45037 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758397Ab0DPNX6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 09:23:58 -0400
-Subject: Re: [RFC] perf_events: support for uncore a.k.a. nest units
-From: Peter Zijlstra <peterz@infradead.org>
-To: Gary.Mohr@Bull.com
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Stephane Eranian <eranian@googlemail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <OFA47E1D5E.A81B0A43-ON07257706.00721254-07257706.0074D40F@us-phx1.az05.bull.com>
-References: <OFA47E1D5E.A81B0A43-ON07257706.00721254-07257706.0074D40F@us-phx1.az05.bull.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 16 Apr 2010 15:24:10 +0200
-Message-ID: <1271424250.4807.2277.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1757584Ab0DPNmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 09:42:10 -0400
+Received: from mx1.gb1.humyo.com ([62.44.71.171]:46246 "EHLO mx1.gb1.humyo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754195Ab0DPNmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 09:42:07 -0400
+Message-ID: <4BC86920.3080101@humyo.com>
+Date: Fri, 16 Apr 2010 14:41:52 +0100
+From: John Berthels <john@humyo.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Chris Mason <chris.mason@oracle.com>, Dave Chinner <david@fromorbit.com>,
+       John Berthels <john@humyo.com>, linux-kernel@vger.kernel.org,
+       Nick Gregory <nick@humyo.com>, Rob Sanderson <rob@humyo.com>,
+       xfs@oss.sgi.com, linux-mm@kvack.org
+Subject: Re: PROBLEM + POSS FIX: kernel stack overflow, xfs, many disks, heavy
+ write load, 8k stack, x86-64
+References: <4BBC6719.7080304@humyo.com> <20100407140523.GJ11036@dastard> <4BBCAB57.3000106@humyo.com> <20100407234341.GK11036@dastard> <20100408030347.GM11036@dastard> <4BBDC92D.8060503@humyo.com> <4BBDEC9A.9070903@humyo.com> <20100408233837.GP11036@dastard> <20100409113850.GE13327@think>
+In-Reply-To: <20100409113850.GE13327@think>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-15 at 14:16 -0700, Gary.Mohr@Bull.com wrote:
-> > On Tue, 2010-03-30 at 09:49 -0700, Corey Ashford wrote:
-> >
-> > Right, I've got some definite ideas on how to go here, just need some
-> > time to implement them.
-> >
-> > The first thing that needs to be done is get rid of all the __weak
-> > functions (with exception of perf_callchain*, since that really is arch
-> > specific).
-> >
-> > For hw_perf_event_init() we need to create a pmu registration facility
-> > and lookup a pmu_id, either passed as an actual id found in sysfs or an
-> > open file handle from sysfs (the cpu pmu would be pmu_id 0 for backwards
-> > compat).
-> >
-> > hw_perf_disable/enable() would become struct pmu functions and
-> > perf_disable/enable need to become per-pmu, most functions operate on a
-> > specific event, for those we know the pmu and hence can call the per-pmu
-> > version. (XXX find those sites where this is not true).
-> >
-> > Then we can move to context, yes I think we want new context for new
-> > PMUs, otherwise we get very funny RR interleaving problems. My idea was
-> > to move find_get_context() into struct pmu as well, this allows you to
-> > have per-pmu contexts. Initially I'd not allow per-pmu-per-task contexts
-> > because then things like perf_event_task_sched_out() would get rather
-> > complex.
-> >
-> > For RR we can move away from perf_event_task_tick and let the pmu
-> > install a (hr)timer for this on their own.
-> >
-> > I've been planning to implement this for more than a week now, its just
-> > that other stuff keeps getting in the way.
-> >
+Chris Mason wrote:
+> shrink_zone on my box isn't 500 bytes, but lets try the easy stuff
+> first.  This is against .34, if you have any trouble applying to .32,
+> just add the word noinline after the word static on the function
+> definitions.
 > 
-> Hi Peter,
-> 
-> My name is Gary Mohr and I work for Bull Information Systems.  I have been
-> following your discussions with Corey (and others) about how to implement
-> support for nest PMU's in the linux kernel.
-> 
-> My company feels that support for Intel Nehalem uncore events is very
-> important to our customers.  Has the "other stuff" mentioned above quited down to
-> allow you to get started on building support for these features ?? 
+> This makes shrink_zone disappear from my check_stack.pl output.
+> Basically I think the compiler is inlining the shrink_active_zone and
+> shrink_inactive_zone code into shrink_zone.
 
-Sadly no.
+Hi Chris,
 
->  If development
-> is actually in progress, would you be willing to make a guess as to which
-> version of the kernel may offer the new capabilities ??
-> 
-> As I said we are interested so if there is any way we can assist you,
-> please let us know.  We would be happy to take experimental patch sets and
-> validate, test, and debug any problems we encounter if that would help your
-> development.
+I hadn't seen the followup discussion on lkml until today, but this message:
 
-Supply patches to make the above happen ;-)
+http://marc.info/?l=linux-mm&m=127122143303771&w=2
 
-One thing not on that list, which should happen first I guess, is to
-remove hw_perf_group_sched_in(). The idea is to add some sort of
-transactional API to the struct pmu, so that we can delay the
-schedulability check until commit time (and roll back when it fails).
+allowed me to look at stack usage in our build environment. If I've 
+understood correctly, it seems that a build with gcc-4.4 and gcc-4.3 
+have very different stack usages for shrink_zone(): 0x88 versus 0x1d8. 
+(details below).
 
-Something as simple as:
+The reason appears to be the -fconserve-stack compilation option 
+specified when using 4.4, since running the cmdline from mm/.vmscan.cmd 
+with gcc-4.4 but *without* -fconserve-stack gives the same result as 
+with 4.3.
 
-  struct pmu {
-    void start_txn(struct pmu *);
-    void commit_txn(struct pmu *);
+According to the discussion when the flag was added, 
+http://www.gossamer-threads.com/lists/linux/kernel/1131612
+this flag seems to primarily affects inlining, so I double-checked the 
+noinline patch you sent to the list and discovered that it had been 
+incorrectly applied to the build tree. Correctly applying that patch to 
+mm/vmscan.c (and using gcc-4.3) gives a
 
-    ,,,
-  };
+sub    $0x78,%rsp
 
-and then change group_sched_in() to use this instead of
-hw_perf_group_sched_in(), whose implementations mostly replicate
-group_sched_in() in various buggy ways anyway.
+line. I'm very sorry that this test or ours wasn't correct and I'm sorry 
+for sending bad info to the list.
+
+We're currently building a kernel with gcc-4.4 and will let you know if 
+it blows the 8k limit or not.
+
+Thanks for your help.
+
+regards,
+
+jb
+
+$ gcc-4.3 --version
+gcc-4.3 (Ubuntu 4.3.4-5ubuntu1) 4.3.4
+$ gcc-4.4 --version
+gcc-4.4 (Ubuntu 4.4.1-4ubuntu9) 4.4.1
 
 
+$ make CC=gcc-4.4 mm/vmscan.o
+$ objdump -d mm/vmscan.o  | less +/shrink_zone
+0000000000002830 <shrink_zone>:
+     2830:       55                      push   %rbp
+     2831:       48 89 e5                mov    %rsp,%rbp
+     2834:       41 57                   push   %r15
+     2836:       41 56                   push   %r14
+     2838:       41 55                   push   %r13
+     283a:       41 54                   push   %r12
+     283c:       53                      push   %rbx
+     283d:       48 81 ec 88 00 00 00    sub    $0x88,%rsp
+     2844:       e8 00 00 00 00          callq  2849 <shrink_zone+0x19>
+$ make clean
+$ make CC=gcc-4.3 mm/vmscan.o
+$ objdump -d mm/vmscan.o  | less +/shrink_zone
+0000000000001ca0 <shrink_zone>:
+     1ca0:       55                      push   %rbp
+     1ca1:       48 89 e5                mov    %rsp,%rbp
+     1ca4:       41 57                   push   %r15
+     1ca6:       41 56                   push   %r14
+     1ca8:       41 55                   push   %r13
+     1caa:       41 54                   push   %r12
+     1cac:       53                      push   %rbx
+     1cad:       48 81 ec d8 01 00 00    sub    $0x1d8,%rsp
+     1cb4:       e8 00 00 00 00          callq  1cb9 <shrink_zone+0x19>
