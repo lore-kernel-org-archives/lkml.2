@@ -1,62 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932392Ab0DPUDd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 16:03:33 -0400
-Received: from mail.atheros.com ([12.36.123.2]:50081 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932222Ab0DPUDb convert rfc822-to-8bit (ORCPT
+	id S932369Ab0DPTyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 15:54:14 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55172 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932222Ab0DPTyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 16:03:31 -0400
-From: David Quan <David.Quan@Atheros.com>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>,
-       linux-wireless <linux-wireless@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "yanmin.zhang@intel.com" <yanmin.zhang@intel.com>,
-       "shaohua.li@intel.com" <shaohua.li@intel.com>,
-       Sameer Nanda <snanda@google.com>,
-       Jonathan May <Jonathan.May@Atheros.com>
-Date: Fri, 16 Apr 2010 13:03:28 -0700
-Subject: RE: Power consumption on 802.11 / ASPM / device measurements
-Thread-Topic: Power consumption on 802.11 / ASPM / device measurements
-Thread-Index: Acrdnpa/fmhWDcq7QGaTqJSKBSQYggAAMLUg
-Message-ID: <93781E992CBA7843962D8B0E7D683F3C1116A1A28B@SC1EXMB-MBCL.global.atheros.com>
-References: <n2q43e72e891004161253wbb9afe61y539206f010e91a78@mail.gmail.com>
-In-Reply-To: <n2q43e72e891004161253wbb9afe61y539206f010e91a78@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 Apr 2010 15:54:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=YznAL44bp2DmrQ/aUNovhFkWj/ENS60yuiYVK1j8wShKdNodDTHicIz0T0wVvA/uSS
+         KGICK9mZu+s5Ku4JSCNQyetLs8d25hhOhO9cdZAev+FqKPcgu2VD5Vr7hJvoRZiORdj7
+         CnlZ15GIPFGUkchukgKM5Q+xSilP0w2Gjx7hQ=
 MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Fri, 16 Apr 2010 12:53:52 -0700
+Message-ID: <n2q43e72e891004161253wbb9afe61y539206f010e91a78@mail.gmail.com>
+Subject: Power consumption on 802.11 / ASPM / device measurements
+To: linux-wireless <linux-wireless@vger.kernel.org>
+Cc: linux-kernel@vger.kernel.org, yanmin.zhang@intel.com, shaohua.li@intel.com,
+       Sameer Nanda <snanda@google.com>,
+       Jonathan May <Jonathan.May@atheros.com>,
+       David Quan <David.Quan@atheros.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-it is a very complicated issue.
-Different system have different limitation.
-it is not a one size fits all.
-
-
-So we let the BIOS of each system with the different chipset control this, and we work with that team
-to make sure the correct settings work together for both RC and endpoint.
-
-It should not be controlled by the endpoint as endpoint can get plug into many different systems and endpoint 
-will not know the limitations of each system/chipset in the system.
-
-I highly recommend you all not to touch the aspm settings from the endpoint, point of view and let the system bios 
-do what it has been programmed to do.
-
-David
-
-
------Original Message-----
-From: Luis R. Rodriguez [mailto:mcgrof@gmail.com] 
-Sent: Friday, April 16, 2010 12:54 PM
-To: linux-wireless
-Cc: linux-kernel@vger.kernel.org; yanmin.zhang@intel.com; shaohua.li@intel.com; Sameer Nanda; Jonathan May; David Quan
-Subject: Power consumption on 802.11 / ASPM / device measurements
 
 We've been accumulating a few power consumption related documents on
 the wireless wiki for a while now. One which I saw was missing was for
