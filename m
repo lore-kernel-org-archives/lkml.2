@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab0DPOyv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:54:51 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:41843 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab0DPOyu (ORCPT
+	id S1752194Ab0DPOzi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:55:38 -0400
+Received: from fg-out-1718.google.com ([72.14.220.154]:16062 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab0DPOzh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:54:50 -0400
+	Fri, 16 Apr 2010 10:55:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jeyPZX0YPJhP+oY+ZTWD64swyaiUyhaNt0bkWpZQRu4dAsJr54cnvKc0Ry/1Wn21Ku
-         tCBlEjWDuu0ygsDvqAHDMXM5q9opjbiUZOmoukjfIJtee/fZ0kuw5k6N2XY9tRcXGJEE
-         fw+R53eNV2zL61og2RW55WnZvQVNNsW2FfnQ0=
-Date: Fri, 16 Apr 2010 18:54:44 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>, mingo@elte.hu, peterz@infradead.org,
-       aris@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100416145444.GB5540@lenovo>
-References: <1271366710-17468-1-git-send-email-dzickus@redhat.com> <20100416014712.GC15570@nowhere> <20100416143232.GA5540@lenovo> <20100416144616.GC5162@nowhere>
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=WvCC2HoFtJF1mgXLJmxpQQ1zj6oa4gbs9sR/w0I6trQGuphX098YnAF+/V79pK6iqG
+         OIt3GbvS9n+Pa9jpGWljpK/EWzdKz0z8YonbI7hBFqIB+47cN27FBZkp4sohjGqkrA21
+         NGuJXjFSHQY9aa/70NcydX9w6odA+KeUTLy2I=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: =?iso-8859-1?q?=C9ric_Piel?= <Eric.Piel@tremplin-utc.net>
+Subject: Re: [REGRESSION bisected] Sound goes too fast due to commit 7b3a177b0
+Date: Fri, 16 Apr 2010 16:55:33 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3; KDE/4.3.4; i686; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <4BC4E812.6050602@tremplin-utc.net>
+In-Reply-To: <4BC4E812.6050602@tremplin-utc.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100416144616.GC5162@nowhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004161655.33441.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 04:46:17PM +0200, Frederic Weisbecker wrote:
-...
-> > > > +		if (hardlockup_panic)
-> > > > +			panic("Watchdog detected hard LOCKUP on cpu %d", this_cpu);
-> > > > +		else
-> > > > +			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
-> > > > +
-> > > > +		cpumask_set_cpu(this_cpu, to_cpumask(hardlockup_mask));
-> > > 
-> > > 
-> > > 
-> > > May be have an arch spin lock there to update your cpu mask safely.
-> > > 
-> > 
-> > Hmm, this is NMI handler path so from what we protect this per-cpu data?
-> > Do I miss something? /me confused
+On wtorek, 13 kwietnia 2010 o 23:54:26 Éric Piel wrote:
+> Hello,
 > 
-> 
-> The cpu mask is not per cpu here, this is a shared bitmap, so you
-> can race against other cpus NMIs.
-> 
-> That said, as I suggested, having a per cpu var that we set when we
-> warned would be much better than a spinlock here.
+> Since 2.6.34-rc*, I have a regression on alsa which prevents the sound
+> to be played correctly. When playing, the music goes too fast, skipping
+> some parts. Typically, it's very easy to reproduce by doing:
+> time mplayer -endpos 30 sound-file-which-lasts-more-than-thirty-sec.mp3
 > 
 
-yeah, saw DECLARE_BITMAP but read it as DEFINE_PER_CPU for some reason.
-having any spinlock in irq handler is really under suspicious.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=15796
+for your bug report, please add your address to the CC list in there, thanks!
 
-	-- Cyrill
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
