@@ -1,105 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab0DPShY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 14:37:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758221Ab0DPShW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 14:37:22 -0400
-Date: Fri, 16 Apr 2010 14:37:19 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org, mingo@redhat.com,
-       anderson@redhat.com, esandeen@redhat.com
-Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20100416183719.8100.12732.sendpatchset@prarit.bos.redhat.com>
-Subject: [PATCH]: Write STACK_END_MAGIC to the init_task's stack
+	id S1758405Ab0DPSuB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 14:50:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48410 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757722Ab0DPSt7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 14:49:59 -0400
+Date: Sat, 17 Apr 2010 03:50:04 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: Fix fencepost error in reg cache access check
+Message-ID: <20100416185003.GB24707@opensource.wolfsonmicro.com>
+References: <1271419209-21634-1-git-send-email-ext-phil.2.carmody@nokia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271419209-21634-1-git-send-email-ext-phil.2.carmody@nokia.com>
+X-Cookie: You enjoy the company of other people.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tasks set STACK_END_MAGIC at the end of the stack to catch stack overruns and
-corruption of the stack.  The only task that does not set the magic value is
-the init_task.
+On Fri, Apr 16, 2010 at 03:00:09PM +0300, Phil Carmody wrote:
+> From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> 
+> Accessing num_reg elements in the interval [reg .. reg+num_regs)
+> is permitted if (reg+numregs <= array size), so barf when that
+> excluded upper bound is > array size. The prior -1 would give
+> access to one too many elements.
 
-Set the init_task's end of stack to the magic value and remove the conditional
-in no_context().
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index f627779..8f4e2ac 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -659,7 +659,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
- 	show_fault_oops(regs, error_code, address);
- 
- 	stackend = end_of_stack(tsk);
--	if (tsk != &init_task && *stackend != STACK_END_MAGIC)
-+	if (*stackend != STACK_END_MAGIC)
- 		printk(KERN_ALERT "Thread overran stack, or stack corrupted\n");
- 
- 	tsk->thread.cr2		= address;
-diff --git a/include/linux/stackprotector.h b/include/linux/stackprotector.h
-index 6f3e54c..fefdfdd 100644
---- a/include/linux/stackprotector.h
-+++ b/include/linux/stackprotector.h
-@@ -13,4 +13,5 @@ static inline void boot_init_stack_canary(void)
- }
- #endif
- 
-+void task_stack_end_magic(struct task_struct *tsk);
- #endif
-diff --git a/init/main.c b/init/main.c
-index 5c85402..a054403 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -530,6 +530,7 @@ asmlinkage void __init start_kernel(void)
- 	char * command_line;
- 	extern struct kernel_param __start___param[], __stop___param[];
- 
-+	task_stack_end_magic(&init_task);
- 	smp_setup_processor_id();
- 
- 	/*
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 44b0791..66b8928 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -65,6 +65,7 @@
- #include <linux/perf_event.h>
- #include <linux/posix-timers.h>
- #include <linux/user-return-notifier.h>
-+#include <linux/stackprotector.h>
- 
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
-@@ -227,11 +228,18 @@ int __attribute__((weak)) arch_dup_task_struct(struct task_struct *dst,
- 	return 0;
- }
- 
-+void task_stack_end_magic(struct task_struct *tsk)
-+{
-+	unsigned long *stackend;
-+
-+	stackend = end_of_stack(tsk);
-+	*stackend = STACK_END_MAGIC;	/* for overflow detection */
-+}
-+
- static struct task_struct *dup_task_struct(struct task_struct *orig)
- {
- 	struct task_struct *tsk;
- 	struct thread_info *ti;
--	unsigned long *stackend;
- 
- 	int err;
- 
-@@ -259,8 +267,7 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
- 
- 	setup_thread_stack(tsk, orig);
- 	clear_user_return_notifier(tsk);
--	stackend = end_of_stack(tsk);
--	*stackend = STACK_END_MAGIC;	/* for overflow detection */
-+	task_stack_end_magic(tsk);
- 
- #ifdef CONFIG_CC_STACKPROTECTOR
- 	tsk->stack_canary = get_random_int();
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
