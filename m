@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757641Ab0DPDJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 23:09:05 -0400
-Received: from baikonur.stro.at ([213.239.196.228]:55731 "EHLO
-	baikonur.stro.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757282Ab0DPDJD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 23:09:03 -0400
-From: maximilian attems <max@stro.at>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, maximilian attems <max@stro.at>,
-       stable@kernel.org, Ulrich Drepper <drepper@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [PATCH] fcntl.h: define AT_EACCESS
-Date: Fri, 16 Apr 2010 05:08:00 +0200
-Message-Id: <1271387280-19565-1-git-send-email-max@stro.at>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1757725Ab0DPDLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 23:11:51 -0400
+Received: from mail.perches.com ([173.55.12.10]:1500 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757502Ab0DPDLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 23:11:48 -0400
+Subject: Re: another cleanup patch gone wrong
+From: Joe Perches <joe@perches.com>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>, netdev@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux/m68k <linux-m68k@vger.kernel.org>
+In-Reply-To: <alpine.OSX.2.00.1004161214270.271@localhost>
+References: <alpine.OSX.2.00.1004161214270.271@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Apr 2010 20:11:46 -0700
+Message-ID: <1271387506.2298.17.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-noticed on a klibc build of dash that someone had left out that def:
-usr/dash/bltin/test.c:490: error: ‘AT_EACCESS’ undeclared (first use in thiction)
+On Fri, 2010-04-16 at 12:34 +1000, Finn Thain wrote:
+> ...but this one was already merged, unfortunately.
+> 
+> > Use printk_once
+> > Add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > Convert printks without KERN_<level> to pr_info and pr_cont
+> > 
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > Signed-off-by: David S. Miller <davem@davemloft.net>
+> > 
+> > 
+> > diff --git a/drivers/net/mac8390.c b/drivers/net/mac8390.c
+> > index 517cee4..8bd09e2 100644 (file)
+> > --- a/drivers/net/mac8390.c
+> > +++ b/drivers/net/mac8390.c
+> > @@ -17,6 +17,8 @@
+> >  /* 2002-12-30: Try to support more cards, some clues from NetBSD driver */
+> >  /* 2003-12-26: Make sure Asante cards always work. */
+> >  
+> > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > +
+> 
+> Why the macro? You only used it once.
 
-Cc: stable@kernel.org
-Cc: Ulrich Drepper <drepper@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: maximilian attems <max@stro.at>
----
- include/linux/fcntl.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+It's used embedded in the pr_<level> functions.
+It's used more than once.
 
-diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
-index 8603740..8bb001d 100644
---- a/include/linux/fcntl.h
-+++ b/include/linux/fcntl.h
-@@ -39,6 +39,8 @@
- #define AT_REMOVEDIR		0x200   /* Remove directory instead of
-                                            unlinking file.  */
- #define AT_SYMLINK_FOLLOW	0x400   /* Follow symbolic links.  */
-+#define AT_EACCESS		0x200	/* Test access permitted for
-+					   effective IDs, not real IDs.  */
- 
- #ifdef __KERNEL__
- 
--- 
-1.7.0.4
+> The pr_xxx naming convention belongs to a kernel-wide include file. Is it 
+> really a good idea to start repurposing it in .c files?
+
+It's in kernel.h, and yes, it is.
+http://lkml.org/lkml/2008/11/12/297
+
+> No, this is pr_err. The driver sets dev->mem_start expecting it to work, 
+> obviously.
+
+I suggest you change the levels to what you desire.
+
+You could add yourself to the MAINTAINERS entry for this file.
+
+cheers, Joe
+
 
