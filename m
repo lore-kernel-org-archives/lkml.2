@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129Ab0DPMXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 08:23:31 -0400
-Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:63056 "EHLO
-	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758369Ab0DPMXX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 08:23:23 -0400
-X-AuditID: 1209190e-b7b82ae000005260-c6-4bc856ba7c5b
-Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <87vdbr8vzv.fsf@basil.nowhere.org>
-Date: Fri, 16 Apr 2010 08:23:17 -0400
-Cc: Zan Lynx <zlynx@acm.org>, Andrew Morton <akpm@linux-foundation.org>,
-       Taras Glek <tglek@mozilla.com>, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9BEF5F2C-8AF3-480A-B382-41B0D331DE7D@mit.edu>
-References: <4BBA6776.5060804@mozilla.com> <20100415155309.2649a29b.akpm@linux-foundation.org> <4BC79F75.2090704@acm.org> <87vdbr8vzv.fsf@basil.nowhere.org>
-To: Andi Kleen <andi@halobates.de>
-X-Mailer: Apple Mail (2.1078)
-X-Brightmail-Tracker: AAAAAA==
+	id S1755662Ab0DPM2C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 08:28:02 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52465 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751814Ab0DPM2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 08:28:00 -0400
+Subject: CFQ read performance regression
+From: Miklos Szeredi <mszeredi@suse.cz>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+       Suresh Jayaraman <sjayaraman@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Apr 2010 14:27:58 +0200
+Message-ID: <1271420878.24780.145.camel@tucsk.pomaz.szeredi.hu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 16, 2010, at 7:41 AM, Andi Kleen wrote:
+Hi Jens,
 
-> Zan Lynx <zlynx@acm.org> writes:
-> 
->> On 4/15/10 4:53 PM, Andrew Morton wrote:
->> 
->>> This just isn't an interesting case.  World-wide, the number of people
->>> who compile their own web browser and execute it from the file which ld
->>> produced is, umm, seven.
->> 
->> Gentoo users? Linux From Scratch?
-> 
-> "make install" tends to copy. I am not aware of any Makefiles
-> that link directly to /usr/bin, and usually that wouldn't work
-> anyways because of permissions. copy fixes the problem.
+I'm chasing a performance bottleneck identified by tiobench that seems
+to be caused by CFQ.  On a SLES10-SP3 kernel (2.6.16, with some patches
+moving cfq closer to 2.6.17) tiobench with 8 threads gets about 260MB/s
+sequential read throughput.  On a recent kernels (including vanilla
+2.6.34-rc) it makes about 145MB/s, a regression of 45%.  The queue and
+readahead parameters are the same.
 
-... and those people who are executing the binary out of the build directory are probably running the regression  test (i.e., "make; make check") and on most developer machines, if they're lucky they have enough memory that the executable will still be in their page cache.   :-)
+This goes back some time, 2.6.27 already seems to have a bad
+performance.
 
-This being said, on modern file systems (i.e., btrfs, ext4, xfs, et. al), delayed allocation should mostly hide this problem; and if not, and the linker can estimate in advance how big the resulting binary will be, it could be modified to use the fallocate(2) system call.
+Changing the scheduler to noop will increase the throughput back into
+the 260MB/s range.  So this is not a driver issue.
 
--- Ted
+Also increasing quantum *and* readahead will increase the throughput,
+but not by as much.  Both noop and these tweaks decrease the write
+throughput somewhat however...
 
+Apparently on recent kernels the number of dispatched requests stays
+mostly at or below 4 and the dispatched sector count at or below 2000,
+which is not enough to fill the bandwidth on this setup.
+
+On 2.6.16 the number of dispatched requests hovers around 22 and the
+sector count around 16000.
+
+I uploaded blktraces for the read part of the tiobench runs for both
+2.6.16 and 2.6.32:
+
+ http://www.kernel.org/pub/linux/kernel/people/mszeredi/blktrace/
+
+Do you have any idea about the cause of this regression?
+
+Thanks,
+Miklos
 
