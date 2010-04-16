@@ -1,54 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab0DPOl5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:41:57 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:57498 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758506Ab0DPOlz (ORCPT
+	id S1758515Ab0DPOnI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:43:08 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:40734 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756242Ab0DPOnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:41:55 -0400
-Date: Fri, 16 Apr 2010 10:41:53 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Martin Mokrejs <mmokrejs@ribosome.natur.cuni.cz>
-cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
-       USB list <linux-usb@vger.kernel.org>,
-       USB Storage list <usb-storage@lists.one-eyed-alien.net>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.33.1: USB camera hung_task_timeout_secs >120 seconds
-In-Reply-To: <4BC81859.2080706@ribosome.natur.cuni.cz>
-Message-ID: <Pine.LNX.4.44L0.1004161036390.1923-100000@iolanthe.rowland.org>
+	Fri, 16 Apr 2010 10:43:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hcCATLub5DeTpPtyG/V6kFN3fdxyPjs4FFfE+y/iJ2CeGrGg8lHWOttTl+stCkZ8f6
+         90zulYxcSRnyFouoYKvRpUbIW1wVBDjWStGzHyFTKTGKCiWHFjDusiL3IlptOC1D5Rzy
+         NFPp8QvZ8AlcHfXNGSvt6gKsU/OIKsdggnXn0=
+Date: Fri, 16 Apr 2010 16:43:04 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100416144302.GB5162@nowhere>
+References: <1271366710-17468-1-git-send-email-dzickus@redhat.com> <20100416014712.GC15570@nowhere> <20100416141213.GC15159@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100416141213.GC15159@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Apr 2010, Martin Mokrejs wrote:
-
-> > If 2.6.34-rc doesn't work, please post a usbmon trace showing what
-> > happens when the device is plugged in.  Instructions are in
-> > Documentation/usb/usbmon.txt.
+On Fri, Apr 16, 2010 at 10:12:13AM -0400, Don Zickus wrote:
+> On Fri, Apr 16, 2010 at 03:47:14AM +0200, Frederic Weisbecker wrote:
+> > >  config PERF_EVENTS_NMI
+> > >  	bool
+> > > +	depends on PERF_EVENTS
+> > >  	help
+> > >  	  Arch has support for nmi_watchdog
+> > 
+> > 
+> > 
+> > That looks too general. It's more about the fact the arch supports
+> > cpu cycle events and generates NMIs on overflow.
 > 
-> I am unable to reproduce this with any version 2.6.30.10., 2.6.31.12,
-> 2.6.33.1, 2.6.34-rc4-git2. I turned off the camera many times, removed the
-> PCMCIA card while the USB media was recognized through kernel (not mounted),
-> no luck. I do use it say once a week and the crash I swa for the first time,
-> so I am not much optimistic on reproducibility. :(
+> I was trying to figure out a way to add the PERF_EVENTS dependency as I
+> didn't want to impose it on the CONFIG_NMI_WATCHDOG if that config
+> supported softlockup (which doesn't need the PERF_EVENTS).
 
-That's good then -- you're running with no problems.  :-)
 
-> Could it be related tot he fact that because the laptop has USB1.1 onboard
-> it loads uhci_hcd first. Eventually when I plugin the PCMCIA card it loads
-> ehci_hcd and the kernel complains it should have been loaded before?
-> Is there a way to tell this in /etc/modules.d/somefile ? I fear I have to
-> compile them into the kernel statically, on this particular setup.
 
-Don't worry about that.  That warning doesn't indicate any errors; it's
-just there to let people know what they _should_ do.  The system will
-work okay even when the drivers are loaded in the wrong order.  Bad
-effects are possible only if the UHCI and EHCI controllers share some
-ports, and on your system they don't.
+Yeah and this is fine. I was talking about the help description.
 
-Alan Stern
+
+ 
+> > I'm confused, do we have two versions of the softlockup
+> > detector now? You should drop the older one.
+> 
+> Originally Ingo talked about a migration path, so I was going to support
+> the older one in case the new one was having issues, sort of like what he
+> suggested about moving the nmi code from arch/x86/kernel/apic/nmi.c to
+> kernel/watchdog.c.  But I can probably drop the softlockup case as the
+> migration isn't as tricky as the nmi case.
+
+
+
+Ok.
+
+> > > +		return;
+> > > +	}
+> > > +
+> > > +	cpumask_clear_cpu(this_cpu, to_cpumask(hardlockup_mask));
+> > 
+> > 
+> > 
+> > Hmm...this is probably not necessary.
+> 
+> I was just thinking of the case where dispite the WARN above, the cpu
+> actually recovered and then failed again separately.  But I probably won't
+> spend anymore time defending it. :-)
+
+
+
+This is really just a corner case, I guess you don't need to
+bother with that. It is actually racy against other cpus and adding
+a spinlock here (in the everything is fine path) would be an overkill.
+
+In fact, having two per cpu vars named hardlockup_warned and
+softlockup_warned would be better than cpumasks. I'm sorry I
+suggested you the cpumask, but such per cpu vars will avoid
+you dealing with these synchonization issues. And one of the primary
+rules is usually to never take a lock from NMIs if we can :)
+
+
+ 
+> > You probably want a backtrace cpu mask here as well
+> > (but better don't use the same than the hardlockup thing)
+> 
+> yup.
+
+
+So actually, per_cpu softlockup_warned would be better :)
+
+
+> > Also you should half-drop the DETECT_SOFTLOCKUP thing:
+> > keep it's definition but drop the ability to choose it from
+> > the prompt:
+> > 
+> > config DETECT_SOFTLOCKUP
+> > 	bool
+> > 	depends on DEBUG_KERNEL && !S390
+> > 	default y
+> > 
+> > This way we keep it for compatibility with def_configs, it will
+> > enable the WATCHDOG by default if it is "y", we can schedule
+> > its removal later.
+ 
+> I understand the general idea but not quite the implementation idea.  I will work
+> on it and see what I come up with.
+
+
+We current have:
+
+config DETECT_SOFTLOCKUP
+     bool "Blah"
+     depends on DEBUG_KERNEL && !S390
+     default y
+     help
+       .......
+
+The idea is to remove the "Blah" so that the user can't select it
+anymore from make menuconfig, and to remove the help too as it's useless
+too.
+
+So that config WATCHDOG can be default y if DETECT_SOFTLOCKUP.
+Then if someone comes with a config that has DETECT_SOFTLOCKUP,
+it's new implementation (WATCHDOG) will enabled by default.
 
