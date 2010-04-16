@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758441Ab0DPONN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:13:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63227 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757729Ab0DPONK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:13:10 -0400
-Date: Fri, 16 Apr 2010 10:12:49 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: mingo@elte.hu, fweisbec@gmail.com, peterz@infradead.org,
-       gorcunov@gmail.com, aris@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100416141249.GD15159@redhat.com>
-References: <1271366710-17468-1-git-send-email-dzickus@redhat.com>
- <20100415153251.590c91ca.randy.dunlap@oracle.com>
+	id S1758413Ab0DPOOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:14:36 -0400
+Received: from www.telegraphics.com.au ([204.15.192.19]:45640 "EHLO
+	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757316Ab0DPOOf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 10:14:35 -0400
+Date: Sat, 17 Apr 2010 00:14:36 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: David Miller <davem@davemloft.net>
+cc: joe@perches.com, p_gortmaker@yahoo.com, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
+Subject: [PATCH] mac8390: change an error return code and some cleanup
+In-Reply-To: <alpine.OSX.2.00.1004161403160.271@localhost>
+Message-ID: <alpine.OSX.2.00.1004162347390.271@localhost>
+References: <alpine.OSX.2.00.1004161214270.271@localhost> <20100415.200113.215578006.davem@davemloft.net> <alpine.OSX.2.00.1004161323340.271@localhost> <alpine.OSX.2.00.1004161403160.271@localhost>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100415153251.590c91ca.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 03:32:51PM -0700, Randy Dunlap wrote:
-> On Thu, 15 Apr 2010 17:25:10 -0400 Don Zickus wrote:
-> 
-> >  arch/x86/kernel/apic/hw_nmi.c |    2 +-
-> >  include/linux/sched.h         |    6 +
-> >  init/Kconfig                  |    1 +
-> >  kernel/Makefile               |    4 +-
-> >  kernel/sysctl.c               |    9 +
-> >  kernel/watchdog.c             |  570 +++++++++++++++++++++++++++++++++++++++++
-> >  lib/Kconfig.debug             |   21 +-
-> >  7 files changed, 605 insertions(+), 8 deletions(-)
-> >  create mode 100644 kernel/watchdog.c
-> 
-> Updates to Documentation/kernel-parameters.txt ??
 
-Thanks for the comments, will try to get them added in the next spin.
+Change an error return from EAGAIN to EBUSY since the former is 
+misleading. Also promote the log message. Likewise some other KERN_INFO 
+log messages.
 
-Cheers,
-Don
+Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+
+--- a/drivers/net/mac8390.c	2010-04-16 13:31:04.000000000 +1000
++++ b/drivers/net/mac8390.c	2010-04-16 23:50:39.000000000 +1000
+@@ -554,7 +554,7 @@
+ 	case MAC8390_APPLE:
+ 		switch (mac8390_testio(dev->mem_start)) {
+ 		case ACCESS_UNKNOWN:
+-			pr_info("Don't know how to access card memory!\n");
++			pr_err("Don't know how to access card memory!\n");
+ 			return -ENODEV;
+ 			break;
+ 
+@@ -643,8 +643,8 @@
+ {
+ 	__ei_open(dev);
+ 	if (request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev)) {
+-		pr_info("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
+-		return -EAGAIN;
++		pr_err("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
++		return -EBUSY;
+ 	}
+ 	return 0;
+ }
+@@ -660,7 +660,7 @@
+ {
+ 	ei_status.txing = 0;
+ 	if (ei_debug > 1)
+-		pr_info("reset not supported\n");
++		printk(KERN_DEBUG pr_fmt("reset not supported\n"));
+ 	return;
+ }
+ 
+@@ -668,11 +668,11 @@
+ {
+ 	unsigned char *target = nubus_slot_addr(IRQ2SLOT(dev->irq));
+ 	if (ei_debug > 1)
+-		pr_info("Need to reset the NS8390 t=%lu...", jiffies);
++		printk(KERN_DEBUG pr_fmt("Need to reset the NS8390 t=%lu..."), jiffies);
+ 	ei_status.txing = 0;
+ 	target[0xC0000] = 0;
+ 	if (ei_debug > 1)
+-		pr_cont("reset complete\n");
++		printk(KERN_CONT "reset complete\n");
+ 	return;
+ }
+ 
