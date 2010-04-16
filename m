@@ -1,489 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757909Ab0DPJuP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 05:50:15 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:58676 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757795Ab0DPJuJ (ORCPT
+	id S1757221Ab0DPJuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 05:50:18 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:39179 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757241Ab0DPJuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Apr 2010 05:50:09 -0400
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Fri, 16 Apr 2010 11:49:32 +0200
+Date: Fri, 16 Apr 2010 11:49:27 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH 7/8] USB: testusb: an USB testing application
-In-reply-to: <dfef9a200fd97e3fc66790ecb6ae4b83e1928705.1271406290.git.mina86@mina86.com>
+Subject: [PATCH 2/8] fs/timerfd.c: make use of
+ wait_event_interruptible_locked_irq()
+In-reply-to: <0d8cfc5167bbcbfc6c5ae0ab10980eba743e0cee.1271406290.git.mina86@mina86.com>
 To: linux-usb@vger.kernel.org
 Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, Greg KH <greg@kroah.com>,
        Kyungmin Park <kyungmin.park@samsung.com>,
        Marek Szyprowski <m.szyprowski@samsung.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Message-id: <02f5106bac6227ed5d1a2d5b56f90714cc8a0546.1271406290.git.mina86@mina86.com>
+Message-id: <7fbfe9c15eae523b73b704a3b5399319152fd505.1271406290.git.mina86@mina86.com>
 X-Mailer: git-send-email 1.7.0
 References: <cover.1271406290.git.mina86@mina86.com>
  <0d8cfc5167bbcbfc6c5ae0ab10980eba743e0cee.1271406290.git.mina86@mina86.com>
- <7fbfe9c15eae523b73b704a3b5399319152fd505.1271406290.git.mina86@mina86.com>
- <41b2cd7e8bacd38bb9c997b7197e175d727876f9.1271406290.git.mina86@mina86.com>
- <d7efac966d1af6641c2b302414e68dd9f68c6350.1271406290.git.mina86@mina86.com>
- <dfc8609b4a4e6c9c43ba9805f2879c76a391c129.1271406290.git.mina86@mina86.com>
- <dfef9a200fd97e3fc66790ecb6ae4b83e1928705.1271406290.git.mina86@mina86.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Brownell <dbrownell@users.sourceforge.net>
-
-The testusb program just issues ioctls to perform the tests
-implemented by the kernel driver.  It can generate a variety
-of transfer patterns; you should make sure to test both regular
-streaming and mixes of  transfer sizes (including short transfers).
-
-For more information on how this can be used and on USB testing
-refer to <URL:http://www.linux-usb.org/usbtest/>.
+This patch modifies the fs/timerfd.c to use the newly created
+wait_event_interruptible_locked_irq() macro.  This replaces an open
+code implementation with a single macro call.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- tools/usb/testusb.c |  427 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 427 insertions(+), 0 deletions(-)
- create mode 100644 tools/usb/testusb.c
+ fs/timerfd.c |   25 ++++---------------------
+ 1 files changed, 4 insertions(+), 21 deletions(-)
 
-diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c
-new file mode 100644
-index 0000000..1f37298
---- /dev/null
-+++ b/tools/usb/testusb.c
-@@ -0,0 +1,427 @@
-+/* $(CROSS_COMPILE)cc -Wall -g -lpthread -o testusb testusb.c */
-+
-+/*
-+ * Copyright (c) 2002 by David Brownell
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2 of the License, or (at your
-+ * option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-+ * for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software Foundation,
-+ * Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <stdio.h>
-+#include <string.h>
-+#include <ftw.h>
-+#include <stdlib.h>
-+#include <pthread.h>
-+#include <unistd.h>
-+#include <errno.h>
-+
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+
-+#include <sys/ioctl.h>
-+#include <linux/usbdevice_fs.h>
-+
-+/*-------------------------------------------------------------------------*/
-+
-+#define	TEST_CASES	30
-+
-+// FIXME make these public somewhere; usbdevfs.h?
-+
-+struct usbtest_param {
-+	// inputs
-+	unsigned		test_num;	/* 0..(TEST_CASES-1) */
-+	unsigned		iterations;
-+	unsigned		length;
-+	unsigned		vary;
-+	unsigned		sglen;
-+
-+	// outputs
-+	struct timeval		duration;
-+};
-+#define USBTEST_REQUEST	_IOWR('U', 100, struct usbtest_param)
-+
-+/*-------------------------------------------------------------------------*/
-+
-+/* #include <linux/usb_ch9.h> */
-+
-+struct usb_device_descriptor {
-+	__u8  bLength;
-+	__u8  bDescriptorType;
-+	__u16 bcdUSB;
-+	__u8  bDeviceClass;
-+	__u8  bDeviceSubClass;
-+	__u8  bDeviceProtocol;
-+	__u8  bMaxPacketSize0;
-+	__u16 idVendor;
-+	__u16 idProduct;
-+	__u16 bcdDevice;
-+	__u8  iManufacturer;
-+	__u8  iProduct;
-+	__u8  iSerialNumber;
-+	__u8  bNumConfigurations;
-+} __attribute__ ((packed));
-+
-+enum usb_device_speed {
-+	USB_SPEED_UNKNOWN = 0,			/* enumerating */
-+	USB_SPEED_LOW, USB_SPEED_FULL,		/* usb 1.1 */
-+	USB_SPEED_HIGH				/* usb 2.0 */
-+};
-+
-+/*-------------------------------------------------------------------------*/
-+
-+static char *speed (enum usb_device_speed s)
-+{
-+	switch (s) {
-+	case USB_SPEED_UNKNOWN:	return "unknown";
-+	case USB_SPEED_LOW:	return "low";
-+	case USB_SPEED_FULL:	return "full";
-+	case USB_SPEED_HIGH:	return "high";
-+	default:		return "??";
-+	}
-+}
-+
-+struct testdev {
-+	struct testdev		*next;
-+	char			*name;
-+	pthread_t		thread;
-+	enum usb_device_speed	speed;
-+	unsigned		ifnum : 8;
-+	unsigned		forever : 1;
-+	int			test;
-+
-+	struct usbtest_param	param;
-+};
-+static struct testdev		*testdevs;
-+
-+static int is_testdev (struct usb_device_descriptor *dev)
-+{
-+	/* FX2 with (tweaked) bulksrc firmware */
-+	if (dev->idVendor == 0x0547 && dev->idProduct == 0x1002)
-+		return 1;
-+
-+	/*----------------------------------------------------*/
-+
-+	/* devices that start up using the EZ-USB default device and
-+	 * which we can use after loading simple firmware.  hotplug
-+	 * can fxload it, and then run this test driver.
-+	 *
-+	 * we return false positives in two cases:
-+	 * - the device has a "real" driver (maybe usb-serial) that
-+	 *   renumerates.  the device should vanish quickly.
-+	 * - the device doesn't have the test firmware installed.
-+	 */
-+
-+	/* generic EZ-USB FX controller */
-+	if (dev->idVendor == 0x0547 && dev->idProduct == 0x2235)
-+		return 1;
-+
-+	/* generic EZ-USB FX2 controller */
-+	if (dev->idVendor == 0x04b4 && dev->idProduct == 0x8613)
-+		return 1;
-+
-+	/* CY3671 development board with EZ-USB FX */
-+	if (dev->idVendor == 0x0547 && dev->idProduct == 0x0080)
-+		return 1;
-+
-+	/* Keyspan 19Qi uses an21xx (original EZ-USB) */
-+	if (dev->idVendor == 0x06cd && dev->idProduct == 0x010b)
-+		return 1;
-+
-+	/*----------------------------------------------------*/
-+
-+	/* "gadget zero", Linux-USB test software */
-+	if (dev->idVendor == 0x0525 && dev->idProduct == 0xa4a0)
-+		return 1;
-+
-+	/* user mode subset of that */
-+	if (dev->idVendor == 0x0525 && dev->idProduct == 0xa4a4)
-+		return 1;
-+
-+	/* iso version of usermode code */
-+	if (dev->idVendor == 0x0525 && dev->idProduct == 0xa4a3)
-+		return 1;
-+
-+	/* some GPL'd test firmware uses these IDs */
-+
-+	if (dev->idVendor == 0xfff0 && dev->idProduct == 0xfff0)
-+		return 1;
-+
-+	/*----------------------------------------------------*/
-+
-+	/* iBOT2 high speed webcam */
-+	if (dev->idVendor == 0x0b62 && dev->idProduct == 0x0059)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+static int find_testdev (const char *name, const struct stat *sb, int flag)
-+{
-+	int				fd;
-+	struct usb_device_descriptor	dev;
-+
-+	if (flag != FTW_F)
-+		return 0;
-+	/* ignore /proc/bus/usb/{devices,drivers} */
-+	if (strrchr (name, '/')[1] == 'd')
-+		return 0;
-+
-+	if ((fd = open (name, O_RDONLY)) < 0) {
-+		perror ("can't open dev file r/o");
-+		return 0;
-+	}
-+	if (read (fd, &dev, sizeof dev) != sizeof dev)
-+		fputs ("short devfile read!\n", stderr);
-+	else if (is_testdev (&dev)) {
-+		struct testdev		*entry;
-+
-+		if ((entry = calloc (1, sizeof *entry)) == 0) {
-+			fputs ("no mem!\n", stderr);
-+			goto done;
-+		}
-+		entry->name = strdup (name);
-+		if (!entry->name) {
-+			free (entry);
-+			goto done;
-+		}
-+
-+		// FIXME better to look at each interface and ask if it's
-+		// bound to 'usbtest', rather than assume interface 0
-+		entry->ifnum = 0;
-+
-+		// FIXME ask usbfs what speed; update USBDEVFS_CONNECTINFO
-+		// so it tells about high speed etc
-+
-+		fprintf (stderr, "%s speed\t%s\n",
-+				speed (entry->speed), entry->name);
-+
-+		entry->next = testdevs;
-+		testdevs = entry;
-+	}
-+
-+done:
-+	close (fd);
-+	return 0;
-+}
-+
-+static int
-+usbdev_ioctl (int fd, int ifno, unsigned request, void *param)
-+{
-+	struct usbdevfs_ioctl	wrapper;
-+
-+	wrapper.ifno = ifno;
-+	wrapper.ioctl_code = request;
-+	wrapper.data = param;
-+
-+	return ioctl (fd, USBDEVFS_IOCTL, &wrapper);
-+}
-+
-+static void *handle_testdev (void *arg)
-+{
-+	struct testdev		*dev = arg;
-+	int			fd, i;
-+	int			status;
-+
-+	if ((fd = open (dev->name, O_RDWR)) < 0) {
-+		perror ("can't open dev file r/w");
-+		return 0;
-+	}
-+
-+restart:
-+	for (i = 0; i < TEST_CASES; i++) {
-+		if (dev->test != -1 && dev->test != i)
-+			continue;
-+		dev->param.test_num = i;
-+
-+		status = usbdev_ioctl (fd, dev->ifnum,
-+				USBTEST_REQUEST, &dev->param);
-+		if (status < 0 && errno == EOPNOTSUPP)
-+			continue;
-+
-+		/* FIXME need a "syslog it" option for background testing */
-+
-+		/* NOTE: each thread emits complete lines; no fragments! */
-+		if (status < 0) {
-+			char	buf [80];
-+			int	err = errno;
-+
-+			if (strerror_r (errno, buf, sizeof buf)) {
-+				snprintf (buf, sizeof buf, "error %d", err);
-+				errno = err;
-+			}
-+			printf ("%s test %d --> %d (%s)\n",
-+				dev->name, i, errno, buf);
-+		} else
-+			printf ("%s test %d, %4d.%.06d secs\n", dev->name, i,
-+				(int) dev->param.duration.tv_sec,
-+				(int) dev->param.duration.tv_usec);
-+
-+		fflush (stdout);
-+	}
-+	if (dev->forever)
-+		goto restart;
-+
-+	close (fd);
-+	return arg;
-+}
-+
-+int main (int argc, char **argv)
-+{
-+	int			c;
-+	struct testdev		*entry;
-+	char			*device;
-+	int			all = 0, forever = 0, not = 0;
-+	int			test = -1 /* all */;
-+	struct usbtest_param	param;
-+
-+	/* pick defaults that works with all speeds, without short packets.
-+	 *
-+	 * Best per-frame data rates:
-+	 *     high speed, bulk       512 * 13 * 8 = 53248
-+	 *                 interrupt 1024 *  3 * 8 = 24576
-+	 *     full speed, bulk/intr   64 * 19     =  1216
-+	 *                 interrupt   64 *  1     =    64
-+	 *      low speed, interrupt    8 *  1     =     8
-+	 */
-+	param.iterations = 1000;
-+	param.length = 512;
-+	param.vary = 512;
-+	param.sglen = 32;
-+
-+	/* for easy use when hotplugging */
-+	device = getenv ("DEVICE");
-+
-+	while ((c = getopt (argc, argv, "D:ac:g:hns:t:v:")) != EOF)
-+	switch (c) {
-+	case 'D':	/* device, if only one */
-+		device = optarg;
-+		continue;
-+	case 'a':	/* use all devices */
-+		device = 0;
-+		all = 1;
-+		continue;
-+	case 'c':	/* count iterations */
-+		param.iterations = atoi (optarg);
-+		if (param.iterations < 0)
-+			goto usage;
-+		continue;
-+	case 'g':	/* scatter/gather entries */
-+		param.sglen = atoi (optarg);
-+		if (param.sglen < 0)
-+			goto usage;
-+		continue;
-+	case 'l':	/* loop forever */
-+		forever = 1;
-+		continue;
-+	case 'n':	/* no test running! */
-+		not = 1;
-+		continue;
-+	case 's':	/* size of packet */
-+		param.length = atoi (optarg);
-+		if (param.length < 0)
-+			goto usage;
-+		continue;
-+	case 't':	/* run just one test */
-+		test = atoi (optarg);
-+		if (test < 0)
-+			goto usage;
-+		continue;
-+	case 'v':	/* vary packet size by ... */
-+		param.vary = atoi (optarg);
-+		if (param.vary < 0)
-+			goto usage;
-+		continue;
-+	case '?':
-+	case 'h':
-+	default:
-+usage:
-+		fprintf (stderr, "usage: %s [-an] [-D dev]\n"
-+			"\t[-c iterations]  [-t testnum]\n"
-+			"\t[-s packetsize] [-g sglen] [-v vary]\n",
-+			argv [0]);
-+		return 1;
-+	}
-+	if (optind != argc)
-+		goto usage;
-+	if (!all && !device) {
-+		fprintf (stderr, "must specify '-a' or '-D dev', "
-+			"or DEVICE=/proc/bus/usb/BBB/DDD in env\n");
-+		goto usage;
-+	}
-+
-+	if ((c = open ("/proc/bus/usb/devices", O_RDONLY)) < 0) {
-+		fputs ("usbfs files are missing\n", stderr);
-+		return -1;
-+	}
-+
-+	/* collect and list the test devices */
-+	if (ftw ("/proc/bus/usb", find_testdev, 3) != 0) {
-+		fputs ("ftw failed; is usbfs missing?\n", stderr);
-+		return -1;
-+	}
-+
-+	/* quit, run single test, or create test threads */
-+	if (!testdevs && !device) {
-+		fputs ("no test devices recognized\n", stderr);
-+		return -1;
-+	}
-+	if (not)
-+		return 0;
-+	if (testdevs && testdevs->next == 0 && !device)
-+		device = testdevs->name;
-+	for (entry = testdevs; entry; entry = entry->next) {
-+		int	status;
-+
-+		entry->param = param;
-+		entry->forever = forever;
-+		entry->test = test;
-+
-+		if (device) {
-+			if (strcmp (entry->name, device))
-+				continue;
-+			return handle_testdev (entry) != entry;
-+		}
-+		status = pthread_create (&entry->thread, 0, handle_testdev, entry);
-+		if (status) {
-+			perror ("pthread_create");
-+			continue;
-+		}
-+	}
-+	if (device) {
-+		struct testdev		dev;
-+
-+		/* kernel can recognize test devices we don't */
-+		fprintf (stderr, "%s: %s may see only control tests\n",
-+				argv [0], device);
-+
-+		memset (&dev, 0, sizeof dev);
-+		dev.name = device;
-+		dev.param = param;
-+		dev.forever = forever;
-+		dev.test = test;
-+		return handle_testdev (&dev) != &dev;
-+	}
-+
-+	/* wait for tests to complete */
-+	for (entry = testdevs; entry; entry = entry->next) {
-+		void	*retval;
-+
-+		if (pthread_join (entry->thread, &retval))
-+			perror ("pthread_join");
-+		/* testing errors discarded! */
-+	}
-+
-+	return 0;
-+}
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index 98158de..b86ab8e 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -110,31 +110,14 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 	struct timerfd_ctx *ctx = file->private_data;
+ 	ssize_t res;
+ 	u64 ticks = 0;
+-	DECLARE_WAITQUEUE(wait, current);
+ 
+ 	if (count < sizeof(ticks))
+ 		return -EINVAL;
+ 	spin_lock_irq(&ctx->wqh.lock);
+-	res = -EAGAIN;
+-	if (!ctx->ticks && !(file->f_flags & O_NONBLOCK)) {
+-		__add_wait_queue(&ctx->wqh, &wait);
+-		for (res = 0;;) {
+-			set_current_state(TASK_INTERRUPTIBLE);
+-			if (ctx->ticks) {
+-				res = 0;
+-				break;
+-			}
+-			if (signal_pending(current)) {
+-				res = -ERESTARTSYS;
+-				break;
+-			}
+-			spin_unlock_irq(&ctx->wqh.lock);
+-			schedule();
+-			spin_lock_irq(&ctx->wqh.lock);
+-		}
+-		__remove_wait_queue(&ctx->wqh, &wait);
+-		__set_current_state(TASK_RUNNING);
+-	}
++	if (file->f_flags & O_NONBLOCK)
++		res = -EAGAIN;
++	else
++		res = wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks);
+ 	if (ctx->ticks) {
+ 		ticks = ctx->ticks;
+ 		if (ctx->expired && ctx->tintv.tv64) {
 -- 
 1.7.0
 
