@@ -1,109 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab0DPPDN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 11:03:13 -0400
-Received: from ey-out-2122.google.com ([74.125.78.25]:48083 "EHLO
-	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab0DPPDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 11:03:10 -0400
-Message-ID: <4BC87C28.70408@monstr.eu>
-Date: Fri, 16 Apr 2010 17:03:04 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1755702Ab0DPPEY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 11:04:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14989 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752901Ab0DPPEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 11:04:22 -0400
+Date: Fri, 16 Apr 2010 11:04:07 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100416150407.GH15159@redhat.com>
+References: <1271366710-17468-1-git-send-email-dzickus@redhat.com>
+ <20100416014712.GC15570@nowhere>
+ <20100416141213.GC15159@redhat.com>
+ <20100416144302.GB5162@nowhere>
 MIME-Version: 1.0
-To: steve@digidescorp.com
-CC: Michal Simek <monstr@monstr.eu>, linux-kernel@vger.kernel.org,
-       microblaze-uclinux@itee.uq.edu.au
-Subject: Re: [microblaze-uclinux] Re: [PATCH 1/2] microblaze: add stack unwinder
-References: <1271220928-3502-1-git-send-email-steve@digidescorp.com>	 <4BC820B2.6060604@monstr.eu> <1271428410.3366.23.camel@iscandar.digidescorp.com>
-In-Reply-To: <1271428410.3366.23.camel@iscandar.digidescorp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100416144302.GB5162@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven J. Magnani wrote:
-> On Fri, 2010-04-16 at 10:32 +0200, Michal Simek wrote:
->> Please apply this patch and do the same testing as I did.
->>
->> diff --git a/arch/microblaze/kernel/reset.c b/arch/microblaze/kernel/reset.c
->> index a1721a3..76f6587 100644
->> --- a/arch/microblaze/kernel/reset.c
->> +++ b/arch/microblaze/kernel/reset.c
->> @@ -112,8 +112,8 @@ void of_platform_reset_gpio_probe(void)
->>   void machine_restart(char *cmd)
->>   {
->>          printk(KERN_NOTICE "Machine restart...\n");
->> +       machine_shutdown();
->>          gpio_system_reset();
->> -       dump_stack();
->>          while (1)
->>                  ;
->>   }
->> @@ -121,6 +121,7 @@ void machine_restart(char *cmd)
->>   void machine_shutdown(void)
->>   {
->>          printk(KERN_NOTICE "Machine shutdown...\n");
->> +       dump_stack();
->>          while (1)
->>                  ;
->>   }
+On Fri, Apr 16, 2010 at 04:43:04PM +0200, Frederic Weisbecker wrote:
+> On Fri, Apr 16, 2010 at 10:12:13AM -0400, Don Zickus wrote:
+> > On Fri, Apr 16, 2010 at 03:47:14AM +0200, Frederic Weisbecker wrote:
+> > > >  config PERF_EVENTS_NMI
+> > > >  	bool
+> > > > +	depends on PERF_EVENTS
+> > > >  	help
+> > > >  	  Arch has support for nmi_watchdog
+> > > 
+> > > 
+> > > 
+> > > That looks too general. It's more about the fact the arch supports
+> > > cpu cycle events and generates NMIs on overflow.
+> > 
+> > I was trying to figure out a way to add the PERF_EVENTS dependency as I
+> > didn't want to impose it on the CONFIG_NMI_WATCHDOG if that config
+> > supported softlockup (which doesn't need the PERF_EVENTS).
 > 
-> I get this:
 > 
-> Call Trace:
-> [<20003008>] microblaze_unwind+0x68/0x94
-> [<20002c24>] show_stack+0x134/0x174
-> [<20002c80>] dump_stack+0x1c/0x3c
-> [<20001d84>] machine_shutdown+0x30/0x40
-> [<20001dc0>] machine_restart+0x2c/0x48
-> [<2002a540>] kernel_restart+0x5c/0x80
-> [<2002a6b8>] sys_reboot+0x11c/0x218
-> SYSCALL
-> [<2d5c0248>] PID 118 [reboot]
 > 
-> Is your problem on a MMU or noMMU system?
+> Yeah and this is fine. I was talking about the help description.
 
-Interesting. It was noMMU system.
+Oh. heh.  ok, will expand that.
 
 > 
-> If the unwinder stops early, it found a return address outside the
-> kernel text, or couldn't find the addik that creates a stack frame - but
-> there's not enough information here to tell what happened. In your case
-> the backtrace goes off the rails before getting to the frame for
-> dump_stack(), which is where the stack dump begins. We'd need to see the
-> 21 words preceding the dump (show_stack's frame is 13 words, and
-> microblaze_unwind's is 8) to know why.
 > 
-> Can you uncomment the #define DEBUG in unwind.c and try it again?
-
-will do next week and let you know.
-
-Thanks,
-Michal
-
-
-> 
-> Thanks,
-> ------------------------------------------------------------------------
->  Steven J. Magnani               "I claim this network for MARS!
->  www.digidescorp.com              Earthling, return my space modulator!"
-> 
->  #include <standard.disclaimer>
+>  
+> > > I'm confused, do we have two versions of the softlockup
+> > > detector now? You should drop the older one.
+> > 
+> > Originally Ingo talked about a migration path, so I was going to support
+> > the older one in case the new one was having issues, sort of like what he
+> > suggested about moving the nmi code from arch/x86/kernel/apic/nmi.c to
+> > kernel/watchdog.c.  But I can probably drop the softlockup case as the
+> > migration isn't as tricky as the nmi case.
 > 
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> Ok.
+> 
+> > > > +		return;
+> > > > +	}
+> > > > +
+> > > > +	cpumask_clear_cpu(this_cpu, to_cpumask(hardlockup_mask));
+> > > 
+> > > 
+> > > 
+> > > Hmm...this is probably not necessary.
+> > 
+> > I was just thinking of the case where dispite the WARN above, the cpu
+> > actually recovered and then failed again separately.  But I probably won't
+> > spend anymore time defending it. :-)
+> 
+> 
+> 
+> This is really just a corner case, I guess you don't need to
+> bother with that. It is actually racy against other cpus and adding
+> a spinlock here (in the everything is fine path) would be an overkill.
+> 
+> In fact, having two per cpu vars named hardlockup_warned and
+> softlockup_warned would be better than cpumasks. I'm sorry I
+> suggested you the cpumask, but such per cpu vars will avoid
+> you dealing with these synchonization issues. And one of the primary
+> rules is usually to never take a lock from NMIs if we can :)
 
+Yeah, I guess per cpu is better.  I agree that locks in NMI are frowned
+upon but I wasn't sure of it was dealt with.
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+I'll try to implement this.  Any objections if I combined hardlockup and
+softlockup with per cpu watchdog_warn and have bit masks for HARDLOCKUP
+and SOFTLOCKUP?  I hate to just waste per cpu space for this.
+
+> 
+> 
+>  
+> > > You probably want a backtrace cpu mask here as well
+> > > (but better don't use the same than the hardlockup thing)
+> > 
+> > yup.
+> 
+> 
+> So actually, per_cpu softlockup_warned would be better :)
+> 
+> 
+> > > Also you should half-drop the DETECT_SOFTLOCKUP thing:
+> > > keep it's definition but drop the ability to choose it from
+> > > the prompt:
+> > > 
+> > > config DETECT_SOFTLOCKUP
+> > > 	bool
+> > > 	depends on DEBUG_KERNEL && !S390
+> > > 	default y
+> > > 
+> > > This way we keep it for compatibility with def_configs, it will
+> > > enable the WATCHDOG by default if it is "y", we can schedule
+> > > its removal later.
+>  
+> > I understand the general idea but not quite the implementation idea.  I will work
+> > on it and see what I come up with.
+> 
+> 
+> We current have:
+> 
+> config DETECT_SOFTLOCKUP
+>      bool "Blah"
+>      depends on DEBUG_KERNEL && !S390
+>      default y
+>      help
+>        .......
+> 
+> The idea is to remove the "Blah" so that the user can't select it
+> anymore from make menuconfig, and to remove the help too as it's useless
+> too.
+> 
+> So that config WATCHDOG can be default y if DETECT_SOFTLOCKUP.
+> Then if someone comes with a config that has DETECT_SOFTLOCKUP,
+> it's new implementation (WATCHDOG) will enabled by default.
+
+Ah, I missed the bool part.  I got it.  Thanks for the clarification.
+
+Cheers,
+Don
+
+> 
