@@ -1,204 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757655Ab0DPObu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:31:50 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:35630 "EHLO gir.skynet.ie"
+	id S1758438Ab0DPOcL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:32:11 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:49986 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752847Ab0DPObs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:31:48 -0400
-Date: Fri, 16 Apr 2010 15:31:28 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-       Dave Chinner <david@fromorbit.com>, Andi Kleen <andi@firstfloor.org>,
-       Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 08/10] vmscan: Setup pagevec as late as possible in
-	shrink_inactive_list()
-Message-ID: <20100416143128.GF19264@csn.ul.ie>
-References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie> <1271352103-2280-9-git-send-email-mel@csn.ul.ie> <20100416115215.27A4.A69D9226@jp.fujitsu.com>
+	id S1752555Ab0DPOcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 10:32:08 -0400
+Date: Fri, 16 Apr 2010 07:32:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
+ implementation
+Message-ID: <20100416143202.GE2615@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100408191737.296180458@chello.nl>
+ <20100408192722.643778654@chello.nl>
+ <1271120731.13059.6.camel@pasglop>
+ <20100413034311.GB2772@linux.vnet.ibm.com>
+ <1271253110.32749.47.camel@laptop>
+ <20100415142852.GA2471@linux.vnet.ibm.com>
+ <1271425881.4807.2319.camel@twins>
+ <20100416141745.GC2615@linux.vnet.ibm.com>
+ <1271427819.4807.2353.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100416115215.27A4.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1271427819.4807.2353.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 03:30:00PM +0900, KOSAKI Motohiro wrote:
-> > shrink_inactive_list() sets up a pagevec to release unfreeable pages. It
-> > uses significant amounts of stack doing this. This patch splits
-> > shrink_inactive_list() to take the stack usage out of the main path so
-> > that callers to writepage() do not contain an unused pagevec on the
-> > stack.
+On Fri, Apr 16, 2010 at 04:23:39PM +0200, Peter Zijlstra wrote:
+> On Fri, 2010-04-16 at 07:17 -0700, Paul E. McKenney wrote:
+> 
+> > > > Of course, with call_rcu_sched(), the corresponding RCU read-side critical
+> > > > sections are non-preemptible.  Therefore, in CONFIG_PREEMPT_RT, these
+> > > > read-side critical sections must use raw spinlocks.
+> > > 
+> > > OK, so if we fully remove CONFIG_TREE_PREEMPT_RCU (defaulting to y),
+> > > rename all the {call_rcu, rcu_read_lock, rcu_read_unlock,
+> > > synchronize_rcu} functions to {*}_preempt and then add a new
+> > > CONFIG_PREEMPT_RCU that simply maps {*} to either {*}_sched or
+> > > {*}_preempt, we've basically got what I've been asking for for a while,
+> > > no?
 > > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > ---
-> >  mm/vmscan.c |   93 +++++++++++++++++++++++++++++++++-------------------------
-> >  1 files changed, 53 insertions(+), 40 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index a232ad6..9bc1ede 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1120,6 +1120,54 @@ static int too_many_isolated(struct zone *zone, int file,
-> >  }
-> >  
-> >  /*
-> > + * TODO: Try merging with migrations version of putback_lru_pages
-> > + */
+> > What would rcu_read_lock_preempt() do in a !CONFIG_PREEMPT kernel?
 > 
-> I also think this stuff need more cleanups. but this patch works and
-> no downside. So, Let's merge this at first.
+> Same as for a preempt one, since you'd have to be able to schedule()
+> while holding it to be able to do things like mutex_lock().
 
-Agreed. I was keeping the first-pass straight-forward and didn't want to
-do too much in one patch to ease review.
+So what you really want is something like rcu_read_lock_sleep() rather
+than rcu_read_lock_preempt(), right?  The point is that you want to do
+more than merely preempt, given that it is legal to do general blocking
+while holding a mutex, correct?
 
-> 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> 
-> but please fix Dave's pointed one.
-> 
-
-Done. Thanks Dave, I hadn't spotted noinline_for_stack but it's exactly
-what was needed here. It's not obvious why I used noinline otherwise.
-
-> 
-> > +static noinline void putback_lru_pages(struct zone *zone,
-> > +				struct zone_reclaim_stat *reclaim_stat,
-> > +				unsigned long nr_anon, unsigned long nr_file,
-> > + 				struct list_head *page_list)
-> > +{
-> > +	struct page *page;
-> > +	struct pagevec pvec;
-> > +
-> > +	pagevec_init(&pvec, 1);
-> > +
-> > +	/*
-> > +	 * Put back any unfreeable pages.
-> > +	 */
-> > +	spin_lock(&zone->lru_lock);
-> > +	while (!list_empty(page_list)) {
-> > +		int lru;
-> > +		page = lru_to_page(page_list);
-> > +		VM_BUG_ON(PageLRU(page));
-> > +		list_del(&page->lru);
-> > +		if (unlikely(!page_evictable(page, NULL))) {
-> > +			spin_unlock_irq(&zone->lru_lock);
-> > +			putback_lru_page(page);
-> > +			spin_lock_irq(&zone->lru_lock);
-> > +			continue;
-> > +		}
-> > +		SetPageLRU(page);
-> > +		lru = page_lru(page);
-> > +		add_page_to_lru_list(zone, page, lru);
-> > +		if (is_active_lru(lru)) {
-> > +			int file = is_file_lru(lru);
-> > +			reclaim_stat->recent_rotated[file]++;
-> > +		}
-> > +		if (!pagevec_add(&pvec, page)) {
-> > +			spin_unlock_irq(&zone->lru_lock);
-> > +			__pagevec_release(&pvec);
-> > +			spin_lock_irq(&zone->lru_lock);
-> > +		}
-> > +	}
-> > +	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
-> > +	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
-> > +
-> > +	spin_unlock_irq(&zone->lru_lock);
-> > +	pagevec_release(&pvec);
-> > +}
-> > +
-> > +/*
-> >   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
-> >   * of reclaimed pages
-> >   */
-> > @@ -1128,12 +1176,10 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
-> >  			int file)
-> >  {
-> >  	LIST_HEAD(page_list);
-> > -	struct pagevec pvec;
-> >  	unsigned long nr_scanned;
-> >  	unsigned long nr_reclaimed = 0;
-> >  	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-> >  	int lumpy_reclaim = 0;
-> > -	struct page *page;
-> >  	unsigned long nr_taken;
-> >  	unsigned long nr_active;
-> >  	unsigned int count[NR_LRU_LISTS] = { 0, };
-> > @@ -1160,8 +1206,6 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
-> >  	else if (sc->order && sc->priority < DEF_PRIORITY - 2)
-> >  		lumpy_reclaim = 1;
-> >  
-> > -	pagevec_init(&pvec, 1);
-> > -
-> >  	lru_add_drain();
-> >  	spin_lock_irq(&zone->lru_lock);
-> >  	nr_taken = sc->isolate_pages(nr_to_scan,
-> > @@ -1177,8 +1221,10 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
-> >  			__count_zone_vm_events(PGSCAN_DIRECT, zone, nr_scanned);
-> >  	}
-> >  
-> > -	if (nr_taken == 0)
-> > -		goto done;
-> > +	if (nr_taken == 0) {
-> > +		spin_unlock_irq(&zone->lru_lock);
-> > +		return 0;
-> > +	}
-> >  
-> >  	nr_active = clear_active_flags(&page_list, count);
-> >  	__count_vm_events(PGDEACTIVATE, nr_active);
-> > @@ -1229,40 +1275,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
-> >  		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
-> >  	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
-> >  
-> > -	spin_lock(&zone->lru_lock);
-> > -	/*
-> > -	 * Put back any unfreeable pages.
-> > -	 */
-> > -	while (!list_empty(&page_list)) {
-> > -		int lru;
-> > -		page = lru_to_page(&page_list);
-> > -		VM_BUG_ON(PageLRU(page));
-> > -		list_del(&page->lru);
-> > -		if (unlikely(!page_evictable(page, NULL))) {
-> > -			spin_unlock_irq(&zone->lru_lock);
-> > -			putback_lru_page(page);
-> > -			spin_lock_irq(&zone->lru_lock);
-> > -			continue;
-> > -		}
-> > -		SetPageLRU(page);
-> > -		lru = page_lru(page);
-> > -		add_page_to_lru_list(zone, page, lru);
-> > -		if (is_active_lru(lru)) {
-> > -			int file = is_file_lru(lru);
-> > -			reclaim_stat->recent_rotated[file]++;
-> > -		}
-> > -		if (!pagevec_add(&pvec, page)) {
-> > -			spin_unlock_irq(&zone->lru_lock);
-> > -			__pagevec_release(&pvec);
-> > -			spin_lock_irq(&zone->lru_lock);
-> > -		}
-> > -	}
-> > -	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
-> > -	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
-> > -
-> > -done:
-> > -	spin_unlock_irq(&zone->lru_lock);
-> > -	pagevec_release(&pvec);
-> > +	putback_lru_pages(zone, reclaim_stat, nr_anon, nr_file, &page_list);
-> >  	return nr_reclaimed;
-> >  }
-> >  
-> > -- 
-> > 1.6.5
-> > 
-> 
-> 
-> 
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+							Thanx, Paul
