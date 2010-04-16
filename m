@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab0DPCWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 22:22:42 -0400
-Received: from www.telegraphics.com.au ([204.15.192.19]:36817 "EHLO
-	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753516Ab0DPCWk (ORCPT
+	id S1757263Ab0DPC2Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 22:28:25 -0400
+Received: from mga14.intel.com ([143.182.124.37]:12602 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753516Ab0DPC2X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 22:22:40 -0400
-X-Greylist: delayed 506 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Apr 2010 22:22:40 EDT
-Date: Fri, 16 Apr 2010 12:14:02 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-       netdev@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: [PATCH] net: mac8390 - Sort out memory/MMIO accesses and casts
- (was: Re: drivers/net/mac8390.c: Remove useless memcpy casting)
-In-Reply-To: <l2k10f740e81004151234t3004275az36e7873493067a8a@mail.gmail.com>
-Message-ID: <alpine.OSX.2.00.1004161206300.271@localhost>
-References: <l2k10f740e81004151234t3004275az36e7873493067a8a@mail.gmail.com>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	Thu, 15 Apr 2010 22:28:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,216,1270450800"; 
+   d="scan'208";a="266356384"
+From: "Zhang, Xiantao" <xiantao.zhang@intel.com>
+To: Avi Kivity <avi@redhat.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       "Yang, Xiaowei" <xiaowei.yang@intel.com>,
+       "Dong, Eddie" <eddie.dong@intel.com>, "Li, Xin" <xin.li@intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Mike Galbraith <efault@gmx.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 16 Apr 2010 10:27:14 +0800
+Subject: RE: VM performance issue in KVM guests.
+Thread-Topic: VM performance issue in KVM guests.
+Thread-Index: AcrbqoCEuPequYdhSdScPLAFwf/1ogBYXdZw
+Message-ID: <EB8593BCECAB3D40A8248BE0B6400A38469C71EB@shzsmsx502.ccr.corp.intel.com>
+References: <EB8593BCECAB3D40A8248BE0B6400A3846903F4C@shzsmsx502.ccr.corp.intel.com>
+ <4BC0D125.9050108@redhat.com>
+ <EB8593BCECAB3D40A8248BE0B6400A384690419B@shzsmsx502.ccr.corp.intel.com>
+ <4BC2C07B.4040607@redhat.com>
+ <EB8593BCECAB3D40A8248BE0B6400A38469046C1@shzsmsx502.ccr.corp.intel.com>
+ <4BC41338.80206@redhat.com>
+ <EB8593BCECAB3D40A8248BE0B6400A38469C6790@shzsmsx502.ccr.corp.intel.com>
+ <4BC57949.2090003@redhat.com>
+In-Reply-To: <4BC57949.2090003@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Thu, 15 Apr 2010, Geert Uytterhoeven wrote:
-
-> On Mon, Mar 8, 2010 at 18:16, Joe Perches <joe@perches.com> wrote:
->
-> > Thanks, I'll submit a patch to fix it by tomorrow or so.
+Avi Kivity wrote:
+> On 04/14/2010 06:24 AM, Zhang, Xiantao wrote:
+>> 
+>>>>> Spin loops need to be addressed first, they are known to kill
+>>>>> performance in overcommit situations.
+>>>>> 
+>>>>> 
+>>>> Even in overcommit case, if vcpu threads of one qemu are not
+>>>> scheduled or pulled to the same logical processor, the performance
+>>>> drop is tolerant like Xen's case today. But for KVM, it has to
+>>>> suffer from additional performance loss, since host's scheduler
+>>>> actively pulls these vcpu threads together.
+>>>> 
+>>>> 
+>>>> 
+>>> Can you quantify this loss?  Give examples of what happens?
+>>> 
+>> For example, one machine is configured with 2 pCPUs and there are
+>> two Windows guests running on the machine, and each guest is
+>> cconfigured with 2 vcpus and one webbench server runs in it.  
+>> If use host's default scheduler, webbench's performance is very bad,
+>> but if pin each geust's vCPU0 to pCPU0 and vCPU1 to pCPU1, we can
+>> see 5-10X performance improvement with same CPU utilization.  
+>> In addition, we also see kvm's perf scalability is also impacted in
+>> large systems, for some performance experiments, kvm's perf begins
+>> to drop when vCPU is overcommitted and pCPU are saturated, but once
+>> the wake_up_affine feature is switched off in scheduler, kvm's perf
+>> can keep rising in this case.    
+>> 
 > 
-> It hasn't been fixed yet.
+> Ok.  This is probably due to spinlock contention.
 
-Thanks for taking care of this, Geert.
+Yes, exactly. 
 
-> But here's a better solution. I do not have the hardware to test it, 
-> though. Finn, does it {look OK,work}?
-
-It looks fine. I can't test it right now, but I will do so when I get the 
-opportunity.
-
-Finn
+> When vcpus are pinned to pcpus, there is a 50% chance that a guest's
+> vcpus will be co-scheduled and spinlocks will perform will.
+> 
+> When vcpus are not pinned, but affine wakeups are disabled, there is a
+> 33% chance that vcpus will be co-scheduled.
+> 
+> When vcpus are not pinned and affine wakeups are enabled there is a 0%
+> chance that vcpus will be co-scheduled.
+> 
+> Keeping both vcpus on the same core actually makes sense since they
+> can communicate through the local cache faster than across cores. 
+> What we need is to make sure that they don't spin.
+> 
+> Windows 2008 can report spinlock spinning through a hypercall.  Can
+> you hook to that interface and see if it happens regularly? 
+> Altenatively use a PLE capable host and trace the kvm_vcpu_on_spin()
+> function. 
+We only tried windows 2003 for the experiments, and have no data related to windows 2008. 
+But maybe we can have  a try later.  Anyway, the key point is we have to enhance the scheduler to let it 
+Know which threads are vcpu threads to avoid perf loss in this case.
+Xiantao
