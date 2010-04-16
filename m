@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592Ab0DPDBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 23:01:11 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54385
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757282Ab0DPDBJ (ORCPT
+	id S1757641Ab0DPDJF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 23:09:05 -0400
+Received: from baikonur.stro.at ([213.239.196.228]:55731 "EHLO
+	baikonur.stro.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757282Ab0DPDJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 23:01:09 -0400
-Date: Thu, 15 Apr 2010 20:01:13 -0700 (PDT)
-Message-Id: <20100415.200113.215578006.davem@davemloft.net>
-To: fthain@telegraphics.com.au
-Cc: joe@perches.com, p_gortmaker@yahoo.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
-Subject: Re: another cleanup patch gone wrong
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.OSX.2.00.1004161214270.271@localhost>
-References: <alpine.OSX.2.00.1004161214270.271@localhost>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Apr 2010 23:09:03 -0400
+From: maximilian attems <max@stro.at>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, maximilian attems <max@stro.at>,
+       stable@kernel.org, Ulrich Drepper <drepper@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [PATCH] fcntl.h: define AT_EACCESS
+Date: Fri, 16 Apr 2010 05:08:00 +0200
+Message-Id: <1271387280-19565-1-git-send-email-max@stro.at>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Finn Thain <fthain@telegraphics.com.au>
-Date: Fri, 16 Apr 2010 12:34:24 +1000 (EST)
+noticed on a klibc build of dash that someone had left out that def:
+usr/dash/bltin/test.c:490: error: ‘AT_EACCESS’ undeclared (first use in thiction)
 
-> 
-> ...but this one was already merged, unfortunately.
-> 
->> Use printk_once
->> Add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->> Convert printks without KERN_<level> to pr_info and pr_cont
->> 
->> Signed-off-by: Joe Perches <joe@perches.com>
->> Signed-off-by: David S. Miller <davem@davemloft.net>
->> 
->> 
->> diff --git a/drivers/net/mac8390.c b/drivers/net/mac8390.c
->> index 517cee4..8bd09e2 100644 (file)
->> --- a/drivers/net/mac8390.c
->> +++ b/drivers/net/mac8390.c
->> @@ -17,6 +17,8 @@
->>  /* 2002-12-30: Try to support more cards, some clues from NetBSD driver */
->>  /* 2003-12-26: Make sure Asante cards always work. */
->>  
->> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->> +
-> 
-> Why the macro? You only used it once.
+Cc: stable@kernel.org
+Cc: Ulrich Drepper <drepper@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: maximilian attems <max@stro.at>
+---
+ include/linux/fcntl.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-It gets expanded internally into all of the pr_*() calls.
+diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
+index 8603740..8bb001d 100644
+--- a/include/linux/fcntl.h
++++ b/include/linux/fcntl.h
+@@ -39,6 +39,8 @@
+ #define AT_REMOVEDIR		0x200   /* Remove directory instead of
+                                            unlinking file.  */
+ #define AT_SYMLINK_FOLLOW	0x400   /* Follow symbolic links.  */
++#define AT_EACCESS		0x200	/* Test access permitted for
++					   effective IDs, not real IDs.  */
+ 
+ #ifdef __KERNEL__
+ 
+-- 
+1.7.0.4
 
-> The pr_xxx naming convention belongs to a kernel-wide include file. Is it 
-> really a good idea to start repurposing it in .c files?
-
-This is exactly how it can be used, and there is much
-precedent for this now.
-
->> -                       printk("Don't know how to access card memory!\n");
->> +                       pr_info("Don't know how to access card memory!\n");
-> 
-> No, this is pr_err. The driver sets dev->mem_start expecting it to work, 
-> obviously.
-
-It was an unspecified printk() so Joe's conversion is equal
-and that's a good way for him to have made these changes.
-
-If we want to mark this as KERN_ERR or whatever, that's entirely
-a seperate change.
-
-I think your objections to Joe's changes are completely uncalled
-for and his changes were good ones.
