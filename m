@@ -1,73 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750985Ab0DPEN2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 00:13:28 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33785 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab0DPEN1 (ORCPT
+	id S1751121Ab0DPEOU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 00:14:20 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:47267 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750792Ab0DPEOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 00:13:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=vPPOQvK/PclFsdo+4fzQ1SdZv62LZHpQqTnZxZmql18j/SoptTNhgtdGnO4VU8flNV
-         LXEIV4Btp7E2DCJXpLrqPHyuGOulcydPDo1mUfsxMlcG7NF5RYgH0Io3Rl4W4VPeMARj
-         0nxEtAxokk8s9kinbVNapELgnQD8zEO8tKhS4=
+	Fri, 16 Apr 2010 00:14:18 -0400
+Date: Fri, 16 Apr 2010 14:14:12 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-ID: <20100416041412.GY2493@dastard>
+References: <20100413202021.GZ13327@think>
+ <20100414014041.GD2493@dastard>
+ <20100414155233.D153.A69D9226@jp.fujitsu.com>
+ <20100414072830.GK2493@dastard>
+ <20100414085132.GJ25756@csn.ul.ie>
+ <20100415013436.GO2493@dastard>
+ <20100415102837.GB10966@csn.ul.ie>
 MIME-Version: 1.0
-In-Reply-To: <20100415231529.GB15570@nowhere>
-References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
-	 <1271262016-18650-2-git-send-email-chase.douglas@canonical.com>
-	 <20100415205739.GF5069@nowhere>
-	 <v2t40ec3ea41004151449x70e7077flb8d1fea5e8d46167@mail.gmail.com>
-	 <20100415231529.GB15570@nowhere>
-Date: Thu, 15 Apr 2010 21:13:25 -0700
-X-Google-Sender-Auth: 49e6840697cd54df
-Message-ID: <m2i40ec3ea41004152113kf902102ex31e35c1bff5060ab@mail.gmail.com>
-Subject: Re: [PATCH 2/3] Add tracing_off_event() calls to BUG() and WARN() 
-	paths
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100415102837.GB10966@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 4:15 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Thu, Apr 15, 2010 at 02:49:05PM -0700, Chase Douglas wrote:
->> On Thu, Apr 15, 2010 at 1:57 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> > On Wed, Apr 14, 2010 at 12:20:15PM -0400, Chase Douglas wrote:
->> >> This change adds tracing_off_event() calls, which stop debug tracing,
->> >> when a BUG() or WARN() function is called. The stoppage depends on
->> >> commandline paramenter tracing_off={bug,warn,none}. The default is
->> >> "bug", so only the BUG() paths will stop tracing.
->> >>
->> >> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
->> >
->> >
->> > ACK
->> >
->> > But I can't find where we call oops_enter() from panic()
->> > I see it called in x86 from oops_begin() that is called
->> > in various places like die(), but couldn't find how it
->> > ends up beeing called from panic().
->>
->> I did not test the panic() path, but when that happens the system goes
->> down anyways. You won't be able to get the ftrace unless you enable
->> the ftrace on oops option, in which case the end of the trace will
->> likely be close enough to what you are looking for anyways.
->
->
-> Yeah but there is also a sysrq that can trigger an ftrace dump.
-> So if you forgot ftrace dump on oops and you want to use the sysrq
-> then you don't want the tracing to continue between the panic and
-> the time for your fingers to reach the keyboard (that notwithstanding
-> the time to remember the right combination...which I always forget).
+On Thu, Apr 15, 2010 at 11:28:37AM +0100, Mel Gorman wrote:
+> On Thu, Apr 15, 2010 at 11:34:36AM +1000, Dave Chinner wrote:
+> > On Wed, Apr 14, 2010 at 09:51:33AM +0100, Mel Gorman wrote:
+> > If you ask it to clean a bunch of pages around the one you want to
+> > reclaim on the LRU, there is a good chance it will also be cleaning
+> > pages that are near the end of the LRU or physically close by as
+> > well. It's not a guarantee, but for the additional IO cost of about
+> > 10% wall time on that IO to clean the page you need, you also get
+> > 1-2 orders of magnitude other pages cleaned. That sounds like a
+> > win any way you look at it...
+> 
+> At worst, it'll distort the LRU ordering slightly. Lets say the the
+> file-adjacent-page you clean was near the end of the LRU. Before such a
+> patch, it may have gotten cleaned and done another lap of the LRU.
+> After, it would be reclaimed sooner. I don't know if we depend on such
+> behaviour (very doubtful) but it's a subtle enough change. I can't
+> predict what it'll do for IO congestion. Simplistically, there is more
+> IO so it's bad but if the write pattern is less seeky and we needed to
+> write the pages anyway, it might be improved.
 
-Ahhh, I can see where this would be useful then. I'll just add an
-event to panic() like I did the other paths.
+Fundamentally, we have so many pages on the LRU, getting a few out
+of order at the back end of it is going to be in the noise. If we
+trade off "perfect" LRU behaviour for cleaning pages an order of
+magnitude faster, reclaim will find candidate pages for a whole lot
+faster. And if we have more clean pages available, faster, overall
+system throughput is going to improve and be much less likely to
+fall into deep, dark holes where the OOM-killer is the light at the
+end.....
 
--- Chase
+[ snip questions Chris answered ]
+
+> > what I'm
+> > pointing out is that the arguments that it is too hard or there are
+> > no interfaces available to issue larger IO from reclaim are not at
+> > all valid.
+> > 
+> 
+> Sure, I'm not resisting fixing this, just your first patch :) There are four
+> goals here
+> 
+> 1. Reduce stack usage
+> 2. Avoid the splicing of subsystem stack usage with direct reclaim
+> 3. Preserve lumpy reclaims cleaning of contiguous pages
+> 4. Try and not drastically alter LRU aging
+> 
+> 1 and 2 are important for you, 3 is important for me and 4 will have to
+> be dealt with on a case-by-case basis.
+
+#4 is important to me, too, because that has direct impact on large
+file IO workloads. however, it is gross changes in behaviour that
+concern me, not subtle, probably-in-the-noise changes that you're
+concerned about. :)
+
+> Your patch fixes 2, avoids 1, breaks 3 and haven't thought about 4 but I
+> guess dirty pages can cycle around more so it'd need to be cared for.
+
+Well, you keep saying that they break #3, but I haven't seen any
+test cases or results showing that. I've been unable to confirm that
+lumpy reclaim is broken by disallowing writeback in my testing, so
+I'm interested to know what tests you are running that show it is
+broken...
+
+> > How about this? For now, we stop direct reclaim from doing writeback
+> > only on order zero allocations, but allow it for higher order
+> > allocations. That will prevent the majority of situations where
+> > direct reclaim blows the stack and interferes with background
+> > writeout, but won't cause lumpy reclaim to change behaviour.
+> > This reduces the scope of impact and hence testing and validation
+> > the needs to be done.
+> > 
+> > Then we can work towards allowing lumpy reclaim to use background
+> > threads as Chris suggested for doing specific writeback operations
+> > to solve the remaining problems being seen. Does this seem like a
+> > reasonable compromise and approach to dealing with the problem?
+> > 
+> 
+> I'd like this to be plan b (or maybe c or d) if we cannot reduce stack usage
+> enough or come up with an alternative fix. From the goals above it mitigates
+> 1, mitigates 2, addresses 3 but potentially allows dirty pages to remain on
+> the LRU with 4 until the background cleaner or kswapd comes along.
+
+We've been through this already, but I'll repeat it again in the
+hope it sinks in: reducing stack usage is not sufficient to stay
+within an 8k stack if we can enter writeback with an arbitrary
+amount of stack already consumed.
+
+We've already got a report of 9k of stack usage (7200 bytes left on
+a order-2 stack) and this is without a complex storage stack - it's
+just a partition on a SATA drive. We can easily add another 1k,
+possibly 2k to that stack depth with a complex storage subsystem.
+Trimming this much (3-4k) is simply not feasible in a callchain that
+is 50-70 functions deep...
+
+> One reason why I am edgy about this is that lumpy reclaim can kick in
+> for low-enough orders too like order-1 pages for stacks in some cases or
+> order-2 pages for network cards using jumbo frames or some wireless
+> cards. The network cards in particular could still cause the stack
+> overflow but be much harder to reproduce and detect.
+
+So push lumpy reclaim into a separate thread. It already blocks, so
+waiting for some other thread to do the work won't change anything.
+Separating high-order reclaim from LRU reclaim is probably a good
+idea, anyway - they use different algorithms and while the two are
+intertwined it's hard to optimise/improve either....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
