@@ -1,175 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab0DPWQe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 18:16:34 -0400
-Received: from gimli.pxnet.com ([195.227.45.7]:54990 "EHLO mail.pxnet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932575Ab0DPWQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 18:16:33 -0400
-Subject: [PATCH] gigaset: include cleanup cleanup
-From: Tilman Schmidt <tilman@imap.cc>
-To: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>
-CC: Tejun Heo <tj@kernel.org>, Hansjoerg Lipp <hjlipp@web.de>,
-       i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
+	id S932651Ab0DPWSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 18:18:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37225 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932635Ab0DPWSX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 18:18:23 -0400
+Date: Fri, 16 Apr 2010 15:18:08 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: benh@kernel.crashing.org, roel.kluin@gmail.com,
        linux-kernel@vger.kernel.org
-Message-Id: <20100416220858.A19F540123@xenon.ts.pxnet.com>
-Date: Sat, 17 Apr 2010 00:08:58 +0200 (CEST)
-X-Spam-Score: 0.1 () RDNS_NONE
+Subject: Re: [PATCH] hvsi: Messed up error checking getting state name
+Message-Id: <20100416151808.a8a5d340.akpm@linux-foundation.org>
+In-Reply-To: <1271418554-21278-1-git-send-email-ext-phil.2.carmody@nokia.com>
+References: <1271418554-21278-1-git-send-email-ext-phil.2.carmody@nokia.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5a0e3ad causes slab.h to be included twice in many of the
-Gigaset driver's source files, first via the common include file
-gigaset.h and then a second time directly. Drop the spares, and
-use the opportunity to clean up a few more similar cases.
+On Fri, 16 Apr 2010 14:49:14 +0300
+Phil Carmody <ext-phil.2.carmody@nokia.com> wrote:
 
-Impact: cleanup, no functional change
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-CC: Tejun Heo <tj@kernel.org>
----
-Seeing that the "include cleanup" patch triggering this was accepted
-after the merge window, I have hopes this one will be accepted, too.
+> From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> 
+> Handle out-of-range indices before reading what they refer
+> to.
 
- drivers/isdn/gigaset/bas-gigaset.c |    5 -----
- drivers/isdn/gigaset/capi.c        |    2 --
- drivers/isdn/gigaset/common.c      |    2 --
- drivers/isdn/gigaset/gigaset.h     |    2 +-
- drivers/isdn/gigaset/i4l.c         |    1 -
- drivers/isdn/gigaset/interface.c   |    1 -
- drivers/isdn/gigaset/proc.c        |    1 -
- drivers/isdn/gigaset/ser-gigaset.c |    3 ---
- drivers/isdn/gigaset/usb-gigaset.c |    4 ----
- 9 files changed, 1 insertions(+), 20 deletions(-)
+Well...  That doesn't matter really - as long as we don't dereference it.
 
-diff --git a/drivers/isdn/gigaset/bas-gigaset.c b/drivers/isdn/gigaset/bas-gigaset.c
-index 0be15c7..47a5ffe 100644
---- a/drivers/isdn/gigaset/bas-gigaset.c
-+++ b/drivers/isdn/gigaset/bas-gigaset.c
-@@ -14,11 +14,6 @@
-  */
- 
- #include "gigaset.h"
--
--#include <linux/errno.h>
--#include <linux/init.h>
--#include <linux/slab.h>
--#include <linux/timer.h>
- #include <linux/usb.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
-diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
-index eb7e271..964a55f 100644
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -12,8 +12,6 @@
-  */
- 
- #include "gigaset.h"
--#include <linux/slab.h>
--#include <linux/ctype.h>
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
- #include <linux/isdn/capilli.h>
-diff --git a/drivers/isdn/gigaset/common.c b/drivers/isdn/gigaset/common.c
-index 0b39b38..f6f45f2 100644
---- a/drivers/isdn/gigaset/common.c
-+++ b/drivers/isdn/gigaset/common.c
-@@ -14,10 +14,8 @@
-  */
- 
- #include "gigaset.h"
--#include <linux/ctype.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
--#include <linux/slab.h>
- 
- /* Version Information */
- #define DRIVER_AUTHOR "Hansjoerg Lipp <hjlipp@web.de>, Tilman Schmidt <tilman@imap.cc>, Stefan Eilers"
-diff --git a/drivers/isdn/gigaset/gigaset.h b/drivers/isdn/gigaset/gigaset.h
-index 9ef5b04..d32efb6 100644
---- a/drivers/isdn/gigaset/gigaset.h
-+++ b/drivers/isdn/gigaset/gigaset.h
-@@ -22,9 +22,9 @@
- #include <linux/kernel.h>
- #include <linux/compiler.h>
- #include <linux/types.h>
-+#include <linux/ctype.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
--#include <linux/usb.h>
- #include <linux/skbuff.h>
- #include <linux/netdevice.h>
- #include <linux/ppp_defs.h>
-diff --git a/drivers/isdn/gigaset/i4l.c b/drivers/isdn/gigaset/i4l.c
-index c99fb97..c22e5ac 100644
---- a/drivers/isdn/gigaset/i4l.c
-+++ b/drivers/isdn/gigaset/i4l.c
-@@ -15,7 +15,6 @@
- 
- #include "gigaset.h"
- #include <linux/isdnif.h>
--#include <linux/slab.h>
- 
- #define HW_HDR_LEN	2	/* Header size used to store ack info */
- 
-diff --git a/drivers/isdn/gigaset/interface.c b/drivers/isdn/gigaset/interface.c
-index f0dc6c9..c9f28dd 100644
---- a/drivers/isdn/gigaset/interface.c
-+++ b/drivers/isdn/gigaset/interface.c
-@@ -13,7 +13,6 @@
- 
- #include "gigaset.h"
- #include <linux/gigaset_dev.h>
--#include <linux/tty.h>
- #include <linux/tty_flip.h>
- 
- /*** our ioctls ***/
-diff --git a/drivers/isdn/gigaset/proc.c b/drivers/isdn/gigaset/proc.c
-index b69f73a..b943efb 100644
---- a/drivers/isdn/gigaset/proc.c
-+++ b/drivers/isdn/gigaset/proc.c
-@@ -14,7 +14,6 @@
-  */
- 
- #include "gigaset.h"
--#include <linux/ctype.h>
- 
- static ssize_t show_cidmode(struct device *dev,
- 			    struct device_attribute *attr, char *buf)
-diff --git a/drivers/isdn/gigaset/ser-gigaset.c b/drivers/isdn/gigaset/ser-gigaset.c
-index 8b0afd2..e96c058 100644
---- a/drivers/isdn/gigaset/ser-gigaset.c
-+++ b/drivers/isdn/gigaset/ser-gigaset.c
-@@ -11,13 +11,10 @@
-  */
- 
- #include "gigaset.h"
--
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/platform_device.h>
--#include <linux/tty.h>
- #include <linux/completion.h>
--#include <linux/slab.h>
- 
- /* Version Information */
- #define DRIVER_AUTHOR "Tilman Schmidt"
-diff --git a/drivers/isdn/gigaset/usb-gigaset.c b/drivers/isdn/gigaset/usb-gigaset.c
-index 9430a2b..76dbb20 100644
---- a/drivers/isdn/gigaset/usb-gigaset.c
-+++ b/drivers/isdn/gigaset/usb-gigaset.c
-@@ -16,10 +16,6 @@
-  */
- 
- #include "gigaset.h"
--
--#include <linux/errno.h>
--#include <linux/init.h>
--#include <linux/slab.h>
- #include <linux/usb.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
--- 
-1.6.5.3.298.g39add
+> And don't access the one-past-the-end element of the
+> array either.
+> 
 
+Yup, that's a bug.
+
+> ---
+>  drivers/char/hvsi.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/char/hvsi.c b/drivers/char/hvsi.c
+> index 793b236..d4b14ff 100644
+> --- a/drivers/char/hvsi.c
+> +++ b/drivers/char/hvsi.c
+> @@ -194,10 +194,8 @@ static inline void print_state(struct hvsi_struct *hp)
+>  		"HVSI_WAIT_FOR_MCTRL_RESPONSE",
+>  		"HVSI_FSP_DIED",
+>  	};
+> -	const char *name = state_names[hp->state];
+> -
+> -	if (hp->state > ARRAY_SIZE(state_names))
+> -		name = "UNKNOWN";
+> +	const char *name = (hp->state < ARRAY_SIZE(state_names))
+> +		? state_names[hp->state] : "UNKNOWN";
+>  
+>  	pr_debug("hvsi%i: state = %s\n", hp->index, name);
+>  #endif /* DEBUG */
+> -- 
+> 1.6.0.4
