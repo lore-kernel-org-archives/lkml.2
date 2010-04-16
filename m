@@ -1,60 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758033Ab0DPLSH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 07:18:07 -0400
-Received: from mail2.donator.se ([217.16.195.8]:3193 "EHLO mail2.donator.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757826Ab0DPLSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 07:18:05 -0400
-X-MDAV-Processed: mail2.donator.se, Fri, 16 Apr 2010 13:18:03 +0200
-X-Spam-Processed: mail2.donator.se, Fri, 16 Apr 2010 13:18:01 +0200
-	(not processed: spam filter heuristic analysis disabled)
-X-Authenticated-Sender: jakob.viketoft@bitsim.com
-X-MDRemoteIP: 10.99.195.158
-X-Return-Path: jakob.viketoft@bitsim.com
-X-Envelope-From: jakob.viketoft@bitsim.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Message-ID: <4BC84766.5060208@bitsim.com>
-Date: Fri, 16 Apr 2010 13:17:58 +0200
-From: Jakob Viketoft <jakob.viketoft@bitsim.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1758048Ab0DPLTI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 07:19:08 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43966 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757219Ab0DPLTG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 07:19:06 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 10/10] vmscan: Update isolated page counters outside of main path in shrink_inactive_list()
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Chris Mason <chris.mason@oracle.com>,
+       Dave Chinner <david@fromorbit.com>, Andi Kleen <andi@firstfloor.org>,
+       Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <1271352103-2280-11-git-send-email-mel@csn.ul.ie>
+References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie> <1271352103-2280-11-git-send-email-mel@csn.ul.ie>
+Message-Id: <20100416115315.27AA.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: daniel@caiaq.de
-CC: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [PATCH] colibri.h: Fix building for colibri 270...
-References: <4BC8330E.6000503@bitsim.com> <20100416100126.GI30801@buzzloop.caiaq.de>
-In-Reply-To: <20100416100126.GI30801@buzzloop.caiaq.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Reply-To: jakob.viketoft@bitsim.com
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 16 Apr 2010 20:19:00 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Mack wrote:
-> On Fri, Apr 16, 2010 at 11:51:10AM +0200, Jakob Viketoft wrote:
->> The recent addition of (Colibri) PXA3xx specific declarations breaks
->> the building of the Colibri 270 with similar features.
+> When shrink_inactive_list() isolates pages, it updates a number of
+> counters using temporary variables to gather them. These consume stack
+> and it's in the main path that calls ->writepage(). This patch moves the
+> accounting updates outside of the main path to reduce stack usage.
 > 
-> Hmm, I can't see any problem here. Which error did you get? Which boards
-> did you select in your config?
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> ---
+>  mm/vmscan.c |   63 +++++++++++++++++++++++++++++++++++-----------------------
+>  1 files changed, 38 insertions(+), 25 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 2c22c83..4225319 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1061,7 +1061,8 @@ static unsigned long clear_active_flags(struct list_head *page_list,
+>  			ClearPageActive(page);
+>  			nr_active++;
+>  		}
+> -		count[lru]++;
+> +		if (count)
+> +			count[lru]++;
+>  	}
+>  
+>  	return nr_active;
+> @@ -1141,12 +1142,13 @@ static int too_many_isolated(struct zone *zone, int file,
+>   * TODO: Try merging with migrations version of putback_lru_pages
+>   */
+>  static noinline void putback_lru_pages(struct zone *zone,
+> -				struct zone_reclaim_stat *reclaim_stat,
+> +				struct scan_control *sc,
+>  				unsigned long nr_anon, unsigned long nr_file,
+>   				struct list_head *page_list)
+>  {
+>  	struct page *page;
+>  	struct pagevec pvec;
+> +	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
 
-Hmmm, it appears I was slightly too fast on the trigger there. I 
-encountered the problem some time ago when migrating fron 2.6.29 to 
-2.6.33.1 and a quick look made me think there was a linking problem. I'm 
-finishing up this project now and wanted to push any relevant fixes 
-upstream. However, the problem I seem to be getting is something 
-different though:
+Seems unrelated change here.
+Otherwise looks good.
 
-   CC      drivers/pcmcia/pxa2xx_colibri.o
-In file included from drivers/pcmcia/pxa2xx_colibri.c:25:
-arch/arm/mach-pxa/include/mach/colibri.h:13: error: expected ')' before 
-'*' token
-make[2]: *** [drivers/pcmcia/pxa2xx_colibri.o] Error 1
-make[1]: *** [drivers/pcmcia] Error 2
-make: *** [drivers] Error 2
+ - kosaki
+>  
+>  	pagevec_init(&pvec, 1);
+>  
+> @@ -1185,6 +1187,37 @@ static noinline void putback_lru_pages(struct zone *zone,
+>  	pagevec_release(&pvec);
+>  }
+>  
+> +static noinline void update_isolated_counts(struct zone *zone, 
+> +					struct scan_control *sc,
+> +					unsigned long *nr_anon,
+> +					unsigned long *nr_file,
+> +					struct list_head *isolated_list)
+> +{
+> +	unsigned long nr_active;
+> +	unsigned int count[NR_LRU_LISTS] = { 0, };
+> +	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+> +
+> +	nr_active = clear_active_flags(isolated_list, count);
+> +	__count_vm_events(PGDEACTIVATE, nr_active);
+> +
+> +	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
+> +			      -count[LRU_ACTIVE_FILE]);
+> +	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
+> +			      -count[LRU_INACTIVE_FILE]);
+> +	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
+> +			      -count[LRU_ACTIVE_ANON]);
+> +	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
+> +			      -count[LRU_INACTIVE_ANON]);
+> +
+> +	*nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
+> +	*nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
+> +	__mod_zone_page_state(zone, NR_ISOLATED_ANON, *nr_anon);
+> +	__mod_zone_page_state(zone, NR_ISOLATED_FILE, *nr_file);
+> +
+> +	reclaim_stat->recent_scanned[0] += *nr_anon;
+> +	reclaim_stat->recent_scanned[1] += *nr_file;
+> +}
+> +
+>  /*
+>   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
+>   * of reclaimed pages
+> @@ -1196,11 +1229,9 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+>  	LIST_HEAD(page_list);
+>  	unsigned long nr_scanned;
+>  	unsigned long nr_reclaimed = 0;
+> -	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+>  	int lumpy_reclaim = 0;
+>  	unsigned long nr_taken;
+>  	unsigned long nr_active;
+> -	unsigned int count[NR_LRU_LISTS] = { 0, };
+>  	unsigned long nr_anon;
+>  	unsigned long nr_file;
+>  
+> @@ -1244,25 +1275,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+>  		return 0;
+>  	}
+>  
+> -	nr_active = clear_active_flags(&page_list, count);
+> -	__count_vm_events(PGDEACTIVATE, nr_active);
+> -
+> -	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
+> -			      -count[LRU_ACTIVE_FILE]);
+> -	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
+> -			      -count[LRU_INACTIVE_FILE]);
+> -	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
+> -			      -count[LRU_ACTIVE_ANON]);
+> -	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
+> -			      -count[LRU_INACTIVE_ANON]);
+> -
+> -	nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
+> -	nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
+> -	__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
+> -	__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
+> -
+> -	reclaim_stat->recent_scanned[0] += nr_anon;
+> -	reclaim_stat->recent_scanned[1] += nr_file;
+> +	update_isolated_counts(zone, sc, &nr_anon, &nr_file, &page_list);
+>  
+>  	spin_unlock_irq(&zone->lru_lock);
+>  
+> @@ -1281,7 +1294,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+>  		 * The attempt at page out may have made some
+>  		 * of the pages active, mark them inactive again.
+>  		 */
+> -		nr_active = clear_active_flags(&page_list, count);
+> +		nr_active = clear_active_flags(&page_list, NULL);
+>  		count_vm_events(PGDEACTIVATE, nr_active);
+>  
+>  		nr_reclaimed += shrink_page_list(&page_list, sc,
+> @@ -1293,7 +1306,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+>  		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
+>  	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
+>  
+> -	putback_lru_pages(zone, reclaim_stat, nr_anon, nr_file, &page_list);
+> +	putback_lru_pages(zone, sc, nr_anon, nr_file, &page_list);
+>  	return nr_reclaimed;
+>  }
+>  
+> -- 
+> 1.6.5
+> 
 
-Is this an error on my part somehow?
 
-	/Jakob
 
