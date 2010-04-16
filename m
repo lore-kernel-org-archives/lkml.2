@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab0DPEU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 00:20:56 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61727 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab0DPEUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 00:20:54 -0400
-Message-ID: <4BC7E56C.4070906@cn.fujitsu.com>
-Date: Fri, 16 Apr 2010 12:19:56 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1751710Ab0DPEVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 00:21:08 -0400
+Received: from www.telegraphics.com.au ([204.15.192.19]:38143 "EHLO
+	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab0DPEVE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 00:21:04 -0400
+Date: Fri, 16 Apr 2010 14:21:00 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: David Miller <davem@davemloft.net>
+cc: joe@perches.com, p_gortmaker@yahoo.com, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
+Subject: Re: [PATCH] mac8390: fix pr_info() calls and change return code
+In-Reply-To: <alpine.OSX.2.00.1004161323340.271@localhost>
+Message-ID: <alpine.OSX.2.00.1004161403160.271@localhost>
+References: <alpine.OSX.2.00.1004161214270.271@localhost> <20100415.200113.215578006.davem@davemloft.net> <alpine.OSX.2.00.1004161323340.271@localhost>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Divyesh Shah <dpshah@google.com>, jens.axboe@oracle.com
-CC: vgoyal@redhat.com, linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com
-Subject: Re: [PATCH] blkio: Initialize blkg->stats_lock for the root cfqg
- too
-References: <20100416040144.3739.94764.stgit@austin.mtv.corp.google.com>
-In-Reply-To: <20100416040144.3739.94764.stgit@austin.mtv.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Divyesh Shah wrote:
-> This fixes the lockdep warning reported by Gui Jianfeng.
-> 
-> Signed-off-by: Divyesh Shah <dpshah@google.com>
 
-This patch looks good to me.
-Reviewed-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
 
-> ---
-> 
->  block/blk-cgroup.c  |    7 +------
->  block/blk-cgroup.h  |    2 --
->  block/cfq-iosched.c |    1 -
->  3 files changed, 1 insertions(+), 9 deletions(-)
-> 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 80c1261..83930f6 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -86,12 +86,6 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
->  }
->  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
->  
-> -void blkio_group_init(struct blkio_group *blkg)
-> -{
-> -	spin_lock_init(&blkg->stats_lock);
-> -}
-> -EXPORT_SYMBOL_GPL(blkio_group_init);
-> -
->  /*
->   * Add to the appropriate stat variable depending on the request type.
->   * This should be called with the blkg->stats_lock held.
-> @@ -349,6 +343,7 @@ void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
->  	unsigned long flags;
->  
->  	spin_lock_irqsave(&blkcg->lock, flags);
-> +	spin_lock_init(&blkg->stats_lock);
->  	rcu_assign_pointer(blkg->key, key);
->  	blkg->blkcg_id = css_id(&blkcg->css);
->  	hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
-> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-> index 1d409ad..2c956a0 100644
-> --- a/block/blk-cgroup.h
-> +++ b/block/blk-cgroup.h
-> @@ -217,7 +217,6 @@ extern void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
->  extern int blkiocg_del_blkio_group(struct blkio_group *blkg);
->  extern struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg,
->  						void *key);
-> -void blkio_group_init(struct blkio_group *blkg);
->  void blkiocg_update_timeslice_used(struct blkio_group *blkg,
->  					unsigned long time);
->  void blkiocg_update_dispatch_stats(struct blkio_group *blkg, uint64_t bytes,
-> @@ -235,7 +234,6 @@ struct cgroup;
->  static inline struct blkio_cgroup *
->  cgroup_to_blkio_cgroup(struct cgroup *cgroup) { return NULL; }
->  
-> -static inline void blkio_group_init(struct blkio_group *blkg) {}
->  static inline void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
->  			struct blkio_group *blkg, void *key, dev_t dev) {}
->  
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 0177109..62defd0 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -961,7 +961,6 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
->  	for_each_cfqg_st(cfqg, i, j, st)
->  		*st = CFQ_RB_ROOT;
->  	RB_CLEAR_NODE(&cfqg->rb_node);
-> -	blkio_group_init(&cfqg->blkg);
->  
->  	/*
->  	 * Take the initial reference that will be released on destroy
-> 
-> 
-> 
-> 
-
--- 
-Regards
-Gui Jianfeng
-
+--- a/drivers/net/mac8390.c	2010-04-16 13:31:04.000000000 +1000
++++ b/drivers/net/mac8390.c	2010-04-16 14:02:29.000000000 +1000
+@@ -554,7 +554,7 @@
+ 	case MAC8390_APPLE:
+ 		switch (mac8390_testio(dev->mem_start)) {
+ 		case ACCESS_UNKNOWN:
+-			pr_info("Don't know how to access card memory!\n");
++			pr_err("Don't know how to access card memory!\n");
+ 			return -ENODEV;
+ 			break;
+ 
+@@ -643,8 +643,8 @@
+ {
+ 	__ei_open(dev);
+ 	if (request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev)) {
+-		pr_info("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
+-		return -EAGAIN;
++		pr_err("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
++		return -EBUSY;
+ 	}
+ 	return 0;
+ }
+@@ -660,7 +660,7 @@
+ {
+ 	ei_status.txing = 0;
+ 	if (ei_debug > 1)
+-		pr_info("reset not supported\n");
++		printk(KERN_DEBUG "reset not supported\n");
+ 	return;
+ }
+ 
+@@ -668,11 +668,11 @@
+ {
+ 	unsigned char *target = nubus_slot_addr(IRQ2SLOT(dev->irq));
+ 	if (ei_debug > 1)
+-		pr_info("Need to reset the NS8390 t=%lu...", jiffies);
++		printk(KERN_DEBUG "Need to reset the NS8390 t=%lu...", jiffies);
+ 	ei_status.txing = 0;
+ 	target[0xC0000] = 0;
+ 	if (ei_debug > 1)
+-		pr_cont("reset complete\n");
++		printk(KERN_CONT "reset complete\n");
+ 	return;
+ }
+ 
