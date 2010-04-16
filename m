@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932708Ab0DPWk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 18:40:27 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40473 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932649Ab0DPWk0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 18:40:26 -0400
-From: Vernon Mauery <vernux@us.ibm.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Vernon Mauery <vernux@us.ibm.com>
-Subject: [PATCH] Always call i7core_[ur]dimm_check_mc_ecc_err
-Date: Fri, 16 Apr 2010 15:40:19 -0700
-Message-Id: <1271457619-4585-1-git-send-email-vernux@us.ibm.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S932729Ab0DPWs2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 18:48:28 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:36223 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932669Ab0DPWs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 18:48:26 -0400
+Date: Sat, 17 Apr 2010 00:48:20 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+       Dave Chinner <david@fromorbit.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 02/10] vmscan: move priority variable into scan_control
+Message-ID: <20100416224820.GE20640@cmpxchg.org>
+References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie> <1271352103-2280-3-git-send-email-mel@csn.ul.ie>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271352103-2280-3-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes an error in function i7core_check_error
+On Thu, Apr 15, 2010 at 06:21:35PM +0100, Mel Gorman wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> Now very lots function in vmscan have `priority' argument. It consume
+> stack slightly. To move it on struct scan_control reduce stack.
 
-In commit d8922d1ba082832de2a215da7233126a7ff45637 which
-converts the driver to use double buffering, there is a
-change in the logic.  Before, if mce_count was zero, it
-skipped over a couple of statements and finished out with
-a call to the *check_mc_ecc_err function.  The current
-code checks to see if mce_count is 0 and then exits.
+I don't like this much because it obfuscates value communication.
 
-This change reverts the behavior back to the original
-where if there are no errors to report, we skip to the
-end and call the *check_mc_ecc_err function.
+Functions no longer have obvious arguments and return values, as it's all
+passed hidden in that struct.
 
-This fix allows the driver to work again on my Nehalem
-based blades again.
-
-Signed-off-by: Vernon Mauery <vernux@us.ibm.com>
----
- drivers/edac/i7core_edac.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index e944b63..339bf0c 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1634,7 +1634,7 @@ static void i7core_check_error(struct mem_ctl_info *mci)
- 	count = (pvt->mce_out + MCE_LOG_LEN - pvt->mce_in)
- 		% MCE_LOG_LEN;
- 	if (!count)
--		return;
-+		goto check_ce_error;
- 
- 	m = pvt->mce_outentry;
- 	if (pvt->mce_in + count > MCE_LOG_LEN) {
-@@ -1667,6 +1667,7 @@ static void i7core_check_error(struct mem_ctl_info *mci)
- 	/*
- 	 * Now, let's increment CE error counts
- 	 */
-+check_ce_error:
- 	if (!pvt->is_registered)
- 		i7core_udimm_check_mc_ecc_err(mci);
- 	else
--- 
-1.7.0.4
-
+Do you think it's worth it?  I would much rather see that thing die than
+expand on it...
