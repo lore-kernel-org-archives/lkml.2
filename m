@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797Ab0DPXlN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 19:41:13 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48979 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932381Ab0DPXlL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 19:41:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=NNGGD2UVbRo40iyASnRweRB47gPGZrFkk6NMcAxgoaQbKdcdJD7tjNerq1qRXc/0eu
-         BV2avP4rpkw5Rud+8bqohe5/P5y3UFbufAgaEK5r9ai7R38aXsko6W8mOPZsxOJNIixX
-         Sf9/EzuStfQOLVgOHbaoToQq+xY19VxbpbZkw=
-MIME-Version: 1.0
-In-Reply-To: <41b2cd7e8bacd38bb9c997b7197e175d727876f9.1271406290.git.mina86@mina86.com>
-References: <cover.1271406290.git.mina86@mina86.com> <0d8cfc5167bbcbfc6c5ae0ab10980eba743e0cee.1271406290.git.mina86@mina86.com> 
-	<7fbfe9c15eae523b73b704a3b5399319152fd505.1271406290.git.mina86@mina86.com> 
-	<41b2cd7e8bacd38bb9c997b7197e175d727876f9.1271406290.git.mina86@mina86.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 16 Apr 2010 19:40:50 -0400
-Message-ID: <n2v8bd0f97a1004161640q640bade7xd4887dde5921b79e@mail.gmail.com>
-Subject: Re: [PATCH 3/8] USB: gadget: __init and __exit tags removed
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S932809Ab0DPXld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 19:41:33 -0400
+Received: from gate.crashing.org ([63.228.1.57]:52842 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932799Ab0DPXla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 19:41:30 -0400
+Subject: Re: Possible bug with mutex adaptative spinning
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+In-Reply-To: <1271453251.1674.485.camel@laptop>
+References: <1271212509.13059.135.camel@pasglop>
+	 <1271213767.13059.137.camel@pasglop>  <1271453251.1674.485.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 17 Apr 2010 08:01:32 +1000
+Message-ID: <1271455292.13059.198.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 05:49, Michal Nazarewicz wrote:
-> __init, __initdata and __exit tags have have been removed from
-> various files to make it possible for gadgets that do not use
-> the __init/__exit tags to use those.
->
-> Files in question are related to:
-> * the core composite framework,
-> * the mass storage function (fixing a section mismatch) and
-> * ethernet driver (ACM, ECM, RNDIS).
+On Fri, 2010-04-16 at 23:27 +0200, Peter Zijlstra wrote:
+> > If the owner is actually running, it may do so for a very long time. It
+> > looks to me that everybody trying to take the mutex will thus spin and
+> > never get out of the spin loop until the owner stops running.
+> 
+> The inner-most spin loop breaks out on need_resched():
+> 
+>                 if (task_thread_info(rq->curr) != owner || need_resched())
+>                         return 0; 
 
-it would be nice if the expected behavior were documented somewhere so
-we dont have to keep thrashing the section markings on the gadget
-drivers.  first they get marked to save space for setups where it
-makes no sense to keep the functions.  then they get tweaked to
-support a semi-dynamic state.  now they're all removed to support yet
-a different setup.
+You are right, this was only a problem in conjunction with the other bug
+returning 1 all the time, causing us to ignore need_resched(). With
+that fixed, it looks fine now.
 
-sounds like the system is insufficiently flexible to meet the
-realistic needs of different groups.
--mike
+Thanks !
+
+Cheers,
+Ben.
+
+
