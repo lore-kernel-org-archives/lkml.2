@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779Ab0DPX1e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 19:27:34 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59419 "EHLO gate.crashing.org"
+	id S932792Ab0DPX2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 19:28:38 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:58162 "EHLO cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932738Ab0DPX1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 19:27:32 -0400
-Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
- implementation
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100416134336.GA2615@linux.vnet.ibm.com>
-References: <20100408191737.296180458@chello.nl>
-	 <20100408192722.643778654@chello.nl> <1271120731.13059.6.camel@pasglop>
-	 <20100413034311.GB2772@linux.vnet.ibm.com>
-	 <1271253110.32749.47.camel@laptop>
-	 <20100415142852.GA2471@linux.vnet.ibm.com>
-	 <1271400891.13059.186.camel@pasglop>
-	 <20100416134336.GA2615@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 17 Apr 2010 09:25:07 +1000
-Message-ID: <1271460307.13059.216.camel@pasglop>
+	id S932766Ab0DPX2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 19:28:37 -0400
+Date: Sat, 17 Apr 2010 01:28:30 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+       Dave Chinner <david@fromorbit.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 08/10] vmscan: Setup pagevec as late as possible in shrink_inactive_list()
+Message-ID: <20100416232830.GJ20640@cmpxchg.org>
+References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie> <1271352103-2280-9-git-send-email-mel@csn.ul.ie>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271352103-2280-9-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-16 at 06:43 -0700, Paul E. McKenney wrote:
-> So I believe that in this case call_rcu_sched() is your friend.  ;-)
+On Thu, Apr 15, 2010 at 06:21:41PM +0100, Mel Gorman wrote:
+> shrink_inactive_list() sets up a pagevec to release unfreeable pages. It
+> uses significant amounts of stack doing this. This patch splits
+> shrink_inactive_list() to take the stack usage out of the main path so
+> that callers to writepage() do not contain an unused pagevec on the
+> stack.
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 
-Looks like it :-)
-
-I'll cook up a patch changing my current call_rcu() to call_rcu_sched().
-
-Cheers,
-Ben.
-
-
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
