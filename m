@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab0DPE2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 00:28:19 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:36954 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750726Ab0DPE2R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 00:28:17 -0400
-Date: Fri, 16 Apr 2010 14:27:42 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 08/10] vmscan: Setup pagevec as late as possible in
- shrink_inactive_list()
-Message-ID: <20100416042742.GA2493@dastard>
-References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie>
- <1271352103-2280-9-git-send-email-mel@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271352103-2280-9-git-send-email-mel@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752260Ab0DPEeS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 00:34:18 -0400
+Received: from mail.perches.com ([173.55.12.10]:1511 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751170Ab0DPEeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 00:34:17 -0400
+Subject: Re: [PATCH] mac8390: fix pr_info() calls and change return code
+From: Joe Perches <joe@perches.com>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: David Miller <davem@davemloft.net>, p_gortmaker@yahoo.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-m68k@vger.kernel.org
+In-Reply-To: <alpine.OSX.2.00.1004161403160.271@localhost>
+References: <alpine.OSX.2.00.1004161214270.271@localhost>
+	 <20100415.200113.215578006.davem@davemloft.net>
+	 <alpine.OSX.2.00.1004161323340.271@localhost>
+	 <alpine.OSX.2.00.1004161403160.271@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Apr 2010 21:34:14 -0700
+Message-ID: <1271392454.2298.37.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 06:21:41PM +0100, Mel Gorman wrote:
-> shrink_inactive_list() sets up a pagevec to release unfreeable pages. It
-> uses significant amounts of stack doing this. This patch splits
-> shrink_inactive_list() to take the stack usage out of the main path so
-> that callers to writepage() do not contain an unused pagevec on the
-> stack.
+On Fri, 2010-04-16 at 14:21 +1000, Finn Thain wrote:
+> Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
 > 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> ---
->  mm/vmscan.c |   93 +++++++++++++++++++++++++++++++++-------------------------
->  1 files changed, 53 insertions(+), 40 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index a232ad6..9bc1ede 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1120,6 +1120,54 @@ static int too_many_isolated(struct zone *zone, int file,
->  }
+> --- a/drivers/net/mac8390.c	2010-04-16 13:31:04.000000000 +1000
+> +++ b/drivers/net/mac8390.c	2010-04-16 14:02:29.000000000 +1000
+> @@ -554,7 +554,7 @@
+>  	case MAC8390_APPLE:
+>  		switch (mac8390_testio(dev->mem_start)) {
+>  		case ACCESS_UNKNOWN:
+> -			pr_info("Don't know how to access card memory!\n");
+> +			pr_err("Don't know how to access card memory!\n");
+>  			return -ENODEV;
+>  			break;
 >  
->  /*
-> + * TODO: Try merging with migrations version of putback_lru_pages
-> + */
-> +static noinline void putback_lru_pages(struct zone *zone,
+> @@ -643,8 +643,8 @@
+>  {
+>  	__ei_open(dev);
+>  	if (request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev)) {
+> -		pr_info("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
+> -		return -EAGAIN;
+> +		pr_err("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
+> +		return -EBUSY;
 
-noinline_for_stack
+You should document the reason for the
+return code change in the changelog.
+Why is it better to use -EBUSY?
 
-Cheers,
+>  	}
+>  	return 0;
+>  }
+> @@ -660,7 +660,7 @@
+>  {
+>  	ei_status.txing = 0;
+>  	if (ei_debug > 1)
+> -		pr_info("reset not supported\n");
+> +		printk(KERN_DEBUG "reset not supported\n");
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+It'd be better to prefix this with the driver name
+or use something like netdev_dbg with #define DEBUG
+otherwise it's "huh? what device emits this message?"
+when reading the logs.
+
+Something like:
+	printk(KERN_DEBUG pr_fmt("reset not supported\n"));
+or
+#define DEBUG
+	netdev_dbg(dev, "reset not supported\n");
+or
+#define DEBUG
+	pr_debug("reset not supported\n");
+
+>  	if (ei_debug > 1)
+> -		pr_cont("reset complete\n");
+> +		printk(KERN_CONT "reset complete\n");
+
+unnecessary conversion.
+
+
