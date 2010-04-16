@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab0DPCSl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 22:18:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32371 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753024Ab0DPCSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 22:18:39 -0400
-Message-ID: <4BC7C9CF.20403@redhat.com>
-Date: Fri, 16 Apr 2010 10:22:07 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
+	id S1756593Ab0DPCWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 22:22:42 -0400
+Received: from www.telegraphics.com.au ([204.15.192.19]:36817 "EHLO
+	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753516Ab0DPCWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 22:22:40 -0400
+X-Greylist: delayed 506 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Apr 2010 22:22:40 EDT
+Date: Fri, 16 Apr 2010 12:14:02 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+       netdev@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [PATCH] net: mac8390 - Sort out memory/MMIO accesses and casts
+ (was: Re: drivers/net/mac8390.c: Remove useless memcpy casting)
+In-Reply-To: <l2k10f740e81004151234t3004275az36e7873493067a8a@mail.gmail.com>
+Message-ID: <alpine.OSX.2.00.1004161206300.271@localhost>
+References: <l2k10f740e81004151234t3004275az36e7873493067a8a@mail.gmail.com>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Sean Hefty <sean.hefty@intel.com>
-CC: "'Tetsuo Handa'" <penguin-kernel@I-love.SAKURA.ne.jp>,
-       opurdila@ixiacom.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       nhorman@tuxdriver.com, davem@davemloft.net, ebiederm@xmission.com,
-       linux-kernel@vger.kernel.org, rolandd@cisco.com,
-       linux-rdma@vger.kernel.org
-Subject: Re: [PATCH] rdma/cm: Randomize local port allocation.
-References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain>	<20100412100816.5302.74919.sendpatchset@localhost.localdomain>	<201004130121.o3D1Lhh7099571@www262.sakura.ne.jp>	<4BC41994.7030707@redhat.com>	<4BC42FE0.4040601@redhat.com> <201004132207.GAJ52684.OJFtMQVFHOSFLO@I-love.SAKURA.ne.jp> <21DAC78125424ED291B5D6477CFF9657@amr.corp.intel.com> <201004140201.o3E21Aqn075978@www262.sakura.ne.jp> <195EB1AD388F455AA386EB214FCD09F4@amr.corp.intel.com> <201004150229.o3F2T4dZ054768@www262.sakura.ne.jp> <5CE6BC7B954643FAAFFD2AD66F673CBD@amr.corp.intel.com>
-In-Reply-To: <5CE6BC7B954643FAAFFD2AD66F673CBD@amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sean Hefty wrote:
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> 
->> Randomize local port allocation in a way sctp_get_port_local() does.
->> Update rover at the end of loop since we're likely to pick a valid port
->> on the first try.
->>
->> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Reviewed-by: Sean Hefty <sean.hefty@intel.com>
-> 
 
-Thanks, everyone!
+On Thu, 15 Apr 2010, Geert Uytterhoeven wrote:
 
+> On Mon, Mar 8, 2010 at 18:16, Joe Perches <joe@perches.com> wrote:
+>
+> > Thanks, I'll submit a patch to fix it by tomorrow or so.
 > 
-> I like this version, thanks!  I'm not sure which tree to merge it through.
-> Are you needing this for 2.6.34, or is 2.6.35 okay?
-> 
+> It hasn't been fixed yet.
 
-As soon as possible, so 2.6.34. :)
+Thanks for taking care of this, Geert.
+
+> But here's a better solution. I do not have the hardware to test it, 
+> though. Finn, does it {look OK,work}?
+
+It looks fine. I can't test it right now, but I will do so when I get the 
+opportunity.
+
+Finn
