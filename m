@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab0DPOxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:53:18 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36167 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755702Ab0DPOxO (ORCPT
+	id S1757301Ab0DPOyv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:54:51 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:41843 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab0DPOyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:53:14 -0400
-Date: Fri, 16 Apr 2010 07:48:13 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Felipe Balbi <felipe.balbi@nokia.com>
-cc: Rik van Riel <riel@redhat.com>, Borislav Petkov <bp@alien8.de>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       "sgunderson@bigfoot.com" <sgunderson@bigfoot.com>
-Subject: Re: [PATCH] rmap: add exclusively owned pages to the newest
- anon_vma
-In-Reply-To: <20100416060924.GD1710@nokia.com>
-Message-ID: <alpine.LFD.2.00.1004160743430.15116@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org> <alpine.LFD.2.00.1004111759440.3521@i5.linux-foundation.org> <20100412072056.GA2432@liondog.tnic> <alpine.LFD.2.00.1004120854440.26679@i5.linux-foundation.org>
- <alpine.LFD.2.00.1004120906370.26679@i5.linux-foundation.org> <20100412215027.GA6263@liondog.tnic> <alpine.LFD.2.00.1004121508290.3647@i5.linux-foundation.org> <20100413093827.GA6954@liondog.tnic> <20100414175928.5e1bdce2@annuminas.surriel.com>
- <alpine.LFD.2.00.1004151256090.15116@i5.linux-foundation.org> <20100416060924.GD1710@nokia.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 16 Apr 2010 10:54:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jeyPZX0YPJhP+oY+ZTWD64swyaiUyhaNt0bkWpZQRu4dAsJr54cnvKc0Ry/1Wn21Ku
+         tCBlEjWDuu0ygsDvqAHDMXM5q9opjbiUZOmoukjfIJtee/fZ0kuw5k6N2XY9tRcXGJEE
+         fw+R53eNV2zL61og2RW55WnZvQVNNsW2FfnQ0=
+Date: Fri, 16 Apr 2010 18:54:44 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, mingo@elte.hu, peterz@infradead.org,
+       aris@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100416145444.GB5540@lenovo>
+References: <1271366710-17468-1-git-send-email-dzickus@redhat.com> <20100416014712.GC15570@nowhere> <20100416143232.GA5540@lenovo> <20100416144616.GC5162@nowhere>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100416144616.GC5162@nowhere>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, 16 Apr 2010, Felipe Balbi wrote:
+On Fri, Apr 16, 2010 at 04:46:17PM +0200, Frederic Weisbecker wrote:
+...
+> > > > +		if (hardlockup_panic)
+> > > > +			panic("Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+> > > > +		else
+> > > > +			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+> > > > +
+> > > > +		cpumask_set_cpu(this_cpu, to_cpumask(hardlockup_mask));
+> > > 
+> > > 
+> > > 
+> > > May be have an arch spin lock there to update your cpu mask safely.
+> > > 
+> > 
+> > Hmm, this is NMI handler path so from what we protect this per-cpu data?
+> > Do I miss something? /me confused
 > 
-> while at that, would it make sense to first provide list_last_entry() since we
-> already have list_first_entry() ??
+> 
+> The cpu mask is not per cpu here, this is a shared bitmap, so you
+> can race against other cpus NMIs.
+> 
+> That said, as I suggested, having a per cpu var that we set when we
+> warned would be much better than a spinlock here.
+> 
 
-Yeah, it probably would make sense. Especially as doing a simple grep for 
-'list_entry.*prev' does seem to imply that there might be quite a few 
-places that would be able to use it. Although some of them do seem to be 
-about finding the previous entry rather than the last in a list.
+yeah, saw DECLARE_BITMAP but read it as DEFINE_PER_CPU for some reason.
+having any spinlock in irq handler is really under suspicious.
 
-That said, doing the same grep for 'next' shows that a lot of places don't 
-use the list_first_entry() that we _do_ have, so..
-
-		Linus
+	-- Cyrill
