@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758290Ab0DPQJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 12:09:09 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:50347 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab0DPQJF (ORCPT
+	id S1758330Ab0DPQK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 12:10:28 -0400
+Received: from x35.xmailserver.org ([64.71.152.41]:60936 "EHLO
+	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757109Ab0DPQK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 12:09:05 -0400
-Date: Fri, 16 Apr 2010 11:07:55 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Tejun Heo <tj@kernel.org>, Mel Gorman <mel@csn.ul.ie>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
-In-Reply-To: <w2h28c262361004150449qdea5cde9y687c1fce30e665d@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1004161105120.7710@router.home>
-References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>  <4BC65237.5080408@kernel.org>  <v2j28c262361004141831h8f2110d5pa7a1e3063438cbf8@mail.gmail.com>  <4BC6BE78.1030503@kernel.org>  <h2w28c262361004150100ne936d943u28f76c0f171d3db8@mail.gmail.com>
-  <4BC6CB30.7030308@kernel.org>  <l2u28c262361004150240q8a873b6axb73eaa32fd6e65e6@mail.gmail.com>  <4BC6E581.1000604@kernel.org>  <z2p28c262361004150321sc65e84b4w6cc99927ea85a52b@mail.gmail.com>  <4BC6FBC8.9090204@kernel.org>
- <w2h28c262361004150449qdea5cde9y687c1fce30e665d@mail.gmail.com>
+	Fri, 16 Apr 2010 12:10:27 -0400
+X-AuthUser: davidel@xmailserver.org
+Date: Fri, 16 Apr 2010 09:10:20 -0700 (PDT)
+From: Davide Libenzi <davidel@xmailserver.org>
+X-X-Sender: davide@makko.or.mcafeemobile.com
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>
+cc: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-fsdevel@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/8] fs/timerfd.c: make use of
+ wait_event_interruptible_locked_irq()
+In-Reply-To: <7fbfe9c15eae523b73b704a3b5399319152fd505.1271406290.git.mina86@mina86.com>
+Message-ID: <alpine.DEB.2.00.1004160908510.16177@makko.or.mcafeemobile.com>
+References: <cover.1271406290.git.mina86@mina86.com> <0d8cfc5167bbcbfc6c5ae0ab10980eba743e0cee.1271406290.git.mina86@mina86.com> <7fbfe9c15eae523b73b704a3b5399319152fd505.1271406290.git.mina86@mina86.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
+X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Apr 2010, Minchan Kim wrote:
+On Fri, 16 Apr 2010, Michal Nazarewicz wrote:
 
-> I don't want to remove alloc_pages for UMA system.
+> This patch modifies the fs/timerfd.c to use the newly created
+> wait_event_interruptible_locked_irq() macro.  This replaces an open
+> code implementation with a single macro call.
+> 
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> ---
+>  fs/timerfd.c |   25 ++++---------------------
+>  1 files changed, 4 insertions(+), 21 deletions(-)
+> 
+> diff --git a/fs/timerfd.c b/fs/timerfd.c
+> index 98158de..b86ab8e 100644
+> --- a/fs/timerfd.c
+> +++ b/fs/timerfd.c
+> @@ -110,31 +110,14 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+>  	struct timerfd_ctx *ctx = file->private_data;
+>  	ssize_t res;
+>  	u64 ticks = 0;
+> -	DECLARE_WAITQUEUE(wait, current);
+>  
+>  	if (count < sizeof(ticks))
+>  		return -EINVAL;
+>  	spin_lock_irq(&ctx->wqh.lock);
+> -	res = -EAGAIN;
+> -	if (!ctx->ticks && !(file->f_flags & O_NONBLOCK)) {
+> -		__add_wait_queue(&ctx->wqh, &wait);
+> -		for (res = 0;;) {
+> -			set_current_state(TASK_INTERRUPTIBLE);
+> -			if (ctx->ticks) {
+> -				res = 0;
+> -				break;
+> -			}
+> -			if (signal_pending(current)) {
+> -				res = -ERESTARTSYS;
+> -				break;
+> -			}
+> -			spin_unlock_irq(&ctx->wqh.lock);
+> -			schedule();
+> -			spin_lock_irq(&ctx->wqh.lock);
+> -		}
+> -		__remove_wait_queue(&ctx->wqh, &wait);
+> -		__set_current_state(TASK_RUNNING);
+> -	}
+> +	if (file->f_flags & O_NONBLOCK)
+> +		res = -EAGAIN;
+> +	else
+> +		res = wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks);
+>  	if (ctx->ticks) {
+>  		ticks = ctx->ticks;
+>  		if (ctx->expired && ctx->tintv.tv64) {
 
-alloc_pages is the same as alloc_pages_any_node so why have it?
+Looks clean to me.
 
-> #define alloc_pages alloc_page_sexact_node
->
-> What I want to remove is just alloc_pages_node. :)
+Acked-By: Davide Libenzi <davidel@xmailserver.org>
 
-Why remove it? If you want to get rid of -1 handling then check all the
-callsites and make sure that they are not using  -1.
 
-Also could you define a constant for -1? -1 may have various meanings. One
-is the local node and the other is any node. The difference is if memory
-policies are obeyed or not. Note that alloc_pages follows memory policies
-whereas alloc_pages_node does not.
+- Davide
 
-Therefore
-
-alloc_pages() != alloc_pages_node(  , -1)
 
