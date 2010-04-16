@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722Ab0DPEXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 00:23:38 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:44202 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751373Ab0DPEXh (ORCPT
+	id S1752194Ab0DPEXs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 00:23:48 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49399 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab0DPEXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 00:23:37 -0400
-Date: Fri, 16 Apr 2010 14:23:08 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 06/10] vmscan: Split shrink_zone to reduce stack usage
-Message-ID: <20100416042308.GZ2493@dastard>
-References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie>
- <1271352103-2280-7-git-send-email-mel@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271352103-2280-7-git-send-email-mel@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 16 Apr 2010 00:23:44 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 16 Apr 2010 13:18:23 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-Id: <20100416131823.c874125a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100416101339.a501f554.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
+	<20100416101339.a501f554.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 06:21:39PM +0100, Mel Gorman wrote:
-> shrink_zone() calculculates how many pages it needs to shrink from each
-> LRU list in a given pass. It uses a number of temporary variables to
-> work this out that then remain on the stack. This patch splits the
-> function so that some of the stack variables can be discarded.
+On Fri, 16 Apr 2010 10:13:39 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+ 
+> Hmm. Then, if memoy cgroup is filled by dirty pages, it can't kick writeback
+> and has to wait for someone else's writeback ?
 > 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> ---
->  mm/vmscan.c |   29 +++++++++++++++++++----------
->  1 files changed, 19 insertions(+), 10 deletions(-)
+> How long this will take ?
+> # mount -t cgroup none /cgroup -o memory
+> # mkdir /cgroup/A
+> # echo 20M > /cgroup/A/memory.limit_in_bytes
+> # echo $$ > /cgroup/A/tasks
+> # dd if=/dev/zero of=./tmpfile bs=4096 count=1000000
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 1ace7c6..a374879 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1595,19 +1595,14 @@ static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
->  	return nr;
->  }
->  
-> -/*
-> - * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
-> - */
-> -static void shrink_zone(struct zone *zone, struct scan_control *sc)
-> +/* Calculate how many pages from each LRU list should be scanned */
-> +static void calc_scan_trybatch(struct zone *zone,
-> +				 struct scan_control *sc, unsigned long *nr)
+> Can memcg ask writeback thread to "Wake Up Now! and Write this out!" effectively ?
+> 
 
-Needs "noinline_for_stack" to stop the compiler re-inlining it.
+Hmm.. I saw an oom-kill while testing several cases but performance itself
+seems not to be far different with or without patch.
+But I'm unhappy with oom-kill, so some tweak for memcg will be necessary
+if we'll go with this.
 
-Cheers,
+Thanks,
+-Kame
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
