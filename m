@@ -1,56 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758313Ab0DPMGu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 08:06:50 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:42758 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225Ab0DPMGt (ORCPT
+	id S1758335Ab0DPMN1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 08:13:27 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:15025 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758287Ab0DPMNZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 08:06:49 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -14.389
-Message-ID: <4BC852CD.40406@tremplin-utc.net>
-Date: Fri, 16 Apr 2010 14:06:37 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100331 Mandriva/3.0.4-1mdv2010.1 (2010.1) Thunderbird/3.0.4
+	Fri, 16 Apr 2010 08:13:25 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: samu.p.onkalo@nokia.com, jkosina@suse.cz, eric.piel@tremplin-utc.net
+Cc: akpm@linux-foundation.org, pavel@ucw.cz, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lis3lv02d: provide means to disable polled input
+ interface
+References: <alpine.LNX.2.00.1004091453530.8345@pobox.suse.cz>
+ <4BBF2BD1.5050107@tremplin-utc.net>
+ <alpine.LNX.2.00.1004091532150.8345@pobox.suse.cz>
+ <op.va86rulwgp7y00@linux-r26l.site>
+ <62697B07E9803846BC582181BD6FB6B826A8525E8A@NOK-EUMSG-02.mgdnok.nokia.com>
+Date: Fri, 16 Apr 2010 14:13:21 +0200
 MIME-Version: 1.0
-To: Marcin Derlukiewicz <marcin@derlukiewicz.pl>
-CC: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-       Samu Onkalo <samu.p.onkalo@nokia.com>, Pavel Machek <pavel@ucw.cz>,
-       lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lis3lv02d: provide means to disable polled input interface
-References: <alpine.LNX.2.00.1004091453530.8345@pobox.suse.cz> <4BBF2BD1.5050107@tremplin-utc.net> <alpine.LNX.2.00.1004091532150.8345@pobox.suse.cz> <op.va86rulwgp7y00@linux-r26l.site>
-In-Reply-To: <op.va86rulwgp7y00@linux-r26l.site>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+From: "Marcin Derlukiewicz" <marcin@derlukiewicz.pl>
+Message-ID: <op.va878jw6gp7y00@linux-r26l.site>
+In-Reply-To: <62697B07E9803846BC582181BD6FB6B826A8525E8A@NOK-EUMSG-02.mgdnok.nokia.com>
+User-Agent: Opera Mail/10.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/04/10 13:41, Marcin Derlukiewicz wrote:
-:
-> sorry for the delay, had a crunch time
-> 
-> here is the link for this lsof:
-> https://bugzilla.novell.com/attachment.cgi?id=354953
-So apparently, it's opened by mplayer. Indeed, by default mplayer always
-opens the first joystick device, because some people like to  control a
-movie with a joystick.
+Dnia 16-04-2010 o 14:00:15 <samu.p.onkalo@nokia.com> napisał(a):
 
-I don't think much can be done from the kernel point of view. Maybe
-there are even people who enjoy controlling their movies by moving their
-laptop! Here, my ~/.mplayer/config looks like:
-[default]
-input=js-dev=/dev/input/js8
+>
+>
+>> -----Original Message-----
+>> From: ext Marcin Derlukiewicz [mailto:marcin@derlukiewicz.pl]
+>> Sent: 16 April, 2010 14:42
+>> To: Jiri Kosina; Éric Piel
+>> Cc: Andrew Morton; Onkalo Samu.P (Nokia-D/Tampere); Pavel Machek; lm-
+>> sensors@lm-sensors.org; linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH] lis3lv02d: provide means to disable polled input
+>> interface
+>>
+>> Dnia 09-04-2010 o 15:32:59 Jiri Kosina <jkosina@suse.cz> napisał(a):
+>>
+>>> On Fri, 9 Apr 2010, Éric Piel wrote:
+>>>
+>>>> > This is reported to create 20% CPU usage increase (and
+>> proportionaly
+>>>> higher
+>>>> > power consumption) just for the ipolldevd kernel thread (which is
+>> used
+>>>> > to read the sensor).
+>>>> >
+>>>> > As most users probably only use the freefall functionality of the
+>>>> driver
+>>>> > and not the joystick interface, provide means for disabling the
+>>>> registration
+>>>> > of joystick device altogether via module parameter.
+>>>> > (I'd rather make it default to 0, but this will break backwards
+>>>> compatibility).
+>>>> Are you saying there is a 20% CPU usage even when the joystick
+>> interface
+>>>> is not open? This should not happen (and this is not happening on my
+>>>> laptop). The polling should happen only when a userspace app opens
+>> the
+>>>> joystick interface (like running neverball).
+>>>>
+>>>> So I'd tend to think it's more due to a misconfiguration of the
+>> system
+>>>> (like xserver using the joystick interface as a pointer device) or
+>> it's
+>>>> a bug in the way we set up the polling. Could you investigate and let
+>> me
+>>>> know?
+>>>
+>>> Marcin originally reported this to me.
+>>>
+>>> Marcin, could you please check 'lsof' output to see whether the
+>> joystick
+>>> interface has been open by some application?
+>>>
+>>> Thanks,
+>>>
+>>
+>> sorry for the delay, had a crunch time
+>>
+>> here is the link for this lsof:
+>> https://bugzilla.novell.com/attachment.cgi?id=354953
+>>
+>
+> Could you check what is the polling period of the device.
+> something like:
+> cat /sys/devices/platform/lis3lv02d/input/input9/poll
+>
+> it is current polling period in milliseconds. 0 disables polling.
+>
+> -Samu
+>
 
-You could also put a udev rule to change the name of this joystick to
-something like js1.
+I think that on my system this is /sys/devices/platform/lis3lv02d/rate
+but i may be wrong. Anyway it contains 40 as a number.
 
-All I could think of in the kernel side to improve this situation would
-be to give more information about joystick devices, and define a subtype
-"accelerometer", which mplayer could avoid selecting by default. I don't
-know enough the input interface to know if this already exists...
-
-See you,
-Eric
-
+Marcin.
