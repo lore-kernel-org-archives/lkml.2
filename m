@@ -1,127 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab0DPHyL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 03:54:11 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47620 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348Ab0DPHyJ (ORCPT
+	id S1757192Ab0DPH5R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 03:57:17 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:52373 "HELO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757030Ab0DPH5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 03:54:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 09/10] vmscan: Setup pagevec as late as possible in shrink_page_list()
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Chris Mason <chris.mason@oracle.com>,
-       Dave Chinner <david@fromorbit.com>, Andi Kleen <andi@firstfloor.org>,
-       Johannes Weiner <hannes@cmpxchg.org>
-In-Reply-To: <1271352103-2280-10-git-send-email-mel@csn.ul.ie>
-References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie> <1271352103-2280-10-git-send-email-mel@csn.ul.ie>
-Message-Id: <20100416115248.27A7.A69D9226@jp.fujitsu.com>
+	Fri, 16 Apr 2010 03:57:16 -0400
+Message-ID: <4BC81859.2080706@ribosome.natur.cuni.cz>
+Date: Fri, 16 Apr 2010 09:57:13 +0200
+From: Martin Mokrejs <mmokrejs@ribosome.natur.cuni.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SeaMonkey/2.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Martin Mokrejs <mmokrejs@ribosome.natur.cuni.cz>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       USB list <linux-usb@vger.kernel.org>,
+       USB Storage list <usb-storage@lists.one-eyed-alien.net>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.33.1: USB camera hung_task_timeout_secs >120 seconds
+References: <Pine.LNX.4.44L0.1004141619360.1716-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1004141619360.1716-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 16 Apr 2010 16:54:03 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> shrink_page_list() sets up a pagevec to release pages as according as they
-> are free. It uses significant amounts of stack on the pagevec. This
-> patch adds pages to be freed via pagevec to a linked list which is then
-> freed en-masse at the end. This avoids using stack in the main path that
-> potentially calls writepage().
-> 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> ---
->  mm/vmscan.c |   34 ++++++++++++++++++++++++++--------
->  1 files changed, 26 insertions(+), 8 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 9bc1ede..2c22c83 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -619,6 +619,22 @@ static enum page_references page_check_references(struct page *page,
->  	return PAGEREF_RECLAIM;
->  }
->  
-> +static void free_page_list(struct list_head *free_list)
-> +{
-> +	struct pagevec freed_pvec;
-> +	struct page *page, *tmp;
-> +
-> +	pagevec_init(&freed_pvec, 1);
-> +
-> +	list_for_each_entry_safe(page, tmp, free_list, lru) {
-> +		list_del(&page->lru);
-> +		if (!pagevec_add(&freed_pvec, page)) {
-> +			__pagevec_free(&freed_pvec);
-> +			pagevec_reinit(&freed_pvec);
-> +		}
-> +	}
+Alan Stern wrote:
+> On Wed, 14 Apr 2010, Maciej Rutecki wrote:
+>
+>> (Add CCs)
+>>
+>> Can you check, that eg. 2.6.30 and latest -RC works OK?
+>>
+>> On wtorek, 13 kwietnia 2010 o 22:07:20 Martin Mokrejs wrote:
+>>> Hi,
+>>>     I am not certain whether the stacktrace I received is just intentional
+>>> to attract developer eyes or whether this is actually a false alarm:
+>>> mounting USB mass storage device media always takes a long while.
+>>> This is a P4-M laptop with Kouwell 7004 FW/USB2.0 PCMCIA card.
+>>> Comments?
+>>> Thanks,
+>>> martin
+>
+> If 2.6.34-rc doesn't work, please post a usbmon trace showing what
+> happens when the device is plugged in.  Instructions are in
+> Documentation/usb/usbmon.txt.
 
-Need this two line at this? because we need consider number of
-list element are not 14xN.
+I am unable to reproduce this with any version 2.6.30.10., 2.6.31.12,
+2.6.33.1, 2.6.34-rc4-git2. I turned off the camera many times, removed the
+PCMCIA card while the USB media was recognized through kernel (not mounted),
+no luck. I do use it say once a week and the crash I swa for the first time,
+so I am not much optimistic on reproducibility. :(
 
-	if (pagevec_count(&freed_pvec))
-		__pagevec_free(&freed_pvec);
+Could it be related tot he fact that because the laptop has USB1.1 onboard
+it loads uhci_hcd first. Eventually when I plugin the PCMCIA card it loads
+ehci_hcd and the kernel complains it should have been loaded before?
+Is there a way to tell this in /etc/modules.d/somefile ? I fear I have to
+compile them into the kernel statically, on this particular setup.
 
-
-> +}
-> +
->  /*
->   * shrink_page_list() returns the number of reclaimed pages
->   */
-> @@ -627,13 +643,12 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  					enum pageout_io sync_writeback)
->  {
->  	LIST_HEAD(ret_pages);
-> -	struct pagevec freed_pvec;
-> +	LIST_HEAD(free_list);
->  	int pgactivate = 0;
->  	unsigned long nr_reclaimed = 0;
->  
->  	cond_resched();
->  
-> -	pagevec_init(&freed_pvec, 1);
->  	while (!list_empty(page_list)) {
->  		enum page_references references;
->  		struct address_space *mapping;
-> @@ -808,10 +823,12 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		__clear_page_locked(page);
->  free_it:
->  		nr_reclaimed++;
-> -		if (!pagevec_add(&freed_pvec, page)) {
-> -			__pagevec_free(&freed_pvec);
-> -			pagevec_reinit(&freed_pvec);
-> -		}
-> +
-> +		/*
-> +		 * Is there need to periodically free_page_list? It would
-> +		 * appear not as the counts should be low
-> +		 */
-> +		list_add(&page->lru, &free_list);
->  		continue;
->  
->  cull_mlocked:
-> @@ -834,9 +851,10 @@ keep:
->  		list_add(&page->lru, &ret_pages);
->  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
->  	}
-> +
-> +	free_page_list(&free_list);
-> +
->  	list_splice(&ret_pages, page_list);
-> -	if (pagevec_count(&freed_pvec))
-> -		__pagevec_free(&freed_pvec);
->  	count_vm_events(PGACTIVATE, pgactivate);
->  	return nr_reclaimed;
->  }
-> -- 
-> 1.6.5
-> 
-
-
-
+Martin
