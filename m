@@ -1,152 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab0DPPEY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 11:04:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14989 "EHLO mx1.redhat.com"
+	id S1756876Ab0DPPFb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 11:05:31 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:38328 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752901Ab0DPPEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 11:04:22 -0400
-Date: Fri, 16 Apr 2010 11:04:07 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100416150407.GH15159@redhat.com>
-References: <1271366710-17468-1-git-send-email-dzickus@redhat.com>
- <20100416014712.GC15570@nowhere>
- <20100416141213.GC15159@redhat.com>
- <20100416144302.GB5162@nowhere>
+	id S1754897Ab0DPPF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 11:05:29 -0400
+Date: Fri, 16 Apr 2010 16:05:10 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Chris Mason <chris.mason@oracle.com>, Dave Chinner <david@fromorbit.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-ID: <20100416150510.GL19264@csn.ul.ie>
+References: <20100413202021.GZ13327@think> <20100414014041.GD2493@dastard> <20100414155233.D153.A69D9226@jp.fujitsu.com> <20100414072830.GK2493@dastard> <20100414085132.GJ25756@csn.ul.ie> <20100415013436.GO2493@dastard> <20100415102837.GB10966@csn.ul.ie> <20100415134217.GB3794@think>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100416144302.GB5162@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100415134217.GB3794@think>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 04:43:04PM +0200, Frederic Weisbecker wrote:
-> On Fri, Apr 16, 2010 at 10:12:13AM -0400, Don Zickus wrote:
-> > On Fri, Apr 16, 2010 at 03:47:14AM +0200, Frederic Weisbecker wrote:
-> > > >  config PERF_EVENTS_NMI
-> > > >  	bool
-> > > > +	depends on PERF_EVENTS
-> > > >  	help
-> > > >  	  Arch has support for nmi_watchdog
+On Thu, Apr 15, 2010 at 09:42:17AM -0400, Chris Mason wrote:
+> On Thu, Apr 15, 2010 at 11:28:37AM +0100, Mel Gorman wrote:
+> > On Thu, Apr 15, 2010 at 11:34:36AM +1000, Dave Chinner wrote:
+> > > On Wed, Apr 14, 2010 at 09:51:33AM +0100, Mel Gorman wrote:
+> > > > On Wed, Apr 14, 2010 at 05:28:30PM +1000, Dave Chinner wrote:
+> > > > > On Wed, Apr 14, 2010 at 03:52:44PM +0900, KOSAKI Motohiro wrote:
+> > > > > > > On Tue, Apr 13, 2010 at 04:20:21PM -0400, Chris Mason wrote:
+> > > > > > > > On Tue, Apr 13, 2010 at 08:34:29PM +0100, Mel Gorman wrote:
+> > > > > > > > > > Basically, there is not enough stack space available to allow direct
+> > > > > > > > > > reclaim to enter ->writepage _anywhere_ according to the stack usage
+> > > > > > > > > > profiles we are seeing here....
+> > > > > > > > > > 
+> > > > > > > > > 
+> > > > > > > > > I'm not denying the evidence but how has it been gotten away with for years
+> > > > > > > > > then? Prevention of writeback isn't the answer without figuring out how
+> > > > > > > > > direct reclaimers can queue pages for IO and in the case of lumpy reclaim
+> > > > > > > > > doing sync IO, then waiting on those pages.
+> > > > > > > > 
+> > > > > > > > So, I've been reading along, nodding my head to Dave's side of things
+> > > > > > > > because seeks are evil and direct reclaim makes seeks.  I'd really loev
+> > > > > > > > for direct reclaim to somehow trigger writepages on large chunks instead
+> > > > > > > > of doing page by page spatters of IO to the drive.
+> > > > > > 
+> > > > > > I agree that "seeks are evil and direct reclaim makes seeks". Actually,
+> > > > > > making 4k io is not must for pageout. So, probably we can improve it.
+> > > > > > 
+> > > > > > 
+> > > > > > > Perhaps drop the lock on the page if it is held and call one of the
+> > > > > > > helpers that filesystems use to do this, like:
+> > > > > > > 
+> > > > > > > 	filemap_write_and_wait(page->mapping);
+> > > > > > 
+> > > > > > Sorry, I'm lost what you talk about. Why do we need per-file
+> > > > > > waiting? If file is 1GB file, do we need to wait 1GB writeout?
+> > > > > 
+> > > > > So use filemap_fdatawrite(page->mapping), or if it's better only
+> > > > > to start IO on a segment of the file, use
+> > > > > filemap_fdatawrite_range(page->mapping, start, end)....
+> > > > 
+> > > > That does not help the stack usage issue, the caller ends up in
+> > > > ->writepages. From an IO perspective, it'll be better from a seek point of
+> > > > view but from a VM perspective, it may or may not be cleaning the right pages.
+> > > > So I think this is a red herring.
 > > > 
+> > > If you ask it to clean a bunch of pages around the one you want to
+> > > reclaim on the LRU, there is a good chance it will also be cleaning
+> > > pages that are near the end of the LRU or physically close by as
+> > > well. It's not a guarantee, but for the additional IO cost of about
+> > > 10% wall time on that IO to clean the page you need, you also get
+> > > 1-2 orders of magnitude other pages cleaned. That sounds like a
+> > > win any way you look at it...
 > > > 
-> > > 
-> > > That looks too general. It's more about the fact the arch supports
-> > > cpu cycle events and generates NMIs on overflow.
 > > 
-> > I was trying to figure out a way to add the PERF_EVENTS dependency as I
-> > didn't want to impose it on the CONFIG_NMI_WATCHDOG if that config
-> > supported softlockup (which doesn't need the PERF_EVENTS).
-> 
-> 
-> 
-> Yeah and this is fine. I was talking about the help description.
-
-Oh. heh.  ok, will expand that.
-
-> 
-> 
->  
-> > > I'm confused, do we have two versions of the softlockup
-> > > detector now? You should drop the older one.
+> > At worst, it'll distort the LRU ordering slightly. Lets say the the
+> > file-adjacent-page you clean was near the end of the LRU. Before such a
+> > patch, it may have gotten cleaned and done another lap of the LRU.
+> > After, it would be reclaimed sooner. I don't know if we depend on such
+> > behaviour (very doubtful) but it's a subtle enough change. I can't
+> > predict what it'll do for IO congestion. Simplistically, there is more
+> > IO so it's bad but if the write pattern is less seeky and we needed to
+> > write the pages anyway, it might be improved.
 > > 
-> > Originally Ingo talked about a migration path, so I was going to support
-> > the older one in case the new one was having issues, sort of like what he
-> > suggested about moving the nmi code from arch/x86/kernel/apic/nmi.c to
-> > kernel/watchdog.c.  But I can probably drop the softlockup case as the
-> > migration isn't as tricky as the nmi case.
-> 
-> 
-> 
-> Ok.
-> 
-> > > > +		return;
-> > > > +	}
-> > > > +
-> > > > +	cpumask_clear_cpu(this_cpu, to_cpumask(hardlockup_mask));
-> > > 
-> > > 
-> > > 
-> > > Hmm...this is probably not necessary.
+> > > I agree that it doesn't solve the stack problem (Chris' suggestion
+> > > that we enable the bdi flusher interface would fix this);
 > > 
-> > I was just thinking of the case where dispite the WARN above, the cpu
-> > actually recovered and then failed again separately.  But I probably won't
-> > spend anymore time defending it. :-)
+> > I'm afraid I'm not familiar with this interface. Can you point me at
+> > some previous discussion so that I am sure I am looking at the right
+> > thing?
 > 
+> vi fs/direct-reclaim-helper.c, it has a few placeholders for where the
+> real code needs to go....just look for the ~ marks.
 > 
-> 
-> This is really just a corner case, I guess you don't need to
-> bother with that. It is actually racy against other cpus and adding
-> a spinlock here (in the everything is fine path) would be an overkill.
-> 
-> In fact, having two per cpu vars named hardlockup_warned and
-> softlockup_warned would be better than cpumasks. I'm sorry I
-> suggested you the cpumask, but such per cpu vars will avoid
-> you dealing with these synchonization issues. And one of the primary
-> rules is usually to never take a lock from NMIs if we can :)
 
-Yeah, I guess per cpu is better.  I agree that locks in NMI are frowned
-upon but I wasn't sure of it was dealt with.
+I must be blind. What tree is this in? I can't see it v2.6.34-rc4,
+mmotm or google.
 
-I'll try to implement this.  Any objections if I combined hardlockup and
-softlockup with per cpu watchdog_warn and have bit masks for HARDLOCKUP
-and SOFTLOCKUP?  I hate to just waste per cpu space for this.
-
+> I mostly meant that the bdi helper threads were the best place to add
+> knowledge about which pages we want to write for reclaim.  We might need
+> to add a thread dedicated to just doing the VM's dirty work, but that's
+> where I would start discussing fancy new interfaces.
 > 
-> 
->  
-> > > You probably want a backtrace cpu mask here as well
-> > > (but better don't use the same than the hardlockup thing)
 > > 
-> > yup.
-> 
-> 
-> So actually, per_cpu softlockup_warned would be better :)
-> 
-> 
-> > > Also you should half-drop the DETECT_SOFTLOCKUP thing:
-> > > keep it's definition but drop the ability to choose it from
-> > > the prompt:
+> > > what I'm
+> > > pointing out is that the arguments that it is too hard or there are
+> > > no interfaces available to issue larger IO from reclaim are not at
+> > > all valid.
 > > > 
-> > > config DETECT_SOFTLOCKUP
-> > > 	bool
-> > > 	depends on DEBUG_KERNEL && !S390
-> > > 	default y
-> > > 
-> > > This way we keep it for compatibility with def_configs, it will
-> > > enable the WATCHDOG by default if it is "y", we can schedule
-> > > its removal later.
->  
-> > I understand the general idea but not quite the implementation idea.  I will work
-> > on it and see what I come up with.
+> > 
+> > Sure, I'm not resisting fixing this, just your first patch :) There are four
+> > goals here
+> > 
+> > 1. Reduce stack usage
+> > 2. Avoid the splicing of subsystem stack usage with direct reclaim
+> > 3. Preserve lumpy reclaims cleaning of contiguous pages
+> > 4. Try and not drastically alter LRU aging
+> > 
+> > 1 and 2 are important for you, 3 is important for me and 4 will have to
+> > be dealt with on a case-by-case basis.
+> > 
+> > Your patch fixes 2, avoids 1, breaks 3 and haven't thought about 4 but I
+> > guess dirty pages can cycle around more so it'd need to be cared for.
 > 
+> I'd like to add one more:
 > 
-> We current have:
+> 5. Don't dive into filesystem locks during reclaim.
 > 
-> config DETECT_SOFTLOCKUP
->      bool "Blah"
->      depends on DEBUG_KERNEL && !S390
->      default y
->      help
->        .......
-> 
-> The idea is to remove the "Blah" so that the user can't select it
-> anymore from make menuconfig, and to remove the help too as it's useless
-> too.
-> 
-> So that config WATCHDOG can be default y if DETECT_SOFTLOCKUP.
-> Then if someone comes with a config that has DETECT_SOFTLOCKUP,
-> it's new implementation (WATCHDOG) will enabled by default.
 
-Ah, I missed the bool part.  I got it.  Thanks for the clarification.
+Good add. It's not a new problem either. This came up at least two years
+ago at around the first VM/FS summit and the response was a long the lines
+of shuffling uncomfortably :/
 
-Cheers,
-Don
-
+> This is different from splicing code paths together, but
+> the filesystem writepage code has become the center of our attempts at
+> doing big fat contiguous writes on disk.  We push off work as late as we
+> can until just before the pages go down to disk.
 > 
+> I'll pick on ext4 and btrfs for a minute, just to broaden the scope
+> outside of XFS.  Writepage comes along and the filesystem needs to
+> actually find blocks on disk for all the dirty pages it has promised to
+> write.
+> 
+> So, we start a transaction, we take various allocator locks, modify
+> different metadata, log changed blocks, take a break (logging is hard
+> work you know, need_resched() triggered a by now), stuff it
+> all into the file's metadata, log that, and finally return.
+> 
+> Each of the steps above can block for a long time.  Ext4 solves
+> this by not doing them.  ext4_writepage only writes pages that
+> are already fully allocated on disk.
+> 
+> Btrfs is much more efficient at not doing them, it just returns right
+> away for PF_MEMALLOC.
+> 
+> This is a long way of saying the filesystem writepage code is the
+> opposite of what direct reclaim wants.  Direct reclaim wants to
+> find free ram now, and if it does end up in the mess describe above,
+> it'll just get stuck for a long time on work entirely unrelated to
+> finding free pages.
+> 
+
+Ok, good summary, thanks. I was only partially aware of some of these.
+i.e. I knew it was a problem but was not sensitive to how bad it was.
+Your last point is interesting because lumpy reclaim for large orders under
+heavy pressure can make the system stutter badly (e.g. during a huge
+page pool resize). I had blamed just plain IO but messing around with
+locks and tranactions could have been a large factor and I didn't go
+looking for it.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
