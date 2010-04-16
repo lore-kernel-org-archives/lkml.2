@@ -1,253 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129Ab0DPP3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 11:29:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35690 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710Ab0DPP3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 11:29:36 -0400
-Date: Fri, 16 Apr 2010 17:29:05 +0200 (CEST)
-From: John Kacur <jkacur@redhat.com>
-X-X-Sender: jkacur@localhost.localdomain
-To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: linux-rt-users@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       Clark Williams <williams@redhat.com>,
-       "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC: PATCH v2] lockdep: Make MAX_STACK_TRACE_ENTRIES
- configurable.
-In-Reply-To: <alpine.LFD.2.00.1004161329030.11320@localhost.localdomain>
-Message-ID: <alpine.LFD.2.00.1004161727000.11320@localhost.localdomain>
-References: <alpine.LFD.2.00.1004161329030.11320@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758152Ab0DPPcT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 11:32:19 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53012 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757732Ab0DPPcS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 11:32:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=LuKI07+EgQ6a1gt98lIpat4F5SbKfgG3diJkPWoGlMizIx4U9+p1bwJ4jHjn4rIluI
+         PFjWB0B/HzukgaNZsx6Vb6KcJ/vgOo9GGqm2jnPiAqkAGW9VPXWJYaw4vHL+d6qB5Q4J
+         a0BHGqQjayCnDDWkhPXiRT0zyGGqOyAFNFFS8=
+Date: Fri, 16 Apr 2010 17:32:12 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100416153210.GG5162@nowhere>
+References: <1271366710-17468-1-git-send-email-dzickus@redhat.com> <20100416014712.GC15570@nowhere> <20100416141213.GC15159@redhat.com> <20100416144302.GB5162@nowhere> <20100416150407.GH15159@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100416150407.GH15159@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 16, 2010 at 11:04:07AM -0400, Don Zickus wrote:
+> > This is really just a corner case, I guess you don't need to
+> > bother with that. It is actually racy against other cpus and adding
+> > a spinlock here (in the everything is fine path) would be an overkill.
+> > 
+> > In fact, having two per cpu vars named hardlockup_warned and
+> > softlockup_warned would be better than cpumasks. I'm sorry I
+> > suggested you the cpumask, but such per cpu vars will avoid
+> > you dealing with these synchonization issues. And one of the primary
+> > rules is usually to never take a lock from NMIs if we can :)
+> 
+> Yeah, I guess per cpu is better.  I agree that locks in NMI are frowned
+> upon but I wasn't sure of it was dealt with.
 
 
-On Fri, 16 Apr 2010, John Kacur wrote:
+They work in fact. They are just not checked by lockdep.
+And mostly they are very dangerous: if something else can
+take it (from interrupt, from context) then this is a deadlock.
+And even though we ensure this is only taken from NMI, we tend
+to avoid that.
 
-> 
-> This patch was created against v2.6.33.2-rt13 but is also intended for 
-> mainline.
-> 
-> Certain debug configurations tend to go over the MAX_STACK_TRACE_ENTRIES
-> limit without there really being any problem.
-> 
-> This patch keeps the old default, but allows the user to configure a 
-> higher value if desired.
-> 
-> I tend to bump this value up for real-time debug configurations for 
-> example. This is preferrable to indiscriminately turning off the locking 
-> correctness validator.
-> 
-> There have been some attempts to increase the default value in the past, 
-> that were met with resistance by some, because of the legitimate concern 
-> that this was growing too large and that we need to understand why. By 
-> making it configurable, I hope to satisfy both sets of people - those who 
-> believe they need to set it larger under special circumstances, and those 
-> who want a reasonably small default.
-> 
-> From 57479e7620d312353f5f5b173742e011896a9c74 Mon Sep 17 00:00:00 2001
-> From: John Kacur <jkacur@redhat.com>
-> Date: Fri, 16 Apr 2010 13:24:02 +0200
-> Subject: [RFC: PATCH] lockdep: Make MAX_STACK_TRACE_ENTRIES configurable.
-> 
-> Certain configurations that have LOCKDEP turned on, run into the limit
-> where the MAX_STACK_TRACE_ENTRIES are too small. Rather than simply
-> turning of the locking correctness validator let the user configure this
-> value to something reasonable for their system.
-> 
-> Signed-off-by: John Kacur <jkacur@redhat.com>
-> ---
->  kernel/lockdep.c           |    8 ++++----
->  kernel/lockdep_internals.h |    6 ------
->  lib/Kconfig.debug          |    9 +++++++++
->  3 files changed, 13 insertions(+), 10 deletions(-)
-> 
-> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> index 1199bda..6030521 100644
-> --- a/kernel/lockdep.c
-> +++ b/kernel/lockdep.c
-> @@ -368,12 +368,12 @@ static int verbose(struct lock_class *class)
->   * addresses. Protected by the graph_lock.
->   */
->  unsigned long nr_stack_trace_entries;
-> -static unsigned long stack_trace[MAX_STACK_TRACE_ENTRIES];
-> +static unsigned long stack_trace[CONFIG_MAX_STACK_TRACE_ENTRIES];
->  
->  static int save_trace(struct stack_trace *trace)
->  {
->  	trace->nr_entries = 0;
-> -	trace->max_entries = MAX_STACK_TRACE_ENTRIES - nr_stack_trace_entries;
-> +	trace->max_entries = CONFIG_MAX_STACK_TRACE_ENTRIES - nr_stack_trace_entries;
->  	trace->entries = stack_trace + nr_stack_trace_entries;
->  
->  	trace->skip = 3;
-> @@ -395,11 +395,11 @@ static int save_trace(struct stack_trace *trace)
->  
->  	nr_stack_trace_entries += trace->nr_entries;
->  
-> -	if (nr_stack_trace_entries >= MAX_STACK_TRACE_ENTRIES-1) {
-> +	if (nr_stack_trace_entries >= CONFIG_MAX_STACK_TRACE_ENTRIES-1) {
->  		if (!debug_locks_off_graph_unlock())
->  			return 0;
->  
-> -		printk("BUG: MAX_STACK_TRACE_ENTRIES too low!\n");
-> +		printk("BUG: CONFIG_MAX_STACK_TRACE_ENTRIES = %d too low!\n", CONFIG_MAX_STACK_TRACE_ENTRIES);
->  		printk("turning off the locking correctness validator.\n");
->  		dump_stack();
->  
-> diff --git a/kernel/lockdep_internals.h b/kernel/lockdep_internals.h
-> index a2ee95a..6887711 100644
-> --- a/kernel/lockdep_internals.h
-> +++ b/kernel/lockdep_internals.h
-> @@ -61,12 +61,6 @@ enum {
->  
->  #define MAX_LOCKDEP_CHAIN_HLOCKS (MAX_LOCKDEP_CHAINS*5)
->  
-> -/*
-> - * Stack-trace: tightly packed array of stack backtrace
-> - * addresses. Protected by the hash_lock.
-> - */
-> -#define MAX_STACK_TRACE_ENTRIES	262144UL
-> -
->  extern struct list_head all_lock_classes;
->  extern struct lock_chain lock_chains[];
->  
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index cbf6e02..ad35402 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -509,6 +509,15 @@ config LOCKDEP
->  	select KALLSYMS
->  	select KALLSYMS_ALL
->  
-> +config MAX_STACK_TRACE_ENTRIES
-> +	int "MAX_STACK_TRACE_ENTRIES for LOCKDEP"
-> +	depends on LOCKDEP
-> +	default 262144
-> +	help
-> +	   This option allows you to change the default MAX_STACK_TRACE_ENTRIES
-> +	   used for LOCKDEP. Warning, increasing this number will increase the
-> +	   size of the stack_trace array, and thus the kernel size too.
-> +
->  config LOCK_STAT
->  	bool "Lock usage statistics"
->  	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
-> -- 
-> 1.6.6.1
-> 
-> 
 
-I missed the MAX_STACK_TRACE_ENTRIES in kernel/lockdep_proc.c
-This corrects that.
+ 
+> I'll try to implement this.  Any objections if I combined hardlockup and
+> softlockup with per cpu watchdog_warn and have bit masks for HARDLOCKUP
+> and SOFTLOCKUP?  I hate to just waste per cpu space for this.
 
->From 66b4fa66afefb9e22047ddc5a68c9886e1a59cf6 Mon Sep 17 00:00:00 2001
-From: John Kacur <jkacur@redhat.com>
-Date: Fri, 16 Apr 2010 13:24:02 +0200
-Subject: [PATCH] lockdep: Make MAX_STACK_TRACE_ENTRIES configurable.
 
-Certain configurations that have LOCKDEP turned on, run into the limit
-where the MAX_STACK_TRACE_ENTRIES are too small. Rather than simply
-turning of the locking correctness validator let the user configure this
-value to something reasonable for their system.
 
-Signed-off-by: John Kacur <jkacur@redhat.com>
----
- kernel/lockdep.c           |    8 ++++----
- kernel/lockdep_internals.h |    6 ------
- kernel/lockdep_proc.c      |    2 +-
- lib/Kconfig.debug          |    9 +++++++++
- 4 files changed, 14 insertions(+), 11 deletions(-)
-
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 1199bda..6030521 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -368,12 +368,12 @@ static int verbose(struct lock_class *class)
-  * addresses. Protected by the graph_lock.
-  */
- unsigned long nr_stack_trace_entries;
--static unsigned long stack_trace[MAX_STACK_TRACE_ENTRIES];
-+static unsigned long stack_trace[CONFIG_MAX_STACK_TRACE_ENTRIES];
- 
- static int save_trace(struct stack_trace *trace)
- {
- 	trace->nr_entries = 0;
--	trace->max_entries = MAX_STACK_TRACE_ENTRIES - nr_stack_trace_entries;
-+	trace->max_entries = CONFIG_MAX_STACK_TRACE_ENTRIES - nr_stack_trace_entries;
- 	trace->entries = stack_trace + nr_stack_trace_entries;
- 
- 	trace->skip = 3;
-@@ -395,11 +395,11 @@ static int save_trace(struct stack_trace *trace)
- 
- 	nr_stack_trace_entries += trace->nr_entries;
- 
--	if (nr_stack_trace_entries >= MAX_STACK_TRACE_ENTRIES-1) {
-+	if (nr_stack_trace_entries >= CONFIG_MAX_STACK_TRACE_ENTRIES-1) {
- 		if (!debug_locks_off_graph_unlock())
- 			return 0;
- 
--		printk("BUG: MAX_STACK_TRACE_ENTRIES too low!\n");
-+		printk("BUG: CONFIG_MAX_STACK_TRACE_ENTRIES = %d too low!\n", CONFIG_MAX_STACK_TRACE_ENTRIES);
- 		printk("turning off the locking correctness validator.\n");
- 		dump_stack();
- 
-diff --git a/kernel/lockdep_internals.h b/kernel/lockdep_internals.h
-index a2ee95a..6887711 100644
---- a/kernel/lockdep_internals.h
-+++ b/kernel/lockdep_internals.h
-@@ -61,12 +61,6 @@ enum {
- 
- #define MAX_LOCKDEP_CHAIN_HLOCKS (MAX_LOCKDEP_CHAINS*5)
- 
--/*
-- * Stack-trace: tightly packed array of stack backtrace
-- * addresses. Protected by the hash_lock.
-- */
--#define MAX_STACK_TRACE_ENTRIES	262144UL
--
- extern struct list_head all_lock_classes;
- extern struct lock_chain lock_chains[];
- 
-diff --git a/kernel/lockdep_proc.c b/kernel/lockdep_proc.c
-index d4aba4f..97fcb31 100644
---- a/kernel/lockdep_proc.c
-+++ b/kernel/lockdep_proc.c
-@@ -306,7 +306,7 @@ static int lockdep_stats_show(struct seq_file *m, void *v)
- 	seq_printf(m, " in-process chains:             %11u\n",
- 			nr_process_chains);
- 	seq_printf(m, " stack-trace entries:           %11lu [max: %lu]\n",
--			nr_stack_trace_entries, MAX_STACK_TRACE_ENTRIES);
-+			nr_stack_trace_entries, CONFIG_MAX_STACK_TRACE_ENTRIES);
- 	seq_printf(m, " combined max dependencies:     %11u\n",
- 			(nr_hardirq_chains + 1) *
- 			(nr_softirq_chains + 1) *
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index cbf6e02..ad35402 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -509,6 +509,15 @@ config LOCKDEP
- 	select KALLSYMS
- 	select KALLSYMS_ALL
- 
-+config MAX_STACK_TRACE_ENTRIES
-+	int "MAX_STACK_TRACE_ENTRIES for LOCKDEP"
-+	depends on LOCKDEP
-+	default 262144
-+	help
-+	   This option allows you to change the default MAX_STACK_TRACE_ENTRIES
-+	   used for LOCKDEP. Warning, increasing this number will increase the
-+	   size of the stack_trace array, and thus the kernel size too.
-+
- config LOCK_STAT
- 	bool "Lock usage statistics"
- 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
--- 
-1.6.6.1
+Hmm, a hardlockup can come in after a softlockup.
+Don't worry too much about memory: usually the more you have cpu,
+the more you have memory :)
+Plus this is debugging code, not something supposed to be enabled
+in production.
 
