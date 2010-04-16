@@ -1,45 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757757Ab0DPOae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:30:34 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:54200 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab0DPOad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:30:33 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -14.389
-Message-ID: <4BC87481.2040000@tremplin-utc.net>
-Date: Fri, 16 Apr 2010 16:30:25 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100331 Mandriva/3.0.4-1mdv2010.1 (2010.1) Thunderbird/3.0.4
+	id S1757655Ab0DPObu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:31:50 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:35630 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752847Ab0DPObs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 10:31:48 -0400
+Date: Fri, 16 Apr 2010 15:31:28 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+       Dave Chinner <david@fromorbit.com>, Andi Kleen <andi@firstfloor.org>,
+       Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 08/10] vmscan: Setup pagevec as late as possible in
+	shrink_inactive_list()
+Message-ID: <20100416143128.GF19264@csn.ul.ie>
+References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie> <1271352103-2280-9-git-send-email-mel@csn.ul.ie> <20100416115215.27A4.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Marcin Derlukiewicz <marcin@derlukiewicz.pl>
-CC: samu.p.onkalo@nokia.com, jkosina@suse.cz, akpm@linux-foundation.org,
-       pavel@ucw.cz, lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lis3lv02d: provide means to disable polled input interface
-References: <alpine.LNX.2.00.1004091453530.8345@pobox.suse.cz> <4BBF2BD1.5050107@tremplin-utc.net> <alpine.LNX.2.00.1004091532150.8345@pobox.suse.cz> <op.va86rulwgp7y00@linux-r26l.site> <62697B07E9803846BC582181BD6FB6B826A8525E8A@NOK-EUMSG-02.mgdnok.nokia.com> <op.va878jw6gp7y00@linux-r26l.site> <4BC86C9B.4010400@tremplin-utc.net> <op.va9ee2z6gp7y00@linux-r26l.site>
-In-Reply-To: <op.va9ee2z6gp7y00@linux-r26l.site>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100416115215.27A4.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/04/10 16:26, Marcin Derlukiewicz wrote:
-> Dnia 16-04-2010 o 15:56:43 Éric Piel <eric.piel@tremplin-utc.net>
-> napisał(a):
-:
->>
->> Maybe your kernel is too old to have this functionality (I don't know
->> when it was introduced). Samu is right, here to disable the joystick, I
->> can indeed do a:
->> echo 0 > /sys/devices/platform/lis3lv02d/input/input*/poll
-:
-> nope, should i paste you list?
-> my kernel is 2.6.31.12
-It's not necessary. For your kernel, I'd recommend the trick with the
-mplayer configuration file. And as Samu explained, on newer kernels the
-ability to disable totally the polling is already there.
+On Fri, Apr 16, 2010 at 03:30:00PM +0900, KOSAKI Motohiro wrote:
+> > shrink_inactive_list() sets up a pagevec to release unfreeable pages. It
+> > uses significant amounts of stack doing this. This patch splits
+> > shrink_inactive_list() to take the stack usage out of the main path so
+> > that callers to writepage() do not contain an unused pagevec on the
+> > stack.
+> > 
+> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > ---
+> >  mm/vmscan.c |   93 +++++++++++++++++++++++++++++++++-------------------------
+> >  1 files changed, 53 insertions(+), 40 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index a232ad6..9bc1ede 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1120,6 +1120,54 @@ static int too_many_isolated(struct zone *zone, int file,
+> >  }
+> >  
+> >  /*
+> > + * TODO: Try merging with migrations version of putback_lru_pages
+> > + */
+> 
+> I also think this stuff need more cleanups. but this patch works and
+> no downside. So, Let's merge this at first.
 
-Eric
+Agreed. I was keeping the first-pass straight-forward and didn't want to
+do too much in one patch to ease review.
+
+> 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> 
+> but please fix Dave's pointed one.
+> 
+
+Done. Thanks Dave, I hadn't spotted noinline_for_stack but it's exactly
+what was needed here. It's not obvious why I used noinline otherwise.
+
+> 
+> > +static noinline void putback_lru_pages(struct zone *zone,
+> > +				struct zone_reclaim_stat *reclaim_stat,
+> > +				unsigned long nr_anon, unsigned long nr_file,
+> > + 				struct list_head *page_list)
+> > +{
+> > +	struct page *page;
+> > +	struct pagevec pvec;
+> > +
+> > +	pagevec_init(&pvec, 1);
+> > +
+> > +	/*
+> > +	 * Put back any unfreeable pages.
+> > +	 */
+> > +	spin_lock(&zone->lru_lock);
+> > +	while (!list_empty(page_list)) {
+> > +		int lru;
+> > +		page = lru_to_page(page_list);
+> > +		VM_BUG_ON(PageLRU(page));
+> > +		list_del(&page->lru);
+> > +		if (unlikely(!page_evictable(page, NULL))) {
+> > +			spin_unlock_irq(&zone->lru_lock);
+> > +			putback_lru_page(page);
+> > +			spin_lock_irq(&zone->lru_lock);
+> > +			continue;
+> > +		}
+> > +		SetPageLRU(page);
+> > +		lru = page_lru(page);
+> > +		add_page_to_lru_list(zone, page, lru);
+> > +		if (is_active_lru(lru)) {
+> > +			int file = is_file_lru(lru);
+> > +			reclaim_stat->recent_rotated[file]++;
+> > +		}
+> > +		if (!pagevec_add(&pvec, page)) {
+> > +			spin_unlock_irq(&zone->lru_lock);
+> > +			__pagevec_release(&pvec);
+> > +			spin_lock_irq(&zone->lru_lock);
+> > +		}
+> > +	}
+> > +	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
+> > +	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
+> > +
+> > +	spin_unlock_irq(&zone->lru_lock);
+> > +	pagevec_release(&pvec);
+> > +}
+> > +
+> > +/*
+> >   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
+> >   * of reclaimed pages
+> >   */
+> > @@ -1128,12 +1176,10 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+> >  			int file)
+> >  {
+> >  	LIST_HEAD(page_list);
+> > -	struct pagevec pvec;
+> >  	unsigned long nr_scanned;
+> >  	unsigned long nr_reclaimed = 0;
+> >  	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+> >  	int lumpy_reclaim = 0;
+> > -	struct page *page;
+> >  	unsigned long nr_taken;
+> >  	unsigned long nr_active;
+> >  	unsigned int count[NR_LRU_LISTS] = { 0, };
+> > @@ -1160,8 +1206,6 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+> >  	else if (sc->order && sc->priority < DEF_PRIORITY - 2)
+> >  		lumpy_reclaim = 1;
+> >  
+> > -	pagevec_init(&pvec, 1);
+> > -
+> >  	lru_add_drain();
+> >  	spin_lock_irq(&zone->lru_lock);
+> >  	nr_taken = sc->isolate_pages(nr_to_scan,
+> > @@ -1177,8 +1221,10 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+> >  			__count_zone_vm_events(PGSCAN_DIRECT, zone, nr_scanned);
+> >  	}
+> >  
+> > -	if (nr_taken == 0)
+> > -		goto done;
+> > +	if (nr_taken == 0) {
+> > +		spin_unlock_irq(&zone->lru_lock);
+> > +		return 0;
+> > +	}
+> >  
+> >  	nr_active = clear_active_flags(&page_list, count);
+> >  	__count_vm_events(PGDEACTIVATE, nr_active);
+> > @@ -1229,40 +1275,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+> >  		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
+> >  	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
+> >  
+> > -	spin_lock(&zone->lru_lock);
+> > -	/*
+> > -	 * Put back any unfreeable pages.
+> > -	 */
+> > -	while (!list_empty(&page_list)) {
+> > -		int lru;
+> > -		page = lru_to_page(&page_list);
+> > -		VM_BUG_ON(PageLRU(page));
+> > -		list_del(&page->lru);
+> > -		if (unlikely(!page_evictable(page, NULL))) {
+> > -			spin_unlock_irq(&zone->lru_lock);
+> > -			putback_lru_page(page);
+> > -			spin_lock_irq(&zone->lru_lock);
+> > -			continue;
+> > -		}
+> > -		SetPageLRU(page);
+> > -		lru = page_lru(page);
+> > -		add_page_to_lru_list(zone, page, lru);
+> > -		if (is_active_lru(lru)) {
+> > -			int file = is_file_lru(lru);
+> > -			reclaim_stat->recent_rotated[file]++;
+> > -		}
+> > -		if (!pagevec_add(&pvec, page)) {
+> > -			spin_unlock_irq(&zone->lru_lock);
+> > -			__pagevec_release(&pvec);
+> > -			spin_lock_irq(&zone->lru_lock);
+> > -		}
+> > -	}
+> > -	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
+> > -	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
+> > -
+> > -done:
+> > -	spin_unlock_irq(&zone->lru_lock);
+> > -	pagevec_release(&pvec);
+> > +	putback_lru_pages(zone, reclaim_stat, nr_anon, nr_file, &page_list);
+> >  	return nr_reclaimed;
+> >  }
+> >  
+> > -- 
+> > 1.6.5
+> > 
+> 
+> 
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
