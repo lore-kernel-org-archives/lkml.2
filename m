@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758591Ab0DPVHx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 17:07:53 -0400
-Received: from diva.malsain.org ([91.121.19.57]:54634 "EHLO diva.malsain.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757825Ab0DPVHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 17:07:52 -0400
-X-Greylist: delayed 1604 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Apr 2010 17:07:51 EDT
-Subject: Athlon L110 CPU and powernow-k8
-From: Josselin Mouette <joss@debian.org>
-To: linux-kernel@vger.kernel.org
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-EF4CXaHGSsb9bkCW3CLZ"
-Date: Fri, 16 Apr 2010 22:40:58 +0200
-Message-ID: <1271450458.6794.33.camel@tomoyo>
+	id S932537Ab0DPVTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 17:19:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39683 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757887Ab0DPVTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 17:19:08 -0400
+Date: Fri, 16 Apr 2010 14:18:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Andreas Mohr <andi@lisas.de>,
+       Jens Axboe <axboe@kernel.dk>, Minchan Kim <minchan.kim@gmail.com>,
+       Linux Memory Management List <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Rik van Riel <riel@redhat.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: Re: [PATCH] vmscan: page_check_references() check low order lumpy
+ reclaim properly
+Message-Id: <20100416141841.300d2361.akpm@linux-foundation.org>
+In-Reply-To: <20100416115437.27AD.A69D9226@jp.fujitsu.com>
+References: <20100415135031.D186.A69D9226@jp.fujitsu.com>
+	<20100415051911.GA17110@localhost>
+	<20100416115437.27AD.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.29.92.1 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 16 Apr 2010 12:16:18 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
---=-EF4CXaHGSsb9bkCW3CLZ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> If vmscan is under lumpy reclaim mode, it have to ignore referenced bit
+> for making contenious free pages. but current page_check_references()
+> doesn't.
+> 
+> Fixes it.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  mm/vmscan.c |   32 +++++++++++++++++---------------
+>  1 files changed, 17 insertions(+), 15 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 3ff3311..13d9546 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -77,6 +77,8 @@ struct scan_control {
+>  
+>  	int order;
+>  
+> +	int lumpy_reclaim;
+> +
 
-Hi,
+Needs a comment explaining its role, please.  Something like "direct
+this reclaim run to perform lumpy reclaim"?
 
-I have a Packard-Bell Dot-M/A which is based on an Athlon L110 CPU, and
-I noticed that powernow-k8 does not recognize this CPU=E2=80=99s frequencie=
-s,
-which leads to an insane power consumption, leaving it at 1,2 GHz
-permanently.
+A clearer name might be "lumpy_relcaim_mode"?
 
-The Gateway LT31, based on the same CPU, has the same issue, as reported
-Krists Krilovs: http://www.pow.za.net/
-
-In both cases, the issue is the same: the DSDT table provided by the
-BIOS does not include the P-states. Waiting for a hypothetical BIOS
-update that would fix this bug requires some faith that I don=E2=80=99t hav=
-e. It
-is possible to work around this by compiling the kernel with a custom
-DSDT table with appropriate P-states patched in, however I consider this
-a developer hack. (Krists Krilovs has the patched DSDT for the LT31, and
-I can provide the one for the Dot-M/A upon request as well - I used the
-same P-states.)
-
-I wonder what is possible to do to support this CPU correctly in the
-kernel. The only sane solution I can think of is to hardcode the
-P-states for this CPU model in the powernow-k8 driver itself.=20
-
-I=E2=80=99m quite a newbie when it comes to ACPI, but I can provide any
-information that could help to fix this. If you think it=E2=80=99s feasible=
- by a
-random hacker, I can also have a look given the correct pointers.
-
-Cheers,
---=20
- .''`.      Josselin Mouette
-: :' :
-`. `'  =E2=80=9CIf you behave this way because you are blackmailed by someo=
-ne,
-  `-    [=E2=80=A6] I will see what I can do for you.=E2=80=9D  -- J=C3=B6r=
-g Schilling
-
---=-EF4CXaHGSsb9bkCW3CLZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iD8DBQBLyMtYrSla4ddfhTMRAqy9AKDYqyO6ifn2AfHRUxoaqZtPd1Em5gCggL1r
-xvkAqmIP1Zq3UA+VAj24G7Q=
-=ExS5
------END PGP SIGNATURE-----
-
---=-EF4CXaHGSsb9bkCW3CLZ--
-
+Making it a `bool' would clarify things too.
