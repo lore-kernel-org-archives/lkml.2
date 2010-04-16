@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757749Ab0DPKkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 06:40:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53208 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756331Ab0DPKke convert rfc822-to-8bit (ORCPT
+	id S1757860Ab0DPKk4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 06:40:56 -0400
+Received: from mail-qy0-f196.google.com ([209.85.221.196]:59121 "EHLO
+	mail-qy0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757754Ab0DPKky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 06:40:34 -0400
-Subject: Re: VM performance issue in KVM guests.
-From: Peter Zijlstra <peterz@infradead.org>
-To: vatsa@in.ibm.com
-Cc: Avi Kivity <avi@redhat.com>, Srivatsa Vaddagiri <vatsa.ml@gmail.com>,
-       "Zhang, Xiantao" <xiantao.zhang@intel.com>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       "Yang, Xiaowei" <xiaowei.yang@intel.com>,
-       "Dong, Eddie" <eddie.dong@intel.com>, "Li, Xin" <xin.li@intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100415164313.GF9128@linux.vnet.ibm.com>
-References: <EB8593BCECAB3D40A8248BE0B6400A3846903F4C@shzsmsx502.ccr.corp.intel.com>
-	 <4BC0D125.9050108@redhat.com>
-	 <EB8593BCECAB3D40A8248BE0B6400A384690419B@shzsmsx502.ccr.corp.intel.com>
-	 <4BC2C07B.4040607@redhat.com>
-	 <p2o2eae271004142158xaa5da968ueff0c2afe6894f9d@mail.gmail.com>
-	 <4BC6CBE3.8020207@redhat.com> <1271338398.1674.13.camel@laptop>
-	 <20100415164313.GF9128@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 16 Apr 2010 12:40:36 +0200
-Message-ID: <1271414436.4807.1935.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Fri, 16 Apr 2010 06:40:54 -0400
+X-Greylist: delayed 426 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Apr 2010 06:40:54 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=lLIWfkWiNb4ponijO9Ue58lYvQ32KQYvnvjvyxdbwI+69a3M2A6XcE1lKRBUzrvIAP
+         2gdlCHDlHWbeXTnrX/z1+8b9mRP7Ah9Kf0dH91W01asx8DjrhsVlVmLYqTjnALDHGXuY
+         kmTu04ixa31dlTaFJwV9ccygvgWsLi6Fw+qGg=
+Message-ID: <4BC83D06.2050909@roadrunner.com>
+Date: Fri, 16 Apr 2010 06:33:42 -0400
+From: Frank Griffin <ftg@roadrunner.com>
+Reply-To: ftg@roadrunner.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20090903 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: =?UTF-8?B?w4lyaWMgUGllbA==?= <Eric.Piel@tremplin-utc.net>
+CC: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       alsa-devel@alsa-project.org
+Subject: Re: [REGRESSION bisected] Sound goes too fast due to commit 7b3a177b0
+References: <4BC4E812.6050602@tremplin-utc.net>	<s5h633u5zx1.wl%tiwai@suse.de>	<4BC5A566.8060106@tremplin-utc.net> <s5hy6gqvx9n.wl%tiwai@suse.de> <4BC782E5.7070900@tremplin-utc.net>
+In-Reply-To: <4BC782E5.7070900@tremplin-utc.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-15 at 09:43 -0700, Srivatsa Vaddagiri wrote:
-> On Thu, Apr 15, 2010 at 03:33:18PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2010-04-15 at 11:18 +0300, Avi Kivity wrote:
-> > > 
-> > > Certainly that has even greater potential for Linux guests.  Note that 
-> > > we spin on mutexes now, so we need to prevent preemption while the lock 
-> > > owner is running. 
-> > 
-> > either that, or disable spinning on (para) virt kernels. Para virt
-> > kernels could possibly extend the thing by also checking to see if the
-> > owner's vcpu is running.
-> 
-> I suspect we will need a combination of both approaches, given that we will not
-> be able to avoid preempting guests in their critical section always (too long
-> critical sections or real-time tasks wanting to preempt). Other idea is to
-> gang-schedule VCPUs of the same guest as much as possible?
-
-Except gang scheduling is a scalability nightmare waiting to happen. I
-much prefer this hint thing.
+Éric Piel wrote:
+> In the case of Frank, this looks more like a regression, or at least a
+> bug to solve, because this happens with the default options. However,
+> this report should be taken with care, because this happens on a
+> 2.6.33.2 kernel made by Mandriva, containing many alsa patches of
+> 2.6.34. Frank, how possible would it be to test a 2.6.34-rc4 kernel from
+> Linus?
+>
+>   
+I'll try to do this over the weekend...
