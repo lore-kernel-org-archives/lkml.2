@@ -1,181 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab0DPPZq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 11:25:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932321Ab0DPPZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 11:25:28 -0400
-Date: Fri, 16 Apr 2010 11:25:02 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-       tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
-       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
-       fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-       vgoyal@redhat.com
-Message-Id: <efbb68cdc13de6930113f4fa6d70e2fc103b3c32.1271427118.git.jbaron@redhat.com>
-In-Reply-To: <cover.1271427118.git.jbaron@redhat.com>
-References: <cover.1271427118.git.jbaron@redhat.com>
-Subject: [PATCH 11/11] jump label: add docs
+	id S932304Ab0DPP0O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 11:26:14 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:44313 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932263Ab0DPP0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 11:26:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=nT0ITLH4Q8tcDyd4RZrCcMxWpBNxvCbqWZmtYosPGeO8SZPXOgr7jXSoSUN2aVYThR
+         fIwWAQN17on8bS7WakFTyafuekYbdQ/gJGDQc+S+1vNEUyw7GtftzEC95Xys/S18roj5
+         rXThibvySpmIGnrH0KPVd995SKNTdUgK79MuY=
+Date: Fri, 16 Apr 2010 17:26:06 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+       "K . Prasad" <prasad@linux.vnet.ibm.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 2/4] ARM: hw-breakpoint: add ARM backend for the
+	hw-breakpoint framework
+Message-ID: <20100416152605.GF5162@nowhere>
+References: <1268236874-7877-1-git-send-email-will.deacon@arm.com> <1268236874-7877-2-git-send-email-will.deacon@arm.com> <1268236874-7877-3-git-send-email-will.deacon@arm.com> <h2mc62985531004130632kd086ffe9o16edafc359fa0e2@mail.gmail.com> <1271173965.17356.28.camel@e102144-lin.cambridge.arm.com> <20100413204000.GC5602@nowhere> <1271240821.11060.3.camel@e102144-lin.cambridge.arm.com> <20100415225950.GI5069@nowhere> <1271427479.21600.1.camel@e102144-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271427479.21600.1.camel@e102144-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add jump label docs as: Documentation/jump-label.txt
+On Fri, Apr 16, 2010 at 03:17:59PM +0100, Will Deacon wrote:
+> Hi Frederic,
+> > It's a cruel architecture...
+> > 
+> 
+> It grows on you :)
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- Documentation/jump-label.txt |  140 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 140 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/jump-label.txt
 
-diff --git a/Documentation/jump-label.txt b/Documentation/jump-label.txt
-new file mode 100644
-index 0000000..4614821
---- /dev/null
-+++ b/Documentation/jump-label.txt
-@@ -0,0 +1,140 @@
-+			Jump Label
-+			----------
-+
-+By: Jason Baron <jbaron@redhat.com>
-+
-+
-+1) motivation
-+
-+
-+Currently, tracepoints are implemented using a conditional. The conditional
-+check requires checking a global variable for each tracepoint. Although,
-+the overhead of this check is small, it increases under memory pressure. As we
-+increase the number of tracepoints in the kernel this may become more of an
-+issue. In addition, tracepoints are often dormant (disabled), and provide no
-+direct kernel functionality. Thus, it is highly desirable to reduce their
-+impact as much as possible. Although tracepoints are the original motivation
-+for this work, other kernel code paths should be able to make use of the jump
-+label optimization.
-+
-+
-+2) jump label description/usage
-+
-+
-+gcc (v4.5) adds a new 'asm goto' statement that allows branching to a label.
-+http://gcc.gnu.org/ml/gcc-patches/2009-07/msg01556.html
-+
-+Thus, this patch set introduces an architecture specific 'JUMP_LABEL()' macro as
-+follows (x86):
-+
-+# define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
-+
-+# define JUMP_LABEL(tag, label, cond)                           \
-+	do {                                                    \
-+		extern const char __jlstrtab_##tag[];           \
-+		asm goto("1:"                                   \
-+			JUMP_LABEL_INITIAL_NOP
-+                        ".pushsection __jump_table,  \"a\" \n\t"\
-+                        _ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
-+                        ".popsection \n\t"                      \
-+                        : :  "i" (__jlstrtab_##tag) :  : label);\
-+        } while (0)
-+
-+
-+For architectures that have not yet introduced jump label support its simply:
-+
-+#define JUMP_LABEL(tag, label, cond)		\
-+	if (unlikely(cond))			\
-+		goto label;
-+
-+which then can be used as:
-+
-+	....
-+        JUMP_LABEL(trace_name, trace_label, jump_enabled);
-+        printk("not doing tracing\n");
-+	return;
-+trace_label:
-+        printk("doing tracing: %d\n", file);
-+	....
-+
-+Thus, when tracing is disabled, we simply have a no-op followed by a jump around
-+the dormant (disabled) tracing code. The 'JUMP_LABEL()' macro, produces a
-+'jump_table' which has the following format:
-+
-+[instruction address] [jump target] [tracepoint name]
-+
-+Thus, to enable a tracepoint, we simply patch the 'instruction address' with
-+a jump to the 'jump target'.
-+
-+The call to enable a jump label is: enable_jump_label(trace_name); to disable:
-+disable_jump_label(trace_name);
-+
-+
-+3) Jump label analysis (x86)
-+
-+
-+I've tested the performance of using 'get_cycles()' calls around the
-+tracepoint call sites. For an Intel Core 2 Quad cpu (in cycles, averages):
-+
-+		idle		after tbench run
-+		----		----------------
-+old code	 32		  88
-+new code	  2		   4
-+
-+
-+The performance improvement can be reproduced reliably on both Intel and AMD
-+hardware.
-+
-+In terms of code analysis the current code for the disabled case is a 'cmpl'
-+followed by a 'je' around the tracepoint code. so:
-+
-+cmpl - 83 3d 0e 77 87 00 00 - 7 bytes
-+je   - 74 3e                - 2 bytes
-+
-+total of 9 instruction bytes.
-+
-+The new code is a 'nopl' followed by a 'jmp'. Thus:
-+
-+nopl - 0f 1f 44 00 00 - 5 bytes
-+jmp  - eb 3e          - 2 bytes
-+
-+total of 7 instruction bytes.
-+
-+So, the new code also accounts for 2 less bytes in the instruction cache per tracepoint.
-+
-+
-+4) architecture interface
-+
-+
-+There are a few functions and macros which arches must implement in order to
-+take advantage of this optimization. As previously mentioned, if there is no
-+architecture support we simply fall back to a traditional, load, test, and
-+jump sequence.
-+
-+* add "HAVE_ARCH_JUMP_LABEL" to arch/<arch>/Kconfig to indicate support
-+
-+* #define JUMP_LABEL_NOP_SIZE, arch/x86/include/asm/jump_label.h
-+
-+* #define "JUMP_LABEL(tag, label, cond)", arch/x86/include/asm/jump_label.h
-+
-+* add: void arch_jump_label_transform(struct jump_entry *entry, enum jump_label_type type)
-+				and
-+       const u8 *arch_get_jump_label_nop(void)
-+
-+	see: arch/x86/kernel/jump_label.c
-+
-+* finally add a definition for "struct jump_entry". This must be done in a
-+  separate .h file, b/c the modpost.c code uses this definition to sort the
-+  the jump label tabel in the vmlinux, so that it does not have to be sorted at
-+  runtime. see: arch/x86/include/asm/jump_entry.h
-+
-+
-+5) Acknowledgments
-+
-+
-+Thanks to Roland McGrath and Richard Henderson for coming up with the initial
-+'asm goto' and jump label design.
-+
-+Thanks to Mathieu Desnoyers for calling attention to this issue, outlining the
-+requirements of a solution, and implementing a solution in the form of the
-+"Immediate Values" work.
--- 
-1.7.0.1
+:-)))
+
+
+ 
+> > Yeah, looking at how this is implemented across versions, it seems
+> > that they all share the same registers, but early versions have
+> > unfeatured reserved bytes in control registers that are filled
+> > with new features over time in subsequent versions.
+> > 
+> > It looks like the things are then forward compatible but not
+> > backward.
+> > 
+> > Isn't that enough to provide a ptrace interface? I mean you can't do
+> > much magic here. Having something that works everywhere would consist
+> > in implementing only the minimal set of features only.
+> 
+> I suppose the ptrace interface will involve bit-packing at some point anyway,
+> so mirroring the hardware configuration might not be as bad as I initially thought.
+> The hardware has some slightly more esoteric features [breakpoint linking, context
+> matching etc] that won't be supported in software for now so I'll ignore those bits.
+
+
+
+In fact, I guess watchpoint to breakpoint linking is something that userspace
+can use. But the context ID linking....well I haven't understood this part
+in ARM documentation :)
+
+
+ 
+> > > I'm unsure about how to provide full protection though. You could still
+> > > set a breakpoint on the breakpoint handling code that exists outside of the
+> > > exception text. Do other archs suffer from this problem? I'm tempted
+> > > just to disallow Kernel breakpoints for now, but that would be a shame.
+> > 
+> > 
+> > In x86 we just write the control register to disable the breakpoints
+> > in the exception handler. (I suspect we don't do it early enough though).
+> > 
+> > You can do the same in ARM.
+> 
+> Ok.
+
+
+
+Speaking about this made me wonder about the current state in x86.
+For now it's safe because task bound breakpoint only allow userspace
+addresses.
+But this is not right because we want task bound to be able to trigger
+on kernel. Once we'll allow this, we need a bit of policy.
+
+Because yeah we can protect against recursion, but always partially.
+The only solution to really protect would be disabling the breakpoint
+as the very first operation in the trap handler.
+
+But that's ugly and may be costly as well.
+
+So what I'm going to do is to simply check attr.exclude_kernel on
+breakpoint creation and look if the address is in the kernel space.
+
+So that if you want to crash your machine why lurking at the very
+tight window of trap handler possible recursion, you need to be
+root :)
+
+Because when a perf event registers and doesn't have exclude_kernel,
+you need to be admin.
+
+Fortunately we don't have this security hole with the current rules,
+but I'll try to make this check more generic (will require archs that
+support breakpoints to implement arch_check_va_in_kernelspace()).
+
+
+> > If an arch has no choice but using sync breakpoints, it needs
+> > to handle that. It seems PowerPc has a similar problem, may be
+> > have a look at Prasad's patches.
+> 
+> Could you give me a pointer to these patches please [I can't see them on LKML]?
+> I *think* PowerPC is lucky enough to have hardware single step, so handling
+> synchronous breakpoints isn't *too* difficult. In ARM we have to work out the
+> address of the following instruction, which is quite tricky because it could be a
+> branch instruction [from a selection of instruction sets] and also be predicated.
+> GDB can handle this, but the Kernel doesn't have the capability to do so [there's
+> some code in arch/arm/ptrace.c but it's not feature complete].
+
+
+I don't remember exactly how this is handled. I remember a story about
+a one-shot breakpoint, ie: that triggers only once.
+
+Anyway, I have yet to review the latest version:
+
+http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-April/081714.html
+http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-April/081715.html
+http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-April/081716.html
+
+
+
+> 
+> > If there is something that can be handled from the generic
+> > layer to help solving this problem, I'll try something.
+> 
+> Unfortunately this is very much an arch problem. As a half-way house, I might
+> implement only the ptrace part of hw-breakpoint for ARM. That way we can
+> force the client to handle stepping over the breakpoint and we also won't have
+> to worry about recursive breakpoints in the Kernel.
+
+
+:-s
+
+Yeah, we'll see what we can do.
 
