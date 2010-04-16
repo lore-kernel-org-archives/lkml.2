@@ -1,139 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501Ab0DPUgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 16:36:37 -0400
-Received: from claw.goop.org ([74.207.240.146]:52029 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932396Ab0DPUgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 16:36:35 -0400
-Message-ID: <4BC8CA52.4090703@goop.org>
-Date: Fri, 16 Apr 2010 13:36:34 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S932403Ab0DPUMx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 16:12:53 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:51284 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932222Ab0DPUMw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 16:12:52 -0400
+Date: Fri, 16 Apr 2010 22:12:45 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: rpurdie@rpsys.net, lenz@cs.wisc.edu,
+       kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+       Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       dbaryshkov@gmail.com, omegamoon@gmail.com, utx@penguin.cz,
+       zaurus-devel@www.linuxtogo.org
+Subject: Re: 2.6.34-rc3 vs zaurus spitz: mistery solved
+Message-ID: <20100416201245.GB13350@elf.ucw.cz>
+References: <20100415180314.GC1443@ucw.cz>
+ <x2qf17812d71004152325v26785671r23aafd9444614590@mail.gmail.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com> <1271356648-5108-2-git-send-email-glommer@redhat.com>
-In-Reply-To: <1271356648-5108-2-git-send-email-glommer@redhat.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x2qf17812d71004152325v26785671r23aafd9444614590@mail.gmail.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2010 11:37 AM, Glauber Costa wrote:
-> In recent stress tests, it was found that pvclock-based systems
-> could seriously warp in smp systems. Using ingo's time-warp-test.c,
-> I could trigger a scenario as bad as 1.5mi warps a minute in some systems.
->   
+On Fri 2010-04-16 14:25:16, Eric Miao wrote:
+> On Fri, Apr 16, 2010 at 2:03 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> > Hi!
+> >
+> > For some reason, spitz will hang very early in boot with SLUB. With
+> > SLOB, it boots fine.
+> >
+> 
+> Weird, just wondering for what specific reason. Pavel, could you possibly
+> paste the failure log if possible?
 
-Is that "1.5 million"?
+Investigating... So far it seems that either it was fixed in -rc4 or
+that slub debugging options cause the problem.
 
-> (to be fair, it wasn't that bad in most of them). Investigating further, I
-> found out that such warps were caused by the very offset-based calculation
-> pvclock is based on.
->   
-
-Is the problem that the tscs are starting out of sync, or that they're
-drifting relative to each other over time?  Do the problems become worse
-the longer the uptime?  How large are the offsets we're talking about here?
-
-> This happens even on some machines that report constant_tsc in its tsc flags,
-> specially on multi-socket ones.
->
-> Two reads of the same kernel timestamp at approx the same time, will likely
-> have tsc timestamped in different occasions too. This means the delta we
-> calculate is unpredictable at best, and can probably be smaller in a cpu
-> that is legitimately reading clock in a forward ocasion.
->
-> Some adjustments on the host could make this window less likely to happen,
-> but still, it pretty much poses as an intrinsic problem of the mechanism.
->
-> A while ago, I though about using a shared variable anyway, to hold clock
-> last state, but gave up due to the high contention locking was likely
-> to introduce, possibly rendering the thing useless on big machines. I argue,
-> however, that locking is not necessary.
->
-> We do a read-and-return sequence in pvclock, and between read and return,
-> the global value can have changed. However, it can only have changed
-> by means of an addition of a positive value. So if we detected that our
-> clock timestamp is less than the current global, we know that we need to
-> return a higher one, even though it is not exactly the one we compared to.
->
-> OTOH, if we detect we're greater than the current time source, we atomically
-> replace the value with our new readings. This do causes contention on big
-> boxes (but big here means *BIG*), but it seems like a good trade off, since
-> it provide us with a time source guaranteed to be stable wrt time warps.
->
-> After this patch is applied, I don't see a single warp in time during 5 days
-> of execution, in any of the machines I saw them before.
->
-> Signed-off-by: Glauber Costa <glommer@redhat.com>
-> CC: Jeremy Fitzhardinge <jeremy@goop.org>
-> CC: Avi Kivity <avi@redhat.com>
-> CC: Marcelo Tosatti <mtosatti@redhat.com>
-> CC: Zachary Amsden <zamsden@redhat.com>
-> ---
->  arch/x86/kernel/pvclock.c |   23 +++++++++++++++++++++++
->  1 files changed, 23 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-> index 03801f2..b7de0e6 100644
-> --- a/arch/x86/kernel/pvclock.c
-> +++ b/arch/x86/kernel/pvclock.c
-> @@ -109,11 +109,14 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src)
->  	return pv_tsc_khz;
->  }
->  
-> +static u64 last_value = 0;
-> +
->  cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
->  {
->  	struct pvclock_shadow_time shadow;
->  	unsigned version;
->  	cycle_t ret, offset;
-> +	u64 last;
->  
->  	do {
->  		version = pvclock_get_time_values(&shadow, src);
-> @@ -123,6 +126,26 @@ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
->  		barrier();
->  	} while (version != src->version);
->  
-> +	/*
-> +	 * Assumption here is that last_value, a global accumulator, always goes
-> +	 * forward. If we are less than that, we should not be much smaller.
-> +	 * We assume there is an error marging we're inside, and then the correction
-> +	 * does not sacrifice accuracy.
-> +	 *
-> +	 * For reads: global may have changed between test and return,
-> +	 * but this means someone else updated poked the clock at a later time.
-> +	 * We just need to make sure we are not seeing a backwards event.
-> +	 *
-> +	 * For updates: last_value = ret is not enough, since two vcpus could be
-> +	 * updating at the same time, and one of them could be slightly behind,
-> +	 * making the assumption that last_value always go forward fail to hold.
-> +	 */
-> +	do {
-> +		last = last_value;
->   
-Does this need a barrier() to prevent the compiler from re-reading
-last_value for the subsequent lines?  Otherwise "(ret < last)" and
-"return last" could execute with different values for "last".
-
-> +		if (ret < last)
-> +			return last;
-> +	} while (unlikely(cmpxchg64(&last_value, last, ret) != ret));
->   
-
-So if CPU A's tsc is, say, 50us behind CPU B's, then it will return a
-static time (from last_time) for 50us until its tsc catched up - or if
-CPU A happens to update last_time to give it a kick?
-
-Is it worth trying to update CPU A's tsc offset at the same time?
-
-    J
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
