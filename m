@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758265Ab0DPDwp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 23:52:45 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49155 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757702Ab0DPDwn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 23:52:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Q2RqHpD17RxEKj8oAhQOkY6kLM/ZsetJKPYNtI8CMcug79L0i5A1m3Ioo/6IuJJoIF
-         3UAbZ7IgRXbE0QPwaqSpb5AV6Y7nJnsqTWBW5ivvW+NT2I5OZa9ug/aCdcO56DEy1j7f
-         OhXtf8WSLicoOCRjfGDVJd8ODgVDC5TdibYUE=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1004160138200.3625@localhost.localdomain>
-References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
-	 <1271262016-18650-3-git-send-email-chase.douglas@canonical.com>
-	 <20100415210357.GG5069@nowhere>
-	 <k2u40ec3ea41004151445je53e7ef2u5c0e48e038e4efca@mail.gmail.com>
-	 <alpine.LFD.2.00.1004160051390.3625@localhost.localdomain>
-	 <p2n40ec3ea41004151627u11ca4d7dw46cbd6b58df9f1c8@mail.gmail.com>
-	 <alpine.LFD.2.00.1004160138200.3625@localhost.localdomain>
-Date: Thu, 15 Apr 2010 20:52:42 -0700
-X-Google-Sender-Auth: 10a6b34a93aa49b6
-Message-ID: <o2v40ec3ea41004152052h91f7529cs6252469208272d89@mail.gmail.com>
-Subject: Re: [PATCH 3/3] Stop tracing on a schedule bug
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1758282Ab0DPDyo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 23:54:44 -0400
+Received: from mail.perches.com ([173.55.12.10]:1506 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757702Ab0DPDym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 23:54:42 -0400
+Subject: Re: [PATCH] mac8390: fix pr_info() calls, was Re: another cleanup
+ patch gone wrong
+From: Joe Perches <joe@perches.com>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: David Miller <davem@davemloft.net>, p_gortmaker@yahoo.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-m68k@vger.kernel.org
+In-Reply-To: <alpine.OSX.2.00.1004161323340.271@localhost>
+References: <alpine.OSX.2.00.1004161214270.271@localhost>
+	 <20100415.200113.215578006.davem@davemloft.net>
+	 <alpine.OSX.2.00.1004161323340.271@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Apr 2010 20:54:40 -0700
+Message-ID: <1271390080.2298.25.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 4:50 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 15 Apr 2010, Chase Douglas wrote:
->> On Thu, Apr 15, 2010 at 4:01 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> > On Thu, 15 Apr 2010, Chase Douglas wrote:
->> >> On Thu, Apr 15, 2010 at 2:03 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> >> > On Wed, Apr 14, 2010 at 12:20:16PM -0400, Chase Douglas wrote:
->> >> >> This change adds a tracing_off_event() call to stop tracing on schedule
->> >> >> bugs unless tracing_off=none was specified on the commandline.
->> >> >>
->> >> >> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
->> >> >> ---
->> >> >>  kernel/sched.c |    2 ++
->> >> >>  1 files changed, 2 insertions(+), 0 deletions(-)
->> >> >>
->> >> >> diff --git a/kernel/sched.c b/kernel/sched.c
->> >> >> index 6af210a..439f036 100644
->> >> >> --- a/kernel/sched.c
->> >> >> +++ b/kernel/sched.c
->> >> >> @@ -3590,6 +3590,8 @@ static noinline void __schedule_bug(struct task_struct *prev)
->> >> >>  {
->> >> >>       struct pt_regs *regs = get_irq_regs();
->> >> >>
->> >> >> +     tracing_off_event(TRACE_EVENT_BUG);
->> >> >> +
->> >> >>       printk(KERN_ERR "BUG: scheduling while atomic: %s/%d/0x%08x\n",
->> >> >>               prev->comm, prev->pid, preempt_count());
->> >> >
->> >> >
->> >> >
->> >> > I would rather call that a TRACE_EVENT_WARN as this is what happens: we
->> >> > warn but we continue.
->> >>
->> >> I tend to think of the TRACE_EVENT_* as an indication of severity and
->> >> whether we want to stop the trace by default. From a distro
->> >> standpoint, the likelihood that we want to continue tracing after a
->> >> __schedule_bug is pretty low. It's easiest if we don't have to tell
->> >
->> > Well, scheduling while atomic is a BUG, but one of the category which
->> > allows the kernel to continue. So in fact it's treated like a WARN_ON.
->> > So the tracing_off_event() qualifier should be *_WARN.
->> >
->> > That's independent of the question whether you want to stop tracing in
->> > that very case. Though I agree that the tracer should stop here.
->>
->> We seem to be agreeing on the functionality. The disagreement seems to
->> be in the macro name/functionality mapping. However, the name of the
->> function itself is *_bug. I don't see how things are clearer or more
->> useful by inserting a *_WARN level macro in a *_bug named function.
->
-> Care to read what I wrote ? Again:
+On Fri, 2010-04-16 at 13:45 +1000, Finn Thain wrote:
+> Here's a patch, both uncalled-for and untested.
+> Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+> 
+> --- a/drivers/net/mac8390.c	2010-04-16 13:31:04.000000000 +1000
+> +++ b/drivers/net/mac8390.c	2010-04-16 13:35:06.000000000 +1000
+> @@ -643,8 +643,8 @@
+>  {
+>  	__ei_open(dev);
+>  	if (request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev)) {
+> -		pr_info("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
+> -		return -EAGAIN;
+> +		pr_err("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
+> +		return -EBUSY;
 
-I misunderstood what you wrote. I thought you were agreeing that the
-tracing should stop by default in __schedule_bug. I now realize you
-meant that you agree it should be possible to stop it, but it should
-not be the default behavior. Sorry for the confusion.
+You should document this in the changelog.
 
-I will change the event to be a *_WARN type.
+>  	}
+>  	return 0;
+>  }
+> @@ -660,7 +660,7 @@
+>  {
+>  	ei_status.txing = 0;
+>  	if (ei_debug > 1)
+> -		pr_info("reset not supported\n");
+> +		pr_debug("reset not supported\n");
 
--- Chase
+You'll need to add
+#define DEBUG
+for this to print.
+
+> -		pr_info("Need to reset the NS8390 t=%lu...", jiffies);
+> +		pr_debug("Need to reset the NS8390 t=%lu...", jiffies);
+
+This also now doesn't print.
+
+cheers, Joe
+
