@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758006Ab0DPK6Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 06:58:24 -0400
-Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:36598 "EHLO
-	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757219Ab0DPK6X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 06:58:23 -0400
-Subject: [PATCH RFC]  buffer_head: remove redundant test from wait_on_buffer
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Jens Axboe <jens.axboe@oracle.com>, lkml <linux-kernel@vger.kernel.org>,
-       Nick Piggin <npiggin@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Apr 2010 11:58:19 +0100
-Message-ID: <1271415499.2075.19.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1758033Ab0DPLSH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 07:18:07 -0400
+Received: from mail2.donator.se ([217.16.195.8]:3193 "EHLO mail2.donator.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757826Ab0DPLSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 07:18:05 -0400
+X-MDAV-Processed: mail2.donator.se, Fri, 16 Apr 2010 13:18:03 +0200
+X-Spam-Processed: mail2.donator.se, Fri, 16 Apr 2010 13:18:01 +0200
+	(not processed: spam filter heuristic analysis disabled)
+X-Authenticated-Sender: jakob.viketoft@bitsim.com
+X-MDRemoteIP: 10.99.195.158
+X-Return-Path: jakob.viketoft@bitsim.com
+X-Envelope-From: jakob.viketoft@bitsim.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Message-ID: <4BC84766.5060208@bitsim.com>
+Date: Fri, 16 Apr 2010 13:17:58 +0200
+From: Jakob Viketoft <jakob.viketoft@bitsim.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: daniel@caiaq.de
+CC: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>
+Subject: Re: [PATCH] colibri.h: Fix building for colibri 270...
+References: <4BC8330E.6000503@bitsim.com> <20100416100126.GI30801@buzzloop.caiaq.de>
+In-Reply-To: <20100416100126.GI30801@buzzloop.caiaq.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+Reply-To: jakob.viketoft@bitsim.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment suggests that when b_count equals zero it is calling
-__wait_no_buffer to trigger some debug, but as there is no debug in
-__wait_on_buffer the whole thing is redundant.
+Daniel Mack wrote:
+> On Fri, Apr 16, 2010 at 11:51:10AM +0200, Jakob Viketoft wrote:
+>> The recent addition of (Colibri) PXA3xx specific declarations breaks
+>> the building of the Colibri 270 with similar features.
+> 
+> Hmm, I can't see any problem here. Which error did you get? Which boards
+> did you select in your config?
 
-AFAICT from the git log this has been the case for at least 5 years, so
-it seems safe just to remove this.
+Hmmm, it appears I was slightly too fast on the trigger there. I 
+encountered the problem some time ago when migrating fron 2.6.29 to 
+2.6.33.1 and a quick look made me think there was a linking problem. I'm 
+finishing up this project now and wanted to push any relevant fixes 
+upstream. However, the problem I seem to be getting is something 
+different though:
 
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
----
+   CC      drivers/pcmcia/pxa2xx_colibri.o
+In file included from drivers/pcmcia/pxa2xx_colibri.c:25:
+arch/arm/mach-pxa/include/mach/colibri.h:13: error: expected ')' before 
+'*' token
+make[2]: *** [drivers/pcmcia/pxa2xx_colibri.o] Error 1
+make[1]: *** [drivers/pcmcia] Error 2
+make: *** [drivers] Error 2
 
-This patch against 2.6.34-rc4
-compiled & tested on x86_64
+Is this an error on my part somehow?
 
-regards
-Richard
-
-
-diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
-index 16ed028..4c62dd4 100644
---- a/include/linux/buffer_head.h
-+++ b/include/linux/buffer_head.h
-@@ -305,15 +305,10 @@ map_bh(struct buffer_head *bh, struct super_block *sb, sector_t block)
- 	bh->b_size = sb->s_blocksize;
- }
- 
--/*
-- * Calling wait_on_buffer() for a zero-ref buffer is illegal, so we call into
-- * __wait_on_buffer() just to trip a debug check.  Because debug code in inline
-- * functions is bloaty.
-- */
- static inline void wait_on_buffer(struct buffer_head *bh)
- {
- 	might_sleep();
--	if (buffer_locked(bh) || atomic_read(&bh->b_count) == 0)
-+	if (buffer_locked(bh))
- 		__wait_on_buffer(bh);
- }
- 
-
+	/Jakob
 
