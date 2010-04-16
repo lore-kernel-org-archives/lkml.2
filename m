@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758542Ab0DPQS6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 12:18:58 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:37541 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758516Ab0DPQS4 (ORCPT
+	id S1758545Ab0DPQYV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 12:24:21 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:51678 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757007Ab0DPQYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 12:18:56 -0400
+	Fri, 16 Apr 2010 12:24:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=CjX3yqL7ITlAO9zBkvpvac0X1CMOcpnTaI0aG10OChMvnfbbxJQ1sKOgrVUZhcoAsI
-         9mko7KO/K+UnGPli5YR+ef/3KprKCrnB7ixf1H2TyoAiDinFD5DCobJjxd85YuIAG/iQ
-         h8TqUJjCPBixohngSCvLyAEp78B9PO9TRJqH8=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eBebL8w3GlxvZCtpjgkRU82Ml07U9sT0MDrLu7wqiVsvHyVRrABCQV15XYk46SOB4n
+         qr0iGqEJm3nSCuNx9pbsD5BPgZDyBvJmfQ5BFvzVSrscBHRQU5SuktEqubsLBH6DaALf
+         bgd8Onnhlx8T1A3s6qIEKmH8Vz4qZDPBlr2yA=
+Date: Fri, 16 Apr 2010 18:24:19 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100416162417.GI5162@nowhere>
+References: <1271366710-17468-1-git-send-email-dzickus@redhat.com> <20100416014712.GC15570@nowhere> <20100416141213.GC15159@redhat.com> <20100416144302.GB5162@nowhere> <20100416150407.GH15159@redhat.com> <20100416153210.GG5162@nowhere> <20100416161401.GI15159@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1004160110360.3625@localhost.localdomain>
-References: <cabda6421003230329w3fe596dbn8e4b37cc36118f9f@mail.gmail.com>
-	 <1269340105-6503-1-git-send-email-chripell@fsfe.org>
-	 <alpine.LFD.2.00.1004160110360.3625@localhost.localdomain>
-Date: Fri, 16 Apr 2010 18:18:54 +0200
-X-Google-Sender-Auth: 54e6674203a32ab4
-Message-ID: <w2gcabda6421004160918vc5dc5ee2y14a5814b4e8573b3@mail.gmail.com>
-Subject: Re: [PATCH v1 1/4] max3100: added raise_threaded_irq
-From: christian pellegrin <chripell@fsfe.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: feng.tang@intel.com, akpm@linux-foundation.org, greg@kroah.com,
-       david-b@pacbell.net, grant.likely@secretlab.ca,
-       alan@lxorguk.ukuu.org.uk, spi-devel-general@lists.sourceforge.net,
-       linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100416161401.GI15159@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Apr 16, 2010 at 12:14:01PM -0400, Don Zickus wrote:
+> On Fri, Apr 16, 2010 at 05:32:12PM +0200, Frederic Weisbecker wrote:
+> > > I'll try to implement this.  Any objections if I combined hardlockup and
+> > > softlockup with per cpu watchdog_warn and have bit masks for HARDLOCKUP
+> > > and SOFTLOCKUP?  I hate to just waste per cpu space for this.
+> > 
+> > 
+> > 
+> > Hmm, a hardlockup can come in after a softlockup.
+> 
+> Let me re-explain what I meant.  It was meant to do double duty.  The
+> softlockup code only checks the SOFTLOCKUP bit and the hardlockup only
+> ever checks the HARDLOCKUP bit.
+> 
+> ie if get_cpu_var(watchdog_warn) && HARDLOCKUP { return; }
 
-On Fri, Apr 16, 2010 at 1:22 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
->> raise_threaded_irq schedules the execution of an interrupt thread
->
-> I really have a hard time to understand _WHY_ we want to have that
-> function.
->
-.....
->
-> Can you please explain, what you are trying to achieve and why it
-> can't be done with the existing interfaces ?
->
 
-The idea was that by using this function we just need one kind of
-deferred work (interrupt threads) instead of two (for example
-interrupt threads and workqueues) in some situations. This is very
-handy with devices that do transmission and reception at the same
-time, for example many SPI devices. The user case is the max3100 UART
-on SPI driver. The same SPI instruction both receives and sends chars.
-So when we need to send a char we just start the interrupt thread
-instead of having another kind of deferred work doing the job. This
-greatly simplifies locking and avoids duplication of functionality
-(otherwise we must have an interrupt thread that does reception and a
-workqueue that does sending and receiving for example) because
-everything is done in just one point. The move from worqueues to
-interrupt threads was motivated by the much smaller latency under load
-of the latter because they are scheduled as RT processes. I hope this
-doesn't sound like a terrible abuse of threaded interrupts. Let me
-know before I try to fix other problems you mentioned.
+Ah right.
 
-Thanks
 
--- 
-Christian Pellegrin, see http://www.evolware.org/chri/
-"Real Programmers don't play tennis, or any other sport which requires
-you to change clothes. Mountain climbing is OK, and Real Programmers
-wear their climbing boots to work in case a mountain should suddenly
-spring up in the middle of the computer room."
+
+> 
+> > Don't worry too much about memory: usually the more you have cpu,
+> > the more you have memory :)
+> > Plus this is debugging code, not something supposed to be enabled
+> > in production.
+> 
+> Well depends on your POV.  In RHEL we enable both NMI_WATCHDOG and
+> SOFTLOCKUP on production systems (and we have customers that are
+> thankful for that :-) ).
+
+
+Ok :)
+
