@@ -1,264 +1,698 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701Ab0DPWct (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 18:32:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59650 "EHLO hera.kernel.org"
+	id S932713Ab0DPWdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 18:33:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59665 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932691Ab0DPWcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 18:32:46 -0400
+	id S932660Ab0DPWdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 18:33:07 -0400
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: Peter Jones <pjones@redhat.com>, Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: [PATCH 1/4] ibft: Update iBFT handling for v1.03 of the spec.
-Date: Fri, 16 Apr 2010 22:31:14 +0000
-Message-Id: <1271457077-9607-2-git-send-email-konrad@kernel.org>
+Cc: Mike Christie <michaelc@cs.wisc.edu>, Peter Jones <pjones@redhat.com>,
+       Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: [PATCH 3/4] ibft: separate ibft parsing from sysfs interface
+Date: Fri, 16 Apr 2010 22:31:16 +0000
+Message-Id: <1271457077-9607-4-git-send-email-konrad@kernel.org>
 X-Mailer: git-send-email 1.7.0.5
 In-Reply-To: <1271457077-9607-1-git-send-email-konrad@kernel.org>
 References: <1271457077-9607-1-git-send-email-konrad@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 16 Apr 2010 22:31:23 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 16 Apr 2010 22:31:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Jones <pjones@redhat.com>
+From: Mike Christie <michaelc@cs.wisc.edu>
 
-- Use struct acpi_table_ibft instead of struct ibft_table_header
-- Don't do reserve_ibft_region() on UEFI machines (section 1.4.3.1)
-- If ibft_addr isn't initialized when ibft_init() is called, check for
-  ACPI-based tables.
+Not all iscsi drivers support ibft. For drivers like be2iscsi
+that do not but are bootable through a vendor firmware specific
+format/process this patch moves the sysfs interface from the ibft code
+to a lib module. This then allows userspace tools to search for iscsi boot
+info in a common place and in a common format.
 
-Author:      Peter Jones <pjones@redhat.com>
+ibft iscsi boot info is exported in the same place as it was
+before: /sys/firmware/ibft.
+
+vendor/fw boot info gets export in /sys/firmware/iscsi_bootX, where X is the
+scsi host number of the HBA. Underneath these parent dirs, the
+target, ethernet, and initiator dirs are the same as they were before.
+
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: Peter Jones <pjones@redhat.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
 ---
- drivers/firmware/iscsi_ibft.c      |   30 ++++++++++++++++++------------
- drivers/firmware/iscsi_ibft_find.c |   34 +++++++++++++++++++++++++++++-----
- include/linux/iscsi_ibft.h         |   12 ++----------
- 3 files changed, 49 insertions(+), 27 deletions(-)
+ drivers/firmware/Kconfig            |    8 +
+ drivers/firmware/Makefile           |    1 +
+ drivers/firmware/iscsi_boot_sysfs.c |  481 +++++++++++++++++++++++++++++++++++
+ include/linux/iscsi_boot_sysfs.h    |  123 +++++++++
+ 4 files changed, 613 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/firmware/iscsi_boot_sysfs.c
+ create mode 100644 include/linux/iscsi_boot_sysfs.h
 
-diff --git a/drivers/firmware/iscsi_ibft.c b/drivers/firmware/iscsi_ibft.c
-index ed2801c..b3ab24f 100644
---- a/drivers/firmware/iscsi_ibft.c
-+++ b/drivers/firmware/iscsi_ibft.c
-@@ -1,5 +1,5 @@
- /*
-- *  Copyright 2007 Red Hat, Inc.
-+ *  Copyright 2007-2010 Red Hat, Inc.
-  *  by Peter Jones <pjones@redhat.com>
-  *  Copyright 2008 IBM, Inc.
-  *  by Konrad Rzeszutek <konradr@linux.vnet.ibm.com>
-@@ -19,6 +19,9 @@
-  *
-  * Changelog:
-  *
-+ *  06 Jan 2010 - Peter Jones <pjones@redhat.com>
-+ *    New changelog entries are in the git log from now on.  Not here.
+diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
+index 1b03ba1..571d218 100644
+--- a/drivers/firmware/Kconfig
++++ b/drivers/firmware/Kconfig
+@@ -122,6 +122,14 @@ config ISCSI_IBFT_FIND
+ 	  is necessary for iSCSI Boot Firmware Table Attributes module to work
+ 	  properly.
+ 
++config ISCSI_BOOT_SYSFS
++	tristate "iSCSI Boot Sysfs Interface"
++	default	n
++	help
++	  This option enables support for exposing iSCSI boot information
++	  via sysfs to userspace. If you wish to export this information,
++	  say Y. Otherwise, say N.
++
+ config ISCSI_IBFT
+ 	tristate "iSCSI Boot Firmware Table Attributes module"
+ 	depends on ISCSI_IBFT_FIND
+diff --git a/drivers/firmware/Makefile b/drivers/firmware/Makefile
+index 1c3c173..5fe7e16 100644
+--- a/drivers/firmware/Makefile
++++ b/drivers/firmware/Makefile
+@@ -10,4 +10,5 @@ obj-$(CONFIG_DCDBAS)		+= dcdbas.o
+ obj-$(CONFIG_DMIID)		+= dmi-id.o
+ obj-$(CONFIG_ISCSI_IBFT_FIND)	+= iscsi_ibft_find.o
+ obj-$(CONFIG_ISCSI_IBFT)	+= iscsi_ibft.o
++obj-$(CONFIG_ISCSI_BOOT_SYSFS)	+= iscsi_boot_sysfs.o
+ obj-$(CONFIG_FIRMWARE_MEMMAP)	+= memmap.o
+diff --git a/drivers/firmware/iscsi_boot_sysfs.c b/drivers/firmware/iscsi_boot_sysfs.c
+new file mode 100644
+index 0000000..df6bff7
+--- /dev/null
++++ b/drivers/firmware/iscsi_boot_sysfs.c
+@@ -0,0 +1,481 @@
++/*
++ * Export the iSCSI boot info to userland via sysfs.
 + *
-  *  14 Mar 2008 - Konrad Rzeszutek <ketuzsezr@darnok.org>
-  *    Updated comments and copyrights. (v0.4.9)
-  *
-@@ -78,9 +81,10 @@
- #include <linux/stat.h>
- #include <linux/string.h>
- #include <linux/types.h>
-+#include <linux/acpi.h>
- 
--#define IBFT_ISCSI_VERSION "0.4.9"
--#define IBFT_ISCSI_DATE "2008-Mar-14"
-+#define IBFT_ISCSI_VERSION "0.5.0"
-+#define IBFT_ISCSI_DATE "2010-Feb-25"
- 
- MODULE_AUTHOR("Peter Jones <pjones@redhat.com> and \
- Konrad Rzeszutek <ketuzsezr@darnok.org>");
-@@ -238,7 +242,7 @@ static const char *ibft_initiator_properties[] =
-  */
- 
- struct ibft_kobject {
--	struct ibft_table_header *header;
-+	struct acpi_table_ibft *header;
- 	union {
- 		struct ibft_initiator *initiator;
- 		struct ibft_nic *nic;
-@@ -536,12 +540,13 @@ static int __init ibft_check_device(void)
- 	u8 *pos;
- 	u8 csum = 0;
- 
--	len = ibft_addr->length;
-+	len = ibft_addr->header.length;
- 
- 	/* Sanity checking of iBFT. */
--	if (ibft_addr->revision != 1) {
-+	if (ibft_addr->header.revision != 1) {
- 		printk(KERN_ERR "iBFT module supports only revision 1, " \
--				"while this is %d.\n", ibft_addr->revision);
-+				"while this is %d.\n",
-+				ibft_addr->header.revision);
- 		return -ENOENT;
- 	}
- 	for (pos = (u8 *)ibft_addr; pos < (u8 *)ibft_addr + len; pos++)
-@@ -558,7 +563,7 @@ static int __init ibft_check_device(void)
- /*
-  * Helper function for ibft_register_kobjects.
-  */
--static int __init ibft_create_kobject(struct ibft_table_header *header,
-+static int __init ibft_create_kobject(struct acpi_table_ibft *header,
- 				       struct ibft_hdr *hdr,
- 				       struct list_head *list)
- {
-@@ -596,7 +601,7 @@ static int __init ibft_create_kobject(struct ibft_table_header *header,
- 	default:
- 		printk(KERN_ERR "iBFT has unknown structure type (%d). " \
- 				"Report this bug to %.6s!\n", hdr->id,
--				header->oem_id);
-+				header->header.oem_id);
- 		rc = 1;
- 		break;
- 	}
-@@ -649,7 +654,7 @@ out_invalid_struct:
-  * found add them on the passed-in list. We do not support the other
-  * fields at this point, so they are skipped.
-  */
--static int __init ibft_register_kobjects(struct ibft_table_header *header,
-+static int __init ibft_register_kobjects(struct acpi_table_ibft *header,
- 					  struct list_head *list)
- {
- 	struct ibft_control *control = NULL;
-@@ -660,7 +665,7 @@ static int __init ibft_register_kobjects(struct ibft_table_header *header,
- 
- 	control = (void *)header + sizeof(*header);
- 	end = (void *)control + control->hdr.length;
--	eot_offset = (void *)header + header->length - (void *)control;
-+	eot_offset = (void *)header + header->header.length - (void *)control;
- 	rc = ibft_verify_hdr("control", (struct ibft_hdr *)control, id_control,
- 			     sizeof(*control));
- 
-@@ -672,7 +677,8 @@ static int __init ibft_register_kobjects(struct ibft_table_header *header,
- 	}
- 	for (ptr = &control->initiator_off; ptr < end; ptr += sizeof(u16)) {
- 		offset = *(u16 *)ptr;
--		if (offset && offset < header->length && offset < eot_offset) {
-+		if (offset && offset < header->header.length &&
-+						offset < eot_offset) {
- 			rc = ibft_create_kobject(header,
- 						 (void *)header + offset,
- 						 list);
-diff --git a/drivers/firmware/iscsi_ibft_find.c b/drivers/firmware/iscsi_ibft_find.c
-index d6470ef..8f4d157 100644
---- a/drivers/firmware/iscsi_ibft_find.c
-+++ b/drivers/firmware/iscsi_ibft_find.c
-@@ -1,5 +1,5 @@
- /*
-- *  Copyright 2007 Red Hat, Inc.
-+ *  Copyright 2007-2010 Red Hat, Inc.
-  *  by Peter Jones <pjones@redhat.com>
-  *  Copyright 2007 IBM, Inc.
-  *  by Konrad Rzeszutek <konradr@linux.vnet.ibm.com>
-@@ -22,6 +22,7 @@
- #include <linux/blkdev.h>
- #include <linux/ctype.h>
- #include <linux/device.h>
-+#include <linux/efi.h>
- #include <linux/err.h>
- #include <linux/init.h>
- #include <linux/limits.h>
-@@ -30,13 +31,14 @@
- #include <linux/stat.h>
- #include <linux/string.h>
- #include <linux/types.h>
-+#include <linux/acpi.h>
- 
- #include <asm/mmzone.h>
- 
- /*
-  * Physical location of iSCSI Boot Format Table.
-  */
--struct ibft_table_header *ibft_addr;
-+struct acpi_table_ibft *ibft_addr;
- EXPORT_SYMBOL_GPL(ibft_addr);
- 
- #define IBFT_SIGN "iBFT"
-@@ -46,6 +48,13 @@ EXPORT_SYMBOL_GPL(ibft_addr);
- #define VGA_MEM 0xA0000 /* VGA buffer */
- #define VGA_SIZE 0x20000 /* 128kB */
- 
-+#ifdef CONFIG_ACPI
-+static int __init acpi_find_ibft(struct acpi_table_header *header)
++ * Copyright (C) 2010 Red Hat, Inc.  All rights reserved.
++ * Copyright (C) 2010 Mike Christie
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License v2.0 as published by
++ * the Free Software Foundation
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++#include <linux/sysfs.h>
++#include <linux/capability.h>
++#include <linux/iscsi_boot_sysfs.h>
++
++
++MODULE_AUTHOR("Mike Christie <michaelc@cs.wisc.edu>");
++MODULE_DESCRIPTION("sysfs interface and helpers to export iSCSI boot information");
++MODULE_LICENSE("GPL");
++/*
++ * The kobject and attribute structures.
++ */
++struct iscsi_boot_attr {
++	struct attribute attr;
++	int type;
++	ssize_t (*show) (void *data, int type, char *buf);
++};
++
++/*
++ * The routine called for all sysfs attributes.
++ */
++static ssize_t iscsi_boot_show_attribute(struct kobject *kobj,
++					 struct attribute *attr, char *buf)
 +{
-+	ibft_addr = (struct acpi_table_ibft *)header;
++	struct iscsi_boot_kobj *boot_kobj =
++			container_of(kobj, struct iscsi_boot_kobj, kobj);
++	struct iscsi_boot_attr *boot_attr =
++			container_of(attr, struct iscsi_boot_attr, attr);
++	ssize_t ret = -EIO;
++	char *str = buf;
++
++	if (!capable(CAP_SYS_ADMIN))
++		return -EACCES;
++
++	if (boot_kobj->show)
++		ret = boot_kobj->show(boot_kobj->data, boot_attr->type, str);
++	return ret;
++}
++
++static const struct sysfs_ops iscsi_boot_attr_ops = {
++	.show = iscsi_boot_show_attribute,
++};
++
++static void iscsi_boot_kobj_release(struct kobject *kobj)
++{
++	struct iscsi_boot_kobj *boot_kobj =
++			container_of(kobj, struct iscsi_boot_kobj, kobj);
++
++	kfree(boot_kobj->data);
++	kfree(boot_kobj);
++}
++
++static struct kobj_type iscsi_boot_ktype = {
++	.release = iscsi_boot_kobj_release,
++	.sysfs_ops = &iscsi_boot_attr_ops,
++};
++
++#define iscsi_boot_rd_attr(fnname, sysfs_name, attr_type)		\
++static struct iscsi_boot_attr iscsi_boot_attr_##fnname = {	\
++	.attr	= { .name = __stringify(sysfs_name), .mode = 0444 },	\
++	.type	= attr_type,						\
++}
++
++/* Target attrs */
++iscsi_boot_rd_attr(tgt_index, index, ISCSI_BOOT_TGT_INDEX);
++iscsi_boot_rd_attr(tgt_flags, flags, ISCSI_BOOT_TGT_FLAGS);
++iscsi_boot_rd_attr(tgt_ip, ip-addr, ISCSI_BOOT_TGT_IP_ADDR);
++iscsi_boot_rd_attr(tgt_port, port, ISCSI_BOOT_TGT_PORT);
++iscsi_boot_rd_attr(tgt_lun, lun, ISCSI_BOOT_TGT_LUN);
++iscsi_boot_rd_attr(tgt_chap, chap-type, ISCSI_BOOT_TGT_CHAP_TYPE);
++iscsi_boot_rd_attr(tgt_nic, nic-assoc, ISCSI_BOOT_TGT_NIC_ASSOC);
++iscsi_boot_rd_attr(tgt_name, target-name, ISCSI_BOOT_TGT_NAME);
++iscsi_boot_rd_attr(tgt_chap_name, chap-name, ISCSI_BOOT_TGT_CHAP_NAME);
++iscsi_boot_rd_attr(tgt_chap_secret, chap-secret, ISCSI_BOOT_TGT_CHAP_SECRET);
++iscsi_boot_rd_attr(tgt_chap_rev_name, rev-chap-name,
++		   ISCSI_BOOT_TGT_REV_CHAP_NAME);
++iscsi_boot_rd_attr(tgt_chap_rev_secret, rev-chap-name-secret,
++		   ISCSI_BOOT_TGT_REV_CHAP_SECRET);
++
++static struct attribute *target_attrs[] = {
++	&iscsi_boot_attr_tgt_index.attr,
++	&iscsi_boot_attr_tgt_flags.attr,
++	&iscsi_boot_attr_tgt_ip.attr,
++	&iscsi_boot_attr_tgt_port.attr,
++	&iscsi_boot_attr_tgt_lun.attr,
++	&iscsi_boot_attr_tgt_chap.attr,
++	&iscsi_boot_attr_tgt_nic.attr,
++	&iscsi_boot_attr_tgt_name.attr,
++	&iscsi_boot_attr_tgt_chap_name.attr,
++	&iscsi_boot_attr_tgt_chap_secret.attr,
++	&iscsi_boot_attr_tgt_chap_rev_name.attr,
++	&iscsi_boot_attr_tgt_chap_rev_secret.attr,
++	NULL
++};
++
++static mode_t iscsi_boot_tgt_attr_is_visible(struct kobject *kobj,
++					     struct attribute *attr, int i)
++{
++	struct iscsi_boot_kobj *boot_kobj =
++			container_of(kobj, struct iscsi_boot_kobj, kobj);
++
++	if (attr ==  &iscsi_boot_attr_tgt_index.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_TGT_INDEX);
++	else if (attr == &iscsi_boot_attr_tgt_flags.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_TGT_FLAGS);
++	else if (attr == &iscsi_boot_attr_tgt_ip.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					      ISCSI_BOOT_TGT_IP_ADDR);
++	else if (attr == &iscsi_boot_attr_tgt_port.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					      ISCSI_BOOT_TGT_PORT);
++	else if (attr == &iscsi_boot_attr_tgt_lun.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					      ISCSI_BOOT_TGT_LUN);
++	else if (attr == &iscsi_boot_attr_tgt_chap.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_TGT_CHAP_TYPE);
++	else if (attr == &iscsi_boot_attr_tgt_nic.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_TGT_NIC_ASSOC);
++	else if (attr == &iscsi_boot_attr_tgt_name.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_TGT_NAME);
++	else if (attr == &iscsi_boot_attr_tgt_chap_name.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_TGT_CHAP_NAME);
++	else if (attr == &iscsi_boot_attr_tgt_chap_secret.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_TGT_CHAP_SECRET);
++	else if (attr == &iscsi_boot_attr_tgt_chap_rev_name.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_TGT_REV_CHAP_NAME);
++	else if (attr == &iscsi_boot_attr_tgt_chap_rev_secret.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_TGT_REV_CHAP_SECRET);
 +	return 0;
 +}
-+#endif /* CONFIG_ACPI */
- 
- /*
-  * Routine used to find the iSCSI Boot Format Table. The logical
-@@ -59,6 +68,11 @@ unsigned long __init find_ibft_region(unsigned long *sizep)
- 
- 	ibft_addr = NULL;
- 
-+	/* iBFT 1.03 section 1.4.3.1 mandates that UEFI machines will
-+	 * only use ACPI for this */
-+	if (efi_enabled)
-+		return 0;
 +
- 	for (pos = IBFT_START; pos < IBFT_END; pos += 16) {
- 		/* The table can't be inside the VGA BIOS reserved space,
- 		 * so skip that area */
-@@ -72,14 +86,24 @@ unsigned long __init find_ibft_region(unsigned long *sizep)
- 			/* if the length of the table extends past 1M,
- 			 * the table cannot be valid. */
- 			if (pos + len <= (IBFT_END-1)) {
--				ibft_addr = (struct ibft_table_header *)virt;
-+				ibft_addr = (struct acpi_table_ibft *)virt;
- 				break;
- 			}
- 		}
- 	}
-+#ifdef CONFIG_ACPI
++static struct attribute_group iscsi_boot_target_attr_group = {
++	.attrs = target_attrs,
++	.is_visible = iscsi_boot_tgt_attr_is_visible,
++};
++
++/* Ethernet attrs */
++iscsi_boot_rd_attr(eth_index, index, ISCSI_BOOT_ETH_INDEX);
++iscsi_boot_rd_attr(eth_flags, flags, ISCSI_BOOT_ETH_FLAGS);
++iscsi_boot_rd_attr(eth_ip, ip-addr, ISCSI_BOOT_ETH_IP_ADDR);
++iscsi_boot_rd_attr(eth_subnet, subnet-mask, ISCSI_BOOT_ETH_SUBNET_MASK);
++iscsi_boot_rd_attr(eth_origin, origin, ISCSI_BOOT_ETH_ORIGIN);
++iscsi_boot_rd_attr(eth_gateway, gateway, ISCSI_BOOT_ETH_GATEWAY);
++iscsi_boot_rd_attr(eth_primary_dns, primary-dns, ISCSI_BOOT_ETH_PRIMARY_DNS);
++iscsi_boot_rd_attr(eth_secondary_dns, secondary-dns,
++		   ISCSI_BOOT_ETH_SECONDARY_DNS);
++iscsi_boot_rd_attr(eth_dhcp, dhcp, ISCSI_BOOT_ETH_DHCP);
++iscsi_boot_rd_attr(eth_vlan, vlan, ISCSI_BOOT_ETH_VLAN);
++iscsi_boot_rd_attr(eth_mac, mac, ISCSI_BOOT_ETH_MAC);
++iscsi_boot_rd_attr(eth_hostname, hostname, ISCSI_BOOT_ETH_HOSTNAME);
++
++static struct attribute *ethernet_attrs[] = {
++	&iscsi_boot_attr_eth_index.attr,
++	&iscsi_boot_attr_eth_flags.attr,
++	&iscsi_boot_attr_eth_ip.attr,
++	&iscsi_boot_attr_eth_subnet.attr,
++	&iscsi_boot_attr_eth_origin.attr,
++	&iscsi_boot_attr_eth_gateway.attr,
++	&iscsi_boot_attr_eth_primary_dns.attr,
++	&iscsi_boot_attr_eth_secondary_dns.attr,
++	&iscsi_boot_attr_eth_dhcp.attr,
++	&iscsi_boot_attr_eth_vlan.attr,
++	&iscsi_boot_attr_eth_mac.attr,
++	&iscsi_boot_attr_eth_hostname.attr,
++	NULL
++};
++
++static mode_t iscsi_boot_eth_attr_is_visible(struct kobject *kobj,
++					     struct attribute *attr, int i)
++{
++	struct iscsi_boot_kobj *boot_kobj =
++			container_of(kobj, struct iscsi_boot_kobj, kobj);
++
++	if (attr ==  &iscsi_boot_attr_eth_index.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_INDEX);
++	else if (attr ==  &iscsi_boot_attr_eth_flags.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_FLAGS);
++	else if (attr ==  &iscsi_boot_attr_eth_ip.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_IP_ADDR);
++	else if (attr ==  &iscsi_boot_attr_eth_subnet.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_SUBNET_MASK);
++	else if (attr ==  &iscsi_boot_attr_eth_origin.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_ORIGIN);
++	else if (attr ==  &iscsi_boot_attr_eth_gateway.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_GATEWAY);
++	else if (attr ==  &iscsi_boot_attr_eth_primary_dns.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_PRIMARY_DNS);
++	else if (attr ==  &iscsi_boot_attr_eth_secondary_dns.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_SECONDARY_DNS);
++	else if (attr ==  &iscsi_boot_attr_eth_dhcp.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_DHCP);
++	else if (attr ==  &iscsi_boot_attr_eth_vlan.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_VLAN);
++	else if (attr ==  &iscsi_boot_attr_eth_mac.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_MAC);
++	else if (attr ==  &iscsi_boot_attr_eth_hostname.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_ETH_HOSTNAME);
++	return 0;
++}
++
++static struct attribute_group iscsi_boot_ethernet_attr_group = {
++	.attrs = ethernet_attrs,
++	.is_visible = iscsi_boot_eth_attr_is_visible,
++};
++
++/* Initiator attrs */
++iscsi_boot_rd_attr(ini_index, index, ISCSI_BOOT_INI_INDEX);
++iscsi_boot_rd_attr(ini_flags, flags, ISCSI_BOOT_INI_FLAGS);
++iscsi_boot_rd_attr(ini_isns, isns-server, ISCSI_BOOT_INI_ISNS_SERVER);
++iscsi_boot_rd_attr(ini_slp, slp-server, ISCSI_BOOT_INI_SLP_SERVER);
++iscsi_boot_rd_attr(ini_primary_radius, pri-radius-server,
++		   ISCSI_BOOT_INI_PRI_RADIUS_SERVER);
++iscsi_boot_rd_attr(ini_secondary_radius, sec-radius-server,
++		   ISCSI_BOOT_INI_SEC_RADIUS_SERVER);
++iscsi_boot_rd_attr(ini_name, initiator-name, ISCSI_BOOT_INI_INITIATOR_NAME);
++
++static struct attribute *initiator_attrs[] = {
++	&iscsi_boot_attr_ini_index.attr,
++	&iscsi_boot_attr_ini_flags.attr,
++	&iscsi_boot_attr_ini_isns.attr,
++	&iscsi_boot_attr_ini_slp.attr,
++	&iscsi_boot_attr_ini_primary_radius.attr,
++	&iscsi_boot_attr_ini_secondary_radius.attr,
++	&iscsi_boot_attr_ini_name.attr,
++	NULL
++};
++
++static mode_t iscsi_boot_ini_attr_is_visible(struct kobject *kobj,
++					     struct attribute *attr, int i)
++{
++	struct iscsi_boot_kobj *boot_kobj =
++			container_of(kobj, struct iscsi_boot_kobj, kobj);
++
++	if (attr ==  &iscsi_boot_attr_ini_index.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_INI_INDEX);
++	if (attr ==  &iscsi_boot_attr_ini_flags.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_INI_FLAGS);
++	if (attr ==  &iscsi_boot_attr_ini_isns.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_INI_ISNS_SERVER);
++	if (attr ==  &iscsi_boot_attr_ini_slp.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_INI_SLP_SERVER);
++	if (attr ==  &iscsi_boot_attr_ini_primary_radius.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_INI_PRI_RADIUS_SERVER);
++	if (attr ==  &iscsi_boot_attr_ini_secondary_radius.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_INI_SEC_RADIUS_SERVER);
++	if (attr ==  &iscsi_boot_attr_ini_name.attr)
++		return boot_kobj->is_visible(boot_kobj->data,
++					     ISCSI_BOOT_INI_INITIATOR_NAME);
++
++	return 0;
++}
++
++static struct attribute_group iscsi_boot_initiator_attr_group = {
++	.attrs = initiator_attrs,
++	.is_visible = iscsi_boot_ini_attr_is_visible,
++};
++
++static struct iscsi_boot_kobj *
++iscsi_boot_create_kobj(struct iscsi_boot_kset *boot_kset,
++		       struct attribute_group *attr_group,
++		       const char *name, int index, void *data,
++		       ssize_t (*show) (void *data, int type, char *buf),
++		       mode_t (*is_visible) (void *data, int type))
++{
++	struct iscsi_boot_kobj *boot_kobj;
++
++	boot_kobj = kzalloc(sizeof(*boot_kobj), GFP_KERNEL);
++	if (!boot_kobj)
++		return NULL;
++	INIT_LIST_HEAD(&boot_kobj->list);
++
++	boot_kobj->kobj.kset = boot_kset->kset;
++	if (kobject_init_and_add(&boot_kobj->kobj, &iscsi_boot_ktype,
++				 NULL, name, index)) {
++		kfree(boot_kobj);
++		return NULL;
++	}
++	boot_kobj->data = data;
++	boot_kobj->show = show;
++	boot_kobj->is_visible = is_visible;
++
++	if (sysfs_create_group(&boot_kobj->kobj, attr_group)) {
++		/*
++		 * We do not want to free this because the caller
++		 * will assume that since the creation call failed
++		 * the boot kobj was not setup and the normal release
++		 * path is not being run.
++		 */
++		boot_kobj->data = NULL;
++		kobject_put(&boot_kobj->kobj);
++		return NULL;
++	}
++	boot_kobj->attr_group = attr_group;
++
++	kobject_uevent(&boot_kobj->kobj, KOBJ_ADD);
++	/* Nothing broke so lets add it to the list. */
++	list_add_tail(&boot_kobj->list, &boot_kset->kobj_list);
++	return boot_kobj;
++}
++
++static void iscsi_boot_remove_kobj(struct iscsi_boot_kobj *boot_kobj)
++{
++	list_del(&boot_kobj->list);
++	sysfs_remove_group(&boot_kobj->kobj, boot_kobj->attr_group);
++	kobject_put(&boot_kobj->kobj);
++}
++
++/**
++ * iscsi_boot_create_target() - create boot target sysfs dir
++ * @boot_kset: boot kset
++ * @index: the target id
++ * @data: driver specific data for target
++ * @show: attr show function
++ * @is_visible: attr visibility function
++ *
++ * Note: The boot sysfs lib will free the data passed in for the caller
++ * when all refs to the target kobject have been released.
++ */
++struct iscsi_boot_kobj *
++iscsi_boot_create_target(struct iscsi_boot_kset *boot_kset, int index,
++			 void *data,
++			 ssize_t (*show) (void *data, int type, char *buf),
++			 mode_t (*is_visible) (void *data, int type))
++{
++	return iscsi_boot_create_kobj(boot_kset, &iscsi_boot_target_attr_group,
++				      "target%d", index, data, show, is_visible);
++}
++EXPORT_SYMBOL_GPL(iscsi_boot_create_target);
++
++/**
++ * iscsi_boot_create_initiator() - create boot initiator sysfs dir
++ * @boot_kset: boot kset
++ * @index: the initiator id
++ * @data: driver specific data
++ * @show: attr show function
++ * @is_visible: attr visibility function
++ *
++ * Note: The boot sysfs lib will free the data passed in for the caller
++ * when all refs to the initiator kobject have been released.
++ */
++struct iscsi_boot_kobj *
++iscsi_boot_create_initiator(struct iscsi_boot_kset *boot_kset, int index,
++			    void *data,
++			    ssize_t (*show) (void *data, int type, char *buf),
++			    mode_t (*is_visible) (void *data, int type))
++{
++	return iscsi_boot_create_kobj(boot_kset,
++				      &iscsi_boot_initiator_attr_group,
++				      "initiator", index, data, show,
++				      is_visible);
++}
++EXPORT_SYMBOL_GPL(iscsi_boot_create_initiator);
++
++/**
++ * iscsi_boot_create_ethernet() - create boot ethernet sysfs dir
++ * @boot_kset: boot kset
++ * @index: the ethernet device id
++ * @data: driver specific data
++ * @show: attr show function
++ * @is_visible: attr visibility function
++ *
++ * Note: The boot sysfs lib will free the data passed in for the caller
++ * when all refs to the ethernet kobject have been released.
++ */
++struct iscsi_boot_kobj *
++iscsi_boot_create_ethernet(struct iscsi_boot_kset *boot_kset, int index,
++			   void *data,
++			   ssize_t (*show) (void *data, int type, char *buf),
++			   mode_t (*is_visible) (void *data, int type))
++{
++	return iscsi_boot_create_kobj(boot_kset,
++				      &iscsi_boot_ethernet_attr_group,
++				      "ethernet%d", index, data, show,
++				      is_visible);
++}
++EXPORT_SYMBOL_GPL(iscsi_boot_create_ethernet);
++
++/**
++ * iscsi_boot_create_kset() - creates root sysfs tree
++ * @set_name: name of root dir
++ */
++struct iscsi_boot_kset *iscsi_boot_create_kset(const char *set_name)
++{
++	struct iscsi_boot_kset *boot_kset;
++
++	boot_kset = kzalloc(sizeof(*boot_kset), GFP_KERNEL);
++	if (!boot_kset)
++		return NULL;
++
++	boot_kset->kset = kset_create_and_add(set_name, NULL, firmware_kobj);
++	if (!boot_kset->kset) {
++		kfree(boot_kset);
++		return NULL;
++	}
++
++	INIT_LIST_HEAD(&boot_kset->kobj_list);
++	return boot_kset;
++}
++EXPORT_SYMBOL_GPL(iscsi_boot_create_kset);
++
++/**
++ * iscsi_boot_create_host_kset() - creates root sysfs tree for a scsi host
++ * @hostno: host number of scsi host
++ */
++struct iscsi_boot_kset *iscsi_boot_create_host_kset(unsigned int hostno)
++{
++	struct iscsi_boot_kset *boot_kset;
++	char *set_name;
++
++	set_name = kasprintf(GFP_KERNEL, "iscsi_boot%u", hostno);
++	if (!set_name)
++		return NULL;
++
++	boot_kset = iscsi_boot_create_kset(set_name);
++	kfree(set_name);
++	return boot_kset;
++}
++EXPORT_SYMBOL_GPL(iscsi_boot_create_host_kset);
++
++/**
++ * iscsi_boot_destroy_kset() - destroy kset and kobjects under it
++ * @boot_kset: boot kset
++ *
++ * This will remove the kset and kobjects and attrs under it.
++ */
++void iscsi_boot_destroy_kset(struct iscsi_boot_kset *boot_kset)
++{
++	struct iscsi_boot_kobj *boot_kobj, *tmp_kobj;
++
++	list_for_each_entry_safe(boot_kobj, tmp_kobj,
++				 &boot_kset->kobj_list, list)
++		iscsi_boot_remove_kobj(boot_kobj);
++
++	kset_unregister(boot_kset->kset);
++}
++EXPORT_SYMBOL_GPL(iscsi_boot_destroy_kset);
+diff --git a/include/linux/iscsi_boot_sysfs.h b/include/linux/iscsi_boot_sysfs.h
+new file mode 100644
+index 0000000..f1e6c18
+--- /dev/null
++++ b/include/linux/iscsi_boot_sysfs.h
+@@ -0,0 +1,123 @@
++/*
++ * Export the iSCSI boot info to userland via sysfs.
++ *
++ * Copyright (C) 2010 Red Hat, Inc.  All rights reserved.
++ * Copyright (C) 2010 Mike Christie
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License v2.0 as published by
++ * the Free Software Foundation
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#ifndef _ISCSI_BOOT_SYSFS_
++#define _ISCSI_BOOT_SYSFS_
++
++/*
++ * The text attributes names for each of the kobjects.
++*/
++enum iscsi_boot_eth_properties_enum {
++	ISCSI_BOOT_ETH_INDEX,
++	ISCSI_BOOT_ETH_FLAGS,
++	ISCSI_BOOT_ETH_IP_ADDR,
++	ISCSI_BOOT_ETH_SUBNET_MASK,
++	ISCSI_BOOT_ETH_ORIGIN,
++	ISCSI_BOOT_ETH_GATEWAY,
++	ISCSI_BOOT_ETH_PRIMARY_DNS,
++	ISCSI_BOOT_ETH_SECONDARY_DNS,
++	ISCSI_BOOT_ETH_DHCP,
++	ISCSI_BOOT_ETH_VLAN,
++	ISCSI_BOOT_ETH_MAC,
++	/* eth_pci_bdf - this is replaced by link to the device itself. */
++	ISCSI_BOOT_ETH_HOSTNAME,
++	ISCSI_BOOT_ETH_END_MARKER,
++};
++
++enum iscsi_boot_tgt_properties_enum {
++	ISCSI_BOOT_TGT_INDEX,
++	ISCSI_BOOT_TGT_FLAGS,
++	ISCSI_BOOT_TGT_IP_ADDR,
++	ISCSI_BOOT_TGT_PORT,
++	ISCSI_BOOT_TGT_LUN,
++	ISCSI_BOOT_TGT_CHAP_TYPE,
++	ISCSI_BOOT_TGT_NIC_ASSOC,
++	ISCSI_BOOT_TGT_NAME,
++	ISCSI_BOOT_TGT_CHAP_NAME,
++	ISCSI_BOOT_TGT_CHAP_SECRET,
++	ISCSI_BOOT_TGT_REV_CHAP_NAME,
++	ISCSI_BOOT_TGT_REV_CHAP_SECRET,
++	ISCSI_BOOT_TGT_END_MARKER,
++};
++
++enum iscsi_boot_initiator_properties_enum {
++	ISCSI_BOOT_INI_INDEX,
++	ISCSI_BOOT_INI_FLAGS,
++	ISCSI_BOOT_INI_ISNS_SERVER,
++	ISCSI_BOOT_INI_SLP_SERVER,
++	ISCSI_BOOT_INI_PRI_RADIUS_SERVER,
++	ISCSI_BOOT_INI_SEC_RADIUS_SERVER,
++	ISCSI_BOOT_INI_INITIATOR_NAME,
++	ISCSI_BOOT_INI_END_MARKER,
++};
++
++struct attribute_group;
++
++struct iscsi_boot_kobj {
++	struct kobject kobj;
++	struct attribute_group *attr_group;
++	struct list_head list;
++
 +	/*
-+	 * One spec says "IBFT", the other says "iBFT". We have to check
-+	 * for both.
++	 * Pointer to store driver specific info. If set this will
++	 * be freed for the LLD when the kobj release function is called.
 +	 */
-+	if (!ibft_addr)
-+		acpi_table_parse(ACPI_SIG_IBFT, acpi_find_ibft);
-+	if (!ibft_addr)
-+		acpi_table_parse("iBFT", acpi_find_ibft);
-+#endif /* CONFIG_ACPI */
- 	if (ibft_addr) {
--		*sizep = PAGE_ALIGN(len);
--		return pos;
-+		*sizep = PAGE_ALIGN(ibft_addr->header.length);
-+		return (u64)isa_virt_to_bus(ibft_addr);
- 	}
- 
- 	*sizep = 0;
-diff --git a/include/linux/iscsi_ibft.h b/include/linux/iscsi_ibft.h
-index d2e4042..8ba7e5b 100644
---- a/include/linux/iscsi_ibft.h
-+++ b/include/linux/iscsi_ibft.h
-@@ -21,21 +21,13 @@
- #ifndef ISCSI_IBFT_H
- #define ISCSI_IBFT_H
- 
--struct ibft_table_header {
--	char signature[4];
--	u32 length;
--	u8 revision;
--	u8 checksum;
--	char oem_id[6];
--	char oem_table_id[8];
--	char reserved[24];
--} __attribute__((__packed__));
-+#include <acpi/acpi.h>
- 
- /*
-  * Logical location of iSCSI Boot Format Table.
-  * If the value is NULL there is no iBFT on the machine.
-  */
--extern struct ibft_table_header *ibft_addr;
-+extern struct acpi_table_ibft *ibft_addr;
- 
- /*
-  * Routine used to find and reserve the iSCSI Boot Format Table. The
++	void *data;
++	/*
++	 * Driver specific show function.
++	 *
++	 * The enum of the type. This can be any value of the above
++	 * properties.
++	 */
++	ssize_t (*show) (void *data, int type, char *buf);
++
++	/*
++	 * Drivers specific visibility function.
++	 * The function should return if they the attr should be readable
++	 * writable or should not be shown.
++	 *
++	 * The enum of the type. This can be any value of the above
++	 * properties.
++	 */
++	mode_t (*is_visible) (void *data, int type);
++};
++
++struct iscsi_boot_kset {
++	struct list_head kobj_list;
++	struct kset *kset;
++};
++
++struct iscsi_boot_kobj *
++iscsi_boot_create_initiator(struct iscsi_boot_kset *boot_kset, int index,
++			    void *data,
++			    ssize_t (*show) (void *data, int type, char *buf),
++			    mode_t (*is_visible) (void *data, int type));
++
++struct iscsi_boot_kobj *
++iscsi_boot_create_ethernet(struct iscsi_boot_kset *boot_kset, int index,
++			   void *data,
++			   ssize_t (*show) (void *data, int type, char *buf),
++			   mode_t (*is_visible) (void *data, int type));
++struct iscsi_boot_kobj *
++iscsi_boot_create_target(struct iscsi_boot_kset *boot_kset, int index,
++			 void *data,
++			 ssize_t (*show) (void *data, int type, char *buf),
++			 mode_t (*is_visible) (void *data, int type));
++
++struct iscsi_boot_kset *iscsi_boot_create_kset(const char *set_name);
++struct iscsi_boot_kset *iscsi_boot_create_host_kset(unsigned int hostno);
++void iscsi_boot_destroy_kset(struct iscsi_boot_kset *boot_kset);
++
++#endif
 -- 
 1.7.0.5
 
