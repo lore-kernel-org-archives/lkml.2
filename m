@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758232Ab0DPB6b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 21:58:31 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56671 "EHLO gate.crashing.org"
+	id S1755702Ab0DPCSl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 22:18:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32371 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758209Ab0DPB63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 21:58:29 -0400
-Subject: Re: linux-next: PowerPC WARN_ON_ONCE() after merge of the final
- tree (tip related)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: David Miller <davem@davemloft.net>
-Cc: mingo@elte.hu, sfr@canb.auug.org.au, peterz@infradead.org,
-       fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-       linux-next@vger.kernel.org, hpa@zytor.com, tglx@linutronix.de,
-       linuxppc-dev@lists.ozlabs.org
-In-Reply-To: <20100414.235557.123118153.davem@davemloft.net>
-References: <20100415161214.04637496.sfr@canb.auug.org.au>
-	 <20100415064940.GA9240@elte.hu>
-	 <20100414.235557.123118153.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Apr 2010 11:56:56 +1000
-Message-ID: <1271383016.13059.173.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1753024Ab0DPCSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 22:18:39 -0400
+Message-ID: <4BC7C9CF.20403@redhat.com>
+Date: Fri, 16 Apr 2010 10:22:07 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
+MIME-Version: 1.0
+To: Sean Hefty <sean.hefty@intel.com>
+CC: "'Tetsuo Handa'" <penguin-kernel@I-love.SAKURA.ne.jp>,
+       opurdila@ixiacom.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       nhorman@tuxdriver.com, davem@davemloft.net, ebiederm@xmission.com,
+       linux-kernel@vger.kernel.org, rolandd@cisco.com,
+       linux-rdma@vger.kernel.org
+Subject: Re: [PATCH] rdma/cm: Randomize local port allocation.
+References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain>	<20100412100816.5302.74919.sendpatchset@localhost.localdomain>	<201004130121.o3D1Lhh7099571@www262.sakura.ne.jp>	<4BC41994.7030707@redhat.com>	<4BC42FE0.4040601@redhat.com> <201004132207.GAJ52684.OJFtMQVFHOSFLO@I-love.SAKURA.ne.jp> <21DAC78125424ED291B5D6477CFF9657@amr.corp.intel.com> <201004140201.o3E21Aqn075978@www262.sakura.ne.jp> <195EB1AD388F455AA386EB214FCD09F4@amr.corp.intel.com> <201004150229.o3F2T4dZ054768@www262.sakura.ne.jp> <5CE6BC7B954643FAAFFD2AD66F673CBD@amr.corp.intel.com>
+In-Reply-To: <5CE6BC7B954643FAAFFD2AD66F673CBD@amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-14 at 23:55 -0700, David Miller wrote:
-> From: Ingo Molnar <mingo@elte.hu>
-> Date: Thu, 15 Apr 2010 08:49:40 +0200
+Sean Hefty wrote:
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 > 
-> > Btw., WARN_ON trapping on PowerPC is clearly a PowerPC bug - there's a good 
-> > reason we have WARN_ON versus BUG_ON - it should be fixed.
+>> Randomize local port allocation in a way sctp_get_port_local() does.
+>> Update rover at the end of loop since we're likely to pick a valid port
+>> on the first try.
+>>
+>> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Reviewed-by: Sean Hefty <sean.hefty@intel.com>
 > 
-> I disagree, an implementation should be allowed to use the most
-> efficient implementation possible for both interfaces.
 
-Right, and I don't think the reason why we have WARN_ON vs. BUG_ON ever
-had anything to do with whether it's implemented with a trap or not :-) 
+Thanks, everyone!
 
-It's purely related to whether it's supposed to be fatal or not. Now,
-there is indeed the potential problem you mention of WARN_ON being
-called in places where such a trap is unsafe, but so far, this is the
-first time I can remember we hit that problem so we've been getting away
-with it for quite a while :-)
-
-Now, whether the trap is or is not more efficient than an explicit test
-is something that is still being debated on powerpc. It has the
-advantage of not un-leafing functions (and thus not creating stack
-frames, adding register reloads, etc... when not needed), basically
-putting the burden of saving/restoring registers to the (hopefully) rare
-path of actually taking the WARN/BUG.
-
-We could probably manufacture something similar with careful use of
-inline asm and an out of line asm trampoline.
-
-The benefit of the trap instruction vs. conditional branches per-se is
-probably nil. It's really more about the codegen impact, register
-clobber due to the added function call, etc.. at least for us.
-
-Cheers,
-Ben.
-
-> I would be using traps for both on sparc64 if that were really
-> feasible on sparc64 (and actually with gcc-4.5's "asm goto" it might
-> actually be now)
 > 
-> The WARN and BUG macros, when implemented without traps, have serious
-> implications for overall code size and register pressure.
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> I like this version, thanks!  I'm not sure which tree to merge it through.
+> Are you needing this for 2.6.34, or is 2.6.35 okay?
+> 
 
-
+As soon as possible, so 2.6.34. :)
