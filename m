@@ -1,32 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab0DPOqU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:46:20 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:50833 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932145Ab0DPOqS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:46:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=awBfVByJlJBBcO/IkFa4Km/WqyJK7CoNLhZ55EvxurbiQQ6Q7BsPD3pQj+tkI3t4e5
-         OE4IuE4I+RGuaoCiJpWsm4LAwyZ9aVMviihRxF9wNL2q3f1pFIlCF0bTLTl1u3XlzKYs
-         HRhlkimLGx8yG692uao2Qnvxdc6vNr6/oJD/4=
-Date: Fri, 16 Apr 2010 16:46:17 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
+	id S932253Ab0DPOql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:46:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23966 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752416Ab0DPOqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 10:46:40 -0400
+Date: Fri, 16 Apr 2010 10:46:24 -0400
+From: Don Zickus <dzickus@redhat.com>
 To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>, mingo@elte.hu, peterz@infradead.org,
-       aris@redhat.com, linux-kernel@vger.kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@elte.hu,
+       peterz@infradead.org, aris@redhat.com, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100416144616.GC5162@nowhere>
-References: <1271366710-17468-1-git-send-email-dzickus@redhat.com> <20100416014712.GC15570@nowhere> <20100416143232.GA5540@lenovo>
+Message-ID: <20100416144624.GG15159@redhat.com>
+References: <1271366710-17468-1-git-send-email-dzickus@redhat.com>
+ <20100416014712.GC15570@nowhere>
+ <20100416143232.GA5540@lenovo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20100416143232.GA5540@lenovo>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -74,10 +68,8 @@ On Fri, Apr 16, 2010 at 06:32:32PM +0400, Cyrill Gorcunov wrote:
 > Hmm, this is NMI handler path so from what we protect this per-cpu data?
 > Do I miss something? /me confused
 
+It's not per-cpu which is the problem I believe.  If you have multiple
+cpus dealing with hardlockups than they can overwrite each other's data.
 
-The cpu mask is not per cpu here, this is a shared bitmap, so you
-can race against other cpus NMIs.
-
-That said, as I suggested, having a per cpu var that we set when we
-warned would be much better than a spinlock here.
-
+Cheers,
+Don
