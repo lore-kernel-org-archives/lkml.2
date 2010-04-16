@@ -1,139 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758515Ab0DPOnI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:43:08 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:40734 "EHLO
+	id S932207Ab0DPOqU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:46:20 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:50833 "EHLO
 	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756242Ab0DPOnG (ORCPT
+	with ESMTP id S932145Ab0DPOqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:43:06 -0400
+	Fri, 16 Apr 2010 10:46:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=hcCATLub5DeTpPtyG/V6kFN3fdxyPjs4FFfE+y/iJ2CeGrGg8lHWOttTl+stCkZ8f6
-         90zulYxcSRnyFouoYKvRpUbIW1wVBDjWStGzHyFTKTGKCiWHFjDusiL3IlptOC1D5Rzy
-         NFPp8QvZ8AlcHfXNGSvt6gKsU/OIKsdggnXn0=
-Date: Fri, 16 Apr 2010 16:43:04 +0200
+        b=awBfVByJlJBBcO/IkFa4Km/WqyJK7CoNLhZ55EvxurbiQQ6Q7BsPD3pQj+tkI3t4e5
+         OE4IuE4I+RGuaoCiJpWsm4LAwyZ9aVMviihRxF9wNL2q3f1pFIlCF0bTLTl1u3XlzKYs
+         HRhlkimLGx8yG692uao2Qnvxdc6vNr6/oJD/4=
+Date: Fri, 16 Apr 2010 16:46:17 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
-       linux-kernel@vger.kernel.org
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, mingo@elte.hu, peterz@infradead.org,
+       aris@redhat.com, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100416144302.GB5162@nowhere>
-References: <1271366710-17468-1-git-send-email-dzickus@redhat.com> <20100416014712.GC15570@nowhere> <20100416141213.GC15159@redhat.com>
+Message-ID: <20100416144616.GC5162@nowhere>
+References: <1271366710-17468-1-git-send-email-dzickus@redhat.com> <20100416014712.GC15570@nowhere> <20100416143232.GA5540@lenovo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100416141213.GC15159@redhat.com>
+In-Reply-To: <20100416143232.GA5540@lenovo>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 10:12:13AM -0400, Don Zickus wrote:
+On Fri, Apr 16, 2010 at 06:32:32PM +0400, Cyrill Gorcunov wrote:
 > On Fri, Apr 16, 2010 at 03:47:14AM +0200, Frederic Weisbecker wrote:
-> > >  config PERF_EVENTS_NMI
-> > >  	bool
-> > > +	depends on PERF_EVENTS
-> > >  	help
-> > >  	  Arch has support for nmi_watchdog
-> > 
-> > 
-> > 
-> > That looks too general. It's more about the fact the arch supports
-> > cpu cycle events and generates NMIs on overflow.
-> 
-> I was trying to figure out a way to add the PERF_EVENTS dependency as I
-> didn't want to impose it on the CONFIG_NMI_WATCHDOG if that config
-> supported softlockup (which doesn't need the PERF_EVENTS).
-
-
-
-Yeah and this is fine. I was talking about the help description.
-
-
- 
-> > I'm confused, do we have two versions of the softlockup
-> > detector now? You should drop the older one.
-> 
-> Originally Ingo talked about a migration path, so I was going to support
-> the older one in case the new one was having issues, sort of like what he
-> suggested about moving the nmi code from arch/x86/kernel/apic/nmi.c to
-> kernel/watchdog.c.  But I can probably drop the softlockup case as the
-> migration isn't as tricky as the nmi case.
-
-
-
-Ok.
-
+> [...]
+> > > +
+> > > +/* Callback function for perf event subsystem */
+> > > +void watchdog_overflow_callback(struct perf_event *event, int nmi,
+> > > +		 struct perf_sample_data *data,
+> > > +		 struct pt_regs *regs)
+> > > +{
+> > > +	int this_cpu = smp_processor_id();
+> > > +	unsigned long touch_ts = per_cpu(watchdog_touch_ts, this_cpu);
+> > > +
+> > > +	if (touch_ts == 0) {
+> > > +		__touch_watchdog();
 > > > +		return;
 > > > +	}
 > > > +
-> > > +	cpumask_clear_cpu(this_cpu, to_cpumask(hardlockup_mask));
+> > > +	/* check for a hardlockup
+> > > +	 * This is done by making sure our timer interrupt
+> > > +	 * is incrementing.  The timer interrupt should have
+> > > +	 * fired multiple times before we overflow'd.  If it hasn't
+> > > +	 * then this is a good indication the cpu is stuck
+> > > +	 */
+> > > +	if (is_hardlockup(this_cpu)) {
+> > > +		/* only print hardlockups once */
+> > > +		if (cpumask_test_cpu(this_cpu, to_cpumask(hardlockup_mask)))
+> > > +			return;
+> > > +
+> > > +		if (hardlockup_panic)
+> > > +			panic("Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+> > > +		else
+> > > +			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+> > > +
+> > > +		cpumask_set_cpu(this_cpu, to_cpumask(hardlockup_mask));
 > > 
 > > 
 > > 
-> > Hmm...this is probably not necessary.
+> > May be have an arch spin lock there to update your cpu mask safely.
+> > 
 > 
-> I was just thinking of the case where dispite the WARN above, the cpu
-> actually recovered and then failed again separately.  But I probably won't
-> spend anymore time defending it. :-)
+> Hmm, this is NMI handler path so from what we protect this per-cpu data?
+> Do I miss something? /me confused
 
 
+The cpu mask is not per cpu here, this is a shared bitmap, so you
+can race against other cpus NMIs.
 
-This is really just a corner case, I guess you don't need to
-bother with that. It is actually racy against other cpus and adding
-a spinlock here (in the everything is fine path) would be an overkill.
-
-In fact, having two per cpu vars named hardlockup_warned and
-softlockup_warned would be better than cpumasks. I'm sorry I
-suggested you the cpumask, but such per cpu vars will avoid
-you dealing with these synchonization issues. And one of the primary
-rules is usually to never take a lock from NMIs if we can :)
-
-
- 
-> > You probably want a backtrace cpu mask here as well
-> > (but better don't use the same than the hardlockup thing)
-> 
-> yup.
-
-
-So actually, per_cpu softlockup_warned would be better :)
-
-
-> > Also you should half-drop the DETECT_SOFTLOCKUP thing:
-> > keep it's definition but drop the ability to choose it from
-> > the prompt:
-> > 
-> > config DETECT_SOFTLOCKUP
-> > 	bool
-> > 	depends on DEBUG_KERNEL && !S390
-> > 	default y
-> > 
-> > This way we keep it for compatibility with def_configs, it will
-> > enable the WATCHDOG by default if it is "y", we can schedule
-> > its removal later.
- 
-> I understand the general idea but not quite the implementation idea.  I will work
-> on it and see what I come up with.
-
-
-We current have:
-
-config DETECT_SOFTLOCKUP
-     bool "Blah"
-     depends on DEBUG_KERNEL && !S390
-     default y
-     help
-       .......
-
-The idea is to remove the "Blah" so that the user can't select it
-anymore from make menuconfig, and to remove the help too as it's useless
-too.
-
-So that config WATCHDOG can be default y if DETECT_SOFTLOCKUP.
-Then if someone comes with a config that has DETECT_SOFTLOCKUP,
-it's new implementation (WATCHDOG) will enabled by default.
+That said, as I suggested, having a per cpu var that we set when we
+warned would be much better than a spinlock here.
 
