@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303Ab0DPMEh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 08:04:37 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:60921 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab0DPMEg (ORCPT
+	id S1758313Ab0DPMGu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 08:06:50 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:42758 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756225Ab0DPMGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 08:04:36 -0400
-Date: Fri, 16 Apr 2010 14:04:32 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Jakob Viketoft <jakob.viketoft@bitsim.com>
-Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [PATCH] colibri.h: Add #include
-Message-ID: <20100416120432.GQ30801@buzzloop.caiaq.de>
-References: <4BC8510B.3060202@bitsim.com>
+	Fri, 16 Apr 2010 08:06:49 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -14.389
+Message-ID: <4BC852CD.40406@tremplin-utc.net>
+Date: Fri, 16 Apr 2010 14:06:37 +0200
+From: =?UTF-8?B?w4lyaWMgUGllbA==?= <eric.piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100331 Mandriva/3.0.4-1mdv2010.1 (2010.1) Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BC8510B.3060202@bitsim.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Marcin Derlukiewicz <marcin@derlukiewicz.pl>
+CC: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+       Samu Onkalo <samu.p.onkalo@nokia.com>, Pavel Machek <pavel@ucw.cz>,
+       lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lis3lv02d: provide means to disable polled input interface
+References: <alpine.LNX.2.00.1004091453530.8345@pobox.suse.cz> <4BBF2BD1.5050107@tremplin-utc.net> <alpine.LNX.2.00.1004091532150.8345@pobox.suse.cz> <op.va86rulwgp7y00@linux-r26l.site>
+In-Reply-To: <op.va86rulwgp7y00@linux-r26l.site>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 01:59:07PM +0200, Jakob Viketoft wrote:
+On 16/04/10 13:41, Marcin Derlukiewicz wrote:
+:
+> sorry for the delay, had a crunch time
 > 
-> CC: stable@kernel.org
-> CC: Daniel Mack <daniel@caiaq.de>
-> CC: Eric Miao <eric.y.miao@gmail.com>
-> Signed-off-by Jakob Viketoft <jakob.viketoft@bitsim.com>
+> here is the link for this lsof:
+> https://bugzilla.novell.com/attachment.cgi?id=354953
+So apparently, it's opened by mplayer. Indeed, by default mplayer always
+opens the first joystick device, because some people like to  control a
+movie with a joystick.
 
-Acked-by: Daniel Mack <daniel@caiaq.de>
+I don't think much can be done from the kernel point of view. Maybe
+there are even people who enjoy controlling their movies by moving their
+laptop! Here, my ~/.mplayer/config looks like:
+[default]
+input=js-dev=/dev/input/js8
 
-Thanks,
-Daniel
+You could also put a udev rule to change the name of this joystick to
+something like js1.
 
-> --- a/arch/arm/mach-pxa/include/mach/colibri.h	2010-03-15
-> 17:09:39.000000000 +0100
-> +++ b/arch/arm/mach-pxa/include/mach/colibri.h	2010-04-16
-> 13:53:29.000000000 +0200
-> @@ -2,6 +2,7 @@
->  #define _COLIBRI_H_
-> 
->  #include <net/ax88796.h>
-> +#include <mach/mfp.h>
-> 
->  /*
->   * common settings for all modules
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+All I could think of in the kernel side to improve this situation would
+be to give more information about joystick devices, and define a subtype
+"accelerometer", which mplayer could avoid selecting by default. I don't
+know enough the input interface to know if this already exists...
+
+See you,
+Eric
+
