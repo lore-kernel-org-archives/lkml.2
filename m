@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab0DPXTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 19:19:34 -0400
-Received: from ge0.mail1.hoer.dk.ip.fullrate.dk ([90.185.1.42]:55876 "EHLO
-	smtp.fullrate.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738Ab0DPXTd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 19:19:33 -0400
-From: Martin Nybo Andersen <tweek@tweek.dk>
-To: linux-kernel@vger.kernel.org
-Subject: Re: 5 years of Linux development in Git
-Date: Sat, 17 Apr 2010 01:19:29 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.4; i686; ; )
-Cc: Christian Ludwig <chrissicool@chrissicool.net>
-References: <1271456402.14652.505.camel@kraftzwerg.chrissicool.shacknet.nu>
-In-Reply-To: <1271456402.14652.505.camel@kraftzwerg.chrissicool.shacknet.nu>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S932779Ab0DPX1e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 19:27:34 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59419 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932738Ab0DPX1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 19:27:32 -0400
+Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
+ implementation
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+In-Reply-To: <20100416134336.GA2615@linux.vnet.ibm.com>
+References: <20100408191737.296180458@chello.nl>
+	 <20100408192722.643778654@chello.nl> <1271120731.13059.6.camel@pasglop>
+	 <20100413034311.GB2772@linux.vnet.ibm.com>
+	 <1271253110.32749.47.camel@laptop>
+	 <20100415142852.GA2471@linux.vnet.ibm.com>
+	 <1271400891.13059.186.camel@pasglop>
+	 <20100416134336.GA2615@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 17 Apr 2010 09:25:07 +1000
+Message-ID: <1271460307.13059.216.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004170119.29511.tweek@tweek.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 17 April 2010 00:20:02 Christian Ludwig wrote:
-> Dear kernel hackers & Git lovers,
-> 
-> [...]
-> 
-> You can find a preview teaser on Youtube at
-> 
->   http://www.youtube.com/watch?v=ntTpM8hfl_E
-> 
-> The torrents are linked on the page.
-> 
-> We hope you enjoy the video and celebrate 5 years of Linux kernel
-> development in Git with us.
+On Fri, 2010-04-16 at 06:43 -0700, Paul E. McKenney wrote:
+> So I believe that in this case call_rcu_sched() is your friend.  ;-)
 
-That is one nice video. rtorrent is now fetching the 1080p version and will be 
-seeding for at least a week.
+Looks like it :-)
 
-> [...]
+I'll cook up a patch changing my current call_rcu() to call_rcu_sched().
 
-Not much to say about git that haven't already been said, except perhaps that 
-it is now the main vcs at work and at home for me.
+Cheers,
+Ben.
 
-Congrats to all contributors!
 
--Tweek
