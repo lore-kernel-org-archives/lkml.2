@@ -1,53 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab0DPEXs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 00:23:48 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49399 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab0DPEXo (ORCPT
+	id S1752231Ab0DPE0I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 00:26:08 -0400
+Received: from mail-yx0-f199.google.com ([209.85.210.199]:52622 "EHLO
+	mail-yx0-f199.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab0DPE0G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 00:23:44 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 16 Apr 2010 13:18:23 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-Id: <20100416131823.c874125a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100416101339.a501f554.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
-	<20100416101339.a501f554.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Apr 2010 00:26:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=lpGL5IDJ0obxSBWfq8qP1TrPjAWo0fUX31tPgle7npMx/fGnZRk/RqsVObUj5Cx3RE
+         TyyLsDIzRvbi+7/junMBuvIw6hJL5waHM5AEHKFNjC6Uo6B4W7kLVidbA/zaP8cJIqIe
+         1uQzJNlZPKAXaQioJTOxzL6taMyz55/UOTHT0=
+MIME-Version: 1.0
+In-Reply-To: <20100416115437.27AD.A69D9226@jp.fujitsu.com>
+References: <20100415135031.D186.A69D9226@jp.fujitsu.com>
+	 <20100415051911.GA17110@localhost>
+	 <20100416115437.27AD.A69D9226@jp.fujitsu.com>
+Date: Fri, 16 Apr 2010 13:26:03 +0900
+Message-ID: <t2j28c262361004152126t1975cd96kc21e54f3a9e41f82@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: page_check_references() check low order lumpy 
+	reclaim properly
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Andreas Mohr <andi@lisas.de>,
+       Jens Axboe <axboe@kernel.dk>,
+       Linux Memory Management List <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Rik van Riel <riel@redhat.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Apr 2010 10:13:39 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
- 
-> Hmm. Then, if memoy cgroup is filled by dirty pages, it can't kick writeback
-> and has to wait for someone else's writeback ?
-> 
-> How long this will take ?
-> # mount -t cgroup none /cgroup -o memory
-> # mkdir /cgroup/A
-> # echo 20M > /cgroup/A/memory.limit_in_bytes
-> # echo $$ > /cgroup/A/tasks
-> # dd if=/dev/zero of=./tmpfile bs=4096 count=1000000
-> 
-> Can memcg ask writeback thread to "Wake Up Now! and Write this out!" effectively ?
-> 
+On Fri, Apr 16, 2010 at 12:16 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> On Thu, Apr 15, 2010 at 12:55:30PM +0800, KOSAKI Motohiro wrote:
+>> > > On Thu, Apr 15, 2010 at 12:32:50PM +0800, KOSAKI Motohiro wrote:
+>> > > > > On Thu, Apr 15, 2010 at 11:31:52AM +0800, KOSAKI Motohiro wrote:
+>> > > > > > > > Many applications (this one and below) are stuck in
+>> > > > > > > > wait_on_page_writeback(). I guess this is why "heavy write to
+>> > > > > > > > irrelevant partition stalls the whole system".  They are stuck on page
+>> > > > > > > > allocation. Your 512MB system memory is a bit tight, so reclaim
+>> > > > > > > > pressure is a bit high, which triggers the wait-on-writeback logic.
+>> > > > > > >
+>> > > > > > > I wonder if this hacking patch may help.
+>> > > > > > >
+>> > > > > > > When creating 300MB dirty file with dd, it is creating continuous
+>> > > > > > > region of hard-to-reclaim pages in the LRU list. priority can easily
+>> > > > > > > go low when irrelevant applications' direct reclaim run into these
+>> > > > > > > regions..
+>> > > > > >
+>> > > > > > Sorry I'm confused not. can you please tell us more detail explanation?
+>> > > > > > Why did lumpy reclaim cause OOM? lumpy reclaim might cause
+>> > > > > > direct reclaim slow down. but IIUC it's not cause OOM because OOM is
+>> > > > > > only occur when priority-0 reclaim failure.
+>> > > > >
+>> > > > > No I'm not talking OOM. Nor lumpy reclaim.
+>> > > > >
+>> > > > > I mean the direct reclaim can get stuck for long time, when we do
+>> > > > > wait_on_page_writeback() on lumpy_reclaim=1.
+>> > > > >
+>> > > > > > IO get stcking also prevent priority reach to 0.
+>> > > > >
+>> > > > > Sure. But we can wait for IO a bit later -- after scanning 1/64 LRU
+>> > > > > (the below patch) instead of the current 1/1024.
+>> > > > >
+>> > > > > In Andreas' case, 512MB/1024 = 512KB, this is way too low comparing to
+>> > > > > the 22MB writeback pages. There can easily be a continuous range of
+>> > > > > 512KB dirty/writeback pages in the LRU, which will trigger the wait
+>> > > > > logic.
+>> > > >
+>> > > > In my feeling from your explanation, we need auto adjustment mechanism
+>> > > > instead change default value for special machine. no?
+>> > >
+>> > > You mean the dumb DEF_PRIORITY/2 may be too large for a 1TB memory box?
+>> > >
+>> > > However for such boxes, whether it be DEF_PRIORITY-2 or DEF_PRIORITY/2
+>> > > shall be irrelevant: it's trivial anyway to reclaim an order-1 or
+>> > > order-2 page. In other word, lumpy_reclaim will hardly go 1.  Do you
+>> > > think so?
+>> >
+>> > If my remember is correct, Its order-1 lumpy reclaim was introduced
+>> > for solving such big box + AIM7 workload made kernel stack (order-1 page)
+>> > allocation failure.
+>> >
+>> > Now, We are living on moore's law. so probably we need to pay attention
+>> > scalability always. today's big box is going to become desktop box after
+>> > 3-5 years.
+>> >
+>> > Probably, Lee know such problem than me. cc to him.
+>>
+>> In Andreas' trace, the processes are blocked in
+>> - do_fork:              console-kit-d
+>> - __alloc_skb:          x-terminal-em, konqueror
+>> - handle_mm_fault:      tclsh
+>> - filemap_fault:        ls
+>>
+>> I'm a bit confused by the last one, and wonder what's the typical
+>> gfp order of __alloc_skb().
+>
+> Probably I've found one of reason of low order lumpy reclaim slow down.
+> Let's fix obvious bug at first!
+>
+>
+> ============================================================
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Subject: [PATCH] vmscan: page_check_references() check low order lumpy reclaim properly
+>
+> If vmscan is under lumpy reclaim mode, it have to ignore referenced bit
+> for making contenious free pages. but current page_check_references()
+> doesn't.
+>
+> Fixes it.
+>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-Hmm.. I saw an oom-kill while testing several cases but performance itself
-seems not to be far different with or without patch.
-But I'm unhappy with oom-kill, so some tweak for memcg will be necessary
-if we'll go with this.
+I am not sure how the patch affects this problem.
+But I think the patch is reasonable.
 
-Thanks,
--Kame
+Nice catch, Kosaiki.
+Below is just nitpick. :)
 
+> ---
+>  mm/vmscan.c |   32 +++++++++++++++++---------------
+>  1 files changed, 17 insertions(+), 15 deletions(-)
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 3ff3311..13d9546 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -77,6 +77,8 @@ struct scan_control {
+>
+>        int order;
+>
+> +       int lumpy_reclaim;
+> +
+>        /* Which cgroup do we reclaim from */
+>        struct mem_cgroup *mem_cgroup;
+>
+> @@ -575,7 +577,7 @@ static enum page_references page_check_references(struct page *page,
+>        referenced_page = TestClearPageReferenced(page);
+>
+>        /* Lumpy reclaim - ignore references */
+> -       if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+> +       if (sc->lumpy_reclaim)
+>                return PAGEREF_RECLAIM;
+>
+>        /*
+> @@ -1130,7 +1132,6 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
+>        unsigned long nr_scanned = 0;
+>        unsigned long nr_reclaimed = 0;
+>        struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+> -       int lumpy_reclaim = 0;
+>
+>        while (unlikely(too_many_isolated(zone, file, sc))) {
+>                congestion_wait(BLK_RW_ASYNC, HZ/10);
+> @@ -1140,17 +1141,6 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
+>                        return SWAP_CLUSTER_MAX;
+>        }
+>
+> -       /*
+> -        * If we need a large contiguous chunk of memory, or have
+> -        * trouble getting a small set of contiguous pages, we
+> -        * will reclaim both active and inactive pages.
+> -        *
+> -        * We use the same threshold as pageout congestion_wait below.
+> -        */
+> -       if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+> -               lumpy_reclaim = 1;
+> -       else if (sc->order && priority < DEF_PRIORITY - 2)
+> -               lumpy_reclaim = 1;
+>
+>        pagevec_init(&pvec, 1);
+>
+> @@ -1163,7 +1153,7 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
+>                unsigned long nr_freed;
+>                unsigned long nr_active;
+>                unsigned int count[NR_LRU_LISTS] = { 0, };
+> -               int mode = lumpy_reclaim ? ISOLATE_BOTH : ISOLATE_INACTIVE;
+> +               int mode = sc->lumpy_reclaim ? ISOLATE_BOTH : ISOLATE_INACTIVE;
+>                unsigned long nr_anon;
+>                unsigned long nr_file;
+>
+> @@ -1216,7 +1206,7 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
+>                 * but that should be acceptable to the caller
+>                 */
+>                if (nr_freed < nr_taken && !current_is_kswapd() &&
+> -                   lumpy_reclaim) {
+> +                   sc->lumpy_reclaim) {
+>                        congestion_wait(BLK_RW_ASYNC, HZ/10);
+>
+>                        /*
+> @@ -1655,6 +1645,18 @@ static void shrink_zone(int priority, struct zone *zone,
+>                                          &reclaim_stat->nr_saved_scan[l]);
+>        }
+>
+> +       /*
+> +        * If we need a large contiguous chunk of memory, or have
+> +        * trouble getting a small set of contiguous pages, we
+> +        * will reclaim both active and inactive pages.
+> +        */
+> +       if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+> +               sc->lumpy_reclaim = 1;
+> +       else if (sc->order && priority < DEF_PRIORITY - 2)
+> +               sc->lumpy_reclaim = 1;
+> +       else
+> +               sc->lumpy_reclaim = 0;
+
+How about making new function for readability instead of nesting else?
+int is_lumpy_reclaim(struct scan_control *sc)
+{
+....
+}
+
+If you merge patch reduced stack usage of reclaim path, I think it's
+enough alone scan_control argument.
+It's just nitpick. :)
+If you don't mind, ignore, please.
+
+
+-- 
+Kind regards,
+Minchan Kim
