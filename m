@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758536Ab0DPQOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 12:14:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55970 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758511Ab0DPQOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 12:14:17 -0400
-Date: Fri, 16 Apr 2010 12:14:01 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100416161401.GI15159@redhat.com>
-References: <1271366710-17468-1-git-send-email-dzickus@redhat.com>
- <20100416014712.GC15570@nowhere>
- <20100416141213.GC15159@redhat.com>
- <20100416144302.GB5162@nowhere>
- <20100416150407.GH15159@redhat.com>
- <20100416153210.GG5162@nowhere>
+	id S1758551Ab0DPQOf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 12:14:35 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:39353 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758539Ab0DPQOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 12:14:32 -0400
+Date: Fri, 16 Apr 2010 11:13:10 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Interleave policy on 2M pages (was Re: [RFC][BUGFIX][PATCH 1/2]
+ memcg: fix charge bypass route of migration)
+In-Reply-To: <20100415081743.GP32034@random.random>
+Message-ID: <alpine.DEB.2.00.1004161111380.7710@router.home>
+References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp> <20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com> <20100415154324.834dace9.nishimura@mxp.nes.nec.co.jp> <20100415155611.da707913.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100415081743.GP32034@random.random>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100416153210.GG5162@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 05:32:12PM +0200, Frederic Weisbecker wrote:
-> > I'll try to implement this.  Any objections if I combined hardlockup and
-> > softlockup with per cpu watchdog_warn and have bit masks for HARDLOCKUP
-> > and SOFTLOCKUP?  I hate to just waste per cpu space for this.
-> 
-> 
-> 
-> Hmm, a hardlockup can come in after a softlockup.
+On Thu, 15 Apr 2010, Andrea Arcangeli wrote:
 
-Let me re-explain what I meant.  It was meant to do double duty.  The
-softlockup code only checks the SOFTLOCKUP bit and the hardlockup only
-ever checks the HARDLOCKUP bit.
+> 2) add alloc_pages_vma for numa awareness in the huge page faults
 
-ie if get_cpu_var(watchdog_warn) && HARDLOCKUP { return; }
+How do interleave policies work with alloc_pages_vma? So far the semantics
+is to spread 4k pages over different nodes. With 2M pages this can no
+longer work the way is was.
 
-> Don't worry too much about memory: usually the more you have cpu,
-> the more you have memory :)
-> Plus this is debugging code, not something supposed to be enabled
-> in production.
-
-Well depends on your POV.  In RHEL we enable both NMI_WATCHDOG and
-SOFTLOCKUP on production systems (and we have customers that are
-thankful for that :-) ).
-
-Cheers,
-Don
