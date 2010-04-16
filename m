@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758551Ab0DPQOf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 12:14:35 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:39353 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758539Ab0DPQOc (ORCPT
+	id S1758558Ab0DPQPF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 12:15:05 -0400
+Received: from mail.webcontact.de ([82.98.82.138]:60944 "EHLO
+	borg.webcontact.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758256Ab0DPQO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 12:14:32 -0400
-Date: Fri, 16 Apr 2010 11:13:10 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Interleave policy on 2M pages (was Re: [RFC][BUGFIX][PATCH 1/2]
- memcg: fix charge bypass route of migration)
-In-Reply-To: <20100415081743.GP32034@random.random>
-Message-ID: <alpine.DEB.2.00.1004161111380.7710@router.home>
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp> <20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com> <20100415154324.834dace9.nishimura@mxp.nes.nec.co.jp> <20100415155611.da707913.kamezawa.hiroyu@jp.fujitsu.com>
- <20100415081743.GP32034@random.random>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 16 Apr 2010 12:14:59 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Apr 2010 12:14:59 EDT
+From: Alexander Rauth <alexander.rauth@promotion-ie.de>
+To: Len Brown <lenb@kernel.org>
+Cc: Alexey Starikovskiy <astarikovskiy@suse.de>, linux-acpi@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       Alexander Rauth <alexander.rauth@promotion-ie.de>
+Subject: [PATCH] ACPI: EC: limit multibyte access to EC to 8 byte
+Date: Fri, 16 Apr 2010 18:07:46 +0200
+Message-Id: <1271434066-7292-1-git-send-email-alexander.rauth@promotion-ie.de>
+X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Apr 2010, Andrea Arcangeli wrote:
+commit dadf28a10c3eb29421837a2e413ab869ebd9e168 enabled multibyte
+access to EC, but ignored that the consuming function expects the
+bitfields to be in chunks of maximal 64 bit. So limit multibyte
+access to 8 byte to prevent error in the ACPI layer.
 
-> 2) add alloc_pages_vma for numa awareness in the huge page faults
+Signed-off-by: Alexander Rauth <alexander.rauth@promotion-ie.de>
+---
+ drivers/acpi/acpica/exprep.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
-How do interleave policies work with alloc_pages_vma? So far the semantics
-is to spread 4k pages over different nodes. With 2M pages this can no
-longer work the way is was.
+diff --git a/drivers/acpi/acpica/exprep.c b/drivers/acpi/acpica/exprep.c
+index a610ebe..58659af 100644
+--- a/drivers/acpi/acpica/exprep.c
++++ b/drivers/acpi/acpica/exprep.c
+@@ -471,13 +471,18 @@ acpi_status acpi_ex_prep_field_value(struct acpi_create_field_info *info)
+ 		/* allow full data read from EC address space */
+ 		if (obj_desc->field.region_obj->region.space_id ==
+ 			ACPI_ADR_SPACE_EC) {
+-			if (obj_desc->common_field.bit_length > 8)
+-				obj_desc->common_field.access_bit_width =
+-				ACPI_ROUND_UP(obj_desc->common_field.
+-							bit_length, 8);
++			if (obj_desc->common_field.bit_length > 8) {
++				if (obj_desc->common_field.bit_length <= 64) {
++					obj_desc->common_field.access_bit_width =
++						ACPI_ROUND_UP(obj_desc->common_field.
++						bit_length, 8);
++				} else {
++					obj_desc->common_field.access_bit_width = 64;
++				}	
+ 				obj_desc->common_field.access_byte_width =
+-				ACPI_DIV_8(obj_desc->common_field.
+-							access_bit_width);
++					ACPI_DIV_8(obj_desc->common_field.
++					access_bit_width);
++			}
+ 		}
+ 
+ 		ACPI_DEBUG_PRINT((ACPI_DB_BFIELD,
+-- 
+1.6.4.4
 
