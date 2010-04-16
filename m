@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab0DPH06 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 03:26:58 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:44386 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab0DPH04 (ORCPT
+	id S1755465Ab0DPHcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 03:32:10 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:46296 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785Ab0DPHcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 03:26:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=scOs4pdiyvR6luIYj4Qmg45F+6yjhZbGDAd4yD5ZIG7ZYhrp1/KcmH7OCC9Hgea8Jm
-         5DAc294lz69sDMvElZnDBFqtSE8Mdaj/G3mJ0SFTehMX/KeqBXYvMJ1Hzwnc00Sq028h
-         vK3kPUOgZsRWyd1wPnaJttcevYxgy5hPm3dGg=
-Date: Fri, 16 Apr 2010 09:26:52 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: useless node/has_cpu sysfs attribute
-Message-ID: <20100416072652.GA4489@alberich.amd.com>
-References: <20100415061200.GC21517@alberich.amd.com>
- <alpine.DEB.2.00.1004151917420.17800@router.home>
+	Fri, 16 Apr 2010 03:32:08 -0400
+Message-ID: <4BC81273.4000406@petalogix.com>
+Date: Fri, 16 Apr 2010 09:32:03 +0200
+From: Michal Simek <michal.simek@petalogix.com>
+Reply-To: michal.simek@petalogix.com
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1004151917420.17800@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Move isa_dma_bridge_buggy to generic location
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 07:27:42PM -0500, Christoph Lameter wrote:
-> On Thu, 15 Apr 2010, Andreas Herrmann wrote:
-> 
-> > commit 99dcc3e5a94ed491fbef402831d8c0bbb267f995 (this_cpu: Page
-> > allocator conversion) removed the call
-> >
-> >     node_set_state(node, N_CPU);    /* this node has a cpu */
+Hi,
 
-> This was moved to vmstat_cpuup_callback. See mm/vmstat.c. Maybe it needs
-> to be  added to setup_vmstat() as well.
+Microblaze misses isa_dma_bridge_buggy and I can easily add it but I 
+think that we should move isa_dma_bridge_buggy to generic location. What 
+is the correct location?
 
-Ok.
-I missed that one.
+This is what all archs have in headers.
 
-> > Thus the sysfs attribute /sys/devices/system/node/has_cpu doesn't
-> > show anything anymore.
-> 
-> Thats strange. Why is the cpuup notifier not executing?
+#ifdef CONFIG_PCI
+extern int isa_dma_bridge_buggy;
+#else
+#define isa_dma_bridge_buggy 	(0)
+#endif
 
-I'll try to figure this out.
-
-> > This attribute never reflected any changes triggered by CPU hotplug.
-> 
-> Duh some breakage in the cpuup notifier handling?
-> 
-> This needs to be fixed.
-
-Why don't we try to call node_clear_state(node, N_CPU)
-anywhere? (Maybe there is such a call and I missed it.)
-
-Do we want to list each node with this attribute that has a CPU
-regardless whether the CPU is actually offline or online?
-
-That is the reason why I wanted to know who is relying on this
-attribute and what are the use cases of it.
-
+Below is just grep where isa_dma_bridge_buggy is.
 
 Thanks,
-Andreas
+Michal
+
+
+arch/mips/include/asm/dma.h:310:extern int isa_dma_bridge_buggy;
+arch/mips/include/asm/dma.h:312:#define isa_dma_bridge_buggy    (0)
+arch/arm/include/asm/dma.h:144:extern int isa_dma_bridge_buggy;
+arch/arm/include/asm/dma.h:146:#define isa_dma_bridge_buggy    (0)
+arch/frv/include/asm/dma.h:120:extern int isa_dma_bridge_buggy;
+arch/frv/include/asm/dma.h:122:#define isa_dma_bridge_buggy     (0)
+arch/powerpc/include/asm/dma.h:352:extern int isa_dma_bridge_buggy;
+arch/powerpc/include/asm/dma.h:354:#define isa_dma_bridge_buggy (0)
+arch/ia64/include/asm/dma.h:15:  extern int isa_dma_bridge_buggy;
+arch/ia64/include/asm/dma.h:17:# define isa_dma_bridge_buggy    (0)
+arch/mn10300/include/asm/dma.h:113:extern int isa_dma_bridge_buggy;
+arch/mn10300/include/asm/dma.h:115:#define isa_dma_bridge_buggy         (0)
+arch/parisc/include/asm/dma.h:180:extern int isa_dma_bridge_buggy;
+arch/parisc/include/asm/dma.h:182:#define isa_dma_bridge_buggy  (0)
+arch/sparc/include/asm/dma.h:87:extern int isa_dma_bridge_buggy;
+arch/sparc/include/asm/dma.h:89:#define isa_dma_bridge_buggy    (0)
+arch/m68k/include/asm/dma.h:489:#define isa_dma_bridge_buggy    (0)
+arch/cris/include/asm/dma.h:16:extern int isa_dma_bridge_buggy;
+arch/cris/include/asm/dma.h:18:#define isa_dma_bridge_buggy     (0)
+arch/sh/include/asm/dma.h:154:extern int isa_dma_bridge_buggy;
+arch/sh/include/asm/dma.h:156:#define isa_dma_bridge_buggy      (0)
+arch/alpha/include/asm/dma.h:370:extern int isa_dma_bridge_buggy;
+arch/alpha/include/asm/dma.h:372:#define isa_dma_bridge_buggy   (0)
+arch/xtensa/include/asm/dma.h:56:extern int isa_dma_bridge_buggy;
+arch/xtensa/include/asm/dma.h:58:#define isa_dma_bridge_buggy   (0)
+arch/x86/include/asm/dma.h:313:extern int isa_dma_bridge_buggy;
+arch/x86/include/asm/dma.h:315:#define isa_dma_bridge_buggy     (0)
+arch/x86/kernel/cpu/cyrix.c:273:                isa_dma_bridge_buggy = 2;
+drivers/pci/pci.c:33:int isa_dma_bridge_buggy;
+drivers/pci/pci.c:34:EXPORT_SYMBOL(isa_dma_bridge_buggy);
+drivers/pci/quirks.c:28:#include <asm/dma.h>    /* isa_dma_bridge_buggy */
+drivers/pci/quirks.c:135:       if (!isa_dma_bridge_buggy) {
+drivers/pci/quirks.c:136:               isa_dma_bridge_buggy=1;
+sound/core/isadma.c:92: if (!isa_dma_bridge_buggy)
+sound/core/isadma.c:98:  * isa_dma_bridge_buggy is set.
+sound/core/isadma.c:101:        if (!isa_dma_bridge_buggy)
+sound/oss/ad1848.c:1340:                if(!isa_dma_bridge_buggy)
+sound/oss/ad1848.c:1348:                if(!isa_dma_bridge_buggy)
+sound/oss/ad1848.c:1375:                if(!isa_dma_bridge_buggy)
+sound/oss/ad1848.c:1383:                if(!isa_dma_bridge_buggy)
+sound/oss/soundcard.c:558:              isa_dma_bridge_buggy = dmabug;
+sound/oss/dmabuf.c:77:  if(isa_dma_bridge_buggy==2)
+sound/oss/dmabuf.c:652:         if(!isa_dma_bridge_buggy)
+sound/oss/dmabuf.c:675:         if(!isa_dma_bridge_buggy)
+sound/oss/dmabuf.c:1042:                if(!isa_dma_bridge_buggy)
+sound/oss/dmabuf.c:1046:                if(!isa_dma_bridge_buggy)
+sound/oss/dmabuf.c:1143:                if(!isa_dma_bridge_buggy)
+sound/oss/dmabuf.c:1147:                if(!isa_dma_bridge_buggy)
+
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+PetaLogix - Linux Solutions for a Reconfigurable World
+w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
