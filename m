@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266Ab0DPTRA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 15:17:00 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:35904 "EHLO
+	id S1758672Ab0DPTRX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 15:17:23 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:35901 "EHLO
 	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758592Ab0DPTQ4 (ORCPT
+	with ESMTP id S1758610Ab0DPTQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 15:16:56 -0400
+	Fri, 16 Apr 2010 15:16:55 -0400
 From: Dinh.Nguyen@freescale.com
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
@@ -15,211 +15,158 @@ Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
        amit.kucheria@canonical.com, r.herring@freescale.com,
        Jun.Li@freescale.com, xiao-lizhang@freescale.com,
        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv4 2.6.34-rc4 5/7] mxc: Add generic USB HW initialization for MX51
-Date: Fri, 16 Apr 2010 14:16:09 -0500
-Message-Id: <1271445371-18501-5-git-send-email-Dinh.Nguyen@freescale.com>
+Subject: [PATCHv4 2.6.34-rc4 4/7] mx5: Enable board specific functions for enabling USB host on Babbage
+Date: Fri, 16 Apr 2010 14:16:08 -0500
+Message-Id: <1271445371-18501-4-git-send-email-Dinh.Nguyen@freescale.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1271445371-18501-4-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <1271445371-18501-3-git-send-email-Dinh.Nguyen@freescale.com>
 References: <1271445371-18501-1-git-send-email-Dinh.Nguyen@freescale.com>
  <1271445371-18501-2-git-send-email-Dinh.Nguyen@freescale.com>
  <1271445371-18501-3-git-send-email-Dinh.Nguyen@freescale.com>
- <1271445371-18501-4-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-This patch adds USB HW initializiation code to /plat-mxc/ehci.c.
-	-Stops and resets USB HW
-	-Sets some specific PHY settings
-	-Stop and restart the USB HW.
-Renames mxc_set_usbcontrol to mxc_initialize_usb_hw.
+This patch enables USB host functionality for Host1 and OTG port on
+Freescale MX51 Babbage HW. This patch contains the board specific
+HW initialization of the USB HW.
 
 This patch applies to 2.6.34-rc4.
 
 Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- arch/arm/plat-mxc/ehci.c                  |  128 ++++++++++++++++++++++++++++-
- arch/arm/plat-mxc/include/mach/mxc_ehci.h |    2 +-
- 2 files changed, 127 insertions(+), 3 deletions(-)
+ arch/arm/mach-mx5/board-mx51_babbage.c |   81 ++++++++++++++++++++++++++++++++
+ 1 files changed, 81 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/plat-mxc/ehci.c b/arch/arm/plat-mxc/ehci.c
-index cb0b638..35ff1c1 100644
---- a/arch/arm/plat-mxc/ehci.c
-+++ b/arch/arm/plat-mxc/ehci.c
-@@ -1,5 +1,6 @@
- /*
-  * Copyright (c) 2009 Daniel Mack <daniel@caiaq.de>
-+ * Copyright (C) 2010 Freescale Semiconductor, Inc.
-  *
-  * This program is free software; you can redistribute it and/or modify it
-  * under the terms of the GNU General Public License as published by the
-@@ -18,6 +19,7 @@
+diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
+index ee67a71..617f4e2 100644
+--- a/arch/arm/mach-mx5/board-mx51_babbage.c
++++ b/arch/arm/mach-mx5/board-mx51_babbage.c
+@@ -12,11 +12,14 @@
  
+ #include <linux/init.h>
  #include <linux/platform_device.h>
- #include <linux/io.h>
++#include <linux/gpio.h>
 +#include <linux/delay.h>
  
+ #include <mach/common.h>
  #include <mach/hardware.h>
- #include <mach/mxc_ehci.h>
-@@ -50,9 +52,14 @@
- #define MX35_H1_TLL_BIT		(1 << 5)
- #define MX35_H1_USBTE_BIT	(1 << 4)
+ #include <mach/imx-uart.h>
+ #include <mach/iomux-mx51.h>
++#include <mach/mxc_ehci.h>
  
--int mxc_set_usbcontrol(int port, unsigned int flags)
-+int mxc_intialize_usb_hw(int port, unsigned int flags)
- {
- 	unsigned int v;
-+	void __iomem *usb_base;
-+	u32 usbotg_base;
-+	u32 usbother_base;
-+	int timeout;
-+	int ret = 0;
- #ifdef CONFIG_ARCH_MX3
- 	if (cpu_is_mx31()) {
- 		v = readl(MX31_IO_ADDRESS(MX31_OTG_BASE_ADDR +
-@@ -186,9 +193,126 @@ int mxc_set_usbcontrol(int port, unsigned int flags)
- 		return 0;
- 	}
- #endif /* CONFIG_MACH_MX27 */
-+#ifdef CONFIG_ARCH_MX51
-+	if (cpu_is_mx51()) {
-+		usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
-+
-+		switch (port) {
-+		case 0:	/* OTG port */
-+			usbotg_base = (u32)usb_base + USBOTG_OFFSET;
-+			break;
-+		case 1:	/* Host 1 port */
-+			usbotg_base = (u32)usb_base + USBH1_OFFSET;
-+			break;
-+		default:
-+			printk(KERN_ERR"%s no such port %d\n", __func__, port);
-+			ret = -ENOENT;
-+			goto error;
-+		}
-+		usbother_base = (u32)usb_base + USBOTHER_REGS_OFFSET;
-+
-+		/* Stop then Reset */
-+		v = __raw_readl(usbotg_base + USBCMD_OFFSET);
-+		v &= ~UCMD_RUN_STOP;
-+		__raw_writel(v, usbotg_base + USBCMD_OFFSET);
-+		timeout = 0x100000;
-+		while (--timeout && __raw_readl(usbotg_base + USBCMD_OFFSET) & UCMD_RUN_STOP)
-+			cpu_relax();
-+		if (!timeout) {
-+			printk(KERN_ERR "%s could not stop usb hardware\n", __func__);
-+			ret = -ETIMEDOUT;
-+			goto error;
-+		}
-+
-+		v = __raw_readl(usbotg_base + USBCMD_OFFSET);
-+		v |= UCMD_RESET;
-+		__raw_writel(v, usbotg_base + USBCMD_OFFSET);
-+		timeout = 0x100000;
-+		while (--timeout && __raw_readl(usbotg_base + USBCMD_OFFSET) & UCMD_RESET)
-+			cpu_relax();
-+		if (!timeout) {
-+			printk(KERN_ERR "%s could not reset usb hardware\n", __func__);
-+			ret = -ETIMEDOUT;
-+			goto error;
-+		}
-+
-+		switch (port) {
-+		case 0:	/*OTG port */
-+			v = __raw_readl(usbother_base + USB_PHY_CTR_FUNC_OFFSET);
-+			v |= USB_UTMI_PHYCTRL_OC_DIS; /* OC is not used */
-+			__raw_writel(v, usbother_base + USB_PHY_CTR_FUNC_OFFSET);
-+
-+			v = __raw_readl(usbother_base + USBCTRL_OFFSET);
-+			v &= ~(UCTRL_OPM | UCTRL_OWIE);/* OTG wakeup/power mask disable */
-+			__raw_writel(v, usbother_base + USBCTRL_OFFSET);
-+
-+			/* Set the PHY clock to 19.2MHz */
-+			v = __raw_readl(usbother_base + USB_PHY_CTR_FUNC2_OFFSET);
-+			v &= ~USB_UTMI_PHYCTRL2_PLLDIV_MASK;
-+			v |= 0x01;
-+			__raw_writel(v, usbother_base + USB_PHY_CTR_FUNC2_OFFSET);
-+			break;
-+		case 1:	/* Host 1 */
-+			/*Host ULPI */
-+			v = __raw_readl(usbother_base + USB_CTRL_1_OFFSET);
-+			__raw_writel(v | USB_CTRL_UH1_EXT_CLK_EN, usbother_base + USB_CTRL_1_OFFSET);
-+
-+			v = __raw_readl(usbother_base + USBCTRL_OFFSET);
-+			v &= ~(UCTRL_H1WIE | UCTRL_H1UIE);/* HOST1 wakeup/ULPI intr disable */
-+			v |= UCTRL_H1PM; /* HOST1 power mask */
-+			__raw_writel(v, usbother_base + USBCTRL_OFFSET);
-+
-+			v = __raw_readl(usbother_base + USB_PHY_CTR_FUNC_OFFSET);
-+			v |= USB_UH1_OC_DIS; /* OC is not used */
-+			__raw_writel(v, usbother_base + USB_PHY_CTR_FUNC_OFFSET);
-+
-+			v = __raw_readl(usbotg_base + USBCMD_OFFSET);
-+			/* Interrupt Threshold Control:Immediate (no threshold) */
-+			v &= UCMD_ITC_NO_THRESHOLD;
-+			__raw_writel(v, usbotg_base + USBCMD_OFFSET);
-+			break;
-+		}
-+
-+		/* need to reset the controller here so that the ID pin
-+		 * is correctly detected.
-+		 */
-+		/* Stop then Reset */
-+		v = __raw_readl(usbotg_base + USBCMD_OFFSET);
-+		v &= ~UCMD_RUN_STOP;
-+		__raw_writel(v, usbotg_base + USBCMD_OFFSET);
-+		timeout = 0x100000;
-+		while (--timeout && __raw_readl(usbotg_base + USBCMD_OFFSET) & UCMD_RUN_STOP)
-+			cpu_relax();
-+		if (!timeout) {
-+			printk(KERN_ERR "%s could not stop usb hardware\n", __func__);
-+			ret = -ETIMEDOUT;
-+			goto error;
-+		}
-+
-+		v = __raw_readl(usbotg_base + USBCMD_OFFSET);
-+		v |= UCMD_RESET;
-+		__raw_writel(v, usbotg_base + USBCMD_OFFSET);
-+		timeout = 0x100000;
-+		while (--timeout && __raw_readl(usbotg_base + USBCMD_OFFSET) & UCMD_RESET)
-+			cpu_relax();
-+		if (!timeout) {
-+			printk(KERN_ERR "%s could not reset usb hardware\n", __func__);
-+			ret = -ETIMEDOUT;
-+			goto error;
-+		}
-+
-+		/* allow controller to reset, and leave time for
-+		 * the ULPI transceiver to reset too.
-+		 */
-+		msleep(100);
-+error:
-+		iounmap(usb_base);
-+		return ret;
-+	}
-+#endif
- 	printk(KERN_WARNING
- 		"%s() unable to setup USBCONTROL for this CPU\n", __func__);
- 	return -EINVAL;
- }
--EXPORT_SYMBOL(mxc_set_usbcontrol);
-+EXPORT_SYMBOL(mxc_intialize_usb_hw);
+ #include <asm/irq.h>
+ #include <asm/setup.h>
+@@ -26,6 +29,9 @@
  
-diff --git a/arch/arm/plat-mxc/include/mach/mxc_ehci.h b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-index c5b1e7b..e61feac 100644
---- a/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-+++ b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-@@ -83,7 +83,7 @@ struct mxc_usbh_platform_data {
- 	struct otg_transceiver	*otg;
+ #include "devices.h"
+ 
++#define BABBAGE_USB_HUB_RESET	(0*32 + 7)	/* GPIO_1_7 */
++#define BABBAGE_USBH1_STP	(0*32 + 27)	/* GPIO_1_27 */
++
+ static struct platform_device *devices[] __initdata = {
+ 	&mxc_fec_device,
+ };
+@@ -46,6 +52,22 @@ static struct pad_desc mx51babbage_pads[] = {
+ 	MX51_PAD_EIM_D26__UART3_TXD,
+ 	MX51_PAD_EIM_D27__UART3_RTS,
+ 	MX51_PAD_EIM_D24__UART3_CTS,
++
++	/* USB HOST1 */
++	MX51_PAD_USBH1_CLK__USBH1_CLK,
++	MX51_PAD_USBH1_DIR__USBH1_DIR,
++	MX51_PAD_USBH1_NXT__USBH1_NXT,
++	MX51_PAD_USBH1_DATA0__USBH1_DATA0,
++	MX51_PAD_USBH1_DATA1__USBH1_DATA1,
++	MX51_PAD_USBH1_DATA2__USBH1_DATA2,
++	MX51_PAD_USBH1_DATA3__USBH1_DATA3,
++	MX51_PAD_USBH1_DATA4__USBH1_DATA4,
++	MX51_PAD_USBH1_DATA5__USBH1_DATA5,
++	MX51_PAD_USBH1_DATA6__USBH1_DATA6,
++	MX51_PAD_USBH1_DATA7__USBH1_DATA7,
++
++	/* USB HUB reset line*/
++	MX51_PAD_GPIO_1_7__GPIO1_7,
  };
  
--int mxc_set_usbcontrol(int port, unsigned int flags);
-+int mxc_intialize_usb_hw(int port, unsigned int flags);
+ /* Serial ports */
+@@ -66,15 +88,74 @@ static inline void mxc_init_imx_uart(void)
+ }
+ #endif /* SERIAL_IMX */
  
- #endif /* __INCLUDE_ASM_ARCH_MXC_EHCI_H */
++static int gpio_usbh1_active(void)
++{
++	struct pad_desc usbh1stp_gpio = MX51_PAD_USBH1_STP__GPIO_1_27;
++	int ret;
++
++	/* Set USBH1_STP to GPIO and toggle it */
++	mxc_iomux_v3_setup_pad(&usbh1stp_gpio);
++	ret = gpio_request(BABBAGE_USBH1_STP, "usbh1_stp");
++
++	if (ret) {
++		pr_debug("failed to get MX51_PAD_USBH1_STP__GPIO_1_27: %d\n", ret);
++		return ret;
++	}
++	gpio_direction_output(BABBAGE_USBH1_STP, 0);
++	gpio_set_value(BABBAGE_USBH1_STP, 1);
++	msleep(100);
++	gpio_free(BABBAGE_USBH1_STP);
++	return 0;
++}
++
++static inline void babbage_usbhub_reset(void)
++{
++	int ret;
++
++	/* Bring USB hub out of reset */
++	ret = gpio_request(BABBAGE_USB_HUB_RESET, "GPIO1_7");
++	if (ret) {
++		printk(KERN_ERR"failed to get GPIO_USB_HUB_RESET: %d\n", ret);
++		return;
++	}
++	gpio_direction_output(BABBAGE_USB_HUB_RESET, 0);
++
++	/* USB HUB RESET - De-assert USB HUB RESET_N */
++	msleep(1);
++	gpio_set_value(BABBAGE_USB_HUB_RESET, 0);
++	msleep(1);
++	gpio_set_value(BABBAGE_USB_HUB_RESET, 1);
++}
++
++static struct mxc_usbh_platform_data dr_utmi_config = {
++	.portsc	= MXC_EHCI_UTMI_16BIT,
++	.flags	= MXC_EHCI_INTERNAL_PHY,
++};
++
++static struct mxc_usbh_platform_data usbh1_config = {
++	.portsc	= MXC_EHCI_MODE_ULPI,
++	.flags	= MXC_EHCI_POWER_PINS_ENABLED,
++};
++
+ /*
+  * Board specific initialization.
+  */
+ static void __init mxc_board_init(void)
+ {
++	struct pad_desc usbh1stp = MX51_PAD_USBH1_STP__USBH1_STP;
++
+ 	mxc_iomux_v3_setup_multiple_pads(mx51babbage_pads,
+ 					ARRAY_SIZE(mx51babbage_pads));
+ 	mxc_init_imx_uart();
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
++
++	mxc_register_device(&mxc_usbdr_host_device, &dr_utmi_config);
++
++	gpio_usbh1_active();
++	mxc_register_device(&mxc_usbh1_device, &usbh1_config);
++	/* setback USBH1_STP to be function */
++	mxc_iomux_v3_setup_pad(&usbh1stp);
++	babbage_usbhub_reset();
+ }
  
+ static void __init mx51_babbage_timer_init(void)
 -- 
 1.6.0.4
 
