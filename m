@@ -1,38 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab0DPTsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 15:48:41 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:4766 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932252Ab0DPTsk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 15:48:40 -0400
-From: Frans Pop <elendil@planet.nl>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [regression] Sound not transferred to docking station after resume from StR
-Date: Fri, 16 Apr 2010 21:48:36 +0200
-User-Agent: KMail/1.9.9
-Cc: linux-pm@lists.linux-foundation.org, alsa-devel@alsa-project.org,
-       Takashi Iwai <tiwai@suse.de>
-References: <201004162131.19171.elendil@planet.nl>
-In-Reply-To: <201004162131.19171.elendil@planet.nl>
+	id S932420Ab0DPUYc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 16:24:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10116 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932381Ab0DPUYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 16:24:31 -0400
+Date: Fri, 16 Apr 2010 17:23:56 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+       Jeremy Fitzhardinge <jeremy@goop.org>,
+       Zachary Amsden <zamsden@redhat.com>
+Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
+Message-ID: <20100416202356.GA17552@amt.cnet>
+References: <1271356648-5108-1-git-send-email-glommer@redhat.com>
+ <1271356648-5108-2-git-send-email-glommer@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201004162148.37751.elendil@planet.nl>
-X-OriginalArrivalTime: 16 Apr 2010 19:48:37.0998 (UTC) FILETIME=[CEA4A0E0:01CADD9D]
-X-RecipientDomain: vger.kernel.org
+In-Reply-To: <1271356648-5108-2-git-send-email-glommer@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 April 2010, Frans Pop wrote:
-> With 2.6.33 and earlier the sound would always come from the external
-> speakers connected to the docking station. But with 2.6.34-rc4 I get
-> sound still coming from the laptop's internal speakers, which is not
-> correct.
+On Thu, Apr 15, 2010 at 02:37:24PM -0400, Glauber Costa wrote:
+> In recent stress tests, it was found that pvclock-based systems
+> could seriously warp in smp systems. Using ingo's time-warp-test.c,
+> I could trigger a scenario as bad as 1.5mi warps a minute in some systems.
+> (to be fair, it wasn't that bad in most of them). Investigating further, I
+> found out that such warps were caused by the very offset-based calculation
+> pvclock is based on.
+> 
+> This happens even on some machines that report constant_tsc in its tsc flags,
+> specially on multi-socket ones.
+> 
+> Two reads of the same kernel timestamp at approx the same time, will likely
+> have tsc timestamped in different occasions too. This means the delta we
+> calculate is unpredictable at best, and can probably be smaller in a cpu
+> that is legitimately reading clock in a forward ocasion.
+> 
+> Some adjustments on the host could make this window less likely to happen,
+> but still, it pretty much poses as an intrinsic problem of the mechanism.
+> 
+> A while ago, I though about using a shared variable anyway, to hold clock
+> last state, but gave up due to the high contention locking was likely
+> to introduce, possibly rendering the thing useless on big machines. I argue,
+> however, that locking is not necessary.
+> 
+> We do a read-and-return sequence in pvclock, and between read and return,
+> the global value can have changed. However, it can only have changed
+> by means of an addition of a positive value. So if we detected that our
+> clock timestamp is less than the current global, we know that we need to
+> return a higher one, even though it is not exactly the one we compared to.
+> 
+> OTOH, if we detect we're greater than the current time source, we atomically
+> replace the value with our new readings. This do causes contention on big
+> boxes (but big here means *BIG*), but it seems like a good trade off, since
+> it provide us with a time source guaranteed to be stable wrt time warps.
+> 
+> After this patch is applied, I don't see a single warp in time during 5 days
+> of execution, in any of the machines I saw them before.
+> 
+> Signed-off-by: Glauber Costa <glommer@redhat.com>
+> CC: Jeremy Fitzhardinge <jeremy@goop.org>
+> CC: Avi Kivity <avi@redhat.com>
+> CC: Marcelo Tosatti <mtosatti@redhat.com>
+> CC: Zachary Amsden <zamsden@redhat.com>
+> ---
+>  arch/x86/kernel/pvclock.c |   23 +++++++++++++++++++++++
+>  1 files changed, 23 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
+> index 03801f2..b7de0e6 100644
+> --- a/arch/x86/kernel/pvclock.c
+> +++ b/arch/x86/kernel/pvclock.c
+> @@ -109,11 +109,14 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src)
+>  	return pv_tsc_khz;
+>  }
+>  
+> +static u64 last_value = 0;
+> +
 
-Forgot to mention that sound does get transferred to the external speakers 
-with .34 if I do an extra undock and redock after the resume.
+__cacheline_aligned_in_smp to avoid other data from sharing the
+cacheline.
+
+>  cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
+>  {
+>  	struct pvclock_shadow_time shadow;
+>  	unsigned version;
+>  	cycle_t ret, offset;
+> +	u64 last;
+>  
+>  	do {
+>  		version = pvclock_get_time_values(&shadow, src);
+> @@ -123,6 +126,26 @@ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
+>  		barrier();
+>  	} while (version != src->version);
+>  
+> +	/*
+> +	 * Assumption here is that last_value, a global accumulator, always goes
+> +	 * forward. If we are less than that, we should not be much smaller.
+> +	 * We assume there is an error marging we're inside, and then the correction
+> +	 * does not sacrifice accuracy.
+> +	 *
+> +	 * For reads: global may have changed between test and return,
+> +	 * but this means someone else updated poked the clock at a later time.
+> +	 * We just need to make sure we are not seeing a backwards event.
+> +	 *
+> +	 * For updates: last_value = ret is not enough, since two vcpus could be
+> +	 * updating at the same time, and one of them could be slightly behind,
+> +	 * making the assumption that last_value always go forward fail to hold.
+> +	 */
+> +	do {
+> +		last = last_value;
+> +		if (ret < last)
+> +			return last;
+> +	} while (unlikely(cmpxchg64(&last_value, last, ret) != ret));
+> +
+
+Don't you need to handle wrap-around?
