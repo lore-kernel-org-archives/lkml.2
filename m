@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab0DPRrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 13:47:16 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:36581 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755702Ab0DPRrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 13:47:14 -0400
-From: Eric Anholt <eric@anholt.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [git pull] drm-intel fixes for 2.6.34-rc2
-Date: Fri, 16 Apr 2010 10:47:11 -0700
-Message-ID: <87k4s770io.fsf@pollan.anholt.net>
+	id S1756322Ab0DPRwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 13:52:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44405 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751276Ab0DPRwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 13:52:08 -0400
+Date: Fri, 16 Apr 2010 19:51:26 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Interleave policy on 2M pages (was Re: [RFC][BUGFIX][PATCH
+ 1/2] memcg: fix charge bypass route of migration)
+Message-ID: <20100416175126.GP32034@random.random>
+References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
+ <20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100415154324.834dace9.nishimura@mxp.nes.nec.co.jp>
+ <20100415155611.da707913.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100415081743.GP32034@random.random>
+ <alpine.DEB.2.00.1004161111380.7710@router.home>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1004161111380.7710@router.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
+On Fri, Apr 16, 2010 at 11:13:10AM -0500, Christoph Lameter wrote:
+> On Thu, 15 Apr 2010, Andrea Arcangeli wrote:
+> 
+> > 2) add alloc_pages_vma for numa awareness in the huge page faults
+> 
+> How do interleave policies work with alloc_pages_vma? So far the semantics
+> is to spread 4k pages over different nodes. With 2M pages this can no
+> longer work the way is was.
 
-The following changes since commit 01e77706cdde7c0b47e5ca1f4284a795504c7c40:
-  Linus Torvalds (1):
-        Merge branch 'for-linus' of git://gitorious.org/linux-omap-dss2/linux
+static struct page *alloc_page_interleave(gfp_t gfp, unsigned order,
+       	      	   				     unsigned nid)
 
-OK, this is sort of a test pull request to you.  I've heard that big
-entirely-mechanical changes are accepted during release cycle to avoid
-conflicts during merging.  There are two of them here: "Rename
-intel_output to intel_encoder" (done with sed) and "introduce
-to_intel_bo helper" (I suspect the same).  The first is prep for the
-multi-function SDVO cards that some embedded devices are using, and the
-other is prep to cut out a pointless pointer in the GEM objects, of
-which normal systems will have hundreds to thousands.  This seems like a
-good time to land these patches, since .34 -> .33 cherry-picking is
-about done, and it'll make .35 -> .34 easy.
+See the order parameter, so I hope it's already solved. I assume the
+idea would be to interleave 2M pages to avoid the CPU the memory
+overhead of the pte layer and to decrease the tlb misses, but still
+maxing out the bandwidth of the system when multiple threads accesses
+memory that is stored in different nodes with random access. It should
+be ideal for hugetlbfs too for the large shared memory pools of the
+DB. Surely it'll be better than having all hugepages from the same
+node despite MPOL_INTERLEAVE is set.
 
-If what I've heard is wrong, I can go rebase these guys out.  The other
-changes are small and pretty well tested at this point -- I've had them
-in the tree for a while and I rebased out a patch people complained
-about.
+Said that, it'd also be possible to disable hugepages if the vma has
+MPOL_INTERLEAVE set, but I doubt we want to do that by default. Maybe
+we can add a sysfs control later for that which can be further tweaked
+at boot time by per-arch quirks, dunno... It's really up to you, you
+know numa better, but I've no doubt that MPOL_INTERLEAVE also can make
+sense with hugepages (both hugetlbfs and transparent hugepage
+support).
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/anholt/drm-intel for-linus
-
-Daniel Vetter (2):
-      drm/i915: introduce to_intel_bo helper
-      agp/intel: intel_845_driver is an agp driver!
-
-Eric Anholt (2):
-      drm/i915: Rename intel_output to intel_encoder.
-      drm/i915: Rename many remaining uses of "output" to encoder or connector.
-
-Robert Hooker (1):
-      drm/i915: Disable FBC on 915GM and 945GM.
-
-Stefan Bader (1):
-      drm/i915: Add no_lvds entry for the Clientron U800
-
-Zhao Yakui (1):
-      drm/i915: Ignore LVDS EDID when it is unavailabe or invalid
-
- drivers/char/agp/intel-agp.c           |    3 -
- drivers/gpu/drm/i915/i915_debugfs.c    |    2 +-
- drivers/gpu/drm/i915/i915_drv.c        |    6 +-
- drivers/gpu/drm/i915/i915_drv.h        |    4 +
- drivers/gpu/drm/i915/i915_gem.c        |  132 +++---
- drivers/gpu/drm/i915/i915_gem_debug.c  |    4 +-
- drivers/gpu/drm/i915/i915_gem_tiling.c |   10 +-
- drivers/gpu/drm/i915/i915_irq.c        |    8 +-
- drivers/gpu/drm/i915/intel_crt.c       |   68 ++--
- drivers/gpu/drm/i915/intel_display.c   |   96 ++--
- drivers/gpu/drm/i915/intel_dp.c        |  256 ++++++------
- drivers/gpu/drm/i915/intel_drv.h       |   18 +-
- drivers/gpu/drm/i915/intel_dvo.c       |   92 ++--
- drivers/gpu/drm/i915/intel_fb.c        |    2 +-
- drivers/gpu/drm/i915/intel_hdmi.c      |   86 ++--
- drivers/gpu/drm/i915/intel_lvds.c      |   81 ++--
- drivers/gpu/drm/i915/intel_modes.c     |   22 +-
- drivers/gpu/drm/i915/intel_overlay.c   |    6 +-
- drivers/gpu/drm/i915/intel_sdvo.c      |  731 ++++++++++++++++----------------
- drivers/gpu/drm/i915/intel_tv.c        |   96 ++--
- 20 files changed, 871 insertions(+), 852 deletions(-)
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvIop8ACgkQHUdvYGzw6veM5gCffacOMYQa8LxCT6S/4AUUVlhU
-dFYAnRIqTIr/T6XDSVVuh9arFMBxWoKJ
-=35o5
------END PGP SIGNATURE-----
---=-=-=--
+Thanks,
+Andrea
