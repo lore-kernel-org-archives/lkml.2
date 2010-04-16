@@ -1,111 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab0DPV0i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 17:26:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60681 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932369Ab0DPV0h (ORCPT
+	id S932392Ab0DPUDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 16:03:33 -0400
+Received: from mail.atheros.com ([12.36.123.2]:50081 "EHLO mail.atheros.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932222Ab0DPUDb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 17:26:37 -0400
-Subject: Re: Possible bug with mutex adaptative spinning
-From: Peter Zijlstra <peterz@infradead.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-In-Reply-To: <1271212509.13059.135.camel@pasglop>
-References: <1271212509.13059.135.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Apr 2010 23:26:24 +0200
-Message-ID: <1271453184.1674.483.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Apr 2010 16:03:31 -0400
+From: David Quan <David.Quan@Atheros.com>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>,
+       linux-wireless <linux-wireless@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "yanmin.zhang@intel.com" <yanmin.zhang@intel.com>,
+       "shaohua.li@intel.com" <shaohua.li@intel.com>,
+       Sameer Nanda <snanda@google.com>,
+       Jonathan May <Jonathan.May@Atheros.com>
+Date: Fri, 16 Apr 2010 13:03:28 -0700
+Subject: RE: Power consumption on 802.11 / ASPM / device measurements
+Thread-Topic: Power consumption on 802.11 / ASPM / device measurements
+Thread-Index: Acrdnpa/fmhWDcq7QGaTqJSKBSQYggAAMLUg
+Message-ID: <93781E992CBA7843962D8B0E7D683F3C1116A1A28B@SC1EXMB-MBCL.global.atheros.com>
+References: <n2q43e72e891004161253wbb9afe61y539206f010e91a78@mail.gmail.com>
+In-Reply-To: <n2q43e72e891004161253wbb9afe61y539206f010e91a78@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-14 at 12:35 +1000, Benjamin Herrenschmidt wrote:
-
-> [PATCH] mutex: Don't spin when the owner CPU is offline or other weird cases
-> 
-> The current code might spin forever if the CPU owning the mutex has been
-> offlined, and the last CPU in the system is trying to acquire it, since
-> mutex_spin_on_owner() will always return 1, telling the caller to spin
-> until the mutex has been released.
-> 
-> This patch changes mutex_spin_on_owner() to return 0 (don't spin) in any
-> case where we aren't sure about the owner struct validity or CPU number,
-> and if the said CPU is offline. There is no point going back &
-> re-evaluate spinning in corner cases like that, let's just go to sleep.
-> 
-> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-
-Right, patch looks good, comments are a tad misleading.
+it is a very complicated issue.
+Different system have different limitation.
+it is not a one size fits all.
 
 
-I've queued the below patch
+So we let the BIOS of each system with the different chipset control this, and we work with that team
+to make sure the correct settings work together for both RC and endpoint.
 
----
-Subject: mutex: Don't spin when the owner CPU is offline or other weird cases
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Fri Apr 16 23:20:00 CEST 2010
+It should not be controlled by the endpoint as endpoint can get plug into many different systems and endpoint 
+will not know the limitations of each system/chipset in the system.
 
-Due to recent load-balancer changes that delay the task migration to
-the next wakeup, the adaptive mutex spinning ends up in a live lock
-when the owner's CPU gets offlined because the cpu_online() check
-lives before the owner running check.
+I highly recommend you all not to touch the aspm settings from the endpoint, point of view and let the system bios 
+do what it has been programmed to do.
 
-This patch changes mutex_spin_on_owner() to return 0 (don't spin) in
-any case where we aren't sure about the owner struct validity or CPU
-number, and if the said CPU is offline. There is no point going back &
-re-evaluate spinning in corner cases like that, let's just go to
-sleep.
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1271212509.13059.135.camel@pasglop>
----
- kernel/sched.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -3647,7 +3647,7 @@ int mutex_spin_on_owner(struct mutex *lo
- 	 * the mutex owner just released it and exited.
- 	 */
- 	if (probe_kernel_address(&owner->cpu, cpu))
--		goto out;
-+		return 0;
- #else
- 	cpu = owner->cpu;
- #endif
-@@ -3657,14 +3657,14 @@ int mutex_spin_on_owner(struct mutex *lo
- 	 * the cpu field may no longer be valid.
- 	 */
- 	if (cpu >= nr_cpumask_bits)
--		goto out;
-+		return 0;
- 
- 	/*
- 	 * We need to validate that we can do a
- 	 * get_cpu() and that we have the percpu area.
- 	 */
- 	if (!cpu_online(cpu))
--		goto out;
-+		return 0;
- 
- 	rq = cpu_rq(cpu);
- 
-@@ -3683,7 +3683,7 @@ int mutex_spin_on_owner(struct mutex *lo
- 
- 		cpu_relax();
- 	}
--out:
-+
- 	return 1;
- }
- #endif
+David
 
 
+-----Original Message-----
+From: Luis R. Rodriguez [mailto:mcgrof@gmail.com] 
+Sent: Friday, April 16, 2010 12:54 PM
+To: linux-wireless
+Cc: linux-kernel@vger.kernel.org; yanmin.zhang@intel.com; shaohua.li@intel.com; Sameer Nanda; Jonathan May; David Quan
+Subject: Power consumption on 802.11 / ASPM / device measurements
+
+We've been accumulating a few power consumption related documents on
+the wireless wiki for a while now. One which I saw was missing was for
+actual power consumption and review of new PCI-E features which should
+be taken into consideration when debugging power consumption or
+reviewing it. ASPM is something that I can say I found little to no
+documentation for when looking into it so I've done a brain dump of
+what I recall from it, the code review of it, and some e-mail
+exchanges I've had with Jonathan May @ Atheros.
+
+I've stashed together all the power consumption docs at:
+
+http://wireless.kernel.org/en/users/Documentation/Power-consumption
+
+You'll see there some ASPM docs now and some ath9k specific power
+consumption metrics/ASPM details. Please review and enhance as you see
+fit.
+
+Yanmin, Shaohua, I see CONFIG_PCIEASPM still marked as experimental,
+I'm curious if this is still really that experimental and if there are
+plans for it go out of experimental. Also I am little puzzled with
+some of the aspm.c code, I see we fill the pci device struct with
+capability stuff via pcie_aspm_cap_init() but I also see ASPM
+capability stuff exposed on kernels without CONFIG_PCIEASPM (albeit I
+see it always disabled on my system at home), so are we filling the
+capability elsewhere? I think there are some boxes without this kernel
+config enabled and where ASPM capability info is exposed and does show
+up as enabled, could be wrong.
+
+Also curious -- how often are BIOSes buggy enough for ASPM to get
+disabled by mistake on the modern devices? And for systems that have
+no Bios (*cough* ChromeOS) how is this handled?
+
+ Luis
