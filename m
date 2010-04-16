@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221Ab0DPBtk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 21:49:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49629 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758188Ab0DPBtj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 21:49:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JA/IIhxmX6Mzck4ey37fGMBpUSTGMrLPmWcb69zJAWFOtQdJAdqIqCD1cW2P2y8dKp
-         WikU+/xtwUEV8YLrG5fDsEeNjzpKWpWu78q4OA0MWpaFUSwG4sgystlNetpgBW1AZK9+
-         tKgdKLAGqDdiRVt/ZuHZmJ1filXTy7AlBO+Eo=
-Date: Fri, 16 Apr 2010 03:49:38 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Chase Douglas <chase.douglas@canonical.com>, linux-kernel@vger.kernel.org,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH 3/3] Stop tracing on a schedule bug
-Message-ID: <20100416014937.GD15570@nowhere>
-References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com> <1271262016-18650-3-git-send-email-chase.douglas@canonical.com> <20100415210357.GG5069@nowhere> <k2u40ec3ea41004151445je53e7ef2u5c0e48e038e4efca@mail.gmail.com> <alpine.LFD.2.00.1004160051390.3625@localhost.localdomain> <p2n40ec3ea41004151627u11ca4d7dw46cbd6b58df9f1c8@mail.gmail.com> <alpine.LFD.2.00.1004160138200.3625@localhost.localdomain> <alpine.LFD.2.00.1004160204510.3625@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004160204510.3625@localhost.localdomain>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758224Ab0DPBxX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 21:53:23 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46673 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758207Ab0DPBxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 21:53:21 -0400
+Subject: Re: linux-next: PowerPC WARN_ON_ONCE() after merge of the final
+ tree (tip related)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: David Miller <davem@davemloft.net>, sfr@canb.auug.org.au,
+       peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+       linux-next@vger.kernel.org, hpa@zytor.com, tglx@linutronix.de,
+       linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <20100415073256.GG9240@elte.hu>
+References: <20100415161214.04637496.sfr@canb.auug.org.au>
+	 <20100415064940.GA9240@elte.hu>
+	 <20100414.235557.123118153.davem@davemloft.net>
+	 <20100415073256.GG9240@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Apr 2010 11:51:30 +1000
+Message-ID: <1271382690.13059.169.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 02:21:47AM +0200, Thomas Gleixner wrote:
-> On Fri, 16 Apr 2010, Thomas Gleixner wrote:
-> > BTW, if interacting with grub is that hard: how does an user start the
-> > tracer at all ?
+On Thu, 2010-04-15 at 09:32 +0200, Ingo Molnar wrote:
+> It trades robustness for slightly better space/code efficiency.
 > 
-> Just looked through the other patches and noticed that the patch which
-> provides the tracing_off(level) stuff is incomplete as it provides
-> only a command line option to change that tracing off level.
+> Such a trap based mechanism exists on x86 as well and we use it for BUG_ON(). 
+> We intentionally dont use it to generate warnings and dont override __WARN(), 
+> because it would blow up way too often when a warning triggers in some 
+> sensitive codepath that cannot take a trap.
 > 
-> The command line option is merily for tracing which happens to be
-> started on the command line i.e. _BEFORE_ we have usable user space.
-> 
-> So your grub argument is just crap. If the user cannot change this
-> setting w/o fiddling with the obscured grub then he can not start the
-> tracer on the command line either.
-> 
-> But somehow he can start the tracer later when user space is up and
-> running, but there is no way to change that setting anymore. Therefor
-> you go through the kernel and impose settings at will.
-> 
-> 1) Your patch simply lacks an interface to change that setting via
->    debugfs/tracing/wtf
-> 
->    WTF should I reboot my machine to change that setting from the
->    default BUG to WARN or NONE ? There is no reason at all.
-> 
-> 2) tracing off can be done via filters on functions and/or events
->    already - so I doubt that the tracing_off_event(level) is necessary
->    at all.
+> Anyway, the warning obviously has to be fixed - but the boot crash itself is 
+> PowerPC's own doing. 
 
+Well, yes and no, as I explained in a separate branch of that thread. We
+indeed can't cope with a WARN in that spot because it goes recursive. 
 
+Now the reason we have this double-enable is due afaik to the way I
+implemented IRQ trace, because things like syscalls basically
+force-enable IRQs on powerpc and I don't necessarily have tracking
+informations in the exception return path of what the "old" value was.
 
-Yeah it works for the function tracer, but not for events (or other tracers),
-or I missed this feature somehow.
+I need to double check what the exact scenario here is and whether I can
+fix it but it's one of those cases where what lockdep is warning about
+isn't actually an error I believe.
+
+Cheers,
+Ben. 
 
