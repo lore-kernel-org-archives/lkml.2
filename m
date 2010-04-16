@@ -1,35 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758405Ab0DPSuB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 14:50:01 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48410 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757722Ab0DPSt7 (ORCPT
+	id S1758478Ab0DPTKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 15:10:41 -0400
+Received: from smtp.cmdik.pan.pl ([212.87.26.100]:26257 "EHLO
+	medres.cmdik.pan.pl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758414Ab0DPTKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 14:49:59 -0400
-Date: Sat, 17 Apr 2010 03:50:04 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: Fix fencepost error in reg cache access check
-Message-ID: <20100416185003.GB24707@opensource.wolfsonmicro.com>
-References: <1271419209-21634-1-git-send-email-ext-phil.2.carmody@nokia.com>
+	Fri, 16 Apr 2010 15:10:39 -0400
+X-Greylist: delayed 7427 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Apr 2010 15:10:39 EDT
+Date: Fri, 16 Apr 2010 19:09:06 +0200
+From: "Mercedes Benz Promotion " <edward.howell.benz@hotmail.com>
+Reply-to: "Mercedes Benz Promotion " <edward.howell.benz@hotmail.com>
+Subject: **Authorize Winner**
+X-Priority: 3
+X-Mailer: UebiMiau 2.7.2
+X-Original-IP: 62.56.220.34
+Content-Transfer-Encoding: 8bit
+X-MSMail-Priority: Medium
+Importance: Medium
+Content-Type: text/plain; charset="iso-8859-1";
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271419209-21634-1-git-send-email-ext-phil.2.carmody@nokia.com>
-X-Cookie: You enjoy the company of other people.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <20100416170906.0E7F525076C@medres.cmdik.pan.pl>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 03:00:09PM +0300, Phil Carmody wrote:
-> From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-> 
-> Accessing num_reg elements in the interval [reg .. reg+num_regs)
-> is permitted if (reg+numregs <= array size), so barf when that
-> excluded upper bound is > array size. The prior -1 would give
-> access to one too many elements.
+The Sum Of £950,000.00 Pounds has been won by your EMAIL Address in our
+Mercedes Benz Promotion . Do get back to this office with your claims
+requirement such as
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+1.Name
+2.Address
+3.Nationality
+4.Age
+5.Sex
+6.Occupation
+7.Phone/Fax
+8.Present Country
+
+Best Regards
+Edward Howell
+
+________________________________________________
+Message sent using http://mail.cmdik.pan.pl
+
