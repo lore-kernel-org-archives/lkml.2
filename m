@@ -1,39 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932531Ab0DPVbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 17:31:48 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:42550 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932417Ab0DPVbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 17:31:47 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201004162131.o3GLVgZQ026576@stout.americas.sgi.com>
-Date: Fri, 16 Apr 2010 16:31:42 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 2.6.34-rc5
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.4 7/29/08
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S932558Ab0DPVrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 17:47:14 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:46426 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932420Ab0DPVrM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 17:47:12 -0400
+Date: Fri, 16 Apr 2010 17:46:53 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [git pull request] ACPI patch for 2.6.34-rc4
+Message-id: <alpine.LFD.2.00.1004161745410.4449@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull these two changes for 2.6.34-rc5.	-Alex
+Hi Linus,
 
-The following changes since commit dc57da3875f527b1cc195ea4ce5bd32e1e68433d:
-  Linus Torvalds (1):
-        Merge branch 'x86-fixes-for-linus' of git://git.kernel.org/.../tip/linux-2.6-tip
+please pull from: 
 
-are available in the git repository at:
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
 
-  git://oss.sgi.com/xfs/xfs for-linus
+fixes a popular 2.6.34-rc4 regression.
 
-Dave Chinner (2):
-      xfs: ensure that sync updates the log tail correctly
-      xfs: don't warn on EAGAIN in inode reclaim
+This will update the files shown below.
 
- fs/xfs/linux-2.6/xfs_sync.c |    4 ++--
- fs/xfs/xfs_log.c            |   38 ++++++++++++++++++++++++++------------
- 2 files changed, 28 insertions(+), 14 deletions(-)
+thanks!
+
+--
+Len Brown
+Intel Open Source Technology Center
+
+
+ps. individual patches are available on linux-acpi@vger.kernel.org
+and a consolidated plain patch is available here:
+http://ftp.kernel.org/pub/linux/kernel/people/lenb/acpi/patches/2.6.34/acpi-release-20100121-2.6.34-rc4.diff.gz
+
+ drivers/acpi/acpica/exprep.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
+
+through these commits:
+
+Alexey Starikovskiy (1):
+      ACPI: EC: Limit burst to 64 bits
+
+with this log:
+
+commit bc3966921ff9528ae44a4a108085ab06107c1e7d
+Merge: dc57da3 2060c44
+Author: Len Brown <len.brown@intel.com>
+Date:   Fri Apr 16 16:08:07 2010 -0400
+
+    Merge branch 'bugzilla-15749' into release
+
+commit 2060c44576c79086ff24718878d7edaa7384a985
+Author: Alexey Starikovskiy <astarikovskiy@suse.de>
+Date:   Fri Apr 16 15:36:40 2010 -0400
+
+    ACPI: EC: Limit burst to 64 bits
+    
+    access_bit_width field is u8 in ACPICA, thus 256 value written to it
+    becomes 0, causing divide by zero later.
+    
+    Proper fix would be to remove access_bit_width at all, just because
+    we already have access_byte_width, which is access_bit_width / 8.
+    Limit access width to 64 bit for now.
+    
+    https://bugzilla.kernel.org/show_bug.cgi?id=15749
+    fixes regression caused by the fix for:
+    https://bugzilla.kernel.org/show_bug.cgi?id=14667
+    
+    Signed-off-by: Alexey Starikovskiy <astarikovskiy@suse.de>
+    Signed-off-by: Len Brown <len.brown@intel.com>
