@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758128Ab0DPL3j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 07:29:39 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:54589 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720Ab0DPL3i (ORCPT
+	id S1758189Ab0DPLkw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 07:40:52 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39918 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756720Ab0DPLkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 07:29:38 -0400
-Date: Fri, 16 Apr 2010 13:29:31 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Jakob Viketoft <jakob.viketoft@bitsim.com>
-Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [PATCH] colibri.h: Fix building for colibri 270...
-Message-ID: <20100416112931.GN30801@buzzloop.caiaq.de>
-References: <4BC8330E.6000503@bitsim.com>
- <20100416100126.GI30801@buzzloop.caiaq.de>
- <4BC84766.5060208@bitsim.com>
- <4BC8493D.60900@bitsim.com>
- <20100416112820.GM30801@buzzloop.caiaq.de>
+	Fri, 16 Apr 2010 07:40:51 -0400
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Taras Glek <tglek@mozilla.com>, linux-kernel@vger.kernel.org
+Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
+From: Andi Kleen <andi@halobates.de>
+References: <4BBA6776.5060804@mozilla.com>
+	<20100415155309.2649a29b.akpm@linux-foundation.org>
+Date: Fri, 16 Apr 2010 13:40:44 +0200
+In-Reply-To: <20100415155309.2649a29b.akpm@linux-foundation.org> (Andrew Morton's message of "Thu, 15 Apr 2010 15:53:09 -0700")
+Message-ID: <87zl138w1v.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100416112820.GM30801@buzzloop.caiaq.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 01:28:20PM +0200, Daniel Mack wrote:
-> On Fri, Apr 16, 2010 at 01:25:49PM +0200, Jakob Viketoft wrote:
-> > Adding a "#include <mach/mfp.h>" seem to cure this problem. If you
-> > agree I can supply a new patch with the correct solution this time.
-> 
-> Ok. Add it to colibri.h, and while at it, you can kick the ax88796.h
-> inclusion. That's a leftover and isn't needed.
+Andrew Morton <akpm@linux-foundation.org> writes:
+>
+> Yes, the linker scrambles the executable's block ordering.
+>
+> This just isn't an interesting case.  World-wide, the number of people
+> who compile their own web browser and execute it from the file which ld
+> produced is, umm, seven.
 
-And Cc: stable@kernel.org for the backmerge to 2.6.33.
+My understanding was that this is usually gone when you use a delayed
+allocation fs (xfs, ext4), unless your link sequence takes much longer
+than the flush window.
 
-Thanks,
-Daniel
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
