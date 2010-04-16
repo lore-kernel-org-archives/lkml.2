@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699Ab0DPR5n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 13:57:43 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:40178 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753871Ab0DPR5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 13:57:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Michal Hocko <mhocko@suse.cz>
-Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
-Date: Fri, 16 Apr 2010 20:00:29 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Tony Vroon <tony@linx.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>
-References: <20100401133923.GA4104@tiehlicka.suse.cz> <201004132253.37432.rjw@sisk.pl> <20100414075808.GA4202@tiehlicka.suse.cz>
-In-Reply-To: <20100414075808.GA4202@tiehlicka.suse.cz>
+	id S932158Ab0DPSJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 14:09:18 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:63756 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab0DPSJQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 14:09:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=ibEKgEOk8qalE419AYziKO+M3umm9WHxYVktuszcHRqgCXA419KvBaOZCstKx8BbXV
+         BsAsLSkql1AcO/HIKkYwSGHotGbF/TJ5NgMFY2g7xysGBn4pz6XOkaB8O+Uv1zwMpQnk
+         qEfduzVV4xFH9qSFDj34Y6M0sUgrQdFz8IQws=
+Message-ID: <4BC8A7C1.20102@gmail.com>
+Date: Fri, 16 Apr 2010 20:09:05 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.3 Thunderbird/3.1b1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: adilger@sun.com, linux-ext4@vger.kernel.org,
+       Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+       Jan Kara <jack@suse.cz>
+Subject: busy inodes -> ext3 umount crash
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004162000.29861.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 April 2010, Michal Hocko wrote:
-> On Tue 13-04-10 22:53:37, Rafael J. Wysocki wrote:
-> > On Tuesday 13 April 2010, Michal Hocko wrote:
-> > > On Tue 13-04-10 01:01:54, Rafael J. Wysocki wrote:
-> > > > On Saturday 10 April 2010, Rafael J. Wysocki wrote:
-> > > > > On Friday 09 April 2010, Tony Vroon wrote:
-> > > > > > On Fri, 2010-04-09 at 22:42 +0200, Rafael J. Wysocki wrote:
-> > > > > > > Please check if the patch below changes anything.
-> > > > > > >  drivers/acpi/wakeup.c |    4 ++--
-> > > > > > >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > > > > > 
-> > > > > > That didn't change the behaviour for me, sorry.
-> > > > > 
-> > > > > Well, I would be sorry if it did, because the patch removed some useful code. :-)
-> > > > > 
-> > > > > > (I made sure to go through a full power down session before trying the
-> > > > > > patched kernel)
-> > > > > 
-> > > > > Thanks for testing.  So it looks like we don't disable the GPE during power off.
-> > > > > 
-> > > > > I'll try to figure out what's going on, please stay tuned.
-> > > > 
-> > > > Can you please check if the patch below changes the behavior?
-> > > 
-> > > Unfortunately, it didn't help either (I have tried on top of the fresh
-> > > rc4).
-> > 
-> > That gets really weird.
-> > 
-> > > > ---
-> > > >  drivers/acpi/wakeup.c |    6 +++---
-> > > >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > > > 
-> > > > Index: linux-2.6/drivers/acpi/wakeup.c
-> > > > ===================================================================
-> > > > --- linux-2.6.orig/drivers/acpi/wakeup.c
-> > > > +++ linux-2.6/drivers/acpi/wakeup.c
-> > > > @@ -63,17 +63,17 @@ void acpi_enable_wakeup_device(u8 sleep_
-> > > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
-> > > >  		struct acpi_device *dev =
-> > > >  			container_of(node, struct acpi_device, wakeup_list);
-> > > > +		u8 action = ACPI_GPE_ENABLE;
-> > 
-> > Can you try to change the above to ACPI_GPE_DISABLE and retest, please?
-> 
-> Unfortunately didn't help as well...
-> Just for reference:
-> 
-> diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
-> index 248b473..f23c08f 100644
-> --- a/drivers/acpi/wakeup.c
-> +++ b/drivers/acpi/wakeup.c
-> @@ -63,7 +63,7 @@ void acpi_enable_wakeup_device(u8 sleep_state)
->  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
->  		struct acpi_device *dev =
->  			container_of(node, struct acpi_device, wakeup_list);
-> -		u8 action = ACPI_GPE_ENABLE;
-> +		u8 action = ACPI_GPE_DISABLE;
+Hi,
 
-That probably means the chipset enables the GPEs by itself _after_ we've
-disabled them in acpi_enable_wakeup_device().
+with mmotm 2010-04-05-16-09 and much older (I hadn't camera to take a
+picture) I sometimes get a BUG() trace in ext3 umount code:
+http://www.fi.muni.cz/~xslaby/sklad/panics/ext3_1.png
+http://www.fi.muni.cz/~xslaby/sklad/panics/ext3_2.png
 
-Unfortunately, I can't reproduce the issue on any of my test boxes and it's
-hard to find the source of the problem staring at the code.
+I have no idea how to reproduce it :(, but it usually happens when I do
+shutdown/kexec.
 
-Rafael
+Those busy inodes are pretty common in current kernels, I don't know if
+that's related -- I doubt it since it is for different bdevs.
+
+Do you have any clue what to test, how to debug that?
+
+@Honza: this is the one we talked about earlier, you wanted to see
+details, but I thought it disappeared. (Just in case you are interested.)
+
+Thanks.
