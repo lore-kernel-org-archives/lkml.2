@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710Ab0DPEVI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 00:21:08 -0400
-Received: from www.telegraphics.com.au ([204.15.192.19]:38143 "EHLO
-	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab0DPEVE (ORCPT
+	id S1752030Ab0DPEVQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 00:21:16 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:52757 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab0DPEVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 00:21:04 -0400
-Date: Fri, 16 Apr 2010 14:21:00 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: David Miller <davem@davemloft.net>
-cc: joe@perches.com, p_gortmaker@yahoo.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH] mac8390: fix pr_info() calls and change return code
-In-Reply-To: <alpine.OSX.2.00.1004161323340.271@localhost>
-Message-ID: <alpine.OSX.2.00.1004161403160.271@localhost>
-References: <alpine.OSX.2.00.1004161214270.271@localhost> <20100415.200113.215578006.davem@davemloft.net> <alpine.OSX.2.00.1004161323340.271@localhost>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	Fri, 16 Apr 2010 00:21:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DcgDTYum9v2dOoOxytp+Ndfxx012XlTeybfLj8VZ7XEsgySbtJVziEgCub+IEbLppT
+         IWofeYfMmHj4RHxhnEZKOilXsESkWCsr9iOVg8qfEZP0B09rdhad7hb6qNkZ9K5gSz1d
+         HjxJJP/A+njJJZUcSACQePc5B+EEpPcaiyeWY=
+Date: Thu, 15 Apr 2010 21:21:04 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Rafi Rubin <rafi@seas.upenn.edu>
+Cc: Alan Cox <alan@linux.intel.com>, linux-i2c@vger.kernel.org,
+       khali@linux-fr.org, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: your mail
+Message-ID: <20100416042104.GA20916@core.coreip.homeip.net>
+References: <20100414125234.23507.42816.stgit@localhost.localdomain>
+ <20100414231604.GA12281@core.coreip.homeip.net>
+ <4BC7A422.7050601@seas.upenn.edu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BC7A422.7050601@seas.upenn.edu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 15, 2010 at 07:41:22PM -0400, Rafi Rubin wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+> >> +	if (ts->tc.event_sended == false) {
+> > 
+> > We set "event_sended" to false immediately before calling
+> > cy8ctmg110_send_event() so I do not see the point of this flag.
+> 
+> On that note:
+> 
+> $ git grep -n sended
+> drivers/net/eth16i.c:1295:
+> 		how many packets there is to be sended */
+> drivers/net/wan/sbni.c:638:
+> 		/* if frame was sended but not ACK'ed - resend it */
+> drivers/net/wan/sbni.c:659:
+> 		* frame sended then in prepare_to_send next frame
+> drivers/usb/serial/aircable.c:13:
+> 		* next two bytes must say how much data will be sended.
+> 
 
-Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+Well, if you want to go down that path...
 
---- a/drivers/net/mac8390.c	2010-04-16 13:31:04.000000000 +1000
-+++ b/drivers/net/mac8390.c	2010-04-16 14:02:29.000000000 +1000
-@@ -554,7 +554,7 @@
- 	case MAC8390_APPLE:
- 		switch (mac8390_testio(dev->mem_start)) {
- 		case ACCESS_UNKNOWN:
--			pr_info("Don't know how to access card memory!\n");
-+			pr_err("Don't know how to access card memory!\n");
- 			return -ENODEV;
- 			break;
- 
-@@ -643,8 +643,8 @@
- {
- 	__ei_open(dev);
- 	if (request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev)) {
--		pr_info("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
--		return -EAGAIN;
-+		pr_err("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
-+		return -EBUSY;
- 	}
- 	return 0;
- }
-@@ -660,7 +660,7 @@
- {
- 	ei_status.txing = 0;
- 	if (ei_debug > 1)
--		pr_info("reset not supported\n");
-+		printk(KERN_DEBUG "reset not supported\n");
- 	return;
- }
- 
-@@ -668,11 +668,11 @@
- {
- 	unsigned char *target = nubus_slot_addr(IRQ2SLOT(dev->irq));
- 	if (ei_debug > 1)
--		pr_info("Need to reset the NS8390 t=%lu...", jiffies);
-+		printk(KERN_DEBUG "Need to reset the NS8390 t=%lu...", jiffies);
- 	ei_status.txing = 0;
- 	target[0xC0000] = 0;
- 	if (ei_debug > 1)
--		pr_cont("reset complete\n");
-+		printk(KERN_CONT "reset complete\n");
- 	return;
- }
- 
+[dtor@hammer work]$ grep -r -e "\(setted\|setuped\|split\+ed\)" . | wc -l
+54
+[dtor@hammer work]$ 
+
+-- 
+Dmitry
