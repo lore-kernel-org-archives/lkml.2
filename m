@@ -1,82 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758387Ab0DPSYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 14:24:48 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:48994 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756654Ab0DPSYq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 14:24:46 -0400
-Date: Fri, 16 Apr 2010 13:28:41 -0500
-From: Mike Miller <mike.miller@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       James.Bottomley@HansenPartnership.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       LKML-scsi <linux-scsi@vger.kernel.org>,
-       Steve Cameron <steve.cameron@hp.com>
-Subject: [patch 1/1] hpsa: remove unneeded defines
-Message-ID: <20100416182841.GA19756@beardog.cce.hp.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S932207Ab0DPShY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 14:37:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61071 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758221Ab0DPShW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 14:37:22 -0400
+Date: Fri, 16 Apr 2010 14:37:19 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org, x86@kernel.org, mingo@redhat.com,
+       anderson@redhat.com, esandeen@redhat.com
+Cc: Prarit Bhargava <prarit@redhat.com>
+Message-Id: <20100416183719.8100.12732.sendpatchset@prarit.bos.redhat.com>
+Subject: [PATCH]: Write STACK_END_MAGIC to the init_task's stack
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 1/1
+Tasks set STACK_END_MAGIC at the end of the stack to catch stack overruns and
+corruption of the stack.  The only task that does not set the magic value is
+the init_task.
 
-From: Mike Miller <mike.miller@hp.com>
+Set the init_task's end of stack to the magic value and remove the conditional
+in no_context().
 
-This patch removes unnecessary #define's from hpsa. The SCSI midlayer
-handles all this for us.
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 
-Signed-off-by: Mike Miller <mike.miller@hp.com>
-Cc: scameron@beardog.cce.hp.com
-
-
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 183d3a4..c016426 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -2708,14 +2708,6 @@ static void fill_cmd(struct CommandList *c, u8 cmd, struct ctlr_info *h,
- 			c->Request.CDB[8] = (size >> 8) & 0xFF;
- 			c->Request.CDB[9] = size & 0xFF;
- 			break;
--
--		case HPSA_READ_CAPACITY:
--			c->Request.CDBLen = 10;
--			c->Request.Type.Attribute = ATTR_SIMPLE;
--			c->Request.Type.Direction = XFER_READ;
--			c->Request.Timeout = 0;
--			c->Request.CDB[0] = cmd;
--			break;
- 		case HPSA_CACHE_FLUSH:
- 			c->Request.CDBLen = 12;
- 			c->Request.Type.Attribute = ATTR_SIMPLE;
-diff --git a/drivers/scsi/hpsa_cmd.h b/drivers/scsi/hpsa_cmd.h
-index 56fb982..78de9b6 100644
---- a/drivers/scsi/hpsa_cmd.h
-+++ b/drivers/scsi/hpsa_cmd.h
-@@ -152,21 +152,6 @@ struct SenseSubsystem_info {
- 	u8 reserved1[1108];
- };
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index f627779..8f4e2ac 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -659,7 +659,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
+ 	show_fault_oops(regs, error_code, address);
  
--#define HPSA_READ_CAPACITY 0x25 /* Read Capacity */
--struct ReadCapdata {
--	u8 total_size[4];	/* Total size in blocks */
--	u8 block_size[4];	/* Size of blocks in bytes */
--};
--
--#if 0
--/* 12 byte commands not implemented in firmware yet. */
--#define HPSA_READ 	0xa8
--#define HPSA_WRITE	0xaa
--#endif
--
--#define HPSA_READ   0x28    /* Read(10) */
--#define HPSA_WRITE  0x2a    /* Write(10) */
--
- /* BMIC commands */
- #define BMIC_READ 0x26
- #define BMIC_WRITE 0x27
+ 	stackend = end_of_stack(tsk);
+-	if (tsk != &init_task && *stackend != STACK_END_MAGIC)
++	if (*stackend != STACK_END_MAGIC)
+ 		printk(KERN_ALERT "Thread overran stack, or stack corrupted\n");
+ 
+ 	tsk->thread.cr2		= address;
+diff --git a/include/linux/stackprotector.h b/include/linux/stackprotector.h
+index 6f3e54c..fefdfdd 100644
+--- a/include/linux/stackprotector.h
++++ b/include/linux/stackprotector.h
+@@ -13,4 +13,5 @@ static inline void boot_init_stack_canary(void)
+ }
+ #endif
+ 
++void task_stack_end_magic(struct task_struct *tsk);
+ #endif
+diff --git a/init/main.c b/init/main.c
+index 5c85402..a054403 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -530,6 +530,7 @@ asmlinkage void __init start_kernel(void)
+ 	char * command_line;
+ 	extern struct kernel_param __start___param[], __stop___param[];
+ 
++	task_stack_end_magic(&init_task);
+ 	smp_setup_processor_id();
+ 
+ 	/*
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 44b0791..66b8928 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -65,6 +65,7 @@
+ #include <linux/perf_event.h>
+ #include <linux/posix-timers.h>
+ #include <linux/user-return-notifier.h>
++#include <linux/stackprotector.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+@@ -227,11 +228,18 @@ int __attribute__((weak)) arch_dup_task_struct(struct task_struct *dst,
+ 	return 0;
+ }
+ 
++void task_stack_end_magic(struct task_struct *tsk)
++{
++	unsigned long *stackend;
++
++	stackend = end_of_stack(tsk);
++	*stackend = STACK_END_MAGIC;	/* for overflow detection */
++}
++
+ static struct task_struct *dup_task_struct(struct task_struct *orig)
+ {
+ 	struct task_struct *tsk;
+ 	struct thread_info *ti;
+-	unsigned long *stackend;
+ 
+ 	int err;
+ 
+@@ -259,8 +267,7 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
+ 
+ 	setup_thread_stack(tsk, orig);
+ 	clear_user_return_notifier(tsk);
+-	stackend = end_of_stack(tsk);
+-	*stackend = STACK_END_MAGIC;	/* for overflow detection */
++	task_stack_end_magic(tsk);
+ 
+ #ifdef CONFIG_CC_STACKPROTECTOR
+ 	tsk->stack_canary = get_random_int();
