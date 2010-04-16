@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab0DPAlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 20:41:51 -0400
-Received: from dm-mail02.mozilla.org ([63.245.208.176]:50723 "EHLO
-	dm-mail02.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab0DPAlt (ORCPT
+	id S1756435Ab0DPBQF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 21:16:05 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:63034 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754874Ab0DPBQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 20:41:49 -0400
-Message-ID: <4BC7B24C.7040701@mozilla.com>
-Date: Thu, 15 Apr 2010 17:41:48 -0700
-From: Taras Glek <tglek@mozilla.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
+	Thu, 15 Apr 2010 21:16:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:subject:to:cc:in-reply-to:references;
+        b=xgAo8ckJshXRfCoOCWxWHMJtjomlTzEk+Wh58Lop0GmtiNEFRN3t3NH6y5qLhHxIs9
+         h7Nc6lUC11bApVPUJGs1l/8bxfiY4kKSOSHmqOXqbXeTCCRjrE6c3plmXFuJR3kOlL7O
+         TrGTQhkxd8YGqyZOdzBr/CPjpp2S54Npiicho=
+Message-ID: <4bc7ba4f.cb3cdc0a.3ebe.0678@mx.google.com>
+Date: Thu, 15 Apr 2010 18:15:59 -0700 (PDT)
+From: Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Lockup inside of stop_machine() during modprobe aes (was Re:
+	Another AR5008 hang)
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
-References: <4BBA6776.5060804@mozilla.com> <20100415155309.2649a29b.akpm@linux-foundation.org>
-In-Reply-To: <20100415155309.2649a29b.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Cc: Johannes Berg <johannes@sipsolutions.net>, linux-kernel@vger.kernel.org,
+       linux-wireless@vger.kernel.org, ath9k@venema.h4ckr.net,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+In-Reply-To: <20100415172205.c1e57636.akpm@linux-foundation.org>
+References: <4bb0e2da.04c2f10a.32b2.11ae@mx.google.com>
+	<1269928986.3927.5.camel@jlt3.sipsolutions.net>
+	<4bb1f940.47c2f10a.3469.609b@mx.google.com>
+	<4bb235fb.0baa660a.5b56.ffffa9c2@mx.google.com>
+	<4bbb7896.48c3f10a.30b9.365b@mx.google.com>
+	<20100415172205.c1e57636.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2010 03:53 PM, Andrew Morton wrote:
-> On Mon, 05 Apr 2010 15:43:02 -0700
-> Taras Glek<tglek@mozilla.com>  wrote:
->
->    
->> To make matters worse,
->> the compile-time linker + gcc lay out code in a manner that does not
->> correspond to how the resulting executable will be executed(ie the
->> layout is basically random).
->>      
-> Yes, the linker scrambles the executable's block ordering.
->
-> This just isn't an interesting case.  World-wide, the number of people
-> who compile their own web browser and execute it from the file which ld
-> produced is, umm, seven.
->    
-I'm sorry that you don't find this interesting. I did not suggest that 
-people compile their own browser to get a perfect layout. This is 
-something that Mozilla can do when preparing builds and it's also 
-something distributions can do. It just so happens that large parts of 
-startup will be very similar for every single firefox install, might as 
-well layout the binary accordingly.
-> So I'd suggest that you always copy the executable to a temp file and
-> mv it back before running any timing tests.
->    
-You mean to get it into a cache or to hope to avoid fragmentation?  If 
-you are suggesting this to avoid measuring the startup overhead of 
-paging the binary in, I strongly disagee. It is the slowest part of 
-firefox startup and needs to be addressed.
+On Thu, 15 Apr 2010 17:22:05 -0400, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Tue, 06 Apr 2010 11:08:22 -0700 (PDT) Ben Gamari <bgamari.foss@gmail.com> wrote:
+> > ...
+> > In particular, it seems that the kernel is deadlocking inside of
+> > stop_machine() while flushing workqueues.
+> > ...
+> 
+> My guess would be that ieee80211 is calling crypto->request_module()
+> under rtnl_lock, and the fact that rtnl_lock is held is causing
+> modprobe->stop_machine to not complete.
+> 
+> > P.S. I am now quite certain that I was mistaken in saying that 2.6.33 was
+> > affected. This seems to just be a 2.6.34 issue.
+> 
+> OK, thanks, I'll ask Rafael and Maciej to track this as a post-2.6.33
+> regression, probably wireless.
 
-Taras
+Thanks!
 
+- Ben
 
