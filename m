@@ -1,178 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab0DPPFb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 11:05:31 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:38328 "EHLO gir.skynet.ie"
+	id S1757153Ab0DPPJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 11:09:18 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46557 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754897Ab0DPPF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 11:05:29 -0400
-Date: Fri, 16 Apr 2010 16:05:10 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Chris Mason <chris.mason@oracle.com>, Dave Chinner <david@fromorbit.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100416150510.GL19264@csn.ul.ie>
-References: <20100413202021.GZ13327@think> <20100414014041.GD2493@dastard> <20100414155233.D153.A69D9226@jp.fujitsu.com> <20100414072830.GK2493@dastard> <20100414085132.GJ25756@csn.ul.ie> <20100415013436.GO2493@dastard> <20100415102837.GB10966@csn.ul.ie> <20100415134217.GB3794@think>
+	id S1756737Ab0DPPJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 11:09:16 -0400
+Date: Fri, 16 Apr 2010 08:09:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
+ implementation
+Message-ID: <20100416150909.GF2615@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100408192722.643778654@chello.nl>
+ <1271120731.13059.6.camel@pasglop>
+ <20100413034311.GB2772@linux.vnet.ibm.com>
+ <1271253110.32749.47.camel@laptop>
+ <20100415142852.GA2471@linux.vnet.ibm.com>
+ <1271425881.4807.2319.camel@twins>
+ <20100416141745.GC2615@linux.vnet.ibm.com>
+ <1271427819.4807.2353.camel@twins>
+ <20100416143202.GE2615@linux.vnet.ibm.com>
+ <1271429810.4807.2390.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100415134217.GB3794@think>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1271429810.4807.2390.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 09:42:17AM -0400, Chris Mason wrote:
-> On Thu, Apr 15, 2010 at 11:28:37AM +0100, Mel Gorman wrote:
-> > On Thu, Apr 15, 2010 at 11:34:36AM +1000, Dave Chinner wrote:
-> > > On Wed, Apr 14, 2010 at 09:51:33AM +0100, Mel Gorman wrote:
-> > > > On Wed, Apr 14, 2010 at 05:28:30PM +1000, Dave Chinner wrote:
-> > > > > On Wed, Apr 14, 2010 at 03:52:44PM +0900, KOSAKI Motohiro wrote:
-> > > > > > > On Tue, Apr 13, 2010 at 04:20:21PM -0400, Chris Mason wrote:
-> > > > > > > > On Tue, Apr 13, 2010 at 08:34:29PM +0100, Mel Gorman wrote:
-> > > > > > > > > > Basically, there is not enough stack space available to allow direct
-> > > > > > > > > > reclaim to enter ->writepage _anywhere_ according to the stack usage
-> > > > > > > > > > profiles we are seeing here....
-> > > > > > > > > > 
-> > > > > > > > > 
-> > > > > > > > > I'm not denying the evidence but how has it been gotten away with for years
-> > > > > > > > > then? Prevention of writeback isn't the answer without figuring out how
-> > > > > > > > > direct reclaimers can queue pages for IO and in the case of lumpy reclaim
-> > > > > > > > > doing sync IO, then waiting on those pages.
-> > > > > > > > 
-> > > > > > > > So, I've been reading along, nodding my head to Dave's side of things
-> > > > > > > > because seeks are evil and direct reclaim makes seeks.  I'd really loev
-> > > > > > > > for direct reclaim to somehow trigger writepages on large chunks instead
-> > > > > > > > of doing page by page spatters of IO to the drive.
-> > > > > > 
-> > > > > > I agree that "seeks are evil and direct reclaim makes seeks". Actually,
-> > > > > > making 4k io is not must for pageout. So, probably we can improve it.
-> > > > > > 
-> > > > > > 
-> > > > > > > Perhaps drop the lock on the page if it is held and call one of the
-> > > > > > > helpers that filesystems use to do this, like:
-> > > > > > > 
-> > > > > > > 	filemap_write_and_wait(page->mapping);
-> > > > > > 
-> > > > > > Sorry, I'm lost what you talk about. Why do we need per-file
-> > > > > > waiting? If file is 1GB file, do we need to wait 1GB writeout?
+On Fri, Apr 16, 2010 at 04:56:50PM +0200, Peter Zijlstra wrote:
+> On Fri, 2010-04-16 at 07:32 -0700, Paul E. McKenney wrote:
+> > On Fri, Apr 16, 2010 at 04:23:39PM +0200, Peter Zijlstra wrote:
+> > > On Fri, 2010-04-16 at 07:17 -0700, Paul E. McKenney wrote:
+> > > 
+> > > > > > Of course, with call_rcu_sched(), the corresponding RCU read-side critical
+> > > > > > sections are non-preemptible.  Therefore, in CONFIG_PREEMPT_RT, these
+> > > > > > read-side critical sections must use raw spinlocks.
 > > > > > 
-> > > > > So use filemap_fdatawrite(page->mapping), or if it's better only
-> > > > > to start IO on a segment of the file, use
-> > > > > filemap_fdatawrite_range(page->mapping, start, end)....
+> > > > > OK, so if we fully remove CONFIG_TREE_PREEMPT_RCU (defaulting to y),
+> > > > > rename all the {call_rcu, rcu_read_lock, rcu_read_unlock,
+> > > > > synchronize_rcu} functions to {*}_preempt and then add a new
+> > > > > CONFIG_PREEMPT_RCU that simply maps {*} to either {*}_sched or
+> > > > > {*}_preempt, we've basically got what I've been asking for for a while,
+> > > > > no?
 > > > > 
-> > > > That does not help the stack usage issue, the caller ends up in
-> > > > ->writepages. From an IO perspective, it'll be better from a seek point of
-> > > > view but from a VM perspective, it may or may not be cleaning the right pages.
-> > > > So I think this is a red herring.
+> > > > What would rcu_read_lock_preempt() do in a !CONFIG_PREEMPT kernel?
 > > > 
-> > > If you ask it to clean a bunch of pages around the one you want to
-> > > reclaim on the LRU, there is a good chance it will also be cleaning
-> > > pages that are near the end of the LRU or physically close by as
-> > > well. It's not a guarantee, but for the additional IO cost of about
-> > > 10% wall time on that IO to clean the page you need, you also get
-> > > 1-2 orders of magnitude other pages cleaned. That sounds like a
-> > > win any way you look at it...
-> > > 
+> > > Same as for a preempt one, since you'd have to be able to schedule()
+> > > while holding it to be able to do things like mutex_lock().
 > > 
-> > At worst, it'll distort the LRU ordering slightly. Lets say the the
-> > file-adjacent-page you clean was near the end of the LRU. Before such a
-> > patch, it may have gotten cleaned and done another lap of the LRU.
-> > After, it would be reclaimed sooner. I don't know if we depend on such
-> > behaviour (very doubtful) but it's a subtle enough change. I can't
-> > predict what it'll do for IO congestion. Simplistically, there is more
-> > IO so it's bad but if the write pattern is less seeky and we needed to
-> > write the pages anyway, it might be improved.
-> > 
-> > > I agree that it doesn't solve the stack problem (Chris' suggestion
-> > > that we enable the bdi flusher interface would fix this);
-> > 
-> > I'm afraid I'm not familiar with this interface. Can you point me at
-> > some previous discussion so that I am sure I am looking at the right
-> > thing?
+> > So what you really want is something like rcu_read_lock_sleep() rather
+> > than rcu_read_lock_preempt(), right?  The point is that you want to do
+> > more than merely preempt, given that it is legal to do general blocking
+> > while holding a mutex, correct?
 > 
-> vi fs/direct-reclaim-helper.c, it has a few placeholders for where the
-> real code needs to go....just look for the ~ marks.
-> 
+> Right, but CONFIG_TREE_PREEMPT_RCU=y ends up being that. We could change
+> the name to _sleep, but we've been calling it preemptible-rcu for a long
+> while now.
 
-I must be blind. What tree is this in? I can't see it v2.6.34-rc4,
-mmotm or google.
+It is actually not permitted to do general blocking in a preemptible RCU
+read-side critical section.  Otherwise, someone is going to block waiting
+for a network packet that never comes, thus OOMing the system.
 
-> I mostly meant that the bdi helper threads were the best place to add
-> knowledge about which pages we want to write for reclaim.  We might need
-> to add a thread dedicated to just doing the VM's dirty work, but that's
-> where I would start discussing fancy new interfaces.
-> 
-> > 
-> > > what I'm
-> > > pointing out is that the arguments that it is too hard or there are
-> > > no interfaces available to issue larger IO from reclaim are not at
-> > > all valid.
-> > > 
-> > 
-> > Sure, I'm not resisting fixing this, just your first patch :) There are four
-> > goals here
-> > 
-> > 1. Reduce stack usage
-> > 2. Avoid the splicing of subsystem stack usage with direct reclaim
-> > 3. Preserve lumpy reclaims cleaning of contiguous pages
-> > 4. Try and not drastically alter LRU aging
-> > 
-> > 1 and 2 are important for you, 3 is important for me and 4 will have to
-> > be dealt with on a case-by-case basis.
-> > 
-> > Your patch fixes 2, avoids 1, breaks 3 and haven't thought about 4 but I
-> > guess dirty pages can cycle around more so it'd need to be cared for.
-> 
-> I'd like to add one more:
-> 
-> 5. Don't dive into filesystem locks during reclaim.
-> 
-
-Good add. It's not a new problem either. This came up at least two years
-ago at around the first VM/FS summit and the response was a long the lines
-of shuffling uncomfortably :/
-
-> This is different from splicing code paths together, but
-> the filesystem writepage code has become the center of our attempts at
-> doing big fat contiguous writes on disk.  We push off work as late as we
-> can until just before the pages go down to disk.
-> 
-> I'll pick on ext4 and btrfs for a minute, just to broaden the scope
-> outside of XFS.  Writepage comes along and the filesystem needs to
-> actually find blocks on disk for all the dirty pages it has promised to
-> write.
-> 
-> So, we start a transaction, we take various allocator locks, modify
-> different metadata, log changed blocks, take a break (logging is hard
-> work you know, need_resched() triggered a by now), stuff it
-> all into the file's metadata, log that, and finally return.
-> 
-> Each of the steps above can block for a long time.  Ext4 solves
-> this by not doing them.  ext4_writepage only writes pages that
-> are already fully allocated on disk.
-> 
-> Btrfs is much more efficient at not doing them, it just returns right
-> away for PF_MEMALLOC.
-> 
-> This is a long way of saying the filesystem writepage code is the
-> opposite of what direct reclaim wants.  Direct reclaim wants to
-> find free ram now, and if it does end up in the mess describe above,
-> it'll just get stuck for a long time on work entirely unrelated to
-> finding free pages.
-> 
-
-Ok, good summary, thanks. I was only partially aware of some of these.
-i.e. I knew it was a problem but was not sensitive to how bad it was.
-Your last point is interesting because lumpy reclaim for large orders under
-heavy pressure can make the system stutter badly (e.g. during a huge
-page pool resize). I had blamed just plain IO but messing around with
-locks and tranactions could have been a large factor and I didn't go
-looking for it.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+							Thanx, Paul
