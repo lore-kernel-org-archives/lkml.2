@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306Ab0DPOXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:23:54 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:43945 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752416Ab0DPOXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:23:52 -0400
-Date: Fri, 16 Apr 2010 07:23:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 02/16] rcu: make dead code really dead
-Message-ID: <20100416142348.GD2615@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100415181255.GA19588@linux.vnet.ibm.com>
- <1271355219-20714-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100415235251.GA2491@feather>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100415235251.GA2491@feather>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757785Ab0DPOYM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:24:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46380 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757336Ab0DPOYE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 10:24:04 -0400
+Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
+ implementation
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+In-Reply-To: <20100416141745.GC2615@linux.vnet.ibm.com>
+References: <20100408191737.296180458@chello.nl>
+	 <20100408192722.643778654@chello.nl> <1271120731.13059.6.camel@pasglop>
+	 <20100413034311.GB2772@linux.vnet.ibm.com>
+	 <1271253110.32749.47.camel@laptop>
+	 <20100415142852.GA2471@linux.vnet.ibm.com>
+	 <1271425881.4807.2319.camel@twins>
+	 <20100416141745.GC2615@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 16 Apr 2010 16:23:39 +0200
+Message-ID: <1271427819.4807.2353.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 04:52:52PM -0700, Josh Triplett wrote:
-> On Thu, Apr 15, 2010 at 11:13:25AM -0700, Paul E. McKenney wrote:
-> > From: Lai Jiangshan <laijs@cn.fujitsu.com>
+On Fri, 2010-04-16 at 07:17 -0700, Paul E. McKenney wrote:
+
+> > > Of course, with call_rcu_sched(), the corresponding RCU read-side critical
+> > > sections are non-preemptible.  Therefore, in CONFIG_PREEMPT_RT, these
+> > > read-side critical sections must use raw spinlocks.
 > > 
-> > cleanup: make dead code really dead
-> > 
-> > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  kernel/rcutree.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index e54c123..6042fb8 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -1236,11 +1236,11 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
-> >  		break; /* grace period idle or initializing, ignore. */
-> >  
-> >  	case RCU_SAVE_DYNTICK:
-> > -
-> > -		raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
-> >  		if (RCU_SIGNAL_INIT != RCU_SAVE_DYNTICK)
-> >  			break; /* So gcc recognizes the dead code. */
+> > OK, so if we fully remove CONFIG_TREE_PREEMPT_RCU (defaulting to y),
+> > rename all the {call_rcu, rcu_read_lock, rcu_read_unlock,
+> > synchronize_rcu} functions to {*}_preempt and then add a new
+> > CONFIG_PREEMPT_RCU that simply maps {*} to either {*}_sched or
+> > {*}_preempt, we've basically got what I've been asking for for a while,
+> > no?
 > 
-> GCC's new __builtin_unreachable would help here, though obviously we
-> can't count on 4.5 or newer quite yet.  A wrapper in compiler.h would
-> let us use it when available though.
+> What would rcu_read_lock_preempt() do in a !CONFIG_PREEMPT kernel?
 
-So at some time when we can count on gcc 4.5 or newer, the code
-would look something like the following?
-
-	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK)
-		this_is_unreachable();
-
-I suppose that in the meantime one could supply the code to use
-in the unreachable case:
-
-	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK)
-		this_is_unreachable(break);
-
-But this is beginning to seem a bit strained to me.  ;-)
-
-							Thanx, Paul
+Same as for a preempt one, since you'd have to be able to schedule()
+while holding it to be able to do things like mutex_lock().
