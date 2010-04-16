@@ -1,93 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab0DONP7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 09:15:59 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:39308 "EHLO elrond.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753809Ab0DONP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 09:15:56 -0400
-Message-ID: <4BC7117C.7090208@interlog.com>
-Date: Thu, 15 Apr 2010 09:15:40 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1753787Ab0DON0i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 09:26:38 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57544 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753238Ab0DON0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Apr 2010 09:26:37 -0400
+Message-ID: <4BC864DD.3000606@cn.fujitsu.com>
+Date: Fri, 16 Apr 2010 21:23:41 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20090922 Fedora/3.0-3.9.b4.fc12 Thunderbird/3.0b4
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-       Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       John Kacur <jkacur@redhat.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Kai Makisara <Kai.Makisara@kolumbus.fi>
-Subject: Re: [PATCH 1/2] [RFC] block: replace BKL with global mutex
-References: <1271277384-7627-1-git-send-email-arnd@arndb.de> <4BC64633.6010407@interlog.com> <201004150911.45842.arnd@arndb.de>
-In-Reply-To: <201004150911.45842.arnd@arndb.de>
-Content-Type: text/plain; charset=iso-8859-1; format=flowed
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/5] KVM MMU: remove unused struct
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> On Thursday 15 April 2010 00:48:19 Douglas Gilbert wrote:
-> 
->>> @@ -1322,7 +1331,8 @@ static const struct file_operations sg_fops = {
->>>  	.read = sg_read,
->>>  	.write = sg_write,
->>>  	.poll = sg_poll,
->>> -	.ioctl = sg_ioctl,
->>> +	.llseek = generic_file_llseek,
->> The sg driver has no seek semantics on its read() and
->> write() calls. And sg_open() calls nonseekable_open(). So
->>      .llseek = no_llseek,
->> seems more appropriate.
-> 
-> Ok, I missed the nonseekable_open here and assumed someone
-> might be calling seek on it. I'll use no_llseek then, or
-> just leave it alone.
-> 
->>> +	.unlocked_ioctl = sg_unlocked_ioctl,
->>>  #ifdef CONFIG_COMPAT
->>>  	.compat_ioctl = sg_compat_ioctl,
->>>  #endif
->> And I just checked st.c (SCSI tape driver) and it calls
->> lock_kernel() .
-> 
-> Ah, good point. So even if the st driver does not need
-> any locking against the block layer, it might need to
-> lock its ioctl against sg.
+Remove 'struct kvm_unsync_walk' since it's not used
 
-At the level of SCSI commands, tape device state assumptions
-made by the st driver could be compromised by SCSI commands
-sent by the sg driver. However the BKL was never meant
-to address that concern.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
- From the comment in st_open() [st.c] it would be using
-nonseekable_open() as well but there are apps out there
-that do lseek()s on its file descriptors. Not sure
-how long nonseekable_open() has been in the sg driver
-but no-one has complained to me about it.
-
-> The most simple solution for this would be to let sg
-> take both blkdev_mutex and the BKL, which of course
-> feels like a step backwards.
-> 
-> A better way is to get rid of the BKL in sg, which requires
-> a better understanding of what it's actually protecting.
-> It only gets it in the open and ioctl functions, which is a
-> result of the pushdown from the respective file operations.
-> Chances are that it's not needed at all, but that's really
-> hard to tell. Can you shed some more light on this?
-
-The BKL is not used to protect any of the internal
-objects within the sg driver. From memory it was added
-in some large code sweep through, not unlike what you
-are proposing now.
-
-So I would not be concerned about any kernel locking
-interactions between the sg and st drivers. I have
-added Kai Makisara (st maintainer) to the cc list.
-
-Doug Gilbert
-
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index b44380b..a23ca75 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -172,11 +172,6 @@ struct kvm_shadow_walk_iterator {
+ 	     shadow_walk_okay(&(_walker));			\
+ 	     shadow_walk_next(&(_walker)))
+ 
+-
+-struct kvm_unsync_walk {
+-	int (*entry) (struct kvm_mmu_page *sp, struct kvm_unsync_walk *walk);
+-};
+-
+ typedef int (*mmu_parent_walk_fn) (struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp);
+ 
+ static struct kmem_cache *pte_chain_cache;
+-- 
+1.6.1.2
