@@ -1,114 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab0DPN6n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 09:58:43 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39695 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932159Ab0DPN6l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 09:58:41 -0400
-Subject: Re: [PATCH 1/5] sched: fix capacity calculations for SMT4
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
-       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Gautham R Shenoy <ego@in.ibm.com>
-In-Reply-To: <2906.1271219317@neuling.org>
-References: <20100409062118.D4096CBB6C@localhost.localdomain>
-	 <1271161766.4807.1280.camel@twins>  <2906.1271219317@neuling.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Apr 2010 15:58:28 +0200
-Message-ID: <1271426308.1674.429.camel@laptop>
+	id S1757742Ab0DPOLK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:11:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16309 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757708Ab0DPOLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 10:11:08 -0400
+Subject: Re: vmalloc performance
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Nick Piggin <npiggin@suse.de>
+In-Reply-To: <1271350270.2013.29.camel@barrios-desktop>
+References: <1271089672.7196.63.camel@localhost.localdomain>
+	 <1271249354.7196.66.camel@localhost.localdomain>
+	 <m2g28c262361004140813j5d70a80fy1882d01436d136a6@mail.gmail.com>
+	 <1271262948.2233.14.camel@barrios-desktop>
+	 <1271320388.2537.30.camel@localhost>
+	 <1271350270.2013.29.camel@barrios-desktop>
+Content-Type: text/plain
+Organization: Red Hat (UK) Ltd (Registered in England and Wales, No.
+ 3798903) Registered office: Red Hat UK Ltd, Amberley Place, 107-111 Peascod
+ Street, Windsor, Berkshire, SL4 ITE
+Date: Fri, 16 Apr 2010 15:10:56 +0100
+Message-Id: <1271427056.7196.163.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-14 at 14:28 +1000, Michael Neuling wrote:
+Hi,
 
-> > Right, so I suspect this will indeed break some things.
-> > 
-> > We initially allowed 0 capacity for when a cpu is consumed by an RT task
-> > and there simply isn't much capacity left, in that case you really want
-> > to try and move load to your sibling cpus if possible.
+On Fri, 2010-04-16 at 01:51 +0900, Minchan Kim wrote:
+[snip]
+> Thanks for the explanation. It seems to be real issue. 
 > 
-> Changing the CPU power based on what tasks are running on them seems a
-> bit wrong to me.  Shouldn't we keep those concepts separate?
-
-Well the thing cpu_power represents is a ratio of compute capacity
-available to this cpu as compared to other cpus. By normalizing the
-runqueue weights with this we end up with a fair balance.
-
-The thing to realize here is that this is solely about SCHED_NORMAL
-tasks, SCHED_FIFO/RR (or the proposed DEADLINE) tasks do not care about
-fairness and available compute capacity.
-
-So if we were to ignore RT tasks, you'd end up with a situation where,
-assuming 2 cpus and 4 equally weighted NORMAL tasks, and 1 RT task, the
-load-balancer would give each cpu 2 NORMAL tasks, but the tasks that
-would end up on the cpu the RT tasks would be running on would not run
-as fast -- is that fair?
-
-Since RT tasks do not have a weight (FIFO/RR have no limit at all,
-DEADLINE would have something equivalent to a max weight), it is
-impossible to account them in the normal weight sense.
-
-Therefore the current model takes them into account by lowering the
-compute capacity according to their (avg) cpu usage. So if the RT task
-would consume 66% cputime, we'd end up with a situation where the cpu
-running the RT task would get 1 NORMAL task, and other cpu would have
-the remaining 3, that way they'd all get 33% cpu.
-
-> > However you're right that this goes awry in your case.
-> > 
-> > One thing to look at is if that 15% increase is indeed representative
-> > for the power7 cpu, it having 4 SMT threads seems to suggest there was
-> > significant gains, otherwise they'd not have wasted the silicon.
+> I tested to see effect with flush during rb tree search.
 > 
-> There are certainly, for most workloads, per core gains for SMT4 over
-> SMT2 on P7.  My kernels certainly compile faster and that's the only
-> workload anyone who matters cares about.... ;-)
-
-For sure ;-)
-
-Are there any numbers available on how much they gain? It might be worth
-to stick in real numbers instead of this alleged 15%.
-
-> > One thing we could look at is using the cpu base power to compute
-> > capacity from. We'd have to add another field to sched_group and store
-> > power before we do the scale_rt_power() stuff.
+> Before I applied your patch, the time is 50300661 us. 
+> After your patch, 11569357 us. 
+> After my debug patch, 6104875 us.
 > 
-> Separating capacity from what RT tasks are running seems like a good
-> idea to me.
+> I tested it as changing threshold value.
+> 
+> threshold	time
+> 1000		13892809
+> 500		9062110
+> 200		6714172
+> 100		6104875
+> 50		6758316
+> 
+My results show:
 
-Well, per the above we cannot fully separate them.
+threshold        time
+100000           139309948
+1000             13555878
+500              10069801
+200              7813667
+100              18523172
+50               18546256
 
-> This would fix the RT issue, but it's not clear to me how you are
-> suggesting fixing the rounding down to 0 SMT4 issue.  Are you suggesting
-> we bump smt_gain to say 2048 + 15%?  Or are you suggesting we separate
-> the RT tasks out from capacity and keep the max(1, capacity) that I've
-> added?  Or something else?
+> And perf shows smp_call_function is very low percentage.
+> 
+> In my cases, 100 is best. 
+> 
+Looks like 200 for me.
 
-I would think that 4 SMT threads are still slower than two full cores,
-right? So cpu_power=2048 would not be appropriate.
+I think you meant to use the non _minmax version of proc_dointvec too?
+Although it doesn't make any difference for this basic test.
 
-> Would another possibility be changing capacity a scaled value (like
-> cpu_power is now) rather than a small integer as it is now.  For
-> example, a scaled capacity of 1024 would be equivalent to a capacity of
-> 1 now.  This might enable us to handle partial capacities better?  We'd
-> probably have to scale a bunch of nr_running too.  
+The original reporter also has 8 cpu cores I've discovered. In his case
+divided by 4 cpus where as mine are divided by 2 cpus, but I think that
+makes no real difference in this case.
 
-Right, so my proposal was to scale down the capacity divider (currently
-1024) to whatever would be the base capacity for that cpu. Trouble seems
-to be that that makes group capacity a lot more complex, as you would
-end up needing to average all the cpu's their base capacity.
+I'll try and get some further test results ready shortly. Many thanks
+for all your efforts in tracking this down,
 
-
-Hrmm, my brain seems muddled but I might have another solution, let me
-ponder this for a bit..
-
+Steve.
 
 
