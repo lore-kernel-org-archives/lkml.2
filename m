@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab0DPN4v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 09:56:51 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:50694 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757693Ab0DPN4u (ORCPT
+	id S932196Ab0DPN5k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 09:57:40 -0400
+Received: from www.telegraphics.com.au ([204.15.192.19]:45362 "EHLO
+	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157Ab0DPN5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 09:56:50 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -14.389
-Message-ID: <4BC86C9B.4010400@tremplin-utc.net>
-Date: Fri, 16 Apr 2010 15:56:43 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100331 Mandriva/3.0.4-1mdv2010.1 (2010.1) Thunderbird/3.0.4
+	Fri, 16 Apr 2010 09:57:38 -0400
+Date: Fri, 16 Apr 2010 23:57:34 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: Joe Perches <joe@perches.com>
+cc: David Miller <davem@davemloft.net>, p_gortmaker@yahoo.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-m68k@vger.kernel.org
+Subject: Re: [PATCH] mac8390: fix pr_info() calls and change return code
+In-Reply-To: <1271392454.2298.37.camel@Joe-Laptop.home>
+Message-ID: <alpine.OSX.2.00.1004162340370.271@localhost>
+References: <alpine.OSX.2.00.1004161214270.271@localhost>  <20100415.200113.215578006.davem@davemloft.net>  <alpine.OSX.2.00.1004161323340.271@localhost>  <alpine.OSX.2.00.1004161403160.271@localhost> <1271392454.2298.37.camel@Joe-Laptop.home>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Marcin Derlukiewicz <marcin@derlukiewicz.pl>
-CC: samu.p.onkalo@nokia.com, jkosina@suse.cz, akpm@linux-foundation.org,
-       pavel@ucw.cz, lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lis3lv02d: provide means to disable polled input interface
-References: <alpine.LNX.2.00.1004091453530.8345@pobox.suse.cz> <4BBF2BD1.5050107@tremplin-utc.net> <alpine.LNX.2.00.1004091532150.8345@pobox.suse.cz> <op.va86rulwgp7y00@linux-r26l.site> <62697B07E9803846BC582181BD6FB6B826A8525E8A@NOK-EUMSG-02.mgdnok.nokia.com> <op.va878jw6gp7y00@linux-r26l.site>
-In-Reply-To: <op.va878jw6gp7y00@linux-r26l.site>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/04/10 14:13, Marcin Derlukiewicz wrote:
-> Dnia 16-04-2010 o 14:00:15 <samu.p.onkalo@nokia.com> napisał(a):
-> 
-:
->>
->> Could you check what is the polling period of the device.
->> something like:
->> cat /sys/devices/platform/lis3lv02d/input/input9/poll
->>
->> it is current polling period in milliseconds. 0 disables polling.
->>
->> -Samu
->>
-> 
-> I think that on my system this is /sys/devices/platform/lis3lv02d/rate
-> but i may be wrong. Anyway it contains 40 as a number.
-This file is something else. Isn't there any file like
-/sys/devices/platform/lis3lv02d/input/input*/poll ?
 
-Maybe your kernel is too old to have this functionality (I don't know
-when it was introduced). Samu is right, here to disable the joystick, I
-can indeed do a:
-echo 0 > /sys/devices/platform/lis3lv02d/input/input*/poll
+On Thu, 15 Apr 2010, Joe Perches wrote:
 
-Eric
+> ...Why is it better to use -EBUSY?
+
+Nubus slots are geographically addressed and their irqs are equally 
+inflexible. -EAGAIN is misleading because retrying will not help fix 
+whatever bug caused the irq to unavailable.
+
+> ...It'd be better to prefix this with the driver name
+> or use something like netdev_dbg with #define DEBUG
+> otherwise it's "huh? what device emits this message?"
+> when reading the logs.
+> 
+> Something like:
+> 	printk(KERN_DEBUG pr_fmt("reset not supported\n"));
+
+Thanks for the suggestion. I'll resend again.
+
+> ...unnecessary conversion.
+
+I guess some prefer consistency, some prefer symmetry.
+
+Finn
