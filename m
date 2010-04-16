@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758204Ab0DPAdL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Apr 2010 20:33:11 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:42185 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758185Ab0DPAdJ (ORCPT
+	id S1755998Ab0DPAlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Apr 2010 20:41:51 -0400
+Received: from dm-mail02.mozilla.org ([63.245.208.176]:50723 "EHLO
+	dm-mail02.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191Ab0DPAlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Apr 2010 20:33:09 -0400
-Date: Thu, 15 Apr 2010 19:27:42 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Andreas Herrmann <herrmann.der.user@googlemail.com>
-cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: useless node/has_cpu sysfs attribute
-In-Reply-To: <20100415061200.GC21517@alberich.amd.com>
-Message-ID: <alpine.DEB.2.00.1004151917420.17800@router.home>
-References: <20100415061200.GC21517@alberich.amd.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 15 Apr 2010 20:41:49 -0400
+Message-ID: <4BC7B24C.7040701@mozilla.com>
+Date: Thu, 15 Apr 2010 17:41:48 -0700
+From: Taras Glek <tglek@mozilla.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
+References: <4BBA6776.5060804@mozilla.com> <20100415155309.2649a29b.akpm@linux-foundation.org>
+In-Reply-To: <20100415155309.2649a29b.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Apr 2010, Andreas Herrmann wrote:
-
-> commit 99dcc3e5a94ed491fbef402831d8c0bbb267f995 (this_cpu: Page
-> allocator conversion) removed the call
+On 04/15/2010 03:53 PM, Andrew Morton wrote:
+> On Mon, 05 Apr 2010 15:43:02 -0700
+> Taras Glek<tglek@mozilla.com>  wrote:
 >
->     node_set_state(node, N_CPU);    /* this node has a cpu */
+>    
+>> To make matters worse,
+>> the compile-time linker + gcc lay out code in a manner that does not
+>> correspond to how the resulting executable will be executed(ie the
+>> layout is basically random).
+>>      
+> Yes, the linker scrambles the executable's block ordering.
+>
+> This just isn't an interesting case.  World-wide, the number of people
+> who compile their own web browser and execute it from the file which ld
+> produced is, umm, seven.
+>    
+I'm sorry that you don't find this interesting. I did not suggest that 
+people compile their own browser to get a perfect layout. This is 
+something that Mozilla can do when preparing builds and it's also 
+something distributions can do. It just so happens that large parts of 
+startup will be very similar for every single firefox install, might as 
+well layout the binary accordingly.
+> So I'd suggest that you always copy the executable to a temp file and
+> mv it back before running any timing tests.
+>    
+You mean to get it into a cache or to hope to avoid fragmentation?  If 
+you are suggesting this to avoid measuring the startup overhead of 
+paging the binary in, I strongly disagee. It is the slowest part of 
+firefox startup and needs to be addressed.
 
-This was moved to vmstat_cpuup_callback. See mm/vmstat.c. Maybe it needs
-to be  added to setup_vmstat() as well.
+Taras
 
-> Thus the sysfs attribute /sys/devices/system/node/has_cpu doesn't
-> show anything anymore.
 
-Thats strange. Why is the cpuup notifier not executing?
-
-> This attribute never reflected any changes triggered by CPU hotplug.
-
-Duh some breakage in the cpuup notifier handling?
-
-This needs to be fixed.
