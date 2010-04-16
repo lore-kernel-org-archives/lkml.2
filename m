@@ -1,78 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289Ab0DPTiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 15:38:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43922 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757978Ab0DPTh7 (ORCPT
+	id S932354Ab0DPTsl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 15:48:41 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:4766 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932252Ab0DPTsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 15:37:59 -0400
-Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
- implementation
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100416164503.GH2615@linux.vnet.ibm.com>
-References: <20100413034311.GB2772@linux.vnet.ibm.com>
-	 <1271253110.32749.47.camel@laptop>
-	 <20100415142852.GA2471@linux.vnet.ibm.com>
-	 <1271425881.4807.2319.camel@twins>
-	 <20100416141745.GC2615@linux.vnet.ibm.com>
-	 <1271427819.4807.2353.camel@twins>
-	 <20100416143202.GE2615@linux.vnet.ibm.com>
-	 <1271429810.4807.2390.camel@twins>
-	 <20100416150909.GF2615@linux.vnet.ibm.com>
-	 <1271430855.4807.2411.camel@twins>
-	 <20100416164503.GH2615@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Apr 2010 21:37:02 +0200
-Message-ID: <1271446622.1674.433.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 16 Apr 2010 15:48:40 -0400
+From: Frans Pop <elendil@planet.nl>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [regression] Sound not transferred to docking station after resume from StR
+Date: Fri, 16 Apr 2010 21:48:36 +0200
+User-Agent: KMail/1.9.9
+Cc: linux-pm@lists.linux-foundation.org, alsa-devel@alsa-project.org,
+       Takashi Iwai <tiwai@suse.de>
+References: <201004162131.19171.elendil@planet.nl>
+In-Reply-To: <201004162131.19171.elendil@planet.nl>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201004162148.37751.elendil@planet.nl>
+X-OriginalArrivalTime: 16 Apr 2010 19:48:37.0998 (UTC) FILETIME=[CEA4A0E0:01CADD9D]
+X-RecipientDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-16 at 09:45 -0700, Paul E. McKenney wrote:
-> o       mutex_lock(): Critical sections need not guarantee
->         forward progress, as general blocking is permitted.
-> 
-Right, I would argue that they should guarantee fwd progress, but due to
-being able to schedule while holding them, its harder to enforce.
+On Friday 16 April 2010, Frans Pop wrote:
+> With 2.6.33 and earlier the sound would always come from the external
+> speakers connected to the docking station. But with 2.6.34-rc4 I get
+> sound still coming from the laptop's internal speakers, which is not
+> correct.
 
-Anything that is waiting for uncertainty should do so without any locks
-held and simply re-acquire them once such an event does occur.
-
-> So the easy response is "just use SRCU."  Of course, SRCU has some
-> disadvantages at the moment:
-> 
-> o       The return value from srcu_read_lock() must be passed to
->         srcu_read_unlock().  I believe that I can fix this.
-> 
-> o       There is no call_srcu().  I believe that I can fix this.
-> 
-> o       SRCU uses a flat per-CPU counter scheme that is not particularly
->         scalable.  I believe that I can fix this.
-> 
-> o       SRCU's current implementation makes it almost impossible to
->         implement priority boosting.  I believe that I can fix this.
-> 
-> o       SRCU requires explicit initialization of the underlying
->         srcu_struct.  Unfortunately, I don't see a reasonable way
->         around this.  Not yet, anyway.
-> 
-> So, is there anything else that you don't like about SRCU?
-
-No, I quite like SRCU when implemented as preemptible tree RCU, and I
-don't at all mind that last point, all dynamic things need some sort of
-init. All locks certainly have.
-
+Forgot to mention that sound does get transferred to the external speakers 
+with .34 if I do an extra undock and redock after the resume.
