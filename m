@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758413Ab0DPOOg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:14:36 -0400
-Received: from www.telegraphics.com.au ([204.15.192.19]:45640 "EHLO
-	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757316Ab0DPOOf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:14:35 -0400
-Date: Sat, 17 Apr 2010 00:14:36 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: David Miller <davem@davemloft.net>
-cc: joe@perches.com, p_gortmaker@yahoo.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
-Subject: [PATCH] mac8390: change an error return code and some cleanup
-In-Reply-To: <alpine.OSX.2.00.1004161403160.271@localhost>
-Message-ID: <alpine.OSX.2.00.1004162347390.271@localhost>
-References: <alpine.OSX.2.00.1004161214270.271@localhost> <20100415.200113.215578006.davem@davemloft.net> <alpine.OSX.2.00.1004161323340.271@localhost> <alpine.OSX.2.00.1004161403160.271@localhost>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	id S1758454Ab0DPORw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:17:52 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:32837 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757724Ab0DPORt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 10:17:49 -0400
+Date: Fri, 16 Apr 2010 07:17:45 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
+ implementation
+Message-ID: <20100416141745.GC2615@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100408191737.296180458@chello.nl>
+ <20100408192722.643778654@chello.nl>
+ <1271120731.13059.6.camel@pasglop>
+ <20100413034311.GB2772@linux.vnet.ibm.com>
+ <1271253110.32749.47.camel@laptop>
+ <20100415142852.GA2471@linux.vnet.ibm.com>
+ <1271425881.4807.2319.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271425881.4807.2319.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 16, 2010 at 03:51:21PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-04-15 at 07:28 -0700, Paul E. McKenney wrote:
+> > On Wed, Apr 14, 2010 at 03:51:50PM +0200, Peter Zijlstra wrote:
+> > > On Mon, 2010-04-12 at 20:43 -0700, Paul E. McKenney wrote:
+> > > > > So we might have to support the interrupt assumption, at least in some
+> > > > > form, with those guys...
+> > > > 
+> > > > One way to make the interrupt assumption official is to use
+> > > > synchronize_sched() rather than synchronize_rcu().
+> > > 
+> > > Well, call_rcu_sched() then, because the current usage is to use
+> > > call_rcu() to free the page directories.
+> > > 
+> > > Paul, here is a call_rcu_sched() available in kernel/rcutree.c, but am I
+> > > right in reading that code that that would not be available for
+> > > preemptible RCU?
+> > 
+> > Both call_rcu_sched() and call_rcu() are always there for you.  ;-)
+> > 
+> > o	If CONFIG_TREE_RCU (or CONFIG_TINY_RCU), they both have the same
+> > 	implementation.
+> > 
+> > o	If CONFIG_TREE_PREEMPT_RCU, call_rcu_sched() is preemptible and
+> > 	call_rcu() is not.
+> 
+> (The reverse I suspect?)
 
-Change an error return from EAGAIN to EBUSY since the former is 
-misleading. Also promote the log message. Likewise some other KERN_INFO 
-log messages.
+Indeed:  If CONFIG_TREE_PREEMPT_RCU, call_rcu() is preemptible and
+call_rcu_sched() is not.
 
-Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+> > Of course, with call_rcu_sched(), the corresponding RCU read-side critical
+> > sections are non-preemptible.  Therefore, in CONFIG_PREEMPT_RT, these
+> > read-side critical sections must use raw spinlocks.
+> 
+> OK, so if we fully remove CONFIG_TREE_PREEMPT_RCU (defaulting to y),
+> rename all the {call_rcu, rcu_read_lock, rcu_read_unlock,
+> synchronize_rcu} functions to {*}_preempt and then add a new
+> CONFIG_PREEMPT_RCU that simply maps {*} to either {*}_sched or
+> {*}_preempt, we've basically got what I've been asking for for a while,
+> no?
 
---- a/drivers/net/mac8390.c	2010-04-16 13:31:04.000000000 +1000
-+++ b/drivers/net/mac8390.c	2010-04-16 23:50:39.000000000 +1000
-@@ -554,7 +554,7 @@
- 	case MAC8390_APPLE:
- 		switch (mac8390_testio(dev->mem_start)) {
- 		case ACCESS_UNKNOWN:
--			pr_info("Don't know how to access card memory!\n");
-+			pr_err("Don't know how to access card memory!\n");
- 			return -ENODEV;
- 			break;
- 
-@@ -643,8 +643,8 @@
- {
- 	__ei_open(dev);
- 	if (request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev)) {
--		pr_info("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
--		return -EAGAIN;
-+		pr_err("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
-+		return -EBUSY;
- 	}
- 	return 0;
- }
-@@ -660,7 +660,7 @@
- {
- 	ei_status.txing = 0;
- 	if (ei_debug > 1)
--		pr_info("reset not supported\n");
-+		printk(KERN_DEBUG pr_fmt("reset not supported\n"));
- 	return;
- }
- 
-@@ -668,11 +668,11 @@
- {
- 	unsigned char *target = nubus_slot_addr(IRQ2SLOT(dev->irq));
- 	if (ei_debug > 1)
--		pr_info("Need to reset the NS8390 t=%lu...", jiffies);
-+		printk(KERN_DEBUG pr_fmt("Need to reset the NS8390 t=%lu..."), jiffies);
- 	ei_status.txing = 0;
- 	target[0xC0000] = 0;
- 	if (ei_debug > 1)
--		pr_cont("reset complete\n");
-+		printk(KERN_CONT "reset complete\n");
- 	return;
- }
- 
+What would rcu_read_lock_preempt() do in a !CONFIG_PREEMPT kernel?
+
+> > Can the code in question accommodate these restrictions?
+> 
+> Yes, that should do just fine I think.
+
+Cool!!!
+
+							Thanx, Paul
