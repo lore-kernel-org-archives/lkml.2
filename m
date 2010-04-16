@@ -1,78 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757697Ab0DPNvo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 09:51:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37894 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757638Ab0DPNvm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 09:51:42 -0400
-Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
- implementation
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100415142852.GA2471@linux.vnet.ibm.com>
-References: <20100408191737.296180458@chello.nl>
-	 <20100408192722.643778654@chello.nl> <1271120731.13059.6.camel@pasglop>
-	 <20100413034311.GB2772@linux.vnet.ibm.com>
-	 <1271253110.32749.47.camel@laptop>
-	 <20100415142852.GA2471@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 16 Apr 2010 15:51:21 +0200
-Message-ID: <1271425881.4807.2319.camel@twins>
+	id S1757713Ab0DPNy3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 09:54:29 -0400
+Received: from wine.ocn.ne.jp ([122.1.235.145]:63434 "EHLO smtp.wine.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757648Ab0DPNy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 09:54:27 -0400
+To: amwang@redhat.com, sean.hefty@intel.com
+Cc: opurdila@ixiacom.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       nhorman@tuxdriver.com, davem@davemloft.net, ebiederm@xmission.com,
+       linux-kernel@vger.kernel.org, rolandd@cisco.com,
+       linux-rdma@vger.kernel.org
+Subject: Re: [PATCH] rdma/cm: Randomize local port allocation.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201004140201.o3E21Aqn075978@www262.sakura.ne.jp>
+	<195EB1AD388F455AA386EB214FCD09F4@amr.corp.intel.com>
+	<201004150229.o3F2T4dZ054768@www262.sakura.ne.jp>
+	<5CE6BC7B954643FAAFFD2AD66F673CBD@amr.corp.intel.com>
+	<4BC7C9CF.20403@redhat.com>
+In-Reply-To: <4BC7C9CF.20403@redhat.com>
+Message-Id: <201004162254.FJF73478.SHOOMOFtQFVJLF@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Fri, 16 Apr 2010 22:54:22 +0900
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-15 at 07:28 -0700, Paul E. McKenney wrote:
-> On Wed, Apr 14, 2010 at 03:51:50PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2010-04-12 at 20:43 -0700, Paul E. McKenney wrote:
-> > > > So we might have to support the interrupt assumption, at least in some
-> > > > form, with those guys...
-> > > 
-> > > One way to make the interrupt assumption official is to use
-> > > synchronize_sched() rather than synchronize_rcu().
+Cong Wang wrote:
+> Sean Hefty wrote:
+> > I like this version, thanks!  I'm not sure which tree to merge it through.
+> > Are you needing this for 2.6.34, or is 2.6.35 okay?
 > > 
-> > Well, call_rcu_sched() then, because the current usage is to use
-> > call_rcu() to free the page directories.
-> > 
-> > Paul, here is a call_rcu_sched() available in kernel/rcutree.c, but am I
-> > right in reading that code that that would not be available for
-> > preemptible RCU?
 > 
-> Both call_rcu_sched() and call_rcu() are always there for you.  ;-)
+> As soon as possible, so 2.6.34. :)
 > 
-> o	If CONFIG_TREE_RCU (or CONFIG_TINY_RCU), they both have the same
-> 	implementation.
-> 
-> o	If CONFIG_TREE_PREEMPT_RCU, call_rcu_sched() is preemptible and
-> 	call_rcu() is not.
-
-(The reverse I suspect?)
-
-> Of course, with call_rcu_sched(), the corresponding RCU read-side critical
-> sections are non-preemptible.  Therefore, in CONFIG_PREEMPT_RT, these
-> read-side critical sections must use raw spinlocks.
-
-OK, so if we fully remove CONFIG_TREE_PREEMPT_RCU (defaulting to y),
-rename all the {call_rcu, rcu_read_lock, rcu_read_unlock,
-synchronize_rcu} functions to {*}_preempt and then add a new
-CONFIG_PREEMPT_RCU that simply maps {*} to either {*}_sched or
-{*}_preempt, we've basically got what I've been asking for for a while,
-no?
-
-> Can the code in question accommodate these restrictions?
-
-Yes, that should do just fine I think.
+Cong, merge window for 2.6.34 was already closed.
+You need to make your patchset towards 2.6.35 (using net-next-2.6 tree)
+rather than 2.6.34 (using linux-2.6 tree). Therefore, this patch being
+queued for 2.6.35 (through net-next-2.6 tree) should be okay for you.
