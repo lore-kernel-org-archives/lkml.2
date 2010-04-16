@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758672Ab0DPTRX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 15:17:23 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:35901 "EHLO
+	id S1758687Ab0DPTRp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 15:17:45 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:35894 "EHLO
 	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758610Ab0DPTQz (ORCPT
+	with ESMTP id S1758558Ab0DPTQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 15:16:55 -0400
+	Fri, 16 Apr 2010 15:16:52 -0400
 From: Dinh.Nguyen@freescale.com
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
@@ -15,158 +15,61 @@ Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
        amit.kucheria@canonical.com, r.herring@freescale.com,
        Jun.Li@freescale.com, xiao-lizhang@freescale.com,
        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv4 2.6.34-rc4 4/7] mx5: Enable board specific functions for enabling USB host on Babbage
-Date: Fri, 16 Apr 2010 14:16:08 -0500
-Message-Id: <1271445371-18501-4-git-send-email-Dinh.Nguyen@freescale.com>
+Subject: [PATCHv4 2.6.34-rc4 6/7] mxc-usb: Add call to initialize MXC USB HW registers
+Date: Fri, 16 Apr 2010 14:16:10 -0500
+Message-Id: <1271445371-18501-6-git-send-email-Dinh.Nguyen@freescale.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1271445371-18501-3-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <1271445371-18501-5-git-send-email-Dinh.Nguyen@freescale.com>
 References: <1271445371-18501-1-git-send-email-Dinh.Nguyen@freescale.com>
  <1271445371-18501-2-git-send-email-Dinh.Nguyen@freescale.com>
  <1271445371-18501-3-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271445371-18501-4-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271445371-18501-5-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-This patch enables USB host functionality for Host1 and OTG port on
-Freescale MX51 Babbage HW. This patch contains the board specific
-HW initialization of the USB HW.
+The placing of the function needs to be before setting the USBMODE
+register to host, since a reset and start is done in
+mxc_initialize_usb_hw.
 
 This patch applies to 2.6.34-rc4.
 
 Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- arch/arm/mach-mx5/board-mx51_babbage.c |   81 ++++++++++++++++++++++++++++++++
- 1 files changed, 81 insertions(+), 0 deletions(-)
+ drivers/usb/host/ehci-mxc.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-index ee67a71..617f4e2 100644
---- a/arch/arm/mach-mx5/board-mx51_babbage.c
-+++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-@@ -12,11 +12,14 @@
+diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
+index ead59f4..7091b20 100644
+--- a/drivers/usb/host/ehci-mxc.c
++++ b/drivers/usb/host/ehci-mxc.c
+@@ -191,6 +191,11 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+ 		clk_enable(priv->ahbclk);
+ 	}
  
- #include <linux/init.h>
- #include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/delay.h>
++	/* setup specific usb hw */
++	ret = mxc_intialize_usb_hw(pdev->id, pdata->flags);
++	if (ret < 0)
++		goto err_init;
++
+ 	/* set USBMODE to host mode */
+ 	temp = readl(hcd->regs + USBMODE_OFFSET);
+ 	writel(temp | USBMODE_CM_HOST, hcd->regs + USBMODE_OFFSET);
+@@ -199,11 +204,6 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+ 	writel(pdata->portsc, hcd->regs + PORTSC_OFFSET);
+ 	mdelay(10);
  
- #include <mach/common.h>
- #include <mach/hardware.h>
- #include <mach/imx-uart.h>
- #include <mach/iomux-mx51.h>
-+#include <mach/mxc_ehci.h>
- 
- #include <asm/irq.h>
- #include <asm/setup.h>
-@@ -26,6 +29,9 @@
- 
- #include "devices.h"
- 
-+#define BABBAGE_USB_HUB_RESET	(0*32 + 7)	/* GPIO_1_7 */
-+#define BABBAGE_USBH1_STP	(0*32 + 27)	/* GPIO_1_27 */
-+
- static struct platform_device *devices[] __initdata = {
- 	&mxc_fec_device,
- };
-@@ -46,6 +52,22 @@ static struct pad_desc mx51babbage_pads[] = {
- 	MX51_PAD_EIM_D26__UART3_TXD,
- 	MX51_PAD_EIM_D27__UART3_RTS,
- 	MX51_PAD_EIM_D24__UART3_CTS,
-+
-+	/* USB HOST1 */
-+	MX51_PAD_USBH1_CLK__USBH1_CLK,
-+	MX51_PAD_USBH1_DIR__USBH1_DIR,
-+	MX51_PAD_USBH1_NXT__USBH1_NXT,
-+	MX51_PAD_USBH1_DATA0__USBH1_DATA0,
-+	MX51_PAD_USBH1_DATA1__USBH1_DATA1,
-+	MX51_PAD_USBH1_DATA2__USBH1_DATA2,
-+	MX51_PAD_USBH1_DATA3__USBH1_DATA3,
-+	MX51_PAD_USBH1_DATA4__USBH1_DATA4,
-+	MX51_PAD_USBH1_DATA5__USBH1_DATA5,
-+	MX51_PAD_USBH1_DATA6__USBH1_DATA6,
-+	MX51_PAD_USBH1_DATA7__USBH1_DATA7,
-+
-+	/* USB HUB reset line*/
-+	MX51_PAD_GPIO_1_7__GPIO1_7,
- };
- 
- /* Serial ports */
-@@ -66,15 +88,74 @@ static inline void mxc_init_imx_uart(void)
- }
- #endif /* SERIAL_IMX */
- 
-+static int gpio_usbh1_active(void)
-+{
-+	struct pad_desc usbh1stp_gpio = MX51_PAD_USBH1_STP__GPIO_1_27;
-+	int ret;
-+
-+	/* Set USBH1_STP to GPIO and toggle it */
-+	mxc_iomux_v3_setup_pad(&usbh1stp_gpio);
-+	ret = gpio_request(BABBAGE_USBH1_STP, "usbh1_stp");
-+
-+	if (ret) {
-+		pr_debug("failed to get MX51_PAD_USBH1_STP__GPIO_1_27: %d\n", ret);
-+		return ret;
-+	}
-+	gpio_direction_output(BABBAGE_USBH1_STP, 0);
-+	gpio_set_value(BABBAGE_USBH1_STP, 1);
-+	msleep(100);
-+	gpio_free(BABBAGE_USBH1_STP);
-+	return 0;
-+}
-+
-+static inline void babbage_usbhub_reset(void)
-+{
-+	int ret;
-+
-+	/* Bring USB hub out of reset */
-+	ret = gpio_request(BABBAGE_USB_HUB_RESET, "GPIO1_7");
-+	if (ret) {
-+		printk(KERN_ERR"failed to get GPIO_USB_HUB_RESET: %d\n", ret);
-+		return;
-+	}
-+	gpio_direction_output(BABBAGE_USB_HUB_RESET, 0);
-+
-+	/* USB HUB RESET - De-assert USB HUB RESET_N */
-+	msleep(1);
-+	gpio_set_value(BABBAGE_USB_HUB_RESET, 0);
-+	msleep(1);
-+	gpio_set_value(BABBAGE_USB_HUB_RESET, 1);
-+}
-+
-+static struct mxc_usbh_platform_data dr_utmi_config = {
-+	.portsc	= MXC_EHCI_UTMI_16BIT,
-+	.flags	= MXC_EHCI_INTERNAL_PHY,
-+};
-+
-+static struct mxc_usbh_platform_data usbh1_config = {
-+	.portsc	= MXC_EHCI_MODE_ULPI,
-+	.flags	= MXC_EHCI_POWER_PINS_ENABLED,
-+};
-+
- /*
-  * Board specific initialization.
-  */
- static void __init mxc_board_init(void)
- {
-+	struct pad_desc usbh1stp = MX51_PAD_USBH1_STP__USBH1_STP;
-+
- 	mxc_iomux_v3_setup_multiple_pads(mx51babbage_pads,
- 					ARRAY_SIZE(mx51babbage_pads));
- 	mxc_init_imx_uart();
- 	platform_add_devices(devices, ARRAY_SIZE(devices));
-+
-+	mxc_register_device(&mxc_usbdr_host_device, &dr_utmi_config);
-+
-+	gpio_usbh1_active();
-+	mxc_register_device(&mxc_usbh1_device, &usbh1_config);
-+	/* setback USBH1_STP to be function */
-+	mxc_iomux_v3_setup_pad(&usbh1stp);
-+	babbage_usbhub_reset();
- }
- 
- static void __init mx51_babbage_timer_init(void)
+-	/* setup USBCONTROL. */
+-	ret = mxc_set_usbcontrol(pdev->id, pdata->flags);
+-	if (ret < 0)
+-		goto err_init;
+-
+ 	/* Initialize the transceiver */
+ 	if (pdata->otg) {
+ 		pdata->otg->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
 -- 
 1.6.0.4
 
