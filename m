@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab0DPEVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 00:21:16 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:52757 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740Ab0DPEVL (ORCPT
+	id S1751722Ab0DPEXi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 00:23:38 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:44202 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751373Ab0DPEXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 00:21:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DcgDTYum9v2dOoOxytp+Ndfxx012XlTeybfLj8VZ7XEsgySbtJVziEgCub+IEbLppT
-         IWofeYfMmHj4RHxhnEZKOilXsESkWCsr9iOVg8qfEZP0B09rdhad7hb6qNkZ9K5gSz1d
-         HjxJJP/A+njJJZUcSACQePc5B+EEpPcaiyeWY=
-Date: Thu, 15 Apr 2010 21:21:04 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Rafi Rubin <rafi@seas.upenn.edu>
-Cc: Alan Cox <alan@linux.intel.com>, linux-i2c@vger.kernel.org,
-       khali@linux-fr.org, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: your mail
-Message-ID: <20100416042104.GA20916@core.coreip.homeip.net>
-References: <20100414125234.23507.42816.stgit@localhost.localdomain>
- <20100414231604.GA12281@core.coreip.homeip.net>
- <4BC7A422.7050601@seas.upenn.edu>
+	Fri, 16 Apr 2010 00:23:37 -0400
+Date: Fri, 16 Apr 2010 14:23:08 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andi Kleen <andi@firstfloor.org>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 06/10] vmscan: Split shrink_zone to reduce stack usage
+Message-ID: <20100416042308.GZ2493@dastard>
+References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie>
+ <1271352103-2280-7-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BC7A422.7050601@seas.upenn.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1271352103-2280-7-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 07:41:22PM -0400, Rafi Rubin wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
+On Thu, Apr 15, 2010 at 06:21:39PM +0100, Mel Gorman wrote:
+> shrink_zone() calculculates how many pages it needs to shrink from each
+> LRU list in a given pass. It uses a number of temporary variables to
+> work this out that then remain on the stack. This patch splits the
+> function so that some of the stack variables can be discarded.
 > 
-> >> +	if (ts->tc.event_sended == false) {
-> > 
-> > We set "event_sended" to false immediately before calling
-> > cy8ctmg110_send_event() so I do not see the point of this flag.
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> ---
+>  mm/vmscan.c |   29 +++++++++++++++++++----------
+>  1 files changed, 19 insertions(+), 10 deletions(-)
 > 
-> On that note:
-> 
-> $ git grep -n sended
-> drivers/net/eth16i.c:1295:
-> 		how many packets there is to be sended */
-> drivers/net/wan/sbni.c:638:
-> 		/* if frame was sended but not ACK'ed - resend it */
-> drivers/net/wan/sbni.c:659:
-> 		* frame sended then in prepare_to_send next frame
-> drivers/usb/serial/aircable.c:13:
-> 		* next two bytes must say how much data will be sended.
-> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 1ace7c6..a374879 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1595,19 +1595,14 @@ static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
+>  	return nr;
+>  }
+>  
+> -/*
+> - * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
+> - */
+> -static void shrink_zone(struct zone *zone, struct scan_control *sc)
+> +/* Calculate how many pages from each LRU list should be scanned */
+> +static void calc_scan_trybatch(struct zone *zone,
+> +				 struct scan_control *sc, unsigned long *nr)
 
-Well, if you want to go down that path...
+Needs "noinline_for_stack" to stop the compiler re-inlining it.
 
-[dtor@hammer work]$ grep -r -e "\(setted\|setuped\|split\+ed\)" . | wc -l
-54
-[dtor@hammer work]$ 
+Cheers,
 
+Dave.
 -- 
-Dmitry
+Dave Chinner
+david@fromorbit.com
