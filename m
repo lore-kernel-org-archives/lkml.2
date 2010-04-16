@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab0DPGQz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 02:16:55 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:61457 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab0DPGQy (ORCPT
+	id S1754555Ab0DPGXQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 02:23:16 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:40155 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007Ab0DPGXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 02:16:54 -0400
-Date: Fri, 16 Apr 2010 09:09:24 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Borislav Petkov <bp@alien8.de>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       "sgunderson@bigfoot.com" <sgunderson@bigfoot.com>
-Subject: Re: [PATCH] rmap: add exclusively owned pages to the newest
- anon_vma
-Message-ID: <20100416060924.GD1710@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org>
- <alpine.LFD.2.00.1004111759440.3521@i5.linux-foundation.org>
- <20100412072056.GA2432@liondog.tnic>
- <alpine.LFD.2.00.1004120854440.26679@i5.linux-foundation.org>
- <alpine.LFD.2.00.1004120906370.26679@i5.linux-foundation.org>
- <20100412215027.GA6263@liondog.tnic>
- <alpine.LFD.2.00.1004121508290.3647@i5.linux-foundation.org>
- <20100413093827.GA6954@liondog.tnic>
- <20100414175928.5e1bdce2@annuminas.surriel.com>
- <alpine.LFD.2.00.1004151256090.15116@i5.linux-foundation.org>
+	Fri, 16 Apr 2010 02:23:15 -0400
+Message-ID: <4BC8024E.6020006@petalogix.com>
+Date: Fri, 16 Apr 2010 08:23:10 +0200
+From: Michal Simek <michal.simek@petalogix.com>
+Reply-To: michal.simek@petalogix.com
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004151256090.15116@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 16 Apr 2010 06:09:43.0450 (UTC) FILETIME=[682B97A0:01CADD2B]
-X-Nokia-AV: Clean
+To: Arnd Bergmann <arnd@arndb.de>
+CC: wuzhangjin@gmail.com, Steven Rostedt <rostedt@goodmis.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched_clock - microblaze
+References: <4BC728DD.5020404@petalogix.com> <1271355179.20625.107.camel@falcon> <4BC76917.9060604@petalogix.com> <201004152152.03883.arnd@arndb.de>
+In-Reply-To: <201004152152.03883.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Arnd Bergmann wrote:
+> On Thursday 15 April 2010 21:29:27 Michal Simek wrote:
+>>> sched_clock() {
+>>>       ftrace_stop();
+>>>       printk(...);
+>>>       ftrace_start();
+>>>       ...
+>>> }
+>> But I am describing different problem. sched_clock is called before 
+>> kernel initialized timers. Microblaze takes all information from DTS 
+>> that's means that I am not able to read timer because I even don't know 
+>> where it is. :-(
+> 
+> You could make sched_clock return zero before the clock is probed, it
+> is very unlikely to be needed before that anyway.
 
-On Thu, Apr 15, 2010 at 10:01:11PM +0200, ext Linus Torvalds wrote:
->+		avc = list_entry(vma->anon_vma_chain.prev, struct anon_vma_chain, same_vma);
+First of all - this technique works.
 
-while at that, would it make sense to first provide list_last_entry() 
-since we already have list_first_entry() ??
+That calling sequence is
+main.c: sched_init() -> sched.c: sched_init(); -> init_idle(); -> 
+sched_clock() without initialized timer which is causing my problems.
 
-totally unrelated to this patch, sorry
+Why is sched_clock called in init_idle? Do you get any non zero value on 
+any ARCH?
+
+Thanks,
+Michal
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 6af210a..bddd918 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5244,7 +5244,7 @@ void __cpuinit init_idle(struct task_struct *idle, 
+int cpu)
+
+         __sched_fork(idle);
+         idle->state = TASK_RUNNING;
+-       idle->se.exec_start = sched_clock();
++       idle->se.exec_start = 0;
+
+         cpumask_copy(&idle->cpus_allowed, cpumask_of(cpu));
+         __set_task_cpu(idle, cpu);
 
 -- 
-balbi
+Michal Simek, Ing. (M.Eng)
+PetaLogix - Linux Solutions for a Reconfigurable World
+w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
