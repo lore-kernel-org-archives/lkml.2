@@ -1,183 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486Ab0DPOfm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:35:42 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34423 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555Ab0DPOfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:35:40 -0400
-Date: Fri, 16 Apr 2010 15:35:21 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-       Dave Chinner <david@fromorbit.com>, Andi Kleen <andi@firstfloor.org>,
-       Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 10/10] vmscan: Update isolated page counters outside of
-	main path in shrink_inactive_list()
-Message-ID: <20100416143521.GH19264@csn.ul.ie>
-References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie> <1271352103-2280-11-git-send-email-mel@csn.ul.ie> <20100416115315.27AA.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100416115315.27AA.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S932231Ab0DPOg1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:36:27 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44395 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758463Ab0DPOg0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 10:36:26 -0400
+Subject: Re: [RFC PATCH 1/2] hw-breakpoints: Separate constraint space for
+ data and instruction breakpoints
+From: Will Deacon <will.deacon@arm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+       "K . Prasad" <prasad@linux.vnet.ibm.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1271113280-10521-2-git-send-regression-fweisbec@gmail.com>
+References: <1271113280-10521-1-git-send-regression-fweisbec@gmail.com>
+	 <1271113280-10521-2-git-send-regression-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Apr 2010 15:35:30 +0100
+Message-ID: <1271428530.23489.3.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Apr 2010 14:35:34.0133 (UTC) FILETIME=[12964A50:01CADD72]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 08:19:00PM +0900, KOSAKI Motohiro wrote:
-> > When shrink_inactive_list() isolates pages, it updates a number of
-> > counters using temporary variables to gather them. These consume stack
-> > and it's in the main path that calls ->writepage(). This patch moves the
-> > accounting updates outside of the main path to reduce stack usage.
-> > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > ---
-> >  mm/vmscan.c |   63 +++++++++++++++++++++++++++++++++++-----------------------
-> >  1 files changed, 38 insertions(+), 25 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 2c22c83..4225319 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1061,7 +1061,8 @@ static unsigned long clear_active_flags(struct list_head *page_list,
-> >  			ClearPageActive(page);
-> >  			nr_active++;
-> >  		}
-> > -		count[lru]++;
-> > +		if (count)
-> > +			count[lru]++;
-> >  	}
-> >  
-> >  	return nr_active;
-> > @@ -1141,12 +1142,13 @@ static int too_many_isolated(struct zone *zone, int file,
-> >   * TODO: Try merging with migrations version of putback_lru_pages
-> >   */
-> >  static noinline void putback_lru_pages(struct zone *zone,
-> > -				struct zone_reclaim_stat *reclaim_stat,
-> > +				struct scan_control *sc,
-> >  				unsigned long nr_anon, unsigned long nr_file,
-> >   				struct list_head *page_list)
-> >  {
-> >  	struct page *page;
-> >  	struct pagevec pvec;
-> > +	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-> 
-> Seems unrelated change here.
-> Otherwise looks good.
-> 
+Hello Frederic,
 
-It was needed somewhat otherwise the split in accounting looked odd. It
-could be done as two patches but it felt trickier to review.
+Thanks for this.
 
->  - kosaki
-> >  
-> >  	pagevec_init(&pvec, 1);
-> >  
-> > @@ -1185,6 +1187,37 @@ static noinline void putback_lru_pages(struct zone *zone,
-> >  	pagevec_release(&pvec);
-> >  }
-> >  
-> > +static noinline void update_isolated_counts(struct zone *zone, 
-> > +					struct scan_control *sc,
-> > +					unsigned long *nr_anon,
-> > +					unsigned long *nr_file,
-> > +					struct list_head *isolated_list)
-> > +{
-> > +	unsigned long nr_active;
-> > +	unsigned int count[NR_LRU_LISTS] = { 0, };
-> > +	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-> > +
-> > +	nr_active = clear_active_flags(isolated_list, count);
-> > +	__count_vm_events(PGDEACTIVATE, nr_active);
-> > +
-> > +	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
-> > +			      -count[LRU_ACTIVE_FILE]);
-> > +	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
-> > +			      -count[LRU_INACTIVE_FILE]);
-> > +	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
-> > +			      -count[LRU_ACTIVE_ANON]);
-> > +	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
-> > +			      -count[LRU_INACTIVE_ANON]);
-> > +
-> > +	*nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-> > +	*nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-> > +	__mod_zone_page_state(zone, NR_ISOLATED_ANON, *nr_anon);
-> > +	__mod_zone_page_state(zone, NR_ISOLATED_FILE, *nr_file);
-> > +
-> > +	reclaim_stat->recent_scanned[0] += *nr_anon;
-> > +	reclaim_stat->recent_scanned[1] += *nr_file;
-> > +}
-> > +
-> >  /*
-> >   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
-> >   * of reclaimed pages
-> > @@ -1196,11 +1229,9 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
-> >  	LIST_HEAD(page_list);
-> >  	unsigned long nr_scanned;
-> >  	unsigned long nr_reclaimed = 0;
-> > -	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-> >  	int lumpy_reclaim = 0;
-> >  	unsigned long nr_taken;
-> >  	unsigned long nr_active;
-> > -	unsigned int count[NR_LRU_LISTS] = { 0, };
-> >  	unsigned long nr_anon;
-> >  	unsigned long nr_file;
-> >  
-> > @@ -1244,25 +1275,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
-> >  		return 0;
-> >  	}
-> >  
-> > -	nr_active = clear_active_flags(&page_list, count);
-> > -	__count_vm_events(PGDEACTIVATE, nr_active);
-> > -
-> > -	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
-> > -			      -count[LRU_ACTIVE_FILE]);
-> > -	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
-> > -			      -count[LRU_INACTIVE_FILE]);
-> > -	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
-> > -			      -count[LRU_ACTIVE_ANON]);
-> > -	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
-> > -			      -count[LRU_INACTIVE_ANON]);
-> > -
-> > -	nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-> > -	nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-> > -	__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
-> > -	__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
-> > -
-> > -	reclaim_stat->recent_scanned[0] += nr_anon;
-> > -	reclaim_stat->recent_scanned[1] += nr_file;
-> > +	update_isolated_counts(zone, sc, &nr_anon, &nr_file, &page_list);
-> >  
-> >  	spin_unlock_irq(&zone->lru_lock);
-> >  
-> > @@ -1281,7 +1294,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
-> >  		 * The attempt at page out may have made some
-> >  		 * of the pages active, mark them inactive again.
-> >  		 */
-> > -		nr_active = clear_active_flags(&page_list, count);
-> > +		nr_active = clear_active_flags(&page_list, NULL);
-> >  		count_vm_events(PGDEACTIVATE, nr_active);
-> >  
-> >  		nr_reclaimed += shrink_page_list(&page_list, sc,
-> > @@ -1293,7 +1306,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
-> >  		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
-> >  	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
-> >  
-> > -	putback_lru_pages(zone, reclaim_stat, nr_anon, nr_file, &page_list);
-> > +	putback_lru_pages(zone, sc, nr_anon, nr_file, &page_list);
-> >  	return nr_reclaimed;
-> >  }
-> >  
-> > -- 
-> > 1.6.5
-> > 
+On Tue, 2010-04-13 at 00:01 +0100, Frederic Weisbecker wrote:
+> There are two outstanding fashions for archs to implement hardware
+> breakpoints.
 > 
+> The first is to separate breakpoint address pattern definition
+> space between data and instruction breakpoints. We then have
+> typically distinct instruction address breakpoint registers
+> and data address breakpoint registers, delivered with
+> separate control registers for data and instruction breakpoints
+> as well. This is the case of PowerPc and ARM for example.
 > 
+> The second consists in having merged breakpoint address space
+> definition between data and instruction breakpoint. Address
+> registers can host either instruction or data address and
+> the access mode for the breakpoint is defined in a control
+> register. This is the case of x86.
 > 
+> This patch adds a new CONFIG_HAVE_MIXED_BREAKPOINTS_REGS config
+> that archs can select if they belong to the second case. Those
+> will have their slot allocation merged for instructions and
+> data breakpoints.
+> 
+> The others will have a separate slot tracking between data and
+> instruction breakpoints.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+This looks useful for supporting architectures with separate
+data/instruction breakpoints.
+
+A couple of points:
+
+1.) Will this affect the arch backend at all?
+
+2.) On ARM, it is possible to have different numbers of breakpoint registers
+    and watchpoint registers [which we do not know until runtime]. This
+    means that we have to define HBP_NUM as a potential upper bound,
+    which seems a bit wasteful. Perhaps there could be a mechanism to 
+    register the available resources at runtime?
+
+Thanks,
+
+Will
+
+
+
