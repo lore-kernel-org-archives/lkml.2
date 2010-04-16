@@ -1,50 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab0DPN5k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 09:57:40 -0400
-Received: from www.telegraphics.com.au ([204.15.192.19]:45362 "EHLO
-	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157Ab0DPN5i (ORCPT
+	id S932203Ab0DPN6n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 09:58:43 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:39695 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932159Ab0DPN6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 09:57:38 -0400
-Date: Fri, 16 Apr 2010 23:57:34 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: Joe Perches <joe@perches.com>
-cc: David Miller <davem@davemloft.net>, p_gortmaker@yahoo.com,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-m68k@vger.kernel.org
-Subject: Re: [PATCH] mac8390: fix pr_info() calls and change return code
-In-Reply-To: <1271392454.2298.37.camel@Joe-Laptop.home>
-Message-ID: <alpine.OSX.2.00.1004162340370.271@localhost>
-References: <alpine.OSX.2.00.1004161214270.271@localhost>  <20100415.200113.215578006.davem@davemloft.net>  <alpine.OSX.2.00.1004161323340.271@localhost>  <alpine.OSX.2.00.1004161403160.271@localhost> <1271392454.2298.37.camel@Joe-Laptop.home>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 16 Apr 2010 09:58:41 -0400
+Subject: Re: [PATCH 1/5] sched: fix capacity calculations for SMT4
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael Neuling <mikey@neuling.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
+       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Gautham R Shenoy <ego@in.ibm.com>
+In-Reply-To: <2906.1271219317@neuling.org>
+References: <20100409062118.D4096CBB6C@localhost.localdomain>
+	 <1271161766.4807.1280.camel@twins>  <2906.1271219317@neuling.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Apr 2010 15:58:28 +0200
+Message-ID: <1271426308.1674.429.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-04-14 at 14:28 +1000, Michael Neuling wrote:
 
-On Thu, 15 Apr 2010, Joe Perches wrote:
-
-> ...Why is it better to use -EBUSY?
-
-Nubus slots are geographically addressed and their irqs are equally 
-inflexible. -EAGAIN is misleading because retrying will not help fix 
-whatever bug caused the irq to unavailable.
-
-> ...It'd be better to prefix this with the driver name
-> or use something like netdev_dbg with #define DEBUG
-> otherwise it's "huh? what device emits this message?"
-> when reading the logs.
+> > Right, so I suspect this will indeed break some things.
+> > 
+> > We initially allowed 0 capacity for when a cpu is consumed by an RT task
+> > and there simply isn't much capacity left, in that case you really want
+> > to try and move load to your sibling cpus if possible.
 > 
-> Something like:
-> 	printk(KERN_DEBUG pr_fmt("reset not supported\n"));
+> Changing the CPU power based on what tasks are running on them seems a
+> bit wrong to me.  Shouldn't we keep those concepts separate?
 
-Thanks for the suggestion. I'll resend again.
+Well the thing cpu_power represents is a ratio of compute capacity
+available to this cpu as compared to other cpus. By normalizing the
+runqueue weights with this we end up with a fair balance.
 
-> ...unnecessary conversion.
+The thing to realize here is that this is solely about SCHED_NORMAL
+tasks, SCHED_FIFO/RR (or the proposed DEADLINE) tasks do not care about
+fairness and available compute capacity.
 
-I guess some prefer consistency, some prefer symmetry.
+So if we were to ignore RT tasks, you'd end up with a situation where,
+assuming 2 cpus and 4 equally weighted NORMAL tasks, and 1 RT task, the
+load-balancer would give each cpu 2 NORMAL tasks, but the tasks that
+would end up on the cpu the RT tasks would be running on would not run
+as fast -- is that fair?
 
-Finn
+Since RT tasks do not have a weight (FIFO/RR have no limit at all,
+DEADLINE would have something equivalent to a max weight), it is
+impossible to account them in the normal weight sense.
+
+Therefore the current model takes them into account by lowering the
+compute capacity according to their (avg) cpu usage. So if the RT task
+would consume 66% cputime, we'd end up with a situation where the cpu
+running the RT task would get 1 NORMAL task, and other cpu would have
+the remaining 3, that way they'd all get 33% cpu.
+
+> > However you're right that this goes awry in your case.
+> > 
+> > One thing to look at is if that 15% increase is indeed representative
+> > for the power7 cpu, it having 4 SMT threads seems to suggest there was
+> > significant gains, otherwise they'd not have wasted the silicon.
+> 
+> There are certainly, for most workloads, per core gains for SMT4 over
+> SMT2 on P7.  My kernels certainly compile faster and that's the only
+> workload anyone who matters cares about.... ;-)
+
+For sure ;-)
+
+Are there any numbers available on how much they gain? It might be worth
+to stick in real numbers instead of this alleged 15%.
+
+> > One thing we could look at is using the cpu base power to compute
+> > capacity from. We'd have to add another field to sched_group and store
+> > power before we do the scale_rt_power() stuff.
+> 
+> Separating capacity from what RT tasks are running seems like a good
+> idea to me.
+
+Well, per the above we cannot fully separate them.
+
+> This would fix the RT issue, but it's not clear to me how you are
+> suggesting fixing the rounding down to 0 SMT4 issue.  Are you suggesting
+> we bump smt_gain to say 2048 + 15%?  Or are you suggesting we separate
+> the RT tasks out from capacity and keep the max(1, capacity) that I've
+> added?  Or something else?
+
+I would think that 4 SMT threads are still slower than two full cores,
+right? So cpu_power=2048 would not be appropriate.
+
+> Would another possibility be changing capacity a scaled value (like
+> cpu_power is now) rather than a small integer as it is now.  For
+> example, a scaled capacity of 1024 would be equivalent to a capacity of
+> 1 now.  This might enable us to handle partial capacities better?  We'd
+> probably have to scale a bunch of nr_running too.  
+
+Right, so my proposal was to scale down the capacity divider (currently
+1024) to whatever would be the base capacity for that cpu. Trouble seems
+to be that that makes group capacity a lot more complex, as you would
+end up needing to average all the cpu's their base capacity.
+
+
+Hrmm, my brain seems muddled but I might have another solution, let me
+ponder this for a bit..
+
+
+
