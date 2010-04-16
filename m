@@ -1,46 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932809Ab0DPXld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 19:41:33 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52842 "EHLO gate.crashing.org"
+	id S932807Ab0DPX4f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 19:56:35 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:59740 "EHLO cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932799Ab0DPXla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 19:41:30 -0400
-Subject: Re: Possible bug with mutex adaptative spinning
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-In-Reply-To: <1271453251.1674.485.camel@laptop>
-References: <1271212509.13059.135.camel@pasglop>
-	 <1271213767.13059.137.camel@pasglop>  <1271453251.1674.485.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 17 Apr 2010 08:01:32 +1000
-Message-ID: <1271455292.13059.198.camel@pasglop>
+	id S932788Ab0DPX4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 19:56:34 -0400
+Date: Sat, 17 Apr 2010 01:56:18 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-ID: <20100416235618.GL20640@cmpxchg.org>
+References: <20100414085132.GJ25756@csn.ul.ie> <20100415023704.GC20640@cmpxchg.org> <20100415114043.D162.A69D9226@jp.fujitsu.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100415114043.D162.A69D9226@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-16 at 23:27 +0200, Peter Zijlstra wrote:
-> > If the owner is actually running, it may do so for a very long time. It
-> > looks to me that everybody trying to take the mutex will thus spin and
-> > never get out of the spin loop until the owner stops running.
+On Thu, Apr 15, 2010 at 11:43:48AM +0900, KOSAKI Motohiro wrote:
+> > I already have some patches to remove trivial parts of struct scan_control,
+> > namely may_unmap, may_swap, all_unreclaimable and isolate_pages.  The rest
+> > needs a deeper look.
 > 
-> The inner-most spin loop breaks out on need_resched():
-> 
->                 if (task_thread_info(rq->curr) != owner || need_resched())
->                         return 0; 
+> Seems interesting. but scan_control diet is not so effective. How much
+> bytes can we diet by it?
 
-You are right, this was only a problem in conjunction with the other bug
-returning 1 all the time, causing us to ignore need_resched(). With
-that fixed, it looks fine now.
-
-Thanks !
-
-Cheers,
-Ben.
-
-
+Not much, it cuts 16 bytes on x86 32 bit.  The bigger gain is the code
+clarification it comes with.  There is too much state to keep track of
+in reclaim.
