@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758698Ab0DPR2W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 13:28:22 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:9867 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710Ab0DPR2V (ORCPT
+	id S1756924Ab0DPRrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 13:47:16 -0400
+Received: from gabe.freedesktop.org ([131.252.210.177]:36581 "EHLO
+	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755702Ab0DPRrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 13:28:21 -0400
-X-RZG-AUTH: :Jm0KVUSnfvMjmR9git3O5c6quLOX9IapxonCLJShzDbee41FJdtkx5o=
-X-RZG-CLASS-ID: mo00
-From: linux-media@jd67.de
-To: linux-kernel@vger.kernel.org
-Subject: Nova-T USB-Stick Model 1277: DiB0070 I2C read / write failed
-Date: Fri, 16 Apr 2010 19:26:16 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.32-4-686-bigmem; KDE/4.3.4; i686; ; )
+	Fri, 16 Apr 2010 13:47:14 -0400
+From: Eric Anholt <eric@anholt.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [git pull] drm-intel fixes for 2.6.34-rc2
+Date: Fri, 16 Apr 2010 10:47:11 -0700
+Message-ID: <87k4s770io.fsf@pollan.anholt.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004161926.17040.linux-media@jd67.de>
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--=-=-=
 
-I have some trouble with a Nova-T USB-Stick. 
+The following changes since commit 01e77706cdde7c0b47e5ca1f4284a795504c7c40:
+  Linus Torvalds (1):
+        Merge branch 'for-linus' of git://gitorious.org/linux-omap-dss2/linux
 
-It's a "WinTV NOVA-T Stick Value, Model 1277" USB-ID:2040:7070.
+OK, this is sort of a test pull request to you.  I've heard that big
+entirely-mechanical changes are accepted during release cycle to avoid
+conflicts during merging.  There are two of them here: "Rename
+intel_output to intel_encoder" (done with sed) and "introduce
+to_intel_bo helper" (I suspect the same).  The first is prep for the
+multi-function SDVO cards that some embedded devices are using, and the
+other is prep to cut out a pointless pointer in the GEM objects, of
+which normal systems will have hundreds to thousands.  This seems like a
+good time to land these patches, since .34 -> .33 cherry-picking is
+about done, and it'll make .35 -> .34 easy.
 
-I use three of it with an ASRock 939A785GMH/128M Mainboard (AMD A785 / SB710) as an Myth-Server.
+If what I've heard is wrong, I can go rebase these guys out.  The other
+changes are small and pretty well tested at this point -- I've had them
+in the tree for a while and I rebased out a patch people complained
+about.
 
-Currently everything running fine after following all advices found at:
-http://linuxtv.org/wiki/index.php/Hauppauge_WinTV-NOVA-T-Stick (Making it Work).
+are available in the git repository at:
 
-At the modules
-* Disabled dvb-rec-polling
-* Enabled LNA 
-* Additional Disabled usb-suspend.
+  git://git.kernel.org/pub/scm/linux/kernel/git/anholt/drm-intel for-linus
 
-At Myth-Backend
-* Disabled all EIT-scans 
-* set an tuning delay to 1000ms.
+Daniel Vetter (2):
+      drm/i915: introduce to_intel_bo helper
+      agp/intel: intel_845_driver is an agp driver!
 
-Before I changing mythtv, I had errors like:
+Eric Anholt (2):
+      drm/i915: Rename intel_output to intel_encoder.
+      drm/i915: Rename many remaining uses of "output" to encoder or connector.
 
-Apr 13 15:58:07 vdr1 kernel: [ 1887.816045] dvb-usb: error while stopping stream.
-Apr 13 15:58:13 vdr1 kernel: [ 1893.137037] dvb-usb: error while enabling fifo.
-Apr 13 15:59:38 vdr1 kernel: [ 1978.672048] dvb-usb: error while stopping stream.
-Apr 13 16:00:18 vdr1 kernel: [ 2018.165037] DiB0070 I2C write failed
-Apr 13 16:00:23 vdr1 kernel: [ 2023.176044] DiB0070 I2C read failed
-Apr 13 16:00:26 vdr1 kernel: [ 2026.468132] DiB0070 I2C write failed
+Robert Hooker (1):
+      drm/i915: Disable FBC on 915GM and 945GM.
 
-Before I disabled the dvb-rec-polling, I had usb-fullstops:
+Stefan Bader (1):
+      drm/i915: Add no_lvds entry for the Clientron U800
 
-ehci_hcd 0000:00:13.2: force halt; handhake f804c424 00004000 00000000 -> -110
+Zhao Yakui (1):
+      drm/i915: Ignore LVDS EDID when it is unavailabe or invalid
 
-I tested with ubuntu-kernels 2.6.31, 32 and 33. 
+ drivers/char/agp/intel-agp.c           |    3 -
+ drivers/gpu/drm/i915/i915_debugfs.c    |    2 +-
+ drivers/gpu/drm/i915/i915_drv.c        |    6 +-
+ drivers/gpu/drm/i915/i915_drv.h        |    4 +
+ drivers/gpu/drm/i915/i915_gem.c        |  132 +++---
+ drivers/gpu/drm/i915/i915_gem_debug.c  |    4 +-
+ drivers/gpu/drm/i915/i915_gem_tiling.c |   10 +-
+ drivers/gpu/drm/i915/i915_irq.c        |    8 +-
+ drivers/gpu/drm/i915/intel_crt.c       |   68 ++--
+ drivers/gpu/drm/i915/intel_display.c   |   96 ++--
+ drivers/gpu/drm/i915/intel_dp.c        |  256 ++++++------
+ drivers/gpu/drm/i915/intel_drv.h       |   18 +-
+ drivers/gpu/drm/i915/intel_dvo.c       |   92 ++--
+ drivers/gpu/drm/i915/intel_fb.c        |    2 +-
+ drivers/gpu/drm/i915/intel_hdmi.c      |   86 ++--
+ drivers/gpu/drm/i915/intel_lvds.c      |   81 ++--
+ drivers/gpu/drm/i915/intel_modes.c     |   22 +-
+ drivers/gpu/drm/i915/intel_overlay.c   |    6 +-
+ drivers/gpu/drm/i915/intel_sdvo.c      |  731 ++++++++++++++++----------------
+ drivers/gpu/drm/i915/intel_tv.c        |   96 ++--
+ 20 files changed, 871 insertions(+), 852 deletions(-)
 
-I can live with this settings, but I have some bad feeling going in holiday for a longer while, leaving the system 
-alone. Is there anything I can do, help fixing this issues. Enable debug options, sending logs?
+--=-=-=
+Content-Type: application/pgp-signature
 
-Would it help, to use an other usb-chipset (VIA, etc)?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Greetings from Frankfurt
-Jan
-
-
-
-
-
+iEYEARECAAYFAkvIop8ACgkQHUdvYGzw6veM5gCffacOMYQa8LxCT6S/4AUUVlhU
+dFYAnRIqTIr/T6XDSVVuh9arFMBxWoKJ
+=35o5
+-----END PGP SIGNATURE-----
+--=-=-=--
