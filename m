@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab0DPPOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 11:14:43 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51072 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757953Ab0DPPOl convert rfc822-to-8bit (ORCPT
+	id S1758084Ab0DPPPS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 11:15:18 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:35905 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757953Ab0DPPPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 11:14:41 -0400
-Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
- implementation
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100416150909.GF2615@linux.vnet.ibm.com>
-References: <20100408192722.643778654@chello.nl>
-	 <1271120731.13059.6.camel@pasglop>
-	 <20100413034311.GB2772@linux.vnet.ibm.com>
-	 <1271253110.32749.47.camel@laptop>
-	 <20100415142852.GA2471@linux.vnet.ibm.com>
-	 <1271425881.4807.2319.camel@twins>
-	 <20100416141745.GC2615@linux.vnet.ibm.com>
-	 <1271427819.4807.2353.camel@twins>
-	 <20100416143202.GE2615@linux.vnet.ibm.com>
-	 <1271429810.4807.2390.camel@twins>
-	 <20100416150909.GF2615@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 16 Apr 2010 17:14:15 +0200
-Message-ID: <1271430855.4807.2411.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Fri, 16 Apr 2010 11:15:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=p7WTZQCoCFdhAAEe8DO+QeCpZLCyx7eH/YuHKxfjyYgecnsuxMsqGDzKXfsjN+1/FM
+         +SYwK7fcbuRqu8diZndDkKiwklfjTnWURCS8lWSkWxEdXC2JsazRMrQrlvuTPFqDyAgM
+         JZc43zCpZWK6zbNfo8U5rfO1BslQpWfWO3WS4=
+Date: Fri, 16 Apr 2010 19:15:10 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, Dmitry Baryshkov <dbaryshkov@gmail.com>,
+       Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] pda_power: add function callbacks for suspend and
+ resume
+Message-ID: <20100416151510.GA29249@oksana.dev.rtsoft.ru>
+References: <1271108002-15574-1-git-send-email-daniel@caiaq.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1271108002-15574-1-git-send-email-daniel@caiaq.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-16 at 08:09 -0700, Paul E. McKenney wrote:
-> On Fri, Apr 16, 2010 at 04:56:50PM +0200, Peter Zijlstra wrote:
-> > On Fri, 2010-04-16 at 07:32 -0700, Paul E. McKenney wrote:
-> > > On Fri, Apr 16, 2010 at 04:23:39PM +0200, Peter Zijlstra wrote:
-> > > > On Fri, 2010-04-16 at 07:17 -0700, Paul E. McKenney wrote:
-> > > > 
-> > > > > > > Of course, with call_rcu_sched(), the corresponding RCU read-side critical
-> > > > > > > sections are non-preemptible.  Therefore, in CONFIG_PREEMPT_RT, these
-> > > > > > > read-side critical sections must use raw spinlocks.
-> > > > > > 
-> > > > > > OK, so if we fully remove CONFIG_TREE_PREEMPT_RCU (defaulting to y),
-> > > > > > rename all the {call_rcu, rcu_read_lock, rcu_read_unlock,
-> > > > > > synchronize_rcu} functions to {*}_preempt and then add a new
-> > > > > > CONFIG_PREEMPT_RCU that simply maps {*} to either {*}_sched or
-> > > > > > {*}_preempt, we've basically got what I've been asking for for a while,
-> > > > > > no?
-> > > > > 
-> > > > > What would rcu_read_lock_preempt() do in a !CONFIG_PREEMPT kernel?
-> > > > 
-> > > > Same as for a preempt one, since you'd have to be able to schedule()
-> > > > while holding it to be able to do things like mutex_lock().
-> > > 
-> > > So what you really want is something like rcu_read_lock_sleep() rather
-> > > than rcu_read_lock_preempt(), right?  The point is that you want to do
-> > > more than merely preempt, given that it is legal to do general blocking
-> > > while holding a mutex, correct?
-> > 
-> > Right, but CONFIG_TREE_PREEMPT_RCU=y ends up being that. We could change
-> > the name to _sleep, but we've been calling it preemptible-rcu for a long
-> > while now.
+On Mon, Apr 12, 2010 at 11:33:22PM +0200, Daniel Mack wrote:
+> Add function prototypes for power management events so they can be
+> handled and used by platform implementations.
 > 
-> It is actually not permitted to do general blocking in a preemptible RCU
-> read-side critical section.  Otherwise, someone is going to block waiting
-> for a network packet that never comes, thus OOMing the system.
+> Signed-off-by: Daniel Mack <daniel@caiaq.de>
+> Cc: Dmitry Baryshkov <dbaryshkov@gmail.com>
+> Cc: Anton Vorontsov <cbou@mail.ru>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> ---
 
-Sure, something that guarantees progress seems like a sensible
-restriction for any lock, and in particular RCU :-)
+Applied, thanks!
 
-
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
