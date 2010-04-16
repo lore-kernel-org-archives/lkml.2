@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab0DPPJS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 11:09:18 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:46557 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756737Ab0DPPJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 11:09:16 -0400
-Date: Fri, 16 Apr 2010 08:09:09 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
- implementation
-Message-ID: <20100416150909.GF2615@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100408192722.643778654@chello.nl>
- <1271120731.13059.6.camel@pasglop>
- <20100413034311.GB2772@linux.vnet.ibm.com>
- <1271253110.32749.47.camel@laptop>
- <20100415142852.GA2471@linux.vnet.ibm.com>
- <1271425881.4807.2319.camel@twins>
- <20100416141745.GC2615@linux.vnet.ibm.com>
- <1271427819.4807.2353.camel@twins>
- <20100416143202.GE2615@linux.vnet.ibm.com>
- <1271429810.4807.2390.camel@twins>
+	id S1757749Ab0DPPJu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 11:09:50 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:39977 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757036Ab0DPPJs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 11:09:48 -0400
+Message-ID: <4BC87D92.1070507@euromail.se>
+Date: Fri, 16 Apr 2010 17:09:06 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271429810.4807.2390.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: mt: introduce MT event slots
+References: <1270685590-2204-1-git-send-email-rydberg@euromail.se> <20100415232523.GA18263@core.coreip.homeip.net>
+In-Reply-To: <20100415232523.GA18263@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.129.72
+X-Scan-Result: No virus found in message 1O2nAI-0002cB-9Z.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1O2nAI-0002cB-9Z f1f64bfe60bfe4a01521a2fb3d08bdf5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 04:56:50PM +0200, Peter Zijlstra wrote:
-> On Fri, 2010-04-16 at 07:32 -0700, Paul E. McKenney wrote:
-> > On Fri, Apr 16, 2010 at 04:23:39PM +0200, Peter Zijlstra wrote:
-> > > On Fri, 2010-04-16 at 07:17 -0700, Paul E. McKenney wrote:
-> > > 
-> > > > > > Of course, with call_rcu_sched(), the corresponding RCU read-side critical
-> > > > > > sections are non-preemptible.  Therefore, in CONFIG_PREEMPT_RT, these
-> > > > > > read-side critical sections must use raw spinlocks.
-> > > > > 
-> > > > > OK, so if we fully remove CONFIG_TREE_PREEMPT_RCU (defaulting to y),
-> > > > > rename all the {call_rcu, rcu_read_lock, rcu_read_unlock,
-> > > > > synchronize_rcu} functions to {*}_preempt and then add a new
-> > > > > CONFIG_PREEMPT_RCU that simply maps {*} to either {*}_sched or
-> > > > > {*}_preempt, we've basically got what I've been asking for for a while,
-> > > > > no?
-> > > > 
-> > > > What would rcu_read_lock_preempt() do in a !CONFIG_PREEMPT kernel?
-> > > 
-> > > Same as for a preempt one, since you'd have to be able to schedule()
-> > > while holding it to be able to do things like mutex_lock().
-> > 
-> > So what you really want is something like rcu_read_lock_sleep() rather
-> > than rcu_read_lock_preempt(), right?  The point is that you want to do
-> > more than merely preempt, given that it is legal to do general blocking
-> > while holding a mutex, correct?
+Dmitry Torokhov wrote:
+> Hi Henrik,
 > 
-> Right, but CONFIG_TREE_PREEMPT_RCU=y ends up being that. We could change
-> the name to _sleep, but we've been calling it preemptible-rcu for a long
-> while now.
+> On Thu, Apr 08, 2010 at 02:13:10AM +0200, Henrik Rydberg wrote:
+>> With the rapidly increasing number of intelligent multi-contact and
+>> multi-user devices, the need to send digested, filtered information
+>> from a set of different sources within the same device is imminent.
+>> This patch adds the concept of slots to the MT protocol. The slots
+>> enumerate a set of identified sources, such that all MT events
+>> can be passed independently and selectively per identified source.
+>>
+>> The protocol works like this: Instead of sending a SYN_MT_REPORT
+>> event immediately after the contact data, one sends a SYN_MT_SLOT
+>> event immediately before the contact data. The input core will only
+>> emit events for the slots corresponding to the contacts that have
+>> changed. It is assumed that the same slot is used for the duration
+>> of an initiated contact.
+>>
+> 
+> I see the reason for doing this however I would like to hold off
+> applying it till we get a couple of users and prove that the scheme
+> works well for them.
 
-It is actually not permitted to do general blocking in a preemptible RCU
-read-side critical section.  Otherwise, someone is going to block waiting
-for a network packet that never comes, thus OOMing the system.
+Sounds good.
 
-							Thanx, Paul
+>>  
+>> +/**
+>> + * struct input_mt_slot - represents the state of an MT input slot
+>> + * @abs: current values from absolute axes for this slot
+>> + */
+>> +struct input_mt_slot {
+>> +	int abs[ABS_MAX + 1];
+>> +};
+> 
+> It would be nice to use abs[ABS_MT_MAX - ABS_MT_TOUCH_MAJOR] to save
+> some memory.
+> 
+
+Spot on! I was choosing between different strategies here: from a) mapping just
+the ABS_MT values to keep memory down (but introduce yet another mapping); to b)
+opening up the protocol for all kinds of event types (after all, it is only
+backwards compatibility that prevents the slots from being used also for, say,
+button events). It seemed best to keep the possibility for new event types to be
+used with slots, thus using a straight mapping to the ABS events and ignoring
+the extra memory used. However the word "new" is not enforced with this patch,
+which your change remedies in the most satisfactory way. Nice.
+
+I will wait for some more implementation test results (I know of one currently
+in progress), then I will be back with an updated patch and accompanying
+documentation.
+
+Cheers,
+Henrik
