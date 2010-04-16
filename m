@@ -1,653 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab0DPIoV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 04:44:21 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:51657 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab0DPIoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 04:44:18 -0400
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
-       h.mitake@gmail.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: [PATCH] perf lock: Fix state machine to recognize lock sequence
-Date: Fri, 16 Apr 2010 17:44:06 +0900
-Message-Id: <1271407446-27180-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <4BC09546.5050309@dcl.info.waseda.ac.jp>
-References: <4BC09546.5050309@dcl.info.waseda.ac.jp>
+	id S1756876Ab0DPIqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 04:46:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20728 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755365Ab0DPIqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 04:46:42 -0400
+Subject: Re: vmalloc performance
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100416061226.GJ5683@laptop>
+References: <1271089672.7196.63.camel@localhost.localdomain>
+	 <1271249354.7196.66.camel@localhost.localdomain>
+	 <m2g28c262361004140813j5d70a80fy1882d01436d136a6@mail.gmail.com>
+	 <1271262948.2233.14.camel@barrios-desktop>
+	 <1271320388.2537.30.camel@localhost>  <20100416061226.GJ5683@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 16 Apr 2010 09:50:46 +0100
+Message-ID: <1271407846.2548.31.camel@localhost>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+Hi,
 
-I'm developing the model to recognize the correct sequence of lock events.
-Previous state machine of perf lock was really broken.
-This patch improves it a little.
+On Fri, 2010-04-16 at 16:12 +1000, Nick Piggin wrote:
+> On Thu, Apr 15, 2010 at 09:33:08AM +0100, Steven Whitehouse wrote:
+> > Hi,
+> > 
+> > On Thu, 2010-04-15 at 01:35 +0900, Minchan Kim wrote:
+> > > On Thu, 2010-04-15 at 00:13 +0900, Minchan Kim wrote:
+> > > > On Wed, Apr 14, 2010 at 9:49 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
+> > > > >> When this module is run on my x86_64, 8 core, 12 Gb machine, then on an
+> > > > >> otherwise idle system I get the following results:
+> > > > >>
+> > > > >> vmalloc took 148798983 us
+> > > > >> vmalloc took 151664529 us
+> > > > >> vmalloc took 152416398 us
+> > > > >> vmalloc took 151837733 us
+> > > > >>
+> > > > >> After applying the two line patch (see the same bz) which disabled the
+> > > > >> delayed removal of the structures, which appears to be intended to
+> > > > >> improve performance in the smp case by reducing TLB flushes across cpus,
+> > > > >> I get the following results:
+> > > > >>
+> > > > >> vmalloc took 15363634 us
+> > > > >> vmalloc took 15358026 us
+> > > > >> vmalloc took 15240955 us
+> > > > >> vmalloc took 15402302 us
+> > > 
+> > > 
+> > > > >>
+> > > > >> So thats a speed up of around 10x, which isn't too bad. The question is
+> > > > >> whether it is possible to come to a compromise where it is possible to
+> > > > >> retain the benefits of the delayed TLB flushing code, but reduce the
+> > > > >> overhead for other users. My two line patch basically disables the delay
+> > > > >> by forcing a removal on each and every vfree.
+> > > > >>
+> > > > >> What is the correct way to fix this I wonder?
+> > > > >>
+> > > > >> Steve.
+> > > > >>
+> > > 
+> > > In my case(2 core, mem 2G system), 50300661 vs 11569357. 
+> > > It improves 4 times. 
+> > > 
+> > Looking at the code, it seems that the limit, against which my patch
+> > removes a test, scales according to the number of cpu cores. So with
+> > more cores, I'd expect the difference to be greater. I have a feeling
+> > that the original reporter had a greater number than the 8 of my test
+> > machine.
+> > 
+> > > It would result from larger number of lazy_max_pages.
+> > > It would prevent many vmap_area freed.
+> > > So alloc_vmap_area takes long time to find new vmap_area. (ie, lookup
+> > > rbtree)
+> > > 
+> > > How about calling purge_vmap_area_lazy at the middle of loop in
+> > > alloc_vmap_area if rbtree lookup were long?
+> > > 
+> > That may be a good solution - I'm happy to test any patches but my worry
+> > is that any change here might result in a regression in whatever
+> > workload the lazy purge code was originally designed to improve. Is
+> > there any way to test that I wonder?
+> 
+> Ah this is interesting. What we could do is have a "free area cache"
+> like the user virtual memory allocator has, which basically avoids
+> restarting the search from scratch.
+> 
+> Or we could perhaps go one better and do a more sophisticated free space
+> allocator.
+> 
+> Bigger systems will indeed get hurt by increasing flushes so I'd prefer
+> to avoid that. But that's not a good justification for a slowdown for
+> small systems. What good is having cake if you can't also eat it? :)
+> 
+I'm all for cake, particularly if its lemon cake :-)
 
-This patch prepares the array of state machine represents lock sequence for each threads.
-These state machines represent one of these sequence:
+> 
+> > > BTW, Steve. Is is real issue or some test?
+> > > I doubt such vmalloc bomb workload is real. 
+> > 
+> > Well the answer is both yes and no :-) So this is how I came across the
+> > issue. I received a report that GFS2 performance had regressed in recent
+> > kernels in relation to a test which basically fires lots of requests at
+> > it via NFS. The reporter of this problem gave me two bits of
+> > information: firstly that by eliminating all readdir calls from the
+> > test, the regression is never seen and secondly that oprofile showed
+> > that two functions related to vmalloc (rb_next, find_vmap_area,
+> > alloc_vmap_area in that order) were taking between them about 60% of the
+> > total cpu time.
+> 
+> Thanks for tracking this down. I didn't realize GFS2 used vmalloc
+> extensively. How large are typical vmalloc requests here, can you
+> tell me? There is a per-cpu virtual memory allocator that is more
+> scalable than the global one, and would help avoid these problems
+> too.
+> 
+> XFS is using it at the moment, but we are looking for some more
+> users of the API so as to get more testing coverage. I was
+> considering moving vmalloc over to use it (vm_map_ram).
+> 
+> It's still probably a good idea to improve the global allocator
+> regression first, but that might get you even more performance.
+> 
+> Thanks,
+> Nick
+> 
 
-      1) acquire -> acquired -> release
-      2) acquire -> contended -> acquired -> release
-      3) acquire (w/ try) -> release
-      4) acquire (w/ read) -> release
+Well, I wouldn't say extensively... its used just once in readdir. Even
+then we only use it for larger directories. We use it for two things,
+basically as a temporary buffer to record pointers to all the "leaf
+blocks" in one hash chain, and also as a temporary buffer to record
+pointers to all the directory entries in the same hash chain. The only
+reason that its used to keep track of the pointers to the leaf blocks
+themselves is simply that it was easier than having two separate
+allocations.
 
-The case of 4) is a little special.
-Double acquire of read lock is allowed, so state machine of sequence
-counts read lock number, and permit double acquire and release.
+The reason that we need a list of pointers to hash entries is so that we
+can feed the resulting buffer to sort() in order to put the entries into
+hash order. Sorting into hash order isn't really the optimal way to
+return the entries in readdir() but due to the slightly odd way in which
+directories expand as entries are added, it is the only ordering which
+allows us to be certain of not listing entries twice or missing entries
+if insertions are made by one process while another process is making
+successive calls to readdir().
 
-But, things are not so simple. Something of my model is still wrong.
-I counted the number of lock instances with bad sequence,
-and ratio is like this (case of tracing whoami): bad:122, total:1956
+The per-cpu virtual memory allocator though, sounds like a better fit
+for GFS2's needs here, so we should look into using that in future I
+think.
 
-There is another new bad thing.
-The size of array of state machine is equal to max depth lockdep defines.
-If perf lock record tries to record lock events of the programs with lots of
-system call like "perf bench sched messaging", the array will be exhausted :(
+As for the size of the allocations, that depends a entirely on the
+directory size. It could be anything from a single page to a couple of
+dozen or more.
 
-I believe my new model can recognize many case,
-but some of locks is at beyond of my understanding...
+For the test which the original reporter was running, I suspect that it
+would be multiple pages, but probably less than 10.
 
-I made too long silence, so I thought that this is time to dump my progress.
-Could you make testing branch on your tip tree?
+If a readdir spans multiple hash chains, then its possible that there
+will be two or more calls to vmalloc/vfree per readdir. However since
+readdir calls tend to use buffers based on the inode's optimal I/O size,
+its pretty unlikely that this will happen very often, and even then its
+only likely to span two hash chains at most.
 
-Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jens Axboe <jens.axboe@oracle.com>
-Cc: Jason Baron <jbaron@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- tools/perf/builtin-lock.c |  399 +++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 330 insertions(+), 69 deletions(-)
+Steve.
 
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 6c38e4f..f277856 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -23,6 +23,8 @@
- #include <linux/list.h>
- #include <linux/hash.h>
- 
-+static struct perf_session *session;
-+
- /* based on kernel/lockdep.c */
- #define LOCKHASH_BITS		12
- #define LOCKHASH_SIZE		(1UL << LOCKHASH_BITS)
-@@ -32,9 +34,6 @@ static struct list_head lockhash_table[LOCKHASH_SIZE];
- #define __lockhashfn(key)	hash_long((unsigned long)key, LOCKHASH_BITS)
- #define lockhashentry(key)	(lockhash_table + __lockhashfn((key)))
- 
--#define LOCK_STATE_UNLOCKED	0	       /* initial state */
--#define LOCK_STATE_LOCKED	1
--
- struct lock_stat {
- 	struct list_head	hash_entry;
- 	struct rb_node		rb;		/* used for sorting */
-@@ -47,20 +46,151 @@ struct lock_stat {
- 	void			*addr;		/* address of lockdep_map, used as ID */
- 	char			*name;		/* for strcpy(), we cannot use const */
- 
--	int			state;
--	u64			prev_event_time; /* timestamp of previous event */
--
--	unsigned int		nr_acquired;
- 	unsigned int		nr_acquire;
-+	unsigned int		nr_acquired;
- 	unsigned int		nr_contended;
- 	unsigned int		nr_release;
- 
-+	unsigned int		nr_readlock;
-+	unsigned int		nr_trylock;
- 	/* these times are in nano sec. */
- 	u64			wait_time_total;
- 	u64			wait_time_min;
- 	u64			wait_time_max;
-+
-+	int			discard; /* flag of blacklist */
-+};
-+
-+/*
-+ * States of lock_seq_stat
-+ *
-+ * UNINITED is required for detecting first event of acquire.
-+ * As the nature of lock events, there is no guarantee
-+ * that the first event for the locks are acquire,
-+ * it can be acquired, contended or release.
-+ */
-+#define SEQ_STATE_UNINITED      0	       /* initial state */
-+#define SEQ_STATE_RELEASED	1
-+#define SEQ_STATE_ACQUIRING	2
-+#define SEQ_STATE_ACQUIRED	3
-+#define SEQ_STATE_CONTENDED	4
-+
-+/*
-+ * MAX_LOCK_DEPTH
-+ * Imported from include/linux/sched.h.
-+ * Should this be synchronized?
-+ */
-+#define MAX_LOCK_DEPTH 48
-+
-+/*
-+ * struct lock_seq_stat:
-+ * Place to put on state of one lock sequence
-+ * 1) acquire -> acquired -> release
-+ * 2) acquire -> contended -> acquired -> release
-+ * 3) acquire (with read or try) -> release
-+ * 4) Are there other patterns?
-+ */
-+struct lock_seq_stat {
-+	int			state;
-+	u64			prev_event_time;
-+	void                    *addr_of_lock;
-+
-+	int                     read_count;
- };
- 
-+struct thread_stat {
-+	struct rb_node		rb;
-+
-+	pid_t                   pid;
-+	int                     seq_index_cache;
-+	struct lock_seq_stat    seq_stack[MAX_LOCK_DEPTH];
-+};
-+
-+static struct rb_root		thread_stats;
-+
-+static struct thread_stat *thread_stat_find(pid_t pid)
-+{
-+	struct rb_node *node;
-+	struct thread_stat *st;
-+
-+	node = thread_stats.rb_node;
-+	while (node) {
-+		st = container_of(node, struct thread_stat, rb);
-+		if (st->pid == pid)
-+			return st;
-+		else if (pid < st->pid)
-+			node = node->rb_left;
-+		else
-+			node = node->rb_right;
-+	}
-+
-+	return NULL;
-+}
-+
-+static void thread_stat_insert(struct thread_stat *new)
-+{
-+	struct rb_node **rb = &thread_stats.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct thread_stat *p;
-+
-+	while (*rb) {
-+		p = container_of(*rb, struct thread_stat, rb);
-+		parent = *rb;
-+
-+		if (new->pid < p->pid)
-+			rb = &(*rb)->rb_left;
-+		else if (new->pid > p->pid)
-+			rb = &(*rb)->rb_right;
-+		else
-+			BUG_ON("inserting invalid thread_stat\n");
-+	}
-+
-+	rb_link_node(&new->rb, parent, rb);
-+	rb_insert_color(&new->rb, &thread_stats);
-+}
-+
-+static struct thread_stat *thread_stat_findnew_after_first(pid_t pid)
-+{
-+	int i;
-+	struct thread_stat *st;
-+
-+	st = thread_stat_find(pid);
-+	if (st)
-+		return st;
-+
-+	st = zalloc(sizeof(struct thread_stat));
-+	if (!st)
-+		die("memory allocation failed\n");
-+
-+	st->pid = pid;
-+	for (i = 0; i < MAX_LOCK_DEPTH; i++)
-+		st->seq_stack[i].state = SEQ_STATE_UNINITED;
-+
-+	thread_stat_insert(st);
-+
-+	return st;
-+}
-+
-+static struct thread_stat *thread_stat_findnew_first(pid_t pid);
-+static struct thread_stat *(*thread_stat_findnew)(pid_t pid) =
-+	thread_stat_findnew_first;
-+
-+static struct thread_stat *thread_stat_findnew_first(pid_t pid)
-+{
-+	struct thread_stat *st;
-+
-+	st = zalloc(sizeof(struct thread_stat));
-+	if (!st)
-+		die("memory allocation failed\n");
-+	st->pid = pid;
-+
-+	rb_link_node(&st->rb, NULL, &thread_stats.rb_node);
-+	rb_insert_color(&st->rb, &thread_stats);
-+
-+	thread_stat_findnew = thread_stat_findnew_after_first;
-+	return st;
-+}
-+
- /* build simple key function one is bigger than two */
- #define SINGLE_KEY(member)						\
- 	static int lock_stat_key_ ## member(struct lock_stat *one,	\
-@@ -175,8 +305,6 @@ static struct lock_stat *lock_stat_findnew(void *addr, const char *name)
- 		goto alloc_failed;
- 	strcpy(new->name, name);
- 
--	/* LOCK_STATE_UNLOCKED == 0 isn't guaranteed forever */
--	new->state = LOCK_STATE_UNLOCKED;
- 	new->wait_time_min = ULLONG_MAX;
- 
- 	list_add(&new->hash_entry, entry);
-@@ -198,6 +326,7 @@ struct raw_event_sample {
- struct trace_acquire_event {
- 	void			*addr;
- 	const char		*name;
-+	int			flag;
- };
- 
- struct trace_acquired_event {
-@@ -241,120 +370,245 @@ struct trace_lock_handler {
- 			      struct thread *thread);
- };
- 
-+static struct lock_seq_stat *get_seq(struct thread_stat *ts, void *addr)
-+{
-+	int i, min_unused;
-+	struct lock_seq_stat *seq;
-+
-+	seq = &ts->seq_stack[ts->seq_index_cache];
-+
-+	if (seq->addr_of_lock != addr) {
-+		min_unused = -1;
-+		for (i = 0; i < MAX_LOCK_DEPTH; i++) {
-+			seq = &ts->seq_stack[i];
-+			if (min_unused < 0 && !seq->addr_of_lock)
-+				min_unused = i;
-+			if (seq->addr_of_lock == addr) {
-+				ts->seq_index_cache = i;
-+				return seq;
-+			}
-+		}
-+
-+		if (min_unused == -1) {
-+			for (i = 0; i < MAX_LOCK_DEPTH; i++) {
-+				struct lock_stat *l;
-+
-+				l = lock_stat_findnew(
-+					ts->seq_stack[i].addr_of_lock, NULL);
-+				printf("%s:%p\n", l->name, l->addr);
-+			}
-+			BUG_ON("seq_stack overflowed, "
-+			       "please expand MAX_LOCK_DEPTH\n");
-+		}
-+
-+		seq = &ts->seq_stack[min_unused];
-+		seq->addr_of_lock = addr;
-+		ts->seq_index_cache = min_unused;
-+	}
-+
-+	return seq;
-+}
-+
- static void
- report_lock_acquire_event(struct trace_acquire_event *acquire_event,
- 			struct event *__event __used,
- 			int cpu __used,
--			u64 timestamp,
-+			u64 timestamp __used,
- 			struct thread *thread __used)
- {
--	struct lock_stat *st;
-+	struct lock_stat *ls;
-+	struct thread_stat *ts;
-+	struct lock_seq_stat *seq;
- 
--	st = lock_stat_findnew(acquire_event->addr, acquire_event->name);
-+	ls = lock_stat_findnew(acquire_event->addr, acquire_event->name);
-+	if (ls->discard)
-+		return;
- 
--	switch (st->state) {
--	case LOCK_STATE_UNLOCKED:
-+	ts = thread_stat_findnew(thread->pid);
-+	seq = get_seq(ts, acquire_event->addr);
-+
-+	switch (seq->state) {
-+	case SEQ_STATE_UNINITED:
-+	case SEQ_STATE_RELEASED:
-+		if (!acquire_event->flag) {
-+			seq->state = SEQ_STATE_ACQUIRING;
-+		} else {
-+			if (acquire_event->flag & 1)
-+				ls->nr_trylock++;
-+			if (acquire_event->flag & 2)
-+				ls->nr_readlock++;
-+			seq->state = SEQ_STATE_ACQUIRED;
-+		}
-+		break;
-+	case SEQ_STATE_ACQUIRED:
-+		if (acquire_event->flag & 2)
-+			seq->read_count++;
-+		else
-+			goto broken;
- 		break;
--	case LOCK_STATE_LOCKED:
-+	case SEQ_STATE_ACQUIRING:
-+	case SEQ_STATE_CONTENDED:
-+broken:
-+		/* broken lock sequence, discard it */
-+		ls->discard = 1;
-+		seq->addr_of_lock = NULL;
-+		seq->state = SEQ_STATE_UNINITED;
- 		break;
- 	default:
--		BUG_ON(1);
-+		BUG_ON("Unknown state of lock sequence found!\n");
- 		break;
- 	}
- 
--	st->prev_event_time = timestamp;
-+	ls->nr_acquire++;
-+	seq->prev_event_time = timestamp;
- }
- 
- static void
- report_lock_acquired_event(struct trace_acquired_event *acquired_event,
- 			 struct event *__event __used,
- 			 int cpu __used,
--			 u64 timestamp,
-+			 u64 timestamp __used,
- 			 struct thread *thread __used)
- {
--	struct lock_stat *st;
-+	struct lock_stat *ls;
-+	struct thread_stat *ts;
-+	struct lock_seq_stat *seq;
-+	u64 contended_term;
-+
-+	ls = lock_stat_findnew(acquired_event->addr, acquired_event->name);
-+	if (ls->discard)
-+		return;
- 
--	st = lock_stat_findnew(acquired_event->addr, acquired_event->name);
-+	ts = thread_stat_findnew(thread->pid);
-+	seq = get_seq(ts, acquired_event->addr);
- 
--	switch (st->state) {
--	case LOCK_STATE_UNLOCKED:
--		st->state = LOCK_STATE_LOCKED;
--		st->nr_acquired++;
-+	switch (seq->state) {
-+	case SEQ_STATE_UNINITED:
-+		/* orphan event, do nothing */
-+		return;
-+	case SEQ_STATE_ACQUIRING:
-+		break;
-+	case SEQ_STATE_CONTENDED:
-+		contended_term = timestamp - seq->prev_event_time;
-+		ls->wait_time_total += contended_term;
-+
-+		if (contended_term < ls->wait_time_min)
-+			ls->wait_time_min = contended_term;
-+		else if (ls->wait_time_max < contended_term)
-+			ls->wait_time_max = contended_term;
- 		break;
--	case LOCK_STATE_LOCKED:
-+	case SEQ_STATE_RELEASED:
-+	case SEQ_STATE_ACQUIRED:
-+		/* broken lock sequence, discard it */
-+		ls->discard = 1;
-+		seq->addr_of_lock = NULL;
-+		seq->state = SEQ_STATE_UNINITED;
- 		break;
-+
- 	default:
--		BUG_ON(1);
-+		BUG_ON("Unknown state of lock sequence found!\n");
- 		break;
- 	}
- 
--	st->prev_event_time = timestamp;
-+	seq->state = SEQ_STATE_ACQUIRED;
-+	ls->nr_acquired++;
-+	seq->prev_event_time = timestamp;
- }
- 
- static void
- report_lock_contended_event(struct trace_contended_event *contended_event,
- 			  struct event *__event __used,
- 			  int cpu __used,
--			  u64 timestamp,
-+			  u64 timestamp __used,
- 			  struct thread *thread __used)
- {
--	struct lock_stat *st;
-+	struct lock_stat *ls;
-+	struct thread_stat *ts;
-+	struct lock_seq_stat *seq;
-+
-+	ls = lock_stat_findnew(contended_event->addr, contended_event->name);
-+	if (ls->discard)
-+		return;
- 
--	st = lock_stat_findnew(contended_event->addr, contended_event->name);
-+	ts = thread_stat_findnew(thread->pid);
-+	seq = get_seq(ts, contended_event->addr);
- 
--	switch (st->state) {
--	case LOCK_STATE_UNLOCKED:
-+	switch (seq->state) {
-+	case SEQ_STATE_UNINITED:
-+		/* orphan event, do nothing */
-+		return;
-+	case SEQ_STATE_ACQUIRING:
- 		break;
--	case LOCK_STATE_LOCKED:
--		st->nr_contended++;
-+	case SEQ_STATE_RELEASED:
-+	case SEQ_STATE_ACQUIRED:
-+	case SEQ_STATE_CONTENDED:
-+		/* broken lock sequence, discard it */
-+		ls->discard = 1;
-+		seq->addr_of_lock = NULL;
-+		seq->state = SEQ_STATE_UNINITED;
- 		break;
- 	default:
--		BUG_ON(1);
-+		BUG_ON("Unknown state of lock sequence found!\n");
- 		break;
- 	}
- 
--	st->prev_event_time = timestamp;
-+	seq->state = SEQ_STATE_CONTENDED;
-+	ls->nr_contended++;
-+	seq->prev_event_time = timestamp;
- }
- 
- static void
- report_lock_release_event(struct trace_release_event *release_event,
- 			struct event *__event __used,
- 			int cpu __used,
--			u64 timestamp,
-+			u64 timestamp __used,
- 			struct thread *thread __used)
- {
--	struct lock_stat *st;
--	u64 hold_time;
-+	struct lock_stat *ls;
-+	struct thread_stat *ts;
-+	struct lock_seq_stat *seq;
- 
--	st = lock_stat_findnew(release_event->addr, release_event->name);
-+	ls = lock_stat_findnew(release_event->addr, release_event->name);
-+	if (ls->discard)
-+		return;
- 
--	switch (st->state) {
--	case LOCK_STATE_UNLOCKED:
--		break;
--	case LOCK_STATE_LOCKED:
--		st->state = LOCK_STATE_UNLOCKED;
--		hold_time = timestamp - st->prev_event_time;
-+	ts = thread_stat_findnew(thread->pid);
-+	seq = get_seq(ts, release_event->addr);
- 
--		if (timestamp < st->prev_event_time) {
--			/* terribly, this can happen... */
--			goto end;
-+	switch (seq->state) {
-+	case SEQ_STATE_UNINITED:
-+		goto end;
-+		break;
-+	case SEQ_STATE_ACQUIRED:
-+		/*
-+		 * FIXME: for this case, lock_release()
-+		 * should have flag to represent read unlock
-+		 */
-+		if (seq->read_count > 0) {
-+			if (--seq->read_count) {
-+				ls->nr_release++;
-+				return;
-+			}
- 		}
--
--		if (st->wait_time_min > hold_time)
--			st->wait_time_min = hold_time;
--		if (st->wait_time_max < hold_time)
--			st->wait_time_max = hold_time;
--		st->wait_time_total += hold_time;
--
--		st->nr_release++;
-+		break;
-+	case SEQ_STATE_ACQUIRING:
-+	case SEQ_STATE_CONTENDED:
-+	case SEQ_STATE_RELEASED:
-+		/* broken lock sequence, discard it */
-+		ls->discard = 1;
-+		seq->addr_of_lock = NULL;
-+		seq->state = SEQ_STATE_UNINITED;
- 		break;
- 	default:
--		BUG_ON(1);
-+		BUG_ON("Unknown state of lock sequence found!\n");
- 		break;
- 	}
- 
-+	ls->nr_release++;
- end:
--	st->prev_event_time = timestamp;
-+	seq->addr_of_lock = NULL;
-+	seq->state = SEQ_STATE_UNINITED;
-+	ts->seq_index_cache = 0;
- }
- 
- /* lock oriented handlers */
-@@ -381,6 +635,7 @@ process_lock_acquire_event(void *data,
- 	tmp = raw_field_value(event, "lockdep_addr", data);
- 	memcpy(&acquire_event.addr, &tmp, sizeof(void *));
- 	acquire_event.name = (char *)raw_field_ptr(event, "name", data);
-+	acquire_event.flag = (int)raw_field_value(event, "flag", data);
- 
- 	if (trace_handler->acquire_event)
- 		trace_handler->acquire_event(&acquire_event, event, cpu, timestamp, thread);
-@@ -441,8 +696,8 @@ process_lock_release_event(void *data,
- }
- 
- static void
--process_raw_event(void *data, int cpu,
--		  u64 timestamp, struct thread *thread)
-+process_raw_event(void *data, int cpu __used,
-+		  u64 timestamp __used, struct thread *thread __used)
- {
- 	struct event *event;
- 	int type;
-@@ -604,14 +859,14 @@ static void queue_raw_event(void *data, int raw_size, int cpu,
- 	}
- }
- 
--static int process_sample_event(event_t *event, struct perf_session *session)
-+static int process_sample_event(event_t *event, struct perf_session *s)
- {
- 	struct thread *thread;
- 	struct sample_data data;
- 
- 	bzero(&data, sizeof(struct sample_data));
--	event__parse_sample(event, session->sample_type, &data);
--	thread = perf_session__findnew(session, data.pid);
-+	event__parse_sample(event, s->sample_type, &data);
-+	thread = perf_session__findnew(s, data.pid);
- 
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
-@@ -634,8 +889,8 @@ static void print_result(void)
- {
- 	struct lock_stat *st;
- 	char cut_name[20];
-+	int bad, total;
- 
--	printf("%18s ", "ID");
- 	printf("%20s ", "Name");
- 	printf("%10s ", "acquired");
- 	printf("%10s ", "contended");
-@@ -646,11 +901,15 @@ static void print_result(void)
- 
- 	printf("\n\n");
- 
-+	bad = total = 0;
- 	while ((st = pop_from_result())) {
-+		total++;
-+		if (st->discard) {
-+			bad++;
-+			continue;
-+		}
- 		bzero(cut_name, 20);
- 
--		printf("%p ", st->addr);
--
- 		if (strlen(st->name) < 16) {
- 			/* output raw name */
- 			printf("%20s ", st->name);
-@@ -673,6 +932,10 @@ static void print_result(void)
- 		       0 : st->wait_time_min);
- 		printf("\n");
- 	}
-+
-+	/* Output for debug */
-+	printf("bad:%d, total:%d\n", bad, total);
-+	printf("bad rate:%f\n", (double)(bad / total));
- }
- 
- static void dump_map(void)
-@@ -692,8 +955,6 @@ static struct perf_event_ops eops = {
- 	.comm			= event__process_comm,
- };
- 
--static struct perf_session *session;
--
- static int read_events(void)
- {
- 	session = perf_session__new(input_name, O_RDONLY, 0);
--- 
-1.6.5.2
 
