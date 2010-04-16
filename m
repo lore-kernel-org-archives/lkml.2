@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758438Ab0DPOcL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:32:11 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:49986 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555Ab0DPOcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:32:08 -0400
-Date: Fri, 16 Apr 2010 07:32:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
- implementation
-Message-ID: <20100416143202.GE2615@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100408191737.296180458@chello.nl>
- <20100408192722.643778654@chello.nl>
- <1271120731.13059.6.camel@pasglop>
- <20100413034311.GB2772@linux.vnet.ibm.com>
- <1271253110.32749.47.camel@laptop>
- <20100415142852.GA2471@linux.vnet.ibm.com>
- <1271425881.4807.2319.camel@twins>
- <20100416141745.GC2615@linux.vnet.ibm.com>
- <1271427819.4807.2353.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271427819.4807.2353.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757862Ab0DPOdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:33:38 -0400
+Received: from mail.digidescorp.com ([66.244.163.200]:16093 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab0DPOdg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 10:33:36 -0400
+X-Spam-Processed: digidescorp.com, Fri, 16 Apr 2010 09:33:34 -0500
+X-Authenticated-Sender: steve@digidescorp.com
+X-MDRemoteIP: 99.142.37.252
+X-Return-Path: prvs=17226ac423=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Subject: Re: [microblaze-uclinux] Re: [PATCH 1/2] microblaze: add stack
+ unwinder
+From: "Steven J. Magnani" <steve@digidescorp.com>
+Reply-To: steve@digidescorp.com
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-kernel@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au
+In-Reply-To: <4BC820B2.6060604@monstr.eu>
+References: <1271220928-3502-1-git-send-email-steve@digidescorp.com>
+	 <4BC820B2.6060604@monstr.eu>
+Content-Type: text/plain
+Organization: Digital Design Corporation
+Date: Fri, 16 Apr 2010 09:33:30 -0500
+Message-Id: <1271428410.3366.23.camel@iscandar.digidescorp.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 04:23:39PM +0200, Peter Zijlstra wrote:
-> On Fri, 2010-04-16 at 07:17 -0700, Paul E. McKenney wrote:
+On Fri, 2010-04-16 at 10:32 +0200, Michal Simek wrote:
+> Please apply this patch and do the same testing as I did.
 > 
-> > > > Of course, with call_rcu_sched(), the corresponding RCU read-side critical
-> > > > sections are non-preemptible.  Therefore, in CONFIG_PREEMPT_RT, these
-> > > > read-side critical sections must use raw spinlocks.
-> > > 
-> > > OK, so if we fully remove CONFIG_TREE_PREEMPT_RCU (defaulting to y),
-> > > rename all the {call_rcu, rcu_read_lock, rcu_read_unlock,
-> > > synchronize_rcu} functions to {*}_preempt and then add a new
-> > > CONFIG_PREEMPT_RCU that simply maps {*} to either {*}_sched or
-> > > {*}_preempt, we've basically got what I've been asking for for a while,
-> > > no?
-> > 
-> > What would rcu_read_lock_preempt() do in a !CONFIG_PREEMPT kernel?
-> 
-> Same as for a preempt one, since you'd have to be able to schedule()
-> while holding it to be able to do things like mutex_lock().
+> diff --git a/arch/microblaze/kernel/reset.c b/arch/microblaze/kernel/reset.c
+> index a1721a3..76f6587 100644
+> --- a/arch/microblaze/kernel/reset.c
+> +++ b/arch/microblaze/kernel/reset.c
+> @@ -112,8 +112,8 @@ void of_platform_reset_gpio_probe(void)
+>   void machine_restart(char *cmd)
+>   {
+>          printk(KERN_NOTICE "Machine restart...\n");
+> +       machine_shutdown();
+>          gpio_system_reset();
+> -       dump_stack();
+>          while (1)
+>                  ;
+>   }
+> @@ -121,6 +121,7 @@ void machine_restart(char *cmd)
+>   void machine_shutdown(void)
+>   {
+>          printk(KERN_NOTICE "Machine shutdown...\n");
+> +       dump_stack();
+>          while (1)
+>                  ;
+>   }
 
-So what you really want is something like rcu_read_lock_sleep() rather
-than rcu_read_lock_preempt(), right?  The point is that you want to do
-more than merely preempt, given that it is legal to do general blocking
-while holding a mutex, correct?
+I get this:
 
-							Thanx, Paul
+Call Trace:
+[<20003008>] microblaze_unwind+0x68/0x94
+[<20002c24>] show_stack+0x134/0x174
+[<20002c80>] dump_stack+0x1c/0x3c
+[<20001d84>] machine_shutdown+0x30/0x40
+[<20001dc0>] machine_restart+0x2c/0x48
+[<2002a540>] kernel_restart+0x5c/0x80
+[<2002a6b8>] sys_reboot+0x11c/0x218
+SYSCALL
+[<2d5c0248>] PID 118 [reboot]
+
+Is your problem on a MMU or noMMU system?
+
+If the unwinder stops early, it found a return address outside the
+kernel text, or couldn't find the addik that creates a stack frame - but
+there's not enough information here to tell what happened. In your case
+the backtrace goes off the rails before getting to the frame for
+dump_stack(), which is where the stack dump begins. We'd need to see the
+21 words preceding the dump (show_stack's frame is 13 words, and
+microblaze_unwind's is 8) to know why.
+
+Can you uncomment the #define DEBUG in unwind.c and try it again?
+
+Thanks,
+------------------------------------------------------------------------
+ Steven J. Magnani               "I claim this network for MARS!
+ www.digidescorp.com              Earthling, return my space modulator!"
+
+ #include <standard.disclaimer>
+
+
