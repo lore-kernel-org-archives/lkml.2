@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357Ab0DPP0i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 11:26:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19145 "EHLO mx1.redhat.com"
+	id S1758107Ab0DPPYp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 11:24:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3263 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932129Ab0DPPZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 11:25:07 -0400
-Date: Fri, 16 Apr 2010 11:24:39 -0400
+	id S1758008Ab0DPPYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 11:24:42 -0400
+Date: Fri, 16 Apr 2010 11:24:14 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
@@ -14,280 +14,55 @@ Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
        vgoyal@redhat.com
-Message-Id: <d7f54dffde4bfd4984f7704d07ac705552f239db.1271427118.git.jbaron@redhat.com>
+Message-Id: <c0ce90218540e1c62ce0a9ec350a46a797871cc9.1271427118.git.jbaron@redhat.com>
 In-Reply-To: <cover.1271427118.git.jbaron@redhat.com>
 References: <cover.1271427118.git.jbaron@redhat.com>
-Subject: [PATCH 07/11] jump label: sort jump table at build-time
+Subject: [PATCH 01/11] jump label: notifier atomic call chain notrace
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The jump label table is more optimal accessed if the entries are continguous.
-Sorting the table accomplishes this. Do the sort at build-time. Adds a '-j'
-option to 'modpost' which replaces the vmlinux, with a sorted jump label
-section vmlinux. I've tested this on x86 with relocatable and it works fine
-there as well. Note that I have not sorted the jump label table in modules.
-This is b/c the jump label names can be exported by the core kernel, and thus
-I don't have them available at buildtime. This could be solved by either
-finding the correct ones in the vmlinux, or by embedding the name of the jump
-label in the module tables (and not just a pointer), but the module tables
-tend to be smaller, and thus their is less value to this kind of change
-anyway. The kernel continues to do the sort, just in case, but at least for
-the vmlinux, this is just a verfication that the jump label table has
-already been sorted.
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
 
+In LTTng, being able to use the atomic notifier from cpu idle entry to
+ensure the tracer flush the last events in the current subbuffer
+requires the rcu read-side to be marked "notrace", otherwise it can end
+up calling back into lockdep and the tracer.
+
+Also apply to the the die notifier.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
 Signed-off-by: Jason Baron <jbaron@redhat.com>
+Reviewed-by: Masami Hiramatsu <mhiramat@redhat.com>
 ---
- Makefile                          |    6 +++-
- include/asm-generic/vmlinux.lds.h |   18 ++++++++--
- scripts/mod/Makefile              |    1 +
- scripts/mod/modpost.c             |   71 +++++++++++++++++++++++++++++++++++--
- scripts/mod/modpost.h             |    2 +
- 5 files changed, 91 insertions(+), 7 deletions(-)
+ kernel/notifier.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index 35bffde..0cbad55 100644
---- a/Makefile
-+++ b/Makefile
-@@ -152,7 +152,7 @@ obj		:= $(objtree)
- 
- VPATH		:= $(srctree)$(if $(KBUILD_EXTMOD),:$(KBUILD_EXTMOD))
- 
--export srctree objtree VPATH
-+export srctree objtree VPATH hdr-arch
- 
- 
- # SUBARCH tells the usermode build what the underlying arch is.  That is set
-@@ -845,6 +845,9 @@ define rule_vmlinux-modpost
- 	$(Q)echo 'cmd_$@ := $(cmd_vmlinux-modpost)' > $(dot-target).cmd
- endef
- 
-+quiet_cmd_sort-jump-label = SORT    $@
-+      cmd_sort-jump-label = $(srctree)/scripts/mod/modpost -j -s $@
-+
- # vmlinux image - including updated kernel symbols
- vmlinux: $(vmlinux-lds) $(vmlinux-init) $(vmlinux-main) vmlinux.o $(kallsyms.o) FORCE
- ifdef CONFIG_HEADERS_CHECK
-@@ -858,6 +861,7 @@ ifdef CONFIG_BUILD_DOCSRC
- endif
- 	$(call vmlinux-modpost)
- 	$(call if_changed_rule,vmlinux__)
-+	$(call cmd,sort-jump-label)
- 	$(Q)rm -f .old_version
- 
- # build vmlinux.o first to catch section mismatch errors early
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 83a469d..f9d8188 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -168,7 +168,6 @@
- 	TRACE_PRINTKS()							\
- 	FTRACE_EVENTS()							\
- 	TRACE_SYSCALLS()						\
--	JUMP_TABLE()							\
- 
- /*
-  * Data section helpers
-@@ -207,7 +206,6 @@
- 		*(__vermagic)		/* Kernel version magic */	\
- 		*(__markers_strings)	/* Markers: strings */		\
- 		*(__tracepoints_strings)/* Tracepoints: strings */	\
--		*(__jump_strings)/* Jump: strings */	\
- 	}								\
- 									\
- 	.rodata1          : AT(ADDR(.rodata1) - LOAD_OFFSET) {		\
-@@ -216,6 +214,10 @@
- 									\
- 	BUG_TABLE							\
- 									\
-+	JUMP_TABLE							\
-+									\
-+	JUMP_STRINGS							\
-+									\
- 	/* PCI quirks */						\
- 	.pci_fixup        : AT(ADDR(.pci_fixup) - LOAD_OFFSET) {	\
- 		VMLINUX_SYMBOL(__start_pci_fixups_early) = .;		\
-@@ -559,11 +561,21 @@
- #define BUG_TABLE
- #endif
- 
--#define JUMP_TABLE()							\
-+#define JUMP_TABLE							\
- 	. = ALIGN(64);							\
-+	__jump_table : AT(ADDR(__jump_table) - LOAD_OFFSET) {		\
- 		VMLINUX_SYMBOL(__start___jump_table) = .;		\
- 		*(__jump_table)						\
- 		VMLINUX_SYMBOL(__stop___jump_table) = .;		\
-+	}
-+
-+#define JUMP_STRINGS							\
-+	. = ALIGN(64);							\
-+	__jump_strings : AT(ADDR(__jump_strings) - LOAD_OFFSET) {	\
-+		VMLINUX_SYMBOL(__start___jump_strings) = .;		\
-+		*(__jump_strings)					\
-+		VMLINUX_SYMBOL(__stop___jump_strings) = .;		\
-+	}
- 
- #ifdef CONFIG_PM_TRACE
- #define TRACEDATA							\
-diff --git a/scripts/mod/Makefile b/scripts/mod/Makefile
-index ff954f8..80d7e18 100644
---- a/scripts/mod/Makefile
-+++ b/scripts/mod/Makefile
-@@ -1,4 +1,5 @@
- hostprogs-y	:= modpost mk_elfconfig
-+HOST_EXTRACFLAGS += -I$(srctree)/arch/$(hdr-arch)/include
- always		:= $(hostprogs-y) empty.o
- 
- modpost-objs	:= modpost.o file2alias.o sumversion.o
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index 2092361..3966fa8 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -17,6 +17,8 @@
- #include "modpost.h"
- #include "../../include/generated/autoconf.h"
- #include "../../include/linux/license.h"
-+#include <linux/types.h>
-+#include <asm/jump_entry.h>
- 
- /* Some toolchains use a `_' prefix for all user symbols. */
- #ifdef CONFIG_SYMBOL_PREFIX
-@@ -41,6 +43,8 @@ static int warn_unresolved = 0;
- /* How a symbol is exported */
- static int sec_mismatch_count = 0;
- static int sec_mismatch_verbose = 1;
-+/* jump label */
-+static int enable_jump_label = 0;
- 
- enum export {
- 	export_plain,      export_unused,     export_gpl,
-@@ -315,12 +319,18 @@ void *grab_file(const char *filename, unsigned long *size)
- 	void *map;
- 	int fd;
- 
--	fd = open(filename, O_RDONLY);
-+	if (!enable_jump_label)
-+		fd = open(filename, O_RDONLY);
-+	else
-+		fd = open(filename, O_RDWR);
- 	if (fd < 0 || fstat(fd, &st) != 0)
- 		return NULL;
- 
- 	*size = st.st_size;
--	map = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
-+	if (!enable_jump_label)
-+		map = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
-+	else
-+		map = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
- 	close(fd);
- 
- 	if (map == MAP_FAILED)
-@@ -367,6 +377,50 @@ void release_file(void *file, unsigned long size)
- 	munmap(file, size);
+diff --git a/kernel/notifier.c b/kernel/notifier.c
+index 2488ba7..88453a7 100644
+--- a/kernel/notifier.c
++++ b/kernel/notifier.c
+@@ -148,7 +148,7 @@ int atomic_notifier_chain_unregister(struct atomic_notifier_head *nh,
+ 	spin_lock_irqsave(&nh->lock, flags);
+ 	ret = notifier_chain_unregister(&nh->head, n);
+ 	spin_unlock_irqrestore(&nh->lock, flags);
+-	synchronize_rcu();
++	synchronize_sched();
+ 	return ret;
  }
- 
-+static void swap_jump_label_entries(struct jump_entry *previous, struct jump_entry *next)
-+{
-+	struct jump_entry tmp;
-+
-+	tmp = *next;
-+	*next = *previous;
-+	*previous = tmp;
-+}
-+
-+static void sort_jump_label_table(struct elf_info *info, Elf_Ehdr *hdr)
-+{
-+	int swapped = 0;
-+	struct jump_entry *iter, *iter_next;
-+	char *name, *next_name;
-+	Elf_Shdr *sechdrs = info->sechdrs;
-+	unsigned long jump_table, jump_table_end;
-+	unsigned long jump_strings, jump_strings_addr;
-+
-+	if ((info->jump_sec == 0) && (info->jump_strings_sec == 0))
-+		return;
-+
-+	jump_table = (unsigned long)hdr + sechdrs[info->jump_sec].sh_offset;
-+	jump_table_end = jump_table + sechdrs[info->jump_sec].sh_size;
-+	jump_strings = (unsigned long)hdr +
-+				sechdrs[info->jump_strings_sec].sh_offset;
-+	jump_strings_addr = sechdrs[info->jump_strings_sec].sh_addr;
-+
-+	do {
-+		swapped = 0;
-+		iter = iter_next = (struct jump_entry *)jump_table;
-+		iter_next++;
-+		for (; iter_next < (struct jump_entry *)jump_table_end;
-+							iter++, iter_next++) {
-+			name = (char *)(jump_strings + (iter->name - jump_strings_addr));
-+			next_name = (char *)(jump_strings +
-+					(iter_next->name - jump_strings_addr));
-+			if (strcmp(name, next_name) > 0) {
-+				swap_jump_label_entries(iter, iter_next);
-+				swapped = 1;
-+			}
-+		}
-+	} while (swapped == 1);
-+}
-+
- static int parse_elf(struct elf_info *info, const char *filename)
+ EXPORT_SYMBOL_GPL(atomic_notifier_chain_unregister);
+@@ -178,9 +178,9 @@ int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
  {
- 	unsigned int i;
-@@ -460,6 +514,10 @@ static int parse_elf(struct elf_info *info, const char *filename)
- 			info->export_unused_gpl_sec = i;
- 		else if (strcmp(secname, "__ksymtab_gpl_future") == 0)
- 			info->export_gpl_future_sec = i;
-+		else if (strcmp(secname, "__jump_table") == 0)
-+			info->jump_sec = i;
-+		else if (strcmp(secname, "__jump_strings") == 0)
-+			info->jump_strings_sec = i;
+ 	int ret;
  
- 		if (sechdrs[i].sh_type != SHT_SYMTAB)
- 			continue;
-@@ -480,6 +538,10 @@ static int parse_elf(struct elf_info *info, const char *filename)
- 		sym->st_value = TO_NATIVE(sym->st_value);
- 		sym->st_size  = TO_NATIVE(sym->st_size);
- 	}
-+
-+	if (enable_jump_label)
-+		sort_jump_label_table(info, hdr);
-+
- 	return 1;
+-	rcu_read_lock();
++	rcu_read_lock_sched_notrace();
+ 	ret = notifier_call_chain(&nh->head, val, v, nr_to_call, nr_calls);
+-	rcu_read_unlock();
++	rcu_read_unlock_sched_notrace();
+ 	return ret;
  }
- 
-@@ -1941,7 +2003,7 @@ int main(int argc, char **argv)
- 	struct ext_sym_list *extsym_iter;
- 	struct ext_sym_list *extsym_start = NULL;
- 
--	while ((opt = getopt(argc, argv, "i:I:e:cmsSo:awM:K:")) != -1) {
-+	while ((opt = getopt(argc, argv, "i:I:e:cmsSo:awM:K:j")) != -1) {
- 		switch (opt) {
- 		case 'i':
- 			kernel_read = optarg;
-@@ -1979,6 +2041,9 @@ int main(int argc, char **argv)
- 		case 'w':
- 			warn_unresolved = 1;
- 			break;
-+		case 'j':
-+			enable_jump_label = 1;
-+			break;
- 		default:
- 			exit(1);
- 		}
-diff --git a/scripts/mod/modpost.h b/scripts/mod/modpost.h
-index be987a4..0875d4b 100644
---- a/scripts/mod/modpost.h
-+++ b/scripts/mod/modpost.h
-@@ -126,6 +126,8 @@ struct elf_info {
- 	Elf_Section  export_gpl_sec;
- 	Elf_Section  export_unused_gpl_sec;
- 	Elf_Section  export_gpl_future_sec;
-+	Elf_Section  jump_sec;
-+	Elf_Section  jump_strings_sec;
- 	const char   *strtab;
- 	char	     *modinfo;
- 	unsigned int modinfo_len;
+ EXPORT_SYMBOL_GPL(__atomic_notifier_call_chain);
 -- 
 1.7.0.1
 
