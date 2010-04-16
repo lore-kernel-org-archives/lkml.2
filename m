@@ -1,105 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758335Ab0DPMN1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 08:13:27 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:15025 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758287Ab0DPMNZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 08:13:25 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: samu.p.onkalo@nokia.com, jkosina@suse.cz, eric.piel@tremplin-utc.net
-Cc: akpm@linux-foundation.org, pavel@ucw.cz, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lis3lv02d: provide means to disable polled input
- interface
-References: <alpine.LNX.2.00.1004091453530.8345@pobox.suse.cz>
- <4BBF2BD1.5050107@tremplin-utc.net>
- <alpine.LNX.2.00.1004091532150.8345@pobox.suse.cz>
- <op.va86rulwgp7y00@linux-r26l.site>
- <62697B07E9803846BC582181BD6FB6B826A8525E8A@NOK-EUMSG-02.mgdnok.nokia.com>
-Date: Fri, 16 Apr 2010 14:13:21 +0200
-MIME-Version: 1.0
+	id S1758366Ab0DPMXV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 08:23:21 -0400
+Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:60887 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758305Ab0DPMXT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 08:23:19 -0400
+X-AuditID: 12074424-b7b9dae000002832-29-4bc856b6b34b
+Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <87vdbr8vzv.fsf@basil.nowhere.org>
+Date: Fri, 16 Apr 2010 08:23:09 -0400
+Cc: Zan Lynx <zlynx@acm.org>, Andrew Morton <akpm@linux-foundation.org>,
+       Taras Glek <tglek@mozilla.com>, linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
-From: "Marcin Derlukiewicz" <marcin@derlukiewicz.pl>
-Message-ID: <op.va878jw6gp7y00@linux-r26l.site>
-In-Reply-To: <62697B07E9803846BC582181BD6FB6B826A8525E8A@NOK-EUMSG-02.mgdnok.nokia.com>
-User-Agent: Opera Mail/10.10 (Linux)
+Message-Id: <736D6FBC-DA18-49FD-BBE5-0BA848189932@mit.edu>
+References: <4BBA6776.5060804@mozilla.com> <20100415155309.2649a29b.akpm@linux-foundation.org> <4BC79F75.2090704@acm.org> <87vdbr8vzv.fsf@basil.nowhere.org>
+To: Andi Kleen <andi@halobates.de>
+X-Mailer: Apple Mail (2.1078)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dnia 16-04-2010 o 14:00:15 <samu.p.onkalo@nokia.com> napisał(a):
+On Apr 16, 2010, at 7:41 AM, Andi Kleen wrote:
 
->
->
->> -----Original Message-----
->> From: ext Marcin Derlukiewicz [mailto:marcin@derlukiewicz.pl]
->> Sent: 16 April, 2010 14:42
->> To: Jiri Kosina; Éric Piel
->> Cc: Andrew Morton; Onkalo Samu.P (Nokia-D/Tampere); Pavel Machek; lm-
->> sensors@lm-sensors.org; linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH] lis3lv02d: provide means to disable polled input
->> interface
->>
->> Dnia 09-04-2010 o 15:32:59 Jiri Kosina <jkosina@suse.cz> napisał(a):
->>
->>> On Fri, 9 Apr 2010, Éric Piel wrote:
->>>
->>>> > This is reported to create 20% CPU usage increase (and
->> proportionaly
->>>> higher
->>>> > power consumption) just for the ipolldevd kernel thread (which is
->> used
->>>> > to read the sensor).
->>>> >
->>>> > As most users probably only use the freefall functionality of the
->>>> driver
->>>> > and not the joystick interface, provide means for disabling the
->>>> registration
->>>> > of joystick device altogether via module parameter.
->>>> > (I'd rather make it default to 0, but this will break backwards
->>>> compatibility).
->>>> Are you saying there is a 20% CPU usage even when the joystick
->> interface
->>>> is not open? This should not happen (and this is not happening on my
->>>> laptop). The polling should happen only when a userspace app opens
->> the
->>>> joystick interface (like running neverball).
->>>>
->>>> So I'd tend to think it's more due to a misconfiguration of the
->> system
->>>> (like xserver using the joystick interface as a pointer device) or
->> it's
->>>> a bug in the way we set up the polling. Could you investigate and let
->> me
->>>> know?
->>>
->>> Marcin originally reported this to me.
->>>
->>> Marcin, could you please check 'lsof' output to see whether the
->> joystick
->>> interface has been open by some application?
->>>
->>> Thanks,
->>>
->>
->> sorry for the delay, had a crunch time
->>
->> here is the link for this lsof:
->> https://bugzilla.novell.com/attachment.cgi?id=354953
->>
->
-> Could you check what is the polling period of the device.
-> something like:
-> cat /sys/devices/platform/lis3lv02d/input/input9/poll
->
-> it is current polling period in milliseconds. 0 disables polling.
->
-> -Samu
->
+> Zan Lynx <zlynx@acm.org> writes:
+> 
+>> On 4/15/10 4:53 PM, Andrew Morton wrote:
+>> 
+>>> This just isn't an interesting case.  World-wide, the number of people
+>>> who compile their own web browser and execute it from the file which ld
+>>> produced is, umm, seven.
+>> 
+>> Gentoo users? Linux From Scratch?
+> 
+> "make install" tends to copy. I am not aware of any Makefiles
+> that link directly to /usr/bin, and usually that wouldn't work
+> anyways because of permissions. copy fixes the problem.
 
-I think that on my system this is /sys/devices/platform/lis3lv02d/rate
-but i may be wrong. Anyway it contains 40 as a number.
+... and those people who are executing the binary out of the build directory are probably running the regression  test (i.e., "make; make check") and on most developer machines, if they're lucky they have enough memory that the executable will still be in their page cache.   :-)
 
-Marcin.
+This being said, on modern file systems (i.e., btrfs, ext4, xfs, et. al), delayed allocation should mostly hide this problem; and if not, and the linker can estimate in advance how big the resulting binary will be, it could be modified to use the fallocate(2) system call.
+
+-- Ted
+
+
