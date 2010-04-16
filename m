@@ -1,38 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab0DPUGc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 16:06:32 -0400
-Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:34392 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932364Ab0DPUGa (ORCPT
+	id S932481Ab0DPV0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 17:26:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60681 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932369Ab0DPV0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 16:06:30 -0400
-Date: Fri, 16 Apr 2010 22:06:22 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Chihau Chau <chihau@gmail.com>
-Cc: herbert@gondor.hengli.com.au, davem@davemloft.net, roel.kluin@gmail.com,
-       sebastian@breakpoint.cc, linux-geode@lists.infradead.org,
-       linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Crypto: geode-aes: Fix some code style issues
-Message-ID: <20100416200622.GA22022@Chamillionaire.breakpoint.cc>
-References: <1271351879-22805-1-git-send-email-chihau@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1271351879-22805-1-git-send-email-chihau@gmail.com>
-X-Key-Id: FE3F4706
-X-Key-Fingerprint: FFDA BBBB 3563 1B27 75C9  925B 98D5 5C1C FE3F 4706
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 16 Apr 2010 17:26:37 -0400
+Subject: Re: Possible bug with mutex adaptative spinning
+From: Peter Zijlstra <peterz@infradead.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+In-Reply-To: <1271212509.13059.135.camel@pasglop>
+References: <1271212509.13059.135.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Apr 2010 23:26:24 +0200
+Message-ID: <1271453184.1674.483.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Chihau Chau | 2010-04-15 13:17:59 [-0400]:
+On Wed, 2010-04-14 at 12:35 +1000, Benjamin Herrenschmidt wrote:
 
->From: Chihau Chau <chihau@gmail.com>
->
->This fixes some code style issues like:
+> [PATCH] mutex: Don't spin when the owner CPU is offline or other weird cases
+> 
+> The current code might spin forever if the CPU owning the mutex has been
+> offlined, and the last CPU in the system is trying to acquire it, since
+> mutex_spin_on_owner() will always return 1, telling the caller to spin
+> until the mutex has been released.
+> 
+> This patch changes mutex_spin_on_owner() to return 0 (don't spin) in any
+> case where we aren't sure about the owner struct validity or CPU number,
+> and if the said CPU is offline. There is no point going back &
+> re-evaluate spinning in corner cases like that, let's just go to sleep.
+> 
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-looks good
+Right, patch looks good, comments are a tad misleading.
 
-Sebastian
+
+I've queued the below patch
+
+---
+Subject: mutex: Don't spin when the owner CPU is offline or other weird cases
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Fri Apr 16 23:20:00 CEST 2010
+
+Due to recent load-balancer changes that delay the task migration to
+the next wakeup, the adaptive mutex spinning ends up in a live lock
+when the owner's CPU gets offlined because the cpu_online() check
+lives before the owner running check.
+
+This patch changes mutex_spin_on_owner() to return 0 (don't spin) in
+any case where we aren't sure about the owner struct validity or CPU
+number, and if the said CPU is offline. There is no point going back &
+re-evaluate spinning in corner cases like that, let's just go to
+sleep.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1271212509.13059.135.camel@pasglop>
+---
+ kernel/sched.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -3647,7 +3647,7 @@ int mutex_spin_on_owner(struct mutex *lo
+ 	 * the mutex owner just released it and exited.
+ 	 */
+ 	if (probe_kernel_address(&owner->cpu, cpu))
+-		goto out;
++		return 0;
+ #else
+ 	cpu = owner->cpu;
+ #endif
+@@ -3657,14 +3657,14 @@ int mutex_spin_on_owner(struct mutex *lo
+ 	 * the cpu field may no longer be valid.
+ 	 */
+ 	if (cpu >= nr_cpumask_bits)
+-		goto out;
++		return 0;
+ 
+ 	/*
+ 	 * We need to validate that we can do a
+ 	 * get_cpu() and that we have the percpu area.
+ 	 */
+ 	if (!cpu_online(cpu))
+-		goto out;
++		return 0;
+ 
+ 	rq = cpu_rq(cpu);
+ 
+@@ -3683,7 +3683,7 @@ int mutex_spin_on_owner(struct mutex *lo
+ 
+ 		cpu_relax();
+ 	}
+-out:
++
+ 	return 1;
+ }
+ #endif
+
+
