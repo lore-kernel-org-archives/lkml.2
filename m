@@ -1,175 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab0DPLTI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 07:19:08 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43966 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757219Ab0DPLTG (ORCPT
+	id S1758065Ab0DPLWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 07:22:13 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37720 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756720Ab0DPLWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 07:19:06 -0400
+	Fri, 16 Apr 2010 07:22:12 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 10/10] vmscan: Update isolated page counters outside of main path in shrink_inactive_list()
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Chris Mason <chris.mason@oracle.com>,
-       Dave Chinner <david@fromorbit.com>, Andi Kleen <andi@firstfloor.org>,
-       Johannes Weiner <hannes@cmpxchg.org>
-In-Reply-To: <1271352103-2280-11-git-send-email-mel@csn.ul.ie>
-References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie> <1271352103-2280-11-git-send-email-mel@csn.ul.ie>
-Message-Id: <20100416115315.27AA.A69D9226@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] [cleanup] mm: introduce free_pages_prepare
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100416202125.27C4.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 16 Apr 2010 20:19:00 +0900 (JST)
+Date: Fri, 16 Apr 2010 20:22:08 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> When shrink_inactive_list() isolates pages, it updates a number of
-> counters using temporary variables to gather them. These consume stack
-> and it's in the main path that calls ->writepage(). This patch moves the
-> accounting updates outside of the main path to reduce stack usage.
-> 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> ---
->  mm/vmscan.c |   63 +++++++++++++++++++++++++++++++++++-----------------------
->  1 files changed, 38 insertions(+), 25 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 2c22c83..4225319 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1061,7 +1061,8 @@ static unsigned long clear_active_flags(struct list_head *page_list,
->  			ClearPageActive(page);
->  			nr_active++;
->  		}
-> -		count[lru]++;
-> +		if (count)
-> +			count[lru]++;
->  	}
->  
->  	return nr_active;
-> @@ -1141,12 +1142,13 @@ static int too_many_isolated(struct zone *zone, int file,
->   * TODO: Try merging with migrations version of putback_lru_pages
->   */
->  static noinline void putback_lru_pages(struct zone *zone,
-> -				struct zone_reclaim_stat *reclaim_stat,
-> +				struct scan_control *sc,
->  				unsigned long nr_anon, unsigned long nr_file,
->   				struct list_head *page_list)
->  {
->  	struct page *page;
->  	struct pagevec pvec;
-> +	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+Free_hot_cold_page() and __free_pages_ok() have very similar
+freeing preparation. This patch make consolicate it.
 
-Seems unrelated change here.
-Otherwise looks good.
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+---
+ mm/page_alloc.c |   40 +++++++++++++++++++++-------------------
+ 1 files changed, 21 insertions(+), 19 deletions(-)
 
- - kosaki
->  
->  	pagevec_init(&pvec, 1);
->  
-> @@ -1185,6 +1187,37 @@ static noinline void putback_lru_pages(struct zone *zone,
->  	pagevec_release(&pvec);
->  }
->  
-> +static noinline void update_isolated_counts(struct zone *zone, 
-> +					struct scan_control *sc,
-> +					unsigned long *nr_anon,
-> +					unsigned long *nr_file,
-> +					struct list_head *isolated_list)
-> +{
-> +	unsigned long nr_active;
-> +	unsigned int count[NR_LRU_LISTS] = { 0, };
-> +	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-> +
-> +	nr_active = clear_active_flags(isolated_list, count);
-> +	__count_vm_events(PGDEACTIVATE, nr_active);
-> +
-> +	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
-> +			      -count[LRU_ACTIVE_FILE]);
-> +	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
-> +			      -count[LRU_INACTIVE_FILE]);
-> +	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
-> +			      -count[LRU_ACTIVE_ANON]);
-> +	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
-> +			      -count[LRU_INACTIVE_ANON]);
-> +
-> +	*nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-> +	*nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-> +	__mod_zone_page_state(zone, NR_ISOLATED_ANON, *nr_anon);
-> +	__mod_zone_page_state(zone, NR_ISOLATED_FILE, *nr_file);
-> +
-> +	reclaim_stat->recent_scanned[0] += *nr_anon;
-> +	reclaim_stat->recent_scanned[1] += *nr_file;
-> +}
-> +
->  /*
->   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
->   * of reclaimed pages
-> @@ -1196,11 +1229,9 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
->  	LIST_HEAD(page_list);
->  	unsigned long nr_scanned;
->  	unsigned long nr_reclaimed = 0;
-> -	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
->  	int lumpy_reclaim = 0;
->  	unsigned long nr_taken;
->  	unsigned long nr_active;
-> -	unsigned int count[NR_LRU_LISTS] = { 0, };
->  	unsigned long nr_anon;
->  	unsigned long nr_file;
->  
-> @@ -1244,25 +1275,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
->  		return 0;
->  	}
->  
-> -	nr_active = clear_active_flags(&page_list, count);
-> -	__count_vm_events(PGDEACTIVATE, nr_active);
-> -
-> -	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
-> -			      -count[LRU_ACTIVE_FILE]);
-> -	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
-> -			      -count[LRU_INACTIVE_FILE]);
-> -	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
-> -			      -count[LRU_ACTIVE_ANON]);
-> -	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
-> -			      -count[LRU_INACTIVE_ANON]);
-> -
-> -	nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-> -	nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-> -	__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
-> -	__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
-> -
-> -	reclaim_stat->recent_scanned[0] += nr_anon;
-> -	reclaim_stat->recent_scanned[1] += nr_file;
-> +	update_isolated_counts(zone, sc, &nr_anon, &nr_file, &page_list);
->  
->  	spin_unlock_irq(&zone->lru_lock);
->  
-> @@ -1281,7 +1294,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
->  		 * The attempt at page out may have made some
->  		 * of the pages active, mark them inactive again.
->  		 */
-> -		nr_active = clear_active_flags(&page_list, count);
-> +		nr_active = clear_active_flags(&page_list, NULL);
->  		count_vm_events(PGDEACTIVATE, nr_active);
->  
->  		nr_reclaimed += shrink_page_list(&page_list, sc,
-> @@ -1293,7 +1306,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
->  		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
->  	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
->  
-> -	putback_lru_pages(zone, reclaim_stat, nr_anon, nr_file, &page_list);
-> +	putback_lru_pages(zone, sc, nr_anon, nr_file, &page_list);
->  	return nr_reclaimed;
->  }
->  
-> -- 
-> 1.6.5
-> 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index d03c946..6a7d0d0 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -599,20 +599,23 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+ 	spin_unlock(&zone->lock);
+ }
+ 
+-static void __free_pages_ok(struct page *page, unsigned int order)
++static bool free_pages_prepare(struct page *page, unsigned int order)
+ {
+-	unsigned long flags;
+ 	int i;
+ 	int bad = 0;
+-	int wasMlocked = __TestClearPageMlocked(page);
+ 
+ 	trace_mm_page_free_direct(page, order);
+ 	kmemcheck_free_shadow(page, order);
+ 
+-	for (i = 0 ; i < (1 << order) ; ++i)
+-		bad += free_pages_check(page + i);
++	for (i = 0 ; i < (1 << order) ; ++i) {
++		struct page *pg = page + i;
++
++		if (PageAnon(pg))
++			pg->mapping = NULL;
++		bad += free_pages_check(pg);
++	}
+ 	if (bad)
+-		return;
++		return false;
+ 
+ 	if (!PageHighMem(page)) {
+ 		debug_check_no_locks_freed(page_address(page),PAGE_SIZE<<order);
+@@ -622,6 +625,17 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+ 	arch_free_page(page, order);
+ 	kernel_map_pages(page, 1 << order, 0);
+ 
++	return true;
++}
++
++static void __free_pages_ok(struct page *page, unsigned int order)
++{
++	unsigned long flags;
++	int wasMlocked = __TestClearPageMlocked(page);
++
++	if (!free_pages_prepare(page, order))
++		return;
++
+ 	local_irq_save(flags);
+ 	if (unlikely(wasMlocked))
+ 		free_page_mlock(page);
+@@ -1107,21 +1121,9 @@ void free_hot_cold_page(struct page *page, int cold)
+ 	int migratetype;
+ 	int wasMlocked = __TestClearPageMlocked(page);
+ 
+-	trace_mm_page_free_direct(page, 0);
+-	kmemcheck_free_shadow(page, 0);
+-
+-	if (PageAnon(page))
+-		page->mapping = NULL;
+-	if (free_pages_check(page))
++	if (!free_pages_prepare(page, 0))
+ 		return;
+ 
+-	if (!PageHighMem(page)) {
+-		debug_check_no_locks_freed(page_address(page), PAGE_SIZE);
+-		debug_check_no_obj_freed(page_address(page), PAGE_SIZE);
+-	}
+-	arch_free_page(page, 0);
+-	kernel_map_pages(page, 1, 0);
+-
+ 	migratetype = get_pageblock_migratetype(page);
+ 	set_page_private(page, migratetype);
+ 	local_irq_save(flags);
+-- 
+1.6.5.2
 
 
 
