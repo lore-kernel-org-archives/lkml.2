@@ -1,115 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065Ab0DPLWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 07:22:13 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37720 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720Ab0DPLWM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 07:22:12 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>, LKML <linux-kernel@vger.kernel.org>,
-       linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] [cleanup] mm: introduce free_pages_prepare
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20100416202125.27C4.A69D9226@jp.fujitsu.com>
+	id S1758086Ab0DPLZy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 07:25:54 -0400
+Received: from mail2.donator.se ([217.16.195.8]:4006 "EHLO mail2.donator.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758020Ab0DPLZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 07:25:52 -0400
+X-MDAV-Processed: mail2.donator.se, Fri, 16 Apr 2010 13:25:51 +0200
+X-Spam-Processed: mail2.donator.se, Fri, 16 Apr 2010 13:25:50 +0200
+	(not processed: spam filter heuristic analysis disabled)
+X-Authenticated-Sender: jakob.viketoft@bitsim.com
+X-MDRemoteIP: 10.99.195.158
+X-Return-Path: jakob.viketoft@bitsim.com
+X-Envelope-From: jakob.viketoft@bitsim.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Message-ID: <4BC8493D.60900@bitsim.com>
+Date: Fri, 16 Apr 2010 13:25:49 +0200
+From: Jakob Viketoft <jakob.viketoft@bitsim.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: daniel@caiaq.de
+CC: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>
+Subject: Re: [PATCH] colibri.h: Fix building for colibri 270...
+References: <4BC8330E.6000503@bitsim.com> <20100416100126.GI30801@buzzloop.caiaq.de> <4BC84766.5060208@bitsim.com>
+In-Reply-To: <4BC84766.5060208@bitsim.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 16 Apr 2010 20:22:08 +0900 (JST)
+Reply-To: jakob.viketoft@bitsim.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free_hot_cold_page() and __free_pages_ok() have very similar
-freeing preparation. This patch make consolicate it.
+Jakob Viketoft wrote:
+> Daniel Mack wrote:
+<...>
+>   CC      drivers/pcmcia/pxa2xx_colibri.o
+> In file included from drivers/pcmcia/pxa2xx_colibri.c:25:
+> arch/arm/mach-pxa/include/mach/colibri.h:13: error: expected ')' before 
+> '*' token
+> make[2]: *** [drivers/pcmcia/pxa2xx_colibri.o] Error 1
+> make[1]: *** [drivers/pcmcia] Error 2
+> make: *** [drivers] Error 2
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/page_alloc.c |   40 +++++++++++++++++++++-------------------
- 1 files changed, 21 insertions(+), 19 deletions(-)
+Adding a "#include <mach/mfp.h>" seem to cure this problem. If you agree 
+I can supply a new patch with the correct solution this time.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d03c946..6a7d0d0 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -599,20 +599,23 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
- 	spin_unlock(&zone->lock);
- }
- 
--static void __free_pages_ok(struct page *page, unsigned int order)
-+static bool free_pages_prepare(struct page *page, unsigned int order)
- {
--	unsigned long flags;
- 	int i;
- 	int bad = 0;
--	int wasMlocked = __TestClearPageMlocked(page);
- 
- 	trace_mm_page_free_direct(page, order);
- 	kmemcheck_free_shadow(page, order);
- 
--	for (i = 0 ; i < (1 << order) ; ++i)
--		bad += free_pages_check(page + i);
-+	for (i = 0 ; i < (1 << order) ; ++i) {
-+		struct page *pg = page + i;
-+
-+		if (PageAnon(pg))
-+			pg->mapping = NULL;
-+		bad += free_pages_check(pg);
-+	}
- 	if (bad)
--		return;
-+		return false;
- 
- 	if (!PageHighMem(page)) {
- 		debug_check_no_locks_freed(page_address(page),PAGE_SIZE<<order);
-@@ -622,6 +625,17 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- 	arch_free_page(page, order);
- 	kernel_map_pages(page, 1 << order, 0);
- 
-+	return true;
-+}
-+
-+static void __free_pages_ok(struct page *page, unsigned int order)
-+{
-+	unsigned long flags;
-+	int wasMlocked = __TestClearPageMlocked(page);
-+
-+	if (!free_pages_prepare(page, order))
-+		return;
-+
- 	local_irq_save(flags);
- 	if (unlikely(wasMlocked))
- 		free_page_mlock(page);
-@@ -1107,21 +1121,9 @@ void free_hot_cold_page(struct page *page, int cold)
- 	int migratetype;
- 	int wasMlocked = __TestClearPageMlocked(page);
- 
--	trace_mm_page_free_direct(page, 0);
--	kmemcheck_free_shadow(page, 0);
--
--	if (PageAnon(page))
--		page->mapping = NULL;
--	if (free_pages_check(page))
-+	if (!free_pages_prepare(page, 0))
- 		return;
- 
--	if (!PageHighMem(page)) {
--		debug_check_no_locks_freed(page_address(page), PAGE_SIZE);
--		debug_check_no_obj_freed(page_address(page), PAGE_SIZE);
--	}
--	arch_free_page(page, 0);
--	kernel_map_pages(page, 1, 0);
--
- 	migratetype = get_pageblock_migratetype(page);
- 	set_page_private(page, migratetype);
- 	local_irq_save(flags);
--- 
-1.6.5.2
-
-
+	/Jakob
 
