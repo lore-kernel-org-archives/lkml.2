@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758503Ab0DPTNQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 15:13:16 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:37337 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758049Ab0DPTNP (ORCPT
+	id S1758545Ab0DPTQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 15:16:50 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:35885 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758049Ab0DPTQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 15:13:15 -0400
-Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
-From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Tejun Heo <tj@kernel.org>,
-       Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-In-Reply-To: <alpine.DEB.2.00.1004161105120.7710@router.home>
-References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
-	 <4BC65237.5080408@kernel.org>
-	 <v2j28c262361004141831h8f2110d5pa7a1e3063438cbf8@mail.gmail.com>
-	 <4BC6BE78.1030503@kernel.org>
-	 <h2w28c262361004150100ne936d943u28f76c0f171d3db8@mail.gmail.com>
-	 <4BC6CB30.7030308@kernel.org>
-	 <l2u28c262361004150240q8a873b6axb73eaa32fd6e65e6@mail.gmail.com>
-	 <4BC6E581.1000604@kernel.org>
-	 <z2p28c262361004150321sc65e84b4w6cc99927ea85a52b@mail.gmail.com>
-	 <4BC6FBC8.9090204@kernel.org>
-	 <w2h28c262361004150449qdea5cde9y687c1fce30e665d@mail.gmail.com>
-	 <alpine.DEB.2.00.1004161105120.7710@router.home>
-Content-Type: text/plain
-Organization: HP/LKTT
-Date: Fri, 16 Apr 2010 15:13:09 -0400
-Message-Id: <1271445189.30360.280.camel@useless.americas.hpqcorp.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Apr 2010 15:16:49 -0400
+From: Dinh.Nguyen@freescale.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, r.herring@freescale.com,
+       Jun.Li@freescale.com, xiao-lizhang@freescale.com,
+       Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv4 2.6.34-rc4 7/7] mx5: Add USB to Freescale MX51 defconfig
+Date: Fri, 16 Apr 2010 14:16:11 -0500
+Message-Id: <1271445371-18501-7-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1271445371-18501-6-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1271445371-18501-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271445371-18501-2-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271445371-18501-3-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271445371-18501-4-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271445371-18501-5-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271445371-18501-6-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-16 at 11:07 -0500, Christoph Lameter wrote:
-> On Thu, 15 Apr 2010, Minchan Kim wrote:
-> 
-> > I don't want to remove alloc_pages for UMA system.
-> 
-> alloc_pages is the same as alloc_pages_any_node so why have it?
-> 
-> > #define alloc_pages alloc_page_sexact_node
-> >
-> > What I want to remove is just alloc_pages_node. :)
-> 
-> Why remove it? If you want to get rid of -1 handling then check all the
-> callsites and make sure that they are not using  -1.
-> 
-> Also could you define a constant for -1? -1 may have various meanings. One
-> is the local node and the other is any node. 
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-NUMA_NO_NODE is #defined as (-1) and can be used for this purpose.  '-1'
-has been replaced by this in many cases.   It can be interpreted as "No
-node specified" == "any node is acceptable".  But, it also has multiple
-meanings.  E.g., in the hugetlb sysfs attribute and sysctl functions it
-indicates the global hstates [all nodes] vs a per node hstate.  So, I
-suppose one could define a NUMA_ANY_NODE, to make the intention clear at
-the call site.
+Update mx51_defconfig to include USB EHCI by default.
 
-I believe that all usage of -1 to mean the local node has been removed,
-unless I missed one.  Local allocation is now indicated by a mempolicy
-mode flag--MPOL_F_LOCAL.  It's treated as a special case of
-MPOL_PREFERRED.
+This patch applies to 2.6.34-rc4.
 
-> The difference is if memory
-> policies are obeyed or not. Note that alloc_pages follows memory policies
-> whereas alloc_pages_node does not.
-> 
-> Therefore
-> 
-> alloc_pages() != alloc_pages_node(  , -1)
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/configs/mx51_defconfig |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/configs/mx51_defconfig b/arch/arm/configs/mx51_defconfig
+index c88e952..a708fd6 100644
+--- a/arch/arm/configs/mx51_defconfig
++++ b/arch/arm/configs/mx51_defconfig
+@@ -809,7 +809,22 @@ CONFIG_SSB_POSSIBLE=y
+ CONFIG_DUMMY_CONSOLE=y
+ # CONFIG_SOUND is not set
+ # CONFIG_HID_SUPPORT is not set
+-# CONFIG_USB_SUPPORT is not set
++CONFIG_USB_SUPPORT=y
++CONFIG_USB_ARCH_HAS_HCD=y
++# CONFIG_USB_ARCH_HAS_OHCI is not set
++CONFIG_USB_ARCH_HAS_EHCI=y
++CONFIG_USB=y
++
++#
++# USB Host Controller Drivers
++#
++# CONFIG_USB_C67X00_HCD is not set
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_ROOT_HUB_TT=y
++# CONFIG_USB_EHCI_TT_NEWSCHED is not set
++CONFIG_USB_EHCI_MXC=y
++
++
+ CONFIG_MMC=y
+ # CONFIG_MMC_DEBUG is not set
+ # CONFIG_MMC_UNSAFE_RESUME is not set
+-- 
+1.6.0.4
 
