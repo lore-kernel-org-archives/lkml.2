@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758603Ab0DPTQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 15:16:53 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:35891 "EHLO
+	id S1758648Ab0DPTQz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 15:16:55 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:35897 "EHLO
 	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758551Ab0DPTQu (ORCPT
+	with ESMTP id S1758592Ab0DPTQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 15:16:50 -0400
+	Fri, 16 Apr 2010 15:16:53 -0400
 From: Dinh.Nguyen@freescale.com
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
@@ -15,95 +15,135 @@ Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
        amit.kucheria@canonical.com, r.herring@freescale.com,
        Jun.Li@freescale.com, xiao-lizhang@freescale.com,
        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv4 2.6.34-rc4 3/7] mxc: Add new defines for USB HW register bits on Freescale SoCs.
-Date: Fri, 16 Apr 2010 14:16:07 -0500
-Message-Id: <1271445371-18501-3-git-send-email-Dinh.Nguyen@freescale.com>
+Subject: [PATCHv4 2.6.34-rc4 2/7] mx5: Add USB device definitions for Freescale MX51 Babbage HW
+Date: Fri, 16 Apr 2010 14:16:06 -0500
+Message-Id: <1271445371-18501-2-git-send-email-Dinh.Nguyen@freescale.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1271445371-18501-2-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <1271445371-18501-1-git-send-email-Dinh.Nguyen@freescale.com>
 References: <1271445371-18501-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271445371-18501-2-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-This patch adds new register bit defines for the USB HW on Freescale
-SoCs.
+This patch is part of enabling USB for Freescale MX51 Babbage HW. This
+patch adds device structures for USB Host1 and OTG port, and adds
+clocking information for USB HW.
 
 This patch applies to 2.6.34-rc4.
 
 Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- arch/arm/plat-mxc/include/mach/mxc_ehci.h |   48 +++++++++++++++++++++++++++++
- 1 files changed, 48 insertions(+), 0 deletions(-)
+ arch/arm/mach-mx5/clock-mx51.c |    8 ++++++
+ arch/arm/mach-mx5/devices.c    |   49 ++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-mx5/devices.h    |    2 +
+ 3 files changed, 59 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/plat-mxc/include/mach/mxc_ehci.h b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-index 4b9b836..c5b1e7b 100644
---- a/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-+++ b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-@@ -1,6 +1,30 @@
- #ifndef __INCLUDE_ASM_ARCH_MXC_EHCI_H
- #define __INCLUDE_ASM_ARCH_MXC_EHCI_H
+diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
+index 1ee6ce4..1fe40e1 100644
+--- a/arch/arm/mach-mx5/clock-mx51.c
++++ b/arch/arm/mach-mx5/clock-mx51.c
+@@ -762,6 +762,10 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG9_OFFSET,
+ DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
+ 	NULL,  NULL, &ipg_clk, NULL);
  
-+#define USBOTG_OFFSET			0
-+#define USBH1_OFFSET			0x200
-+#define USBH2_OFFSET			0x400
-+#define USBH3_OFFSET			0x600
-+#define USBOTHER_REGS_OFFSET	0x800
++/* USB */
++DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
++	NULL, NULL, &pll3_sw_clk, NULL);
 +
-+#define USBCMD_OFFSET			0x140
-+
-+#define ULPI_VIEWPORT_OFFSET	0x170
-+#define PORTSC_OFFSET		0x184
-+#define USBMODE_OFFSET		0x1a8
-+#define USBMODE_CM_HOST		3
-+
-+#define USBCTRL_OFFSET					0
-+#define USB_PHY_CTR_FUNC_OFFSET		0x8
-+#define USB_PHY_CTR_FUNC2_OFFSET		0xc
-+#define USB_CTRL_1_OFFSET				0x10
-+
-+
-+/* USBCMD */
-+#define UCMD_RUN_STOP           (1 << 0)        /* controller run/stop */
-+#define UCMD_RESET		(1 << 1)	/* controller reset */
-+#define UCMD_ITC_NO_THRESHOLD		(~(0xff << 16))	/* Interrupt Threshold Control */
-+
- /* values for portsc field */
- #define MXC_EHCI_PHY_LOW_POWER_SUSPEND	(1 << 23)
- #define MXC_EHCI_FORCE_FS		(1 << 24)
-@@ -26,6 +50,30 @@
- #define MXC_EHCI_IPPUE_DOWN		(1 << 8)
- #define MXC_EHCI_IPPUE_UP		(1 << 9)
+ /* FEC */
+ DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
+ 	NULL,  NULL, &ipg_clk, NULL);
+@@ -779,6 +783,10 @@ static struct clk_lookup lookups[] = {
+ 	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
+ 	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
+ 	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
++	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
++	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
++	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
++	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
+ };
  
-+/* USB_CTRL */
-+#define UCTRL_OUIE		(1 << 28)	/* OTG ULPI intr enable */
-+#define UCTRL_OWIE		(1 << 27)	/* OTG wakeup intr enable */
-+#define UCTRL_OBPVAL_RXDP	(1 << 26)	/* OTG RxDp status in bypass mode */
-+#define UCTRL_OBPVAL_RXDM	(1 << 25)	/* OTG RxDm status in bypass mode */
-+#define UCTRL_OPM		(1 << 24)	/* OTG power mask */
-+#define UCTRL_H1UIE		(1 << 12)	/* Host1 ULPI interrupt enable */
-+#define UCTRL_H1WIE		(1 << 11)	/* HOST1 wakeup intr enable */
-+#define UCTRL_H1PM		(1 <<  8)		/* HOST1 power mask */
+ static void clk_tree_init(void)
+diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
+index 5070ae1..4b456d5 100644
+--- a/arch/arm/mach-mx5/devices.c
++++ b/arch/arm/mach-mx5/devices.c
+@@ -12,6 +12,7 @@
+ 
+ #include <linux/platform_device.h>
+ #include <linux/gpio.h>
++#include <linux/dma-mapping.h>
+ #include <mach/hardware.h>
+ #include <mach/imx-uart.h>
+ #include <mach/irqs.h>
+@@ -92,6 +93,54 @@ struct platform_device mxc_fec_device = {
+ 	.resource = mxc_fec_resources,
+ };
+ 
++static u64 usb_dma_mask = DMA_BIT_MASK(32);
 +
-+/* USB_PHY_CTRL_FUNC */
-+#define USB_UTMI_PHYCTRL_OC_DIS	(1 << 8)	/* OTG Disable Overcurrent Event */
-+#define USB_UH1_OC_DIS	(1 << 5)		/* UH1 Disable Overcurrent Event */
++static struct resource usbotg_resources[] = {
++	{
++		.start = MX51_OTG_BASE_ADDR,
++		.end = MX51_OTG_BASE_ADDR + 0x1ff,
++		.flags = IORESOURCE_MEM,
++	},
++	{
++		.start = MX51_MXC_INT_USB_OTG,
++		.flags = IORESOURCE_IRQ,
++	},
++};
 +
-+/* USB_CTRL_1 */
-+#define USB_CTRL_UH1_EXT_CLK_EN			(1 << 25)
-+#define USB_CTRL_UH2_EXT_CLK_EN			(1 << 26)
++struct platform_device mxc_usbdr_host_device = {
++	.name = "mxc-ehci",
++	.id = 0,
++	.num_resources = ARRAY_SIZE(usbotg_resources),
++	.resource = usbotg_resources,
++	.dev = {
++		.dma_mask = &usb_dma_mask,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
++	},
++};
 +
-+/* USB_PHY_CTRL_FUNC2*/
-+#define USB_UTMI_PHYCTRL2_PLLDIV_MASK		0x3
-+#define USB_UTMI_PHYCTRL2_PLLDIV_SHIFT		0
-+#define USB_UTMI_PHYCTRL2_HSDEVSEL_MASK		0x3
-+#define USB_UTMI_PHYCTRL2_HSDEVSEL_SHIFT	19
++static struct resource usbh1_resources[] = {
++	{
++		.start = MX51_OTG_BASE_ADDR + 0x200,
++		.end = MX51_OTG_BASE_ADDR + 0x200 + 0x1ff,
++		.flags = IORESOURCE_MEM,
++	},
++	{
++		.start = MX51_MXC_INT_USB_H1,
++		.flags = IORESOURCE_IRQ,
++	},
++};
 +
- struct mxc_usbh_platform_data {
- 	int (*init)(struct platform_device *pdev);
- 	int (*exit)(struct platform_device *pdev);
++struct platform_device mxc_usbh1_device = {
++	.name = "mxc-ehci",
++	.id = 1,
++	.num_resources = ARRAY_SIZE(usbh1_resources),
++	.resource = usbh1_resources,
++	.dev = {
++		.dma_mask = &usb_dma_mask,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
++	},
++};
++
+ static struct mxc_gpio_port mxc_gpio_ports[] = {
+ 	{
+ 		.chip.label = "gpio-0",
+diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
+index f339ab8..6497764 100644
+--- a/arch/arm/mach-mx5/devices.h
++++ b/arch/arm/mach-mx5/devices.h
+@@ -2,3 +2,5 @@ extern struct platform_device mxc_uart_device0;
+ extern struct platform_device mxc_uart_device1;
+ extern struct platform_device mxc_uart_device2;
+ extern struct platform_device mxc_fec_device;
++extern struct platform_device mxc_usbdr_host_device;
++extern struct platform_device mxc_usbh1_device;
+\ No newline at end of file
 -- 
 1.6.0.4
 
