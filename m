@@ -1,400 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab0DPPUT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 11:20:19 -0400
-Received: from mga07.intel.com ([143.182.124.22]:49031 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752260Ab0DPPUR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 11:20:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,219,1270450800"; 
-   d="scan'208";a="266547305"
-Date: Fri, 16 Apr 2010 17:20:42 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-       Mattias Wallin <mattias.wallin@stericsson.com>
-Subject: Re: [PATCH 1/3] MFD: renamed ab3100.h to abx500.h
-Message-ID: <20100416152041.GA28863@sortiz.org>
-References: <1271113496-6744-1-git-send-email-linus.walleij@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271113496-6744-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758000Ab0DPPYh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 11:24:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12455 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757123Ab0DPPYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 11:24:36 -0400
+Date: Fri, 16 Apr 2010 11:24:10 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
+       tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
+       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+       fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+       vgoyal@redhat.com
+Message-Id: <cover.1271427118.git.jbaron@redhat.com>
+Subject: [PATCH 00/11] jump label v7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-On Tue, Apr 13, 2010 at 01:04:56AM +0200, Linus Walleij wrote:
-> The goal here is to make way for a more general interface for the
-> analog baseband chips ab3100 ab3550 ab550 and future chips.
-I have an initial question for you:
-Do you plan to have one single driver supporting the 3100, 3550 and the 550
-chips ?
+Based on David Miller's suggestion this version re-works the architecture
+interfaces for jump labels. I have also added a documentation file, and
+re-freshed the patchset against the latest -tip tree.
 
-Cheers,
-Samuel.
+The new architecture interface (quoting from the docs file), is as follows:
 
-> This patch have been divided into two parts since both changing name
-> and content of a file is not recommended in git.
-> 
-> Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
-> ---
->  arch/arm/mach-u300/i2c.c   |    2 +-
->  drivers/mfd/ab3100-core.c  |    2 +-
->  drivers/mfd/ab3100-otp.c   |    2 +-
->  drivers/regulator/ab3100.c |    2 +-
->  drivers/rtc/rtc-ab3100.c   |    2 +-
->  include/linux/mfd/ab3100.h |  129 --------------------------------------------
->  include/linux/mfd/abx500.h |  129 ++++++++++++++++++++++++++++++++++++++++++++
->  7 files changed, 134 insertions(+), 134 deletions(-)
->  delete mode 100644 include/linux/mfd/ab3100.h
->  create mode 100644 include/linux/mfd/abx500.h
-> 
-> diff --git a/arch/arm/mach-u300/i2c.c b/arch/arm/mach-u300/i2c.c
-> index c73ed06..d893ee0 100644
-> --- a/arch/arm/mach-u300/i2c.c
-> +++ b/arch/arm/mach-u300/i2c.c
-> @@ -9,7 +9,7 @@
->   */
->  #include <linux/kernel.h>
->  #include <linux/i2c.h>
-> -#include <linux/mfd/ab3100.h>
-> +#include <linux/mfd/abx500.h>
->  #include <linux/regulator/machine.h>
->  #include <linux/amba/bus.h>
->  #include <mach/irqs.h>
-> diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
-> index 1689821..f8c4a33 100644
-> --- a/drivers/mfd/ab3100-core.c
-> +++ b/drivers/mfd/ab3100-core.c
-> @@ -19,7 +19,7 @@
->  #include <linux/debugfs.h>
->  #include <linux/seq_file.h>
->  #include <linux/uaccess.h>
-> -#include <linux/mfd/ab3100.h>
-> +#include <linux/mfd/abx500.h>
->  
->  /* These are the only registers inside AB3100 used in this main file */
->  
-> diff --git a/drivers/mfd/ab3100-otp.c b/drivers/mfd/ab3100-otp.c
-> index 2d14655..7093f1a 100644
-> --- a/drivers/mfd/ab3100-otp.c
-> +++ b/drivers/mfd/ab3100-otp.c
-> @@ -12,7 +12,7 @@
->  #include <linux/slab.h>
->  #include <linux/init.h>
->  #include <linux/platform_device.h>
-> -#include <linux/mfd/ab3100.h>
-> +#include <linux/mfd/abx500.h>
->  #include <linux/debugfs.h>
->  #include <linux/seq_file.h>
->  
-> diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
-> index 7de9509..1b8b0ab 100644
-> --- a/drivers/regulator/ab3100.c
-> +++ b/drivers/regulator/ab3100.c
-> @@ -16,7 +16,7 @@
->  #include <linux/delay.h>
->  #include <linux/platform_device.h>
->  #include <linux/regulator/driver.h>
-> -#include <linux/mfd/ab3100.h>
-> +#include <linux/mfd/abx500.h>
->  
->  /* LDO registers and some handy masking definitions for AB3100 */
->  #define AB3100_LDO_A		0x40
-> diff --git a/drivers/rtc/rtc-ab3100.c b/drivers/rtc/rtc-ab3100.c
-> index 4704aac..b46b85d 100644
-> --- a/drivers/rtc/rtc-ab3100.c
-> +++ b/drivers/rtc/rtc-ab3100.c
-> @@ -9,7 +9,7 @@
->  #include <linux/init.h>
->  #include <linux/platform_device.h>
->  #include <linux/rtc.h>
-> -#include <linux/mfd/ab3100.h>
-> +#include <linux/mfd/abx500.h>
->  
->  /* Clock rate in Hz */
->  #define AB3100_RTC_CLOCK_RATE	32768
-> diff --git a/include/linux/mfd/ab3100.h b/include/linux/mfd/ab3100.h
-> deleted file mode 100644
-> index 9a881c3..0000000
-> --- a/include/linux/mfd/ab3100.h
-> +++ /dev/null
-> @@ -1,129 +0,0 @@
-> -/*
-> - * Copyright (C) 2007-2009 ST-Ericsson AB
-> - * License terms: GNU General Public License (GPL) version 2
-> - * AB3100 core access functions
-> - * Author: Linus Walleij <linus.walleij@stericsson.com>
-> - */
-> -
-> -#include <linux/device.h>
-> -#include <linux/regulator/machine.h>
-> -
-> -#ifndef MFD_AB3100_H
-> -#define MFD_AB3100_H
-> -
-> -#define ABUNKNOWN	0
-> -#define	AB3000		1
-> -#define	AB3100		2
-> -
-> -/*
-> - * AB3100, EVENTA1, A2 and A3 event register flags
-> - * these are catenated into a single 32-bit flag in the code
-> - * for event notification broadcasts.
-> - */
-> -#define AB3100_EVENTA1_ONSWA				(0x01<<16)
-> -#define AB3100_EVENTA1_ONSWB				(0x02<<16)
-> -#define AB3100_EVENTA1_ONSWC				(0x04<<16)
-> -#define AB3100_EVENTA1_DCIO				(0x08<<16)
-> -#define AB3100_EVENTA1_OVER_TEMP			(0x10<<16)
-> -#define AB3100_EVENTA1_SIM_OFF				(0x20<<16)
-> -#define AB3100_EVENTA1_VBUS				(0x40<<16)
-> -#define AB3100_EVENTA1_VSET_USB				(0x80<<16)
-> -
-> -#define AB3100_EVENTA2_READY_TX				(0x01<<8)
-> -#define AB3100_EVENTA2_READY_RX				(0x02<<8)
-> -#define AB3100_EVENTA2_OVERRUN_ERROR			(0x04<<8)
-> -#define AB3100_EVENTA2_FRAMING_ERROR			(0x08<<8)
-> -#define AB3100_EVENTA2_CHARG_OVERCURRENT		(0x10<<8)
-> -#define AB3100_EVENTA2_MIDR				(0x20<<8)
-> -#define AB3100_EVENTA2_BATTERY_REM			(0x40<<8)
-> -#define AB3100_EVENTA2_ALARM				(0x80<<8)
-> -
-> -#define AB3100_EVENTA3_ADC_TRIG5			(0x01)
-> -#define AB3100_EVENTA3_ADC_TRIG4			(0x02)
-> -#define AB3100_EVENTA3_ADC_TRIG3			(0x04)
-> -#define AB3100_EVENTA3_ADC_TRIG2			(0x08)
-> -#define AB3100_EVENTA3_ADC_TRIGVBAT			(0x10)
-> -#define AB3100_EVENTA3_ADC_TRIGVTX			(0x20)
-> -#define AB3100_EVENTA3_ADC_TRIG1			(0x40)
-> -#define AB3100_EVENTA3_ADC_TRIG0			(0x80)
-> -
-> -/* AB3100, STR register flags */
-> -#define AB3100_STR_ONSWA				(0x01)
-> -#define AB3100_STR_ONSWB				(0x02)
-> -#define AB3100_STR_ONSWC				(0x04)
-> -#define AB3100_STR_DCIO					(0x08)
-> -#define AB3100_STR_BOOT_MODE				(0x10)
-> -#define AB3100_STR_SIM_OFF				(0x20)
-> -#define AB3100_STR_BATT_REMOVAL				(0x40)
-> -#define AB3100_STR_VBUS					(0x80)
-> -
-> -/*
-> - * AB3100 contains 8 regulators, one external regulator controller
-> - * and a buck converter, further the LDO E and buck converter can
-> - * have separate settings if they are in sleep mode, this is
-> - * modeled as a separate regulator.
-> - */
-> -#define AB3100_NUM_REGULATORS				10
-> -
-> -/**
-> - * struct ab3100
-> - * @access_mutex: lock out concurrent accesses to the AB3100 registers
-> - * @dev: pointer to the containing device
-> - * @i2c_client: I2C client for this chip
-> - * @testreg_client: secondary client for test registers
-> - * @chip_name: name of this chip variant
-> - * @chip_id: 8 bit chip ID for this chip variant
-> - * @event_subscribers: event subscribers are listed here
-> - * @startup_events: a copy of the first reading of the event registers
-> - * @startup_events_read: whether the first events have been read
-> - *
-> - * This struct is PRIVATE and devices using it should NOT
-> - * access ANY fields. It is used as a token for calling the
-> - * AB3100 functions.
-> - */
-> -struct ab3100 {
-> -	struct mutex access_mutex;
-> -	struct device *dev;
-> -	struct i2c_client *i2c_client;
-> -	struct i2c_client *testreg_client;
-> -	char chip_name[32];
-> -	u8 chip_id;
-> -	struct blocking_notifier_head event_subscribers;
-> -	u32 startup_events;
-> -	bool startup_events_read;
-> -};
-> -
-> -/**
-> - * struct ab3100_platform_data
-> - * Data supplied to initialize board connections to the AB3100
-> - * @reg_constraints: regulator constraints for target board
-> - *     the order of these constraints are: LDO A, C, D, E,
-> - *     F, G, H, K, EXT and BUCK.
-> - * @reg_initvals: initial values for the regulator registers
-> - *     plus two sleep settings for LDO E and the BUCK converter.
-> - *     exactly AB3100_NUM_REGULATORS+2 values must be sent in.
-> - *     Order: LDO A, C, E, E sleep, F, G, H, K, EXT, BUCK,
-> - *     BUCK sleep, LDO D. (LDO D need to be initialized last.)
-> - * @external_voltage: voltage level of the external regulator.
-> - */
-> -struct ab3100_platform_data {
-> -	struct regulator_init_data reg_constraints[AB3100_NUM_REGULATORS];
-> -	u8 reg_initvals[AB3100_NUM_REGULATORS+2];
-> -	int external_voltage;
-> -};
-> -
-> -int ab3100_set_register_interruptible(struct ab3100 *ab3100, u8 reg, u8 regval);
-> -int ab3100_get_register_interruptible(struct ab3100 *ab3100, u8 reg, u8 *regval);
-> -int ab3100_get_register_page_interruptible(struct ab3100 *ab3100,
-> -			     u8 first_reg, u8 *regvals, u8 numregs);
-> -int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
-> -				 u8 reg, u8 andmask, u8 ormask);
-> -u8 ab3100_get_chip_type(struct ab3100 *ab3100);
-> -int ab3100_event_register(struct ab3100 *ab3100,
-> -			  struct notifier_block *nb);
-> -int ab3100_event_unregister(struct ab3100 *ab3100,
-> -			    struct notifier_block *nb);
-> -int ab3100_event_registers_startup_state_get(struct ab3100 *ab3100,
-> -					     u32 *fatevent);
-> -
-> -#endif
-> diff --git a/include/linux/mfd/abx500.h b/include/linux/mfd/abx500.h
-> new file mode 100644
-> index 0000000..9a881c3
-> --- /dev/null
-> +++ b/include/linux/mfd/abx500.h
-> @@ -0,0 +1,129 @@
-> +/*
-> + * Copyright (C) 2007-2009 ST-Ericsson AB
-> + * License terms: GNU General Public License (GPL) version 2
-> + * AB3100 core access functions
-> + * Author: Linus Walleij <linus.walleij@stericsson.com>
-> + */
-> +
-> +#include <linux/device.h>
-> +#include <linux/regulator/machine.h>
-> +
-> +#ifndef MFD_AB3100_H
-> +#define MFD_AB3100_H
-> +
-> +#define ABUNKNOWN	0
-> +#define	AB3000		1
-> +#define	AB3100		2
-> +
-> +/*
-> + * AB3100, EVENTA1, A2 and A3 event register flags
-> + * these are catenated into a single 32-bit flag in the code
-> + * for event notification broadcasts.
-> + */
-> +#define AB3100_EVENTA1_ONSWA				(0x01<<16)
-> +#define AB3100_EVENTA1_ONSWB				(0x02<<16)
-> +#define AB3100_EVENTA1_ONSWC				(0x04<<16)
-> +#define AB3100_EVENTA1_DCIO				(0x08<<16)
-> +#define AB3100_EVENTA1_OVER_TEMP			(0x10<<16)
-> +#define AB3100_EVENTA1_SIM_OFF				(0x20<<16)
-> +#define AB3100_EVENTA1_VBUS				(0x40<<16)
-> +#define AB3100_EVENTA1_VSET_USB				(0x80<<16)
-> +
-> +#define AB3100_EVENTA2_READY_TX				(0x01<<8)
-> +#define AB3100_EVENTA2_READY_RX				(0x02<<8)
-> +#define AB3100_EVENTA2_OVERRUN_ERROR			(0x04<<8)
-> +#define AB3100_EVENTA2_FRAMING_ERROR			(0x08<<8)
-> +#define AB3100_EVENTA2_CHARG_OVERCURRENT		(0x10<<8)
-> +#define AB3100_EVENTA2_MIDR				(0x20<<8)
-> +#define AB3100_EVENTA2_BATTERY_REM			(0x40<<8)
-> +#define AB3100_EVENTA2_ALARM				(0x80<<8)
-> +
-> +#define AB3100_EVENTA3_ADC_TRIG5			(0x01)
-> +#define AB3100_EVENTA3_ADC_TRIG4			(0x02)
-> +#define AB3100_EVENTA3_ADC_TRIG3			(0x04)
-> +#define AB3100_EVENTA3_ADC_TRIG2			(0x08)
-> +#define AB3100_EVENTA3_ADC_TRIGVBAT			(0x10)
-> +#define AB3100_EVENTA3_ADC_TRIGVTX			(0x20)
-> +#define AB3100_EVENTA3_ADC_TRIG1			(0x40)
-> +#define AB3100_EVENTA3_ADC_TRIG0			(0x80)
-> +
-> +/* AB3100, STR register flags */
-> +#define AB3100_STR_ONSWA				(0x01)
-> +#define AB3100_STR_ONSWB				(0x02)
-> +#define AB3100_STR_ONSWC				(0x04)
-> +#define AB3100_STR_DCIO					(0x08)
-> +#define AB3100_STR_BOOT_MODE				(0x10)
-> +#define AB3100_STR_SIM_OFF				(0x20)
-> +#define AB3100_STR_BATT_REMOVAL				(0x40)
-> +#define AB3100_STR_VBUS					(0x80)
-> +
-> +/*
-> + * AB3100 contains 8 regulators, one external regulator controller
-> + * and a buck converter, further the LDO E and buck converter can
-> + * have separate settings if they are in sleep mode, this is
-> + * modeled as a separate regulator.
-> + */
-> +#define AB3100_NUM_REGULATORS				10
-> +
-> +/**
-> + * struct ab3100
-> + * @access_mutex: lock out concurrent accesses to the AB3100 registers
-> + * @dev: pointer to the containing device
-> + * @i2c_client: I2C client for this chip
-> + * @testreg_client: secondary client for test registers
-> + * @chip_name: name of this chip variant
-> + * @chip_id: 8 bit chip ID for this chip variant
-> + * @event_subscribers: event subscribers are listed here
-> + * @startup_events: a copy of the first reading of the event registers
-> + * @startup_events_read: whether the first events have been read
-> + *
-> + * This struct is PRIVATE and devices using it should NOT
-> + * access ANY fields. It is used as a token for calling the
-> + * AB3100 functions.
-> + */
-> +struct ab3100 {
-> +	struct mutex access_mutex;
-> +	struct device *dev;
-> +	struct i2c_client *i2c_client;
-> +	struct i2c_client *testreg_client;
-> +	char chip_name[32];
-> +	u8 chip_id;
-> +	struct blocking_notifier_head event_subscribers;
-> +	u32 startup_events;
-> +	bool startup_events_read;
-> +};
-> +
-> +/**
-> + * struct ab3100_platform_data
-> + * Data supplied to initialize board connections to the AB3100
-> + * @reg_constraints: regulator constraints for target board
-> + *     the order of these constraints are: LDO A, C, D, E,
-> + *     F, G, H, K, EXT and BUCK.
-> + * @reg_initvals: initial values for the regulator registers
-> + *     plus two sleep settings for LDO E and the BUCK converter.
-> + *     exactly AB3100_NUM_REGULATORS+2 values must be sent in.
-> + *     Order: LDO A, C, E, E sleep, F, G, H, K, EXT, BUCK,
-> + *     BUCK sleep, LDO D. (LDO D need to be initialized last.)
-> + * @external_voltage: voltage level of the external regulator.
-> + */
-> +struct ab3100_platform_data {
-> +	struct regulator_init_data reg_constraints[AB3100_NUM_REGULATORS];
-> +	u8 reg_initvals[AB3100_NUM_REGULATORS+2];
-> +	int external_voltage;
-> +};
-> +
-> +int ab3100_set_register_interruptible(struct ab3100 *ab3100, u8 reg, u8 regval);
-> +int ab3100_get_register_interruptible(struct ab3100 *ab3100, u8 reg, u8 *regval);
-> +int ab3100_get_register_page_interruptible(struct ab3100 *ab3100,
-> +			     u8 first_reg, u8 *regvals, u8 numregs);
-> +int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
-> +				 u8 reg, u8 andmask, u8 ormask);
-> +u8 ab3100_get_chip_type(struct ab3100 *ab3100);
-> +int ab3100_event_register(struct ab3100 *ab3100,
-> +			  struct notifier_block *nb);
-> +int ab3100_event_unregister(struct ab3100 *ab3100,
-> +			    struct notifier_block *nb);
-> +int ab3100_event_registers_startup_state_get(struct ab3100 *ab3100,
-> +					     u32 *fatevent);
-> +
-> +#endif
-> -- 
-> 1.7.0.1
-> 
+"
+4) architecture interface
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+There are a few functions and macros which arches must implement in order to
+take advantage of this optimization. As previously mentioned, if there is no
+architecture support we simply fall back to a traditional, load, test, and
+jump sequence.
+
+* add "HAVE_ARCH_JUMP_LABEL" to arch/<arch>/Kconfig to indicate support
+
+* #define JUMP_LABEL_NOP_SIZE, arch/x86/include/asm/jump_label.h
+
+* #define "JUMP_LABEL(tag, label, cond)", arch/x86/include/asm/jump_label.h
+
+* add: void arch_jump_label_transform(struct jump_entry *entry, enum jump_label_type type)
+                                and
+       const u8 *arch_get_jump_label_nop(void)
+
+        see: arch/x86/kernel/jump_label.c
+
+* finally add a definition for "struct jump_entry". This must be done in a
+  separate .h file, b/c the modpost.c code uses this definition to sort the
+  the jump label tabel in the vmlinux, so that it does not have to be sorted at
+  runtime. see: arch/x86/include/asm/jump_entry.h
+"
+
+David, I re-worked the sparc64 to match the updated interfaces. The code should
+hopefully compile now, although I did not test the sparc bits.
+
+thanks,
+
+-Jason
+
+David S. Miller (1):
+  sparc64: Add jump_label support
+
+Jason Baron (9):
+  jump label: base patch
+  jump label: x86 support
+  jump label: tracepoint support
+  jump label: add module support
+  jump label: move ftrace_dyn_arch_init to common code
+  jump label: sort jump table at build-time
+  jump label: initialize workqueue tracepoints *before* they are
+    registered
+  jump label: jump_label_text_reserved() to reserve our jump points
+  jump label: add docs
+
+Mathieu Desnoyers (1):
+  jump label: notifier atomic call chain notrace
+
+ Documentation/jump-label.txt        |  140 +++++++++++
+ Makefile                            |    6 +-
+ arch/Kconfig                        |    3 +
+ arch/sparc/Kconfig                  |    1 +
+ arch/sparc/include/asm/jump_entry.h |   16 ++
+ arch/sparc/include/asm/jump_label.h |   21 ++
+ arch/sparc/kernel/Makefile          |    2 +
+ arch/sparc/kernel/jump_label.c      |   38 +++
+ arch/sparc/kernel/module.c          |    6 +
+ arch/x86/Kconfig                    |    1 +
+ arch/x86/include/asm/alternative.h  |   14 ++
+ arch/x86/include/asm/jump_entry.h   |   28 +++
+ arch/x86/include/asm/jump_label.h   |   23 ++
+ arch/x86/kernel/Makefile            |    2 +-
+ arch/x86/kernel/alternative.c       |   71 ++++++-
+ arch/x86/kernel/ftrace.c            |   70 +------
+ arch/x86/kernel/jump_label.c        |   47 ++++
+ arch/x86/kernel/kprobes.c           |    3 +-
+ arch/x86/kernel/module.c            |    3 +
+ arch/x86/kernel/ptrace.c            |    1 +
+ arch/x86/kernel/setup.c             |    3 +
+ include/asm-generic/vmlinux.lds.h   |   22 ++-
+ include/linux/jump_label.h          |   75 ++++++
+ include/linux/module.h              |    5 +-
+ include/linux/tracepoint.h          |   34 ++--
+ kernel/Makefile                     |    2 +-
+ kernel/jump_label.c                 |  431 +++++++++++++++++++++++++++++++++++
+ kernel/kprobes.c                    |    3 +-
+ kernel/module.c                     |    7 +
+ kernel/notifier.c                   |    6 +-
+ kernel/trace/ftrace.c               |   13 +-
+ kernel/trace/trace_workqueue.c      |   10 +-
+ kernel/tracepoint.c                 |    8 +
+ scripts/mod/Makefile                |    1 +
+ scripts/mod/modpost.c               |   71 ++++++-
+ scripts/mod/modpost.h               |    2 +
+ 36 files changed, 1073 insertions(+), 116 deletions(-)
+ create mode 100644 Documentation/jump-label.txt
+ create mode 100644 arch/sparc/include/asm/jump_entry.h
+ create mode 100644 arch/sparc/include/asm/jump_label.h
+ create mode 100644 arch/sparc/kernel/jump_label.c
+ create mode 100644 arch/x86/include/asm/jump_entry.h
+ create mode 100644 arch/x86/include/asm/jump_label.h
+ create mode 100644 arch/x86/kernel/jump_label.c
+ create mode 100644 include/linux/jump_label.h
+ create mode 100644 kernel/jump_label.c
+
