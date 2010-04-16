@@ -1,421 +1,604 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710Ab0DPJuA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 05:50:00 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:32954 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757339Ab0DPJtw (ORCPT
+	id S1758000Ab0DPJvB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 05:51:01 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:39179 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757428Ab0DPJuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 05:49:52 -0400
-Date: Fri, 16 Apr 2010 11:49:30 +0200
+	Fri, 16 Apr 2010 05:50:00 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 16 Apr 2010 11:49:31 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH 5/8] USB: g_ffs: the FunctionFS gadget driver
-In-reply-to: <d7efac966d1af6641c2b302414e68dd9f68c6350.1271406290.git.mina86@mina86.com>
+Subject: [PATCH 6/8] USB: ffs-test: FunctionFS testing program
+In-reply-to: <dfc8609b4a4e6c9c43ba9805f2879c76a391c129.1271406290.git.mina86@mina86.com>
 To: linux-usb@vger.kernel.org
 Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, Greg KH <greg@kroah.com>,
        Kyungmin Park <kyungmin.park@samsung.com>,
        Marek Szyprowski <m.szyprowski@samsung.com>,
        linux-kernel@vger.kernel.org
-Message-id: <dfc8609b4a4e6c9c43ba9805f2879c76a391c129.1271406290.git.mina86@mina86.com>
-MIME-version: 1.0
+Message-id: <dfef9a200fd97e3fc66790ecb6ae4b83e1928705.1271406290.git.mina86@mina86.com>
 X-Mailer: git-send-email 1.7.0
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
 References: <cover.1271406290.git.mina86@mina86.com>
  <0d8cfc5167bbcbfc6c5ae0ab10980eba743e0cee.1271406290.git.mina86@mina86.com>
  <7fbfe9c15eae523b73b704a3b5399319152fd505.1271406290.git.mina86@mina86.com>
  <41b2cd7e8bacd38bb9c997b7197e175d727876f9.1271406290.git.mina86@mina86.com>
  <d7efac966d1af6641c2b302414e68dd9f68c6350.1271406290.git.mina86@mina86.com>
+ <dfc8609b4a4e6c9c43ba9805f2879c76a391c129.1271406290.git.mina86@mina86.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Function Filesystem (FunctioFS) lets one create USB
-composite functions in user space in the same way as GadgetFS
-lets one create USB gadgets in user space.  This allows
-creation of composite gadgets such that some of the functions
-are implemented in kernel space (for instance Ethernet, serial
-or mass storage) and other are implemented in user space.
+This adds an example user-space FunctionFS driver which
+implements a source/sink interface used for testing.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- drivers/usb/gadget/Kconfig  |   21 +++-
- drivers/usb/gadget/Makefile |    2 +
- drivers/usb/gadget/g_ffs.c  |  322 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 344 insertions(+), 1 deletions(-)
- create mode 100644 drivers/usb/gadget/g_ffs.c
+ tools/usb/ffs-test.c |  554 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 554 insertions(+), 0 deletions(-)
+ create mode 100644 tools/usb/ffs-test.c
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index d886cd6..6f38a10 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -746,6 +746,26 @@ config USB_GADGETFS
- 	  Say "y" to link the driver statically, or "m" to build a
- 	  dynamically linked module called "gadgetfs".
- 
-+config USB_FUNCTIONFS
-+	tristate "Function Filesystem (EXPERIMENTAL)"
-+	depends on EXPERIMENTAL
-+	help
-+	  The Function Filesystem (FunctioFS) lets one create USB
-+	  composite functions in user space in the same way as GadgetFS
-+	  lets one create USB gadgets in user space.  This allows creation
-+	  of composite gadgets such that some of the functions are
-+	  implemented in kernel space (for instance Ethernet, serial or
-+	  mass storage) and other are implemented in user space.
-+
-+	  Say "y" to link the driver statically, or "m" to build
-+	  a dynamically linked module called "g_ffs".
-+
-+config USB_FUNCTIONFS_ETH
-+	bool "Include Ethernet funcien"
-+	depends on USB_FUNCTIONFS
-+	help
-+	  Include an Ethernet funcion in the Funcion Filesystem.
-+
- config USB_FILE_STORAGE
- 	tristate "File-backed Storage Gadget"
- 	depends on BLOCK
-diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
-index cecbc3d..0dd1e7b 100644
---- a/drivers/usb/gadget/Makefile
-+++ b/drivers/usb/gadget/Makefile
-@@ -50,6 +50,8 @@ obj-$(CONFIG_USB_ZERO)		+= g_zero.o
- obj-$(CONFIG_USB_AUDIO)		+= g_audio.o
- obj-$(CONFIG_USB_ETH)		+= g_ether.o
- obj-$(CONFIG_USB_GADGETFS)	+= gadgetfs.o
-+obj-$(CONFIG_USB_FUNCTIONFS)	+= g_ffs.o
-+obj-$(CONFIG_USB_ETH_FUNCTIONFS)	+= g_eth_ffs.o
- obj-$(CONFIG_USB_FILE_STORAGE)	+= g_file_storage.o
- obj-$(CONFIG_USB_MASS_STORAGE)	+= g_mass_storage.o
- obj-$(CONFIG_USB_G_SERIAL)	+= g_serial.o
-diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
+diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
 new file mode 100644
-index 0000000..6033f5d
+index 0000000..bbe2e3a
 --- /dev/null
-+++ b/drivers/usb/gadget/g_ffs.c
-@@ -0,0 +1,322 @@
-+#include <linux/module.h>
-+#include <linux/utsname.h>
-+
-+
++++ b/tools/usb/ffs-test.c
+@@ -0,0 +1,554 @@
 +/*
-+ * kbuild is not very cooperative with respect to linking separately
-+ * compiled library objects into one module.  So for now we won't use
-+ * separate compilation ... ensuring init/exit sections work to shrink
-+ * the runtime footprint, and giving us at least some parts of what
-+ * a "gcc --combine ... part1.c part2.c part3.c ... " build would.
++ * ffs-test.c.c -- user mode filesystem api for usb composite function
++ *
++ * Copyright (C) 2010 Samsung Electronics
++ *                    Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + */
 +
-+/* Do not mark any of the USB and composite initialization functions
-+ * as __init, we use it after user space writes descriptors which is
-+ * when init segments are removed. */
-+#define USB_NO_INIT_SEGMENT 1
-+/* Do not mark composite_unbind() and usb_composite_unregister() as
-+ * __exit, we may need it even if we are not unloaded. */
-+#define USB_NO_EXIT_SEGMENT 1
-+
-+#include "composite.c"
-+#include "usbstring.c"
-+#include "config.c"
-+#include "epautoconf.c"
-+
-+#ifdef CONFIG_USB_FUNCTIONFS_ETH
-+/* #  if defined USB_ETH_RNDIS */
-+/* #    undef USB_ETH_RNDIS */
-+/* #  endif */
-+/* #  ifdef CONFIG_USB_ETH_FUNCTIONFS_RNDIS */
-+/* #    define USB_ETH_RNDIS y */
-+/* #  endif */
-+#  include "u_ether.h"
-+
-+#  include "f_ecm.c"
-+#  include "f_subset.c"
-+/* #  ifdef USB_ETH_RNDIS */
-+/* #    include "f_rndis.c" */
-+/* #    include "rndis.c" */
-+/* #  endif */
-+#  include "u_ether.c"
-+
-+static u8 gfs_hostaddr[ETH_ALEN];
-+#endif
-+
-+#include "f_fs.c"
++/* $(CROSS_COMPILE)cc -Wall -Wextra -g -o ffs-test ffs-test.c -lpthread */
 +
 +
-+#define DRIVER_NAME	"g_ffs"
-+#define DRIVER_DESC	"USB Function Filesystem"
-+#define DRIVER_VERSION	"24 Aug 2004"
++#define _BSD_SOURCE /* for endian.h */
 +
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_AUTHOR("Michal Nazarewicz");
-+MODULE_LICENSE("GPL");
++#include <endian.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <pthread.h>
++#include <stdarg.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sys/ioctl.h>
++#include <sys/stat.h>
++#include <sys/types.h>
++#include <unistd.h>
 +
-+
-+static unsigned short gfs_vendor_id    = 0x0525;	/* XXX NetChip */
-+static unsigned short gfs_product_id   = 0xa4ac;	/* XXX */
-+
-+static struct usb_device_descriptor gfs_dev_desc = {
-+	.bLength		= sizeof gfs_dev_desc,
-+	.bDescriptorType	= USB_DT_DEVICE,
-+
-+	.bcdUSB			= cpu_to_le16(0x0200),
-+	.bDeviceClass		= USB_CLASS_PER_INTERFACE,
-+
-+	/* Vendor and product id can be overridden by module parameters.  */
-+	/* .idVendor		= cpu_to_le16(gfs_vendor_id), */
-+	/* .idProduct		= cpu_to_le16(gfs_product_id), */
-+	/* .bcdDevice		= f(hardware) */
-+	/* .iManufacturer	= DYNAMIC */
-+	/* .iProduct		= DYNAMIC */
-+	/* NO SERIAL NUMBER */
-+	.bNumConfigurations	= 1,
-+};
-+
-+#define GFS_MODULE_PARAM_DESC(name, field) \
-+	MODULE_PARM_DESC(name, "Value of the " #field " field of the device descriptor sent to the host.  Takes effect only prior to the user-space driver registering to the FunctionFS.")
-+
-+module_param_named(usb_class,    gfs_dev_desc.bDeviceClass,    byte,   0644);
-+GFS_MODULE_PARAM_DESC(usb_class, bDeviceClass);
-+module_param_named(usb_subclass, gfs_dev_desc.bDeviceSubClass, byte,   0644);
-+GFS_MODULE_PARAM_DESC(usb_subclass, bDeviceSubClass);
-+module_param_named(usb_protocol, gfs_dev_desc.bDeviceProtocol, byte,   0644);
-+GFS_MODULE_PARAM_DESC(usb_protocol, bDeviceProtocol);
-+module_param_named(usb_vendor,   gfs_vendor_id,                ushort, 0644);
-+GFS_MODULE_PARAM_DESC(usb_vendor, idVendor);
-+module_param_named(usb_product,  gfs_product_id,               ushort, 0644);
-+GFS_MODULE_PARAM_DESC(usb_product, idProduct);
++#include <linux/usb/functionfs.h>
 +
 +
++/******************** Little Endian Handling ********************************/
 +
-+static const struct usb_descriptor_header *gfs_otg_desc[] = {
-+	(const struct usb_descriptor_header *)
-+	&(const struct usb_otg_descriptor) {
-+		.bLength		= sizeof(struct usb_otg_descriptor),
-+		.bDescriptorType	= USB_DT_OTG,
++#define cpu_to_le16(x)  htole16(x)
++#define cpu_to_le32(x)  htole32(x)
++#define le32_to_cpu(x)  le32toh(x)
++#define le16_to_cpu(x)  le16toh(x)
 +
-+		/* REVISIT SRP-only hardware is possible, although
-+		 * it would not be called "OTG" ... */
-+		.bmAttributes		= USB_OTG_SRP | USB_OTG_HNP,
++static inline __u16 get_unaligned_le16(const void *_ptr)
++{
++	const __u8 *ptr = _ptr;
++	return ptr[0] | (ptr[1] << 8);
++}
++
++static inline __u32 get_unaligned_le32(const void *_ptr)
++{
++	const __u8 *ptr = _ptr;
++	return ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24);
++}
++
++static inline void put_unaligned_le16(__u16 val, void *_ptr)
++{
++	__u8 *ptr = _ptr;
++	*ptr++ = val;
++	*ptr++ = val >> 8;
++}
++
++static inline void put_unaligned_le32(__u32 val, void *_ptr)
++{
++	__u8 *ptr = _ptr;
++	*ptr++ = val;
++	*ptr++ = val >>  8;
++	*ptr++ = val >> 16;
++	*ptr++ = val >> 24;
++}
++
++
++/******************** Messages and Errors ***********************************/
++
++static const char argv0[] = "ffs-test";
++
++static unsigned verbosity = 7;
++
++static void _msg(unsigned level, const char *fmt, ...)
++{
++	if (level < 2)
++		level = 2;
++	else if (level > 7)
++		level = 7;
++
++	if (level <= verbosity) {
++		static const char levels[8][6] = {
++			[2] = "crit:",
++			[3] = "err: ",
++			[4] = "warn:",
++			[5] = "note:",
++			[6] = "info:",
++			[7] = "dbg: "
++		};
++
++		int _errno = errno;
++		va_list ap;
++
++		fprintf(stderr, "%s: %s ", argv0, levels[level]);
++		va_start(ap, fmt);
++		vfprintf(stderr, fmt, ap);
++		va_end(ap);
++
++		if (fmt[strlen(fmt) - 1] != '\n') {
++			char buffer[128];
++			strerror_r(_errno, buffer, sizeof buffer);
++			fprintf(stderr, ": (-%d) %s\n", _errno, buffer);
++		}
++
++		fflush(stderr);
++	}
++}
++
++#define die(...)  (_msg(2, __VA_ARGS__), exit(1))
++#define err(...)   _msg(3, __VA_ARGS__)
++#define warn(...)  _msg(4, __VA_ARGS__)
++#define note(...)  _msg(5, __VA_ARGS__)
++#define info(...)  _msg(6, __VA_ARGS__)
++#define debug(...) _msg(7, __VA_ARGS__)
++
++#define die_on(cond, ...) do { \
++	if (cond) \
++		die(__VA_ARGS__); \
++	} while (0)
++
++
++/******************** Descriptors and Strings *******************************/
++
++static const struct {
++	struct usb_functionfs_descs_head header;
++	struct {
++		struct usb_interface_descriptor intf;
++		struct usb_endpoint_descriptor_no_audio sink;
++		struct usb_endpoint_descriptor_no_audio source;
++	} __attribute__((packed)) fs_descs, hs_descs;
++} __attribute__((packed)) descriptors = {
++	.header = {
++		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
++		.length = cpu_to_le32(sizeof descriptors),
++		.fs_count = 3,
++		.hs_count = 3,
 +	},
-+
-+	NULL
-+};
-+
-+/* string IDs are assigned dynamically */
-+
-+enum {
-+	GFS_STRING_MANUFACTURER_IDX,
-+	GFS_STRING_PRODUCT_IDX,
-+	GFS_STRING_CONFIGURATION_IDX
-+};
-+
-+static       char gfs_manufacturer[50];
-+static const char gfs_driver_desc[] = DRIVER_DESC;
-+static const char gfs_short_name[]  = DRIVER_NAME;
-+
-+static struct usb_string gfs_strings[] = {
-+	[GFS_STRING_MANUFACTURER_IDX].s = gfs_manufacturer,
-+	[GFS_STRING_PRODUCT_IDX].s = gfs_driver_desc,
-+	[GFS_STRING_CONFIGURATION_IDX].s = "Self Powered",
-+	{  } /* end of list */
-+};
-+
-+static struct usb_gadget_strings *gfs_dev_strings[] = {
-+	&(struct usb_gadget_strings) {
-+		.language	= 0x0409,	/* en-us */
-+		.strings	= gfs_strings,
++	.fs_descs = {
++		.intf = {
++			.bLength = sizeof descriptors.fs_descs.intf,
++			.bDescriptorType = USB_DT_INTERFACE,
++			.bNumEndpoints = 2,
++			.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
++			.iInterface = 1,
++		},
++		.sink = {
++			.bLength = sizeof descriptors.fs_descs.sink,
++			.bDescriptorType = USB_DT_ENDPOINT,
++			.bEndpointAddress = 1 | USB_DIR_IN,
++			.bmAttributes = USB_ENDPOINT_XFER_BULK,
++			/* .wMaxPacketSize = autoconfiguration (kernel) */
++		},
++		.source = {
++			.bLength = sizeof descriptors.fs_descs.source,
++			.bDescriptorType = USB_DT_ENDPOINT,
++			.bEndpointAddress = 2 | USB_DIR_OUT,
++			.bmAttributes = USB_ENDPOINT_XFER_BULK,
++			/* .wMaxPacketSize = autoconfiguration (kernel) */
++		},
 +	},
-+	NULL,
++	.hs_descs = {
++		.intf = {
++			.bLength = sizeof descriptors.fs_descs.intf,
++			.bDescriptorType = USB_DT_INTERFACE,
++			.bNumEndpoints = 2,
++			.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
++			.iInterface = 1,
++		},
++		.sink = {
++			.bLength = sizeof descriptors.hs_descs.sink,
++			.bDescriptorType = USB_DT_ENDPOINT,
++			.bEndpointAddress = 1 | USB_DIR_IN,
++			.bmAttributes = USB_ENDPOINT_XFER_BULK,
++			.wMaxPacketSize = cpu_to_le16(512),
++		},
++		.source = {
++			.bLength = sizeof descriptors.hs_descs.source,
++			.bDescriptorType = USB_DT_ENDPOINT,
++			.bEndpointAddress = 2 | USB_DIR_OUT,
++			.bmAttributes = USB_ENDPOINT_XFER_BULK,
++			.wMaxPacketSize = cpu_to_le16(512),
++			.bInterval = 1, /* NAK every 1 uframe */
++		},
++	},
 +};
 +
 +
-+static int gfs_bind(struct usb_composite_dev *cdev);
-+static int gfs_unbind(struct usb_composite_dev *cdev);
-+static int gfs_do_config(struct usb_configuration *c);
++#define STR_INTERFACE_ "Source/Sink"
 +
-+
-+static struct usb_composite_driver gfs_driver = {
-+	.name		= gfs_short_name,
-+	.dev		= &gfs_dev_desc,
-+	.strings	= gfs_dev_strings,
-+	.bind		= gfs_bind,
-+	.unbind		= gfs_unbind,
++static const struct {
++	struct usb_functionfs_strings_head header;
++	struct {
++		__le16 code;
++		const char str1[sizeof STR_INTERFACE_];
++	} __attribute__((packed)) lang0;
++} __attribute__((packed)) strings = {
++	.header = {
++		.magic = cpu_to_le32(FUNCTIONFS_STRINGS_MAGIC),
++		.length = cpu_to_le32(sizeof strings),
++		.str_count = cpu_to_le32(1),
++		.lang_count = cpu_to_le32(1),
++	},
++	.lang0 = {
++		cpu_to_le16(0x0409), /* en-us */
++		STR_INTERFACE_,
++	},
 +};
 +
-+static struct usb_configuration gfs_config_driver = {
-+	.label			= "FunctionFS",
-+	.bind			= gfs_do_config,
-+	.bConfigurationValue	= 1,
-+	/* .iConfiguration	= DYNAMIC */
-+	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
++#define STR_INTERFACE strings.lang0.str1
++
++
++/******************** Files and Threads Handling ****************************/
++
++struct thread;
++
++static ssize_t read_wrap(struct thread *t, void *buf, size_t nbytes);
++static ssize_t write_wrap(struct thread *t, const void *buf, size_t nbytes);
++static ssize_t ep0_consume(struct thread *t, const void *buf, size_t nbytes);
++static ssize_t fill_in_buf(struct thread *t, void *buf, size_t nbytes);
++static ssize_t empty_out_buf(struct thread *t, const void *buf, size_t nbytes);
++
++
++static struct thread {
++	const char *const filename;
++	size_t buf_size;
++
++	ssize_t (*in)(struct thread *, void *, size_t);
++	const char *const in_name;
++
++	ssize_t (*out)(struct thread *, const void *, size_t);
++	const char *const out_name;
++
++	int fd;
++	pthread_t id;
++	void *buf;
++	ssize_t status;
++} threads[] = {
++	{
++		"ep0", 4 * sizeof(struct usb_functionfs_event),
++		read_wrap, NULL,
++		ep0_consume, "<consume>",
++		0, 0, NULL, 0
++	},
++	{
++		"ep1", 8 * 1024,
++		fill_in_buf, "<in>",
++		write_wrap, NULL,
++		0, 0, NULL, 0
++	},
++	{
++		"ep2", 8 * 1024,
++		read_wrap, NULL,
++		empty_out_buf, "<out>",
++		0, 0, NULL, 0
++	},
 +};
 +
 +
-+static struct ffs_data *gfs_ffs_data;
-+static unsigned long gfs_registered;
-+
-+
-+static int __init gfs_init(void)
++static void init_thread(struct thread *t)
 +{
-+	ENTER();
++	t->buf = malloc(t->buf_size);
++	die_on(!t->buf, "malloc");
 +
-+	return functionfs_init();
-+}
-+module_init(gfs_init);
-+
-+static void __exit gfs_exit(void)
-+{
-+	ENTER();
-+
-+	if (test_and_clear_bit(0, &gfs_registered))
-+		usb_composite_unregister(&gfs_driver);
-+
-+	functionfs_cleanup();
-+}
-+module_exit(gfs_exit);
-+
-+
-+static int functionfs_ready_callback(struct ffs_data *ffs)
-+{
-+	int ret;
-+
-+	ENTER();
-+
-+	if (WARN_ON(test_and_set_bit(0, &gfs_registered)))
-+		return -EBUSY;
-+
-+	gfs_ffs_data = ffs;
-+	ret = usb_composite_register(&gfs_driver);
-+	if (unlikely(ret < 0))
-+		clear_bit(0, &gfs_registered);
-+	return ret;
++	t->fd = open(t->filename, O_RDWR);
++	die_on(t->fd < 0, "%s", t->filename);
 +}
 +
-+static void functionfs_closed_callback(struct ffs_data *ffs)
++static void cleanup_thread(void *arg)
 +{
-+	ENTER();
++	struct thread *t = arg;
++	int ret, fd;
 +
-+	if (test_and_clear_bit(0, &gfs_registered))
-+		usb_composite_unregister(&gfs_driver);
-+}
++	fd = t->fd;
++	if (t->fd < 0)
++		return;
++	t->fd = -1;
 +
-+
-+static int functionfs_check_dev_callback(const char *dev_name)
-+{
-+	return 0;
-+}
-+
-+
-+
-+static int gfs_bind(struct usb_composite_dev *cdev)
-+{
-+	int ret;
-+
-+	ENTER();
-+
-+	if (WARN_ON(!gfs_ffs_data))
-+		return -ENODEV;
-+
-+#ifdef CONFIG_USB_FUNCTIONFS_ETH
-+	ret = gether_setup(cdev->gadget, gfs_hostaddr);
-+	if (unlikely(ret < 0))
-+		goto error_quick;
-+#endif
-+
-+	gfs_dev_desc.idVendor  = cpu_to_le16(gfs_vendor_id);
-+	gfs_dev_desc.idProduct = cpu_to_le16(gfs_product_id);
-+
-+	snprintf(gfs_manufacturer, sizeof gfs_manufacturer, "%s %s with %s",
-+		 init_utsname()->sysname, init_utsname()->release,
-+		 cdev->gadget->name);
-+	ret = usb_string_id(cdev);
-+	if (unlikely(ret < 0))
-+		goto error;
-+	gfs_strings[GFS_STRING_MANUFACTURER_IDX].id = ret;
-+	gfs_dev_desc.iManufacturer = ret;
-+
-+	ret = usb_string_id(cdev);
-+	if (unlikely(ret < 0))
-+		goto error;
-+	gfs_strings[GFS_STRING_PRODUCT_IDX].id = ret;
-+	gfs_dev_desc.iProduct = ret;
-+
-+	ret = usb_string_id(cdev);
-+	if (unlikely(ret < 0))
-+		goto error;
-+	gfs_strings[GFS_STRING_CONFIGURATION_IDX].id = ret;
-+	gfs_config_driver.iConfiguration = ret;
-+
-+	ret = functionfs_bind(gfs_ffs_data, cdev);
-+	if (unlikely(ret < 0))
-+		goto error;
-+
-+	ret = usb_add_config(cdev, &gfs_config_driver);
-+	if (unlikely(ret < 0))
-+		goto error_unbind;
-+
-+	return 0;
-+
-+error_unbind:
-+	functionfs_unbind(gfs_ffs_data);
-+error:
-+#ifdef CONFIG_USB_FUNCTIONFS_ETH
-+	gether_cleanup();
-+error_quick:
-+#endif
-+	gfs_ffs_data = NULL;
-+	return ret;
-+}
-+
-+static int gfs_unbind(struct usb_composite_dev *cdev)
-+{
-+	ENTER();
-+
-+#ifdef CONFIG_USB_FUNCTIONFS_ETH
-+	gether_cleanup();
-+#endif
-+
-+	if (!WARN_ON(!gfs_ffs_data)) {
-+		functionfs_unbind(gfs_ffs_data);
-+		gfs_ffs_data = NULL;
++	/* test the FIFO ioctls (non-ep0 code paths) */
++	if (t != threads) {
++		ret = ioctl(fd, FUNCTIONFS_FIFO_STATUS);
++		if (ret < 0) {
++			/* ENODEV reported after disconnect */
++			if (errno != ENODEV)
++				err("%s: get fifo status", t->filename);
++		} else if (ret) {
++			warn("%s: unclaimed = %d\n", t->filename, ret);
++			if (ioctl(fd, FUNCTIONFS_FIFO_FLUSH) < 0)
++				err("%s: fifo flush", t->filename);
++		}
 +	}
 +
-+	return 0;
++	if (close(fd) < 0)
++		err("%s: close", t->filename);
++
++	free(t->buf);
++	t->buf = NULL;
++}
++
++static void *start_thread_helper(void *arg)
++{
++	const char *name, *op, *in_name, *out_name;
++	struct thread *t = arg;
++	ssize_t ret;
++
++	info("%s: starts\n", t->filename);
++	in_name = t->in_name ? t->in_name : t->filename;
++	out_name = t->out_name ? t->out_name : t->filename;
++
++	pthread_cleanup_push(cleanup_thread, arg);
++
++	for (;;) {
++		pthread_testcancel();
++
++		ret = t->in(t, t->buf, t->buf_size);
++		if (ret > 0) {
++			ret = t->out(t, t->buf, t->buf_size);
++			name = out_name;
++			op = "write";
++		} else {
++			name = in_name;
++			op = "read";
++		}
++
++		if (ret > 0) {
++			/* nop */
++		} else if (!ret) {
++			debug("%s: %s: EOF", name, op);
++			break;
++		} else if (errno == EINTR || errno == EAGAIN) {
++			debug("%s: %s", name, op);
++		} else {
++			warn("%s: %s", name, op);
++			break;
++		}
++	}
++
++	pthread_cleanup_pop(1);
++
++	t->status = ret;
++	info("%s: ends\n", t->filename);
++	return NULL;
++}
++
++static void start_thread(struct thread *t)
++{
++	debug("%s: starting\n", t->filename);
++
++	die_on(pthread_create(&t->id, NULL, start_thread_helper, t) < 0,
++	       "pthread_create(%s)", t->filename);
++}
++
++static void join_thread(struct thread *t)
++{
++	int ret = pthread_join(t->id, NULL);
++
++	if (ret < 0)
++		err("%s: joining thread", t->filename);
++	else
++		debug("%s: joined\n", t->filename);
 +}
 +
 +
-+static int gfs_do_config(struct usb_configuration *c)
++static ssize_t read_wrap(struct thread *t, void *buf, size_t nbytes)
 +{
-+	int ret;
++	return read(t->fd, buf, nbytes);
++}
 +
-+	ENTER();
++static ssize_t write_wrap(struct thread *t, const void *buf, size_t nbytes)
++{
++	return write(t->fd, buf, nbytes);
++}
 +
-+	if (WARN_ON(!gfs_ffs_data))
-+		return -ENODEV;
 +
-+	if (gadget_is_otg(c->cdev->gadget)) {
-+		c->descriptors = gfs_otg_desc;
-+		c->bmAttributes |= USB_CONFIG_ATT_WAKEUP;
++/******************** Empty/Fill buffer routines ****************************/
++
++/* 0 -- stream of zeros, 1 -- i % 63, 2 -- pipe */
++enum pattern { PAT_ZERO, PAT_SEQ, PAT_PIPE };
++static enum pattern pattern;
++
++static ssize_t
++fill_in_buf(struct thread *ignore, void *buf, size_t nbytes)
++{
++	size_t i;
++	__u8 *p;
++
++	(void)ignore;
++
++	switch (pattern) {
++	case PAT_ZERO:
++		memset(buf, 0, nbytes);
++		break;
++
++	case PAT_SEQ:
++		for (p = buf, i = 0; i < nbytes; ++i, ++p)
++			*p = i % 63;
++		break;
++
++	case PAT_PIPE:
++		return fread(buf, 1, nbytes, stdin);
 +	}
 +
-+#ifdef CONFIG_USB_FUNCTIONFS_ETH
-+	if (can_support_ecm(c->cdev->gadget)) {
-+		FINFO("ecm_bind_config");
-+		ret = ecm_bind_config(c, gfs_hostaddr);
-+	} else {
-+		FINFO("geth_bind_config");
-+		ret = geth_bind_config(c, gfs_hostaddr);
-+	}
-+	if (unlikely(ret < 0))
-+		return ret;
-+#endif
++	return nbytes;
++}
 +
-+	ret = functionfs_add(c->cdev, c, gfs_ffs_data);
-+	if (unlikely(ret < 0))
-+		return ret;
++static ssize_t
++empty_out_buf(struct thread *ignore, const void *buf, size_t nbytes)
++{
++	const __u8 *p;
++	__u8 expected;
++	ssize_t ret;
++	size_t len;
++
++	(void)ignore;
++
++	switch (pattern) {
++	case PAT_ZERO:
++		expected = 0;
++		for (p = buf, len = 0; len < nbytes; ++p, ++len)
++			if (*p)
++				goto invalid;
++		break;
++
++	case PAT_SEQ:
++		for (p = buf, len = 0; len < nbytes; ++p, ++len)
++			if (*p != len % 63) {
++				expected = len % 63;
++				goto invalid;
++			}
++		break;
++
++	case PAT_PIPE:
++		ret = fwrite(buf, nbytes, 1, stdout);
++		if (ret > 0)
++			fflush(stdout);
++		break;
++
++invalid:
++		err("bad OUT byte %zd, expected %02x got %02x\n",
++		    len, expected, *p);
++		for (p = buf, len = 0; len < nbytes; ++p, ++len) {
++			if (0 == (len % 32))
++				fprintf(stderr, "%4d:", len);
++			fprintf(stderr, " %02x", *p);
++			if (31 == (len % 32))
++				fprintf(stderr, "\n");
++		}
++		fflush(stderr);
++		errno = EILSEQ;
++		return -1;
++	}
++
++	return len;
++}
++
++
++/******************** Endpoints routines ************************************/
++
++static void handle_setup(const struct usb_ctrlrequest *setup)
++{
++	printf("bRequestType = %d\n", setup->bRequestType);
++	printf("bRequest     = %d\n", setup->bRequest);
++	printf("wValue       = %d\n", le16_to_cpu(setup->wValue));
++	printf("wIndex       = %d\n", le16_to_cpu(setup->wIndex));
++	printf("wLength      = %d\n", le16_to_cpu(setup->wLength));
++}
++
++static ssize_t
++ep0_consume(struct thread *ignore, const void *buf, size_t nbytes)
++{
++	static const char *const names[] = {
++		[FUNCTIONFS_BIND] = "BIND",
++		[FUNCTIONFS_UNBIND] = "UNBIND",
++		[FUNCTIONFS_ENABLE] = "ENABLE",
++		[FUNCTIONFS_DISABLE] = "DISABLE",
++		[FUNCTIONFS_SETUP] = "SETUP",
++		[FUNCTIONFS_SUSPEND] = "SUSPEND",
++		[FUNCTIONFS_RESUME] = "RESUME",
++	};
++
++	const struct usb_functionfs_event *event = buf;
++	size_t n;
++
++	(void)ignore;
++
++	for (n = nbytes / sizeof *event; n; --n, ++event)
++		switch (event->type) {
++		case FUNCTIONFS_BIND:
++		case FUNCTIONFS_UNBIND:
++		case FUNCTIONFS_ENABLE:
++		case FUNCTIONFS_DISABLE:
++		case FUNCTIONFS_SETUP:
++		case FUNCTIONFS_SUSPEND:
++		case FUNCTIONFS_RESUME:
++			printf("Event %s\n", names[event->type]);
++			if (event->type == FUNCTIONFS_SETUP)
++				handle_setup(&event->u.setup);
++			break;
++
++		default:
++			printf("Event %03u (unknown)\n", event->type);
++		}
++
++	return nbytes;
++}
++
++static void ep0_init(struct thread *t)
++{
++	ssize_t ret;
++
++	info("%s: writing descriptors\n", t->filename);
++	ret = write(t->fd, &descriptors, sizeof descriptors);
++	die_on(ret < 0, "%s: write: descriptors", t->filename);
++
++	info("%s: writing strings\n", t->filename);
++	ret = write(t->fd, &strings, sizeof strings);
++	die_on(ret < 0, "%s: write: strings", t->filename);
++}
++
++
++/******************** Main **************************************************/
++
++int main(void)
++{
++	unsigned i;
++
++	/* XXX TODO: Argument parsing missing */
++
++	init_thread(threads);
++	ep0_init(threads);
++
++	for (i = 1; i < sizeof threads / sizeof *threads; ++i)
++		init_thread(threads + i);
++
++	for (i = 1; i < sizeof threads / sizeof *threads; ++i)
++		start_thread(threads + i);
++
++	start_thread_helper(threads);
++
++	for (i = 1; i < sizeof threads / sizeof *threads; ++i)
++		join_thread(threads + i);
 +
 +	return 0;
 +}
