@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab0DPOg1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 10:36:27 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44395 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758463Ab0DPOg0 (ORCPT
+	id S932241Ab0DPOii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 10:38:38 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:52596 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757254Ab0DPOih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 10:36:26 -0400
-Subject: Re: [RFC PATCH 1/2] hw-breakpoints: Separate constraint space for
- data and instruction breakpoints
-From: Will Deacon <will.deacon@arm.com>
+	Fri, 16 Apr 2010 10:38:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WOla+sEY+EVwoZLCpMKjXxg0+fn21vzv/Cw2poMVYQ58fyIILsLlWieYRA2HEs2PAp
+         8T85a9FjwY2Z356wg62uK4CFutYagYM3cUcDaalIB69SKB7V9vFi4JcWItkHTOEdZpLf
+         pfN4g+WkUkjuhHmb+tRS0i5+41RqQEuEWeBoQ=
+Date: Fri, 16 Apr 2010 18:32:32 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
 To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-       "K . Prasad" <prasad@linux.vnet.ibm.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1271113280-10521-2-git-send-regression-fweisbec@gmail.com>
-References: <1271113280-10521-1-git-send-regression-fweisbec@gmail.com>
-	 <1271113280-10521-2-git-send-regression-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Apr 2010 15:35:30 +0100
-Message-ID: <1271428530.23489.3.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Apr 2010 14:35:34.0133 (UTC) FILETIME=[12964A50:01CADD72]
+Cc: Don Zickus <dzickus@redhat.com>, mingo@elte.hu, peterz@infradead.org,
+       aris@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100416143232.GA5540@lenovo>
+References: <1271366710-17468-1-git-send-email-dzickus@redhat.com> <20100416014712.GC15570@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100416014712.GC15570@nowhere>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Frederic,
-
-Thanks for this.
-
-On Tue, 2010-04-13 at 00:01 +0100, Frederic Weisbecker wrote:
-> There are two outstanding fashions for archs to implement hardware
-> breakpoints.
+On Fri, Apr 16, 2010 at 03:47:14AM +0200, Frederic Weisbecker wrote:
+[...]
+> > +
+> > +/* Callback function for perf event subsystem */
+> > +void watchdog_overflow_callback(struct perf_event *event, int nmi,
+> > +		 struct perf_sample_data *data,
+> > +		 struct pt_regs *regs)
+> > +{
+> > +	int this_cpu = smp_processor_id();
+> > +	unsigned long touch_ts = per_cpu(watchdog_touch_ts, this_cpu);
+> > +
+> > +	if (touch_ts == 0) {
+> > +		__touch_watchdog();
+> > +		return;
+> > +	}
+> > +
+> > +	/* check for a hardlockup
+> > +	 * This is done by making sure our timer interrupt
+> > +	 * is incrementing.  The timer interrupt should have
+> > +	 * fired multiple times before we overflow'd.  If it hasn't
+> > +	 * then this is a good indication the cpu is stuck
+> > +	 */
+> > +	if (is_hardlockup(this_cpu)) {
+> > +		/* only print hardlockups once */
+> > +		if (cpumask_test_cpu(this_cpu, to_cpumask(hardlockup_mask)))
+> > +			return;
+> > +
+> > +		if (hardlockup_panic)
+> > +			panic("Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+> > +		else
+> > +			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+> > +
+> > +		cpumask_set_cpu(this_cpu, to_cpumask(hardlockup_mask));
 > 
-> The first is to separate breakpoint address pattern definition
-> space between data and instruction breakpoints. We then have
-> typically distinct instruction address breakpoint registers
-> and data address breakpoint registers, delivered with
-> separate control registers for data and instruction breakpoints
-> as well. This is the case of PowerPc and ARM for example.
 > 
-> The second consists in having merged breakpoint address space
-> definition between data and instruction breakpoint. Address
-> registers can host either instruction or data address and
-> the access mode for the breakpoint is defined in a control
-> register. This is the case of x86.
 > 
-> This patch adds a new CONFIG_HAVE_MIXED_BREAKPOINTS_REGS config
-> that archs can select if they belong to the second case. Those
-> will have their slot allocation merged for instructions and
-> data breakpoints.
+> May be have an arch spin lock there to update your cpu mask safely.
 > 
-> The others will have a separate slot tracking between data and
-> instruction breakpoints.
 
-This looks useful for supporting architectures with separate
-data/instruction breakpoints.
+Hmm, this is NMI handler path so from what we protect this per-cpu data?
+Do I miss something? /me confused
 
-A couple of points:
-
-1.) Will this affect the arch backend at all?
-
-2.) On ARM, it is possible to have different numbers of breakpoint registers
-    and watchpoint registers [which we do not know until runtime]. This
-    means that we have to define HBP_NUM as a potential upper bound,
-    which seems a bit wasteful. Perhaps there could be a mechanism to 
-    register the available resources at runtime?
-
-Thanks,
-
-Will
-
-
-
+	-- Cyrill
