@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758675Ab0DPRMn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 13:12:43 -0400
-Received: from mail.deksai.com ([66.103.254.248]:53881 "EHLO mail.deksai.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752185Ab0DPRMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 13:12:41 -0400
-X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Apr 2010 13:12:41 EDT
-Date: Fri, 16 Apr 2010 13:06:44 -0400
-From: Chris <lists@deksai.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: CFQ read performance regression
-Message-ID: <20100416170639.GA6753@chris-laptop.a2hosting.com>
-Mail-Followup-To: linux-kernel <linux-kernel@vger.kernel.org>
-References: <1271420878.24780.145.camel@tucsk.pomaz.szeredi.hu>
+	id S1758691Ab0DPRNO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 13:13:14 -0400
+Received: from mga10.intel.com ([192.55.52.92]:50401 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758679Ab0DPRNK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Apr 2010 13:13:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,220,1270450800"; 
+   d="scan'208";a="558613315"
+Date: Fri, 16 Apr 2010 19:13:36 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Richard =?iso-8859-1?Q?R=F6jfors?= 
+	<richard.rojfors@pelagicore.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux Media Mailing List <linux-media@vger.kernel.org>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Douglas Schilling Landgraf <dougsland@gmail.com>,
+       "Williams, Dan J" <dan.j.williams@intel.com>
+Subject: Re: [PATCH 0/2] media, mfd: Add timberdale video-in driver
+Message-ID: <20100416171335.GC28863@sortiz.org>
+References: <1271435274.11641.44.camel@debian>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1271420878.24780.145.camel@tucsk.pomaz.szeredi.hu>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1271435274.11641.44.camel@debian>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 02:27:58PM +0200, Miklos Szeredi wrote:
-> Hi Jens,
+Hi Richard,
+
+On Fri, Apr 16, 2010 at 06:27:54PM +0200, Richard Röjfors wrote:
+> To follow are two patches.
 > 
-> I'm chasing a performance bottleneck identified by tiobench that seems
-> to be caused by CFQ.  On a SLES10-SP3 kernel (2.6.16, with some patches
-> moving cfq closer to 2.6.17) tiobench with 8 threads gets about 260MB/s
-> sequential read throughput.  On a recent kernels (including vanilla
-> 2.6.34-rc) it makes about 145MB/s, a regression of 45%.  The queue and
-> readahead parameters are the same.
+> The first one adds the timberdale video-in driver to the media tree.
+> 
+> The second one adds it to the timberdale MFD driver.
+> 
+> The Kconfig of the media patch selects TIMB_DMA which is introduced
+> in the DMA tree, that's why I cc:d in Dan.
+> 
+> Samuel and Mauro hope you can support and solve the potential merge
+> issue between your two trees.
+Mauro, the mfd part of this patch depends on the video one. Do you mind if I
+take both through my tree, after getting your Acked-by ?
 
-I've also just noticed this using the most recent Redhat kernels.  Writes don't
-seem to be affected at all.  If the latest Redhat kernels mean anything here, I
-might as well show you what I've got, in case there is something common.
+Cheers,
+Samuel.
 
-./disktest  -B 4k -h 1 -I BD -K 32 -p l -P T -T 300  -r /dev/sdf
 
-With cfq we get this:
- STAT  | 17260 | v1.4.2 | /dev/sdf | Heartbeat read throughput: 15032320.0B/s (14.34MB/s), IOPS 3670.0/s
-And with noop we get this:
-  STAT  | 17260 | v1.4.2 | /dev/sdf | Heartbeat read throughput: 111759360.0B/s (106.58MB/s), IOPS 27285.0/s.
+> Thanks
+> --Richard
+> 
 
-Setting some very large and busy web servers to noop just out of curiousity
-also reduced the average io time and dropped the load.
-
-Chris
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
