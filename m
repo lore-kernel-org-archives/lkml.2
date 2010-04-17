@@ -1,103 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab0DQFDb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 01:03:31 -0400
-Received: from relay2-d.mail.gandi.net ([217.70.183.194]:57733 "EHLO
-	relay2-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab0DQFDa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 01:03:30 -0400
-X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Apr 2010 01:03:29 EDT
-X-Originating-IP: 217.70.178.42
-X-Originating-IP: 173.50.255.69
-Date: Fri, 16 Apr 2010 21:53:27 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 02/16] rcu: make dead code really dead
-Message-ID: <20100417045326.GA11604@feather>
-References: <20100415181255.GA19588@linux.vnet.ibm.com>
- <1271355219-20714-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100415235251.GA2491@feather>
- <20100416142348.GD2615@linux.vnet.ibm.com>
- <20100416211610.GA8357@feather>
- <20100416222927.GP2615@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100416222927.GP2615@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752391Ab0DQFMo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 01:12:44 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:52937 "EHLO df.lth.se"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751357Ab0DQFMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Apr 2010 01:12:42 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: STEricsson_nomadik_linux@list.st.com, linux-kernel@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org,
+       Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH 1/3] DMAENGINE: add generic PrimeCell interface to COH 901 318 v6
+Date: Sat, 17 Apr 2010 07:12:16 +0200
+Message-Id: <1271481136-9324-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.2.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 03:29:27PM -0700, Paul E. McKenney wrote:
-> On Fri, Apr 16, 2010 at 02:16:10PM -0700, Josh Triplett wrote:
-> > On Fri, Apr 16, 2010 at 07:23:48AM -0700, Paul E. McKenney wrote:
-> > > On Thu, Apr 15, 2010 at 04:52:52PM -0700, Josh Triplett wrote:
-> > > > On Thu, Apr 15, 2010 at 11:13:25AM -0700, Paul E. McKenney wrote:
-> > > > > From: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > > > 
-> > > > > cleanup: make dead code really dead
-> > > > > 
-> > > > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > > ---
-> > > > >  kernel/rcutree.c |    4 ++--
-> > > > >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > > > > 
-> > > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > > > index e54c123..6042fb8 100644
-> > > > > --- a/kernel/rcutree.c
-> > > > > +++ b/kernel/rcutree.c
-> > > > > @@ -1236,11 +1236,11 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
-> > > > >  		break; /* grace period idle or initializing, ignore. */
-> > > > >  
-> > > > >  	case RCU_SAVE_DYNTICK:
-> > > > > -
-> > > > > -		raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
-> > > > >  		if (RCU_SIGNAL_INIT != RCU_SAVE_DYNTICK)
-> > > > >  			break; /* So gcc recognizes the dead code. */
-> > > > 
-> > > > GCC's new __builtin_unreachable would help here, though obviously we
-> > > > can't count on 4.5 or newer quite yet.  A wrapper in compiler.h would
-> > > > let us use it when available though.
-> > > 
-> > > So at some time when we can count on gcc 4.5 or newer, the code
-> > > would look something like the following?
-> > > 
-> > > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK)
-> > > 		this_is_unreachable();
-> > 
-> > Yes, exactly.
-> > 
-> > > I suppose that in the meantime one could supply the code to use
-> > > in the unreachable case:
-> > > 
-> > > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK)
-> > > 		this_is_unreachable(break);
-> > > 
-> > > But this is beginning to seem a bit strained to me.  ;-)
-> > 
-> > I'd suggest spelling that this way:
-> > 
-> > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK) {
-> > 		unreachable();
-> > 		break;
-> > 	}
-> > 
-> > But in any case, all of these do seem excessive just to avoid the need
-> > for an ifdef. :)
-> 
-> Actually, the "if" condition is a comparison of numerical constants,
-> so no #ifdef is required.
+This extends the DMA engine driver for the COH 901 318 used in the
+U300 platform with the generic PrimeCell interface.
 
-I just meant that those constants get #defined based on CONFIG_NO_HZ, so
-an #ifdef on that would remove the need for the special handling of dead
-code.
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+Changes since v5:
+- Fixed spelling mistake
+- Remove the #if 0 stuff for supporting odd addresses in memcpy
+  etc, save this for later
+---
+ drivers/dma/coh901318.c |  146 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 146 insertions(+), 0 deletions(-)
 
-- Josh Triplett
+diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+index 4233440..1d5ed16 100644
+--- a/drivers/dma/coh901318.c
++++ b/drivers/dma/coh901318.c
+@@ -21,6 +21,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/debugfs.h>
+ #include <mach/coh901318.h>
++#include <linux/amba/dma.h>
+ 
+ #include "coh901318_lli.h"
+ 
+@@ -72,6 +73,9 @@ struct coh901318_chan {
+ 	unsigned long nbr_active_done;
+ 	unsigned long busy;
+ 
++	u32 amba_addr;
++	u32 amba_ctrl;
++
+ 	struct coh901318_base *base;
+ };
+ 
+@@ -190,6 +194,9 @@ static inline struct coh901318_chan *to_coh901318_chan(struct dma_chan *chan)
+ static inline dma_addr_t
+ cohc_dev_addr(struct coh901318_chan *cohc)
+ {
++	/* PrimeCell supplied address will take precedence */
++	if (cohc->amba_addr)
++		return cohc->amba_addr;
+ 	return cohc->base->platform->chan_conf[cohc->id].dev_addr;
+ }
+ 
+@@ -1055,6 +1062,14 @@ coh901318_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 
+ 	params = cohc_chan_param(cohc);
+ 	config = params->config;
++	/*
++	 * Add primecell-specific control on top, make
++	 * sure the bits you set per peripheral channel are
++	 * cleared in the default config from the platform.
++	 */
++	ctrl_chained |= cohc->amba_ctrl;
++	ctrl_last |= cohc->amba_ctrl;
++	ctrl |= cohc->amba_ctrl;
+ 
+ 	if (direction == DMA_TO_DEVICE) {
+ 		u32 tx_flags = COH901318_CX_CTRL_PRDD_SOURCE |
+@@ -1113,6 +1128,12 @@ coh901318_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 	if (ret)
+ 		goto err_lli_fill;
+ 
++	/*
++	 * Set the default ctrl for the channel to the one from the lli,
++	 * things may have changed due to odd buffer alignment etc.
++	 */
++	coh901318_set_ctrl(cohc, lli->control);
++
+ 	COH_DBG(coh901318_list_print(cohc, lli));
+ 
+ 	/* Pick a descriptor to handle this transfer */
+@@ -1239,6 +1260,131 @@ coh901318_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd)
+ 
+ 	return 0;
+ }
++
++/*
++ * Here we wrap in the PrimeCell dma interface
++ */
++struct burst_table {
++	int burst_8bit;
++	int burst_16bit;
++	int burst_32bit;
++	u32 reg;
++};
++
++static const struct burst_table burst_sizes[] = {
++	{
++		.burst_8bit = 64,
++		.burst_16bit = 32,
++		.burst_32bit = 16,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_64_BYTES,
++	},
++	{
++		.burst_8bit = 48,
++		.burst_16bit = 24,
++		.burst_32bit = 12,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_48_BYTES,
++	},
++	{
++		.burst_8bit = 32,
++		.burst_16bit = 16,
++		.burst_32bit = 8,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_32_BYTES,
++	},
++	{
++		.burst_8bit = 16,
++		.burst_16bit = 8,
++		.burst_32bit = 4,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_16_BYTES,
++	},
++	{
++		.burst_8bit = 8,
++		.burst_16bit = 4,
++		.burst_32bit = 2,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_8_BYTES,
++	},
++	{
++		.burst_8bit = 4,
++		.burst_16bit = 2,
++		.burst_32bit = 1,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_4_BYTES,
++	},
++	{
++		.burst_8bit = 2,
++		.burst_16bit = 1,
++		.burst_32bit = 0,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_2_BYTES,
++	},
++	{
++		.burst_8bit = 1,
++		.burst_16bit = 0,
++		.burst_32bit = 0,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_1_BYTE,
++	},
++};
++
++void dma_set_ambaconfig(struct dma_chan *chan,
++			struct amba_dma_channel_config *config)
++{
++	struct coh901318_chan *cohc = to_coh901318_chan(chan);
++	int maxburst = config->maxburst;
++	u32 amba_ctrl = 0;
++	int i = 0;
++
++	dev_dbg(COHC_2_DEV(cohc), "configure channel for %d byte transfers\n",
++		config->addr_width);
++	switch (config->addr_width)  {
++	case 1:
++		amba_ctrl |=
++			COH901318_CX_CTRL_SRC_BUS_SIZE_8_BITS |
++			COH901318_CX_CTRL_DST_BUS_SIZE_8_BITS;
++
++		while (i < ARRAY_SIZE(burst_sizes)) {
++			if (burst_sizes[i].burst_8bit <= maxburst)
++				break;
++			i++;
++		}
++
++		break;
++	case 2:
++		amba_ctrl |=
++			COH901318_CX_CTRL_SRC_BUS_SIZE_16_BITS |
++			COH901318_CX_CTRL_DST_BUS_SIZE_16_BITS;
++
++		while (i < ARRAY_SIZE(burst_sizes)) {
++			if (burst_sizes[i].burst_16bit <= maxburst)
++				break;
++			i++;
++		}
++
++		break;
++	case 4:
++		/* Direction doesn't matter here, it's 32/32 bits */
++		amba_ctrl |=
++			COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS |
++			COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS;
++
++		while (i < ARRAY_SIZE(burst_sizes)) {
++			if (burst_sizes[i].burst_32bit <= maxburst)
++				break;
++			i++;
++		}
++
++		break;
++	default:
++		dev_err(COHC_2_DEV(cohc),
++			"bad ambaconfig: alien address width\n");
++		return;
++	}
++
++	amba_ctrl |= burst_sizes[i].reg;
++	dev_dbg(COHC_2_DEV(cohc),
++		"selected burst size %d bytes for address width %d bytes, maxburst %d\n",
++		burst_sizes[i].burst_8bit, config->addr_width, maxburst);
++
++	cohc->amba_addr = config->addr;
++	cohc->amba_ctrl = amba_ctrl;
++}
++
+ void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
+ 			 struct coh901318_base *base)
+ {
+-- 
+1.7.0.1
+
