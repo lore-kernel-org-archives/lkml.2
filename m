@@ -1,126 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab0DQMzB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 08:55:01 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:46345 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab0DQMy7 (ORCPT
+	id S1752584Ab0DQNlS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 09:41:18 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:41212 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab0DQNlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 08:54:59 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -12.589
-Message-ID: <4BC9AF9E.8040902@tremplin-utc.net>
-Date: Sat, 17 Apr 2010 14:54:54 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <Eric.Piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090319 Mandriva/2.0.0.21-1mdv2009.1 (2009.1) Thunderbird/2.0.0.21 Mnenhy/0.7.6.666
-MIME-Version: 1.0
-To: platform-driver-x86@vger.kernel.org, Andrew Morton <akpm@osdl.org>
-CC: "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2 v2] Make BACKLIGHT_CLASS_DEVICE be selected automatically
- when needed
-References: <4BC8FFA4.2090906@tremplin-utc.net>
-In-Reply-To: <4BC8FFA4.2090906@tremplin-utc.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sat, 17 Apr 2010 09:41:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:subject:message-id:organization:mime-version
+         :content-type;
+        b=o2TnQUuLAvVR/BDCO6PbQYPJyFBKQYpGCLSqCSi7ZDDc1Vui0aEuNAmxRjLy2IFDF1
+         GCOTlbejt3bTnIEeHZwyhjqkf2sHXry+aktZqo3N6fqzdp3thtawkLWJ3ETJxB9msYXb
+         HLQrcNN2r8tKht6v0yD7b7u21uy4JnzFulm4o=
+Date: Sat, 17 Apr 2010 17:41:08 +0400
+From: Vlad Glagolev <stealth@sourcemage.org>
+To: linux-kernel@vger.kernel.org
+Subject: NFS and /dev/mdXpY
+Message-Id: <20100417174108.c39d52df.stealth@sourcemage.org>
+Organization: Source Mage Team
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__17_Apr_2010_17_41_08_+0400_9TcRuKstovei40Du"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a new version, compatible with the v2 of PATCH 1.
+--Signature=_Sat__17_Apr_2010_17_41_08_+0400_9TcRuKstovei40Du
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Eric
-8<----------------------------------
+Well, hello there,
 
-Many different modules depend on BACKLIGHT_CLASS_DEVICE, and are
-situated in completely different places. In Kconfig, some used to "depend"
-on it, while others "selected" it. Excepted for the drivers just below
-the option, it's easier for the user to have it automatically
-selected whenever needed. So we consistently "select" it for platform
-and ACPI drivers.
+I faced this problem today while trying to mount some NFS share on OpenBSD =
+box.
+I mounted it successfully without any visible errors, but I wasn't able to =
+cd there, the printed error was:
 
-Signed-off-by: Éric Piel <eric.piel@tremplin-utc.net>
----
- drivers/platform/x86/Kconfig |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ksh: cd: /storage - Stale NFS file handle
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 28c33e8..de5e99d 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -19,9 +19,9 @@ config ACER_WMI
- 	depends on ACPI
- 	depends on LEDS_CLASS
- 	depends on NEW_LEDS
--	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on SERIO_I8042
- 	depends on RFKILL || RFKILL = n
-+	select BACKLIGHT_CLASS_DEVICE
- 	select ACPI_WMI
- 	---help---
- 	  This is a driver for newer Acer (and Wistron) laptops. It adds
-@@ -78,10 +78,10 @@ config DELL_LAPTOP
- 	depends on X86
- 	depends on DCDBAS
- 	depends on EXPERIMENTAL
--	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on RFKILL || RFKILL = n
- 	depends on POWER_SUPPLY
- 	depends on SERIO_I8042
-+	select BACKLIGHT_CLASS_DEVICE
- 	default n
- 	---help---
- 	This driver adds support for rfkill and backlight control to Dell
-@@ -102,8 +102,8 @@ config FUJITSU_LAPTOP
- 	tristate "Fujitsu Laptop Extras"
- 	depends on ACPI
- 	depends on INPUT
--	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on LEDS_CLASS || LEDS_CLASS=n
-+	select BACKLIGHT_CLASS_DEVICE
- 	---help---
- 	  This is a driver for laptops built by Fujitsu:
- 
-@@ -151,8 +151,8 @@ config HP_WMI
- config MSI_LAPTOP
- 	tristate "MSI Laptop Extras"
- 	depends on ACPI
--	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on RFKILL
-+	select BACKLIGHT_CLASS_DEVICE
- 	---help---
- 	  This is a driver for laptops built by MSI (MICRO-STAR
- 	  INTERNATIONAL):
-@@ -170,7 +170,7 @@ config MSI_LAPTOP
- config PANASONIC_LAPTOP
- 	tristate "Panasonic Laptop Extras"
- 	depends on INPUT && ACPI
--	depends on BACKLIGHT_CLASS_DEVICE
-+	select BACKLIGHT_CLASS_DEVICE
- 	---help---
- 	  This driver adds support for access to backlight control and hotkeys
- 	  on Panasonic Let's Note laptops.
-@@ -181,8 +181,8 @@ config PANASONIC_LAPTOP
- config COMPAL_LAPTOP
- 	tristate "Compal Laptop Extras"
- 	depends on ACPI
--	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on RFKILL
-+	select BACKLIGHT_CLASS_DEVICE
- 	---help---
- 	  This is a driver for laptops built by Compal:
- 
-@@ -423,8 +423,8 @@ config ACPI_WMI
- config MSI_WMI
- 	tristate "MSI WMI extras"
- 	depends on INPUT
--	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on ACPI
-+	select BACKLIGHT_CLASS_DEVICE
- 	select ACPI_WMI
- 	select INPUT_SPARSEKMAP
- 	help
--- 
-1.7.0.5
+Apropos, the partition is 5.5 TB. I tried another one on my box and it was =
+mounted successfully. It was possible to manage files there too. Its size i=
+s ~3GB.
+That's why the first time I thought about some size limitations of OpenBSD/=
+Linux/NFS.
 
+While talking on #openbsd @ freenode, I discovered this via tcpdump on both=
+ sides:
+
+http://pastebin.ca/1864713
+
+Googling for 3 hours didn't help at all, some posts had similiar issue but =
+either with no answer at all or without any full description.
+
+Then I started to experiment with another Linux box to kill the possible di=
+fferent variants.
+
+On another box I also have nfs-utils 1.1.6 and kernel 2.6.32. Mounting that=
+ big partition was unsuccessful, it got just stuck. On tcpdump I've seen th=
+is:
+
+--
+    172.17.2.5.884 > 172.17.2.2.2049: Flags [.], cksum 0x25e4 (correct), se=
+q 1, ack 1, win 92, options [nop,nop,TS val 1808029984 ecr 1618999], length=
+ 0
+    172.17.2.5.3565791363 > 172.17.2.2.2049: 40 null
+    172.17.2.2.2049 > 172.17.2.5.884: Flags [.], cksum 0x25e6 (correct), se=
+q 1, ack 45, win 46, options [nop,nop,TS val 1618999 ecr 1808029984], lengt=
+h 0
+    172.17.2.2.2049 > 172.17.2.5.3565791363: reply ok 24 null
+    172.17.2.5.884 > 172.17.2.2.2049: Flags [.], cksum 0x259b (correct), se=
+q 45, ack 29, win 92, options [nop,nop,TS val 1808029985 ecr 1618999], leng=
+th 0
+    172.17.2.5.3582568579 > 172.17.2.2.2049: 40 null
+    172.17.2.2.2049 > 172.17.2.5.3582568579: reply ok 24 null
+    172.17.2.5.3599345795 > 172.17.2.2.2049: 92 fsinfo fh Unknown/010003000=
+5030100000800000000000000000000000000000000000000000000
+    172.17.2.2.2049 > 172.17.2.5.3599345795: reply ok 32 fsinfo ERROR: Stal=
+e NFS file handle POST:
+    172.17.2.5.3616123011 > 172.17.2.2.2049: 92 fsinfo fh Unknown/010003000=
+5030100000800000000000000000000000000000000000000000000
+    172.17.2.2.2049 > 172.17.2.5.3616123011: reply ok 32 fsinfo ERROR: Stal=
+e NFS file handle POST:
+    172.17.2.5.884 > 172.17.2.2.2049: Flags [F.], cksum 0x2449 (correct), s=
+eq 281, ack 129, win 92, options [nop,nop,TS val 1808029986 ecr 1618999], l=
+ength 0
+    172.17.2.2.2049 > 172.17.2.5.884: Flags [F.], cksum 0x2476 (correct), s=
+eq 129, ack 282, win 46, options [nop,nop,TS val 1618999 ecr 1808029986], l=
+ength 0
+    172.17.2.5.884 > 172.17.2.2.2049: Flags [.], cksum 0x2448 (correct), se=
+q 282, ack 130, win 92, options [nop,nop,TS val 1808029986 ecr 1618999], le=
+ngth 0
+--
+
+familiar messages, eh?
+
+Since that time I've solved that's not OpenBSD problem. So only NFS and Lin=
+ux left as the reasons of this.
+It was possible to mount that small partition on Linux box too, the same as=
+ on OpenBSD.
+
+But afterthat I recongnized an interesting issue: I have different sw raid =
+setups on my storage server.
+I tried to mount a small partition on the same md device where 5.5TB partit=
+ion is located, and got the same
+error message! Now I'm sure it's about NFS <-> MDADM setup, that's why I ca=
+lled the topic like this.
+
+A bit about my setup:
+
+# cat /proc/mdstat=20
+Personalities : [linear] [raid0] [raid1] [raid6] [raid5] [raid4] [multipath=
+]=20
+md3 : active raid1 sdc1[0] sdd1[1]
+      61376 blocks [2/2] [UU]
+     =20
+md1 : active raid5 sdc2[2] sdd2[3] sdb2[1] sda2[0]
+      3153408 blocks level 5, 512k chunk, algorithm 2 [4/4] [UUUU]
+     =20
+md2 : active raid5 sdc3[2] sdd3[3] sdb3[1] sda3[0]
+      5857199616 blocks level 5, 512k chunk, algorithm 2 [4/4] [UUUU]
+     =20
+md0 : active raid1 sdb1[1] sda1[0]
+      61376 blocks [2/2] [UU]
+     =20
+unused devices: <none>
+
+md0, md1, and md3 aren't so interesting, since fs is created directly on th=
+em, and that's a _problem device_:
+
+# parted /dev/md2
+GNU Parted 2.2
+Using /dev/md2
+Welcome to GNU Parted! Type 'help' to view a list of commands.
+(parted) p free                                                          =20
+p free
+Model: Unknown (unknown)
+Disk /dev/md2: 5998GB
+Sector size (logical/physical): 512B/512B
+Partition Table: gpt
+
+Number  Start   End     Size    File system     Name   Flags
+        17.4kB  1049kB  1031kB  Free Space
+ 1      1049kB  2147MB  2146MB  linux-swap(v1)  swap
+ 2      2147MB  23.6GB  21.5GB  xfs             home
+ 3      23.6GB  24.7GB  1074MB  xfs             temp
+ 4      24.7GB  35.4GB  10.7GB  xfs             user
+ 5      35.4GB  51.5GB  16.1GB  xfs             var
+ 6      51.5GB  5998GB  5946GB  xfs             vault
+        5998GB  5998GB  507kB   Free Space
+
+# ls /dev/md?*
+/dev/md0  /dev/md1  /dev/md2  /dev/md2p1  /dev/md2p2  /dev/md2p3  /dev/md2p=
+4  /dev/md2p5  /dev/md2p6  /dev/md3
+
+It's very handy partitioning scheme where I can extend (grow 5th raid) with=
+ more hdds only /vault partition while "loosing" (a.k.a. not using for this=
+ partition) only ~1gb of space from every 2TB drive.
+
+System boots ok and xfs_check passes with no problems, etc.
+The only problem: it's not possible to use NFS shares on any partition of /=
+dev/md2 device.
+
+Finally, my question to NFS and MDADM developers: any idea?
+
+--=20
+Dont wait to die to find paradise...
+--
+Cheerz,
+Vlad "Stealth" Glagolev
+
+--Signature=_Sat__17_Apr_2010_17_41_08_+0400_9TcRuKstovei40Du
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvJunQACgkQ8Hg3cBKtRUkB8wCgv/X6noTB2Dm2TPJBDb2IJNxk
+W54An28dZJMF9BZr4PKBH3/dBTwK/IV6
+=uTI5
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__17_Apr_2010_17_41_08_+0400_9TcRuKstovei40Du--
