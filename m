@@ -1,207 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab0DQFNH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 01:13:07 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:52949 "EHLO df.lth.se"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752647Ab0DQFMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 01:12:49 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: STEricsson_nomadik_linux@list.st.com, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org,
-       Linus Walleij <linus.walleij@stericsson.com>,
-       Jonas Aaberg <jonas.aberg@stericsson.com>,
-       Marcin Mielczarczyk <marcin.mielczarczyk@tieto.com>
-Subject: [PATCH 2/3] DMAENGINE: DMA40 logical channel fixes
-Date: Sat, 17 Apr 2010 07:12:31 +0200
-Message-Id: <1271481151-9589-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.6.2.rc1
+	id S1752721Ab0DQFXp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 01:23:45 -0400
+Received: from mailgw.tensilica.com ([65.119.96.134]:35291 "EHLO
+	mailgw.tensilica.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab0DQFXn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Apr 2010 01:23:43 -0400
+X-Greylist: delayed 1296 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Apr 2010 01:23:42 EDT
+From: Marc Gauthier <marc@tensilica.com>
+To: David VomLehn <dvomlehn@cisco.com>,
+       "to@dvomlehn-lnx2.corp.sa.net" <to@dvomlehn-lnx2.corp.sa.net>,
+       "\"linux-arch@vger.kernel.org\"@cisco.com" 
+	<"linux-arch@vger.kernel.org"@cisco.com>,
+       "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "maint_arch@dvomlehn-lnx2.corp.sa.net" 
+	<maint_arch@dvomlehn-lnx2.corp.sa.net>,
+       "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>
+Date: Fri, 16 Apr 2010 21:51:42 -0700
+Subject: RE: [PATCH 23/23] Make register values available to Xtensa panic
+ notifiers
+Thread-Topic: [PATCH 23/23] Make register values available to Xtensa panic
+ notifiers
+Thread-Index: AcrdHWaAorgWSZ2bQkW0S8DFbAzx9QAp4lbQ
+Message-ID: <522C1DF17AF50042AD8AE87F7887BD3D0163037B63@exch.hq.tensilica.com>
+References: <20100412060719.GA26007@dvomlehn-lnx2.corp.sa.net>
+In-Reply-To: <20100412060719.GA26007@dvomlehn-lnx2.corp.sa.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes some small bugs relating to the handling of logical
-channels in the DMA40 driver:
+David,
 
-- Fix a bug when asking for paused status of a logical channel
-  would fail (bug found by Jonas Aaberg)
-- Handle DMA channel request for logical channel 0 (bug found by
-  Marcin Mielczarczyk)
+David VomLehn wrote:
+> The save_ptregs() function has not been tested or even built. I will
+> need help to complete this.
 
-Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-Signed-off-by: Marcin Mielczarczyk <marcin.mielczarczyk@tieto.com>
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
- drivers/dma/ste_dma40.c |   92 +++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 70 insertions(+), 22 deletions(-)
+Just having a first look...  (thanks for the invite to
+chortle with merriment  :-)
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index f86b99f..0ac6543 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -663,7 +663,7 @@ static void d40_config_set_event(struct d40_chan *d40c, bool do_enable)
- 	spin_unlock_irqrestore(&d40c->phy_chan->lock, flags);
- }
- 
--static bool d40_chan_has_events(struct d40_chan *d40c)
-+static u32 d40_chan_has_events(struct d40_chan *d40c)
- {
- 	u32 val = 0;
- 
-@@ -678,7 +678,7 @@ static bool d40_chan_has_events(struct d40_chan *d40c)
- 		val = readl(d40c->base->virtbase + D40_DREG_PCBASE +
- 			    d40c->phy_chan->num * D40_DREG_PCDELTA +
- 			    D40_CHAN_REG_SDLNK);
--	return (bool) val;
-+	return val;
- }
- 
- static void d40_config_enable_lidx(struct d40_chan *d40c)
-@@ -1043,11 +1043,11 @@ static int d40_validate_conf(struct d40_chan *d40c,
- }
- 
- static bool d40_alloc_mask_set(struct d40_phy_res *phy, bool is_src,
--			       int log_event_line)
-+			       int log_event_line, bool is_log)
- {
- 	unsigned long flags;
- 	spin_lock_irqsave(&phy->lock, flags);
--	if (!log_event_line) {
-+	if (!is_log) {
- 		/* Physical interrupts are masked per physical full channel */
- 		if (phy->allocated_src == D40_ALLOC_FREE &&
- 		    phy->allocated_dst == D40_ALLOC_FREE) {
-@@ -1165,15 +1165,16 @@ static int d40_allocate_channel(struct d40_chan *d40c)
- 			/* Find physical half channel */
- 			for (i = 0; i < d40c->base->num_phy_chans; i++) {
- 
--				if (d40_alloc_mask_set(&phys[i], is_src, 0))
-+				if (d40_alloc_mask_set(&phys[i], is_src,
-+						       0, is_log))
- 					goto found_phy;
- 			}
- 		} else
- 			for (j = 0; j < d40c->base->num_phy_chans; j += 8) {
- 				int phy_num = j  + event_group * 2;
- 				for (i = phy_num; i < phy_num + 2; i++) {
--					if (d40_alloc_mask_set(&phys[i],
--							       is_src, 0))
-+					if (d40_alloc_mask_set(&phys[i], is_src,
-+							       0, is_log))
- 						goto found_phy;
- 				}
- 			}
-@@ -1197,13 +1198,13 @@ found_phy:
- 		if (is_src) {
- 			for (i = phy_num; i < phy_num + 2; i++) {
- 				if (d40_alloc_mask_set(&phys[i], is_src,
--						       event_line))
-+						       event_line, is_log))
- 					goto found_log;
- 			}
- 		} else {
- 			for (i = phy_num + 1; i >= phy_num; i--) {
- 				if (d40_alloc_mask_set(&phys[i], is_src,
--						       event_line))
-+						       event_line, is_log))
- 					goto found_log;
- 			}
- 		}
-@@ -1393,6 +1394,65 @@ static int d40_pause(struct dma_chan *chan)
- 	return res;
- }
- 
-+static bool d40_is_paused(struct d40_chan *d40c)
-+{
-+	bool is_paused = false;
-+	unsigned long flags;
-+	void __iomem *active_reg;
-+	u32 status;
-+	u32 event;
-+	int res;
-+
-+	spin_lock_irqsave(&d40c->lock, flags);
-+
-+	if (d40c->log_num == D40_PHY_CHAN) {
-+		if (d40c->phy_chan->num % 2 == 0)
-+			active_reg = d40c->base->virtbase + D40_DREG_ACTIVE;
-+		else
-+			active_reg = d40c->base->virtbase + D40_DREG_ACTIVO;
-+
-+		status = (readl(active_reg) &
-+			  D40_CHAN_POS_MASK(d40c->phy_chan->num)) >>
-+			D40_CHAN_POS(d40c->phy_chan->num);
-+		if (status == D40_DMA_SUSPENDED || status == D40_DMA_STOP)
-+			is_paused = true;
-+
-+		goto _exit;
-+	}
-+
-+	res = d40_channel_execute_command(d40c, D40_DMA_SUSPEND_REQ);
-+	if (res != 0)
-+		goto _exit;
-+
-+	if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
-+	    d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM)
-+		event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dst_dev_type);
-+	else if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM)
-+		event = D40_TYPE_TO_EVENT(d40c->dma_cfg.src_dev_type);
-+	else {
-+		dev_err(&d40c->chan.dev->device,
-+			"[%s] Unknown direction\n", __func__);
-+		goto _exit;
-+	}
-+	status = d40_chan_has_events(d40c);
-+	status = (status & D40_EVENTLINE_MASK(event)) >>
-+		D40_EVENTLINE_POS(event);
-+
-+	if (status != D40_DMA_RUN)
-+		is_paused = true;
-+
-+	/* Resume the other logical channels if any */
-+	if (d40_chan_has_events(d40c))
-+		res = d40_channel_execute_command(d40c,
-+						  D40_DMA_RUN);
-+
-+_exit:
-+	spin_unlock_irqrestore(&d40c->lock, flags);
-+	return is_paused;
-+
-+}
-+
-+
- static bool d40_tx_is_linked(struct d40_chan *d40c)
- {
- 	bool is_link;
-@@ -1983,26 +2043,14 @@ static enum dma_status d40_tx_status(struct dma_chan *chan,
- 				     struct dma_tx_state *txstate)
- {
- 	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
--	void __iomem *active_reg;
- 	dma_cookie_t last_used;
- 	dma_cookie_t last_complete;
--	u32 status;
- 	int ret;
- 
- 	last_complete = d40c->completed;
- 	last_used = chan->cookie;
- 
--	/* check for pause first */
--	if (d40c->phy_chan->num % 2 == 0)
--		active_reg = d40c->base->virtbase + D40_DREG_ACTIVE;
--	else
--		active_reg = d40c->base->virtbase + D40_DREG_ACTIVO;
--
--	status = (readl(active_reg) &
--		  D40_CHAN_POS_MASK(d40c->phy_chan->num)) >>
--		D40_CHAN_POS(d40c->phy_chan->num);
--
--	if (status == D40_DMA_SUSPENDED)
-+	if (d40_is_paused(d40c))
- 		ret = DMA_PAUSED;
- 	else
- 		ret = dma_async_is_complete(cookie, last_complete, last_used);
--- 
-1.7.0.1
+I take it this is supposed to save the kernel's registers
+around the call to save_ptregs()?  (not just find the
+current exception/interrupt's pt_regs)
+Does __always_inline work compiling the kernel with -O0?
+if not, saving regs of save_ptregs() itself fails because
+that call frame is gone by the time something uses the
+regs to do a backtrace.  So should save_ptregs() save the
+registers of its caller instead?  And is the caller of
+save_ptregs not expected to return?
 
+Almost wonder whether it's easier to write a panic system
+call, given the system call mechanism saves all registers
+for everyone already.
+
+-Marc
+
+
+
+> Signed-off-by: David VomLehn <dvomlehn@cisco.com>
+> ---
+>  arch/xtensa/include/asm/ptrace.h |   93
+>  ++++++++++++++++++++++++++++++++++++++ arch/xtensa/kernel/traps.c
+>  |    4 +- 2 files changed, 95 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/xtensa/include/asm/ptrace.h
+> b/arch/xtensa/include/asm/ptrace.h index 905e1e6..56d5721 100644
+> --- a/arch/xtensa/include/asm/ptrace.h
+> +++ b/arch/xtensa/include/asm/ptrace.h
+> @@ -130,6 +130,99 @@ extern void show_regs(struct pt_regs *);
+>
+>  #endif       /* !__ASSEMBLY__ */
+>
+> +/* Macros for saving the contents of registers and for the output
+> constraint + * for those registers */
+> +#define PTREG_SAVE(r, name)          "movel  " #r ", %[" #name "]\n"
+> +#define PTREG_SAVE_R(r)                      PTREG_SAVE_I(r, r, i)
+> +
+> +#define PTREG_OUT_R(regs, i)         PTREG_OUT_I(regs, i)
+> +
+> +#define arch_has_save_ptregs 1
+> +
+> +/**
+> + * save_ptregs - save processor registers for backtracing
+> + * @regs:    Pointer to &struct pt_regs structure in which to save the
+> + *           registers
+> + *
+> + * Returns a constant pointer to @regs.
+> + *
+> + * This function must be called first in a function. There must be no
+> + * auto variables defined that are initialized before calling this
+> function. + */
+> +static __always_inline
+> +const struct pt_regs *save_ptregs(struct pt_regs *regs)
+> +{
+> +     __asm__ __volatile__ (
+> +                     PTREG_SAVE(pc, pc)
+> +                     PTREG_SAVE(ps, ps)
+> +                     PTREG_SAVE(depc, depc)
+> +                     PTREG_SAVE(exccause, exccause)
+> +                     PTREG_SAVE(excvaddr, excvaddr)
+> +                     PTREG_SAVE(debugcause, debugcause)
+> +                     PTREG_SAVE(wmask, wmask)
+> +                     PTREG_SAVE(lbeg, lbeg)
+> +                     PTREG_SAVE(lend, lend)
+> +                     PTREG_SAVE(lcount, lcount)
+> +                     PTREG_SAVE(sar, sar)
+> +                     PTREG_SAVE(windowbase, windowbase)
+> +                     PTREG_SAVE(windowstart, windowstart)
+> +                     PTREG_SAVE(syscall, syscall)
+> +                     PTREG_SAVE(icountlevel, icountlevel)
+> +                     /* Don't know how to handle xtregs_opt_t definitions */
+> +                     PTREG_SAVE_R(0)
+> +                     PTREG_SAVE_R(1)
+> +                     PTREG_SAVE_R(2)
+> +                     PTREG_SAVE_R(3)
+> +                     PTREG_SAVE_R(4)
+> +                     PTREG_SAVE_R(5)
+> +                     PTREG_SAVE_R(6)
+> +                     PTREG_SAVE_R(7)
+> +                     PTREG_SAVE_R(8)
+> +                     PTREG_SAVE_R(9)
+> +                     PTREG_SAVE_R(10)
+> +                     PTREG_SAVE_R(11)
+> +                     PTREG_SAVE_R(12)
+> +                     PTREG_SAVE_R(13)
+> +                     PTREG_SAVE_R(14)
+> +                     PTREG_SAVE_R(15)
+> +     :
+> +             PTREG_OUT(regs, pc, pc),
+> +             PTREG_OUT(regs, ps, ps),
+> +             PTREG_OUT(regs, depc, depc),
+> +             PTREG_OUT(regs, exccause, exccause),
+> +             PTREG_OUT(regs, excvaddr, excvaddr),
+> +             PTREG_OUT(regs, debugcause, debugcause),
+> +             PTREG_OUT(regs, wmask, wmask),
+> +             PTREG_OUT(regs, lbeg, lbeg),
+> +             PTREG_OUT(regs, lend, lend),
+> +             PTREG_OUT(regs, lcount, lcount),
+> +             PTREG_OUT(regs, sar, sar),
+> +             PTREG_OUT(regs, windowbase, windowbase),
+> +             PTREG_OUT(regs, windowstart, windowstart),
+> +             PTREG_OUT(regs, syscall, syscall),
+> +             PTREG_OUT(regs, icountlevel, icountlevel),
+> +             /* Don't know how to handle xtregs_opt_t definitions */
+> +             PTREG_OUT_R(regs, 0),
+> +             PTREG_OUT_R(regs, 1),
+> +             PTREG_OUT_R(regs, 2),
+> +             PTREG_OUT_R(regs, 3),
+> +             PTREG_OUT_R(regs, 4),
+> +             PTREG_OUT_R(regs, 5),
+> +             PTREG_OUT_R(regs, 6),
+> +             PTREG_OUT_R(regs, 7),
+> +             PTREG_OUT_R(regs, 8),
+> +             PTREG_OUT_R(regs, 9),
+> +             PTREG_OUT_R(regs, 10),
+> +             PTREG_OUT_R(regs, 11),
+> +             PTREG_OUT_R(regs, 12),
+> +             PTREG_OUT_R(regs, 13),
+> +             PTREG_OUT_R(regs, 14),
+> +             PTREG_OUT_R(regs, 15)
+> +     :
+> +     );
+> +
+> +     return regs;
+> +}
+>  #endif  /* __KERNEL__ */
+>
+>  #endif       /* _XTENSA_PTRACE_H */
+> diff --git a/arch/xtensa/kernel/traps.c b/arch/xtensa/kernel/traps.c
+> index e64efac..3441d54 100644
+> --- a/arch/xtensa/kernel/traps.c
+> +++ b/arch/xtensa/kernel/traps.c
+> @@ -497,10 +497,10 @@ void die(const char * str, struct pt_regs *
+>       regs, long err) spin_unlock_irq(&die_lock);
+>
+>       if (in_interrupt())
+> -             panic("Fatal exception in interrupt");
+> +             panic_with_regs(regs, "Fatal exception in interrupt");
+>
+>       if (panic_on_oops)
+> -             panic("Fatal exception");
+> +             panic_with_regs(regs, "Fatal exception");
+>
+>       do_exit(err);
+>  }
