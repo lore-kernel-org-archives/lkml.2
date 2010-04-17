@@ -1,128 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932838Ab0DQAyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 20:54:12 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:30695 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758429Ab0DQAyK (ORCPT
+	id S1758702Ab0DQA6e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 20:58:34 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:49027 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758652Ab0DQA6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 20:54:10 -0400
-ORGANIZATION: Oracle Linux Eng.
+	Fri, 16 Apr 2010 20:58:33 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -22.589
+Message-ID: <4BC907B5.2050104@tremplin-utc.net>
+Date: Sat, 17 Apr 2010 02:58:29 +0200
+From: =?ISO-8859-1?Q?=C9ric_Piel?= <Eric.Piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090319 Mandriva/2.0.0.21-1mdv2009.1 (2009.1) Thunderbird/2.0.0.21 Mnenhy/0.7.6.666
 MIME-Version: 1.0
-Message-ID: <20100416175142.f4b59683.randy.dunlap@oracle.com>
-Date: Fri, 16 Apr 2010 17:51:42 -0700 (PDT)
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>,
-       x86@kernel.org
-Cc: Dimitri Sivanich <sivanich@sgi.com>, Russ Anderson <rja@sgi.com>,
-       Robin Holt <holt@sgi.com>, Mike Travis <travis@sgi.com>,
-       Cliff Wickman <cpw@sgi.com>, Jack Steiner <steiner@sgi.com>
-Subject: [PATCH resend] uv_irq.c: fix all sparse warnings
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4BC90658.0018:SCFMA4539814,ss=1,fgs=0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: platform-driver-x86@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
+       "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] Make WMI be selected automatically when needed
+References: <4BC8FF9D.7050500@tremplin-utc.net> <20100416173127.6b968fd4.randy.dunlap@oracle.com>
+In-Reply-To: <20100416173127.6b968fd4.randy.dunlap@oracle.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Op 17-04-10 02:31, Randy Dunlap schreef:
+> On Sat, 17 Apr 2010 02:23:57 +0200 Éric Piel wrote:
+> 
+>> Many different modules depend on WMI. In Kconfig, some used to "depend"
+>> on it, while others "selected" it. As WMI by itself is useless and more
+>> like a library, it's easier for the user to have it automatically
+>> selected whenever needed. It's especially true for options in completely
+>> different places (like LEDS_DELL_NETBOOKS). So we consistently "select"
+>> it.
+>>
+>> Signed-off-by: Éric Piel <eric.piel@tremplin-utc.net>
+> 
+> config ACPI_WMI
+> 	tristate "WMI"
+> 	depends on ACPI
+> 
+> so what happens when one of these configs selects ACPI_WMI
+> but ACPI is not enabled?  Hint:  that will not enable ACPI.
+> 
+> Did you test that kconfig combination?
+Indeed, I hadn't really thought of no ACPI support at all... I guess the best
+is to just do like the other config which select ACPI_WMI, make them depend
+on ACPI. Sounds good to you? (new version appended)
 
-Fix all sparse warnings in building uv_irq.c.
+Eric
 
-arch/x86/kernel/uv_irq.c:46:17: warning: symbol 'uv_irq_chip' was not declared. Should it be static?
-arch/x86/kernel/uv_irq.c:143:50: error: no identifier for function argument
-arch/x86/kernel/uv_irq.c:162:13: error: typename in expression
-arch/x86/kernel/uv_irq.c:162:13: error: undefined identifier 'restrict'
-arch/x86/kernel/uv_irq.c:250:44: error: no identifier for function argument
-arch/x86/kernel/uv_irq.c:260:17: error: typename in expression
-arch/x86/kernel/uv_irq.c:260:17: error: undefined identifier 'restrict'
-arch/x86/kernel/uv_irq.c:233:50: warning: incorrect type in argument 3 (different signedness)
-arch/x86/kernel/uv_irq.c:233:50:    expected int *pnode
-arch/x86/kernel/uv_irq.c:233:50:    got unsigned int *<noident>
-arch/x86/include/asm/uv/uv_hub.h:318:44: warning: incorrect type in argument 2 (different address spaces)
-arch/x86/include/asm/uv/uv_hub.h:318:44:    expected void volatile [noderef] <asn:2>*addr
-arch/x86/include/asm/uv/uv_hub.h:318:44:    got unsigned long *
+8<------------------------------
+Many different modules depend on WMI. In Kconfig, some used to "depend"
+on it, while others "selected" it. As WMI by itself is useless and more
+like a library, it's easier for the user to have it automatically
+selected whenever needed. It's especially true for options in completely
+different places (like LEDS_DELL_NETBOOKS). So we consistently "select"
+it.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: x86@kernel.org
-Cc: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Mike Travis <travis@sgi.com>
-Cc: Cliff Wickman <cpw@sgi.com>
-Cc: Jack Steiner <steiner@sgi.com>
+v2: depend on ACPI to avoid selecting ACPI_WMI without ACPI.
+
+Signed-off-by: Éric Piel <eric.piel@tremplin-utc.net>
 ---
- arch/x86/include/asm/uv/uv_hub.h |    2 +-
- arch/x86/kernel/uv_irq.c         |   12 ++++++------
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/leds/Kconfig         |    4 +++-
+ drivers/platform/x86/Kconfig |   12 ++++++++----
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
---- linux-2.6.34-rc4-git4.orig/arch/x86/kernel/uv_irq.c
-+++ linux-2.6.34-rc4-git4/arch/x86/kernel/uv_irq.c
-@@ -44,7 +44,7 @@ static void uv_ack_apic(unsigned int irq
- 	ack_APIC_irq();
- }
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index 505eb64..f937f88 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -280,7 +280,9 @@ config LEDS_ADP5520
  
--struct irq_chip uv_irq_chip = {
-+static struct irq_chip uv_irq_chip = {
- 	.name		= "UV-CORE",
- 	.startup	= uv_noop_ret,
- 	.shutdown	= uv_noop,
-@@ -141,7 +141,7 @@ int uv_irq_2_mmr_info(int irq, unsigned 
-  */
- static int
- arch_enable_uv_irq(char *irq_name, unsigned int irq, int cpu, int mmr_blade,
--		       unsigned long mmr_offset, int restrict)
-+		       unsigned long mmr_offset, int limit)
- {
- 	const struct cpumask *eligible_cpu = cpumask_of(cpu);
- 	struct irq_desc *desc = irq_to_desc(irq);
-@@ -160,7 +160,7 @@ arch_enable_uv_irq(char *irq_name, unsig
- 	if (err != 0)
- 		return err;
+ config LEDS_DELL_NETBOOKS
+ 	tristate "External LED on Dell Business Netbooks"
+-	depends on X86 && ACPI_WMI
++	depends on X86
++	depends on ACPI
++	select ACPI_WMI
+ 	help
+ 	  This adds support for the Latitude 2100 and similar
+ 	  notebooks that have an external LED.
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 7bec458..28c33e8 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -89,8 +89,9 @@ config DELL_LAPTOP
  
--	if (restrict == UV_AFFINITY_CPU)
-+	if (limit == UV_AFFINITY_CPU)
- 		desc->status |= IRQ_NO_BALANCING;
- 	else
- 		desc->status |= IRQ_MOVE_PCNTXT;
-@@ -214,7 +214,7 @@ static int uv_set_irq_affinity(unsigned 
- 	unsigned long mmr_value;
- 	struct uv_IO_APIC_route_entry *entry;
- 	unsigned long mmr_offset;
--	unsigned mmr_pnode;
-+	int mmr_pnode;
+ config DELL_WMI
+ 	tristate "Dell WMI extras"
+-	depends on ACPI_WMI
+ 	depends on INPUT
++	depends on ACPI
++	select ACPI_WMI
+ 	---help---
+ 	  Say Y here if you want to support WMI-based hotkeys on Dell laptops.
  
- 	if (set_desc_affinity(desc, mask, &dest))
- 		return -1;
-@@ -248,7 +248,7 @@ static int uv_set_irq_affinity(unsigned 
-  * interrupt is raised.
-  */
- int uv_setup_irq(char *irq_name, int cpu, int mmr_blade,
--		 unsigned long mmr_offset, int restrict)
-+		 unsigned long mmr_offset, int limit)
- {
- 	int irq, ret;
+@@ -136,9 +137,10 @@ config TC1100_WMI
  
-@@ -258,7 +258,7 @@ int uv_setup_irq(char *irq_name, int cpu
- 		return -EBUSY;
+ config HP_WMI
+ 	tristate "HP WMI extras"
+-	depends on ACPI_WMI
+ 	depends on INPUT
+ 	depends on RFKILL || RFKILL = n
++	depends on ACPI
++	select ACPI_WMI
+ 	help
+ 	 Say Y here if you want to support WMI-based hotkeys on HP laptops and
+ 	 to read data from WMI such as docking or ambient light sensor state.
+@@ -387,9 +389,10 @@ config EEEPC_LAPTOP
  
- 	ret = arch_enable_uv_irq(irq_name, irq, cpu, mmr_blade, mmr_offset,
--		restrict);
-+		limit);
- 	if (ret == irq)
- 		uv_set_irq_2_mmr_info(irq, mmr_offset, mmr_blade);
- 	else
---- linux-2.6.34-rc4-git4.orig/arch/x86/include/asm/uv/uv_hub.h
-+++ linux-2.6.34-rc4-git4/arch/x86/include/asm/uv/uv_hub.h
-@@ -307,7 +307,7 @@ static inline unsigned long uv_read_glob
-  * Access Global MMR space using the MMR space located at the top of physical
-  * memory.
-  */
--static inline unsigned long *uv_global_mmr64_address(int pnode, unsigned long offset)
-+static inline volatile void __iomem *uv_global_mmr64_address(int pnode, unsigned long offset)
- {
- 	return __va(UV_GLOBAL_MMR64_BASE |
- 		    UV_GLOBAL_MMR64_PNODE_BITS(pnode) | offset);
+ config EEEPC_WMI
+ 	tristate "Eee PC WMI Hotkey Driver (EXPERIMENTAL)"
+-	depends on ACPI_WMI
+ 	depends on INPUT
+ 	depends on EXPERIMENTAL
++	depends on ACPI
++	select ACPI_WMI
+ 	---help---
+ 	  Say Y here if you want to support WMI-based hotkeys on Eee PC laptops.
+ 
+@@ -419,9 +422,10 @@ config ACPI_WMI
+ 
+ config MSI_WMI
+ 	tristate "MSI WMI extras"
+-	depends on ACPI_WMI
+ 	depends on INPUT
+ 	depends on BACKLIGHT_CLASS_DEVICE
++	depends on ACPI
++	select ACPI_WMI
+ 	select INPUT_SPARSEKMAP
+ 	help
+ 	 Say Y here if you want to support WMI-based hotkeys on MSI laptops.
+-- 
+1.7.0.5
+
+
+ 
