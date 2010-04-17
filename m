@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab0DQOHd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 10:07:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28897 "EHLO mx1.redhat.com"
+	id S1753189Ab0DQOHk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 10:07:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13396 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752387Ab0DQOHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 10:07:30 -0400
+	id S1752842Ab0DQOHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Apr 2010 10:07:35 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/3] X86_64: Optimise fls(), ffs() and fls64() [ver #2]
+Subject: [PATCH 3/3] Optimise get_order() [ver #2]
 To: torvalds@osdl.org, mingo@elte.hu, tglx@linutronix.de, matthew@wil.cx,
        arjan@infradead.org
 Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
        David Howells <dhowells@redhat.com>
-Date: Sat, 17 Apr 2010 15:07:01 +0100
-Message-ID: <20100417140701.15855.26978.stgit@warthog.procyon.org.uk>
+Date: Sat, 17 Apr 2010 15:07:11 +0100
+Message-ID: <20100417140711.15855.92031.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20100417140701.15855.26978.stgit@warthog.procyon.org.uk>
+References: <20100417140701.15855.26978.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -26,44 +28,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fls(N), ffs(N) and fls64(N) can be optimised on x86_64.  Currently they use a
-CMOV instruction after the BSR/BSF to set the destination register to -1 if the
-value to be scanned was 0 (in which case BSR/BSF set the Z flag).
+Optimise get_order() to use bit scanning instructions if such exist rather than
+a loop.  Also, make it possible to use get_order() in static initialisations
+too by building it on top of ilog2() in the constant parameter case.
 
-Instead, according to the AMD64 specification, we can make use of the fact that
-BSR/BSF doesn't modify its output register if its input is 0.  By preloading
-the output with -1 and incrementing the result, we achieve the desired result
-without the need for a conditional check.
-
-The Intel x86_64 specification, however, says that the result of BSR/BSF in
-such a case is undefined.  That said, when queried, one of the Intel CPU
-architects said that the behaviour on all Intel CPUs is that:
-
- (1) with BSRQ/BSFQ, the 64-bit destination register is written with its
-     original value if the source is 0, thus, in essence, giving the effect we
-     want.  And,
-
- (2) with BSRL/BSFL, the lower half of the 64-bit destination register is
-     written with its original value if the source is 0, and the upper half is
-     cleared, thus giving us the effect we want (we return a 4-byte int).
-
-Further, it was indicated that they (Intel) are unlikely to get away with
-changing the behaviour.
-
-
-It might be possible to optimise the 32-bit versions of these functions, but
-there's a lot more variation, and so the effective non-destructive property of
-BSRL/BSRF cannot be relied on.
-
-
-I have benchmarked these functions on my Core2 Duo test machine using the
-following program:
+This has been tested for i386 and x86_64 using the following userspace program,
+and for FRV by making appropriate substitutions for fls() and fls64().  It will
+abort if the case for get_order() deviates from the original except for the
+order of 0, for which get_order() produces an undefined result.  This program
+tests both dynamic and static parameters.
 
 	#include <stdlib.h>
 	#include <stdio.h>
 
-	#ifndef __x86_64__
-	#error
+	#ifdef __x86_64__
+	#define BITS_PER_LONG 64
+	#else
+	#define BITS_PER_LONG 32
 	#endif
 
 	#define PAGE_SHIFT 12
@@ -72,31 +53,130 @@ following program:
 	typedef unsigned int __u32, u32;
 	#define noinline	__attribute__((noinline))
 
+	static inline int fls(int x)
+	{
+		int bitpos = -1;
+
+		asm("bsrl %1,%0"
+		    : "+r" (bitpos)
+		    : "rm" (x));
+		return bitpos + 1;
+	}
+
 	static __always_inline int fls64(__u64 x)
 	{
+	#if BITS_PER_LONG == 64
 		long bitpos = -1;
 
 		asm("bsrq %1,%0"
 		    : "+r" (bitpos)
 		    : "rm" (x));
 		return bitpos + 1;
+	#else
+		__u32 h = x >> 32, l = x;
+		int bitpos = -1;
+
+		asm("bsrl	%1,%0	\n"
+		    "subl	%2,%0	\n"
+		    "bsrl	%3,%0	\n"
+		    : "+r" (bitpos)
+		    : "rm" (l), "i"(32), "rm" (h));
+
+		return bitpos + 33;
+	#endif
 	}
 
-	static inline unsigned long __fls(unsigned long word)
+	static inline __attribute__((const))
+	int __ilog2_u32(u32 n)
 	{
-		asm("bsr %1,%0"
-		    : "=r" (word)
-		    : "rm" (word));
-		return word;
-	}
-	static __always_inline int old_fls64(__u64 x)
-	{
-		if (x == 0)
-			return 0;
-		return __fls(x) + 1;
+		return fls(n) - 1;
 	}
 
-	static noinline // __attribute__((const))
+	static inline __attribute__((const))
+	int __ilog2_u64(u64 n)
+	{
+		return fls64(n) - 1;
+	}
+
+	extern __attribute__((const, noreturn))
+	int ____ilog2_NaN(void);
+
+	#define ilog2(n)				\
+	(						\
+		__builtin_constant_p(n) ? (		\
+			(n) < 1 ? ____ilog2_NaN() :	\
+			(n) & (1ULL << 63) ? 63 :	\
+			(n) & (1ULL << 62) ? 62 :	\
+			(n) & (1ULL << 61) ? 61 :	\
+			(n) & (1ULL << 60) ? 60 :	\
+			(n) & (1ULL << 59) ? 59 :	\
+			(n) & (1ULL << 58) ? 58 :	\
+			(n) & (1ULL << 57) ? 57 :	\
+			(n) & (1ULL << 56) ? 56 :	\
+			(n) & (1ULL << 55) ? 55 :	\
+			(n) & (1ULL << 54) ? 54 :	\
+			(n) & (1ULL << 53) ? 53 :	\
+			(n) & (1ULL << 52) ? 52 :	\
+			(n) & (1ULL << 51) ? 51 :	\
+			(n) & (1ULL << 50) ? 50 :	\
+			(n) & (1ULL << 49) ? 49 :	\
+			(n) & (1ULL << 48) ? 48 :	\
+			(n) & (1ULL << 47) ? 47 :	\
+			(n) & (1ULL << 46) ? 46 :	\
+			(n) & (1ULL << 45) ? 45 :	\
+			(n) & (1ULL << 44) ? 44 :	\
+			(n) & (1ULL << 43) ? 43 :	\
+			(n) & (1ULL << 42) ? 42 :	\
+			(n) & (1ULL << 41) ? 41 :	\
+			(n) & (1ULL << 40) ? 40 :	\
+			(n) & (1ULL << 39) ? 39 :	\
+			(n) & (1ULL << 38) ? 38 :	\
+			(n) & (1ULL << 37) ? 37 :	\
+			(n) & (1ULL << 36) ? 36 :	\
+			(n) & (1ULL << 35) ? 35 :	\
+			(n) & (1ULL << 34) ? 34 :	\
+			(n) & (1ULL << 33) ? 33 :	\
+			(n) & (1ULL << 32) ? 32 :	\
+			(n) & (1ULL << 31) ? 31 :	\
+			(n) & (1ULL << 30) ? 30 :	\
+			(n) & (1ULL << 29) ? 29 :	\
+			(n) & (1ULL << 28) ? 28 :	\
+			(n) & (1ULL << 27) ? 27 :	\
+			(n) & (1ULL << 26) ? 26 :	\
+			(n) & (1ULL << 25) ? 25 :	\
+			(n) & (1ULL << 24) ? 24 :	\
+			(n) & (1ULL << 23) ? 23 :	\
+			(n) & (1ULL << 22) ? 22 :	\
+			(n) & (1ULL << 21) ? 21 :	\
+			(n) & (1ULL << 20) ? 20 :	\
+			(n) & (1ULL << 19) ? 19 :	\
+			(n) & (1ULL << 18) ? 18 :	\
+			(n) & (1ULL << 17) ? 17 :	\
+			(n) & (1ULL << 16) ? 16 :	\
+			(n) & (1ULL << 15) ? 15 :	\
+			(n) & (1ULL << 14) ? 14 :	\
+			(n) & (1ULL << 13) ? 13 :	\
+			(n) & (1ULL << 12) ? 12 :	\
+			(n) & (1ULL << 11) ? 11 :	\
+			(n) & (1ULL << 10) ? 10 :	\
+			(n) & (1ULL <<  9) ?  9 :	\
+			(n) & (1ULL <<  8) ?  8 :	\
+			(n) & (1ULL <<  7) ?  7 :	\
+			(n) & (1ULL <<  6) ?  6 :	\
+			(n) & (1ULL <<  5) ?  5 :	\
+			(n) & (1ULL <<  4) ?  4 :	\
+			(n) & (1ULL <<  3) ?  3 :	\
+			(n) & (1ULL <<  2) ?  2 :	\
+			(n) & (1ULL <<  1) ?  1 :	\
+			(n) & (1ULL <<  0) ?  0 :	\
+			____ilog2_NaN()			\
+					   ) :		\
+		(sizeof(n) <= 4) ?			\
+		__ilog2_u32(n) :			\
+		__ilog2_u64(n)				\
+	 )
+
+	static noinline __attribute__((const))
 	int old_get_order(unsigned long size)
 	{
 		int order;
@@ -110,214 +190,209 @@ following program:
 		return order;
 	}
 
-	static inline __attribute__((const))
-	int get_order_old_fls64(unsigned long size)
+	static noinline __attribute__((const))
+	int __get_order(unsigned long size)
 	{
 		int order;
 		size--;
 		size >>= PAGE_SHIFT;
-		order = old_fls64(size);
-		return order;
-	}
-
-	static inline __attribute__((const))
-	int get_order(unsigned long size)
-	{
-		int order;
-		size--;
-		size >>= PAGE_SHIFT;
+	#if BITS_PER_LONG == 32
+		order = fls(size);
+	#else
 		order = fls64(size);
+	#endif
 		return order;
 	}
 
-	unsigned long prevent_optimise_out;
+	#define get_order(n)						\
+	(								\
+		__builtin_constant_p(n) ? (				\
+			(n == 0UL) ? BITS_PER_LONG - PAGE_SHIFT :	\
+			((n < (1UL << PAGE_SHIFT)) ? 0 :		\
+			 ilog2((n) - 1) - PAGE_SHIFT + 1)		\
+		) :							\
+		__get_order(n)						\
+	)
 
-	static noinline unsigned long test_old_get_order(void)
+	#define order(N) \
+		{ (1UL << N) - 1,	get_order((1UL << N) - 1)	},	\
+		{ (1UL << N),		get_order((1UL << N))		},	\
+		{ (1UL << N) + 1,	get_order((1UL << N) + 1)	}
+
+	struct order {
+		unsigned long n, order;
+	};
+
+	static const struct order order_table[] = {
+		order(0),
+		order(1),
+		order(2),
+		order(3),
+		order(4),
+		order(5),
+		order(6),
+		order(7),
+		order(8),
+		order(9),
+		order(10),
+		order(11),
+		order(12),
+		order(13),
+		order(14),
+		order(15),
+		order(16),
+		order(17),
+		order(18),
+		order(19),
+		order(20),
+		order(21),
+		order(22),
+		order(23),
+		order(24),
+		order(25),
+		order(26),
+		order(27),
+		order(28),
+		order(29),
+		order(30),
+		order(31),
+	#if BITS_PER_LONG == 64
+		order(32),
+		order(33),
+		order(34),
+		order(35),
+	#endif
+		{ 0x2929 }
+	};
+
+	void check(int loop, unsigned long n)
 	{
-		unsigned long n, total = 0;
-		long rep, loop;
+		unsigned long old, new;
 
-		for (rep = 1000000; rep > 0; rep--) {
-			for (loop = 0; loop <= 16384; loop += 4) {
-				n = 1UL << loop;
-				total += old_get_order(n);
-			}
-		}
-		return total;
-	}
+		printf("[%2d]: %09lx | ", loop, n);
 
-	static noinline unsigned long test_get_order_old_fls64(void)
-	{
-		unsigned long n, total = 0;
-		long rep, loop;
+		old = old_get_order(n);
+		new = get_order(n);
 
-		for (rep = 1000000; rep > 0; rep--) {
-			for (loop = 0; loop <= 16384; loop += 4) {
-				n = 1UL << loop;
-				total += get_order_old_fls64(n);
-			}
-		}
-		return total;
-	}
-
-	static noinline unsigned long test_get_order(void)
-	{
-		unsigned long n, total = 0;
-		long rep, loop;
-
-		for (rep = 1000000; rep > 0; rep--) {
-			for (loop = 0; loop <= 16384; loop += 4) {
-				n = 1UL << loop;
-				total += get_order(n);
-			}
-		}
-		return total;
+		printf("%3ld, %3ld\n", old, new);
+		if (n != 0 && old != new)
+			abort();
 	}
 
 	int main(int argc, char **argv)
 	{
-		unsigned long total;
+		const struct order *p;
+		unsigned long n;
+		int loop;
 
-		switch (argc) {
-		case 1:  total = test_old_get_order();		break;
-		case 2:  total = test_get_order_old_fls64();	break;
-		default: total = test_get_order();		break;
+		for (loop = 0; loop <= BITS_PER_LONG - 1; loop++) {
+			n = 1UL << loop;
+			check(loop, n - 1);
+			check(loop, n);
+			check(loop, n + 1);
 		}
-		prevent_optimise_out = total;
+
+		for (p = order_table; p->n != 0x2929; p++) {
+			unsigned long old, new;
+
+			old = old_get_order(p->n);
+			new = p->order;
+			printf("%09lx\t%3ld, %3ld\n", p->n, old, new);
+			if (p->n != 0 && old != new)
+				abort();
+		}
+
 		return 0;
 	}
 
-This allows me to test the use of the old fls64() implementation and the new
-fls64() implementation and also to contrast these to the out-of-line loop-based
-implementation of get_order().  The results were:
+Disassembling the x86_64 version of the above code shows:
 
-	warthog>time ./get_order
-	real    1m37.191s
-	user    1m36.313s
-	sys     0m0.861s
-	warthog>time ./get_order x
-	real    0m16.892s
-	user    0m16.586s
-	sys     0m0.287s
-	warthog>time ./get_order x x
-	real    0m7.731s
-	user    0m7.727s
-	sys     0m0.002s
+	0000000000400510 <old_get_order>:
+	  400510:       48 83 ef 01             sub    $0x1,%rdi
+	  400514:       b8 ff ff ff ff          mov    $0xffffffff,%eax
+	  400519:       48 c1 ef 0b             shr    $0xb,%rdi
+	  40051d:       0f 1f 00                nopl   (%rax)
+	  400520:       83 c0 01                add    $0x1,%eax
+	  400523:       48 d1 ef                shr    %rdi
+	  400526:       75 f8                   jne    400520 <old_get_order+0x10>
+	  400528:       f3 c3                   repz retq
+	  40052a:       66 0f 1f 44 00 00       nopw   0x0(%rax,%rax,1)
 
-Using the current upstream fls64() as a basis for an inlined get_order() [the
-second result above] is much faster than using the current out-of-line
-loop-based get_order() [the first result above].
+	0000000000400530 <__get_order>:
+	  400530:       48 83 ef 01             sub    $0x1,%rdi
+	  400534:       48 c7 c0 ff ff ff ff    mov    $0xffffffffffffffff,%rax
+	  40053b:       48 c1 ef 0c             shr    $0xc,%rdi
+	  40053f:       48 0f bd c7             bsr    %rdi,%rax
+	  400543:       83 c0 01                add    $0x1,%eax
+	  400546:       c3                      retq
+	  400547:       66 0f 1f 84 00 00 00    nopw   0x0(%rax,%rax,1)
+	  40054e:       00 00
 
-Using my optimised inline fls64()-based get_order() [the third result above]
-is even faster still.
+As can be seen, the new __get_order() function is simpler than the
+old_get_order() function.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/x86/include/asm/bitops.h |   65 +++++++++++++++++++++++++++++++++++------
- 1 files changed, 56 insertions(+), 9 deletions(-)
+ include/asm-generic/getorder.h |   40 ++++++++++++++++++++++++++++------------
+ 1 files changed, 28 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 02b47a6..a57b4b1 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -395,10 +395,21 @@ static inline unsigned long __fls(unsigned long word)
- static inline int ffs(int x)
- {
- 	int r;
--#ifdef CONFIG_X86_CMOV
+diff --git a/include/asm-generic/getorder.h b/include/asm-generic/getorder.h
+index 76e9687..e0fb4bf 100644
+--- a/include/asm-generic/getorder.h
++++ b/include/asm-generic/getorder.h
+@@ -4,6 +4,25 @@
+ #ifndef __ASSEMBLY__
+ 
+ #include <linux/compiler.h>
++#include <linux/log2.h>
 +
-+#if BITS_PER_LONG == 64
-+	/* AMD64 says BSFL won't clobber the dest reg if x==0; Intel64 says the
-+	 * dest reg is undefined if x==0, but their CPU architect says its
-+	 * value is written to set it to the same as before, except that the
-+	 * top 32-bits will be cleared.
-+	 */
-+	long tmp = -1;
-+	asm("bsfl %1,%0"
-+	    : "=r" (r)
-+	    : "rm" (x), "0" (tmp));
-+#elif defined(CONFIG_X86_CMOV)
- 	asm("bsfl %1,%0\n\t"
- 	    "cmovzl %2,%0"
--	    : "=r" (r) : "rm" (x), "r" (-1));
-+	    : "=&r" (r) : "rm" (x), "r" (-1));
- #else
- 	asm("bsfl %1,%0\n\t"
- 	    "jnz 1f\n\t"
-@@ -422,7 +433,18 @@ static inline int ffs(int x)
- static inline int fls(int x)
- {
- 	int r;
--#ifdef CONFIG_X86_CMOV
-+
-+#if BITS_PER_LONG == 64
-+	/* AMD64 says BSRL won't clobber the dest reg if x==0; Intel64 says the
-+	 * dest reg is undefined if x==0, but their CPU architect says its
-+	 * value is written to set it to the same as before, except that the
-+	 * top 32-bits will be cleared.
-+	 */
-+	long tmp = -1;
-+	asm("bsrl %1,%0"
-+	    : "=r" (r)
-+	    : "rm" (x), "0" (tmp));
-+#elif defined(CONFIG_X86_CMOV)
- 	asm("bsrl %1,%0\n\t"
- 	    "cmovzl %2,%0"
- 	    : "=&r" (r) : "rm" (x), "rm" (-1));
-@@ -434,10 +456,41 @@ static inline int fls(int x)
- #endif
- 	return r + 1;
- }
-+
-+/**
-+ * fls64 - find last set bit in a 64-bit word
-+ * @x: the word to search
-+ *
-+ * This is defined in a similar way as the libc and compiler builtin
-+ * ffsll, but returns the position of the most significant set bit.
-+ *
-+ * fls64(value) returns 0 if value is 0 or the position of the last
-+ * set bit if value is nonzero. The last (most significant) bit is
-+ * at position 64.
++/*
++ * Runtime evaluation of get_order()
 + */
-+#if BITS_PER_LONG == 64
-+static __always_inline int fls64(__u64 x)
++static inline __attribute_const__
++int __get_order(unsigned long size)
 +{
-+	long bitpos = -1;
++	int order;
 +
-+	/* AMD64 says BSRQ won't clobber the dest reg if x==0; Intel64 says the
-+	 * dest reg is undefined if x==0, but their CPU architect says its
-+	 * value is written to set it to the same as before.
-+	 */
-+	asm("bsrq %1,%0"
-+	    : "+r" (bitpos)
-+	    : "rm" (x));
-+	return bitpos + 1;
-+}
-+#endif
- #endif /* __KERNEL__ */
- 
- #undef ADDR
- 
++	size--;
++	size >>= PAGE_SHIFT;
 +#if BITS_PER_LONG == 32
-+#include <asm-generic/bitops/fls64.h>
++	order = fls(size);
++#else
++	order = fls64(size);
 +#endif
-+
- #ifdef __KERNEL__
++	return order;
++}
  
- #include <asm-generic/bitops/sched.h>
-@@ -446,12 +499,6 @@ static inline int fls(int x)
- 
- #include <asm-generic/bitops/hweight.h>
- 
--#endif /* __KERNEL__ */
+ /**
+  * get_order - Determine the allocation order of a memory size
+@@ -27,18 +46,15 @@
+  * This function may be used to initialise variables with compile time
+  * evaluations of constants.
+  */
+-static inline __attribute_const__ int get_order(unsigned long size)
+-{
+-	int order;
 -
--#include <asm-generic/bitops/fls64.h>
--
--#ifdef __KERNEL__
--
- #include <asm-generic/bitops/ext2-non-atomic.h>
+-	size = (size - 1) >> (PAGE_SHIFT - 1);
+-	order = -1;
+-	do {
+-		size >>= 1;
+-		order++;
+-	} while (size);
+-	return order;
+-}
++#define get_order(n)						\
++(								\
++	__builtin_constant_p(n) ? (				\
++		(n == 0UL) ? BITS_PER_LONG - PAGE_SHIFT :	\
++		((n < (1UL << PAGE_SHIFT)) ? 0 :		\
++		 ilog2((n) - 1) - PAGE_SHIFT + 1)		\
++	) :							\
++	__get_order(n)						\
++)
  
- #define ext2_set_bit_atomic(lock, nr, addr)			\
+ #endif	/* __ASSEMBLY__ */
+ 
 
