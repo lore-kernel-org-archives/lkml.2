@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab0DQJIR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 05:08:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65224 "EHLO song.cn.fujitsu.com"
+	id S1755718Ab0DQJUe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 05:20:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49535 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755253Ab0DQJIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 05:08:15 -0400
-Message-ID: <4BC97A7D.4070502@cn.fujitsu.com>
-Date: Sat, 17 Apr 2010 17:08:13 +0800
+	id S1755465Ab0DQJUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Apr 2010 05:20:33 -0400
+Message-ID: <4BC97D62.2090908@cn.fujitsu.com>
+Date: Sat, 17 Apr 2010 17:20:34 +0800
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Subject: [PATCH] kvm: reduce couple for ACC_EXEC_MASK
+Subject: [PATCH 1/2] kvm: simplify kvm_vm_ioctl_set_memory_alias
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,31 +21,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The statement "access &= ~(gpte >> PT64_NX_SHIFT);" tries
-to clear bit ACC_EXEC_MASK actually. This statement
-relies PT64_NX_SHIFT==63&&ACC_EXEC_MASK=1
-
-This patch reduces this couple.
-
+It's just time waste if we free a object and allocate it immediately.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 81eab9a..34f4aa2 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -101,11 +101,9 @@ static unsigned FNAME(gpte_access)(struct kvm_vcpu *vcpu, pt_element_t gpte)
- {
- 	unsigned access;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 24cd0ee..db8d7fe 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2479,15 +2479,8 @@ static int kvm_vm_ioctl_set_memory_alias(struct kvm *kvm,
+ 	rcu_assign_pointer(kvm->arch.aliases, aliases);
+ 	synchronize_srcu_expedited(&kvm->srcu);
+ 	kvm_mmu_zap_all(kvm);
+-	kfree(old_aliases);
+-
+-	r = -ENOMEM;
+-	aliases = kzalloc(sizeof(struct kvm_mem_aliases), GFP_KERNEL);
+-	if (!aliases)
+-		goto out_unlock;
+-
+-	memcpy(aliases, kvm->arch.aliases, sizeof(struct kvm_mem_aliases));
  
--	access = (gpte & (PT_WRITABLE_MASK | PT_USER_MASK)) | ACC_EXEC_MASK;
--#if PTTYPE == 64
--	if (is_nx(vcpu))
--		access &= ~(gpte >> PT64_NX_SHIFT);
--#endif
-+	access = (gpte & (PT_WRITABLE_MASK | PT_USER_MASK));
-+	if (PTTYPE != 64 || !is_nx(vcpu) || (gpte & PT64_NX_MASK))
-+		access |= ACC_EXEC_MASK;
- 	return access;
- }
++	aliases = old_aliases;
+ 	p = &aliases->aliases[alias->slot];
+ 	p->base_gfn = alias->guest_phys_addr >> PAGE_SHIFT;
+ 	p->npages = alias->memory_size >> PAGE_SHIFT;
+@@ -2505,7 +2498,6 @@ static int kvm_vm_ioctl_set_memory_alias(struct kvm *kvm,
+ 	kfree(old_aliases);
+ 	r = 0;
  
+-out_unlock:
+ 	mutex_unlock(&kvm->slots_lock);
+ out:
+ 	return r;
+
