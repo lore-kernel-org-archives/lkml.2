@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab0DQRoP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 13:44:15 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:45404 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab0DQRoN (ORCPT
+	id S1752627Ab0DQRz7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 13:55:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59712 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab0DQRz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 13:44:13 -0400
-Date: Sat, 17 Apr 2010 21:44:05 +0400
-From: Eric B Munson <ebmunson@us.ibm.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-rdma@vger.kernel.org, rolandd@cisco.com, peterz@infradead.org,
-       pavel@ucw.cz, mingo@elte.hu
-Subject: Re: [PATCH] ummunotify: fix umn-test build
-Message-ID: <20100417174404.GB3579@us.ibm.com>
-References: <1271053337-7121-1-git-send-email-ebmunson@us.ibm.com>
- <20100414094341.ba69842d.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Yylu36WmvOXNoKYn"
-Content-Disposition: inline
-In-Reply-To: <20100414094341.ba69842d.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 17 Apr 2010 13:55:58 -0400
+Date: Sat, 17 Apr 2010 10:57:21 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: tytso@mit.edu
+Cc: Peter Zijlstra <peterz@infradead.org>, Salman <sqazi@google.com>,
+       mingo@elte.hu, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       svaidy@linux.vnet.ibm.com, linux-pm@lists.linux-foundation.org,
+       csadler@google.com, ranjitm@google.com, kenchen@google.com,
+       dawnchen@google.com
+Subject: Re: [PATCH 0/3] [idled]: Idle Cycle Injector for power capping
+Message-ID: <20100417105721.63d48577@infradead.org>
+In-Reply-To: <20100417170808.GE32634@thunk.org>
+References: <20100413234902.29004.41655.stgit@bumblebee1.mtv.corp.google.com>
+	<1271317886.32749.69.camel@laptop>
+	<20100417170808.GE32634@thunk.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 17 Apr 2010 13:08:08 -0400
+tytso@mit.edu wrote:
 
---Yylu36WmvOXNoKYn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Thu, Apr 15, 2010 at 09:51:26AM +0200, Peter Zijlstra wrote:
+> > On Tue, 2010-04-13 at 17:08 -0700, Salman wrote:
+> > > As we discussed earlier this year, Google has an implementation
+> > > that it would like to share.  I have finally gotten around to
+> > > porting it to v2.6.33 and cleaning up the interfaces.  It is
+> > > provided in the following messages for your review.  I realize
+> > > that when we first discussed this idea, a lot of ideas were
+> > > presented for enhancing it.  Thanks alot for your suggestions.  I
+> > > haven't gotten around to implementing any of them.
+> > 
+> > .33 is way too old to submit patches against.
+> 
+> But it's not too old for review purposes; as Salman said, they were
+> sent to LKML for comments and review.  I think it's well understood
+> that when these patches are ready to be merged, they need to be
+> submitted right before the merge window opens, against a recent -rc
+> kernel.
 
-On Wed, 14 Apr 2010, Randy Dunlap wrote:
+s/submitted/refreshed/ ;-)
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
->=20
-> Add ummunotify.h to Kbuild list for export to userspace,
-> fixing 27 build errors in umn-test.c when O=3Dbuilddir is used.
->=20
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Thanks, will wrap this into V2.
 
-Eric
 
---Yylu36WmvOXNoKYn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkvJ82QACgkQsnv9E83jkzrrtwCgvJ1CtcloQrQ9idKWHPb+2gZt
-M4YAn32kcEhDiFFTVe6uTIF2PEY1v8cd
-=0JkT
------END PGP SIGNATURE-----
-
---Yylu36WmvOXNoKYn--
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
