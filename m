@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab0DQIuK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 04:50:10 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55344 "EHLO song.cn.fujitsu.com"
+	id S1755320Ab0DQJAS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 05:00:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50078 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752729Ab0DQIuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 04:50:08 -0400
-Message-ID: <4BC97645.8050009@cn.fujitsu.com>
-Date: Sat, 17 Apr 2010 16:50:13 +0800
+	id S1755142Ab0DQJAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Apr 2010 05:00:15 -0400
+Message-ID: <4BC978A3.8010502@cn.fujitsu.com>
+Date: Sat, 17 Apr 2010 17:00:19 +0800
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Subject: [PATCH] kvm x86 mmu: simplify kvm_mmu_unlink_parents()
+Subject: [PATCH] kvm: do not need hardware_disable when CPU_UP_CANCELED
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,63 +21,28 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-mmu_page_remove_parent_pte() does much maintenance works,
-but kvm_mmu_unlink_parents() unlink all parents, so
-such maintenance works are not need.
-
-This patch simplifies the works of kvm_mmu_unlink_parents()
-by unlinking parents without so many maintenance works.
+When CPU_UP_CANCELED, hardware_enable() has not been called at the CPU
+which is going up because raw_notifier_call_chain(CPU_ONLINE)
+has not been called for this cpu.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 90f666e..71faa04 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1453,22 +1453,33 @@ static void kvm_mmu_reset_last_pte_updated(struct kvm *kvm)
- 
- static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
- {
--	u64 *parent_pte;
-+	if (!sp->multimapped) {
-+		if (!sp->parent_pte)
-+			return;
- 
--	while (sp->multimapped || sp->parent_pte) {
--		if (!sp->multimapped)
--			parent_pte = sp->parent_pte;
--		else {
--			struct kvm_pte_chain *chain;
-+		__set_spte(sp->parent_pte, shadow_trap_nonpresent_pte);
-+		sp->parent_pte = NULL;
-+		return;
-+	}
- 
--			chain = container_of(sp->parent_ptes.first,
--					     struct kvm_pte_chain, link);
--			parent_pte = chain->parent_ptes[0];
-+	while (!hlist_empty(&sp->parent_ptes)) {
-+		struct kvm_pte_chain *chain;
-+		u64 *parent_pte;
-+		int i;
-+
-+		chain = hlist_entry(sp->parent_ptes.first,
-+				    struct kvm_pte_chain, link);
-+		for (i = 0; i < NR_PTE_CHAIN_ENTRIES; ++i) {
-+			parent_pte = chain->parent_ptes[i];
-+			if (!parent_pte)
-+				break;
-+			__set_spte(parent_pte, shadow_trap_nonpresent_pte);
- 		}
--		BUG_ON(!parent_pte);
--		kvm_mmu_put_page(sp, parent_pte);
--		__set_spte(parent_pte, shadow_trap_nonpresent_pte);
-+		hlist_del(&chain->link);
-+		mmu_free_pte_chain(chain);
- 	}
-+	sp->multimapped = 0;
-+	sp->parent_pte = NULL;
- }
- 
- static int mmu_zap_unsync_children(struct kvm *kvm,
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 5a0cd19..b03f863 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1921,11 +1921,6 @@ static int kvm_cpu_hotplug(struct notifier_block *notifier, unsigned long val,
+ 		       cpu);
+ 		hardware_disable(NULL);
+ 		break;
+-	case CPU_UP_CANCELED:
+-		printk(KERN_INFO "kvm: disabling virtualization on CPU%d\n",
+-		       cpu);
+-		smp_call_function_single(cpu, hardware_disable, NULL, 1);
+-		break;
+ 	case CPU_ONLINE:
+ 		printk(KERN_INFO "kvm: enabling virtualization on CPU%d\n",
+ 		       cpu);
+
+
 
