@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab0DQPNI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 11:13:08 -0400
-Received: from fg-out-1718.google.com ([72.14.220.152]:50970 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973Ab0DQPNE (ORCPT
-	<rfc822;Linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 11:13:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:references:x-url:x-pgp-fp:x-pgp:date
-         :in-reply-to:message-id:user-agent:mime-version:content-type;
-        b=hQq5UG/5h48Xdzd4V4NUGK6heeBxVy0npYO/xF4WTiZ6VYJAVsffcY0fkIvKE+JUfr
-         x2cqtWYPcCQw2JKfbGATBoMO5H7awCU45jSFcdNgS/CRKNiFyzg0+IUvzJgUa43l2j7q
-         MqZm0P0S9eiiywo7tqXNY1rEGPV5bVQ6X66lw=
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, <Linux-kernel@vger.kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH] usb: core: config.c: usb_get_configuration() simplified
-References: <Pine.LNX.4.44L0.1004171041240.4980-100000@netrider.rowland.org>
-X-Url: http://mina86.com/
-X-PGP-FP: 9134 06FA 7AD8 D134 9D0C  C33F 532C CB00 B7C6 DF1E
-X-PGP: B7C6DF1E
-Date: Sat, 17 Apr 2010 17:12:58 +0200
-In-Reply-To: <Pine.LNX.4.44L0.1004171041240.4980-100000@netrider.rowland.org>
-	(Alan Stern's message of "Sat, 17 Apr 2010 10:42:17 -0400 (EDT)")
-Message-ID: <87sk6uaz9h.fsf@erwin.mina86.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0 (Slckware Linux)
+	id S1753203Ab0DQPS7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 11:18:59 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:1210 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751973Ab0DQPS6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Apr 2010 11:18:58 -0400
+To: linux-kernel@vger.kernel.org
+Subject: [regression,bisected] Missing boot messages with VESAFB after VT initialization
+Cc: Dave Airlie <airlied@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       x86@kernel.org
+Content-Disposition: inline
+From: Frans Pop <elendil@planet.nl>
+Date: Sat, 17 Apr 2010 17:18:55 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004171718.55867.elendil@planet.nl>
+X-OriginalArrivalTime: 17 Apr 2010 15:18:56.0157 (UTC) FILETIME=[4BED64D0:01CADE41]
+X-RecipientDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usb_gat_configuratio() used two pointers to point to the same
-memory.  Code simplified, by removing one of them.
+Initially all messages from init scripts are displayed correctly, but after
+the init script to set up the VT1-VT6 is run, messages from init scripts
+are no longer displayed. Instead the display is blank with only a cursor.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/usb/core/config.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+However, if I switch back to VT1 from X.Org after the boot has completed,
+the missing messages are visible.
 
-> On Sat, 17 Apr 2010, Michal Nazarewicz wrote:
->> usb_get_configuration() uses a temporary buffer allocated on heap
->> to read USB configuration descriptor.  The buffer is just nine
->> bytes an so it is a waste to allocate it on heap where it can be
->> allocated on stack with the rest of local variables.  This
->> simplifies the code and minimises memory usage.
+System is x86_64 running Debian stable ("Lenny"). I'm using VESAFB (vga=791)
+and no KMS.
 
-Alan Stern <stern@rowland.harvard.edu> writes:
-> This is completely wrong.  You are not allowed to do DMA to buffers on 
-> the stack; some architectures are not capable of handling it.
+I've bisected this to the following commit:
+   commit 477346ff74f4c2aed50e8a0db96a61069f3e5b80
+   Author: Dave Airlie <airlied@redhat.com>
+   Date:   Thu Jan 7 17:04:54 2010 +1000
+       x86-64: Allow fbdev primary video code
 
-That makes sense; I haven't considered this thinking that copying nine
-bytes by CPU, rather then using DMA, is not a big issue.
+Kernel config is available in: http://lkml.org/lkml/2010/4/16/230
 
-Still, the change proposed by attached commit does not suffer from DMA
-issue and still simplify the code.
+Relevant part of the boot log (I boot with 'quiet'):
+[...]
+Sat Apr 17 16:52:07 2010: Starting portmap daemon...Already running..
+Sat Apr 17 16:52:07 2010: Starting NFS common utilities: statd idmapd.
+Sat Apr 17 16:52:08 2010: Setting sensors limits.
+Sat Apr 17 16:52:08 2010: Setting console screen modes and fonts.
+[Messages after this point are not displayed]
+Sat Apr 17 16:52:08 2010: Setting up ALSA...done.
+Sat Apr 17 16:52:09 2010: INIT: Entering runlevel: 2
+Sat Apr 17 16:52:09 2010: Loading cpufreq kernel modules...done (acpi-cpufreq).
+Sat Apr 17 16:52:10 2010: Starting system log daemon....
+Sat Apr 17 16:52:10 2010: Starting kernel log daemon....
+Sat Apr 17 16:52:10 2010: Starting ACPI services....
+Sat Apr 17 16:52:10 2010: Starting system message bus: dbus.
+Sat Apr 17 16:52:11 2010: Starting OpenBSD Secure Shell server: sshd.
+Sat Apr 17 16:52:11 2010: CPUFreq Utilities: Setting ondemand CPUFreq governor...CPU0...CPU1...done.
+Sat Apr 17 16:52:11 2010: Starting HTTP server: boa.
+Sat Apr 17 16:52:11 2010: Starting Common Unix Printing System: cupsd.
+Sat Apr 17 16:52:13 2010: Starting DirMngr: dirmngr.
+Sat Apr 17 16:52:13 2010: Starting MTA: exim4.
+Sat Apr 17 16:52:14 2010: Starting LAN Information Server: lisa.
+Sat Apr 17 16:52:14 2010: Setting up Machine Check Exceptions trigger... done.
+Sat Apr 17 16:52:14 2010: Running Machine Check Exceptions decoder... done.
+Sat Apr 17 16:52:14 2010: Starting NFS common utilities: statd idmapd.
+Sat Apr 17 16:52:14 2010: Not starting internet superserver: no services enabled.
+Sat Apr 17 16:52:14 2010: Setting sysfs variables....
+Sat Apr 17 16:52:15 2010: Starting file alteration monitor: FAM.
+Sat Apr 17 16:52:15 2010: Starting Hardware abstraction layer: hald.
+Sat Apr 17 16:52:17 2010: Starting bluetooth: disabled. see /etc/default/bluetooth.
+Sat Apr 17 16:52:17 2010: Starting /usr/sbin/chronyd...
+Sat Apr 17 16:52:18 2010: chronyd is running and online.
+Sat Apr 17 16:52:18 2010: Starting anac(h)ronistic cron: anacron.
+Sat Apr 17 16:52:18 2010: Starting deferred execution scheduler: atd.
+Sat Apr 17 16:52:19 2010: Starting periodic command scheduler: crond.
+Sat Apr 17 16:52:19 2010: Starting K Display Manager: kdm.
 
-diff --git a/drivers/usb/core/config.c b/drivers/usb/core/config.c
-index 0d3af6a..4b23e7f 100644
---- a/drivers/usb/core/config.c
-+++ b/drivers/usb/core/config.c
-@@ -722,7 +722,6 @@ int usb_get_configuration(struct usb_device *dev)
- 	int ncfg = dev->descriptor.bNumConfigurations;
- 	int result = 0;
- 	unsigned int cfgno, length;
--	unsigned char *buffer;
- 	unsigned char *bigbuffer;
- 	struct usb_config_descriptor *desc;
- 
-@@ -751,17 +750,16 @@ int usb_get_configuration(struct usb_device *dev)
- 	if (!dev->rawdescriptors)
- 		goto err2;
- 
--	buffer = kmalloc(USB_DT_CONFIG_SIZE, GFP_KERNEL);
--	if (!buffer)
-+	desc = kmalloc(USB_DT_CONFIG_SIZE, GFP_KERNEL);
-+	if (!desc)
- 		goto err2;
--	desc = (struct usb_config_descriptor *)buffer;
- 
- 	result = 0;
- 	for (; cfgno < ncfg; cfgno++) {
- 		/* We grab just the first descriptor so we know how long
- 		 * the whole configuration is */
- 		result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno,
--		    buffer, USB_DT_CONFIG_SIZE);
-+		    desc, USB_DT_CONFIG_SIZE);
- 		if (result < 0) {
- 			dev_err(ddev, "unable to read config index %d "
- 			    "descriptor/%s: %d\n", cfgno, "start", result);
-@@ -810,7 +808,7 @@ int usb_get_configuration(struct usb_device *dev)
- 	result = 0;
- 
- err:
--	kfree(buffer);
-+	kfree(desc);
- out_not_authorized:
- 	dev->descriptor.bNumConfigurations = cfgno;
- err2:
--- 
-Best regards,                                         _     _
- .o. | Liege of Serenly Enlightened Majesty of      o' \,=./ `o
- ..o | Computer Science,  Michal "mina86" Nazarewicz   (o o)
- ooo +--<mina86-tlen.pl>--<jid:mina86-jabber.org>--ooO--(_)--Ooo--
+The "Setting console screen modes and fonts" message comes from the init
+script /etc/rcS.d/S48console-screen.sh. When that script is run the 2 tux
+logos for my 2 CPU cores also disappear.
+
+Cheers,
+FJP
