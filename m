@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab0DQE6y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 00:58:54 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:47379 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab0DQE6v (ORCPT
+	id S1752144Ab0DQFDb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 01:03:31 -0400
+Received: from relay2-d.mail.gandi.net ([217.70.183.194]:57733 "EHLO
+	relay2-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab0DQFDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 00:58:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=kRcSJ/X50qH+C1+Ntdv6OMbZHD093SC4Ouw2UXvgLo3jSgntjx+QzxcRD+cRLkFzRE
-         XJuyY/JvO/htrI4XqEfwTZhN9FDCBUFAYlOuHka6OGB1PmOEzle4l2+MiABHTCdK2Foy
-         NQ76wIqUfGBrG533rPZy4Q2dNM0+vdK4if5PM=
+	Sat, 17 Apr 2010 01:03:30 -0400
+X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Apr 2010 01:03:29 EDT
+X-Originating-IP: 217.70.178.42
+X-Originating-IP: 173.50.255.69
+Date: Fri, 16 Apr 2010 21:53:27 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 02/16] rcu: make dead code really dead
+Message-ID: <20100417045326.GA11604@feather>
+References: <20100415181255.GA19588@linux.vnet.ibm.com>
+ <1271355219-20714-2-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20100415235251.GA2491@feather>
+ <20100416142348.GD2615@linux.vnet.ibm.com>
+ <20100416211610.GA8357@feather>
+ <20100416222927.GP2615@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <t2qe9c3a7c21004141815x70ecf123p4364802681417da9@mail.gmail.com>
-References: <1270681920-4461-1-git-send-email-linus.walleij@stericsson.com>
-	 <v2se9c3a7c21004071645u8180f4d7p3b4b1f96de11303e@mail.gmail.com>
-	 <CEE6BB42CAD6E947908279175AF8470A03A50F78@EXDCVYMBSTM006.EQ1STM.local>
-	 <t2qe9c3a7c21004141815x70ecf123p4364802681417da9@mail.gmail.com>
-Date: Sat, 17 Apr 2010 06:58:49 +0200
-Message-ID: <q2o63386a3d1004162158v296379fat2b376d5c4c087378@mail.gmail.com>
-Subject: Re: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100416222927.GP2615@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/15 Dan Williams <dan.j.williams@intel.com>:
+On Fri, Apr 16, 2010 at 03:29:27PM -0700, Paul E. McKenney wrote:
+> On Fri, Apr 16, 2010 at 02:16:10PM -0700, Josh Triplett wrote:
+> > On Fri, Apr 16, 2010 at 07:23:48AM -0700, Paul E. McKenney wrote:
+> > > On Thu, Apr 15, 2010 at 04:52:52PM -0700, Josh Triplett wrote:
+> > > > On Thu, Apr 15, 2010 at 11:13:25AM -0700, Paul E. McKenney wrote:
+> > > > > From: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > > > > 
+> > > > > cleanup: make dead code really dead
+> > > > > 
+> > > > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > > ---
+> > > > >  kernel/rcutree.c |    4 ++--
+> > > > >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > > > > 
+> > > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > > > > index e54c123..6042fb8 100644
+> > > > > --- a/kernel/rcutree.c
+> > > > > +++ b/kernel/rcutree.c
+> > > > > @@ -1236,11 +1236,11 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
+> > > > >  		break; /* grace period idle or initializing, ignore. */
+> > > > >  
+> > > > >  	case RCU_SAVE_DYNTICK:
+> > > > > -
+> > > > > -		raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
+> > > > >  		if (RCU_SIGNAL_INIT != RCU_SAVE_DYNTICK)
+> > > > >  			break; /* So gcc recognizes the dead code. */
+> > > > 
+> > > > GCC's new __builtin_unreachable would help here, though obviously we
+> > > > can't count on 4.5 or newer quite yet.  A wrapper in compiler.h would
+> > > > let us use it when available though.
+> > > 
+> > > So at some time when we can count on gcc 4.5 or newer, the code
+> > > would look something like the following?
+> > > 
+> > > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK)
+> > > 		this_is_unreachable();
+> > 
+> > Yes, exactly.
+> > 
+> > > I suppose that in the meantime one could supply the code to use
+> > > in the unreachable case:
+> > > 
+> > > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK)
+> > > 		this_is_unreachable(break);
+> > > 
+> > > But this is beginning to seem a bit strained to me.  ;-)
+> > 
+> > I'd suggest spelling that this way:
+> > 
+> > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK) {
+> > 		unreachable();
+> > 		break;
+> > 	}
+> > 
+> > But in any case, all of these do seem excessive just to avoid the need
+> > for an ifdef. :)
+> 
+> Actually, the "if" condition is a comparison of numerical constants,
+> so no #ifdef is required.
 
-> Getting closer... I have pushed out the dma40 driver (v3), 4, and 6.
+I just meant that those constants get #defined based on CONFIG_NO_HZ, so
+an #ifdef on that would remove the need for the special handling of dead
+code.
 
-That's great!
-
-> The other patch in -mm I could take as well but that needs an ack from
-> Russell.
-
-Nah, I'll push that in through Russells tree hopefully, it needs rebasing on
-the latest board setup code anyway.
-
-> 5 is pending the review comment and 9 does not apply cleanly (does it
-> depend on something in the spi tree?)
-
-OK I'm sending updated versions soon, along with a DMA40 bug fix
-all on top of async_tx instead.
-
-Number 9 fails since it is based on -next where all the #include <slab.h>
-business has taken place, I don't know how that is resolved in the end
-but it now includes that include and applies cleanly on async_tx.
-
-I'll keep working on getting the PL011 and PL180 DMA tested on the
-RealView somehow so those can also be accepted.
-
-Your,
-Linus Walleij
+- Josh Triplett
