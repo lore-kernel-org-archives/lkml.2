@@ -1,99 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365Ab0DQKnN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 06:43:13 -0400
-Received: from 8bytes.org ([88.198.83.132]:52917 "EHLO 8bytes.org"
+	id S1756804Ab0DQKtr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 06:49:47 -0400
+Received: from 8bytes.org ([88.198.83.132]:48193 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756136Ab0DQKnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 06:43:11 -0400
-Date: Sat, 17 Apr 2010 12:43:09 +0200
+	id S1756325Ab0DQKtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Apr 2010 06:49:45 -0400
+Date: Sat, 17 Apr 2010 12:49:44 +0200
 From: Joerg Roedel <joro@8bytes.org>
-To: Tom Lyon <pugs@cisco.com>
-Cc: mst@redhat.com, hjk@linutronix.de, gregkh@suse.de, chrisw@sous-sol.org,
-       avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] drivers/uio/uio.c: DMA mapping, interrupt
-	extensions, etc.
-Message-ID: <20100417104309.GA23260@8bytes.org>
-References: <4bc77d41.njZFTBp9Nkn93l72%pugs@cisco.com>
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Cc: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, linux-kernel@vger.kernel.org,
+       Zachary Amsden <zamsden@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       tim.c.chen@intel.com, zhiteng.huang@intel.com,
+       Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH V4 1/2] perf & kvm: Enhance perf to collect KVM guest
+	os statistics from host side
+Message-ID: <20100417104944.GB23260@8bytes.org>
+References: <1271403275.2078.509.camel@ymzhang.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4bc77d41.njZFTBp9Nkn93l72%pugs@cisco.com>
+In-Reply-To: <1271403275.2078.509.camel@ymzhang.sh.intel.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 15, 2010 at 01:55:29PM -0700, Tom Lyon wrote:
+Hi Yanmin,
 
-> +	down(&idev->gate);
-> +	if (idev->listeners == 0) {		/* first open */
-> +		if (idev->pmaster && !iommu_found() && !capable(CAP_SYS_RAWIO)) {
-> +			up(&idev->gate);
-> +			return -EPERM;
-> +		}
-> +		/* reset to known state if we can */
-> +		if (idev->pdev)
-> +			(void) pci_reset_function(idev->pdev);
-> +	}
-> +	idev->listeners++;
-> +	up(&idev->gate);
+On Fri, Apr 16, 2010 at 03:34:35PM +0800, Zhang, Yanmin wrote:
+> Below is the kernel patch to enable perf to collect guest os statistics.
+> 
+> Joerg,
+> 
+> Would you like to add support on svm? I don't know the exact point to trigger
+> NMI to host with svm.
 
-Why do you want to allow multiple opens for a device? Is it not
-sufficient to allow only one?
-
-
-> +	if (idev->domain == NULL) {
-> +		if (!list_empty(&listener->dm_list))	/* no mix with anywhere */
-> +			return -EINVAL;
-> +		if (!iommu_found())
-> +			return -EINVAL;
-> +		idev->domain = iommu_domain_alloc();
-> +		if (idev->domain == NULL)
-> +			return -ENXIO;
-> +		idev->cachec = iommu_domain_has_cap(idev->domain,
-> +					IOMMU_CAP_CACHE_COHERENCY);
-> +		ret = iommu_attach_device(idev->domain, idev->dev->parent);
-> +		if (ret) {
-> +			iommu_domain_free(idev->domain);
-> +			idev->domain = NULL;
-> +			printk(KERN_ERR "%s: device_attach failed %d\n", __func__, ret);
-> +			return ret;
-> +		}
-> +	}
-
-If userspace calls this path this will make all the addresses mapped
-with DMA-API paths unusable by the device. This doesn't look like a sane
-userspace interface.
-
-For better and more in-depth review I suggest that you split up this
-large patch into a series of smaler which implement specific aspects of
-your work.
+Yes I will do that, thanks for all the work you have already done :-) Do
+we have a branch for that work somewhere? Probably in the -tip tree? 
 
 	Joerg
 
-P.S.: I got these warning when applying your patches ...
-
-Applying: drivers/uio/uio_pci_generic.c: allow access for non-privileged processes
-/home/joro/src/linux.trees.git/.git/rebase-apply/patch:86: trailing whitespace.
-                        info->mem[j].name = name; 
-/home/joro/src/linux.trees.git/.git/rebase-apply/patch:87: trailing whitespace.
-                        info->mem[j].addr = pci_resource_start(pdev, i); 
-/home/joro/src/linux.trees.git/.git/rebase-apply/patch:89: trailing whitespace.
-                        info->mem[j].memtype = UIO_MEM_PHYS; 
-warning: 3 lines add whitespace errors.
-Applying: drivers/uio/uio.c: DMA mapping, interrupt extensions, etc.
-/home/joro/src/linux.trees.git/.git/rebase-apply/patch:315: trailing whitespace.
-                ret = iommu_map_range(idev->domain, iova, 
-/home/joro/src/linux.trees.git/.git/rebase-apply/patch:325: trailing whitespace.
-        } 
-/home/joro/src/linux.trees.git/.git/rebase-apply/patch:366: trailing whitespace.
-         * adjacent pages, but noone seems to really do that. So we squash 
-/home/joro/src/linux.trees.git/.git/rebase-apply/patch:368: trailing whitespace.
-         * This works if (a) there is an iommu, or (b) the user allocates 
-/home/joro/src/linux.trees.git/.git/rebase-apply/patch:578: trailing whitespace.
-                        unsigned int cmd, unsigned long arg) 
-warning: squelched 1 whitespace error
-warning: 6 lines add whitespace errors.
-
-And there are also some coding-style issues.
