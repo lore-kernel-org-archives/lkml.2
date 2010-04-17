@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab0DQQZf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 12:25:35 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:39232 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab0DQQZd (ORCPT
+	id S1751971Ab0DQQik (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 12:38:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55524 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab0DQQii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 12:25:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=axFaVNgNPkhFAwGS9vze3jfSWMSXW7t9cZFhEqF6vE0ZHqCCr1yIDjR3Ww24hV9Sbi
-         KQW1lLF4VvtW7p5RUG6IkTtliF9iMf5h9lJ6CeaKQ0k7oTSENwzbspCtj3o41xT9H4KH
-         d9lHTi2FF4foBHCjZCwMfn+7VVxbQ7IOHVSfs=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1004162143300.3625@localhost.localdomain>
-References: <cabda6421003230329w3fe596dbn8e4b37cc36118f9f@mail.gmail.com>
-	 <1269340105-6503-1-git-send-email-chripell@fsfe.org>
-	 <alpine.LFD.2.00.1004160110360.3625@localhost.localdomain>
-	 <w2gcabda6421004160918vc5dc5ee2y14a5814b4e8573b3@mail.gmail.com>
-	 <alpine.LFD.2.00.1004162143300.3625@localhost.localdomain>
-Date: Sat, 17 Apr 2010 18:25:31 +0200
-X-Google-Sender-Auth: 5ebfc8609cf17234
-Message-ID: <g2xcabda6421004170925l8c824191t5d451434d24320ae@mail.gmail.com>
-Subject: Re: [PATCH v1 1/4] max3100: added raise_threaded_irq
-From: christian pellegrin <chripell@fsfe.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: feng.tang@intel.com, akpm@linux-foundation.org, greg@kroah.com,
-       david-b@pacbell.net, grant.likely@secretlab.ca,
-       alan@lxorguk.ukuu.org.uk, spi-devel-general@lists.sourceforge.net,
-       linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 17 Apr 2010 12:38:38 -0400
+Date: Sat, 17 Apr 2010 09:40:05 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Salman <sqazi@google.com>
+Cc: peterz@infradead.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, svaidy@linux.vnet.ibm.com,
+       linux-pm@lists.linux-foundation.org, csadler@google.com,
+       ranjitm@google.com, kenchen@google.com, dawnchen@google.com
+Subject: Re: [PATCH 0/3] [idled]: Idle Cycle Injector for power capping
+Message-ID: <20100417094005.449443be@infradead.org>
+In-Reply-To: <20100413234902.29004.41655.stgit@bumblebee1.mtv.corp.google.com>
+References: <20100413234902.29004.41655.stgit@bumblebee1.mtv.corp.google.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 13 Apr 2010 17:08:18 -0700
+Salman <sqazi@google.com> wrote:
+
+> As we discussed earlier this year, Google has an implementation that
+> it would like to share.  I have finally gotten around to porting it to
+> v2.6.33 and cleaning up the interfaces.  It is provided in the
+> following messages for your review.  I realize that when we first
+> discussed this idea, a lot of ideas were presented for enhancing it.
+> Thanks alot for your suggestions.  I haven't gotten around to
+> implementing any of them.
+
+again I'll chime in to support this effort; it's the right thing to do
+for power limiting (as opposed to taking cores offline), and I'm happy
+to see progress being made.
+
+I'll start playing with your patches and use timechart to see how well
+it works, including to see how well things align... 
+
+> The ones that I still find appealing are:
+> 
+> 0. Providing approximate synchronization between cores, regardless
+> of their independant settings in order to improve power savings.   We
+> have to balance this with eager injection (i.e. avoiding injection
+> when an interactive task needs to run).
+
+I still would like to see this ;-)
+It's a *HUGE* instant power delta.
+
+But it does not have to be perfect. As long as "on average" we align
+we're good enough.
+
+the easiest way is to round the time of the start of idle injection
+up to, say, double the duration of the injection period...
+and maybe to whole seconds or some round value of jiffies as well.
+
+It could even be done by "creeping" towards an aligned situation...
+rather than forcing instant alignment, as long as each time we inject
+idle time we get a step closer to being aligned.. very soon we WILL be
+aligned.
+(for example, if a cpu notices it's on the late side of an alignment
+window, it could inject a little shorter than usual, while if it
+notices it's a little early, it can inject a little longer)
+ 
+> A stricter synchronization between cores is needed to make idle cycle
+> injector work on hyperthreaded systems.  This is a some what separate
+> issue, as there should only be one idle cycle injector minimum idle
+> setting per physical core.
+
+actually... while the HT case is clearly required to be solved to get
+actual power limits, ideally we can solve it using the same tricks we
+use for the above, just with a stronger bias...
+
+I don't think we need to force the admin to set the same value per se,
+it's something that's just a matter of having the policy guy do this
+right... (but if you want to do "effective injection %age is minimum of
+the two" or so, I can live with that)
 
 
-On Sat, Apr 17, 2010 at 12:06 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> I wonder whether we should restrict this mechanism to threaded
-> handlers or just implement it in the following way:
->
-.....
-> This will not work out of the box when the irq is nested into some
-> demultiplexing thread handler (IRQF_NESTED_THREAD).
->
 
-OK, I see. The solution you proposed has many other uses such testing
-of interrupt handlers in general. I will try to do some work along the
-line you suggested next week.
 
-Thank you!
+> 
 
 
 -- 
-Christian Pellegrin, see http://www.evolware.org/chri/
-"Real Programmers don't play tennis, or any other sport which requires
-you to change clothes. Mountain climbing is OK, and Real Programmers
-wear their climbing boots to work in case a mountain should suddenly
-spring up in the middle of the computer room."
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
