@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480Ab0DQDHM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Apr 2010 23:07:12 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:45426 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758615Ab0DQDHK (ORCPT
+	id S1758734Ab0DQDQL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Apr 2010 23:16:11 -0400
+Received: from www.telegraphics.com.au ([204.15.192.19]:54128 "EHLO
+	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758713Ab0DQDQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 23:07:10 -0400
-Date: Sat, 17 Apr 2010 13:06:48 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Suleiman Souhlal <ssouhlal@freebsd.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, suleiman@google.com
-Subject: Re: [PATCH 1/4] vmscan: delegate pageout io to flusher thread if
- current is kswapd
-Message-ID: <20100417030648.GH2493@dastard>
-References: <20100415013436.GO2493@dastard>
- <20100415130212.D16E.A69D9226@jp.fujitsu.com>
- <20100415131106.D174.A69D9226@jp.fujitsu.com>
- <64BE60A8-EEF9-4AC6-AF0A-0ED3CB544726@freebsd.org>
- <20100415093214.GV2493@dastard>
- <85DB7083-8E78-4884-9E76-5BD803C530EF@freebsd.org>
- <20100415233339.GW2493@dastard>
- <20100416105002.191adeb1@lxorguk.ukuu.org.uk>
+	Fri, 16 Apr 2010 23:16:09 -0400
+Date: Sat, 17 Apr 2010 13:16:04 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: David Miller <davem@davemloft.net>
+cc: joe@perches.com, p_gortmaker@yahoo.com, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
+Subject: [PATCH] mac8390: change an error return code and some cleanup, take
+ 3
+In-Reply-To: <alpine.OSX.2.00.1004162347390.271@localhost>
+Message-ID: <alpine.OSX.2.00.1004171258330.358@localhost>
+References: <alpine.OSX.2.00.1004161214270.271@localhost> <20100415.200113.215578006.davem@davemloft.net> <alpine.OSX.2.00.1004161323340.271@localhost> <alpine.OSX.2.00.1004161403160.271@localhost> <alpine.OSX.2.00.1004162347390.271@localhost>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100416105002.191adeb1@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 10:50:02AM +0100, Alan Cox wrote:
-> > No. If you are doing full disk seeks between random chunks, then you
-> > still lose a large amount of throughput. e.g. if the seek time is
-> > 10ms and your IO time is 10ms for each 4k page, then increasing the
-> > size ito 64k makes it 10ms seek and 12ms for the IO. We might increase
-> > throughput but we are still limited to 100 IOs per second. We've
-> > gone from 400kB/s to 6MB/s, but that's still an order of magnitude
-> > short of the 100MB/s full size IOs with little in way of seeks
-> > between them will acheive on the same spindle...
-> 
-> The usual armwaving numbers for ops/sec for an ATA disk are in the 200
-> ops/sec range so that seems horribly credible.
 
-Yeah, in my experience 7200rpm SATA will get you 200 ops/s when you
-are doing really small seeks as the typical minimum seek time is
-around 4-5ms. Average seek time, however, is usually in the range of
-10ms, because full head sweep + spindle rotation seeks take in the
-order of 15ms.
+Change an error return code from -EAGAIN to -EBUSY since the former is 
+misleading.
 
-Hence small random IO tends to result in seek times nearer the
-average seek time than the minimum, so that's what i tend to use for
-determining the number of ops/s a disk will sustain.
+Nubus slots are geographically addressed and their irqs are equally 
+inflexible. -EAGAIN is misleading because retrying will not help fix 
+whatever bug it was that made the irq unavailable.
 
-> But then I've never quite understood why our anonymous paging isn't
-> sorting stuff as best it can and then using the drive as a log structure
-> with in memory metadata so it can stream the pages onto disk. Read
-> performance is goig to be similar (maybe better if you have a log tidy
-> when idle), write ought to be far better.
+Also promote the log message. Likewise some other KERN_INFO log messages.
 
-Sounds like a worthy project for someone to sink their teeth into.
-Lots of people would like to have a system that can page out at
-hundreds of megabytes a second....
+Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--- a/drivers/net/mac8390.c	2010-04-16 13:31:04.000000000 +1000
++++ b/drivers/net/mac8390.c	2010-04-16 23:50:39.000000000 +1000
+@@ -554,7 +554,7 @@
+ 	case MAC8390_APPLE:
+ 		switch (mac8390_testio(dev->mem_start)) {
+ 		case ACCESS_UNKNOWN:
+-			pr_info("Don't know how to access card memory!\n");
++			pr_err("Don't know how to access card memory!\n");
+ 			return -ENODEV;
+ 			break;
+ 
+@@ -643,8 +643,8 @@
+ {
+ 	__ei_open(dev);
+ 	if (request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev)) {
+-		pr_info("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
+-		return -EAGAIN;
++		pr_err("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
++		return -EBUSY;
+ 	}
+ 	return 0;
+ }
+@@ -660,7 +660,7 @@
+ {
+ 	ei_status.txing = 0;
+ 	if (ei_debug > 1)
+-		pr_info("reset not supported\n");
++		printk(KERN_DEBUG pr_fmt("reset not supported\n"));
+ 	return;
+ }
+ 
+@@ -668,7 +668,7 @@
+ {
+ 	unsigned char *target = nubus_slot_addr(IRQ2SLOT(dev->irq));
+ 	if (ei_debug > 1)
+-		pr_info("Need to reset the NS8390 t=%lu...", jiffies);
++		printk(KERN_DEBUG pr_fmt("Need to reset the NS8390 t=%lu..."), jiffies);
+ 	ei_status.txing = 0;
+ 	target[0xC0000] = 0;
+ 	if (ei_debug > 1)
+ 
