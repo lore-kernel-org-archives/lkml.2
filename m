@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab0DRUXu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 16:23:50 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37303 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752266Ab0DRUXs (ORCPT
+	id S1753401Ab0DRUZe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 16:25:34 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38320 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613Ab0DRUZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 16:23:48 -0400
-Date: Sun, 18 Apr 2010 13:21:13 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Mike Galbraith <efault@gmx.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Greg Kroah-Hartman <greg@kroah.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Jarkko Nikula <jhnikula@gmail.com>, Tony Lindgren <tony@atomide.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC patch] CFS fix place entity spread issue (v2)
-In-Reply-To: <20100418131302.GA3614@Krystal>
-Message-ID: <alpine.LFD.2.00.1004181317100.14500@i5.linux-foundation.org>
-References: <20100418131302.GA3614@Krystal>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Sun, 18 Apr 2010 16:25:33 -0400
+Date: Sun, 18 Apr 2010 21:25:11 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+       Eric Paris <eparis@parisplace.org>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Fix "undefined reference to `anon_inode_getfd'"
+Message-ID: <20100418202511.GB17939@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix:
 
+fs/built-in.o: In function `sys_inotify_init1':
+summary.c:(.text+0x347a4): undefined reference to `anon_inode_getfd'
 
-On Sun, 18 Apr 2010, Mathieu Desnoyers wrote:
->
-> CFS fix place entity spread issue (v2)
-> 
-> Huge CFS vruntime spread (18 minutes) has been observed with LTTng while simply
-> running Xorg on a uniprocessor machine. Detailed explanation in my ELC2010
-> presentation at:
+found by kautobuild with arms bcmring_defconfig, which ends up with
+INOTIFY_USER enabled (through the 'default y') but leaves ANON_INODES
+unset.  However, inotify_user.c uses anon_inode_getfd().
 
-Hmm. I tested this patch with my favourite non-scientific desktop load 
-test: do web browsing while doing a kernel compile with "make -j16" (after 
-doing a "git clean -dqfx" and "ccache -C" to get rid of old object files 
-and ccache).
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+ fs/notify/inotify/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-This is on a dual-core (with SMT, so 4 threads) Core i5, so "make -j16" 
-overcommits the CPU's quite a bit.
+diff --git a/fs/notify/inotify/Kconfig b/fs/notify/inotify/Kconfig
+index 3e56dbf..af2fc8e 100644
+--- a/fs/notify/inotify/Kconfig
++++ b/fs/notify/inotify/Kconfig
+@@ -16,6 +16,7 @@ config INOTIFY
+ config INOTIFY_USER
+ 	bool "Inotify support for userspace"
+ 	select FSNOTIFY
++	select ANON_INODES
+ 	default y
+ 	---help---
+ 	  Say Y here to enable inotify support for userspace, including the
 
-And quite frankly, I think your patch makes things much worse. I don't 
-have numbers, but it felt much choppier and slower to do scrolling in 
-firefox o moving windows around while the load average is 20+.
-
-My testload is in no way objective, nor necessarily any good, but it's the 
-one I happen to use, and while it's subjective, I think the difference was 
-pretty clear and not good.
-
-			Linus
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
