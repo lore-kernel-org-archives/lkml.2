@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab0DRCAe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 22:00:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51084 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756508Ab0DRCAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 22:00:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,229,1270450800"; 
-   d="scan'208";a="266921256"
-From: "Brown, Len" <len.brown@intel.com>
-To: =?utf-8?B?w4lyaWMgUGllbA==?= <Eric.Piel@tremplin-utc.net>,
-       "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-       Andrew Morton <akpm@osdl.org>
-CC: Matthew Garrett <mjg@redhat.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sat, 17 Apr 2010 19:00:29 -0700
-Subject: RE: [PATCH 0/2] Change some config options to be automatically
- selected
-Thread-Topic: [PATCH 0/2] Change some config options to be automatically
- selected
-Thread-Index: AcrdxEtzQa0GbCiRSr6WSZ4kyhlwSAA1ofVA
-Message-ID: <E87738D94A6AD54789B5B8D1BAEB06CC6F04B30811@azsmsx503.amr.corp.intel.com>
-References: <4BC8FF97.6040502@tremplin-utc.net>
-In-Reply-To: <4BC8FF97.6040502@tremplin-utc.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1756734Ab0DRCFK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 22:05:10 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56614 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756508Ab0DRCFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Apr 2010 22:05:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=h27xp7haU5KGzwSTTPsXFkpodev9iEdm35lyqPItu+PIGKGHYWm/O13h35khuWi5Mf
+         JSgEzlqs7LURqsm3CYfyfHj9MlpN4bqobZHESsqoJzINa7t4+/+9ncV7NEuX+2M6HmRC
+         s7KNZ7CPgkN4jQUX4kjQBkcYDELY28l7RtpM8=
+Date: Sat, 17 Apr 2010 22:04:56 -0400 (EDT)
+From: Parag Warudkar <parag.lkml@gmail.com>
+X-X-Sender: paragw@parag-laptop
+To: jglisse@redhat.com
+cc: linux-kernel@vger.kernel.org, airlied@redhat.com
+Subject: Atombios Execution timeout
+Message-ID: <alpine.DEB.2.00.1004172146310.2797@parag-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o3I212mE018365
 
-> I'm not sure if there is anyone who feels really the maintainer of the
-> platform-x86 directory
+Hi Jerome,
 
-Matthew Garrett maintains the platform-x86 directory.
+On my laptop with a HD3650 GPU, during resume from RAM I get the 
+below errors -
 
-Cheers,
--Len
+[   80.484213] [drm:atom_op_jump] *ERROR* atombios stuck in loop for more 
+than 1sec aborting
+[   80.484218] [drm:atom_execute_table_locked] *ERROR* atombios stuck 
+executing FA30 (len 493, WS 0, PS 4) @ 0xFA71
+[   81.497547] [drm:atom_op_jump] *ERROR* atombios stuck in loop for more 
+than 1sec aborting
+[   81.497552] [drm:atom_execute_table_locked] *ERROR* atombios stuck 
+executing FA30 (len 493, WS 0, PS 4) @ 0xFA71
+[   81.548053] PM: resume of devices complete after 2129.312 msecs
+[   81.746649] PM: Finishing wakeup.
+[   81.746651] Restarting tasks ... done.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Since this happens only during resume may be the current 1 second time is 
+not sufficient for the resume case? I bumped it to 2 sec and it stopped 
+complaining. 
+
+May be we should increase the timeout for only the resume case?
+
+Thanks,
+
+Parag
