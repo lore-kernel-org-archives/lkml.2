@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757089Ab0DRLrg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 07:47:36 -0400
-Received: from skypost.ru ([88.151.105.133]:39834 "EHLO skypost.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752761Ab0DRLrf convert rfc822-to-8bit (ORCPT
+	id S1757243Ab0DRMHu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 08:07:50 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:55809 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757185Ab0DRMHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 07:47:35 -0400
-To: undisclosed-recipients:;
-Subject: RE: Notice
-MIME-Version: 1.0
-X-Mailer: SkyPost Mail 1.0 ( http://www.v-webmail.org/ )
-Date: Sun, 18 Apr 2010 17:36:37 +0600
-From: "Webmaster" <upgrade@web.mail.fi>
-Reply-To: ovomedu@hotmail.com
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <l12ll2.3br2m1@skypost.ru>
+	Sun, 18 Apr 2010 08:07:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=lKHEpT/JtQ+LX32aWS/l6GRHfPZeUQxwImlQ7gAPm+0YARj0klmDqjAz7xdtE11WJC
+         TTOG0+D3KknI82Qat5hQoCevWK89Zq7lHq+vFHQzIYmHAwrPO2Wb4j17sFOZjHWdKO3u
+         feAyBVxx/dGOIZuhku7RbVS+K/NG5CnHNltAw=
+Subject: Re: Network activity after route changes
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Oleg Kutkov <elenbert@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4BCAE9BC.3090609@gmail.com>
+References: <4BC9DB9A.9090605@gmail.com>  <4BCAE9BC.3090609@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 18 Apr 2010 14:07:41 +0200
+Message-ID: <1271592461.16881.4960.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This Message is from the Server Messaging Center to all Universities Webmail
-Subscribers. We are currently changing our Email System from April 20th 2010.
-We will launch Online GX-5 Webmail. Please provide the Informations below, so
-we can upgrade your webmail to the new system
+Le dimanche 18 avril 2010 à 14:15 +0300, Oleg Kutkov a écrit :
+> Hello.
+> I try to send and receive ethernet packets on very low level in my 
+> kernel module.
+> When i change (add or delete entry) routin table (via route command) my 
+> network is freeze for ~15 seconds and my application can't send and 
+> receive any packets.
+> Is it normal or bug somewhere in my application?
+> Can i change this behavior of route system? Maybe change some timeouts, 
+> or immediately flush route (rt_flush() ?) table?
+> 
+> Thanks.
 
-Full Names: .....................
-Email Username: ................
-Email Password: ................
-Date of Birth: .................
+I guess its a bug in your module, since user apps dont experience this
+interesting phenomena :)
 
-==================================================================
-This E-mail is confidential and privileged. If you are not the intended
-Recipient please accept our apologies; Please do not Disclose, Copy or
-distribute Information in this E-mail or take any action in Reliance on its
-contents: to do so is strictly prohibited and may be Unlawful. Please inform
-us that this Message has gone astray before deleting it. Thank you for your
-Co-operation. Copyright �2010. All Rights are resserved.
-_________________________________________________________
-This mail sent using V-webmail - http://www.v-webmail.org
+
 
