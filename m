@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab0DRTC2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 15:02:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44629 "EHLO
+	id S1757609Ab0DRTCa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 15:02:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44638 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757537Ab0DRTCV convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753040Ab0DRTCY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 15:02:21 -0400
-Date: Sun, 18 Apr 2010 12:02:24 -0700
+	Sun, 18 Apr 2010 15:02:24 -0400
+Date: Sun, 18 Apr 2010 12:02:58 -0700
 From: Arjan van de Ven <arjan@infradead.org>
 To: linux-kernel@vger.kernel.org
 Cc: Arjan van de Ven <arjan@infradead.org>, akpm@linux-foundation.org,
        mingo@elte.hu, peterz@infradead.org, tglx@linutronix.de,
        davej@redhat.com, cpufreq@vger.kernel.org
-Subject: [PATCH 4/7] sched: fold updating of the last update time into
- update_ts_time_stats()
-Message-ID: <20100418120224.5447dec3@infradead.org>
+Subject: [PATCH 5/7] sched: eliminate the ts->idle_lastupdate field
+Message-ID: <20100418120258.09c95042@infradead.org>
 In-Reply-To: <20100418115949.7b743898@infradead.org>
 References: <20100418115949.7b743898@infradead.org>
 Organization: Intel
@@ -29,84 +28,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e75d6cd203e43ea4c5e9919f19e2882c066491b8 Mon Sep 17 00:00:00 2001
+>From 526a9f347d5a953f37b67b4b2afb39d7b4d77a92 Mon Sep 17 00:00:00 2001
 From: Arjan van de Ven <arjan@linux.intel.com>
-Date: Sun, 18 Apr 2010 10:47:02 -0700
-Subject: [PATCH 4/7] sched: fold updating of the last update time into update_ts_time_stats()
+Date: Sun, 18 Apr 2010 10:49:30 -0700
+Subject: [PATCH 5/7] sched: eliminate the ts->idle_lastupdate field
 
-This patch folds the updating of the last_update_time into the
-update_ts_time_stats() function, and updates the callers.
+Now that the only user of ts->idle_lastupdate is update_ts_time_stats(),
+the entire field can be eliminated.
 
-This allows for further cleanups that are done in the next patch.
+In update_ts_time_stats(), idle_lastupdate is first set to "now",
+and a few lines later, the only user is an if() statement that
+assigns a variable either to "now" or to ts->idle_lastupdate,
+which has the value of "now" at that point.
 
 Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
 ---
- kernel/time/tick-sched.c |   22 +++++++++++-----------
- 1 files changed, 11 insertions(+), 11 deletions(-)
+ include/linux/tick.h     |    1 -
+ kernel/time/tick-sched.c |    5 +----
+ 2 files changed, 1 insertions(+), 5 deletions(-)
 
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index d2ae79e..0343eed 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -60,7 +60,6 @@ struct tick_sched {
+ 	ktime_t				idle_waketime;
+ 	ktime_t				idle_exittime;
+ 	ktime_t				idle_sleeptime;
+-	ktime_t				idle_lastupdate;
+ 	ktime_t				sleep_length;
+ 	unsigned long			last_jiffies;
+ 	unsigned long			next_jiffies;
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 7dbad2f..ac54543 100644
+index ac54543..326f5f8 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -153,7 +153,8 @@ static void tick_nohz_update_jiffies(ktime_t now)
- /*
-  * Updates the per cpu time idle statistics counters
-  */
--static void update_ts_time_stats(struct tick_sched *ts, ktime_t now)
-+static void
-+update_ts_time_stats(struct tick_sched *ts, ktime_t now, u64 *last_update_time)
+@@ -158,16 +158,13 @@ update_ts_time_stats(struct tick_sched *ts, ktime_t now, u64 *last_update_time)
  {
  	ktime_t delta;
  
-@@ -163,13 +164,19 @@ static void update_ts_time_stats(struct tick_sched *ts, ktime_t now)
+-	ts->idle_lastupdate = now;
+ 	if (ts->idle_active) {
+ 		delta = ktime_sub(now, ts->idle_entrytime);
  		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
  		ts->idle_entrytime = now;
  	}
-+
-+	if (ts->idle_active && last_update_time)
-+		*last_update_time = ktime_to_us(ts->idle_lastupdate);
-+	else
-+		*last_update_time = ktime_to_us(now);
-+
- }
  
- static void tick_nohz_stop_idle(int cpu, ktime_t now)
- {
- 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
- 
--	update_ts_time_stats(ts, now);
-+	update_ts_time_stats(ts, now, NULL);
- 	ts->idle_active = 0;
- 
- 	sched_clock_idle_wakeup_event(0);
-@@ -181,7 +188,7 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
- 
- 	now = ktime_get();
- 
--	update_ts_time_stats(ts, now);
-+	update_ts_time_stats(ts, now, NULL);
- 
- 	ts->idle_entrytime = now;
- 	ts->idle_active = 1;
-@@ -206,18 +213,11 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
- u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
- {
- 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
--	ktime_t now;
- 
- 	if (!tick_nohz_enabled)
- 		return -1;
- 
--	now = ktime_get();
--	update_ts_time_stats(ts, now);
--
--	if (ts->idle_active)
+-	if (ts->idle_active && last_update_time)
 -		*last_update_time = ktime_to_us(ts->idle_lastupdate);
 -	else
--		*last_update_time = ktime_to_us(now);
-+	update_ts_time_stats(ts, ktime_get(), last_update_time);
++	if (last_update_time)
+ 		*last_update_time = ktime_to_us(now);
  
- 	return ktime_to_us(ts->idle_sleeptime);
  }
 -- 
 1.6.2.5
