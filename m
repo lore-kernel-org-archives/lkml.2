@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757598Ab0DRUNw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 16:13:52 -0400
-Received: from mail-out2.uio.no ([129.240.10.58]:43651 "EHLO mail-out2.uio.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529Ab0DRUNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 16:13:50 -0400
-Subject: Re: 2.6.34rc4 NFS writeback regression (bisected): client often
- fails to delete things it just created
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Nix <nix@esperi.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-In-Reply-To: <87mxx0a5pc.fsf@spindle.srvr.nix>
-References: <87tyr9dfvv.fsf@spindle.srvr.nix>
-	 <1271618484.8049.1.camel@localhost.localdomain>
-	 <87vdboa7e0.fsf@spindle.srvr.nix>
-	 <1271620750.8049.3.camel@localhost.localdomain>
-	 <87mxx0a5pc.fsf@spindle.srvr.nix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 18 Apr 2010 16:13:44 -0400
-Message-ID: <1271621624.8049.6.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 3 msgs/h 1 sum rcpts/h 3 sum msgs/h 1 total rcpts 66 max rcpts/h 12 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: A5E6533DA78B086518B3EE1AF4A8A14710F18EB8
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 28 max/h 4 blacklist 0 greylist 0 ratelimit 0
+	id S1757632Ab0DRUXu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 16:23:50 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37303 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752266Ab0DRUXs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Apr 2010 16:23:48 -0400
+Date: Sun, 18 Apr 2010 13:21:13 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Mike Galbraith <efault@gmx.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Greg Kroah-Hartman <greg@kroah.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Jarkko Nikula <jhnikula@gmail.com>, Tony Lindgren <tony@atomide.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC patch] CFS fix place entity spread issue (v2)
+In-Reply-To: <20100418131302.GA3614@Krystal>
+Message-ID: <alpine.LFD.2.00.1004181317100.14500@i5.linux-foundation.org>
+References: <20100418131302.GA3614@Krystal>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-04-18 at 21:03 +0100, Nix wrote: 
-> On 18 Apr 2010, Trond Myklebust said:
-> 
-> > On Sun, 2010-04-18 at 20:27 +0100, Nix wrote: 
-> >> On 18 Apr 2010, Trond Myklebust verbalised:
-> >> tip-of-tree includes that commit, and it's still happening for me there.
-> >> (Just verified again.)
-> >
-> > Does a 'sync' clear out the sillyrenamed files?
-> 
-> Yes.
 
-OK. Next question is how these files are being written. If you 'strace'
-the process, do you see ordinary write() calls being used, or is the
-file perhaps being written via mmap()?
 
+On Sun, 18 Apr 2010, Mathieu Desnoyers wrote:
+>
+> CFS fix place entity spread issue (v2)
+> 
+> Huge CFS vruntime spread (18 minutes) has been observed with LTTng while simply
+> running Xorg on a uniprocessor machine. Detailed explanation in my ELC2010
+> presentation at:
+
+Hmm. I tested this patch with my favourite non-scientific desktop load 
+test: do web browsing while doing a kernel compile with "make -j16" (after 
+doing a "git clean -dqfx" and "ccache -C" to get rid of old object files 
+and ccache).
+
+This is on a dual-core (with SMT, so 4 threads) Core i5, so "make -j16" 
+overcommits the CPU's quite a bit.
+
+And quite frankly, I think your patch makes things much worse. I don't 
+have numbers, but it felt much choppier and slower to do scrolling in 
+firefox o moving windows around while the load average is 20+.
+
+My testload is in no way objective, nor necessarily any good, but it's the 
+one I happen to use, and while it's subjective, I think the difference was 
+pretty clear and not good.
+
+			Linus
