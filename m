@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab0DRNzJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 09:55:09 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:38499 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753069Ab0DRNzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 09:55:06 -0400
-Date: Sun, 18 Apr 2010 06:55:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
- implementation
-Message-ID: <20100418135500.GD3096@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100415142852.GA2471@linux.vnet.ibm.com>
- <1271425881.4807.2319.camel@twins>
- <20100416141745.GC2615@linux.vnet.ibm.com>
- <1271427819.4807.2353.camel@twins>
- <20100416143202.GE2615@linux.vnet.ibm.com>
- <1271429810.4807.2390.camel@twins>
- <20100416150909.GF2615@linux.vnet.ibm.com>
- <1271430855.4807.2411.camel@twins>
- <20100416164503.GH2615@linux.vnet.ibm.com>
- <1271559996.14589.9.camel@mulgrave.site>
+	id S1754337Ab0DROiM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 10:38:12 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:52014 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791Ab0DROiK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Apr 2010 10:38:10 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.52,231,1270425600"; 
+   d="scan'208";a="516952173"
+From: Roland Dreier <rdreier@cisco.com>
+To: Eric B Munson <ebmunson@us.ibm.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org,
+       rolandd@cisco.com, peterz@infradead.org, pavel@ucw.cz, mingo@elte.hu
+Subject: Re: [PATCH] ummunotify: fix umn-test build
+References: <1271053337-7121-1-git-send-email-ebmunson@us.ibm.com>
+	<20100414094341.ba69842d.randy.dunlap@oracle.com>
+	<20100417174404.GB3579@us.ibm.com>
+X-Message-Flag: Warning: May contain useful information
+Date: Sun, 18 Apr 2010 07:38:06 -0700
+In-Reply-To: <20100417174404.GB3579@us.ibm.com> (Eric B. Munson's message of
+	"Sat, 17 Apr 2010 21:44:05 +0400")
+Message-ID: <ada633oltbl.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271559996.14589.9.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 17, 2010 at 10:06:36PM -0500, James Bottomley wrote:
-> On Fri, 2010-04-16 at 09:45 -0700, Paul E. McKenney wrote:
-> > o	mutex_lock(): Critical sections need not guarantee
-> > 	forward progress, as general blocking is permitted.
-> 
-> This isn't quite right.  mutex critical sections must guarantee eventual
-> forward progress against the class of other potential acquirers of the
-> mutex otherwise the system will become either deadlocked or livelocked.
+Eric, sorry for not seeing this earlier, but it looks like the last
+patch I emailed out did not include all the tiny changes I made prior to
+asking Linus to pull this (which he ended up not doing).  For example
+this fix to the include Kbuild file was there.
 
-If I understand you correctly, you are saying that it is OK for a given
-critical section for a given mutex to fail to make forward progress if
-nothing else happens to acquire that mutex during that time.  I would
-agree, at least I would if you were to further add that the soft-lockup
-checks permit an additional 120 seconds of failure to make forward progress
-even if something -is- attempting to acquire that mutex.
+You could look at:
+http://git.kernel.org/?p=linux/kernel/git/roland/infiniband.git;a=commit;h=cfe60a43c3434907a47323fb82d2960e915a9538
 
-By my standards, 120 seconds is a reasonable approximation to infinity,
-hence my statement above.
+to see what was actually in my pull request.  There may be other trivial
+tweaks worth including.
 
-So, would you agree with the following as a more precise statement?
+Thanks for resurrecting this work BTW.
 
-o	mutex_lock(): Critical sections need not guarantee
-	forward progress unless some other task is waiting
-	on the mutex in question, in which case critical sections
-	should complete in 120 seconds.
-
-							Thanx, Paul
+ - R.
+-- 
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
