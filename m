@@ -1,39 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab0DRTCU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 15:02:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44610 "EHLO
+	id S1757671Ab0DRTDA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 15:03:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44645 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab0DRTCP (ORCPT
+	with ESMTP id S1757553Ab0DRTC0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 15:02:15 -0400
-Date: Sun, 18 Apr 2010 11:59:49 -0700
+	Sun, 18 Apr 2010 15:02:26 -0400
+Date: Sun, 18 Apr 2010 12:03:21 -0700
 From: Arjan van de Ven <arjan@infradead.org>
 To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, mingo@elte.hu, peterz@infradead.org,
-       tglx@linutronix.de, davej@redhat.com, cpufreq@vger.kernel.org
-Subject: [PATCH 0/7] Fix performance issue with ondemand governor
-Message-ID: <20100418115949.7b743898@infradead.org>
+Cc: Arjan van de Ven <arjan@infradead.org>, akpm@linux-foundation.org,
+       mingo@elte.hu, peterz@infradead.org, tglx@linutronix.de,
+       davej@redhat.com, cpufreq@vger.kernel.org
+Subject: [PATCH 6/7] sched: introduce get_cpu_iowait_time_us()
+Message-ID: <20100418120321.11ad89a2@infradead.org>
+In-Reply-To: <20100418115949.7b743898@infradead.org>
+References: <20100418115949.7b743898@infradead.org>
 Organization: Intel
 X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There have been various reports of the ondemand governor causing some
-serious performance issues, one of the latest ones from Andrew.
-There are several fundamental issues with ondemand (being worked on),
-but the report from Andrew can be fixed relatively easily.
+>From c4dd11703034f2ecbc3180603663fab14c292d7c Mon Sep 17 00:00:00 2001
+From: Arjan van de Ven <arjan@linux.intel.com>
+Date: Sun, 18 Apr 2010 10:57:43 -0700
+Subject: [PATCH 6/7] sched: introduce get_cpu_iowait_time_us()
 
-The fundamental issue is that ondemand will go to a (too) low CPU
-frequency for workloads that alternatingly disk and CPU bound...
+For the ondemand cpufreq governor, it is desired that the iowait
+time is microaccounted in a similar way as idle time is.
 
+This patch introduces the infrastructure to account and expose
+this information via the get_cpu_iowait_time_us() function.
+
+Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+---
+ include/linux/tick.h     |    4 ++++
+ kernel/time/tick-sched.c |   28 ++++++++++++++++++++++++++++
+ kernel/time/timer_list.c |    1 +
+ 3 files changed, 33 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 0343eed..4aa3703 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -42,6 +42,7 @@ enum tick_nohz_mode {
+  * @idle_waketime:	Time when the idle was interrupted
+  * @idle_exittime:	Time when the idle state was left
+  * @idle_sleeptime:	Sum of the time slept in idle with sched tick stopped
++ * @iowait_sleeptime:	Sum of the time slept in idle with sched tick stopped, with IO outstanding
+  * @sleep_length:	Duration of the current idle sleep
+  * @do_timer_lst:	CPU was the last one doing do_timer before going idle
+  */
+@@ -60,6 +61,7 @@ struct tick_sched {
+ 	ktime_t				idle_waketime;
+ 	ktime_t				idle_exittime;
+ 	ktime_t				idle_sleeptime;
++	ktime_t				iowait_sleeptime;
+ 	ktime_t				sleep_length;
+ 	unsigned long			last_jiffies;
+ 	unsigned long			next_jiffies;
+@@ -123,6 +125,7 @@ extern void tick_nohz_stop_sched_tick(int inidle);
+ extern void tick_nohz_restart_sched_tick(void);
+ extern ktime_t tick_nohz_get_sleep_length(void);
+ extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
++extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+ # else
+ static inline void tick_nohz_stop_sched_tick(int inidle) { }
+ static inline void tick_nohz_restart_sched_tick(void) { }
+@@ -133,6 +136,7 @@ static inline ktime_t tick_nohz_get_sleep_length(void)
+ 	return len;
+ }
+ static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
++static inline u64 get_cpu_iowait(int cpu, u64 *unused) { return -1; }
+ # endif /* !NO_HZ */
+ 
+ #endif
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 326f5f8..a6104a8 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -161,6 +161,8 @@ update_ts_time_stats(struct tick_sched *ts, ktime_t now, u64 *last_update_time)
+ 	if (ts->idle_active) {
+ 		delta = ktime_sub(now, ts->idle_entrytime);
+ 		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
++		if (nr_iowait_cpu() > 0)
++			ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
+ 		ts->idle_entrytime = now;
+ 	}
+ 
+@@ -220,6 +222,32 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_idle_time_us);
+ 
++/*
++ * get_cpu_iowait_time_us - get the total iowait time of a cpu
++ * @cpu: CPU number to query
++ * @last_update_time: variable to store update time in
++ *
++ * Return the cummulative iowait time (since boot) for a given
++ * CPU, in microseconds.
++ *
++ * This time is measured via accounting rather than sampling,
++ * and is as accurate as ktime_get() is.
++ *
++ * This function returns -1 if NOHZ is not enabled.
++ */
++u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
++{
++	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
++
++	if (!tick_nohz_enabled)
++		return -1;
++
++	update_ts_time_stats(ts, ktime_get(), last_update_time);
++
++	return ktime_to_us(ts->iowait_sleeptime);
++}
++EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
++
+ /**
+  * tick_nohz_stop_sched_tick - stop the idle tick from the idle task
+  *
+diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
+index 1a4a7dd..ab8f5e3 100644
+--- a/kernel/time/timer_list.c
++++ b/kernel/time/timer_list.c
+@@ -176,6 +176,7 @@ static void print_cpu(struct seq_file *m, int cpu, u64 now)
+ 		P_ns(idle_waketime);
+ 		P_ns(idle_exittime);
+ 		P_ns(idle_sleeptime);
++		P_ns(iowait_sleeptime);
+ 		P(last_jiffies);
+ 		P(next_jiffies);
+ 		P_ns(idle_expires);
 -- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+1.6.2.5
+
