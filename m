@@ -1,128 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab0DRVJZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 17:09:25 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:53637 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285Ab0DRVJX (ORCPT
+	id S1753707Ab0DRVMm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 17:12:42 -0400
+Received: from relay2-d.mail.gandi.net ([217.70.183.194]:48274 "EHLO
+	relay2-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab0DRVMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 17:09:23 -0400
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: 2.6.34rc4 NFS writeback regression (bisected): client often fails to delete things it just created
-References: <87tyr9dfvv.fsf@spindle.srvr.nix>
-	<1271618484.8049.1.camel@localhost.localdomain>
-	<87vdboa7e0.fsf@spindle.srvr.nix>
-	<1271620750.8049.3.camel@localhost.localdomain>
-	<87mxx0a5pc.fsf@spindle.srvr.nix>
-	<1271621624.8049.6.camel@localhost.localdomain>
-From: Nix <nix@esperi.org.uk>
-Emacs: the prosecution rests its case.
-Date: Sun, 18 Apr 2010 22:09:11 +0100
-In-Reply-To: <1271621624.8049.6.camel@localhost.localdomain> (Trond Myklebust's message of "Sun, 18 Apr 2010 16:13:44 -0400")
-Message-ID: <87iq7oa2o8.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
+	Sun, 18 Apr 2010 17:12:40 -0400
+X-Originating-IP: 217.70.178.40
+X-Originating-IP: 173.50.255.69
+Date: Sun, 18 Apr 2010 14:12:16 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 02/16] rcu: make dead code really dead
+Message-ID: <20100418211215.GA25720@feather>
+References: <20100415181255.GA19588@linux.vnet.ibm.com>
+ <1271355219-20714-2-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20100415235251.GA2491@feather>
+ <20100416142348.GD2615@linux.vnet.ibm.com>
+ <20100416211610.GA8357@feather>
+ <20100416222927.GP2615@linux.vnet.ibm.com>
+ <20100417045326.GA11604@feather>
+ <20100418011213.GF2876@linux.vnet.ibm.com>
+ <20100418035309.GA20129@feather>
+ <20100418134217.GC3096@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-DCC-INFN-TO-Metrics: spindle 1233; Body=3 Fuz1=3 Fuz2=3
+Content-Disposition: inline
+In-Reply-To: <20100418134217.GC3096@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 Apr 2010, Trond Myklebust outgrape:
-> OK. Next question is how these files are being written. If you 'strace'
-> the process, do you see ordinary write() calls being used, or is the
-> file perhaps being written via mmap()?
+On Sun, Apr 18, 2010 at 06:42:17AM -0700, Paul E. McKenney wrote:
+> On Sat, Apr 17, 2010 at 08:53:09PM -0700, Josh Triplett wrote:
+> > On Sat, Apr 17, 2010 at 06:12:13PM -0700, Paul E. McKenney wrote:
+> > > On Fri, Apr 16, 2010 at 09:53:27PM -0700, Josh Triplett wrote:
+> > > > On Fri, Apr 16, 2010 at 03:29:27PM -0700, Paul E. McKenney wrote:
+> > > > > On Fri, Apr 16, 2010 at 02:16:10PM -0700, Josh Triplett wrote:
+> > > > > > On Fri, Apr 16, 2010 at 07:23:48AM -0700, Paul E. McKenney wrote:
+> > > > > > > On Thu, Apr 15, 2010 at 04:52:52PM -0700, Josh Triplett wrote:
+> > > > > > > > On Thu, Apr 15, 2010 at 11:13:25AM -0700, Paul E. McKenney wrote:
+> > > > > > > > > From: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > > > > > > > > 
+> > > > > > > > > cleanup: make dead code really dead
+> > > > > > > > > 
+> > > > > > > > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > > > > > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > > > > > > ---
+> > > > > > > > >  kernel/rcutree.c |    4 ++--
+> > > > > > > > >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > > > > > > > > 
+> > > > > > > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > > > > > > > > index e54c123..6042fb8 100644
+> > > > > > > > > --- a/kernel/rcutree.c
+> > > > > > > > > +++ b/kernel/rcutree.c
+> > > > > > > > > @@ -1236,11 +1236,11 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
+> > > > > > > > >  		break; /* grace period idle or initializing, ignore. */
+> > > > > > > > >  
+> > > > > > > > >  	case RCU_SAVE_DYNTICK:
+> > > > > > > > > -
+> > > > > > > > > -		raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
+> > > > > > > > >  		if (RCU_SIGNAL_INIT != RCU_SAVE_DYNTICK)
+> > > > > > > > >  			break; /* So gcc recognizes the dead code. */
+> > > > > > > > 
+> > > > > > > > GCC's new __builtin_unreachable would help here, though obviously we
+> > > > > > > > can't count on 4.5 or newer quite yet.  A wrapper in compiler.h would
+> > > > > > > > let us use it when available though.
+> > > > > > > 
+> > > > > > > So at some time when we can count on gcc 4.5 or newer, the code
+> > > > > > > would look something like the following?
+> > > > > > > 
+> > > > > > > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK)
+> > > > > > > 		this_is_unreachable();
+> > > > > > 
+> > > > > > Yes, exactly.
+> > > > > > 
+> > > > > > > I suppose that in the meantime one could supply the code to use
+> > > > > > > in the unreachable case:
+> > > > > > > 
+> > > > > > > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK)
+> > > > > > > 		this_is_unreachable(break);
+> > > > > > > 
+> > > > > > > But this is beginning to seem a bit strained to me.  ;-)
+> > > > > > 
+> > > > > > I'd suggest spelling that this way:
+> > > > > > 
+> > > > > > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK) {
+> > > > > > 		unreachable();
+> > > > > > 		break;
+> > > > > > 	}
+> > > > > > 
+> > > > > > But in any case, all of these do seem excessive just to avoid the need
+> > > > > > for an ifdef. :)
+> > > > > 
+> > > > > Actually, the "if" condition is a comparison of numerical constants,
+> > > > > so no #ifdef is required.
+> > > > 
+> > > > I just meant that those constants get #defined based on CONFIG_NO_HZ, so
+> > > > an #ifdef on that would remove the need for the special handling of dead
+> > > > code.
+> > > 
+> > > True, I could put a #ifdef CONFIG_NO_HZ around that leg of the switch
+> > > statement.  Or am I still missing your point?
+> > 
+> > No, you got it exactly.  Hence my suggesting that all the other
+> > alternatives (the if with a break, or with __builtin_unreachable) seemed
+> > excessive just to try to convince the compiler to infer what an ifdef
+> > would tell it explicitly. :)
+> 
+> Which is exactly the purpose of the "if" statement comparing the two
+> constants, right?  ;-)
 
-(strace output is at
-<http://www.esperi.org.uk/~nix/temporary/strace-kdelibs-nfs-EBUSY.log.lzma>
-if you want to look for yourself, but it's about 70Mb unlzmaed, so I can
-understand if you run very fast in the opposite direction...)
+Right, which also seems excessive compared to an ifdef, since it serves
+the same purpose but more confusingly. ;)
 
-The files are all ELF object files:
-
-build/CMakeFiles/CMakeTmp/CMakeFiles/cmTryCompileExec.dir/.nfs000000000031c7510000159b: ELF 64-bit LSB relocatable, x86-64, version 1 (SYSV), stripped
-
-... which means they're being written by gas, and that writes them out
-with write() (it's easy to spot gas writing things out, because one
-of the first things it writes is an ELF note of the general form
-"GCC: (GNU) 4.4.4" which is very rare elsewhere in an strace dump.)
-
-A complete as run looks like this (I think this is one of the failing
-ones, only of course it's cmake's subsequent recursive unlink()/rmdir()
-that fails: I speculate that the non-failing ones only work because they
-ran early enough that writeback had completed for them...):
-
-23109 mmap(NULL, 528384, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fafe3703000
-23109 mmap(NULL, 528384, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fafe3682000
-23109 mmap(NULL, 528384, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fafe3601000
-23109 mmap(NULL, 528384, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fafe29f7000
-23109 stat("CMakeFiles/cmTryCompileExec.dir/src.cxx.o", 0x7fffe1073b40) = -1 ENOENT (No such file or directory)
-23109 open("CMakeFiles/cmTryCompileExec.dir/src.cxx.o", O_RDWR|O_CREAT|O_TRUNC, 0666) = 3
-23109 fcntl(3, F_GETFD)                 = 0
-23109 fcntl(3, F_SETFD, FD_CLOEXEC)     = 0
-23109 mmap(NULL, 528384, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fafe2976000
-23109 brk(0x1006000)                    = 0x1006000
-23109 mmap(NULL, 528384, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fafe28f5000
-23109 open("/tmp/ccybr1Xe.s", O_RDONLY) = 4
-23109 fstat(4, {st_mode=S_IFREG|0600, st_size=356, ...}) = 0
-23109 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fafe37b3000
-23109 read(4, "\t.file\t\"src.cxx\"\n\t.text\n.globl m"..., 4096) = 356
-23109 read(4, "", 28672)                = 0
-23109 read(4, "", 32768)                = 0
-23109 read(4, "", 32768)                = 0
-23109 close(4)                          = 0
-23109 munmap(0x7fafe37b3000, 4096)      = 0
-23109 brk(0x102a000)                    = 0x102a000
-23109 fstat(3, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-23109 mmap(NULL, 1048576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fafe27f5000
-23109 lseek(3, 0, SEEK_SET)             = 0
-23109 read(3, "", 1184)                 = 0
-23109 lseek(3, 1184, SEEK_CUR)          = 1184
-23109 write(3, "\0src.cxx\0main\0", 14) = 14
-23109 lseek(3, 0, SEEK_SET)             = 0
-23109 read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 1048576) = 1198
-23109 lseek(3, -1134, SEEK_CUR)         = 64
-23109 write(3, "UH\211\345\270\0\0\0\0\311\303", 11) = 11
-23109 lseek(3, 0, SEEK_SET)             = 0
-23109 read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 1048576) = 1198
-23109 lseek(3, -1122, SEEK_CUR)         = 76
-23109 write(3, "\0GCC: (GNU) 4.4.4 20100308 (prer"..., 40) = 40
-23109 lseek(3, 0, SEEK_SET)             = 0
-23109 read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 1048576) = 1198
-23109 lseek(3, -1078, SEEK_CUR)         = 120
-23109 write(3, "\24\0\0\0\0\0\0\0\1zR\0\1x\20\1\33\f\7\10\220\1\0\0\34\0\0\0\34\0\0\0"..., 56) = 56
-23109 lseek(3, 0, SEEK_SET)             = 0
-23109 read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 1048576) = 1198
-23109 lseek(3, 2, SEEK_CUR)             = 1200
-23109 write(3, " \0\0\0\0\0\0\0\2\0\0\0\2\0\0\0\0\0\0\0\0\0\0\0", 24) = 24
-23109 lseek(3, 0, SEEK_SET)             = 0
-23109 read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 1048576) = 1224
-23109 lseek(3, -256, SEEK_CUR)          = 968
-23109 write(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1\0\0\0\4\0\361\377"..., 216) = 216
-23109 lseek(3, 0, SEEK_SET)             = 0
-23109 read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 1048576) = 1224
-23109 lseek(3, -1048, SEEK_CUR)         = 176
-23109 write(3, "\0.symtab\0.strtab\0.shstrtab\0.text"..., 84) = 84
-23109 lseek(3, 0, SEEK_SET)             = 0
-23109 write(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\1\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 64) = 64
-23109 lseek(3, 0, SEEK_SET)             = 0
-23109 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\1\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 1048576) = 1224
-23109 brk(0x1021000)                    = 0x1021000
-23109 lseek(3, -960, SEEK_CUR)          = 264
-23109 write(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 704) = 704
-23109 close(3)                          = 0
-23109 munmap(0x7fafe27f5000, 1048576)   = 0
-23109 exit_group(0)                     = ?
-
-However, this can't be the whole picture, because this does *not* fail:
-
-mkdir foo; (cd foo; echo 'int main (void) {}' | c++ -x c++ -c -o foo.o -pipe -); rm -r foo
-
-So it's something more than just as.
-
-I wonder if the failures are caused by ld -r invocations?
-
-... no, there are none: the relict files must therefore be the result of
-'as' runs. It's a shame I can't tell what they were called before they
-were deleted...
+- Josh Triplett
