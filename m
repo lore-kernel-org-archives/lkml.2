@@ -1,111 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab0DRTMK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 15:12:10 -0400
-Received: from mexforward.lss.emc.com ([128.222.32.20]:47535 "EHLO
-	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab0DRTMH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 15:12:07 -0400
-Date: Sun, 18 Apr 2010 15:11:34 -0400
-To: "Christoph Hellwig" <hch@infradead.org>,
-       "Andrew Morton" <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-From: "Sorin Faibish" <sfaibish@emc.com>
-Cc: "Mel Gorman" <mel@csn.ul.ie>, "Dave Chinner" <david@fromorbit.com>,
-       "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
-       "Chris Mason" <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; format=flowed; delsp=yes; charset=iso-8859-15
+	id S1752973Ab0DRTPZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 15:15:25 -0400
+Received: from www.tglx.de ([62.245.132.106]:56799 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751149Ab0DRTPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Apr 2010 15:15:24 -0400
+Date: Sun, 18 Apr 2010 21:14:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Guillaume Knispel <gknispel@proformatique.com>
+cc: linux-kernel@vger.kernel.org, Linuxppc-dev@lists.ozlabs.org,
+       Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Ingo Molnar <mingo@elte.hu>, Lars-Peter Clausen <lars@metafoo.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Michael Buesch <mb@bu3sch.de>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Pending interrupts not always replayed
+In-Reply-To: <20100418164614.771d4f01@xilun.lan.proformatique.com>
+Message-ID: <alpine.LFD.2.00.1004182112280.2972@localhost.localdomain>
+References: <20100418053439.4d2ffe11@xilun.lan.proformatique.com> <20100418164614.771d4f01@xilun.lan.proformatique.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-References: <20100413202021.GZ13327@think> <20100414014041.GD2493@dastard>
- <20100414155233.D153.A69D9226@jp.fujitsu.com> <20100414072830.GK2493@dastard>
- <20100414085132.GJ25756@csn.ul.ie> <20100415013436.GO2493@dastard>
- <20100415102837.GB10966@csn.ul.ie> <20100416041412.GY2493@dastard>
- <20100416151403.GM19264@csn.ul.ie>
- <20100417203239.dda79e88.akpm@linux-foundation.org>
- <20100418190526.GA1692@infradead.org>
-Content-Transfer-Encoding: 8bit
-Message-ID: <op.vbdgxkherwwil4@sfaibish1.corp.emc.com>
-In-Reply-To: <20100418190526.GA1692@infradead.org>
-User-Agent: Opera Mail/9.63 (Win32)
-X-EMM-EM: Active
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 18 Apr 2010 15:05:26 -0400, Christoph Hellwig <hch@infradead.org>  
-wrote:
+On Sun, 18 Apr 2010, Guillaume Knispel wrote:
+> Now everything seems to work fine: my device was not previously not
+> interrupting anymore after typically 1 or 2 minutes (because the
+> interrupt signal stays at level low until the device is served, so
 
-> On Sat, Apr 17, 2010 at 08:32:39PM -0400, Andrew Morton wrote:
->> The poor IO patterns thing is a regression.  Some time several years
->> ago (around 2.6.16, perhaps), page reclaim started to do a LOT more
->> dirty-page writeback than it used to.  AFAIK nobody attempted to work
->> out why, nor attempted to try to fix it.
->
-> I just know that we XFS guys have been complaining about it a lot..
-I know also that the ext3 and reisefs guys complained about this issue
-as well.
+So you are having a level interrupt device and the irq line is handled
+by an edge type handler ? Why not configuring the irq line for level
+and in the first place ?
 
->
-> But that was mostly a tuning issue - before writeout mostly happened
-> from pdflush.  If we got into kswapd or direct reclaim we already
-> did get horrible I/O patterns - it just happened far less often.
->
->> Regarding simply not doing any writeout in direct reclaim (Dave's
->> initial proposal): the problem is that pageout() will clean a page in
->> the target zone.  Normal writeout won't do that, so we could get into a
->> situation where vast amounts of writeout is happening, but none of it
->> is cleaning pages in the zone which we're trying to allocate from.
->> It's quite possibly livelockable, too.
->
-> As Chris mentioned currently btrfs and ext4 do not actually do delalloc
-> conversions from this path, so for typical workloads the amount of
-> writeout that can happen from this path is extremly limited.  And unless
-> we get things fixed we will have to do the same for XFS.  I'd be much
-> more happy if we could just sort it out at the VM level, because this
-> means we have one sane place for this kind of policy instead of three
-> or more hacks down inside the filesystems.  It's rather interesting
-> that all people on the modern fs side completely agree here what the
-> problem is, but it seems rather hard to convince the VM side to do
-> anything about it.
->
->> To solve the stack-usage thing: dunno, really.  One could envisage code
->> which skips pageout() if we're using more than X amount of stack, but
->> that sucks.
->
-> And it doesn't solve other issues, like the whole lock taking problem.
->
->> Another possibility might be to hand the target page over
->> to another thread (I suppose kswapd will do) and then synchronise with
->> that thread - get_page()+wait_on_page_locked() is one way.  The helper
->> thread could of course do writearound.
->
-> Allowing the flusher threads to do targeted writeout would be the
-> best from the FS POV.  We'll still have one source of the I/O, just
-> with another know on how to select the exact region to write out.
-> We can still synchronously wait for the I/O for lumpy reclaim if really
-> nessecary.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel"  
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+Thanks,
 
-
-
--- 
-Best Regards
-Sorin Faibish
-Corporate Distinguished Engineer
-Network Storage Group
-
-        EMC²
-where information lives
-
-Phone: 508-435-1000 x 48545
-Cellphone: 617-510-0422
-Email : sfaibish@emc.com
+	tglx
