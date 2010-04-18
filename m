@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab0DRJNP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 05:13:15 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33950
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755277Ab0DRJNO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 05:13:14 -0400
-Date: Sun, 18 Apr 2010 02:13:18 -0700 (PDT)
-Message-Id: <20100418.021318.169745594.davem@davemloft.net>
-To: tj@kernel.org
-Cc: tilman@imap.cc, isdn@linux-pingi.de, hjlipp@web.de,
-       i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gigaset: include cleanup cleanup
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4BCA6B8E.9000408@kernel.org>
-References: <20100416220858.A19F540123@xenon.ts.pxnet.com>
-	<4BCA6B8E.9000408@kernel.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1756866Ab0DRKxz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 06:53:55 -0400
+Received: from bamako.nerim.net ([62.4.17.28]:64423 "EHLO bamako.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756581Ab0DRKxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Apr 2010 06:53:54 -0400
+Date: Sun, 18 Apr 2010 12:53:51 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Farid Hammane <farid.hammane@gmail.com>
+Cc: ben-linux@fluff.org, w.sang@pengutronix.de, giometti@linux.it,
+       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-core: fix some coding style issues in i2c-core.c
+Message-ID: <20100418125351.58c97bca@hyperion.delvare>
+In-Reply-To: <1271580067-13619-1-git-send-email-farid.hammane@gmail.com>
+References: <1271580067-13619-1-git-send-email-farid.hammane@gmail.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
-Date: Sun, 18 Apr 2010 11:16:46 +0900
+Hi Farid,
 
+On Sun, 18 Apr 2010 10:41:07 +0200, Farid Hammane wrote:
+> This is a patch to the i2c-core.c file that fixes up coding style issues found by the checkpatch.pl tool
 > 
->> Seeing that the "include cleanup" patch triggering this was accepted
->> after the merge window, I have hopes this one will be accepted, too.
-> 
-> Hmm... through which tree should this go through?  I can route it
-> through percpu but maybe taking the usual isdn patch path would be
-> better?
+> Signed-off-by: Farid Hammane <farid.hammane@gmail.com>
+> ---
+>  drivers/i2c/i2c-core.c |   86 ++++++++++++++++++++++++------------------------
+>  1 files changed, 43 insertions(+), 43 deletions(-)
 
-I'll take it into net-2.6, no worries.
+Ironically, your patch itself triggers 5 checkpatch errors. I'll fix
+them. Thanks for the patch, consider it applied.
+
+-- 
+Jean Delvare
