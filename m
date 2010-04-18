@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756992Ab0DRRje (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 13:39:34 -0400
-Received: from tex.lwn.net ([70.33.254.29]:40453 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753759Ab0DRRjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 13:39:33 -0400
-Date: Sun, 18 Apr 2010 11:39:30 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
-       Deepak Saxena <dsaxena@laptop.org>,
-       linux-fbdev-devel@lists.sourceforge.net
-Subject: Re: [PATCH 07/16] viafb: Add 1200x900 DCON/LCD panel modes for OLPC
- XO-1.5
-Message-ID: <20100418113930.1ba08ee3@bike.lwn.net>
-In-Reply-To: <4BBF9BC2.9070502@gmx.de>
-References: <1270746946-12467-1-git-send-email-corbet@lwn.net>
-	<1270746946-12467-8-git-send-email-corbet@lwn.net>
-	<4BBF9BC2.9070502@gmx.de>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1756335Ab0DRRuM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 13:50:12 -0400
+Received: from fmmailgate03.web.de ([217.72.192.234]:57380 "EHLO
+	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab0DRRuL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Apr 2010 13:50:11 -0400
+Message-ID: <4BCB464A.702@web.de>
+Date: Sun, 18 Apr 2010 19:50:02 +0200
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Jeff Dike <jdike@addtoit.com>
+CC: user-mode-linux-devel@lists.sourceforge.net,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: uml: pthreads instead of manual clone()?
+X-Enigmail-Version: 0.95.7
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigB072389367F5E104741C48CB"
+X-Provags-ID: V01U2FsdGVkX19xtnZijnLlU9+z1e5XaJ8KlHxPG+zDDyt0Monu
+	h2uQOF+y/rMnTTMZK2GfMozotY0MZI+Jo5om4ItJMLjyok6WG6
+	oejJTA+rc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Apr 2010 23:27:30 +0200
-Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigB072389367F5E104741C48CB
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-> What will happen if someone with no VX855 will try to enter 1200x900 
-> mode? Probably the world won't be destroyed but I have a really ugly 
-> feeling that the driver is not well prepared for this situation. 
+Hi Jeff,
 
-OK, I'm certainly exposing my relative lack of understanding of
-framebuffer issues (I'm here to add a camera driver, remember? :),
-but...is this really something that older chipsets can't handle?  Or is
-it just that nobody has had that size of panel before?
+is there (still) any reason to use explicit clone() instead of pthreads
+to spawn UML kernel threads?
 
-> Haven't 
-> tested yet as I'm waiting for the official forward port but I think it 
-> might be better to reschedule this patch for later or add some PLL 
-> values that are supposed to work (using/executing the formulas in the 
-> VIA open source X driver)
+While playing with a patch to finally move os_nsecs to proper
+CLOCK_MONOTONIC, I noticed some subtle side-effect: We need to link
+against librt for clock_gettime, but that indirectly drags in
+libpthread. Now gdb gets unhappy when you try to debug the UML kernel.
+It assumes that pthreads are used, but fails to find their IDs and
+terminates the session. So the obvious approach appears to be converting
+kernel threads to pthreads - if there aren't any know pitfalls.
 
-If it's really not acceptable, then it will stay out, but I would
-rather get it merged.  I will leave it in the series for now; it can
-come out later if need be.
+Jan
 
-Thanks,
 
-jon
+--------------enigB072389367F5E104741C48CB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.9 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org
+
+iEYEARECAAYFAkvLRk8ACgkQitSsb3rl5xRlWwCg0j9oWDNFXcvSva4SFWx1Uo+o
+znwAn0il7aX4P3Z/to2BT7JAKCuE8TYb
+=01UP
+-----END PGP SIGNATURE-----
+
+--------------enigB072389367F5E104741C48CB--
