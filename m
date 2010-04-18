@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab0DRCTk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 22:19:40 -0400
-Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:59476 "EHLO
-	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756574Ab0DRCTj (ORCPT
+	id S1756988Ab0DRDGn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 23:06:43 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33143 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756776Ab0DRDGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 22:19:39 -0400
-X-AuditID: 1209190e-b7b82ae000005260-64-4bca6c39f74f
-Message-Id: <E1O3K6c-0000ly-GA@approx.mit.edu>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Bug #15544] black screen upon S3 resume, syslog has "render error" and "page table error"
-In-Reply-To: Your message of "Fri, 09 Apr 2010 21:52:21 +0200."
-             <201004092152.21306.rjw@sisk.pl>
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
-Date: Sat, 17 Apr 2010 22:19:30 -0400
-From: Sanjoy Mahajan <sanjoy@MIT.EDU>
-X-Brightmail-Tracker: AAAAAhO1V3QTtWCz
+	Sat, 17 Apr 2010 23:06:42 -0400
+Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
+ implementation
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+In-Reply-To: <20100416164503.GH2615@linux.vnet.ibm.com>
+References: <20100413034311.GB2772@linux.vnet.ibm.com>
+	 <1271253110.32749.47.camel@laptop>
+	 <20100415142852.GA2471@linux.vnet.ibm.com>
+	 <1271425881.4807.2319.camel@twins>
+	 <20100416141745.GC2615@linux.vnet.ibm.com>
+	 <1271427819.4807.2353.camel@twins>
+	 <20100416143202.GE2615@linux.vnet.ibm.com>
+	 <1271429810.4807.2390.camel@twins>
+	 <20100416150909.GF2615@linux.vnet.ibm.com>
+	 <1271430855.4807.2411.camel@twins>
+	 <20100416164503.GH2615@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 17 Apr 2010 22:06:36 -0500
+Message-ID: <1271559996.14589.9.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just 10 minutes ago I had a similar or maybe an identical problem: When
-the laptop woke up from (S3) sleep, the screen was very dim and almost
-black, although everything else seemed normal -- e.g. I could use my Fn
-key bindings in twm, switch windows, type, switch to a console, etc..
+On Fri, 2010-04-16 at 09:45 -0700, Paul E. McKenney wrote:
+> o	mutex_lock(): Critical sections need not guarantee
+> 	forward progress, as general blocking is permitted.
 
-The screen was so dim that I could barely see the outlines of the emacs
-and xpdf windows.  Restarting xdm (and therefore the X server) didn't
-restore the brightness.  But it probably is not a hardware problem,
-because rebooting the laptop restored the brightness to normal.
+This isn't quite right.  mutex critical sections must guarantee eventual
+forward progress against the class of other potential acquirers of the
+mutex otherwise the system will become either deadlocked or livelocked.
 
--Sanjoy
+James
 
-`Until lions have their historians, tales of the hunt shall always
- glorify the hunters.'  --African Proverb
+
