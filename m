@@ -1,128 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab0DRNNK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 09:13:10 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:43090 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752144Ab0DRNNI (ORCPT
+	id S1753055Ab0DRNbY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 09:31:24 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54091 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab0DRNbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 09:13:08 -0400
-Date: Sun, 18 Apr 2010 09:13:02 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Mike Galbraith <efault@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Greg Kroah-Hartman <greg@kroah.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Jarkko Nikula <jhnikula@gmail.com>, Tony Lindgren <tony@atomide.com>,
-       linux-kernel@vger.kernel.org
-Subject: [RFC patch] CFS fix place entity spread issue (v2)
-Message-ID: <20100418131302.GA3614@Krystal>
+	Sun, 18 Apr 2010 09:31:22 -0400
+From: Karsten Keil <isdn@linux-pingi.de>
+Reply-To: isdn@linux-pingi.de
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] gigaset: include cleanup cleanup
+Date: Sun, 18 Apr 2010 15:31:14 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.27.45-0.1-default; KDE/4.4.1; x86_64; ; )
+Cc: Tilman Schmidt <tilman@imap.cc>, David Miller <davem@davemloft.net>,
+       Hansjoerg Lipp <hjlipp@web.de>, i4ldeveloper@listserv.isdn4linux.de,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100416220858.A19F540123@xenon.ts.pxnet.com> <4BCA6B8E.9000408@kernel.org>
+In-Reply-To: <4BCA6B8E.9000408@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 09:11:49 up 85 days, 15:48,  3 users,  load average: 0.01, 0.01,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004181531.14871.isdn@linux-pingi.de>
+X-Provags-ID: V01U2FsdGVkX19zGwe+DBafIjW3JhgJyGkBBSUdg/yRt5+VWgS
+ 68+9FVyPhoJenZpmy9gWT6lF8MgAi7CIElbURf5lZyA+aNVdfm
+ mzRxoRZJS2z0jSzylPaetLONs7wrEHc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CFS fix place entity spread issue (v2)
+On Sonntag, 18. April 2010 04:16:46 Tejun Heo wrote:
+> Hello,
+> 
+> On 04/17/2010 07:08 AM, Tilman Schmidt wrote:
+> > Commit 5a0e3ad causes slab.h to be included twice in many of the
+> > Gigaset driver's source files, first via the common include file
+> > gigaset.h and then a second time directly. Drop the spares, and
+> > use the opportunity to clean up a few more similar cases.
+> >
+> > Impact: cleanup, no functional change
+> > Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+> > CC: Tejun Heo <tj@kernel.org>
+> 
+> Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Karsten Keil <isdn@linux-pingi.de>
 
-Huge CFS vruntime spread (18 minutes) has been observed with LTTng while simply
-running Xorg on a uniprocessor machine. Detailed explanation in my ELC2010
-presentation at:
+> 
+> Thanks for the clean up.
+> 
+> > Seeing that the "include cleanup" patch triggering this was accepted
+> > after the merge window, I have hopes this one will be accepted, too.
+> 
+> Hmm... through which tree should this go through?  I can route it
+> through percpu but maybe taking the usual isdn patch path would be
+> better?
+> 
+I think David Miller will take it.
 
-http://www.efficios.com/elc2010
-
-(includes slides, ad-hoc CFS instrumentation patches and wakeup latency test
-program)
-
-Changelog since v1:
-
-* Keep max(se->vruntime, vruntime). It's needed to ensure that tasks already
-  within the spread window do not get an extra unfair vruntime boost just
-  because they slept.
-
-I've torn the CFS scheduler apart in the past days to figure out what is causing
-this weird behavior, and the culprit seems to be place_entity(). The problem
-appears to be the cumulative effect of letting the min_vruntime go backward when
-putting sleepers back on the runqueue. It lets the vruntime spread grow to
-"entertaining" values (it is supposed to be in the 5ms range, not 18 minutes!).
-
-In the original code, a max between the sched entity vruntime and the calculated
-vruntime was supposed to "ensure that the thread time never go backward". But I
-don't see why we even care about that. The key point is that the min_vruntime
-of the runqueue should not go backward.
-
-I propose to fix this by calculating the relative offset from
-min_vruntime + sysctl_sched_latency rather than directly from min_vruntime. I
-also ensure that the value never goes below min_vruntime.
-
-Under the Xorg workload, moving a few windows around and starting firefox while
-executing the wakeup-latency.c program (program waking up every 10ms and
-reporting wakeup latency), this patch brings worse latency from 60ms down to
-12ms. Even doing a kernel compilation at the same time, the worse latency stays
-around 20ms now.
-
-I'm submitting this patch ASAP, since it seems to fix CFS issues that many
-people have been complaining about. I'm sending it as RFC because testing its
-effect on more workloads would be welcome.
-
-I can see that place_entity() has stayed more or less the same since 2.6.24 (and
-maybe even before, as code has just been reorganised between 2.6.23 and 2.6.24),
-so we can expect this to be a problem people have been experiencing for a while.
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Mike Galbraith <efault@gmx.de>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Greg Kroah-Hartman <greg@kroah.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Jarkko Nikula <jhnikula@gmail.com>
-CC: Tony Lindgren <tony@atomide.com>
----
- kernel/sched_fair.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-Index: linux-2.6-lttng.git/kernel/sched_fair.c
-===================================================================
---- linux-2.6-lttng.git.orig/kernel/sched_fair.c	2010-04-18 01:48:04.000000000 -0400
-+++ linux-2.6-lttng.git/kernel/sched_fair.c	2010-04-18 08:58:30.000000000 -0400
-@@ -738,6 +738,14 @@
- 		unsigned long thresh = sysctl_sched_latency;
- 
- 		/*
-+		 * Place the woken up task relative to
-+		 * min_vruntime + sysctl_sched_latency.
-+		 * We must _never_ decrement min_vruntime, because the effect is
-+		 * that spread increases progressively under the Xorg workload.
-+		 */
-+		vruntime += sysctl_sched_latency;
-+
-+		/*
- 		 * Convert the sleeper threshold into virtual time.
- 		 * SCHED_IDLE is a special sub-class.  We care about
- 		 * fairness only relative to other SCHED_IDLE tasks,
-@@ -755,6 +763,9 @@
- 			thresh >>= 1;
- 
- 		vruntime -= thresh;
-+
-+		/* ensure min_vruntime never go backwards. */
-+		vruntime = max_t(u64, vruntime, cfs_rq->min_vruntime);
- 	}
- 
- 	/* ensure we never gain time by being placed backwards. */
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Karsten
