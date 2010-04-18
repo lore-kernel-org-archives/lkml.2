@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab0DRVNs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 17:13:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59716 "EHLO mx1.redhat.com"
+	id S1753819Ab0DRVTU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 17:19:20 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34952 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529Ab0DRVNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 17:13:46 -0400
-Subject: Re: [regression,bisected] Missing boot messages with VESAFB after
- VT initialization
-From: Dave Airlie <airlied@redhat.com>
-To: Frans Pop <elendil@planet.nl>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-       x86@kernel.org
-In-Reply-To: <201004171718.55867.elendil@planet.nl>
-References: <201004171718.55867.elendil@planet.nl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Apr 2010 07:10:28 +1000
-Message-ID: <1271625028.19111.0.camel@t60prh>
-Mime-Version: 1.0
+	id S1753283Ab0DRVTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Apr 2010 17:19:18 -0400
+Message-ID: <4BCB780C.1030001@kernel.org>
+Date: Mon, 19 Apr 2010 06:22:20 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>	 <4BC65237.5080408@kernel.org>	 <v2j28c262361004141831h8f2110d5pa7a1e3063438cbf8@mail.gmail.com>	 <4BC6BE78.1030503@kernel.org>	 <h2w28c262361004150100ne936d943u28f76c0f171d3db8@mail.gmail.com>	 <4BC6CB30.7030308@kernel.org>	 <l2u28c262361004150240q8a873b6axb73eaa32fd6e65e6@mail.gmail.com>	 <4BC6E581.1000604@kernel.org>	 <z2p28c262361004150321sc65e84b4w6cc99927ea85a52b@mail.gmail.com>	 <4BC6FBC8.9090204@kernel.org>	 <w2h28c262361004150449qdea5cde9y687c1fce30e665d@mail.gmail.com>	 <alpine.DEB.2.00.1004161105120.7710@router.home> <1271606079.2100.159.camel@barrios-desktop>
+In-Reply-To: <1271606079.2100.159.camel@barrios-desktop>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 18 Apr 2010 21:18:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-04-17 at 17:18 +0200, Frans Pop wrote:
-> Initially all messages from init scripts are displayed correctly, but after
-> the init script to set up the VT1-VT6 is run, messages from init scripts
-> are no longer displayed. Instead the display is blank with only a cursor.
+On 04/19/2010 12:54 AM, Minchan Kim wrote:
+>> alloc_pages is the same as alloc_pages_any_node so why have it?
 > 
-> However, if I switch back to VT1 from X.Org after the boot has completed,
-> the missing messages are visible.
-> 
-> System is x86_64 running Debian stable ("Lenny"). I'm using VESAFB (vga=791)
-> and no KMS.
-> 
-> I've bisected this to the following commit:
->    commit 477346ff74f4c2aed50e8a0db96a61069f3e5b80
->    Author: Dave Airlie <airlied@redhat.com>
->    Date:   Thu Jan 7 17:04:54 2010 +1000
->        x86-64: Allow fbdev primary video code
+> I don't want to force using '_node' postfix on UMA users.
+> Maybe they don't care getting page from any node and event don't need to
+> know about _NODE_. 
 
-Can you diff dmesg with/without this?
+Yeah, then, remove alloc_pages_any_node().  I can't really see the
+point of any_/exact_node.  alloc_pages() and alloc_pages_node() are
+fine and in line with other functions.  Why change it?
 
-It shouldn't do anything unless you have multiple framebuffer drivers.
-
-Dave.
-
+>> Why remove it? If you want to get rid of -1 handling then check all the
 > 
-> Kernel config is available in: http://lkml.org/lkml/2010/4/16/230
-> 
-> Relevant part of the boot log (I boot with 'quiet'):
-> [...]
-> Sat Apr 17 16:52:07 2010: Starting portmap daemon...Already running..
-> Sat Apr 17 16:52:07 2010: Starting NFS common utilities: statd idmapd.
-> Sat Apr 17 16:52:08 2010: Setting sensors limits.
-> Sat Apr 17 16:52:08 2010: Setting console screen modes and fonts.
-> [Messages after this point are not displayed]
-> Sat Apr 17 16:52:08 2010: Setting up ALSA...done.
-> Sat Apr 17 16:52:09 2010: INIT: Entering runlevel: 2
-> Sat Apr 17 16:52:09 2010: Loading cpufreq kernel modules...done (acpi-cpufreq).
-> Sat Apr 17 16:52:10 2010: Starting system log daemon....
-> Sat Apr 17 16:52:10 2010: Starting kernel log daemon....
-> Sat Apr 17 16:52:10 2010: Starting ACPI services....
-> Sat Apr 17 16:52:10 2010: Starting system message bus: dbus.
-> Sat Apr 17 16:52:11 2010: Starting OpenBSD Secure Shell server: sshd.
-> Sat Apr 17 16:52:11 2010: CPUFreq Utilities: Setting ondemand CPUFreq governor...CPU0...CPU1...done.
-> Sat Apr 17 16:52:11 2010: Starting HTTP server: boa.
-> Sat Apr 17 16:52:11 2010: Starting Common Unix Printing System: cupsd.
-> Sat Apr 17 16:52:13 2010: Starting DirMngr: dirmngr.
-> Sat Apr 17 16:52:13 2010: Starting MTA: exim4.
-> Sat Apr 17 16:52:14 2010: Starting LAN Information Server: lisa.
-> Sat Apr 17 16:52:14 2010: Setting up Machine Check Exceptions trigger... done.
-> Sat Apr 17 16:52:14 2010: Running Machine Check Exceptions decoder... done.
-> Sat Apr 17 16:52:14 2010: Starting NFS common utilities: statd idmapd.
-> Sat Apr 17 16:52:14 2010: Not starting internet superserver: no services enabled.
-> Sat Apr 17 16:52:14 2010: Setting sysfs variables....
-> Sat Apr 17 16:52:15 2010: Starting file alteration monitor: FAM.
-> Sat Apr 17 16:52:15 2010: Starting Hardware abstraction layer: hald.
-> Sat Apr 17 16:52:17 2010: Starting bluetooth: disabled. see /etc/default/bluetooth.
-> Sat Apr 17 16:52:17 2010: Starting /usr/sbin/chronyd...
-> Sat Apr 17 16:52:18 2010: chronyd is running and online.
-> Sat Apr 17 16:52:18 2010: Starting anac(h)ronistic cron: anacron.
-> Sat Apr 17 16:52:18 2010: Starting deferred execution scheduler: atd.
-> Sat Apr 17 16:52:19 2010: Starting periodic command scheduler: crond.
-> Sat Apr 17 16:52:19 2010: Starting K Display Manager: kdm.
-> 
-> The "Setting console screen modes and fonts" message comes from the init
-> script /etc/rcS.d/S48console-screen.sh. When that script is run the 2 tux
-> logos for my 2 CPU cores also disappear.
-> 
-> Cheers,
-> FJP
+> alloc_pages_node have multiple meaning as you said. So some of users
+> misuses that API. I want to clear intention of user.
 
+The name is fine.  Just clean up the users and make the intended usage
+clear in documentation and implementation (ie. trigger a big fat
+warning) and make all the callers use named constants instead of -1
+for special meanings.
 
+Thanks.
+
+-- 
+tejun
