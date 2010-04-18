@@ -1,1856 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab0DRUqZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 16:46:25 -0400
-Received: from www84.your-server.de ([213.133.104.84]:58864 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266Ab0DRUqX (ORCPT
+	id S1752928Ab0DRUuM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 16:50:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64769 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab0DRUuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 16:46:23 -0400
-Subject: [PATCH] Fix a huge latency problem in the MTD CFI and LPDDR flash
- drivers.
-From: Stefani Seibold <stefani@seibold.net>
-To: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, dwmw2@infradead.org, michael.kreuzer@nsn.com,
-       nico@fluxnic.net
-Cc: stefani@seibold.net
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sun, 18 Apr 2010 22:46:44 +0200
-Message-ID: <1271623604.7050.0.camel@wall-e.seibold.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3.1 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Sun, 18 Apr 2010 16:50:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=NuA25GmLO5f0AoaZRIBDA+tE1URtLuoErrCpvN46c5bK6pdm1SgczxvtDwfUK/aojF
+         wJzqYNnGX50qkT6vFUfKMOfP96P8HIQncte7o7CPshAogHcjaOvVrSVDt05Po6ob3gTq
+         QTnXFBaS9hljMMQiY/ijGs2UJrYDhBmL2ucNc=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH] tracing: Dump either the oops's cpu source or all cpus buffers
+Date: Sun, 18 Apr 2010 22:50:10 +0200
+Message-Id: <1271623810-23700-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+The ftrace_dump_on_oops kernel parameter, sysctl and sysrq let one
+dump every cpu buffers when an oops or panic happens.
 
-The use of a memcpy() during a spinlock operation will cause very long
-thread context switch delays if the flash chip bandwidth is low and the
-data to be copied large, because a spinlock will disable preemption.
+It's nice when you have few cpus but it may take ages if have many,
+plus you miss the real origin of the problem in all the cpu traces.
 
-For example: A flash with 6,5 MB/s bandwidth will cause under ubifs,
-which request sometimes 128 KB (the flash erase size), a preemption delay of
-20 milliseconds. High priority threads will not be served during this
-time, regardless whether this threads access the flash or not. This behavior
-breaks real time.
+Sometimes, all you need is to dump the cpu buffer that triggered the
+opps, most of the time it is our main interest.
 
-The patch changes all the use of spin_lock operations for xxxx->mutex
-into mutex operations, which is exact what the name says and means.
+This patch modifies ftrace_dump_on_oops to handle this choice.
 
-I have checked the code of the drivers and there is no use of atomic
-pathes like interrupt or timers. The mtdoops facility will also not be used
-by this drivers. So it is dave to replace the spin_lock against mutex.
+The ftrace_dump_on_oops kernel parameter, when it comes alone, has
+the same behaviour than before. But ftrace_dump_on_oops=orig_cpu
+will only dump the buffer of the cpu that oops'ed.
 
-There is no performance regression since the mutex is normally not
-acquired.
+Similarly, sysctl kernel.ftrace_dump_on_oops=1 and
+echo 1 > /proc/sys/kernel/ftrace_dump_on_oops keep their previous
+behaviour. But setting 2 jumps into cpu origin dump mode.
 
-Changelog:
- 06.03.2010 First release
- 26.03.2010 Fix mutex[1] issue and tested it for compile failure
-
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- drivers/mtd/chips/cfi_cmdset_0001.c |  131 +++++++++++++++++-----------------
- drivers/mtd/chips/cfi_cmdset_0002.c |  122 ++++++++++++++++----------------
- drivers/mtd/chips/cfi_cmdset_0020.c |  136 +++++++++++++++++-----------------
- drivers/mtd/chips/fwh_lock.h        |    6 +-
- drivers/mtd/chips/gen_probe.c       |    3 +-
- drivers/mtd/lpddr/lpddr_cmds.c      |   79 ++++++++++----------
- include/linux/mtd/flashchip.h       |    4 +-
- 7 files changed, 239 insertions(+), 242 deletions(-)
+ Documentation/kernel-parameters.txt |    6 +++-
+ Documentation/trace/ftrace.txt      |    6 ++-
+ drivers/char/sysrq.c                |    2 +-
+ include/linux/ftrace.h              |    4 ++-
+ include/linux/kernel.h              |   11 ++++++-
+ kernel/trace/trace.c                |   53 +++++++++++++++++++++++++++--------
+ 6 files changed, 63 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0001.c b/drivers/mtd/chips/cfi_cmdset_0001.c
-index 9253043..62f3ea9 100644
---- a/drivers/mtd/chips/cfi_cmdset_0001.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0001.c
-@@ -725,8 +725,7 @@ static int cfi_intelext_partition_fixup(struct mtd_info *mtd,
- 				/* those should be reset too since
- 				   they create memory references. */
- 				init_waitqueue_head(&chip->wq);
--				spin_lock_init(&chip->_spinlock);
--				chip->mutex = &chip->_spinlock;
-+				mutex_init(&chip->mutex);
- 				chip++;
- 			}
- 		}
-@@ -772,9 +771,9 @@ static int chip_ready (struct map_info *map, struct flchip *chip, unsigned long
- 			if (chip->priv && map_word_andequal(map, status, status_PWS, status_PWS))
- 				break;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index e4cbca5..f6c68e8 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -789,8 +789,12 @@ and is between 256 and 4096 characters. It is defined in the file
+ 			as early as possible in order to facilitate early
+ 			boot debugging.
  
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			cfi_udelay(1);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			/* Someone else might have been playing with it. */
- 			return -EAGAIN;
- 		}
-@@ -821,9 +820,9 @@ static int chip_ready (struct map_info *map, struct flchip *chip, unsigned long
- 				return -EIO;
- 			}
+-	ftrace_dump_on_oops
++	ftrace_dump_on_oops[=orig_cpu]
+ 			[FTRACE] will dump the trace buffers on oops.
++			If no parameter is passed, ftrace will dump
++			every cpu buffers, but if you pass orig_cpu, it will
++			dump only the buffer of the cpu that triggered the
++			oops.
  
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			cfi_udelay(1);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			/* Nobody will touch it while it's in state FL_ERASE_SUSPENDING.
- 			   So we can just loop here. */
- 		}
-@@ -850,10 +849,10 @@ static int chip_ready (struct map_info *map, struct flchip *chip, unsigned long
- 	sleep:
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		add_wait_queue(&chip->wq, &wait);
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		schedule();
- 		remove_wait_queue(&chip->wq, &wait);
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 		return -EAGAIN;
- 	}
+ 	ftrace_filter=[function-list]
+ 			[FTRACE] Limit the functions traced by the function
+diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+index 03485bf..d242bc0 100644
+--- a/Documentation/trace/ftrace.txt
++++ b/Documentation/trace/ftrace.txt
+@@ -1337,12 +1337,14 @@ ftrace_dump_on_oops must be set. To set ftrace_dump_on_oops, one
+ can either use the sysctl function or set it via the proc system
+ interface.
+ 
+-  sysctl kernel.ftrace_dump_on_oops=1
++  sysctl kernel.ftrace_dump_on_oops=n
+ 
+ or
+ 
+-  echo 1 > /proc/sys/kernel/ftrace_dump_on_oops
++  echo n > /proc/sys/kernel/ftrace_dump_on_oops
+ 
++If n = 1, ftrace will dump every cpu buffers, if n = 2 ftrace will
++only dump the buffer of the cpu that triggered the oops.
+ 
+ Here's an example of such a dump after a null pointer
+ dereference in a kernel module:
+diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
+index 59de252..d4e8b21 100644
+--- a/drivers/char/sysrq.c
++++ b/drivers/char/sysrq.c
+@@ -289,7 +289,7 @@ static struct sysrq_key_op sysrq_showstate_blocked_op = {
+ 
+ static void sysrq_ftrace_dump(int key, struct tty_struct *tty)
+ {
+-	ftrace_dump();
++	ftrace_dump(DUMP_ALL);
  }
-@@ -899,20 +898,20 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 			 * it'll happily send us to sleep.  In any case, when
- 			 * get_chip returns success we're clear to go ahead.
- 			 */
--			ret = spin_trylock(contender->mutex);
-+			ret = mutex_trylock(&contender->mutex);
- 			spin_unlock(&shared->lock);
- 			if (!ret)
- 				goto retry;
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			ret = chip_ready(map, contender, contender->start, mode);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 
- 			if (ret == -EAGAIN) {
--				spin_unlock(contender->mutex);
-+				mutex_unlock(&contender->mutex);
- 				goto retry;
- 			}
- 			if (ret) {
--				spin_unlock(contender->mutex);
-+				mutex_unlock(&contender->mutex);
- 				return ret;
- 			}
- 			spin_lock(&shared->lock);
-@@ -921,10 +920,10 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 			 * in FL_SYNCING state. Put contender and retry. */
- 			if (chip->state == FL_SYNCING) {
- 				put_chip(map, contender, contender->start);
--				spin_unlock(contender->mutex);
-+				mutex_unlock(&contender->mutex);
- 				goto retry;
- 			}
--			spin_unlock(contender->mutex);
-+			mutex_unlock(&contender->mutex);
- 		}
- 
- 		/* Check if we already have suspended erase
-@@ -934,10 +933,10 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 			spin_unlock(&shared->lock);
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			schedule();
- 			remove_wait_queue(&chip->wq, &wait);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			goto retry;
- 		}
- 
-@@ -967,12 +966,12 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
- 			if (shared->writing && shared->writing != chip) {
- 				/* give back ownership to who we loaned it from */
- 				struct flchip *loaner = shared->writing;
--				spin_lock(loaner->mutex);
-+				mutex_lock(&loaner->mutex);
- 				spin_unlock(&shared->lock);
--				spin_unlock(chip->mutex);
-+				mutex_unlock(&chip->mutex);
- 				put_chip(map, loaner, loaner->start);
--				spin_lock(chip->mutex);
--				spin_unlock(loaner->mutex);
-+				mutex_lock(&chip->mutex);
-+				mutex_unlock(&loaner->mutex);
- 				wake_up(&chip->wq);
- 				return;
- 			}
-@@ -1142,7 +1141,7 @@ static int __xipram xip_wait_for_operation(
- 			(void) map_read(map, adr);
- 			xip_iprefetch();
- 			local_irq_enable();
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			xip_iprefetch();
- 			cond_resched();
- 
-@@ -1152,15 +1151,15 @@ static int __xipram xip_wait_for_operation(
- 			 * a suspended erase state.  If so let's wait
- 			 * until it's done.
- 			 */
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			while (chip->state != newstate) {
- 				DECLARE_WAITQUEUE(wait, current);
- 				set_current_state(TASK_UNINTERRUPTIBLE);
- 				add_wait_queue(&chip->wq, &wait);
--				spin_unlock(chip->mutex);
-+				mutex_unlock(&chip->mutex);
- 				schedule();
- 				remove_wait_queue(&chip->wq, &wait);
--				spin_lock(chip->mutex);
-+				mutex_lock(&chip->mutex);
- 			}
- 			/* Disallow XIP again */
- 			local_irq_disable();
-@@ -1216,10 +1215,10 @@ static int inval_cache_and_wait_for_operation(
- 	int chip_state = chip->state;
- 	unsigned int timeo, sleep_time, reset_timeo;
- 
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	if (inval_len)
- 		INVALIDATE_CACHED_RANGE(map, inval_adr, inval_len);
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	timeo = chip_op_time_max;
- 	if (!timeo)
-@@ -1239,7 +1238,7 @@ static int inval_cache_and_wait_for_operation(
- 		}
- 
- 		/* OK Still waiting. Drop the lock, wait a while and retry. */
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		if (sleep_time >= 1000000/HZ) {
- 			/*
- 			 * Half of the normal delay still remaining
-@@ -1254,17 +1253,17 @@ static int inval_cache_and_wait_for_operation(
- 			cond_resched();
- 			timeo--;
- 		}
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		while (chip->state != chip_state) {
- 			/* Someone's suspended the operation: sleep */
- 			DECLARE_WAITQUEUE(wait, current);
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			schedule();
- 			remove_wait_queue(&chip->wq, &wait);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 		}
- 		if (chip->erase_suspended && chip_state == FL_ERASING)  {
- 			/* Erase suspend occured while sleep: reset timeout */
-@@ -1300,7 +1299,7 @@ static int do_point_onechip (struct map_info *map, struct flchip *chip, loff_t a
- 	/* Ensure cmd read/writes are aligned. */
- 	cmd_addr = adr & ~(map_bankwidth(map)-1);
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	ret = get_chip(map, chip, cmd_addr, FL_POINT);
- 
-@@ -1311,7 +1310,7 @@ static int do_point_onechip (struct map_info *map, struct flchip *chip, loff_t a
- 		chip->state = FL_POINT;
- 		chip->ref_point_counter++;
- 	}
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 
- 	return ret;
- }
-@@ -1396,7 +1395,7 @@ static void cfi_intelext_unpoint(struct mtd_info *mtd, loff_t from, size_t len)
- 		else
- 			thislen = len;
- 
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 		if (chip->state == FL_POINT) {
- 			chip->ref_point_counter--;
- 			if(chip->ref_point_counter == 0)
-@@ -1405,7 +1404,7 @@ static void cfi_intelext_unpoint(struct mtd_info *mtd, loff_t from, size_t len)
- 			printk(KERN_ERR "%s: Warning: unpoint called on non pointed region\n", map->name); /* Should this give an error? */
- 
- 		put_chip(map, chip, chip->start);
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 
- 		len -= thislen;
- 		ofs = 0;
-@@ -1424,10 +1423,10 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
- 	/* Ensure cmd read/writes are aligned. */
- 	cmd_addr = adr & ~(map_bankwidth(map)-1);
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, cmd_addr, FL_READY);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -1441,7 +1440,7 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
- 
- 	put_chip(map, chip, cmd_addr);
- 
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return 0;
+ static struct sysrq_key_op sysrq_ftrace_dump_op = {
+ 	.handler	= sysrq_ftrace_dump,
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 01e6ade..ea5b1aa 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -492,7 +492,9 @@ static inline int test_tsk_trace_graph(struct task_struct *tsk)
+ 	return tsk->trace & TSK_TRACE_FL_GRAPH;
  }
  
-@@ -1504,10 +1503,10 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip,
- 		return -EINVAL;
- 	}
+-extern int ftrace_dump_on_oops;
++enum ftrace_dump_mode;
++
++extern enum ftrace_dump_mode ftrace_dump_on_oops;
  
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, adr, mode);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -1553,7 +1552,7 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip,
- 
- 	xip_enable(map, chip, adr);
-  out:	put_chip(map, chip, adr);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -1662,10 +1661,10 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
- 	/* Let's determine this according to the interleave only once */
- 	write_cmd = (cfi->cfiq->P_ID != 0x0200) ? CMD(0xe8) : CMD(0xe9);
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, cmd_adr, FL_WRITING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -1796,7 +1795,7 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
- 
- 	xip_enable(map, chip, cmd_adr);
-  out:	put_chip(map, chip, cmd_adr);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -1875,10 +1874,10 @@ static int __xipram do_erase_oneblock(struct map_info *map, struct flchip *chip,
- 	adr += chip->start;
- 
-  retry:
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, adr, FL_ERASING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -1934,7 +1933,7 @@ static int __xipram do_erase_oneblock(struct map_info *map, struct flchip *chip,
- 		} else if (chipstatus & 0x20 && retries--) {
- 			printk(KERN_DEBUG "block erase failed at 0x%08lx: status 0x%lx. Retrying...\n", adr, chipstatus);
- 			put_chip(map, chip, adr);
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			goto retry;
- 		} else {
- 			printk(KERN_ERR "%s: block erase failed at 0x%08lx (status 0x%lx)\n", map->name, adr, chipstatus);
-@@ -1946,7 +1945,7 @@ static int __xipram do_erase_oneblock(struct map_info *map, struct flchip *chip,
- 
- 	xip_enable(map, chip, adr);
-  out:	put_chip(map, chip, adr);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -1979,7 +1978,7 @@ static void cfi_intelext_sync (struct mtd_info *mtd)
- 	for (i=0; !ret && i<cfi->numchips; i++) {
- 		chip = &cfi->chips[i];
- 
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 		ret = get_chip(map, chip, chip->start, FL_SYNCING);
- 
- 		if (!ret) {
-@@ -1990,7 +1989,7 @@ static void cfi_intelext_sync (struct mtd_info *mtd)
- 			 * with the chip now anyway.
- 			 */
- 		}
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 	}
- 
- 	/* Unlock the chips again */
-@@ -1998,14 +1997,14 @@ static void cfi_intelext_sync (struct mtd_info *mtd)
- 	for (i--; i >=0; i--) {
- 		chip = &cfi->chips[i];
- 
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		if (chip->state == FL_SYNCING) {
- 			chip->state = chip->oldstate;
- 			chip->oldstate = FL_READY;
- 			wake_up(&chip->wq);
- 		}
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 	}
- }
- 
-@@ -2051,10 +2050,10 @@ static int __xipram do_xxlock_oneblock(struct map_info *map, struct flchip *chip
- 
- 	adr += chip->start;
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, adr, FL_LOCKING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -2088,7 +2087,7 @@ static int __xipram do_xxlock_oneblock(struct map_info *map, struct flchip *chip
- 
- 	xip_enable(map, chip, adr);
- out:	put_chip(map, chip, adr);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -2153,10 +2152,10 @@ do_otp_read(struct map_info *map, struct flchip *chip, u_long offset,
- 	struct cfi_private *cfi = map->fldrv_priv;
- 	int ret;
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, chip->start, FL_JEDEC_QUERY);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -2175,7 +2174,7 @@ do_otp_read(struct map_info *map, struct flchip *chip, u_long offset,
- 	INVALIDATE_CACHED_RANGE(map, chip->start + offset, size);
- 
- 	put_chip(map, chip, chip->start);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return 0;
- }
- 
-@@ -2450,7 +2449,7 @@ static int cfi_intelext_suspend(struct mtd_info *mtd)
- 	for (i=0; !ret && i<cfi->numchips; i++) {
- 		chip = &cfi->chips[i];
- 
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		switch (chip->state) {
- 		case FL_READY:
-@@ -2482,7 +2481,7 @@ static int cfi_intelext_suspend(struct mtd_info *mtd)
- 		case FL_PM_SUSPENDED:
- 			break;
- 		}
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 	}
- 
- 	/* Unlock the chips again */
-@@ -2491,7 +2490,7 @@ static int cfi_intelext_suspend(struct mtd_info *mtd)
- 		for (i--; i >=0; i--) {
- 			chip = &cfi->chips[i];
- 
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 
- 			if (chip->state == FL_PM_SUSPENDED) {
- 				/* No need to force it into a known state here,
-@@ -2501,7 +2500,7 @@ static int cfi_intelext_suspend(struct mtd_info *mtd)
- 				chip->oldstate = FL_READY;
- 				wake_up(&chip->wq);
- 			}
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 		}
- 	}
- 
-@@ -2542,7 +2541,7 @@ static void cfi_intelext_resume(struct mtd_info *mtd)
- 
- 		chip = &cfi->chips[i];
- 
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		/* Go to known state. Chip may have been power cycled */
- 		if (chip->state == FL_PM_SUSPENDED) {
-@@ -2551,7 +2550,7 @@ static void cfi_intelext_resume(struct mtd_info *mtd)
- 			wake_up(&chip->wq);
- 		}
- 
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 	}
- 
- 	if ((mtd->flags & MTD_POWERUP_LOCK)
-@@ -2571,14 +2570,14 @@ static int cfi_intelext_reset(struct mtd_info *mtd)
- 		/* force the completion of any ongoing operation
- 		   and switch to array mode so any bootloader in
- 		   flash is accessible for soft reboot. */
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 		ret = get_chip(map, chip, chip->start, FL_SHUTDOWN);
- 		if (!ret) {
- 			map_write(map, CMD(0xff), chip->start);
- 			chip->state = FL_SHUTDOWN;
- 			put_chip(map, chip, chip->start);
- 		}
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 	}
- 
- 	return 0;
-diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
-index ea2a7f6..c93e47d 100644
---- a/drivers/mtd/chips/cfi_cmdset_0002.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-@@ -565,9 +565,9 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 				printk(KERN_ERR "Waiting for chip to be ready timed out.\n");
- 				return -EIO;
- 			}
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			cfi_udelay(1);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			/* Someone else might have been playing with it. */
- 			goto retry;
- 		}
-@@ -611,9 +611,9 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 				return -EIO;
- 			}
- 
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			cfi_udelay(1);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			/* Nobody will touch it while it's in state FL_ERASE_SUSPENDING.
- 			   So we can just loop here. */
- 		}
-@@ -637,10 +637,10 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 	sleep:
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		add_wait_queue(&chip->wq, &wait);
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		schedule();
- 		remove_wait_queue(&chip->wq, &wait);
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 		goto resettime;
- 	}
- }
-@@ -772,7 +772,7 @@ static void __xipram xip_udelay(struct map_info *map, struct flchip *chip,
- 			(void) map_read(map, adr);
- 			xip_iprefetch();
- 			local_irq_enable();
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			xip_iprefetch();
- 			cond_resched();
- 
-@@ -782,15 +782,15 @@ static void __xipram xip_udelay(struct map_info *map, struct flchip *chip,
- 			 * a suspended erase state.  If so let's wait
- 			 * until it's done.
- 			 */
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			while (chip->state != FL_XIP_WHILE_ERASING) {
- 				DECLARE_WAITQUEUE(wait, current);
- 				set_current_state(TASK_UNINTERRUPTIBLE);
- 				add_wait_queue(&chip->wq, &wait);
--				spin_unlock(chip->mutex);
-+				mutex_unlock(&chip->mutex);
- 				schedule();
- 				remove_wait_queue(&chip->wq, &wait);
--				spin_lock(chip->mutex);
-+				mutex_lock(&chip->mutex);
- 			}
- 			/* Disallow XIP again */
- 			local_irq_disable();
-@@ -852,17 +852,17 @@ static void __xipram xip_udelay(struct map_info *map, struct flchip *chip,
- 
- #define UDELAY(map, chip, adr, usec)  \
- do {  \
--	spin_unlock(chip->mutex);  \
-+	mutex_unlock(&chip->mutex);  \
- 	cfi_udelay(usec);  \
--	spin_lock(chip->mutex);  \
-+	mutex_lock(&chip->mutex);  \
- } while (0)
- 
- #define INVALIDATE_CACHE_UDELAY(map, chip, adr, len, usec)  \
- do {  \
--	spin_unlock(chip->mutex);  \
-+	mutex_unlock(&chip->mutex);  \
- 	INVALIDATE_CACHED_RANGE(map, adr, len);  \
- 	cfi_udelay(usec);  \
--	spin_lock(chip->mutex);  \
-+	mutex_lock(&chip->mutex);  \
- } while (0)
- 
+ #ifdef CONFIG_PREEMPT
+ #define INIT_TRACE_RECURSION		.trace_recursion = 0,
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 9365227..9fb1c12 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -490,6 +490,13 @@ static inline void tracing_off(void) { }
+ static inline void tracing_off_permanent(void) { }
+ static inline int tracing_is_on(void) { return 0; }
  #endif
-@@ -878,10 +878,10 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
- 	/* Ensure cmd read/writes are aligned. */
- 	cmd_addr = adr & ~(map_bankwidth(map)-1);
++
++enum ftrace_dump_mode {
++	DUMP_NONE,
++	DUMP_ALL,
++	DUMP_ORIG,
++};
++
+ #ifdef CONFIG_TRACING
+ extern void tracing_start(void);
+ extern void tracing_stop(void);
+@@ -571,7 +578,7 @@ __ftrace_vbprintk(unsigned long ip, const char *fmt, va_list ap);
+ extern int
+ __ftrace_vprintk(unsigned long ip, const char *fmt, va_list ap);
  
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, cmd_addr, FL_READY);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -894,7 +894,7 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
- 
- 	put_chip(map, chip, cmd_addr);
- 
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
+-extern void ftrace_dump(void);
++extern void ftrace_dump(enum ftrace_dump_mode oops_dump_mode);
+ #else
+ static inline void
+ ftrace_special(unsigned long arg1, unsigned long arg2, unsigned long arg3) { }
+@@ -592,7 +599,7 @@ ftrace_vprintk(const char *fmt, va_list ap)
+ {
  	return 0;
  }
- 
-@@ -948,7 +948,7 @@ static inline int do_read_secsi_onechip(struct map_info *map, struct flchip *chi
- 	struct cfi_private *cfi = map->fldrv_priv;
- 
-  retry:
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	if (chip->state != FL_READY){
- #if 0
-@@ -957,7 +957,7 @@ static inline int do_read_secsi_onechip(struct map_info *map, struct flchip *chi
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		add_wait_queue(&chip->wq, &wait);
- 
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 
- 		schedule();
- 		remove_wait_queue(&chip->wq, &wait);
-@@ -986,7 +986,7 @@ static inline int do_read_secsi_onechip(struct map_info *map, struct flchip *chi
- 	cfi_send_gen_cmd(0x00, cfi->addr_unlock1, chip->start, map, cfi, cfi->device_type, NULL);
- 
- 	wake_up(&chip->wq);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 
- 	return 0;
- }
-@@ -1055,10 +1055,10 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip,
- 
- 	adr += chip->start;
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, adr, FL_WRITING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -1101,11 +1101,11 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip,
- 
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			schedule();
- 			remove_wait_queue(&chip->wq, &wait);
- 			timeo = jiffies + (HZ / 2); /* FIXME */
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			continue;
- 		}
- 
-@@ -1137,7 +1137,7 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip,
-  op_done:
- 	chip->state = FL_READY;
- 	put_chip(map, chip, adr);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 
- 	return ret;
- }
-@@ -1169,7 +1169,7 @@ static int cfi_amdstd_write_words(struct mtd_info *mtd, loff_t to, size_t len,
- 		map_word tmp_buf;
- 
-  retry:
--		spin_lock(cfi->chips[chipnum].mutex);
-+		mutex_lock(&cfi->chips[chipnum].mutex);
- 
- 		if (cfi->chips[chipnum].state != FL_READY) {
- #if 0
-@@ -1178,7 +1178,7 @@ static int cfi_amdstd_write_words(struct mtd_info *mtd, loff_t to, size_t len,
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&cfi->chips[chipnum].wq, &wait);
- 
--			spin_unlock(cfi->chips[chipnum].mutex);
-+			mutex_unlock(&cfi->chips[chipnum].mutex);
- 
- 			schedule();
- 			remove_wait_queue(&cfi->chips[chipnum].wq, &wait);
-@@ -1192,7 +1192,7 @@ static int cfi_amdstd_write_words(struct mtd_info *mtd, loff_t to, size_t len,
- 		/* Load 'tmp_buf' with old contents of flash */
- 		tmp_buf = map_read(map, bus_ofs+chipstart);
- 
--		spin_unlock(cfi->chips[chipnum].mutex);
-+		mutex_unlock(&cfi->chips[chipnum].mutex);
- 
- 		/* Number of bytes to copy from buffer */
- 		n = min_t(int, len, map_bankwidth(map)-i);
-@@ -1247,7 +1247,7 @@ static int cfi_amdstd_write_words(struct mtd_info *mtd, loff_t to, size_t len,
- 		map_word tmp_buf;
- 
-  retry1:
--		spin_lock(cfi->chips[chipnum].mutex);
-+		mutex_lock(&cfi->chips[chipnum].mutex);
- 
- 		if (cfi->chips[chipnum].state != FL_READY) {
- #if 0
-@@ -1256,7 +1256,7 @@ static int cfi_amdstd_write_words(struct mtd_info *mtd, loff_t to, size_t len,
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&cfi->chips[chipnum].wq, &wait);
- 
--			spin_unlock(cfi->chips[chipnum].mutex);
-+			mutex_unlock(&cfi->chips[chipnum].mutex);
- 
- 			schedule();
- 			remove_wait_queue(&cfi->chips[chipnum].wq, &wait);
-@@ -1269,7 +1269,7 @@ static int cfi_amdstd_write_words(struct mtd_info *mtd, loff_t to, size_t len,
- 
- 		tmp_buf = map_read(map, ofs + chipstart);
- 
--		spin_unlock(cfi->chips[chipnum].mutex);
-+		mutex_unlock(&cfi->chips[chipnum].mutex);
- 
- 		tmp_buf = map_word_load_partial(map, tmp_buf, buf, 0, len);
- 
-@@ -1304,10 +1304,10 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
- 	adr += chip->start;
- 	cmd_adr = adr;
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, adr, FL_WRITING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -1362,11 +1362,11 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
- 
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			schedule();
- 			remove_wait_queue(&chip->wq, &wait);
- 			timeo = jiffies + (HZ / 2); /* FIXME */
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			continue;
- 		}
- 
-@@ -1394,7 +1394,7 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
-  op_done:
- 	chip->state = FL_READY;
- 	put_chip(map, chip, adr);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 
- 	return ret;
- }
-@@ -1494,10 +1494,10 @@ static int __xipram do_erase_chip(struct map_info *map, struct flchip *chip)
- 
- 	adr = cfi->addr_unlock1;
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, adr, FL_WRITING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -1530,10 +1530,10 @@ static int __xipram do_erase_chip(struct map_info *map, struct flchip *chip)
- 			/* Someone's suspended the erase. Sleep */
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			schedule();
- 			remove_wait_queue(&chip->wq, &wait);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			continue;
- 		}
- 		if (chip->erase_suspended) {
-@@ -1567,7 +1567,7 @@ static int __xipram do_erase_chip(struct map_info *map, struct flchip *chip)
- 	chip->state = FL_READY;
- 	xip_enable(map, chip, adr);
- 	put_chip(map, chip, adr);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 
- 	return ret;
- }
-@@ -1582,10 +1582,10 @@ static int __xipram do_erase_oneblock(struct map_info *map, struct flchip *chip,
- 
- 	adr += chip->start;
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, adr, FL_ERASING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -1618,10 +1618,10 @@ static int __xipram do_erase_oneblock(struct map_info *map, struct flchip *chip,
- 			/* Someone's suspended the erase. Sleep */
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			schedule();
- 			remove_wait_queue(&chip->wq, &wait);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			continue;
- 		}
- 		if (chip->erase_suspended) {
-@@ -1657,7 +1657,7 @@ static int __xipram do_erase_oneblock(struct map_info *map, struct flchip *chip,
- 
- 	chip->state = FL_READY;
- 	put_chip(map, chip, adr);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -1709,7 +1709,7 @@ static int do_atmel_lock(struct map_info *map, struct flchip *chip,
- 	struct cfi_private *cfi = map->fldrv_priv;
- 	int ret;
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, adr + chip->start, FL_LOCKING);
- 	if (ret)
- 		goto out_unlock;
-@@ -1735,7 +1735,7 @@ static int do_atmel_lock(struct map_info *map, struct flchip *chip,
- 	ret = 0;
- 
- out_unlock:
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -1745,7 +1745,7 @@ static int do_atmel_unlock(struct map_info *map, struct flchip *chip,
- 	struct cfi_private *cfi = map->fldrv_priv;
- 	int ret;
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, adr + chip->start, FL_UNLOCKING);
- 	if (ret)
- 		goto out_unlock;
-@@ -1763,7 +1763,7 @@ static int do_atmel_unlock(struct map_info *map, struct flchip *chip,
- 	ret = 0;
- 
- out_unlock:
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -1791,7 +1791,7 @@ static void cfi_amdstd_sync (struct mtd_info *mtd)
- 		chip = &cfi->chips[i];
- 
- 	retry:
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		switch(chip->state) {
- 		case FL_READY:
-@@ -1805,7 +1805,7 @@ static void cfi_amdstd_sync (struct mtd_info *mtd)
- 			 * with the chip now anyway.
- 			 */
- 		case FL_SYNCING:
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			break;
- 
- 		default:
-@@ -1813,7 +1813,7 @@ static void cfi_amdstd_sync (struct mtd_info *mtd)
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
- 
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 
- 			schedule();
- 
-@@ -1828,13 +1828,13 @@ static void cfi_amdstd_sync (struct mtd_info *mtd)
- 	for (i--; i >=0; i--) {
- 		chip = &cfi->chips[i];
- 
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		if (chip->state == FL_SYNCING) {
- 			chip->state = chip->oldstate;
- 			wake_up(&chip->wq);
- 		}
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 	}
- }
- 
-@@ -1850,7 +1850,7 @@ static int cfi_amdstd_suspend(struct mtd_info *mtd)
- 	for (i=0; !ret && i<cfi->numchips; i++) {
- 		chip = &cfi->chips[i];
- 
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		switch(chip->state) {
- 		case FL_READY:
-@@ -1870,7 +1870,7 @@ static int cfi_amdstd_suspend(struct mtd_info *mtd)
- 			ret = -EAGAIN;
- 			break;
- 		}
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 	}
- 
- 	/* Unlock the chips again */
-@@ -1879,13 +1879,13 @@ static int cfi_amdstd_suspend(struct mtd_info *mtd)
- 		for (i--; i >=0; i--) {
- 			chip = &cfi->chips[i];
- 
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 
- 			if (chip->state == FL_PM_SUSPENDED) {
- 				chip->state = chip->oldstate;
- 				wake_up(&chip->wq);
- 			}
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 		}
- 	}
- 
-@@ -1904,7 +1904,7 @@ static void cfi_amdstd_resume(struct mtd_info *mtd)
- 
- 		chip = &cfi->chips[i];
- 
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		if (chip->state == FL_PM_SUSPENDED) {
- 			chip->state = FL_READY;
-@@ -1914,7 +1914,7 @@ static void cfi_amdstd_resume(struct mtd_info *mtd)
- 		else
- 			printk(KERN_ERR "Argh. Chip not in PM_SUSPENDED state upon resume()\n");
- 
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 	}
- }
- 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0020.c b/drivers/mtd/chips/cfi_cmdset_0020.c
-index 0667a67..e54e8c1 100644
---- a/drivers/mtd/chips/cfi_cmdset_0020.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0020.c
-@@ -265,7 +265,7 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
- 
- 	timeo = jiffies + HZ;
-  retry:
--	spin_lock_bh(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	/* Check that the chip's ready to talk to us.
- 	 * If it's in FL_ERASING state, suspend it and make it talk now.
-@@ -296,15 +296,15 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
- 				/* make sure we're in 'read status' mode */
- 				map_write(map, CMD(0x70), cmd_addr);
- 				chip->state = FL_ERASING;
--				spin_unlock_bh(chip->mutex);
-+				mutex_unlock(&chip->mutex);
- 				printk(KERN_ERR "Chip not ready after erase "
- 				       "suspended: status = 0x%lx\n", status.x[0]);
- 				return -EIO;
- 			}
- 
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			cfi_udelay(1);
--			spin_lock_bh(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 		}
- 
- 		suspended = 1;
-@@ -335,13 +335,13 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
- 
- 		/* Urgh. Chip not yet ready to talk to us. */
- 		if (time_after(jiffies, timeo)) {
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			printk(KERN_ERR "waiting for chip to be ready timed out in read. WSM status = %lx\n", status.x[0]);
- 			return -EIO;
- 		}
- 
- 		/* Latency issues. Drop the lock, wait a while and retry */
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		cfi_udelay(1);
- 		goto retry;
- 
-@@ -351,7 +351,7 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
- 		   someone changes the status */
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		add_wait_queue(&chip->wq, &wait);
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		schedule();
- 		remove_wait_queue(&chip->wq, &wait);
- 		timeo = jiffies + HZ;
-@@ -376,7 +376,7 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
- 	}
- 
- 	wake_up(&chip->wq);
--	spin_unlock_bh(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return 0;
- }
- 
-@@ -445,7 +445,7 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
- #ifdef DEBUG_CFI_FEATURES
-        printk("%s: chip->state[%d]\n", __func__, chip->state);
- #endif
--	spin_lock_bh(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	/* Check that the chip's ready to talk to us.
- 	 * Later, we can actually think about interrupting it
-@@ -470,14 +470,14 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
- 			break;
- 		/* Urgh. Chip not yet ready to talk to us. */
- 		if (time_after(jiffies, timeo)) {
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
-                         printk(KERN_ERR "waiting for chip to be ready timed out in buffer write Xstatus = %lx, status = %lx\n",
-                                status.x[0], map_read(map, cmd_adr).x[0]);
- 			return -EIO;
- 		}
- 
- 		/* Latency issues. Drop the lock, wait a while and retry */
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		cfi_udelay(1);
- 		goto retry;
- 
-@@ -486,7 +486,7 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
- 		   someone changes the status */
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		add_wait_queue(&chip->wq, &wait);
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		schedule();
- 		remove_wait_queue(&chip->wq, &wait);
- 		timeo = jiffies + HZ;
-@@ -503,16 +503,16 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
- 		if (map_word_andequal(map, status, status_OK, status_OK))
- 			break;
- 
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		cfi_udelay(1);
--		spin_lock_bh(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		if (++z > 100) {
- 			/* Argh. Not ready for write to buffer */
- 			DISABLE_VPP(map);
-                         map_write(map, CMD(0x70), cmd_adr);
- 			chip->state = FL_STATUS;
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			printk(KERN_ERR "Chip not ready for buffer write. Xstatus = %lx\n", status.x[0]);
- 			return -EIO;
- 		}
-@@ -532,9 +532,9 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
- 	map_write(map, CMD(0xd0), cmd_adr);
- 	chip->state = FL_WRITING;
- 
--	spin_unlock_bh(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	cfi_udelay(chip->buffer_write_time);
--	spin_lock_bh(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	timeo = jiffies + (HZ/2);
- 	z = 0;
-@@ -543,11 +543,11 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
- 			/* Someone's suspended the write. Sleep */
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			schedule();
- 			remove_wait_queue(&chip->wq, &wait);
- 			timeo = jiffies + (HZ / 2); /* FIXME */
--			spin_lock_bh(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			continue;
- 		}
- 
-@@ -563,16 +563,16 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
-                         map_write(map, CMD(0x70), adr);
- 			chip->state = FL_STATUS;
- 			DISABLE_VPP(map);
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			printk(KERN_ERR "waiting for chip to be ready timed out in bufwrite\n");
- 			return -EIO;
- 		}
- 
- 		/* Latency issues. Drop the lock, wait a while and retry */
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		cfi_udelay(1);
- 		z++;
--		spin_lock_bh(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 	}
- 	if (!z) {
- 		chip->buffer_write_time--;
-@@ -596,11 +596,11 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
- 		/* put back into read status register mode */
- 		map_write(map, CMD(0x70), adr);
- 		wake_up(&chip->wq);
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return map_word_bitsset(map, status, CMD(0x02)) ? -EROFS : -EIO;
- 	}
- 	wake_up(&chip->wq);
--	spin_unlock_bh(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 
-         return 0;
- }
-@@ -749,7 +749,7 @@ static inline int do_erase_oneblock(struct map_info *map, struct flchip *chip, u
- 
- 	timeo = jiffies + HZ;
- retry:
--	spin_lock_bh(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	/* Check that the chip's ready to talk to us. */
- 	switch (chip->state) {
-@@ -766,13 +766,13 @@ retry:
- 
- 		/* Urgh. Chip not yet ready to talk to us. */
- 		if (time_after(jiffies, timeo)) {
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			printk(KERN_ERR "waiting for chip to be ready timed out in erase\n");
- 			return -EIO;
- 		}
- 
- 		/* Latency issues. Drop the lock, wait a while and retry */
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		cfi_udelay(1);
- 		goto retry;
- 
-@@ -781,7 +781,7 @@ retry:
- 		   someone changes the status */
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		add_wait_queue(&chip->wq, &wait);
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		schedule();
- 		remove_wait_queue(&chip->wq, &wait);
- 		timeo = jiffies + HZ;
-@@ -797,9 +797,9 @@ retry:
- 	map_write(map, CMD(0xD0), adr);
- 	chip->state = FL_ERASING;
- 
--	spin_unlock_bh(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	msleep(1000);
--	spin_lock_bh(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	/* FIXME. Use a timer to check this, and return immediately. */
- 	/* Once the state machine's known to be working I'll do that */
-@@ -810,11 +810,11 @@ retry:
- 			/* Someone's suspended the erase. Sleep */
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			schedule();
- 			remove_wait_queue(&chip->wq, &wait);
- 			timeo = jiffies + (HZ*20); /* FIXME */
--			spin_lock_bh(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			continue;
- 		}
- 
-@@ -828,14 +828,14 @@ retry:
- 			chip->state = FL_STATUS;
- 			printk(KERN_ERR "waiting for erase to complete timed out. Xstatus = %lx, status = %lx.\n", status.x[0], map_read(map, adr).x[0]);
- 			DISABLE_VPP(map);
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			return -EIO;
- 		}
- 
- 		/* Latency issues. Drop the lock, wait a while and retry */
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		cfi_udelay(1);
--		spin_lock_bh(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 	}
- 
- 	DISABLE_VPP(map);
-@@ -878,7 +878,7 @@ retry:
- 				printk(KERN_DEBUG "Chip erase failed at 0x%08lx: status 0x%x. Retrying...\n", adr, chipstatus);
- 				timeo = jiffies + HZ;
- 				chip->state = FL_STATUS;
--				spin_unlock_bh(chip->mutex);
-+				mutex_unlock(&chip->mutex);
- 				goto retry;
- 			}
- 			printk(KERN_DEBUG "Chip erase failed at 0x%08lx: status 0x%x\n", adr, chipstatus);
-@@ -887,7 +887,7 @@ retry:
- 	}
- 
- 	wake_up(&chip->wq);
--	spin_unlock_bh(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -995,7 +995,7 @@ static void cfi_staa_sync (struct mtd_info *mtd)
- 		chip = &cfi->chips[i];
- 
- 	retry:
--		spin_lock_bh(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		switch(chip->state) {
- 		case FL_READY:
-@@ -1009,7 +1009,7 @@ static void cfi_staa_sync (struct mtd_info *mtd)
- 			 * with the chip now anyway.
- 			 */
- 		case FL_SYNCING:
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			break;
- 
- 		default:
-@@ -1017,7 +1017,7 @@ static void cfi_staa_sync (struct mtd_info *mtd)
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
- 
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			schedule();
- 		        remove_wait_queue(&chip->wq, &wait);
- 
-@@ -1030,13 +1030,13 @@ static void cfi_staa_sync (struct mtd_info *mtd)
- 	for (i--; i >=0; i--) {
- 		chip = &cfi->chips[i];
- 
--		spin_lock_bh(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		if (chip->state == FL_SYNCING) {
- 			chip->state = chip->oldstate;
- 			wake_up(&chip->wq);
- 		}
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 	}
- }
- 
-@@ -1054,7 +1054,7 @@ static inline int do_lock_oneblock(struct map_info *map, struct flchip *chip, un
- 
- 	timeo = jiffies + HZ;
- retry:
--	spin_lock_bh(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	/* Check that the chip's ready to talk to us. */
- 	switch (chip->state) {
-@@ -1071,13 +1071,13 @@ retry:
- 
- 		/* Urgh. Chip not yet ready to talk to us. */
- 		if (time_after(jiffies, timeo)) {
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			printk(KERN_ERR "waiting for chip to be ready timed out in lock\n");
- 			return -EIO;
- 		}
- 
- 		/* Latency issues. Drop the lock, wait a while and retry */
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		cfi_udelay(1);
- 		goto retry;
- 
-@@ -1086,7 +1086,7 @@ retry:
- 		   someone changes the status */
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		add_wait_queue(&chip->wq, &wait);
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		schedule();
- 		remove_wait_queue(&chip->wq, &wait);
- 		timeo = jiffies + HZ;
-@@ -1098,9 +1098,9 @@ retry:
- 	map_write(map, CMD(0x01), adr);
- 	chip->state = FL_LOCKING;
- 
--	spin_unlock_bh(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	msleep(1000);
--	spin_lock_bh(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	/* FIXME. Use a timer to check this, and return immediately. */
- 	/* Once the state machine's known to be working I'll do that */
-@@ -1118,21 +1118,21 @@ retry:
- 			chip->state = FL_STATUS;
- 			printk(KERN_ERR "waiting for lock to complete timed out. Xstatus = %lx, status = %lx.\n", status.x[0], map_read(map, adr).x[0]);
- 			DISABLE_VPP(map);
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			return -EIO;
- 		}
- 
- 		/* Latency issues. Drop the lock, wait a while and retry */
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		cfi_udelay(1);
--		spin_lock_bh(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 	}
- 
- 	/* Done and happy. */
- 	chip->state = FL_STATUS;
- 	DISABLE_VPP(map);
- 	wake_up(&chip->wq);
--	spin_unlock_bh(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return 0;
- }
- static int cfi_staa_lock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
-@@ -1203,7 +1203,7 @@ static inline int do_unlock_oneblock(struct map_info *map, struct flchip *chip,
- 
- 	timeo = jiffies + HZ;
- retry:
--	spin_lock_bh(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	/* Check that the chip's ready to talk to us. */
- 	switch (chip->state) {
-@@ -1220,13 +1220,13 @@ retry:
- 
- 		/* Urgh. Chip not yet ready to talk to us. */
- 		if (time_after(jiffies, timeo)) {
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			printk(KERN_ERR "waiting for chip to be ready timed out in unlock\n");
- 			return -EIO;
- 		}
- 
- 		/* Latency issues. Drop the lock, wait a while and retry */
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		cfi_udelay(1);
- 		goto retry;
- 
-@@ -1235,7 +1235,7 @@ retry:
- 		   someone changes the status */
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		add_wait_queue(&chip->wq, &wait);
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		schedule();
- 		remove_wait_queue(&chip->wq, &wait);
- 		timeo = jiffies + HZ;
-@@ -1247,9 +1247,9 @@ retry:
- 	map_write(map, CMD(0xD0), adr);
- 	chip->state = FL_UNLOCKING;
- 
--	spin_unlock_bh(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	msleep(1000);
--	spin_lock_bh(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 
- 	/* FIXME. Use a timer to check this, and return immediately. */
- 	/* Once the state machine's known to be working I'll do that */
-@@ -1267,21 +1267,21 @@ retry:
- 			chip->state = FL_STATUS;
- 			printk(KERN_ERR "waiting for unlock to complete timed out. Xstatus = %lx, status = %lx.\n", status.x[0], map_read(map, adr).x[0]);
- 			DISABLE_VPP(map);
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			return -EIO;
- 		}
- 
- 		/* Latency issues. Drop the unlock, wait a while and retry */
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		cfi_udelay(1);
--		spin_lock_bh(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 	}
- 
- 	/* Done and happy. */
- 	chip->state = FL_STATUS;
- 	DISABLE_VPP(map);
- 	wake_up(&chip->wq);
--	spin_unlock_bh(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return 0;
- }
- static int cfi_staa_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
-@@ -1334,7 +1334,7 @@ static int cfi_staa_suspend(struct mtd_info *mtd)
- 	for (i=0; !ret && i<cfi->numchips; i++) {
- 		chip = &cfi->chips[i];
- 
--		spin_lock_bh(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		switch(chip->state) {
- 		case FL_READY:
-@@ -1354,7 +1354,7 @@ static int cfi_staa_suspend(struct mtd_info *mtd)
- 			ret = -EAGAIN;
- 			break;
- 		}
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 	}
- 
- 	/* Unlock the chips again */
-@@ -1363,7 +1363,7 @@ static int cfi_staa_suspend(struct mtd_info *mtd)
- 		for (i--; i >=0; i--) {
- 			chip = &cfi->chips[i];
- 
--			spin_lock_bh(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 
- 			if (chip->state == FL_PM_SUSPENDED) {
- 				/* No need to force it into a known state here,
-@@ -1372,7 +1372,7 @@ static int cfi_staa_suspend(struct mtd_info *mtd)
- 				chip->state = chip->oldstate;
- 				wake_up(&chip->wq);
- 			}
--			spin_unlock_bh(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 		}
- 	}
- 
-@@ -1390,7 +1390,7 @@ static void cfi_staa_resume(struct mtd_info *mtd)
- 
- 		chip = &cfi->chips[i];
- 
--		spin_lock_bh(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		/* Go to known state. Chip may have been power cycled */
- 		if (chip->state == FL_PM_SUSPENDED) {
-@@ -1399,7 +1399,7 @@ static void cfi_staa_resume(struct mtd_info *mtd)
- 			wake_up(&chip->wq);
- 		}
- 
--		spin_unlock_bh(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 	}
- }
- 
-diff --git a/drivers/mtd/chips/fwh_lock.h b/drivers/mtd/chips/fwh_lock.h
-index 57e0e4e..d180649 100644
---- a/drivers/mtd/chips/fwh_lock.h
-+++ b/drivers/mtd/chips/fwh_lock.h
-@@ -58,10 +58,10 @@ static int fwh_xxlock_oneblock(struct map_info *map, struct flchip *chip,
- 	 * to flash memory - that means that we don't have to check status
- 	 * and timeout.
- 	 */
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, adr, FL_LOCKING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -72,7 +72,7 @@ static int fwh_xxlock_oneblock(struct map_info *map, struct flchip *chip,
- 	/* Done and happy. */
- 	chip->state = chip->oldstate;
- 	put_chip(map, chip, adr);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return 0;
- }
- 
-diff --git a/drivers/mtd/chips/gen_probe.c b/drivers/mtd/chips/gen_probe.c
-index e2dc964..fcc1bc0 100644
---- a/drivers/mtd/chips/gen_probe.c
-+++ b/drivers/mtd/chips/gen_probe.c
-@@ -155,8 +155,7 @@ static struct cfi_private *genprobe_ident_chips(struct map_info *map, struct chi
- 			pchip->start = (i << cfi.chipshift);
- 			pchip->state = FL_READY;
- 			init_waitqueue_head(&pchip->wq);
--			spin_lock_init(&pchip->_spinlock);
--			pchip->mutex = &pchip->_spinlock;
-+			mutex_init(&pchip->mutex);
- 		}
- 	}
- 
-diff --git a/drivers/mtd/lpddr/lpddr_cmds.c b/drivers/mtd/lpddr/lpddr_cmds.c
-index e22ca49..eb6f437 100644
---- a/drivers/mtd/lpddr/lpddr_cmds.c
-+++ b/drivers/mtd/lpddr/lpddr_cmds.c
-@@ -106,8 +106,7 @@ struct mtd_info *lpddr_cmdset(struct map_info *map)
- 			/* those should be reset too since
- 			   they create memory references. */
- 			init_waitqueue_head(&chip->wq);
--			spin_lock_init(&chip->_spinlock);
--			chip->mutex = &chip->_spinlock;
-+			mutex_init(&chip->mutex);
- 			chip++;
- 		}
- 	}
-@@ -143,7 +142,7 @@ static int wait_for_ready(struct map_info *map, struct flchip *chip,
- 		}
- 
- 		/* OK Still waiting. Drop the lock, wait a while and retry. */
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		if (sleep_time >= 1000000/HZ) {
- 			/*
- 			 * Half of the normal delay still remaining
-@@ -158,17 +157,17 @@ static int wait_for_ready(struct map_info *map, struct flchip *chip,
- 			cond_resched();
- 			timeo--;
- 		}
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 
- 		while (chip->state != chip_state) {
- 			/* Someone's suspended the operation: sleep */
- 			DECLARE_WAITQUEUE(wait, current);
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			schedule();
- 			remove_wait_queue(&chip->wq, &wait);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 		}
- 		if (chip->erase_suspended || chip->write_suspended)  {
- 			/* Suspend has occured while sleep: reset timeout */
-@@ -229,20 +228,20 @@ static int get_chip(struct map_info *map, struct flchip *chip, int mode)
- 			 * it'll happily send us to sleep.  In any case, when
- 			 * get_chip returns success we're clear to go ahead.
- 			 */
--			ret = spin_trylock(contender->mutex);
-+			ret = mutex_trylock(&contender->mutex);
- 			spin_unlock(&shared->lock);
- 			if (!ret)
- 				goto retry;
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			ret = chip_ready(map, contender, mode);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 
- 			if (ret == -EAGAIN) {
--				spin_unlock(contender->mutex);
-+				mutex_unlock(&contender->mutex);
- 				goto retry;
- 			}
- 			if (ret) {
--				spin_unlock(contender->mutex);
-+				mutex_unlock(&contender->mutex);
- 				return ret;
- 			}
- 			spin_lock(&shared->lock);
-@@ -251,10 +250,10 @@ static int get_chip(struct map_info *map, struct flchip *chip, int mode)
- 			 * state. Put contender and retry. */
- 			if (chip->state == FL_SYNCING) {
- 				put_chip(map, contender);
--				spin_unlock(contender->mutex);
-+				mutex_unlock(&contender->mutex);
- 				goto retry;
- 			}
--			spin_unlock(contender->mutex);
-+			mutex_unlock(&contender->mutex);
- 		}
- 
- 		/* Check if we have suspended erase on this chip.
-@@ -264,10 +263,10 @@ static int get_chip(struct map_info *map, struct flchip *chip, int mode)
- 			spin_unlock(&shared->lock);
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
--			spin_unlock(chip->mutex);
-+			mutex_unlock(&chip->mutex);
- 			schedule();
- 			remove_wait_queue(&chip->wq, &wait);
--			spin_lock(chip->mutex);
-+			mutex_lock(&chip->mutex);
- 			goto retry;
- 		}
- 
-@@ -336,10 +335,10 @@ static int chip_ready(struct map_info *map, struct flchip *chip, int mode)
- sleep:
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		add_wait_queue(&chip->wq, &wait);
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		schedule();
- 		remove_wait_queue(&chip->wq, &wait);
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 		return -EAGAIN;
- 	}
- }
-@@ -355,12 +354,12 @@ static void put_chip(struct map_info *map, struct flchip *chip)
- 			if (shared->writing && shared->writing != chip) {
- 				/* give back the ownership */
- 				struct flchip *loaner = shared->writing;
--				spin_lock(loaner->mutex);
-+				mutex_lock(&loaner->mutex);
- 				spin_unlock(&shared->lock);
--				spin_unlock(chip->mutex);
-+				mutex_unlock(&chip->mutex);
- 				put_chip(map, loaner);
--				spin_lock(chip->mutex);
--				spin_unlock(loaner->mutex);
-+				mutex_lock(&chip->mutex);
-+				mutex_unlock(&loaner->mutex);
- 				wake_up(&chip->wq);
- 				return;
- 			}
-@@ -413,10 +412,10 @@ int do_write_buffer(struct map_info *map, struct flchip *chip,
- 
- 	wbufsize = 1 << lpddr->qinfo->BufSizeShift;
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, FL_WRITING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 	/* Figure out the number of words to write */
-@@ -477,7 +476,7 @@ int do_write_buffer(struct map_info *map, struct flchip *chip,
- 	}
- 
-  out:	put_chip(map, chip);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -489,10 +488,10 @@ int do_erase_oneblock(struct mtd_info *mtd, loff_t adr)
- 	struct flchip *chip = &lpddr->chips[chipnum];
- 	int ret;
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, FL_ERASING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 	send_pfow_command(map, LPDDR_BLOCK_ERASE, adr, 0, NULL);
-@@ -504,7 +503,7 @@ int do_erase_oneblock(struct mtd_info *mtd, loff_t adr)
- 		goto out;
- 	}
-  out:	put_chip(map, chip);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -517,10 +516,10 @@ static int lpddr_read(struct mtd_info *mtd, loff_t adr, size_t len,
- 	struct flchip *chip = &lpddr->chips[chipnum];
- 	int ret = 0;
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, FL_READY);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -528,7 +527,7 @@ static int lpddr_read(struct mtd_info *mtd, loff_t adr, size_t len,
- 	*retlen = len;
- 
- 	put_chip(map, chip);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -568,9 +567,9 @@ static int lpddr_point(struct mtd_info *mtd, loff_t adr, size_t len,
- 		else
- 			thislen = len;
- 		/* get the chip */
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 		ret = get_chip(map, chip, FL_POINT);
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		if (ret)
- 			break;
- 
-@@ -610,7 +609,7 @@ static void lpddr_unpoint (struct mtd_info *mtd, loff_t adr, size_t len)
- 		else
- 			thislen = len;
- 
--		spin_lock(chip->mutex);
-+		mutex_lock(&chip->mutex);
- 		if (chip->state == FL_POINT) {
- 			chip->ref_point_counter--;
- 			if (chip->ref_point_counter == 0)
-@@ -620,7 +619,7 @@ static void lpddr_unpoint (struct mtd_info *mtd, loff_t adr, size_t len)
- 					"pointed region\n", map->name);
- 
- 		put_chip(map, chip);
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 
- 		len -= thislen;
- 		ofs = 0;
-@@ -726,10 +725,10 @@ int do_xxlock(struct mtd_info *mtd, loff_t adr, uint32_t len, int thunk)
- 	int chipnum = adr >> lpddr->chipshift;
- 	struct flchip *chip = &lpddr->chips[chipnum];
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, FL_LOCKING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -749,7 +748,7 @@ int do_xxlock(struct mtd_info *mtd, loff_t adr, uint32_t len, int thunk)
- 		goto out;
- 	}
- out:	put_chip(map, chip);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-@@ -770,10 +769,10 @@ int word_program(struct map_info *map, loff_t adr, uint32_t curval)
- 	int chipnum = adr >> lpddr->chipshift;
- 	struct flchip *chip = &lpddr->chips[chipnum];
- 
--	spin_lock(chip->mutex);
-+	mutex_lock(&chip->mutex);
- 	ret = get_chip(map, chip, FL_WRITING);
- 	if (ret) {
--		spin_unlock(chip->mutex);
-+		mutex_unlock(&chip->mutex);
- 		return ret;
- 	}
- 
-@@ -787,7 +786,7 @@ int word_program(struct map_info *map, loff_t adr, uint32_t curval)
- 	}
- 
- out:	put_chip(map, chip);
--	spin_unlock(chip->mutex);
-+	mutex_unlock(&chip->mutex);
- 	return ret;
- }
- 
-diff --git a/include/linux/mtd/flashchip.h b/include/linux/mtd/flashchip.h
-index d0bf422..f43e9b4 100644
---- a/include/linux/mtd/flashchip.h
-+++ b/include/linux/mtd/flashchip.h
-@@ -15,6 +15,7 @@
-  * has asm/spinlock.h, or 2.4, which has linux/spinlock.h
+-static inline void ftrace_dump(void) { }
++static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ #endif /* CONFIG_TRACING */
+ 
+ /*
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index bed83ca..0564ee7 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -117,9 +117,12 @@ static cpumask_var_t __read_mostly	tracing_buffer_mask;
+  *
+  * It is default off, but you can enable it with either specifying
+  * "ftrace_dump_on_oops" in the kernel command line, or setting
+- * /proc/sys/kernel/ftrace_dump_on_oops to true.
++ * /proc/sys/kernel/ftrace_dump_on_oops
++ * Set 1 if you want to dump every cpu buffers
++ * Set 2 if you want to dump the buffer of the cpu that triggered oops
   */
- #include <linux/sched.h>
-+#include <linux/mutex.h>
+-int ftrace_dump_on_oops;
++
++enum ftrace_dump_mode ftrace_dump_on_oops;
  
- typedef enum {
- 	FL_READY,
-@@ -74,8 +75,7 @@ struct flchip {
- 	unsigned int erase_suspended:1;
- 	unsigned long in_progress_block_addr;
+ static int tracing_set_tracer(const char *buf);
  
--	spinlock_t *mutex;
--	spinlock_t _spinlock; /* We do it like this because sometimes they'll be shared. */
-+	struct mutex mutex;
- 	wait_queue_head_t wq; /* Wait on here when we're waiting for the chip
- 			     to be ready */
- 	int word_write_time;
+@@ -139,10 +142,21 @@ __setup("ftrace=", set_cmdline_ftrace);
+ 
+ static int __init set_ftrace_dump_on_oops(char *str)
+ {
+-	ftrace_dump_on_oops = 1;
+-	return 1;
++	if (*str++ != '=' || !*str) {
++		ftrace_dump_on_oops = DUMP_ALL;
++		return 1;
++	}
++
++	if (!strcmp("orig_cpu", str)) {
++		ftrace_dump_on_oops = DUMP_ORIG;
++                return 1;
++        }
++
++        return 0;
+ }
+ __setup("ftrace_dump_on_oops", set_ftrace_dump_on_oops);
++}
++__setup("ftrace_dump_on_oops=", set_ftrace_dump_on_oops);
+ 
+ unsigned long long ns2usecs(cycle_t nsec)
+ {
+@@ -4338,7 +4352,7 @@ static int trace_panic_handler(struct notifier_block *this,
+ 			       unsigned long event, void *unused)
+ {
+ 	if (ftrace_dump_on_oops)
+-		ftrace_dump();
++		ftrace_dump(ftrace_dump_on_oops);
+ 	return NOTIFY_OK;
+ }
+ 
+@@ -4355,7 +4369,7 @@ static int trace_die_handler(struct notifier_block *self,
+ 	switch (val) {
+ 	case DIE_OOPS:
+ 		if (ftrace_dump_on_oops)
+-			ftrace_dump();
++			ftrace_dump(ftrace_dump_on_oops);
+ 		break;
+ 	default:
+ 		break;
+@@ -4396,7 +4410,8 @@ trace_printk_seq(struct trace_seq *s)
+ 	trace_seq_init(s);
+ }
+ 
+-static void __ftrace_dump(bool disable_tracing)
++static void
++__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
+ {
+ 	static arch_spinlock_t ftrace_dump_lock =
+ 		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+@@ -4429,12 +4444,25 @@ static void __ftrace_dump(bool disable_tracing)
+ 	/* don't look at user memory in panic mode */
+ 	trace_flags &= ~TRACE_ITER_SYM_USEROBJ;
+ 
+-	printk(KERN_TRACE "Dumping ftrace buffer:\n");
+-
+ 	/* Simulate the iterator */
+ 	iter.tr = &global_trace;
+ 	iter.trace = current_trace;
+-	iter.cpu_file = TRACE_PIPE_ALL_CPU;
++
++	switch (oops_dump_mode) {
++	case DUMP_ALL:
++		iter.cpu_file = TRACE_PIPE_ALL_CPU;
++		break;
++	case DUMP_ORIG:
++		iter.cpu_file = raw_smp_processor_id();
++		break;
++	case DUMP_NONE:
++		goto out_enable;
++	default:
++		printk(KERN_TRACE "Bad dumping mode, switching to all cpu dump\n");
++		iter.cpu_file = TRACE_PIPE_ALL_CPU;
++	}
++
++	printk(KERN_TRACE "Dumping ftrace buffer:\n");
+ 
+ 	/*
+ 	 * We need to stop all tracing on all CPUS to read the
+@@ -4473,6 +4501,7 @@ static void __ftrace_dump(bool disable_tracing)
+ 	else
+ 		printk(KERN_TRACE "---------------------------------\n");
+ 
++ out_enable:
+ 	/* Re-enable tracing if requested */
+ 	if (!disable_tracing) {
+ 		trace_flags |= old_userobj;
+@@ -4489,9 +4518,9 @@ static void __ftrace_dump(bool disable_tracing)
+ }
+ 
+ /* By default: disable tracing after the dump */
+-void ftrace_dump(void)
++void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
+ {
+-	__ftrace_dump(true);
++	__ftrace_dump(true, oops_dump_mode);
+ }
+ 
+ __init static int tracer_alloc_buffers(void)
 -- 
-1.7.0.3
-
-
+1.6.2.3
 
