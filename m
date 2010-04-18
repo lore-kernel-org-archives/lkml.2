@@ -1,63 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab0DRUDo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 16:03:44 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:34902 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab0DRUDn (ORCPT
+	id S1757645Ab0DRUDw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 16:03:52 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:38811 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757591Ab0DRUDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 16:03:43 -0400
-Date: Sun, 18 Apr 2010 20:00:24 +0200
-From: Harald Welte <laforge@gnumonks.org>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-       linux-kernel@vger.kernel.org, JosephChan@via.com.tw,
-       ScottFang@viatech.com.cn, Deepak Saxena <dsaxena@laptop.org>,
-       linux-fbdev-devel@lists.sourceforge.net
-Subject: Re: [PATCH 05/16] viafb: Determine type of 2D engine and store it
- in chip_info
-Message-ID: <20100418180024.GY18200@prithivi.gnumonks.org>
-References: <1270746946-12467-1-git-send-email-corbet@lwn.net>
- <1270746946-12467-6-git-send-email-corbet@lwn.net>
- <4BBE9CFC.2020804@gmx.de>
- <20100409141127.42e4e1fa@bike.lwn.net>
- <4BBF8F48.2070902@gmx.de>
- <20100418113430.53760f99@bike.lwn.net>
+	Sun, 18 Apr 2010 16:03:49 -0400
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: 2.6.34rc4 NFS writeback regression (bisected): client often fails to delete things it just created
+References: <87tyr9dfvv.fsf@spindle.srvr.nix>
+	<1271618484.8049.1.camel@localhost.localdomain>
+	<87vdboa7e0.fsf@spindle.srvr.nix>
+	<1271620750.8049.3.camel@localhost.localdomain>
+From: Nix <nix@esperi.org.uk>
+Emacs: a learning curve that you can use as a plumb line.
+Date: Sun, 18 Apr 2010 21:03:43 +0100
+In-Reply-To: <1271620750.8049.3.camel@localhost.localdomain> (Trond Myklebust's message of "Sun, 18 Apr 2010 15:59:10 -0400")
+Message-ID: <87mxx0a5pc.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100418113430.53760f99@bike.lwn.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-DCC-wuwien-Metrics: spindle 1290; Body=3 Fuz1=3 Fuz2=3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 18 Apr 2010, Trond Myklebust said:
 
-On Sun, Apr 18, 2010 at 11:34:30AM -0600, Jonathan Corbet wrote:
+> On Sun, 2010-04-18 at 20:27 +0100, Nix wrote: 
+>> On 18 Apr 2010, Trond Myklebust verbalised:
+>> tip-of-tree includes that commit, and it's still happening for me there.
+>> (Just verified again.)
+>
+> Does a 'sync' clear out the sillyrenamed files?
 
-> In the absence of that, the only course of action which makes sense is
-> to simply fail the initialization if an unknown chip type shows up
-> there.  That's easy, and I can do it.  But, given that this was a
-> "minor nit," can we leave it as-is for now?  There's a *lot* of things
-> to clean up in this driver, I'd like to make it better a step at a time
-> rather than trying to do the whole thing at once.
-
-i agree with that step by step strategy.
-
-I always felt conservative about making too big changes.  After all, it is hard
-to find people who actually own and use all those various models of graphics
-chips, and even more so: who want to try + test recent mainline and check for
-regressions :(
-
-VIA's resources are extremely limited, and they can barely complete the work
-required for new products...  I know it's unfortunate, but VIA is a very small
-company.
-
-Regards,
-	Harald
--- 
-- Harald Welte <laforge@gnumonks.org>           http://laforge.gnumonks.org/
-============================================================================
-"Privacy in residential applications is a desirable marketing option."
-                                                  (ETSI EN 300 175-7 Ch. A6)
+Yes.
