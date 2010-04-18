@@ -1,289 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab0DRUuM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 16:50:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64769 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab0DRUuK (ORCPT
+	id S1753557Ab0DRUyH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 16:54:07 -0400
+Received: from www84.your-server.de ([213.133.104.84]:51592 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752529Ab0DRUyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 16:50:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
-        b=NuA25GmLO5f0AoaZRIBDA+tE1URtLuoErrCpvN46c5bK6pdm1SgczxvtDwfUK/aojF
-         wJzqYNnGX50qkT6vFUfKMOfP96P8HIQncte7o7CPshAogHcjaOvVrSVDt05Po6ob3gTq
-         QTnXFBaS9hljMMQiY/ijGs2UJrYDhBmL2ucNc=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH] tracing: Dump either the oops's cpu source or all cpus buffers
-Date: Sun, 18 Apr 2010 22:50:10 +0200
-Message-Id: <1271623810-23700-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+	Sun, 18 Apr 2010 16:54:03 -0400
+From: stefani@seibold.net
+To: linux-kernel@vger.kernel.org, stefani@seibold.net
+Subject: [PATCH 1/4] fix kfifo miss use of nozami.c
+Date: Sun, 18 Apr 2010 22:54:23 +0200
+Message-Id: <1271624066-7820-2-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1271624066-7820-1-git-send-email-stefani@seibold.net>
+References: <1271624066-7820-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ftrace_dump_on_oops kernel parameter, sysctl and sysrq let one
-dump every cpu buffers when an oops or panic happens.
+From: Stefani Seibold <stefani@seibold.net>
 
-It's nice when you have few cpus but it may take ages if have many,
-plus you miss the real origin of the problem in all the cpu traces.
+User of the kernel fifo should never bypass the API and directly access
+the fifo structure. Otherwise it will be very hard to maintain the API.
 
-Sometimes, all you need is to dump the cpu buffer that triggered the
-opps, most of the time it is our main interest.
-
-This patch modifies ftrace_dump_on_oops to handle this choice.
-
-The ftrace_dump_on_oops kernel parameter, when it comes alone, has
-the same behaviour than before. But ftrace_dump_on_oops=orig_cpu
-will only dump the buffer of the cpu that oops'ed.
-
-Similarly, sysctl kernel.ftrace_dump_on_oops=1 and
-echo 1 > /proc/sys/kernel/ftrace_dump_on_oops keep their previous
-behaviour. But setting 2 jumps into cpu origin dump mode.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
 ---
- Documentation/kernel-parameters.txt |    6 +++-
- Documentation/trace/ftrace.txt      |    6 ++-
- drivers/char/sysrq.c                |    2 +-
- include/linux/ftrace.h              |    4 ++-
- include/linux/kernel.h              |   11 ++++++-
- kernel/trace/trace.c                |   53 +++++++++++++++++++++++++++--------
- 6 files changed, 63 insertions(+), 19 deletions(-)
+ drivers/char/nozomi.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index e4cbca5..f6c68e8 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -789,8 +789,12 @@ and is between 256 and 4096 characters. It is defined in the file
- 			as early as possible in order to facilitate early
- 			boot debugging.
- 
--	ftrace_dump_on_oops
-+	ftrace_dump_on_oops[=orig_cpu]
- 			[FTRACE] will dump the trace buffers on oops.
-+			If no parameter is passed, ftrace will dump
-+			every cpu buffers, but if you pass orig_cpu, it will
-+			dump only the buffer of the cpu that triggered the
-+			oops.
- 
- 	ftrace_filter=[function-list]
- 			[FTRACE] Limit the functions traced by the function
-diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-index 03485bf..d242bc0 100644
---- a/Documentation/trace/ftrace.txt
-+++ b/Documentation/trace/ftrace.txt
-@@ -1337,12 +1337,14 @@ ftrace_dump_on_oops must be set. To set ftrace_dump_on_oops, one
- can either use the sysctl function or set it via the proc system
- interface.
- 
--  sysctl kernel.ftrace_dump_on_oops=1
-+  sysctl kernel.ftrace_dump_on_oops=n
- 
- or
- 
--  echo 1 > /proc/sys/kernel/ftrace_dump_on_oops
-+  echo n > /proc/sys/kernel/ftrace_dump_on_oops
- 
-+If n = 1, ftrace will dump every cpu buffers, if n = 2 ftrace will
-+only dump the buffer of the cpu that triggered the oops.
- 
- Here's an example of such a dump after a null pointer
- dereference in a kernel module:
-diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
-index 59de252..d4e8b21 100644
---- a/drivers/char/sysrq.c
-+++ b/drivers/char/sysrq.c
-@@ -289,7 +289,7 @@ static struct sysrq_key_op sysrq_showstate_blocked_op = {
- 
- static void sysrq_ftrace_dump(int key, struct tty_struct *tty)
- {
--	ftrace_dump();
-+	ftrace_dump(DUMP_ALL);
- }
- static struct sysrq_key_op sysrq_ftrace_dump_op = {
- 	.handler	= sysrq_ftrace_dump,
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 01e6ade..ea5b1aa 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -492,7 +492,9 @@ static inline int test_tsk_trace_graph(struct task_struct *tsk)
- 	return tsk->trace & TSK_TRACE_FL_GRAPH;
- }
- 
--extern int ftrace_dump_on_oops;
-+enum ftrace_dump_mode;
-+
-+extern enum ftrace_dump_mode ftrace_dump_on_oops;
- 
- #ifdef CONFIG_PREEMPT
- #define INIT_TRACE_RECURSION		.trace_recursion = 0,
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 9365227..9fb1c12 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -490,6 +490,13 @@ static inline void tracing_off(void) { }
- static inline void tracing_off_permanent(void) { }
- static inline int tracing_is_on(void) { return 0; }
- #endif
-+
-+enum ftrace_dump_mode {
-+	DUMP_NONE,
-+	DUMP_ALL,
-+	DUMP_ORIG,
-+};
-+
- #ifdef CONFIG_TRACING
- extern void tracing_start(void);
- extern void tracing_stop(void);
-@@ -571,7 +578,7 @@ __ftrace_vbprintk(unsigned long ip, const char *fmt, va_list ap);
- extern int
- __ftrace_vprintk(unsigned long ip, const char *fmt, va_list ap);
- 
--extern void ftrace_dump(void);
-+extern void ftrace_dump(enum ftrace_dump_mode oops_dump_mode);
- #else
- static inline void
- ftrace_special(unsigned long arg1, unsigned long arg2, unsigned long arg3) { }
-@@ -592,7 +599,7 @@ ftrace_vprintk(const char *fmt, va_list ap)
- {
- 	return 0;
- }
--static inline void ftrace_dump(void) { }
-+static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
- #endif /* CONFIG_TRACING */
- 
- /*
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index bed83ca..0564ee7 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -117,9 +117,12 @@ static cpumask_var_t __read_mostly	tracing_buffer_mask;
-  *
-  * It is default off, but you can enable it with either specifying
-  * "ftrace_dump_on_oops" in the kernel command line, or setting
-- * /proc/sys/kernel/ftrace_dump_on_oops to true.
-+ * /proc/sys/kernel/ftrace_dump_on_oops
-+ * Set 1 if you want to dump every cpu buffers
-+ * Set 2 if you want to dump the buffer of the cpu that triggered oops
-  */
--int ftrace_dump_on_oops;
-+
-+enum ftrace_dump_mode ftrace_dump_on_oops;
- 
- static int tracing_set_tracer(const char *buf);
- 
-@@ -139,10 +142,21 @@ __setup("ftrace=", set_cmdline_ftrace);
- 
- static int __init set_ftrace_dump_on_oops(char *str)
- {
--	ftrace_dump_on_oops = 1;
--	return 1;
-+	if (*str++ != '=' || !*str) {
-+		ftrace_dump_on_oops = DUMP_ALL;
-+		return 1;
-+	}
-+
-+	if (!strcmp("orig_cpu", str)) {
-+		ftrace_dump_on_oops = DUMP_ORIG;
-+                return 1;
-+        }
-+
-+        return 0;
- }
- __setup("ftrace_dump_on_oops", set_ftrace_dump_on_oops);
-+}
-+__setup("ftrace_dump_on_oops=", set_ftrace_dump_on_oops);
- 
- unsigned long long ns2usecs(cycle_t nsec)
- {
-@@ -4338,7 +4352,7 @@ static int trace_panic_handler(struct notifier_block *this,
- 			       unsigned long event, void *unused)
- {
- 	if (ftrace_dump_on_oops)
--		ftrace_dump();
-+		ftrace_dump(ftrace_dump_on_oops);
- 	return NOTIFY_OK;
- }
- 
-@@ -4355,7 +4369,7 @@ static int trace_die_handler(struct notifier_block *self,
- 	switch (val) {
- 	case DIE_OOPS:
- 		if (ftrace_dump_on_oops)
--			ftrace_dump();
-+			ftrace_dump(ftrace_dump_on_oops);
- 		break;
- 	default:
- 		break;
-@@ -4396,7 +4410,8 @@ trace_printk_seq(struct trace_seq *s)
- 	trace_seq_init(s);
- }
- 
--static void __ftrace_dump(bool disable_tracing)
-+static void
-+__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
- {
- 	static arch_spinlock_t ftrace_dump_lock =
- 		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
-@@ -4429,12 +4444,25 @@ static void __ftrace_dump(bool disable_tracing)
- 	/* don't look at user memory in panic mode */
- 	trace_flags &= ~TRACE_ITER_SYM_USEROBJ;
- 
--	printk(KERN_TRACE "Dumping ftrace buffer:\n");
--
- 	/* Simulate the iterator */
- 	iter.tr = &global_trace;
- 	iter.trace = current_trace;
--	iter.cpu_file = TRACE_PIPE_ALL_CPU;
-+
-+	switch (oops_dump_mode) {
-+	case DUMP_ALL:
-+		iter.cpu_file = TRACE_PIPE_ALL_CPU;
-+		break;
-+	case DUMP_ORIG:
-+		iter.cpu_file = raw_smp_processor_id();
-+		break;
-+	case DUMP_NONE:
-+		goto out_enable;
-+	default:
-+		printk(KERN_TRACE "Bad dumping mode, switching to all cpu dump\n");
-+		iter.cpu_file = TRACE_PIPE_ALL_CPU;
-+	}
-+
-+	printk(KERN_TRACE "Dumping ftrace buffer:\n");
- 
- 	/*
- 	 * We need to stop all tracing on all CPUS to read the
-@@ -4473,6 +4501,7 @@ static void __ftrace_dump(bool disable_tracing)
- 	else
- 		printk(KERN_TRACE "---------------------------------\n");
- 
-+ out_enable:
- 	/* Re-enable tracing if requested */
- 	if (!disable_tracing) {
- 		trace_flags |= old_userobj;
-@@ -4489,9 +4518,9 @@ static void __ftrace_dump(bool disable_tracing)
- }
- 
- /* By default: disable tracing after the dump */
--void ftrace_dump(void)
-+void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
- {
--	__ftrace_dump(true);
-+	__ftrace_dump(true, oops_dump_mode);
- }
- 
- __init static int tracer_alloc_buffers(void)
+diff --git a/drivers/char/nozomi.c b/drivers/char/nozomi.c
+index a663800..d578449 100644
+--- a/drivers/char/nozomi.c
++++ b/drivers/char/nozomi.c
+@@ -1741,8 +1741,7 @@ static int ntty_write_room(struct tty_struct *tty)
+ 	if (dc) {
+ 		mutex_lock(&port->tty_sem);
+ 		if (port->port.count)
+-			room = port->fifo_ul.size -
+-					kfifo_len(&port->fifo_ul);
++			room = kfifo_avail(&port->fifo_ul);
+ 		mutex_unlock(&port->tty_sem);
+ 	}
+ 	return room;
 -- 
-1.6.2.3
+1.7.0.4
 
