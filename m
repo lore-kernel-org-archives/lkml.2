@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab0DRSz0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 14:55:26 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38445 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752838Ab0DRSzX (ORCPT
+	id S1757498Ab0DRTCR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 15:02:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44612 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab0DRTCP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 14:55:23 -0400
-Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
- implementation
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100418135500.GD3096@linux.vnet.ibm.com>
-References: <20100415142852.GA2471@linux.vnet.ibm.com>
-	 <1271425881.4807.2319.camel@twins>
-	 <20100416141745.GC2615@linux.vnet.ibm.com>
-	 <1271427819.4807.2353.camel@twins>
-	 <20100416143202.GE2615@linux.vnet.ibm.com>
-	 <1271429810.4807.2390.camel@twins>
-	 <20100416150909.GF2615@linux.vnet.ibm.com>
-	 <1271430855.4807.2411.camel@twins>
-	 <20100416164503.GH2615@linux.vnet.ibm.com>
-	 <1271559996.14589.9.camel@mulgrave.site>
-	 <20100418135500.GD3096@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 18 Apr 2010 13:55:17 -0500
-Message-ID: <1271616917.27350.63.camel@mulgrave.site>
+	Sun, 18 Apr 2010 15:02:15 -0400
+Date: Sun, 18 Apr 2010 12:00:50 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: linux-kernel@vger.kernel.org
+Cc: Arjan van de Ven <arjan@infradead.org>, akpm@linux-foundation.org,
+       mingo@elte.hu, peterz@infradead.org, tglx@linutronix.de,
+       davej@redhat.com, cpufreq@vger.kernel.org
+Subject: [PATCH 1/7] sched: add a comment to get_cpu_idle_time_us()
+Message-ID: <20100418120050.562d63a6@infradead.org>
+In-Reply-To: <20100418115949.7b743898@infradead.org>
+References: <20100418115949.7b743898@infradead.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-04-18 at 06:55 -0700, Paul E. McKenney wrote:
-> On Sat, Apr 17, 2010 at 10:06:36PM -0500, James Bottomley wrote:
-> > On Fri, 2010-04-16 at 09:45 -0700, Paul E. McKenney wrote:
-> > > o	mutex_lock(): Critical sections need not guarantee
-> > > 	forward progress, as general blocking is permitted.
-> > 
-> > This isn't quite right.  mutex critical sections must guarantee eventual
-> > forward progress against the class of other potential acquirers of the
-> > mutex otherwise the system will become either deadlocked or livelocked.
-> 
-> If I understand you correctly, you are saying that it is OK for a given
-> critical section for a given mutex to fail to make forward progress if
-> nothing else happens to acquire that mutex during that time.  I would
-> agree, at least I would if you were to further add that the soft-lockup
-> checks permit an additional 120 seconds of failure to make forward progress
-> even if something -is- attempting to acquire that mutex.
+>From 6f9df3bc6571d6545c552151f408d69265e15f92 Mon Sep 17 00:00:00 2001
+From: Arjan van de Ven <arjan@linux.intel.com>
+Date: Sun, 18 Apr 2010 10:25:19 -0700
+Subject: [PATCH 1/7] sched: add a comment to get_cpu_idle_time_us()
 
-Yes ... I was thinking of two specific cases: one is wrong programming
-of lock acquisition where the system deadlocks; the other is doing silly
-things like taking a mutex around an event loop instead of inside it so
-incoming events prevent forward progress and the system livelocks, but
-there are many other ways of producing deadlocks and livelocks.  I just
-couldn't think of a concise way of saying all of that but I didn't want
-a statement about mutexes to give the impression that anything goes.
+The exported function get_cpu_idle_time_us() has no comment
+describing it; add a kerneldoc comment
 
-I've got to say that I also dislike seeing any form of sleep within a
-critical section because it's just asking for a nasty entangled deadlock
-which can be very hard to sort out.  So I also didn't like the statement
-"general blocking is permitted"
+Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+---
+ kernel/time/tick-sched.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-> By my standards, 120 seconds is a reasonable approximation to infinity,
-> hence my statement above.
-> 
-> So, would you agree with the following as a more precise statement?
-> 
-> o	mutex_lock(): Critical sections need not guarantee
-> 	forward progress unless some other task is waiting
-> 	on the mutex in question, in which case critical sections
-> 	should complete in 120 seconds.
-
-Sounds fair.
-
-James
-
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index f992762..54dc155 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -179,6 +179,20 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
+ 	return now;
+ }
+ 
++/**
++ * get_cpu_idle_time_us - get the total idle time of a cpu
++ * @cpu: CPU number to query
++ * @last_update_time: variable to store update time in
++ *
++ * Return the cummulative idle time (since boot) for a given
++ * CPU, in microseconds. The idle time returned includes
++ * the iowait time (unlike what "top" and co report).
++ *
++ * This time is measured via accounting rather than sampling,
++ * and is as accurate as ktime_get() is.
++ *
++ * This function returns -1 if NOHZ is not enabled.
++ */
+ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
+ {
+ 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+-- 
+1.6.2.5
 
