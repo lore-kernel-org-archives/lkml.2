@@ -1,40 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab0DRSVA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 14:21:00 -0400
-Received: from 202-150-217-242.rev.ne.com.sg ([202.150.217.242]:34786 "EHLO
-	synergic-networks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab0DRSU7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 14:20:59 -0400
-Message-ID: <b412e437a8cf628bf670bcc280a9eb73.squirrel@webmail.zionbpc.org.sg>
-Date: Mon, 19 Apr 2010 00:46:01 +0800
-Subject: Admin Message!!!
-From: "Admin Support Team" <isq.rvruette@hispeed.ch>
-User-Agent: SquirrelMail/1.4.19
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - synergic-networks.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - hispeed.ch
-To: unlisted-recipients:; (no To-header on input)
+	id S1757331Ab0DRSV1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 14:21:27 -0400
+Received: from tex.lwn.net ([70.33.254.29]:35329 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752694Ab0DRSVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Apr 2010 14:21:25 -0400
+From: Jonathan Corbet <corbet@lwn.net>
+To: linux-kernel@vger.kernel.org
+Cc: Harald Welte <laforge@gnumonks.org>, Deepak Saxena <dsaxena@laptop.org>,
+       linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
+       ScottFang@viatech.com.cn,
+       Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [RFC] Initial OLPC Viafb merge (V2)
+Date: Sun, 18 Apr 2010 12:21:02 -0600
+Message-Id: <1271614873-5952-1-git-send-email-corbet@lwn.net>
+X-Mailer: git-send-email 1.7.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to inform you that you have exceeded your email quota
-limit of 356MB and you need to increase your email quota limit
-because in less than 48 hours your email will be disable. Increase
-your email quota limit and continue to use your webmail account.
+The following patches are the beginning of an effort to move work done for
+the OLPC XO 1.5 machine into the mainline.  What's here is basic support
+for the VX855 chipset, I2C, and the OLPC panel display.  What's coming in
+the future is a reworking of the viafb driver into something resembling a
+proper multifunction device, GPIO support, and camera support.  But I'd
+like to start here.
 
-To increase your email quota limit to 2GB, click the below link:
-http://www.emailmeform.com/fid.php?formid=667537
+CHANGES FROM THE FIRST POSTING include fixes in response to a number of
+Florian's comments and the removal of the suspend/resume patches.  The
+patch series is also now based on 2.6.34-rc3.
 
-Thank you for your understanding.
-Copyright ©2010 Webmail Helpdest Support Centre
+If there's no objections, I'll start a tree and get it into linux-next in
+the near future, with an eye toward a 2.6.35 merge.
+
+Thanks,
+
+jon
+
+Chris Ball (2):
+      viafb: Add 1200x900 DCON/LCD panel modes for OLPC XO-1.5
+      viafb: Do not probe for LVDS/TMDS on OLPC XO-1.5
+
+Harald Welte (4):
+      [FB] viafb: Fix various resource leaks during module_init()
+      viafb: use proper pci config API
+      viafb: Determine type of 2D engine and store it in chip_info
+      viafb: rework the I2C support in the VIA framebuffer driver
+
+Jonathan Corbet (4):
+      viafb: Unmap the frame buffer on initialization error
+      viafb: Retain GEMODE reserved bits
+      viafb: Unify duplicated set_bpp() code
+      viafb: complete support for VX800/VX855 accelerated framebuffer
+
+Paul Fox (1):
+      suppress verbose debug messages:  change printk() to DEBUG_MSG()
+
+ drivers/video/via/accel.c    |  111 +++++++++++++++++----------
+ drivers/video/via/accel.h    |   40 ++++++++++
+ drivers/video/via/chip.h     |    8 ++
+ drivers/video/via/dvi.c      |   35 +++-----
+ drivers/video/via/hw.c       |   85 +++++++++++++++------
+ drivers/video/via/hw.h       |    4 -
+ drivers/video/via/ioctl.h    |    2 
+ drivers/video/via/lcd.c      |   35 ++++++--
+ drivers/video/via/lcd.h      |    2 
+ drivers/video/via/share.h    |    7 +
+ drivers/video/via/via_i2c.c  |  171 ++++++++++++++++++++++++++-----------------
+ drivers/video/via/via_i2c.h  |   43 +++++++---
+ drivers/video/via/viafbdev.c |   60 +++++++++++----
+ drivers/video/via/viafbdev.h |    4 -
+ drivers/video/via/viamode.c  |   14 +++
+ drivers/video/via/vt1636.c   |   36 ++++-----
+ drivers/video/via/vt1636.h   |    2 
+ 17 files changed, 446 insertions(+), 213 deletions(-)
+
+
 
