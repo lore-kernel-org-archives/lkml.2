@@ -1,117 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab0DRNmX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 09:42:23 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:58118 "EHLO e2.ny.us.ibm.com"
+	id S1754076Ab0DRNzJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 09:55:09 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38499 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752885Ab0DRNmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 09:42:21 -0400
-Date: Sun, 18 Apr 2010 06:42:17 -0700
+	id S1753069Ab0DRNzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Apr 2010 09:55:06 -0400
+Date: Sun, 18 Apr 2010 06:55:00 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 02/16] rcu: make dead code really dead
-Message-ID: <20100418134217.GC3096@linux.vnet.ibm.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
+ implementation
+Message-ID: <20100418135500.GD3096@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100415181255.GA19588@linux.vnet.ibm.com>
- <1271355219-20714-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100415235251.GA2491@feather>
- <20100416142348.GD2615@linux.vnet.ibm.com>
- <20100416211610.GA8357@feather>
- <20100416222927.GP2615@linux.vnet.ibm.com>
- <20100417045326.GA11604@feather>
- <20100418011213.GF2876@linux.vnet.ibm.com>
- <20100418035309.GA20129@feather>
+References: <20100415142852.GA2471@linux.vnet.ibm.com>
+ <1271425881.4807.2319.camel@twins>
+ <20100416141745.GC2615@linux.vnet.ibm.com>
+ <1271427819.4807.2353.camel@twins>
+ <20100416143202.GE2615@linux.vnet.ibm.com>
+ <1271429810.4807.2390.camel@twins>
+ <20100416150909.GF2615@linux.vnet.ibm.com>
+ <1271430855.4807.2411.camel@twins>
+ <20100416164503.GH2615@linux.vnet.ibm.com>
+ <1271559996.14589.9.camel@mulgrave.site>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100418035309.GA20129@feather>
+In-Reply-To: <1271559996.14589.9.camel@mulgrave.site>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 17, 2010 at 08:53:09PM -0700, Josh Triplett wrote:
-> On Sat, Apr 17, 2010 at 06:12:13PM -0700, Paul E. McKenney wrote:
-> > On Fri, Apr 16, 2010 at 09:53:27PM -0700, Josh Triplett wrote:
-> > > On Fri, Apr 16, 2010 at 03:29:27PM -0700, Paul E. McKenney wrote:
-> > > > On Fri, Apr 16, 2010 at 02:16:10PM -0700, Josh Triplett wrote:
-> > > > > On Fri, Apr 16, 2010 at 07:23:48AM -0700, Paul E. McKenney wrote:
-> > > > > > On Thu, Apr 15, 2010 at 04:52:52PM -0700, Josh Triplett wrote:
-> > > > > > > On Thu, Apr 15, 2010 at 11:13:25AM -0700, Paul E. McKenney wrote:
-> > > > > > > > From: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > > > > > > 
-> > > > > > > > cleanup: make dead code really dead
-> > > > > > > > 
-> > > > > > > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > > > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > > > > > ---
-> > > > > > > >  kernel/rcutree.c |    4 ++--
-> > > > > > > >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > > > > > > > 
-> > > > > > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > > > > > > index e54c123..6042fb8 100644
-> > > > > > > > --- a/kernel/rcutree.c
-> > > > > > > > +++ b/kernel/rcutree.c
-> > > > > > > > @@ -1236,11 +1236,11 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
-> > > > > > > >  		break; /* grace period idle or initializing, ignore. */
-> > > > > > > >  
-> > > > > > > >  	case RCU_SAVE_DYNTICK:
-> > > > > > > > -
-> > > > > > > > -		raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
-> > > > > > > >  		if (RCU_SIGNAL_INIT != RCU_SAVE_DYNTICK)
-> > > > > > > >  			break; /* So gcc recognizes the dead code. */
-> > > > > > > 
-> > > > > > > GCC's new __builtin_unreachable would help here, though obviously we
-> > > > > > > can't count on 4.5 or newer quite yet.  A wrapper in compiler.h would
-> > > > > > > let us use it when available though.
-> > > > > > 
-> > > > > > So at some time when we can count on gcc 4.5 or newer, the code
-> > > > > > would look something like the following?
-> > > > > > 
-> > > > > > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK)
-> > > > > > 		this_is_unreachable();
-> > > > > 
-> > > > > Yes, exactly.
-> > > > > 
-> > > > > > I suppose that in the meantime one could supply the code to use
-> > > > > > in the unreachable case:
-> > > > > > 
-> > > > > > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK)
-> > > > > > 		this_is_unreachable(break);
-> > > > > > 
-> > > > > > But this is beginning to seem a bit strained to me.  ;-)
-> > > > > 
-> > > > > I'd suggest spelling that this way:
-> > > > > 
-> > > > > 	if (RCU_SIGNAL_INIT == RCU_SAVE_DYNTICK) {
-> > > > > 		unreachable();
-> > > > > 		break;
-> > > > > 	}
-> > > > > 
-> > > > > But in any case, all of these do seem excessive just to avoid the need
-> > > > > for an ifdef. :)
-> > > > 
-> > > > Actually, the "if" condition is a comparison of numerical constants,
-> > > > so no #ifdef is required.
-> > > 
-> > > I just meant that those constants get #defined based on CONFIG_NO_HZ, so
-> > > an #ifdef on that would remove the need for the special handling of dead
-> > > code.
-> > 
-> > True, I could put a #ifdef CONFIG_NO_HZ around that leg of the switch
-> > statement.  Or am I still missing your point?
+On Sat, Apr 17, 2010 at 10:06:36PM -0500, James Bottomley wrote:
+> On Fri, 2010-04-16 at 09:45 -0700, Paul E. McKenney wrote:
+> > o	mutex_lock(): Critical sections need not guarantee
+> > 	forward progress, as general blocking is permitted.
 > 
-> No, you got it exactly.  Hence my suggesting that all the other
-> alternatives (the if with a break, or with __builtin_unreachable) seemed
-> excessive just to try to convince the compiler to infer what an ifdef
-> would tell it explicitly. :)
+> This isn't quite right.  mutex critical sections must guarantee eventual
+> forward progress against the class of other potential acquirers of the
+> mutex otherwise the system will become either deadlocked or livelocked.
 
-Which is exactly the purpose of the "if" statement comparing the two
-constants, right?  ;-)
+If I understand you correctly, you are saying that it is OK for a given
+critical section for a given mutex to fail to make forward progress if
+nothing else happens to acquire that mutex during that time.  I would
+agree, at least I would if you were to further add that the soft-lockup
+checks permit an additional 120 seconds of failure to make forward progress
+even if something -is- attempting to acquire that mutex.
+
+By my standards, 120 seconds is a reasonable approximation to infinity,
+hence my statement above.
+
+So, would you agree with the following as a more precise statement?
+
+o	mutex_lock(): Critical sections need not guarantee
+	forward progress unless some other task is waiting
+	on the mutex in question, in which case critical sections
+	should complete in 120 seconds.
 
 							Thanx, Paul
