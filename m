@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967Ab0DRIMa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 04:12:30 -0400
-Received: from omr15.networksolutionsemail.com ([205.178.146.65]:55177 "EHLO
-	omr15.networksolutionsemail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752126Ab0DRIM1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 04:12:27 -0400
-Authentication-Results: cm-omr5 smtp.user=jon; auth=pass (CRAM-MD5)
-Message-ID: <4BCABED6.7050400@nerdgrounds.com>
-Date: Sun, 18 Apr 2010 01:12:06 -0700
-From: Jonathan Campbell <jon@nerdgrounds.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.7) Gecko/20100111 Thunderbird/3.0.1
+	id S1754714Ab0DRIbi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 04:31:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46643 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753049Ab0DRIbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Apr 2010 04:31:36 -0400
+Message-ID: <4BCA6B8E.9000408@kernel.org>
+Date: Sun, 18 Apr 2010 11:16:46 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: ratheesh k <ratheesh.ksz@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: open sockets from task_struct
-References: <x2hcfeab66d1004180006ob6ebdba5r489f58f4edafc1a@mail.gmail.com>	 <4BCAB35A.6070806@nerdgrounds.com> <s2jcfeab66d1004180056m927c83f6l5642dcf56ad05a5e@mail.gmail.com>
-In-Reply-To: <s2jcfeab66d1004180056m927c83f6l5642dcf56ad05a5e@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tilman Schmidt <tilman@imap.cc>
+CC: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>,
+       Hansjoerg Lipp <hjlipp@web.de>, i4ldeveloper@listserv.isdn4linux.de,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gigaset: include cleanup cleanup
+References: <20100416220858.A19F540123@xenon.ts.pxnet.com>
+In-Reply-To: <20100416220858.A19F540123@xenon.ts.pxnet.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 18 Apr 2010 08:31:24 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get the Linux kernel source and look at what the procfs filesystem is 
-doing to get that information. Look under fs/proc.
-fs/proc/base.c(2508) seems to contain the inode structures for 
-/proc/pid/fd and /proc/pid/fdinfo, locate the inode operations
-structure and locate the functions. Drill down through the function 
-calls and you'll eventually find how to read what
-file handles are open. A quick glance tells me that the calls go several 
-layers deep including a call through a function pointer passed in one of 
-the parameters, "instantiate", hopefully that won't be a problem for you.
-> On Sun, Apr 18, 2010 at 12:53 PM, Jonathan Campbell<jon@nerdgrounds.com>  wrote:
->    
->> I know that on the user-space side any open handles can be seen in the
->> /proc/<pid>/fd directory (<pid>  is whatever process you're interested in).
->> Assuming you're talking about reading this from kernel space, I'd look at
->> what the procfs filesystem is doing and learn from that.
->> Sockets and block/char devices are listed like any other file, the list is
->> based on file handles.
->>      
->>> I have task_struct structure , how to find all the opened files ? how
->>> to find opened sockets ?
->>>
->>> Thanks,
->>> Ratheesh
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>>
->>>
->>>        
->>
->>      
-> I need it in kernel space and i am using  2.6.29.4 kernel .. could you
-> please guide a little ?
->
->
->    
+Hello,
 
+On 04/17/2010 07:08 AM, Tilman Schmidt wrote:
+> Commit 5a0e3ad causes slab.h to be included twice in many of the
+> Gigaset driver's source files, first via the common include file
+> gigaset.h and then a second time directly. Drop the spares, and
+> use the opportunity to clean up a few more similar cases.
+> 
+> Impact: cleanup, no functional change
+> Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+> CC: Tejun Heo <tj@kernel.org>
+
+Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks for the clean up.
+
+> Seeing that the "include cleanup" patch triggering this was accepted
+> after the merge window, I have hopes this one will be accepted, too.
+
+Hmm... through which tree should this go through?  I can route it
+through percpu but maybe taking the usual isdn patch path would be
+better?
+
+Thanks.
+
+-- 
+tejun
