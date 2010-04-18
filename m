@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757116Ab0DRDfM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Apr 2010 23:35:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59449 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757081Ab0DRDfK (ORCPT
+	id S1754076Ab0DRDn7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Apr 2010 23:43:59 -0400
+Received: from mx1.corp.avencall.com ([91.194.178.12]:57701 "EHLO
+	mx1.corp.avencall.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460Ab0DRDn6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Apr 2010 23:35:10 -0400
-Date: Sat, 17 Apr 2010 20:32:39 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Dave Chinner <david@fromorbit.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-Id: <20100417203239.dda79e88.akpm@linux-foundation.org>
-In-Reply-To: <20100416151403.GM19264@csn.ul.ie>
-References: <20100413202021.GZ13327@think>
-	<20100414014041.GD2493@dastard>
-	<20100414155233.D153.A69D9226@jp.fujitsu.com>
-	<20100414072830.GK2493@dastard>
-	<20100414085132.GJ25756@csn.ul.ie>
-	<20100415013436.GO2493@dastard>
-	<20100415102837.GB10966@csn.ul.ie>
-	<20100416041412.GY2493@dastard>
-	<20100416151403.GM19264@csn.ul.ie>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Sat, 17 Apr 2010 23:43:58 -0400
+X-Greylist: delayed 553 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Apr 2010 23:43:58 EDT
+Date: Sun, 18 Apr 2010 05:34:39 +0200
+From: Guillaume Knispel <gknispel@proformatique.com>
+To: linux-kernel@vger.kernel.org, Linuxppc-dev@lists.ozlabs.org
+Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Ingo Molnar <mingo@elte.hu>, Lars-Peter Clausen <lars@metafoo.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Michael Buesch <mb@bu3sch.de>, Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Pending interrupts not always replayed
+Message-ID: <20100418053439.4d2ffe11@xilun.lan.proformatique.com>
+Organization: Proformatique
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.12.12; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-There are two issues here: stack utilisation and poor IO patterns in
-direct reclaim.  They are different.
+>From reading the code (kernel/irq stuffs), it seems that at least some
+handle_edge_irq based interrupts are not replayed when enabling if
+desc->chip->retrigger == NULL and on a platform where
+CONFIG_HARDIRQS_SW_RESEND is not set (which for now is only defined for
+(some?) arm and avr32). Depending on the pic this problem might
+be masked if multiple interrupts are received between disable_irq and
+enable_irq (maybe other conditions exist with controllers i don't know).
 
-The poor IO patterns thing is a regression.  Some time several years
-ago (around 2.6.16, perhaps), page reclaim started to do a LOT more
-dirty-page writeback than it used to.  AFAIK nobody attempted to work
-out why, nor attempted to try to fix it.
+I happen to program a PPC SoC (MPC8555E to be precise), using some edge
+interrupts on the PortC of the CPM2 pic (arch/powerpc/sysdev/cpm2_pic.c)
+in a driver that does some enable_irq/disable_irq while various
+patterns of interrupts are received and i think i've hit the problem.
 
+Is the behavior intended (not always replaying edge triggered interrupts)
+or is it just a bug to fix?
 
-Doing writearound in pageout() might help.  The kernel was in fact was
-doing that around 2.5.10, but I took it out again because it wasn't
-obviously beneficial.
+Anybody knows if it's safe to activate CONFIG_HARDIRQS_SW_RESEND for a
+powerpc or are there some known dangerous interactions?
+(I'll give it a try on my side in the meantime anyway)
 
-Writearound is hard to do, because direct-reclaim doesn't have an easy
-way of pinning the address_space: it can disappear and get freed under
-your feet.  I was able to make this happen under intense MM loads.  The
-current page-at-a-time pageout code pins the address_space by taking a
-lock on one of its pages.  Once that lock is released, we cannot touch
-*mapping.
-
-And lo, the pageout() code is presently buggy:
-
-		res = mapping->a_ops->writepage(page, &wbc);
-		if (res < 0)
-			handle_write_error(mapping, page, res);
-
-The ->writepage can/will unlock the page, and we're passing a hand
-grenade into handle_write_error().
-
-Any attempt to implement writearound in pageout will need to find a way
-to safely pin that address_space.  One way is to take a temporary ref
-on mapping->host, but IIRC that introduced nasties with inode_lock. 
-Certainly it'll put more load on that worrisomely-singleton lock.
-
-
-Regarding simply not doing any writeout in direct reclaim (Dave's
-initial proposal): the problem is that pageout() will clean a page in
-the target zone.  Normal writeout won't do that, so we could get into a
-situation where vast amounts of writeout is happening, but none of it
-is cleaning pages in the zone which we're trying to allocate from. 
-It's quite possibly livelockable, too.
-
-Doing writearound (if we can get it going) will solve that adequately
-(assuming that the target page gets reliably written), but it won't
-help the stack usage problem.
-
-
-To solve the IO-pattern thing I really do think we should first work
-out ytf we started doing much more IO off the LRU.  What caused it?  Is
-it really unavoidable?
-
-
-To solve the stack-usage thing: dunno, really.  One could envisage code
-which skips pageout() if we're using more than X amount of stack, but
-that sucks.  Another possibility might be to hand the target page over
-to another thread (I suppose kswapd will do) and then synchronise with
-that thread - get_page()+wait_on_page_locked() is one way.  The helper
-thread could of course do writearound.
-
+Cheers!
+-- 
+Guillaume Knispel
