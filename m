@@ -1,75 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab0DSBhh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 21:37:37 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:50818 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753866Ab0DSBhf (ORCPT
+	id S1754243Ab0DSBzK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 21:55:10 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:59228 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077Ab0DSBzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 21:37:35 -0400
-Date: Mon, 19 Apr 2010 11:37:02 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Denys Fedorysychenko <nuclearcat@nuclearcat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: endless sync on bdi_sched_wait()? 2.6.33.1
-Message-ID: <20100419013702.GE2520@dastard>
-References: <201003311907.31342.nuclearcat@nuclearcat.com>
- <20100408092850.GA20488@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100408092850.GA20488@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 18 Apr 2010 21:55:08 -0400
+Date: Mon, 19 Apr 2010 10:49:17 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       linux-mm@kvack.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: mmotm 2010-04-15-14-42 uploaded (shmem, CGROUP_MEM_RES_CTLR)
+Message-Id: <20100419104917.1a568b17.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100416090315.22b7d361.randy.dunlap@oracle.com>
+References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org>
+	<20100416090315.22b7d361.randy.dunlap@oracle.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 08, 2010 at 11:28:50AM +0200, Jan Kara wrote:
-> > SUPERPROXY ~ # cat /proc/1753/stack
-> > [<c019a93c>] bdi_sched_wait+0x8/0xc
-> > [<c019a807>] wait_on_bit+0x20/0x2c
-> > [<c019a9af>] sync_inodes_sb+0x6f/0x10a
-> > [<c019dd53>] __sync_filesystem+0x28/0x49
-> > [<c019ddf3>] sync_filesystems+0x7f/0xc0
-> > [<c019de7a>] sys_sync+0x1b/0x2d
-> > [<c02f7a25>] syscall_call+0x7/0xb
-> > [<ffffffff>] 0xffffffff
->   Hmm, I guess you are observing the problem reported in
-> https://bugzilla.kernel.org/show_bug.cgi?id=14830
->   There seem to be several issues in the per-bdi writeback code that
-> cause sync on a busy filesystem to last almost forever. To that bug are
-> attached two patches that fix two issues but apparently it's not all.
-> I'm still looking into it...
+On Fri, 16 Apr 2010 09:03:15 -0700, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> On Thu, 15 Apr 2010 14:42:59 -0700 akpm@linux-foundation.org wrote:
+> 
+> > The mm-of-the-moment snapshot 2010-04-15-14-42 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > and will soon be available at
+> > 
+> >    git://zen-kernel.org/kernel/mmotm.git
+> > 
+> > It contains the following patches against 2.6.34-rc4:
+> 
+> 
+> memcg-move-charge-of-file-pages.patch:
+> 
+> when CONFIG_SHMFS is not enabled:
+> 
+> mm/shmem.c:2721: error: implicit declaration of function 'SHMEM_I'
+> mm/shmem.c:2721: warning: initialization makes pointer from integer without a cast
+> mm/shmem.c:2726: error: dereferencing pointer to incomplete type
+> mm/shmem.c:2727: error: implicit declaration of function 'shmem_swp_entry'
+> mm/shmem.c:2727: warning: assignment makes pointer from integer without a cast
+> mm/shmem.c:2734: error: implicit declaration of function 'shmem_swp_unmap'
+> mm/shmem.c:2735: error: dereferencing pointer to incomplete type
+> 
+Thank you very much for your report.
 
-So Jen's writeback tracing shows this for a normal cycle during a
-large dd:
+I attach a fix patch.
 
-           <...>-6030  [005] 604446.696454: writeback_sched: work=38c0, task=task
-    flush-253:16-6029  [002] 604446.696492: writeback_exec: work=38c0 pages=9223372036854775807, sb=0, kupdate=0, range_cyclic=-1 for_background=-1
-    flush-253:16-6029  [002] 604446.696493: writeback_clear: work=ffff88011f1a38c0, refs=1
-    flush-253:16-6029  [003] 604446.784240: writeback_pages_written: 1024
+===
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-There were 100 of these traces (102400 pages (400MB) which is exactly 10% of
-RAM) before this:
+build fix for !CONFIG_SHMEM case.
 
-           <...>-6030  [000] 604462.346329: writeback_sched: work=6c0, task=task
-    flush-253:16-6029  [002] 604462.267098: writeback_exec: work=6c0 pages=9223372036854775807, sb=0, kupdate=0, range_cyclic=-1 for_background=-1
-    flush-253:16-6029  [002] 604462.267101: writeback_clear: work=ffff88011e8006c0, refs=1
-    flush-253:16-6029  [001] 604465.406331: writeback_pages_written: 160771
+  CC      mm/shmem.o
+mm/shmem.c: In function 'mem_cgroup_get_shmem_target':
+mm/shmem.c:2721: error: implicit declaration of function 'SHMEM_I'
+mm/shmem.c:2721: warning: initialization makes pointer from integer without a cast
+mm/shmem.c:2726: error: dereferencing pointer to incomplete type
+mm/shmem.c:2727: error: implicit declaration of function 'shmem_swp_entry'
+mm/shmem.c:2727: warning: assignment makes pointer from integer without a cast
+mm/shmem.c:2734: error: implicit declaration of function 'shmem_swp_unmap'
+mm/shmem.c:2735: error: dereferencing pointer to incomplete type
+make[1]: *** [mm/shmem.o] Error 1
 
-which shows 160771 pages written in a single iteration (650MB). I suspect some
-interaction between foreground and background writeout is occurring here.
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+---
+ mm/shmem.c |   99 +++++++++++++++++++++++++++++++++++++----------------------
+ 1 files changed, 62 insertions(+), 37 deletions(-)
 
-The flusher thread appears to be getting stuck on congestion - the wchan
-it is sitting on indicates it is blocking in get_request().  I'm going to
-extend this tracing further down into the writeback code so that what is
-happening is clearer...
-
-Cheers,
-
-Dave.
+diff --git a/mm/shmem.c b/mm/shmem.c
+index cb87365..6f183ef 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2568,6 +2568,43 @@ out4:
+ 	return error;
+ }
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++/**
++ * mem_cgroup_get_shmem_target - find a page or entry assigned to the shmem file
++ * @inode: the inode to be searched
++ * @pgoff: the offset to be searched
++ * @pagep: the pointer for the found page to be stored
++ * @ent: the pointer for the found swap entry to be stored
++ *
++ * If a page is found, refcount of it is incremented. Callers should handle
++ * these refcount.
++ */
++void mem_cgroup_get_shmem_target(struct inode *inode, pgoff_t pgoff,
++					struct page **pagep, swp_entry_t *ent)
++{
++	swp_entry_t entry = { .val = 0 }, *ptr;
++	struct page *page = NULL;
++	struct shmem_inode_info *info = SHMEM_I(inode);
++
++	if ((pgoff << PAGE_CACHE_SHIFT) >= i_size_read(inode))
++		goto out;
++
++	spin_lock(&info->lock);
++	ptr = shmem_swp_entry(info, pgoff, NULL);
++	if (ptr && ptr->val) {
++		entry.val = ptr->val;
++		page = find_get_page(&swapper_space, entry.val);
++	} else
++		page = find_get_page(inode->i_mapping, pgoff);
++	if (ptr)
++		shmem_swp_unmap(ptr);
++	spin_unlock(&info->lock);
++out:
++	*pagep = page;
++	*ent = entry;
++}
++#endif
++
+ #else /* !CONFIG_SHMEM */
+ 
+ /*
+@@ -2607,6 +2644,31 @@ int shmem_lock(struct file *file, int lock, struct user_struct *user)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++/**
++ * mem_cgroup_get_shmem_target - find a page or entry assigned to the shmem file
++ * @inode: the inode to be searched
++ * @pgoff: the offset to be searched
++ * @pagep: the pointer for the found page to be stored
++ * @ent: the pointer for the found swap entry to be stored
++ *
++ * If a page is found, refcount of it is incremented. Callers should handle
++ * these refcount.
++ */
++void mem_cgroup_get_shmem_target(struct inode *inode, pgoff_t pgoff,
++					struct page **pagep, swp_entry_t *ent)
++{
++	struct page *page = NULL;
++
++	if ((pgoff << PAGE_CACHE_SHIFT) >= i_size_read(inode))
++		goto out;
++	page = find_get_page(inode->i_mapping, pgoff);
++out:
++	*pagep = page;
++	*ent = (swp_entry_t){ .val = 0 };
++}
++#endif
++
+ #define shmem_vm_ops				generic_file_vm_ops
+ #define shmem_file_operations			ramfs_file_operations
+ #define shmem_get_inode(sb, mode, dev, flags)	ramfs_get_inode(sb, mode, dev)
+@@ -2701,40 +2763,3 @@ int shmem_zero_setup(struct vm_area_struct *vma)
+ 	vma->vm_ops = &shmem_vm_ops;
+ 	return 0;
+ }
+-
+-#ifdef CONFIG_CGROUP_MEM_RES_CTLR
+-/**
+- * mem_cgroup_get_shmem_target - find a page or entry assigned to the shmem file
+- * @inode: the inode to be searched
+- * @pgoff: the offset to be searched
+- * @pagep: the pointer for the found page to be stored
+- * @ent: the pointer for the found swap entry to be stored
+- *
+- * If a page is found, refcount of it is incremented. Callers should handle
+- * these refcount.
+- */
+-void mem_cgroup_get_shmem_target(struct inode *inode, pgoff_t pgoff,
+-					struct page **pagep, swp_entry_t *ent)
+-{
+-	swp_entry_t entry = { .val = 0 }, *ptr;
+-	struct page *page = NULL;
+-	struct shmem_inode_info *info = SHMEM_I(inode);
+-
+-	if ((pgoff << PAGE_CACHE_SHIFT) >= i_size_read(inode))
+-		goto out;
+-
+-	spin_lock(&info->lock);
+-	ptr = shmem_swp_entry(info, pgoff, NULL);
+-	if (ptr && ptr->val) {
+-		entry.val = ptr->val;
+-		page = find_get_page(&swapper_space, entry.val);
+-	} else
+-		page = find_get_page(inode->i_mapping, pgoff);
+-	if (ptr)
+-		shmem_swp_unmap(ptr);
+-	spin_unlock(&info->lock);
+-out:
+-	*pagep = page;
+-	*ent = entry;
+-}
+-#endif
 -- 
-Dave Chinner
-david@fromorbit.com
+1.5.6.1
+
