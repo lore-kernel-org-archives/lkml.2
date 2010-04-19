@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab0DSI5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 04:57:52 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:60915 "EHLO gir.skynet.ie"
+	id S1753452Ab0DSJAK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 05:00:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39640 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125Ab0DSI5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 04:57:51 -0400
-Date: Mon, 19 Apr 2010 09:57:31 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [git pull] drm fixes
-In-Reply-To: <alpine.DEB.2.00.1004190525550.16598@skynet.skynet.ie>
-Message-ID: <alpine.DEB.2.00.1004190956550.7306@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1004190525550.16598@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752838Ab0DSJAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 05:00:08 -0400
+Message-ID: <4BCC1B82.5050000@redhat.com>
+Date: Mon, 19 Apr 2010 11:59:46 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-242710427-1271667451=:7306"
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       zhiteng.huang@intel.com, tim.c.chen@intel.com,
+       Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH V5 1/3] perf & kvm: Enhance perf to collect KVM guest
+ os statistics from host side
+References: <1271655161.2078.603.camel@ymzhang.sh.intel.com>	 <4BCC1665.1080003@redhat.com> <1271667323.2078.611.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1271667323.2078.611.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 04/19/2010 11:55 AM, Zhang, Yanmin wrote:
+> On Mon, 2010-04-19 at 11:37 +0300, Avi Kivity wrote:
+>    
+>> On 04/19/2010 08:32 AM, Zhang, Yanmin wrote:
+>>      
+>>> Below patch introduces perf_guest_info_callbacks and related register/unregister
+>>> functions. Add more PERF_RECORD_MISC_XXX bits meaning guest kernel and guest user
+>>> space.
+>>>
+>>>        
+>> This doesn't apply against upstream.
+>>      
+> What does upstream mean here? The vanilla 2.6.34-rc4?
+>    
 
---29444707-242710427-1271667451=:7306
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+Yes, sorry for being unclear.
 
-> 
-> Hi Linus,
+>>    What branch was this generated
+>> against?
+>>
+>>      
+> It's against the latest tip/master. I checked out to 19b26586090 as the latest
+> tip/master has some updates on perf.
+>    
 
-Updated this pull with one more pci id commit.
+I don't want to merge tip/master... does tip/perf/core contain the 
+needed updates?
 
-commit 79b9517a33a283c5d9db875c263670ed1e055f7e
-Author: Dave Airlie <airlied@redhat.com>
-Date:   Mon Apr 19 17:54:31 2010 +1000
+-- 
+error compiling committee.c: too many arguments to function
 
-    drm/radeon/kms: add FireMV 2400 PCI ID.
-
-is the new HEAD.
-
-Dave.
-> 
-> Just radeon fixes, the most important one being a one char typo in the 
-> rs600 setup that caused memory corruption with KMS on this particular 
-> chipset. RS600s are a really rare chipset, so it took a while for Jerome 
-> to track one down to reproduce. Others are mainly fixes to open bugs and a 
-> regression in the smooth booting process thats caused flicker when X 
-> started up. Along with some register updates to the command stream parser.
-> 
-> The following changes since commit 930b9d94579fa1ea9604cbf7ba56cedf99ba9b5c:
->   Dave Airlie (1):
->         Merge remote branch 'nouveau/for-airlied' of ../drm-nouveau-next into drm-linus
-> 
-> are available in the git repository at:
-> 
->   ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-linus
-> 
-> Alex Deucher (6):
->       drm/radeon/kms: more atom parser fixes (v2)
->       drm/radeon/kms/atom: fix dual-link DVI on DCE3.2/4.0
->       drm/radeon/kms/evergreen: don't enable hdmi audio stuff
->       drm/radeon/kms: fix tv dac conflict resolver
->       drm/radeon/kms: adjust pll settings for tv
->       drm/radeon/kms: disable the tv encoder when tv/cv is not in use
-> 
-> Corbin Simpson (1):
->       drivers/gpu/radeon: Add MSPOS regs to safe list.
-> 
-> Dave Airlie (1):
->       drm/radeon/kms: only change mode when coherent value changes.
-> 
-> Jerome Glisse (2):
->       drm/radeon/kms: print GPU family and device id when loading
->       drm/radeon/kms: fix rs600 tlb flush
-> 
-> Marek Ol¨ák (2):
->       drm/radeon/kms: fix calculation of mipmapped 3D texture sizes
->       drm/radeon/kms: allow R500 regs VAP_ALT_NUM_VERTICES and VAP_INDEX_OFFSET
-> 
->  drivers/gpu/drm/radeon/atom.c              |   10 +++++
->  drivers/gpu/drm/radeon/atombios_crtc.c     |    4 ++
->  drivers/gpu/drm/radeon/r100.c              |   21 ++++++++---
->  drivers/gpu/drm/radeon/r100_track.h        |    1 +
->  drivers/gpu/drm/radeon/r300.c              |   15 ++++++--
->  drivers/gpu/drm/radeon/r600_audio.c        |    2 +-
->  drivers/gpu/drm/radeon/r600_hdmi.c         |    9 +++++
->  drivers/gpu/drm/radeon/radeon_connectors.c |   13 ++++++-
->  drivers/gpu/drm/radeon/radeon_device.c     |   53 +++++++++++++++++++++++++++-
->  drivers/gpu/drm/radeon/radeon_drv.c        |    3 +-
->  drivers/gpu/drm/radeon/radeon_encoders.c   |   12 +++++-
->  drivers/gpu/drm/radeon/radeon_family.h     |    3 +-
->  drivers/gpu/drm/radeon/reg_srcs/r300       |    2 +
->  drivers/gpu/drm/radeon/reg_srcs/r420       |    2 +
->  drivers/gpu/drm/radeon/reg_srcs/rs600      |    2 +
->  drivers/gpu/drm/radeon/reg_srcs/rv515      |    3 ++
->  drivers/gpu/drm/radeon/rs600.c             |    2 +-
->  17 files changed, 138 insertions(+), 19 deletions(-)
---29444707-242710427-1271667451=:7306--
