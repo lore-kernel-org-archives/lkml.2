@@ -1,161 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab0DSQfM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 12:35:12 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:59646 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328Ab0DSQfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 12:35:10 -0400
-Date: Mon, 19 Apr 2010 17:34:48 +0100
-From: Mel Gorman <mel@csn.ul.ie>
+	id S1753259Ab0DSQhK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 12:37:10 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:53243
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751018Ab0DSQhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 12:37:06 -0400
+X-SpamScore: -22
+X-BigFish: VPS-22(zz1432P98dN936eM62a3Lab9bhzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 5,
+X-WSS-ID: 0L14SNS-02-3OA-02
+X-M-MSG: 
+Date: Mon, 19 Apr 2010 18:04:39 +0200
+From: Robert Richter <robert.richter@amd.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: r6144 <rainy6144@gmail.com>, linux-kernel@vger.kernel.org,
-       Darren Hart <dvhltc@us.ibm.com>, tglx <tglx@linutronix.de>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>
-Subject: Re: Process-shared futexes on hugepages puts the kernel in an
-	infinite loop in 2.6.32.11; is this fixed now?
-Message-ID: <20100419163448.GY19264@csn.ul.ie>
-References: <1271432722.2564.16.camel@localhost.localdomain> <1271449668.1674.466.camel@laptop> <20100419114300.GT19264@csn.ul.ie> <1271677956.1674.922.camel@laptop> <20100419153245.GX19264@csn.ul.ie> <1271691905.1488.317.camel@laptop>
+CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/12] perf, x86: setup NMI handler for IBS
+Message-ID: <20100419160439.GP11907@erda.amd.com>
+References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
+ <1271190201-25705-11-git-send-email-robert.richter@amd.com>
+ <1271336255.1674.8.camel@laptop>
+ <20100415131130.GK11907@erda.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1271691905.1488.317.camel@laptop>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100415131130.GK11907@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 19 Apr 2010 16:04:40.0386 (UTC) FILETIME=[04710220:01CADFDA]
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 05:45:05PM +0200, Peter Zijlstra wrote:
-> On Mon, 2010-04-19 at 16:32 +0100, Mel Gorman wrote:
-> > Fix infinite loop in get_futex_key when backed by huge pages
+On 15.04.10 15:11:30, Robert Richter wrote:
+> On 15.04.10 14:57:35, Peter Zijlstra wrote:
+> > > +/* uninitialize the APIC for the IBS interrupts if needed */
+> > > +static void clear_ibs_nmi(void)
+> > > +{
+> > > +	on_each_cpu(apic_clear_ibs_nmi_per_cpu, NULL, 1);
+> > > +}
 > > 
-> > If a futex key happens to be located within a huge page mapped MAP_PRIVATE,
-> > get_futex_key() can go into an infinite loop waiting for a page->mapping
-> > that will never exist. This was reported and documented in an external
-> > bugzilla at
 > > 
-> > https://bugzilla.redhat.com/show_bug.cgi?id=552257
-> > 
-> > This patch makes page->mapping a poisoned value that includes PAGE_MAPPING_ANON
-> > mapped MAP_PRIVATE.  This is enough for futex to continue but because
-> > of PAGE_MAPPING_ANON, the poisoned value is not dereferenced or used by
-> > futex. No other part of the VM should be dereferencing the page->mapping of
-> > a hugetlbfs page as its page cache is not on the LRU.
-> > 
-> > This patch fixes the problem with the test case described in the bugzilla.
-> > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > ---
-> >  include/linux/poison.h |   10 ++++++++++
-> >  mm/hugetlb.c           |    6 +++++-
-> >  2 files changed, 15 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/include/linux/poison.h b/include/linux/poison.h
-> > index 2110a81..0f7b5ac 100644
-> > --- a/include/linux/poison.h
-> > +++ b/include/linux/poison.h
-> > @@ -48,6 +48,16 @@
-> >  #define POISON_FREE    0x6b    /* for use-after-free poisoning */
-> >  #define        POISON_END      0xa5    /* end-byte of poisoning */
-> >  
-> > +/********** mm/hugetlb.c **********/
-> > +/*
-> > + * Private mappings of hugetlb pages use this poisoned value for
-> > + * page->mapping. The core VM should not be doing anything with this mapping
-> > + * but futex requires the existance of some page->mapping value even if it
-> > + * is unused. If the core VM does deference the mapping, it'll look like a
-> > + * suspiciously high null-pointer offset starting from 0x2e5
-> > + */
-> > +#define HUGETLB_PRIVATE_MAPPING        (0x2e4 | PAGE_MAPPING_ANON)
+> > That on_each_cpu() looks wonky, why isn't this in the hotplug hooks?
 > 
-> Wouldn't a longer poison be more recognisable? Also, shouldn't this use
-> POISON_POINTER_DELTA?
-> 
+> Right, it should be there. Will update this patch.
 
-I was looking for an address < 0x1000 because it would only be valid in very
-rare cases. I wasn't so sure about any other pointer value and only x86-64
-appears to define POISON_POINTER_DELTA.
+Peter,
 
-> Something like:
-> 
-> #define HUGETBL_POISON	((void *) 0x00300300 + POISON_POINTER_DELTA)
-> 
-> 0x2e5 isn't that high, I've had actual derefs in that range.
-> 
+please see my updated version below.
 
-So have I, but it couldn't be too near the page boundary either and pretty
-much any address can be valid.  Still, architectures aren't stopped from
-defining the delta and it is something we appear to rely on for the list
-poisoning. I'd prefer a value below 0x1000 but matching list poisoning should
-work for the most part.
+-Robert
 
-How about?
-
-==== CUT HERE ====
-Fix infinite loop in get_futex_key when backed by huge pages
-
-If a futex key happens to be located within a huge page mapped MAP_PRIVATE,
-get_futex_key() can go into an infinite loop waiting for a page->mapping that
-will never exist. This was reported and documented in an external bugzilla at
-
-https://bugzilla.redhat.com/show_bug.cgi?id=552257
-
-This patch makes page->mapping a poisoned value that includes
-PAGE_MAPPING_ANON mapped MAP_PRIVATE.  This is enough for futex to continue
-but because of PAGE_MAPPING_ANON, the poisoned value is not dereferenced
-or used by futex. No other part of the VM should be dereferencing the
-page->mapping of a hugetlbfs page as its page cache is not on the LRU.
-
-This patch fixes the problem with the test case described in the bugzilla.
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 ---
- include/linux/poison.h |    9 +++++++++
- mm/hugetlb.c           |    5 ++++-
- 2 files changed, 13 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/poison.h b/include/linux/poison.h
-index 2110a81..bab71f3 100644
---- a/include/linux/poison.h
-+++ b/include/linux/poison.h
-@@ -48,6 +48,15 @@
- #define POISON_FREE	0x6b	/* for use-after-free poisoning */
- #define	POISON_END	0xa5	/* end-byte of poisoning */
+>From bcb2c4aec6bf09fc7c05f31dde9dacd57b9c679c Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Mon, 19 Apr 2010 15:32:37 +0200
+Subject: [PATCH] perf, x86: setup NMI handler for IBS
+
+This implements the perf nmi handler for ibs interrupts. The code was
+copied from oprofile and should be merged somewhen.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/kernel/cpu/perf_event.c     |    5 ++
+ arch/x86/kernel/cpu/perf_event_amd.c |   85 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 90 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 940107f..0ad8c45 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -516,6 +516,8 @@ static int x86_pmu_hw_config(struct perf_event *event)
+ 	return x86_setup_perfctr(event);
+ }
  
-+/********** mm/hugetlb.c **********/
-+/*
-+ * Private mappings of hugetlb pages use this poisoned value for
-+ * page->mapping. The core VM should not be doing anything with this mapping
-+ * but futex requires the existance of some page->mapping value even though it
-+ * is unused if PAGE_MAPPING_ANON is set.
-+ */
-+#define HUGETLB_POISON	((void *)(0x00300300 + POISON_POINTER_DELTA + PAGE_MAPPING_ANON))
++static inline void init_ibs_nmi(void);
 +
- /********** arch/$ARCH/mm/init.c **********/
- #define POISON_FREE_INITMEM	0xcc
+ /*
+  * Setup the hardware configuration for a given attr_type
+  */
+@@ -537,6 +539,8 @@ static int __hw_perf_event_init(struct perf_event *event)
+ 				if (err)
+ 					release_pmc_hardware();
+ 			}
++			if (!err)
++				init_ibs_nmi();
+ 		}
+ 		if (!err)
+ 			atomic_inc(&active_events);
+@@ -1381,6 +1385,7 @@ static void __init pmu_check_apic(void)
+ 		return;
  
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 6034dc9..ffbdfc8 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -546,6 +546,7 @@ static void free_huge_page(struct page *page)
+ 	x86_pmu.apic = 0;
++	x86_pmu.ibs = 0;
+ 	pr_info("no APIC, boot with the \"lapic\" boot parameter to force-enable it.\n");
+ 	pr_info("no hardware sampling interrupt available.\n");
+ }
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 246304d..a6ce6f8 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -1,5 +1,7 @@
+ #ifdef CONFIG_CPU_SUP_AMD
  
- 	mapping = (struct address_space *) page_private(page);
- 	set_page_private(page, 0);
-+	page->mapping = NULL;
- 	BUG_ON(page_count(page));
- 	INIT_LIST_HEAD(&page->lru);
++#include <linux/pci.h>
++
+ static DEFINE_RAW_SPINLOCK(amd_nb_lock);
  
-@@ -2447,8 +2448,10 @@ retry:
- 			spin_lock(&inode->i_lock);
- 			inode->i_blocks += blocks_per_huge_page(h);
- 			spin_unlock(&inode->i_lock);
--		} else
-+		} else {
- 			lock_page(page);
-+			page->mapping = HUGETLB_POISON;
+ static __initconst const u64 amd_hw_cache_event_ids
+@@ -106,6 +108,85 @@ static const u64 amd_perfmon_event_map[] =
+   [PERF_COUNT_HW_BRANCH_MISSES]		= 0x00c5,
+ };
+ 
++#ifdef CONFIG_X86_LOCAL_APIC
++
++/* IBS - apic initialization, taken from oprofile, should be unified */
++
++/*
++ * Currently there is no early pci ecs access implemented, so this
++ * can't be put into amd_pmu_init(). For now we initialize it in
++ * __hw_perf_event_init().
++ */
++
++static int __init_ibs_nmi(void)
++{
++#define IBSCTL_LVTOFFSETVAL		(1 << 8)
++#define IBSCTL				0x1cc
++	struct pci_dev *cpu_cfg;
++	int nodes;
++	u32 value = 0;
++	u8 ibs_eilvt_off;
++
++	if (!x86_pmu.ibs)
++		return 0;
++
++	ibs_eilvt_off = setup_APIC_eilvt_ibs(0, APIC_EILVT_MSG_FIX, 0);
++
++	nodes = 0;
++	cpu_cfg = NULL;
++	do {
++		cpu_cfg = pci_get_device(PCI_VENDOR_ID_AMD,
++					 PCI_DEVICE_ID_AMD_10H_NB_MISC,
++					 cpu_cfg);
++		if (!cpu_cfg)
++			break;
++		++nodes;
++		pci_write_config_dword(cpu_cfg, IBSCTL, ibs_eilvt_off
++				       | IBSCTL_LVTOFFSETVAL);
++		pci_read_config_dword(cpu_cfg, IBSCTL, &value);
++		if (value != (ibs_eilvt_off | IBSCTL_LVTOFFSETVAL)) {
++			pci_dev_put(cpu_cfg);
++			printk(KERN_DEBUG "Failed to setup IBS LVT offset, "
++				"IBSCTL = 0x%08x", value);
++			return 1;
 +		}
++	} while (1);
++
++	if (!nodes) {
++		printk(KERN_DEBUG "No CPU node configured for IBS");
++		return 1;
++	}
++
++	return 0;
++}
++
++static inline void init_ibs_nmi(void)
++{
++	if (__init_ibs_nmi())
++		/* something went wrong, disable ibs */
++		x86_pmu.ibs = 0;
++}
++
++static inline void apic_init_ibs(void)
++{
++	if (x86_pmu.ibs)
++		setup_APIC_eilvt_ibs(0, APIC_EILVT_MSG_NMI, 0);
++}
++
++static inline void apic_clear_ibs(void)
++{
++	if (x86_pmu.ibs)
++		setup_APIC_eilvt_ibs(0, APIC_EILVT_MSG_FIX, 1);
++}
++
++#else
++
++static inline void init_ibs_nmi(void) { }
++static inline void apic_init_ibs(void) { }
++static inline void apic_clear_ibs(void) { }
++
++#endif
++
+ static u64 amd_pmu_event_map(int hw_event)
+ {
+ 	return amd_perfmon_event_map[hw_event];
+@@ -343,6 +424,8 @@ static void amd_pmu_cpu_starting(int cpu)
+ 	cpuc->amd_nb->refcnt++;
+ 
+ 	raw_spin_unlock(&amd_nb_lock);
++
++	apic_init_ibs();
+ }
+ 
+ static void amd_pmu_cpu_dead(int cpu)
+@@ -366,6 +449,8 @@ static void amd_pmu_cpu_dead(int cpu)
  	}
  
- 	/*
+ 	raw_spin_unlock(&amd_nb_lock);
++
++	apic_clear_ibs();
+ }
+ 
+ static __initconst const struct x86_pmu amd_pmu = {
+-- 
+1.7.0.3
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
+
