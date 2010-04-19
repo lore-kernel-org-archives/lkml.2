@@ -1,33 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953Ab0DSPvg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 11:51:36 -0400
-Received: from exhub016-4.exch016.msoutlookonline.net ([207.5.72.225]:18530
-	"EHLO EXHUB016-4.exch016.msoutlookonline.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753027Ab0DSPvf (ORCPT
+	id S1754129Ab0DSPwR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 11:52:17 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:47578 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729Ab0DSPwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 11:51:35 -0400
-Message-ID: <4BCC7C05.8000803@cfl.rr.com>
-Date: Mon, 19 Apr 2010 11:51:33 -0400
-From: Phillip Susi <psusi@cfl.rr.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Mon, 19 Apr 2010 11:52:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=WWZlbar8vhK9PBCgGU9dWCktjxDSD7U9h/NIRqMeaFk/EB1fGdW0NISfEVimu6/pR+
+         /bx5pVdOBJcxmXY25yYgKhZPPJ46nDddmshZ5l9DtXF8FZX6WlrfAn/wlGrCFrrRY9Cd
+         kZSvlwIbOLycHfbu33a2PNFJneFPZbR8gQG48=
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: readahead on directories
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <s2l7f9d1ffb1004190836l9ba703c5lab13638d968a5c55@mail.gmail.com>
+References: <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com>
+	 <20100406163211.GA29117@nokia.com> <4BBB6767.7010202@ti.com>
+	 <20100406165720.GA17916@nokia.com>
+	 <00b401cad5e0$1d1868d0$544ff780@am.dhcp.ti.com>
+	 <4BBBC628.9030207@ti.com>
+	 <00c901cad5e7$9de54350$544ff780@am.dhcp.ti.com>
+	 <4BBBD87C.1040307@ti.com>
+	 <003601cad73c$98c3aa50$544ff780@am.dhcp.ti.com>
+	 <s2l7f9d1ffb1004190836l9ba703c5lab13638d968a5c55@mail.gmail.com>
+Date: Mon, 19 Apr 2010 21:21:53 +0530
+Message-ID: <h2h7f9d1ffb1004190851gf08897awf198d3c8e5f9dbce@mail.gmail.com>
+Subject: [PATCH v4] OMAP: Fix for bus width which improves SD card's 
+	peformance.
+From: kishore kadiyala <kishorek.kadiyala@gmail.com>
+To: Madhusudhan <madhu.cr@ti.com>
+Cc: Nishanth Menon <nm@ti.com>, felipe.balbi@nokia.com, me@felipebalbi.com,
+       Vimal Singh <vimal.newwork@gmail.com>, tony@atomide.com,
+       "S, Venkatraman" <svenkatr@ti.com>, linux-omap@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Lavinen Jarkko (Nokia-D/Helsinki)" <jarkko.lavinen@nokia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have been trying to improve boot times with ureadahead and have
-identified a period of time of almost zero IO throughput caused by calls
-to open() blocking during name lookup while fetching directory blocks.
-At first I thought this could simply be fixed by calling readahead() on
-the directories first before open()ing all of the normal files for
-readahead.
+The previous patch was Line wrapped , resending
+correct patch.
+NM, Sorry I miss spelled your name correcting this time.
 
-Unfortunately it seems that readahead() fails when called on a
-directory.  I was wondering if I could get some help understanding why
-this is, and how it could be fixed.
+Regards,
+Kishore
+
+From: Kishore Kadiyala <kishore.kadiyala@ti.com>
+
+This patch improves low speeds for SD cards.
+OMAP-MMC controller's can support maximum bus width of '8'.
+when bus width is mentioned as "8" in controller data,the SD
+stack will check whether bus width is "4" and if not it will
+set bus width to "1" and there by degrading performance.
+This patch fixes the issue and improves the performance of
+SD cards.
+
+Signed-off-by: Kishore Kadiyala <kishore.kadiyala@ti.com>
+Signed-off-by: Venkatraman S <svenkatr@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Madhusudhan Chikkature <madhu.cr@ti.com>
+Tested-by: Jarkko Nikula <jhnikula@gmail.com>
+---
+In V4 : Updated with Nishant's comments and appened his Signed-off
+In V3 : Updated  with Madhu's comments  and appended Tested by Nikula
+In V2 : Appended Signed-off by Venkat and Ack by Madhu
+
+ Here are my experiment numbers, on a Class 6 SDHC card:
+ Read peformance is increased by 220%
+ Write Performance is increased by 52%
+
+ drivers/mmc/host/omap_hsmmc.c |   19 ++++++++++++++++---
+ 1 files changed, 16 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 8c97c22..9c1a60e 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -2091,10 +2091,23 @@ static int __init omap_hsmmc_probe(struct
+	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
+ 		     MMC_CAP_WAIT_WHILE_BUSY;
+
+-	if (mmc_slot(host).wires >= 8)
+-		mmc->caps |= (MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA);
+-	else if (mmc_slot(host).wires >= 4)
++	switch (mmc_slot(host).wires) {
++	case 8:
++		mmc->caps |= MMC_CAP_8_BIT_DATA;
++		/* Fall through */
++	case 4:
+ 		mmc->caps |= MMC_CAP_4_BIT_DATA;
++		break;
++	case 1:
++		/* Nothing to crib here */
++	case 0:
++		/* Assuming nothing was given by board, Core use's 1-Bit */
++		 break;
++	default:
++		/* Completely unexpected.. Core goes with 1-Bit Width */
++		dev_crit(mmc_dev(host->mmc), "Invalid width %d\n used!"
++			"using 1 instead\n", mmc_slot(host).wires);
++	}
+
+ 	if (mmc_slot(host).nonremovable)
+ 		mmc->caps |= MMC_CAP_NONREMOVABLE;
+-- 
+1.6.3.3
