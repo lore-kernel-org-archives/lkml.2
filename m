@@ -1,202 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab0DSVmI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:42:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:59473 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab0DSVmD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:42:03 -0400
-X-Authority-Analysis: v=1.1 cv=E9k1WvbCwWjFc1mtZtTZCb4xMnZJ3NelAETgZ6iwC6Q= c=1 sm=0 a=P4QjFWemaDkA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=VnNF1IyMAAAA:8 a=D19gQVrFAAAA:8 a=07d9gI8wAAAA:8 a=qbnYl8dfu2m4EraZRq4A:9 a=VXVYe3l_moduxMF85s4A:7 a=UpmnIRnwTup1vU4xaEMddX5vwgoA:4 a=CjuIK1q_8ugA:10 a=8xHVFx9fsZr6vWhT:21 a=N2lhdLdC4dWYLo_w:21 a=Nqdp4+S2FArj7gZzHVn+tA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.120.198.24
-Date: Mon, 19 Apr 2010 16:39:53 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: "Serge E. Hallyn" <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
-       linux-security-module@vger.kernel.org,
-       Eric Biederman <ebiederm@xmission.com>,
-       "Andrew G. Morgan" <morgan@kernel.org>
-Subject: Re: [PATCH 0/3] Taming execve, setuid, and LSMs
-Message-ID: <20100419213952.GA28494@hallyn.com>
-References: <cover.1269610458.git.luto@mit.edu>
- <20100419172639.GA15800@us.ibm.com>
- <n2ycb0375e11004191432g855540c0jab7989d75b32200d@mail.gmail.com>
-MIME-Version: 1.0
+	id S1751740Ab0DSVo7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:44:59 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:56498 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751185Ab0DSVo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 17:44:58 -0400
+Date: Mon, 19 Apr 2010 23:44:12 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
+       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>
+Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone pressure
+Message-ID: <20100419214412.GB5336@cmpxchg.org>
+References: <20100322235053.GD9590@csn.ul.ie> <4BA940E7.2030308@redhat.com> <20100324145028.GD2024@csn.ul.ie> <4BCC4B0C.8000602@linux.vnet.ibm.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <n2ycb0375e11004191432g855540c0jab7989d75b32200d@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BCC4B0C.8000602@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andrew Lutomirski (luto@mit.edu):
-> On Mon, Apr 19, 2010 at 1:26 PM, Serge E. Hallyn <serue@us.ibm.com> wrote:
-> > Quoting Andy Lutomirski (luto@MIT.EDU):
-> >> Every now and then, someone wants to let unprivileged programs change
-> >> something about their execution environment (think unsharing namespaces,
-> >> changing capabilities, disabling networking, chrooting, mounting and
-> >> unmounting filesystems). ?Whether or not any of these abilities are good
-> >> ideas, there's a recurring problem that gets most of these patches shot
-> >> down: setuid executables.
-> >>
-> >> The obvious solution is to allow a process to opt out of setuid
-> >> semantics and require processes to do this before using these shiny new
-> >> features. [1] [2]
-> >>
-> >> But there's a problem with this, too: with LSMs running, execve can do
-> >> pretty much anything, and even unprivileged users running unprivileged
-> >> programs can have crazy security implications. ?(Take a look at a
-> >> default install of Fedora. ?If you can understand the security
-> >> implications of disabling setuid, you get a cookie. ?If you can figure
-> >> out which programs will result in a change of security label when
-> >> exec'd, you get another cookie.)
-> >>
-> >> So here's another solution, based on the idea that in a sane world,
-> >> execve should be a lot less magical than it is. ?Any unprivileged
-> >> program can open an executable, parse its headers, map it, and run it,
-> >> although getting all the details right is tedious at best (and there's
-> >> no good way to get all of the threading semantics right from userspace).
-> >>
-> >> Patch 1 adds a new syscall execve_nosecurity. ?It does an exec, but
-> >> without changing any security properties. ?This means no setuid, no
-> >> setgid, no LSM credential hooks (e.g. no SELinux type transitions), and
-> >> no ptrace restrictions. ?(You have to have read access to the program,
-> >> because disabling security stuff could allow someone to ptrace a program
-> >> that they couldn't otherwise ptrace.) ?This shouldn't be particularly
-> >> scary -- any process could do much the same thing with open and mmap.
-> >> (You can easily shoot yourself in the foot with this syscall -- think
-> >> LD_PRELOAD or running some program with insufficient error checking that
-> >> can get subverted when run in the wrong security context. ?So don't do
-> >> that.)
-> >>
-> >> Patch 2 adds a prctl that irrevocably disables execve. ?Making execve do
-> >> something different that could confuse LSMs is dangerous. ?Turning the
-> >> whole thing off shouldn't be. ?(Of course, with execve disabled, you can
-> >> still use execve_nosecurity. ?But any program that does that should take
-> >> precautions not to shoot itself in the foot.) ?(In a future revision,
-> >> this should probably be a new syscall.)
-> >>
-> >> Sadly, programs that have opted out of execve might want to use
-> >> subprocesses that in turn run execve. ?This will fail. ?So patch 3
-> >> (which is ugly, but I don't see anything fundamentally wrong with it)
-> >> allows processes to set a flag that turns execve into execve_nosecurity.
-> >> This flag survives exec. ?Of course, this could be used to subvert
-> >> setuid programs, so you can't set this flag unless you disable ordinary
-> >> exec first.
-> >>
-> >> [1] Unprivileged: http://lkml.org/lkml/2009/12/30/265
-> >> [2] securebit approach: http://lwn.net/Articles/368600/
-> >
-> > No responses for a month after this was sent. ?Really, thanks, I do
-> > appreciate the work at another approach.
-> >
-> > I'll be honest, I prefer option [1]. ?Though I think it's reasonable
-> > to require privilege for prctl(PR_SET_NOSUID). ?Make it a separate
-> > capability, and on most systems it should be safe to have a file
-> > sitting in /bin with cap_set_nosuid+pe. ?If OTOH you know you have
-> > legacy or poorly coded privileged programs which would not be safe
-> > bc they don't verify that they have the needed privs, you just don't
-> > provide the program to do prctl(PR_SET_NOSUID) for unprivileged users.
+On Mon, Apr 19, 2010 at 02:22:36PM +0200, Christian Ehrhardt wrote:
+> So now coming to the probably most critical part - the evict once discussion in this thread.
+> I'll try to explain what I found in the meanwhile - let me know whats unclear and I'll add data etc.
 > 
-> Both approaches result in two kinds of exec: the normal kind that
-> respects setuid, file capabilities, and LSMs, and the restricted kind
-> that is supposed to be safe when programs have unshared namespaces and
-> other crazy things.
+> In the past we identified that "echo 3 > /proc/sys/vm/drop_caches" helps to improve the accuracy of the used testcase by lowering the noise from 5-8% to <1%.
+> Therefore I ran all tests and verifications with that drops.
+> In the meanwhile I unfortunately discovered that Mel's fix only helps for the cases when the caches are dropped.
+> Without it seems to be bad all the time. So don't cast the patch away due to that discovery :-)
 > 
-> Eric's approach [1] adds a restricted kind of exec that ignores setuid
-> but still (AFAICT) respects file capabilities 
-
-No, please see the rest of that thread - that was an oversight.
-
-> and LSM  transitions.  I
-> think this is a terrible idea for two reasons:
->   1. LSM transitions already scare me enough, and if anyone relies on
-> them working in concert with setuid, then the mere act of separating
-> them might break things, even if the "privileged" (by LSM) app in
-> question is well-written.
-
-hmm...
-
-A good point.
-
->   2. File capabilities are just as dangerous as setuid, and I wouldn't
-> even know how to write a program that's safe when it has extra
-> capabilities granted by fE (or fP or whatever it is) and the caller
-> has, say, an unshared fs namespace and the ability to rearrange the
-> namespace arbitrarily.
-
-Absolutely these should not be ignored, and Eric didn't mean to ignore
-them.
-
-> In short, I think that this nosuid exec is both dangerous in and of
-> itself *and* doesn't actually solve the problem it was supposed to
-> solve.
+> On the good side I was also able to analyze a few more things due to that insight - and it might give us new data to debug the root cause.
+> Like Mel I also had identified "56e49d21 vmscan: evict use-once pages first" to be related in the past. But without the watermark wait fix, unapplying it 56e49d21 didn't change much for my case so I left this analysis path.
 > 
-> I also don't like relying on the admin to decide that it's safe to
-> allow PR_SET_NOSUID (or whatever you call it) and having to install a
-> special privileged program to enable it.  If sandbox-like features
-> require explicit action by root, then they won't be as widely used as
-> they should be.  And how many admins will have any clue whether
-> enabling this feature is safe?
-
-I do not agree with deciding the admins are not competent to admin
-their system and therefore we should bypass them and let users decide.
-
-But it's moot, as I think you've convinced me with your point 1. above
-to take another look at your patches.
-
-> My approach introduces what I think is a much more obviously safe
-> restricted exec, and I think it's so safe that no privilege or special
-> configuration should be required to use it.
+> But now after I found dropping caches is the key to "get back good performance" and "subsequent writes for bad performance" even with watermark wait applied I checked what else changes:
+> - first write/read load after reboot or dropping caches -> read TP good
+> - second write/read load after reboot or dropping caches -> read TP bad
+> => so what changed.
 > 
-> As for what to call it (execve_nosecurity or PR_SET_NOSUID) or whether
-> to have a special syscall so that programs that aren't restricted can
-> use the restricted exec, I don't care all that much.  I just think
-> that the separate syscall might be useful in its own right and
-> required almost no additional code, so I added it.
+> I went through all kind of logs and found something in the system activity report which very probably is related to 56e49d21.
+> When issuing subsequent writes after I dropped caches to get a clean start I get this in Buffers/Caches from Meminfo:
 > 
+> pre write 1
+> Buffers:             484 kB
+> Cached:             5664 kB
+> pre write 2
+> Buffers:           33500 kB
+> Cached:           149856 kB
+> pre write 3
+> Buffers:           65564 kB
+> Cached:           115888 kB
+> pre write 4
+> Buffers:           85556 kB
+> Cached:            97184 kB
 > 
-> >
-> > ( I did like using new securebits as in [2], but I prefer the
-> > automatic not-raising-privs of [1] to simply -EPERM on uid/gid
-> > change and lack kof checking for privs raising of [2]. )
-> >
-> > Really the trick will be finding a balance to satisfy those wanting
-> > this as a separate LSM, without traipsing into LSM stacking territory.
-> 
-> I think that making this an LSM is absurd.  Containers (and anything
-> else people want to do with namespaces or with other new features that
-> interact badly with setuid) are features that people should be able to
+> It stays at ~85M with more writes which is approx 50% of my free 160M memory.
 
-Yes, but that's a reason to aim for targeted caps.  Exec_nopriv or
-whatever is more a sandbox than a namespace feature.
+Ok, so I am the idiot that got quoted on 'the active set is not too big, so
+buffer heads are not a problem when avoiding to scan it' in eternal history.
 
-> use easily, and system's choice of LSM shouldn't have anything to do
-> with them.  Not to mention that we're trying to *add* rights (e.g.
-> unprivileged unshare), and LSM is about *removing* rights.
-> 
-> >
-> > I myself think this feature fits very nicely with established semantics,
-> > but not everyone agrees, so chances are my view is a bit tainted, and
-> > we should defer to those wanting this to be an LSM.
-> >
-> > Of course, another alternative is to skip this feature altogether and
-> > push toward targeted capabilties. ?The problem is that path amounts
-> > to playing whack-a-mole to catch all the places where privilege might
-> > leak to a parent namespace, whereas [1] simply, cleanly cuts them all
-> > off at the source.
-> 
-> Agreed, that sounds painful.  My secret goal is real
-> userspace-controlled (by unprivileged users, no less) sandboxes, in
-> which case in-kernel target capabilities are probably impossible.
+But the threshold inactive/active ratio for skipping active file pages is
+actually 1:1.
 
-Not sure what you mean by that last part - inside the sandbox, you won't
-get capabilities, targeted or otherwise, but certainly targeted capabilities
-and a sandbox are not mutually exclusive.
+The easiest 'fix' is probably to change that ratio, 2:1 (or even 3:1?) appears
+to be a bit more natural anyway?  Below is a patch that changes it to 2:1.
+Christian, can you check if it fixes your regression?
 
-Thanks for responding, I'll take another look at your patchset in detail.
+Additionally, we can always scan active file pages but only deactivate them
+when the ratio is off and otherwise strip buffers of clean pages.
 
-thanks,
--serge
+What do people think?
+
+	Hannes
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f4ede99..a4aea76 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -898,7 +898,7 @@ int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg)
+ 	inactive = mem_cgroup_get_local_zonestat(memcg, LRU_INACTIVE_FILE);
+ 	active = mem_cgroup_get_local_zonestat(memcg, LRU_ACTIVE_FILE);
+ 
+-	return (active > inactive);
++	return (active > inactive / 2);
+ }
+ 
+ unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 3ff3311..8f1a846 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1466,7 +1466,7 @@ static int inactive_file_is_low_global(struct zone *zone)
+ 	active = zone_page_state(zone, NR_ACTIVE_FILE);
+ 	inactive = zone_page_state(zone, NR_INACTIVE_FILE);
+ 
+-	return (active > inactive);
++	return (active > inactive / 2);
+ }
+ 
+ /**
+
