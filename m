@@ -1,85 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab0DSPWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 11:22:31 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49264 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755067Ab0DSPWa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 11:22:30 -0400
-Subject: Re: [Kgdb-bugreport] [PATCH 4/5] kgdb: Use atomic operators
- whichuse barriers
-From: Will Deacon <will.deacon@arm.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       kgdb-bugreport@lists.sourceforge.net,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       linux-arm@vger.kernel.org
-In-Reply-To: <4BB649E3.5060606@windriver.com>
-References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com>
-	 <1270233145-29335-2-git-send-email-jason.wessel@windriver.com>
-	 <1270233145-29335-3-git-send-email-jason.wessel@windriver.com>
-	 <1270233145-29335-4-git-send-email-jason.wessel@windriver.com>
-	 <1270233145-29335-5-git-send-email-jason.wessel@windriver.com>
-	 <alpine.LFD.2.00.1004021205080.3634@i5.linux-foundation.org>
-	 <4BB64762.6040806@windriver.com>  <4BB649E3.5060606@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Apr 2010 16:21:56 +0100
-Message-ID: <1271690516.17500.2.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Apr 2010 15:22:00.0148 (UTC) FILETIME=[0E6BB140:01CADFD4]
+	id S1755371Ab0DSP3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 11:29:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55113 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751034Ab0DSP3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 11:29:19 -0400
+Date: Mon, 19 Apr 2010 08:28:56 -0700
+From: Greg KH <gregkh@suse.de>
+To: stefani@seibold.net
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       andi@firstfloor.org, alan@lxorguk.ukuu.org.uk, tytso@mit.edu,
+       iws@ovro.caltech.edu
+Subject: Re: [PATCH 2/4] remove the old non generic API
+Message-ID: <20100419152856.GC11553@suse.de>
+References: <1271624718-8256-1-git-send-email-stefani@seibold.net>
+ <1271624718-8256-3-git-send-email-stefani@seibold.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271624718-8256-3-git-send-email-stefani@seibold.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
-
-> Here is the revised patch, which is going into the kgdb-fixes branch.
+On Sun, Apr 18, 2010 at 11:05:16PM +0200, stefani@seibold.net wrote:
+> From: Stefani Seibold <stefani@seibold.net>
 > 
-> Thanks,
-> Jason.
-> 
-> --
-> From: Jason Wessel <jason.wessel@windriver.com>
-> Subject: [PATCH] kgdb: Use atomic operators which use barriers
-> 
-> The cpu_relax() does not mandate that there is an smp memory barrier.
-> As a result on the arm smp architecture the kernel debugger can hang
-> on entry from time to time, as shown by the kgdb regression tests.
-> 
-> The solution is simply to use the atomic operators which include a
-> proper smp memory barrier, instead of using atomic_set().
-> 
-> Tested-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-> ---
->  kernel/kgdb.c |   15 +++++++--------
->  1 file changed, 7 insertions(+), 8 deletions(-)
-> 
-> --- a/kernel/kgdb.c
-> +++ b/kernel/kgdb.c
-> @@ -1379,8 +1379,7 @@ acquirelock:
->  	 * Make sure the above info reaches the primary CPU before
->  	 * our cpu_in_kgdb[] flag setting does:
->  	 */
-> -	smp_wmb();
-> -	atomic_set(&cpu_in_kgdb[cpu], 1);
-> +	atomic_inc(&cpu_in_kgdb[cpu]);
+> This patch simple remove the whole kfifo.c and kfifo.h files. The next
+> patch will replace it with the new generic kfifo API.
 
-As Dmitry pointed out here:
+But you just broke the kernel build at this point in the patch sequence,
+which is not allowed :(
 
-http://lkml.org/lkml/2010/4/8/214
+thanks,
 
-This bit of code looks broken, especially since the comment has been left
-alone by the patch. I think commit ae6bf53e should be reverted because
-semantically all it does is remove the smp_wmb() above.
-
-Please let me know what you think,
-
-Will
-
-
-
+greg k-h
