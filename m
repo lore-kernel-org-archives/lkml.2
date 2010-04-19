@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab0DSJAK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 05:00:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39640 "EHLO mx1.redhat.com"
+	id S1753533Ab0DSJA7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 05:00:59 -0400
+Received: from mail.atmel.fr ([81.80.104.162]:63696 "EHLO atmel-es2.atmel.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838Ab0DSJAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 05:00:08 -0400
-Message-ID: <4BCC1B82.5050000@redhat.com>
-Date: Mon, 19 Apr 2010 11:59:46 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       zhiteng.huang@intel.com, tim.c.chen@intel.com,
-       Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH V5 1/3] perf & kvm: Enhance perf to collect KVM guest
- os statistics from host side
-References: <1271655161.2078.603.camel@ymzhang.sh.intel.com>	 <4BCC1665.1080003@redhat.com> <1271667323.2078.611.camel@ymzhang.sh.intel.com>
-In-Reply-To: <1271667323.2078.611.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752997Ab0DSJA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 05:00:58 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: haavard.skinnemoen@atmel.com, linux-arm-kernel@lists.infradead.org,
+       akpm@linux-foundation.org, linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, kernel@avr32linux.org,
+       Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] MMC: atmel-mci: enable SD high speed support
+Date: Mon, 19 Apr 2010 12:12:32 +0200
+Message-Id: <1271671952-29204-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 11:55 AM, Zhang, Yanmin wrote:
-> On Mon, 2010-04-19 at 11:37 +0300, Avi Kivity wrote:
->    
->> On 04/19/2010 08:32 AM, Zhang, Yanmin wrote:
->>      
->>> Below patch introduces perf_guest_info_callbacks and related register/unregister
->>> functions. Add more PERF_RECORD_MISC_XXX bits meaning guest kernel and guest user
->>> space.
->>>
->>>        
->> This doesn't apply against upstream.
->>      
-> What does upstream mean here? The vanilla 2.6.34-rc4?
->    
+Enable high speed support for atmel-mci driver. This support is dependent of
+the revision of the IP and, of course, the capacity of the SD card used.
 
-Yes, sorry for being unclear.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/mmc/host/atmel-mci.c |   22 +++++++++++++++++++---
+ 1 files changed, 19 insertions(+), 3 deletions(-)
 
->>    What branch was this generated
->> against?
->>
->>      
-> It's against the latest tip/master. I checked out to 19b26586090 as the latest
-> tip/master has some updates on perf.
->    
-
-I don't want to merge tip/master... does tip/perf/core contain the 
-needed updates?
-
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index 88be37d..4338750 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -951,10 +951,21 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 		if (mci_has_rwproof())
+ 			host->mode_reg |= (MCI_MR_WRPROOF | MCI_MR_RDPROOF);
+ 
+-		if (list_empty(&host->queue))
++		if (atmci_is_mci2()) {
++			/* setup High Speed mode in relation with card capacity */
++			if (ios->timing == MMC_TIMING_SD_HS)
++				host->cfg_reg |= MCI_CFG_HSMODE;
++			else
++				host->cfg_reg &= ~MCI_CFG_HSMODE;
++		}
++
++		if (list_empty(&host->queue)) {
+ 			mci_writel(host, MR, host->mode_reg);
+-		else
++			if (atmci_is_mci2())
++				mci_writel(host, CFG, host->cfg_reg);
++		} else {
+ 			host->need_clock_update = true;
++		}
+ 
+ 		spin_unlock_bh(&host->lock);
+ 	} else {
+@@ -1051,8 +1062,11 @@ static void atmci_request_end(struct atmel_mci *host, struct mmc_request *mrq)
+ 	 * necessary if set_ios() is called when a different slot is
+ 	 * busy transfering data.
+ 	 */
+-	if (host->need_clock_update)
++	if (host->need_clock_update) {
+ 		mci_writel(host, MR, host->mode_reg);
++		if (atmci_is_mci2())
++			mci_writel(host, CFG, host->cfg_reg);
++	}
+ 
+ 	host->cur_slot->mrq = NULL;
+ 	host->mrq = NULL;
+@@ -1563,6 +1577,8 @@ static int __init atmci_init_slot(struct atmel_mci *host,
+ 	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 512);
+ 	mmc->f_max = host->bus_hz / 2;
+ 	mmc->ocr_avail	= MMC_VDD_32_33 | MMC_VDD_33_34;
++	if (atmci_is_mci2())
++		mmc->caps |= MMC_CAP_SD_HIGHSPEED;
+ 	if (slot_data->bus_width >= 4)
+ 		mmc->caps |= MMC_CAP_4_BIT_DATA;
+ 
 -- 
-error compiling committee.c: too many arguments to function
+1.5.6.5
 
