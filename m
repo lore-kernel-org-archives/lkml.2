@@ -1,132 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab0DSINS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 04:13:18 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:65259 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab0DSINR (ORCPT
+	id S1752838Ab0DSIOW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 04:14:22 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:48861 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab0DSIOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 04:13:17 -0400
-Date: Mon, 19 Apr 2010 17:07:01 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC][BUGFIX][PATCH 2/2] memcg: fix file mapped underflow at
- migration (v3)
-Message-Id: <20100419170701.3864992e.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100419131817.f263d93c.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
-	<20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100415120652.c577846f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100416193143.5807d114.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100419124225.91f3110b.nishimura@mxp.nes.nec.co.jp>
-	<20100419131817.f263d93c.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Apr 2010 04:14:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=qt1bRUN1I5Je/zPf+JuE+4xKJ5n51AQYZ8EvBrgCeNX33zeGZ7Vx2TmMwHpdEV1h6q
+         j4Iv+N5B1Jr84NkmxQSq5xLV8T79ncFw56maN3N/E26r3wt5ZXPL4gSmElezmoDtjhs/
+         kZ7rwQqOrRpWEkPplPjjToyXG+SvtPkPjIUpw=
+MIME-Version: 1.0
+In-Reply-To: <4BCB373F.4070400@gmail.com>
+References: <4BC9DB9A.9090605@gmail.com> <4BCAE9BC.3090609@gmail.com>
+	 <4BCB373F.4070400@gmail.com>
+Date: Mon, 19 Apr 2010 11:14:16 +0300
+Message-ID: <m2s5e9821061004190114k63b8c00cu969cf1d1a0113196@mail.gmail.com>
+Subject: Re: Network activity after route changes
+From: Oleg Kutkov <elenbert@gmail.com>
+To: Matt <tank.en.mate@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for explaining in detail.
+Thank, but this does not help me. Maybe it really my bug.
 
-On Mon, 19 Apr 2010 13:18:17 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Mon, 19 Apr 2010 12:42:25 +0900
-> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> 
-> > Hmm, before going further, will you explain why we need a new PCG_MIGRATION flag ?
-> > What's the problem of v2 ?
-> > 
-> 
-> v2 can't handle migration-failure case of freed swapcache and the used page
-> was swapped-out case. I think.
-> 
-> All "page" in following is ANON.
-> 
-> 
->      mem_cgroup_prepare_migration()
-> 	     charge against new page.
->      
->      try_to_unmap()
->         -> mapcount goes down to 0.
->              -> an old page is unchaged
->      
-But old page isn't uncharged iff PageSwapCache, is it ?
-
->      move_to_new_page()
->         -> may fail. (in some case.)   ----(*1)
-> 
->      remap the old page to pte.
-> 
->      mem_cgroup_end_migration()
-> 		(at success *1)
-> 		check charge for newpage is valid or not (*2)
-> 
-> 		(at fail *1)
-> 		uncharge new page.
-> 		What we should do for an old page. ---(*3)
-> 
-> At (*2). (*3), there are several cases.
-> 
-> (*2) migration was succeeded.
->     1. The new page was successfully remapped.
-> 	-> Nothing to do.
->     2. The new page was remapped but finally unmapped before (*3)
-> 	-> page_remove_rmap() will catch the event.
->     3. The new page was not remapped.
-> 	-> page_remove_rmap() can't catch the event. end_migraion() has to
-> 	uncharge it.
-> 
-> (*3) migration was failed.
->     1. The old page was successfully remapped.
-> 	-> We have to recharge against the old page. (But it may hit OOM.)
->     2. The old page wasn't remapped.
->         -> mapcount is 0. No new charge will happen.
->     3. The old page wasn't remapped but SwapCache.
->         -> mapcount is 0. We have to recharge against the old page (But it may hit OOM)
-> 
-hmm, we've done try_charge at this point, so why can we cause oom here ?
-
-> Maybe other seqence I couldn't write will exist......IMHO, "we have to recharge it because
-> it's uncharged.." is bad idea. It seems hard to maintainace..
-> 
-> 
-> When we use MIGRATION flag.
-> After migaration.
-> 
->     1. Agaisnt new page, we remove MIGRATION flag and try to uncharge() it again.
-> 
->     2. Agaisnt old page, we remove MIGRATION flag and try to uncharge it again.
-> 
-> NOTE:  I noticed my v3 patch is buggy when the page-is-swapped-out case. It seems
->        mem_cgroup_uncharge_swapcache() has to wait for migration ends or some
->        other case handling. (Anyway, this race exists only after unlock_page(newpage).
->        So, wait for MIGRATION ends in spin will not be very bad.)
-> 
-> 
-> To me, things are much simpler than now, we have to know what kind of magics behind us...
-> 
-> Maybe I can think of other tricks for handling them...but using a FLAG and prevent uncharge
-> is the simplest, I think.
-> 
-Anyway, I agree that current implementation is complicated and there might be
-some cases we are missing. MIGRATION flag can make it simpler.
-
-I have one concern for now. Reading the patch, the flag have influence on
-only anonymous pages, so we'd better to note it and I feel it strange to
-set(and clear) the flag of "old page" always(iow, even when !PageAnon)
-in prepare_migration.
-
-
-Thanks,
-Daisuke Nishimura.
+2010/4/18 Matt <tank.en.mate@gmail.com>:
+> On 18/04/10 12:15, Oleg Kutkov wrote:
+>>
+>> Hello.
+>> I try to send and receive ethernet packets on very low level in my kernel
+>> module.
+>> When i change (add or delete entry) routin table (via route command) my
+>> network is freeze for ~15 seconds and my application can't send and receive
+>> any packets.
+>> Is it normal or bug somewhere in my application?
+>> Can i change this behavior of route system? Maybe change some timeouts, or
+>> immediately flush route (rt_flush() ?) table?
+>
+> Depending on your routing configuration the change may be causing the
+> problem. Have you tried flushing the route cache (as opposed to the main
+> routing table)?
+>
+> # ip route flush table cache
+>
+> matt
+>
