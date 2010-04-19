@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab0DSLkU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 07:40:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42776 "EHLO mx1.redhat.com"
+	id S1752677Ab0DSLnV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 07:43:21 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:50540 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753131Ab0DSLkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 07:40:14 -0400
-Message-ID: <4BCC4111.4030405@redhat.com>
-Date: Mon, 19 Apr 2010 14:40:01 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
+	id S1751066Ab0DSLnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 07:43:20 -0400
+Date: Mon, 19 Apr 2010 12:43:00 +0100
+From: Mel Gorman <mel@csn.ul.ie>
 To: Peter Zijlstra <peterz@infradead.org>
-CC: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>	 <1271356648-5108-2-git-send-email-glommer@redhat.com>	 <4BCA026D.3070309@redhat.com>  <4BCA02D1.2020608@redhat.com>	 <1271673836.1674.757.camel@laptop>  <4BCC34DF.6030702@redhat.com>	 <1271674575.1674.793.camel@laptop>  <4BCC3AC2.8050601@redhat.com> <1271675983.1674.853.camel@laptop>
-In-Reply-To: <1271675983.1674.853.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Cc: r6144 <rainy6144@gmail.com>, linux-kernel@vger.kernel.org,
+       Darren Hart <dvhltc@us.ibm.com>, tglx <tglx@linutronix.de>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>
+Subject: Re: Process-shared futexes on hugepages puts the kernel in an
+	infinite loop in 2.6.32.11; is this fixed now?
+Message-ID: <20100419114300.GT19264@csn.ul.ie>
+References: <1271432722.2564.16.camel@localhost.localdomain> <1271449668.1674.466.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1271449668.1674.466.camel@laptop>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 02:19 PM, Peter Zijlstra wrote:
->
->> Still have two cmpxchgs in the common case.  The first iteration will
->> fail, fetching last_value, the second will work.
->>
->> It will be better when we have contention, though, so it's worthwhile.
->>      
-> Right, another option is to put the initial read outside of the loop,
-> that way you'll have the best of all cases, a single LOCK'ed op in the
-> loop, and only a single LOCK'ed op for the fast path on sensible
-> architectures ;-)
->
->      last = atomic64_read(&last_value);
->      do {
->        if (ret<  last)
->          return last;
->        last = atomic64_cmpxchg(&last_value, last, ret);
->      } while (unlikely(last != ret));
->
-> Or so.
->
->    
+On Fri, Apr 16, 2010 at 10:27:48PM +0200, Peter Zijlstra wrote:
+> On Fri, 2010-04-16 at 23:45 +0800, r6144 wrote:
+> > Hello all,
+> > 
+> > I'm having an annoying kernel bug regarding huge pages in Fedora 12:
+> > 
+> > https://bugzilla.redhat.com/show_bug.cgi?id=552257
+> > 
+> > Basically I want to use huge pages in a multithreaded number crunching
+> > program, which happens to use process-shared semaphores (because fftw
+> > does it).  The futex for the semaphore ends up lying on a huge page, and
+> > I then get an endless loop in get_futex_key(), apparently because the
+> > anonymous huge page containing the futex does not have a page->mapping.
+> > A test case is provided in the above link.
+> > 
+> > I reported the bug to Fedora bugzilla months ago, but haven't received
+> > any feedback yet. 
+> 
+> No, it works much better if you simply mail LKML and CC people who work
+> on the code in question ;-)
+> 
+> >  The Fedora kernel is based on 2.6.32.11, and a
+> > cursory glance at the 2.6.34-rc3 source does not yield any relevant
+> > change.
+> > 
+> > So, could anyone tell me if the current mainline kernel might act better
+> > in this respect, before I get around to compiling it?
+> 
+> Right, so I had a quick chat with Mel, and it appears MAP_PRIVATE
+> hugetlb pages don't have their page->mapping set.
+> 
+> I guess something like the below might work, but I'd really rather not
+> add hugetlb knowledge to futex.c. Does anybody else have a better idea?
+> Maybe create something similar to an anon_vma for hugetlb pages?
+> 
 
-Yes, looks optimal when !NONSTOP_TSC.
+anon_vma for hugetlb pages sounds overkill, what would it gain? In this
+context, futex only appears to distinguish between whether the
+references are private or shared.
 
--- 
-error compiling committee.c: too many arguments to function
+Looking at the hugetlbfs code, I can't see a place where it actually cares
+about the mapping as such. It's used to find shared pages in the page cache
+(but not in the LRU) that are backed by the hugetlbfs file. For hugetlbfs
+though, the mapping is mostly kept in page->private for reservation accounting
+purposes.
 
+I can't think of other parts of the VM that touch the mapping if the
+page is managed by hugetlbfs so the following patch should also work but
+without futex having hugetlbfs-awareness. What do you think? Maybe for
+safety, it would be better to make the mapping some obvious poison bytes
+or'd with PAGE_MAPPING_ANON so an oops will be more obvious?
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 6034dc9..57a5faa 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -546,6 +546,7 @@ static void free_huge_page(struct page *page)
+ 
+ 	mapping = (struct address_space *) page_private(page);
+ 	set_page_private(page, 0);
++	page->mapping = NULL;
+ 	BUG_ON(page_count(page));
+ 	INIT_LIST_HEAD(&page->lru);
+ 
+@@ -2447,8 +2448,10 @@ retry:
+ 			spin_lock(&inode->i_lock);
+ 			inode->i_blocks += blocks_per_huge_page(h);
+ 			spin_unlock(&inode->i_lock);
+-		} else
++		} else {
+ 			lock_page(page);
++			page->mapping = (struct address_space *)PAGE_MAPPING_ANON;
++		}
+ 	}
+ 
+ 	/*
