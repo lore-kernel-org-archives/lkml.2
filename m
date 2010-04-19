@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153Ab0DSJJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 05:09:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52018 "EHLO mx1.redhat.com"
+	id S1753828Ab0DSJKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 05:10:06 -0400
+Received: from mx3.sophos.com ([74.202.89.160]:60947 "EHLO mx3.sophos.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752029Ab0DSJJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 05:09:35 -0400
-Message-ID: <4BCC1DBC.3000700@redhat.com>
-Date: Mon, 19 Apr 2010 12:09:16 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1753582Ab0DSJKE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 05:10:04 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with ondemand during disk IO
+Date: Mon, 19 Apr 2010 10:09:55 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-desktop; KDE/4.3.5; x86_64; ; )
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       "davej@redhat.com" <davej@redhat.com>,
+       "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
+References: <20100418115949.7b743898@infradead.org> <20100418120346.1b478410@infradead.org>
+In-Reply-To: <20100418120346.1b478410@infradead.org>
 MIME-Version: 1.0
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       zhiteng.huang@intel.com, tim.c.chen@intel.com,
-       Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH V5 1/3] perf & kvm: Enhance perf to collect KVM guest
- os statistics from host side
-References: <1271655161.2078.603.camel@ymzhang.sh.intel.com>	 <4BCC1665.1080003@redhat.com> <1271667323.2078.611.camel@ymzhang.sh.intel.com> <4BCC1B82.5050000@redhat.com>
-In-Reply-To: <4BCC1B82.5050000@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <201004191009.56859.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 19/04/2010 10:09:56,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 19/04/2010 10:09:57,
+	Serialize complete at 19/04/2010 10:09:57
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 11:59 AM, Avi Kivity wrote:
+On Sunday 18 Apr 2010 20:03:46 Arjan van de Ven wrote:
+> The ondemand cpufreq governor uses CPU busy time (e.g. not-idle time) as
+> a measure for scaling the CPU frequency up or down.
+> If the CPU is busy, the CPU frequency scales up, if it's idle, the CPU
+> frequency scales down. Effectively, it uses the CPU busy time as proxy
+> variable for the more nebulous "how critical is performance right now"
+> question.
 >
->>>    What branch was this generated
->>> against?
->>>
->> It's against the latest tip/master. I checked out to 19b26586090 as 
->> the latest
->> tip/master has some updates on perf.
+> This algorithm falls flat on its face in the light of workloads where
+> you're alternatingly disk and CPU bound, such as the ever popular
+> "git grep", but also things like startup of programs and maildir using
+> email clients... much to the chagarin of Andrew Morton.
 >
-> I don't want to merge tip/master... does tip/perf/core contain the 
-> needed updates?
->
+> This patch changes the ondemand algorithm to count iowait time as busy,
+> not idle, time. As shown in the breakdown cases above, iowait is
+>  performance critical often, and by counting iowait, the proxy variable
+>  becomes a more accurate representation of the "how critical is
+>  performance" question.
 
-Note, given that there won't be changes to NMI handling in kvm, we can 
-go the simpler route of merging all the patches in tip/perf/core.
+Is the improvement really because IO benefited from CPU being held at a higher
+frequency, or perhaps because it is now not scaled down during IO, so when CPU
+intensive part of git grep comes along it is already "revved up"?
 
--- 
-error compiling committee.c: too many arguments to function
+Or in other words, does a pure IO workload benefit from now higher selected
+frequency?
 
+One idea I had but a) never had time to implement it and b) was not sure it
+would be accepted anyway, was to modify ondemand governor to ramp up
+instantly, but slow down slowly (in a configurable way). Or to make it a hybrid
+of conservative and ondemand in a way. (This was all long time ago so perhaps
+today what I wanted to do then is already achievable with some knobs.) It was
+not an idea out of thin air, but based on unpleasant desktop latencies with
+ondemand, while performance governor was of course perfect.
+
+Tvrtko
+
+
+
+
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
