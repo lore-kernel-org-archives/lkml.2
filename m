@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab0DSWaz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 18:30:55 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:55188 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829Ab0DSWay convert rfc822-to-8bit (ORCPT
+	id S1752102Ab0DSWn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 18:43:59 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49948 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751493Ab0DSWn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 18:30:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=K21mk52otzFrxb5fYbl4fYPMTT6L299VbvZOAbGE/hk3QsNML5OMFIHm9Mb66Z7pnl
-         94rI0d3qWXBjvc4NG6xqlcBJOXa6mlTnKySNTmUUop7kIfgZcTudxdKw0myKKhId2yy4
-         LMtnIHjnfv5rFedODDsl5H4zAby4ZLOZpeeFk=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1004160204510.3625@localhost.localdomain>
-References: <1271262016-18650-1-git-send-email-chase.douglas@canonical.com>
-	 <1271262016-18650-3-git-send-email-chase.douglas@canonical.com>
-	 <20100415210357.GG5069@nowhere>
-	 <k2u40ec3ea41004151445je53e7ef2u5c0e48e038e4efca@mail.gmail.com>
-	 <alpine.LFD.2.00.1004160051390.3625@localhost.localdomain>
-	 <p2n40ec3ea41004151627u11ca4d7dw46cbd6b58df9f1c8@mail.gmail.com>
-	 <alpine.LFD.2.00.1004160138200.3625@localhost.localdomain>
-	 <alpine.LFD.2.00.1004160204510.3625@localhost.localdomain>
-Date: Mon, 19 Apr 2010 15:30:53 -0700
-X-Google-Sender-Auth: e957c9c18a9dfd3c
-Message-ID: <q2s40ec3ea41004191530lc743121fm2247dacb4779eca3@mail.gmail.com>
-Subject: Re: [PATCH 3/3] Stop tracing on a schedule bug
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Apr 2010 18:43:58 -0400
+Date: Mon, 19 Apr 2010 15:43:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Tom Lyon" <pugs@cisco.com>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+       joerg.roedel@amd.com, chrisw@sous-sol.org, dwmw2@infradead.org
+Subject: Re: [PATCH v3] drivers/pci/intel-iommu.c: errors with smaller iommu
+ widths
+Message-Id: <20100419154339.e80b6ef3.akpm@linux-foundation.org>
+In-Reply-To: <4bccceb0.P4o49QIX47z1ouTs%pugs@cisco.com>
+References: <4bccceb0.P4o49QIX47z1ouTs%pugs@cisco.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 2) tracing off can be done via filters on functions and/or events
->   already - so I doubt that the tracing_off_event(level) is necessary
->   at all.
+On Mon, 19 Apr 2010 14:44:16 -0700
+"Tom Lyon" <pugs@cisco.com> wrote:
 
-I just found what you were meaning here, since there's no
-documentation yet about the traceon/traceoff filter command. This
-would do exactly what we want for helping us fix bugs.
+> 
+> When using iommu_domain_alloc with the Intel iommu, the domain address width
+> is always initialized to 48 bits (agaw 2). __This domain->agaw value is then
+> used by pfn_to_dma_pte to (always) build a 4 level page table. __However, not
+> all systems support iommu width of 48 or 4 level page tables. __In particular,
+> the Core i5-660 and i5-670 support an address width of 36 bits (not 39!), an
+> agaw of only 1, and only 3 level page tables.
+> 
+> This version of the patch simply lops off extra levels of the page tables if
+> the agaw value of the iommu is less than what is currently allocated for the
+> domain (in intel_iommu_attach_device). If there were already allocated
+> addresses above what the new iommu can handle, EFAULT is returned.
+> 	Signed-off-by: Tom Lyon <pugs@cisco.com>
 
-I'll write some info about the command in ftrace.txt and send a patch
-for review so no one else is left out of the party :).
-
--- Chase
+This smells like a 2.6.34 patch.  Do you agree?
