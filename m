@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab0DSVCy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:02:54 -0400
-Received: from mail-pz0-f196.google.com ([209.85.222.196]:64836 "EHLO
-	mail-pz0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab0DSVCx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:02:53 -0400
-X-Greylist: delayed 885 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Apr 2010 17:02:52 EDT
+	id S1751981Ab0DSVJN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:09:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38361 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156Ab0DSVJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 17:09:11 -0400
+Message-ID: <4BCCC4E1.8040109@zytor.com>
+Date: Mon, 19 Apr 2010 14:02:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Date: Tue, 20 Apr 2010 07:02:52 +1000
-Message-ID: <m2n836a6dcf1004191402gbd659247i215b627acb2b1e0e@mail.gmail.com>
-Subject: Problems with gobi loader - qualcomm 3g card on hp min 5101
-From: Alexander Samad <alex@samad.com.au>
-To: linux-kernel@vger.kernel.org
+To: guenter.roeck@ericsson.com
+CC: linux-kernel@vger.kernel.org, penberg@cs.helsinki.fi, mingo@redhat.com,
+       x86@kernel.org
+Subject: Re: [PATCH][RESEND] x86: Do not write to VGA memory space if CONFIG_VGA_CONSOLE
+ is undefined
+References: <1270046479-4486-1-git-send-email-guenter.roeck@ericsson.com>	 <84144f021003310832i3420e4c1g7396b4d1f311f393@mail.gmail.com>	 <1270491029.1477.453.camel@groeck-laptop>  <4BBA3021.9090504@zytor.com>	 <1270497725.1477.488.camel@groeck-laptop>  <4BBA473D.9040004@zytor.com>	 <1270501481.1477.521.camel@groeck-laptop>  <4BBA51F3.7070808@zytor.com> <1270505579.1477.584.camel@groeck-laptop>
+In-Reply-To: <1270505579.1477.584.camel@groeck-laptop>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi Guenter,
 
-Sorry if this is the 3rd post, I haven't seen it hit the archives and
-i wasn't sure if it actually made it through  - originally sent as
-html (gmail).
+I wanted to check where we are at... at the very least we should drop
+messages issued before initialization when isVGA != 1.
 
-I have a HP Mini with their wwan module (Qualcomm 3g card), it
-attaches via the usb interface. It was working (not sure exactly but
-about 2 months ago) and when I went to use it recently it didnot work
-any more - the gobi loader get stucks uploading firmware to the card
-:(
+Since serial ports require initialization, I really don't want to send
+messages to the serial port before the port has been initialized, but
+obviously it would be good to initialize earlyprintk as early as at all
+possible.
 
-I have had the motherboad and the card replaced.... I have removed the
-udev rule which calls the loader removed and tried it manually. From
-reading on other forums it seems like adding a delay to firmware
-upload can help.
+	-hpa
 
-I have noticed with strace that some of the firmware get uploaded some
-of the time and then it just hangs :(
-
-I am not sure what or how to debug this, so I have come to the list.
-running debian i386 2.6.32-4
-
-Alex
