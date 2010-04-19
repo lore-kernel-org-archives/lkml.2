@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab0DSJKG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 05:10:06 -0400
-Received: from mx3.sophos.com ([74.202.89.160]:60947 "EHLO mx3.sophos.com"
+	id S1752256Ab0DSJUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 05:20:43 -0400
+Received: from pc175e.fzu.cz ([147.231.127.175]:57234 "EHLO postak-1.fzu.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753582Ab0DSJKE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 05:10:04 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with ondemand during disk IO
-Date: Mon, 19 Apr 2010 10:09:55 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-desktop; KDE/4.3.5; x86_64; ; )
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "peterz@infradead.org" <peterz@infradead.org>,
-       "tglx@linutronix.de" <tglx@linutronix.de>,
-       "davej@redhat.com" <davej@redhat.com>,
-       "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
-References: <20100418115949.7b743898@infradead.org> <20100418120346.1b478410@infradead.org>
-In-Reply-To: <20100418120346.1b478410@infradead.org>
+	id S1751526Ab0DSJUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 05:20:40 -0400
+Message-ID: <4BCC203F.4070501@gentoo.org>
+Date: Mon, 19 Apr 2010 11:19:59 +0200
+From: =?UTF-8?B?SmFuIEt1bmRyw6F0?= <jkt@gentoo.org>
+User-Agent: Thunderbird 2.0.0.14 (X11/20080421)
 MIME-Version: 1.0
-Message-ID: <201004191009.56859.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 19/04/2010 10:09:56,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 19/04/2010 10:09:57,
-	Serialize complete at 19/04/2010 10:09:57
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
+To: Arjan van de Ven <arjan@infradead.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: boot device order troubleshooting without an initrd
+References: <4BCB87E2.4090807@gentoo.org> <20100418165125.1d2b2843@infradead.org>
+In-Reply-To: <20100418165125.1d2b2843@infradead.org>
+X-Enigmail-Version: 0.96.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig5A891B12AD6DABECDC1F710C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 18 Apr 2010 20:03:46 Arjan van de Ven wrote:
-> The ondemand cpufreq governor uses CPU busy time (e.g. not-idle time) as
-> a measure for scaling the CPU frequency up or down.
-> If the CPU is busy, the CPU frequency scales up, if it's idle, the CPU
-> frequency scales down. Effectively, it uses the CPU busy time as proxy
-> variable for the more nebulous "how critical is performance right now"
-> question.
->
-> This algorithm falls flat on its face in the light of workloads where
-> you're alternatingly disk and CPU bound, such as the ever popular
-> "git grep", but also things like startup of programs and maildir using
-> email clients... much to the chagarin of Andrew Morton.
->
-> This patch changes the ondemand algorithm to count iowait time as busy,
-> not idle, time. As shown in the breakdown cases above, iowait is
->  performance critical often, and by counting iowait, the proxy variable
->  becomes a more accurate representation of the "how critical is
->  performance" question.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig5A891B12AD6DABECDC1F710C
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Is the improvement really because IO benefited from CPU being held at a higher
-frequency, or perhaps because it is now not scaled down during IO, so when CPU
-intensive part of git grep comes along it is already "revved up"?
+Arjan van de Ven wrote:
+> so the problem is that the boot order you want is pretty much opposite
+> from what "normal" people want.
+> AHCI sata before CF slots is pretty much the right thing and what most
+> people will use.... most people will have their OS on AHCI SATA, and
+> occasionally stick in some photo card or whatever.... and they'd ask
+> the flipside question basically.
 
-Or in other words, does a pure IO workload benefit from now higher selected
-frequency?
+On this particular motherboard, the CF slot is soldered to the bottom
+side of the PCB, so it is normally situated between the motherboard and
+the computer case, completely inaccessible to the user at runtime.
 
-One idea I had but a) never had time to implement it and b) was not sure it
-would be accepted anyway, was to modify ondemand governor to ramp up
-instantly, but slow down slowly (in a configurable way). Or to make it a hybrid
-of conservative and ondemand in a way. (This was all long time ago so perhaps
-today what I wanted to do then is already achievable with some knobs.) It was
-not an idea out of thin air, but based on unpleasant desktop latencies with
-ondemand, while performance governor was of course perfect.
+> We could have pretty evil things in the kernel, so that we'd deal with
+> multiple root=3D lines in the kernel, one by one trying them until one
+> sticks. Right now we don't.... but if you make a clean enough patch
+> it might even pass the review here...
 
-Tvrtko
+If the ordering stays the same and such patch existed, I should probably
+use something like
+"root=3D/dev/sdf1,/dev/sde1,/dev/sdd1,/dev/sdc1,/dev/sdb1,/dev/sda1". Now=
+,
+ I'd guess this would break as soon as I attempt to boot with a USB
+flash device present (I'm assuming it will be enumerated after the CF
+card, right?).
+
+So, in short, what I'd love to see is a special device alias which would
+mean the "BIOS-provided boot device". Would such an approach be
+reasonable? Is it possible at all?
+
+Cheers,
+-jkt
+
+--=20
+cd /local/pub && more beer > /dev/mouth
 
 
+--------------enig5A891B12AD6DABECDC1F710C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+iEYEARECAAYFAkvMIEQACgkQamXfqERyJRdzqgCeMqbLsHfokDub+Aw88yYp2QoB
+Qu0AmwTgi5n2tjHCSV9DF87AZr3VxwVe
+=Zyfv
+-----END PGP SIGNATURE-----
+
+--------------enig5A891B12AD6DABECDC1F710C--
