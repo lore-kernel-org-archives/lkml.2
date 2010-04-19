@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab0DSJEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 05:04:12 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:65089 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab0DSJEL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 05:04:11 -0400
-Date: Mon, 19 Apr 2010 11:04:19 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 3/8] USB: gadget: __init and __exit tags removed
-In-reply-to: <w2v8bd0f97a1004190102pd928e442td837c8fcee0541c5@mail.gmail.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <op.vbejhhcz7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.10 (Linux)
-References: <cover.1271406290.git.mina86@mina86.com>
- <0d8cfc5167bbcbfc6c5ae0ab10980eba743e0cee.1271406290.git.mina86@mina86.com>
- <7fbfe9c15eae523b73b704a3b5399319152fd505.1271406290.git.mina86@mina86.com>
- <41b2cd7e8bacd38bb9c997b7197e175d727876f9.1271406290.git.mina86@mina86.com>
- <n2v8bd0f97a1004161640q640bade7xd4887dde5921b79e@mail.gmail.com>
- <op.vbegell27p4s8u@pikus>
- <w2v8bd0f97a1004190102pd928e442td837c8fcee0541c5@mail.gmail.com>
+	id S1753634Ab0DSJFl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 05:05:41 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:37814 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753475Ab0DSJFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 05:05:39 -0400
+Date: Mon, 19 Apr 2010 10:05:20 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/6] change alloc function in alloc_slab_page
+Message-ID: <20100419090520.GN19264@csn.ul.ie>
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com> <8b348d9cc1ea4960488b193b7e8378876918c0d4.1271171877.git.minchan.kim@gmail.com> <20100414091825.0bacfe48.kamezawa.hiroyu@jp.fujitsu.com> <s2x84144f021004140523t3092f6cbge410ab4e15afac3e@mail.gmail.com> <alpine.DEB.2.00.1004161109070.7710@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1004161109070.7710@router.home>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 2010/4/19 Michał Nazarewicz:
->> Yes, I agree.  That's why in the first version I proposed the
->> __usb_init, __usb_exit, etc. tags which could be customized
->> prior to including composite related files.
+On Fri, Apr 16, 2010 at 11:10:01AM -0500, Christoph Lameter wrote:
+> On Wed, 14 Apr 2010, Pekka Enberg wrote:
+> 
+> > Minchan, care to send a v2 with proper changelog and reviewed-by attributions?
+> 
+> Still wondering what the big deal about alloc_pages_node_exact is. Its not
+> exact since we can fall back to another node. It is better to clarify the
+> API for alloc_pages_node and forbid / clarify the use of -1.
+> 
 
-Mike Frysinger:
-> seems like __usbgadget_xxx would be better naming, but i'm not
-> interested in fighting to get the idea in general accepted
+There should be a comment clarifing it now. I admit the naming fault is
+mine. At the time, the intended meaning was "allocate pages from any node in
+the fallback list and the caller knows exactly which node to start from". I
+did not take into account that the meaning of "exact" depends on context.
 
-Bit long though, but yes makes more sense.
-
->> What's more, I don't see any other (that is cleaner) solution which
->> would allow flexibility so it seems what we can either choose
->> a non-flexible solution proposed by this patch or an ugly solution
->> proposed by my previous patch.
-
-> i dont have a problem with your current patch (since there are still
-> seciton mismatch warnings floating about that i imagine this is going
-> to fix), just with the general situation
-
-Yes, I understand that.  I'm just clarifying the situation we are in
-so maybe someone will came up with some better solution then the ones
-already proposed.
+With a comment clarifying the meaning, I do not think a rename is necessary.
+However, I'd rather not see a mass renaming of functions like alloc_pages()
+that have existed a long times. If nothing else, they are documented in books
+like "Linux Device Drivers" so why make life harder on device authors than
+it already is?
 
 -- 
-Best regards,                                           _     _
-   .o. | Liege of Serenely Enlightened Majesty of       o' \,=./ `o
-   ..o | Computer Science,  Michał "mina86" Nazarewicz     (o o)
-   ooo +---[mina86@mina86.com]---[mina86@jabber.org]---ooO--(_)--Ooo--
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
