@@ -1,38 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab0DSVJN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:09:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38361 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab0DSVJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:09:11 -0400
-Message-ID: <4BCCC4E1.8040109@zytor.com>
-Date: Mon, 19 Apr 2010 14:02:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1752128Ab0DSVJc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:09:32 -0400
+Received: from mail-va3.bigfish.com ([216.32.180.114]:60904 "EHLO
+	mail184-va3-R.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752018Ab0DSVJU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 17:09:20 -0400
+X-Greylist: delayed 1803 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Apr 2010 17:09:19 EDT
+X-SpamScore: -27
+X-BigFish: VPS-27(zz1432P98dN936eM9371Pzz1202hz4fhzz2fh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 5,
+X-MS-Exchange-Organization-Antispam-Report: OrigIP: 160.33.98.74;Service: EHS
+Message-ID: <4BCCBF6D.3030105@am.sony.com>
+Date: Mon, 19 Apr 2010 13:39:09 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: guenter.roeck@ericsson.com
-CC: linux-kernel@vger.kernel.org, penberg@cs.helsinki.fi, mingo@redhat.com,
-       x86@kernel.org
-Subject: Re: [PATCH][RESEND] x86: Do not write to VGA memory space if CONFIG_VGA_CONSOLE
- is undefined
-References: <1270046479-4486-1-git-send-email-guenter.roeck@ericsson.com>	 <84144f021003310832i3420e4c1g7396b4d1f311f393@mail.gmail.com>	 <1270491029.1477.453.camel@groeck-laptop>  <4BBA3021.9090504@zytor.com>	 <1270497725.1477.488.camel@groeck-laptop>  <4BBA473D.9040004@zytor.com>	 <1270501481.1477.521.camel@groeck-laptop>  <4BBA51F3.7070808@zytor.com> <1270505579.1477.584.camel@groeck-laptop>
-In-Reply-To: <1270505579.1477.584.camel@groeck-laptop>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "rostedt@goodmis.org" <rostedt@goodmis.org>
+CC: Tom Zanussi <tzanussi@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Chase Douglas <chase.douglas@canonical.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: request to add trace off and trace on with events
+References: <1271707444.10448.12.camel@gandalf.stny.rr.com>
+In-Reply-To: <1271707444.10448.12.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Reverse-DNS: mail7.fw-bc.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+On 04/19/2010 01:04 PM, Steven Rostedt wrote:
+> Hi Tom,
+> 
+> Could you add a way to do a call to tracing_on() or tracing_off() via
+> the filters. I would like to do something like:
+> 
+> 
+> echo 'if (pid == 1234) traceoff' > events/sched/sched_wakeup/filter
+> 
+> Where, if the sched_wakeup event is hit with pid == 1234 it will turn
+> tracing off.
 
-I wanted to check where we are at... at the very least we should drop
-messages issued before initialization when isVGA != 1.
+Just a comment on the nomenclature.  In KFT I called
+things like this "triggers".  I'm not sure what other
+tracing systems call them.  I'm a little worried about
+overloading the filtering abstraction with trigger
+semantics.  (I like the idea of triggers, but it might
+be better to control them with another pseudo-file for
+clarity.)
 
-Since serial ports require initialization, I really don't want to send
-messages to the serial port before the port has been initialized, but
-obviously it would be good to initialize earlyprintk as early as at all
-possible.
+I suppose both are a form of conditional execution.
+Filtering has an implicit action of either 'trace this'
+or 'don't trace this', while triggering usually has
+an action, often explicit, to start or stop tracing.
+However, since they both use the conditional testing,
+it might be a pain to reproduce this code for a different
+pseudo-file.
 
-	-hpa
+Just my 2 cents.
+ -- Tim
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Linux Forum
+Senior Staff Engineer, Sony Network Entertainment
+=============================
 
