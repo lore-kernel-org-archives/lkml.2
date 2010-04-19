@@ -1,43 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab0DSSyt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 14:54:49 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:59515 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab0DSSys (ORCPT
+	id S1753519Ab0DSS5D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 14:57:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48044 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab0DSS5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 14:54:48 -0400
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: 2.6.34rc4 NFS writeback regression (bisected): client often fails to delete things it just created
-References: <87tyr9dfvv.fsf@spindle.srvr.nix>
-	<1271618484.8049.1.camel@localhost.localdomain>
-	<87vdboa7e0.fsf@spindle.srvr.nix>
-	<1271620750.8049.3.camel@localhost.localdomain>
-	<87mxx0a5pc.fsf@spindle.srvr.nix>
-	<1271621624.8049.6.camel@localhost.localdomain>
-	<87iq7oa2o8.fsf@spindle.srvr.nix>
-	<1271682635.13653.40.camel@localhost.localdomain>
-From: Nix <nix@esperi.org.uk>
-Emacs: more than just a Lisp interpreter, a text editor as well!
-Date: Mon, 19 Apr 2010 19:54:41 +0100
-In-Reply-To: <1271682635.13653.40.camel@localhost.localdomain> (Trond Myklebust's message of "Mon, 19 Apr 2010 09:10:35 -0400")
-Message-ID: <87aasz9ssu.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-DCC-Misty-Metrics: spindle 1170; Body=3 Fuz1=3 Fuz2=3
+	Mon, 19 Apr 2010 14:57:00 -0400
+Subject: Re: [REGRESSION 2.6.30][PATCH v3] sched: update load count only
+ once per cpu in 10 tick update window
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       kernel-team <kernel-team@lists.ubuntu.com>
+In-Reply-To: <1271703130.1676.214.camel@laptop>
+References: <1271200751-18697-1-git-send-email-chase.douglas@canonical.com>
+	 <1271703130.1676.214.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Apr 2010 20:56:52 +0200
+Message-ID: <1271703412.1676.224.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 Apr 2010, Trond Myklebust verbalised:
-> Hmm... Could you please try reverting commit
-> 2c61be0a9478258f77b66208a0c4b1f5f8161c3c (NFS: Ensure that the WRITE and
-> COMMIT RPC calls are always uninterruptible). I wonder if that
-> introduced a new race...
+On Mon, 2010-04-19 at 20:52 +0200, Peter Zijlstra wrote:
+> 
+> So the only early updates can come from
+> pick_next_task_idle()->calc_load_account_active(), so why not specialize
+> that callchain instead of the below? 
 
-That seems to have fixed it.
+To clarify, when I wrote that your patch was still below.. ;-)
 
-(This must be a heck of a wide race, or I'm very unlucky :) I hit it
-every single time, even if the machine is under heavy load...)
