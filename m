@@ -1,174 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab0DSAc7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 20:32:59 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:56472 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545Ab0DSAc6 (ORCPT
+	id S1754121Ab0DSAgF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 20:36:05 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:55472 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752858Ab0DSAgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 20:32:58 -0400
-Date: Mon, 19 Apr 2010 03:32:52 +0300
-From: Amit Kucheria <amit.kucheria@canonical.com>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-       valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
-       bryan.wu@canonical.com, r.herring@freescale.com, Jun.Li@freescale.com,
-       xiao-lizhang@freescale.com
-Subject: Re: [PATCHv4 2.6.34-rc4 2/7] mx5: Add USB device definitions for
- Freescale MX51 Babbage HW
-Message-ID: <20100419003252.GA15308@matterhorn.verdurent.com>
-Mail-Followup-To: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
-	linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-	s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-	grant.likely@secretlab.ca, bryan.wu@canonical.com,
-	r.herring@freescale.com, Jun.Li@freescale.com,
-	xiao-lizhang@freescale.com
-References: <1271445371-18501-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271445371-18501-2-git-send-email-Dinh.Nguyen@freescale.com>
+	Sun, 18 Apr 2010 20:36:01 -0400
+Date: Mon, 19 Apr 2010 10:35:56 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-ID: <20100419003556.GC2520@dastard>
+References: <20100413202021.GZ13327@think>
+ <20100414014041.GD2493@dastard>
+ <20100414155233.D153.A69D9226@jp.fujitsu.com>
+ <20100414072830.GK2493@dastard>
+ <20100414085132.GJ25756@csn.ul.ie>
+ <20100415013436.GO2493@dastard>
+ <20100415102837.GB10966@csn.ul.ie>
+ <20100416041412.GY2493@dastard>
+ <20100416151403.GM19264@csn.ul.ie>
+ <20100417203239.dda79e88.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1271445371-18501-2-git-send-email-Dinh.Nguyen@freescale.com>
-X-URL: http://www.verdurent.com/
+In-Reply-To: <20100417203239.dda79e88.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 Apr 16, Dinh.Nguyen@freescale.com wrote:
-> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+On Sat, Apr 17, 2010 at 08:32:39PM -0400, Andrew Morton wrote:
 > 
-> This patch is part of enabling USB for Freescale MX51 Babbage HW. This
-> patch adds device structures for USB Host1 and OTG port, and adds
-> clocking information for USB HW.
+> There are two issues here: stack utilisation and poor IO patterns in
+> direct reclaim.  They are different.
 > 
-> This patch applies to 2.6.34-rc4.
+> The poor IO patterns thing is a regression.  Some time several years
+> ago (around 2.6.16, perhaps), page reclaim started to do a LOT more
+> dirty-page writeback than it used to.  AFAIK nobody attempted to work
+> out why, nor attempted to try to fix it.
+
+I think that part of the problem is that at roughly the same time
+writeback started on a long down hill slide as well, and we've
+really only fixed that in the last couple of kernel releases. Also,
+it tends to take more that just writing a few large files to invoke
+the LRU-based writeback code is it is generally not invoked in
+filesystem "performance" testing. Hence my bet is on the fact that
+the effects of LRU-based writeback are rarely noticed in common
+testing.
+
+IOWs, low memory testing is not something a lot of people do. Add to
+that the fact that most fs people, including me, have been treating
+the VM as a black box that a bunch of other people have been taking
+care of and hence really just been hoping it does the right thing,
+and we've got a recipe for an unnoticed descent into a Bad Place.
+
+[snip]
+
+> Any attempt to implement writearound in pageout will need to find a way
+> to safely pin that address_space.  One way is to take a temporary ref
+> on mapping->host, but IIRC that introduced nasties with inode_lock. 
+> Certainly it'll put more load on that worrisomely-singleton lock.
+
+A problem already solved in the background flusher threads....
+
+> Regarding simply not doing any writeout in direct reclaim (Dave's
+> initial proposal): the problem is that pageout() will clean a page in
+> the target zone.  Normal writeout won't do that, so we could get into a
+> situation where vast amounts of writeout is happening, but none of it
+> is cleaning pages in the zone which we're trying to allocate from. 
+> It's quite possibly livelockable, too.
+
+That's true, but seeing as we can't safely do writeback from
+reclaim, we need some method of telling the background threads to
+write a certain region of an inode. Perhaps some extension of a
+struct writeback_control?
+
+> Doing writearound (if we can get it going) will solve that adequately
+> (assuming that the target page gets reliably written), but it won't
+> help the stack usage problem.
 > 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/mach-mx5/clock-mx51.c |    8 ++++++
->  arch/arm/mach-mx5/devices.c    |   49 ++++++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-mx5/devices.h    |    2 +
->  3 files changed, 59 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
-> index 1ee6ce4..1fe40e1 100644
-> --- a/arch/arm/mach-mx5/clock-mx51.c
-> +++ b/arch/arm/mach-mx5/clock-mx51.c
-> @@ -762,6 +762,10 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG9_OFFSET,
->  DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
->  	NULL,  NULL, &ipg_clk, NULL);
->  
-> +/* USB */
-> +DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
-> +	NULL, NULL, &pll3_sw_clk, NULL);
-> +
->  /* FEC */
->  DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
->  	NULL,  NULL, &ipg_clk, NULL);
-> @@ -779,6 +783,10 @@ static struct clk_lookup lookups[] = {
->  	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
->  	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
->  	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
->  };
->  
->  static void clk_tree_init(void)
-> diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
-> index 5070ae1..4b456d5 100644
+> To solve the IO-pattern thing I really do think we should first work
+> out ytf we started doing much more IO off the LRU.  What caused it?  Is
+> it really unavoidable?
 
-This part of the patch doesn't apply anymore. Please fix. Also, run
-scripts/checkpatch.pl on the series to catch some standard whitespace errors
-(like no new line at the end of this file)
+/me wonders who has the time and expertise to do that archeology
 
-> --- a/arch/arm/mach-mx5/devices.c
-> +++ b/arch/arm/mach-mx5/devices.c
-> @@ -12,6 +12,7 @@
->  
->  #include <linux/platform_device.h>
->  #include <linux/gpio.h>
-> +#include <linux/dma-mapping.h>
->  #include <mach/hardware.h>
->  #include <mach/imx-uart.h>
->  #include <mach/irqs.h>
-> @@ -92,6 +93,54 @@ struct platform_device mxc_fec_device = {
->  	.resource = mxc_fec_resources,
->  };
->  
-> +static u64 usb_dma_mask = DMA_BIT_MASK(32);
-> +
-> +static struct resource usbotg_resources[] = {
-> +	{
-> +		.start = MX51_OTG_BASE_ADDR,
-> +		.end = MX51_OTG_BASE_ADDR + 0x1ff,
-> +		.flags = IORESOURCE_MEM,
-> +	},
-> +	{
-> +		.start = MX51_MXC_INT_USB_OTG,
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +struct platform_device mxc_usbdr_host_device = {
-> +	.name = "mxc-ehci",
-> +	.id = 0,
-> +	.num_resources = ARRAY_SIZE(usbotg_resources),
-> +	.resource = usbotg_resources,
-> +	.dev = {
-> +		.dma_mask = &usb_dma_mask,
-> +		.coherent_dma_mask = DMA_BIT_MASK(32),
-> +	},
-> +};
-> +
-> +static struct resource usbh1_resources[] = {
-> +	{
-> +		.start = MX51_OTG_BASE_ADDR + 0x200,
-> +		.end = MX51_OTG_BASE_ADDR + 0x200 + 0x1ff,
-> +		.flags = IORESOURCE_MEM,
-> +	},
-> +	{
-> +		.start = MX51_MXC_INT_USB_H1,
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +struct platform_device mxc_usbh1_device = {
-> +	.name = "mxc-ehci",
-> +	.id = 1,
-> +	.num_resources = ARRAY_SIZE(usbh1_resources),
-> +	.resource = usbh1_resources,
-> +	.dev = {
-> +		.dma_mask = &usb_dma_mask,
-> +		.coherent_dma_mask = DMA_BIT_MASK(32),
-> +	},
-> +};
-> +
->  static struct mxc_gpio_port mxc_gpio_ports[] = {
->  	{
->  		.chip.label = "gpio-0",
-> diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
-> index f339ab8..6497764 100644
-> --- a/arch/arm/mach-mx5/devices.h
-> +++ b/arch/arm/mach-mx5/devices.h
-> @@ -2,3 +2,5 @@ extern struct platform_device mxc_uart_device0;
->  extern struct platform_device mxc_uart_device1;
->  extern struct platform_device mxc_uart_device2;
->  extern struct platform_device mxc_fec_device;
-> +extern struct platform_device mxc_usbdr_host_device;
-> +extern struct platform_device mxc_usbh1_device;
-> \ No newline at end of file
+> To solve the stack-usage thing: dunno, really.  One could envisage code
+> which skips pageout() if we're using more than X amount of stack, but
 
+Which, if we have to set it as low as 1.5k of stack used, may as
+well just skip pageout()....
 
+> that sucks.  Another possibility might be to hand the target page over
+> to another thread (I suppose kswapd will do) and then synchronise with
+> that thread - get_page()+wait_on_page_locked() is one way.  The helper
+> thread could of course do writearound.
 
-> -- 
-> 1.6.0.4
-> 
+I'm fundamentally opposed to pushing IO to another place in the VM
+when it could be just as easily handed to the flusher threads.
+Also, consider that there's only one kswapd thread in a given
+context (e.g. per CPU), but we can scale the number of flusher
+threads as need be....
 
+Cheers,
+
+Dave.
 -- 
-----------------------------------------------------------------------
-Amit Kucheria, Kernel Engineer || amit.kucheria@canonical.com
-----------------------------------------------------------------------
+Dave Chinner
+david@fromorbit.com
