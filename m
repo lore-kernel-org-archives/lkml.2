@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab0DSWEZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 18:04:25 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:52912 "HELO
-	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751891Ab0DSWEY (ORCPT
+	id S1752673Ab0DSWEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 18:04:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61638 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615Ab0DSWEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 18:04:24 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=XAeaC3Um3zJ56L/advvZpM1TgEqz6mHQhr6A01SKz6yYUh5+1/nBjGljuV/Xr7vX3s7cWJGPQluK5iSnLmS/TW6EY6Zlq9RNqF4on4nrcJKRzSiVmPxANzZ5rAC4AmyI;
-Date: Mon, 19 Apr 2010 15:05:32 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Dave Airlie <airlied@gmail.com>, James Simmons <jsimmons@infradead.org>
-Subject: Re: [RFC] Try a bit harder to get output on the screen at panic
- time
-Message-ID: <20100419150532.13822b73@virtuousgeek.org>
-In-Reply-To: <20100409151050.74ef6dcd@virtuousgeek.org>
-References: <20100409151050.74ef6dcd@virtuousgeek.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 19 Apr 2010 18:04:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bUgH6cysnYTxPjkKw//dHvXQbz4FSTpQT/eEnvWNheRDGmUpf1VW03pmXgtZuW4AQo
+         pzwiNejOkhD4uI9rxm2hajMvG1RLasviQN0xLIscaFLC2F8dt7dzjpHZtRWniAEtn6aL
+         Oqpy7+I/SbfyUyxhfYCi0P+pQhH0q3jMXua4A=
+Date: Tue, 20 Apr 2010 00:04:39 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Tim Bird <tim.bird@am.sony.com>, Tom Zanussi <tzanussi@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Chase Douglas <chase.douglas@canonical.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: request to add trace off and trace on with events
+Message-ID: <20100419220437.GC8811@nowhere>
+References: <1271707444.10448.12.camel@gandalf.stny.rr.com> <4BCCBF6D.3030105@am.sony.com> <1271709846.10448.29.camel@gandalf.stny.rr.com> <20100419212950.GB8811@nowhere> <1271713074.10448.101.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271713074.10448.101.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Apr 2010 15:10:50 -0700
-Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-
-> This set of 3 patches makes it a little more likely we'll get panic
-> output onto the screen even when X is running, assuming a KMS enabled
-> stack anyway.
+On Mon, Apr 19, 2010 at 05:37:54PM -0400, Steven Rostedt wrote:
+> On Mon, 2010-04-19 at 23:29 +0200, Frederic Weisbecker wrote:
 > 
-> It gets me from a blank or very sparsely populated black screen at
-> panic time, to one including the full backtrace and panic output at
-> panic time (tested with "echo c > /proc/sysrq-trigger" from an X
-> session).
+> > The problem with having triggers defined in the filter file is that
+> > you couldn't set a normal filter plus a trigger.
+> > 
+> > That said a filter itself could be a trigger.
+> > 
+> > if (cond) filter
+> > 
+> > This is going to break some ABI though.
+> > 
+> > In fact having one file per trigger type is going to make the
+> > things much easier if you don't want to encumber with syntax parsing,
+> > and just reuse the filtering code as is with very few modification.
+> > This is going to be also easier for the users as they don't have to
+> > remember the syntax or the available triggers.
+> > 
+> > Say you are in an event directory:
+> > 
+> > $ ls triggers/
+> > 
+> > filter
+> > tracing_off
+> > tracing_on
+> > dump_trace
+> > 
+> > $ echo "(a == 1 && b == 2)" > tracing_off
+> > 
+> > So in the above example, you just reuse the filtering code,
+> > no need to parse an if or a command.
+> > The filter becomes a command. I've listed it in the triggers
+> > directory but this just to express the fact it can be treated
+> > like whatever trigger command, this is just an implementation
+> > POV. In fact we can just keep it in the event directory.
 > 
-> It doesn't cover every case; for instance I think it'll fail when X has
-> disabled the display, but those cases need to be handled with separate
-> patches anyway (need to add atomic DPMS paths for instance).
 > 
-> Anyway, please test these out and let me know if they work for you.
+> I like this. Heck, all registered triggers can be shown here.
+> 
+> # cat event/sched/sched_switch/triggers/tracing_off
+> disabled
+> 
+> Or it can be a filter, or enabled.
 
-Linus, did you get a chance to try these at all?  They're small, and if
-they work for you I thought maybe they had a chance to get into 2.6.34.
 
-Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Yep, since it would share exatly the same code than filter (as
+filter basically becomes a trigger command), it can behave the
+same: displaying "none" when there is no filter, or a filter.
+
+
+> 
+> This could also allow a user to do:
+> 
+> echo "(a > 100)" > tracing_on
+> echo "(a < 100)" > tracing_off
+
+
+Yeah :)
+But if the scope of the "tracing off" is only for this event, then
+rather use:
+
+echo "(a < 100)" > filter
+
+You could have tracing_off/on that have this event scope and
+tracing_off/on_all for a global tracing scope.
+
