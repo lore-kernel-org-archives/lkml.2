@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab0DSHfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 03:35:32 -0400
-Received: from fmmailgate02.web.de ([217.72.192.227]:45158 "EHLO
-	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab0DSHfb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 03:35:31 -0400
-Message-ID: <4BCC07C0.5050601@web.de>
-Date: Mon, 19 Apr 2010 09:35:28 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1752277Ab0DSHiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 03:38:46 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:56996 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751877Ab0DSHip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 03:38:45 -0400
+Date: Mon, 19 Apr 2010 09:38:44 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] [MTD] Fix JFFS2 sync silent failure
+Message-ID: <20100419073843.GN27497@kernel.dk>
+References: <20100417184016.GA17345@logfs.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Jeff Dike <jdike@addtoit.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       user-mode-linux-devel@lists.sourceforge.net,
-       Tiger Yang <tiger.yang@oracle.com>
-Subject: Re: [PATCH] uml: Fix build breakage after slab.h changes
-References: <4BCB353A.3040806@web.de> <4BCB788E.2040501@kernel.org>
-In-Reply-To: <4BCB788E.2040501@kernel.org>
-X-Enigmail-Version: 0.95.7
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigECEAA47507809F97268BA43A"
-X-Provags-ID: V01U2FsdGVkX19i9uoOtJR8j7GyrL/s5hll1po/+pOovmRNGWFg
-	FjkXYkD0wkvf2CBbK7LSRwbQrBYnWpPgrFnJk/7yas1bmN7kai
-	wRmKO6HBM=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100417184016.GA17345@logfs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigECEAA47507809F97268BA43A
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Sat, Apr 17 2010, Jörn Engel wrote:
+> Moin David,
+> 
+> if I read the code correctly, JFFS2 will happily perform a NOP on
+> sys_sync() again.  And this time it appears to be Jens' fault.
+> 
+> JFFS2 does not appear to set s_bdi anywhere.  And as of 32a88aa1,
+> __sync_filesystem() will return 0 if s_bdi is not set.  As a result,
+> sync_fs() is never called for jffs2 and whatever remains in the wbuf
+> will not make it to the device.
+> 
+> The patch also adds a BUG_ON to catch this problem in any remaining or
+> future offenders.  I am not sure about network filesystems, but at
+> least bdev- and mtd-based ones should be caught.
+> 
+> Opinions?
 
-Tejun Heo wrote:
-> Hello,
->=20
-> On 04/19/2010 01:37 AM, Jan Kiszka wrote:
->> We now have to to include linux/slab.h explicitly for kmalloc & friend=
-s.
->> Files that build against host headers already get their prototypes via=
+I think that BUG_ON() would be a lot better as a printk() and fail mount
+instead. There's really little point in killing the kernel for something
+you could easily warn about and recover nicely.
 
->> um_malloc.h, linux/slab.h may even be unavailable.
->=20
-> Hmmm... my test um build was okay but I don't know much about details
-> of um builds.=20
+-- 
+Jens Axboe
 
-We may use different configs. Also, your userland includes have to lack
-slab.h.
-
-> I suppose this patch will go through um tree?
-
-Good question. Does such a tree exist? I'm sitting on a few more um
-cleanups & fixes, and so far I'm working against Linus' tree as I failed
-to find anything more recent.
-
-Jan
-
-
---------------enigECEAA47507809F97268BA43A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.9 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org
-
-iEYEARECAAYFAkvMB8AACgkQitSsb3rl5xSVZgCfVGI6pJXVFibUZ6Gbuy1Ue1BY
-VK0An00HqFcHT7Bv2Oi7vp8v1ceZtr1s
-=LFFY
------END PGP SIGNATURE-----
-
---------------enigECEAA47507809F97268BA43A--
