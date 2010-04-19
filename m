@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab0DSHUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 03:20:47 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49388 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab0DSHUq (ORCPT
+	id S1752264Ab0DSHV2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 03:21:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51193 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163Ab0DSHVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 03:20:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Yw1MwlYGckNEwWss24Pmc0X5eNvgLNNOe0WDk35wO/V4F9M1anUSb+n1lhBlfeLZdM
-         ZDNiH1LLzyw5OeGiS/te3N9K7Y7R5qxCgRwVYAsz+3jWrgfVdaeOfahaYF5P2vhUDSXn
-         J2D0lYk4AlCrh0wnbpooFwVvjfNlCvwr2Jcpk=
-Message-ID: <4BCC0453.3060806@gmail.com>
-Date: Mon, 19 Apr 2010 00:20:51 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Mon, 19 Apr 2010 03:21:25 -0400
+Date: Mon, 19 Apr 2010 09:21:21 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: afleming@freescale.com, davem@davemloft.net, netdev@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Phylib polling when doing mdio_read will cause system response
+	and transfer speed drop
+Message-ID: <20100419072121.GA15697@pengutronix.de>
+References: <4BC50BF5.7080700@canonical.com>
 MIME-Version: 1.0
-To: Jie Zhang <jie@codesourcery.com>
-CC: Ben Gamari <bgamari.foss@gmail.com>, gcc@gcc.gnu.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: gcc- 4.6.0 20100416 rtmutex.c:1138:1: internal compiler error
-References: <i2ydd18b0c31004182119w30322238p2ab0094f55901051@mail.gmail.com> <4bcbebb3.9653f10a.3be1.ffffe0ef@mx.google.com> <4BCBFBA9.9040606@gmail.com> <4BCBFEE3.8020509@codesourcery.com>
-In-Reply-To: <4BCBFEE3.8020509@codesourcery.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
+Content-Disposition: inline
+In-Reply-To: <4BC50BF5.7080700@canonical.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2010 11:57 PM, Jie Zhang wrote:
-> On 04/19/2010 02:43 PM, Justin P. Mattock wrote:
->> I couldn't resist..(had to play),
->> anyways I looked through the reports
->> but didn't see anything that was
->> familiar. so I went and created an entry:
->> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=43791
->>
-> Thanks. Please add a preprocessed source file so people can reproduce
-> your issue.
+
+--tThc/1wpZn/ma/RB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Apr 13, 2010 at 05:27:33PM -0700, Bryan Wu wrote:
+
+> I found the root cause is the polling operation in the mdio_read=20
+> function. When we transfer large files, we experienced many times of=20
+> timeout issue. So I got several question here:
+
+Same here, I saw the 'MDIO Timeout' Message occasionally.
+
+> 1. Need I return -ETIMEDOUT when polling timeout. If I don't return=20
+> -ETIMEOUT, the performance improved a lot. And after check other drivers,=
+=20
+> some don't return anything, some return 0, some return negative value.=20
+> What's the rule for this mdio_read polling timeout case.
 >
+> 2. How to do polling busy waiting? Normally, we won't buys wait very long=
+=20
+> in polling. But hardware is not perfect every time. Running cpu_relax()=
+=20
+> 10000 times in polling will cause our system response very bad when=20
+> hardware don't set the flag as we expected. Maybe udelay(25) 10 times or=
+=20
+> msleep(1) 10 times is better than that.
 >
+> I got a patch to recover this issue, =20
+> http://kernel.ubuntu.com/git?p=3Droc/ubuntu-lucid.git;a=3Dcommitdiff;h=3D=
+5d77e3409b319ca84183bf1d2fd158a9c864e03f.
 
+Can't help with the details, but the patch seems to help here, too
+(and not only because of the removed printk ;)).
 
-as for the preprocessed source file,
-not that yet skilled at code.(one day)
-I added my .config, and the CFLAGS
-I used for building gcc.
+Regards,
 
-In regards to 4.6.0 everything seems
-o.k. i.g. glibc builds with no errors
-all of the xserver no errors, even firefox
-builds.. seems the kernel was the only real
-problem I ran into(which isn't really a problem
-given this version of gcc is experimental).
+   Wolfram
 
-maybe something todo with building modules
-(but could be wrong).
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Justin P. Mattock
+--tThc/1wpZn/ma/RB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkvMBHEACgkQD27XaX1/VRvozgCfa2IevtCOomaSfQeezLZIpScN
+WGsAni3BRDAwKVNgih/GVkKE3igqgrLw
+=f849
+-----END PGP SIGNATURE-----
+
+--tThc/1wpZn/ma/RB--
