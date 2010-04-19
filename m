@@ -1,110 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab0DSPwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 11:52:17 -0400
-Received: from fg-out-1718.google.com ([72.14.220.156]:47578 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab0DSPwP (ORCPT
+	id S1754211Ab0DSP6b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 11:58:31 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55043 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190Ab0DSP6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 11:52:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WWZlbar8vhK9PBCgGU9dWCktjxDSD7U9h/NIRqMeaFk/EB1fGdW0NISfEVimu6/pR+
-         /bx5pVdOBJcxmXY25yYgKhZPPJ46nDddmshZ5l9DtXF8FZX6WlrfAn/wlGrCFrrRY9Cd
-         kZSvlwIbOLycHfbu33a2PNFJneFPZbR8gQG48=
+	Mon, 19 Apr 2010 11:58:30 -0400
+Date: Mon, 19 Apr 2010 17:58:28 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Nguyen Dinh-R00091 <R00091@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       linux@arm.linux.org.uk, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com,
+       Herring Robert-RA7055 <RA7055@freescale.com>,
+       Li Jun-R65092 <R65092@freescale.com>,
+       Zhang Lily-R58066 <R58066@freescale.com>
+Subject: Re: [PATCHv4 2.6.34-rc4 5/7] mxc: Add generic USB HWinitialization
+	for MX51
+Message-ID: <20100419155828.GE7882@pengutronix.de>
+References: <1271445371-18501-1-git-send-email-Dinh.Nguyen@freescale.com> <1271445371-18501-2-git-send-email-Dinh.Nguyen@freescale.com> <1271445371-18501-3-git-send-email-Dinh.Nguyen@freescale.com> <1271445371-18501-4-git-send-email-Dinh.Nguyen@freescale.com> <1271445371-18501-5-git-send-email-Dinh.Nguyen@freescale.com> <20100418020726.GB7882@pengutronix.de> <86A0E76937111F4C92FABEC0A20988510473395C@az33exm21>
 MIME-Version: 1.0
-In-Reply-To: <s2l7f9d1ffb1004190836l9ba703c5lab13638d968a5c55@mail.gmail.com>
-References: <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com>
-	 <20100406163211.GA29117@nokia.com> <4BBB6767.7010202@ti.com>
-	 <20100406165720.GA17916@nokia.com>
-	 <00b401cad5e0$1d1868d0$544ff780@am.dhcp.ti.com>
-	 <4BBBC628.9030207@ti.com>
-	 <00c901cad5e7$9de54350$544ff780@am.dhcp.ti.com>
-	 <4BBBD87C.1040307@ti.com>
-	 <003601cad73c$98c3aa50$544ff780@am.dhcp.ti.com>
-	 <s2l7f9d1ffb1004190836l9ba703c5lab13638d968a5c55@mail.gmail.com>
-Date: Mon, 19 Apr 2010 21:21:53 +0530
-Message-ID: <h2h7f9d1ffb1004190851gf08897awf198d3c8e5f9dbce@mail.gmail.com>
-Subject: [PATCH v4] OMAP: Fix for bus width which improves SD card's 
-	peformance.
-From: kishore kadiyala <kishorek.kadiyala@gmail.com>
-To: Madhusudhan <madhu.cr@ti.com>
-Cc: Nishanth Menon <nm@ti.com>, felipe.balbi@nokia.com, me@felipebalbi.com,
-       Vimal Singh <vimal.newwork@gmail.com>, tony@atomide.com,
-       "S, Venkatraman" <svenkatr@ti.com>, linux-omap@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       "Lavinen Jarkko (Nokia-D/Helsinki)" <jarkko.lavinen@nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <86A0E76937111F4C92FABEC0A20988510473395C@az33exm21>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:55:54 up 30 days,  4:45, 64 users,  load average: 0.08, 0.74,
+	1.95
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous patch was Line wrapped , resending
-correct patch.
-NM, Sorry I miss spelled your name correcting this time.
+On Mon, Apr 19, 2010 at 08:40:29AM -0700, Nguyen Dinh-R00091 wrote:
+>  
+> 
+> -----Original Message-----
+> From: Sascha Hauer [mailto:s.hauer@pengutronix.de] 
+> Sent: Saturday, April 17, 2010 9:07 PM
+> To: Nguyen Dinh-R00091
+> Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> linux@arm.linux.org.uk; valentin.longchamp@epfl.ch; daniel@caiaq.de;
+> grant.likely@secretlab.ca; bryan.wu@canonical.com;
+> amit.kucheria@canonical.com; Herring Robert-RA7055; Li Jun-R65092; Zhang
+> Lily-R58066
+> Subject: Re: [PATCHv4 2.6.34-rc4 5/7] mxc: Add generic USB
+> HWinitialization for MX51
+> 
+> On Fri, Apr 16, 2010 at 02:16:09PM -0500, Dinh.Nguyen@freescale.com
+> wrote:
+> > From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> > 
+> > This patch adds USB HW initializiation code to /plat-mxc/ehci.c.
+> > 	-Stops and resets USB HW
+> > 	-Sets some specific PHY settings
+> > 	-Stop and restart the USB HW.
+> > Renames mxc_set_usbcontrol to mxc_initialize_usb_hw.
+> > 
+> > This patch applies to 2.6.34-rc4.
+> > 
+> > Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> > ---
+> >  arch/arm/plat-mxc/ehci.c                  |  128
+> ++++++++++++++++++++++++++++-
+> >  arch/arm/plat-mxc/include/mach/mxc_ehci.h |    2 +-
+> >  2 files changed, 127 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/arm/plat-mxc/ehci.c b/arch/arm/plat-mxc/ehci.c index
+> 
+> > cb0b638..35ff1c1 100644
+> > --- a/arch/arm/plat-mxc/ehci.c
+> > +++ b/arch/arm/plat-mxc/ehci.c
+> > @@ -1,5 +1,6 @@
+> >  /*
+> >   * Copyright (c) 2009 Daniel Mack <daniel@caiaq.de>
+> > + * Copyright (C) 2010 Freescale Semiconductor, Inc.
+> >   *
+> >   * This program is free software; you can redistribute it and/or
+> modify it
+> >   * under the terms of the GNU General Public License as published by 
+> > the @@ -18,6 +19,7 @@
+> >  
+> >  #include <linux/platform_device.h>
+> >  #include <linux/io.h>
+> > +#include <linux/delay.h>
+> >  
+> >  #include <mach/hardware.h>
+> >  #include <mach/mxc_ehci.h>
+> > @@ -50,9 +52,14 @@
+> >  #define MX35_H1_TLL_BIT		(1 << 5)
+> >  #define MX35_H1_USBTE_BIT	(1 << 4)
+> >  
+> > -int mxc_set_usbcontrol(int port, unsigned int flags)
+> > +int mxc_intialize_usb_hw(int port, unsigned int flags)
+> >  {
+> >  	unsigned int v;
+> > +	void __iomem *usb_base;
+> > +	u32 usbotg_base;
+> > +	u32 usbother_base;
+> > +	int timeout;
+> > +	int ret = 0;
+> >  #ifdef CONFIG_ARCH_MX3
+> >  	if (cpu_is_mx31()) {
+> >  		v = readl(MX31_IO_ADDRESS(MX31_OTG_BASE_ADDR + @@ -186,9
+> +193,126 
+> > @@ int mxc_set_usbcontrol(int port, unsigned int flags)
+> >  		return 0;
+> >  	}
+> >  #endif /* CONFIG_MACH_MX27 */
+> > +#ifdef CONFIG_ARCH_MX51
+> > +	if (cpu_is_mx51()) {
+> > +		usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
+> > +
+> > +		switch (port) {
+> > +		case 0:	/* OTG port */
+> > +			usbotg_base = (u32)usb_base + USBOTG_OFFSET;
+> > +			break;
+> > +		case 1:	/* Host 1 port */
+> > +			usbotg_base = (u32)usb_base + USBH1_OFFSET;
+> > +			break;
+> > +		default:
+> > +			printk(KERN_ERR"%s no such port %d\n", __func__,
+> port);
+> > +			ret = -ENOENT;
+> > +			goto error;
+> > +		}
+> > +		usbother_base = (u32)usb_base + USBOTHER_REGS_OFFSET;
+> > +
+> > +		/* Stop then Reset */
+> > +		v = __raw_readl(usbotg_base + USBCMD_OFFSET);
+> > +		v &= ~UCMD_RUN_STOP;
+> > +		__raw_writel(v, usbotg_base + USBCMD_OFFSET);
+> > +		timeout = 0x100000;
+> > +		while (--timeout && __raw_readl(usbotg_base +
+> USBCMD_OFFSET) & UCMD_RUN_STOP)
+> > +			cpu_relax();
+> > +		if (!timeout) {
+> > +			printk(KERN_ERR "%s could not stop usb
+> hardware\n", __func__);
+> > +			ret = -ETIMEDOUT;
+> > +			goto error;
+> > +		}
+> > +
+> > +		v = __raw_readl(usbotg_base + USBCMD_OFFSET);
+> > +		v |= UCMD_RESET;
+> > +		__raw_writel(v, usbotg_base + USBCMD_OFFSET);
+> > +		timeout = 0x100000;
+> > +		while (--timeout && __raw_readl(usbotg_base +
+> USBCMD_OFFSET) & UCMD_RESET)
+> > +			cpu_relax();
+> > +		if (!timeout) {
+> > +			printk(KERN_ERR "%s could not reset usb
+> hardware\n", __func__);
+> > +			ret = -ETIMEDOUT;
+> > +			goto error;
+> > +		}
+> > +
+> > +		switch (port) {
+> > +		case 0:	/*OTG port */
+> > +			v = __raw_readl(usbother_base +
+> USB_PHY_CTR_FUNC_OFFSET);
+> > +			v |= USB_UTMI_PHYCTRL_OC_DIS; /* OC is not used
+> */
+> > +			__raw_writel(v, usbother_base +
+> USB_PHY_CTR_FUNC_OFFSET);
+> > +
+> > +			v = __raw_readl(usbother_base + USBCTRL_OFFSET);
+> > +			v &= ~(UCTRL_OPM | UCTRL_OWIE);/* OTG
+> wakeup/power mask disable */
+> > +			__raw_writel(v, usbother_base + USBCTRL_OFFSET);
+> > +
+> > +			/* Set the PHY clock to 19.2MHz */
+> > +			v = __raw_readl(usbother_base +
+> USB_PHY_CTR_FUNC2_OFFSET);
+> > +			v &= ~USB_UTMI_PHYCTRL2_PLLDIV_MASK;
+> > +			v |= 0x01;
+> > +			__raw_writel(v, usbother_base +
+> USB_PHY_CTR_FUNC2_OFFSET);
+> > +			break;
+> 
+> The sense of this funtion is to make the interface configuration,
+> especially the receiver type configurable with the flags parameter to
+> this function. This all looks very specific to your board, flags is
+> completely unused.
+> 
+> [Dinh] I think you're right Sascha, I think I can move this to the board
+> initialization. Do you agree Daniel?
 
-Regards,
-Kishore
+No, and Daniel won't agree either. What I meant is that you should add
+support for the different transceiver types in this function. Take
+i.MX27/31/35 as an example how to do this: Parse the flag parameter and
+do whatever you have to.
 
-From: Kishore Kadiyala <kishore.kadiyala@ti.com>
+Sascha
 
-This patch improves low speeds for SD cards.
-OMAP-MMC controller's can support maximum bus width of '8'.
-when bus width is mentioned as "8" in controller data,the SD
-stack will check whether bus width is "4" and if not it will
-set bus width to "1" and there by degrading performance.
-This patch fixes the issue and improves the performance of
-SD cards.
 
-Signed-off-by: Kishore Kadiyala <kishore.kadiyala@ti.com>
-Signed-off-by: Venkatraman S <svenkatr@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Acked-by: Madhusudhan Chikkature <madhu.cr@ti.com>
-Tested-by: Jarkko Nikula <jhnikula@gmail.com>
----
-In V4 : Updated with Nishant's comments and appened his Signed-off
-In V3 : Updated  with Madhu's comments  and appended Tested by Nikula
-In V2 : Appended Signed-off by Venkat and Ack by Madhu
-
- Here are my experiment numbers, on a Class 6 SDHC card:
- Read peformance is increased by 220%
- Write Performance is increased by 52%
-
- drivers/mmc/host/omap_hsmmc.c |   19 ++++++++++++++++---
- 1 files changed, 16 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index 8c97c22..9c1a60e 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -2091,10 +2091,23 @@ static int __init omap_hsmmc_probe(struct
-	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
- 		     MMC_CAP_WAIT_WHILE_BUSY;
-
--	if (mmc_slot(host).wires >= 8)
--		mmc->caps |= (MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA);
--	else if (mmc_slot(host).wires >= 4)
-+	switch (mmc_slot(host).wires) {
-+	case 8:
-+		mmc->caps |= MMC_CAP_8_BIT_DATA;
-+		/* Fall through */
-+	case 4:
- 		mmc->caps |= MMC_CAP_4_BIT_DATA;
-+		break;
-+	case 1:
-+		/* Nothing to crib here */
-+	case 0:
-+		/* Assuming nothing was given by board, Core use's 1-Bit */
-+		 break;
-+	default:
-+		/* Completely unexpected.. Core goes with 1-Bit Width */
-+		dev_crit(mmc_dev(host->mmc), "Invalid width %d\n used!"
-+			"using 1 instead\n", mmc_slot(host).wires);
-+	}
-
- 	if (mmc_slot(host).nonremovable)
- 		mmc->caps |= MMC_CAP_NONREMOVABLE;
 -- 
-1.6.3.3
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
