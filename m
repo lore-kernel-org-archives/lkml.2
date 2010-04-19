@@ -1,98 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693Ab0DSOT6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 10:19:58 -0400
-Received: from adsl-67-113-118-6.dsl.sndg02.pacbell.net ([67.113.118.6]:60555
-	"EHLO multivac.one-eyed-alien.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754235Ab0DSOT4 (ORCPT
+	id S1754748Ab0DSOU1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 10:20:27 -0400
+Received: from mail-pz0-f185.google.com ([209.85.222.185]:44362 "EHLO
+	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab0DSOUZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 10:19:56 -0400
-Date: Mon, 19 Apr 2010 07:19:07 -0700
-From: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
-To: Stefan Assmann <sassmann@redhat.com>
-Cc: digidietze@draisberghof.de,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-usb@vger.kernel.org
-Subject: Re: [PATCH] USB: expose Huawei E1550 3G modem
-Message-ID: <20100419141907.GN26130@one-eyed-alien.net>
-Mail-Followup-To: Stefan Assmann <sassmann@redhat.com>,
-	digidietze@draisberghof.de,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-usb@vger.kernel.org
-References: <4BCC5071.4010509@redhat.com> <4BCC6206.4030003@draisberghof.de> <4BCC63EB.4010204@redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WR+jf/RUebEcofwt"
-Content-Disposition: inline
-In-Reply-To: <4BCC63EB.4010204@redhat.com>
-User-Agent: Mutt/1.4.2.3i
-Organization: One Eyed Alien Networks
-X-Copyright: (C) 2010 Matthew Dharm, all rights reserved.
-X-Message-Flag: Get a real e-mail client.  http://www.mutt.org/
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (multivac.one-eyed-alien.net [127.0.0.1]); Mon, 19 Apr 2010 07:19:07 -0700 (PDT)
+	Mon, 19 Apr 2010 10:20:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cgMjcDA+4iAdY07oPpxlkP8ER/jT+HxX49gax9dNiANYLekGgzyFwaWhKF3iFLn/T1
+         YWdVdifzIbl0OZiO6bpMekIQZq2O8BvhIHQjKdeN2zcCI1QP1TctYOJg0BqtRxmHCaIF
+         ZzQ8lZVh5hZnJQ15F3Conm+QbzpZwaRp6hbBc=
+MIME-Version: 1.0
+In-Reply-To: <1271681929.7196.175.camel@localhost.localdomain>
+References: <1271089672.7196.63.camel@localhost.localdomain>
+	 <1271249354.7196.66.camel@localhost.localdomain>
+	 <m2g28c262361004140813j5d70a80fy1882d01436d136a6@mail.gmail.com>
+	 <1271262948.2233.14.camel@barrios-desktop>
+	 <1271320388.2537.30.camel@localhost>
+	 <1271350270.2013.29.camel@barrios-desktop>
+	 <1271427056.7196.163.camel@localhost.localdomain>
+	 <1271603649.2100.122.camel@barrios-desktop>
+	 <1271681929.7196.175.camel@localhost.localdomain>
+Date: Mon, 19 Apr 2010 23:12:40 +0900
+Message-ID: <h2g28c262361004190712v131bf7a3q2a82fd1168faeefe@mail.gmail.com>
+Subject: Re: vmalloc performance
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Nick Piggin <npiggin@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 19, 2010 at 9:58 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
+> Hi,
+>
+> On Mon, 2010-04-19 at 00:14 +0900, Minchan Kim wrote:
+>> On Fri, 2010-04-16 at 15:10 +0100, Steven Whitehouse wrote:
+>> > Hi,
+>> >
+>> > On Fri, 2010-04-16 at 01:51 +0900, Minchan Kim wrote:
+>> > [snip]
+>> > > Thanks for the explanation. It seems to be real issue.
+>> > >
+>> > > I tested to see effect with flush during rb tree search.
+>> > >
+>> > > Before I applied your patch, the time is 50300661 us.
+>> > > After your patch, 11569357 us.
+>> > > After my debug patch, 6104875 us.
+>> > >
+>> > > I tested it as changing threshold value.
+>> > >
+>> > > threshold time
+>> > > 1000              13892809
+>> > > 500               9062110
+>> > > 200               6714172
+>> > > 100               6104875
+>> > > 50                6758316
+>> > >
+>> > My results show:
+>> >
+>> > threshold        time
+>> > 100000           139309948
+>> > 1000             13555878
+>> > 500              10069801
+>> > 200              7813667
+>> > 100              18523172
+>> > 50               18546256
+>> >
+>> > > And perf shows smp_call_function is very low percentage.
+>> > >
+>> > > In my cases, 100 is best.
+>> > >
+>> > Looks like 200 for me.
+>> >
+>> > I think you meant to use the non _minmax version of proc_dointvec too?
+>>
+>> Yes. My fault :)
+>>
+>> > Although it doesn't make any difference for this basic test.
+>> >
+>> > The original reporter also has 8 cpu cores I've discovered. In his case
+>> > divided by 4 cpus where as mine are divided by 2 cpus, but I think that
+>> > makes no real difference in this case.
+>> >
+>> > I'll try and get some further test results ready shortly. Many thanks
+>> > for all your efforts in tracking this down,
+>> >
+>> > Steve.
+>>
+>> I voted "free area cache".
+> My results with this patch are:
+>
+> vmalloc took 5419238 us
+> vmalloc took 5432874 us
+> vmalloc took 5425568 us
+> vmalloc took 5423867 us
+>
+> So thats about a third of the time it took with my original patch, so
+> very much going in the right direction :-)
 
---WR+jf/RUebEcofwt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Good. :)
 
-On Mon, Apr 19, 2010 at 04:08:43PM +0200, Stefan Assmann wrote:
-> On 19.04.2010 16:00, Josua Dietze wrote:
-> > Stefan Assmann schrieb:
-> >> The Huawei E1550 3G modem is hidden by default and can be
-> >> exposed by sending some magic initialization code. This
-> >> patch takes care of that.
-> >=20
-> > This device (as all other Huaweis using this sequence) is=20
-> > supported by the usb_modeswitch tool which takes of the=20
-> > switching process. Once installed, no user interaction is=20
-> > required except plugging.
-> >=20
-> > Current policy is to leave switching to the userspace if it's=20
-> > working there.
->=20
-> that's good news. This is part of hardware initialization, so let's move
-> it to the kernel. Or do you know any good reason why the kernel
-> shouldn't handle it?
+>
+> I did get a compile warning:
+>  CC      mm/vmalloc.o
+> mm/vmalloc.c: In function ‘__free_vmap_area’:
+> mm/vmalloc.c:454: warning: unused variable ‘prev’
+>
+> ....harmless, but it should be fixed before the final version,
 
-We've had this discussion, what, over a dozen times already?  It keeps
-coming up every few months.
+Of course. It's not formal patch but for showing concept  . :)
 
-There are two primary reasons to keep this in userspace:
+Thanks for consuming precious your time. :)
+As Nick comments, I have to do further work.
+Maybe Nick could do it faster than me.
+Anyway, I hope it can solve your problem.
 
-1) Someone might actually want to access the storage mode of these devices.
-It has come up in the past, and there is no good reason the kernel should
-deny access to that function of the device by enforcing a switchover.
+Thanks, Steven.
 
-2) It is much much easier to update a userspace tool than the kernel.
-Thus, new devices can be supported without a kernel update by end-users.
+>
+> Steve.
+>
+>
+>
 
-Matt
 
---=20
-Matthew Dharm                              Home: mdharm-usb@one-eyed-alien.=
-net=20
-Maintainer, Linux USB Mass Storage Driver
 
-Now payink attention, please.  This is mouse.  Click-click. Easy to=20
-use, da? Now you try...
-					-- Pitr to Miranda
-User Friendly, 10/11/1998
-
---WR+jf/RUebEcofwt
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.7 (GNU/Linux)
-
-iD8DBQFLzGZbHL9iwnUZqnkRAnMKAJ95BiCjIbmjFLjmlixKdKDnprGR0QCgql0X
-cKRSOMWbioy5LmObE5aD0lc=
-=vNrq
------END PGP SIGNATURE-----
-
---WR+jf/RUebEcofwt--
+-- 
+Kind regards,
+Minchan Kim
