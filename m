@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab0DSOKO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 10:10:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43096 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754185Ab0DSOKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 10:10:12 -0400
-Message-ID: <4BCC63EB.4010204@redhat.com>
-Date: Mon, 19 Apr 2010 16:08:43 +0200
-From: Stefan Assmann <sassmann@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: digidietze@draisberghof.de
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-usb@vger.kernel.org
-Subject: Re: [PATCH] USB: expose Huawei E1550 3G modem
-References: <4BCC5071.4010509@redhat.com> <4BCC6206.4030003@draisberghof.de>
-In-Reply-To: <4BCC6206.4030003@draisberghof.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754378Ab0DSOLZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 10:11:25 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52722 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475Ab0DSOLX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 10:11:23 -0400
+From: Thomas Weber <weber@corscience.de>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Weber <weber@corscience.de>, linux-omap@vger.kernel.org,
+       johnpol@2ka.mipt.ru
+Subject: [PATCH] Drivers: w1: omap_hdq: Fix missing include sched.h
+Date: Mon, 19 Apr 2010 16:10:36 +0000
+Message-Id: <1271693436-14950-1-git-send-email-weber@corscience.de>
+X-Mailer: git-send-email 1.6.4.4
+X-Provags-ID: V01U2FsdGVkX19qG0AsPITfGrwBOJbTlWRbDRxqgC0jL1wKlAy
+ mX8H5U3PggWvui0g165RGNnlv+wkGj8yooJe+vVVU8/hnfs9q8
+ Yr9uPhbiHvqiI0HvUR7cA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.04.2010 16:00, Josua Dietze wrote:
-> Stefan Assmann schrieb:
->> The Huawei E1550 3G modem is hidden by default and can be
->> exposed by sending some magic initialization code. This
->> patch takes care of that.
-> 
-> This device (as all other Huaweis using this sequence) is 
-> supported by the usb_modeswitch tool which takes of the 
-> switching process. Once installed, no user interaction is 
-> required except plugging.
-> 
-> Current policy is to leave switching to the userspace if it's 
-> working there.
+In commit f6a570333e554b48ad589e7137c77c57809eee81 #include <sched.h> was
+removed from module.h and not added in omap_hdq.c .
 
-Hi Josua,
+The definition for TASK_UNINTERRUPTIBLE and
+schedule_timeout_uninterruptible are missing.
+This patch fixes the missing definition.
 
-that's good news. This is part of hardware initialization, so let's move
-it to the kernel. Or do you know any good reason why the kernel
-shouldn't handle it?
+Signed-off-by: Thomas Weber <weber@corscience.de>
+---
 
-  Stefan
---
-Stefan Assmann         | Red Hat GmbH
-Software Engineer      | Otto-Hahn-Strasse 20, 85609 Dornach
-                       | HR: Amtsgericht Muenchen HRB 153243
-                       | GF: Brendan Lane, Charlie Peters,
-sassmann at redhat.com |     Michael Cunningham, Charles Cachera
+ drivers/w1/masters/omap_hdq.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/w1/masters/omap_hdq.c b/drivers/w1/masters/omap_hdq.c
+index ef36fca..3a7e9ff 100644
+--- a/drivers/w1/masters/omap_hdq.c
++++ b/drivers/w1/masters/omap_hdq.c
+@@ -16,6 +16,7 @@
+ #include <linux/err.h>
+ #include <linux/clk.h>
+ #include <linux/io.h>
++#include <linux/sched.h>
+ 
+ #include <asm/irq.h>
+ #include <mach/hardware.h>
+-- 
+1.6.4.4
+
