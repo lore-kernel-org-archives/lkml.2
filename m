@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab0DSOWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 10:22:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62137 "EHLO mx1.redhat.com"
+	id S1754912Ab0DSOXf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 10:23:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6606 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754317Ab0DSOWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 10:22:07 -0400
-Date: Mon, 19 Apr 2010 11:21:58 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Jeremy Fitzhardinge <jeremy@goop.org>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-Message-ID: <20100419142158.GD14158@mothafucka.localdomain>
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>
- <1271356648-5108-2-git-send-email-glommer@redhat.com>
- <4BC8CA52.4090703@goop.org>
- <1271673545.1674.743.camel@laptop>
- <4BCC3584.1050501@redhat.com>
- <1271675100.1674.818.camel@laptop>
- <4BCC3A3E.9070909@redhat.com>
-MIME-Version: 1.0
+	id S1754495Ab0DSOXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 10:23:32 -0400
+Date: Mon, 19 Apr 2010 10:23:15 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Jan Blunck <jblunck@suse.de>
+Cc: Jamie Lokier <jamie@shareable.org>, David Woodhouse <dwmw2@infradead.org>,
+       Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, Theodore Tso <tytso@mit.edu>,
+       linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
+Message-ID: <20100419142315.GA2688@shell>
+References: <1271372682-21225-10-git-send-email-vaurora@redhat.com> <1271372682-21225-11-git-send-email-vaurora@redhat.com> <1271372682-21225-12-git-send-email-vaurora@redhat.com> <1271372682-21225-13-git-send-email-vaurora@redhat.com> <1271372682-21225-14-git-send-email-vaurora@redhat.com> <20100419124025.GG10776@bolzano.suse.de> <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BCC3A3E.9070909@redhat.com>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+In-Reply-To: <20100419141248.GK10776@bolzano.suse.de>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 02:10:54PM +0300, Avi Kivity wrote:
-> On 04/19/2010 02:05 PM, Peter Zijlstra wrote:
-> >>
-> >>>ACCESS_ONCE() is your friend.
-> >>>
-> >>I think it's implied with atomic64_read().
-> >Yes it would be. I was merely trying to point out that
-> >
-> >   last = ACCESS_ONCE(last_value);
-> >
-> >Is a narrower way of writing:
-> >
-> >   last = last_value;
-> >   barrier();
-> >
-> >In that it need not clobber all memory locations and makes it instantly
-> >clear what we want the barrier for.
+On Mon, Apr 19, 2010 at 04:12:48PM +0200, Jan Blunck wrote:
+> On Mon, Apr 19, Jamie Lokier wrote:
 > 
-> Oh yes, just trying to avoid a patch with both atomic64_read() and
-> ACCESS_ONCE().
-you're mixing the private version of the patch you saw with this one.
-there isn't any atomic reads in here. I'll use a barrier then
+> > Jan Blunck wrote:
+> > > On Mon, Apr 19, David Woodhouse wrote:
+> > > 
+> > > > On Mon, 2010-04-19 at 14:40 +0200, Jan Blunck wrote:
+> > > > > On Thu, Apr 15, Valerie Aurora wrote:
+> > > > > 
+> > > > > > Add support for fallthru directory entries to ext2.
+> > > > > > 
+> > > > > > XXX - Makes up inode number for fallthru entry
+> > > > > > XXX - Might be better implemented as special symlinks
+> > > > > 
+> > > > > Better not. David Woodhouse actually convinced me of moving away from the
+> > > > > special symlink approach. The whiteouts have been implemented as special
+> > > > > symlinks before.
+> > > > 
+> > > > I certainly asked whether you really need a real 'struct inode' for
+> > > > whiteouts, and suggested that they should be represented _purely_ as a
+> > > > dentry with type DT_WHT.
+> > > > 
+> > > > I don't much like the manifestation of that in this patch though,
+> > > > especially with the made-up inode number. (ISTR I had other
+> > > > jffs2-specific objections too, which I'll dig out and forward).
+> > > 
+> > > Yes, this patches still have issues that Val and me are aware off. I can't
+> > > remember anything jffs2-specific though.
+> > > 
+> > > We return that inode number because we don't want to lookup the name on the
+> > > other filesystem during readdir. Therefore returning DT_UNKNOWN to let the
+> > > userspace decide if it needs to stat the file was the easiest workaround. I
+> > > know that POSIX requires d_ino and d_name but on the other hand it does not
+> > > require anything more on how long d_ino is valid.
+> > 
+> > Although the lifetime of d_ino might very, I know some programs (not
+> > public) that will break if they see a d_ino which is wrongly matching
+> > the st_ino of another file somewhere on the same st_dev.  They will
+> > assume the name is a hard link to the other file, without calling
+> > stat(), which I think is a reasonable assumption and a useful optimisation.
+> > 
+> > So the made-up d_ino should at least be careful to not match an inode
+> > number of another file which has a stable st_ino.
+> > 
+> > Why not zero for d_ino?
+> > 
+> 
+> Hmm, why not. Or even the ino of the directory we are reading from ...
 
+I don't recall there being any technical reason not to look up the
+real inode number.  I just wrote it that we because I was lazy.  So I
+like returning the directory's d_ino better than a single magic
+number, but I'd at least like to try returning the real inode number
+too.
+
+-VAL
