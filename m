@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881Ab0DSWs1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 18:48:27 -0400
-Received: from tundra.namei.org ([65.99.196.166]:44579 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570Ab0DSWsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 18:48:25 -0400
-Date: Tue, 20 Apr 2010 08:48:23 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: wzt.wzt@gmail.com
-cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       eparis@parisplace.org
-Subject: Re: [PATCH] Security: Fix the comment of cap_file_mmap()
-In-Reply-To: <20100419011617.GB22615@localhost.localdomain>
-Message-ID: <alpine.LRH.2.00.1004200848120.19387@tundra.namei.org>
-References: <20100419011617.GB22615@localhost.localdomain>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752729Ab0DSWup (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 18:50:45 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:8285 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab0DSWuo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 18:50:44 -0400
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEALt6zEurR7Hu/2dsb2JhbACcAXGkTpk9hQ4EgzI
+X-IronPort-AV: E=Sophos;i="4.52,237,1270425600"; 
+   d="scan'208";a="117617646"
+From: Tom Lyon <pugs@lyon-about.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3] drivers/pci/intel-iommu.c: errors with smaller iommu widths
+Date: Mon, 19 Apr 2010 15:47:53 -0700
+User-Agent: KMail/1.9.9
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+       joerg.roedel@amd.com, chrisw@sous-sol.org, dwmw2@infradead.org
+References: <4bccceb0.P4o49QIX47z1ouTs%pugs@cisco.com> <20100419154339.e80b6ef3.akpm@linux-foundation.org>
+In-Reply-To: <20100419154339.e80b6ef3.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201004191547.53930.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Apr 2010, wzt.wzt@gmail.com wrote:
+I agree, but I defer to Mr. Woodhouse.
 
-> In the comment of cap_file_mmap(), replace mmap_min_addr to be dac_mmap_min_addr.
+On Monday 19 April 2010 03:43:39 pm Andrew Morton wrote:
+> On Mon, 19 Apr 2010 14:44:16 -0700
+> "Tom Lyon" <pugs@cisco.com> wrote:
 > 
-> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+> > 
+> > When using iommu_domain_alloc with the Intel iommu, the domain address width
+> > is always initialized to 48 bits (agaw 2). __This domain->agaw value is then
+> > used by pfn_to_dma_pte to (always) build a 4 level page table. __However, not
+> > all systems support iommu width of 48 or 4 level page tables. __In particular,
+> > the Core i5-660 and i5-670 support an address width of 36 bits (not 39!), an
+> > agaw of only 1, and only 3 level page tables.
+> > 
+> > This version of the patch simply lops off extra levels of the page tables if
+> > the agaw value of the iommu is less than what is currently allocated for the
+> > domain (in intel_iommu_attach_device). If there were already allocated
+> > addresses above what the new iommu can handle, EFAULT is returned.
+> > 	Signed-off-by: Tom Lyon <pugs@cisco.com>
+> 
+> This smells like a 2.6.34 patch.  Do you agree?
+> 
 
 
-Applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
-
--- 
-James Morris
-<jmorris@namei.org>
