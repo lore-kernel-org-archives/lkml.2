@@ -1,215 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab0DSKZY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 06:25:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51854 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753959Ab0DSKZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 06:25:21 -0400
-Date: Mon, 19 Apr 2010 13:21:18 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>,
-       "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
-	virtio-net.
-Message-ID: <20100419102118.GA16198@redhat.com>
-References: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com> <20100414152519.GA10792@redhat.com> <97F6D3BD476C464182C1B7BABF0B0AF5C18969CC@shzsmsx502.ccr.corp.intel.com> <20100415100546.GA17035@redhat.com> <F2E9EB7348B8264F86B6AB8151CE2D79026FA95401@shsmsx502.ccr.corp.intel.com>
+	id S1754073Ab0DSK0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 06:26:45 -0400
+Received: from mail-qy0-f182.google.com ([209.85.221.182]:54056 "EHLO
+	mail-qy0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab0DSK0o convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 06:26:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZTlLF5dg+IwpCO4YwRRBoxbfPHMM2GTDI6i8/Ktn7xCeoRCpk/pgCy/NkGcqJC+6xe
+         4fc7/3XZRh2eVSP8LbrH+/wMdn5oXmr1h/85JPnHHGqNcwxXotoEoXSsGYdhAoIB6MXR
+         g2VRVLOjaLUVVzVWI+GicXgYMDu5Ul7f3jvOU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D79026FA95401@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <v2he9c3a7c21004141730vcc79dd58t5478c9d83af9816@mail.gmail.com>
+References: <v2mdbb048f61004132326r8ac75382k1e42321ff0ed484a@mail.gmail.com>
+	 <v2he9c3a7c21004141730vcc79dd58t5478c9d83af9816@mail.gmail.com>
+Date: Mon, 19 Apr 2010 15:56:43 +0530
+Message-ID: <m2vdbb048f61004190326ve4220de6za13c94eed059ec2@mail.gmail.com>
+Subject: Re: Dmaengine query
+From: rd bairva <rbairva@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-arm-kernel@lists.arm.linux.org.uk, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 06:05:17PM +0800, Xin, Xiaohui wrote:
-> > Michael,
-> > >>> The idea is simple, just to pin the guest VM user space and then
-> > >>> let host NIC driver has the chance to directly DMA to it. 
-> > >>> The patches are based on vhost-net backend driver. We add a device
-> > >>> which provides proto_ops as sendmsg/recvmsg to vhost-net to
-> > >>> send/recv directly to/from the NIC driver. KVM guest who use the
-> > >>> vhost-net backend may bind any ethX interface in the host side to
-> > >>> get copyless data transfer thru guest virtio-net frontend.
-> > >>> 
-> > >>> The scenario is like this:
-> > >>> 
-> > >>> The guest virtio-net driver submits multiple requests thru vhost-net
-> > >>> backend driver to the kernel. And the requests are queued and then
-> > >>> completed after corresponding actions in h/w are done.
-> > >>> 
-> > >>> For read, user space buffers are dispensed to NIC driver for rx when
-> > >>> a page constructor API is invoked. Means NICs can allocate user buffers
-> > >>> from a page constructor. We add a hook in netif_receive_skb() function
-> > >>> to intercept the incoming packets, and notify the zero-copy device.
-> > >>> 
-> > >>> For write, the zero-copy deivce may allocates a new host skb and puts
-> > >>> payload on the skb_shinfo(skb)->frags, and copied the header to skb->data.
-> > >>> The request remains pending until the skb is transmitted by h/w.
-> > >>> 
-> > >>> Here, we have ever considered 2 ways to utilize the page constructor
-> > >>> API to dispense the user buffers.
-> > >>> 
-> > >>> One:	Modify __alloc_skb() function a bit, it can only allocate a 
-> > >>> 	structure of sk_buff, and the data pointer is pointing to a 
-> > >>> 	user buffer which is coming from a page constructor API.
-> > >>> 	Then the shinfo of the skb is also from guest.
-> > >>> 	When packet is received from hardware, the skb->data is filled
-> > >>> 	directly by h/w. What we have done is in this way.
-> > >>> 
-> > >>> 	Pros:	We can avoid any copy here.
-> > >>> 	Cons:	Guest virtio-net driver needs to allocate skb as almost
-> > >>> 		the same method with the host NIC drivers, say the size
-> > >>> 		of netdev_alloc_skb() and the same reserved space in the
-> > >>> 		head of skb. Many NIC drivers are the same with guest and
-> > >>> 		ok for this. But some lastest NIC drivers reserves special
-> > >>> 		room in skb head. To deal with it, we suggest to provide
-> > >>> 		a method in guest virtio-net driver to ask for parameter
-> > >>> 		we interest from the NIC driver when we know which device 
-> > >>> 		we have bind to do zero-copy. Then we ask guest to do so.
-> > >>> 		Is that reasonable?
-> > >>Unfortunately, this would break compatibility with existing virtio.
-> > >>This also complicates migration.  
-> >> You mean any modification to the guest virtio-net driver will break the
-> >> compatibility? We tried to enlarge the virtio_net_config to contains the
-> >> 2 parameter, and add one VIRTIO_NET_F_PASSTHRU flag, virtionet_probe()
-> >> will check the feature flag, and get the parameters, then virtio-net driver use
-> >> it to allocate buffers. How about this?
-> 
-> >This means that we can't, for example, live-migrate between different systems
-> >without flushing outstanding buffers.
-> 
-> Ok. What we have thought about now is to do something with skb_reserve().
-> If the device is binded by mp, then skb_reserve() will do nothing with it.
-> 
-> > >>What is the room in skb head used for?
-> > >I'm not sure, but the latest ixgbe driver does this, it reserves 32 bytes compared to
-> >> NET_IP_ALIGN.
-> 
-> >Looking at code, this seems to do with alignment - could just be
-> >a performance optimization.
-> 
-> > >>> Two:	Modify driver to get user buffer allocated from a page constructor
-> > >>> 	API(to substitute alloc_page()), the user buffer are used as payload
-> > >>> 	buffers and filled by h/w directly when packet is received. Driver
-> > >>> 	should associate the pages with skb (skb_shinfo(skb)->frags). For 
-> > >>> 	the head buffer side, let host allocates skb, and h/w fills it. 
-> > >>> 	After that, the data filled in host skb header will be copied into
-> > >>> 	guest header buffer which is submitted together with the payload buffer.
-> > >>> 
-> > >>> 	Pros:	We could less care the way how guest or host allocates their
-> > >>> 		buffers.
-> > >>> 	Cons:	We still need a bit copy here for the skb header.
-> > >>> 
-> > >>> We are not sure which way is the better here. 
-> > >>The obvious question would be whether you see any speed difference
-> > >>with the two approaches. If no, then the second approach would be
-> > >>better.
-> > 
-> >> I remember the second approach is a bit slower in 1500MTU. 
-> >> But we did not tested too much.
-> 
-> >Well, that's an important datapoint. By the way, you'll need
-> >header copy to activate LRO in host, so that's a good
-> >reason to go with option 2 as well.
-> 
-> 
-> > >>> This is the first thing we want
-> > >>> to get comments from the community. We wish the modification to the network
-> > >>> part will be generic which not used by vhost-net backend only, but a user
-> > >>> application may use it as well when the zero-copy device may provides async
-> > >>> read/write operations later.
-> > >>> 
-> > >>> Please give comments especially for the network part modifications.
-> > >>> 
-> > >>> 
-> > >>> We provide multiple submits and asynchronous notifiicaton to 
-> > >>>vhost-net too.
-> > >>> 
-> > >>> Our goal is to improve the bandwidth and reduce the CPU usage.
-> > >>> Exact performance data will be provided later. But for simple
-> > >>> test with netperf, we found bindwidth up and CPU % up too,
-> > >>> but the bindwidth up ratio is much more than CPU % up ratio.
-> > >>> 
-> > >>> What we have not done yet:
-> > >>> 	packet split support
-> > 
-> > >>What does this mean, exactly?
-> >> We can support 1500MTU, but for jumbo frame, since vhost driver before don't 
-> > >support mergeable buffer, we cannot try it for multiple sg.
-> 
-> >I do not see why, vhost currently supports 64K buffers with indirect
-> >descriptors.
-> 
-> The receive_skb() in guest virtio-net driver will merge the multiple sg to skb frags, how can indirect descriptors to that?
+Hi Dan,
 
-See add_recvbuf_big.
+On Thu, Apr 15, 2010 at 6:00 AM, Dan Williams <dan.j.williams@intel.com> wrote:
+> On Tue, Apr 13, 2010 at 11:26 PM, rd bairva <rbairva@gmail.com> wrote:
+>> Hi Dan,
+>>
+>>        I am currently writing dmaengine compatible DMA driver for our ARM
+>> based architecture, But I am facing some performance issues doing
+>> that.
+>>
+>> 1. dmaengine says callback should run in tasklet, and next transfer
+>> cannot be scheduled from the callback.
+>>
+>> Due to these restrictions I am getting some performance issue while
+>> playing sound in our architecture.
+>>
+>>
+>> Can callback call in DMA driver be placed out of spin_lock to submit
+>> new operations from callback? (only in asynchronous case)
+>>
+>> is this Ok? please comment.
+>
+> Other dma driver authors are dropping the lock across the call to the
+> callback in the mem-to-io case.  The compliance points in the
+> documentation are primarily targeted at the expectations of the
+> async_tx api.  In the mem-to-io (slave dma) model you are not using
+> the async_tx api.
+>
+> --
+> Dan
+>
 
-> >>> A jumbo frame will split 5
-> >>> frags and hook them once a descriptor, so the user buffer allocation is greatly dependent
-> >>> on how guest virtio-net drivers submits buffers. We think mergeable buffer is suitable for >>>it. 
-> > 
-> > >> 	To support GRO
-> >>> Actually, I think if the mergeable buffer may get good performance, then GRO is not 
-> >>> so important then.
-> > >>And TSO/GSO?
-> >>> Do we really need them?
-> 
-> >>My guess would be yes. Mergeable buffers is a memory saving
-> >>optimization, not a performance optimization, I don't see
-> >>that it can help. And I think you can't solely rely on jumbo frames
-> >>in hardware, not everyone can enable them.
-> 
-> >Having said that, number one priority is getting decent performance
-> >out of the driver, in whatever way you find fit. I was just
-> >suggesting obvious ways to do this.
-> 
-> Thanks.
-> 
-> > >> 	Performance tuning
-> > >> 
-> > >> what we have done in v1:
-> > >> 	polish the RCU usage
-> > >> 	deal with write logging in asynchroush mode in vhost
-> > >> 	add notifier block for mp device
-> > >> 	rename page_ctor to mp_port in netdevice.h to make it looks generic
-> > >> 	add mp_dev_change_flags() for mp device to change NIC state
-> > >> 	add CONIFG_VHOST_MPASSTHRU to limit the usage when module is not load
-> > >> 	a small fix for missing dev_put when fail
-> > >> 	using dynamic minor instead of static minor number
-> > >> 	a __KERNEL__ protect to mp_get_sock()
-> > >> 
-> > >> what we have done in v2:
-> > >> 	
-> > >> 	remove most of the RCU usage, since the ctor pointer is only
-> > >> 	changed by BIND/UNBIND ioctl, and during that time, NIC will be
-> > >> 	stopped to get good cleanup(all outstanding requests are finished),
-> > >> 	so the ctor pointer cannot be raced into wrong situation.
-> > >> 
-> > >> 	Remove the struct vhost_notifier with struct kiocb.
-> > >> 	Let vhost-net backend to alloc/free the kiocb and transfer them
-> > >> 	via sendmsg/recvmsg.
-> > >> 
-> > >> 	use get_user_pages_fast() and set_page_dirty_lock() when read.
-> > >> 
-> > >> 	Add some comments for netdev_mp_port_prep() and handle_mpassthru().
-> > >> 
-> > >> 
-> > >> Comments not addressed yet in this time:
-> > >> 	the async write logging is not satified by vhost-net
-> > >> 	Qemu needs a sync write
-> > >> 	a limit for locked pages from get_user_pages_fast()
-> > >> 	
-> > >> 		
-> > >> performance:
-> > >> 	using netperf with GSO/TSO disabled, 10G NIC, 
-> > >> 	disabled packet split mode, with raw socket case compared to vhost.
-> > >> 
-> > >> 	bindwidth will be from 1.1Gbps to 1.7Gbps
-> > >> 	CPU % from 120%-140% to 140%-160%
+    My DMA controller supports device to device DMA transfers and we
+need it in some of our drivers. Existing DMA engine framework doesn't
+have support for device to device transfers.
+
+Do you have any plans for device to device support in DMA engine?
+
+Can you suggest me some other suggestion for doing this?
+
+
+Regards
+Ramdayal
