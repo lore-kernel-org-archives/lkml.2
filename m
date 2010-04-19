@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab0DSO6n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 10:58:43 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:4913 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754150Ab0DSO6m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 10:58:42 -0400
-From: Frans Pop <elendil@planet.nl>
-To: Takashi Iwai <tiwai@suse.de>
-Subject: Re: [regression] Sound not transferred to docking station after resume from StR
-Date: Mon, 19 Apr 2010 16:58:39 +0200
-User-Agent: KMail/1.9.9
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-       alsa-devel@alsa-project.org
-References: <201004162131.19171.elendil@planet.nl> <201004191439.45589.elendil@planet.nl> <s5hpr1vob79.wl%tiwai@suse.de>
-In-Reply-To: <s5hpr1vob79.wl%tiwai@suse.de>
+	id S1754613Ab0DSO7q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 10:59:46 -0400
+Received: from kroah.org ([198.145.64.141]:54655 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753845Ab0DSO7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 10:59:45 -0400
+Date: Mon, 19 Apr 2010 07:59:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Tomas Winkler <tomasw@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+       Kay Sievers <kay.sievers@vrfy.org>,
+       David Woodhouse <dwmw2@infradead.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: request_firmware API exhaust memory
+Message-ID: <20100419145934.GA10893@kroah.com>
+References: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201004191658.40291.elendil@planet.nl>
-X-OriginalArrivalTime: 19 Apr 2010 14:58:41.0342 (UTC) FILETIME=[CCAAD5E0:01CADFD0]
-X-RecipientDomain: vger.kernel.org
+In-Reply-To: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 April 2010, Takashi Iwai wrote:
-> Thanks for a quick check.  But I found that the patch isn't fully
-> correct.
->
-> The patch below should suffice instead of the previous one.
-> Could you check it again?
+On Mon, Apr 19, 2010 at 03:20:34PM +0300, Tomas Winkler wrote:
+> Lately we've been developing a device that rather more extensively
+> used request_firmware API in load and also using pm_notifiers to load
+> firmware.
 
-Works as well.
+Do you have a pointer to your driver source anywhere that shows how you
+are trying to use the firmware api in this manner?
 
-Reported-and-tested-by: Frans Pop <elendil@planet.nl>
+thanks,
+
+greg k-h
