@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab0DSWFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 18:05:10 -0400
-Received: from baikonur.stro.at ([213.239.196.228]:55013 "EHLO
-	baikonur.stro.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751891Ab0DSWFI (ORCPT
+	id S1752625Ab0DSWHu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 18:07:50 -0400
+Received: from mail-yx0-f171.google.com ([209.85.210.171]:65009 "EHLO
+	mail-yx0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab0DSWHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 18:05:08 -0400
-Date: Mon, 19 Apr 2010 23:57:11 +0200
-From: maximilian attems <max@stro.at>
+	Mon, 19 Apr 2010 18:07:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=CMPNS+GfsGoJjk93bziuB3bMGkCvL4QNRVdNFupWGe2aUBc7If3giSNRdnNIrBmMJf
+         dlL1xoAzJWfVCCJ4smNG8ZFIhYL3Xnmb5K2n5/8HH0DOL3enV9JXctyFkm8Z0UdLkGiF
+         0JdWIMrs4wjUb0+G+5mW5F4EYxdm+dFrgt3cg=
+Message-ID: <4BCCD486.9050006@gmail.com>
+Date: Mon, 19 Apr 2010 15:09:10 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+MIME-Version: 1.0
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, stable@kernel.org,
-       Ulrich Drepper <drepper@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH] fcntl.h: define AT_EACCESS
-Message-ID: <20100419215711.GR10984@baikonur.stro.at>
-References: <1271387280-19565-1-git-send-email-max@stro.at> <20100419144729.2b8180e8.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100419144729.2b8180e8.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.9i
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Alexey Starikovskiy <astarikovskiy@suse.de>
+Subject: Re: MacBookPro2,2 unable too boot with the latest HEAD
+References: <i2vdd18b0c31004140812i6a0e9430u68ab49b24273fe9b@mail.gmail.com>	<20100419142804.3cd53666.akpm@linux-foundation.org>	<4BCCCCDF.4010605@gmail.com> <20100419145741.95688467.akpm@linux-foundation.org>
+In-Reply-To: <20100419145741.95688467.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 02:47:29PM -0700, Andrew Morton wrote:
-> On Fri, 16 Apr 2010 05:08:00 +0200
-> maximilian attems <max@stro.at> wrote:
-> 
-> > noticed on a klibc build of dash that someone had left out that def:
-> > usr/dash/bltin/test.c:490: error: ___AT_EACCESS___ undeclared (first use in thiction)
-> > 
-> > Cc: stable@kernel.org
-> > Cc: Ulrich Drepper <drepper@redhat.com>
-> > Cc: H. Peter Anvin <hpa@zytor.com>
-> > Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> > Signed-off-by: maximilian attems <max@stro.at>
-> > ---
-> >  include/linux/fcntl.h |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
-> > index 8603740..8bb001d 100644
-> > --- a/include/linux/fcntl.h
-> > +++ b/include/linux/fcntl.h
-> > @@ -39,6 +39,8 @@
-> >  #define AT_REMOVEDIR		0x200   /* Remove directory instead of
-> >                                             unlinking file.  */
-> >  #define AT_SYMLINK_FOLLOW	0x400   /* Follow symbolic links.  */
-> > +#define AT_EACCESS		0x200	/* Test access permitted for
-> > +					   effective IDs, not real IDs.  */
-> >  
-> 
-> I'm all confused.
-> 
-> The affects sys_faccesat(), yes?  But sys_faccesat() never gets passed
-> a `flags' argument so how does the behaviour which the FACCESSAT(2)
-> manpage describes get implemented?
-> 
-> This patch doesn't actually change kernel behaviour, so how can setting
-> AT_EACCESS change any syscall's actions?
-> 
-> It's a bit of a worry that the proposed value for AT_EACCESS duplicates
-> AT_REMOVEDIR.  I guess that, despite apeparances, they're different
-> namespaces.  Any thoughts on the implications of this?
+On 04/19/2010 02:57 PM, Andrew Morton wrote:
+> On Mon, 19 Apr 2010 14:36:31 -0700
+> "Justin P. Mattock"<justinmattock@gmail.com>  wrote:
+>
+>> On 04/19/2010 02:28 PM, Andrew Morton wrote:
+>>> On Wed, 14 Apr 2010 08:12:57 -0700
+>>> Justin Mattock<justinmattock@gmail.com>   wrote:
+>>>
+>>>> Just noticed this this morning,
+>>>> system can only boot up when I take the battery
+>>>> out.(when the battery is plugged in this(below)
+>>>> shows up, and if booting no go)
+>>>>
+>>>> [  169.207193] divide error: 0000 [#1] SMP
+>>>> [  169.207203] last sysfs file: /sys/devices/platform/applesmc.768/light
+>>>> [  169.207208] CPU 0
+>>>> [  169.207212] Modules linked in: rfcomm sco radeon bnep l2cap ttm
+>>>> drm_kms_helper drm ipt_LOG iptable_nat nf_nat xt_state
+>>>> nf_conntrack_ftp nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4
+>>>> iptable_filter ip_tables x_tables btusb bluetooth firewire_ohci ath9k
+>>>> firewire_core ath9k_common video battery ac ath9k_hw evdev joydev
+>>>> ohci1394 ath button thermal sky2 i2c_i801 raw1394 ieee1394 uhci_hcd
+>>>> ehci_hcd coretemp acpi_cpufreq processor appletouch applesmc uvcvideo
+>>>> [  169.207303]
+>>>> [  169.207310] Pid: 182, comm: kacpi_notify Not tainted
+>>>> 2.6.34-rc3-00502-gd3b0936 #42 Mac-F42187C8/MacBookPro2,2
+>>>> [  169.207316] RIP: 0010:[<ffffffff81237e43>]  [<ffffffff81237e43>]
+>>>> acpi_ex_extract_from_field+0xb1/0x24a
+>>>
+>>> Presumably acpi_ex_extract_from_field() fed zero into (the misnamed)
+>>> ACPI_ROUND_UP_TO().
+>>>
+>>> I'll ask Rafael and Maciej to track this as a post-26.33 regression,
+>>> thanks.
+>>>
+>>>
+>>
+>> the patch here fixes it for me:ACPI: EC: Limit burst to 64 bit
+>> https://bugzilla.kernel.org/attachment.cgi?id=25962
+>
+> hm.  I wonder how you go from a bugzilla attachment back up tot he bug
+> to which it is attached?
 
-glibc fcntl.h defines AT_EACCESS in the same way as aboves patch,
-concerning the implementation, others should know better.
+I don't know.. maybe backwards thinking(me lefthanded people
+suffer from things of that nature).
 
-the dash code calling faccessat has the 4 params,
-klibc faccessat had only 3 args, guess nobody had used it before.
+>
+> Oh well.  Alexey, I trust that patch is in the 2.6.34 queue?
+>
+> Thanks.
+>
 
-the relevant dash code reads:
-#ifdef HAVE_FACCESSAT
-static int test_file_access(const char *path, int mode)
-{
-	return !faccessat(AT_FDCWD, path, mode, AT_EACCESS);
-}
-#else  /* HAVE_FACCESSAT */
- 
+
+cool..
+
+Justin P. Mattock
