@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab0DSVg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:36:57 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:50874 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab0DSVg4 (ORCPT
+	id S1752527Ab0DSVh5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:37:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:56776 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab0DSVh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:36:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=HgmhjJTXK24BP14Fk4FNY63fwFlUKIfn0QBpe2eREUAYzOkoLT2ERYcj5+84qAgzay
-         zmyIqkBUUk2DZ8dKIV02/uf3Jj0rYCw/3ctmuWC8OzhRHj/fuAFD6fgirvKPNji5pG8M
-         i/RCIXS8ZC9Q72jwFBzzjZgxkmOt3ZKUQA/3U=
-Message-ID: <4BCCCD4B.2070906@gmail.com>
-Date: Mon, 19 Apr 2010 14:38:19 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Jonathan Wakely <jwakely.gcc@gmail.com>
-CC: Jie Zhang <jie@codesourcery.com>, Ben Gamari <bgamari.foss@gmail.com>,
-       gcc@gcc.gnu.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: gcc- 4.6.0 20100416 rtmutex.c:1138:1: internal compiler error
-References: <i2ydd18b0c31004182119w30322238p2ab0094f55901051@mail.gmail.com>	 <4bcbebb3.9653f10a.3be1.ffffe0ef@mx.google.com>	 <4BCBFBA9.9040606@gmail.com> <4BCBFEE3.8020509@codesourcery.com>	 <4BCC0453.3060806@gmail.com> <r2s4348dea51004191417yd5915c1du89b179011d65ca5f@mail.gmail.com>
-In-Reply-To: <r2s4348dea51004191417yd5915c1du89b179011d65ca5f@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 19 Apr 2010 17:37:56 -0400
+X-Authority-Analysis: v=1.1 cv=E9k1WvbCwWjFc1mtZtTZCb4xMnZJ3NelAETgZ6iwC6Q= c=1 sm=0 a=zBnlsAAkvaYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=HNgIk0J_KvSHESlEGNYA:9 a=nYdWiXNiG5D1olA7iFdsE3BbX2EA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: request to add trace off and trace on with events
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Tim Bird <tim.bird@am.sony.com>, Tom Zanussi <tzanussi@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Chase Douglas <chase.douglas@canonical.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100419212950.GB8811@nowhere>
+References: <1271707444.10448.12.camel@gandalf.stny.rr.com>
+	 <4BCCBF6D.3030105@am.sony.com>
+	 <1271709846.10448.29.camel@gandalf.stny.rr.com>
+	 <20100419212950.GB8811@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 19 Apr 2010 17:37:54 -0400
+Message-ID: <1271713074.10448.101.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 02:17 PM, Jonathan Wakely wrote:
-> On 19 April 2010 08:20, Justin P. Mattock wrote:
->> On 04/18/2010 11:57 PM, Jie Zhang wrote:
->>>
->>> On 04/19/2010 02:43 PM, Justin P. Mattock wrote:
->>>>
->>>> I couldn't resist..(had to play),
->>>> anyways I looked through the reports
->>>> but didn't see anything that was
->>>> familiar. so I went and created an entry:
->>>> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=43791
->>>>
->>> Thanks. Please add a preprocessed source file so people can reproduce
->>> your issue.
->>>
->>>
->>
->>
->> as for the preprocessed source file,
->> not that yet skilled at code.(one day)
->
-> See the "how to report" link on the gcc front page:
-> http://gcc.gnu.org/bugs/
-> It's not hard.
->
+On Mon, 2010-04-19 at 23:29 +0200, Frederic Weisbecker wrote:
+
+> The problem with having triggers defined in the filter file is that
+> you couldn't set a normal filter plus a trigger.
+> 
+> That said a filter itself could be a trigger.
+> 
+> if (cond) filter
+> 
+> This is going to break some ABI though.
+> 
+> In fact having one file per trigger type is going to make the
+> things much easier if you don't want to encumber with syntax parsing,
+> and just reuse the filtering code as is with very few modification.
+> This is going to be also easier for the users as they don't have to
+> remember the syntax or the available triggers.
+> 
+> Say you are in an event directory:
+> 
+> $ ls triggers/
+> 
+> filter
+> tracing_off
+> tracing_on
+> dump_trace
+> 
+> $ echo "(a == 1 && b == 2)" > tracing_off
+> 
+> So in the above example, you just reuse the filtering code,
+> no need to parse an if or a command.
+> The filter becomes a command. I've listed it in the triggers
+> directory but this just to express the fact it can be treated
+> like whatever trigger command, this is just an implementation
+> POV. In fact we can just keep it in the event directory.
 
 
-the info from jie, worked, as well
-as: make kernel/rtmutex.i
-(from joe perches)
+I like this. Heck, all registered triggers can be shown here.
 
-Justin P. Mattock
+# cat event/sched/sched_switch/triggers/tracing_off
+disabled
+
+Or it can be a filter, or enabled.
+
+This could also allow a user to do:
+
+echo "(a > 100)" > tracing_on
+echo "(a < 100)" > tracing_off
+
+-- Steve
+
+
+
