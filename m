@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164Ab0DSVvq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:51:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13302 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201Ab0DSVvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:51:44 -0400
-Date: Mon, 19 Apr 2010 17:51:27 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, peterz@infradead.org,
-       gorcunov@gmail.com, aris@redhat.com, linux-kernel@vger.kernel.org,
-       randy.dunlap@oracle.com
-Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100419215127.GO15159@redhat.com>
-References: <1271366710-17468-1-git-send-email-dzickus@redhat.com>
- <20100416014712.GC15570@nowhere>
- <20100419212135.GN15159@redhat.com>
- <20100419213529.GA855@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100419213529.GA855@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1752530Ab0DSVx1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:53:27 -0400
+Received: from fmmailgate01.web.de ([217.72.192.221]:45972 "EHLO
+	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab0DSVxW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 17:53:22 -0400
+From: Jan Kiszka <jan.kiszka@web.de>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+       Jeff Dike <jdike@addtoit.com>
+Subject: [PATCH 4/5] uml: i386: Avoid redefinition of NR_syscalls
+Date: Mon, 19 Apr 2010 23:53:07 +0200
+Message-Id: <3e07ad1a38e88a22d7298deb88a8f3962b101998.1271713955.git.jan.kiszka@web.de>
+X-Mailer: git-send-email 1.6.0.2
+In-Reply-To: <cover.1271713955.git.jan.kiszka@web.de>
+References: <cover.1271713955.git.jan.kiszka@web.de>
+In-Reply-To: <cover.1271713955.git.jan.kiszka@web.de>
+References: <cover.1271713955.git.jan.kiszka@web.de>
+X-Provags-ID: V01U2FsdGVkX18kH+PHNixFwvODFWcBEj+OEezXsyGU/i6qu6sS
+	uwBrUWGih889uXWkuNo/AQ356Kx0hOe86dhqcqkTYllfNoDEjz
+	lir/VbDtI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 11:35:29PM +0200, Ingo Molnar wrote:
-> 
-> * Don Zickus <dzickus@redhat.com> wrote:
-> 
-> > On Fri, Apr 16, 2010 at 03:47:14AM +0200, Frederic Weisbecker wrote:
-> > > On Thu, Apr 15, 2010 at 05:25:10PM -0400, Don Zickus wrote:
-> > > > The new nmi_watchdog (which uses the perf event subsystem) is very
-> > > > similar in structure to the softlockup detector.  Using Ingo's suggestion,
-> > > > I combined the two functionalities into one file, kernel/watchdog.c.
-> > > > 
-> > > > Now both the nmi_watchdog (or hardlockup detector) and softlockup detector
-> > > > sit on top of the perf event subsystem, which is run every 60 seconds or so
-> > > > to see if there are any lockups.
-> > 
-> > Hello all,
-> > 
-> > After making a bunch of cleanups, I am stuck debating whether to continue 
-> > updating this patch on the stale branch perf/nmi on Ingo's tree or just 
-> > repost the whole patch again (which isn't much bigger just adds the 
-> > arch/x86/kernel/apic/hw_nmi.c piece).
-> > 
-> > Part of the new patch series includes removing kernel/nmi_watchdog.c, which 
-> > seemed kinda silly because it was only an intermediate file until things got 
-> > shifted to kernel/watchdog.c
-> > 
-> > Thoughts?
-> 
-> I'd prefer relative patches as the current perf/nmi bits are tested quite 
-> well.
-> 
-> Intermediate stages are not a problem: 90% of the code in the kernel's Git 
-> history is 'intermediate' as well, in hindsight. What matters is that the 
-> workflow that resulted was clean and that the patches were (and are) clean.
+The i386 subarch happens to pull in original NR_syscalls. Maybe we can
+make that work for all host arch, but for now just avoid the clash by
+using an all-upper-case name.
 
-Ok, I'll continue that then.  Thanks.
+Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
+---
+ arch/um/kernel/skas/syscall.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Cheers,
-Don
+diff --git a/arch/um/kernel/skas/syscall.c b/arch/um/kernel/skas/syscall.c
+index 4e3b820..f5173e1 100644
+--- a/arch/um/kernel/skas/syscall.c
++++ b/arch/um/kernel/skas/syscall.c
+@@ -10,7 +10,7 @@
+ #include "sysdep/syscalls.h"
+ 
+ extern int syscall_table_size;
+-#define NR_syscalls (syscall_table_size / sizeof(void *))
++#define NR_SYSCALLS (syscall_table_size / sizeof(void *))
+ 
+ void handle_syscall(struct uml_pt_regs *r)
+ {
+@@ -30,7 +30,7 @@ void handle_syscall(struct uml_pt_regs *r)
+ 	 * in case it's a compiler bug.
+ 	 */
+ 	syscall = UPT_SYSCALL_NR(r);
+-	if ((syscall >= NR_syscalls) || (syscall < 0))
++	if ((syscall >= NR_SYSCALLS) || (syscall < 0))
+ 		result = -ENOSYS;
+ 	else result = EXECUTE_SYSCALL(syscall, regs);
+ 
+-- 
+1.6.0.2
+
