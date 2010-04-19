@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab0DSRRe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 13:17:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11731 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab0DSRRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 13:17:32 -0400
-Date: Mon, 19 Apr 2010 18:32:17 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, r6144 <rainy6144@gmail.com>,
-       linux-kernel@vger.kernel.org, Darren Hart <dvhltc@us.ibm.com>,
-       tglx <tglx@linutronix.de>, Lee Schermerhorn <lee.schermerhorn@hp.com>
-Subject: Re: Process-shared futexes on hugepages puts the kernel in an
- infinite loop in 2.6.32.11; is this fixed now?
-Message-ID: <20100419163217.GB32034@random.random>
-References: <1271432722.2564.16.camel@localhost.localdomain>
- <1271449668.1674.466.camel@laptop>
- <20100419114300.GT19264@csn.ul.ie>
- <1271677956.1674.922.camel@laptop>
- <20100419153245.GX19264@csn.ul.ie>
- <1271691905.1488.317.camel@laptop>
- <20100419161102.GZ32034@random.random>
- <1271693928.1676.18.camel@laptop>
+	id S1754627Ab0DSRUV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 13:20:21 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60965 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab0DSRUT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 13:20:19 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=oCpSYk0le292q3ka9j/wUNLkDmUo2k1m5qT2rPLyqxA1nbeXulSINyHiVk8FlYA+T
+	3ykb7pOBfwOpb6HS4gi/g==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271693928.1676.18.camel@laptop>
+In-Reply-To: <1271317886.32749.69.camel@laptop>
+References: <20100413234902.29004.41655.stgit@bumblebee1.mtv.corp.google.com>
+	 <1271317886.32749.69.camel@laptop>
+Date: Mon, 19 Apr 2010 10:20:01 -0700
+Message-ID: <h2u4352991a1004191020q8200399oc8e9f7d8dee934bf@mail.gmail.com>
+Subject: Re: [PATCH 0/3] [idled]: Idle Cycle Injector for power capping
+From: Salman Qazi <sqazi@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       svaidy@linux.vnet.ibm.com, linux-pm@lists.linux-foundation.org,
+       arjan@infradead.org, csadler@google.com, ranjitm@google.com,
+       kenchen@google.com, dawnchen@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 06:18:48PM +0200, Peter Zijlstra wrote:
-> Well, most poison values have that problem and still we have them. Also
+On Thu, Apr 15, 2010 at 12:51 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-04-13 at 17:08 -0700, Salman wrote:
+>> As we discussed earlier this year, Google has an implementation that it
+>> would like to share.  I have finally gotten around to porting it to
+>> v2.6.33 and cleaning up the interfaces.  It is provided in the following
+>> messages for your review.  I realize that when we first discussed this
+>> idea, a lot of ideas were presented for enhancing it.  Thanks alot for
+>> your suggestions.  I haven't gotten around to implementing any of them.
+>
+> .33 is way too old to submit patches against.
 
-That would better be fixed too to stay <4096 for higher chance of
-bug-detection, it doesn't make this case correct ;).
+Will bump up the version when I refresh the change.
 
-> on 64bit machines you can use POISON_POINTER_DELTA to map it outside the
-> virtual address range.
+>
+> That said, I really really dislike this approach, I would much rather
+> see it tie in with power aware scheduling.
 
-We've thousands of magic values there, I don't see much benefit from
-POISON_POINTER_DELTA other than being able to call it
-0xdeadbeef+POISON_POINTER_DELTA ;). We always look the assembly to
-find the actual real raw pointer value (without the field offset) so I
-think using a range between 0xaaa and 0xbbb for the error pointers, is
-functional enough, but it's up to you as long as it is a address range
-that can't be used by userland it's surely ok ;).
+I think I can see your point:  there is potentially better information
+about the power consumption of the CPU beyond the time it was busy.
+But please clarify: is your complaint the lack of use of this
+information or are you arguing for a deeper integration into the
+scheduler (I.e. implementing it as part of the scheduler rather than
+an independent thread) or both?
+
+>
+>
