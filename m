@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab0DSWZS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 18:25:18 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:49926 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab0DSWZP (ORCPT
+	id S1752901Ab0DSW1c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 18:27:32 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:56757 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab0DSW1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 18:25:15 -0400
-Date: Mon, 19 Apr 2010 17:25:13 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       Eric Biederman <ebiederm@xmission.com>,
-       "Andrew G. Morgan" <morgan@kernel.org>
-Subject: Re: [PATCH 0/3] Taming execve, setuid, and LSMs
-Message-ID: <20100419222513.GA25851@us.ibm.com>
-References: <cover.1269610458.git.luto@mit.edu>
- <20100419172639.GA15800@us.ibm.com>
- <n2ycb0375e11004191432g855540c0jab7989d75b32200d@mail.gmail.com>
- <20100419213952.GA28494@hallyn.com>
- <g2xcb0375e11004191502h7ab186d2nc692ff749a4a2c99@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <g2xcb0375e11004191502h7ab186d2nc692ff749a4a2c99@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 19 Apr 2010 18:27:30 -0400
+From: Dinh.Nguyen@freescale.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, r.herring@freescale.com,
+       Jun.Li@freescale.com, xiao-lizhang@freescale.com,
+       Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv5 2.6.34-rc4 1/5] mxc: Update GPIO for USB support on Freescale MX51 Babbage HW
+Date: Mon, 19 Apr 2010 17:27:00 -0500
+Message-Id: <1271716024-22990-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andrew Lutomirski (luto@mit.edu):
-> On Mon, Apr 19, 2010 at 5:39 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> > Quoting Andrew Lutomirski (luto@mit.edu):
-> >> >
-> >> > ( I did like using new securebits as in [2], but I prefer the
-> >> > automatic not-raising-privs of [1] to simply -EPERM on uid/gid
-> >> > change and lack kof checking for privs raising of [2]. )
-> >> >
-> >> > Really the trick will be finding a balance to satisfy those wanting
-> >> > this as a separate LSM, without traipsing into LSM stacking territory.
-> >>
-> >> I think that making this an LSM is absurd.  Containers (and anything
-> >> else people want to do with namespaces or with other new features that
-> >> interact badly with setuid) are features that people should be able to
-> >
-> > Yes, but that's a reason to aim for targeted caps.  Exec_nopriv or
-> > whatever is more a sandbox than a namespace feature.
-> >
-> >> use easily, and system's choice of LSM shouldn't have anything to do
-> >> with them.  Not to mention that we're trying to *add* rights (e.g.
-> >> unprivileged unshare), and LSM is about *removing* rights.
-> 
-> Is a targeted cap something like "process A can call setdomainname,
-> but only on one particular UTS namespace?"
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Right, only to the UTS ns in which you live.  See for instance
-http://thread.gmane.org/gmane.linux.kernel.containers/15934 .  It's
-how we express for instance that root in a child user_namespace has
-CAP_DAC_OVERRIDE over files in the container, but not over the host.
+This patch is part of enabling USB for Freescale MX51 Babbage HW. This
+patch updates the iomux pins for USB, and gpio line for reset the
+USB hub on the MX51 Babbage HW.
 
--serge
+This patch applies to 2.6.34-rc4.
+
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/plat-mxc/include/mach/iomux-mx51.h |   33 ++++++++++++++++----------
+ 1 files changed, 20 insertions(+), 13 deletions(-)
+
+diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+index b4f975e..80528cc 100644
+--- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
++++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+@@ -1,5 +1,6 @@
+ /*
+  * Copyright (C) 2009-2010 Amit Kucheria <amit.kucheria@canonical.com>
++ * Copyright (C) 2010 Freescale Semiconductor, Inc.
+  *
+  * The code contained herein is licensed under the GNU General Public
+  * License. You may obtain a copy of the GNU General Public License
+@@ -37,6 +38,11 @@ typedef enum iomux_config {
+ 				PAD_CTL_SRE_FAST)
+ #define MX51_UART3_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_DSE_HIGH | \
+ 				PAD_CTL_SRE_FAST)
++#define MX51_USBH1_PAD_CTRL	(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH | \
++				PAD_CTL_PUS_100K_UP | PAD_CTL_PUE | \
++				PAD_CTL_PKE | PAD_CTL_HYS)
++#define MX51_GPIO_PAD_CTRL		(PAD_CTL_DSE_HIGH | PAD_CTL_PKE | \
++				PAD_CTL_SRE_FAST)
+ 
+ /*
+  * The naming convention for the pad modes is MX51_PAD_<padname>__<padmode>
+@@ -208,18 +214,19 @@ typedef enum iomux_config {
+ #define MX51_PAD_KEY_COL3__KEY_COL3	IOMUX_PAD(0x658, 0x268, 0, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_KEY_COL4__KEY_COL4	IOMUX_PAD(0x65C, 0x26C, 0, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_KEY_COL5__KEY_COL5	IOMUX_PAD(0x660, 0x270, 0, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_25__USBH1_CLK	IOMUX_PAD(0x678, 0x278, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_26__USBH1_DIR	IOMUX_PAD(0x67C, 0x27C, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_27__USBH1_STP	IOMUX_PAD(0x680, 0x280, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_28__USBH1_NXT	IOMUX_PAD(0x684, 0x284, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_11__USBH1_DATA0	IOMUX_PAD(0x688, 0x288, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_12__USBH1_DATA1	IOMUX_PAD(0x68C, 0x28C, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_13__USBH1_DATA2	IOMUX_PAD(0x690, 0x290, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_14__USBH1_DATA3	IOMUX_PAD(0x694, 0x294, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_15__USBH1_DATA4	IOMUX_PAD(0x698, 0x298, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_16__USBH1_DATA5	IOMUX_PAD(0x69C, 0x29C, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_17__USBH1_DATA6	IOMUX_PAD(0x6A0, 0x2A0, 2, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_18__USBH1_DATA7	IOMUX_PAD(0x6A4, 0x2A4, 2, 0x0, 0, NO_PAD_CTRL)
++#define MX51_PAD_USBH1_CLK__USBH1_CLK	IOMUX_PAD(0x678, 0x278, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DIR__USBH1_DIR	IOMUX_PAD(0x67C, 0x27C, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_STP__USBH1_STP	IOMUX_PAD(0x680, 0x280, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_STP__GPIO_1_27	IOMUX_PAD(0x680, 0x280, IOMUX_CONFIG_GPIO, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_NXT__USBH1_NXT	IOMUX_PAD(0x684, 0x284, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA0__USBH1_DATA0	IOMUX_PAD(0x688, 0x288, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA1__USBH1_DATA1	IOMUX_PAD(0x68C, 0x28C, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA2__USBH1_DATA2	IOMUX_PAD(0x690, 0x290, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA3__USBH1_DATA3	IOMUX_PAD(0x694, 0x294, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA4__USBH1_DATA4	IOMUX_PAD(0x698, 0x298, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA5__USBH1_DATA5	IOMUX_PAD(0x69C, 0x29C, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA6__USBH1_DATA6	IOMUX_PAD(0x6A0, 0x2A0, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
++#define MX51_PAD_USBH1_DATA7__USBH1_DATA7	IOMUX_PAD(0x6A4, 0x2A4, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
+ #define MX51_PAD_GPIO_3_0__DI1_PIN11	IOMUX_PAD(0x6A8, 0x2A8, 4, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_3_1__DI1_PIN12	IOMUX_PAD(0x6AC, 0x2AC, 4, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_3_2__DI1_PIN13	IOMUX_PAD(0x6B0, 0x2B0, 4, 0x0, 0, NO_PAD_CTRL)
+@@ -299,7 +306,7 @@ typedef enum iomux_config {
+ #define MX51_PAD_GPIO_1_4__GPIO1_4	IOMUX_PAD(0x804, 0x3D8, 0, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_1_5__GPIO1_5	IOMUX_PAD(0x808, 0x3DC, 0, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_1_6__GPIO1_6	IOMUX_PAD(0x80C, 0x3E0, 0, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_1_7__GPIO1_7	IOMUX_PAD(0x810, 0x3E4, 0, 0x0, 0, NO_PAD_CTRL)
++#define MX51_PAD_GPIO_1_7__GPIO1_7	IOMUX_PAD(0x810, 0x3E4, 0, 0x0, 0, MX51_GPIO_PAD_CTRL)
+ #define MX51_PAD_GPIO_1_8__GPIO1_8	IOMUX_PAD(0x814, 0x3E8, 0, 0x0, 1, \
+ 						(PAD_CTL_SRE_SLOW | PAD_CTL_DSE_MED | PAD_CTL_PUS_100K_UP |  PAD_CTL_HYS))
+ #define MX51_PAD_GPIO_1_9__GPIO1_9	IOMUX_PAD(0x818, 0x3EC, 0, 0x0, 0, NO_PAD_CTRL)
+-- 
+1.6.0.4
+
