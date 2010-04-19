@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab0DSNls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 09:41:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36686 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab0DSNlq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 09:41:46 -0400
-Date: Mon, 19 Apr 2010 06:43:25 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: =?UTF-8?B?w4lyaWM=?= Piel <eric.piel@tremplin-utc.net>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
-       cpufreq@vger.kernel.org
-Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with
- ondemand during disk IO
-Message-ID: <20100419064325.49cb3108@infradead.org>
-In-Reply-To: <4BCC147B.10708@tremplin-utc.net>
-References: <20100418115949.7b743898@infradead.org>
-	<20100418120346.1b478410@infradead.org>
-	<4BCC147B.10708@tremplin-utc.net>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1752927Ab0DSNoF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 09:44:05 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:25944
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751558Ab0DSNoD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 09:44:03 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz1432P1418Mzz1202hz31izz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 5,
+X-WSS-ID: 0L14M4Y-01-FK3-02
+X-M-MSG: 
+From: "Langsdorf, Mark" <mark.langsdorf@amd.com>
+To: "'joss@debian.org'" <joss@debian.org>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Mon, 19 Apr 2010 06:43:48 -0700
+Subject: Athlon L110 CPU and powernow-k8
+Thread-Topic: Athlon L110 CPU and powernow-k8
+Thread-Index: Acre/G7tcZX5bOQjTye14yU3Lj886wAx9EHw
+Message-ID: <DDE95BDD51FB774B804A9C029E735EE103E9BF5129@sausexmbp02.amd.com>
+References: <20100418102608.GA29846@a1.tnic>
+In-Reply-To: <20100418102608.GA29846@a1.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+MIME-Version: 1.0
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Apr 2010 10:29:47 +0200
-Éric Piel <eric.piel@tremplin-utc.net> wrote:
-> > 
-> > The problem and fix are both verified with the "perf timechar" tool.
-> Hi,
-> I don't doubt that keeping the cpu full frequency during IO can
-> improve some specific workloads, however in your log message you
-> don't explain how much we are loosing.
 
-first of all, it's so bad that people will just turn the whole power
-management off... at which point fixing the really bad bug is actually
-quite a win 
-
+> Date: Fri, 16 Apr 2010 22:40:58 +0200
+> From: Josselin Mouette <joss@debian.org>
+> To: linux-kernel@vger.kernel.org
+> Subject: Athlon L110 CPU and powernow-k8
+> X-Mailer: Evolution 2.29.92.1
+> Message-ID: <1271450458.6794.33.camel@tomoyo>
 > 
-> How much more energy is consumed when doing a "updatedb" or "find /" ?
+> In both cases, the issue is the same: the DSDT table provided by the
+> BIOS does not include the P-states. Waiting for a hypothetical BIOS
+> update that would fix this bug requires some faith that I 
+> don't have. It is possible to work around this by compiling the
+> kernel with a custom DSDT table with appropriate P-states patched
+> in, however I consider this a developer hack. 
+>
+> I wonder what is possible to do to support this CPU correctly in the
+> kernel. The only sane solution I can think of is to hardcode the
+> P-states for this CPU model in the powernow-k8 driver itself. 
 
-on the machines I used this on (Core i7's) it's actually hardly
-measurable. All CPUs I have access to turn the voltage entirely off
-during idle, so while the frequency is higher, if you're mostly IO
-bound, it's only for very short durations... while still being mostly
-"off".
+I think that hard-coding P-states into the PowerNow 
+driver is not a mantainable solution.
 
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+I don't quite understand why the you think that
+a custom DSDT as a BIOS hack, but think that
+adding custom frequencies to the driver itself is
+acceptable.
+
+The last time this issue came up on cpufreq, Dave
+Jones nixed a general solution to add custom P-states
+through the driver on the grounds that people would
+undervolt their systems, causing a lot of screwy,
+unpredictable behavior.  I agreed with his opinion
+then and I don't see anything in this mesage to
+change that view.
+
+
+--Mark Langsdorf
+Operating System Research Center
+AMD
+
