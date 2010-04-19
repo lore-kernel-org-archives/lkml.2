@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab0DSV3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:29:50 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64709 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018Ab0DSV3t (ORCPT
+	id S1752349Ab0DSVbg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:31:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60095 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750715Ab0DSVbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:29:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Sbu/wQqU6sEaEacBAcW1ATxWV+TD/QBmec4rigwBL4mTPCSHNx2WGbkJuRcsyCgOuI
-         c+C4rMLcD3EexqQGDktQorZxQn0SVaU6VmcPl81p2lrwtQ8xXEmSjIeOpTMxV6OzvhT7
-         R/y3J6T/tEum/fvp6+WeDaeCv3p4jvJ/HfxHU=
-Date: Mon, 19 Apr 2010 23:29:52 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tim Bird <tim.bird@am.sony.com>, Tom Zanussi <tzanussi@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Chase Douglas <chase.douglas@canonical.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: request to add trace off and trace on with events
-Message-ID: <20100419212950.GB8811@nowhere>
-References: <1271707444.10448.12.camel@gandalf.stny.rr.com> <4BCCBF6D.3030105@am.sony.com> <1271709846.10448.29.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271709846.10448.29.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 19 Apr 2010 17:31:35 -0400
+Date: Mon, 19 Apr 2010 14:31:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Steven B <damentz@gmail.com>
+Cc: Frank Ren <frankrq2009@gmx.com>, mingo <mingo@elte.hu>,
+       "a.p.zijlstra" <a.p.zijlstra@chello.nl>,
+       "jens.axboe" <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, dm-devel@redhat.com,
+       Alasdair G Kergon <agk@redhat.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: high iowait problem(Bug 12309 on bugzilla.kernel.org)
+Message-Id: <20100419143102.38f37fe9.akpm@linux-foundation.org>
+In-Reply-To: <o2k8c2bb01004142258zd1a02d38ib2128e324b7d9947@mail.gmail.com>
+References: <20100331124834.192500@gmx.com>
+	<20100413135416.b537eee8.akpm@linux-foundation.org>
+	<o2k8c2bb01004142258zd1a02d38ib2128e324b7d9947@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 04:44:06PM -0400, Steven Rostedt wrote:
-> I thought about a separate file, but I like the idea of having control
-> over them. We could add a "trigger" file too, but I'm not sure if that
-> would be any clearer.
+On Thu, 15 Apr 2010 00:58:05 -0500
+Steven B <damentz@gmail.com> wrote:
+
+> Hi Andrew,
 > 
-> If we add a trigger file, then the filter can be separate, and we just
-> trigger the trigger if the filter passes.
+> > So something between 2.6.32.3 and 2.6.32.8 inclusive rebroke the
+> > kernel. __That's useful info.
+> >
+> > Looking at the changelogs, the only thing I can immediately see in the
+> > block-core area is
+> >
+> > : commit cb723ba5d03bf719dbc7409b4d67572d4472ef8b
+> > : Author: Dmitry Monakhov <dmonakhov@openvz.org>
+> > : Date: __ Wed Jan 27 22:44:36 2010 +0300
+> > :
+> > : __ __ block: fix bio_add_page for non trivial merge_bvec_fn case
+> >
+> > which seems unlikely.
+> >
+> > I'm seeing just one device-mapper change whcih went in over that
+> > timeframe:
+> >
+> > : commit e0f5cfa7c18b411634e73923841eccd3a4c0ce7f
+> > : Author: Martin K. Petersen <martin.petersen@oracle.com>
+> > : Date: __ Mon Jan 11 03:21:50 2010 -0500
+> > :
+> > : __ __ DM: Fix device mapper topology stacking
+> >
+> >
 > 
-> This may be better, because then the triggers do not mess with the
-> filtering code, and I can add it without modification to Tom's code.
+> Although I can't provide any big details, I went through the commits between
+> 2.6.32.2 and 2.6.32.8 and as many things that could affect IO and reverted
+> them from my 2.6.33.2 kernel.
 > 
-> -- Steve
+> Here's my list of commits I reverted that seemed to improve performance locally
+> running a 2.6.33.2 kernel.
 > 
+> cb723ba5d03bf719dbc7409b4d67572d4472ef8b (this one you suspected)
+> block: fix bio_add_page for non trivial merge_bvec_fn case
 > 
+> b2ea8cb9c8f1937cb80b9beb50548a05bfc37819
+> vmscan: do not evict inactive pages when skipping an active list scan
+> 
+> e4dd8ca5be771aa706b0797b3284328bb595bfa1
+> fasync: split 'fasync_helper()' into separate add/remove functions
+> 
+> Though, I was hoping you guys could identify which one of these is
+> the real culprit.
 
-
-The problem with having triggers defined in the filter file is that
-you couldn't set a normal filter plus a trigger.
-
-That said a filter itself could be a trigger.
-
-if (cond) filter
-
-This is going to break some ABI though.
-
-In fact having one file per trigger type is going to make the
-things much easier if you don't want to encumber with syntax parsing,
-and just reuse the filtering code as is with very few modification.
-This is going to be also easier for the users as they don't have to
-remember the syntax or the available triggers.
-
-Say you are in an event directory:
-
-$ ls triggers/
-
-filter
-tracing_off
-tracing_on
-dump_trace
-
-$ echo "(a == 1 && b == 2)" > tracing_off
-
-So in the above example, you just reuse the filtering code,
-no need to parse an if or a command.
-The filter becomes a command. I've listed it in the triggers
-directory but this just to express the fact it can be treated
-like whatever trigger command, this is just an implementation
-POV. In fact we can just keep it in the event directory.
-
-
+Can you go through and revert them individually please?
