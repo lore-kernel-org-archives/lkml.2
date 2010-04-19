@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab0DSIsg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 04:48:36 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52890 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab0DSIsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 04:48:35 -0400
-Message-ID: <4BCC1998.2090604@kernel.org>
-Date: Mon, 19 Apr 2010 17:51:36 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@web.de>
-CC: Jeff Dike <jdike@addtoit.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       user-mode-linux-devel@lists.sourceforge.net,
-       Tiger Yang <tiger.yang@oracle.com>
-Subject: Re: [PATCH] uml: Fix build breakage after slab.h changes
-References: <4BCB353A.3040806@web.de>
-In-Reply-To: <4BCB353A.3040806@web.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753401Ab0DSIzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 04:55:46 -0400
+Received: from mga06.intel.com ([134.134.136.21]:31528 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752125Ab0DSIzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 04:55:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,234,1270450800"; 
+   d="scan'208";a="614384927"
+Subject: Re: [PATCH V5 1/3] perf & kvm: Enhance perf to collect KVM guest
+ os statistics from host side
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       zhiteng.huang@intel.com, tim.c.chen@intel.com,
+       Arnaldo Carvalho de Melo <acme@infradead.org>
+In-Reply-To: <4BCC1665.1080003@redhat.com>
+References: <1271655161.2078.603.camel@ymzhang.sh.intel.com>
+	 <4BCC1665.1080003@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Mon, 19 Apr 2010 16:55:23 +0800
+Message-Id: <1271667323.2078.611.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 19 Apr 2010 08:48:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 01:37 AM, Jan Kiszka wrote:
-> We now have to to include linux/slab.h explicitly for kmalloc & friends.
-> Files that build against host headers already get their prototypes via
-> um_malloc.h, linux/slab.h may even be unavailable.
+On Mon, 2010-04-19 at 11:37 +0300, Avi Kivity wrote:
+> On 04/19/2010 08:32 AM, Zhang, Yanmin wrote:
+> > Below patch introduces perf_guest_info_callbacks and related register/unregister
+> > functions. Add more PERF_RECORD_MISC_XXX bits meaning guest kernel and guest user
+> > space.
+> >    
 > 
-> Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
+> This doesn't apply against upstream.
+What does upstream mean here? The vanilla 2.6.34-rc4?
 
-applied to percpu#for-linus/next.  Will push to Linus in a few days.
+>   What branch was this generated 
+> against?
+> 
+It's against the latest tip/master. I checked out to 19b26586090 as the latest
+tip/master has some updates on perf.
 
-Thanks.
 
--- 
-tejun
