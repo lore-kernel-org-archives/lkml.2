@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab0DSJUn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 05:20:43 -0400
-Received: from pc175e.fzu.cz ([147.231.127.175]:57234 "EHLO postak-1.fzu.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526Ab0DSJUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 05:20:40 -0400
-Message-ID: <4BCC203F.4070501@gentoo.org>
-Date: Mon, 19 Apr 2010 11:19:59 +0200
-From: =?UTF-8?B?SmFuIEt1bmRyw6F0?= <jkt@gentoo.org>
-User-Agent: Thunderbird 2.0.0.14 (X11/20080421)
-MIME-Version: 1.0
-To: Arjan van de Ven <arjan@infradead.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: boot device order troubleshooting without an initrd
-References: <4BCB87E2.4090807@gentoo.org> <20100418165125.1d2b2843@infradead.org>
-In-Reply-To: <20100418165125.1d2b2843@infradead.org>
-X-Enigmail-Version: 0.96.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig5A891B12AD6DABECDC1F710C"
+	id S1752666Ab0DSJWo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 05:22:44 -0400
+Received: from mga05.intel.com ([192.55.52.89]:40725 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752067Ab0DSJWm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 05:22:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,234,1270450800"; 
+   d="scan'208";a="559237473"
+Subject: Re: [PATCH V5 1/3] perf & kvm: Enhance perf to collect KVM guest
+ os statistics from host side
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       zhiteng.huang@intel.com, tim.c.chen@intel.com,
+       Arnaldo Carvalho de Melo <acme@infradead.org>
+In-Reply-To: <4BCC1B82.5050000@redhat.com>
+References: <1271655161.2078.603.camel@ymzhang.sh.intel.com>
+	 <4BCC1665.1080003@redhat.com>
+	 <1271667323.2078.611.camel@ymzhang.sh.intel.com>
+	 <4BCC1B82.5050000@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Mon, 19 Apr 2010 17:22:21 +0800
+Message-Id: <1271668941.2078.613.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig5A891B12AD6DABECDC1F710C
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-Arjan van de Ven wrote:
-> so the problem is that the boot order you want is pretty much opposite
-> from what "normal" people want.
-> AHCI sata before CF slots is pretty much the right thing and what most
-> people will use.... most people will have their OS on AHCI SATA, and
-> occasionally stick in some photo card or whatever.... and they'd ask
-> the flipside question basically.
-
-On this particular motherboard, the CF slot is soldered to the bottom
-side of the PCB, so it is normally situated between the motherboard and
-the computer case, completely inaccessible to the user at runtime.
-
-> We could have pretty evil things in the kernel, so that we'd deal with
-> multiple root=3D lines in the kernel, one by one trying them until one
-> sticks. Right now we don't.... but if you make a clean enough patch
-> it might even pass the review here...
-
-If the ordering stays the same and such patch existed, I should probably
-use something like
-"root=3D/dev/sdf1,/dev/sde1,/dev/sdd1,/dev/sdc1,/dev/sdb1,/dev/sda1". Now=
-,
- I'd guess this would break as soon as I attempt to boot with a USB
-flash device present (I'm assuming it will be enumerated after the CF
-card, right?).
-
-So, in short, what I'd love to see is a special device alias which would
-mean the "BIOS-provided boot device". Would such an approach be
-reasonable? Is it possible at all?
-
-Cheers,
--jkt
-
---=20
-cd /local/pub && more beer > /dev/mouth
+On Mon, 2010-04-19 at 11:59 +0300, Avi Kivity wrote:
+> On 04/19/2010 11:55 AM, Zhang, Yanmin wrote:
+> > On Mon, 2010-04-19 at 11:37 +0300, Avi Kivity wrote:
+> >    
+> >> On 04/19/2010 08:32 AM, Zhang, Yanmin wrote:
+> >>      
+> >>> Below patch introduces perf_guest_info_callbacks and related register/unregister
+> >>> functions. Add more PERF_RECORD_MISC_XXX bits meaning guest kernel and guest user
+> >>> space.
+> >>>
+> >>>        
+> >> This doesn't apply against upstream.
+> >>      
+> > What does upstream mean here? The vanilla 2.6.34-rc4?
+> >    
+> 
+> Yes, sorry for being unclear.
+> 
+> >>    What branch was this generated
+> >> against?
+> >>
+> >>      
+> > It's against the latest tip/master. I checked out to 19b26586090 as the latest
+> > tip/master has some updates on perf.
+> >    
+> 
+> I don't want to merge tip/master... does tip/perf/core contain the 
+> needed updates?
+I think so. A moment ago, I checked out to b5a80b7e9 of tip/perf/core. All 3
+patches could be applied cleanly and compilation is ok. A quick testing shows
+tip/perf/core kernel does work.
 
 
---------------enig5A891B12AD6DABECDC1F710C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkvMIEQACgkQamXfqERyJRdzqgCeMqbLsHfokDub+Aw88yYp2QoB
-Qu0AmwTgi5n2tjHCSV9DF87AZr3VxwVe
-=Zyfv
------END PGP SIGNATURE-----
-
---------------enig5A891B12AD6DABECDC1F710C--
