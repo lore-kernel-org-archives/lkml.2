@@ -1,27 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab0DSLYo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 07:24:44 -0400
-Received: from smtp1.Stanford.EDU ([171.67.219.81]:38403 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754522Ab0DSLYn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 07:24:43 -0400
-Date: Mon, 19 Apr 2010 04:24:26 -0700 (PDT)
-From: Liu Tai Ling <karynnd@stanford.edu>
-Reply-To: Liu Tai Ling <lingtai25@yahoo.com.hk>
-Message-ID: <2078998752.106051271676266603.JavaMail.root@zm02.stanford.edu>
-Subject: Good Day
+	id S1754702Ab0DSL2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 07:28:35 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58000 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753580Ab0DSL2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 07:28:33 -0400
+Date: Mon, 19 Apr 2010 13:28:32 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Lorenzo Castelli <lcastelli@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid: Add mappings for a few keys found on Logitech
+ MX3200
+In-Reply-To: <1271437231.3040.26.camel@lorenzo-desktop>
+Message-ID: <alpine.LNX.2.00.1004191328130.7579@pobox.suse.cz>
+References: <1271437231.3040.26.camel@lorenzo-desktop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [212.116.219.150]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (zclient/5.0.21_GA_3150.RHEL4_64)
-X-Authenticated-User: karynnd@stanford.edu
-To: undisclosed-recipients:;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Day,
-I have a Business Proposal of $21,300,000.00 for you to handle with me from my bank.please contact me on {lingtai25@yahoo.com.hk} with your Full names,occupation,private phone number,current residential address.
+On Fri, 16 Apr 2010, Lorenzo Castelli wrote:
+
+> The keys are added to the generic wireless mappings in case other
+> keyboards use them. Note that the product ID for the MX3200 is the same
+> as USB_DEVICE_ID_S510_RECEIVER_2.
+
+Applied. thanks.
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
