@@ -1,207 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab0DSMWu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 08:22:50 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:53869 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab0DSMWs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 08:22:48 -0400
-Message-ID: <4BCC4B0C.8000602@linux.vnet.ibm.com>
-Date: Mon, 19 Apr 2010 14:22:36 +0200
-From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-mm@kvack.org, Nick Piggin <npiggin@suse.de>,
-       Chris Mason <chris.mason@oracle.com>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Ehrhardt Christian <ehrhardt@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone pressure
-References: <20100322235053.GD9590@csn.ul.ie> <4BA940E7.2030308@redhat.com> <20100324145028.GD2024@csn.ul.ie>
-In-Reply-To: <20100324145028.GD2024@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+	id S1754685Ab0DSMaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 08:30:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47985 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440Ab0DSMaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 08:30:04 -0400
+Date: Mon, 19 Apr 2010 14:30:03 +0200
+From: Jan Blunck <jblunck@suse.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+       Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [GIT PULL] Preparation for BKL'ed ioctl removal
+Message-ID: <20100419123003.GE10776@bolzano.suse.de>
+References: <1271390105-20355-1-git-send-regression-fweisbec@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271390105-20355-1-git-send-regression-fweisbec@gmail.com>
+Organization: SUSE LINUX Products GmbH, GF Markus Rex, HRB 16746 (AG Nuernberg)
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for replying that late, but after digging through another pile of tasks I'm happy to come back to this issue and I'll try to answer all open questions.
-Fortunately I'm also able to add a few new insights that might resurrect this discussion^^
+On Fri, Apr 16, Frederic Weisbecker wrote:
 
-For the requested CFQ scheduler tuning, its deadline what is here :-)
-So I can't apply all that. But in the past I was already able to show that all the "slowdown" occurs above the block device layer (read back through our threads if interessted about details). But eventually that leaves all lower layer tuning out of the critical zone.
+> Linus,
+> 
+> In order to stop the bkl contagion in ioctl and push the
+> bkl from Vfs to the drivers that don't implement a proper
+> unlock_ioctl, this patch proposes to add a new "locked_ioctl"
+> field in struct file_operation.
+> 
+> This field is never called from vfs and requires to assign a
+> new "deprecated_ioctl" helper to the unlocked_ioctl field.
+> This deprecated_ioctl() helper then calls the locked_ioctl()
+> callback with the bkl held.
+> 
+> The point of doing this is to change every users of fops::ioctl
+> to the new scheme. Once there is no more users of the ioctl field,
+> we'll then be able to remove it.
+> 
+> Also this change brings a new config BKL which is always
+> enabled for now. Every drivers that use the bkl through
+> explicit lock_kernel() calls or by using deprecated_ioctl()
+> will have to select CONFIG_BKL.
+> 
+> Once we get no more uses of the bkl from the core features but
+> only on individual drivers, config BKL can be turned off
+> by default and selected by those drivers if needed, relegating
+> the bkl as an obsolete library for poor old drivers.
+> 
+> And given the work happening currently (tty mutex, vfs pushdowns,
+> procfs bkl removal, llseek janitorials, etc...), this may happen
+> sooner than was expected.
+> 
+> Now the point of having this patch in 2.6.34 is to turn
+> the old ioctl implementations to the new scheme in a set
+> of patches that relevant maintainers can apply to their
+> tree (or apply by ourself for unmaintained areas) for .35
+> Otherwise we would need to queue everything in a single
+> tree that may bring conflicts in the next merge window.
+> 
+> This single patch has very few chances to bring any regressions.
+> 
+> Please pull the bkl/ioctl branch that can be found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	bkl/ioctl
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Arnd Bergmann (1):
+>       vfs: Introduce CONFIG_BKL and deprecated_ioctl
+> 
+> 
+>  fs/ioctl.c               |   22 ++++++++++++++++++++++
+>  include/linux/fs.h       |    3 +++
+>  include/linux/smp_lock.h |    4 ++++
+>  kernel/Kconfig.locks     |   10 ++++++++++
+>  4 files changed, 39 insertions(+), 0 deletions(-)
+> 
+> ---
+> commit 588a2267f7b2919ae73380e0932cc6a202787036
+> Author: Arnd Bergmann <arnd@arndb.de>
+> Date:   Thu Apr 1 14:42:38 2010 +0200
+> 
+>     vfs: Introduce CONFIG_BKL and deprecated_ioctl
+>     
+>     This is a preparation for the removal of the big kernel lock that
+>     introduces new interfaces for device drivers still using it.
+>     
+>     We can start marking those device drivers as 'depends on CONFIG_BKL'
+>     now, and make that symbol optional later, when the point has come
+>     at which we are able to build a kernel without the BKL.
+>     
+>     Similarly, device drivers that currently make use of the implicit
+>     BKL locking around the ioctl function can now get annotated by
+>     changing
+>     
+>     	.ioctl = foo_ioctl,
+>     
+>     to
+>     
+>     	.locked_ioctl = foo_ioctl,
+>     	.unlocked_ioctl = deprecated_ioctl,
+>     
+>     As soon as no driver remains using the old ioctl callback, it can
+>     get removed.
+>     
+>     [fweisbec: move config bkl from Kconfig.debug to Kconfig.locks,
+>     rename default_ioctl to deprecated_ioctl]
+>     
+>     Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>     Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+> diff --git a/fs/ioctl.c b/fs/ioctl.c
+> index 6c75110..e6d6a75 100644
+> --- a/fs/ioctl.c
+> +++ b/fs/ioctl.c
+> @@ -58,6 +58,28 @@ static long vfs_ioctl(struct file *filp, unsigned int cmd,
+>  	return error;
+>  }
+>  
+> +#ifdef CONFIG_BKL
+> +/*
+> + * deprecated_ioctl - call locked_ioctl with BKL held
+> + *
+> + * Setting only the ioctl operation but not unlocked_ioctl will become
+> + * invalid in the future, all drivers that are not converted to unlocked_ioctl
+> + * should set .unlocked_ioctl = deprecated_ioctl now.
+> + */
+> +long deprecated_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+> +{
+> +	int error = -ENOTTY;
+> +	if (filp->f_op->locked_ioctl) {
+> +		lock_kernel();
+> +		error = filp->f_op->locked_ioctl(filp->f_path.dentry->d_inode,
+> +						 filp, cmd, arg);
+> +		unlock_kernel();
+> +	}
+> +	return error;
+> +}
+> +EXPORT_SYMBOL_GPL(default_ioctl);
+> +#endif
+> +
+>  static int ioctl_fibmap(struct file *filp, int __user *p)
+>  {
+>  	struct address_space *mapping = filp->f_mapping;
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 39d57bc..6b65b26 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1492,6 +1492,9 @@ struct file_operations {
+>  	int (*readdir) (struct file *, void *, filldir_t);
+>  	unsigned int (*poll) (struct file *, struct poll_table_struct *);
+>  	int (*ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
+> +#ifdef CONFIG_BKL
+> +	int (*locked_ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
+> +#endif
+>  	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+>  	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+>  	int (*mmap) (struct file *, struct vm_area_struct *);
+> diff --git a/include/linux/smp_lock.h b/include/linux/smp_lock.h
+> index 2ea1dd1..c8693e1 100644
+> --- a/include/linux/smp_lock.h
+> +++ b/include/linux/smp_lock.h
+> @@ -62,4 +62,8 @@ static inline void cycle_kernel_lock(void)
+>  #define kernel_locked()				1
+>  
+>  #endif /* CONFIG_LOCK_KERNEL */
+> +
+> +loff_t default_llseek(struct file *file, loff_t offset, int origin);
 
-Corrado also asked for iostat data, due to the reason explained above (issue above BDL) it doesn't contain anything much useful as expected.
-So I'll just add a one liner of good/bad case to show that things like req-sz etc are the same, but just slower.
-This "being slower" is caused by the request arriving in the BDL at a lower rate - caused by our beloved full timeouts in congestion_wait.
+Any specific reason why the default llseek() is in this patch?
 
-Device:         rrqm/s   wrqm/s     r/s     w/s     rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %util
-bad sdb         0.00     0.00    154.50    0.00  70144.00     0.00   908.01     0.62    4.05   2.72  42.00
-good sdb        0.00     0.00    270.50    0.00 122624.00     0.00   906.65     1.32    4.94   2.92  79.00
+Jan
 
-
-So now coming to the probably most critical part - the evict once discussion in this thread.
-I'll try to explain what I found in the meanwhile - let me know whats unclear and I'll add data etc.
-
-In the past we identified that "echo 3 > /proc/sys/vm/drop_caches" helps to improve the accuracy of the used testcase by lowering the noise from 5-8% to <1%.
-Therefore I ran all tests and verifications with that drops.
-In the meanwhile I unfortunately discovered that Mel's fix only helps for the cases when the caches are dropped.
-Without it seems to be bad all the time. So don't cast the patch away due to that discovery :-)
-
-On the good side I was also able to analyze a few more things due to that insight - and it might give us new data to debug the root cause.
-Like Mel I also had identified "56e49d21 vmscan: evict use-once pages first" to be related in the past. But without the watermark wait fix, unapplying it 56e49d21 didn't change much for my case so I left this analysis path.
-
-But now after I found dropping caches is the key to "get back good performance" and "subsequent writes for bad performance" even with watermark wait applied I checked what else changes:
-- first write/read load after reboot or dropping caches -> read TP good
-- second write/read load after reboot or dropping caches -> read TP bad
-=> so what changed.
-
-I went through all kind of logs and found something in the system activity report which very probably is related to 56e49d21.
-When issuing subsequent writes after I dropped caches to get a clean start I get this in Buffers/Caches from Meminfo:
-
-pre write 1
-Buffers:             484 kB
-Cached:             5664 kB
-pre write 2
-Buffers:           33500 kB
-Cached:           149856 kB
-pre write 3
-Buffers:           65564 kB
-Cached:           115888 kB
-pre write 4
-Buffers:           85556 kB
-Cached:            97184 kB
-
-It stays at ~85M with more writes which is approx 50% of my free 160M memory.
-It can be said that once Buffers reached the 65M level all (no matter how much read load I throw at the system) following read loads will have the bad throughput.
-Dropping caches - and by that removing these buffers - gives back the good performance.
-
-So far I found no alternative to a manual drop_caches, but recommending a 30 second cron job dropping caches to get good read performance for customers is not that good anyway.
-I checked if the buffers get cleaned some when, but neither a lot of subsequent read loads pushing the pressure towards read page cache (I hoped the buffers would age or something to eventually get thrown out) nor waiting a long time helped.
-The system seems to be totally unable to get rid of these buffers without my manual help via drop_caches.
-
-I imagine a huge customer DB running wirtes&reads fine at day, with a nightly large backup that losses 50% read throughput because the kernel keeps 50% buffers all the night - and by that doesn't fit in their night slot - just to draw one realistic scenario.
-Is there anything to avoid that behavior to "never free these buffers", but still get all/some of the intended benefits of 56e49d21?
-
-Ideas welcome
-
-P.S. This is still a .32 stable kernel + Mels watermark wait patch based analysis - I plan to check current kernels as well once I find the time, but let me know if there are known obvious fixes related to this issue I should test asap. 
-
-Mel Gorman wrote:
-> On Tue, Mar 23, 2010 at 06:29:59PM -0400, Rik van Riel wrote:
->> On 03/22/2010 07:50 PM, Mel Gorman wrote:
->>
->>> Test scenario
->>> =============
->>> X86-64 machine 1 socket 4 cores
->>> 4 consumer-grade disks connected as RAID-0 - software raid. RAID controller
->>> 	on-board and a piece of crap, and a decent RAID card could blow
->>> 	the budget.
->>> Booted mem=256 to ensure it is fully IO-bound and match closer to what
->>> 	Christian was doing
->> With that many disks, you can easily have dozens of megabytes
->> of data in flight to the disk at once.  That is a major
->> fraction of memory.
->>
-> 
-> That is easily possible. Note, I'm not maintaining this workload configuration
-> is a good idea.
-> 
-> The background to this problem is Christian running a disk-intensive iozone
-> workload over many CPUs and disks with limited memory. It's already known
-> that if he added a small amount of extra memory, the problem went away.
-> The problem was a massive throughput regression and a bisect pinpointed
-> two patches (both mine) but neither make sense. One altered the order pages
-> come back from lists but not availability and his hardware does no automatic
-> merging. A second does alter the availility of pages via the per-cpu lists
-> but reverting the behaviour didn't help.
-> 
-> The first fix to this was to replace congestion_wait with a waitqueue
-> that woke up processes if the watermarks were met. This fixed
-> Christian's problem but Andrew wants to pin the underlying cause.
-> 
-> I strongly suspect that evict-once behaves sensibly when memory is ample
-> but in this particular case, it's not helping.
-> 
->> In fact, you might have all of the inactive file pages under
->> IO...
->>
-> 
-> Possibly. The tests have a write and a read phase but I wasn't
-> collecting the data with sufficient granularity to see which of the
-> tests are actually stalling.
-> 
->>> 3. Page reclaim evict-once logic from 56e49d21 hurts really badly
->>> 	fix title: revertevict
->>> 	fixed in mainline? no
->>> 	affects: 2.6.31 to now
->>>
->>> 	For reasons that are not immediately obvious, the evict-once patches
->>> 	*really* hurt the time spent on congestion and the number of pages
->>> 	reclaimed. Rik, I'm afaid I'm punting this to you for explanation
->>> 	because clearly you tested this for AIM7 and might have some
->>> 	theories. For the purposes of testing, I just reverted the changes.
->> The patch helped IO tests with reasonable amounts of memory
->> available, because the VM can cache frequently used data
->> much more effectively.
->>
->> This comes at the cost of caching less recently accessed
->> use-once data, which should not be an issue since the data
->> is only used once...
->>
-> 
-> Indeed. With or without evict-once, I'd have an expectation of all the
-> pages being recycled anyway because of the amount of data involved.
-> 
->>> Rik, any theory on evict-once?
->> No real theories yet, just the observation that your revert
->> appears to be buggy (see below) and the possibility that your
->> test may have all of the inactive file pages under IO...
->>
-> 
-> Bah. I had the initial revert right and screwed up reverting from
-> 2.6.32.10 on. I'm rerunning the tests. Is this right?
-> 
-> -       if (is_active_lru(lru)) {
-> -               if (inactive_list_is_low(zone, sc, file))
-> -                   shrink_active_list(nr_to_scan, zone, sc, priority, file);
-> +       if (is_active_lru(lru)) {
-> +               shrink_active_list(nr_to_scan, zone, sc, priority, file);
->                 return 0;
-> 
-> 
->> Can you reproduce the stall if you lower the dirty limits?
->>
-> 
-> I'm rerunning the revertevict patches at the moment. When they complete,
-> I'll experiment with dirty limits. Any suggested values or will I just
-> increase it by some arbitrary amount and see what falls out? e.g.
-> increse dirty_ratio to 80.
-> 
->>>   static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
->>>   	struct zone *zone, struct scan_control *sc, int priority)
->>>   {
->>>   	int file = is_file_lru(lru);
->>>
->>> -	if (is_active_lru(lru)) {
->>> -		if (inactive_list_is_low(zone, sc, file))
->>> -		    shrink_active_list(nr_to_scan, zone, sc, priority, file);
->>> +	if (lru == LRU_ACTIVE_FILE) {
->>> +		shrink_active_list(nr_to_scan, zone, sc, priority, file);
->>>   		return 0;
->>>   	}
->> Your revert is buggy.  With this change, anonymous pages will
->> never get deactivated via shrink_list.
->>
-> 
-> /me slaps self
-> 
+> +long deprecated_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
+> +
+>  #endif /* __LINUX_SMPLOCK_H */
+> diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+> index 88c92fb..9a80413 100644
+> --- a/kernel/Kconfig.locks
+> +++ b/kernel/Kconfig.locks
+> @@ -200,3 +200,13 @@ config INLINE_WRITE_UNLOCK_IRQRESTORE
+>  
+>  config MUTEX_SPIN_ON_OWNER
+>  	def_bool SMP && !DEBUG_MUTEXES && !HAVE_DEFAULT_NO_SPIN_MUTEXES
+> +
+> +config BKL
+> +	def_bool y
+> +	help
+> +	  This is the traditional lock that is used in old code instead
+> +	  of proper locking. All drivers that use the BKL should depend
+> +	  on this symbol.
+> +	  This configuration option will become user-selectable in the
+> +	  future, as soon as it is possible to build a kernel without
+> +	  it.
+Regards,
+	Jan
 
 -- 
-
-Grüsse / regards, Christian Ehrhardt
-IBM Linux Technology Center, System z Linux Performance 
+Jan Blunck <jblunck@suse.de>
