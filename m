@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab0DSPUz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 11:20:55 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:48871 "EHLO gir.skynet.ie"
+	id S1755378Ab0DSPVR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 11:21:17 -0400
+Received: from 007.netroom.de ([194.0.247.207]:19940 "EHLO 007.netroom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751034Ab0DSPUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 11:20:54 -0400
-Date: Mon, 19 Apr 2010 16:20:34 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Dave Chinner <david@fromorbit.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100419152034.GW19264@csn.ul.ie>
-References: <20100413202021.GZ13327@think> <20100414014041.GD2493@dastard> <20100414155233.D153.A69D9226@jp.fujitsu.com> <20100414072830.GK2493@dastard> <20100414085132.GJ25756@csn.ul.ie> <20100415013436.GO2493@dastard> <20100415102837.GB10966@csn.ul.ie> <20100416041412.GY2493@dastard> <20100416151403.GM19264@csn.ul.ie>
+	id S1755308Ab0DSPVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 11:21:16 -0400
+Message-ID: <4BCC74E6.1040902@draisberghof.de>
+Date: Mon, 19 Apr 2010 17:21:10 +0200
+From: Josua Dietze <digidietze@draisberghof.de>
+Reply-To: digidietze@draisberghof.de
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100416151403.GM19264@csn.ul.ie>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Stefan Assmann <sassmann@redhat.com>
+CC: mdharm-kernel@one-eyed-alien.net,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-usb@vger.kernel.org
+Subject: Re: [PATCH] USB: expose Huawei E1550 3G modem
+References: <4BCC5071.4010509@redhat.com> <4BCC6206.4030003@draisberghof.de> <4BCC63EB.4010204@redhat.com> <20100419141907.GN26130@one-eyed-alien.net> <4BCC6FAF.2030809@redhat.com>
+In-Reply-To: <4BCC6FAF.2030809@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 16, 2010 at 04:14:03PM +0100, Mel Gorman wrote:
-> > > Your patch fixes 2, avoids 1, breaks 3 and haven't thought about 4 but I
-> > > guess dirty pages can cycle around more so it'd need to be cared for.
-> > 
-> > Well, you keep saying that they break #3, but I haven't seen any
-> > test cases or results showing that. I've been unable to confirm that
-> > lumpy reclaim is broken by disallowing writeback in my testing, so
-> > I'm interested to know what tests you are running that show it is
-> > broken...
-> > 
-> 
-> Ok, I haven't actually tested this. The machines I use are tied up
-> retesting the compaction patches at the moment. The reason why I reckon
-> it'll be a problem is that when these sync-writeback changes were
-> introduced, it significantly helped lumpy reclaim for huge pages. I am
-> making an assumption that backing out those changes will hurt it.
-> 
-> I'll test for real on Monday and see what falls out.
-> 
+Stefan Assmann schrieb:
+> You're right about that. For the E1550 it doesn't hide any devices. I'm
+> still able to access the virtual CDROM and the microSD card. Josua, you
+> might know more about that, isn't the hidding of the CDROM/microSD part
+> done separately?
 
-One machine has completed the test and the results are as expected. When
-allocating huge pages under stress, your patch drops the success rates
-significantly. On X86-64, it showed
+This behaviour depends on the respective device. Most devices 
+don't re-expose the installation medium after switching, some do.
 
-STRESS-HIGHALLOC
-              stress-highalloc   stress-highalloc
-            enable-directreclaim disable-directreclaim
-Under Load 1    89.00 ( 0.00)    73.00 (-16.00)
-Under Load 2    90.00 ( 0.00)    85.00 (-5.00)
-At Rest         90.00 ( 0.00)    90.00 ( 0.00)
+Anyway, usb_modeswitch is on the road to becoming a standard 
+part of the big distributions, so users won't have to look for 
+it actively.
 
-So with direct reclaim, it gets 89% of memory as huge pages at the first
-attempt but 73% with your patch applied. The "Under Load 2" test happens
-immediately after. With the start kernel, the first and second attempts
-are usually the same or very close together. With your patch applied,
-there are big differences as it was no longer trying to clean pages.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Josua Dietze
