@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab0DSNoF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 09:44:05 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:25944
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751558Ab0DSNoD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 09:44:03 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz1432P1418Mzz1202hz31izz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 5,
-X-WSS-ID: 0L14M4Y-01-FK3-02
-X-M-MSG: 
-From: "Langsdorf, Mark" <mark.langsdorf@amd.com>
-To: "'joss@debian.org'" <joss@debian.org>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Mon, 19 Apr 2010 06:43:48 -0700
-Subject: Athlon L110 CPU and powernow-k8
-Thread-Topic: Athlon L110 CPU and powernow-k8
-Thread-Index: Acre/G7tcZX5bOQjTye14yU3Lj886wAx9EHw
-Message-ID: <DDE95BDD51FB774B804A9C029E735EE103E9BF5129@sausexmbp02.amd.com>
-References: <20100418102608.GA29846@a1.tnic>
-In-Reply-To: <20100418102608.GA29846@a1.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Reverse-DNS: unknown
+	id S1753359Ab0DSNoj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 09:44:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36706 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab0DSNog (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 09:44:36 -0400
+Date: Mon, 19 Apr 2010 06:46:17 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       "davej@redhat.com" <davej@redhat.com>,
+       "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
+Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with
+ ondemand during disk IO
+Message-ID: <20100419064617.519eb384@infradead.org>
+In-Reply-To: <201004191009.56859.tvrtko.ursulin@sophos.com>
+References: <20100418115949.7b743898@infradead.org>
+	<20100418120346.1b478410@infradead.org>
+	<201004191009.56859.tvrtko.ursulin@sophos.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 19 Apr 2010 10:09:55 +0100
+Tvrtko Ursulin <tvrtko.ursulin@sophos.com> wrote:
 
-> Date: Fri, 16 Apr 2010 22:40:58 +0200
-> From: Josselin Mouette <joss@debian.org>
-> To: linux-kernel@vger.kernel.org
-> Subject: Athlon L110 CPU and powernow-k8
-> X-Mailer: Evolution 2.29.92.1
-> Message-ID: <1271450458.6794.33.camel@tomoyo>
+> Is the improvement really because IO benefited from CPU being held at
+> a higher frequency, or perhaps because it is now not scaled down
+> during IO, so when CPU intensive part of git grep comes along it is
+> already "revved up"?
+
+the IO part does not get much faster (some systems lower the FSB speed
+at low frequencies, but disks are still much slower than the FSB
+anyway), but the CPU part, which is performance critical for, say,
+"git grep" does go faster.
+
+
 > 
-> In both cases, the issue is the same: the DSDT table provided by the
-> BIOS does not include the P-states. Waiting for a hypothetical BIOS
-> update that would fix this bug requires some faith that I 
-> don't have. It is possible to work around this by compiling the
-> kernel with a custom DSDT table with appropriate P-states patched
-> in, however I consider this a developer hack. 
->
-> I wonder what is possible to do to support this CPU correctly in the
-> kernel. The only sane solution I can think of is to hardcode the
-> P-states for this CPU model in the powernow-k8 driver itself. 
+> Or in other words, does a pure IO workload benefit from now higher
+> selected frequency?
 
-I think that hard-coding P-states into the PowerNow 
-driver is not a mantainable solution.
-
-I don't quite understand why the you think that
-a custom DSDT as a BIOS hack, but think that
-adding custom frequencies to the driver itself is
-acceptable.
-
-The last time this issue came up on cpufreq, Dave
-Jones nixed a general solution to add custom P-states
-through the driver on the grounds that people would
-undervolt their systems, causing a lot of screwy,
-unpredictable behavior.  I agreed with his opinion
-then and I don't see anything in this mesage to
-change that view.
+no.
+Mixed workloads do.
+but pure IO workloads also don't suffer since while idle, the voltage
+goes down anyway.
 
 
---Mark Langsdorf
-Operating System Research Center
-AMD
+> 
+> One idea I had but a) never had time to implement it and b) was not
+> sure it would be accepted anyway, was to modify ondemand governor to
+> ramp up instantly, but slow down slowly (in a configurable way).
 
+that's what ondemand does already.
+
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
