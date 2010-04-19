@@ -1,190 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab0DSNy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 09:54:56 -0400
-Received: from fieldses.org ([174.143.236.118]:51915 "EHLO fieldses.org"
+	id S1754007Ab0DSN54 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 09:57:56 -0400
+Received: from borg.medozas.de ([188.40.89.202]:41928 "EHLO borg.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753454Ab0DSNyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 09:54:55 -0400
-Date: Mon, 19 Apr 2010 09:54:44 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jan Blunck <jblunck@suse.de>
-Cc: Valerie Aurora <vaurora@redhat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-       linux-nfs@vger.kernel.org, Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH 04/35] whiteout/NFSD: Don't return information about
-	whiteouts to userspace
-Message-ID: <20100419135444.GA7700@fieldses.org>
-References: <1271372682-21225-1-git-send-email-vaurora@redhat.com> <1271372682-21225-2-git-send-email-vaurora@redhat.com> <1271372682-21225-3-git-send-email-vaurora@redhat.com> <1271372682-21225-4-git-send-email-vaurora@redhat.com> <1271372682-21225-5-git-send-email-vaurora@redhat.com> <20100416155943.GD29363@fieldses.org> <20100419123741.GF10776@bolzano.suse.de>
+	id S1753771Ab0DSN5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 09:57:54 -0400
+Date: Mon, 19 Apr 2010 15:57:52 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [patch] vt: deactive Shift In/Out in unicode mode
+Message-ID: <alpine.LSU.2.01.1004191555290.17067@obet.zrqbmnf.qr>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100419123741.GF10776@bolzano.suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 02:37:41PM +0200, Jan Blunck wrote:
-> On Fri, Apr 16, J. Bruce Fields wrote:
-> 
-> > Seems OK.  (Though is there any way we could avoid having to add the
-> > check to every filldir callback?  Isn't the default going to be
-> > disinterest in whiteouts?  How are we avoiding all the same checks in
-> > the case of lookup?)
-> > 
-> 
-> Bruce,
-> 
-> the alternative would be to include the check in the fs readdir()
-> implementation, and therefore prevent the call of the filler. I think this
-> patch would be even bigger.
+Hi,
 
-OK, makes sense.
 
---b.
 
-> 
-> Jan
-> 
-> > --b.
-> > 
-> > On Thu, Apr 15, 2010 at 04:04:11PM -0700, Valerie Aurora wrote:
-> > > From: Jan Blunck <jblunck@suse.de>
-> > > 
-> > > Userspace isn't ready for handling another file type, so silently drop
-> > > whiteout directory entries before they leave the kernel.
-> > > 
-> > > Signed-off-by: Jan Blunck <jblunck@suse.de>
-> > > Signed-off-by: David Woodhouse <dwmw2@infradead.org>
-> > > Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-> > > Cc: linux-nfs@vger.kernel.org
-> > > Cc: "J. Bruce Fields" <bfields@fieldses.org>
-> > > Cc: Neil Brown <neilb@suse.de>
-> > > ---
-> > >  fs/compat.c       |    9 +++++++++
-> > >  fs/nfsd/nfs3xdr.c |    5 +++++
-> > >  fs/nfsd/nfs4xdr.c |    5 +++++
-> > >  fs/nfsd/nfsxdr.c  |    4 ++++
-> > >  fs/readdir.c      |    9 +++++++++
-> > >  5 files changed, 32 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/fs/compat.c b/fs/compat.c
-> > > index 00d90c2..624e1a5 100644
-> > > --- a/fs/compat.c
-> > > +++ b/fs/compat.c
-> > > @@ -838,6 +838,9 @@ static int compat_fillonedir(void *__buf, const char *name, int namlen,
-> > >  	struct compat_old_linux_dirent __user *dirent;
-> > >  	compat_ulong_t d_ino;
-> > >  
-> > > +	if (d_type == DT_WHT)
-> > > +		return 0;
-> > > +
-> > >  	if (buf->result)
-> > >  		return -EINVAL;
-> > >  	d_ino = ino;
-> > > @@ -909,6 +912,9 @@ static int compat_filldir(void *__buf, const char *name, int namlen,
-> > >  	compat_ulong_t d_ino;
-> > >  	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(compat_long_t));
-> > >  
-> > > +	if (d_type == DT_WHT)
-> > > +		return 0;
-> > > +
-> > >  	buf->error = -EINVAL;	/* only used if we fail.. */
-> > >  	if (reclen > buf->count)
-> > >  		return -EINVAL;
-> > > @@ -998,6 +1004,9 @@ static int compat_filldir64(void * __buf, const char * name, int namlen, loff_t
-> > >  	int reclen = ALIGN(jj + namlen + 1, sizeof(u64));
-> > >  	u64 off;
-> > >  
-> > > +	if (d_type == DT_WHT)
-> > > +		return 0;
-> > > +
-> > >  	buf->error = -EINVAL;	/* only used if we fail.. */
-> > >  	if (reclen > buf->count)
-> > >  		return -EINVAL;
-> > > diff --git a/fs/nfsd/nfs3xdr.c b/fs/nfsd/nfs3xdr.c
-> > > index 2a533a0..9b96f5a 100644
-> > > --- a/fs/nfsd/nfs3xdr.c
-> > > +++ b/fs/nfsd/nfs3xdr.c
-> > > @@ -885,6 +885,11 @@ encode_entry(struct readdir_cd *ccd, const char *name, int namlen,
-> > >  	int		elen;		/* estimated entry length in words */
-> > >  	int		num_entry_words = 0;	/* actual number of words */
-> > >  
-> > > +	if (d_type == DT_WHT) {
-> > > +		cd->common.err = nfs_ok;
-> > > +		return 0;
-> > > +	}
-> > > +
-> > >  	if (cd->offset) {
-> > >  		u64 offset64 = offset;
-> > >  
-> > > diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-> > > index 78c7e24..8839ba8 100644
-> > > --- a/fs/nfsd/nfs4xdr.c
-> > > +++ b/fs/nfsd/nfs4xdr.c
-> > > @@ -2268,6 +2268,11 @@ nfsd4_encode_dirent(void *ccdv, const char *name, int namlen,
-> > >  		return 0;
-> > >  	}
-> > >  
-> > > +	if (d_type == DT_WHT) {
-> > > +		cd->common.err = nfs_ok;
-> > > +		return 0;
-> > > +	}
-> > > +
-> > >  	if (cd->offset)
-> > >  		xdr_encode_hyper(cd->offset, (u64) offset);
-> > >  
-> > > diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
-> > > index 4ce005d..0e57d4b 100644
-> > > --- a/fs/nfsd/nfsxdr.c
-> > > +++ b/fs/nfsd/nfsxdr.c
-> > > @@ -503,6 +503,10 @@ nfssvc_encode_entry(void *ccdv, const char *name,
-> > >  			namlen, name, offset, ino);
-> > >  	 */
-> > >  
-> > > +	if (d_type == DT_WHT) {
-> > > +		cd->common.err = nfs_ok;
-> > > +		return 0;
-> > > +	}
-> > >  	if (offset > ~((u32) 0)) {
-> > >  		cd->common.err = nfserr_fbig;
-> > >  		return -EINVAL;
-> > > diff --git a/fs/readdir.c b/fs/readdir.c
-> > > index 7723401..3a48491 100644
-> > > --- a/fs/readdir.c
-> > > +++ b/fs/readdir.c
-> > > @@ -77,6 +77,9 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
-> > >  	struct old_linux_dirent __user * dirent;
-> > >  	unsigned long d_ino;
-> > >  
-> > > +	if (d_type == DT_WHT)
-> > > +		return 0;
-> > > +
-> > >  	if (buf->result)
-> > >  		return -EINVAL;
-> > >  	d_ino = ino;
-> > > @@ -154,6 +157,9 @@ static int filldir(void * __buf, const char * name, int namlen, loff_t offset,
-> > >  	unsigned long d_ino;
-> > >  	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(long));
-> > >  
-> > > +	if (d_type == DT_WHT)
-> > > +		return 0;
-> > > +
-> > >  	buf->error = -EINVAL;	/* only used if we fail.. */
-> > >  	if (reclen > buf->count)
-> > >  		return -EINVAL;
-> > > @@ -239,6 +245,9 @@ static int filldir64(void * __buf, const char * name, int namlen, loff_t offset,
-> > >  	struct getdents_callback64 * buf = (struct getdents_callback64 *) __buf;
-> > >  	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 1, sizeof(u64));
-> > >  
-> > > +	if (d_type == DT_WHT)
-> > > +		return 0;
-> > > +
-> > >  	buf->error = -EINVAL;	/* only used if we fail.. */
-> > >  	if (reclen > buf->count)
-> > >  		return -EINVAL;
-> > > -- 
-> > > 1.6.3.3
-> > > 
+I am proposing the patch below for inclusion.
+Also pullable via
+	git://dev.medozas.de/linux siso
+
+##
+parent d93af0ec5842904b701927b0b4da41e59f284e45 (v2.6.34-rc1-1127-gd93af0e)
+commit 063c73c9d7c4e7a86e99c9e7eefc2b47a9262065
+Author: Jan Engelhardt <jengelh@medozas.de>
+Date:   Sat Apr 10 12:40:31 2010 +0200
+
+vt: deactive Shift In/Out in unicode mode
+
+WP describes these control codes as: "The original meaning of those
+characters was to switch to a different character set and back.  This
+was used, for instance, in the Russian character set known as KOI7,
+where SO starts printing Russian letters, and SI starts printing Latin
+letters again."
+
+It is easy to switch one's terminal into gibberish mode by merely
+cat-ing a file which has these characters (may happen with corrupted
+text files, or if accidentally displaying the contents of a binary
+file). This patch deactivates the processing of the control chars in
+Unicode mode, where this switch is not needed.
+
+Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
+---
+ drivers/char/vt.c            |   16 ++++++----
+ net/netfilter/xt_condition.c |   53 +++++++++++++--------------------
+ 2 files changed, 31 insertions(+), 38 deletions(-)
+
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index bd1d116..a3e66bc 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -1698,14 +1698,18 @@ static void do_con_trol(struct tty_struct *tty, struct vc_data *vc, int c)
+ 		cr(vc);
+ 		return;
+ 	case 14:
+-		vc->vc_charset = 1;
+-		vc->vc_translate = set_translate(vc->vc_G1_charset, vc);
+-		vc->vc_disp_ctrl = 1;
++		if (!vc->vc_utf) {
++			vc->vc_charset = 1;
++			vc->vc_translate = set_translate(vc->vc_G1_charset, vc);
++			vc->vc_disp_ctrl = 1;
++		}
+ 		return;
+ 	case 15:
+-		vc->vc_charset = 0;
+-		vc->vc_translate = set_translate(vc->vc_G0_charset, vc);
+-		vc->vc_disp_ctrl = 0;
++		if (!vc->vc_utf) {
++			vc->vc_charset = 0;
++			vc->vc_translate = set_translate(vc->vc_G0_charset, vc);
++			vc->vc_disp_ctrl = 0;
++		}
+ 		return;
+ 	case 24: case 26:
+ 		vc->vc_state = ESnormal;
+diff --git a/net/netfilter/xt_condition.c b/net/netfilter/xt_condition.c
+index d3dcaa4..6594338 100644
+--- a/net/netfilter/xt_condition.c
++++ b/net/netfilter/xt_condition.c
+@@ -52,7 +52,7 @@ struct condition_variable {
+ 
+ /* proc_lock is a user context only semaphore used for write access */
+ /*           to the conditions' list.                               */
+-static struct mutex proc_lock;
++static DEFINE_MUTEX(proc_lock);
+ 
+ static LIST_HEAD(conditions_list);
+ static struct proc_dir_entry *proc_net_condition;
+@@ -96,13 +96,8 @@ condition_mt(const struct sk_buff *skb, const struct xt_match_param *par)
+ {
+ 	const struct xt_condition_mtinfo *info = par->matchinfo;
+ 	const struct condition_variable *var   = info->condvar;
+-	bool x;
+ 
+-	rcu_read_lock();
+-	x = rcu_dereference(var->enabled);
+-	rcu_read_unlock();
+-
+-	return x ^ info->invert;
++	return var->enabled ^ info->invert;
+ }
+ 
+ static int condition_mt_check(const struct xt_mtchk_param *par)
+@@ -122,9 +117,7 @@ static int condition_mt_check(const struct xt_mtchk_param *par)
+ 	 * Let's acquire the lock, check for the condition and add it
+ 	 * or increase the reference counter.
+ 	 */
+-	if (mutex_lock_interruptible(&proc_lock) != 0)
+-		return -EINTR;
+-
++	mutex_lock(&proc_lock);
+ 	list_for_each_entry(var, &conditions_list, list) {
+ 		if (strcmp(info->name, var->status_proc->name) == 0) {
+ 			++var->refcount;
+@@ -156,7 +149,7 @@ static int condition_mt_check(const struct xt_mtchk_param *par)
+ 	wmb();
+ 	var->status_proc->read_proc  = condition_proc_read;
+ 	var->status_proc->write_proc = condition_proc_write;
+-	list_add_rcu(&var->list, &conditions_list);
++	list_add(&var->list, &conditions_list);
+ 	var->status_proc->uid = condition_uid_perms;
+ 	var->status_proc->gid = condition_gid_perms;
+ 	mutex_unlock(&proc_lock);
+@@ -171,16 +164,9 @@ static void condition_mt_destroy(const struct xt_mtdtor_param *par)
+ 
+ 	mutex_lock(&proc_lock);
+ 	if (--var->refcount == 0) {
+-		list_del_rcu(&var->list);
++		list_del(&var->list);
+ 		remove_proc_entry(var->status_proc->name, proc_net_condition);
+ 		mutex_unlock(&proc_lock);
+-		/*
+-		 * synchronize_rcu() would be good enough, but
+-		 * synchronize_net() guarantees that no packet
+-		 * will go out with the old rule after
+-		 * succesful removal.
+-		 */
+-		synchronize_net();
+ 		kfree(var);
+ 		return;
+ 	}
+@@ -202,24 +188,13 @@ static const char *const dir_name = "nf_condition";
+ 
+ static int __net_init condnet_mt_init(struct net *net)
+ {
+-	int ret;
+-
+ 	proc_net_condition = proc_mkdir(dir_name, net->proc_net);
+-	if (proc_net_condition == NULL)
+-		return -EACCES;
+-
+-	ret = xt_register_match(&condition_mt_reg);
+-	if (ret < 0) {
+-		remove_proc_entry(dir_name, net->proc_net);
+-		return ret;
+-	}
+ 
+-	return 0;
++	return (proc_net_condition == NULL) ? -EACCES : 0;
+ }
+ 
+ static void __net_exit condnet_mt_exit(struct net *net)
+ {
+-	xt_unregister_match(&condition_mt_reg);
+ 	remove_proc_entry(dir_name, net->proc_net);
+ }
+ 
+@@ -230,12 +205,26 @@ static struct pernet_operations condition_mt_netops = {
+ 
+ static int __init condition_mt_init(void)
+ {
++	int ret;
++
+ 	mutex_init(&proc_lock);
+-	return register_pernet_subsys(&condition_mt_netops);
++
++	ret = xt_register_match(&condition_mt_reg);
++	if (ret < 0)
++		return ret;
++
++	ret = register_pernet_subsys(&condition_mt_netops);
++	if (ret < 0) {
++		xt_unregister_match(&condition_mt_reg);
++		return ret;
++	}
++
++	return 0;
+ }
+ 
+ static void __exit condition_mt_exit(void)
+ {
++	xt_unregister_match(&condition_mt_reg);
+ 	unregister_pernet_subsys(&condition_mt_netops);
+ }
+ 
+-- 
+# Created with git-export-patch
