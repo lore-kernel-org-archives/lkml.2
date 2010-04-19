@@ -1,194 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab0DSW2P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 18:28:15 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:56776 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab0DSW1q (ORCPT
+	id S1753007Ab0DSW2z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 18:28:55 -0400
+Received: from taverner.CS.Berkeley.EDU ([128.32.153.193]:43684 "EHLO
+	taverner.cs.berkeley.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785Ab0DSW2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 18:27:46 -0400
-From: Dinh.Nguyen@freescale.com
+	Mon, 19 Apr 2010 18:28:54 -0400
+X-Greylist: delayed 521 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Apr 2010 18:28:54 EDT
 To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-       grant.likely@secretlab.ca, bryan.wu@canonical.com,
-       amit.kucheria@canonical.com, r.herring@freescale.com,
-       Jun.Li@freescale.com, xiao-lizhang@freescale.com,
-       Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv5 2.6.34-rc4 3/5] mx5: Enable board specific functions for enabling USB host on Babbage
-Date: Mon, 19 Apr 2010 17:27:02 -0500
-Message-Id: <1271716024-22990-3-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1271716024-22990-2-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1271716024-22990-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271716024-22990-2-git-send-email-Dinh.Nguyen@freescale.com>
+Path: not-for-mail
+From: daw@cs.berkeley.edu (David Wagner)
+Newsgroups: isaac.lists.linux-kernel
+Subject: Re: [PATCH] fcntl.h: define AT_EACCESS
+Date: Mon, 19 Apr 2010 22:20:13 +0000 (UTC)
+Organization: University of California, Berkeley
+Message-ID: <hqikut$4ts$1@taverner.cs.berkeley.edu>
+References: <1271387280-19565-1-git-send-email-max@stro.at> <20100419144729.2b8180e8.akpm@linux-foundation.org> <20100419215711.GR10984@baikonur.stro.at>
+NNTP-Posting-Host: taverner.cs.berkeley.edu
+X-Trace: taverner.cs.berkeley.edu 1271715613 5052 128.32.153.193 (19 Apr 2010 22:20:13 GMT)
+X-Complaints-To: news@taverner.cs.berkeley.edu
+NNTP-Posting-Date: Mon, 19 Apr 2010 22:20:13 +0000 (UTC)
+X-Newsreader: trn 4.0-test76 (Apr 2, 2001)
+Originator: daw@taverner.cs.berkeley.edu (David Wagner)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Can you share some justification why it's worth extending
+faccessat() with new options?
 
-This patch enables USB host functionality for Host1 and OTG port on
-Freescale MX51 Babbage HW. This patch contains the board specific
-HW initialization of the USB HW.
+Isn't faccessat() insecure in most use cases, due to TOCTTOU
+(time-of-check to time-of-use) vulnerabilities?  When faccessat()
+returns 0, you learn that at some point in the past, the process had
+permission to access a given file, though the process may or may not
+have permission at the moment.  Why is that a useful thing to know?
 
-This patch applies to 2.6.34-rc4.
-
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/mach-mx5/board-mx51_babbage.c |  104 ++++++++++++++++++++++++++++++++
- 1 files changed, 104 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-index ee67a71..3b39a27 100644
---- a/arch/arm/mach-mx5/board-mx51_babbage.c
-+++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-@@ -12,11 +12,15 @@
- 
- #include <linux/init.h>
- #include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
- 
- #include <mach/common.h>
- #include <mach/hardware.h>
- #include <mach/imx-uart.h>
- #include <mach/iomux-mx51.h>
-+#include <mach/mxc_ehci.h>
- 
- #include <asm/irq.h>
- #include <asm/setup.h>
-@@ -26,6 +30,9 @@
- 
- #include "devices.h"
- 
-+#define BABBAGE_USB_HUB_RESET	(0*32 + 7)	/* GPIO_1_7 */
-+#define BABBAGE_USBH1_STP	(0*32 + 27)	/* GPIO_1_27 */
-+
- static struct platform_device *devices[] __initdata = {
- 	&mxc_fec_device,
- };
-@@ -46,6 +53,22 @@ static struct pad_desc mx51babbage_pads[] = {
- 	MX51_PAD_EIM_D26__UART3_TXD,
- 	MX51_PAD_EIM_D27__UART3_RTS,
- 	MX51_PAD_EIM_D24__UART3_CTS,
-+
-+	/* USB HOST1 */
-+	MX51_PAD_USBH1_CLK__USBH1_CLK,
-+	MX51_PAD_USBH1_DIR__USBH1_DIR,
-+	MX51_PAD_USBH1_NXT__USBH1_NXT,
-+	MX51_PAD_USBH1_DATA0__USBH1_DATA0,
-+	MX51_PAD_USBH1_DATA1__USBH1_DATA1,
-+	MX51_PAD_USBH1_DATA2__USBH1_DATA2,
-+	MX51_PAD_USBH1_DATA3__USBH1_DATA3,
-+	MX51_PAD_USBH1_DATA4__USBH1_DATA4,
-+	MX51_PAD_USBH1_DATA5__USBH1_DATA5,
-+	MX51_PAD_USBH1_DATA6__USBH1_DATA6,
-+	MX51_PAD_USBH1_DATA7__USBH1_DATA7,
-+
-+	/* USB HUB reset line*/
-+	MX51_PAD_GPIO_1_7__GPIO1_7,
- };
- 
- /* Serial ports */
-@@ -66,15 +89,96 @@ static inline void mxc_init_imx_uart(void)
- }
- #endif /* SERIAL_IMX */
- 
-+static int gpio_usbh1_active(void)
-+{
-+	struct pad_desc usbh1stp_gpio = MX51_PAD_USBH1_STP__GPIO_1_27;
-+	int ret;
-+
-+	/* Set USBH1_STP to GPIO and toggle it */
-+	mxc_iomux_v3_setup_pad(&usbh1stp_gpio);
-+	ret = gpio_request(BABBAGE_USBH1_STP, "usbh1_stp");
-+
-+	if (ret) {
-+		pr_debug("failed to get MX51_PAD_USBH1_STP__GPIO_1_27: %d\n", ret);
-+		return ret;
-+	}
-+	gpio_direction_output(BABBAGE_USBH1_STP, 0);
-+	gpio_set_value(BABBAGE_USBH1_STP, 1);
-+	msleep(100);
-+	gpio_free(BABBAGE_USBH1_STP);
-+	return 0;
-+}
-+
-+static inline void babbage_usbhub_reset(void)
-+{
-+	int ret;
-+
-+	/* Bring USB hub out of reset */
-+	ret = gpio_request(BABBAGE_USB_HUB_RESET, "GPIO1_7");
-+	if (ret) {
-+		printk(KERN_ERR"failed to get GPIO_USB_HUB_RESET: %d\n", ret);
-+		return;
-+	}
-+	gpio_direction_output(BABBAGE_USB_HUB_RESET, 0);
-+
-+	/* USB HUB RESET - De-assert USB HUB RESET_N */
-+	msleep(1);
-+	gpio_set_value(BABBAGE_USB_HUB_RESET, 0);
-+	msleep(1);
-+	gpio_set_value(BABBAGE_USB_HUB_RESET, 1);
-+}
-+
-+/* This function is board specific as the bit mask for the plldiv will also
-+be different for other Freescale SoCs, thus a common bitmask is not
-+possible and cannot get place in /plat-mxc/ehci.c.*/
-+static int initialize_otg_port(struct platform_device *pdev)
-+{
-+	u32 v;
-+	void __iomem *usb_base;
-+	u32 usbother_base;
-+
-+	usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
-+	usbother_base = usb_base + USBOTHER_REGS_OFFSET;
-+
-+	/* Set the PHY clock to 19.2MHz */
-+	v = __raw_readl(usbother_base + USB_PHY_CTR_FUNC2_OFFSET);
-+	v &= ~USB_UTMI_PHYCTRL2_PLLDIV_MASK;
-+	v |= USB_PLL_DIV_19_2_MHZ;
-+	__raw_writel(v, usbother_base + USB_PHY_CTR_FUNC2_OFFSET);
-+	iounmap(usb_base);
-+	return 0;
-+}
-+
-+static struct mxc_usbh_platform_data dr_utmi_config = {
-+	.init		= initialize_otg_port,
-+	.portsc	= MXC_EHCI_UTMI_16BIT,
-+	.flags	= MXC_EHCI_INTERNAL_PHY,
-+};
-+
-+static struct mxc_usbh_platform_data usbh1_config = {
-+	.portsc	= MXC_EHCI_MODE_ULPI,
-+	.flags	= (MXC_EHCI_POWER_PINS_ENABLED | MXC_EHCI_ITC_NO_THRESHOLD),
-+};
-+
- /*
-  * Board specific initialization.
-  */
- static void __init mxc_board_init(void)
- {
-+	struct pad_desc usbh1stp = MX51_PAD_USBH1_STP__USBH1_STP;
-+
- 	mxc_iomux_v3_setup_multiple_pads(mx51babbage_pads,
- 					ARRAY_SIZE(mx51babbage_pads));
- 	mxc_init_imx_uart();
- 	platform_add_devices(devices, ARRAY_SIZE(devices));
-+
-+	mxc_register_device(&mxc_usbdr_host_device, &dr_utmi_config);
-+
-+	gpio_usbh1_active();
-+	mxc_register_device(&mxc_usbh1_device, &usbh1_config);
-+	/* setback USBH1_STP to be function */
-+	mxc_iomux_v3_setup_pad(&usbh1stp);
-+	babbage_usbhub_reset();
- }
- 
- static void __init mx51_babbage_timer_init(void)
--- 
-1.6.0.4
-
+I'm sure you're familiar with all the standard arguments why using
+access() tends to represent a security vulnerability.  Is there a reason
+why similar arguments do not apply to faccessat()?
