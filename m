@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab0DSOMv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 10:12:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37138 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753771Ab0DSOMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 10:12:49 -0400
-Date: Mon, 19 Apr 2010 16:12:48 +0200
-From: Jan Blunck <jblunck@suse.de>
-To: Jamie Lokier <jamie@shareable.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, Valerie Aurora <vaurora@redhat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Theodore Tso <tytso@mit.edu>,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
-Message-ID: <20100419141248.GK10776@bolzano.suse.de>
-References: <1271372682-21225-9-git-send-email-vaurora@redhat.com> <1271372682-21225-10-git-send-email-vaurora@redhat.com> <1271372682-21225-11-git-send-email-vaurora@redhat.com> <1271372682-21225-12-git-send-email-vaurora@redhat.com> <1271372682-21225-13-git-send-email-vaurora@redhat.com> <1271372682-21225-14-git-send-email-vaurora@redhat.com> <20100419124025.GG10776@bolzano.suse.de> <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org>
-Mime-Version: 1.0
+	id S1754345Ab0DSOPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 10:15:35 -0400
+Received: from isilmar.linta.de ([213.133.102.198]:47429 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753811Ab0DSOPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 10:15:34 -0400
+Date: Mon, 19 Apr 2010 16:12:52 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [RFC] PCMCIA patches for 2.6.36-rc5
+Message-ID: <20100419141252.GA25320@comet.dominikbrodowski.net>
+Mail-Followup-To: linux-pcmcia@lists.infradead.org,
+	linux-kernel@vger.kernel.org
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100419133028.GA3631@shareable.org>
-Organization: SUSE LINUX Products GmbH, GF Markus Rex, HRB 16746 (AG Nuernberg)
-User-Agent: Mutt/1.5.9i
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, Jamie Lokier wrote:
+Hey,
 
-> Jan Blunck wrote:
-> > On Mon, Apr 19, David Woodhouse wrote:
-> > 
-> > > On Mon, 2010-04-19 at 14:40 +0200, Jan Blunck wrote:
-> > > > On Thu, Apr 15, Valerie Aurora wrote:
-> > > > 
-> > > > > Add support for fallthru directory entries to ext2.
-> > > > > 
-> > > > > XXX - Makes up inode number for fallthru entry
-> > > > > XXX - Might be better implemented as special symlinks
-> > > > 
-> > > > Better not. David Woodhouse actually convinced me of moving away from the
-> > > > special symlink approach. The whiteouts have been implemented as special
-> > > > symlinks before.
-> > > 
-> > > I certainly asked whether you really need a real 'struct inode' for
-> > > whiteouts, and suggested that they should be represented _purely_ as a
-> > > dentry with type DT_WHT.
-> > > 
-> > > I don't much like the manifestation of that in this patch though,
-> > > especially with the made-up inode number. (ISTR I had other
-> > > jffs2-specific objections too, which I'll dig out and forward).
-> > 
-> > Yes, this patches still have issues that Val and me are aware off. I can't
-> > remember anything jffs2-specific though.
-> > 
-> > We return that inode number because we don't want to lookup the name on the
-> > other filesystem during readdir. Therefore returning DT_UNKNOWN to let the
-> > userspace decide if it needs to stat the file was the easiest workaround. I
-> > know that POSIX requires d_ino and d_name but on the other hand it does not
-> > require anything more on how long d_ino is valid.
-> 
-> Although the lifetime of d_ino might very, I know some programs (not
-> public) that will break if they see a d_ino which is wrongly matching
-> the st_ino of another file somewhere on the same st_dev.  They will
-> assume the name is a hard link to the other file, without calling
-> stat(), which I think is a reasonable assumption and a useful optimisation.
-> 
-> So the made-up d_ino should at least be careful to not match an inode
-> number of another file which has a stable st_ino.
-> 
-> Why not zero for d_ino?
-> 
+to solve most of the outstanding bugs I'm aware of, I intend to submit a
+pull request for a few patches tomorrow. They're available at
 
-Hmm, why not. Or even the ino of the directory we are reading from ...
+git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
 
-Regards,
-	Jan
+As usual, I'm interested in your input to this patch series. The individual
+patches will be sent out to the PCMCIA list in a few moments.
 
--- 
-Jan Blunck <jblunck@suse.de>
+Best,
+	Dominik
+
+
+Dan Carpenter (1):
+      pcmcia: fix error handling in cm4000_cs.c
+
+Dominik Brodowski (5):
+      pcmcia: use previously assigned IRQ for all card functions
+      pcmcia: fix io_probe due to parent (PCI) resources
+      pcmcia: re-start on MFC override
+      pcmcia: fix ioport size calculation in rsrc_nonstatic
+      pcmcia: avoid late calls to pccard_validate_cis
+
+Julia Lawall (1):
+      drivers/pcmcia: Add missing local_irq_restore
+
+Timur Maximov (1):
+      serial_cs: MD55x support (PCMCIA GPRS/EDGE modem) (kernel 2.6.33)
+
+ drivers/char/pcmcia/cm4000_cs.c  |    8 +++++---
+ drivers/pcmcia/cistpl.c          |    9 +++++++--
+ drivers/pcmcia/db1xxx_ss.c       |    4 +++-
+ drivers/pcmcia/ds.c              |   22 ++++++++++++++--------
+ drivers/pcmcia/pcmcia_resource.c |   10 +++++-----
+ drivers/pcmcia/rsrc_nonstatic.c  |   16 ++++++++++++----
+ drivers/serial/serial_cs.c       |    9 +++++++++
+ 7 files changed, 55 insertions(+), 23 deletions(-)
