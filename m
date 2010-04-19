@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab0DSVyP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:54:15 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41304 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752623Ab0DSVyE (ORCPT
+	id S1752606Ab0DSVyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:54:01 -0400
+Received: from fmmailgate01.web.de ([217.72.192.221]:45978 "EHLO
+	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245Ab0DSVxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:54:04 -0400
-Date: Mon, 19 Apr 2010 22:54:00 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alexander Samad <alex@samad.com.au>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: problem with gobi loader on HP mini 5101
-Message-ID: <20100419215400.GA20921@srcf.ucam.org>
-References: <r2l836a6dcf1004191348tba6a2b5al8051a65e5c6f81fd@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <r2l836a6dcf1004191348tba6a2b5al8051a65e5c6f81fd@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 19 Apr 2010 17:53:22 -0400
+From: Jan Kiszka <jan.kiszka@web.de>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+       Jeff Dike <jdike@addtoit.com>
+Subject: [PATCH 5/5] uml: Clean up asm/system.h
+Date: Mon, 19 Apr 2010 23:53:08 +0200
+Message-Id: <e89d636e305d095f5919c0e22cf92159c4067018.1271713955.git.jan.kiszka@web.de>
+X-Mailer: git-send-email 1.6.0.2
+In-Reply-To: <cover.1271713955.git.jan.kiszka@web.de>
+References: <cover.1271713955.git.jan.kiszka@web.de>
+In-Reply-To: <cover.1271713955.git.jan.kiszka@web.de>
+References: <cover.1271713955.git.jan.kiszka@web.de>
+X-Provags-ID: V01U2FsdGVkX19Eg1VsZRvRLpzsMlTsBMa7wHVKaGPYyY4Fg+CT
+	u+4glKU1l9ZfmpTLTb4YHMW5afB4GJLjXS5kPUBLib1ZhQ1bIn
+	cIkWpsmpo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 06:48:06AM +1000, Alexander Samad wrote:
+Remove duplicates and unused prototypes.
 
-> I am not sure what or how to debug this, so I have come to the list.
-> running debian i386 2.6.32-4
+Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
+---
+ arch/um/include/asm/system.h |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-The switch to kfifo in usbserial in .32 broke it. There are patches on 
-linux-usb, but they won't apply cleanly to .32.
-
+diff --git a/arch/um/include/asm/system.h b/arch/um/include/asm/system.h
+index 753346e..93af1cf 100644
+--- a/arch/um/include/asm/system.h
++++ b/arch/um/include/asm/system.h
+@@ -3,11 +3,8 @@
+ 
+ #include "sysdep/system.h"
+ 
+-extern void *switch_to(void *prev, void *next, void *last);
+-
+ extern int get_signals(void);
+ extern int set_signals(int enable);
+-extern int get_signals(void);
+ extern void block_signals(void);
+ extern void unblock_signals(void);
+ 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.6.0.2
+
