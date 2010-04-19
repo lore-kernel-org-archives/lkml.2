@@ -1,62 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab0DSPuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 11:50:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47989 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753027Ab0DSPuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 11:50:03 -0400
-Date: Mon, 19 Apr 2010 17:48:46 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Peter Zijlstra <peterz@infradead.org>, r6144 <rainy6144@gmail.com>,
-       linux-kernel@vger.kernel.org, Darren Hart <dvhltc@us.ibm.com>,
-       tglx <tglx@linutronix.de>, Lee Schermerhorn <lee.schermerhorn@hp.com>
-Subject: Re: Process-shared futexes on hugepages puts the kernel in an
- infinite loop in 2.6.32.11; is this fixed now?
-Message-ID: <20100419154846.GY32034@random.random>
-References: <1271432722.2564.16.camel@localhost.localdomain>
- <1271449668.1674.466.camel@laptop>
- <20100419114300.GT19264@csn.ul.ie>
- <1271677956.1674.922.camel@laptop>
- <20100419153245.GX19264@csn.ul.ie>
+	id S1753953Ab0DSPvg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 11:51:36 -0400
+Received: from exhub016-4.exch016.msoutlookonline.net ([207.5.72.225]:18530
+	"EHLO EXHUB016-4.exch016.msoutlookonline.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753027Ab0DSPvf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 11:51:35 -0400
+Message-ID: <4BCC7C05.8000803@cfl.rr.com>
+Date: Mon, 19 Apr 2010 11:51:33 -0400
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100419153245.GX19264@csn.ul.ie>
+To: linux-fsdevel@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: readahead on directories
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 04:32:45PM +0100, Mel Gorman wrote:
-> +#define HUGETLB_PRIVATE_MAPPING	(0x2e4 | PAGE_MAPPING_ANON)
+I have been trying to improve boot times with ureadahead and have
+identified a period of time of almost zero IO throughput caused by calls
+to open() blocking during name lookup while fetching directory blocks.
+At first I thought this could simply be fixed by calling readahead() on
+the directories first before open()ing all of the normal files for
+readahead.
 
-Cute indeed.
-
-BTW, just in case I tested this on transparent hugepage and it works
-fine (it uses no cpu and can be killed with C^c). I had to hack it
-like below to allocate the semaphore on hugepages without
-khugepaged. I verified 1 hugepage is allocated (thanks to memory
-compaction there's an huge excess of hugepages compared to what my
-regular apps can eat ;). Furthermore I found gcc bypasses malloc so a
-small patch to gcc should move it all into hugepages. Then maybe we
-can build the kernel faster and definitely translate.o will build 8%
-faster with the default khugepaged scan_sleep_millisecs settings
-(waiting to be confirmed but I exclude bad surprises, whatever runs
-fast with khugepaged has will run even faster without it if something,
-or equal in the worst case).
-
-Thanks,
-Andrea
-
---- process-shared-sem-hugepage.c.orig	2010-04-19 17:43:47.278964888 +0200
-+++ process-shared-sem-hugepage.c	2010-04-19 17:44:01.100032774 +0200
-@@ -30,6 +30,7 @@ int main(void)
- 
-   g_thread_init(NULL);
-   workers = g_new(GThread *, NWORKER); work_sem = g_new(sem_t, 1);
-+  posix_memalign(&work_sem, 2*1024*1024, 2*1024*1024);
-   result = sem_init(work_sem, TRUE, 0); g_assert(result == 0);
- 
-   for (i = 0; i < NWORKER; i++) {
-
+Unfortunately it seems that readahead() fails when called on a
+directory.  I was wondering if I could get some help understanding why
+this is, and how it could be fixed.
