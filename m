@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab0DSOXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 10:23:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6606 "EHLO mx1.redhat.com"
+	id S1755094Ab0DSO0a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 10:26:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5053 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754495Ab0DSOXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 10:23:32 -0400
-Date: Mon, 19 Apr 2010 10:23:15 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Jan Blunck <jblunck@suse.de>
-Cc: Jamie Lokier <jamie@shareable.org>, David Woodhouse <dwmw2@infradead.org>,
-       Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Theodore Tso <tytso@mit.edu>,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
-Message-ID: <20100419142315.GA2688@shell>
-References: <1271372682-21225-10-git-send-email-vaurora@redhat.com> <1271372682-21225-11-git-send-email-vaurora@redhat.com> <1271372682-21225-12-git-send-email-vaurora@redhat.com> <1271372682-21225-13-git-send-email-vaurora@redhat.com> <1271372682-21225-14-git-send-email-vaurora@redhat.com> <20100419124025.GG10776@bolzano.suse.de> <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de>
-Mime-Version: 1.0
+	id S1754767Ab0DSO02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 10:26:28 -0400
+Date: Mon, 19 Apr 2010 11:26:24 -0300
+From: Glauber Costa <glommer@redhat.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>
+Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
+Message-ID: <20100419142624.GE14158@mothafucka.localdomain>
+References: <1271356648-5108-1-git-send-email-glommer@redhat.com>
+ <1271356648-5108-2-git-send-email-glommer@redhat.com>
+ <4BC8CA52.4090703@goop.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100419141248.GK10776@bolzano.suse.de>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <4BC8CA52.4090703@goop.org>
+X-ChuckNorris: True
+User-Agent: Jack Bauer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 04:12:48PM +0200, Jan Blunck wrote:
-> On Mon, Apr 19, Jamie Lokier wrote:
+On Fri, Apr 16, 2010 at 01:36:34PM -0700, Jeremy Fitzhardinge wrote:
+> On 04/15/2010 11:37 AM, Glauber Costa wrote:
+> > In recent stress tests, it was found that pvclock-based systems
+> > could seriously warp in smp systems. Using ingo's time-warp-test.c,
+> > I could trigger a scenario as bad as 1.5mi warps a minute in some systems.
+> >   
 > 
-> > Jan Blunck wrote:
-> > > On Mon, Apr 19, David Woodhouse wrote:
-> > > 
-> > > > On Mon, 2010-04-19 at 14:40 +0200, Jan Blunck wrote:
-> > > > > On Thu, Apr 15, Valerie Aurora wrote:
-> > > > > 
-> > > > > > Add support for fallthru directory entries to ext2.
-> > > > > > 
-> > > > > > XXX - Makes up inode number for fallthru entry
-> > > > > > XXX - Might be better implemented as special symlinks
-> > > > > 
-> > > > > Better not. David Woodhouse actually convinced me of moving away from the
-> > > > > special symlink approach. The whiteouts have been implemented as special
-> > > > > symlinks before.
-> > > > 
-> > > > I certainly asked whether you really need a real 'struct inode' for
-> > > > whiteouts, and suggested that they should be represented _purely_ as a
-> > > > dentry with type DT_WHT.
-> > > > 
-> > > > I don't much like the manifestation of that in this patch though,
-> > > > especially with the made-up inode number. (ISTR I had other
-> > > > jffs2-specific objections too, which I'll dig out and forward).
-> > > 
-> > > Yes, this patches still have issues that Val and me are aware off. I can't
-> > > remember anything jffs2-specific though.
-> > > 
-> > > We return that inode number because we don't want to lookup the name on the
-> > > other filesystem during readdir. Therefore returning DT_UNKNOWN to let the
-> > > userspace decide if it needs to stat the file was the easiest workaround. I
-> > > know that POSIX requires d_ino and d_name but on the other hand it does not
-> > > require anything more on how long d_ino is valid.
-> > 
-> > Although the lifetime of d_ino might very, I know some programs (not
-> > public) that will break if they see a d_ino which is wrongly matching
-> > the st_ino of another file somewhere on the same st_dev.  They will
-> > assume the name is a hard link to the other file, without calling
-> > stat(), which I think is a reasonable assumption and a useful optimisation.
-> > 
-> > So the made-up d_ino should at least be careful to not match an inode
-> > number of another file which has a stable st_ino.
-> > 
-> > Why not zero for d_ino?
-> > 
+> Is that "1.5 million"?
+Yes it is.
+
+But as I said, this seem to be a very deep worst case scenario. Most of boxes
+are not even close to being that bad.
+
 > 
-> Hmm, why not. Or even the ino of the directory we are reading from ...
+> > (to be fair, it wasn't that bad in most of them). Investigating further, I
+> > found out that such warps were caused by the very offset-based calculation
+> > pvclock is based on.
+> >   
+> 
+> Is the problem that the tscs are starting out of sync, or that they're
+> drifting relative to each other over time?  Do the problems become worse
+> the longer the uptime?  How large are the offsets we're talking about here?
+The offsets usually seem pretty small, under a microsecond. So I don't think
+it has anything to do with tscs starting out of sync. Specially because the
+delta-based calculation has the exact purpose of handling that case.
 
-I don't recall there being any technical reason not to look up the
-real inode number.  I just wrote it that we because I was lazy.  So I
-like returning the directory's d_ino better than a single magic
-number, but I'd at least like to try returning the real inode number
-too.
 
--VAL
