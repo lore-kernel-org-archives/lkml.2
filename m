@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab0DSBdW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 21:33:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34772 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab0DSBdU convert rfc822-to-8bit (ORCPT
+	id S1757501Ab0DSBhh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 21:37:37 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:50818 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753866Ab0DSBhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 21:33:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,233,1270450800"; 
-   d="scan'208";a="790470489"
-From: "Zhang, Xiantao" <xiantao.zhang@intel.com>
-To: "vatsa@in.ibm.com" <vatsa@in.ibm.com>,
-       Peter Zijlstra <peterz@infradead.org>
-CC: Avi Kivity <avi@redhat.com>, Srivatsa Vaddagiri <vatsa.ml@gmail.com>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       "Yang, Xiaowei" <xiaowei.yang@intel.com>,
-       "Dong, Eddie" <eddie.dong@intel.com>, "Li, Xin" <xin.li@intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 19 Apr 2010 09:32:12 +0800
-Subject: RE: VM performance issue in KVM guests.
-Thread-Topic: VM performance issue in KVM guests.
-Thread-Index: Acrcus1jW65uZu+eQe6RkvRYk4Yi9ACoxykQAACNDoA=
-Message-ID: <BC00F5384FCFC9499AF06F92E8B78A9E026FAC6185@shsmsx502.ccr.corp.intel.com>
-References: <EB8593BCECAB3D40A8248BE0B6400A3846903F4C@shzsmsx502.ccr.corp.intel.com>
- <4BC0D125.9050108@redhat.com>
- <EB8593BCECAB3D40A8248BE0B6400A384690419B@shzsmsx502.ccr.corp.intel.com>
- <4BC2C07B.4040607@redhat.com>
- <p2o2eae271004142158xaa5da968ueff0c2afe6894f9d@mail.gmail.com>
- <4BC6CBE3.8020207@redhat.com> <1271338398.1674.13.camel@laptop>
- <20100415164313.GF9128@linux.vnet.ibm.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 18 Apr 2010 21:37:35 -0400
+Date: Mon, 19 Apr 2010 11:37:02 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Denys Fedorysychenko <nuclearcat@nuclearcat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: endless sync on bdi_sched_wait()? 2.6.33.1
+Message-ID: <20100419013702.GE2520@dastard>
+References: <201003311907.31342.nuclearcat@nuclearcat.com>
+ <20100408092850.GA20488@quack.suse.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100408092850.GA20488@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srivatsa Vaddagiri wrote:
-> On Thu, Apr 15, 2010 at 03:33:18PM +0200, Peter Zijlstra wrote:
->> On Thu, 2010-04-15 at 11:18 +0300, Avi Kivity wrote:
->>> 
->>> Certainly that has even greater potential for Linux guests.  Note
->>> that we spin on mutexes now, so we need to prevent preemption while
->>> the lock owner is running.
->> 
->> either that, or disable spinning on (para) virt kernels. Para virt
->> kernels could possibly extend the thing by also checking to see if
->> the owner's vcpu is running.
-> 
-> I suspect we will need a combination of both approaches, given that
-> we will not be able to avoid preempting guests in their critical
-> section always (too long critical sections or real-time tasks wanting
-> to preempt). Other idea is to gang-schedule VCPUs of the same guest
-> as much as possible? 
-Gang-scheduling maybe the ideal solution to solve the issue, and has to change host's scheduler a lot to implement it, and it maybe hard to be upstream.  So can we figure out an easy way(maybe not best) for this ? 
-Xiantao
+On Thu, Apr 08, 2010 at 11:28:50AM +0200, Jan Kara wrote:
+> > SUPERPROXY ~ # cat /proc/1753/stack
+> > [<c019a93c>] bdi_sched_wait+0x8/0xc
+> > [<c019a807>] wait_on_bit+0x20/0x2c
+> > [<c019a9af>] sync_inodes_sb+0x6f/0x10a
+> > [<c019dd53>] __sync_filesystem+0x28/0x49
+> > [<c019ddf3>] sync_filesystems+0x7f/0xc0
+> > [<c019de7a>] sys_sync+0x1b/0x2d
+> > [<c02f7a25>] syscall_call+0x7/0xb
+> > [<ffffffff>] 0xffffffff
+>   Hmm, I guess you are observing the problem reported in
+> https://bugzilla.kernel.org/show_bug.cgi?id=14830
+>   There seem to be several issues in the per-bdi writeback code that
+> cause sync on a busy filesystem to last almost forever. To that bug are
+> attached two patches that fix two issues but apparently it's not all.
+> I'm still looking into it...
+
+So Jen's writeback tracing shows this for a normal cycle during a
+large dd:
+
+           <...>-6030  [005] 604446.696454: writeback_sched: work=38c0, task=task
+    flush-253:16-6029  [002] 604446.696492: writeback_exec: work=38c0 pages=9223372036854775807, sb=0, kupdate=0, range_cyclic=-1 for_background=-1
+    flush-253:16-6029  [002] 604446.696493: writeback_clear: work=ffff88011f1a38c0, refs=1
+    flush-253:16-6029  [003] 604446.784240: writeback_pages_written: 1024
+
+There were 100 of these traces (102400 pages (400MB) which is exactly 10% of
+RAM) before this:
+
+           <...>-6030  [000] 604462.346329: writeback_sched: work=6c0, task=task
+    flush-253:16-6029  [002] 604462.267098: writeback_exec: work=6c0 pages=9223372036854775807, sb=0, kupdate=0, range_cyclic=-1 for_background=-1
+    flush-253:16-6029  [002] 604462.267101: writeback_clear: work=ffff88011e8006c0, refs=1
+    flush-253:16-6029  [001] 604465.406331: writeback_pages_written: 160771
+
+which shows 160771 pages written in a single iteration (650MB). I suspect some
+interaction between foreground and background writeout is occurring here.
+
+The flusher thread appears to be getting stuck on congestion - the wchan
+it is sitting on indicates it is blocking in get_request().  I'm going to
+extend this tracing further down into the writeback code so that what is
+happening is clearer...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
