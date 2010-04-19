@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab0DSVBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:01:53 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42261 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab0DSVBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:01:52 -0400
-Date: Mon, 19 Apr 2010 23:01:42 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, tilman@imap.cc, akpm@linux-foundation.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: tip: origin tree build failure, [patch] fix isdn/gigaset build
- failure
-Message-ID: <20100419210142.GA21440@elte.hu>
-References: <20100419180520.GA9244@elte.hu>
- <alpine.LFD.2.00.1004191112550.14500@i5.linux-foundation.org>
- <alpine.LFD.2.00.1004191200050.14500@i5.linux-foundation.org>
- <20100419.120600.82034948.davem@davemloft.net>
+	id S1751922Ab0DSVCy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:02:54 -0400
+Received: from mail-pz0-f196.google.com ([209.85.222.196]:64836 "EHLO
+	mail-pz0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409Ab0DSVCx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 17:02:53 -0400
+X-Greylist: delayed 885 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Apr 2010 17:02:52 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100419.120600.82034948.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Date: Tue, 20 Apr 2010 07:02:52 +1000
+Message-ID: <m2n836a6dcf1004191402gbd659247i215b627acb2b1e0e@mail.gmail.com>
+Subject: Problems with gobi loader - qualcomm 3g card on hp min 5101
+From: Alexander Samad <alex@samad.com.au>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
-* David Miller <davem@davemloft.net> wrote:
+Sorry if this is the 3rd post, I haven't seen it hit the archives and
+i wasn't sure if it actually made it through  - originally sent as
+html (gmail).
 
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> Date: Mon, 19 Apr 2010 12:00:49 -0700 (PDT)
-> 
-> > On Mon, 19 Apr 2010, Linus Torvalds wrote:
-> >> 
-> >> Maybe add the #include <linux/sched.h> into gigaset.h, instead of 
-> >> common.c?
-> > 
-> > This compiled for me, although the only thing I tried was just turning all 
-> > the gigaset options to 'y'. Maybe some other config doesn't work. So I 
-> > committed it as likely to fix things.
-> 
-> Thanks Linus.
-> 
-> Ingo, let us know if there is still some problems in your
-> build tests.
+I have a HP Mini with their wwan module (Qualcomm 3g card), it
+attaches via the usb interface. It was working (not sure exactly but
+about 2 months ago) and when I went to use it recently it didnot work
+any more - the gobi loader get stucks uploading firmware to the card
+:(
 
-I did a few tests and it looks good here!
+I have had the motherboad and the card replaced.... I have removed the
+udev rule which calls the loader removed and tried it manually. From
+reading on other forums it seems like adding a delay to firmware
+upload can help.
 
-Thanks,
+I have noticed with strace that some of the firmware get uploaded some
+of the time and then it just hangs :(
 
-	Ingo
+I am not sure what or how to debug this, so I have come to the list.
+running debian i386 2.6.32-4
+
+Alex
