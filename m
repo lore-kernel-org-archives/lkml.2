@@ -1,107 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab0DSOgO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 10:36:14 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:44704
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751787Ab0DSOgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 10:36:13 -0400
-X-Greylist: delayed 582 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Apr 2010 10:36:13 EDT
-X-IronPort-AV: E=Sophos;i="4.52,235,1270418400"; 
-   d="scan'208";a="48711027"
-Date: Mon, 19 Apr 2010 16:26:28 +0200
-From: Samuel Thibault <samuel.thibault@labri.fr>
-To: linux-kernel@vger.kernel.org
-Subject: Hardware locality (hwloc) v1.0rc1 released
-Message-ID: <20100419142628.GI5025@const.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@labri.fr>,
-	linux-kernel@vger.kernel.org
+	id S1752645Ab0DSOhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 10:37:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55401 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751824Ab0DSOhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 10:37:52 -0400
+Message-ID: <4BCC6ABA.9030006@redhat.com>
+Date: Mon, 19 Apr 2010 17:37:46 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.12-2006-07-14
+To: Glauber Costa <glommer@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>
+Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
+References: <1271356648-5108-1-git-send-email-glommer@redhat.com> <1271356648-5108-2-git-send-email-glommer@redhat.com> <4BCA026D.3070309@redhat.com> <4BCA02D1.2020608@redhat.com> <1271673836.1674.757.camel@laptop> <4BCC34DF.6030702@redhat.com> <1271674575.1674.793.camel@laptop> <4BCC3AC2.8050601@redhat.com> <1271675983.1674.853.camel@laptop> <20100419143219.GF14158@mothafucka.localdomain>
+In-Reply-To: <20100419143219.GF14158@mothafucka.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hardware Locality (hwloc) team is pleased to announce the first
-release candidate for v1.0:
+On 04/19/2010 05:32 PM, Glauber Costa wrote:
+>
+>> Right, another option is to put the initial read outside of the loop,
+>> that way you'll have the best of all cases, a single LOCK'ed op in the
+>> loop, and only a single LOCK'ed op for the fast path on sensible
+>> architectures ;-)
+>>
+>>      last = atomic64_read(&last_value);
+>>      
+> isn't a barrier enough here?
+>
+>    
 
-   http://www.open-mpi.org/projects/hwloc/
-   (mirrors will update shortly)
+No.  On i386, the statement
 
-hwloc provides command line tools and a C API to obtain the
-hierarchical map of key computing elements, such as: NUMA memory
-nodes, shared caches, processor sockets, processor cores, and
-processor "threads". hwloc also gathers various attributes such as
-cache and memory information, and is portable across a variety of
-different operating systems and platforms.
+    last = last_value;
 
-v1.0rc1 is the first milestone of a major feature release.  Many
-features and changes have been added since the v0.9 series.  Although
-v1.0rc1 is only a prerelease, we felt it important to announce the
-first in the series in order to gain feedback and widespread testing
-before v1.0 goes final.  Please try hwloc out on your system, read its
-improved documentation, and send us your feedback.
+will be split by the compiler into two 32-bit loads.  If a write 
+(atomic, using cmpxchg) on another cpu happens between those two loads, 
+then the variable last will have a corrupted value.
 
-The following is a summary of the changes since the v0.9 series (this
-list may change before v1.0 goes final):
+-- 
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
 
-* The ABI of the library has changed.
-* Backend updates
-  + Add FreeBSD support.
-  + Add x86 cpuid based backend.
-  + Add Linux cgroup support to the Linux cpuset code.
-  + Support binding of entire multithreaded process on Linux.
-  + Cleanup XML export/import.
-* Objects
-  + HWLOC_OBJ_PROC is renamed into HWLOC_OBJ_PU for "Processing Unit",
-    its stringified type name is now "PU".                            
-  + Use new HWLOC_OBJ_GROUP objects instead of MISC when grouping
-    objects according to NUMA distances or arbitrary OS aggregation.
-  + Rework memory attributes.
-  + Add different cpusets in each object to specify processors that
-    are offline, unavailable, ...                                  
-  + Cleanup the storage of object names and DMI infos.
-* Features
-  + Add support for looking up specific PID topology information.
-  + Add hwloc_topology_export_xml() to export the topology in a XML file.
-  + Add hwloc_topology_get_support() to retrieve the supported features
-    for the current topology context.                                  
-  + Support non-SYSTEM object as the root of the tree, use MACHINE in
-    most common cases.                                               
-  + Add hwloc_get_*cpubind() routines to retrieve the current binding
-    of processes and threads.                                        
-* API
-  + Add HWLOC_API_VERSION to help detect the currently used API version.
-  + Add missing ending "e" to *compare* functions.
-  + Add several routines to emulate PLPA functions.
-  + Rename and rework the cpuset and/or/xor/not/clear operators to output
-    their result in a dedicated argument instead of modifying one input. 
-  + Deprecate hwloc_obj_snprintf() in favor of hwloc_obj_type/attr_snprintf().
-  + Clarify the use of parent and ancestor in the API, do not use father.
-  + Replace hwloc_get_system_obj() with hwloc_get_root_obj().
-  + Return -1 instead of HWLOC_OBJ_TYPE_MAX in the API since the latter
-    isn't public.                                                      
-  + Relax constraints in hwloc_obj_type_of_string().
-  + Improve displaying of memory sizes.
-  + Add 0x prefix to cpuset strings.
-* Tools
-  + lstopo now displays logical indexes by default, use --physical to
-    revert back to OS/physical indexes.                              
-  + Add colors in the lstopo graphical outputs to distinguish between online,
-    offline, reserved, ... objects.                                          
-  + Extend lstopo to show cpusets, filter objects by type, ...
-  + Renamed hwloc-mask into hwloc-calc which supports many new options.
-* Documentation
-  + Add a hwloc(7) manpage containing general information.
-  + Add documentation about how to switch from PLPA to hwloc.
-  + Cleanup the distributed documentation files.
-* Miscellaneous
-  + Many compilers warning fixes.
-  + Cleanup the ABI by using the visibility attribute.
-  + Add project embedding support.
-
-Samuel
