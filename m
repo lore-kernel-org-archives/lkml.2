@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab0DSFfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 01:35:50 -0400
-Received: from qw-out-2122.google.com ([74.125.92.26]:58633 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab0DSFft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 01:35:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:subject:to:cc:in-reply-to:references;
-        b=ZMzmEOmYfyxhYz7TyCScRdsWOOPvN3l2j6FIBAGOu2Hi4FKuFMuV0JRLPgNwTlzdIp
-         Bnt/Sh3LiDL+PNp0lCd/DiWYORiWcPbEFePALg8lTAgHB8Mp37VG4fJlZwid5bmocdgb
-         5yCrsmcf6tL7WdZOrLY2zq48K978svM7dnRzc=
-Message-ID: <4bcbebb3.9653f10a.3be1.ffffe0ef@mx.google.com>
-Date: Sun, 18 Apr 2010 22:35:47 -0700 (PDT)
-From: Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: gcc- 4.6.0 20100416 rtmutex.c:1138:1: internal compiler error
-To: Justin Mattock <justinmattock@gmail.com>, gcc@gcc.gnu.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <i2ydd18b0c31004182119w30322238p2ab0094f55901051@mail.gmail.com>
-References: <i2ydd18b0c31004182119w30322238p2ab0094f55901051@mail.gmail.com>
+	id S1751781Ab0DSGUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 02:20:31 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:56630 "EHLO poutre.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075Ab0DSGU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 02:20:29 -0400
+Date: Mon, 19 Apr 2010 08:20:25 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Farid Hammane <farid.hammane@gmail.com>
+Cc: ben-linux@fluff.org, tglx@linutronix.de, vince@simtec.co.uk,
+       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-dev: fix all coding style issues in i2c-dev.c
+Message-ID: <20100419082025.3df80ad5@hyperion.delvare>
+In-Reply-To: <1271615899-5894-1-git-send-email-farid.hammane@gmail.com>
+References: <1271615899-5894-1-git-send-email-farid.hammane@gmail.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 18 Apr 2010 21:19:19 -0700, Justin Mattock <justinmattock@gmail.com> wrote:
-> so far I've compiled most of the system
-> (glibc,Xserver,etc..)
-> and not really anything has crashed and burned
-> except for the kernel:
+Hi Farid,
+
+On Sun, 18 Apr 2010 20:38:19 +0200, Farid Hammane wrote:
+> This patch fixes all coding style issues found by checkpatch.pl.
 > 
-You are using a pre-release compiler. It should be no surprise that it chokes
-on the kernel. You should do as the compiler said and report this to the gcc
-folks.
+> Signed-off-by: Farid Hammane <farid.hammane@gmail.com>
+> ---
+>  drivers/i2c/i2c-dev.c |   30 +++++++++++++++---------------
+>  1 files changed, 15 insertions(+), 15 deletions(-)
 
-- Ben
+Applied, thanks.
 
+-- 
+Jean Delvare
