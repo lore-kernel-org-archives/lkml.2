@@ -1,106 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab0DSW5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 18:57:18 -0400
-Received: from mail-yx0-f171.google.com ([209.85.210.171]:65083 "EHLO
-	mail-yx0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab0DSW5Q (ORCPT
+	id S1753079Ab0DSW6j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 18:58:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54206 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752922Ab0DSW6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 18:57:16 -0400
+	Mon, 19 Apr 2010 18:58:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=gTdfFhHh9lZ/HQRjHg4U+yYGfSgVBrJ0AGVa6v+u7qBrqz7wJ3HAOaCx9XI0UDSgof
-         +gXN9RwxCsJhg6pBYDpPGs262lx3Yd12TCLxnX3hEQhRRAIYLWkoMCkNaJI3g5j4CCWP
-         bmuvWX7ghnQ2cEqzgFfGWJZkpk0q8HRVfw848=
-Message-ID: <4BCCDFBC.4020907@gmail.com>
-Date: Mon, 19 Apr 2010 15:57:00 -0700
-From: Till Kamppeter <till.kamppeter@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100404 Thunderbird/3.0.4
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=VwKv3PdF1MejJ6jvdDe8dD4F4vhHWgeLqKgcsYm3okbnDX6Yb5jv8P6WZRPQn5znLC
+         6tUtgZ+bPDt3i367yJT8OniDnJAvtovOSlwya5iMVVqdQ8KR3f8AnB7rLYU3DenlSXa6
+         jUi1WzSFt7Gsz1aUQMyK00pW2nO3OB1CUvdqA=
 MIME-Version: 1.0
+In-Reply-To: <20100419224634.GG1800@kroah.com>
+References: <4BCCB176.3060206@gmail.com> <20100419224634.GG1800@kroah.com>
+Date: Mon, 19 Apr 2010 23:58:35 +0100
+Message-ID: <m2v3ace41891004191558k2ade8cdic258601bd1059a8f@mail.gmail.com>
+Subject: Re: Google Summer of Code 2010 - Please resolve duplicates
+From: Hin-Tak Leung <hintak.leung@gmail.com>
 To: Greg KH <greg@kroah.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Till Kamppeter <till.kamppeter@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
        "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-kernel@vger.kernel.org,
        linux-wireless <linux-wireless@vger.kernel.org>,
        Witold Sowa <witold.sowa@gmail.com>,
        Johannes Berg <johannes@sipsolutions.net>,
        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: Google Summer of Code 2010 - Please resolve duplicates
-References: <4BCCB176.3060206@gmail.com> <20100419224634.GG1800@kroah.com>
-In-Reply-To: <20100419224634.GG1800@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 03:46 PM, Greg KH wrote:
-> On Mon, Apr 19, 2010 at 12:39:34PM -0700, Till Kamppeter wrote:
->> Hi,
->>
->> two students who applied for your projects have applied also for
->> another organization's project and they got accepted by us and by
->> the other organization.
->>
->> Until Wednesday Google wants these situation to be resolved until
->> Wednesday April 21, 17:00 UTC. Please contact the students and/or
->> the organization to agree on one of the project for each student.
->>
->> In addition, the ranking of the students (to decide who actually
->> gets our slots) and the mentor assignments have to be finalized by
->> the same date and time.
->>
->> Duplicates not be resolved until then will be resolved on an IRC
->> meeting on Wednesday April 21 at 19:00 UTC. The meeting takes place
->> in the #gsoc channel on Freenode.
->>
->> Please mail me if a mentor needs to be (re)assigned.
->>
->>     Till
->>
->>
->>
->> ----------------------------------------------------------------------
->>
->> Hi all,
->>
+On Mon, Apr 19, 2010 at 11:46 PM, Greg KH <greg@kroah.com> wrote:
+<snipped>
 >> I have opened the duplicate information for students to all of your
 >> orgs. If you view your student proposals now the ones that are ranked
 >> to be accepted that are duplicated with another org will be marked in
 >> red. If you click on the proposal you will see the contact information
 >> for the other organization(s)'s admins near the bottom of the
 >> proposal.
->>
->> You must also have a mentor assigned to all the students in your top N
->> slots by now. If you do not have a mentor assigned to them the
->> duplicate detection script will not pick them up and we may have
->> duplicates we don't know about. That is bad, please fix that if its
->> the case.
->>
->> Please try to resolve as many of these duplicate situations via email
->> in the next two days as possible - contact your fellow organizations,
->> be clear with each other about who is taking the student, and then
->> rank the student up if you are accepting him/her or mark the student
->> ineligible with a public comment that you have marked it ineligible
->> because of a duplicate situation if you are not taking the student.
->>
->> The deadline for changing rankings is 17:00UTC on Wednesday, April 21.
->> All duplicates that have not been resolved by 17:00 UTC will be taken
->> to the IRC meeting at 19:00 UTC.
->
+
+<snipped>
 > Have a pointer to the web site to do this?
->
-> thanks,
->
-> greg k-h
->
 
-Sorry, here we go:
-
-http://socghop.appspot.com/gsoc/org/list_proposals/google/gsoc2010/lf
-
-Requires login as mentor.
-
-    Till
+I think the idea from the original announcement is for each pair of
+organizations with duplicate applications, to contact each other, for
+one of the organization to drop the student's application so the other
+one can proceed. e.g. if a student applies to both linux foundation
+and gnome (for example), the linux foundation admin should contact the
+gnome admin to decide which organization to take the student (and
+which one to withdraw. As for the question itself, somewhere under:
+ - http://socghop.appspot.com/gsoc/program/home/google/gsoc2010
