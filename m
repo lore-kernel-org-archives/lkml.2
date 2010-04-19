@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab0DSQ0g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 12:26:36 -0400
-Received: from kroah.org ([198.145.64.141]:43114 "EHLO coco.kroah.org"
+	id S1755519Ab0DSQ02 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 12:26:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57800 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755180Ab0DSQ0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 12:26:30 -0400
-Date: Mon, 19 Apr 2010 09:17:05 -0700
-From: Greg KH <greg@kroah.com>
-To: Stefan Assmann <sassmann@redhat.com>, digidietze@draisberghof.de,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-usb@vger.kernel.org
-Subject: Re: [PATCH] USB: expose Huawei E1550 3G modem
-Message-ID: <20100419161705.GA28020@kroah.com>
-References: <4BCC5071.4010509@redhat.com>
- <4BCC6206.4030003@draisberghof.de>
- <4BCC63EB.4010204@redhat.com>
- <20100419141907.GN26130@one-eyed-alien.net>
- <4BCC6FAF.2030809@redhat.com>
- <20100419161406.GO26130@one-eyed-alien.net>
+	id S1755180Ab0DSQ00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 12:26:26 -0400
+Date: Mon, 19 Apr 2010 09:15:15 -0700
+From: Greg KH <gregkh@suse.de>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       andi@firstfloor.org, alan@lxorguk.ukuu.org.uk, tytso@mit.edu,
+       iws@ovro.caltech.edu
+Subject: Re: [PATCH 2/4] remove the old non generic API
+Message-ID: <20100419161515.GA17949@suse.de>
+References: <1271624718-8256-1-git-send-email-stefani@seibold.net>
+ <1271624718-8256-3-git-send-email-stefani@seibold.net>
+ <20100419152856.GC11553@suse.de>
+ <1271691184.12238.2.camel@wall-e.seibold.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100419161406.GO26130@one-eyed-alien.net>
+In-Reply-To: <1271691184.12238.2.camel@wall-e.seibold.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 09:14:06AM -0700, Matthew Dharm wrote:
-> On Mon, Apr 19, 2010 at 04:58:55PM +0200, Stefan Assmann wrote:
-> > On 19.04.2010 16:19, Matthew Dharm wrote:
+On Mon, Apr 19, 2010 at 05:33:04PM +0200, Stefani Seibold wrote:
+> Am Montag, den 19.04.2010, 08:28 -0700 schrieb Greg KH:
+> > On Sun, Apr 18, 2010 at 11:05:16PM +0200, stefani@seibold.net wrote:
+> > > From: Stefani Seibold <stefani@seibold.net>
 > > > 
-> > > 2) It is much much easier to update a userspace tool than the kernel.
-> > > Thus, new devices can be supported without a kernel update by end-users.
+> > > This patch simple remove the whole kfifo.c and kfifo.h files. The next
+> > > patch will replace it with the new generic kfifo API.
 > > 
-> > Of course. Nobody is talking about removing existing code from any
-> > user-space application. Under the condition that no functionality gets
-> > lost, wouldn't it be convenient to have the modem exposed by the kernel?
-> > If the kernel support doesn't suffice you can still run an updated
-> > usb_modeswitch until kernel support is there.
+> > But you just broke the kernel build at this point in the patch sequence,
+> > which is not allowed :(
 > > 
-> > This also has the benefit that it would work for people that don't
-> > have usb_modeswitch installed. Matt, are you still thinking that is the
-> > wrong way of doing it?
 > 
-> I still believe that, for an end-user, upgrading a userspace tool is much
-> much easier than upgrading a kernel.
+> I know, but the only way is to merge the patch 2 and 3 together which
+> results in a very large and unreadable patch.
 > 
-> Also, the actual "driver" for the device (i.e. the modem part) doesn't need
-> an upgrade to the kernel component for these types of devices.
-> 
-> Finally, these sorts of databases don't belong in the kernel as much as
-> possible.
-> 
-> The usb-storage driver will not accept patches for device which can be
-> supported via userspace-only tools.
+> If desired i will do this...
 
-And just to confirm, I support Matthew's position.
+Or you can rename files, or do all sorts of other things instead of
+breaking the build, which again, is not allowed, so don't do it :)
 
 thanks,
 
