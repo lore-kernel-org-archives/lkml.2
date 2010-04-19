@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab0DSTjv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 15:39:51 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:50168 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648Ab0DSTjt (ORCPT
+	id S1753113Ab0DSTms (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 15:42:48 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:54644 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107Ab0DSTmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 15:39:49 -0400
+	Mon, 19 Apr 2010 15:42:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=bIWs7caInQuT0NeS28PqRwYtTxiOz3P+waaPXVeGCtA0s6xQBtdiJmk6+emT0vKpI0
-         gk8U8we+iw326aASNxTZRzHCvYg6T/h6OsT5iFPq6oqgMHEvIGPBVe6ZtJugZv+Jxa+E
-         PeuOZpeytxhmIbX13v/7575bbzba2M6jwwV1A=
-Message-ID: <4BCCB176.3060206@gmail.com>
-Date: Mon, 19 Apr 2010 12:39:34 -0700
-From: Till Kamppeter <till.kamppeter@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100404 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Greg KH <greg@kroah.com>,
-       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-       "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-wireless <linux-wireless@vger.kernel.org>,
-       Witold Sowa <witold.sowa@gmail.com>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Grant Likely <grant.likely@secretlab.ca>
-Subject: Google Summer of Code 2010 - Please resolve duplicates
-Content-Type: text/plain; charset=UTF-8; format=flowed
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sp4d5gYI3crWLmijsFQ8eUu1liMeQ5UiInub6b2onEkoQqM/a5d2MAI5mGStY4RGHS
+         lASDm3FsMw8qS8kYqVZle91fESCxytBZbqGvxaE+XO3K3Su/zG6Y4/MYBsWiAQE0gUGP
+         s+Kp9bCMoKOmhE9cs6Tp6jmJOHIoPefvFUeQU=
+Subject: Re: [regression, bisected] Xonar DX invalid PCI I/O range since 
+ 977d17bb174
+From: Peter Henriksson <peter.henriksson@gmail.com>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <4BCCA5FD.6060002@oracle.com>
+References: <4BCBFE89.9070401@ladisch.de>
+	 <o2gf046f1351004190044h6c3f6536ga916d2fa047f3fe7@mail.gmail.com>
+	 <4BCC0F10.3070208@ladisch.de>
+	 <l2sf046f1351004190142ocb2e5f1fyc0e892489caa76a3@mail.gmail.com>
+	 <4BCCA5FD.6060002@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Apr 2010 21:42:41 +0200
+Message-ID: <1271706161.2505.6.camel@darwin.lan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.0.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2010-04-19 at 11:50 -0700, Yinghai wrote:
+> please try:
+> 
+> [PATCH] pci: disable pci trying to reallocate pci bridge by default.
+> 
+> it broken Linus's Nouveau
+> 
 
-two students who applied for your projects have applied also for another 
-organization's project and they got accepted by us and by the other 
-organization.
-
-Until Wednesday Google wants these situation to be resolved until 
-Wednesday April 21, 17:00 UTC. Please contact the students and/or the 
-organization to agree on one of the project for each student.
-
-In addition, the ranking of the students (to decide who actually gets 
-our slots) and the mentor assignments have to be finalized by the same 
-date and time.
-
-Duplicates not be resolved until then will be resolved on an IRC meeting 
-on Wednesday April 21 at 19:00 UTC. The meeting takes place in the #gsoc 
-channel on Freenode.
-
-Please mail me if a mentor needs to be (re)assigned.
-
-    Till
-
-
-
-----------------------------------------------------------------------
-
-Hi all,
-
-I have opened the duplicate information for students to all of your
-orgs. If you view your student proposals now the ones that are ranked
-to be accepted that are duplicated with another org will be marked in
-red. If you click on the proposal you will see the contact information
-for the other organization(s)'s admins near the bottom of the
-proposal.
-
-You must also have a mentor assigned to all the students in your top N
-slots by now. If you do not have a mentor assigned to them the
-duplicate detection script will not pick them up and we may have
-duplicates we don't know about. That is bad, please fix that if its
-the case.
-
-Please try to resolve as many of these duplicate situations via email
-in the next two days as possible - contact your fellow organizations,
-be clear with each other about who is taking the student, and then
-rank the student up if you are accepting him/her or mark the student
-ineligible with a public comment that you have marked it ineligible
-because of a duplicate situation if you are not taking the student.
-
-The deadline for changing rankings is 17:00UTC on Wednesday, April 21.
-All duplicates that have not been resolved by 17:00 UTC will be taken
-to the IRC meeting at 19:00 UTC.
+Not sure why but I had to use some spit and glue to get it to apply.
+Other than that, works for me, thanks.
 
 Cheers,
-Carol
+Peter
 
