@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab0DSWLJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 18:11:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32558 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab0DSWLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 18:11:05 -0400
-Message-ID: <4BCCD4BD.3030303@redhat.com>
-Date: Mon, 19 Apr 2010 15:10:05 -0700
-From: Ulrich Drepper <drepper@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de-DE; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: maximilian attems <max@stro.at>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, stable@kernel.org,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH] fcntl.h: define AT_EACCESS
-References: <1271387280-19565-1-git-send-email-max@stro.at> <20100419144729.2b8180e8.akpm@linux-foundation.org> <20100419215711.GR10984@baikonur.stro.at>
-In-Reply-To: <20100419215711.GR10984@baikonur.stro.at>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752751Ab0DSWNv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 18:13:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:47624 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab0DSWNt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 18:13:49 -0400
+X-Authority-Analysis: v=1.1 cv=E9k1WvbCwWjFc1mtZtTZCb4xMnZJ3NelAETgZ6iwC6Q= c=1 sm=0 a=zBnlsAAkvaYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=A_kOvf3FS9Ot71pqOTMA:9 a=J1ieX7EJKZzx_LdtmK98SkHVwTsA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: request to add trace off and trace on with events
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Tim Bird <tim.bird@am.sony.com>, Tom Zanussi <tzanussi@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Chase Douglas <chase.douglas@canonical.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100419220437.GC8811@nowhere>
+References: <1271707444.10448.12.camel@gandalf.stny.rr.com>
+	 <4BCCBF6D.3030105@am.sony.com>
+	 <1271709846.10448.29.camel@gandalf.stny.rr.com>
+	 <20100419212950.GB8811@nowhere>
+	 <1271713074.10448.101.camel@gandalf.stny.rr.com>
+	 <20100419220437.GC8811@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 19 Apr 2010 18:13:47 -0400
+Message-ID: <1271715227.10448.145.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Tue, 2010-04-20 at 00:04 +0200, Frederic Weisbecker wrote:
+> On Mon, Apr 19, 2010 at 05:37:54PM -0400, Steven Rostedt wrote:
 
-On 04/19/2010 02:57 PM, maximilian attems wrote:
-> the dash code calling faccessat has the 4 params,
-> klibc faccessat had only 3 args, guess nobody had used it before.
+> > # cat event/sched/sched_switch/triggers/tracing_off
+> > disabled
+> > 
+> > Or it can be a filter, or enabled.
+> 
+> 
+> Yep, since it would share exatly the same code than filter (as
+> filter basically becomes a trigger command), it can behave the
+> same: displaying "none" when there is no filter, or a filter.
+> 
 
-The function is implemented at userlevel.  The kernel code has the same
-name but isn't a complete implementation.  There is no point in defining
-the symbol in the kernel headers.
+Then do we make the triggers themselves directories too?
 
-- -- 
-➧ Ulrich Drepper ➧ Red Hat, Inc. ➧ 444 Castro St ➧ Mountain View, CA ❖
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+# ls event/sched/sched_switch/triggers/tracing_off
+filter   enable
 
-iEYEARECAAYFAkvM1L0ACgkQ2ijCOnn/RHS1zgCggyyqLkOWD7dyOeLOiC314niu
-+MYAoKQVKnG3DSZii9lodwvIHkBIppEF
-=y6bR
------END PGP SIGNATURE-----
+?
+
+> 
+> > 
+> > This could also allow a user to do:
+> > 
+> > echo "(a > 100)" > tracing_on
+> > echo "(a < 100)" > tracing_off
+> 
+> 
+> Yeah :)
+> But if the scope of the "tracing off" is only for this event, then
+> rather use:
+> 
+> echo "(a < 100)" > filter
+> 
+> You could have tracing_off/on that have this event scope and
+> tracing_off/on_all for a global tracing scope.
+
+The two are not equivalent. In fact, just enabling a trigger does not
+mean that the event itself will be traced.
+
+-- Steve
+
+
