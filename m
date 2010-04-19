@@ -1,157 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab0DSIaa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 04:30:30 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:35353 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab0DSIa3 (ORCPT
+	id S1753175Ab0DSIc3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 04:32:29 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62237 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950Ab0DSIc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 04:30:29 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 19 Apr 2010 17:26:29 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][BUGFIX][PATCH 2/2] memcg: fix file mapped underflow at
- migration (v3)
-Message-Id: <20100419172629.dbf65e18.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100419170701.3864992e.nishimura@mxp.nes.nec.co.jp>
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
-	<20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100415120652.c577846f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100416193143.5807d114.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100419124225.91f3110b.nishimura@mxp.nes.nec.co.jp>
-	<20100419131817.f263d93c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100419170701.3864992e.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Apr 2010 04:32:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=pYY+rgY+lmiwNORHyo+/RzmfqrGoCY+W9l+IW6R3fxXyAB5DFAKrm8OgKwKakvOrNn
+         61XOQbb9unhxHRP7cVVEAXlZg9+m6gwH31k3AyqxXwS8HHpuMCz3esRLPeCR3tDEx3Mi
+         xFwyXRMu2YpMyKe48BNSG0NWJaUs40koQ03NU=
+Date: Mon, 19 Apr 2010 01:32:22 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] input: Add support of Synaptics Clickpad device
+Message-ID: <20100419083221.GB26102@core.coreip.homeip.net>
+References: <1271257823-23566-1-git-send-email-tiwai@suse.de>
+ <1271257823-23566-2-git-send-email-tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271257823-23566-2-git-send-email-tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Apr 2010 17:07:01 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+Hi Takashi,
 
-> Thank you for explaining in detail.
-> 
-> On Mon, 19 Apr 2010 13:18:17 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Mon, 19 Apr 2010 12:42:25 +0900
-> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> > 
-> > > Hmm, before going further, will you explain why we need a new PCG_MIGRATION flag ?
-> > > What's the problem of v2 ?
-> > > 
-> > 
-> > v2 can't handle migration-failure case of freed swapcache and the used page
-> > was swapped-out case. I think.
-> > 
-> > All "page" in following is ANON.
-> > 
-> > 
-> >      mem_cgroup_prepare_migration()
-> > 	     charge against new page.
-> >      
-> >      try_to_unmap()
-> >         -> mapcount goes down to 0.
-> >              -> an old page is unchaged
-> >      
-> But old page isn't uncharged iff PageSwapCache, is it ?
-> 
-yes.
-
-
-> >      move_to_new_page()
-> >         -> may fail. (in some case.)   ----(*1)
-> > 
-> >      remap the old page to pte.
-> > 
-> >      mem_cgroup_end_migration()
-> > 		(at success *1)
-> > 		check charge for newpage is valid or not (*2)
-> > 
-> > 		(at fail *1)
-> > 		uncharge new page.
-> > 		What we should do for an old page. ---(*3)
-> > 
-> > At (*2). (*3), there are several cases.
-> > 
-> > (*2) migration was succeeded.
-> >     1. The new page was successfully remapped.
-> > 	-> Nothing to do.
-> >     2. The new page was remapped but finally unmapped before (*3)
-> > 	-> page_remove_rmap() will catch the event.
-> >     3. The new page was not remapped.
-> > 	-> page_remove_rmap() can't catch the event. end_migraion() has to
-> > 	uncharge it.
-> > 
-> > (*3) migration was failed.
-> >     1. The old page was successfully remapped.
-> > 	-> We have to recharge against the old page. (But it may hit OOM.)
-> >     2. The old page wasn't remapped.
-> >         -> mapcount is 0. No new charge will happen.
-> >     3. The old page wasn't remapped but SwapCache.
-> >         -> mapcount is 0. We have to recharge against the old page (But it may hit OOM)
-> > 
-> hmm, we've done try_charge at this point, so why can we cause oom here ?
+On Wed, Apr 14, 2010 at 05:10:22PM +0200, Takashi Iwai wrote:
+> Add the detection of Synaptics Clickpad device.
+> The device can be detected a new query command 0x0c.  The clickpad
+> flags are in cap[0]:4 and cap[1]:0 bits.  But, the driver checks
+> first the product id bits in the ext capabilities to be sure, so
+> that it skips the new check on older devices.
 > 
 
-v2 doesn't charge. That was the bug.
-"may hit OOM" is an explanation for why current implementation is used.
-(current implemnation == delayed commmit charge.)
+Instead of looking at the product id, can we check the number of
+supported extended capabilities queries and act accordingly, like the
+patch below?
+
+Thanks.
+
+-- 
+Dmitry
 
 
-> > Maybe other seqence I couldn't write will exist......IMHO, "we have to recharge it because
-> > it's uncharged.." is bad idea. It seems hard to maintainace..
-> > 
-> > 
-> > When we use MIGRATION flag.
-> > After migaration.
-> > 
-> >     1. Agaisnt new page, we remove MIGRATION flag and try to uncharge() it again.
-> > 
-> >     2. Agaisnt old page, we remove MIGRATION flag and try to uncharge it again.
-> > 
-> > NOTE:  I noticed my v3 patch is buggy when the page-is-swapped-out case. It seems
-> >        mem_cgroup_uncharge_swapcache() has to wait for migration ends or some
-> >        other case handling. (Anyway, this race exists only after unlock_page(newpage).
-> >        So, wait for MIGRATION ends in spin will not be very bad.)
-> > 
-> > 
-> > To me, things are much simpler than now, we have to know what kind of magics behind us...
-> > 
-> > Maybe I can think of other tricks for handling them...but using a FLAG and prevent uncharge
-> > is the simplest, I think.
-> > 
-> Anyway, I agree that current implementation is complicated and there might be
-> some cases we are missing. MIGRATION flag can make it simpler.
-> 
-I think so.
+Input: Add support of Synaptics Clickpad device
 
-> I have one concern for now. Reading the patch, the flag have influence on
-> only anonymous pages, so we'd better to note it and I feel it strange to
-> set(and clear) the flag of "old page" always(iow, even when !PageAnon)
-> in prepare_migration.
-> 
+From: Takashi Iwai <tiwai@suse.de>
 
-Hmm...Checking "Only Anon" is simpler ? It will have no meanings for migrating
-file caches, but it may have some meanings for easy debugging. 
-I think "mark it always but it's used only for anonymous page" is reasonable
-(if it causes no bug.)
+The new type of touchpads can be detected via a new query command 0x0c.
+The clickpad flags are in cap[0]:4 and cap[1]:0 bits.
+
+When the device is detected, the driver now reports only the left
+button as the supported buttons so that X11 driver can detect that
+the device is Clickpad.  A Clickpad device gives the button events
+only as the middle button.  The kernel driver morphs to the left
+button.  The real handling of Clickpad is done rather in X driver
+side.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+---
+
+ drivers/input/mouse/synaptics.c |   33 +++++++++++++++++++++++++++++----
+ drivers/input/mouse/synaptics.h |    4 ++++
+ 2 files changed, 33 insertions(+), 4 deletions(-)
 
 
-Thanks,
--Kame
-
-
-
-
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 026df60..c7b5285 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -137,7 +137,8 @@ static int synaptics_capability(struct psmouse *psmouse)
+ 	if (synaptics_send_cmd(psmouse, SYN_QUE_CAPABILITIES, cap))
+ 		return -1;
+ 	priv->capabilities = (cap[0] << 16) | (cap[1] << 8) | cap[2];
+-	priv->ext_cap = 0;
++	priv->ext_cap = priv->ext_cap_0c = 0;
++
+ 	if (!SYN_CAP_VALID(priv->capabilities))
+ 		return -1;
+ 
+@@ -162,6 +163,16 @@ static int synaptics_capability(struct psmouse *psmouse)
+ 				priv->ext_cap &= 0xff0fff;
+ 		}
+ 	}
++
++	if (SYN_EXT_CAP_REQUESTS(priv->capabilities) >= 4) {
++		if (synaptics_send_cmd(psmouse, SYN_QUE_EXT_CAPAB_0C, cap)) {
++			printk(KERN_ERR "Synaptics claims to have extended capability 0x0c,"
++			       " but I'm not able to read it.");
++		} else {
++			priv->ext_cap_0c = (cap[0] << 16) | (cap[1] << 8) | cap[2];
++		}
++	}
++
+ 	return 0;
+ }
+ 
+@@ -348,7 +359,15 @@ static void synaptics_parse_hw_state(unsigned char buf[], struct synaptics_data
+ 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
+ 
+-		if (SYN_CAP_MIDDLE_BUTTON(priv->capabilities)) {
++		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
++			/*
++			 * Clickpad's button is transmitted as middle button,
++			 * however, since it is primary button, we will report
++			 * it as BTN_LEFT.
++			 */
++			hw->left = ((buf[0] ^ buf[3]) & 0x01) ? 1 : 0;
++
++		} else if (SYN_CAP_MIDDLE_BUTTON(priv->capabilities)) {
+ 			hw->middle = ((buf[0] ^ buf[3]) & 0x01) ? 1 : 0;
+ 			if (hw->w == 2)
+ 				hw->scroll = (signed char)(buf[1]);
+@@ -593,6 +612,12 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+ 
+ 	dev->absres[ABS_X] = priv->x_res;
+ 	dev->absres[ABS_Y] = priv->y_res;
++
++	if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
++		/* Clickpads report only left button */
++		__clear_bit(BTN_RIGHT, dev->keybit);
++		__clear_bit(BTN_MIDDLE, dev->keybit);
++	}
+ }
+ 
+ static void synaptics_disconnect(struct psmouse *psmouse)
+@@ -697,10 +722,10 @@ int synaptics_init(struct psmouse *psmouse)
+ 
+ 	priv->pkt_type = SYN_MODEL_NEWABS(priv->model_id) ? SYN_NEWABS : SYN_OLDABS;
+ 
+-	printk(KERN_INFO "Synaptics Touchpad, model: %ld, fw: %ld.%ld, id: %#lx, caps: %#lx/%#lx\n",
++	printk(KERN_INFO "Synaptics Touchpad, model: %ld, fw: %ld.%ld, id: %#lx, caps: %#lx/%#lx/%#lx\n",
+ 		SYN_ID_MODEL(priv->identity),
+ 		SYN_ID_MAJOR(priv->identity), SYN_ID_MINOR(priv->identity),
+-		priv->model_id, priv->capabilities, priv->ext_cap);
++		priv->model_id, priv->capabilities, priv->ext_cap, priv->ext_cap_0c);
+ 
+ 	set_input_params(psmouse->dev, priv);
+ 
+diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+index f0f40a3..ae37c5d 100644
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -18,6 +18,7 @@
+ #define SYN_QUE_SERIAL_NUMBER_SUFFIX	0x07
+ #define SYN_QUE_RESOLUTION		0x08
+ #define SYN_QUE_EXT_CAPAB		0x09
++#define SYN_QUE_EXT_CAPAB_0C		0x0c
+ 
+ /* synatics modes */
+ #define SYN_BIT_ABSOLUTE_MODE		(1 << 7)
+@@ -48,6 +49,8 @@
+ #define SYN_CAP_VALID(c)		((((c) & 0x00ff00) >> 8) == 0x47)
+ #define SYN_EXT_CAP_REQUESTS(c)		(((c) & 0x700000) >> 20)
+ #define SYN_CAP_MULTI_BUTTON_NO(ec)	(((ec) & 0x00f000) >> 12)
++#define SYN_CAP_PRODUCT_ID(ec)		(((ec) & 0xff0000) >> 16)
++#define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100100)
+ 
+ /* synaptics modes query bits */
+ #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
+@@ -96,6 +99,7 @@ struct synaptics_data {
+ 	unsigned long int model_id;		/* Model-ID */
+ 	unsigned long int capabilities;		/* Capabilities */
+ 	unsigned long int ext_cap;		/* Extended Capabilities */
++	unsigned long int ext_cap_0c;		/* Ext Caps from 0x0c query */
+ 	unsigned long int identity;		/* Identification */
+ 	int x_res;				/* X resolution in units/mm */
+ 	int y_res;				/* Y resolution in units/mm */
