@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128Ab0DSVsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:48:55 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58955 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751848Ab0DSVsy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:48:54 -0400
-Date: Mon, 19 Apr 2010 14:47:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: maximilian attems <max@stro.at>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, stable@kernel.org,
-       Ulrich Drepper <drepper@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH] fcntl.h: define AT_EACCESS
-Message-Id: <20100419144729.2b8180e8.akpm@linux-foundation.org>
-In-Reply-To: <1271387280-19565-1-git-send-email-max@stro.at>
-References: <1271387280-19565-1-git-send-email-max@stro.at>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752164Ab0DSVvq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:51:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13302 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201Ab0DSVvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 17:51:44 -0400
+Date: Mon, 19 Apr 2010 17:51:27 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, peterz@infradead.org,
+       gorcunov@gmail.com, aris@redhat.com, linux-kernel@vger.kernel.org,
+       randy.dunlap@oracle.com
+Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100419215127.GO15159@redhat.com>
+References: <1271366710-17468-1-git-send-email-dzickus@redhat.com>
+ <20100416014712.GC15570@nowhere>
+ <20100419212135.GN15159@redhat.com>
+ <20100419213529.GA855@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100419213529.GA855@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Apr 2010 05:08:00 +0200
-maximilian attems <max@stro.at> wrote:
-
-> noticed on a klibc build of dash that someone had left out that def:
-> usr/dash/bltin/test.c:490: error: ___AT_EACCESS___ undeclared (first use in thiction)
+On Mon, Apr 19, 2010 at 11:35:29PM +0200, Ingo Molnar wrote:
 > 
-> Cc: stable@kernel.org
-> Cc: Ulrich Drepper <drepper@redhat.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Signed-off-by: maximilian attems <max@stro.at>
-> ---
->  include/linux/fcntl.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> * Don Zickus <dzickus@redhat.com> wrote:
 > 
-> diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
-> index 8603740..8bb001d 100644
-> --- a/include/linux/fcntl.h
-> +++ b/include/linux/fcntl.h
-> @@ -39,6 +39,8 @@
->  #define AT_REMOVEDIR		0x200   /* Remove directory instead of
->                                             unlinking file.  */
->  #define AT_SYMLINK_FOLLOW	0x400   /* Follow symbolic links.  */
-> +#define AT_EACCESS		0x200	/* Test access permitted for
-> +					   effective IDs, not real IDs.  */
->  
+> > On Fri, Apr 16, 2010 at 03:47:14AM +0200, Frederic Weisbecker wrote:
+> > > On Thu, Apr 15, 2010 at 05:25:10PM -0400, Don Zickus wrote:
+> > > > The new nmi_watchdog (which uses the perf event subsystem) is very
+> > > > similar in structure to the softlockup detector.  Using Ingo's suggestion,
+> > > > I combined the two functionalities into one file, kernel/watchdog.c.
+> > > > 
+> > > > Now both the nmi_watchdog (or hardlockup detector) and softlockup detector
+> > > > sit on top of the perf event subsystem, which is run every 60 seconds or so
+> > > > to see if there are any lockups.
+> > 
+> > Hello all,
+> > 
+> > After making a bunch of cleanups, I am stuck debating whether to continue 
+> > updating this patch on the stale branch perf/nmi on Ingo's tree or just 
+> > repost the whole patch again (which isn't much bigger just adds the 
+> > arch/x86/kernel/apic/hw_nmi.c piece).
+> > 
+> > Part of the new patch series includes removing kernel/nmi_watchdog.c, which 
+> > seemed kinda silly because it was only an intermediate file until things got 
+> > shifted to kernel/watchdog.c
+> > 
+> > Thoughts?
+> 
+> I'd prefer relative patches as the current perf/nmi bits are tested quite 
+> well.
+> 
+> Intermediate stages are not a problem: 90% of the code in the kernel's Git 
+> history is 'intermediate' as well, in hindsight. What matters is that the 
+> workflow that resulted was clean and that the patches were (and are) clean.
 
-I'm all confused.
+Ok, I'll continue that then.  Thanks.
 
-The affects sys_faccesat(), yes?  But sys_faccesat() never gets passed
-a `flags' argument so how does the behaviour which the FACCESSAT(2)
-manpage describes get implemented?
-
-This patch doesn't actually change kernel behaviour, so how can setting
-AT_EACCESS change any syscall's actions?
-
-It's a bit of a worry that the proposed value for AT_EACCESS duplicates
-AT_REMOVEDIR.  I guess that, despite apeparances, they're different
-namespaces.  Any thoughts on the implications of this?
-
+Cheers,
+Don
