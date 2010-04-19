@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab0DSSPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 14:15:06 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:58085 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752929Ab0DSSPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 14:15:04 -0400
-Date: Mon, 19 Apr 2010 19:14:42 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-       "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: error at compaction  (Re: mmotm 2010-04-15-14-42 uploaded
-Message-ID: <20100419181442.GA19264@csn.ul.ie>
-References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org> <20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753327Ab0DSSR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 14:17:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60777 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752135Ab0DSSR1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 14:17:27 -0400
+Date: Mon, 19 Apr 2010 11:14:55 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+cc: David Miller <davem@davemloft.net>, tilman@imap.cc,
+       akpm@linux-foundation.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: tip: origin tree build failure, [patch] fix isdn/gigaset build
+ failure
+In-Reply-To: <20100419180520.GA9244@elte.hu>
+Message-ID: <alpine.LFD.2.00.1004191112550.14500@i5.linux-foundation.org>
+References: <20100419.003857.260094283.davem@davemloft.net> <20100419172731.GA4358@elte.hu> <20100419.103304.35342954.davem@davemloft.net> <20100419180520.GA9244@elte.hu>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 07:01:33PM +0900, KAMEZAWA Hiroyuki wrote:
-> 
-> mmotm 2010-04-15-14-42 
-> 
-> When I tried 
->  # echo 0 > /proc/sys/vm/compaction
-> 
-> I see following.
-> 
-> My enviroment was 
->   2.6.34-rc4-mm1+ (2010-04-15-14-42) (x86-64) CPUx8
->   allocating tons of hugepages and reduce free memory.
-> 
-> What I did was:
->   # echo 0 > /proc/sys/vm/compact_memory
-> 
-> Hmm, I see this kind of error at migation for the 1st time..
-> my.config is attached. Hmm... ?
-> 
-> (I'm sorry I'll be offline soon.)
 
-That's ok, thanks you for the report. I'm afraid I made little progress
-as I spent most of the day on other bugs but I do have something for
-you.
 
-First, I reproduced the problem using your .config. However, the problem does
-not manifest with the .config I normally use which is derived from the distro
-kernel configuration (Debian Lenny). So, there is something in your .config
-that triggers the problem. I very strongly suspect this is an interaction
-between migration, compaction and page allocation debug. Compaction takes
-pages directly off the buddy list and I bet you a shiny penny they are still
-unmapped when the copy takes place resulting in your oops.
+On Mon, 19 Apr 2010, Ingo Molnar wrote:
+> 
+> Note, i just found that my patch is not enough as we fail the build elsewhere as well:
 
-I'll verify the theory tomorrow but it's a plausible explanation. On a
-different note, where did config options like the following come out of?
+Maybe add the #include <linux/sched.h> into gigaset.h, instead of 
+common.c?
 
-CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11" 
+IOW..
 
-I don't think they are a factor but I'm curious.
+		Linus
+---
+ drivers/isdn/gigaset/gigaset.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+diff --git a/drivers/isdn/gigaset/gigaset.h b/drivers/isdn/gigaset/gigaset.h
+index d32efb6..05947f9 100644
+--- a/drivers/isdn/gigaset/gigaset.h
++++ b/drivers/isdn/gigaset/gigaset.h
+@@ -20,6 +20,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/kernel.h>
++#include <linux/sched.h>
+ #include <linux/compiler.h>
+ #include <linux/types.h>
+ #include <linux/ctype.h>
