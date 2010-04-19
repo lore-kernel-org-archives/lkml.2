@@ -1,49 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab0DSHiq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 03:38:46 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:56996 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877Ab0DSHip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 03:38:45 -0400
-Date: Mon, 19 Apr 2010 09:38:44 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] [MTD] Fix JFFS2 sync silent failure
-Message-ID: <20100419073843.GN27497@kernel.dk>
-References: <20100417184016.GA17345@logfs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100417184016.GA17345@logfs.org>
+	id S1752554Ab0DSHiz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 03:38:55 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39026
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752426Ab0DSHiw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 03:38:52 -0400
+Date: Mon, 19 Apr 2010 00:38:57 -0700 (PDT)
+Message-Id: <20100419.003857.260094283.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [GIT]: Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 17 2010, Jörn Engel wrote:
-> Moin David,
-> 
-> if I read the code correctly, JFFS2 will happily perform a NOP on
-> sys_sync() again.  And this time it appears to be Jens' fault.
-> 
-> JFFS2 does not appear to set s_bdi anywhere.  And as of 32a88aa1,
-> __sync_filesystem() will return 0 if s_bdi is not set.  As a result,
-> sync_fs() is never called for jffs2 and whatever remains in the wbuf
-> will not make it to the device.
-> 
-> The patch also adds a BUG_ON to catch this problem in any remaining or
-> future offenders.  I am not sure about network filesystems, but at
-> least bdev- and mtd-based ones should be caught.
-> 
-> Opinions?
 
-I think that BUG_ON() would be a lot better as a printk() and fail mount
-instead. There's really little point in killing the kernel for something
-you could easily warn about and recover nicely.
+1) Fix TX lockups in forcedeth due to an incorrect chipset ID check
+   wrt. whether to enable a TX hw bug workaround or not.  Fix from
+   Ayaz Abdulla.
 
--- 
-Jens Axboe
+2) Fix some virtualization problems by orphan'ing the SKB on TX
+   in tun driver.  From Michael S. Tsirkin.
 
+3) Some minor fallout from the slab.h cleanups in gigaset driver,
+   from Tilman Schmidt.
+
+4) hdlc_ppp can crash on rmmod due to lack of PPP tx queue flush,
+   fix from Krzysztof Halasa.
+
+5) Three fixes from Eric Dumazet:
+   a) ip_dev_loopback_xmit() needs to use netif_rx_ni() since it sometimes
+      is invoked from user context and therefore an explicit check and
+      run of softirqs is necessary.
+   b) dev_pic_tx() should not cache a socket TX queue selection unless
+      the socket cache'd dst matches the one currently hung off of the
+      skb
+   c) Fix lockdep false positives in fib_trie
+
+6) AF_PACKET erroneously restricts to init_net in some ioctls, fix
+   from Daniel Lezcano.
+
+7) iwlwifi active chain detection fix from Johannes Berg.
+
+Please pull, thanks a lot!
+
+The following changes since commit 13bd8e4673d527a9e48f41956b11d391e7c2cfe0:
+  Linus Torvalds (1):
+        Merge branch 'for-linus' of git://git.kernel.org/.../anholt/drm-intel
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Ayaz Abdulla (1):
+      forcedeth: fix tx limit2 flag check
+
+Daniel Lezcano (1):
+      packet : remove init_net restriction
+
+David S. Miller (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
+
+Eric Dumazet (3):
+      fib: suppress lockdep-RCU false positive in FIB trie.
+      net: dev_pick_tx() fix
+      ip: Fix ip_dev_loopback_xmit()
+
+Johannes Berg (1):
+      iwlwifi: work around bogus active chains detection
+
+Krzysztof Halasa (1):
+      WAN: flush tx_queue in hdlc_ppp to prevent panic on rmmod hw_driver.
+
+Michael S. Tsirkin (1):
+      tun: orphan an skb on tx
+
+Tilman Schmidt (1):
+      gigaset: include cleanup cleanup
+
+ drivers/isdn/gigaset/bas-gigaset.c       |    5 -----
+ drivers/isdn/gigaset/capi.c              |    2 --
+ drivers/isdn/gigaset/common.c            |    2 --
+ drivers/isdn/gigaset/gigaset.h           |    2 +-
+ drivers/isdn/gigaset/i4l.c               |    1 -
+ drivers/isdn/gigaset/interface.c         |    1 -
+ drivers/isdn/gigaset/proc.c              |    1 -
+ drivers/isdn/gigaset/ser-gigaset.c       |    3 ---
+ drivers/isdn/gigaset/usb-gigaset.c       |    4 ----
+ drivers/net/forcedeth.c                  |    2 +-
+ drivers/net/tun.c                        |    4 ++++
+ drivers/net/wan/hdlc_ppp.c               |    6 ++++++
+ drivers/net/wireless/iwlwifi/iwl-calib.c |   12 ++++++++++++
+ net/core/dev.c                           |    8 ++++++--
+ net/ipv4/fib_trie.c                      |    4 +++-
+ net/ipv4/ip_output.c                     |    2 +-
+ net/ipv6/ip6_output.c                    |    2 +-
+ net/packet/af_packet.c                   |    2 --
+ 18 files changed, 35 insertions(+), 28 deletions(-)
