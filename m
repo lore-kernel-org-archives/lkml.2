@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab0DSHzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 03:55:36 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53108 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018Ab0DSHzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 03:55:35 -0400
-Date: Mon, 19 Apr 2010 07:54:41 GMT
-From: "tip-bot for Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       davem@davemloft.net, paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
-       tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       davem@davemloft.net, paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
-       tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20100415195039.GA22623@linux.vnet.ibm.com>
-References: <20100415195039.GA22623@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] rcu: Make RCU lockdep check the lockdep_recursion variable
-Message-ID: <tip-bc293d62b26ec590afc90a9e0a31c45d355b7bd8@git.kernel.org>
-Git-Commit-ID: bc293d62b26ec590afc90a9e0a31c45d355b7bd8
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 19 Apr 2010 07:54:44 +0000 (UTC)
+	id S1752648Ab0DSH5r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 03:57:47 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:27782 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab0DSH5p convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 03:57:45 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Mon, 19 Apr 2010 09:57:47 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH 3/8] USB: gadget: __init and __exit tags removed
+In-reply-to: <n2v8bd0f97a1004161640q640bade7xd4887dde5921b79e@mail.gmail.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org
+Message-id: <op.vbegell27p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.10 (Linux)
+References: <cover.1271406290.git.mina86@mina86.com>
+ <0d8cfc5167bbcbfc6c5ae0ab10980eba743e0cee.1271406290.git.mina86@mina86.com>
+ <7fbfe9c15eae523b73b704a3b5399319152fd505.1271406290.git.mina86@mina86.com>
+ <41b2cd7e8bacd38bb9c997b7197e175d727876f9.1271406290.git.mina86@mina86.com>
+ <n2v8bd0f97a1004161640q640bade7xd4887dde5921b79e@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bc293d62b26ec590afc90a9e0a31c45d355b7bd8
-Gitweb:     http://git.kernel.org/tip/bc293d62b26ec590afc90a9e0a31c45d355b7bd8
-Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-AuthorDate: Thu, 15 Apr 2010 12:50:39 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 19 Apr 2010 08:37:19 +0200
+> On Fri, Apr 16, 2010 at 05:49, Michal Nazarewicz wrote:
+>> __init, __initdata and __exit tags have have been removed from
+>> various files to make it possible for gadgets that do not use
+>> the __init/__exit tags to use those.
+>>
+>> Files in question are related to:
+>> * the core composite framework,
+>> * the mass storage function (fixing a section mismatch) and
+>> * ethernet driver (ACM, ECM, RNDIS).
 
-rcu: Make RCU lockdep check the lockdep_recursion variable
+Mike Frysinger wrote:
+> it would be nice if the expected behavior were documented somewhere so
+> we dont have to keep thrashing the section markings on the gadget
+> drivers.  first they get marked to save space for setups where it
+> makes no sense to keep the functions.  then they get tweaked to
+> support a semi-dynamic state.  now they're all removed to support yet
+> a different setup.
 
-The lockdep facility temporarily disables lockdep checking by
-incrementing the current->lockdep_recursion variable.  Such
-disabling happens in NMIs and in other situations where lockdep
-might expect to recurse on itself.
+Are you referring to my previous patch by saying "then they get tweaked
+to support a semi-dynamic state"? Those were just a proposal which was never
+accepted and suggested to remove those tags all together.
 
-This patch therefore checks current->lockdep_recursion, disabling RCU
-lockdep splats when this variable is non-zero.  In addition, this patch
-removes the "likely()", as suggested by Lai Jiangshan.
+> sounds like the system is insufficiently flexible to meet the
+> realistic needs of different groups.
 
-Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-Reported-by: David Miller <davem@davemloft.net>
-Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: laijs@cn.fujitsu.com
-Cc: dipankar@in.ibm.com
-Cc: mathieu.desnoyers@polymtl.ca
-Cc: josh@joshtriplett.org
-Cc: dvhltc@us.ibm.com
-Cc: niv@us.ibm.com
-Cc: peterz@infradead.org
-Cc: rostedt@goodmis.org
-Cc: Valdis.Kletnieks@vt.edu
-Cc: dhowells@redhat.com
-Cc: eric.dumazet@gmail.com
-LKML-Reference: <20100415195039.GA22623@linux.vnet.ibm.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- include/linux/rcupdate.h |    5 +----
- kernel/rcupdate.c        |    7 +++++++
- 2 files changed, 8 insertions(+), 4 deletions(-)
+Yes, I agree.  That's why in the first version I proposed the __usb_init,
+__usb_exit, etc. tags which could be customized prior to including
+composite related files.
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 9f1ddfe..07db2fe 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -101,10 +101,7 @@ extern struct lockdep_map rcu_sched_lock_map;
- # define rcu_read_release_sched() \
- 		lock_release(&rcu_sched_lock_map, 1, _THIS_IP_)
- 
--static inline int debug_lockdep_rcu_enabled(void)
--{
--	return likely(rcu_scheduler_active && debug_locks);
--}
-+extern int debug_lockdep_rcu_enabled(void);
- 
- /**
-  * rcu_read_lock_held - might we be in RCU read-side critical section?
-diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-index 63fe254..03a7ea1 100644
---- a/kernel/rcupdate.c
-+++ b/kernel/rcupdate.c
-@@ -69,6 +69,13 @@ EXPORT_SYMBOL_GPL(rcu_scheduler_active);
- 
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 
-+int debug_lockdep_rcu_enabled(void)
-+{
-+	return rcu_scheduler_active && debug_locks &&
-+	       current->lockdep_recursion == 0;
-+}
-+EXPORT_SYMBOL_GPL(debug_lockdep_rcu_enabled);
-+
- /**
-  * rcu_read_lock_bh_held - might we be in RCU-bh read-side critical section?
-  *
+I would still go with that solution but it was considered, let me
+find the exact phrase, "Ick ick ick." :)
+
+What's more, I don't see any other (that is cleaner) solution which
+would allow flexibility so it seems what we can either choose
+a non-flexible solution proposed by this patch or an ugly solution
+proposed by my previous patch.
+
+So basically, I trusted more experienced kernel developer's opinion
+on this one.
+
+-- 
+Best regards,                                           _     _
+  .o. | Liege of Serenely Enlightened Majesty of       o' \,=./ `o
+  ..o | Computer Science,  Michał "mina86" Nazarewicz     (o o)
+  ooo +---[mina86@mina86.com]---[mina86@jabber.org]---ooO--(_)--Ooo--
