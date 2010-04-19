@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab0DSOdb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 10:33:31 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:65498 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754666Ab0DSOd3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 10:33:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=JUfZU90/jz/dNLsI8mMtD5OAWKhHK892WPsPYW1dy9PXkLfnk/PHi9EdG6yAMG+TRr
-         LZ3VrVjV2M/ZtXzg2dlJcu1KRCdczyRrtgJObBGJUNBLc9fQmgoFOpqUpdnCAdPZLFPz
-         rPuJKoeQZcFR02NwgdlM4qZZ/HryY4jghPWks=
-Message-ID: <4BCC69B4.2050308@gmail.com>
-Date: Mon, 19 Apr 2010 16:33:24 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.5 Thunderbird/3.1b1
+	id S1755364Ab0DSOeF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 10:34:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752886Ab0DSOeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 10:34:02 -0400
+Message-ID: <4BCC69D5.3050209@redhat.com>
+Date: Mon, 19 Apr 2010 17:33:57 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, adilger@sun.com,
-       linux-ext4@vger.kernel.org,
-       Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       mszeredi@suse.cz
-Subject: Re: busy inodes -> ext3 umount crash
-References: <4BC8A7C1.20102@gmail.com> <20100419141158.GB5439@quack.suse.cz>
-In-Reply-To: <20100419141158.GB5439@quack.suse.cz>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+To: Glauber Costa <glommer@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+       Jeremy Fitzhardinge <jeremy@goop.org>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>
+Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
+References: <1271356648-5108-1-git-send-email-glommer@redhat.com> <1271356648-5108-2-git-send-email-glommer@redhat.com> <4BC8CA52.4090703@goop.org> <1271673545.1674.743.camel@laptop> <4BCC3584.1050501@redhat.com> <1271675100.1674.818.camel@laptop> <4BCC3A3E.9070909@redhat.com> <20100419142158.GD14158@mothafucka.localdomain>
+In-Reply-To: <20100419142158.GD14158@mothafucka.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 04:11 PM, Jan Kara wrote:
->> I have no idea how to reproduce it :(, but it usually happens when I do
->> shutdown/kexec.
->   If it's the patch I suspect above, then moving one directory over another
-> one might trigger the leak which would be later spotted on umount of the
-> filesystem. Or maybe to trigger the leak you have to have a process which
-> has its CWD in the directory you are going to delete by the rename... not
-> sure.
+On 04/19/2010 05:21 PM, Glauber Costa wrote:
+>
+>> Oh yes, just trying to avoid a patch with both atomic64_read() and
+>> ACCESS_ONCE().
+>>      
+> you're mixing the private version of the patch you saw with this one.
+> there isn't any atomic reads in here. I'll use a barrier then
+>    
 
-The trigger for busy inodes is as simple as (I=initialization done only
-once):
-I> # dd if=/dev/zero of=/dev/shm/ext3 bs=1024 count=1 seek=$((100*1024))
-I> # mkfs.ext3 -m 0 /dev/shm/ext3
-# mount -oloop /dev/shm/ext3 /mnt/c
-# umount /mnt/c
-# dmesg|tail
-VFS: Busy inodes after unmount of loop0. Self-destruct in 5 seconds.
-Have a nice day...
+This patch writes last_value atomically, but reads it non-atomically.  A 
+barrier is insufficient.
 
-(The printk time varies -- this sequence really suffices.)
-
-> So if you can easily reproduce
-> the "busy inodes" message then I'd start with debugging that one. Do you
-> see it also with vanilla kernels?
-
-I don't know, now I'm going to play with that as I have the trigger ;).
-Will be back soon.
-
-thanks,
 -- 
-js
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+
