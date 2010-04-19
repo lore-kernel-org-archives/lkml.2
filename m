@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628Ab0DSHjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 03:39:11 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:57807 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328Ab0DSHjG (ORCPT
+	id S1752125Ab0DSHoJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 03:44:09 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:43966 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab0DSHoE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 03:39:06 -0400
-Date: Mon, 19 Apr 2010 09:38:59 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch,
-       grant.likely@secretlab.ca, bryan.wu@canonical.com,
-       r.herring@freescale.com, Jun.Li@freescale.com,
-       xiao-lizhang@freescale.com
-Subject: Re: [PATCHv4 2.6.34-rc4 5/7] mxc: Add generic USB HW
- initialization for MX51
-Message-ID: <20100419073859.GA30801@buzzloop.caiaq.de>
-References: <1271445371-18501-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271445371-18501-2-git-send-email-Dinh.Nguyen@freescale.com>
- <1271445371-18501-3-git-send-email-Dinh.Nguyen@freescale.com>
- <1271445371-18501-4-git-send-email-Dinh.Nguyen@freescale.com>
- <1271445371-18501-5-git-send-email-Dinh.Nguyen@freescale.com>
- <20100417170706.GY30801@buzzloop.caiaq.de>
- <20100419010340.GB15308@matterhorn.verdurent.com>
+	Mon, 19 Apr 2010 03:44:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TkDJJV1ayKudvhP9fmrhaINqCb0N09driSPco3KMhWDPvdiy86T1gL8caQmRRiEGEc
+         OQvxtoXGRCD78odEeZHDQa2S7lVPfeW1AaoqCEBYj9A1PCu5MhAhGe27bEcRe2PXoQGY
+         JfCjgsW1xqEVrUPubvjKMWDOmh4/hRnKkyoCA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100419010340.GB15308@matterhorn.verdurent.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BCBFE89.9070401@ladisch.de>
+References: <4BCBFE89.9070401@ladisch.de>
+Date: Mon, 19 Apr 2010 09:44:02 +0200
+Message-ID: <o2gf046f1351004190044h6c3f6536ga916d2fa047f3fe7@mail.gmail.com>
+Subject: Re: [regression, bisected] Xonar DX invalid PCI I/O range since 
+	977d17bb174
+From: Peter Henriksson <peter.henriksson@gmail.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 04:03:40AM +0300, Amit Kucheria wrote:
-> On 10 Apr 17, Daniel Mack wrote:
-> > > @@ -18,6 +19,7 @@
-> > >  
-> > >  #include <linux/platform_device.h>
-> > >  #include <linux/io.h>
-> > > +#include <linux/delay.h>
-> > >  
-> > >  #include <mach/hardware.h>
-> > >  #include <mach/mxc_ehci.h>
-> > > @@ -50,9 +52,14 @@
-> > >  #define MX35_H1_TLL_BIT		(1 << 5)
-> > >  #define MX35_H1_USBTE_BIT	(1 << 4)
-> > >  
-> > > -int mxc_set_usbcontrol(int port, unsigned int flags)
-> > > +int mxc_intialize_usb_hw(int port, unsigned int flags)
-> > 
-> > This patch and the next one should be merged into one. The reason is
-> > that you rename a function here and the next patch follows that change.
-> > Especially when bisecting, this can lead to uncompilable checkouts of
-> > the tree when stopping in the middle.
-> 
-> Also, patch 3 really belongs with this patch too since the #defines in
-> patch 3 are used here.
+> Unfortunately, the bug tracker is dead, so I cannot ask for further
+> information.  (If somebody renews the domain, this report will be at
+> <https://bugtrack.alsa-project.org/alsa-bug/view.php?id=4982>.)
 
-Well, as long as the defines are commited _before_ their users, it
-should be fine. But they can also be squashed into one, that's true.
+Hi Clemens,
+I am the one who that filed the bug. Please let me know what you need.
 
-Thanks,
-Daniel
-
+Regards,
+Peter
