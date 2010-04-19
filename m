@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762Ab0DSUU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 16:20:56 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:60521 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750753Ab0DSUUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 16:20:54 -0400
-Date: Mon, 19 Apr 2010 15:20:43 -0500
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       ecryptfs-devel@lists.launchpad.net
-Subject: [GIT PULL] eCryptfs fixes for 2.6.34
-Message-ID: <20100419202043.GB2648@fedora-virt>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1751373Ab0DSUoJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 16:44:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:51084 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab0DSUoI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 16:44:08 -0400
+X-Authority-Analysis: v=1.1 cv=ZUag8tkj9kgmNMrzofuoEsXxpG43g9sRv4eUZcQ4+as= c=1 sm=0 a=zBnlsAAkvaYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=Cl93p3Yo3IC6YUjMddsA:9 a=ImbjCMi8EUaFmQa7AvYjdokM6D4A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: request to add trace off and trace on with events
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Chase Douglas <chase.douglas@canonical.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4BCCBF6D.3030105@am.sony.com>
+References: <1271707444.10448.12.camel@gandalf.stny.rr.com>
+	 <4BCCBF6D.3030105@am.sony.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 19 Apr 2010 16:44:06 -0400
+Message-ID: <1271709846.10448.29.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 2010-04-19 at 13:39 -0700, Tim Bird wrote:
+> On 04/19/2010 01:04 PM, Steven Rostedt wrote:
+> > Hi Tom,
+> > 
+> > Could you add a way to do a call to tracing_on() or tracing_off() via
+> > the filters. I would like to do something like:
+> > 
+> > 
+> > echo 'if (pid == 1234) traceoff' > events/sched/sched_wakeup/filter
+> > 
+> > Where, if the sched_wakeup event is hit with pid == 1234 it will turn
+> > tracing off.
+> 
+> Just a comment on the nomenclature.  In KFT I called
+> things like this "triggers".  I'm not sure what other
 
-The following changes since commit 220bf991b0366cc50a94feede3d7341fa5710ee4:
-  Linus Torvalds (1):
-        Linux 2.6.34-rc2
+Yeah, Mathieu calls them triggers too. But if you do, I'm fine with
+calling them that as well.
 
-are available in the git repository at:
+> tracing systems call them.  I'm a little worried about
+> overloading the filtering abstraction with trigger
+> semantics.  (I like the idea of triggers, but it might
+> be better to control them with another pseudo-file for
+> clarity.)
+> 
+> I suppose both are a form of conditional execution.
+> Filtering has an implicit action of either 'trace this'
+> or 'don't trace this', while triggering usually has
+> an action, often explicit, to start or stop tracing.
+> However, since they both use the conditional testing,
+> it might be a pain to reproduce this code for a different
+> pseudo-file.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git for-linus
+I thought about a separate file, but I like the idea of having control
+over them. We could add a "trigger" file too, but I'm not sure if that
+would be any clearer.
 
-Christian Pulvermacher (1):
-      ecryptfs: fix error code for missing xattrs in lower fs
+If we add a trigger file, then the filter can be separate, and we just
+trigger the trigger if the filter passes.
 
-Jeff Mahoney (1):
-      ecryptfs: fix use with tmpfs by removing d_drop from ecryptfs_destroy_inode
+This may be better, because then the triggers do not mess with the
+filtering code, and I can add it without modification to Tom's code.
 
-Tyler Hicks (7):
-      eCryptfs: Fix metadata in xattr feature regression
-      eCryptfs: Rename ecryptfs_crypt_stat.num_header_bytes_at_front
-      eCryptfs: Clear buffer before reading in metadata xattr
-      eCryptfs: Strip metadata in xattr flag in encrypted view
-      eCryptfs: Decrypt symlink target for stat size
-      eCryptfs: Copy lower directory inode times and size on link
-      eCryptfs: Turn lower lookup error messages into debug messages
+-- Steve
 
- fs/ecryptfs/crypto.c          |   37 ++++++------
- fs/ecryptfs/ecryptfs_kernel.h |   13 ++++-
- fs/ecryptfs/inode.c           |  129 +++++++++++++++++++++--------------------
- fs/ecryptfs/mmap.c            |   38 +++++++------
- fs/ecryptfs/super.c           |    1 -
- 5 files changed, 118 insertions(+), 100 deletions(-)
+
