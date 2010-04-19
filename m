@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab0DSVOO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:14:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17523 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362Ab0DSVOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:14:12 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org,
-       Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH] acpi: Fall back to manually changing SCI_EN
-Date: Mon, 19 Apr 2010 17:13:34 -0400
-Message-Id: <1271711614-15527-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.34.250
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1752165Ab0DSVRO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:17:14 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:58276 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658Ab0DSVRN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 17:17:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=GbVKcjvJUdpEPdtwbzkiIyCeFE3DojL1CHocNoVC3W2rYCjMVJrGC7bGbYi//APBVs
+         8vQQptiFEmqvNuYCAtkMAwBMmoO4ef7n1AsNFR6N9Yjw9v8CtgUiEWLaOGhMDESu69oA
+         5MalT54h2Xg6mL2aJoLiRlfM5GzDQD/QV9tII=
+MIME-Version: 1.0
+In-Reply-To: <4BCC0453.3060806@gmail.com>
+References: <i2ydd18b0c31004182119w30322238p2ab0094f55901051@mail.gmail.com>
+	 <4bcbebb3.9653f10a.3be1.ffffe0ef@mx.google.com>
+	 <4BCBFBA9.9040606@gmail.com> <4BCBFEE3.8020509@codesourcery.com>
+	 <4BCC0453.3060806@gmail.com>
+Date: Mon, 19 Apr 2010 22:17:11 +0100
+Message-ID: <r2s4348dea51004191417yd5915c1du89b179011d65ca5f@mail.gmail.com>
+Subject: Re: gcc- 4.6.0 20100416 rtmutex.c:1138:1: internal compiler error
+From: Jonathan Wakely <jwakely.gcc@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Jie Zhang <jie@codesourcery.com>, Ben Gamari <bgamari.foss@gmail.com>,
+       gcc@gcc.gnu.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI spec tells us that the ACPI SCI_EN bit is under hardware control
-and shouldn't be touched by the OS. It seems that the Leading Other OS
-ignores this and some machines expect this behaviour. We have a blacklist
-for these, but given that we're able to detect the failure case and the
-alternative to breaking the spec is letting the machine crash and burn,
-let's try falling back when we know the alternative is a mostly-dead
-machine.
+On 19 April 2010 08:20, Justin P. Mattock wrote:
+> On 04/18/2010 11:57 PM, Jie Zhang wrote:
+>>
+>> On 04/19/2010 02:43 PM, Justin P. Mattock wrote:
+>>>
+>>> I couldn't resist..(had to play),
+>>> anyways I looked through the reports
+>>> but didn't see anything that was
+>>> familiar. so I went and created an entry:
+>>> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=43791
+>>>
+>> Thanks. Please add a preprocessed source file so people can reproduce
+>> your issue.
+>>
+>>
+>
+>
+> as for the preprocessed source file,
+> not that yet skilled at code.(one day)
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- drivers/acpi/sleep.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index f74834a..79df8d4 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -227,6 +227,7 @@ static int acpi_suspend_begin(suspend_state_t pm_state)
- static int acpi_suspend_enter(suspend_state_t pm_state)
- {
- 	acpi_status status = AE_OK;
-+	acpi_status enable_status = AE_OK;
- 	unsigned long flags = 0;
- 	u32 acpi_state = acpi_target_sleep_state;
- 
-@@ -254,10 +255,19 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
- 	}
- 
- 	/* If ACPI is not enabled by the BIOS, we need to enable it here. */
--	if (set_sci_en_on_resume)
-+	if (!set_sci_en_on_resume)
-+		enable_status = acpi_enable();
-+
-+	if (set_sci_en_on_resume || enable_status == AE_NO_HARDWARE_RESPONSE)
-+		/* If we're still in legacy mode then we have a problem. The
-+		 * spec tells us that this bit is under hardware control, but
-+		 * there's no plausible way that the OS can transition back to
-+		 * legacy mode so our choices here are to either ignore the
-+		 * spec or crash and burn horribly. The latter doesn't seem
-+		 * like it's ever going to be the preferable choice, so let's
-+		 * live dangerously.
-+		 */
- 		acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
--	else
--		acpi_enable();
- 
- 	/* Reprogram control registers and execute _BFS */
- 	acpi_leave_sleep_state_prep(acpi_state);
--- 
-1.7.0.1
-
+See the "how to report" link on the gcc front page:
+http://gcc.gnu.org/bugs/
+It's not hard.
