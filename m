@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab0DSWEj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 18:04:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61638 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615Ab0DSWEg (ORCPT
+	id S1752676Ab0DSWFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 18:05:10 -0400
+Received: from baikonur.stro.at ([213.239.196.228]:55013 "EHLO
+	baikonur.stro.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891Ab0DSWFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 18:04:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bUgH6cysnYTxPjkKw//dHvXQbz4FSTpQT/eEnvWNheRDGmUpf1VW03pmXgtZuW4AQo
-         pzwiNejOkhD4uI9rxm2hajMvG1RLasviQN0xLIscaFLC2F8dt7dzjpHZtRWniAEtn6aL
-         Oqpy7+I/SbfyUyxhfYCi0P+pQhH0q3jMXua4A=
-Date: Tue, 20 Apr 2010 00:04:39 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tim Bird <tim.bird@am.sony.com>, Tom Zanussi <tzanussi@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Chase Douglas <chase.douglas@canonical.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: request to add trace off and trace on with events
-Message-ID: <20100419220437.GC8811@nowhere>
-References: <1271707444.10448.12.camel@gandalf.stny.rr.com> <4BCCBF6D.3030105@am.sony.com> <1271709846.10448.29.camel@gandalf.stny.rr.com> <20100419212950.GB8811@nowhere> <1271713074.10448.101.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
+	Mon, 19 Apr 2010 18:05:08 -0400
+Date: Mon, 19 Apr 2010 23:57:11 +0200
+From: maximilian attems <max@stro.at>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, stable@kernel.org,
+       Ulrich Drepper <drepper@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH] fcntl.h: define AT_EACCESS
+Message-ID: <20100419215711.GR10984@baikonur.stro.at>
+References: <1271387280-19565-1-git-send-email-max@stro.at> <20100419144729.2b8180e8.akpm@linux-foundation.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1271713074.10448.101.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100419144729.2b8180e8.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 05:37:54PM -0400, Steven Rostedt wrote:
-> On Mon, 2010-04-19 at 23:29 +0200, Frederic Weisbecker wrote:
+On Mon, Apr 19, 2010 at 02:47:29PM -0700, Andrew Morton wrote:
+> On Fri, 16 Apr 2010 05:08:00 +0200
+> maximilian attems <max@stro.at> wrote:
 > 
-> > The problem with having triggers defined in the filter file is that
-> > you couldn't set a normal filter plus a trigger.
+> > noticed on a klibc build of dash that someone had left out that def:
+> > usr/dash/bltin/test.c:490: error: ___AT_EACCESS___ undeclared (first use in thiction)
 > > 
-> > That said a filter itself could be a trigger.
+> > Cc: stable@kernel.org
+> > Cc: Ulrich Drepper <drepper@redhat.com>
+> > Cc: H. Peter Anvin <hpa@zytor.com>
+> > Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> > Signed-off-by: maximilian attems <max@stro.at>
+> > ---
+> >  include/linux/fcntl.h |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
 > > 
-> > if (cond) filter
-> > 
-> > This is going to break some ABI though.
-> > 
-> > In fact having one file per trigger type is going to make the
-> > things much easier if you don't want to encumber with syntax parsing,
-> > and just reuse the filtering code as is with very few modification.
-> > This is going to be also easier for the users as they don't have to
-> > remember the syntax or the available triggers.
-> > 
-> > Say you are in an event directory:
-> > 
-> > $ ls triggers/
-> > 
-> > filter
-> > tracing_off
-> > tracing_on
-> > dump_trace
-> > 
-> > $ echo "(a == 1 && b == 2)" > tracing_off
-> > 
-> > So in the above example, you just reuse the filtering code,
-> > no need to parse an if or a command.
-> > The filter becomes a command. I've listed it in the triggers
-> > directory but this just to express the fact it can be treated
-> > like whatever trigger command, this is just an implementation
-> > POV. In fact we can just keep it in the event directory.
+> > diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
+> > index 8603740..8bb001d 100644
+> > --- a/include/linux/fcntl.h
+> > +++ b/include/linux/fcntl.h
+> > @@ -39,6 +39,8 @@
+> >  #define AT_REMOVEDIR		0x200   /* Remove directory instead of
+> >                                             unlinking file.  */
+> >  #define AT_SYMLINK_FOLLOW	0x400   /* Follow symbolic links.  */
+> > +#define AT_EACCESS		0x200	/* Test access permitted for
+> > +					   effective IDs, not real IDs.  */
+> >  
 > 
+> I'm all confused.
 > 
-> I like this. Heck, all registered triggers can be shown here.
+> The affects sys_faccesat(), yes?  But sys_faccesat() never gets passed
+> a `flags' argument so how does the behaviour which the FACCESSAT(2)
+> manpage describes get implemented?
 > 
-> # cat event/sched/sched_switch/triggers/tracing_off
-> disabled
+> This patch doesn't actually change kernel behaviour, so how can setting
+> AT_EACCESS change any syscall's actions?
 > 
-> Or it can be a filter, or enabled.
+> It's a bit of a worry that the proposed value for AT_EACCESS duplicates
+> AT_REMOVEDIR.  I guess that, despite apeparances, they're different
+> namespaces.  Any thoughts on the implications of this?
 
+glibc fcntl.h defines AT_EACCESS in the same way as aboves patch,
+concerning the implementation, others should know better.
 
-Yep, since it would share exatly the same code than filter (as
-filter basically becomes a trigger command), it can behave the
-same: displaying "none" when there is no filter, or a filter.
+the dash code calling faccessat has the 4 params,
+klibc faccessat had only 3 args, guess nobody had used it before.
 
-
-> 
-> This could also allow a user to do:
-> 
-> echo "(a > 100)" > tracing_on
-> echo "(a < 100)" > tracing_off
-
-
-Yeah :)
-But if the scope of the "tracing off" is only for this event, then
-rather use:
-
-echo "(a < 100)" > filter
-
-You could have tracing_off/on that have this event scope and
-tracing_off/on_all for a global tracing scope.
-
+the relevant dash code reads:
+#ifdef HAVE_FACCESSAT
+static int test_file_access(const char *path, int mode)
+{
+	return !faccessat(AT_FDCWD, path, mode, AT_EACCESS);
+}
+#else  /* HAVE_FACCESSAT */
+ 
