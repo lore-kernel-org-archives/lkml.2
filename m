@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab0DSMfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 08:35:32 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:34676 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440Ab0DSMfb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 08:35:31 -0400
+	id S1754238Ab0DSMhB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 08:37:01 -0400
+Received: from [200.254.57.130] ([200.254.57.130]:64751 "EHLO lamed.iaene.br"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753518Ab0DSMhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 08:37:00 -0400
+X-Greylist: delayed 752 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Apr 2010 08:37:00 EDT
+Message-Id: <201004191207.o3JC7SjU002538@lamed.iaene.br>
+Date: Mon, 19 Apr 2010 9:07:28 -0300
+From: "Tomo Sand Nori" <dirgeral@iaene.br>
+Reply-to: "Tomo Sand Nori" <mrtomosandnori07@w.cn>
+Subject: Greetings
+X-Priority: 3
+X-Mailer: Webmail-IASD 2.7
+X-Original-IP: 10.41.25.1
+Content-Transfer-Encoding: 7BIT
+X-MSMail-Priority: Medium
+Importance: Medium
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-In-Reply-To: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com>
-References: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Mon, 19 Apr 2010 14:35:13 +0200
-Message-ID: <z2iac3eb2511004190535pa4209f50n80708879a6b705e1@mail.gmail.com>
-Subject: Re: request_firmware API exhaust memory
-To: Tomas Winkler <tomasw@gmail.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>, Greg KH <greg@kroah.com>,
-       David Woodhouse <dwmw2@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: undisclosed-recipients:;
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (lamed.iaene.br [10.41.25.30]); Mon, 19 Apr 2010 09:08:41 -0300 (BRT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 14:20, Tomas Winkler <tomasw@gmail.com> wrote:
-> Lately we've been developing a device that rather more extensively
-> used request_firmware API in load and also using pm_notifiers to load
-> firmware. In some stress  testing the usage will exhaust the system
-> memory. First we suspected there is a memory leak in the
-> firwmare_class but eventually what is that udevd piles up it takes
-> time to collect the process.
+--
+Greetings,
 
-What version of the kernel, and what version of udev?
+I am sorry to encroach into your privacy in this manner, I found your listed
+in the Trade Centre Chambers of Commerce directory here in Japan, I find it
+pleasurable to offer you my partnership in business, I only pray at this
+time that your address is still valid. I want to solicit your attention to
+receive money on my behalf. The purpose of my contacting you is because my
+status would not permit me to do this alone.
 
-> We loose ~ 500K for each
-> request/release_firmware iteration.
+When you reply this message, I will send you the full details and more
+information about myself and the funds. If interested, please reply through
+my alternate Email:mrtomosandnori07@w.cn
 
-You mean you lose 500k, not taken by any process?
+MR. Tomo Sand Nori
+(Head of Account Dept,Tokyo Mitsubishi Bank,
+Tokyo, Japan)
+Email:mrtomosandnori07@w.cn
 
-> After the stress the process table will will look something like shown below,
+________________________________________________
+Message sent using
+Webmail-IASD 2.7
 
-What are these processes doing (strace)? Do they have child processes?
-If yes, what are they doing (strace)?
-
-Kay
