@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab0DSSMI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 14:12:08 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44185 "EHLO mx3.mail.elte.hu"
+	id S1753709Ab0DSSPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 14:15:06 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:58085 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752746Ab0DSSMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 14:12:06 -0400
-Date: Mon, 19 Apr 2010 20:11:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Avi Kivity <avi@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       zhiteng.huang@intel.com, tim.c.chen@intel.com,
-       Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH V5 1/3] perf & kvm: Enhance perf to collect KVM guest os
- statistics from host side
-Message-ID: <20100419181154.GA14631@elte.hu>
-References: <1271655161.2078.603.camel@ymzhang.sh.intel.com>
+	id S1752929Ab0DSSPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 14:15:04 -0400
+Date: Mon, 19 Apr 2010 19:14:42 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+       "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: error at compaction  (Re: mmotm 2010-04-15-14-42 uploaded
+Message-ID: <20100419181442.GA19264@csn.ul.ie>
+References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org> <20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1271655161.2078.603.camel@ymzhang.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 19, 2010 at 07:01:33PM +0900, KAMEZAWA Hiroyuki wrote:
+> 
+> mmotm 2010-04-15-14-42 
+> 
+> When I tried 
+>  # echo 0 > /proc/sys/vm/compaction
+> 
+> I see following.
+> 
+> My enviroment was 
+>   2.6.34-rc4-mm1+ (2010-04-15-14-42) (x86-64) CPUx8
+>   allocating tons of hugepages and reduce free memory.
+> 
+> What I did was:
+>   # echo 0 > /proc/sys/vm/compact_memory
+> 
+> Hmm, I see this kind of error at migation for the 1st time..
+> my.config is attached. Hmm... ?
+> 
+> (I'm sorry I'll be offline soon.)
 
-FYI, i found a few problems that need fixing:
+That's ok, thanks you for the report. I'm afraid I made little progress
+as I spent most of the day on other bugs but I do have something for
+you.
 
-> +	unsigned long ip;
-> +	if (perf_guest_cbs && perf_guest_cbs->is_in_guest())
+First, I reproduced the problem using your .config. However, the problem does
+not manifest with the .config I normally use which is derived from the distro
+kernel configuration (Debian Lenny). So, there is something in your .config
+that triggers the problem. I very strongly suspect this is an interaction
+between migration, compaction and page allocation debug. Compaction takes
+pages directly off the buddy list and I bet you a shiny penny they are still
+unmapped when the copy takes place resulting in your oops.
 
-missing newline.
+I'll verify the theory tomorrow but it's a plausible explanation. On a
+different note, where did config options like the following come out of?
 
-> +	int misc = 0;
-> +	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
+CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11" 
 
-ditto.
+I don't think they are a factor but I'm curious.
 
-> +			PERF_RECORD_MISC_GUEST_KERNEL;
-> +	} else
-> +		misc |= user_mode(regs) ? PERF_RECORD_MISC_USER :
-> +			PERF_RECORD_MISC_KERNEL;
-
-- unbalanced curly braces
-- missing curly brace for multi-line statement.
-- unnecessary line-break due to col80 warning from checkpatch
-
-> +extern struct perf_guest_info_callbacks *perf_guest_cbs;
-> +extern int perf_register_guest_info_callbacks(
-> +		struct perf_guest_info_callbacks *);
-> +extern int perf_unregister_guest_info_callbacks(
-> +		struct perf_guest_info_callbacks *);
-
-- unnecessary line-break due to col80 warning from checkpatch
-
-> +static inline int perf_register_guest_info_callbacks
-> +(struct perf_guest_info_callbacks *) {return 0; }
-> +static inline int perf_unregister_guest_info_callbacks
-> +(struct perf_guest_info_callbacks *) {return 0; }
-
-- invalid C: function parameter needs name even if unused
-- missing space after opening curly brace
-
-Please provide delta fixes.
-
-	Ingo
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
