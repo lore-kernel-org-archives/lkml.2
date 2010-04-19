@@ -1,45 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab0DSWn7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 18:43:59 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49948 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751493Ab0DSWn6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 18:43:58 -0400
-Date: Mon, 19 Apr 2010 15:43:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Tom Lyon" <pugs@cisco.com>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-       joerg.roedel@amd.com, chrisw@sous-sol.org, dwmw2@infradead.org
-Subject: Re: [PATCH v3] drivers/pci/intel-iommu.c: errors with smaller iommu
- widths
-Message-Id: <20100419154339.e80b6ef3.akpm@linux-foundation.org>
-In-Reply-To: <4bccceb0.P4o49QIX47z1ouTs%pugs@cisco.com>
-References: <4bccceb0.P4o49QIX47z1ouTs%pugs@cisco.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752543Ab0DSWsG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 18:48:06 -0400
+Received: from kroah.org ([198.145.64.141]:34577 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752030Ab0DSWsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 18:48:02 -0400
+Date: Mon, 19 Apr 2010 15:46:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Till Kamppeter <till.kamppeter@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+       "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-wireless <linux-wireless@vger.kernel.org>,
+       Witold Sowa <witold.sowa@gmail.com>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: Google Summer of Code 2010 - Please resolve duplicates
+Message-ID: <20100419224634.GG1800@kroah.com>
+References: <4BCCB176.3060206@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BCCB176.3060206@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Apr 2010 14:44:16 -0700
-"Tom Lyon" <pugs@cisco.com> wrote:
-
+On Mon, Apr 19, 2010 at 12:39:34PM -0700, Till Kamppeter wrote:
+> Hi,
 > 
-> When using iommu_domain_alloc with the Intel iommu, the domain address width
-> is always initialized to 48 bits (agaw 2). __This domain->agaw value is then
-> used by pfn_to_dma_pte to (always) build a 4 level page table. __However, not
-> all systems support iommu width of 48 or 4 level page tables. __In particular,
-> the Core i5-660 and i5-670 support an address width of 36 bits (not 39!), an
-> agaw of only 1, and only 3 level page tables.
+> two students who applied for your projects have applied also for
+> another organization's project and they got accepted by us and by
+> the other organization.
 > 
-> This version of the patch simply lops off extra levels of the page tables if
-> the agaw value of the iommu is less than what is currently allocated for the
-> domain (in intel_iommu_attach_device). If there were already allocated
-> addresses above what the new iommu can handle, EFAULT is returned.
-> 	Signed-off-by: Tom Lyon <pugs@cisco.com>
+> Until Wednesday Google wants these situation to be resolved until
+> Wednesday April 21, 17:00 UTC. Please contact the students and/or
+> the organization to agree on one of the project for each student.
+> 
+> In addition, the ranking of the students (to decide who actually
+> gets our slots) and the mentor assignments have to be finalized by
+> the same date and time.
+> 
+> Duplicates not be resolved until then will be resolved on an IRC
+> meeting on Wednesday April 21 at 19:00 UTC. The meeting takes place
+> in the #gsoc channel on Freenode.
+> 
+> Please mail me if a mentor needs to be (re)assigned.
+> 
+>    Till
+> 
+> 
+> 
+> ----------------------------------------------------------------------
+> 
+> Hi all,
+> 
+> I have opened the duplicate information for students to all of your
+> orgs. If you view your student proposals now the ones that are ranked
+> to be accepted that are duplicated with another org will be marked in
+> red. If you click on the proposal you will see the contact information
+> for the other organization(s)'s admins near the bottom of the
+> proposal.
+> 
+> You must also have a mentor assigned to all the students in your top N
+> slots by now. If you do not have a mentor assigned to them the
+> duplicate detection script will not pick them up and we may have
+> duplicates we don't know about. That is bad, please fix that if its
+> the case.
+> 
+> Please try to resolve as many of these duplicate situations via email
+> in the next two days as possible - contact your fellow organizations,
+> be clear with each other about who is taking the student, and then
+> rank the student up if you are accepting him/her or mark the student
+> ineligible with a public comment that you have marked it ineligible
+> because of a duplicate situation if you are not taking the student.
+> 
+> The deadline for changing rankings is 17:00UTC on Wednesday, April 21.
+> All duplicates that have not been resolved by 17:00 UTC will be taken
+> to the IRC meeting at 19:00 UTC.
 
-This smells like a 2.6.34 patch.  Do you agree?
+Have a pointer to the web site to do this?
+
+thanks,
+
+greg k-h
