@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab0DSVfL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:35:11 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:57633 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab0DSVfI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:35:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=QBJQJL1INJcXX7svEL4SqqNsC2YIq0tmbrLfBdUmjWiHvcKsq5JiDqI2XNZKvuBDEA
-         zdDMGx80wIVZR2XzVXcIfXVuy6QYcbl8hZiU3ofIAtHQrSxysTH8awoKJjb0j6Gqgdym
-         5FnwkIFGViU7RpRPsVnxeirarXBV9AAMNehYU=
-Message-ID: <4BCCCCDF.4010605@gmail.com>
-Date: Mon, 19 Apr 2010 14:36:31 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	id S1752544Ab0DSVfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:35:43 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53730 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752448Ab0DSVfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 17:35:41 -0400
+Date: Mon, 19 Apr 2010 23:35:29 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, peterz@infradead.org,
+       gorcunov@gmail.com, aris@redhat.com, linux-kernel@vger.kernel.org,
+       randy.dunlap@oracle.com
+Subject: Re: [PATCH v2] [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100419213529.GA855@elte.hu>
+References: <1271366710-17468-1-git-send-email-dzickus@redhat.com>
+ <20100416014712.GC15570@nowhere>
+ <20100419212135.GN15159@redhat.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: MacBookPro2,2 unable too boot with the latest HEAD
-References: <i2vdd18b0c31004140812i6a0e9430u68ab49b24273fe9b@mail.gmail.com> <20100419142804.3cd53666.akpm@linux-foundation.org>
-In-Reply-To: <20100419142804.3cd53666.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100419212135.GN15159@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 02:28 PM, Andrew Morton wrote:
-> On Wed, 14 Apr 2010 08:12:57 -0700
-> Justin Mattock<justinmattock@gmail.com>  wrote:
->
->> Just noticed this this morning,
->> system can only boot up when I take the battery
->> out.(when the battery is plugged in this(below)
->> shows up, and if booting no go)
->>
->> [  169.207193] divide error: 0000 [#1] SMP
->> [  169.207203] last sysfs file: /sys/devices/platform/applesmc.768/light
->> [  169.207208] CPU 0
->> [  169.207212] Modules linked in: rfcomm sco radeon bnep l2cap ttm
->> drm_kms_helper drm ipt_LOG iptable_nat nf_nat xt_state
->> nf_conntrack_ftp nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4
->> iptable_filter ip_tables x_tables btusb bluetooth firewire_ohci ath9k
->> firewire_core ath9k_common video battery ac ath9k_hw evdev joydev
->> ohci1394 ath button thermal sky2 i2c_i801 raw1394 ieee1394 uhci_hcd
->> ehci_hcd coretemp acpi_cpufreq processor appletouch applesmc uvcvideo
->> [  169.207303]
->> [  169.207310] Pid: 182, comm: kacpi_notify Not tainted
->> 2.6.34-rc3-00502-gd3b0936 #42 Mac-F42187C8/MacBookPro2,2
->> [  169.207316] RIP: 0010:[<ffffffff81237e43>]  [<ffffffff81237e43>]
->> acpi_ex_extract_from_field+0xb1/0x24a
->
-> Presumably acpi_ex_extract_from_field() fed zero into (the misnamed)
-> ACPI_ROUND_UP_TO().
->
-> I'll ask Rafael and Maciej to track this as a post-26.33 regression,
-> thanks.
->
->
 
-the patch here fixes it for me:ACPI: EC: Limit burst to 64 bit
-https://bugzilla.kernel.org/attachment.cgi?id=25962
+* Don Zickus <dzickus@redhat.com> wrote:
 
+> On Fri, Apr 16, 2010 at 03:47:14AM +0200, Frederic Weisbecker wrote:
+> > On Thu, Apr 15, 2010 at 05:25:10PM -0400, Don Zickus wrote:
+> > > The new nmi_watchdog (which uses the perf event subsystem) is very
+> > > similar in structure to the softlockup detector.  Using Ingo's suggestion,
+> > > I combined the two functionalities into one file, kernel/watchdog.c.
+> > > 
+> > > Now both the nmi_watchdog (or hardlockup detector) and softlockup detector
+> > > sit on top of the perf event subsystem, which is run every 60 seconds or so
+> > > to see if there are any lockups.
+> 
+> Hello all,
+> 
+> After making a bunch of cleanups, I am stuck debating whether to continue 
+> updating this patch on the stale branch perf/nmi on Ingo's tree or just 
+> repost the whole patch again (which isn't much bigger just adds the 
+> arch/x86/kernel/apic/hw_nmi.c piece).
+> 
+> Part of the new patch series includes removing kernel/nmi_watchdog.c, which 
+> seemed kinda silly because it was only an intermediate file until things got 
+> shifted to kernel/watchdog.c
+> 
+> Thoughts?
 
-Justin P. Mattock
+I'd prefer relative patches as the current perf/nmi bits are tested quite 
+well.
+
+Intermediate stages are not a problem: 90% of the code in the kernel's Git 
+history is 'intermediate' as well, in hindsight. What matters is that the 
+workflow that resulted was clean and that the patches were (and are) clean.
+
+	Ingo
