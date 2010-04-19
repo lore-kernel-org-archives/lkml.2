@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab0DSNeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 09:34:12 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:43610 "EHLO e1.ny.us.ibm.com"
+	id S1752258Ab0DSNit (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 09:38:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50900 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab0DSNeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 09:34:10 -0400
-Date: Mon, 19 Apr 2010 06:34:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, dipankar@in.ibm.com,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       adobriyan@gmail.com, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [patch 5/5] tree/tiny rcu: Add debug RCU head objects (v5)
-Message-ID: <20100419133404.GC2564@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100417124837.536020244@efficios.com>
- <20100417125052.236240763@efficios.com>
- <4BCBAF46.4010603@cn.fujitsu.com>
+	id S1751494Ab0DSNir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 09:38:47 -0400
+Date: Mon, 19 Apr 2010 23:38:43 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: vmalloc performance
+Message-ID: <20100419133843.GP5683@laptop>
+References: <1271089672.7196.63.camel@localhost.localdomain>
+ <1271249354.7196.66.camel@localhost.localdomain>
+ <m2g28c262361004140813j5d70a80fy1882d01436d136a6@mail.gmail.com>
+ <1271262948.2233.14.camel@barrios-desktop>
+ <1271320388.2537.30.camel@localhost>
+ <1271350270.2013.29.camel@barrios-desktop>
+ <1271427056.7196.163.camel@localhost.localdomain>
+ <1271603649.2100.122.camel@barrios-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BCBAF46.4010603@cn.fujitsu.com>
+In-Reply-To: <1271603649.2100.122.camel@barrios-desktop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 09:17:58AM +0800, Lai Jiangshan wrote:
+On Mon, Apr 19, 2010 at 12:14:09AM +0900, Minchan Kim wrote:
+> On Fri, 2010-04-16 at 15:10 +0100, Steven Whitehouse wrote:
+> Nick, What do you think about "free area cache" approach?
+ 
+Thanks, yep something like this is what I had in mind. Looks like you
+have some really nice speed improvements which is great.
+
+
+> In this version, I don't consider last hole and backward cache movement which is 
+> like mmap's cached_hole_size
+> That's because I want to flush vmap_areas freed intentionally if we meet vend.
+> It makes flush frequent than old but it's trade-off. In addition, vmalloc isn't 
+> critical compared to mmap about performance. So I think that's enough. 
 > 
-> Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> If you don't opposed, I will repost formal patch without code related to debug.
 
-Thank you, Lai!!!  I have added your Reviewed-by.
+I think I would prefer to be a little smarter about using lower
+addresses first. I know the lazy TLB flushing works against this, but
+that is an important speed tradeoff, wheras there is not really any
+downside to trying hard to allocate low areas first. Keeping virtual
+addresses dense helps with locality of reference of page tables, for
+one.
 
-							Thanx, Paul
+So I would like to see:
+- invalidating the cache in the case of vstart being decreased.
+- Don't unconditionally reset the cache to the last vm area freed,
+  because you might have a higher area freed after a lower area. Only
+  reset if the freed area is lower.
+- Do keep a cached hole size, so smaller lookups can restart a full
+  search.
 
-> Mathieu Desnoyers wrote:
-> > Helps finding racy users of call_rcu(), which results in hangs because list
-> > entries are overwritten and/or skipped.
-> > 
-> > Changelog since v4:
-> > - Bissectability is now OK
-> > - Now generate a WARN_ON_ONCE() for non-initialized rcu_head passed to
-> >   call_rcu(). Statically initialized objects are detected with
-> >   object_is_static().
-> > - Rename rcu_head_init_on_stack to init_rcu_head_on_stack.
-> > - Remove init_rcu_head() completely.
-> > 
-> > Changelog since v3:
-> > - Include comments from Lai Jiangshan
-> > 
+Probably also at this point, moving some of the rbtree code (like the
+search code) into functions would manage the alloc_vmap_area complexity.
+Maybe do this one first if you're going to write a patchset.
+
+What do you think? Care to have a go? :)
+
