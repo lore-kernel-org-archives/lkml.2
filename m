@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab0DSSfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 14:35:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42124 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526Ab0DSSfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 14:35:53 -0400
-Message-ID: <4BCCA281.6040509@redhat.com>
-Date: Mon, 19 Apr 2010 08:35:45 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1753271Ab0DSSh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 14:37:58 -0400
+Received: from web94914.mail.in2.yahoo.com ([203.104.17.188]:35977 "HELO
+	web94914.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751890Ab0DSSh5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 14:37:57 -0400
+Message-ID: <251325.14614.qm@web94914.mail.in2.yahoo.com>
+X-YMail-OSG: UGxxjh8VM1lI6FgS14yg0JCjd242s0dlUQ9uJn1bqRXzUd9
+ FLrZZy3lkZzLAMotSVZnMWdbYu7cEAxm1Ap0oXt6POqcufnJ.x6AR8QVuAdW
+ OA_WlOxe9Y_.WtgKu2NyMxVBg4fFg7HxAYgZCMidGEmrtWXEtSYU47J5GQsw
+ FrtHoSq7EJHj25UXgFH0xhRKyfYcGYAZlNydt2tGhOiG7vg6IzxRjWC.TOCz
+ Cx1dW_ZdHYzaQ_nfb.IjbjwD_4g.PUM3WCC8oltvX_IIBGHWNOnDxBLyJWmu
+ ElfJetonKkKueR6Ax
+X-RocketYMMF: pavan_savoy
+X-Mailer: YahooMailClassic/10.1.9 YahooMailWebService/0.8.102.267879
+Date: Tue, 20 Apr 2010 00:07:53 +0530 (IST)
+From: Pavan Savoy <pavan_savoy@ti.com>
+Reply-To: pavan_savoy@ti.com
+Subject: Re: [PATCH] drivers:staging: sources for ST core
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20100413161247.22e5b86f@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Glauber Costa <glommer@redhat.com>,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jeremy Fitzhardinge <jeremy@goop.org>,
-       Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>	 <1271356648-5108-2-git-send-email-glommer@redhat.com>	 <4BCA026D.3070309@redhat.com> <1271673975.1674.763.camel@laptop>	 <4BCC3520.6090305@redhat.com> <1271674273.1674.777.camel@laptop> <4BCC3654.2090600@redhat.com>
-In-Reply-To: <4BCC3654.2090600@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 12:54 AM, Avi Kivity wrote:
-> On 04/19/2010 01:51 PM, Peter Zijlstra wrote:
->>
->>>> Right, so on x86 we have:
->>>>
->>>> X86_FEATURE_CONSTANT_TSC, which only states that TSC is frequency
->>>> independent, not that it doesn't stop in C states and similar fun 
->>>> stuff.
->>>>
->>>> X86_FEATURE_TSC_RELIABLE, which IIRC should indicate the TSC is 
->>>> constant
->>>> and synced between cores.
->>>>
->>>>
->>> Sockets and boards too?  (IOW, how reliable is TSC_RELIABLE)?
->> Not sure, IIRC we clear that when the TSC sync test fails, eg when we
->> mark the tsc clocksource unusable.
->
-> Worrying.  By the time we detect this the guest may already have 
-> gotten confused by clocks going backwards.
 
-Upstream, we are marking the TSC unstable preemptively when hardware 
-which will eventually sync test is detected, so this should be fine.
+--- On Tue, 13/4/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-Zach
+> From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Subject: Re: [PATCH] drivers:staging: sources for ST core
+> To: pavan_savoy@ti.com
+> Cc: linux-kernel@vger.kernel.org
+> Date: Tuesday, 13 April, 2010, 8:42 PM
+> > Any comments on these patches ?
+> 
+> Still on my TODO list, busy trying to beat my own employers
+> code into
+> sanity for submission right now ;)
+> 
+> Alan
+
+
+Hi Alan,
+
+Hope you have found some time now.
+Thanks.
+
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
