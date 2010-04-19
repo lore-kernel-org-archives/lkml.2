@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561Ab0DSUps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 16:45:48 -0400
-Received: from ozlabs.org ([203.10.76.45]:52286 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201Ab0DSUpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 16:45:47 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
-       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Gautham R Shenoy <ego@in.ibm.com>
-Subject: Re: [PATCH 1/5] sched: fix capacity calculations for SMT4
-In-reply-to: <1271688543.1488.253.camel@laptop>
-References: <20100409062118.D4096CBB6C@localhost.localdomain> <1271161766.4807.1280.camel@twins> <2906.1271219317@neuling.org> <1271426308.1674.429.camel@laptop> <28214.1271626457@neuling.org> <1271688543.1488.253.camel@laptop>
-Comments: In-reply-to Peter Zijlstra <peterz@infradead.org>
-   message dated "Mon, 19 Apr 2010 16:49:03 +0200."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
-Date: Tue, 20 Apr 2010 06:45:45 +1000
-Message-ID: <715.1271709945@neuling.org>
+	id S1751561Ab0DSUss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 16:48:48 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:48772 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab0DSUsq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 16:48:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=vlAD76YIsXu8OC/Po0z1CE5FNrEL+fcmM4NvUuGRHLh3b3wK9RE6ambVyvBYDiUpVc
+         QQbZyy0Ps5omwixihStz8fHZzxrErgDTLqRHM2E32tWhiKoxe+yFYGtGpubnIpdCjE6h
+         uB353bqvz9yx5UbtFCCLHVs5XPo+rkCaemfVE=
+MIME-Version: 1.0
+Date: Mon, 19 Apr 2010 22:48:45 +0200
+Message-ID: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
+Subject: Considerations on sched APIs under RT patch
+From: Primiano Tucci <p.tucci@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In message <1271688543.1488.253.camel@laptop> you wrote:
-> On Mon, 2010-04-19 at 07:34 +1000, Michael Neuling wrote:
-> > > Are there any numbers available on how much they gain? It might be worth
-> > > to stick in real numbers instead of this alleged 15%.
-> > 
-> > I get some gain numbers but obviously the workloads makes a huge
-> > difference.  From a scheduler perspective, I assume an
-> > average/representative gain is best rather than an optimistic or
-> > pessimistic one?
-> 
-> Yeah, average would be best.
+Hi all
+I am an Italian researcher and I am working on a (cross-platform) Real
+Time scheduling infrastructure.
+I am currently using Linux Kernel 2.6.29.6-rt24-smp (PREEMPT-RT Patch)
+running on a Intel Q9550 CPU.
+Yesterday days I found a strange behavior of the scheduler API's using
+the RT patch, in particular the pthread_setaffinity_np (that stands on
+sched_setaffinity).
+(link: http://article.gmane.org/gmane.linux.kernel.api/1550)
 
-Ok.
+I think the main problem is that sched_setaffinity makes use of a
+rwlock, but rwlocks are pre-emptible with the RT patch.
+So it could happen that an high priority process/thread that makes use
+of the sched_setaffinity facility could be unwillingly preempted when
+controlling other (even low-priority) processes/threads.
+I think sched_setaffinity should make use of raw_spinlocks, or should
+anyway be guaranteed to not be pre-empted (maybe a preempt_disable?),
+otherwise could lead in unwanted situations for a Real Time OS, such
+the one described below.
 
-> > We'll have different gains for SMT2 and SMT4, so we could change the
-> > gain dynamically based on which SMT mode we are in.  Does that seem like
-> > something we should add as an arch hook?  
-> 
-> That's the sort of thing you can use arch_scale_smt_power() for. But be
-> weary to not fall into the same trap I did with x86, where I confused
-> actual gain with capacity (When idle the actual gain is 0, but the
-> capacity is not).
+The issue can be easily reproduced taking inspiration from this scenario:
 
-Oops, yes of course :-)
+I have 4 Real Time Threads (SCHED_FIFO) distributed as follows:
 
-<from before>
-> Hrmm, my brain seems muddled but I might have another solution, let me
-> ponder this for a bit..
+T0 : CPU 0, Priority 2 (HIGH)
+T1 : CPU 1, Priority 2 (HIGH)
+T3 : CPU 0, Priority 1 (LOW)
+T4 : CPU 1, Priority 1 (LOW)
 
-Let me know if/when you come up this solution or if I can help.  
+So T0 and T1 are actually the "big bosses" on CPUs #0 and #1, T3 and
+T4, instead, never execute (let's assume that each thread is a simple
+busy wait that never sleeps/yields) Now, at a certain point, from T0
+code, I want to migrate T4 from CPU #1 to #0, keeping its low
+priority.
+Therefore I perform a pthread_setaffinity_np from T0 changing T4 mask
+from CPU #1 to #0.
 
-Mikey
+In this scenario it happens that T3 (that should never execute since
+there is T0 with higher priority currently running on the same CPU #0)
+"emerge" and executes for a bit.
+It seems that the pthread_setaffinity_np syscall is somehow
+"suspensive" for the time needed to migrate T4 and let the scheduler
+to execute T3 for that bunch of time.
+
+What do you think about this situation? Should sched APIs be revised?
+
+Thanks in advance,
+Primiano
+
+--
+ Primiano Tucci
+ http://www.primianotucci.com
