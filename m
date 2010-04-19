@@ -1,151 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab0DSRyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 13:54:06 -0400
-Received: from fg-out-1718.google.com ([72.14.220.159]:17580 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab0DSRyC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 13:54:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:x-mailer:mime-version
-         :content-type;
-        b=cNoo7kgJ/MTuXBgKdtmqh+PnBFSNrW7CnRPSWsDI9kZAdgUBdDUmyDPLkerUL3vv7a
-         gPbjeIsVzJ59HXPJ8GbLvlK+8mUjh3r8AgfxFKKtNlu8EH6jXSS3Tvx1ULBPy9bCnHgX
-         Rh3SqhJ/rVVFKk+tDC+z2PihK+QUtaNdDXnMg=
-Date: Mon, 19 Apr 2010 19:54:11 +0200
-From: Kristoffer Ericson <kristoffer.ericson@gmail.com>
-To: linux@dominikbrodowski.net
-Cc: "linux-pcmcia@lists.infradead.org" <linux-pcmcia@lists.infradead.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: PATCH - update pata_pcmcia/ide-cs with transcend and kingston cards
-Message-Id: <20100419195411.f16d8f68.kristoffer.ericson@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/mixed;
- boundary="Multipart=_Mon__19_Apr_2010_19_54_11_+0200_IAaHk0RlUAk=aAJe"
+	id S1753452Ab0DSSFe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 14:05:34 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48172 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751034Ab0DSSFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 14:05:32 -0400
+Date: Mon, 19 Apr 2010 20:05:20 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: David Miller <davem@davemloft.net>
+Cc: tilman@imap.cc, torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: tip: origin tree build failure, [patch] fix isdn/gigaset build
+ failure
+Message-ID: <20100419180520.GA9244@elte.hu>
+References: <20100419.003857.260094283.davem@davemloft.net>
+ <20100419172731.GA4358@elte.hu>
+ <20100419.103304.35342954.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100419.103304.35342954.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
 
---Multipart=_Mon__19_Apr_2010_19_54_11_+0200_IAaHk0RlUAk=aAJe
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+* David Miller <davem@davemloft.net> wrote:
 
-This patch adds idstrings for Kingston 1GB/4GB and Transcend 4GB/8GB.
+> From: Ingo Molnar <mingo@elte.hu>
+> Date: Mon, 19 Apr 2010 19:27:31 +0200
+> 
+> > Introduced by commit b91ecb00 that got pushed out today. That change removed 
+> > an implicit sched.h inclusion that came in via slab.h.
+> > 
+> > The patch below fixes it by adding the sched.h dependency.
+> 
+> Thanks Ingo, Linus please apply:
+> 
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Signed-off-by: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+Note, i just found that my patch is not enough as we fail the build elsewhere as well:
 
-diff --git a/drivers/ide/ide-cs.c b/drivers/ide/ide-cs.c
-index ab87e4f..defce28 100644
---- a/drivers/ide/ide-cs.c
-+++ b/drivers/ide/ide-cs.c
-@@ -409,6 +409,8 @@ static struct pcmcia_device_id ide_ids[] = {
- 	PCMCIA_DEVICE_PROD_ID12("Hyperstone", "Model1", 0x3d5b9ef5, 0xca6ab420),
- 	PCMCIA_DEVICE_PROD_ID12("IBM", "microdrive", 0xb569a6e5, 0xa6d76178),
- 	PCMCIA_DEVICE_PROD_ID12("IBM", "IBM17JSSFP20", 0xb569a6e5, 0xf2508753),
-+	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 1GB", 0x2e6d1829, 0x3e520e17),
-+	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 4GB", 0x2e6d1829, 0x531e7d10),
- 	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF8GB", 0x2e6d1829, 0xacbe682e),
- 	PCMCIA_DEVICE_PROD_ID12("IO DATA", "CBIDE2      ", 0x547e66dc, 0x8671043b),
- 	PCMCIA_DEVICE_PROD_ID12("IO DATA", "PCIDE", 0x547e66dc, 0x5c5ab149),
-@@ -429,6 +431,8 @@ static struct pcmcia_device_id ide_ids[] = {
- 	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS1GCF80", 0x709b1bf1, 0x2a54d4b1),
- 	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS2GCF120", 0x709b1bf1, 0x969aa4f2),
- 	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF120", 0x709b1bf1, 0xf54a91c8),
-+	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF133", 0x709b1bf1, 0x9351e59d),
-+	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS8GCF133", 0x709b1bf1, 0xb2f89b47),
- 	PCMCIA_DEVICE_PROD_ID12("WIT", "IDE16", 0x244e5994, 0x3e232852),
- 	PCMCIA_DEVICE_PROD_ID12("WEIDA", "TWTTI", 0xcc7cf69c, 0x212bb918),
- 	PCMCIA_DEVICE_PROD_ID1("STI Flash", 0xe4a13209),
-diff --git a/drivers/ata/pata_pcmcia.c b/drivers/ata/pata_pcmcia.c
-index 3c3172d..4164dd2 100644
---- a/drivers/ata/pata_pcmcia.c
-+++ b/drivers/ata/pata_pcmcia.c
-@@ -424,6 +424,8 @@ static struct pcmcia_device_id pcmcia_devices[] = {
- 	PCMCIA_DEVICE_PROD_ID12("Hyperstone", "Model1", 0x3d5b9ef5, 0xca6ab420),
- 	PCMCIA_DEVICE_PROD_ID12("IBM", "microdrive", 0xb569a6e5, 0xa6d76178),
- 	PCMCIA_DEVICE_PROD_ID12("IBM", "IBM17JSSFP20", 0xb569a6e5, 0xf2508753),
-+	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 1GB", 0x2e6d1829, 0x3e520e17),
-+	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 4GB", 0x2e6d1829, 0x531e7d10),
- 	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF8GB", 0x2e6d1829, 0xacbe682e),
- 	PCMCIA_DEVICE_PROD_ID12("IO DATA", "CBIDE2      ", 0x547e66dc, 0x8671043b),
- 	PCMCIA_DEVICE_PROD_ID12("IO DATA", "PCIDE", 0x547e66dc, 0x5c5ab149),
-@@ -444,6 +446,8 @@ static struct pcmcia_device_id pcmcia_devices[] = {
- 	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS1GCF80", 0x709b1bf1, 0x2a54d4b1),
- 	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS2GCF120", 0x709b1bf1, 0x969aa4f2),
- 	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF120", 0x709b1bf1, 0xf54a91c8),
-+	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF133", 0x709b1bf1, 0x9351e59d),
-+	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS8GCF133", 0x709b1bf1, 0xb2f89b47),
- 	PCMCIA_DEVICE_PROD_ID12("WIT", "IDE16", 0x244e5994, 0x3e232852),
- 	PCMCIA_DEVICE_PROD_ID12("WEIDA", "TWTTI", 0xcc7cf69c, 0x212bb918),
- 	PCMCIA_DEVICE_PROD_ID1("STI Flash", 0xe4a13209),
+drivers/isdn/gigaset/proc.c:52: error: 'TASK_UNINTERRUPTIBLE' undeclared (first use in this function)
+drivers/isdn/gigaset/proc.c:52: error: (Each undeclared identifier is reported only once
+drivers/isdn/gigaset/proc.c:52: error: for each function it appears in.)
+drivers/isdn/gigaset/proc.c:52: error: implicit declaration of function 'schedule'
+drivers/isdn/gigaset/interface.c:49: error: 'TASK_UNINTERRUPTIBLE' undeclared (first use in this function)
+drivers/isdn/gigaset/interface.c:49: error: (Each undeclared identifier is reported only once
+drivers/isdn/gigaset/interface.c:49: error: for each function it appears in.)
+drivers/isdn/gigaset/interface.c:49: error: implicit declaration of function 'schedule'
+drivers/isdn/gigaset/interface.c:83: error: 'TASK_UNINTERRUPTIBLE' undeclared (first use in this function)
+drivers/isdn/gigaset/ev-layer.c:981: error: 'TASK_NORMAL' undeclared (first use in this function)
+drivers/isdn/gigaset/ev-layer.c:981: error: (Each undeclared identifier is reported only once
+drivers/isdn/gigaset/ev-layer.c:981: error: for each function it appears in.)
+drivers/isdn/gigaset/ev-layer.c:1001: error: 'TASK_NORMAL' undeclared (first use in this function)
+drivers/isdn/gigaset/ev-layer.c:1495: error: 'TASK_NORMAL' undeclared (first use in this function)
 
+i'd suggest a revert of b91ecb00 instead.
 
--- 
-Kristoffer Ericson <kristoffer.ericson@gmail.com>
-
---Multipart=_Mon__19_Apr_2010_19_54_11_+0200_IAaHk0RlUAk=aAJe
-Content-Type: application/octet-stream;
- name="drivers-ide-pata-add-support-for-more-cards.patch"
-Content-Disposition: attachment;
- filename="drivers-ide-pata-add-support-for-more-cards.patch"
-Content-Transfer-Encoding: base64
-
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvaWRlL2lkZS1jcy5jIGIvZHJpdmVycy9pZGUvaWRlLWNzLmMK
-aW5kZXggYWI4N2U0Zi4uZGVmY2UyOCAxMDA2NDQKLS0tIGEvZHJpdmVycy9pZGUvaWRlLWNzLmMK
-KysrIGIvZHJpdmVycy9pZGUvaWRlLWNzLmMKQEAgLTQwOSw2ICs0MDksOCBAQCBzdGF0aWMgc3Ry
-dWN0IHBjbWNpYV9kZXZpY2VfaWQgaWRlX2lkc1tdID0gewogCVBDTUNJQV9ERVZJQ0VfUFJPRF9J
-RDEyKCJIeXBlcnN0b25lIiwgIk1vZGVsMSIsIDB4M2Q1YjllZjUsIDB4Y2E2YWI0MjApLAogCVBD
-TUNJQV9ERVZJQ0VfUFJPRF9JRDEyKCJJQk0iLCAibWljcm9kcml2ZSIsIDB4YjU2OWE2ZTUsIDB4
-YTZkNzYxNzgpLAogCVBDTUNJQV9ERVZJQ0VfUFJPRF9JRDEyKCJJQk0iLCAiSUJNMTdKU1NGUDIw
-IiwgMHhiNTY5YTZlNSwgMHhmMjUwODc1MyksCisJUENNQ0lBX0RFVklDRV9QUk9EX0lEMTIoIktJ
-TkdTVE9OIiwgIkNGIENBUkQgMUdCIiwgMHgyZTZkMTgyOSwgMHgzZTUyMGUxNyksCisJUENNQ0lB
-X0RFVklDRV9QUk9EX0lEMTIoIktJTkdTVE9OIiwgIkNGIENBUkQgNEdCIiwgMHgyZTZkMTgyOSwg
-MHg1MzFlN2QxMCksCiAJUENNQ0lBX0RFVklDRV9QUk9EX0lEMTIoIktJTkdTVE9OIiwgIkNGOEdC
-IiwgMHgyZTZkMTgyOSwgMHhhY2JlNjgyZSksCiAJUENNQ0lBX0RFVklDRV9QUk9EX0lEMTIoIklP
-IERBVEEiLCAiQ0JJREUyICAgICAgIiwgMHg1NDdlNjZkYywgMHg4NjcxMDQzYiksCiAJUENNQ0lB
-X0RFVklDRV9QUk9EX0lEMTIoIklPIERBVEEiLCAiUENJREUiLCAweDU0N2U2NmRjLCAweDVjNWFi
-MTQ5KSwKQEAgLTQyOSw2ICs0MzEsOCBAQCBzdGF0aWMgc3RydWN0IHBjbWNpYV9kZXZpY2VfaWQg
-aWRlX2lkc1tdID0gewogCVBDTUNJQV9ERVZJQ0VfUFJPRF9JRDEyKCJUUkFOU0NFTkQiLCAiVFMx
-R0NGODAiLCAweDcwOWIxYmYxLCAweDJhNTRkNGIxKSwKIAlQQ01DSUFfREVWSUNFX1BST0RfSUQx
-MigiVFJBTlNDRU5EIiwgIlRTMkdDRjEyMCIsIDB4NzA5YjFiZjEsIDB4OTY5YWE0ZjIpLAogCVBD
-TUNJQV9ERVZJQ0VfUFJPRF9JRDEyKCJUUkFOU0NFTkQiLCAiVFM0R0NGMTIwIiwgMHg3MDliMWJm
-MSwgMHhmNTRhOTFjOCksCisJUENNQ0lBX0RFVklDRV9QUk9EX0lEMTIoIlRSQU5TQ0VORCIsICJU
-UzRHQ0YxMzMiLCAweDcwOWIxYmYxLCAweDkzNTFlNTlkKSwKKwlQQ01DSUFfREVWSUNFX1BST0Rf
-SUQxMigiVFJBTlNDRU5EIiwgIlRTOEdDRjEzMyIsIDB4NzA5YjFiZjEsIDB4YjJmODliNDcpLAog
-CVBDTUNJQV9ERVZJQ0VfUFJPRF9JRDEyKCJXSVQiLCAiSURFMTYiLCAweDI0NGU1OTk0LCAweDNl
-MjMyODUyKSwKIAlQQ01DSUFfREVWSUNFX1BST0RfSUQxMigiV0VJREEiLCAiVFdUVEkiLCAweGNj
-N2NmNjljLCAweDIxMmJiOTE4KSwKIAlQQ01DSUFfREVWSUNFX1BST0RfSUQxKCJTVEkgRmxhc2gi
-LCAweGU0YTEzMjA5KSwKZGlmZiAtLWdpdCBhL2RyaXZlcnMvYXRhL3BhdGFfcGNtY2lhLmMgYi9k
-cml2ZXJzL2F0YS9wYXRhX3BjbWNpYS5jCmluZGV4IDNjMzE3MmQuLjQxNjRkZDIgMTAwNjQ0Ci0t
-LSBhL2RyaXZlcnMvYXRhL3BhdGFfcGNtY2lhLmMKKysrIGIvZHJpdmVycy9hdGEvcGF0YV9wY21j
-aWEuYwpAQCAtNDI0LDYgKzQyNCw4IEBAIHN0YXRpYyBzdHJ1Y3QgcGNtY2lhX2RldmljZV9pZCBw
-Y21jaWFfZGV2aWNlc1tdID0gewogCVBDTUNJQV9ERVZJQ0VfUFJPRF9JRDEyKCJIeXBlcnN0b25l
-IiwgIk1vZGVsMSIsIDB4M2Q1YjllZjUsIDB4Y2E2YWI0MjApLAogCVBDTUNJQV9ERVZJQ0VfUFJP
-RF9JRDEyKCJJQk0iLCAibWljcm9kcml2ZSIsIDB4YjU2OWE2ZTUsIDB4YTZkNzYxNzgpLAogCVBD
-TUNJQV9ERVZJQ0VfUFJPRF9JRDEyKCJJQk0iLCAiSUJNMTdKU1NGUDIwIiwgMHhiNTY5YTZlNSwg
-MHhmMjUwODc1MyksCisJUENNQ0lBX0RFVklDRV9QUk9EX0lEMTIoIktJTkdTVE9OIiwgIkNGIENB
-UkQgMUdCIiwgMHgyZTZkMTgyOSwgMHgzZTUyMGUxNyksCisJUENNQ0lBX0RFVklDRV9QUk9EX0lE
-MTIoIktJTkdTVE9OIiwgIkNGIENBUkQgNEdCIiwgMHgyZTZkMTgyOSwgMHg1MzFlN2QxMCksCiAJ
-UENNQ0lBX0RFVklDRV9QUk9EX0lEMTIoIktJTkdTVE9OIiwgIkNGOEdCIiwgMHgyZTZkMTgyOSwg
-MHhhY2JlNjgyZSksCiAJUENNQ0lBX0RFVklDRV9QUk9EX0lEMTIoIklPIERBVEEiLCAiQ0JJREUy
-ICAgICAgIiwgMHg1NDdlNjZkYywgMHg4NjcxMDQzYiksCiAJUENNQ0lBX0RFVklDRV9QUk9EX0lE
-MTIoIklPIERBVEEiLCAiUENJREUiLCAweDU0N2U2NmRjLCAweDVjNWFiMTQ5KSwKQEAgLTQ0NCw2
-ICs0NDYsOCBAQCBzdGF0aWMgc3RydWN0IHBjbWNpYV9kZXZpY2VfaWQgcGNtY2lhX2RldmljZXNb
-XSA9IHsKIAlQQ01DSUFfREVWSUNFX1BST0RfSUQxMigiVFJBTlNDRU5EIiwgIlRTMUdDRjgwIiwg
-MHg3MDliMWJmMSwgMHgyYTU0ZDRiMSksCiAJUENNQ0lBX0RFVklDRV9QUk9EX0lEMTIoIlRSQU5T
-Q0VORCIsICJUUzJHQ0YxMjAiLCAweDcwOWIxYmYxLCAweDk2OWFhNGYyKSwKIAlQQ01DSUFfREVW
-SUNFX1BST0RfSUQxMigiVFJBTlNDRU5EIiwgIlRTNEdDRjEyMCIsIDB4NzA5YjFiZjEsIDB4ZjU0
-YTkxYzgpLAorCVBDTUNJQV9ERVZJQ0VfUFJPRF9JRDEyKCJUUkFOU0NFTkQiLCAiVFM0R0NGMTMz
-IiwgMHg3MDliMWJmMSwgMHg5MzUxZTU5ZCksCisJUENNQ0lBX0RFVklDRV9QUk9EX0lEMTIoIlRS
-QU5TQ0VORCIsICJUUzhHQ0YxMzMiLCAweDcwOWIxYmYxLCAweGIyZjg5YjQ3KSwKIAlQQ01DSUFf
-REVWSUNFX1BST0RfSUQxMigiV0lUIiwgIklERTE2IiwgMHgyNDRlNTk5NCwgMHgzZTIzMjg1Miks
-CiAJUENNQ0lBX0RFVklDRV9QUk9EX0lEMTIoIldFSURBIiwgIlRXVFRJIiwgMHhjYzdjZjY5Yywg
-MHgyMTJiYjkxOCksCiAJUENNQ0lBX0RFVklDRV9QUk9EX0lEMSgiU1RJIEZsYXNoIiwgMHhlNGEx
-MzIwOSksCg==
-
---Multipart=_Mon__19_Apr_2010_19_54_11_+0200_IAaHk0RlUAk=aAJe--
+	Ingo
