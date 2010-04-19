@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab0DSVXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 17:23:20 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49205 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab0DSVXS (ORCPT
+	id S1752399Ab0DSV2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 17:28:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37331 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752018Ab0DSV2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 17:23:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=TJKnTyTbmm+bUIxs5HxbYO7uDuDsY6PWwqKTOnV/poRlgxHu3bsRaljEAK5it50Emb
-         2RfIizkY9PtYhwYu3PzhFr70ZFqwxos5U9ugTF8bp0UIPgUKQbCXVn4oXoYCmLg/35fI
-         iqQ4T+r14NLb17t1GTspCs0d3akyYFD7dg7Tg=
-MIME-Version: 1.0
-In-Reply-To: <1271710361.1676.379.camel@laptop>
-References: <1271200751-18697-1-git-send-email-chase.douglas@canonical.com>
-	 <1271703130.1676.214.camel@laptop>
-	 <n2y40ec3ea41004191316sc65cefeq478c74f302406be3@mail.gmail.com>
-	 <1271710361.1676.379.camel@laptop>
-Date: Mon, 19 Apr 2010 14:17:04 -0700
-X-Google-Sender-Auth: d5761a547061c27b
-Message-ID: <v2s40ec3ea41004191417n8f4f703bs23cc092e53bd4940@mail.gmail.com>
-Subject: Re: [REGRESSION 2.6.30][PATCH v3] sched: update load count only once 
-	per cpu in 10 tick update window
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 Apr 2010 17:28:07 -0400
+Date: Mon, 19 Apr 2010 14:28:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Justin Mattock <justinmattock@gmail.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: MacBookPro2,2 unable too boot with the latest HEAD
+Message-Id: <20100419142804.3cd53666.akpm@linux-foundation.org>
+In-Reply-To: <i2vdd18b0c31004140812i6a0e9430u68ab49b24273fe9b@mail.gmail.com>
+References: <i2vdd18b0c31004140812i6a0e9430u68ab49b24273fe9b@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 2010-04-19 at 13:16 -0700, Chase Douglas wrote:
->
->> > Also, since its all NO_HZ, why not stick this in with the ILB? Once
->> > people get around to making that scale better, this can hitch a ride.
->> >
->> > Something like the below perhaps? It does run partially from softirq
->> > context, but since there's a distinct lack of synchronization here that
->> > didn't seem like an immediate problem.
->>
->> I understand everything until you move the calc_load_account_active
->> call to run_rebalance_domains. I take it that when CPUs go NO_HZ idle,
->> at least one cpu is left to monitor and perform updates as necessary.
->
-> Right, that is the idea.
->
->> Conceptually, it makes sense that this cpu should be handling the load
->> accounting updates. However, I'm new to this code, so I'm having a
->> hard time understanding all the cases and timings for when the
->> scheduler softirq is called. Is it guaranteed to be called during
->> every 10 tick load update window? If not, then we'll have the issue
->> where a NO_HZ idle cpu won't be updated to 0 running tasks in time for
->> the load avg calculation.
->
-> Ah, I overlooked that trigger_load_balance() already has a jiffy delay.
-> I was ass-uming we triggered the softirq on each tick.
->
-> Yes, that needs a bit of a fix to get called at least every 10 ticks,
-> looking at rebalance_domain() that can end up being 60s.
->
->> Would someone be able to explain how we are guaranted of the correct
->> timing for this path?
->>
->> I also have a concern with run_rebalance_domains: If the designated
->> no_hz.load_balancer cpu wasn't idle at the last tick or needs
->> rescheduling, load accounting won't occur for idle cpus. Is it
->> possible for this to occur every time when called in the 10 tick
->> update window?
->
-> Right, so I didn't look too closely either, but was more or less going
-> for the structure than the details. I haven't read through the ILB stuff
-> in a while.
->
-> >From what I can quickly see, trigger_load_balance() will check if the
-> current cpu is idle_at_tick, if not it will nominate another cpu to be
-> ilb -- so I guess it neatly fits together, the !idle cpus fend for
-> themselves and the idle ones get sorted by the ILB.
->
-> Alternatively you could add the calc_load_tasks_deferred thing to the
-> nohz structure and do it all from trigger_load_balance.
->
-> Either approach would work if the ILB were extended to be per node or
-> something like that (Venki used to work on that, not sure what happened
-> to that).
+On Wed, 14 Apr 2010 08:12:57 -0700
+Justin Mattock <justinmattock@gmail.com> wrote:
 
-I really don't feel comfortable with this code to know how to
-implement either of these approaches myself. I have no issue how the
-fix is implemented. However, I worry that using the ILB code may be
-complex and/or require many little checks to ensure there are no
-improper interactions. Will we be sure that further changes to the ILB
-won't introduce new issues? In the end, what do we gain by using the
-ILB, and is it worth it to introduce that complexity?
+> Just noticed this this morning,
+> system can only boot up when I take the battery
+> out.(when the battery is plugged in this(below)
+> shows up, and if booting no go)
+> 
+> [  169.207193] divide error: 0000 [#1] SMP
+> [  169.207203] last sysfs file: /sys/devices/platform/applesmc.768/light
+> [  169.207208] CPU 0
+> [  169.207212] Modules linked in: rfcomm sco radeon bnep l2cap ttm
+> drm_kms_helper drm ipt_LOG iptable_nat nf_nat xt_state
+> nf_conntrack_ftp nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4
+> iptable_filter ip_tables x_tables btusb bluetooth firewire_ohci ath9k
+> firewire_core ath9k_common video battery ac ath9k_hw evdev joydev
+> ohci1394 ath button thermal sky2 i2c_i801 raw1394 ieee1394 uhci_hcd
+> ehci_hcd coretemp acpi_cpufreq processor appletouch applesmc uvcvideo
+> [  169.207303]
+> [  169.207310] Pid: 182, comm: kacpi_notify Not tainted
+> 2.6.34-rc3-00502-gd3b0936 #42 Mac-F42187C8/MacBookPro2,2
+> [  169.207316] RIP: 0010:[<ffffffff81237e43>]  [<ffffffff81237e43>]
+> acpi_ex_extract_from_field+0xb1/0x24a
 
--- Chase
+Presumably acpi_ex_extract_from_field() fed zero into (the misnamed)
+ACPI_ROUND_UP_TO().
+
+I'll ask Rafael and Maciej to track this as a post-26.33 regression,
+thanks.
+
