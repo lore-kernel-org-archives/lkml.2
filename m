@@ -1,215 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603Ab0DSCSh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Apr 2010 22:18:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28408 "EHLO
+	id S1753723Ab0DSCaZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Apr 2010 22:30:25 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44629 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab0DSCSg (ORCPT
+	with ESMTP id S1752721Ab0DSCaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Apr 2010 22:18:36 -0400
-X-Greylist: delayed 163480 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Apr 2010 22:18:35 EDT
-Message-ID: <4BCBBD3D.5020102@oracle.com>
-Date: Sun, 18 Apr 2010 19:17:33 -0700
+	Sun, 18 Apr 2010 22:30:24 -0400
+Date: Sun, 18 Apr 2010 19:29:02 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       linux-mm@kvack.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: mmotm 2010-04-15-14-42 uploaded (shmem, CGROUP_MEM_RES_CTLR)
-References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org>	<20100416090315.22b7d361.randy.dunlap@oracle.com> <20100419104917.1a568b17.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100419104917.1a568b17.nishimura@mxp.nes.nec.co.jp>
-Content-Type: text/plain; charset=UTF-8
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v2] tracing: Dump either the oops's cpu source or all
+ cpus buffers
+Message-Id: <20100418192902.f3fad119.randy.dunlap@oracle.com>
+In-Reply-To: <1271639740-11653-1-git-send-regression-fweisbec@gmail.com>
+References: <1271623810-23700-1-git-send-regression-fweisbec@gmail.com>
+	<1271639740-11653-1-git-send-regression-fweisbec@gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 X-Auth-Type: Internal IP
 X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090208.4BCBBD6D.0031:SCFMA4539811,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4BCBC021.0114:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/10 18:49, Daisuke Nishimura wrote:
-> On Fri, 16 Apr 2010 09:03:15 -0700, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->> On Thu, 15 Apr 2010 14:42:59 -0700 akpm@linux-foundation.org wrote:
->>
->>> The mm-of-the-moment snapshot 2010-04-15-14-42 has been uploaded to
->>>
->>>    http://userweb.kernel.org/~akpm/mmotm/
->>>
->>> and will soon be available at
->>>
->>>    git://zen-kernel.org/kernel/mmotm.git
->>>
->>> It contains the following patches against 2.6.34-rc4:
->>
->>
->> memcg-move-charge-of-file-pages.patch:
->>
->> when CONFIG_SHMFS is not enabled:
->>
->> mm/shmem.c:2721: error: implicit declaration of function 'SHMEM_I'
->> mm/shmem.c:2721: warning: initialization makes pointer from integer without a cast
->> mm/shmem.c:2726: error: dereferencing pointer to incomplete type
->> mm/shmem.c:2727: error: implicit declaration of function 'shmem_swp_entry'
->> mm/shmem.c:2727: warning: assignment makes pointer from integer without a cast
->> mm/shmem.c:2734: error: implicit declaration of function 'shmem_swp_unmap'
->> mm/shmem.c:2735: error: dereferencing pointer to incomplete type
->>
-> Thank you very much for your report.
-> 
-> I attach a fix patch.
-> 
-> ===
-> From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> 
-> build fix for !CONFIG_SHMEM case.
-> 
->   CC      mm/shmem.o
-> mm/shmem.c: In function 'mem_cgroup_get_shmem_target':
-> mm/shmem.c:2721: error: implicit declaration of function 'SHMEM_I'
-> mm/shmem.c:2721: warning: initialization makes pointer from integer without a cast
-> mm/shmem.c:2726: error: dereferencing pointer to incomplete type
-> mm/shmem.c:2727: error: implicit declaration of function 'shmem_swp_entry'
-> mm/shmem.c:2727: warning: assignment makes pointer from integer without a cast
-> mm/shmem.c:2734: error: implicit declaration of function 'shmem_swp_unmap'
-> mm/shmem.c:2735: error: dereferencing pointer to incomplete type
-> make[1]: *** [mm/shmem.o] Error 1
-> 
-> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+On Mon, 19 Apr 2010 03:15:40 +0200 Frederic Weisbecker wrote:
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-
-Thanks.
-
-> ---
->  mm/shmem.c |   99 +++++++++++++++++++++++++++++++++++++----------------------
->  1 files changed, 62 insertions(+), 37 deletions(-)
+>  Documentation/kernel-parameters.txt |    6 +++-
+>  Documentation/trace/ftrace.txt      |    6 +++-
+>  drivers/char/sysrq.c                |    2 +-
+>  include/linux/ftrace.h              |    4 ++-
+>  include/linux/kernel.h              |   11 ++++++-
+>  kernel/trace/trace.c                |   51 ++++++++++++++++++++++++++--------
+>  6 files changed, 61 insertions(+), 19 deletions(-)
 > 
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index cb87365..6f183ef 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -2568,6 +2568,43 @@ out4:
->  	return error;
->  }
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index e4cbca5..f6c68e8 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -789,8 +789,12 @@ and is between 256 and 4096 characters. It is defined in the file
+>  			as early as possible in order to facilitate early
+>  			boot debugging.
 >  
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> +/**
-> + * mem_cgroup_get_shmem_target - find a page or entry assigned to the shmem file
-> + * @inode: the inode to be searched
-> + * @pgoff: the offset to be searched
-> + * @pagep: the pointer for the found page to be stored
-> + * @ent: the pointer for the found swap entry to be stored
-> + *
-> + * If a page is found, refcount of it is incremented. Callers should handle
-> + * these refcount.
-> + */
-> +void mem_cgroup_get_shmem_target(struct inode *inode, pgoff_t pgoff,
-> +					struct page **pagep, swp_entry_t *ent)
-> +{
-> +	swp_entry_t entry = { .val = 0 }, *ptr;
-> +	struct page *page = NULL;
-> +	struct shmem_inode_info *info = SHMEM_I(inode);
-> +
-> +	if ((pgoff << PAGE_CACHE_SHIFT) >= i_size_read(inode))
-> +		goto out;
-> +
-> +	spin_lock(&info->lock);
-> +	ptr = shmem_swp_entry(info, pgoff, NULL);
-> +	if (ptr && ptr->val) {
-> +		entry.val = ptr->val;
-> +		page = find_get_page(&swapper_space, entry.val);
-> +	} else
-> +		page = find_get_page(inode->i_mapping, pgoff);
-> +	if (ptr)
-> +		shmem_swp_unmap(ptr);
-> +	spin_unlock(&info->lock);
-> +out:
-> +	*pagep = page;
-> +	*ent = entry;
-> +}
-> +#endif
-> +
->  #else /* !CONFIG_SHMEM */
+> -	ftrace_dump_on_oops
+> +	ftrace_dump_on_oops[=orig_cpu]
+>  			[FTRACE] will dump the trace buffers on oops.
+> +			If no parameter is passed, ftrace will dump
+> +			every cpu buffers, but if you pass orig_cpu, it will
+
+			buffers of all CPUs,
+
+> +			dump only the buffer of the cpu that triggered the
+
+			                            CPU
+
+> +			oops.
 >  
->  /*
-> @@ -2607,6 +2644,31 @@ int shmem_lock(struct file *file, int lock, struct user_struct *user)
->  	return 0;
->  }
+>  	ftrace_filter=[function-list]
+>  			[FTRACE] Limit the functions traced by the function
+> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+> index 03485bf..d242bc0 100644
+> --- a/Documentation/trace/ftrace.txt
+> +++ b/Documentation/trace/ftrace.txt
+> @@ -1337,12 +1337,14 @@ ftrace_dump_on_oops must be set. To set ftrace_dump_on_oops, one
+>  can either use the sysctl function or set it via the proc system
+>  interface.
 >  
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> +/**
-> + * mem_cgroup_get_shmem_target - find a page or entry assigned to the shmem file
-> + * @inode: the inode to be searched
-> + * @pgoff: the offset to be searched
-> + * @pagep: the pointer for the found page to be stored
-> + * @ent: the pointer for the found swap entry to be stored
-> + *
-> + * If a page is found, refcount of it is incremented. Callers should handle
-> + * these refcount.
-> + */
-> +void mem_cgroup_get_shmem_target(struct inode *inode, pgoff_t pgoff,
-> +					struct page **pagep, swp_entry_t *ent)
-> +{
-> +	struct page *page = NULL;
+> -  sysctl kernel.ftrace_dump_on_oops=1
+> +  sysctl kernel.ftrace_dump_on_oops=n
+>  
+>  or
+>  
+> -  echo 1 > /proc/sys/kernel/ftrace_dump_on_oops
+> +  echo n > /proc/sys/kernel/ftrace_dump_on_oops
+>  
+> +If n = 1, ftrace will dump every cpu buffers, if n = 2 ftrace will
+
+                              buffers of all CPUs,
+
+> +only dump the buffer of the cpu that triggered the oops.
+
+                               CPU
+
+>  
+>  Here's an example of such a dump after a null pointer
+>  dereference in a kernel module:
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index bed83ca..4252ffe 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -117,9 +117,12 @@ static cpumask_var_t __read_mostly	tracing_buffer_mask;
+>   *
+>   * It is default off, but you can enable it with either specifying
+>   * "ftrace_dump_on_oops" in the kernel command line, or setting
+> - * /proc/sys/kernel/ftrace_dump_on_oops to true.
+> + * /proc/sys/kernel/ftrace_dump_on_oops
+> + * Set 1 if you want to dump every cpu buffers
+
+                                buffers of all CPUs
+
+> + * Set 2 if you want to dump the buffer of the cpu that triggered oops
+
+                                                  CPU
+
+>   */
+> -int ftrace_dump_on_oops;
 > +
-> +	if ((pgoff << PAGE_CACHE_SHIFT) >= i_size_read(inode))
-> +		goto out;
-> +	page = find_get_page(inode->i_mapping, pgoff);
-> +out:
-> +	*pagep = page;
-> +	*ent = (swp_entry_t){ .val = 0 };
-> +}
-> +#endif
+> +enum ftrace_dump_mode ftrace_dump_on_oops;
+>  
+>  static int tracing_set_tracer(const char *buf);
+>  
+> @@ -4429,12 +4442,25 @@ static void __ftrace_dump(bool disable_tracing)
+>  	/* don't look at user memory in panic mode */
+>  	trace_flags &= ~TRACE_ITER_SYM_USEROBJ;
+>  
+> -	printk(KERN_TRACE "Dumping ftrace buffer:\n");
+> -
+>  	/* Simulate the iterator */
+>  	iter.tr = &global_trace;
+>  	iter.trace = current_trace;
+> -	iter.cpu_file = TRACE_PIPE_ALL_CPU;
 > +
->  #define shmem_vm_ops				generic_file_vm_ops
->  #define shmem_file_operations			ramfs_file_operations
->  #define shmem_get_inode(sb, mode, dev, flags)	ramfs_get_inode(sb, mode, dev)
-> @@ -2701,40 +2763,3 @@ int shmem_zero_setup(struct vm_area_struct *vma)
->  	vma->vm_ops = &shmem_vm_ops;
->  	return 0;
->  }
-> -
-> -#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> -/**
-> - * mem_cgroup_get_shmem_target - find a page or entry assigned to the shmem file
-> - * @inode: the inode to be searched
-> - * @pgoff: the offset to be searched
-> - * @pagep: the pointer for the found page to be stored
-> - * @ent: the pointer for the found swap entry to be stored
-> - *
-> - * If a page is found, refcount of it is incremented. Callers should handle
-> - * these refcount.
-> - */
-> -void mem_cgroup_get_shmem_target(struct inode *inode, pgoff_t pgoff,
-> -					struct page **pagep, swp_entry_t *ent)
-> -{
-> -	swp_entry_t entry = { .val = 0 }, *ptr;
-> -	struct page *page = NULL;
-> -	struct shmem_inode_info *info = SHMEM_I(inode);
-> -
-> -	if ((pgoff << PAGE_CACHE_SHIFT) >= i_size_read(inode))
-> -		goto out;
-> -
-> -	spin_lock(&info->lock);
-> -	ptr = shmem_swp_entry(info, pgoff, NULL);
-> -	if (ptr && ptr->val) {
-> -		entry.val = ptr->val;
-> -		page = find_get_page(&swapper_space, entry.val);
-> -	} else
-> -		page = find_get_page(inode->i_mapping, pgoff);
-> -	if (ptr)
-> -		shmem_swp_unmap(ptr);
-> -	spin_unlock(&info->lock);
-> -out:
-> -	*pagep = page;
-> -	*ent = entry;
-> -}
-> -#endif
+> +	switch (oops_dump_mode) {
+> +	case DUMP_ALL:
+> +		iter.cpu_file = TRACE_PIPE_ALL_CPU;
+> +		break;
+> +	case DUMP_ORIG:
+> +		iter.cpu_file = raw_smp_processor_id();
+> +		break;
+> +	case DUMP_NONE:
+> +		goto out_enable;
+> +	default:
+> +		printk(KERN_TRACE "Bad dumping mode, switching to all cpu dump\n");
+
+		                                                      CPUs
+
+> +		iter.cpu_file = TRACE_PIPE_ALL_CPU;
+> +	}
+> +
+> +	printk(KERN_TRACE "Dumping ftrace buffer:\n");
+>  
+>  	/*
+>  	 * We need to stop all tracing on all CPUS to read the
 
 
--- 
+---
 ~Randy
