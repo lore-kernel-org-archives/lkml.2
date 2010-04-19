@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab0DSNit (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 09:38:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50900 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab0DSNir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 09:38:47 -0400
-Date: Mon, 19 Apr 2010 23:38:43 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: vmalloc performance
-Message-ID: <20100419133843.GP5683@laptop>
-References: <1271089672.7196.63.camel@localhost.localdomain>
- <1271249354.7196.66.camel@localhost.localdomain>
- <m2g28c262361004140813j5d70a80fy1882d01436d136a6@mail.gmail.com>
- <1271262948.2233.14.camel@barrios-desktop>
- <1271320388.2537.30.camel@localhost>
- <1271350270.2013.29.camel@barrios-desktop>
- <1271427056.7196.163.camel@localhost.localdomain>
- <1271603649.2100.122.camel@barrios-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271603649.2100.122.camel@barrios-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752805Ab0DSNls (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 09:41:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36686 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab0DSNlq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 09:41:46 -0400
+Date: Mon, 19 Apr 2010 06:43:25 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: =?UTF-8?B?w4lyaWM=?= Piel <eric.piel@tremplin-utc.net>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
+       cpufreq@vger.kernel.org
+Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with
+ ondemand during disk IO
+Message-ID: <20100419064325.49cb3108@infradead.org>
+In-Reply-To: <4BCC147B.10708@tremplin-utc.net>
+References: <20100418115949.7b743898@infradead.org>
+	<20100418120346.1b478410@infradead.org>
+	<4BCC147B.10708@tremplin-utc.net>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 12:14:09AM +0900, Minchan Kim wrote:
-> On Fri, 2010-04-16 at 15:10 +0100, Steven Whitehouse wrote:
-> Nick, What do you think about "free area cache" approach?
- 
-Thanks, yep something like this is what I had in mind. Looks like you
-have some really nice speed improvements which is great.
+On Mon, 19 Apr 2010 10:29:47 +0200
+Éric Piel <eric.piel@tremplin-utc.net> wrote:
+> > 
+> > The problem and fix are both verified with the "perf timechar" tool.
+> Hi,
+> I don't doubt that keeping the cpu full frequency during IO can
+> improve some specific workloads, however in your log message you
+> don't explain how much we are loosing.
 
+first of all, it's so bad that people will just turn the whole power
+management off... at which point fixing the really bad bug is actually
+quite a win 
 
-> In this version, I don't consider last hole and backward cache movement which is 
-> like mmap's cached_hole_size
-> That's because I want to flush vmap_areas freed intentionally if we meet vend.
-> It makes flush frequent than old but it's trade-off. In addition, vmalloc isn't 
-> critical compared to mmap about performance. So I think that's enough. 
 > 
-> If you don't opposed, I will repost formal patch without code related to debug.
+> How much more energy is consumed when doing a "updatedb" or "find /" ?
 
-I think I would prefer to be a little smarter about using lower
-addresses first. I know the lazy TLB flushing works against this, but
-that is an important speed tradeoff, wheras there is not really any
-downside to trying hard to allocate low areas first. Keeping virtual
-addresses dense helps with locality of reference of page tables, for
-one.
+on the machines I used this on (Core i7's) it's actually hardly
+measurable. All CPUs I have access to turn the voltage entirely off
+during idle, so while the frequency is higher, if you're mostly IO
+bound, it's only for very short durations... while still being mostly
+"off".
 
-So I would like to see:
-- invalidating the cache in the case of vstart being decreased.
-- Don't unconditionally reset the cache to the last vm area freed,
-  because you might have a higher area freed after a lower area. Only
-  reset if the freed area is lower.
-- Do keep a cached hole size, so smaller lookups can restart a full
-  search.
-
-Probably also at this point, moving some of the rbtree code (like the
-search code) into functions would manage the alloc_vmap_area complexity.
-Maybe do this one first if you're going to write a patchset.
-
-What do you think? Care to have a go? :)
-
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
