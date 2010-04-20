@@ -1,35 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab0DTHhK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 03:37:10 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39877 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab0DTHhI (ORCPT
+	id S1753878Ab0DTHmN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 03:42:13 -0400
+Received: from mail.gmx.net ([213.165.64.20]:60477 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753827Ab0DTHmM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 03:37:08 -0400
-Content-Type: text/plain; charset=UTF-8
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-       benh <benh@kernel.crashing.org>, Masami Hiramatsu <mhiramat@redhat.com>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v4] perf: Split out arch specific code & improve PowerPC perf probe support
-From: Ian Munsie <imunsie@au1.ibm.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-In-reply-to: <1271746713-8347-1-git-send-email-imunsie@au1.ibm.com>
-References: <1271746713-8347-1-git-send-email-imunsie@au1.ibm.com>
-Date: Tue, 20 Apr 2010 17:36:37 +1000
-Message-Id: <1271748940-sup-3011@au1.ibm.com>
-User-Agent: Sup/0.10.2
-Content-Transfer-Encoding: 8bit
+	Tue, 20 Apr 2010 03:42:12 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX19xcnIIWZZxZiP5CwBbvEHljtO4ANZSsW0gacSR97
+	hcLmFp/4ImhqK+
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: my KDE-4.4.2 Battery Monitor ppplet dislikes the ACPI changes in 2.6.34-rc3 betweeen f5284e7..cf90bfe
+Date: Tue, 20 Apr 2010 09:42:09 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.34-rc4; KDE/4.4.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201004081812.10656.toralf.foerster@gmx.de> <201004081817.29561.toralf.foerster@gmx.de> <201004200510.47642.rjw@sisk.pl>
+In-Reply-To: <201004200510.47642.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004200942.09556.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.71999999999999997
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Ian Munsie's message of Tue Apr 20 16:58:31 +1000 2010:
-> Here's the 4th version of the perf probe PowerPC support and perf arch specific
-> infrastructure patches rebased on top of tip/perf/core.
 
-That should read "rebased on top of tip/master".
+Rafael J. Wysocki wrote at 05:10:47
+> Does that still happen with -rc5?
+No, issue is solved - bug report can be closed.
+Thx.
 
-Cheers,
--Ian
+-- 
+MfG/Sincerely
+Toralf Förster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
