@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953Ab0DTLzH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 07:55:07 -0400
-Received: from isilmar.linta.de ([213.133.102.198]:49849 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753572Ab0DTLzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 07:55:05 -0400
-Date: Tue, 20 Apr 2010 13:54:09 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: torvalds@osdl.org, akpm@osdl.org
-Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [git pull] PCMCIA bugfixes for 2.6.34-rc6
-Message-ID: <20100420115409.GA30097@comet.dominikbrodowski.net>
-Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org,
-	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754257Ab0DTLzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 07:55:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50540 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753993Ab0DTLzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 07:55:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,241,1270450800"; 
+   d="scan'208";a="614761458"
+Subject: Re: [RFC] perf_events: support for uncore a.k.a. nest units
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Gary.Mohr@Bull.com" <Gary.Mohr@Bull.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Stephane Eranian <eranian@googlemail.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1271424250.4807.2277.camel@twins>
+References: <OFA47E1D5E.A81B0A43-ON07257706.00721254-07257706.0074D40F@us-phx1.az05.bull.com>
+	 <1271424250.4807.2277.camel@twins>
+Content-Type: text/plain
+Date: Tue, 20 Apr 2010 19:55:47 +0800
+Message-Id: <1271764547.13968.69.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, 2010-04-16 at 21:24 +0800, Peter Zijlstra wrote:
+> On Thu, 2010-04-15 at 14:16 -0700, Gary.Mohr@Bull.com wrote:
+> > > On Tue, 2010-03-30 at 09:49 -0700, Corey Ashford wrote:
+> > >
+> > > Right, I've got some definite ideas on how to go here, just need some
+> > > time to implement them.
+> > >
+> > > The first thing that needs to be done is get rid of all the __weak
+> > > functions (with exception of perf_callchain*, since that really is arch
+> > > specific).
+> > >
+> > > For hw_perf_event_init() we need to create a pmu registration facility
+> > > and lookup a pmu_id, either passed as an actual id found in sysfs or an
+> > > open file handle from sysfs (the cpu pmu would be pmu_id 0 for backwards
+> > > compat).
+> > >
+> > > hw_perf_disable/enable() would become struct pmu functions and
+> > > perf_disable/enable need to become per-pmu, most functions operate on a
+> > > specific event, for those we know the pmu and hence can call the per-pmu
+> > > version. (XXX find those sites where this is not true).
+> > >
+> > > Then we can move to context, yes I think we want new context for new
+> > > PMUs, otherwise we get very funny RR interleaving problems. My idea was
+> > > to move find_get_context() into struct pmu as well, this allows you to
+> > > have per-pmu contexts. Initially I'd not allow per-pmu-per-task contexts
+> > > because then things like perf_event_task_sched_out() would get rather
+> > > complex.
+> > >
+> > > For RR we can move away from perf_event_task_tick and let the pmu
+> > > install a (hr)timer for this on their own.
+> > >
+> > > I've been planning to implement this for more than a week now, its just
+> > > that other stuff keeps getting in the way.
+> > >
+> > 
+> > Hi Peter,
+> > 
+> > My name is Gary Mohr and I work for Bull Information Systems.  I have been
+> > following your discussions with Corey (and others) about how to implement
+> > support for nest PMU's in the linux kernel.
+> > 
+> > My company feels that support for Intel Nehalem uncore events is very
+> > important to our customers.  Has the "other stuff" mentioned above quited down to
+> > allow you to get started on building support for these features ?? 
+> 
+> Sadly no.
+> 
+> >  If development
+> > is actually in progress, would you be willing to make a guess as to which
+> > version of the kernel may offer the new capabilities ??
+> > 
+> > As I said we are interested so if there is any way we can assist you,
+> > please let us know.  We would be happy to take experimental patch sets and
+> > validate, test, and debug any problems we encounter if that would help your
+> > development.
+> 
+> Supply patches to make the above happen ;-)
+> 
+> One thing not on that list, which should happen first I guess, is to
+> remove hw_perf_group_sched_in(). The idea is to add some sort of
+> transactional API to the struct pmu, so that we can delay the
+> schedulability check until commit time (and roll back when it fails).
+> 
+> Something as simple as:
+> 
+>   struct pmu {
+>     void start_txn(struct pmu *);
+>     void commit_txn(struct pmu *);
+> 
+>     ,,,
+>   };
 
-to solve most of the outstanding PCMCIA bugs I'm aware of -- notable
-exception is the regression in kernel bugzilla 13426 --, please pull from
+Could you please explain a bit more?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
+Does it mean that "start_txn" perform the schedule events stuff
+and "commit_txn" perform the assign events stuff?
 
-The diffstat and list of changes follows; the patches went to the PCMCIA
-list yesterday.
+Does "commit time" mean the actual activation in hw_perf_enable?
 
 Thanks,
-	Dominik
+Lin Ming
 
-----
+> 
+> and then change group_sched_in() to use this instead of
+> hw_perf_group_sched_in(), whose implementations mostly replicate
+> group_sched_in() in various buggy ways anyway.
+> 
 
-Dan Carpenter (1):
-      pcmcia: fix error handling in cm4000_cs.c
 
-Dominik Brodowski (5):
-      pcmcia: use previously assigned IRQ for all card functions
-      pcmcia: fix io_probe due to parent (PCI) resources
-      pcmcia: re-start on MFC override
-      pcmcia: fix ioport size calculation in rsrc_nonstatic
-      pcmcia: avoid late calls to pccard_validate_cis
-
-Julia Lawall (1):
-      drivers/pcmcia: Add missing local_irq_restore
-
-Timur Maximov (1):
-      serial_cs: MD55x support (PCMCIA GPRS/EDGE modem) (kernel 2.6.33)
-
- drivers/char/pcmcia/cm4000_cs.c  |    8 +++++---
- drivers/pcmcia/cistpl.c          |    9 +++++++--
- drivers/pcmcia/db1xxx_ss.c       |    4 +++-
- drivers/pcmcia/ds.c              |   22 ++++++++++++++--------
- drivers/pcmcia/pcmcia_resource.c |   10 +++++-----
- drivers/pcmcia/rsrc_nonstatic.c  |   16 ++++++++++++----
- drivers/serial/serial_cs.c       |    9 +++++++++
- 7 files changed, 55 insertions(+), 23 deletions(-)
