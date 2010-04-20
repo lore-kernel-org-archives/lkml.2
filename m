@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab0DTRgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 13:36:04 -0400
-Received: from 8bytes.org ([88.198.83.132]:57263 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754928Ab0DTRgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 13:36:01 -0400
-Date: Tue, 20 Apr 2010 19:35:59 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Greg KH <greg@kroah.com>
-Cc: Joerg Roedel <joerg.roedel@amd.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: pci_get_dev_by_id() from interrupt handlers
-Message-ID: <20100420173552.GA15669@8bytes.org>
-References: <20100420160423.GD31537@amd.com> <20100420163215.GB3270@kroah.com>
+	id S1755012Ab0DTRly (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 13:41:54 -0400
+Received: from ausxippc101.us.dell.com ([143.166.85.207]:25419 "EHLO
+	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754990Ab0DTRlx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 13:41:53 -0400
+X-Greylist: delayed 590 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 13:41:53 EDT
+X-Loopcount0: from 10.166.62.177
+From: <Rezwanul_Kabir@Dell.com>
+To: <achiang@canonical.com>, <mjg@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+       <lenb@kernel.org>
+Date: Tue, 20 Apr 2010 12:31:52 -0500
+Subject: RE: [PATCH] acpi: Fall back to manually changing SCI_EN
+Thread-Topic: [PATCH] acpi: Fall back to manually changing SCI_EN
+Thread-Index: AcrgmkEiJIaaHfnXQ8+ak+aHZl3zZwAE59iA
+Message-ID: <57DF5FDC2DC0634FA2A310BC5B81A68D01DC9F1850@AUSX7MCPC108.AMER.DELL.COM>
+References: <1271711614-15527-1-git-send-email-mjg@redhat.com>
+ <20100420150010.GA17935@canonical.com>
+In-Reply-To: <20100420150010.GA17935@canonical.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100420163215.GB3270@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 20 Apr 2010 17:31:55.0043 (UTC) FILETIME=[5EF40730:01CAE0AF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 09:32:15AM -0700, Greg KH wrote:
-> On Tue, Apr 20, 2010 at 06:04:24PM +0200, Joerg Roedel wrote:
-> > Hi Jesse,
-> > 
-> > I have a question regarding the warning in the pci_get_dev_by_id()
-> > [search.c] function which triggers when called from interrupt context.
-> > As far as I have seen this function should be save to be called in
-> > atomic mode.
-> 
-> Are you sure?
+Agree with getting Matthew's patch to fall back on force setting SCI_EN bit. I have discovered this issue recently with New Gen Dell systems where the systems were suspending right the first time around and then resorted to rebooting ( instead of resuming ) the second time. Also, the system would come with SCI interrupt disabled the first time around.
+ I worked with the BIOS teams to get this fixed in the latest BIOS revs but just as Alex pointed out Matthew's approach seems to be the default bahaviour in the "Other OS". The problem may be more widespread than the limited set of blacklisted platforms..
 
-Not anymore. You proved me wrong ;-)
+Thanks..
+   --rez
+ 
 
-> > Is there any other reason it should not be called in interrupt
-> > handlers?
-> 
-> klist traversal is not safe to be done in interrupt context as the
-> spinlock is not told to be interrupt safe.  Now you could go and change
-> the klist core to be interrupt safe, but you should probably rethink
-> your need here first.
+Rezwanul Kabir
+Dell Inc.
+512-725-0766
+ 
 
-The idea was to capture IO page faults in the IOMMU and propagate them
-to KVM instead of just printk into dmesg. KVM could do something better
-then like killing the guest. Currently a malicious guest could flood
-host dmesg by causing IO page faults.
-For the AMD IOMMU the page faults are reported in an event log and the
-cpu is informed by an interrupt about it. The event log entry contains
-the bus/dev/function of the device. To get the necessary information to
-propagate this to KVM I need to get the 'struct device' for it.
-I could certainly do this in a tasklet instead but doing that only for
-the task of converting bus/device/function into 'struct device' sounds
-a bit complicated to me.
-
-Regards,
-
-	Joerg
-
+>-----Original Message-----
+>From: linux-acpi-owner@vger.kernel.org 
+>[mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Alex Chiang
+>Sent: Tuesday, April 20, 2010 10:00 AM
+>To: Matthew Garrett
+>Cc: linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org; 
+>lenb@kernel.org
+>Subject: Re: [PATCH] acpi: Fall back to manually changing SCI_EN
+>
+>* Matthew Garrett <mjg@redhat.com>:
+>> The ACPI spec tells us that the ACPI SCI_EN bit is under hardware 
+>> control and shouldn't be touched by the OS. It seems that 
+>the Leading 
+>> Other OS ignores this and some machines expect this 
+>behaviour. We have 
+>> a blacklist for these, but given that we're able to detect 
+>the failure 
+>> case and the alternative to breaking the spec is letting the machine 
+>> crash and burn, let's try falling back when we know the 
+>alternative is 
+>> a mostly-dead machine.
+>
+>Yes, we got a hint from a Lenovo BIOS developer:
+>
+>	A SCI_EN bit had not been set at S3 resume post. It
+>	should be set as ACPI defines. It seems that Windows OS
+>	sets SCI_EN bit by itself after S3 resume....
+>
+>So I believe that Matthew's approach is reasonably safe and correct.
+>
+>Acked-by: Alex Chiang <achiang@canonical.com>
+>
+>/ac
+>--
+>To unsubscribe from this list: send the line "unsubscribe 
+>linux-acpi" in the body of a message to 
+>majordomo@vger.kernel.org More majordomo info at  
+>http://vger.kernel.org/majordomo-info.html
+>
