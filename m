@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab0DTO2L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 10:28:11 -0400
-Received: from saraswathi.solana.com ([198.99.130.12]:34620 "EHLO
-	saraswathi.solana.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754783Ab0DTO2J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 10:28:09 -0400
-Date: Tue, 20 Apr 2010 10:25:10 -0400
-From: Jeff Dike <jdike@addtoit.com>
-To: Amerigo Wang <xiyou.wangcong@gmail.com>
-Cc: Jan Kiszka <jan.kiszka@web.de>, trivial@kernel.org,
-       linux-kernel@vger.kernel.org,
-       user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [PATCH 2/5] uml: Drop private round_down definition
-Message-ID: <20100420142510.GA30011@c-98-229-117-200.hsd1.ma.comcast.net>
-References: <cover.1271713955.git.jan.kiszka@web.de> <74c7d668690f283cf3b8aed92004dc72e872f7ce.1271713955.git.jan.kiszka@web.de> <20100420083358.GD4356@cr0.nay.redhat.com>
+	id S1754834Ab0DTOb6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 10:31:58 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49771 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754809Ab0DTOb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 10:31:57 -0400
+Date: Tue, 20 Apr 2010 16:31:53 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+       Jeff Dike <jdike@addtoit.com>
+Subject: Re: [PATCH 1/5] uml: Remove unused variable from line driver
+In-Reply-To: <f430193946dbd11791e8fb5bef2e4a8e68393828.1271713955.git.jan.kiszka@web.de>
+Message-ID: <alpine.LNX.2.00.1004201631440.7579@pobox.suse.cz>
+References: <cover.1271713955.git.jan.kiszka@web.de> <f430193946dbd11791e8fb5bef2e4a8e68393828.1271713955.git.jan.kiszka@web.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100420083358.GD4356@cr0.nay.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 04:33:58PM +0800, Amerigo Wang wrote:
-> On Mon, Apr 19, 2010 at 11:53:05PM +0200, Jan Kiszka wrote:
-> >Already defined in kernel.h. The official version assumes that 'n' is
-> >power of two - which it is in our case.
-> >
-> >Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
-> >---
-> > arch/um/sys-x86_64/signal.c |    2 --
-> > 1 files changed, 0 insertions(+), 2 deletions(-)
-> >
-> >diff --git a/arch/um/sys-x86_64/signal.c b/arch/um/sys-x86_64/signal.c
-> >index 1a899a7..07797d1 100644
-> >--- a/arch/um/sys-x86_64/signal.c
-> >+++ b/arch/um/sys-x86_64/signal.c
-> >@@ -165,8 +165,6 @@ struct rt_sigframe
-> > 	struct _fpstate fpstate;
-> > };
-> > 
-> >-#define round_down(m, n) (((m) / (n)) * (n))
-> >-
-> > int setup_signal_stack_si(unsigned long stack_top, int sig,
-> > 			  struct k_sigaction *ka, struct pt_regs * regs,
-> > 			  siginfo_t *info, sigset_t *set)
+On Mon, 19 Apr 2010, Jan Kiszka wrote:
+
+> Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
+> ---
+>  arch/um/drivers/line.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
-> Shouldn't this signal.c #include <linux/kernel.h>?
+> diff --git a/arch/um/drivers/line.c b/arch/um/drivers/line.c
+> index 7a656bd..7f7338c 100644
+> --- a/arch/um/drivers/line.c
+> +++ b/arch/um/drivers/line.c
+> @@ -19,7 +19,6 @@ static irqreturn_t line_interrupt(int irq, void *data)
+>  {
+>  	struct chan *chan = data;
+>  	struct line *line = chan->line;
+> -	struct tty_struct *tty;
+>  
+>  	if (line)
+>  		chan_interrupt(&line->chan_list, &line->task, line->tty, irq);
 
-I agree - if this is going to depend on kernel.h, it should be
-explicitly included.
+Applied, thanks.
 
-				Jeff
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
