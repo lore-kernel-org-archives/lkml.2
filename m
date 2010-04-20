@@ -1,36 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024Ab0DTSXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 14:23:42 -0400
-Received: from claw.goop.org ([74.207.240.146]:51255 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752746Ab0DTSXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 14:23:41 -0400
-Message-ID: <4BCDF12C.1020702@goop.org>
-Date: Tue, 20 Apr 2010 11:23:40 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Glauber Costa <glommer@redhat.com>,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>	 <1271356648-5108-2-git-send-email-glommer@redhat.com>	 <4BC8CA52.4090703@goop.org> <1271673545.1674.743.camel@laptop>	 <4BCC3584.1050501@redhat.com> <1271675100.1674.818.camel@laptop>	 <4BCC3A3E.9070909@redhat.com>	 <20100419142158.GD14158@mothafucka.localdomain>	 <4BCC69D5.3050209@redhat.com> <1271688411.1488.248.camel@laptop> <4BCC8246.9040202@goop.org> <4BCD748E.7080007@redhat.com>
-In-Reply-To: <4BCD748E.7080007@redhat.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
+	id S1755093Ab0DTShi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 14:37:38 -0400
+Received: from a2s43.a2hosting.com ([69.39.89.30]:60780 "EHLO
+	a2s43.a2hosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab0DTShh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 14:37:37 -0400
+X-Greylist: delayed 20841 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 14:37:37 EDT
+Date: Tue, 20 Apr 2010 08:52:30 -0400
+From: Michael Shell <list1@michaelshell.org>
+To: linux-kernel@vger.kernel.org
+Subject: CD/DVD-R eject after burn to sync/validate/update read cache and/or
+ media flags
+Message-ID: <20100420085230.46608b34@bashir>
+X-Mailer: Sylpheed-Claws 2.3.1 (GTK+ 2.4.9; i586-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - a2s43.a2hosting.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - michaelshell.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2010 02:31 AM, Avi Kivity wrote:
-> btw, do you want this code in pvclock.c, or shall we keep it kvmclock
-> specific?
 
-I think its a pvclock-level fix.  I'd been hoping to avoid having
-something like this, but I think its ultimately necessary.
 
-    J
+We recently had a discussion on the cdrecord-support mailing list
+about the need to eject a CD/DVD-R after burning to be able to
+mount it.
+
+This has been a known issue under Linux for some time:
+
+http://lkml.indiana.edu/hypermail/linux/kernel/0705.0/0259.html
+
+http://lkml.indiana.edu/hypermail/linux/kernel/9604.3/0377.html
+
+It is a more serious annoyance with laptop drives that cannot
+close their trays without the help of a human hand.
+
+Has this issue been fixed in recent kernels, and if so, does anyone
+know about what release the change was made?
+
+Also, is there an ioctl or other way to force the kernel/driver to
+invalidate the read cache or other stored data of a specific
+drive/media (not the system as a whole) without having to physically
+eject the media?
+
+
+  Cheers and thanks in advance,
+
+  Mike Shell
+
+
+
