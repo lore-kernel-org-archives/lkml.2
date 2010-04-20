@@ -1,60 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab0DTNQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 09:16:11 -0400
-Received: from 83-238-130-35.ip.netia.com.pl ([83.238.130.35]:58674 "EHLO
-	mail.supercomputing.pl" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab0DTNQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 09:16:09 -0400
-Message-ID: <4BCDA912.3070406@supercomputing.pl>
-Date: Tue, 20 Apr 2010 15:16:02 +0200
-From: nevee <nevee@supercomputing.pl>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1754645Ab0DTNUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 09:20:08 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47425 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754488Ab0DTNUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 09:20:07 -0400
+Message-ID: <4BCDAA05.50506@suse.cz>
+Date: Tue, 20 Apr 2010 15:20:05 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.8 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: PROBLEM: conflicting types for =?UTF-8?B?4oCYc25fZG1hX2ZsdXNo4oCZ?=
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Florian Fainelli <ffainelli@freebox.fr>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] globally ignore Module.symvers
+References: <201004191642.52517.ffainelli@freebox.fr>
+In-Reply-To: <201004191642.52517.ffainelli@freebox.fr>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
-I had a problem in arch/ia64/include/asm/sn/io.h:
-----------------------------------------------------------------------
-arch/ia64/sn/pci/pcibr/pcibr_dma.c:237: error: conflicting types for 
-‘sn_dma_flush’
-/tmp/linux-2.6.33.2/arch/ia64/include/asm/sn/io.h:21: error: previous 
-declaration of ‘sn_dma_flush’ was here
-arch/ia64/sn/pci/pcibr/pcibr_dma.c:412: error: conflicting types for 
-‘sn_dma_flush’
-/tmp/linux-2.6.33.2/arch/ia64/include/asm/sn/io.h:21: error: previous 
-declaration of ‘sn_dma_flush’ was here
-CC arch/ia64/sn/kernel/huberror.o
-make[4]: *** [arch/ia64/sn/pci/pcibr/pcibr_dma.o] Error 1
-make[3]: *** [arch/ia64/sn/pci/pcibr] Error 2
-make[2]: *** [arch/ia64/sn/pci] Error 2
-make[2]: *** Waiting for unfinished jobs....
-----------------------------------------------------------------------
+On 19.4.2010 16:42, Florian Fainelli wrote:
+> If we build using make SUBDIRS=foo/ Kbuild will output per-directory
+> Module.symvers files that we do not want to keep track of. Ignore these files
+> globally.
 
-Tested versions: 2.6.32.11, 2.6.33.2 also 2.6.34-rc5
+SUBDIRS= or M= is meant for external modules, which generate their own
+Module.symvers. If you only need to build a part of the kernel sources,
+use 'make dir/'.
 
-arch/ia64/include/asm/sn/io.h:21:
-
-extern void sn_dma_flush(unsigned long);
-
-should be:
-
-extern void sn_dma_flush(unsigned long long);
-
-for:
-
-arch/ia64/sn/pci/pcibr/pcibr_dma.c:237:
-
-void sn_dma_flush(u64 addr)
-{...}
-
-After this change, works fine.
-Cheers,
-nevee
+Michal
