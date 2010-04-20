@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab0DTENH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 00:13:07 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48899 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111Ab0DTEND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 00:13:03 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.34-rc5: Reported regressions from 2.6.33
-Date: Tue, 20 Apr 2010 06:13:33 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <20100419205723.8724338c.akpm@linux-foundation.org>
-In-Reply-To: <20100419205723.8724338c.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753090Ab0DTEXr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 00:23:47 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:57953 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab0DTEXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 00:23:46 -0400
+Date: Tue, 20 Apr 2010 13:20:50 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [RFC][BUGFIX][PATCH 2/2] memcg: fix file mapped underflow at
+ migration (v3)
+Message-Id: <20100420132050.3477a717.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100419172629.dbf65e18.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
+	<20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100415120652.c577846f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100416193143.5807d114.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100419124225.91f3110b.nishimura@mxp.nes.nec.co.jp>
+	<20100419131817.f263d93c.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100419170701.3864992e.nishimura@mxp.nes.nec.co.jp>
+	<20100419172629.dbf65e18.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004200613.33696.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 April 2010, Andrew Morton wrote:
-> On Tue, 20 Apr 2010 05:15:57 +0200 (CEST) "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > I have one concern for now. Reading the patch, the flag have influence on
+> > only anonymous pages, so we'd better to note it and I feel it strange to
+> > set(and clear) the flag of "old page" always(iow, even when !PageAnon)
+> > in prepare_migration.
+> > 
 > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15812
-> > Subject		: utsname.domainname not set in x86_32 processes (causing "YPBINDPROC_DOMAIN: domain not bound" errors)
-> > Submitter	:  <adi@hexapodia.org>
-> > Date		: 2010-04-19 21:28 (1 days old)
-> 
-> I merged hch's fix for this twelve seconds ago.
+> Hmm...Checking "Only Anon" is simpler ?
+I just thought it was inconsistent that we always set/clear the bit about "old page",
+while we set the bit about "new page" only in PageAnon case.
 
-I updated the entry.
+> It will have no meanings for migrating
+> file caches, but it may have some meanings for easy debugging. 
+> I think "mark it always but it's used only for anonymous page" is reasonable
+> (if it causes no bug.)
+> 
+Anyway, I don't have any strong objection.
+It's all right for me as long as it is well documented or commented.
+
+
+Thanks,
+Daisuke Nishimura.
