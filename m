@@ -1,137 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab0DTHVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 03:21:18 -0400
-Received: from mtagate4.de.ibm.com ([195.212.17.164]:37183 "EHLO
-	mtagate4.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab0DTHVQ (ORCPT
+	id S1753831Ab0DTHZd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 03:25:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49900 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556Ab0DTHZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 03:21:16 -0400
-Message-ID: <4BCD55DA.2020000@linux.vnet.ibm.com>
-Date: Tue, 20 Apr 2010 09:20:58 +0200
-From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>
-Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone pressure
-References: <20100322235053.GD9590@csn.ul.ie> <4BA940E7.2030308@redhat.com> <20100324145028.GD2024@csn.ul.ie> <4BCC4B0C.8000602@linux.vnet.ibm.com> <20100419214412.GB5336@cmpxchg.org>
-In-Reply-To: <20100419214412.GB5336@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 20 Apr 2010 03:25:32 -0400
+Subject: Re: INFO: suspicious rcu_dereference_check() usage -
+ include/linux/cgroup.h:492 invoked rcu_dereference_check() without
+ protection!
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Eric Paris <eparis@redhat.com>, Eric Paris <eparis@parisplace.org>,
+       Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100420030452.GB2905@linux.vnet.ibm.com>
+References: <a44ae5cd1003071726u1f94336h7ab6c7b80d16723b@mail.gmail.com>
+	 <20100311032843.GE6767@linux.vnet.ibm.com>
+	 <q2x7e0fb38c1004121144rb097e521hd2a7d8cea77c54b7@mail.gmail.com>
+	 <1271098032.4807.137.camel@twins> <1271242058.32749.19.camel@laptop>
+	 <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com>
+	 <20100419230136.GA16856@linux.vnet.ibm.com>
+	 <1271726729.2972.13.camel@dhcp231-113.rdu.redhat.com>
+	 <20100420030452.GB2905@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Apr 2010 09:21:47 +0200
+Message-ID: <1271748107.1676.392.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-04-19 at 20:04 -0700, Paul E. McKenney wrote:
+> On Mon, Apr 19, 2010 at 09:25:29PM -0400, Eric Paris wrote:
+
+> > That one is also fixed so feel free to add a tested or something from
+> > me.  But we've got another, weeeee!  If there some way I could get all
+> > of these at once?
+> 
+> Sure!  I -think- that if you remove the first "if" statement in
+> lockdep_rcu_dereference() in kernel/lockdep.c, you will get lots of them
+> all at once.  Maybe more than your console log is able to hold...
+> 
+> So another approach would be to print only the first 100 or some such.
+> 
+> It -looks- to me that you could make __debug_locks_off() atomically
+> decrement a counter rather than just setting it to zero, see
+> include/linux/debug_locks.h.  I suspect that atomic_dec_not_zero()
+> would work very well for you here.
+> 
+> Peter probably knows a better approach, but those would work.
+
+Right, so because the RCU checking stuff doesn't poke at the lockdep
+class chains, but simply validates the current task state we can delay
+or altogether not disable lockdep.
+
+So something like the below, or simply remove that debug_locks_off()
+thing alltogether.
+
+---
+ kernel/lockdep.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 78325f8..31c8738 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -3784,12 +3784,16 @@ void lockdep_sys_exit(void)
+ 	}
+ }
+ 
++static atomic_t rcu_warns = ATOMIC_INIT(100);
++
+ void lockdep_rcu_dereference(const char *file, const int line)
+ {
+ 	struct task_struct *curr = current;
+ 
+-	if (!debug_locks_off())
+-		return;
++	if (!debug_locks || atomic_dec_and_test(&rcu_warns)) {
++		if (!debug_locks_off())
++			return;
++	}
+ 	printk("\n===================================================\n");
+ 	printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
+ 	printk(  "---------------------------------------------------\n");
 
 
-Johannes Weiner wrote:
-> On Mon, Apr 19, 2010 at 02:22:36PM +0200, Christian Ehrhardt wrote:
->> So now coming to the probably most critical part - the evict once discussion in this thread.
->> I'll try to explain what I found in the meanwhile - let me know whats unclear and I'll add data etc.
->>
->> In the past we identified that "echo 3 > /proc/sys/vm/drop_caches" helps to improve the accuracy of the used testcase by lowering the noise from 5-8% to <1%.
->> Therefore I ran all tests and verifications with that drops.
->> In the meanwhile I unfortunately discovered that Mel's fix only helps for the cases when the caches are dropped.
->> Without it seems to be bad all the time. So don't cast the patch away due to that discovery :-)
->>
->> On the good side I was also able to analyze a few more things due to that insight - and it might give us new data to debug the root cause.
->> Like Mel I also had identified "56e49d21 vmscan: evict use-once pages first" to be related in the past. But without the watermark wait fix, unapplying it 56e49d21 didn't change much for my case so I left this analysis path.
->>
->> But now after I found dropping caches is the key to "get back good performance" and "subsequent writes for bad performance" even with watermark wait applied I checked what else changes:
->> - first write/read load after reboot or dropping caches -> read TP good
->> - second write/read load after reboot or dropping caches -> read TP bad
->> => so what changed.
->>
->> I went through all kind of logs and found something in the system activity report which very probably is related to 56e49d21.
->> When issuing subsequent writes after I dropped caches to get a clean start I get this in Buffers/Caches from Meminfo:
->>
->> pre write 1
->> Buffers:             484 kB
->> Cached:             5664 kB
->> pre write 2
->> Buffers:           33500 kB
->> Cached:           149856 kB
->> pre write 3
->> Buffers:           65564 kB
->> Cached:           115888 kB
->> pre write 4
->> Buffers:           85556 kB
->> Cached:            97184 kB
->>
->> It stays at ~85M with more writes which is approx 50% of my free 160M memory.
-> 
-> Ok, so I am the idiot that got quoted on 'the active set is not too big, so
-> buffer heads are not a problem when avoiding to scan it' in eternal history.
-> 
-> But the threshold inactive/active ratio for skipping active file pages is
-> actually 1:1.
-> 
-> The easiest 'fix' is probably to change that ratio, 2:1 (or even 3:1?) appears
-> to be a bit more natural anyway?  Below is a patch that changes it to 2:1.
-> Christian, can you check if it fixes your regression?
-
-I'll check it out.
-from the numbers I have up to now I know that the good->bad transition 
-for my case is somewhere between 30M/60M e.g. first and second write.
-The ratio 2:1 will eat max 53M of my ~160M that gets split up.
-
-That means setting the ratio to 2:1 or whatever else might help or not, 
-but eventually there is just another setting of workload vs. memory 
-constraints that would still be affected. Still I guess 3:1 (and I'll 
-try that as well) should be enough to be a bit more towards the save side.
-
-> Additionally, we can always scan active file pages but only deactivate them
-> when the ratio is off and otherwise strip buffers of clean pages.
-
-In think we need something that allows the system to forget its history 
-somewhen - be it 1:1 or x:1 - if the workload changes "long enough"(tm) 
-it should eventually throw all old things out.
-Like I described before many systems have different usage patterns when 
-e.g. comparing day/night workload. So it is far from optimal if e.g. day 
-write loads eat so much cache and never give it back for nightly huge 
-reads tasks or something similar.
-
-Would your suggestion achieve that already?
-If not what kind change could?
-
-> What do people think?
-> 
-> 	Hannes
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index f4ede99..a4aea76 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -898,7 +898,7 @@ int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg)
->  	inactive = mem_cgroup_get_local_zonestat(memcg, LRU_INACTIVE_FILE);
->  	active = mem_cgroup_get_local_zonestat(memcg, LRU_ACTIVE_FILE);
-> 
-> -	return (active > inactive);
-> +	return (active > inactive / 2);
->  }
-> 
->  unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 3ff3311..8f1a846 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1466,7 +1466,7 @@ static int inactive_file_is_low_global(struct zone *zone)
->  	active = zone_page_state(zone, NR_ACTIVE_FILE);
->  	inactive = zone_page_state(zone, NR_INACTIVE_FILE);
-> 
-> -	return (active > inactive);
-> +	return (active > inactive / 2);
->  }
-> 
->  /**
-> 
-
--- 
-
-Grüsse / regards, Christian Ehrhardt
-IBM Linux Technology Center, System z Linux Performance
