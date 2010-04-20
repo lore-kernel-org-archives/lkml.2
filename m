@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab0DTOuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 10:50:13 -0400
-Received: from straum.hexapodia.org ([207.7.131.186]:57589 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754942Ab0DTOuL (ORCPT
+	id S1751095Ab0DTOyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 10:54:38 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:34407 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab0DTOyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 10:50:11 -0400
-Date: Tue, 20 Apr 2010 07:50:09 -0700
-From: Andy Isaacson <adi@hexapodia.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: correctly wire up the newuname system call
-Message-ID: <20100420145009.GA13376@hexapodia.org>
-References: <20100420033102.GA13406@lst.de>
+	Tue, 20 Apr 2010 10:54:37 -0400
+Date: Tue, 20 Apr 2010 08:54:29 -0600
+From: Alex Chiang <achiang@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: lenb@kernel.org, colin.king@canonical.com, linux-acpi@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org
+Subject: Re: [PATCH] ACPI: DMI init_set_sci_en_on_resume for multiple
+ Lenovo ThinkPads
+Message-ID: <20100420145429.GB5573@canonical.com>
+Mail-Followup-To: Alex Chiang <achiang@canonical.com>,
+	Matthew Garrett <mjg59@srcf.ucam.org>, lenb@kernel.org,
+	colin.king@canonical.com, linux-acpi@vger.kernel.org,
+	linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org
+References: <20100420140314.GA5573@canonical.com>
+ <20100420144654.GA6354@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100420033102.GA13406@lst.de>
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100420144654.GA6354@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 05:31:02AM +0200, Christoph Hellwig wrote:
-> Before commit e28cbf22933d0c0ccaf3c4c27a1a263b41f73859 64-bit x86 had
-> a private implementation of sys_uname which was just called sys_uname,
-> which other architectures used for the old uname.  Due to some merge
-> issues with the uname refactoring patches we ended up calling the
-> old uname version for both the old and new system call slots, which
-> lead to the domainname filed never be set which caused failures with
-                         ^^^^^ field.
-
-> libnss_nis.
+* Matthew Garrett <mjg59@srcf.ucam.org>:
+> On Tue, Apr 20, 2010 at 08:03:14AM -0600, Alex Chiang wrote:
 > 
-> Reported-by: Andy Isaacson <adi@hexapodia.org>
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> > In any case, an existing DMI table exists for machines where
+> > this defect is a known problem. Lenovo promise to fix their
+> > BIOS, but for folks who either won't or can't upgrade their
+> > BIOS, allow Linux to workaround the issue.
 > 
-> Index: linux-2.6/arch/x86/ia32/ia32entry.S
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/ia32/ia32entry.S	2010-04-19 20:21:11.919003961 -0700
-> +++ linux-2.6/arch/x86/ia32/ia32entry.S	2010-04-19 20:21:19.902005565 -0700
-> @@ -626,7 +626,7 @@ ia32_sys_call_table:
->  	.quad stub32_sigreturn
->  	.quad stub32_clone		/* 120 */
->  	.quad sys_setdomainname
-> -	.quad sys_uname
-> +	.quad sys_newuname
+> While this is certainly the low impact fix for now, I'd prefer
+> the patch I sent as a long-term solution in order to avoid
+> having to add more machines to the table in future.
 
-Yes, that's the same patch I arrived at and fixes the issue for me.
+Ah, yes, I should have been more clear.
 
-Tested-by: Andy Isaacson <adi@hexapodia.org>
+I want to get this patch upstream so we can get it into stable,
+so that we can get it into Ubuntu 10.04.
+
+Certainly what I'm proposing is suitable for stable: it's
+minimal, specific to a few machines, etc.
+
+For the long term, I support the patch that Matthew sent out
+yesterday, and we can perhaps think about removing the quirks
+entirely.
 
 Thanks,
--andy
+/ac
+
