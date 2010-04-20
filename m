@@ -1,277 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab0DTVze (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 17:55:34 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:43942 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751558Ab0DTVzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 17:55:33 -0400
-Date: Tue, 20 Apr 2010 14:55:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm: use the correct RCU API
-Message-ID: <20100420215529.GA21246@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4BCC2543.7050104@cn.fujitsu.com>
+	id S1752741Ab0DTV4v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:56:51 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:47637 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab0DTV4t convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 17:56:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZWNGZmoWFrkWD5CgP7wMnqPTdKvTdSxHvZazl5pTq/BsuyqQ65PdfsRkDkAlkcGVP0
+         +zPr3XvW3qsYzkf5yz4dkZPVrpckyhZd/6QxM3U6kQuXmU42FIoiZmQfdRGCLPqitQYZ
+         Taa5a+uVBJJC6f1x+8H1z29yf/8n7WfMvOFK8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BCC2543.7050104@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1271755208.1676.422.camel@laptop>
+References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
+	 <1271755208.1676.422.camel@laptop>
+Date: Tue, 20 Apr 2010 23:56:45 +0200
+Message-ID: <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
+Subject: Re: Considerations on sched APIs under RT patch
+From: Primiano Tucci <p.tucci@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, tglx <tglx@linutronix.de>,
+       rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 05:41:23PM +0800, Lai Jiangshan wrote:
-> The RCU/SRCU API have already changed for proving RCU usage.
-> 
-> I got the following dmesg when PROVE_RCU=y because we used incorrect API.
-> This patch coverts rcu_deference() to srcu_dereference() or family API.
-> 
-> ===================================================
-> [ INFO: suspicious rcu_dereference_check() usage. ]
-> ---------------------------------------------------
-> arch/x86/kvm/mmu.c:3020 invoked rcu_dereference_check() without protection!
-> 
-> other info that might help us debug this:
-> 
-> 
-> rcu_scheduler_active = 1, debug_locks = 0
-> 2 locks held by qemu-system-x86/8550:
->  #0:  (&kvm->slots_lock){+.+.+.}, at: [<ffffffffa011a6ac>] kvm_set_memory_region+0x29/0x50 [kvm]
->  #1:  (&(&kvm->mmu_lock)->rlock){+.+...}, at: [<ffffffffa012262d>] kvm_arch_commit_memory_region+0xa6/0xe2 [kvm]
-> 
-> stack backtrace:
-> Pid: 8550, comm: qemu-system-x86 Not tainted 2.6.34-rc4-tip-01028-g939eab1 #27
-> Call Trace:
->  [<ffffffff8106c59e>] lockdep_rcu_dereference+0xaa/0xb3
->  [<ffffffffa012f6c1>] kvm_mmu_calculate_mmu_pages+0x44/0x7d [kvm]
->  [<ffffffffa012263e>] kvm_arch_commit_memory_region+0xb7/0xe2 [kvm]
->  [<ffffffffa011a5d7>] __kvm_set_memory_region+0x636/0x6e2 [kvm]
->  [<ffffffffa011a6ba>] kvm_set_memory_region+0x37/0x50 [kvm]
->  [<ffffffffa015e956>] vmx_set_tss_addr+0x46/0x5a [kvm_intel]
->  [<ffffffffa0126592>] kvm_arch_vm_ioctl+0x17a/0xcf8 [kvm]
->  [<ffffffff810a8692>] ? unlock_page+0x27/0x2c
->  [<ffffffff810bf879>] ? __do_fault+0x3a9/0x3e1
->  [<ffffffffa011b12f>] kvm_vm_ioctl+0x364/0x38d [kvm]
->  [<ffffffff81060cfa>] ? up_read+0x23/0x3d
->  [<ffffffff810f3587>] vfs_ioctl+0x32/0xa6
->  [<ffffffff810f3b19>] do_vfs_ioctl+0x495/0x4db
->  [<ffffffff810e6b2f>] ? fget_light+0xc2/0x241
->  [<ffffffff810e416c>] ? do_sys_open+0x104/0x116
->  [<ffffffff81382d6d>] ? retint_swapgs+0xe/0x13
->  [<ffffffff810f3ba6>] sys_ioctl+0x47/0x6a
->  [<ffffffff810021db>] system_call_fastpath+0x16/0x1b
+Hi Peter,
+thank you for your reply.
 
-I have queued this one up, thank you, Lai!
+On Tue, Apr 20, 2010 at 11:20 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2010-04-19 at 22:48 +0200, Primiano Tucci wrote:
+>
+>> Yesterday days I found a strange behavior of the scheduler API's using
+>> the RT patch, in particular the pthread_setaffinity_np (that stands on
+>> sched_setaffinity).
+>
+>> I think the main problem is that sched_setaffinity makes use of a
+>> rwlock, but rwlocks are pre-emptible with the RT patch.
+>
+> It does? where?
+>
+> sys_sched_setaffinity()
+>  sched_setaffinity()
+>    set_cpus_allowed_ptr()
 
-							Thanx, Paul
 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
-> index 73c5c2b..52b8ece 100644
-> --- a/arch/ia64/kvm/kvm-ia64.c
-> +++ b/arch/ia64/kvm/kvm-ia64.c
-> @@ -1379,7 +1379,7 @@ static void kvm_release_vm_pages(struct kvm *kvm)
->  	int i, j;
->  	unsigned long base_gfn;
-> 
-> -	slots = rcu_dereference(kvm->memslots);
-> +	slots = kvm_memslots(kvm);
->  	for (i = 0; i < slots->nmemslots; i++) {
->  		memslot = &slots->memslots[i];
->  		base_gfn = memslot->base_gfn;
-> diff --git a/arch/s390/kvm/kvm-s390.h b/arch/s390/kvm/kvm-s390.h
-> index 60f09ab..cfa9d17 100644
-> --- a/arch/s390/kvm/kvm-s390.h
-> +++ b/arch/s390/kvm/kvm-s390.h
-> @@ -72,7 +72,7 @@ static inline void kvm_s390_vcpu_set_mem(struct kvm_vcpu *vcpu)
->  	struct kvm_memslots *memslots;
-> 
->  	idx = srcu_read_lock(&vcpu->kvm->srcu);
-> -	memslots = rcu_dereference(vcpu->kvm->memslots);
-> +	memslots = kvm_memslots(vcpu->kvm);
-> 
->  	mem = &memslots->memslots[0];
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 71faa04..bb61881 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -792,7 +792,7 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
->  	int retval = 0;
->  	struct kvm_memslots *slots;
-> 
-> -	slots = rcu_dereference(kvm->memslots);
-> +	slots = kvm_memslots(kvm);
-> 
->  	for (i = 0; i < slots->nmemslots; i++) {
->  		struct kvm_memory_slot *memslot = &slots->memslots[i];
-> @@ -3017,7 +3017,8 @@ unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm)
->  	unsigned int  nr_pages = 0;
->  	struct kvm_memslots *slots;
-> 
-> -	slots = rcu_dereference(kvm->memslots);
-> +	slots = kvm_memslots(kvm);
-> +
->  	for (i = 0; i < slots->nmemslots; i++)
->  		nr_pages += slots->memslots[i].npages;
-> 
-> @@ -3292,7 +3293,7 @@ static int count_rmaps(struct kvm_vcpu *vcpu)
->  	int i, j, k, idx;
-> 
->  	idx = srcu_read_lock(&kvm->srcu);
-> -	slots = rcu_dereference(kvm->memslots);
-> +	slots = kvm_memslots(kvm);
->  	for (i = 0; i < KVM_MEMORY_SLOTS; ++i) {
->  		struct kvm_memory_slot *m = &slots->memslots[i];
->  		struct kvm_rmap_desc *d;
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 077cac5..725e7b6 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -1514,7 +1514,7 @@ static gva_t rmode_tss_base(struct kvm *kvm)
->  		struct kvm_memslots *slots;
->  		gfn_t base_gfn;
-> 
-> -		slots = rcu_dereference(kvm->memslots);
-> +		slots = kvm_memslots(kvm);
->  		base_gfn = kvm->memslots->memslots[0].base_gfn +
->  				 kvm->memslots->memslots[0].npages - 3;
->  		return base_gfn << PAGE_SHIFT;
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 6120e33..4dcd62c 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2408,7 +2408,7 @@ gfn_t unalias_gfn_instantiation(struct kvm *kvm, gfn_t gfn)
->  	struct kvm_mem_alias *alias;
->  	struct kvm_mem_aliases *aliases;
-> 
-> -	aliases = rcu_dereference(kvm->arch.aliases);
-> +	aliases = kvm_aliases(kvm);
-> 
->  	for (i = 0; i < aliases->naliases; ++i) {
->  		alias = &aliases->aliases[i];
-> @@ -2427,7 +2427,7 @@ gfn_t unalias_gfn(struct kvm *kvm, gfn_t gfn)
->  	struct kvm_mem_alias *alias;
->  	struct kvm_mem_aliases *aliases;
-> 
-> -	aliases = rcu_dereference(kvm->arch.aliases);
-> +	aliases = kvm_aliases(kvm);
-> 
->  	for (i = 0; i < aliases->naliases; ++i) {
->  		alias = &aliases->aliases[i];
-> diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
-> index 2d10163..e218fed 100644
-> --- a/arch/x86/kvm/x86.h
-> +++ b/arch/x86/kvm/x86.h
-> @@ -65,4 +65,11 @@ static inline int is_paging(struct kvm_vcpu *vcpu)
->  	return kvm_read_cr0_bits(vcpu, X86_CR0_PG);
->  }
-> 
-> +static inline struct kvm_mem_aliases *kvm_aliases(struct kvm *kvm)
-> +{
-> +	return rcu_dereference_check(kvm->arch.aliases,
-> +			srcu_read_lock_held(&kvm->srcu)
-> +			|| lockdep_is_held(&kvm->slots_lock));
-> +}
-> +
->  #endif
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index a3fd0f9..f735752 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -239,6 +239,13 @@ void kvm_exit(void);
->  void kvm_get_kvm(struct kvm *kvm);
->  void kvm_put_kvm(struct kvm *kvm);
-> 
-> +static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
-> +{
-> +	return rcu_dereference_check(kvm->memslots,
-> +			srcu_read_lock_held(&kvm->srcu)
-> +			|| lockdep_is_held(&kvm->slots_lock));
-> +}
-> +
->  #define HPA_MSB ((sizeof(hpa_t) * 8) - 1)
->  #define HPA_ERR_MASK ((hpa_t)1 << HPA_MSB)
->  static inline int is_error_hpa(hpa_t hpa) { return hpa >> HPA_MSB; }
-> diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-> index 80fd3ad..37ca71e 100644
-> --- a/virt/kvm/iommu.c
-> +++ b/virt/kvm/iommu.c
-> @@ -78,7 +78,7 @@ static int kvm_iommu_map_memslots(struct kvm *kvm)
->  	int i, r = 0;
->  	struct kvm_memslots *slots;
-> 
-> -	slots = rcu_dereference(kvm->memslots);
-> +	slots = kvm_memslots(kvm);
-> 
->  	for (i = 0; i < slots->nmemslots; i++) {
->  		r = kvm_iommu_map_pages(kvm, &slots->memslots[i]);
-> @@ -217,7 +217,7 @@ static int kvm_iommu_unmap_memslots(struct kvm *kvm)
->  	int i;
->  	struct kvm_memslots *slots;
-> 
-> -	slots = rcu_dereference(kvm->memslots);
-> +	slots = kvm_memslots(kvm);
-> 
->  	for (i = 0; i < slots->nmemslots; i++) {
->  		kvm_iommu_put_pages(kvm, slots->memslots[i].base_gfn,
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index b03f863..58b2147 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -829,7 +829,7 @@ EXPORT_SYMBOL_GPL(kvm_is_error_hva);
->  struct kvm_memory_slot *gfn_to_memslot_unaliased(struct kvm *kvm, gfn_t gfn)
->  {
->  	int i;
-> -	struct kvm_memslots *slots = rcu_dereference(kvm->memslots);
-> +	struct kvm_memslots *slots = kvm_memslots(kvm);
-> 
->  	for (i = 0; i < slots->nmemslots; ++i) {
->  		struct kvm_memory_slot *memslot = &slots->memslots[i];
-> @@ -851,7 +851,7 @@ struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn)
->  int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn)
->  {
->  	int i;
-> -	struct kvm_memslots *slots = rcu_dereference(kvm->memslots);
-> +	struct kvm_memslots *slots = kvm_memslots(kvm);
-> 
->  	gfn = unalias_gfn_instantiation(kvm, gfn);
->  	for (i = 0; i < KVM_MEMORY_SLOTS; ++i) {
-> @@ -895,7 +895,7 @@ out:
->  int memslot_id(struct kvm *kvm, gfn_t gfn)
->  {
->  	int i;
-> -	struct kvm_memslots *slots = rcu_dereference(kvm->memslots);
-> +	struct kvm_memslots *slots = kvm_memslots(kvm);
->  	struct kvm_memory_slot *memslot = NULL;
-> 
->  	gfn = unalias_gfn(kvm, gfn);
-> @@ -1979,7 +1979,9 @@ int kvm_io_bus_write(struct kvm *kvm, enum kvm_bus bus_idx, gpa_t addr,
->  		     int len, const void *val)
->  {
->  	int i;
-> -	struct kvm_io_bus *bus = rcu_dereference(kvm->buses[bus_idx]);
-> +	struct kvm_io_bus *bus;
-> +
-> +	bus = srcu_dereference(kvm->buses[bus_idx], &kvm->srcu);
->  	for (i = 0; i < bus->dev_count; i++)
->  		if (!kvm_iodevice_write(bus->devs[i], addr, len, val))
->  			return 0;
-> @@ -1991,8 +1993,9 @@ int kvm_io_bus_read(struct kvm *kvm, enum kvm_bus bus_idx, gpa_t addr,
->  		    int len, void *val)
->  {
->  	int i;
-> -	struct kvm_io_bus *bus = rcu_dereference(kvm->buses[bus_idx]);
-> +	struct kvm_io_bus *bus;
-> 
-> +	bus = srcu_dereference(kvm->buses[bus_idx], &kvm->srcu);
->  	for (i = 0; i < bus->dev_count; i++)
->  		if (!kvm_iodevice_read(bus->devs[i], addr, len, val))
->  			return 0;
-> 
+I see
+
+long sched_setaffinity(pid_t pid, const struct cpumask *in_mask) {
+	cpumask_var_t cpus_allowed, new_mask;
+	struct task_struct *p;
+	int retval;
+
+	get_online_cpus();
+-->	read_lock(&tasklist_lock);
+
+
+My question is: suppose that tasklist_lock is held by a writer.
+What happens to the calling thread? It can't take the lock, therefore
+it yields to the next ready task (that in my scenario has a lower
+priority).
+In my view, this is not a Priority Inversion problem. The problem is
+that the sched_setaffinity is unexpectedly "suspensive" and yields to
+the lower thread.
+
+Thank you for your support,
+Primiano
+
+>
+> set_cpus_allowed_ptr() is the one that does the real work, and that
+> takes the rq->lock and plays games with the migration thread, non of
+> which should be able to cause any form of priority inversion.
+>
+>> So it could happen that an high priority process/thread that makes use
+>> of the sched_setaffinity facility could be unwillingly preempted when
+>> controlling other (even low-priority) processes/threads.
+>
+> Well, suppose there was a rwlock_t, then for PREEMPT_RT=y that would be
+> mapped to an rt_mutex, which is PI aware.
+>
+>> I think sched_setaffinity should make use of raw_spinlocks, or should
+>> anyway be guaranteed to not be pre-empted (maybe a preempt_disable?),
+>> otherwise could lead in unwanted situations for a Real Time OS, such
+>> the one described below.
+>
+> It does, rq->lock is a non preemptible lock, and the migration thread
+> runs at a priority higher than FIFO-99.
+>
+>> The issue can be easily reproduced taking inspiration from this scenario:
+>>
+>> I have 4 Real Time Threads (SCHED_FIFO) distributed as follows:
+>>
+>> T0 : CPU 0, Priority 2 (HIGH)
+>> T1 : CPU 1, Priority 2 (HIGH)
+>> T3 : CPU 0, Priority 1 (LOW)
+>> T4 : CPU 1, Priority 1 (LOW)
+>>
+>> So T0 and T1 are actually the "big bosses" on CPUs #0 and #1, T3 and
+>> T4, instead, never execute (let's assume that each thread is a simple
+>> busy wait that never sleeps/yields) Now, at a certain point, from T0
+>> code, I want to migrate T4 from CPU #1 to #0, keeping its low
+>> priority.
+>> Therefore I perform a pthread_setaffinity_np from T0 changing T4 mask
+>> from CPU #1 to #0.
+>>
+>> In this scenario it happens that T3 (that should never execute since
+>> there is T0 with higher priority currently running on the same CPU #0)
+>> "emerge" and executes for a bit.
+>> It seems that the pthread_setaffinity_np syscall is somehow
+>> "suspensive" for the time needed to migrate T4 and let the scheduler
+>> to execute T3 for that bunch of time.
+>>
+>> What do you think about this situation? Should sched APIs be revised?
+>
+> Not sure why you thinking the APIs should be changed. If this does
+> indeed happen then there is a bug somewhere in the implementation, the
+> trick will be finding it.
+>
+> So you run these four RT tasks on CPUs 0,1 and then control them from
+> another cpu, say 2?
+>
+> Can you get a function trace that illustrates T3 getting scheduled,
+> preferably while running the latest -rt kernel?
+>
+>
+
+--
+ Primiano Tucci
+ http://www.primianotucci.com
