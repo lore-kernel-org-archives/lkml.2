@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab0DTEBU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 00:01:20 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48775 "EHLO ogre.sisk.pl"
+	id S1753726Ab0DTEB2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 00:01:28 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48789 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752333Ab0DTEBL convert rfc822-to-8bit (ORCPT
+	id S1753654Ab0DTEBS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 00:01:11 -0400
+	Tue, 20 Apr 2010 00:01:18 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Florian Mickler" <fmickler@gmx.de>
+       Maciej Rutecki <maciej.rutecki@gmail.com>, "" <adi@hexapodia.org>
 References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh>
 In-Reply-To: <deuQKFRcc0B.A.3EG.BRSzLB@tosh>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +16,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <YeFfFNFyTSF.A.7eG.LRSzLB@tosh>
-Subject: [Bug #15790] Meta-Bug: Regressions
+Message-ID: <YeFfFNFyTSF.A.uGG.DRSzLB@tosh>
+Subject: [Bug #15812] utsname.domainname not set in x86_32 processes (causing "YPBINDPROC_DOMAIN: domain not bound" errors)
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 20 Apr 2010 05:19:24 +0200 (CEST)
+Date: Tue, 20 Apr 2010 05:19:26 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,9 +32,9 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15790
-Subject		: Meta-Bug: Regressions
-Submitter	: Florian Mickler <fmickler@gmx.de>
-Date		: 2010-04-15 18:21 (5 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15812
+Subject		: utsname.domainname not set in x86_32 processes (causing "YPBINDPROC_DOMAIN: domain not bound" errors)
+Submitter	:  <adi@hexapodia.org>
+Date		: 2010-04-19 21:28 (1 days old)
 
 
