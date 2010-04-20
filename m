@@ -1,255 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab0DTRzP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 13:55:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15919 "EHLO mga09.intel.com"
+	id S1754190Ab0DTRz2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 13:55:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47207 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751672Ab0DTRzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 13:55:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,244,1270450800"; 
-   d="scan'208";a="614860448"
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: [PATCH linux-next 1/2] irq: Add CPU mask affinity hint callback
-	framework
-To: tglx@linutronix.de, davem@davemloft.net, arjan@linux.jf.intel.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 20 Apr 2010 11:01:12 -0700
-Message-ID: <20100420180112.1276.11906.stgit@ppwaskie-hc2.jf.intel.com>
-User-Agent: StGIT/0.14.3
+	id S1753728Ab0DTRzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 13:55:25 -0400
+Date: Tue, 20 Apr 2010 17:54:41 GMT
+From: "tip-bot for Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       Jes.Sorensen@redhat.com, a.p.zijlstra@chello.nl, joro@8bytes.org,
+       yanmin_zhang@linux.intel.com, zamsden@redhat.com, gleb@redhat.com,
+       acme@infradead.org, mtosatti@redhat.com, tglx@linutronix.de,
+       sheng@linux.intel.com, mingo@elte.hu, avi@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       a.p.zijlstra@chello.nl, Jes.Sorensen@redhat.com,
+       yanmin_zhang@linux.intel.com, joro@8bytes.org, zamsden@redhat.com,
+       gleb@redhat.com, acme@infradead.org, mtosatti@redhat.com,
+       sheng@linux.intel.com, tglx@linutronix.de, avi@redhat.com,
+       mingo@elte.hu
+In-Reply-To: <1271729638.2078.624.camel@ymzhang.sh.intel.com>
+References: <1271729638.2078.624.camel@ymzhang.sh.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf & kvm: Clean up some of the guest profiling callback API details
+Message-ID: <tip-dcf46b9443ad48a227a61713adea001228925adf@git.kernel.org>
+Git-Commit-ID: dcf46b9443ad48a227a61713adea001228925adf
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 20 Apr 2010 17:54:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a callback function pointer to the irq_desc
-structure, along with a registration function and a read-only
-proc entry for each interrupt.
+Commit-ID:  dcf46b9443ad48a227a61713adea001228925adf
+Gitweb:     http://git.kernel.org/tip/dcf46b9443ad48a227a61713adea001228925adf
+Author:     Zhang, Yanmin <yanmin_zhang@linux.intel.com>
+AuthorDate: Tue, 20 Apr 2010 10:13:58 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 20 Apr 2010 08:08:28 +0200
 
-This affinity_hint handle for each interrupt can be used by
-underlying drivers that need a better mechanism to control
-interrupt affinity.  The underlying driver can register a
-callback for the interrupt, which will allow the driver to
-provide the CPU mask for the interrupt to anything that
-requests it.  The intent is to extend the userspace daemon,
-irqbalance, to help hint to it a preferred CPU mask to balance
-the interrupt into.
+perf & kvm: Clean up some of the guest profiling callback API details
 
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Fix some build bug and programming style issues:
+
+ - use valid C
+ - fix up various style details
+
+Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sheng Yang <sheng@linux.intel.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: oerg Roedel <joro@8bytes.org>
+Cc: Jes Sorensen <Jes.Sorensen@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Zachary Amsden <zamsden@redhat.com>
+Cc: zhiteng.huang@intel.com
+Cc: tim.c.chen@intel.com
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+LKML-Reference: <1271729638.2078.624.camel@ymzhang.sh.intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
+ arch/x86/kernel/cpu/perf_event.c |   20 ++++++++++++++------
+ arch/x86/kvm/x86.c               |    4 ++++
+ include/linux/perf_event.h       |   10 ++++------
+ 3 files changed, 22 insertions(+), 12 deletions(-)
 
- include/linux/interrupt.h |   27 +++++++++++++++++++++++++++
- include/linux/irq.h       |    1 +
- kernel/irq/manage.c       |   39 +++++++++++++++++++++++++++++++++++++++
- kernel/irq/proc.c         |   41 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 108 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 75f3f00..f2a7d0b 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -78,6 +78,8 @@ enum {
- };
- 
- typedef irqreturn_t (*irq_handler_t)(int, void *);
-+typedef unsigned int (*irq_affinity_hint_t)(cpumask_var_t, unsigned int,
-+                                            void *);
- 
- /**
-  * struct irqaction - per interrupt action descriptor
-@@ -105,6 +107,18 @@ struct irqaction {
- 	unsigned long thread_flags;
- };
- 
-+/**
-+ * struct irqaffinityhint - per interrupt affinity helper
-+ * @callback:	device driver callback function
-+ * @dev:	reference for the affected device
-+ * @irq:	interrupt number
-+ */
-+struct irqaffinityhint {
-+	irq_affinity_hint_t callback;
-+	void *dev;
-+	int irq;
-+};
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 2ea78ab..7de7061 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1752,23 +1752,31 @@ void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int ski
+ unsigned long perf_instruction_pointer(struct pt_regs *regs)
+ {
+ 	unsigned long ip;
 +
- extern irqreturn_t no_action(int cpl, void *dev_id);
- 
- #ifdef CONFIG_GENERIC_HARDIRQS
-@@ -209,6 +223,9 @@ extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
- extern int irq_can_set_affinity(unsigned int irq);
- extern int irq_select_affinity(unsigned int irq);
- 
-+extern int irq_register_affinity_hint(unsigned int irq, void *dev,
-+                                      irq_affinity_hint_t callback);
-+extern int irq_unregister_affinity_hint(unsigned int irq);
- #else /* CONFIG_SMP */
- 
- static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
-@@ -223,6 +240,16 @@ static inline int irq_can_set_affinity(unsigned int irq)
- 
- static inline int irq_select_affinity(unsigned int irq)  { return 0; }
- 
-+static inline int irq_register_affinity_hint(unsigned int irq, void *dev,
-+                                             irq_affinity_hint_t callback)
-+{
-+	return -EINVAL;
-+}
+ 	if (perf_guest_cbs && perf_guest_cbs->is_in_guest())
+ 		ip = perf_guest_cbs->get_guest_ip();
+ 	else
+ 		ip = instruction_pointer(regs);
 +
-+static inline int irq_unregister_affinity_hint(unsigned int irq);
-+{
-+	return -EINVAL;
-+}
- #endif /* CONFIG_SMP && CONFIG_GENERIC_HARDIRQS */
- 
- #ifdef CONFIG_GENERIC_HARDIRQS
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 707ab12..bd73e9b 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -206,6 +206,7 @@ struct irq_desc {
- 	struct proc_dir_entry	*dir;
- #endif
- 	const char		*name;
-+	struct irqaffinityhint	*hint;
- } ____cacheline_internodealigned_in_smp;
- 
- extern void arch_init_copy_chip_data(struct irq_desc *old_desc,
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 704e488..3674b6a 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -138,6 +138,42 @@ int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
- 	return 0;
+ 	return ip;
  }
  
-+int irq_register_affinity_hint(unsigned int irq, void *dev,
-+                               irq_affinity_hint_t callback)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	unsigned long flags;
+ unsigned long perf_misc_flags(struct pt_regs *regs)
+ {
+ 	int misc = 0;
 +
-+	raw_spin_lock_irqsave(&desc->lock, flags);
-+
-+	if (!desc->hint)
-+		desc->hint = kmalloc(sizeof(struct irqaffinityhint),
-+		                     GFP_KERNEL);
-+	desc->hint->callback = callback;
-+	desc->hint->dev = dev;
-+	desc->hint->irq = irq;
-+
-+	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(irq_register_affinity_hint);
-+
-+int irq_unregister_affinity_hint(unsigned int irq)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&desc->lock, flags);
-+
-+	kfree(desc->hint);
-+	desc->hint = NULL;
-+
-+	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(irq_unregister_affinity_hint);
- #ifndef CONFIG_AUTO_IRQ_AFFINITY
- /*
-  * Generic version of the affinity autoselector.
-@@ -916,6 +952,9 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
- 			desc->chip->disable(irq);
- 	}
- 
-+	/* make sure affinity_hint callback is cleaned up */
-+	kfree(desc->hint);
-+
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
- 
- 	unregister_handler_proc(irq, action);
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index 7a6eb04..59110a3 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -32,6 +32,23 @@ static int irq_affinity_proc_show(struct seq_file *m, void *v)
- 	return 0;
- }
- 
-+static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
-+{
-+	struct irq_desc *desc = irq_to_desc((long)m->private);
-+	struct cpumask mask;
-+	unsigned int ret = 0;
-+
-+	if (desc->hint && desc->hint->callback) {
-+		ret = desc->hint->callback(&mask, (long)m->private,
-+		                           desc->hint->dev);
-+		if (!ret)
-+			seq_cpumask(m, &mask);
+ 	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
+-		misc |= perf_guest_cbs->is_user_mode() ?
+-			PERF_RECORD_MISC_GUEST_USER :
+-			PERF_RECORD_MISC_GUEST_KERNEL;
+-	} else
+-		misc |= user_mode(regs) ? PERF_RECORD_MISC_USER :
+-			PERF_RECORD_MISC_KERNEL;
++		if (perf_guest_cbs->is_user_mode())
++			misc |= PERF_RECORD_MISC_GUEST_USER;
++		else
++			misc |= PERF_RECORD_MISC_GUEST_KERNEL;
++	} else {
++		if (user_mode(regs))
++			misc |= PERF_RECORD_MISC_USER;
++		else
++			misc |= PERF_RECORD_MISC_KERNEL;
 +	}
 +
-+	seq_putc(m, '\n');
-+	return ret;
-+}
+ 	if (regs->flags & PERF_EFLAGS_EXACT)
+ 		misc |= PERF_RECORD_MISC_EXACT;
+ 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index c3a33b2..21b9b6a 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3776,16 +3776,20 @@ static int kvm_is_in_guest(void)
+ static int kvm_is_user_mode(void)
+ {
+ 	int user_mode = 3;
 +
- #ifndef is_affinity_mask_valid
- #define is_affinity_mask_valid(val) 1
- #endif
-@@ -79,11 +96,23 @@ free_cpumask:
- 	return err;
+ 	if (percpu_read(current_vcpu))
+ 		user_mode = kvm_x86_ops->get_cpl(percpu_read(current_vcpu));
++
+ 	return user_mode != 0;
  }
  
-+static ssize_t irq_affinity_hint_proc_write(struct file *file,
-+		const char __user *buffer, size_t count, loff_t *pos)
-+{
-+	/* affinity_hint is read-only from proc */
-+	return -EOPNOTSUPP;
-+}
-+
- static int irq_affinity_proc_open(struct inode *inode, struct file *file)
+ static unsigned long kvm_get_guest_ip(void)
  {
- 	return single_open(file, irq_affinity_proc_show, PDE(inode)->data);
+ 	unsigned long ip = 0;
++
+ 	if (percpu_read(current_vcpu))
+ 		ip = kvm_rip_read(percpu_read(current_vcpu));
++
+ 	return ip;
  }
  
-+static int irq_affinity_hint_proc_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, irq_affinity_hint_proc_show, PDE(inode)->data);
-+}
-+
- static const struct file_operations irq_affinity_proc_fops = {
- 	.open		= irq_affinity_proc_open,
- 	.read		= seq_read,
-@@ -92,6 +121,14 @@ static const struct file_operations irq_affinity_proc_fops = {
- 	.write		= irq_affinity_proc_write,
- };
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 24de5f1..ace31fb 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -941,10 +941,8 @@ static inline void perf_event_mmap(struct vm_area_struct *vma)
+ }
  
-+static const struct file_operations irq_affinity_hint_proc_fops = {
-+	.open		= irq_affinity_hint_proc_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+	.write		= irq_affinity_hint_proc_write,
-+};
-+
- static int default_affinity_show(struct seq_file *m, void *v)
- {
- 	seq_cpumask(m, irq_default_affinity);
-@@ -231,6 +268,10 @@ void register_irq_proc(unsigned int irq, struct irq_desc *desc)
- 	/* create /proc/irq/<irq>/smp_affinity */
- 	proc_create_data("smp_affinity", 0600, desc->dir,
- 			 &irq_affinity_proc_fops, (void *)(long)irq);
-+
-+	/* create /proc/irq/<irq>/affinity_hint */
-+	proc_create_data("affinity_hint", 0400, desc->dir,
-+			 &irq_affinity_hint_proc_fops, (void *)(long)irq);
- #endif
+ extern struct perf_guest_info_callbacks *perf_guest_cbs;
+-extern int perf_register_guest_info_callbacks(
+-		struct perf_guest_info_callbacks *);
+-extern int perf_unregister_guest_info_callbacks(
+-		struct perf_guest_info_callbacks *);
++extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
++extern int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
  
- 	proc_create_data("spurious", 0444, desc->dir,
-
+ extern void perf_event_comm(struct task_struct *tsk);
+ extern void perf_event_fork(struct task_struct *tsk);
+@@ -1016,9 +1014,9 @@ static inline void
+ perf_bp_event(struct perf_event *event, void *data)			{ }
+ 
+ static inline int perf_register_guest_info_callbacks
+-(struct perf_guest_info_callbacks *) {return 0; }
++(struct perf_guest_info_callbacks *callbacks) { return 0; }
+ static inline int perf_unregister_guest_info_callbacks
+-(struct perf_guest_info_callbacks *) {return 0; }
++(struct perf_guest_info_callbacks *callbacks) { return 0; }
+ 
+ static inline void perf_event_mmap(struct vm_area_struct *vma)		{ }
+ static inline void perf_event_comm(struct task_struct *tsk)		{ }
