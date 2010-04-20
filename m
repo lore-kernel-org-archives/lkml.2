@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab0DTSyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 14:54:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59496 "EHLO mx1.redhat.com"
+	id S1753876Ab0DTTAc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 15:00:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52725 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752697Ab0DTSy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 14:54:29 -0400
-Message-ID: <4BCDF85C.3000004@redhat.com>
-Date: Tue, 20 Apr 2010 21:54:20 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1753234Ab0DTTAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 15:00:31 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] ACPI: DMI init_set_sci_en_on_resume for multiple Lenovo ThinkPads
+Date: Tue, 20 Apr 2010 21:01:10 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Jerone Young <jerone.young@canonical.com>,
+       Alex Chiang <achiang@canonical.com>, lenb@kernel.org,
+       colin.king@canonical.com, linux-acpi@vger.kernel.org,
+       "linux-kernel" <linux-kernel@vger.kernel.org>, stable@kernel.org
+References: <20100420140314.GA5573@canonical.com> <1271783936.25170.131.camel@laptop> <20100420172419.GA9719@srcf.ucam.org>
+In-Reply-To: <20100420172419.GA9719@srcf.ucam.org>
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Glauber Costa <glommer@redhat.com>,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>	 <1271356648-5108-2-git-send-email-glommer@redhat.com>	 <4BC8CA52.4090703@goop.org> <1271673545.1674.743.camel@laptop>	 <4BCC3584.1050501@redhat.com> <1271675100.1674.818.camel@laptop>	 <4BCC3A3E.9070909@redhat.com>	 <20100419142158.GD14158@mothafucka.localdomain>	 <4BCC69D5.3050209@redhat.com> <1271688411.1488.248.camel@laptop> <4BCC8246.9040202@goop.org> <4BCD748E.7080007@redhat.com> <4BCDF12C.1020702@goop.org>
-In-Reply-To: <4BCDF12C.1020702@goop.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004202101.10245.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2010 09:23 PM, Jeremy Fitzhardinge wrote:
-> On 04/20/2010 02:31 AM, Avi Kivity wrote:
->    
->> btw, do you want this code in pvclock.c, or shall we keep it kvmclock
->> specific?
->>      
-> I think its a pvclock-level fix.  I'd been hoping to avoid having
-> something like this, but I think its ultimately necessary.
->    
+On Tuesday 20 April 2010, Matthew Garrett wrote:
+> On Tue, Apr 20, 2010 at 12:18:56PM -0500, Jerone Young wrote:
+> 
+> > I could agree, but the only issue is if you go to the thinkpad-acpi or
+> > ibm-acpi mailing list they would probably disagree as there have been
+> > updates to the bios in the past required for proper functionality of
+> > Thinkpads ;-) .. the bios update methods have not changed since then for
+> > Thinkpads.
+> 
+> If another OS works, and if Linux can be made to work without impairing 
+> the functionality of working machines, then Linux should be made to 
+> work. Always. Updating the BIOS should be limited to cases where it's 
+> impossible to fix things up in the OS.
 
-Did you observe drift on Xen, or is this "ultimately" pointing at the 
-future?
+Agreed.
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
-
+Rafael
