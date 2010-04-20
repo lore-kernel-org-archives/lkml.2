@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab0DTEB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 00:01:26 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48784 "EHLO ogre.sisk.pl"
+	id S1753648Ab0DTEBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 00:01:18 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48782 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223Ab0DTEBP convert rfc822-to-8bit (ORCPT
+	id S1751586Ab0DTEBO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 00:01:15 -0400
+	Tue, 20 Apr 2010 00:01:14 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Parag Warudkar" <parag.lkml@gmail.com>
+       "Alexander Beregalov" <a.beregalov@gmail.com>
 References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh>
 In-Reply-To: <deuQKFRcc0B.A.3EG.BRSzLB@tosh>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,8 +17,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <YeFfFNFyTSF.A.GdG.KRSzLB@tosh>
-Subject: [Bug #15795] 2.6.34-rc4 : OOPS in unmap_vma
+Message-ID: <YeFfFNFyTSF.A.wMG.FRSzLB@tosh>
+Subject: [Bug #15805] reiserfs locking
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Tue, 20 Apr 2010 05:19:25 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,11 +33,11 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15795
-Subject		: 2.6.34-rc4 : OOPS in unmap_vma
-Submitter	: Parag Warudkar <parag.lkml@gmail.com>
-Date		: 2010-04-14 (6 days old)
-Message-ID	: <alpine.DEB.2.00.1004132147260.1881@parag-laptop>
-References	: http://marc.info/?l=linux-kernel&m=127121006625429&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15805
+Subject		: reiserfs locking
+Submitter	: Alexander Beregalov <a.beregalov@gmail.com>
+Date		: 2010-04-15 21:02 (5 days old)
+Message-ID	: <t2ka4423d671004151402n7b2dc425mdc9c6bb9640d63fb@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127136535323933&w=2
 
 
