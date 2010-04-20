@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab0DTPRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 11:17:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3289 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750795Ab0DTPRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 11:17:00 -0400
-Message-ID: <4BCDC567.6090708@redhat.com>
-Date: Tue, 20 Apr 2010 18:16:55 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1752291Ab0DTPRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 11:17:32 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36881 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164Ab0DTPRS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 11:17:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=MqjjHcIyGbxmYjc25Nzv+lqW0KE/jmZG8pv1V5AvfjIdAFjAfcpf/DIjIBul6HMLsQ
+         zhEYpPXrX7xclxTGO79G+0k7KIsZYMFHJ7yPlyxNdBTqxt8a479A/k7U0CPxjJc/un9M
+         gTmY5K4upUv3/sjYBljLQI1RyQTq3afjfC3hA=
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-       Jeremy Fitzhardinge <jeremy@goop.org>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com> <1271356648-5108-2-git-send-email-glommer@redhat.com> <4BC8CA52.4090703@goop.org> <20100419142624.GE14158@mothafucka.localdomain> <4BCC829A.6000803@goop.org> <20100419182542.GI14158@mothafucka.localdomain> <20100420015733.GA28249@amt.cnet> <4BCD7557.9090502@redhat.com> <20100420125902.GJ14158@mothafucka.localdomain>
-In-Reply-To: <20100420125902.GJ14158@mothafucka.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100420143545.GA19513@us.ibm.com>
+References: <cover.1269610458.git.luto@mit.edu> <20100419172639.GA15800@us.ibm.com> 
+	<n2ycb0375e11004191432g855540c0jab7989d75b32200d@mail.gmail.com> 
+	<20100419213952.GA28494@hallyn.com> <1271767039.30027.50.camel@moss-pluto.epoch.ncsc.mil> 
+	<v2qcb0375e11004200723w776f806elb1be2c3aa30f1671@mail.gmail.com> 
+	<20100420143545.GA19513@us.ibm.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 20 Apr 2010 11:11:55 -0400
+X-Google-Sender-Auth: 8132d2d5b8473ecc
+Message-ID: <n2ncb0375e11004200811x830e2047o6da43d6d3d85058@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Taming execve, setuid, and LSMs
+To: "Serge E. Hallyn" <serue@us.ibm.com>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>, linux-kernel@vger.kernel.org,
+       linux-security-module@vger.kernel.org,
+       Eric Biederman <ebiederm@xmission.com>,
+       "Andrew G. Morgan" <morgan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2010 03:59 PM, Glauber Costa wrote:
+On Tue, Apr 20, 2010 at 10:35 AM, Serge E. Hallyn <serue@us.ibm.com> wrote:
+>>
+>> True,  but I think it's still asking for trouble -- other LSMs could
+>> (and almost certainly will, especially the out-of-tree ones) do
+>> something, and I think that any action at all that an LSM takes in the
+>> bprm_set_creds hook for a nosuid (or whatever it's called) process is
+>> wrong or at best misguided.
 >
->> Might be due to NMIs or SMIs interrupting the rdtsc(); ktime_get()
->> operation which establishes the timeline.  We could limit it by
->> having a loop doing rdtsc(); ktime_get(); rdtsc(); and checking for
->> some bound, but it isn't worthwhile (and will break nested
->> virtualization for sure).  Better to have the option to calibrate
->> kvmclock just once on machines with
->> X86_FEATURE_NONSTOP_TRULY_RELIABLE _TSC_HONESTLY.
->>      
-> For the record, we can only even do that in those machines. If we try to update
-> time structures only once in machines with the
-> X86_FEATURE_TSC_SAYS_IT_IS_OKAY_BUT_IN_REALITY_IS_NOT_OKAY feature flag, guests
-> won't even boot.
->
-> We can detect that, and besides doing calculation only once, also export some
-> bit indicating that to the guest. Humm... I'm thinking now, that because of
-> migration, we should check this bit every time, because we might have changed host.
-> So instead of using an expensive cpuid check, we should probably use some bit in
-> the vcpu_time_info structure, and use a cpuid bit just to say it is enabled.
->    
+> I could be wrong, but I think the point is that your reasoning is
+> correct, and that the same reasoning must apply if we're just
+> executing a file out of an fs which has been mounted with '-o nosuid'.
 
-Right, we need a bit in the structure itself that says you can trust the 
-time not to go backwards, and a bit in cpuid that says you can trust the 
-bit in the structure (unless we can be sure no implementations leak 
-garbage into the padding field).
+I tend to agree, except that only root can set nosuid (presumably) and
+making that change will change existing behavior.  Is that a problem?
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
-
+--Andy
