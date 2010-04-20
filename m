@@ -1,123 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab0DTNKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 09:10:46 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:48848 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444Ab0DTNKo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 09:10:44 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz1432P98dN936eM62a3Lab9bhzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 5,
-X-WSS-ID: 0L16F9I-01-AI2-02
-X-M-MSG: 
-Date: Tue, 20 Apr 2010 15:10:28 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+	id S1754651Ab0DTNOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 09:14:33 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47268 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754509Ab0DTNOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 09:14:31 -0400
+Date: Tue, 20 Apr 2010 06:14:20 -0700
+From: Greg KH <gregkh@suse.de>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/12] perf, x86: implement the ibs interrupt handler
-Message-ID: <20100420131028.GS11907@erda.amd.com>
-References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
- <1271190201-25705-13-git-send-email-robert.richter@amd.com>
- <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com>
+Subject: Re: [BUG] sysfs: don't use allocated key for lockdep
+Message-ID: <20100420131420.GA27126@suse.de>
+References: <4BCD246F.4090005@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com>
+In-Reply-To: <4BCD246F.4090005@cn.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 20 Apr 2010 13:10:29.0190 (UTC) FILETIME=[D974CE60:01CAE08A]
-X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.04.10 14:19:57, Stephane Eranian wrote:
-> > diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-> > index bc473ac..a7e4aa5 100644
-> > --- a/arch/x86/include/asm/msr-index.h
-> > +++ b/arch/x86/include/asm/msr-index.h
-> > @@ -113,6 +113,7 @@
-> >  #define MSR_AMD64_IBSFETCHCTL          0xc0011030
-> >  #define MSR_AMD64_IBSFETCHLINAD                0xc0011031
-> >  #define MSR_AMD64_IBSFETCHPHYSAD       0xc0011032
-> > +#define MSR_AMD64_IBSFETCH_SIZE                3
+On Tue, Apr 20, 2010 at 11:50:07AM +0800, Lai Jiangshan wrote:
+> Reported-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 > 
-> I would use COUNT instead of size given the unit is registers not bytes.
-
-I will change the naming for all macros.
-
-> > +static int amd_pmu_check_ibs(int idx, unsigned int msr, u64 valid,
-> > +                            u64 reenable, int size, struct pt_regs *iregs)
-> > +{
-> > +       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-> > +       struct perf_event *event = cpuc->events[idx];
-> > +       struct perf_sample_data data;
-> > +       struct perf_raw_record raw;
-> > +       struct pt_regs regs;
-> > +       u64 buffer[MSR_AMD64_IBS_SIZE_MAX];
-> > +       u64 *buf = buffer;
-> > +       int i;
-> > +
-> > +       if (!test_bit(idx, cpuc->active_mask))
-> > +               return 0;
-> > +
-> > +       rdmsrl(msr++, *buf);
-> > +       if (!(*buf++ & valid))
-> > +               return 0;
-> > +
-> > +       perf_sample_data_init(&data, 0);
-> > +       if (event->attr.sample_type & PERF_SAMPLE_RAW) {
-> > +               for (i = 1; i < size; i++)
-> > +                       rdmsrl(msr++, *buf++);
-> > +               raw.size = sizeof(u64) * size;
-> > +               raw.data = buffer;
-> > +               data.raw = &raw;
-> > +       }
-> > +
+> The commit 6992f5334995af474c2b58d010d08bc597f0f2fe
+> does wrong thing that use allocated key for lockdep_map.
 > 
-> Need to add the padding: raw.size = sizeof(u64) * size + sizeof(u32);
-
-Yes, this triggers a warning. Will change it and add 4 padding bytes
-at the buffer start (to be also 8 byte aligned).
-
-> > +static int amd_pmu_handle_irq(struct pt_regs *regs)
-> > +{
-> > +       int handled, handled2;
-> > +
-> > +       handled = x86_pmu_handle_irq(regs);
-> > +
-> > +       if (!x86_pmu.ibs)
-> > +               return handled;
-> > +
-> > +       handled2 = 0;
-> > +       handled2 += amd_pmu_check_ibs(X86_PMC_IDX_SPECIAL_IBS_FETCH,
-> > +                                     MSR_AMD64_IBSFETCHCTL, IBS_FETCH_VAL,
-> > +                                     IBS_FETCH_ENABLE, MSR_AMD64_IBSFETCH_SIZE,
-> > +                                     regs);
-> > +       handled2 += amd_pmu_check_ibs(X86_PMC_IDX_SPECIAL_IBS_OP,
-> > +                                     MSR_AMD64_IBSOPCTL, IBS_OP_VAL,
-> > +                                     IBS_OP_ENABLE, MSR_AMD64_IBSOP_SIZE,
-> > +                                     regs);
-> > +
-> > +       if (handled2)
-> > +               inc_irq_stat(apic_perf_irqs);
-> > +
+> Lockdep requires keys that are static:
 > 
-> If you have both regular counter intr + IBS you will double-count
-> apic_perf_irqs.
-> I would do: if (handled2 && !handled) inc_irq_stat().
+> lockdep_init_map() {
+> ......
+> 	/*
+> 	 * Sanity check, the lock-class key must be persistent:
+> 	 */
+> 	if (!static_obj(key)) {
+> 		printk("BUG: key %p not in .data!\n", key);
+> 		DEBUG_LOCKS_WARN_ON(1);
+> 		return;
+> 	}
+> 	lock->key = key;
+> ......
+> }
 > 
+> Could you please fix it.
 
-True, will change this.
+All in-kernel attributes should now be fixed, so what exactly is the
+remaining issue?
 
--Robert
+> ----------------
+> One other comment (not relate to this bug, but relate to the commit):
+> It is not a very good idea that use one lockdep class per sysfs attribute.
+> 
+> First: we don't have too much lockdep class resource.
+> Second: lockdep validator is O(N*N) algorithm.
+>         (N is the number of used lockdep class)
+> 
+> So it is recommended that use only one class for a group of locks.
+> 
+> For some nesting requirement, you can use
+> lock_acquire(...,subclass,...nest_lock,...)
+> 
+> Or change the design.
+> --------------------
+> 
+> BUG: key ffff880042c68220 not in .data!
+> ------------[ cut here ]------------
+> WARNING: at kernel/lockdep.c:2706 lockdep_init_map+0xe6/0x4fb()
+> Hardware name: Lenovo WQ T168/T468 G6
+> Modules linked in: mptsas(+) mptscsih mptbase scsi_transport_sas ext4 jbd2 crc16 uhci_hcd ohci_hcd ehci_hcd
+> Pid: 1329, comm: modprobe Not tainted 2.6.34-rc3-22949-gbc8a97a-dirty #1
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
+Please try 2.6.34-rc5 and let us know if this still shows up.
 
+thanks,
+
+greg k-h
