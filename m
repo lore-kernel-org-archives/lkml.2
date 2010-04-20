@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab0DTVq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 17:46:29 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43771 "EHLO e9.ny.us.ibm.com"
+	id S1752698Ab0DTVpP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:45:15 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:54091 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab0DTVpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 17:45:17 -0400
+	id S1752305Ab0DTVpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 17:45:05 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 06/23] rcu: fix now-bogus rcu_scheduler_active comments.
-Date: Tue, 20 Apr 2010 14:44:38 -0700
-Message-Id: <1271799895-21028-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 01/23] rcu: substitute set_need_resched for sending resched IPIs
+Date: Tue, 20 Apr 2010 14:44:33 -0700
+Message-Id: <1271799895-21028-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100420214431.GA20777@linux.vnet.ibm.com>
 References: <20100420214431.GA20777@linux.vnet.ibm.com>
@@ -24,39 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rcu_scheduler_active check has been wrapped into the new
-debug_lockdep_rcu_enabled() function, so update the comments to
-reflect this new reality.
+This patch adds a check to __rcu_pending() that does a local
+set_need_resched() if the current CPU is holding up the current grace
+period and if force_quiescent_state() will be called soon.  The goal is
+to reduce the probability that force_quiescent_state() will need to do
+smp_send_reschedule(), which sends an IPI and is therefore more expensive
+on most architectures.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ kernel/rcutree.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 40854c6..07c8591 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -111,7 +111,8 @@ extern int debug_lockdep_rcu_enabled(void);
-  * this assumes we are in an RCU read-side critical section unless it can
-  * prove otherwise.
-  *
-- * Check rcu_scheduler_active to prevent false positives during boot.
-+ * Check debug_lockdep_rcu_enabled() to prevent false positives during boot
-+ * and while lockdep is disabled.
-  */
- static inline int rcu_read_lock_held(void)
- {
-@@ -136,7 +137,8 @@ extern int rcu_read_lock_bh_held(void);
-  * of preemption (including disabling irqs) counts as an RCU-sched
-  * read-side critical section.
-  *
-- * Check rcu_scheduler_active to prevent false positives during boot.
-+ * Check debug_lockdep_rcu_enabled() to prevent false positives during boot
-+ * and while lockdep is disabled.
-  */
- #ifdef CONFIG_PREEMPT
- static inline int rcu_read_lock_sched_held(void)
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 3ec8160..e54c123 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1499,6 +1499,16 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+ 
+ 	/* Is the RCU core waiting for a quiescent state from this CPU? */
+ 	if (rdp->qs_pending) {
++
++		/*
++		 * If force_quiescent_state() coming soon and this CPU
++		 * needs a quiescent state, and this is either RCU-sched
++		 * or RCU-bh, force a local reschedule.
++		 */
++		if (!rdp->preemptable &&
++		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
++				 jiffies))
++			set_need_resched();
+ 		rdp->n_rp_qs_pending++;
+ 		return 1;
+ 	}
 -- 
 1.7.0
 
