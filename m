@@ -1,111 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab0DTJAp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 05:00:45 -0400
-Received: from reaktio.net ([194.89.68.22]:53173 "EHLO ydin.reaktio.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab0DTJAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 05:00:42 -0400
-Date: Tue, 20 Apr 2010 11:49:55 +0300
-From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
-To: Tracy Reed <treed@ultraviolet.org>, xen-devel@lists.xensource.com,
-       Aoetools-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] domU is causing misaligned disk writes
-Message-ID: <20100420084955.GV1878@reaktio.net>
-References: <20100420080958.GN5660@tracyreed.org>
+	id S1754034Ab0DTJLg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 05:11:36 -0400
+Received: from mail200.messagelabs.com ([216.82.254.195]:16130 "EHLO
+	mail200.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab0DTJLf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 05:11:35 -0400
+X-VirusChecked: Checked
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-14.tower-200.messagelabs.com!1271754694!57313694!1
+X-StarScan-Version: 6.2.4; banners=-,-,-
+X-Originating-IP: [66.77.174.13]
+From: Hector Palacios <hector.palacios@digi.com>
+To: <dbrownell@users.sourceforge.net>
+CC: <linux-kernel@vger.kernel.org>, Hector Palacios <hector.palacios@digi.com>
+Subject: [PATCH] spi: spidev_test gives error upon 1-byte transfer
+Date: Tue, 20 Apr 2010 11:11:08 +0200
+Message-ID: <1271754668-4391-1-git-send-email-hector.palacios@digi.com>
+X-Mailer: git-send-email 1.7.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100420080958.GN5660@tracyreed.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 01:09:58AM -0700, Tracy Reed wrote:
-> Anyone know why my xen xvda devices would be doing (apparently)
-> unaligned writes to my SAN causing horrible performance and massive
-> seeking and lots of reading for page cache backfill? BUT writing to
-> the device in the dom0 is very fast and causes no extra reads?
-> 
-> I am running the 2.6.18-164.11.1.el5xen xen/kernel which came with
-> CentOS 5.4
-> 
-> After spending a lot of time banging my head on this I seem to have
-> finally tracked it down to a difference between domU and dom0.  I
-> never would have thought it would be this but it is extremely
-> reproduceable. We're talking a difference of 4-5x in write speed.
-> Reads are equally fast everywhere.
-> 
-> I am using AoE v72 kernel module (initiator) on a Dell R610's to talk
-> to vblade-19 (target) on Dell R710's all running CentOS 5.4. I have
-> striped two 7200 RPM SATA disks and exported the md with AoE (although
-> I have done these tests with individual disks also). Read performance
-> is excellent:
-> 
-> # dd of=/dev/null if=/dev/xvdg1 bs=4096 count=3000000
-> 3000000+0 records in
-> 3000000+0 records out
-> 12288000000 bytes (12 GB) copied, 106.749 seconds, 115 MB/s
-> 
-> I dropped the cache with:
-> 
-> echo 1 > /proc/sys/vm/drop_caches
-> 
-> on both target and initiator before starting the test. This is great
-> for just a single gig-e link. This suggests that the network is fine.
-> 
-> However, write performance is odious. Typically around 20MB/s. It
-> should be more like 70MB/s per disk or better (7200rpm SATA) and max
-> out my gig-e with write performance similar to the above read
-> performance. I mentioned above that these are unaligned writes because
-> when running iostat on the target machine I can see lots of reads
-> happening which are surely causing seeks and killing
-> performance. Typical is something like 8MB/s of reads while doing
-> 16MB/s of writes.
-> 
-> HOWEVER, if I do the writes from the dom0 the performance is
-> excellent:
-> 
-> # dd if=/dev/zero of=/dev/etherd/e6.2 bs=4096 count=3000000
-> 3000000+0 records in
-> 3000000+0 records out
-> 12288000000 bytes (12 GB) copied, 104.679 seconds, 117 MB/s
-> 
-> And I see no reads happening on the disks being written to in
-> iostat. Purely streaming writes at high speeds.
-> 
-> I have had AoE working very well with Xen previously although not with
-> this particular hardware/xen/aoe version. Also it occurs to me that in
-> the past when I have done this I network booted the domU's and they
-> got root over AoE using a complicated initrd that I cooked up. In the
-> last year or so I decided that it was too complicated and went to
-> booting my dom0's from compact flash with the AoE driver in the dom0
-> instead of the domU. I now handing the domU xvd's from the AoE driver
-> in dom0. I strongly suspect that this is why things worked great
-> before but stink now. Unfortunately I don't have a working network
-> boot initrd setup like I used to and although I still have all of the
-> code etc. it would take a while to set up. I don't want to run that
-> setup in production anymore anyway if I can help it.
-> 
-> I have tried manually aligning the disk by setting the beginning of
-> data on the partition from 63 to 64 (although this is usually done for
-> RAID alignment) and I have tried changing the disk geometry to account
-> for the extra partition table which causes a half-block page-cache
-> misalignment as described by the ever insightful Kelsey Hudson in his
-> writeup on the issue here:
-> 
-> http://copilotco.com/Virtualization/wiki/aoe-caching-alignment.pdf/at_download/file
-> 
-> All to no avail. What am I missing here? Why is domU apparently
-> fudging my writes?
-> 
+The sample application spidev_test.c is using SPI_IOC_MESSAGE
+ioctl to do an SPI transfer. This ioctl returns the number of
+bytes successfully transmitted or a negative error code upon
+erroneous completion. The application however is returning an
+error if the result of the ioclt if the return value is 1.
+This makes the application to fail upon 1-byte length transfers.
 
-Please paste your domU partition table:
-sfdisk -d /dev/xvda
+Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+---
+ Documentation/spi/spidev_test.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Are you using filesystems on normal partitions, or LVM in the domU? 
-I'm pretty sure this is a domU partitioning problem.
-
--- Pasi
+diff --git a/Documentation/spi/spidev_test.c b/Documentation/spi/spidev_test.c
+index c1a5aad..8c9d02e 100644
+--- a/Documentation/spi/spidev_test.c
++++ b/Documentation/spi/spidev_test.c
+@@ -58,7 +58,7 @@ static void transfer(int fd)
+ 	};
+ 
+ 	ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
+-	if (ret == 1)
++	if (ret < 1)
+ 		pabort("can't send spi message");
+ 
+ 	for (ret = 0; ret < ARRAY_SIZE(tx); ret++) {
+-- 
+1.7.0.5
 
