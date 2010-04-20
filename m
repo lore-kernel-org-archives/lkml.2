@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab0DTUxY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 16:53:24 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:56134 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214Ab0DTUxW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 16:53:22 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linuxppc-dev@ozlabs.org,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       adobriyan@gmail.com, Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.vUB.fSSzLB@tosh>
-	<alpine.DEB.2.01.1004192339190.13016@bogon.housecafe.de>
-	<1271765898.4324.2.camel@concordia>
-	<alpine.DEB.2.01.1004201104170.13016@bogon.housecafe.de>
-X-Yow: It's hard being an ARTIST!!
-Date: Tue, 20 Apr 2010 22:53:19 +0200
-In-Reply-To: <alpine.DEB.2.01.1004201104170.13016@bogon.housecafe.de>
-	(Christian Kujau's message of "Tue, 20 Apr 2010 11:15:05 -0700 (PDT)")
-Message-ID: <m2k4s1hmm8.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.96 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755370Ab0DTVBU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:01:20 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47048 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754986Ab0DTVBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 17:01:16 -0400
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 08/14] mm: Move definition for LRU isolation modes to a header
+Date: Tue, 20 Apr 2010 22:01:10 +0100
+Message-Id: <1271797276-31358-9-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
+References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christian Kujau <lists@nerdbynature.de> writes:
+Currently, vmscan.c defines the isolation modes for __isolate_lru_page().
+Memory compaction needs access to these modes for isolating pages for
+migration.  This patch exports them.
 
-> +	while ((p = strstr(p, "/")))
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Christoph Lameter <cl@linux-foundation.org>
+---
+ include/linux/swap.h |    5 +++++
+ mm/vmscan.c          |    5 -----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-You want to use strchr.
-
-Andreas.
-
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 94ec325..32af03c 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -238,6 +238,11 @@ static inline void lru_cache_add_active_file(struct page *page)
+ 	__lru_cache_add(page, LRU_ACTIVE_FILE);
+ }
+ 
++/* LRU Isolation modes. */
++#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
++#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
++#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
++
+ /* linux/mm/vmscan.c */
+ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 					gfp_t gfp_mask, nodemask_t *mask);
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 1070f83..8bdd85c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -839,11 +839,6 @@ keep:
+ 	return nr_reclaimed;
+ }
+ 
+-/* LRU Isolation modes. */
+-#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
+-#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
+-#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
+-
+ /*
+  * Attempt to remove the specified page from its LRU.  Only take this page
+  * if it is of the appropriate PageActive status.  Pages which are being
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+1.6.5
+
