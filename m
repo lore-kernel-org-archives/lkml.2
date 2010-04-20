@@ -1,68 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab0DTXIW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 19:08:22 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46104 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab0DTXIV (ORCPT
+	id S1753371Ab0DTXMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 19:12:19 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:37489 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525Ab0DTXMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 19:08:21 -0400
-Date: Wed, 21 Apr 2010 00:07:19 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: Suspicious compilation warning
-Message-ID: <20100420230719.GB1432@n2100.arm.linux.org.uk>
-References: <k2ncecb6d8f1004191627w3cd36450xf797f746460abb09@mail.gmail.com> <20100420155122.6f2c26eb.akpm@linux-foundation.org>
+	Tue, 20 Apr 2010 19:12:18 -0400
+Message-ID: <4BCE34CC.9030506@canonical.com>
+Date: Tue, 20 Apr 2010 16:12:12 -0700
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100420155122.6f2c26eb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: linux-kernel@vger.kernel.org
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, pingc@wacom.com,
+       Anton@anikin.name, stable@kernel.org, stable-commits@vger.kernel.org
+Subject: Re: patch input-wacom-switch-mode-upon-system-resume.patch added
+ to 2.6.33-stable tree
+References: <1271697023113@kroah.org> <201004191024.43397.dmitry.torokhov@gmail.com> <20100419172856.GA6965@suse.de>
+In-Reply-To: <20100419172856.GA6965@suse.de>
+X-Enigmail-Version: 0.95.7
+Content-Type: multipart/mixed;
+ boundary="------------010904080400080502030604"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 03:51:22PM -0700, Andrew Morton wrote:
-> On Mon, 19 Apr 2010 20:27:43 -0300
-> Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br> wrote:
+This is a multi-part message in MIME format.
+--------------010904080400080502030604
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+
+Greg KH wrote:
+> On Mon, Apr 19, 2010 at 10:24:41AM -0700, Dmitry Torokhov wrote:
+>> Greg,
+>>
+>> On Monday 19 April 2010 10:10:23 am gregkh@suse.de wrote:
+>>> This is a note to let you know that we have just queued up the patch titled
+>>>
+>>>     Subject: Input: wacom - switch mode upon system resume
+>>>
+>>> to the 2.6.33-stable tree.  Its filename is
+>>>
+>>>     input-wacom-switch-mode-upon-system-resume.patch
+>>>
+>> Could you add this to .32 as well, please?
 > 
-> > I get this warning while compiling for ARM/SA1100:
-> > 
-> > mm/sparse.c: In function '__section_nr':
-> > mm/sparse.c:135: warning: 'root' is used uninitialized in this function
-> > 
-> > With a small patch in fs/proc/meminfo.c, I find that NR_SECTION_ROOTS
-> > is zero, which certainly explains the warning.
-> > 
-> > # cat /proc/meminfo
-> > NR_SECTION_ROOTS=0
-> > NR_MEM_SECTIONS=32
-> > SECTIONS_PER_ROOT=512
-> > SECTIONS_SHIFT=5
-> > MAX_PHYSMEM_BITS=32
+> I looked, and it didn't seem to apply at all.  Can someone backport it
+> to .32 and I will be glad to apply it.
 > 
-> hm, who owns sparsemem nowadays? Nobody identifiable.
+
+That would be my backport for .32, maybe Ping or Dmitry can sanity check.
+
+Stefan
+
+> thanks,
 > 
-> Does it make physical sense to have SECTIONS_PER_ROOT > NR_MEM_SECTIONS?
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable-commits" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Well, it'll be about this number on everything using sparsemem extreme:
 
-#define SECTIONS_PER_ROOT       (PAGE_SIZE / sizeof (struct mem_section))
 
-and with only 32 sections, this is going to give a NR_SECTION_ROOTS value
-of zero.  I think the calculation of NR_SECTIONS_ROOTS is wrong.
+--------------010904080400080502030604
+Content-Type: text/x-diff;
+ name="0001-Input-wacom-switch-mode-upon-system-resume.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename*0="0001-Input-wacom-switch-mode-upon-system-resume.patch"
 
-#define NR_SECTION_ROOTS        (NR_MEM_SECTIONS / SECTIONS_PER_ROOT)
+>From 7021bbc3685fc147eb47deee345801ffb007a7e9 Mon Sep 17 00:00:00 2001
+From: Ping Cheng <pingc@wacom.com>
+Date: Tue, 13 Apr 2010 23:07:52 -0700
+Subject: [PATCH] Input: wacom - switch mode upon system resume
 
-Clearly if we have 1 mem section, we want to have one section root, so
-I think this division should round up any fractional part, thusly:
+commit 014f61504af276ba9d9544d8a7401d8f8526eb73 upstream
 
-#define NR_SECTION_ROOTS        ((NR_MEM_SECTIONS + SECTIONS_PER_ROOT - 1) / SECTIONS_PER_ROOT)
+When Wacom devices wake up from a sleep, the switch mode command
+(wacom_query_tablet_data) is needed before wacom_open is called.
+wacom_query_tablet_data should not be executed inside wacom_open
+since wacom_open is called more than once during probe.
+
+wacom_retrieve_hid_descriptor is removed from wacom_resume due
+to the fact that the required descriptors are stored properly
+upon system resume.
+
+Reported-and-tested-by: Anton Anikin <Anton@Anikin.name>
+Signed-off-by: Ping Cheng <pingc@wacom.com>
+Cc: stable@kernel.org
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+---
+ drivers/input/tablet/wacom_sys.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index b5b69cc..5be07f9 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -562,11 +562,15 @@ static int wacom_resume(struct usb_interface *intf)
+ 	int rv;
+ 
+ 	mutex_lock(&wacom->lock);
+-	if (wacom->open) {
++
++	/* switch to wacom mode first */
++	wacom_query_tablet_data(intf, features);
++
++	if (wacom->open)
+ 		rv = usb_submit_urb(wacom->irq, GFP_NOIO);
+-		wacom_query_tablet_data(intf);
+-	} else
++	else
+ 		rv = 0;
++
+ 	mutex_unlock(&wacom->lock);
+ 
+ 	return rv;
+-- 
+1.6.3.3
+
+
+--------------010904080400080502030604--
