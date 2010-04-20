@@ -1,180 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753116Ab0DTCOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 22:14:17 -0400
-Received: from mga05.intel.com ([192.55.52.89]:42530 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751138Ab0DTCOP (ORCPT
+	id S1753228Ab0DTCWr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 22:22:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3253 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752986Ab0DTCWp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 22:14:15 -0400
+	Mon, 19 Apr 2010 22:22:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,239,1270450800"; 
-   d="scan'208";a="559512522"
-Subject: Re: [PATCH V5 1/3] perf & kvm: Enhance perf to collect KVM guest
- os statistics from host side
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Avi Kivity <avi@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       zhiteng.huang@intel.com, tim.c.chen@intel.com,
-       Arnaldo Carvalho de Melo <acme@infradead.org>
-In-Reply-To: <20100419181154.GA14631@elte.hu>
-References: <1271655161.2078.603.camel@ymzhang.sh.intel.com>
-	 <20100419181154.GA14631@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 20 Apr 2010 10:13:58 +0800
-Message-Id: <1271729638.2078.624.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="614633331"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>,
+       "davem@davemloft.net" <davem@davemloft.net>
+Date: Tue, 20 Apr 2010 10:21:55 +0800
+Subject: RE: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
+	virtio-net.
+Thread-Topic: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
+	virtio-net.
+Thread-Index: AcrfqqAr4RXIE0yEQo+zu9dIXy3W9gAhQRBg
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D79026FAB1E5F@shsmsx502.ccr.corp.intel.com>
+References: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com>
+ <20100414152519.GA10792@redhat.com>
+ <97F6D3BD476C464182C1B7BABF0B0AF5C18969CC@shzsmsx502.ccr.corp.intel.com>
+ <20100415100546.GA17035@redhat.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D79026FA95401@shsmsx502.ccr.corp.intel.com>
+ <20100419102118.GA16198@redhat.com>
+In-Reply-To: <20100419102118.GA16198@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-19 at 20:11 +0200, Ingo Molnar wrote:
-> FYI, i found a few problems that need fixing:
-> 
-> > +	unsigned long ip;
-> > +	if (perf_guest_cbs && perf_guest_cbs->is_in_guest())
-> 
-> missing newline.
-> 
-> > +	int misc = 0;
-> > +	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
-> 
-> ditto.
-> 
-> > +			PERF_RECORD_MISC_GUEST_KERNEL;
-> > +	} else
-> > +		misc |= user_mode(regs) ? PERF_RECORD_MISC_USER :
-> > +			PERF_RECORD_MISC_KERNEL;
-> 
-> - unbalanced curly braces
-> - missing curly brace for multi-line statement.
-> - unnecessary line-break due to col80 warning from checkpatch
-> 
-> > +extern struct perf_guest_info_callbacks *perf_guest_cbs;
-> > +extern int perf_register_guest_info_callbacks(
-> > +		struct perf_guest_info_callbacks *);
-> > +extern int perf_unregister_guest_info_callbacks(
-> > +		struct perf_guest_info_callbacks *);
-> 
-> - unnecessary line-break due to col80 warning from checkpatch
-> 
-> > +static inline int perf_register_guest_info_callbacks
-> > +(struct perf_guest_info_callbacks *) {return 0; }
-> > +static inline int perf_unregister_guest_info_callbacks
-> > +(struct perf_guest_info_callbacks *) {return 0; }
-> 
-> - invalid C: function parameter needs name even if unused
-> - missing space after opening curly brace
-> 
-> Please provide delta fixes.
+Michael,
 
-Here is the fix on the top of the prior 3 patches of V5.
+>>>>>> What we have not done yet:
+>>>>>> 	packet split support
+>>>>>> 
+>>>>>What does this mean, exactly?
+>>>> We can support 1500MTU, but for jumbo frame, since vhost driver before don't 
+>>>>support mergeable buffer, we cannot try it for multiple sg.
+>>>> 
+>>>I do not see why, vhost currently supports 64K buffers with indirect
+>>>descriptors.
+>>> 
+>> The receive_skb() in guest virtio-net driver will merge the multiple sg to skb frags, how >>can indirect descriptors to that?
 
-From: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
+>See add_recvbuf_big.
 
-Fix some programming style issues on the top of perf kvm
-enhancement V5.
+I don't mean this, it's for buffer submission. I mean when packet is received, in receive_buf(), mergeable buffer knows which pages received can be hooked in skb frags, it's receive_mergeable() which do this.
 
-Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
+When a NIC driver supports packet split mode, then each ring descriptor contains a skb and a page. When packet is received, if the status is not EOP, then hook the page of the next descriptor to the prev skb. We don't how many frags belongs to one skb. So when guest submit buffers, it should submit multiple pages, and when receive, the guest should know which pages are belongs to one skb and hook them together. I think receive_mergeable() can do this, but I don't see how big->packets handle this. May I miss something here?
 
----
-
-diff -Nraup linux-2.6_tip0417_perfkvm/arch/x86/kernel/cpu/perf_event.c linux-2.6_tip0417_perfkvmstyle/arch/x86/kernel/cpu/perf_event.c
---- linux-2.6_tip0417_perfkvm/arch/x86/kernel/cpu/perf_event.c	2010-04-19 09:53:59.689452915 +0800
-+++ linux-2.6_tip0417_perfkvmstyle/arch/x86/kernel/cpu/perf_event.c	2010-04-20 10:48:18.500999849 +0800
-@@ -1752,23 +1752,29 @@ void perf_arch_fetch_caller_regs(struct 
- unsigned long perf_instruction_pointer(struct pt_regs *regs)
- {
- 	unsigned long ip;
-+
- 	if (perf_guest_cbs && perf_guest_cbs->is_in_guest())
- 		ip = perf_guest_cbs->get_guest_ip();
- 	else
- 		ip = instruction_pointer(regs);
-+
- 	return ip;
- }
- 
- unsigned long perf_misc_flags(struct pt_regs *regs)
- {
- 	int misc = 0;
-+
- 	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
--		misc |= perf_guest_cbs->is_user_mode() ?
--			PERF_RECORD_MISC_GUEST_USER :
--			PERF_RECORD_MISC_GUEST_KERNEL;
--	} else
--		misc |= user_mode(regs) ? PERF_RECORD_MISC_USER :
--			PERF_RECORD_MISC_KERNEL;
-+		if (perf_guest_cbs->is_user_mode())
-+			misc |= PERF_RECORD_MISC_GUEST_USER;
-+		else
-+			misc |= PERF_RECORD_MISC_GUEST_KERNEL;
-+	} else if (user_mode(regs))
-+		misc |= PERF_RECORD_MISC_USER;
-+	else
-+		misc |= PERF_RECORD_MISC_KERNEL;
-+
- 	if (regs->flags & PERF_EFLAGS_EXACT)
- 		misc |= PERF_RECORD_MISC_EXACT;
- 
-diff -Nraup linux-2.6_tip0417_perfkvm/arch/x86/kvm/x86.c linux-2.6_tip0417_perfkvmstyle/arch/x86/kvm/x86.c
---- linux-2.6_tip0417_perfkvm/arch/x86/kvm/x86.c	2010-04-19 09:53:59.691378953 +0800
-+++ linux-2.6_tip0417_perfkvmstyle/arch/x86/kvm/x86.c	2010-04-20 10:11:40.507545564 +0800
-@@ -3776,16 +3776,20 @@ static int kvm_is_in_guest(void)
- static int kvm_is_user_mode(void)
- {
- 	int user_mode = 3;
-+
- 	if (percpu_read(current_vcpu))
- 		user_mode = kvm_x86_ops->get_cpl(percpu_read(current_vcpu));
-+
- 	return user_mode != 0;
- }
- 
- static unsigned long kvm_get_guest_ip(void)
- {
- 	unsigned long ip = 0;
-+
- 	if (percpu_read(current_vcpu))
- 		ip = kvm_rip_read(percpu_read(current_vcpu));
-+
- 	return ip;
- }
- 
-diff -Nraup linux-2.6_tip0417_perfkvm/include/linux/perf_event.h linux-2.6_tip0417_perfkvmstyle/include/linux/perf_event.h
---- linux-2.6_tip0417_perfkvm/include/linux/perf_event.h	2010-04-19 09:53:59.691378953 +0800
-+++ linux-2.6_tip0417_perfkvmstyle/include/linux/perf_event.h	2010-04-20 10:08:03.531551890 +0800
-@@ -941,10 +941,8 @@ static inline void perf_event_mmap(struc
- }
- 
- extern struct perf_guest_info_callbacks *perf_guest_cbs;
--extern int perf_register_guest_info_callbacks(
--		struct perf_guest_info_callbacks *);
--extern int perf_unregister_guest_info_callbacks(
--		struct perf_guest_info_callbacks *);
-+extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
-+extern int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
- 
- extern void perf_event_comm(struct task_struct *tsk);
- extern void perf_event_fork(struct task_struct *tsk);
-@@ -1016,9 +1014,9 @@ static inline void
- perf_bp_event(struct perf_event *event, void *data)			{ }
- 
- static inline int perf_register_guest_info_callbacks
--(struct perf_guest_info_callbacks *) {return 0; }
-+(struct perf_guest_info_callbacks *callbacks) { return 0; }
- static inline int perf_unregister_guest_info_callbacks
--(struct perf_guest_info_callbacks *) {return 0; }
-+(struct perf_guest_info_callbacks *callbacks) { return 0; }
- 
- static inline void perf_event_mmap(struct vm_area_struct *vma)		{ }
- static inline void perf_event_comm(struct task_struct *tsk)		{ }
-
+Thanks
+Xiaohui 
 
