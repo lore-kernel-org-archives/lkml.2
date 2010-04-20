@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab0DTEaS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 00:30:18 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:34291 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068Ab0DTEaP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 00:30:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 20 Apr 2010 13:26:16 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][BUGFIX][PATCH 2/2] memcg: fix file mapped underflow at
- migration (v3)
-Message-Id: <20100420132616.ed27f757.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100420132050.3477a717.nishimura@mxp.nes.nec.co.jp>
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
-	<20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100415120652.c577846f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100416193143.5807d114.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100419124225.91f3110b.nishimura@mxp.nes.nec.co.jp>
-	<20100419131817.f263d93c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100419170701.3864992e.nishimura@mxp.nes.nec.co.jp>
-	<20100419172629.dbf65e18.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100420132050.3477a717.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753449Ab0DTEbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 00:31:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48914 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752068Ab0DTEbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 00:31:21 -0400
+Message-ID: <4BCD2ED1.4080702@redhat.com>
+Date: Tue, 20 Apr 2010 12:34:25 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: penguin-kernel@I-love.SAKURA.ne.jp, sean.hefty@intel.com,
+       opurdila@ixiacom.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       nhorman@tuxdriver.com, ebiederm@xmission.com,
+       linux-kernel@vger.kernel.org, rolandd@cisco.com,
+       linux-rdma@vger.kernel.org
+Subject: Re: [PATCH] rdma/cm: Randomize local port allocation.
+References: <5CE6BC7B954643FAAFFD2AD66F673CBD@amr.corp.intel.com>	<4BC7C9CF.20403@redhat.com>	<201004162254.FJF73478.SHOOMOFtQFVJLF@I-love.SAKURA.ne.jp> <20100416.133001.262206466.davem@davemloft.net>
+In-Reply-To: <20100416.133001.262206466.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Apr 2010 13:20:50 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-
-> > > I have one concern for now. Reading the patch, the flag have influence on
-> > > only anonymous pages, so we'd better to note it and I feel it strange to
-> > > set(and clear) the flag of "old page" always(iow, even when !PageAnon)
-> > > in prepare_migration.
-> > > 
-> > 
-> > Hmm...Checking "Only Anon" is simpler ?
-> I just thought it was inconsistent that we always set/clear the bit about "old page",
-> while we set the bit about "new page" only in PageAnon case.
+David Miller wrote:
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Fri, 16 Apr 2010 22:54:22 +0900
 > 
-Ok, look into again.
-
-
-> > It will have no meanings for migrating
-> > file caches, but it may have some meanings for easy debugging. 
-> > I think "mark it always but it's used only for anonymous page" is reasonable
-> > (if it causes no bug.)
-> > 
-> Anyway, I don't have any strong objection.
-> It's all right for me as long as it is well documented or commented.
+>> Cong Wang wrote:
+>>> Sean Hefty wrote:
+>>>> I like this version, thanks!  I'm not sure which tree to merge it through.
+>>>> Are you needing this for 2.6.34, or is 2.6.35 okay?
+>>>>
+>>> As soon as possible, so 2.6.34. :)
+>>>
+>> Cong, merge window for 2.6.34 was already closed.
+>> You need to make your patchset towards 2.6.35 (using net-next-2.6 tree)
+>> rather than 2.6.34 (using linux-2.6 tree). Therefore, this patch being
+>> queued for 2.6.35 (through net-next-2.6 tree) should be okay for you.
 > 
-Maybe I can post v4, today.
+> I don't take RDMA patches into net-next-2.6, the less I touch this
+> stack avoiding stuff the better and Roland has been taking this stuff
+> into his own tree for some time now.
 
-Thanks,
--Kame
+I left for a few days.
 
+Ok, so I will wait for this to be merged.
+
+Thanks, David and Tetsuo!
 
