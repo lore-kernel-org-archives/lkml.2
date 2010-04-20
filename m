@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab0DTTSM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 15:18:12 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:54892 "EHLO e1.ny.us.ibm.com"
+	id S1754245Ab0DTT00 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 15:26:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54995 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753696Ab0DTTSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 15:18:10 -0400
-Date: Tue, 20 Apr 2010 12:18:05 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 10/16] rcu: slim down rcutiny by
- removing rcu_scheduler_active and friends
-Message-ID: <20100420191805.GL2628@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1271355219-20714-10-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100415181255.GA19588@linux.vnet.ibm.com>
- <31681.1271758508@redhat.com>
+	id S1754117Ab0DTT0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 15:26:24 -0400
+Date: Tue, 20 Apr 2010 21:24:21 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Pete Zaitcev <zaitcev@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] rmap: anon_vma_prepare() can leak anon_vma_chain
+Message-ID: <20100420192420.GA20840@redhat.com>
+References: <20100415120940.GA31762@redhat.com> <4BCD0E78.9050904@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <31681.1271758508@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BCD0E78.9050904@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 11:15:08AM +0100, David Howells wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > +void rcu_scheduler_starting(void)
-> > +{
-> > +	WARN_ON(nr_context_switches() > 0);
-> > +	rcu_scheduler_active = 1;
-> > +}
-> 
-> Since rcu_scheduler_active is a global variable, does it make sense to make
-> this an inline function in the header file?
+If find_mergeable_anon_vma() succeeds but another thread installs
+->anon_vma before we take ptl, then allocated == NULL but avc should
+be freed. Change the code to check avc != NULL to detect this case.
 
-Unfortunately, nr_context_switches() put me in #include hell when I
-tried that.
+Also, a couple of whitespace changes to make the critical section more
+visible.
 
-> It looks decidedly odd in its own include file as you've done it.  Wouldn't
-> the right way to do this be to split it into its own .c file and conditionally
-> compile it in the Makefile?
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
 
-It will soon have lots of company, as this is where the plugins
-for CONFIG_TINY_PREEMPT_RCU will go.  In other words, kernel/rcutiny.c
-will have the same relationship to kernel/rcutiny_plugin.h that
-kernel/rcutree.c has with kernel/rcutree_plugin.h.
+ mm/rmap.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-							Thanx, Paul
+--- 34-rc1/mm/rmap.c~AVP_AVC_LEAK	2010-03-11 13:11:50.000000000 +0100
++++ 34-rc1/mm/rmap.c	2010-04-20 21:05:24.000000000 +0200
+@@ -133,8 +133,8 @@ int anon_vma_prepare(struct vm_area_stru
+ 				goto out_enomem_free_avc;
+ 			allocated = anon_vma;
+ 		}
+-		spin_lock(&anon_vma->lock);
+ 
++		spin_lock(&anon_vma->lock);
+ 		/* page_table_lock to protect against threads */
+ 		spin_lock(&mm->page_table_lock);
+ 		if (likely(!vma->anon_vma)) {
+@@ -144,14 +144,15 @@ int anon_vma_prepare(struct vm_area_stru
+ 			list_add(&avc->same_vma, &vma->anon_vma_chain);
+ 			list_add(&avc->same_anon_vma, &anon_vma->head);
+ 			allocated = NULL;
++			avc = NULL;
+ 		}
+ 		spin_unlock(&mm->page_table_lock);
+-
+ 		spin_unlock(&anon_vma->lock);
+-		if (unlikely(allocated)) {
++
++		if (unlikely(allocated))
+ 			anon_vma_free(allocated);
++		if (unlikely(avc))
+ 			anon_vma_chain_free(avc);
+-		}
+ 	}
+ 	return 0;
+ 
+
