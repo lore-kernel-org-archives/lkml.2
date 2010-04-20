@@ -1,136 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab0DTV4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 17:56:51 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:47637 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab0DTV4t convert rfc822-to-8bit (ORCPT
+	id S1752776Ab0DTV7A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:59:00 -0400
+Received: from mail.copilotco.com ([216.105.40.123]:53253 "EHLO
+	mail.copilotco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab0DTV67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 17:56:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ZWNGZmoWFrkWD5CgP7wMnqPTdKvTdSxHvZazl5pTq/BsuyqQ65PdfsRkDkAlkcGVP0
-         +zPr3XvW3qsYzkf5yz4dkZPVrpckyhZd/6QxM3U6kQuXmU42FIoiZmQfdRGCLPqitQYZ
-         Taa5a+uVBJJC6f1x+8H1z29yf/8n7WfMvOFK8=
+	Tue, 20 Apr 2010 17:58:59 -0400
+Date: Tue, 20 Apr 2010 14:58:59 -0700
+From: Tracy Reed <treed@ultraviolet.org>
+To: pasik@iki.fi, xen-devel@lists.xensource.com,
+       Aoetools-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] domU is causing misaligned disk writes
+Message-ID: <20100420215859.GW5660@tracyreed.org>
+Mail-Followup-To: Tracy Reed <treed@ultraviolet.org>, pasik@iki.fi,
+	xen-devel@lists.xensource.com,
+	Aoetools-discuss@lists.sourceforge.net,
+	linux-kernel@vger.kernel.org
+References: <20100420080958.GN5660@tracyreed.org>
+ <20100420084955.GV1878@reaktio.net>
+ <20100420200004.GQ5660@tracyreed.org>
+ <20100420204151.GH1708@kremvax.cs.ubc.ca>
 MIME-Version: 1.0
-In-Reply-To: <1271755208.1676.422.camel@laptop>
-References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
-	 <1271755208.1676.422.camel@laptop>
-Date: Tue, 20 Apr 2010 23:56:45 +0200
-Message-ID: <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
-Subject: Re: Considerations on sched APIs under RT patch
-From: Primiano Tucci <p.tucci@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, tglx <tglx@linutronix.de>,
-       rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3m6ZAtymzEdXvUYk"
+Content-Disposition: inline
+In-Reply-To: <20100420204151.GH1708@kremvax.cs.ubc.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-thank you for your reply.
 
-On Tue, Apr 20, 2010 at 11:20 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2010-04-19 at 22:48 +0200, Primiano Tucci wrote:
->
->> Yesterday days I found a strange behavior of the scheduler API's using
->> the RT patch, in particular the pthread_setaffinity_np (that stands on
->> sched_setaffinity).
->
->> I think the main problem is that sched_setaffinity makes use of a
->> rwlock, but rwlocks are pre-emptible with the RT patch.
->
-> It does? where?
->
-> sys_sched_setaffinity()
->  sched_setaffinity()
->    set_cpus_allowed_ptr()
+--3m6ZAtymzEdXvUYk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, Apr 20, 2010 at 01:41:51PM -0700, Brendan Cully spake thusly:
+> You could also be limited by the size of the block request ring (I
+> believe the ring is normally only one page) -- the ring needs to be
+> large enough to handle the bandwidth delay product, and AoE means the
+> delay is probably higher than normal.
 
-I see
+Interesting. Any easy way to increase this as a test?
 
-long sched_setaffinity(pid_t pid, const struct cpumask *in_mask) {
-	cpumask_var_t cpus_allowed, new_mask;
-	struct task_struct *p;
-	int retval;
+> Do you get better performance against a local partition?
 
-	get_online_cpus();
--->	read_lock(&tasklist_lock);
+You mean a local partition on local disk in the dom0 given to a domU
+as xvd? Let's see...
 
+I just created a 20G logical volume on the dom0:
 
-My question is: suppose that tasklist_lock is held by a writer.
-What happens to the calling thread? It can't take the lock, therefore
-it yields to the next ready task (that in my scenario has a lower
-priority).
-In my view, this is not a Priority Inversion problem. The problem is
-that the sched_setaffinity is unexpectedly "suspensive" and yields to
-the lower thread.
+# /usr/sbin/lvcreate -n test -L20G sysvg
 
-Thank you for your support,
-Primiano
+Added it to the domain config file to be /dev/xvdi and rebooted.
 
->
-> set_cpus_allowed_ptr() is the one that does the real work, and that
-> takes the rq->lock and plays games with the migration thread, non of
-> which should be able to cause any form of priority inversion.
->
->> So it could happen that an high priority process/thread that makes use
->> of the sched_setaffinity facility could be unwillingly preempted when
->> controlling other (even low-priority) processes/threads.
->
-> Well, suppose there was a rwlock_t, then for PREEMPT_RT=y that would be
-> mapped to an rt_mutex, which is PI aware.
->
->> I think sched_setaffinity should make use of raw_spinlocks, or should
->> anyway be guaranteed to not be pre-empted (maybe a preempt_disable?),
->> otherwise could lead in unwanted situations for a Real Time OS, such
->> the one described below.
->
-> It does, rq->lock is a non preemptible lock, and the migration thread
-> runs at a priority higher than FIFO-99.
->
->> The issue can be easily reproduced taking inspiration from this scenario:
->>
->> I have 4 Real Time Threads (SCHED_FIFO) distributed as follows:
->>
->> T0 : CPU 0, Priority 2 (HIGH)
->> T1 : CPU 1, Priority 2 (HIGH)
->> T3 : CPU 0, Priority 1 (LOW)
->> T4 : CPU 1, Priority 1 (LOW)
->>
->> So T0 and T1 are actually the "big bosses" on CPUs #0 and #1, T3 and
->> T4, instead, never execute (let's assume that each thread is a simple
->> busy wait that never sleeps/yields) Now, at a certain point, from T0
->> code, I want to migrate T4 from CPU #1 to #0, keeping its low
->> priority.
->> Therefore I perform a pthread_setaffinity_np from T0 changing T4 mask
->> from CPU #1 to #0.
->>
->> In this scenario it happens that T3 (that should never execute since
->> there is T0 with higher priority currently running on the same CPU #0)
->> "emerge" and executes for a bit.
->> It seems that the pthread_setaffinity_np syscall is somehow
->> "suspensive" for the time needed to migrate T4 and let the scheduler
->> to execute T3 for that bunch of time.
->>
->> What do you think about this situation? Should sched APIs be revised?
->
-> Not sure why you thinking the APIs should be changed. If this does
-> indeed happen then there is a bug somewhere in the implementation, the
-> trick will be finding it.
->
-> So you run these four RT tasks on CPUs 0,1 and then control them from
-> another cpu, say 2?
->
-> Can you get a function trace that illustrates T3 getting scheduled,
-> preferably while running the latest -rt kernel?
->
->
+         "phy:/dev/sysvg/test,xvdi,w"
 
---
- Primiano Tucci
- http://www.primianotucci.com
+I know you can attach block devices on the fly but this has not been
+entirely reliable for me in the past so I reboot now.
+
+In domU against xvdi which is /dev/sysvg/test in dom0:
+
+# dd if=3D/dev/zero of=3D/dev/xvdi bs=3D4096 count=3D1000000
+1000000+0 records in
+1000000+0 records out
+4096000000 bytes (4.1 GB) copied, 99.3749 seconds, 41.2 MB/s
+
+And iostat on dom0 shows:
+Device:         rrqm/s   wrqm/s   r/s   w/s    rkB/s    wkB/s avgrq-sz
+avgqu-sz   await  svctm  %util
+sda               0.00   824.00  4.00 101.00    16.00 39936.00
+760.99     3.19   31.31   9.52 100.00
+
+In dom0 against the local disk to demonstrate native performance:
+
+# dd if=3D/dev/zero of=3D/dev/sysvg/test bs=3D4096 count=3D1000000
+1000000+0 records in
+1000000+0 records out
+4096000000 bytes (4.1 GB) copied, 84.9047 seconds, 48.2 MB/s
+
+Device:         rrqm/s   wrqm/s   r/s   w/s    rkB/s    wkB/s avgrq-sz
+avgqu-sz   await  svctm  %util
+sda               7.00 11104.00  5.00 96.00    48.00 48144.00   954.30
+133.92 1172.40   9.94 100.40
+
+Virtually no reads happening. This disk seems a bit slow (older 80G
+sata disk) but otherwise normal. I don't see anything indicating
+alignment issues.
+
+--=20
+Tracy Reed
+http://tracyreed.org
+
+--3m6ZAtymzEdXvUYk
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.5 (GNU/Linux)
+
+iD8DBQFLziOj9PIYKZYVAq0RAkp7AJ45PvbdgQX1g1OJ3ke75DXKB+NyhwCgn1ZM
+HSNBTA4Ev01HfpVOu8Z6Pbo=
+=JNhH
+-----END PGP SIGNATURE-----
+
+--3m6ZAtymzEdXvUYk--
