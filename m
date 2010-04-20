@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab0DTRo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 13:44:29 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:48095 "EHLO gir.skynet.ie"
+	id S1755066Ab0DTRvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 13:51:32 -0400
+Received: from kroah.org ([198.145.64.141]:59237 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755004Ab0DTRo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 13:44:28 -0400
-Date: Tue, 20 Apr 2010 18:44:07 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] hugetlbfs: Kill applications that use MAP_NORESERVE with
-	SIGBUS instead of OOM-killer
-Message-ID: <20100420174407.GA30306@csn.ul.ie>
+	id S1755045Ab0DTRva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 13:51:30 -0400
+Date: Tue, 20 Apr 2010 10:52:02 -0700
+From: Greg KH <greg@kroah.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Joerg Roedel <joerg.roedel@amd.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: pci_get_dev_by_id() from interrupt handlers
+Message-ID: <20100420175202.GA4874@kroah.com>
+References: <20100420160423.GD31537@amd.com> <20100420163215.GB3270@kroah.com> <20100420173552.GA15669@8bytes.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100420173552.GA15669@8bytes.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ordinarily, application using hugetlbfs will create mappings with
-reserves. For shared mappings, these pages are reserved before mmap()
-returns success and for private mappings, the caller process is
-guaranteed and a child process that cannot get the pages gets killed
-with sigbus.
+On Tue, Apr 20, 2010 at 07:35:59PM +0200, Joerg Roedel wrote:
+> On Tue, Apr 20, 2010 at 09:32:15AM -0700, Greg KH wrote:
+> > On Tue, Apr 20, 2010 at 06:04:24PM +0200, Joerg Roedel wrote:
+> > > Is there any other reason it should not be called in interrupt
+> > > handlers?
+> > 
+> > klist traversal is not safe to be done in interrupt context as the
+> > spinlock is not told to be interrupt safe.  Now you could go and change
+> > the klist core to be interrupt safe, but you should probably rethink
+> > your need here first.
+> 
+> The idea was to capture IO page faults in the IOMMU and propagate them
+> to KVM instead of just printk into dmesg. KVM could do something better
+> then like killing the guest. Currently a malicious guest could flood
+> host dmesg by causing IO page faults.
 
-An application that uses MAP_NORESERVE gets no reservations and mmap()
-will always succeed at the risk the page will not be available at fault
-time. This might be used for example on very large sparse mappings where the
-developer is confident the necessary huge pages exist to satisfy all faults
-even though the whole mapping cannot be backed by huge pages.  Unfortunately,
-if an allocation does fail, VM_FAULT_OOM is returned to the fault handler
-which proceeds to trigger the OOM-killer. This is unhelpful.
+That's not good.
 
-This patch alters hugetlbfs to kill a process that uses MAP_NORESERVE
-where huge pages were not available with SIGBUS instead of triggering
-the OOM killer.
+> For the AMD IOMMU the page faults are reported in an event log and the
+> cpu is informed by an interrupt about it. The event log entry contains
+> the bus/dev/function of the device. To get the necessary information to
+> propagate this to KVM I need to get the 'struct device' for it.
 
-This patch if accepted should also be considered a -stable candidate.
+Ok, that's reasonable.
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/hugetlb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> I could certainly do this in a tasklet instead but doing that only for
+> the task of converting bus/device/function into 'struct device' sounds
+> a bit complicated to me.
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 6034dc9..af2d907 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1038,7 +1038,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 		page = alloc_buddy_huge_page(h, vma, addr);
- 		if (!page) {
- 			hugetlb_put_quota(inode->i_mapping, chg);
--			return ERR_PTR(-VM_FAULT_OOM);
-+			return ERR_PTR(-VM_FAULT_SIGBUS);
- 		}
- 	}
- 
+Why not do the whole thing in an interrupt task as the whole thing
+sounds like something that shouldn't be done in interrupt context,
+right?  Now that we have this type of functionality, we should take
+advantage of it :)
+
+Eventually, notifying KVM isn't something that you want to do from
+interrupt context anyway, right?
+
+thanks,
+
+greg k-h
