@@ -1,175 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab0DTNwk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 09:52:40 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:36386 "EHLO e9.ny.us.ibm.com"
+	id S1754747Ab0DTNye (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 09:54:34 -0400
+Received: from pmx3.lnl.infn.it ([192.135.30.243]:43537 "EHLO pmx3.lnl.infn.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754073Ab0DTNwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 09:52:38 -0400
-Date: Tue, 20 Apr 2010 06:52:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
- rcu_dereference_check() usage
-Message-ID: <20100420135227.GC2628@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <q2x7e0fb38c1004121144rb097e521hd2a7d8cea77c54b7@mail.gmail.com>
- <1271098032.4807.137.camel@twins>
- <1271242058.32749.19.camel@laptop>
- <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com>
- <20100419230136.GA16856@linux.vnet.ibm.com>
- <1271726729.2972.13.camel@dhcp231-113.rdu.redhat.com>
- <20100420030452.GB2905@linux.vnet.ibm.com>
- <4BCD646B.1080206@cn.fujitsu.com>
- <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com>
- <j2ya44ae5cd1004200545q6be4ec82o18ae99d93e8c29c7@mail.gmail.com>
-MIME-Version: 1.0
+	id S1754084Ab0DTNyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 09:54:32 -0400
+Message-ID: <6490876.1271771620997.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+Date: Tue, 20 Apr 2010 15:53:40 +0200 (CEST)
+From: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>
+To: Amir Vadai <amirv@mellanox.co.il>
+Subject: Re: Socket Direct Protocol: help (2)
+Cc: "Tung, Chien Tin" <chien.tin.tung@intel.com>,
+       Steve Wise <swise@opengridcomputing.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+       "rolandd@cisco.com" <rolandd@cisco.com>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
+       Eric B Munson <ebmunson@us.ibm.com>
+In-Reply-To: <4BC6D075.1070405@mellanox.co.il>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <j2ya44ae5cd1004200545q6be4ec82o18ae99d93e8c29c7@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-Priority: 2 (high)
+X-Mailer: SuSE Linux Openexchange Server 4 - WebMail (Build 2.4160)
+X-Operating-System: Linux 2.4.21-314-smp i386 (JVM 1.3.1_20)
+Organization: INFN - Laboratori Nazionali Legnaro
+References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com> <4BC49E2B.3000804@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com> <4BC4D22A.6020700@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com> <7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <4BC5D1D3.3020004@mellanox.co.il> <4BC5D529.1060701@mellanox.co.il> <2EFBCAEF10980645BBCFB605689E08E9047C79B918@azsmsx506.amr.corp.intel.com> <4BC5D9D4.7020702@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C79BD12@azsmsx506.amr.corp.intel.com> <4BC6B135.2060004@mellanox.co.il> <1205877.1271315264088.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <4BC6D075.1070405@mellanox.co.il>
+X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.20.134222 (i)
+X-Spam-Flag: NO
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 08:45:28AM -0400, Miles Lane wrote:
-> Is there a patch set for 2.6.34-rc5 I can test?
+Hi Amir,
 
-I will be sending a patchset out later today after testing, but
-please see below for a sneak preview collapsed into a single patch.
+have you any news about bugs 2027 "SDP not respecting # SGEs as reported
+from HW" and 2028 "SDP should support fastreg mrs"?
 
-							Thanx, Paul
+When those bugs will be fixed, I will test the NE020 cards performance
+with SDP protocol and I will compare SDP and TCP.
 
-> On Tue, Apr 20, 2010 at 8:31 AM, Eric Paris <eparis@redhat.com> wrote:
+Keep in touch,
+
+Andrea Gozzelino
+
+INFN - Laboratori Nazionali di Legnaro	(LNL)
+Viale dell'Universita' 2
+I-35020 - Legnaro (PD)- ITALIA
+Tel: +39 049 8068346
+Fax: +39 049 641925
+Mail: andrea.gozzelino@lnl.infn.it
+
+
+
+
+
+
+
+On Apr 15, 2010 10:38 AM, Amir Vadai <amirv@mellanox.co.il> wrote:
+
+> It should be a simple fix and I plan to do soon - just add yourself as
+> CC in bugzilla  - that way I won't forget to notify you.
 > 
-> > On Tue, 2010-04-20 at 16:23 +0800, Lai Jiangshan wrote:
+> - amir
+> 
+> On 04/15/2010 10:07 AM, Andrea Gozzelino wrote:
+> > On Apr 15, 2010 08:24 AM, Amir Vadai <amirv@mellanox.co.il> wrote:
 > >
-> > > [PATCH] RCU: don't turn off lockdep when find suspicious
-> > rcu_dereference_check() usage
-> > >
-> > > When suspicious rcu_dereference_check() usage is detected, lockdep is
-> > still
-> > > available actually, so we should not call debug_locks_off() in
-> > > lockdep_rcu_dereference().
-> > >
-> > > For get rid of too much "suspicious rcu_dereference_check() usage"
-> > > output when the "if(!debug_locks_off())" statement is removed. This patch
-> > uses
-> > > static variable '__warned's for very usage of "rcu_dereference*()".
-> > >
-> > > One variable per usage, so, Now, we can get multiple complaint
-> > > when we detect multiple different suspicious rcu_dereference_check()
-> > usage.
-> > >
-> > > Requested-by: Eric Paris <eparis@redhat.com>
-> > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> >   
+> >> I hope to have a fix next week for the first one.
+> >>
+> >> Thanks,
+> >> Amir
+> >>
+> >> On 04/14/2010 09:48 PM, Tung, Chien Tin wrote:
+> >>     
+> >>>> Tung, Chien Tin wrote:
+> >>>>     
+> >>>>         
+> >>>>>> One more thing - Please open a bug regarding the num_sge
+> >>>>>> limitation at:
+> >>>>>> https://bugs.openfabrics.org/
+> >>>>>>
+> >>>>>>         
+> >>>>>>             
+> >>>>> Done, Bug 2027.
+> >>>>>
+> >>>>> Chien
+> >>>>>
+> >>>>>       
+> >>>>>           
+> >>>> And 2028 opened to request fastreg support.
+> >>>>
+> >>>>     
+> >>>>         
+> >>> I am open to test fixes for these two bugs.
+> >>>
+> >>> Chien
+> >>>
+> >>>   
+> >>>       
+> >>     
+> > Hi Amir, 
+> > Hi Chien,
 > >
-> > Although mine was a linux-next kernel and it doesn't appear that I have
-> > rcu_dereference_protected() at all, so I dropped that bit of the patch,
-> > it worked great!  I got 4 more complaints to harass people with.  Feel
-> > free to add my tested by if you care to.
+> > I understand that the bug 2027 could be solved next week, so I will
+> > test
+> > SDP protocol performance on NE020 cards.
+> > Is it correct? 
+> > If yes, could you point out the code modifies?
 > >
-> > Tested-by: Eric Paris <eparis@redhat.com>
+> > Keep in touch and take care.
+> > Regards,
+> > Andrea
+> >
+> >
+> > Andrea Gozzelino
+> >
+> > INFN - Laboratori Nazionali di Legnaro	(LNL)
+> > Viale dell'Universita' 2
+> > I-35020 - Legnaro (PD)- ITALIA
+> > Tel: +39 049 8068346
+> > Fax: +39 049 641925
+> > Mail: andrea.gozzelino@lnl.infn.it			
+> >
+> >
+> >   
+> 
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 07db2fe..ec9ab49 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -190,6 +190,15 @@ static inline int rcu_read_lock_sched_held(void)
- 
- #ifdef CONFIG_PROVE_RCU
- 
-+#define __do_rcu_dereference_check(c)					\
-+	do {								\
-+		static bool __warned;					\
-+		if (debug_lockdep_rcu_enabled() && !__warned && !(c)) {	\
-+			__warned = true;				\
-+			lockdep_rcu_dereference(__FILE__, __LINE__);	\
-+		}							\
-+	} while (0)
-+
- /**
-  * rcu_dereference_check - rcu_dereference with debug checking
-  * @p: The pointer to read, prior to dereferencing
-@@ -219,8 +228,7 @@ static inline int rcu_read_lock_sched_held(void)
-  */
- #define rcu_dereference_check(p, c) \
- 	({ \
--		if (debug_lockdep_rcu_enabled() && !(c)) \
--			lockdep_rcu_dereference(__FILE__, __LINE__); \
-+		__do_rcu_dereference_check(c); \
- 		rcu_dereference_raw(p); \
- 	})
- 
-@@ -237,8 +245,7 @@ static inline int rcu_read_lock_sched_held(void)
-  */
- #define rcu_dereference_protected(p, c) \
- 	({ \
--		if (debug_lockdep_rcu_enabled() && !(c)) \
--			lockdep_rcu_dereference(__FILE__, __LINE__); \
-+		__do_rcu_dereference_check(c); \
- 		(p); \
- 	})
- 
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index da5e139..e5c0244 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -205,9 +205,12 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- 	 * No lock is needed, since the task isn't on tasklist yet,
- 	 * so it can't be moved to another cgroup, which means the
- 	 * freezer won't be removed and will be valid during this
--	 * function call.
-+	 * function call.  Nevertheless, apply RCU read-side critical
-+	 * section to suppress RCU lockdep false positives.
- 	 */
-+	rcu_read_lock();
- 	freezer = task_freezer(task);
-+	rcu_read_unlock();
- 
- 	/*
- 	 * The root cgroup is non-freezable, so we can skip the
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 2594e1c..03dd1fa 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -3801,8 +3801,6 @@ void lockdep_rcu_dereference(const char *file, const int line)
- {
- 	struct task_struct *curr = current;
- 
--	if (!debug_locks_off())
--		return;
- 	printk("\n===================================================\n");
- 	printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
- 	printk(  "---------------------------------------------------\n");
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 6af210a..14c44ec 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -323,6 +323,15 @@ static inline struct task_group *task_group(struct task_struct *p)
- /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
- static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
- {
-+	/*
-+	 * Strictly speaking this rcu_read_lock() is not needed since the
-+	 * task_group is tied to the cgroup, which in turn can never go away
-+	 * as long as there are tasks attached to it.
-+	 *
-+	 * However since task_group() uses task_subsys_state() which is an
-+	 * rcu_dereference() user, this quiets CONFIG_PROVE_RCU.
-+	 */
-+	rcu_read_lock();
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
- 	p->se.parent = task_group(p)->se[cpu];
-@@ -332,6 +341,7 @@ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
- 	p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
- 	p->rt.parent = task_group(p)->rt_se[cpu];
- #endif
-+	rcu_read_unlock();
- }
- 
- #else
+
+		
+
