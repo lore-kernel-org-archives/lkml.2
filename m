@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab0DTP4Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 11:56:16 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:65511 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab0DTP4O (ORCPT
+	id S1754009Ab0DTQFG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 12:05:06 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:54742
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753850Ab0DTQFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 11:56:14 -0400
-Date: Tue, 20 Apr 2010 08:53:50 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, fweisbec@gmail.com, peterz@infradead.org,
-       gorcunov@gmail.com, aris@redhat.com, linux-kernel@vger.kernel.org,
-       randy.dunlap@oracle.com
-Subject: Re: [PATCH 1/6] [watchdog] combine nmi_watchdog and softlockup
-Message-Id: <20100420085350.fce77f4f.randy.dunlap@oracle.com>
-In-Reply-To: <1271777043-3807-2-git-send-email-dzickus@redhat.com>
-References: <1271777043-3807-1-git-send-email-dzickus@redhat.com>
-	<1271777043-3807-2-git-send-email-dzickus@redhat.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090208.4BCDCE78.0016:SCFMA4539811,ss=1,fgs=0
+	Tue, 20 Apr 2010 12:05:02 -0400
+X-SpamScore: -3
+X-BigFish: VPS-3(zz4015Lzz1202hzzz32i2a8h87h43h65h)
+X-Spam-TCS-SCL: 4:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L16NBD-02-P7O-02
+X-M-MSG: 
+Date: Tue, 20 Apr 2010 18:04:24 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: pci_get_dev_by_id() from interrupt handlers
+Message-ID: <20100420160423.GD31537@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 20 Apr 2010 16:04:24.0952 (UTC) FILETIME=[25A7B780:01CAE0A3]
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Apr 2010 11:23:58 -0400 Don Zickus wrote:
+Hi Jesse,
 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 7331a16..98e3f5f 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -948,8 +948,11 @@ config PERF_USE_VMALLOC
->  
->  config PERF_EVENTS_NMI
->  	bool
-> +	depends on PERF_EVENTS
->  	help
-> -	  Arch has support for nmi_watchdog
-> +	  Arch can generate an NMI using the perf event subsystem
+I have a question regarding the warning in the pci_get_dev_by_id()
+[search.c] function which triggers when called from interrupt context.
+As far as I have seen this function should be save to be called in
+atomic mode. Is there any other reason it should not be called in
+interrupt handlers? I need to (indirectly) call this function for my
+IOMMU driver to handle events from the IOMMU.
 
-Hi Don,
+Thanks,
+	Joerg
 
-I realize that you didn't introduce Arch in this help text,
-but can we eliminate him, please?  E.g.:
-
-	  Platform can generate an NMI using the perf event subsystem.
-or
-	  System hardware can generate an NMI using the perf event subsystem.
-
-> +	  Also has support for calculating cpu cycle events to
-
-	                                   CPU
-
-> +	  determine how many clock cycles in a given period
-
-                                                     period.
-
->  
->  menu "Kernel Performance Events And Counters"
-
-
----
-~Randy
