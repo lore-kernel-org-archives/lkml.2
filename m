@@ -1,119 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab0DTQ4t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 12:56:49 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:35995 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab0DTQ4q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 12:56:46 -0400
-Subject: Re: [PATCH] ACPI: DMI init_set_sci_en_on_resume for multiple
- Lenovo ThinkPads
-From: Jerone Young <jerone.young@canonical.com>
-To: Alex Chiang <achiang@canonical.com>
-Cc: lenb@kernel.org, colin.king@canonical.com, linux-acpi@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org
-In-Reply-To: <20100420140314.GA5573@canonical.com>
-References: <20100420140314.GA5573@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Apr 2010 11:56:41 -0500
-Message-ID: <1271782601.25170.105.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753302Ab0DTQ4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 12:56:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45807 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752910Ab0DTQ4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 12:56:45 -0400
+Message-ID: <4BCDD7B3.2050400@redhat.com>
+Date: Tue, 20 Apr 2010 12:34:59 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+       benh@kernel.crashing.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 1/2] perf: Move arch specific code into separate arch
+ directory
+References: <1271746713-8347-1-git-send-email-imunsie@au1.ibm.com> <1271746713-8347-2-git-send-email-imunsie@au1.ibm.com>
+In-Reply-To: <1271746713-8347-2-git-send-email-imunsie@au1.ibm.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't think this patch should go in as Lenovo is issuing a BIOS to
-address this issue. On these Thinkpads listed and more. Seems to add
-uneeded quirks in my opinion.
+Hi Ian,
 
-Though some over all patch may be good for all machines. As Windows
-seems to be setting this bit on it's own.
+Please feel free to add my ack. :)
 
-				Jerone
+Acked-by: Masami Hiramatsu <mhiramat@redhat.com>
 
-On Tue, 2010-04-20 at 08:03 -0600, Alex Chiang wrote:
-> Multiple Lenovo ThinkPad models with Intel Core i5/i7 CPUs can
-> successfully suspend/resume once, and then hang on the second s/r
-> cycle.
+Ingo, I think this one is important enhancement for perf
+to port it on other archs.
+
+Thank you,
+
+Ian Munsie wrote:
+> From: Ian Munsie <imunsie@au.ibm.com>
 > 
-> We got confirmation that this was due to a BIOS defect. The BIOS
-> did not properly set SCI_EN coming out of S3. The BIOS guys
-> hinted that The Other Leading OS ignores the fact that hardware
-> owns the bit and sets it manually.
+> The perf userspace tool included some architecture specific code to map
+> registers from the DWARF register number into the names used by the regs
+> and stack access API.
 > 
-> In any case, an existing DMI table exists for machines where this
-> defect is a known problem. Lenovo promise to fix their BIOS, but
-> for folks who either won't or can't upgrade their BIOS, allow
-> Linux to workaround the issue.
+> This patch moves the architecture specific code out into a separate
+> arch/x86 directory along with the infrastructure required to use it.
 > 
-> https://bugzilla.kernel.org/show_bug.cgi?id=15407
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/532374
-> 
-> Confirmed by numerous testers in the launchpad bug that using
-> acpi_sleep=sci_force_enable fixes the issue. We add the machines
-> to acpisleep_dmi_table[] to automatically enable this workaround.
-> 
-> Cc: stable@kernel.org
-> Cc: Colin King <colin.king@canonical.com>
-> Signed-off-by: Alex Chiang <achiang@canonical.com>
+> Signed-off-by: Ian Munsie <imunsie@au.ibm.com>
 > ---
-> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-> index f74834a..ce54cd0 100644
-> --- a/drivers/acpi/sleep.c
-> +++ b/drivers/acpi/sleep.c
-> @@ -450,6 +450,46 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
->  		},
->  	},
->  	{
-> +	.callback = init_set_sci_en_on_resume,
-> +	.ident = "Lenovo ThinkPad T410",
-> +	.matches = {
-> +		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
-> +		},
-> +	},
-> +	{
-> +	.callback = init_set_sci_en_on_resume,
-> +	.ident = "Lenovo ThinkPad T510",
-> +	.matches = {
-> +		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
-> +		},
-> +	},
-> +	{
-> +	.callback = init_set_sci_en_on_resume,
-> +	.ident = "Lenovo ThinkPad W510",
-> +	.matches = {
-> +		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
-> +		},
-> +	},
-> +	{
-> +	.callback = init_set_sci_en_on_resume,
-> +	.ident = "Lenovo ThinkPad X201",
-> +	.matches = {
-> +		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
-> +		},
-> +	},
-> +	{
-> +	.callback = init_set_sci_en_on_resume,
-> +	.ident = "Lenovo ThinkPad X201",
-> +	.matches = {
-> +		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201s"),
-> +		},
-> +	},
-> +	{
->  	.callback = init_old_suspend_ordering,
->  	.ident = "Panasonic CF51-2L",
->  	.matches = {
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Changes since v3:
+> * Move the check for DWARF support prior to the inclusion of the arch specific
+>   Makefile so that the arch specific Makefile can include the relevant files in
+>   the build only if DWARF support is available.
+> * Fix NO_DWARF build
+> 
+>  tools/perf/Makefile                   |   36 +++++++++++++---
+>  tools/perf/arch/x86/Makefile          |    4 ++
+>  tools/perf/arch/x86/util/dwarf-regs.c |   75 +++++++++++++++++++++++++++++++++
+>  tools/perf/util/include/dwarf-regs.h  |    8 ++++
+>  tools/perf/util/probe-finder.c        |   55 +-----------------------
+>  5 files changed, 119 insertions(+), 59 deletions(-)
+>  create mode 100644 tools/perf/arch/x86/Makefile
+>  create mode 100644 tools/perf/arch/x86/util/dwarf-regs.c
+>  create mode 100644 tools/perf/util/include/dwarf-regs.h
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 3cb3449..e8bf2e1 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -173,6 +173,20 @@ uname_R := $(shell sh -c 'uname -r 2>/dev/null || echo not')
+>  uname_P := $(shell sh -c 'uname -p 2>/dev/null || echo not')
+>  uname_V := $(shell sh -c 'uname -v 2>/dev/null || echo not')
+>  
+> +ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+> +				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+> +				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+> +				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+> +				  -e s/sh[234].*/sh/ )
+> +
+> +# Additional ARCH settings for x86
+> +ifeq ($(ARCH),i386)
+> +        ARCH := x86
+> +endif
+> +ifeq ($(ARCH),x86_64)
+> +        ARCH := x86
+> +endif
+> +
+>  # CFLAGS and LDFLAGS are for the users to override from the command line.
+>  
+>  #
+> @@ -285,7 +299,7 @@ endif
+>  # Those must not be GNU-specific; they are shared with perl/ which may
+>  # be built by a different compiler. (Note that this is an artifact now
+>  # but it still might be nice to keep that distinction.)
+> -BASIC_CFLAGS = -Iutil/include
+> +BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include
+>  BASIC_LDFLAGS =
+>  
+>  # Guard against environment variables
+> @@ -367,6 +381,7 @@ LIB_H += util/include/asm/byteorder.h
+>  LIB_H += util/include/asm/swab.h
+>  LIB_H += util/include/asm/system.h
+>  LIB_H += util/include/asm/uaccess.h
+> +LIB_H += util/include/dwarf-regs.h
+>  LIB_H += perf.h
+>  LIB_H += util/cache.h
+>  LIB_H += util/callchain.h
+> @@ -487,6 +502,15 @@ PERFLIBS = $(LIB_FILE)
+>  -include config.mak.autogen
+>  -include config.mak
+>  
+> +ifndef NO_DWARF
+> +ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
+> +	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/elfutils-dev);
+> +	NO_DWARF := 1
+> +endif # Dwarf support
+> +endif # NO_DWARF
+> +
+> +-include arch/$(ARCH)/Makefile
+> +
+>  ifeq ($(uname_S),Darwin)
+>  	ifndef NO_FINK
+>  		ifeq ($(shell test -d /sw/lib && echo y),y)
+> @@ -519,15 +543,15 @@ else
+>  	msg := $(error No libelf.h/libelf found, please install libelf-dev/elfutils-libelf-devel and glibc-dev[el]);
+>  endif
+>  
+> -ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
+> -	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/elfutils-dev);
+> -else
+>  ifndef NO_DWARF
+> +ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+> +	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
+> +else
+>  	BASIC_CFLAGS += -I/usr/include/elfutils -DDWARF_SUPPORT
+>  	EXTLIBS += -lelf -ldw
+>  	LIB_OBJS += $(OUTPUT)util/probe-finder.o
+> -endif
+> -endif
+> +endif # PERF_HAVE_DWARF_REGS
+> +endif # NO_DWARF
+>  
+>  ifneq ($(shell sh -c "(echo '\#include <newt.h>'; echo 'int main(void) { newtInit(); newtCls(); return newtFinished(); }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -lnewt -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
+>  	msg := $(warning newt not found, disables TUI support. Please install newt-devel or libnewt-dev);
+> diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+> new file mode 100644
+> index 0000000..15130b5
+> --- /dev/null
+> +++ b/tools/perf/arch/x86/Makefile
+> @@ -0,0 +1,4 @@
+> +ifndef NO_DWARF
+> +PERF_HAVE_DWARF_REGS := 1
+> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+> +endif
+> diff --git a/tools/perf/arch/x86/util/dwarf-regs.c b/tools/perf/arch/x86/util/dwarf-regs.c
+> new file mode 100644
+> index 0000000..a794d30
+> --- /dev/null
+> +++ b/tools/perf/arch/x86/util/dwarf-regs.c
+> @@ -0,0 +1,75 @@
+> +/*
+> + * dwarf-regs.c : Mapping of DWARF debug register numbers into register names.
+> + * Extracted from probe-finder.c
+> + *
+> + * Written by Masami Hiramatsu <mhiramat@redhat.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+> + *
+> + */
+> +
+> +#include <libio.h>
+> +#include <dwarf-regs.h>
+> +
+> +/*
+> + * Generic dwarf analysis helpers
+> + */
+> +
+> +#define X86_32_MAX_REGS 8
+> +const char *x86_32_regs_table[X86_32_MAX_REGS] = {
+> +	"%ax",
+> +	"%cx",
+> +	"%dx",
+> +	"%bx",
+> +	"$stack",	/* Stack address instead of %sp */
+> +	"%bp",
+> +	"%si",
+> +	"%di",
+> +};
+> +
+> +#define X86_64_MAX_REGS 16
+> +const char *x86_64_regs_table[X86_64_MAX_REGS] = {
+> +	"%ax",
+> +	"%dx",
+> +	"%cx",
+> +	"%bx",
+> +	"%si",
+> +	"%di",
+> +	"%bp",
+> +	"%sp",
+> +	"%r8",
+> +	"%r9",
+> +	"%r10",
+> +	"%r11",
+> +	"%r12",
+> +	"%r13",
+> +	"%r14",
+> +	"%r15",
+> +};
+> +
+> +/* TODO: switching by dwarf address size */
+> +#ifdef __x86_64__
+> +#define ARCH_MAX_REGS X86_64_MAX_REGS
+> +#define arch_regs_table x86_64_regs_table
+> +#else
+> +#define ARCH_MAX_REGS X86_32_MAX_REGS
+> +#define arch_regs_table x86_32_regs_table
+> +#endif
+> +
+> +/* Return architecture dependent register string (for kprobe-tracer) */
+> +const char *get_arch_regstr(unsigned int n)
+> +{
+> +	return (n <= ARCH_MAX_REGS) ? arch_regs_table[n] : NULL;
+> +}
+> diff --git a/tools/perf/util/include/dwarf-regs.h b/tools/perf/util/include/dwarf-regs.h
+> new file mode 100644
+> index 0000000..cf6727e
+> --- /dev/null
+> +++ b/tools/perf/util/include/dwarf-regs.h
+> @@ -0,0 +1,8 @@
+> +#ifndef _PERF_DWARF_REGS_H_
+> +#define _PERF_DWARF_REGS_H_
+> +
+> +#ifdef DWARF_SUPPORT
+> +const char *get_arch_regstr(unsigned int n);
+> +#endif
+> +
+> +#endif
+> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> index 3e79775..e7ee52f 100644
+> --- a/tools/perf/util/probe-finder.c
+> +++ b/tools/perf/util/probe-finder.c
+> @@ -31,6 +31,7 @@
+>  #include <string.h>
+>  #include <stdarg.h>
+>  #include <ctype.h>
+> +#include <dwarf-regs.h>
+>  
+>  #include "string.h"
+>  #include "event.h"
+> @@ -38,61 +39,9 @@
+>  #include "util.h"
+>  #include "probe-finder.h"
+>  
+> -
+> -/*
+> - * Generic dwarf analysis helpers
+> - */
+> -
+> -#define X86_32_MAX_REGS 8
+> -const char *x86_32_regs_table[X86_32_MAX_REGS] = {
+> -	"%ax",
+> -	"%cx",
+> -	"%dx",
+> -	"%bx",
+> -	"$stack",	/* Stack address instead of %sp */
+> -	"%bp",
+> -	"%si",
+> -	"%di",
+> -};
+> -
+> -#define X86_64_MAX_REGS 16
+> -const char *x86_64_regs_table[X86_64_MAX_REGS] = {
+> -	"%ax",
+> -	"%dx",
+> -	"%cx",
+> -	"%bx",
+> -	"%si",
+> -	"%di",
+> -	"%bp",
+> -	"%sp",
+> -	"%r8",
+> -	"%r9",
+> -	"%r10",
+> -	"%r11",
+> -	"%r12",
+> -	"%r13",
+> -	"%r14",
+> -	"%r15",
+> -};
+> -
+> -/* TODO: switching by dwarf address size */
+> -#ifdef __x86_64__
+> -#define ARCH_MAX_REGS X86_64_MAX_REGS
+> -#define arch_regs_table x86_64_regs_table
+> -#else
+> -#define ARCH_MAX_REGS X86_32_MAX_REGS
+> -#define arch_regs_table x86_32_regs_table
+> -#endif
+> -
+>  /* Kprobe tracer basic type is up to u64 */
+>  #define MAX_BASIC_TYPE_BITS	64
+>  
+> -/* Return architecture dependent register string (for kprobe-tracer) */
+> -static const char *get_arch_regstr(unsigned int n)
+> -{
+> -	return (n <= ARCH_MAX_REGS) ? arch_regs_table[n] : NULL;
+> -}
+> -
+>  /*
+>   * Compare the tail of two strings.
+>   * Return 0 if whole of either string is same as another's tail part.
+> @@ -447,7 +396,7 @@ static int convert_location(Dwarf_Op *op, struct probe_finder *pf)
+>  
+>  	regs = get_arch_regstr(regn);
+>  	if (!regs) {
+> -		pr_warning("%u exceeds max register number.\n", regn);
+> +		pr_warning("Mapping for DWARF register number %u missing on this architecture.", regn);
+>  		return -ERANGE;
+>  	}
+>  
 
-
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
