@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab0DTXoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 19:44:06 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37290 "EHLO mx1.suse.de"
+	id S1753892Ab0DTXoY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 19:44:24 -0400
+Received: from mail.agmk.net ([91.192.224.71]:48244 "EHLO mail.agmk.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752609Ab0DTXoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 19:44:02 -0400
-Date: Wed, 21 Apr 2010 01:43:56 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jan Kiszka <jan.kiszka@web.de>
-Cc: Jeff Dike <jdike@addtoit.com>, Amerigo Wang <xiyou.wangcong@gmail.com>,
-       linux-kernel@vger.kernel.org,
-       user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [PATCH 3/5] uml: Fix warning due to missing task_struct
- declaration
-In-Reply-To: <4BCDDFBB.40805@web.de>
-Message-ID: <alpine.LNX.2.00.1004210143060.7579@pobox.suse.cz>
-References: <cover.1271713955.git.jan.kiszka@web.de> <1d97cd7761a1eae73923b1adda4c6915a0647bb3.1271713955.git.jan.kiszka@web.de> <20100420100949.GB5317@cr0.nay.redhat.com> <20100420143016.GB30011@c-98-229-117-200.hsd1.ma.comcast.net>
- <4BCDDFBB.40805@web.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753829Ab0DTXoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 19:44:19 -0400
+From: =?iso-8859-2?q?Pawe=B3_Sikora?= <pluto@agmk.net>
+To: libc-help@sourceware.org
+Subject: Re: mprotect() failed: Cannot allocate memory
+Date: Wed, 21 Apr 2010 01:44:18 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.33.2-1; KDE/4.4.2; x86_64; ; )
+Cc: Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org
+References: <201004210105.20942.pluto@agmk.net> <201004201917.23286.vapier@gentoo.org>
+In-Reply-To: <201004201917.23286.vapier@gentoo.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201004210144.18954.pluto@agmk.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Apr 2010, Jan Kiszka wrote:
+On Wednesday 21 April 2010 01:17:22 Mike Frysinger wrote:
+> On Tuesday 20 April 2010 19:05:20 Pawe� Sikora wrote:
+> > i'm trying to debug an ugly application with ElectricFence.
+> 
+> electricfence does a lot of ugly memory tricks to do its thing, including,
+> but not limited to, overriding memory related symbols.  best to seek help
+> from the electricfence authors.
 
-> >>> We can't pull in linux/sched.h, so just declare the struct.
-> >>>
-> >> Did you meet any build error? If yes, please include it.
-> > 
-> > What does this patch fix, aside from being a bit cleaner?
-> 
->   CC      arch/um/sys-i386/elfcore.o
-> In file included from /data/linux-2.6/include/linux/elf.h:8,
->                  from /data/linux-2.6/arch/um/sys-i386/elfcore.c:2:
-> /data/linux-2.6/arch/um/sys-i386/asm/elf.h:78: warning: ‘struct task_struct’ declared inside parameter list
-> /data/linux-2.6/arch/um/sys-i386/asm/elf.h:78: warning: its scope is only this definition or declaration, which is probably not what you want
-> 
-> I guess not many people build against i386 hosts anymore, so this
-> remained widely unnoticed.
-> 
-> > 
-> > If it built before, without having a task_struct declaration, I think
-> > that means that the elf_core_copy_fpregs was never used.  The
-> > task_struct * in the declaration would become a private task_struct,
-> > known only to the declaration.  If the implementation or callers have
-> > the regular task_struct, it will be a different one, and the
-> > prototypes will conflict due to the different types of the first
-> > parameter.
-> 
-> This is just a forward declaration (that many arch elf header include),
-> so no such problem exists.
-> 
-> BTW, to answer the other question in this thread: We have a circular
-> dependency that prevents including sched.h.
-> 
-> I can add all these information to some v2 of this patch if it is
-> required to get this merged. Please let me know.
+so, let's avoid EF and run following test:
 
-I have updated the explanation in the changelog and applied the patch. If 
-anyone has any objections still, please let me know.
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
 
-Thanks,
+void* my_alloc( size_t n )
+{
+        size_t ps = getpagesize();
+        printf( "request for %Zd bytes => ", n );
+        /* alloc PAGE_SIZE + n */
+        char* p = mmap( 0, ps + n, PROT_READ | PROT_WRITE, MAP_SHARED | 
+MAP_ANONYMOUS, -1, 0 );
+        if ( p == MAP_FAILED )
+                __builtin_abort();
+        /* block guard page */
+        int rc = mprotect( p, ps, PROT_NONE );
+        if ( rc != 0 )
+                __builtin_abort();
+        char* q = p + ps;
+        printf( "guard page @ %p, allocated region @ %p\n", p, q );
+        return q;
+}
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+int main()
+{
+        #define N 100  
+        size_t NN = 4*100*100;
+        size_t kmax = 100;
+        int i;
+
+        double **bm = (double **)my_alloc( NN * sizeof( double* ) );
+        for( i = 0; i < NN; ++i )
+        {
+                bm[ i ] = (double*)my_alloc( kmax * sizeof( double ) );
+        }
+        // leak...
+        return 0;
+}
+
+and the result is...
+
+(...)
+mmap(NULL, 4896, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0) = 
+0x7f5fd97df000
+mprotect(0x7f5fd97df000, 4096, PROT_NONE) = -1 ENOMEM (Cannot allocate memory)
