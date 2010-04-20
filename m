@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab0DTBqx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 21:46:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52093 "EHLO mx1.redhat.com"
+	id S1753122Ab0DTBqz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 21:46:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28627 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752134Ab0DTBqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752473Ab0DTBqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Apr 2010 21:46:50 -0400
-Date: Mon, 19 Apr 2010 21:59:37 -0300
+Date: Mon, 19 Apr 2010 22:45:04 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm x86 mmu: simplify kvm_mmu_unlink_parents()
-Message-ID: <20100420005937.GA17981@amt.cnet>
-References: <4BC97645.8050009@cn.fujitsu.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+Subject: Re: [BUG] kvm: dereference srcu-protected pointer without
+ srcu_read_lock() held
+Message-ID: <20100420014504.GB17981@amt.cnet>
+References: <4BCC2543.7050104@cn.fujitsu.com>
+ <4BCC295D.1040807@cn.fujitsu.com>
+ <4BCC2B9D.8050008@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BC97645.8050009@cn.fujitsu.com>
+In-Reply-To: <4BCC2B9D.8050008@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 17, 2010 at 04:50:13PM +0800, Lai Jiangshan wrote:
+On Mon, Apr 19, 2010 at 01:08:29PM +0300, Avi Kivity wrote:
+> On 04/19/2010 12:58 PM, Lai Jiangshan wrote:
+> >Applied the patch I just sent and let CONFIG_PROVE_RCU=y,
+> >we can got the following dmesg. And we found that it is
+> >because some codes in KVM dereferences srcu-protected pointer without
+> >srcu_read_lock() held or update-side lock held.
+> >
+> >It is not hard to fix, the problem is that:
+> >Where is the most proper place to put a srcu_read_lock()?
+> >
+> >I can not determine the answer, so I report this bug
+> >instead of fixing it.
+> >
 > 
-> mmu_page_remove_parent_pte() does much maintenance works,
-> but kvm_mmu_unlink_parents() unlink all parents, so
-> such maintenance works are not need.
+> I think the else branch in complete_pio() should work.  Marcelo?
 > 
-> This patch simplifies the works of kvm_mmu_unlink_parents()
-> by unlinking parents without so many maintenance works.
+> Longer term I'd like to see the lock taken at the high levels
+> (ioctls, in virt/kvm) and dropped only for guest entry and when we
+> explicitly sleep (hlt emulation).
 > 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 90f666e..71faa04 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1453,22 +1453,33 @@ static void kvm_mmu_reset_last_pte_updated(struct kvm *kvm)
->  
->  static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
->  {
-> -	u64 *parent_pte;
-> +	if (!sp->multimapped) {
-> +		if (!sp->parent_pte)
-> +			return;
->  
-> -	while (sp->multimapped || sp->parent_pte) {
-> -		if (!sp->multimapped)
-> -			parent_pte = sp->parent_pte;
-> -		else {
-> -			struct kvm_pte_chain *chain;
-> +		__set_spte(sp->parent_pte, shadow_trap_nonpresent_pte);
-> +		sp->parent_pte = NULL;
-> +		return;
-> +	}
->  
-> -			chain = container_of(sp->parent_ptes.first,
-> -					     struct kvm_pte_chain, link);
-> -			parent_pte = chain->parent_ptes[0];
-> +	while (!hlist_empty(&sp->parent_ptes)) {
-> +		struct kvm_pte_chain *chain;
-> +		u64 *parent_pte;
-> +		int i;
-> +
-> +		chain = hlist_entry(sp->parent_ptes.first,
-> +				    struct kvm_pte_chain, link);
-> +		for (i = 0; i < NR_PTE_CHAIN_ENTRIES; ++i) {
-> +			parent_pte = chain->parent_ptes[i];
-> +			if (!parent_pte)
-> +				break;
-> +			__set_spte(parent_pte, shadow_trap_nonpresent_pte);
->  		}
-> -		BUG_ON(!parent_pte);
-> -		kvm_mmu_put_page(sp, parent_pte);
-> -		__set_spte(parent_pte, shadow_trap_nonpresent_pte);
-> +		hlist_del(&chain->link);
-> +		mmu_free_pte_chain(chain);
->  	}
-> +	sp->multimapped = 0;
-> +	sp->parent_pte = NULL;
->  }
->  
->  static int mmu_zap_unsync_children(struct kvm *kvm,
-> 
+> Note: complete_pio() is gone in the current code.
 
-Personally i don't see why this is any better than the previous code.
+Yes, this was fixed by 7fb2ea1e6.
+
