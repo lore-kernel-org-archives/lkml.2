@@ -1,107 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab0DTQGr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 12:06:47 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:2452 "EHLO
-	VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751970Ab0DTQGp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 12:06:45 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz1432P98dN936eM62a3Lzz1202hzzz32i2a8h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-SS: 5,
-X-WSS-ID: 0L16NDZ-01-DEH-02
-X-M-MSG: 
-Date: Tue, 20 Apr 2010 18:05:57 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+	id S1753952Ab0DTQJc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 12:09:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52659 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751970Ab0DTQJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 12:09:31 -0400
+Date: Tue, 20 Apr 2010 18:09:27 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Greg KH <gregkh@suse.de>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 11/12] perf, x86: implement AMD IBS event configuration
-Message-ID: <20100420160557.GT11907@erda.amd.com>
-References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
- <1271190201-25705-12-git-send-email-robert.richter@amd.com>
- <h2obd4cb8901004190646v8231b6a1sf47d0cff6481cc5e@mail.gmail.com>
+Subject: Re: [BUG] sysfs: don't use allocated key for lockdep
+In-Reply-To: <20100420131420.GA27126@suse.de>
+Message-ID: <alpine.LRH.2.00.1004201805480.28179@twin.jikos.cz>
+References: <4BCD246F.4090005@cn.fujitsu.com> <20100420131420.GA27126@suse.de>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <h2obd4cb8901004190646v8231b6a1sf47d0cff6481cc5e@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 20 Apr 2010 16:05:57.0668 (UTC) FILETIME=[5CEB0E40:01CAE0A3]
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.04.10 15:46:29, Stephane Eranian wrote:
-> > +       if (event->hw.sample_period)
-> > +               /*
-> > +                * The usage of the sample period attribute to
-> > +                * calculate the IBS max count value is not yet
-> > +                * supported, the max count must be in the raw config
-> > +                * value.
-> > +                */
-> > +               return -ENOSYS;
-> > +
-> What is the problem with directly using the period here, rejecting
-> any value that is off range or with bottom 4 bits set?
+On Tue, 20 Apr 2010, Greg KH wrote:
 
-Yes, I will create an updated version of this patch.
-
-> > +       if (event->attr.type != PERF_TYPE_RAW)
-> > +               /* only raw sample types are supported */
-> > +               return -EINVAL;
-> > +
-> > +       type = get_model_spec_type(event->attr.config);
-> > +       switch (type) {
-> > +       case MODEL_SPEC_TYPE_IBS_FETCH:
-> > +               event->hw.config = IBS_FETCH_CONFIG_MASK & event->attr.config;
-> > +               event->hw.idx = X86_PMC_IDX_SPECIAL_IBS_FETCH;
-> > +               /*
-> > +                * dirty hack, needed for __x86_pmu_enable_event(), we
-> > +                * should better change event->hw.config_base into
-> > +                * event->hw.config_msr that already includes the index
-> > +                */
-> > +               event->hw.config_base = MSR_AMD64_IBSFETCHCTL - event->hw.idx;
-> > +               break;
-> > +       case MODEL_SPEC_TYPE_IBS_OP:
-> > +               event->hw.config = IBS_OP_CONFIG_MASK & event->attr.config;
-> > +               event->hw.idx = X86_PMC_IDX_SPECIAL_IBS_OP;
-> > +               event->hw.config_base = MSR_AMD64_IBSOPCTL - event->hw.idx;
-> > +               break;
+> > lockdep_init_map() {
+> > ......
+> > 	/*
+> > 	 * Sanity check, the lock-class key must be persistent:
+> > 	 */
+> > 	if (!static_obj(key)) {
+> > 		printk("BUG: key %p not in .data!\n", key);
+> > 		DEBUG_LOCKS_WARN_ON(1);
+> > 		return;
+> > 	}
+> > 	lock->key = key;
+> > ......
+> > }
+> > 
+> > Could you please fix it.
 > 
-> IBSOP.cnt_ctl only available from RevC, need to check and reject if older.
+> All in-kernel attributes should now be fixed, so what exactly is the
+> remaining issue?
 
-Right, for this patch I will modify IBS_OP_CONFIG_MASK to RevB only
-bits, later I will add cpuid detection and pmu revision checks in a
-separate patch.
+Are they?
 
-> > +static struct event_constraint amd_event_constraints[] =
-> > +{
-> > +       /*
-> > +        * The value for the weight of these constraints is higher
-> > +        * than in the unconstrainted case to process ibs after the
-> > +        * generic counters in x86_schedule_events().
-> > +        */
-> > +       __EVENT_CONSTRAINT(0, 1ULL << X86_PMC_IDX_SPECIAL_IBS_FETCH, 0,
-> > +                          AMD64_NUM_COUNTERS + 1),
-> > +       __EVENT_CONSTRAINT(0, 1ULL << X86_PMC_IDX_SPECIAL_IBS_OP, 0,
-> > +                          AMD64_NUM_COUNTERS + 1),
-> > +       EVENT_CONSTRAINT_END
-> > +};
-> > +
-> I think you could define EVENT_IBS_CONSTRAINT() and shorten
-> the definitions here. You could pass FETCH or OP and the macro
-> would do the bit shifting. This is how it's done for fixed counters on Intel.
+How about my fix to drivers/hwmon/asus_atk0110.c for example, I sent last 
+week? http://lkml.org/lkml/2010/4/14/458
 
-Ok, I will update this.
+> > ----------------
+> > One other comment (not relate to this bug, but relate to the commit):
+> > It is not a very good idea that use one lockdep class per sysfs attribute.
+> > 
+> > First: we don't have too much lockdep class resource.
+> > Second: lockdep validator is O(N*N) algorithm.
+> >         (N is the number of used lockdep class)
+> > 
+> > So it is recommended that use only one class for a group of locks.
+> > 
+> > For some nesting requirement, you can use
+> > lock_acquire(...,subclass,...nest_lock,...)
+> > 
+> > Or change the design.
+> > --------------------
+> > 
+> > BUG: key ffff880042c68220 not in .data!
+> > ------------[ cut here ]------------
+> > WARNING: at kernel/lockdep.c:2706 lockdep_init_map+0xe6/0x4fb()
+> > Hardware name: Lenovo WQ T168/T468 G6
+> > Modules linked in: mptsas(+) mptscsih mptbase scsi_transport_sas ext4 jbd2 crc16 uhci_hcd ohci_hcd ehci_hcd
+> > Pid: 1329, comm: modprobe Not tainted 2.6.34-rc3-22949-gbc8a97a-dirty #1
+> 
+> Please try 2.6.34-rc5 and let us know if this still shows up.
 
--Robert
+This particular one should indeed by fixed by upstream commit 
+ebd09ec93c90c8 though.
+
+Thanks,
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
+Jiri Kosina
+SUSE Labs, Novell Inc.
 
