@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab0DTEbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 00:31:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48914 "EHLO mx1.redhat.com"
+	id S1753519Ab0DTEfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 00:35:23 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:52661 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752068Ab0DTEbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 00:31:21 -0400
-Message-ID: <4BCD2ED1.4080702@redhat.com>
-Date: Tue, 20 Apr 2010 12:34:25 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
+	id S1753400Ab0DTEfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 00:35:22 -0400
+Date: Tue, 20 Apr 2010 05:35:02 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: [git pull] drm single fix
+Message-ID: <alpine.DEB.2.00.1004200534060.30237@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: penguin-kernel@I-love.SAKURA.ne.jp, sean.hefty@intel.com,
-       opurdila@ixiacom.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       nhorman@tuxdriver.com, ebiederm@xmission.com,
-       linux-kernel@vger.kernel.org, rolandd@cisco.com,
-       linux-rdma@vger.kernel.org
-Subject: Re: [PATCH] rdma/cm: Randomize local port allocation.
-References: <5CE6BC7B954643FAAFFD2AD66F673CBD@amr.corp.intel.com>	<4BC7C9CF.20403@redhat.com>	<201004162254.FJF73478.SHOOMOFtQFVJLF@I-love.SAKURA.ne.jp> <20100416.133001.262206466.davem@davemloft.net>
-In-Reply-To: <20100416.133001.262206466.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller wrote:
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Fri, 16 Apr 2010 22:54:22 +0900
-> 
->> Cong Wang wrote:
->>> Sean Hefty wrote:
->>>> I like this version, thanks!  I'm not sure which tree to merge it through.
->>>> Are you needing this for 2.6.34, or is 2.6.35 okay?
->>>>
->>> As soon as possible, so 2.6.34. :)
->>>
->> Cong, merge window for 2.6.34 was already closed.
->> You need to make your patchset towards 2.6.35 (using net-next-2.6 tree)
->> rather than 2.6.34 (using linux-2.6 tree). Therefore, this patch being
->> queued for 2.6.35 (through net-next-2.6 tree) should be okay for you.
-> 
-> I don't take RDMA patches into net-next-2.6, the less I touch this
-> stack avoiding stuff the better and Roland has been taking this stuff
-> into his own tree for some time now.
 
-I left for a few days.
+This change kept falling down the cracks somehow, finally make unload i915 
+easy.
 
-Ok, so I will wait for this to be merged.
 
-Thanks, David and Tetsuo!
+The following changes since commit 79b9517a33a283c5d9db875c263670ed1e055f7e:
+  Dave Airlie (1):
+        drm/radeon/kms: add FireMV 2400 PCI ID.
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-linus
+
+Jesse Barnes (1):
+      drm: delay vblank cleanup until after driver unload
+
+ drivers/gpu/drm/drm_stub.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
