@@ -1,106 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab0DTEvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 00:51:14 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:34982 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab0DTEvN (ORCPT
+	id S1753487Ab0DTExH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 00:53:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60203 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab0DTExF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 00:51:13 -0400
-Date: Tue, 20 Apr 2010 10:20:38 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Salman Qazi <sqazi@google.com>, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       linux-pm@lists.linux-foundation.org, arjan@infradead.org,
-       csadler@google.com, ranjitm@google.com, kenchen@google.com,
-       dawnchen@google.com
-Subject: Re: [PATCH 0/3] [idled]: Idle Cycle Injector for power capping
-Message-ID: <20100420045038.GB2915@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <20100413234902.29004.41655.stgit@bumblebee1.mtv.corp.google.com>
- <1271317886.32749.69.camel@laptop>
- <h2u4352991a1004191020q8200399oc8e9f7d8dee934bf@mail.gmail.com>
- <1271703701.1676.235.camel@laptop>
+	Tue, 20 Apr 2010 00:53:05 -0400
+Date: Tue, 20 Apr 2010 06:53:01 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>, linux-mtd@lists.infradead.org,
+       hsweeten@visionengravers.com, dwmw2@infradead.org
+Subject: Re: [Bug #15729] BUG: physmap modprobe & rmmod
+Message-ID: <20100420045301.GF19957@pengutronix.de>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.MFH.fRSzLB@tosh>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TU+u6i6jrDPzmlWF"
 Content-Disposition: inline
-In-Reply-To: <1271703701.1676.235.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <YeFfFNFyTSF.A.MFH.fRSzLB@tosh>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2010-04-19 21:01:41]:
 
-> On Mon, 2010-04-19 at 10:20 -0700, Salman Qazi wrote:
-> > On Thu, Apr 15, 2010 at 12:51 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > On Tue, 2010-04-13 at 17:08 -0700, Salman wrote:
-> > >> As we discussed earlier this year, Google has an implementation that it
-> > >> would like to share.  I have finally gotten around to porting it to
-> > >> v2.6.33 and cleaning up the interfaces.  It is provided in the following
-> > >> messages for your review.  I realize that when we first discussed this
-> > >> idea, a lot of ideas were presented for enhancing it.  Thanks alot for
-> > >> your suggestions.  I haven't gotten around to implementing any of them.
-> > >
-> > > .33 is way too old to submit patches against.
-> > 
-> > Will bump up the version when I refresh the change.
-> > 
-> > >
-> > > That said, I really really dislike this approach, I would much rather
-> > > see it tie in with power aware scheduling.
-> > 
-> > I think I can see your point:  there is potentially better information
-> > about the power consumption of the CPU beyond the time it was busy.
-> > But please clarify: is your complaint the lack of use of this
-> > information or are you arguing for a deeper integration into the
-> > scheduler (I.e. implementing it as part of the scheduler rather than
-> > an independent thread) or both?
-> 
-> Right, so the IBM folks who were looking at power aware scheduling were
-> working on an interface to quantify the amount of power to save.
+--TU+u6i6jrDPzmlWF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Indicating required system capacity to the loadbalance and using that
-information to evacuate cores or socket was the basic idea.  
+On Tue, Apr 20, 2010 at 05:19:23AM +0200, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary repo=
+rt
+> of recent regressions.
+>=20
+> The following bug entry is on the current list of known regressions
+> from 2.6.33.  Please verify if it still should be listed and let the trac=
+king team
+> know (either way).
+>=20
+>=20
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D15729
+> Subject		: BUG: physmap modprobe & rmmod
+> Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
+> Date		: 2010-04-02 20:40 (18 days old)
+> Message-ID	: <20100402134058.c4682716.randy.dunlap@oracle.com>
+> References	: http://marc.info/?l=3Dlinux-kernel&m=3D127024096210230&w=3D2
 
-Ref: http://lkml.org/lkml/2009/5/13/173
+Patch is here:
 
-The challenges with that approach is the predictable evacuation or
-forced idleness is not guaranteed.
+	https://patchwork.kernel.org/patch/90497/
 
-> But their approach, was an extension of the regular power aware
-> load-balancer, which basically groups tasks onto sockets so that whole
-> sockets can go idle.
+I'd ack it if I still had the original mail :)
 
-Integrating with the load balancer will make the design cleaner and
-avoid forcefully running an idle thread.  The scheduler should
-schedule 'nothing' so that idleness can happen and cpuidle governor
-can take care of idle states.
+CCing linux-mtd and some more people, so it can get picked up.
 
-> However Arjan explained to me that your approach, which idles the whole
-> machine, has the advantage that also memory banks can go into idle mode
-> and save power.
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Well, this is an ideal goal.  Injecting some amount of idle time
-across all cores/threads preferably with overlapping time window will
-save quite a lot of power on x86.  But atleast overlapping idle times
-among sibling threads are required to get any power savings.
+--TU+u6i6jrDPzmlWF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-This proposed approach does not yet have the ability to do overlapping
-idle times, though they may randomly occur.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-> Still in the interest to cut back on power-saving interfaces it would be
-> nice to see if there is anything we can do to merge these things, but I
-> really haven't thought much about that yet.
+iEYEARECAAYFAkvNMy0ACgkQD27XaX1/VRvOjwCfR5BTbMlc8HV5GK2pT0/fk2cx
+m0MAoIBhg7erLShmPhpufA/BiydjkyeX
+=IKW4
+-----END PGP SIGNATURE-----
 
-Atleast integrating this with ACPI cpu aggregation driver can be a good
-first step.  Both the drivers and code are for the same power capping
-purpose using idle time injection and running an high priority idle
-thread for short duration.
-
-ACPI Processor Aggregator Driver for 2.6.32-rc1
-Ref: http://lkml.org/lkml/2009/10/3/13
-
---Vaidy
-
+--TU+u6i6jrDPzmlWF--
