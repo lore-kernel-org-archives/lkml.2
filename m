@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab0DTVDv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 17:03:51 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47018 "EHLO gir.skynet.ie"
+	id S1755489Ab0DTVDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:03:52 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47004 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755301Ab0DTVBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 17:01:13 -0400
+	id S1755252Ab0DTVBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 17:01:12 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 04/14] mm,migration: Allow the migration of PageSwapCache pages
-Date: Tue, 20 Apr 2010 22:01:06 +0100
-Message-Id: <1271797276-31358-5-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 03/14] mm,migration: Do not try to migrate unmapped anonymous pages
+Date: Tue, 20 Apr 2010 22:01:05 +0100
+Message-Id: <1271797276-31358-4-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
 References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
@@ -27,114 +27,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PageAnon pages that are unmapped may or may not have an anon_vma so are
-not currently migrated.  However, a swap cache page can be migrated and
-fits this description.  This patch identifies page swap caches and allows
-them to be migrated but ensures that no attempt to made to remap the pages
-would would potentially try to access an already freed anon_vma.
+rmap_walk_anon() was triggering errors in memory compaction that look like
+use-after-free errors.  The problem is that between the page being
+isolated from the LRU and rcu_read_lock() being taken, the mapcount of the
+page dropped to 0 and the anon_vma gets freed.  This can happen during
+memory compaction if pages being migrated belong to a process that exits
+before migration completes.  Hence, the use-after-free race looks like
+
+ 1. Page isolated for migration
+ 2. Process exits
+ 3. page_mapcount(page) drops to zero so anon_vma was no longer reliable
+ 4. unmap_and_move() takes the rcu_lock but the anon_vma is already garbage
+ 4. call try_to_unmap, looks up tha anon_vma and "locks" it but the lock
+    is garbage.
+
+This patch checks the mapcount after the rcu lock is taken.  If the
+mapcount is zero, the anon_vma is assumed to be freed and no further
+action is taken.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Rik van Riel <riel@redhat.com>
 Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/migrate.c |   53 ++++++++++++++++++++++++++++++++++++-----------------
- 1 files changed, 36 insertions(+), 17 deletions(-)
+ mm/migrate.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
 diff --git a/mm/migrate.c b/mm/migrate.c
-index b114635..4afd6fe 100644
+index 42a3d24..b114635 100644
 --- a/mm/migrate.c
 +++ b/mm/migrate.c
-@@ -485,7 +485,8 @@ static int fallback_migrate_page(struct address_space *mapping,
-  *   < 0 - error code
-  *  == 0 - success
-  */
--static int move_to_new_page(struct page *newpage, struct page *page)
-+static int move_to_new_page(struct page *newpage, struct page *page,
-+						int remap_swapcache)
- {
- 	struct address_space *mapping;
- 	int rc;
-@@ -520,10 +521,12 @@ static int move_to_new_page(struct page *newpage, struct page *page)
- 	else
- 		rc = fallback_migrate_page(mapping, newpage, page);
- 
--	if (!rc)
--		remove_migration_ptes(page, newpage);
--	else
-+	if (rc) {
- 		newpage->mapping = NULL;
-+	} else {
-+		if (remap_swapcache)
-+			remove_migration_ptes(page, newpage);
-+	}
- 
- 	unlock_page(newpage);
- 
-@@ -540,6 +543,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	int rc = 0;
- 	int *result = NULL;
- 	struct page *newpage = get_new_page(page, private, &result);
-+	int remap_swapcache = 1;
- 	int rcu_locked = 0;
- 	int charge = 0;
- 	struct mem_cgroup *mem = NULL;
-@@ -601,18 +605,33 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+@@ -600,6 +600,17 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 	if (PageAnon(page)) {
  		rcu_read_lock();
  		rcu_locked = 1;
- 
--		/*
--		 * If the page has no mappings any more, just bail. An
--		 * unmapped anon page is likely to be freed soon but worse,
--		 * it's possible its anon_vma disappeared between when
--		 * the page was isolated and when we reached here while
--		 * the RCU lock was not held
--		 */
--		if (!page_mapped(page))
--			goto rcu_unlock;
-+		/* Determine how to safely use anon_vma */
-+		if (!page_mapped(page)) {
-+			if (!PageSwapCache(page))
-+				goto rcu_unlock;
- 
--		anon_vma = page_anon_vma(page);
--		atomic_inc(&anon_vma->external_refcount);
-+			/*
-+			 * We cannot be sure that the anon_vma of an unmapped
-+			 * swapcache page is safe to use because we don't
-+			 * know in advance if the VMA that this page belonged
-+			 * to still exists. If the VMA and others sharing the
-+			 * data have been freed, then the anon_vma could
-+			 * already be invalid.
-+			 *
-+			 * To avoid this possibility, swapcache pages get
-+			 * migrated but are not remapped when migration
-+			 * completes
-+			 */
-+			remap_swapcache = 0;
-+		} else {
-+			/*
-+			 * Take a reference count on the anon_vma if the
-+			 * page is mapped so that it is guaranteed to
-+			 * exist when the page is remapped later
-+			 */
-+			anon_vma = page_anon_vma(page);
-+			atomic_inc(&anon_vma->external_refcount);
-+		}
++
++		/*
++		 * If the page has no mappings any more, just bail. An
++		 * unmapped anon page is likely to be freed soon but worse,
++		 * it's possible its anon_vma disappeared between when
++		 * the page was isolated and when we reached here while
++		 * the RCU lock was not held
++		 */
++		if (!page_mapped(page))
++			goto rcu_unlock;
++
+ 		anon_vma = page_anon_vma(page);
+ 		atomic_inc(&anon_vma->external_refcount);
  	}
- 
- 	/*
-@@ -647,9 +666,9 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 
- skip_unmap:
- 	if (!page_mapped(page))
--		rc = move_to_new_page(newpage, page);
-+		rc = move_to_new_page(newpage, page, remap_swapcache);
- 
--	if (rc)
-+	if (rc && remap_swapcache)
- 		remove_migration_ptes(page, page);
- rcu_unlock:
- 
 -- 
 1.6.5
 
