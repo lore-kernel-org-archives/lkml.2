@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab0DTVkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 17:40:52 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:37601 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab0DTVkt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 17:40:49 -0400
-Date: Tue, 20 Apr 2010 22:40:43 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Jan Blunck <jblunck@suse.de>, David Woodhouse <dwmw2@infradead.org>,
-       Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Theodore Tso <tytso@mit.edu>,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
-Message-ID: <20100420214043.GN11723@shareable.org>
-References: <1271372682-21225-11-git-send-email-vaurora@redhat.com> <1271372682-21225-12-git-send-email-vaurora@redhat.com> <1271372682-21225-13-git-send-email-vaurora@redhat.com> <1271372682-21225-14-git-send-email-vaurora@redhat.com> <20100419124025.GG10776@bolzano.suse.de> <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de> <20100419142315.GA2688@shell>
+	id S1751999Ab0DTVl1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:41:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8898 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750950Ab0DTVlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 17:41:25 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] CRED: Fix double free in prepare_usermodehelper_creds() error
+	handling
+To: linux-security-module@vger.kernel.org
+Cc: dhowells@redhat.com, mathieu.desnoyers@efficios.com,
+       linux-kernel@vger.kernel.org
+Date: Tue, 20 Apr 2010 22:41:18 +0100
+Message-ID: <20100420214117.10400.82534.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100419142315.GA2688@shell>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Valerie Aurora wrote:
-> On Mon, Apr 19, 2010 at 04:12:48PM +0200, Jan Blunck wrote:
-> > On Mon, Apr 19, Jamie Lokier wrote:
-> > 
-> > > Jan Blunck wrote:
-> > > > On Mon, Apr 19, David Woodhouse wrote:
-> > > > 
-> > > > > On Mon, 2010-04-19 at 14:40 +0200, Jan Blunck wrote:
-> > > > > > On Thu, Apr 15, Valerie Aurora wrote:
-> > > > > > 
-> > > > > > > Add support for fallthru directory entries to ext2.
-> > > > > > > 
-> > > > > > > XXX - Makes up inode number for fallthru entry
-> > > > > > > XXX - Might be better implemented as special symlinks
-> > > > > > 
-> > > > > > Better not. David Woodhouse actually convinced me of moving away from the
-> > > > > > special symlink approach. The whiteouts have been implemented as special
-> > > > > > symlinks before.
-> > > > > 
-> > > > > I certainly asked whether you really need a real 'struct inode' for
-> > > > > whiteouts, and suggested that they should be represented _purely_ as a
-> > > > > dentry with type DT_WHT.
-> > > > > 
-> > > > > I don't much like the manifestation of that in this patch though,
-> > > > > especially with the made-up inode number. (ISTR I had other
-> > > > > jffs2-specific objections too, which I'll dig out and forward).
-> > > > 
-> > > > Yes, this patches still have issues that Val and me are aware off. I can't
-> > > > remember anything jffs2-specific though.
-> > > > 
-> > > > We return that inode number because we don't want to lookup the name on the
-> > > > other filesystem during readdir. Therefore returning DT_UNKNOWN to let the
-> > > > userspace decide if it needs to stat the file was the easiest workaround. I
-> > > > know that POSIX requires d_ino and d_name but on the other hand it does not
-> > > > require anything more on how long d_ino is valid.
-> > > 
-> > > Although the lifetime of d_ino might very, I know some programs (not
-> > > public) that will break if they see a d_ino which is wrongly matching
-> > > the st_ino of another file somewhere on the same st_dev.  They will
-> > > assume the name is a hard link to the other file, without calling
-> > > stat(), which I think is a reasonable assumption and a useful optimisation.
-> > > 
-> > > So the made-up d_ino should at least be careful to not match an inode
-> > > number of another file which has a stable st_ino.
-> > > 
-> > > Why not zero for d_ino?
-> > > 
-> > 
-> > Hmm, why not. Or even the ino of the directory we are reading from ...
-> 
-> I don't recall there being any technical reason not to look up the
-> real inode number.  I just wrote it that we because I was lazy.  So I
-> like returning the directory's d_ino better than a single magic
-> number, but I'd at least like to try returning the real inode number
-> too.
+Patch 570b8fb505896e007fd3bb07573ba6640e51851d:
 
-I thought of zero because Bash and GNU Readline both check d_ino != 0
-to decide if an entry is valid.
+	Author: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+	Date:   Tue Mar 30 00:04:00 2010 +0100
+	Subject: CRED: Fix memory leak in error handling
 
-On reflection, that is why zero must _not_ be used :-)
+attempts to fix a memory leak in the error handling by making the offending
+return statement into a jump down to the bottom of the function where a
+kfree(tgcred) is inserted.
 
--- Jamie
+This is, however, incorrect, as it does a kfree() after doing put_cred() if
+security_prepare_creds() fails.  That will result in a double free if 'error'
+is jumped to as put_cred() will also attempt to free the new tgcred record by
+virtue of it being pointed to by the new cred record.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ kernel/cred.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/cred.c b/kernel/cred.c
+index e1dbe9e..ce1a52b 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -398,6 +398,8 @@ struct cred *prepare_usermodehelper_creds(void)
+ 
+ error:
+ 	put_cred(new);
++	return NULL;
++
+ free_tgcred:
+ #ifdef CONFIG_KEYS
+ 	kfree(tgcred);
+
