@@ -1,111 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab0DTIzL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 04:55:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43821 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab0DTIzJ (ORCPT
+	id S1753953Ab0DTJA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 05:00:28 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55055 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab0DTJA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 04:55:09 -0400
-Subject: Re: [patch v2 1/2] sched: check for prev_cpu == this_cpu before
- calling wake_affine()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
-       Arjan van de Ven <arjan@linux.jf.intel.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-       Yanmin Zhang <yanmin_zhang@linux.jf.intel.com>,
-       Gautham R Shenoy <ego@in.ibm.com>
-In-Reply-To: <1271753212.1676.400.camel@laptop>
-References: <20100308221946.842728363@sbs-t61.sc.intel.com>
-	 <1270031119.5003.93.camel@laptop>
-	 <1270079265.7835.8.camel@sbs-t61.sc.intel.com>
-	 <1271753212.1676.400.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Apr 2010 10:55:06 +0200
-Message-ID: <1271753706.1676.402.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Apr 2010 05:00:26 -0400
+Date: Tue, 20 Apr 2010 11:00:25 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [Bug #15711] 2.6.34-rc3, BUG at mm/slab.c:2989
+Message-ID: <20100420090025.GA7997@fancy-poultry.org>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh>
+ <YeFfFNFyTSF.A.zvH.wRSzLB@tosh>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <YeFfFNFyTSF.A.zvH.wRSzLB@tosh>
+X-Accept-Language: no,dk,se,en,de
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.20+20100402 (GNU/Linux)
+X-Provags-ID: V01U2FsdGVkX1+FLJHooZpunTuLOIgpLHBgr2P7EZ1ZFOA8CBI
+ i+Bnpq4YN2zR+qeaerpEZ9meobBLFRWaRrkYRyH0bmhNEKEHEv
+ AvrjKYqb7KRB4eEIGuHAg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-20 at 10:46 +0200, Peter Zijlstra wrote:
-> So should we be using idle_cpu(i) instead?
+On 20.04.2010, Rafael J. Wysocki wrote: 
 
-something like the below..
+> The following bug entry is on the current list of known regressions
+> from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+ 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15711
+> Subject		: 2.6.34-rc3, BUG at mm/slab.c:2989
+> Submitter	: Heinz Diehl <htd@fancy-poultry.org>
+> Date		: 2010-04-01 17:52 (19 days old)
+> Message-ID	: <20100401175225.GA6581@fancy-poultry.org>
+> References	: http://marc.info/?l=linux-kernel&m=127014437406250&w=2
 
----
-Index: linux-2.6/kernel/sched_fair.c
-===================================================================
---- linux-2.6.orig/kernel/sched_fair.c
-+++ linux-2.6/kernel/sched_fair.c
-@@ -1375,26 +1375,25 @@ find_idlest_cpu(struct sched_group *grou
- /*
-  * Try and locate an idle CPU in the sched_domain.
-  */
--static int
--select_idle_sibling(struct task_struct *p, int target)
-+static int select_idle_sibling(struct task_struct *p, int target)
- {
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
--	int i;
- 	struct sched_domain *sd;
-+	int i;
- 
- 	/*
- 	 * If the task is going to be woken-up on this cpu and if it is
- 	 * already idle, then it is the right target.
- 	 */
--	if (target == cpu && !cpu_rq(cpu)->cfs.nr_running)
-+	if (target == cpu && idle_cpu(cpu))
- 		return cpu;
- 
- 	/*
- 	 * If the task is going to be woken-up on the cpu where it previously
- 	 * ran and if it is currently idle, then it the right target.
- 	 */
--	if (target == prev_cpu && !cpu_rq(prev_cpu)->cfs.nr_running)
-+	if (target == prev_cpu && idle_cpu(prev_cpu))
- 		return prev_cpu;
- 
- 	/*
-@@ -1405,7 +1404,7 @@ select_idle_sibling(struct task_struct *
- 			break;
- 
- 		for_each_cpu_and(i, sched_domain_span(sd), &p->cpus_allowed) {
--			if (!cpu_rq(i)->cfs.nr_running) {
-+			if (idle_cpu(i)) {
- 				target = i;
- 				break;
- 			}
-@@ -1479,16 +1478,14 @@ select_task_rq_fair(struct rq *rq, struc
- 				want_sd = 0;
- 		}
- 
--		if (want_affine) {
--			/*
--			 * If both cpu and prev_cpu are part of this domain,
--			 * cpu is a valid SD_WAKE_AFFINE target.
--			 */
--			if (cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))
--			    && (tmp->flags & SD_WAKE_AFFINE)) {
--				affine_sd = tmp;
--				want_affine = 0;
--			}
-+		/*
-+		 * If both cpu and prev_cpu are part of this domain,
-+		 * cpu is a valid SD_WAKE_AFFINE target.
-+		 */
-+		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
-+		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
-+			affine_sd = tmp;
-+			want_affine = 0;
- 		}
- 
- 		if (!want_sd && !want_affine)
-
+Don't know if this is still present, after reporting it here on the list,
+I've been advised by Chr. Lameter to switch from slab to slub. I did, and
+haven't seen this again.
 
