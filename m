@@ -1,61 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab0DTIhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 04:37:11 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:52923 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab0DTIhH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 04:37:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Ii9JJVhwq6myCZTRvggMHZ92IL0g4GdXduXMKVAGmxoYXby27RPuFB8QaWWNhT/cyz
-         pdlQa0KydXHnacd/yiVE13Nj1hQpypuJnnFCIMl7asNUcuicF2wn2w0x9pCa2lno573t
-         oducSWUpCXQA66Y0LisocOYdrF1t/7ejF2a/k=
-Date: Tue, 20 Apr 2010 16:33:58 +0800
-From: Amerigo Wang <xiyou.wangcong@gmail.com>
-To: Jan Kiszka <jan.kiszka@web.de>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
-       user-mode-linux-devel@lists.sourceforge.net,
-       Jeff Dike <jdike@addtoit.com>
-Subject: Re: [PATCH 2/5] uml: Drop private round_down definition
-Message-ID: <20100420083358.GD4356@cr0.nay.redhat.com>
-References: <cover.1271713955.git.jan.kiszka@web.de>
- <74c7d668690f283cf3b8aed92004dc72e872f7ce.1271713955.git.jan.kiszka@web.de>
+	id S1754060Ab0DTIis (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 04:38:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38277 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753346Ab0DTIiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 04:38:46 -0400
+Date: Tue, 20 Apr 2010 18:38:40 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] mm: add context argument to shrinker callback
+Message-ID: <20100420083840.GR5683@laptop>
+References: <1271118255-21070-1-git-send-email-david@fromorbit.com>
+ <1271118255-21070-2-git-send-email-david@fromorbit.com>
+ <20100418001514.GA26575@infradead.org>
+ <20100419140039.GQ5683@laptop>
+ <20100420004149.GA14744@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <74c7d668690f283cf3b8aed92004dc72e872f7ce.1271713955.git.jan.kiszka@web.de>
+In-Reply-To: <20100420004149.GA14744@dastard>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 11:53:05PM +0200, Jan Kiszka wrote:
->Already defined in kernel.h. The official version assumes that 'n' is
->power of two - which it is in our case.
->
->Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
->---
-> arch/um/sys-x86_64/signal.c |    2 --
-> 1 files changed, 0 insertions(+), 2 deletions(-)
->
->diff --git a/arch/um/sys-x86_64/signal.c b/arch/um/sys-x86_64/signal.c
->index 1a899a7..07797d1 100644
->--- a/arch/um/sys-x86_64/signal.c
->+++ b/arch/um/sys-x86_64/signal.c
->@@ -165,8 +165,6 @@ struct rt_sigframe
-> 	struct _fpstate fpstate;
-> };
+On Tue, Apr 20, 2010 at 10:41:49AM +1000, Dave Chinner wrote:
+> On Tue, Apr 20, 2010 at 12:00:39AM +1000, Nick Piggin wrote:
+> > On Sat, Apr 17, 2010 at 08:15:14PM -0400, Christoph Hellwig wrote:
+> > > Any chance we can still get this into 2.6.34?  It's really needed to fix
+> > > a regression in XFS that would be hard to impossible to work around
+> > > inside the fs.  While it touches quite a few places the changes are
+> > > trivial and well understood.
+> > 
+> > Why do you even need this context argument?  Reclaim is not doing anything
+> > smart about this, it would just call each call shrinker in turn.
 > 
->-#define round_down(m, n) (((m) / (n)) * (n))
->-
-> int setup_signal_stack_si(unsigned long stack_top, int sig,
-> 			  struct k_sigaction *ka, struct pt_regs * regs,
-> 			  siginfo_t *info, sigset_t *set)
+> It's not being smart, but it is detemining how many objects to
+> reclaim in each shrinker call based on memory pressure and the
+> number of reclimable objects in the cache the shrinker works on.
+> That's exactly the semantics I want for per-filesystem inode cache
+> reclaim.
 
-Shouldn't this signal.c #include <linux/kernel.h>?
+And you can easily do that in the filesystem code because either
+way you have to know the number of objects you have.
 
-Thanks.
+> 
+> > Do you not have an easily traversable list of mountpoints?
+> 
+> No, XFS does not have one, and I'm actively trying to remove any
+> global state that crosses mounts that does exist (e.g. the global
+> dquot caches and freelist).
+
+The shrinker list is global state too, so it's not a big deal. A
+simple list and an rwsem will work fine and be smaller than adding
+the full shrinker structure in the mount point.
+
+And that way you get a mountpoint list to potentially use for other
+things. Wheras with the shrinker you still cannot.
+
+ 
+> > Can you just
+> > make a list of them? It would be cheaper than putting a whole shrinker
+> > structure into them anyway.
+> 
+> It's not cheaper or simpler. To make it work properly, I'd
+> need to aggregate counters over all the filesystems in the list,
+> work out how much to reclaim from each, etc. It is quite messy
+> compared to deferecing the context to check one variable and either
+> return or invoke the existing inode reclaim code.
+
+It most definitely is cheaper, in terms of memory footprint. For
+cost of doing the traversals, letting the shrinker code do it is
+doing the *exact* same thing -- it's just traversing all your mount
+points.
+
+ 
+> I also don't want to have a situation where i have to implement
+> fairness heuristics to avoid reclaiming one filesystem too much or
+> only end up reclaiming one or two inodes per filesystem per shrinker
+> call because of the number of filesytems is similar to the shrinker
+> batch size.  The high level shrinker code already does this reclaim
+> proportioning and does it far better than can be done in the scope
+> of a shrinker callback. IOWs, adding a context allows XFS to do
+> inode reclaim far more efficiently than if it was implemented
+> through global state and a single shrinker.
+
+You would just do it proportionately with the size of each fliesystem,
+simple, dumb, and exactly what the shrinker does.
+
+ 
+> FWIW, we have this problem in the inode and dentry cache - we've got
+> all sorts of complexity for being fair about reclaiming across all
+> superblocks. I don't want to duplicate that complexity - instead I
+> want to avoid it entirely.
+
+The dcache pruning is not complex.
+
+                if (prune_ratio != 1)
+                        w_count = (sb->s_nr_dentry_unused / prune_ratio)
++ 1;
+                else
+                        w_count = sb->s_nr_dentry_unused;
+
+Inode pruning is the same.
+
+
+> > The main reason I would be against proliferation of dynamic shrinker
+> > registration would be that it could change reclaim behaviour depending
+> > on how they get ordered (in the cache the caches are semi-dependent,
+> > like inode cache and dentry cache).
+> 
+> Adding a context does not change that implicit ordering based on
+> registration order. Any filesystem based shrinker is going to be
+> registered after the core infrastructure shrnikers, so they are not
+> going to perturb the current ordering.
+ 
+By definition the ordering changes based on the order of registration.
+You can't argue with that.
+
+
+> And if this is enough of a problem to disallow context based cache
+> shrinkers, then lets fix the interface so that we encode the
+> dependencies explicitly in the registration interface rather than
+> doing it implicitly.
+> 
+> IOWs, I don't think this is a valid reason for not allowing a
+> context to be passed with a shrinker because it is easily fixed.
+
+Well yeah you could do all that maybe. I think it would definitely be
+required if we were to do context shrinkers like this. But AFAIKS there
+is simply no need at all. Definitely it is not preventing XFS from
+following more like the existing shrinker implementations.
+
+
