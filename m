@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab0DTARF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 20:17:05 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:37477 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab0DTARB convert rfc822-to-8bit (ORCPT
+	id S1752790Ab0DTAUa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 20:20:30 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:43033 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab0DTAU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 20:17:01 -0400
+	Mon, 19 Apr 2010 20:20:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=T7bTjiWJVr2Nsrsy+HmsNOKglt6ReX9G+aazn3OUwVodIaBMF8oVkiih3XpKF/B3nq
-         rzzUBIz1zabzb1QEfFwBq2R4PCEe0QUgwafVMDKspne+Exx1O9ch/QQxt9D6WK7lfpFx
-         VPBsbGHidrrkeFBGCIlcL8gxgYrIBs71xQFhE=
+         :cc:content-type;
+        b=BVxAbvvnqu0PBJ3u78sHzJtmTfZsymS/UHT5qYjJvNgDLGb3lIHdVreC7jNmEpk4Oi
+         p0DxhPP0T5sxC+AtP369Mg54vCItiba0yEDZk39LfqHjvqS5BYj/iSMLYiapCu83lYhN
+         qpqRx3DNkN+96gUbl8XzlCMWyXjAMmuORzCFI=
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1004151114490.1562-100000@iolanthe.rowland.org>
-References: <g2h74fd948d1004141820ladc1941eo732d059dd678df0a@mail.gmail.com>
-	 <Pine.LNX.4.44L0.1004151114490.1562-100000@iolanthe.rowland.org>
-Date: Tue, 20 Apr 2010 01:16:58 +0100
-Message-ID: <t2r74fd948d1004191716l49dedc2p25a27da39bcc614a@mail.gmail.com>
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-From: Pedro Ribeiro <pedrib@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Daniel Mack <daniel@caiaq.de>
-Cc: Chris Wright <chrisw@sous-sol.org>, David Woodhouse <dwmw2@infradead.org>,
-       USB list <linux-usb@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>,
-       iommu@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <alpine.DEB.2.00.1004191238450.9855@router.home>
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
+	 <4BC6E581.1000604@kernel.org>
+	 <z2p28c262361004150321sc65e84b4w6cc99927ea85a52b@mail.gmail.com>
+	 <4BC6FBC8.9090204@kernel.org>
+	 <w2h28c262361004150449qdea5cde9y687c1fce30e665d@mail.gmail.com>
+	 <alpine.DEB.2.00.1004161105120.7710@router.home>
+	 <1271606079.2100.159.camel@barrios-desktop>
+	 <4BCB780C.1030001@kernel.org>
+	 <j2h28c262361004181703gd3f4bc19r6d00451e01b779a7@mail.gmail.com>
+	 <alpine.DEB.2.00.1004191238450.9855@router.home>
+Date: Tue, 20 Apr 2010 09:20:27 +0900
+Message-ID: <o2p28c262361004191720n1c2bc086ub93a195b612c7f01@mail.gmail.com>
+Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Mel Gorman <mel@csn.ul.ie>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 April 2010 16:20, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Thu, 15 Apr 2010, Pedro Ribeiro wrote:
+On Tue, Apr 20, 2010 at 2:45 AM, Christoph Lameter
+<cl@linux-foundation.org> wrote:
+> On Mon, 19 Apr 2010, Minchan Kim wrote:
 >
->> I enabled  CONFIG_DMAR_BROKEN_GFX_WA=y and the result is the same. A
->> delay in the boot process and usb devices don't work properly,
->> including my USB mouse.
+>> Let's tidy my table.
 >>
->> Strange, since you have the same platform as me. The extra usb devices
->> you were seeing are because of my docking station - but it makes no
->> difference whether I'm docked or not for the purposes of the original
->> bug or this situation right now. The dmesg I'm attaching is without
->> the computer being docked.
+>> I made quick patch to show the concept with one example of pci-dma.
+>> (Sorry but I attach patch since web gmail's mangling.)
+>>
+>> On UMA, we can change alloc_pages with
+>> alloc_pages_exact_node(numa_node_id(),....)
+>> (Actually, the patch is already merged mmotm)
 >
-> It's not possible to determine the reason for the timeout errors
-> between timestamps 16 and 53 from the small amount of debugging
-> information in the log.  Clearly something is going wrong with the
-> communication between the computer and the EHCI controller.  And
-> clearly the kernel config changes are responsible.
->
-> But I don't know what to do to track it down any farther.
->
-> Alan Stern
->
->
+> UMA does not have the concept of nodes. Whatever node you specify is
+> irrelevant. Please remove the patch from mmotm.
 
-I guess this is pretty much a dead end until anyone else can reproduce it!
+I didn't change API name. The patch is just for optimization.
+http://lkml.org/lkml/2010/4/14/225
+I think it's reasonable in UMA.
+Why do you want to remove it?
 
-I'll continue to use Daniel's patches privately.
+Do you dislike alloc_pages_exact_node naming?
+I added comment.
+http://lkml.org/lkml/2010/4/14/230
+Do you think it isn't enough?
 
-Daniel, should I use the big initial patch or the GFP_DMA one? Which
-one is better for a system which is only rebooted every week or so (I
-usually hibernate)?
+This patch results from misunderstanding of alloc_pages_exact_node.
+(http://marc.info/?l=linux-mm&m=127109064101184&w=2)
+At that time, I thought naming changing is worth.
+But many people don't like it.
+Okay. It was just trial and if everyone dislike, I don't have any strong cause.
+But this patch series don't relate to it. Again said, It's just for
+optimization patch.
 
-Regards,
-Pedro
+Let's clarify other's opinion.
+
+1. "I dislike alloc_pages_exact_node naming. Let's change it with more
+clear name."
+2. "I hate alloc_pages_exact_node. It's trivial optimization. Let's
+remove it and replace it with alloc_pages_node."
+3. "alloc_pages_exact_node naming is not bad. Let's add the comment to
+clear name"
+4. "Let's cleanup alloc_pages_xxx in this change as well as 3.
+5. "Please, don't touch. Remain whole of thing like as-is."
+
+I think Chrsitop selects 5 or 1, Tejun selects 2, Mel selects 3, me
+want to 4 but is satisfied with 3. Right?
+
+If we selects 5, In future, there are confusing between
+alloc_pages_node and alloc_pages_exact_node.So I don't want it.
+
+If we select 2, We already have many place of alloc_pages_exact_node.
+And I add this patch series. So most of caller uses alloc_pages_exact_node now.
+Isn't it trivial?
+
+So I want 3 at lest although you guys don't like 4.
+Please, suggest better idea to me. :)
+
+-- 
+Kind regards,
+Minchan Kim
