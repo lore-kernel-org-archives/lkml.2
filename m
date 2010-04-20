@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab0DTXA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 19:00:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:54347 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab0DTXAz (ORCPT
+	id S1753186Ab0DTXIW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 19:08:22 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46104 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab0DTXIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 19:00:55 -0400
-X-Authority-Analysis: v=1.1 cv=ZUag8tkj9kgmNMrzofuoEsXxpG43g9sRv4eUZcQ4+as= c=1 sm=0 a=eOOYVsMsLpwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=mx-tpX3RaX2WCM4R2LsA:9 a=SeCOUZLyZGnKl9vbdtgA:7 a=MPYBzRg3a9dvLP0X2MQPNfHi14YA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: Considerations on sched APIs under RT patch
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Primiano Tucci <p.tucci@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       tglx <tglx@linutronix.de>
-In-Reply-To: <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
-References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
-	 <1271755208.1676.422.camel@laptop>
-	 <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Tue, 20 Apr 2010 19:00:53 -0400
-Message-ID: <1271804453.10448.168.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Apr 2010 19:08:21 -0400
+Date: Wed, 21 Apr 2010 00:07:19 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: Suspicious compilation warning
+Message-ID: <20100420230719.GB1432@n2100.arm.linux.org.uk>
+References: <k2ncecb6d8f1004191627w3cd36450xf797f746460abb09@mail.gmail.com> <20100420155122.6f2c26eb.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100420155122.6f2c26eb.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-20 at 23:56 +0200, Primiano Tucci wrote:
-> Hi Peter,
-
-> long sched_setaffinity(pid_t pid, const struct cpumask *in_mask) {
-> 	cpumask_var_t cpus_allowed, new_mask;
-> 	struct task_struct *p;
-> 	int retval;
+On Tue, Apr 20, 2010 at 03:51:22PM -0700, Andrew Morton wrote:
+> On Mon, 19 Apr 2010 20:27:43 -0300
+> Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br> wrote:
 > 
-> 	get_online_cpus();
-> -->	read_lock(&tasklist_lock);
+> > I get this warning while compiling for ARM/SA1100:
+> > 
+> > mm/sparse.c: In function '__section_nr':
+> > mm/sparse.c:135: warning: 'root' is used uninitialized in this function
+> > 
+> > With a small patch in fs/proc/meminfo.c, I find that NR_SECTION_ROOTS
+> > is zero, which certainly explains the warning.
+> > 
+> > # cat /proc/meminfo
+> > NR_SECTION_ROOTS=0
+> > NR_MEM_SECTIONS=32
+> > SECTIONS_PER_ROOT=512
+> > SECTIONS_SHIFT=5
+> > MAX_PHYSMEM_BITS=32
 > 
+> hm, who owns sparsemem nowadays? Nobody identifiable.
 > 
-> My question is: suppose that tasklist_lock is held by a writer.
-> What happens to the calling thread? It can't take the lock, therefore
-> it yields to the next ready task (that in my scenario has a lower
-> priority).
-> In my view, this is not a Priority Inversion problem. The problem is
-> that the sched_setaffinity is unexpectedly "suspensive" and yields to
-> the lower thread.
+> Does it make physical sense to have SECTIONS_PER_ROOT > NR_MEM_SECTIONS?
 
-read_locks are converted into "special" rt_mutexes. The only thing
-special about them, is the owner may grab the same read lock more than
-once (recursive).
+Well, it'll be about this number on everything using sparsemem extreme:
 
-If a lower priority process currently holds the tasklist_lock for write,
-when a high priority process tries to take it for read (or write for
-that matter) it will block on the lower priority process. But that lower
-priority process will acquire the priority of the higher priority
-process (priority inheritance) and will run at that priority until it
-releases the lock. Then it will go back to its low priority and the
-higher priority process will then preempt it and acquire the lock for
-read.
+#define SECTIONS_PER_ROOT       (PAGE_SIZE / sizeof (struct mem_section))
 
-The above is what is expected.
+and with only 32 sections, this is going to give a NR_SECTION_ROOTS value
+of zero.  I think the calculation of NR_SECTIONS_ROOTS is wrong.
 
--- Steve
+#define NR_SECTION_ROOTS        (NR_MEM_SECTIONS / SECTIONS_PER_ROOT)
 
+Clearly if we have 1 mem section, we want to have one section root, so
+I think this division should round up any fractional part, thusly:
 
+#define NR_SECTION_ROOTS        ((NR_MEM_SECTIONS + SECTIONS_PER_ROOT - 1) / SECTIONS_PER_ROOT)
