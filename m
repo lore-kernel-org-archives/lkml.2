@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab0DTXd6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 19:33:58 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60797 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752174Ab0DTXd5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 19:33:57 -0400
-Date: Tue, 20 Apr 2010 16:33:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] hugetlbfs: Kill applications that use MAP_NORESERVE
- with SIGBUS instead of OOM-killer
-Message-Id: <20100420163307.785a6cb2.akpm@linux-foundation.org>
-In-Reply-To: <20100420174407.GA30306@csn.ul.ie>
-References: <20100420174407.GA30306@csn.ul.ie>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753403Ab0DTXoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 19:44:06 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37290 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752609Ab0DTXoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 19:44:02 -0400
+Date: Wed, 21 Apr 2010 01:43:56 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: Jeff Dike <jdike@addtoit.com>, Amerigo Wang <xiyou.wangcong@gmail.com>,
+       linux-kernel@vger.kernel.org,
+       user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH 3/5] uml: Fix warning due to missing task_struct
+ declaration
+In-Reply-To: <4BCDDFBB.40805@web.de>
+Message-ID: <alpine.LNX.2.00.1004210143060.7579@pobox.suse.cz>
+References: <cover.1271713955.git.jan.kiszka@web.de> <1d97cd7761a1eae73923b1adda4c6915a0647bb3.1271713955.git.jan.kiszka@web.de> <20100420100949.GB5317@cr0.nay.redhat.com> <20100420143016.GB30011@c-98-229-117-200.hsd1.ma.comcast.net>
+ <4BCDDFBB.40805@web.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Apr 2010 18:44:07 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
+On Tue, 20 Apr 2010, Jan Kiszka wrote:
 
-> Ordinarily, application using hugetlbfs will create mappings with
-> reserves. For shared mappings, these pages are reserved before mmap()
-> returns success and for private mappings, the caller process is
-> guaranteed and a child process that cannot get the pages gets killed
-> with sigbus.
+> >>> We can't pull in linux/sched.h, so just declare the struct.
+> >>>
+> >> Did you meet any build error? If yes, please include it.
+> > 
+> > What does this patch fix, aside from being a bit cleaner?
 > 
-> An application that uses MAP_NORESERVE gets no reservations and mmap()
-> will always succeed at the risk the page will not be available at fault
-> time. This might be used for example on very large sparse mappings where the
-> developer is confident the necessary huge pages exist to satisfy all faults
-> even though the whole mapping cannot be backed by huge pages.  Unfortunately,
-> if an allocation does fail, VM_FAULT_OOM is returned to the fault handler
-> which proceeds to trigger the OOM-killer. This is unhelpful.
+>   CC      arch/um/sys-i386/elfcore.o
+> In file included from /data/linux-2.6/include/linux/elf.h:8,
+>                  from /data/linux-2.6/arch/um/sys-i386/elfcore.c:2:
+> /data/linux-2.6/arch/um/sys-i386/asm/elf.h:78: warning: ‘struct task_struct’ declared inside parameter list
+> /data/linux-2.6/arch/um/sys-i386/asm/elf.h:78: warning: its scope is only this definition or declaration, which is probably not what you want
 > 
-> This patch alters hugetlbfs to kill a process that uses MAP_NORESERVE
-> where huge pages were not available with SIGBUS instead of triggering
-> the OOM killer.
+> I guess not many people build against i386 hosts anymore, so this
+> remained widely unnoticed.
 > 
-> This patch if accepted should also be considered a -stable candidate.
-
-Why?  The changelog doesn't convey much seriousness?
-
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> ---
->  mm/hugetlb.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > If it built before, without having a task_struct declaration, I think
+> > that means that the elf_core_copy_fpregs was never used.  The
+> > task_struct * in the declaration would become a private task_struct,
+> > known only to the declaration.  If the implementation or callers have
+> > the regular task_struct, it will be a different one, and the
+> > prototypes will conflict due to the different types of the first
+> > parameter.
 > 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 6034dc9..af2d907 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1038,7 +1038,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  		page = alloc_buddy_huge_page(h, vma, addr);
->  		if (!page) {
->  			hugetlb_put_quota(inode->i_mapping, chg);
-> -			return ERR_PTR(-VM_FAULT_OOM);
-> +			return ERR_PTR(-VM_FAULT_SIGBUS);
->  		}
->  	}
->  
+> This is just a forward declaration (that many arch elf header include),
+> so no such problem exists.
+> 
+> BTW, to answer the other question in this thread: We have a circular
+> dependency that prevents including sched.h.
+> 
+> I can add all these information to some v2 of this patch if it is
+> required to get this merged. Please let me know.
 
-This affects hugetlb_cow() as well?
+I have updated the explanation in the changelog and applied the patch. If 
+anyone has any objections still, please let me know.
 
+Thanks,
 
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
