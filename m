@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab0DTVsH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 17:48:07 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:50406 "EHLO e2.ny.us.ibm.com"
+	id S1752962Ab0DTVtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:49:00 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:47507 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab0DTVpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 17:45:10 -0400
+	id S1752301Ab0DTVpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 17:45:09 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 13/23] rcu: print boot-time console messages if RCU configs out of ordinary
-Date: Tue, 20 Apr 2010 14:44:45 -0700
-Message-Id: <1271799895-21028-13-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 10/23] rcu: slim down rcutiny by removing rcu_scheduler_active and friends
+Date: Tue, 20 Apr 2010 14:44:42 -0700
+Message-Id: <1271799895-21028-10-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100420214431.GA20777@linux.vnet.ibm.com>
 References: <20100420214431.GA20777@linux.vnet.ibm.com>
@@ -24,108 +24,234 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print boot-time messages if tracing is enabled, if fanout is set
-to non-default values, if exact fanout is specified, if accelerated
-dyntick-idle grace periods have been enabled, if RCU-lockdep is enabled,
-if rcutorture has been boot-time enabled, if the CPU stall detector has
-been disabled, or if four-level hierarchy has been enabled.
+TINY_RCU does not need rcu_scheduler_active unless CONFIG_DEBUG_LOCK_ALLOC.
+So conditionally compile rcu_scheduler_active in order to slim down
+rcutiny a bit more.  Also gets rid of an EXPORT_SYMBOL_GPL, which is
+responsible for most of the slimming.
 
-This is all for TREE_RCU and TREE_PREEMPT_RCU.  TINY_RCU will be handled
-separately, if at all.
-
-Suggested-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c        |    6 ------
- kernel/rcutree_plugin.h |   44 ++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 42 insertions(+), 8 deletions(-)
+ include/linux/rcupdate.h |    4 +---
+ include/linux/rcutiny.h  |   13 +++++++++++++
+ include/linux/rcutree.h  |    3 +++
+ kernel/rcupdate.c        |   19 -------------------
+ kernel/rcutiny.c         |    7 +++++++
+ kernel/rcutiny_plugin.h  |   39 +++++++++++++++++++++++++++++++++++++++
+ kernel/rcutree.c         |   19 +++++++++++++++++++
+ 7 files changed, 82 insertions(+), 22 deletions(-)
+ create mode 100644 kernel/rcutiny_plugin.h
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 595fb83..ec6196f 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1938,12 +1938,6 @@ void __init rcu_init(void)
- 	int cpu;
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 08a04b1..6e6f851 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -64,8 +64,6 @@ extern int sched_expedited_torture_stats(char *page);
  
- 	rcu_bootup_announce();
--#ifdef CONFIG_RCU_CPU_STALL_DETECTOR
--	printk(KERN_INFO "RCU-based detection of stalled CPUs is enabled.\n");
--#endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
--#if NUM_RCU_LVL_4 != 0
--	printk(KERN_INFO "Experimental four-level hierarchy is enabled.\n");
--#endif /* #if NUM_RCU_LVL_4 != 0 */
- 	RCU_INIT_FLAVOR(&rcu_sched_state, rcu_sched_data);
- 	RCU_INIT_FLAVOR(&rcu_bh_state, rcu_bh_data);
- 	__rcu_init_preempt();
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index f9bc83a..0ae2339 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -26,6 +26,45 @@
+ /* Internal to kernel */
+ extern void rcu_init(void);
+-extern int rcu_scheduler_active;
+-extern void rcu_scheduler_starting(void);
  
- #include <linux/delay.h>
+ #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
+ #include <linux/rcutree.h>
+@@ -178,7 +176,7 @@ static inline int rcu_read_lock_bh_held(void)
+ #ifdef CONFIG_PREEMPT
+ static inline int rcu_read_lock_sched_held(void)
+ {
+-	return !rcu_scheduler_active || preempt_count() != 0 || irqs_disabled();
++	return preempt_count() != 0 || irqs_disabled();
+ }
+ #else /* #ifdef CONFIG_PREEMPT */
+ static inline int rcu_read_lock_sched_held(void)
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index ff22b97..14e5a76 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -128,4 +128,17 @@ static inline int rcu_preempt_depth(void)
+ 	return 0;
+ }
  
-+/*
-+ * Check the RCU kernel configuration parameters and print informative
-+ * messages about anything out of the ordinary.  If you like #ifdef, you
-+ * will love this function.
-+ */
-+static void __init rcu_bootup_announce_oddness(void)
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++
++extern int rcu_scheduler_active __read_mostly;
++extern void rcu_scheduler_starting(void);
++
++#else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
++
++static inline void rcu_scheduler_starting(void)
 +{
-+#ifdef CONFIG_RCU_TRACE
-+	printk(KERN_INFO "\tRCU debugfs-based tracing is enabled.\n");
-+#endif
-+#if (defined(CONFIG_64BIT) && CONFIG_RCU_FANOUT != 64) || (!defined(CONFIG_64BIT) && CONFIG_RCU_FANOUT != 32)
-+	printk(KERN_INFO "\tCONFIG_RCU_FANOUT set to non-default value of %d\n",
-+	       CONFIG_RCU_FANOUT);
-+#endif
-+#ifdef CONFIG_RCU_FANOUT_EXACT
-+	printk(KERN_INFO "\tHierarchical RCU autobalancing is disabled.\n");
-+#endif
-+#ifdef CONFIG_RCU_FAST_NO_HZ
-+	printk(KERN_INFO
-+	       "\tRCU dyntick-idle grace-period acceleration is enabled.\n");
-+#endif
-+#ifdef CONFIG_PROVE_RCU
-+	printk(KERN_INFO "\tRCU lockdep checking is enabled.\n");
-+#endif
-+#ifdef CONFIG_RCU_TORTURE_TEST_RUNNABLE
-+	printk(KERN_INFO "\tRCU torture testing starts during boot.\n");
-+#endif
-+#ifndef CONFIG_RCU_CPU_STALL_DETECTOR
-+	printk(KERN_INFO
-+	       "\tRCU-based detection of stalled CPUs is disabled.\n");
-+#endif
-+#ifndef CONFIG_RCU_CPU_STALL_VERBOSE
-+	printk(KERN_INFO "\tVerbose stalled-CPUs detection is disabled.\n");
-+#endif
-+#if NUM_RCU_LVL_4 != 0
-+	printk(KERN_INFO "\tExperimental four-level hierarchy is enabled.\n");
-+#endif
 +}
 +
- #ifdef CONFIG_TREE_PREEMPT_RCU
++#endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
++
+ #endif /* __LINUX_RCUTINY_H */
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index b9f7460..4828205 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -123,4 +123,7 @@ static inline int rcu_blocking_is_gp(void)
+ 	return num_online_cpus() == 1;
+ }
  
- struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt_state);
-@@ -38,8 +77,8 @@ static int rcu_preempted_readers_exp(struct rcu_node *rnp);
++extern void rcu_scheduler_starting(void);
++extern int rcu_scheduler_active __read_mostly;
++
+ #endif /* __LINUX_RCUTREE_H */
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index 03a7ea1..689281e 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -44,7 +44,6 @@
+ #include <linux/cpu.h>
+ #include <linux/mutex.h>
+ #include <linux/module.h>
+-#include <linux/kernel_stat.h>
+ #include <linux/hardirq.h>
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+@@ -64,9 +63,6 @@ struct lockdep_map rcu_sched_lock_map =
+ EXPORT_SYMBOL_GPL(rcu_sched_lock_map);
+ #endif
+ 
+-int rcu_scheduler_active __read_mostly;
+-EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+-
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 
+ int debug_lockdep_rcu_enabled(void)
+@@ -97,21 +93,6 @@ EXPORT_SYMBOL_GPL(rcu_read_lock_bh_held);
+ #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
+ /*
+- * This function is invoked towards the end of the scheduler's initialization
+- * process.  Before this is called, the idle task might contain
+- * RCU read-side critical sections (during which time, this idle
+- * task is booting the system).  After this function is called, the
+- * idle tasks are prohibited from containing RCU read-side critical
+- * sections.
+- */
+-void rcu_scheduler_starting(void)
+-{
+-	WARN_ON(num_online_cpus() != 1);
+-	WARN_ON(nr_context_switches() > 0);
+-	rcu_scheduler_active = 1;
+-}
+-
+-/*
+  * Awaken the corresponding synchronize_rcu() instance now that a
+  * grace period has elapsed.
   */
- static void __init rcu_bootup_announce(void)
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index d9f8a62..b1804ff 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -54,6 +54,11 @@ static struct rcu_ctrlblk rcu_bh_ctrlblk = {
+ 	.curtail	= &rcu_bh_ctrlblk.rcucblist,
+ };
+ 
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++int rcu_scheduler_active __read_mostly;
++EXPORT_SYMBOL_GPL(rcu_scheduler_active);
++#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
++
+ #ifdef CONFIG_NO_HZ
+ 
+ static long rcu_dynticks_nesting = 1;
+@@ -276,3 +281,5 @@ void __init rcu_init(void)
  {
--	printk(KERN_INFO
--	       "Experimental preemptable hierarchical RCU implementation.\n");
-+	printk(KERN_INFO "Preemptable hierarchical RCU implementation.\n");
-+	rcu_bootup_announce_oddness();
+ 	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
+ }
++
++#include "rcutiny_plugin.h"
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+new file mode 100644
+index 0000000..d223a92
+--- /dev/null
++++ b/kernel/rcutiny_plugin.h
+@@ -0,0 +1,39 @@
++/*
++ * Read-Copy Update mechanism for mutual exclusion (tree-based version)
++ * Internal non-public definitions that provide either classic
++ * or preemptable semantics.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright IBM Corporation, 2009
++ *
++ * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
++ */
++
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++
++#include <linux/kernel_stat.h>
++
++/*
++ * During boot, we forgive RCU lockdep issues.  After this function is
++ * invoked, we start taking RCU lockdep issues seriously.
++ */
++void rcu_scheduler_starting(void)
++{
++	WARN_ON(nr_context_switches() > 0);
++	rcu_scheduler_active = 1;
++}
++
++#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index e336313..3623f8e 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -46,6 +46,7 @@
+ #include <linux/cpu.h>
+ #include <linux/mutex.h>
+ #include <linux/time.h>
++#include <linux/kernel_stat.h>
+ 
+ #include "rcutree.h"
+ 
+@@ -80,6 +81,9 @@ DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
+ struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh_state);
+ DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+ 
++int rcu_scheduler_active __read_mostly;
++EXPORT_SYMBOL_GPL(rcu_scheduler_active);
++
+ /*
+  * Return true if an RCU grace period is in progress.  The ACCESS_ONCE()s
+  * permit this function to be invoked without holding the root rcu_node
+@@ -1784,6 +1788,21 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
  }
  
  /*
-@@ -757,6 +796,7 @@ void exit_rcu(void)
- static void __init rcu_bootup_announce(void)
- {
- 	printk(KERN_INFO "Hierarchical RCU implementation.\n");
-+	rcu_bootup_announce_oddness();
- }
- 
- /*
++ * This function is invoked towards the end of the scheduler's initialization
++ * process.  Before this is called, the idle task might contain
++ * RCU read-side critical sections (during which time, this idle
++ * task is booting the system).  After this function is called, the
++ * idle tasks are prohibited from containing RCU read-side critical
++ * sections.  This function also enables RCU lockdep checking.
++ */
++void rcu_scheduler_starting(void)
++{
++	WARN_ON(num_online_cpus() != 1);
++	WARN_ON(nr_context_switches() > 0);
++	rcu_scheduler_active = 1;
++}
++
++/*
+  * Compute the per-level fanout, either using the exact fanout specified
+  * or balancing the tree, depending on CONFIG_RCU_FANOUT_EXACT.
+  */
 -- 
 1.7.0
 
