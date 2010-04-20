@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab0DTD7N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 23:59:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48665 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753307Ab0DTD7L convert rfc822-to-8bit (ORCPT
+	id S1753490Ab0DTD7U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 23:59:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47829 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753307Ab0DTD7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 23:59:11 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+	Mon, 19 Apr 2010 23:59:14 -0400
+Date: Mon, 19 Apr 2010 20:57:23 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Alex Zhavnerchik" <alex.vizor@gmail.com>
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh>
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>
+Subject: Re: 2.6.34-rc5: Reported regressions from 2.6.33
+Message-Id: <20100419205723.8724338c.akpm@linux-foundation.org>
 In-Reply-To: <deuQKFRcc0B.A.3EG.BRSzLB@tosh>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <YeFfFNFyTSF.A.vYB.mSSzLB@tosh>
-Subject: [Bug #15551] WARNING: at net/mac80211/work.c:811 ieee80211_work_work+0x7f/0xde8 [mac80211]()
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 20 Apr 2010 05:19:19 +0200 (CEST)
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+On Tue, 20 Apr 2010 05:15:57 +0200 (CEST) "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-The following bug entry is on the current list of known regressions
-from 2.6.33.  Please verify if it still should be listed and let the tracking team
-know (either way).
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15812
+> Subject		: utsname.domainname not set in x86_32 processes (causing "YPBINDPROC_DOMAIN: domain not bound" errors)
+> Submitter	:  <adi@hexapodia.org>
+> Date		: 2010-04-19 21:28 (1 days old)
 
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15551
-Subject		: WARNING: at net/mac80211/work.c:811 ieee80211_work_work+0x7f/0xde8 [mac80211]()
-Submitter	: Alex Zhavnerchik <alex.vizor@gmail.com>
-Date		: 2010-03-16 22:03 (35 days old)
-
-
+I merged hch's fix for this twelve seconds ago.
