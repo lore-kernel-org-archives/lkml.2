@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab0DTIhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 04:37:00 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43744 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346Ab0DTIg6 (ORCPT
+	id S1754043Ab0DTIhL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 04:37:11 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52923 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab0DTIhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 04:36:58 -0400
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
- rcu_dereference_check() usage
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
-       Eric Paris <eparis@redhat.com>, Eric Paris <eparis@parisplace.org>,
-       Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4BCD646B.1080206@cn.fujitsu.com>
-References: <a44ae5cd1003071726u1f94336h7ab6c7b80d16723b@mail.gmail.com>
-	 <20100311032843.GE6767@linux.vnet.ibm.com>
-	 <q2x7e0fb38c1004121144rb097e521hd2a7d8cea77c54b7@mail.gmail.com>
-	 <1271098032.4807.137.camel@twins> <1271242058.32749.19.camel@laptop>
-	 <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com>
-	 <20100419230136.GA16856@linux.vnet.ibm.com>
-	 <1271726729.2972.13.camel@dhcp231-113.rdu.redhat.com>
-	 <20100420030452.GB2905@linux.vnet.ibm.com>
-	 <4BCD646B.1080206@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Apr 2010 10:36:55 +0200
-Message-ID: <1271752615.1676.393.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Apr 2010 04:37:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Ii9JJVhwq6myCZTRvggMHZ92IL0g4GdXduXMKVAGmxoYXby27RPuFB8QaWWNhT/cyz
+         pdlQa0KydXHnacd/yiVE13Nj1hQpypuJnnFCIMl7asNUcuicF2wn2w0x9pCa2lno573t
+         oducSWUpCXQA66Y0LisocOYdrF1t/7ejF2a/k=
+Date: Tue, 20 Apr 2010 16:33:58 +0800
+From: Amerigo Wang <xiyou.wangcong@gmail.com>
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+       user-mode-linux-devel@lists.sourceforge.net,
+       Jeff Dike <jdike@addtoit.com>
+Subject: Re: [PATCH 2/5] uml: Drop private round_down definition
+Message-ID: <20100420083358.GD4356@cr0.nay.redhat.com>
+References: <cover.1271713955.git.jan.kiszka@web.de>
+ <74c7d668690f283cf3b8aed92004dc72e872f7ce.1271713955.git.jan.kiszka@web.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74c7d668690f283cf3b8aed92004dc72e872f7ce.1271713955.git.jan.kiszka@web.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-20 at 16:23 +0800, Lai Jiangshan wrote:
+On Mon, Apr 19, 2010 at 11:53:05PM +0200, Jan Kiszka wrote:
+>Already defined in kernel.h. The official version assumes that 'n' is
+>power of two - which it is in our case.
+>
+>Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
+>---
+> arch/um/sys-x86_64/signal.c |    2 --
+> 1 files changed, 0 insertions(+), 2 deletions(-)
+>
+>diff --git a/arch/um/sys-x86_64/signal.c b/arch/um/sys-x86_64/signal.c
+>index 1a899a7..07797d1 100644
+>--- a/arch/um/sys-x86_64/signal.c
+>+++ b/arch/um/sys-x86_64/signal.c
+>@@ -165,8 +165,6 @@ struct rt_sigframe
+> 	struct _fpstate fpstate;
+> };
 > 
-> One variable per usage, so, Now, we can get multiple complaint
-> when we detect multiple different suspicious rcu_dereference_check()
-> usage.
-> 
+>-#define round_down(m, n) (((m) / (n)) * (n))
+>-
+> int setup_signal_stack_si(unsigned long stack_top, int sig,
+> 			  struct k_sigaction *ka, struct pt_regs * regs,
+> 			  siginfo_t *info, sigset_t *set)
 
-Ah indeed, very nice.
+Shouldn't this signal.c #include <linux/kernel.h>?
 
+Thanks.
