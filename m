@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab0DTShi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 14:37:38 -0400
-Received: from a2s43.a2hosting.com ([69.39.89.30]:60780 "EHLO
-	a2s43.a2hosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab0DTShh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 14:37:37 -0400
-X-Greylist: delayed 20841 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 14:37:37 EDT
-Date: Tue, 20 Apr 2010 08:52:30 -0400
-From: Michael Shell <list1@michaelshell.org>
-To: linux-kernel@vger.kernel.org
-Subject: CD/DVD-R eject after burn to sync/validate/update read cache and/or
- media flags
-Message-ID: <20100420085230.46608b34@bashir>
-X-Mailer: Sylpheed-Claws 2.3.1 (GTK+ 2.4.9; i586-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - a2s43.a2hosting.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - michaelshell.org
+	id S1755111Ab0DTSlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 14:41:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44800 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753624Ab0DTSla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 14:41:30 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: minyard@acm.org
+Cc: openipmi-developer@lists.sourceforge.net, bjorn.helgaas@hp.com,
+       linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 3/3] ipmi: Change device discovery order
+Date: Tue, 20 Apr 2010 14:40:28 -0400
+Message-Id: <1271788828-10231-3-git-send-email-mjg@redhat.com>
+In-Reply-To: <1271788828-10231-2-git-send-email-mjg@redhat.com>
+References: <1271788828-10231-1-git-send-email-mjg@redhat.com>
+ <1271788828-10231-2-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.234.200
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The ipmi spec provides an ordering for si discovery. Change the driver
+to match.
 
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/char/ipmi/ipmi_si_intf.c |   21 +++++++++++----------
+ 1 files changed, 11 insertions(+), 10 deletions(-)
 
-We recently had a discussion on the cdrecord-support mailing list
-about the need to eject a CD/DVD-R after burning to be able to
-mount it.
-
-This has been a known issue under Linux for some time:
-
-http://lkml.indiana.edu/hypermail/linux/kernel/0705.0/0259.html
-
-http://lkml.indiana.edu/hypermail/linux/kernel/9604.3/0377.html
-
-It is a more serious annoyance with laptop drives that cannot
-close their trays without the help of a human hand.
-
-Has this issue been fixed in recent kernels, and if so, does anyone
-know about what release the change was made?
-
-Also, is there an ioctl or other way to force the kernel/driver to
-invalidate the read cache or other stored data of a specific
-drive/media (not the system as a whole) without having to physically
-eject the media?
-
-
-  Cheers and thanks in advance,
-
-  Mike Shell
-
-
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 95af023..a36cab1 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -3301,23 +3301,24 @@ static __devinit int init_ipmi_si(void)
+ 	}
+ 	mutex_unlock(&smi_infos_lock);
+ 
+-#ifdef CONFIG_DMI
+-	dmi_find_bmc();
++#ifdef CONFIG_PCI
++	rv = pci_register_driver(&ipmi_pci_driver);
++	if (rv)
++		printk(KERN_ERR
++		       "init_ipmi_si: Unable to register PCI driver: %d\n",
++		       rv);
+ #endif
+ 
+ #ifdef CONFIG_ACPI
+-	spmi_find_bmc();
++	pnp_register_driver(&ipmi_pnp_driver);
+ #endif
++
+ #ifdef CONFIG_ACPI
+-	pnp_register_driver(&ipmi_pnp_driver);
++	spmi_find_bmc();
+ #endif
+ 
+-#ifdef CONFIG_PCI
+-	rv = pci_register_driver(&ipmi_pci_driver);
+-	if (rv)
+-		printk(KERN_ERR
+-		       "init_ipmi_si: Unable to register PCI driver: %d\n",
+-		       rv);
++#ifdef CONFIG_DMI
++	dmi_find_bmc();
+ #endif
+ 
+ #ifdef CONFIG_PPC_OF
+-- 
+1.6.5.2
 
