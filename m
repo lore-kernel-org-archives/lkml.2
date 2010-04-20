@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab0DTRcE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 13:32:04 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:34257 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754847Ab0DTRcA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 13:32:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=RpAnE0CEZvnq7+55JsrmUme5Zs/a/8Uh3aU2VCWZQkfxpnW0l/R7GCMwn+OpM+tex+
-         B/ozFQyVaTSC5MgZzm6gO2dUQOtLJvo51mseQ5i065+x8L8ZZ4kEVHgygJlCGjyX3P1Q
-         T8CkEyYzxhvkbNXONsiXab29Xu4XqSoZ42IP8=
-Message-ID: <4BCDE507.10800@gmail.com>
-Date: Tue, 20 Apr 2010 10:31:51 -0700
-From: Till Kamppeter <till.kamppeter@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100404 Thunderbird/3.0.4
+	id S1754962Ab0DTRgE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 13:36:04 -0400
+Received: from 8bytes.org ([88.198.83.132]:57263 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754928Ab0DTRgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 13:36:01 -0400
+Date: Tue, 20 Apr 2010 19:35:59 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Greg KH <greg@kroah.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: pci_get_dev_by_id() from interrupt handlers
+Message-ID: <20100420173552.GA15669@8bytes.org>
+References: <20100420160423.GD31537@amd.com> <20100420163215.GB3270@kroah.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Rik van Riel <riel@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-       Greg KH <greg@kroah.com>,
-       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-       "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-wireless <linux-wireless@vger.kernel.org>,
-       Witold Sowa <witold.sowa@gmail.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: Google Summer of Code 2010 - Please resolve duplicates
-References: <4BCCB176.3060206@gmail.com> <i2wfa686aa41004200543gfbb71c98m9a70120fe1cbc8b9@mail.gmail.com>
-In-Reply-To: <i2wfa686aa41004200543gfbb71c98m9a70120fe1cbc8b9@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100420163215.GB3270@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2010 05:43 AM, Grant Likely wrote:
-> On Mon, Apr 19, 2010 at 1:39 PM, Till Kamppeter
-> <till.kamppeter@gmail.com>  wrote:
->> Please mail me if a mentor needs to be (re)assigned.
->
-> Nitin Gupta has 2 proposals on the table (one pending acceptance, and
-> one rejection).  I'm assigned as mentor on both of them, but I'm
-> certainly not qualified.  Rik van Riel has expressed a willingness to
-> mentor Nitin.  Rik, are you willing to take on a second student, or
-> can you suggest somebody to mentor Nitin?
->
+On Tue, Apr 20, 2010 at 09:32:15AM -0700, Greg KH wrote:
+> On Tue, Apr 20, 2010 at 06:04:24PM +0200, Joerg Roedel wrote:
+> > Hi Jesse,
+> > 
+> > I have a question regarding the warning in the pci_get_dev_by_id()
+> > [search.c] function which triggers when called from interrupt context.
+> > As far as I have seen this function should be save to be called in
+> > atomic mode.
+> 
+> Are you sure?
 
-Set Rik as mentor for the project pending acceptance.
+Not anymore. You proved me wrong ;-)
 
-> Alex Lorca's Locator/ID Separation Protocol project is pending
-> acceptance, but it has not been reviewed by anyone working in the area
-> of network routing.  Again, I'm not qualified to mentor this project
-> and I do not know who to suggest.
+> > Is there any other reason it should not be called in interrupt
+> > handlers?
+> 
+> klist traversal is not safe to be done in interrupt context as the
+> spinlock is not told to be interrupt safe.  Now you could go and change
+> the klist core to be interrupt safe, but you should probably rethink
+> your need here first.
 
-Seems that we have to reject this student because no one wants to mentor 
-him.
+The idea was to capture IO page faults in the IOMMU and propagate them
+to KVM instead of just printk into dmesg. KVM could do something better
+then like killing the guest. Currently a malicious guest could flood
+host dmesg by causing IO page faults.
+For the AMD IOMMU the page faults are reported in an event log and the
+cpu is informed by an interrupt about it. The event log entry contains
+the bus/dev/function of the device. To get the necessary information to
+propagate this to KVM I need to get the 'struct device' for it.
+I could certainly do this in a tasklet instead but doing that only for
+the task of converting bus/device/function into 'struct device' sounds
+a bit complicated to me.
 
-    TIll
+Regards,
+
+	Joerg
+
