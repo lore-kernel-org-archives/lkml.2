@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab0DTDbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 23:31:13 -0400
-Received: from verein.lst.de ([213.95.11.210]:41861 "EHLO verein.lst.de"
+	id S1753371Ab0DTDci (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 23:32:38 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48541 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116Ab0DTDbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 23:31:12 -0400
-Date: Tue, 20 Apr 2010 05:31:02 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: torvalds@linux-foundation.org
-Cc: Andy Isaacson <adi@hexapodia.org>, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: correctly wire up the newuname system call
-Message-ID: <20100420033102.GA13406@lst.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S1753116Ab0DTDcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 23:32:36 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: [REGRESSION 2.6.34] Suspend fails in pm_test=processor on Dell laptop
+Date: Tue, 20 Apr 2010 05:33:13 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+       pm list <linux-pm@lists.linux-foundation.org>
+References: <4bcb1cf2.116bdc0a.2008.6f5a@mx.google.com>
+In-Reply-To: <4bcb1cf2.116bdc0a.2008.6f5a@mx.google.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004200533.13219.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before commit e28cbf22933d0c0ccaf3c4c27a1a263b41f73859 64-bit x86 had
-a private implementation of sys_uname which was just called sys_uname,
-which other architectures used for the old uname.  Due to some merge
-issues with the uname refactoring patches we ended up calling the
-old uname version for both the old and new system call slots, which
-lead to the domainname filed never be set which caused failures with
-libnss_nis.
+On Sunday 18 April 2010, Ben Gamari wrote:
+> Hey all,
+> 
+> It seems that something in the 2.6.34 merge cycle has broken suspend to RAM on
+> my Dell Latitude D830. While suspend has been rock solid for several release
+> cycles, as of 2.6.34-rc4 it locks up on suspend. All of the pm_test options up
+> to processor work fine, precluding a driver issue.
 
-Reported-by: Andy Isaacson <adi@hexapodia.org>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Hmm, does the "processors" work?
 
-Index: linux-2.6/arch/x86/ia32/ia32entry.S
-===================================================================
---- linux-2.6.orig/arch/x86/ia32/ia32entry.S	2010-04-19 20:21:11.919003961 -0700
-+++ linux-2.6/arch/x86/ia32/ia32entry.S	2010-04-19 20:21:19.902005565 -0700
-@@ -626,7 +626,7 @@ ia32_sys_call_table:
- 	.quad stub32_sigreturn
- 	.quad stub32_clone		/* 120 */
- 	.quad sys_setdomainname
--	.quad sys_uname
-+	.quad sys_newuname
- 	.quad sys_modify_ldt
- 	.quad compat_sys_adjtimex
- 	.quad sys32_mprotect		/* 125 */
+> Unfortunately, I've been unable to get any useful output from the serial
+> console during suspend. I'll try bisecting and report back when I have more
+> details. Let me know what else I can do to help.
+
+I can't reproduce this, so it looks hardware or BIOS-related.  Or it's an
+obscure x86 bug.
+
+Rafael
