@@ -1,83 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab0DTUs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 16:48:59 -0400
-Received: from zakopane.cs.ubc.ca ([198.162.52.68]:41391 "EHLO
-	mail.quuxuum.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754666Ab0DTUs5 (ORCPT
+	id S1755290Ab0DTUuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 16:50:14 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38479 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754666Ab0DTUuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 16:48:57 -0400
-X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 16:48:57 EDT
-Date: Tue, 20 Apr 2010 13:41:51 -0700
-To: Tracy Reed <treed@ultraviolet.org>,
-       Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>,
-       xen-devel@lists.xensource.com, Aoetools-discuss@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] domU is causing misaligned disk writes
-Message-ID: <20100420204151.GH1708@kremvax.cs.ubc.ca>
-References: <20100420080958.GN5660@tracyreed.org>
-	<20100420084955.GV1878@reaktio.net>
-	<20100420200004.GQ5660@tracyreed.org>
+	Tue, 20 Apr 2010 16:50:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hDcwPtmYKGjQiqFe+wFHkqQWsJj987z/IPEzb9zM906vEsp7ty6WV6XCnTfqf5msSr
+         qGlf/SaLLU7lqhLGZUB+2pIg2oq+OAhFID+ay+4L65T5BTYa/zjeVS0MEa4lQLv2yP8f
+         sL+opjvNk63e5ncMfDT0xrfSQ583EdgxFtpfg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100420200004.GQ5660@tracyreed.org>
-X-Operating-System: Linux 2.6.31-20-generic x86_64
-User-Agent: Mutt/1.5.20 (2010-03-22)
-X-Delivery-Agent: TMDA/1.1.12 (Macallan)
-From: Brendan Cully <brendan@cs.ubc.ca>
-Mail-Followup-To: treed@ultraviolet.org, pasik@iki.fi,
-	xen-devel@lists.xensource.com,
-	Aoetools-discuss@lists.sourceforge.net,
-	linux-kernel@vger.kernel.org
+In-Reply-To: <1271677562.24780.184.camel@tucsk.pomaz.szeredi.hu>
+References: <1271420878.24780.145.camel@tucsk.pomaz.szeredi.hu>
+	 <h2m4e5e476b1004170546z8997cd90h98ecfb9cc5aad8cf@mail.gmail.com>
+	 <1271677562.24780.184.camel@tucsk.pomaz.szeredi.hu>
+Date: Tue, 20 Apr 2010 22:50:09 +0200
+Message-ID: <j2t4e5e476b1004201350xbd08a002l3329fbdd4fb1b8db@mail.gmail.com>
+Subject: Re: CFQ read performance regression
+From: Corrado Zoccolo <czoccolo@gmail.com>
+To: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Jens Axboe <jens.axboe@oracle.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+       Suresh Jayaraman <sjayaraman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o3KKoPmE015426
 
-On Tuesday, 20 April 2010 at 13:00, Tracy Reed wrote:
-> On Tue, Apr 20, 2010 at 11:49:55AM +0300, Pasi K�rkk�inen spake thusly:
-> > Are you using filesystems on normal partitions, or LVM in the domU? 
-> > I'm pretty sure this is a domU partitioning problem.
-> 
-> Also: What changes in the view of the partitioning between domU and
-> dom0? Wouldn't a partitioning error manifest itself in tests in the
-> dom0 as well as in the domU?
-> 
-> BTW: The dd from the last time in my last email finally finished:
-> 
-> # dd if=/dev/zero of=/dev/xvdg1 bs=4096 count=3000000
-> 3000000+0 records in
-> 3000000+0 records out
-> 12288000000 bytes (12 GB) copied, 734.714 seconds, 16.7 MB/s
-> 
-> If I run that very same dd as above (the last test in my previous
-> email) with the same partition setup again but this time from the
-> dom0:
-> 
-> # dd if=/dev/zero of=/dev/etherd/e6.1 bs=4096 count=3000000
-> 3000000+0 records in
-> 3000000+0 records out
-> 12288000000 bytes (12 GB) copied, 107.352 seconds, 114 MB/s
-> 
-> # /sbin/sfdisk -d /dev/etherd/e6.1 
-> # partition table of /dev/etherd/e6.1
-> unit: sectors
-> 
-> /dev/etherd/e6.1p1 : start=       64, size=566226926, Id=83
-> /dev/etherd/e6.1p2 : start=        0, size=        0, Id= 0
-> /dev/etherd/e6.1p3 : start=        0, size=        0, Id= 0
-> /dev/etherd/e6.1p4 : start=        0, size=        0, Id= 0
-> 
-> Device:         rrqm/s   wrqm/s   r/s   w/s    rkB/s    wkB/s avgrq-sz
-> avgqu-sz   await  svctm  %util
-> sda               0.00 17350.80  0.60 275.60    22.40 72540.00
-> 525.43    97.94  344.01   3.62 100.02
-> sdb               0.00 17374.80  1.20 256.00    28.00 74848.00
-> 582.24   136.20  527.72   3.89 100.02
-
-You could also be limited by the size of the block request ring (I
-believe the ring is normally only one page) -- the ring needs to be
-large enough to handle the bandwidth delay product, and AoE means the
-delay is probably higher than normal. Do you get better performance
-against a local partition?
+On Mon, Apr 19, 2010 at 1:46 PM, Miklos Szeredi <mszeredi@suse.cz> wrote:> Hi Corrado,>> On Sat, 2010-04-17 at 14:46 +0200, Corrado Zoccolo wrote:>> I don't think this is related to CFQ. I've made a graph of the>> accessed (read) sectors (see attached).>> You can see that the green cloud (2.6.16) is much more concentrated,>> while the red one (2.6.32) is split in two, and you can better>> recognize the different lines.>> This means that the FS put more distance between the blocks of the>> files written by the tio threads, and the read time is therefore>> impacted, since the disk head has to perform longer seeks. On the>> other hand, if you read those files sequentially with a single thread,>> the performance may be better with the new layout, so YMMV. When>> testing 2.6.32 and up, you should consider testing also with>> low_latency setting disabled, since tuning for latency can negatively>> affect throughput.Hi Miklos,can you give more information about the setup?How much memory do you have, what is the disk configuration (is this ahw raid?) and so on.>> low_latency is set to zero in all tests.>> The layout difference doesn't explain why setting the scheduler to> "noop" consistently speeds up read throughput in 8-thread tiobench to> almost twice.  This fact alone pretty clearly indicates that the I/O> scheduler is the culprit.From the attached btt output, I see that a lot of time is spentwaiting to allocate new request structures.> S2G               0.022460311   6.581680621  23.144763751          15Since noop doesn't attach fancy data to each request, it can savethose allocations, thus resulting in no sleeps.The delays in allocation, though, may not be completely imputable tothe I/O scheduler, and working in constrained memory conditions willnegatively affect it.
+> There are other indications, see the attached btt output for both> traces.  From there it appears that 2.6.16 does more and longer seeks,> yet it's getting an overall better performance.I see less seeks for 2.6.16, but longer on average.It seems that 2.6.16 allows more requests from the same process to bestreamed to disk before switching to an other process.Since the timeslice is the same, it might be that we are limiting thenumber of requests per queue due to memory congestion.
+> I've also tested with plain "dd" instead of tiobench where the> filesystem layout stayed exactly the same between tests.  Still the> speed difference is there.Does dropping caches before the read test change the situation?
+Thanks,Corrado>> Thanks,> Miklos>> ************************************************************************> btt output for 2.6.16:> ==================== All Devices ====================>>            ALL           MIN           AVG           MAX           N> --------------- ------------- ------------- ------------- ----------->> Q2Q               0.000000047   0.000854417   1.003550405       67465> Q2G               0.000000458   0.000001211   0.000123527       46062> G2I               0.000000123   0.000001815   0.000494517       46074> Q2M               0.000000186   0.000001798   0.000010296       21404> I2D               0.000000162   0.000158001   0.040794333       46062> M2D               0.000000878   0.000133130   0.040585566       21404> D2C               0.000053870   0.023778266   0.234154543       67466> Q2C               0.000056746   0.023931014   0.234176000       67466>> ==================== Device Overhead ====================>>       DEV |       Q2G       G2I       Q2M       I2D       D2C> ---------- | --------- --------- --------- --------- --------->  (  8, 64) |   0.0035%   0.0052%   0.0024%   0.4508%  99.3617%> ---------- | --------- --------- --------- --------- --------->   Overall |   0.0035%   0.0052%   0.0024%   0.4508%  99.3617%>> ==================== Device Merge Information ====================>>       DEV |       #Q       #D   Ratio |   BLKmin   BLKavg   BLKmax    Total> ---------- | -------- -------- ------- | -------- -------- -------- -------->  (  8, 64) |    67466    46062     1.5 |        8      597     1024 27543688>> ==================== Device Q2Q Seek Information ====================>>       DEV |          NSEEKS            MEAN          MEDIAN | MODE> ---------- | --------------- --------------- --------------- | --------------->  (  8, 64) |           67466        866834.0               0 | 0(34558)> ---------- | --------------- --------------- --------------- | --------------->   Overall |          NSEEKS            MEAN          MEDIAN | MODE>   Average |           67466        866834.0               0 | 0(34558)>> ==================== Device D2D Seek Information ====================>>       DEV |          NSEEKS            MEAN          MEDIAN | MODE> ---------- | --------------- --------------- --------------- | --------------->  (  8, 64) |           46062       1265503.9               0 | 0(13242)> ---------- | --------------- --------------- --------------- | --------------->   Overall |          NSEEKS            MEAN          MEDIAN | MODE>   Average |           46062       1265503.9               0 | 0(13242)>> ==================== Plug Information ====================>>       DEV |    # Plugs # Timer Us  | % Time Q Plugged> ---------- | ---------- ----------  | ---------------->  (  8, 64) |      29271(       533) |   3.878105328%>>       DEV |    IOs/Unp   IOs/Unp(to)> ---------- | ----------   ---------->  (  8, 64) |       19.2         19.7> ---------- | ----------   ---------->   Overall |    IOs/Unp   IOs/Unp(to)>   Average |       19.2         19.7>> ==================== Active Requests At Q Information ====================>>       DEV |  Avg Reqs @ Q> ---------- | ------------->  (  8, 64) |           0.8>> ==================== I/O Active Period Information ====================>>       DEV |     # Live      Avg. Act     Avg. !Act % Live> ---------- | ---------- ------------- ------------- ------>  (  8, 64) |        545   0.100012237   0.005766640  94.56> ---------- | ---------- ------------- ------------- ------>  Total Sys |        545   0.100012237   0.005766640  94.56>> ************************************************************************> btt output for 2.6.32:>> ==================== All Devices ====================>>            ALL           MIN           AVG           MAX           N> --------------- ------------- ------------- ------------- ----------->> Q2Q               0.000000279   0.001710581   1.803934429       69429> Q2G               0.000000908   0.001798735  23.144764798       54940> S2G               0.022460311   6.581680621  23.144763751          15> G2I               0.000000628   0.000001576   0.000120409       54942> Q2M               0.000000628   0.000001611   0.000013201       14490> I2D               0.000000768   0.289812035  86.820205789       54940> M2D               0.000005518   0.098208187   0.794441158       14490> D2C               0.000173141   0.008056256   0.219516385       69430> Q2C               0.000179077   0.259305605  86.820559403       69430>> ==================== Device Overhead ====================>>       DEV |       Q2G       G2I       Q2M       I2D       D2C> ---------- | --------- --------- --------- --------- --------->  (  8, 64) |   0.5489%   0.0005%   0.0001%  88.4394%   3.1069%> ---------- | --------- --------- --------- --------- --------->   Overall |   0.5489%   0.0005%   0.0001%  88.4394%   3.1069%>> ==================== Device Merge Information ====================>>       DEV |       #Q       #D   Ratio |   BLKmin   BLKavg   BLKmax    Total> ---------- | -------- -------- ------- | -------- -------- -------- -------->  (  8, 64) |    69430    54955     1.3 |        8      520     2048 28614984>> ==================== Device Q2Q Seek Information ====================>>       DEV |          NSEEKS            MEAN          MEDIAN | MODE> ---------- | --------------- --------------- --------------- | --------------->  (  8, 64) |           69430        546377.3               0 | 0(50235)> ---------- | --------------- --------------- --------------- | --------------->   Overall |          NSEEKS            MEAN          MEDIAN | MODE>   Average |           69430        546377.3               0 | 0(50235)>> ==================== Device D2D Seek Information ====================>>       DEV |          NSEEKS            MEAN          MEDIAN | MODE> ---------- | --------------- --------------- --------------- | --------------->  (  8, 64) |           54955        565286.3               0 | 0(37535)> ---------- | --------------- --------------- --------------- | --------------->   Overall |          NSEEKS            MEAN          MEDIAN | MODE>   Average |           54955        565286.3               0 | 0(37535)>> ==================== Plug Information ====================>>       DEV |    # Plugs # Timer Us  | % Time Q Plugged> ---------- | ---------- ----------  | ---------------->  (  8, 64) |       2310(         0) |   0.049353257%>>       DEV |    IOs/Unp   IOs/Unp(to)> ---------- | ----------   ---------->  (  8, 64) |        7.3          0.0> ---------- | ----------   ---------->   Overall |    IOs/Unp   IOs/Unp(to)>   Average |        7.3          0.0>> ==================== Active Requests At Q Information ====================>>       DEV |  Avg Reqs @ Q> ---------- | ------------->  (  8, 64) |         132.8>> ==================== I/O Active Period Information ====================>>       DEV |     # Live      Avg. Act     Avg. !Act % Live> ---------- | ---------- ------------- ------------- ------>  (  8, 64) |       4835   0.023848998   0.000714665  97.09> ---------- | ---------- ------------- ------------- ------>  Total Sys |       4835   0.023848998   0.000714665  97.09>>>>���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
