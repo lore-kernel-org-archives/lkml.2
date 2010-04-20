@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab0DTUeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 16:34:13 -0400
-Received: from n18.bullet.mail.mud.yahoo.com ([68.142.206.145]:40402 "HELO
-	n18.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755188Ab0DTUeL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 16:34:11 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 710191.77319.bm@omp110.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=0AIb0mSQy13ufwHxZ9I1CYh/DbZPCK9UuMlBQjQX4k1VmNW5VehdrURKPQpZW6nhGQL0eloPYgi9QHr9B2rATsbRM9+bc7WlbwOlOrvE0co5XmxzA9JGiE+86E/MRgD1WeC46Ee4jlHQJkvLb5ee7URZKdBBaVUgzMogWpspG4A=;
-Message-ID: <301842.27948.qm@web111913.mail.gq1.yahoo.com>
-X-YMail-OSG: lKw0zTwVM1kM8XtylQKCRZeNF5kaFcjzMqspEAKX2w7mFic
- IbmA7IuD6ozl64M5wELMZwrBjNikqHMyKrm9M1Yfk1VFm.uVLRFKKek27RAK
- HTgQE1n5adjirgjUElUhz_KXMlP7jjD3hvvJCj57WAxiDwIsB5iiAv.CxIaV
- FU8KNa0rLeFbxSanEggVItoMEC8tNWyerquqRAua1ZASiMUFFz3BgbJL3Xxq
- BKm6L2Rwf49RzMULtNTSVBKIOYkxwEB3j7lwVA1PyoN7hQc2BDXsKjp8pnhN
- i3w--
-X-Mailer: YahooMailClassic/10.1.9 YahooMailWebService/0.8.102.267879
-Date: Tue, 20 Apr 2010 13:34:10 -0700 (PDT)
-From: Chetan Loke <generationgnu@yahoo.com>
-Subject: RE: Memory policy question for NUMA arch....
-To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: rick.sherm@yahoo.com, andi@firstfloor.org, linux-numa@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755243Ab0DTUgE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 16:36:04 -0400
+Received: from www84.your-server.de ([213.133.104.84]:36885 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755159Ab0DTUgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 16:36:01 -0400
+Subject: Re: [PATCH 0/4] enhanced reimplemention of the kfifo API
+From: Stefani Seibold <stefani@seibold.net>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       andi@firstfloor.org, alan@lxorguk.ukuu.org.uk, tytso@mit.edu,
+       iws@ovro.caltech.edu
+In-Reply-To: <20100420201642.GA32373@suse.de>
+References: <1271794000-18897-1-git-send-email-stefani@seibold.net>
+	 <20100420201642.GA32373@suse.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 20 Apr 2010 22:35:47 +0200
+Message-ID: <1271795747.16051.18.camel@wall-e.seibold.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3.1 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee,
-
---- On Mon, 4/19/10, Lee Schermerhorn <Lee.Schermerhorn@hp.com> wrote:
-> You should never change the system default once the system
-> is up and
-> running.
+>  
+> > This are the features which are currently not used in the kernel:
+> > 
+> > kfifo_to_user()
+> > kfifo_from_user()
+> > kfifo_dma_....() macros
+> > kfifo_esize()
+> > kfifo_recsize()
+> > kfifo_put()
+> > kfifo_get()
+> > the fixed size record elements, exclude "unsigned char" fifo's and
+> > the variable size records fifo's
+> 
+> If you have features that have no users, why add them?  Do you think
+> that some drivers need/want these features?
 > 
 
-Not sure what I was thinking.Agreed, we should leave the default-policy alone.
+Some developers ask me for this features, so i am a nice girl and
+implemented it. Especially the kfifo_to_user() and kfifo_from_user() was
+desired and is IMHO very useful. 
 
-> Still not clear on what your requirements are 
+kfifo_put(), kfifo_get(), kfifo_esize() and kfifo_recsize() didn't coast
+anything, because there are only macros.
 
-Thanks for pointing me to the other post. I might have a similar problem.I've a nehalem box.
+Andrew agreed that we add this for a given time period, and have a look
+what happens. The code overhead is not to much.
 
-1) Drivers supports MSI-X.
-  1.1) Drivers at load time allocate a chunk of DMA'able memory.
-   
-2) Sometime later, after the OS boots, I need to load my apps.
+It is a chicken and egg problem: If we do not provide this features,
+nobody can use it and everyone will write it's own implementation.
 
-3) Now, the apps and the drivers communicate via a mmap'd region.
+I also plan to port some drivers to the new generic kfifo API, where i
+own the hardware.
 
-I need a deterministic way of allocating memory depending on my needs(interleave or localalloc).So I can't be at the mercy of either 'current' or 'global-policy' or anyone else.Also, why reference 'current' to begin with? And everytime I reference 'current' from within my driver, current points to 'work_for_cpu' kthread. So that clearly doesn't help.
+Stefani
 
-> A device-centric interface--e.g.,
-> 'get_free_pages_dev()'--could get the
-> device/bus node affinity via dev_to_node() and then do the
-> allocation/conversion.   I think this is
-> close to what you're suggesting
-> above. See dma_generic_alloc_coherent() [in
-> arch/x86/kernel/pci-dma.c]
-> for an example of a wrapper that does the device affinity
-> lookup and
-> allocation in one function.
-> 
-
-> Of course, you could just do this in your driver, as well.
-> 
-Very helpful thanks.I will mimic 'dma_generic_alloc_coherent' in my driver when I need local-node memory.
-
-
-> > Also, is there a way to configure irqbalance and ask
-> it to leave these
-> > guys alone? Like a config file that says - leave
-> these
-> > irqs/pci-devices alone.For now I've shut down
-> irqbalance.
-> 
-> You can set the environment variable
-> IRQBALANCE_BANNED_INTERRUPTS--when
-> starting irqbalance--to list of interrupts that irqbalance
-> should ignore
-> if you're using a version that supports that.  Check
-> the init script
-> that starts irqbalance on your distro of choice.
-> 
-aaaah...mine is old and I could see IRQBALANCE_BANNED_CPUS and not _INTERRUPTS.I will upgrade it.
-
-> Regards,
-> Lee
-
-Thanks
-Chetan Loke
-
-
-
-      
 
