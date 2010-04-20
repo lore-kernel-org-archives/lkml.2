@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab0DTKxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 06:53:38 -0400
-Received: from fg-out-1718.google.com ([72.14.220.159]:43026 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab0DTKxf (ORCPT
+	id S1754515Ab0DTLA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 07:00:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48113 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398Ab0DTLA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 06:53:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=b0bmSzPtM/VmY1N1SUdXapXG4JTtyBveJv/+mOnQI55/ranYXCH0064dZX33NEaWXA
-         6Af3y5ZwgIAm9Osxi5TUHRfujzV11LzIlBUZMnUG3YT2+VkpMBqY/3XGGcxNMQ6bjL/b
-         K3y/s3u+3PyyhEQh0FQwHq8kpbaZrdFbm16+k=
-From: Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-       Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>
-Subject: [PATCH] i2c-s3c2410: Decrease delay after end of transaction
-Date: Tue, 20 Apr 2010 13:53:19 +0300
-Message-Id: <1271760799-30913-1-git-send-email-yauhen.kharuzhy@promwad.com>
-X-Mailer: git-send-email 1.6.6.1
+	Tue, 20 Apr 2010 07:00:27 -0400
+Date: Tue, 20 Apr 2010 04:02:07 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       "davej@redhat.com" <davej@redhat.com>,
+       "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
+Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with
+ ondemand during disk IO
+Message-ID: <20100420040207.1be74046@infradead.org>
+In-Reply-To: <201004201010.50725.tvrtko.ursulin@sophos.com>
+References: <20100418115949.7b743898@infradead.org>
+	<201004191629.39339.tvrtko.ursulin@sophos.com>
+	<20100419174702.635ddad1@infradead.org>
+	<201004201010.50725.tvrtko.ursulin@sophos.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-msleep(1) which has been used for delay after issuing a STOP condition
-to bus cause very big delay (min 1/HZ s). This is makes bulk register
-update in I2C devices (for instance video camera) very slowly.
+On Tue, 20 Apr 2010 10:10:49 +0100
+Tvrtko Ursulin <tvrtko.ursulin@sophos.com> wrote:
+> >
+> > it's better then to stay high longer... at least on modern machines
+> > the inbetween states are pretty much either useless or actually
+> > energy hurting compared to the higher state.
+> 
+> Why do you think it is not good for latency to stay at higher
+> frequency for longer?
 
-Seems that this delay can be safely decreased to few tens of
-microseconds.
+oh it will be. 
 
-Signed-off-by: Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>
----
- drivers/i2c/busses/i2c-s3c2410.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> governor it was much much better. That is why I proposed to have a
+> gradual lowering as an option in on-demand. You said it already does
+> that - I ask are you sure? And also now you are saying it would not
+> be good for latency
+> - above is an example when it clearly does help (a lot).
 
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index d27072b..de20a4e 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -521,7 +521,7 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
- 
- 	/* ensure the stop has been through the bus */
- 
--	msleep(1);
-+	udelay(50);
- 
-  out:
- 	return ret;
+but the *gradual* lowering just does not make sense.
+might as well just stay at the highest frequency for the duration for
+which you do the gradual lowering, it's more efficient for power on most
+modern machines.
+
+The problem is if you do this gradual thing for long enough to help
+you on desktop loads, or the stay-high thing, on server workloads the
+power efficiency will completely and utterly tank. Been there tried
+that ;-)
+
+
+frankly, you're starting to touch at the more fundamental issues with
+ondemand. I'm not trying to solve that in this small patch, they really
+can only be solved in a complete redesign. While I'm doing such a
+redesign, I was asked to at least fix this particular gap urgently.
+Solving all of ondemand's issues needs a complete rethink of the core
+assumptions it makes (which are not correct anymore nowadays).
+
 -- 
-1.6.6.1
-
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
