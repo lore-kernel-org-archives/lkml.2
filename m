@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab0DTNU0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 09:20:26 -0400
-Received: from lon1-post-3.mail.demon.net ([195.173.77.150]:48988 "EHLO
-	lon1-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754666Ab0DTNUW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 09:20:22 -0400
-X-Greylist: delayed 4652 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 09:20:22 EDT
-Message-ID: <4BCD97C8.6090406@rsk.demon.co.uk>
-Date: Tue, 20 Apr 2010 13:02:16 +0100
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1754673Ab0DTNWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 09:22:24 -0400
+Received: from kroah.org ([198.145.64.141]:34844 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754494Ab0DTNWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 09:22:23 -0400
+Date: Tue, 20 Apr 2010 06:22:11 -0700
+From: Greg KH <greg@kroah.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>, linux-kernel@vger.kernel.org,
+       Brandon Philips <brandon@ifup.org>, stable@kernel.org
+Subject: Re: [stable] [PATCH] module: drop the lock while waiting for
+ module to complete initialization.
+Message-ID: <20100420132211.GA27374@kroah.com>
+References: <201004201849.04960.rusty@rustcorp.com.au>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       xfs@oss.sgi.com
-Subject: Re: [PATCH 0/4] writeback: tracing and wbc->nr_to_write fixes
-References: <1271731314-5893-1-git-send-email-david@fromorbit.com>
-In-Reply-To: <1271731314-5893-1-git-send-email-david@fromorbit.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004201849.04960.rusty@rustcorp.com.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/04/10 03:41, Dave Chinner wrote:
-> This series contains the initial writeback tracing patches from
-> Jens, as well as the extensions I added to provide visibility into
-> writeback control structures as the are used by the writeback code.
-> The visibility given is sufficient to understand what is happening
-> in the writeback path - what path is writing data, what path is
-> blocking on congestion, etc, and to determine the differences in
-> behaviour for different sync modes and calling contexts. This
-> tracing really needs to be integrated into mainline so that anyone
-> can improve the tracing as they use it to track down problems
-> in our convoluted writeback paths.
+On Tue, Apr 20, 2010 at 06:49:04PM +0930, Rusty Russell wrote:
+> This fixes "gave up waiting for init of module libcrc32c." which
+> happened at boot time due to multiple parallel module loads.
 > 
-> The remaining patches are fixes to problems that the new tracing
-> highlighted.
+> The problem was a deadlock: we wait for a module to finish
+> initializing, but we keep the module_lock mutex so it can't complete.
+> In particular, this could reasonably happen if a module does a
+> request_module() in its initialization routine.
 > 
+> So we change use_module() to return an errno rather than a bool, and if
+> it's -EBUSY we drop the lock and wait in the caller, then reaquire the
+> lock.
+> 
+> Reported-by: Brandon Philips <brandon@ifup.org>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> Tested-by: Brandon Philips <brandon@ifup.org>
+> ---
 
-Hi Dave,
+If you wish to have patches included "automatically" in the stable
+kernel releases, just add:
+	Cc: stable <stable@kernel.org>
+to the signed-off-by area of your patch.  Then, when the patch goes into
+Linus's tree, I get notified of it and can trivially add it to the
+proper kernel trees.
 
-Thanks for adding tracing to this, it will be really useful.
+Otherwise I need to go dig through git and watch to see if/when the
+patch shows up there or not, which takes a lot of time when having to do
+it for a lot of patches.
 
-The fix to write_cache_pages looks really interesting, I'm going to test
-it on my machine. Maybe it should be a separate patch to get more
-visibility?
+thanks,
 
-Ext4 also multiplies nr_to_write, so will that need fixing too?
-
-regards
-Richard
+greg k-h
