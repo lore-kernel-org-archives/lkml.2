@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab0DTKOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 06:14:10 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:38035 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab0DTKOI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 06:14:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DOG5FcO1Jt5vfbbBt/bjzzZCjYxlwloDdRykJd1mVhEPfizuMTX7yQipcvBcTAYe8z
-         Kf/6/Z5MYzwpfUn1P+Wk7yYmmdNc40wzB7t9rAVv3LpFjuY1YmS29pQPMn3aL6JKMZEr
-         mGsPzAXTjSNyTDpuH9r5x6tomxJRcJgHATQOk=
-MIME-Version: 1.0
-In-Reply-To: <20100420095855.GE19264@csn.ul.ie>
-References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org>
-	 <20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100419181442.GA19264@csn.ul.ie> <20100419193919.GB19264@csn.ul.ie>
-	 <s2v28c262361004191939we64e5490ld59b21dc4fa5bc8d@mail.gmail.com>
-	 <20100420082057.GC19264@csn.ul.ie>
-	 <x2h28c262361004200132q39fe5d5ex79251643a80d28b3@mail.gmail.com>
-	 <20100420084454.GD19264@csn.ul.ie>
-	 <x2u28c262361004200250h2c38894i9adbd85d8fb7b1d8@mail.gmail.com>
-	 <20100420095855.GE19264@csn.ul.ie>
-Date: Tue, 20 Apr 2010 19:14:05 +0900
-Message-ID: <p2m28c262361004200314i43af7c2bob94ee64d912ae2c1@mail.gmail.com>
-Subject: Re: error at compaction (Re: mmotm 2010-04-15-14-42 uploaded
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754343Ab0DTKQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 06:16:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17396 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754153Ab0DTKQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 06:16:56 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1271355219-20714-10-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <1271355219-20714-10-git-send-email-paulmck@linux.vnet.ibm.com> <20100415181255.GA19588@linux.vnet.ibm.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+       laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 10/16] rcu: slim down rcutiny by removing rcu_scheduler_active and friends
+Date: Tue, 20 Apr 2010 11:15:08 +0100
+Message-ID: <31681.1271758508@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 6:58 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> On Tue, Apr 20, 2010 at 06:50:23PM +0900, Minchan Kim wrote:
->> On Tue, Apr 20, 2010 at 5:44 PM, Mel Gorman <mel@csn.ul.ie> wrote:
->> > On Tue, Apr 20, 2010 at 05:32:13PM +0900, Minchan Kim wrote:
->> >>
->> >> Yes. Then, Let's add comment like split_page. :)
->> >>  /*
->> >>  * Note: this is probably too low level an operation for use in drivers.
->> >>  * Please consult with lkml before using this in your driver.
->> >>  */
->> >>
->> >
->> > I can, but the comment that was there says it's like split_page except the
->> > page is already free. This also covers not using it in a driver.
->>
->> I see. In addition, you already mentioned "As this is only being used
->> for migration".
->> I missed one.
->> I don't have any against one.
->> Will you repost v2 which move split_free_pages out of compaction.c?
->
-> I don't understand your suggestion. split_free_pages is already out of
-> compaction.c.
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Ahh. Sorry. It's my fault. I confused. forget it, please.
--- 
-Kind regards,
-Minchan Kim
+> +void rcu_scheduler_starting(void)
+> +{
+> +	WARN_ON(nr_context_switches() > 0);
+> +	rcu_scheduler_active = 1;
+> +}
+
+Since rcu_scheduler_active is a global variable, does it make sense to make
+this an inline function in the header file?
+
+It looks decidedly odd in its own include file as you've done it.  Wouldn't
+the right way to do this be to split it into its own .c file and conditionally
+compile it in the Makefile?
+
+David
