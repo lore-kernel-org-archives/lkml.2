@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab0DTVsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 17:48:15 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:54104 "EHLO e3.ny.us.ibm.com"
+	id S1753506Ab0DTVsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:48:18 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:54186 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752486Ab0DTVpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752525Ab0DTVpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Apr 2010 17:45:09 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 08/23] rcu: rename rcutiny rcu_ctrlblk to rcu_sched_ctrlblk
-Date: Tue, 20 Apr 2010 14:44:40 -0700
-Message-Id: <1271799895-21028-8-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 11/23] rcu: enable CPU_STALL_VERBOSE by default
+Date: Tue, 20 Apr 2010 14:44:43 -0700
+Message-Id: <1271799895-21028-11-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100420214431.GA20777@linux.vnet.ibm.com>
 References: <20100420214431.GA20777@linux.vnet.ibm.com>
@@ -24,58 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make naming line up in preparation for CONFIG_TINY_PREEMPT_RCU.
+The CPU_STALL_VERBOSE kernel configuration parameter was added to
+2.6.34 to identify any preempted/blocked tasks that were preventing
+the current grace period from completing when running preemptible
+RCU.  As is conventional for new configurations parameters, this
+defaulted disabled.  It is now time to enable it by default.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutiny.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+ lib/Kconfig.debug |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 272c6d2..d9f8a62 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -44,9 +44,9 @@ struct rcu_ctrlblk {
- };
- 
- /* Definition for rcupdate control block. */
--static struct rcu_ctrlblk rcu_ctrlblk = {
--	.donetail	= &rcu_ctrlblk.rcucblist,
--	.curtail	= &rcu_ctrlblk.rcucblist,
-+static struct rcu_ctrlblk rcu_sched_ctrlblk = {
-+	.donetail	= &rcu_sched_ctrlblk.rcucblist,
-+	.curtail	= &rcu_sched_ctrlblk.rcucblist,
- };
- 
- static struct rcu_ctrlblk rcu_bh_ctrlblk = {
-@@ -108,7 +108,8 @@ static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
-  */
- void rcu_sched_qs(int cpu)
- {
--	if (rcu_qsctr_help(&rcu_ctrlblk) + rcu_qsctr_help(&rcu_bh_ctrlblk))
-+	if (rcu_qsctr_help(&rcu_sched_ctrlblk) +
-+	    rcu_qsctr_help(&rcu_bh_ctrlblk))
- 		raise_softirq(RCU_SOFTIRQ);
- }
- 
-@@ -173,7 +174,7 @@ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
-  */
- static void rcu_process_callbacks(struct softirq_action *unused)
- {
--	__rcu_process_callbacks(&rcu_ctrlblk);
-+	__rcu_process_callbacks(&rcu_sched_ctrlblk);
- 	__rcu_process_callbacks(&rcu_bh_ctrlblk);
- }
- 
-@@ -221,7 +222,7 @@ static void __call_rcu(struct rcu_head *head,
-  */
- void call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
- {
--	__call_rcu(head, func, &rcu_ctrlblk);
-+	__call_rcu(head, func, &rcu_sched_ctrlblk);
- }
- EXPORT_SYMBOL_GPL(call_rcu);
- 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 935248b..40d7be7 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -793,7 +793,7 @@ config RCU_CPU_STALL_DETECTOR
+ config RCU_CPU_STALL_VERBOSE
+ 	bool "Print additional per-task information for RCU_CPU_STALL_DETECTOR"
+ 	depends on RCU_CPU_STALL_DETECTOR && TREE_PREEMPT_RCU
+-	default n
++	default y
+ 	help
+ 	  This option causes RCU to printk detailed per-task information
+ 	  for any tasks that are stalling the current RCU grace period.
 -- 
 1.7.0
 
