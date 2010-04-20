@@ -1,47 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab0DTDKZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 23:10:25 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48492 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753158Ab0DTDKY convert rfc822-to-8bit (ORCPT
+	id S1753308Ab0DTDLu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 23:11:50 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43636 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753158Ab0DTDLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 23:10:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-Subject: Re: my KDE-4.4.2 Battery Monitor ppplet dislikes the ACPI changes in 2.6.34-rc3 betweeen f5284e7..cf90bfe
-Date: Tue, 20 Apr 2010 05:10:47 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201004081812.10656.toralf.foerster@gmx.de> <201004081817.29561.toralf.foerster@gmx.de>
-In-Reply-To: <201004081817.29561.toralf.foerster@gmx.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201004200510.47642.rjw@sisk.pl>
+	Mon, 19 Apr 2010 23:11:48 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 20 Apr 2010 12:07:53 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: error at compaction (Re: mmotm 2010-04-15-14-42 uploaded
+Message-Id: <20100420120753.b161dea9.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <s2v28c262361004191939we64e5490ld59b21dc4fa5bc8d@mail.gmail.com>
+References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org>
+	<20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100419181442.GA19264@csn.ul.ie>
+	<20100419193919.GB19264@csn.ul.ie>
+	<s2v28c262361004191939we64e5490ld59b21dc4fa5bc8d@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 April 2010, Toralf F�rster wrote:
-> 
-> Toralf F�rster wrote at 18:12:09
-> > because now it tells me that my ThinkPad T400 has 0 cpus and 0 batteries
-> > ...
-> 
-> FWIW : 
-> 
-> tfoerste@n22 ~/tmp $ grep "ACPI E" dmesg-2.6.34-rc3-00406-gcf90bfe
-> ACPI Error: Null Object! Obj=(null) State=f676bc00 Num=0 
-> (20100121/dswstate-183)
-> ACPI Error (psparse-0537): Method parse/execution failed 
-> [\_SB_.PCI0.LPC_.EC__.GBIF] (Node f70d4e28), AE_BAD_PARAMETER
-> ACPI Error (psparse-0537): Method parse/execution failed 
-> [\_SB_.PCI0.LPC_.EC__.BAT0._BIF] (Node f70d4d60), AE_BAD_PARAMETER
-> ACPI Exception: AE_BAD_PARAMETER, Evaluating _BIF (20100121/battery-405)
-> thinkpad_acpi: ThinkPad ACPI Extras v0.24
+On Tue, 20 Apr 2010 11:39:46 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-Does that still happen with -rc5?
+> On Tue, Apr 20, 2010 at 4:39 AM, Mel Gorman <mel@csn.ul.ie> wrote:
+> > On Mon, Apr 19, 2010 at 07:14:42PM +0100, Mel Gorman wrote:
+> >> On Mon, Apr 19, 2010 at 07:01:33PM +0900, KAMEZAWA Hiroyuki wrote:
+> >> >
+> >> > mmotm 2010-04-15-14-42
+> >> >
+> >> > When I tried
+> >> >  # echo 0 > /proc/sys/vm/compaction
+> >> >
+> >> > I see following.
+> >> >
+> >> > My enviroment was
+> >> >   2.6.34-rc4-mm1+ (2010-04-15-14-42) (x86-64) CPUx8
+> >> >   allocating tons of hugepages and reduce free memory.
+> >> >
+> >> > What I did was:
+> >> >   # echo 0 > /proc/sys/vm/compact_memory
+> >> >
+> >> > Hmm, I see this kind of error at migation for the 1st time..
+> >> > my.config is attached. Hmm... ?
+> >> >
+> >> > (I'm sorry I'll be offline soon.)
+> >>
+> >> That's ok, thanks you for the report. I'm afraid I made little progress
+> >> as I spent most of the day on other bugs but I do have something for
+> >> you.
+> >>
+> >> First, I reproduced the problem using your .config. However, the problem does
+> >> not manifest with the .config I normally use which is derived from the distro
+> >> kernel configuration (Debian Lenny). So, there is something in your .config
+> >> that triggers the problem. I very strongly suspect this is an interaction
+> >> between migration, compaction and page allocation debug.
+> >
+> > I unexpecedly had the time to dig into this. Does the following patch fix
+> > your problem? It Worked For Me.
+> 
+> Nice catch during shot time. Below is comment.
+> 
+> >
+> > ==== CUT HERE ====
+> > mm,compaction: Map free pages in the address space after they get split for compaction
+> >
+> > split_free_page() is a helper function which takes a free page from the
+> > buddy lists and splits it into order-0 pages. It is used by memory
+> > compaction to build a list of destination pages. If
+> > CONFIG_DEBUG_PAGEALLOC is set, a kernel paging request bug is triggered
+> > because split_free_page() did not call the arch-allocation hooks or map
+> > the page into the kernel address space.
+> >
+> > This patch does not update split_free_page() as it is called with
+> > interrupts held. Instead it documents that callers of split_free_page()
+> > are responsible for calling the arch hooks and to map the page and fixes
+> > compaction.
+> 
+> Dumb question. Why can't we call arch_alloc_page and kernel_map_pages
+> as interrupt disabled? It's deadlock issue or latency issue?
+> I don't found any comment about it.
+> It should have added the comment around that functions. :)
+> 
 
-Rafael
+I guess it's from the same reason as vfree(), which can't be called under
+irq-disabled.
+
+Both of them has to flush TLB of all cpus. At flushing TLB (of other cpus), cpus has
+to send IPI via smp_call_function. What I know from old stories is below.
+
+At sendinf IPI, usual sequence is following. (This may be old.)
+
+	spin_lock(&ipi_lock);
+		set up cpu mask for getting notification from other cpu for declearing
+		"I received IPI and finished my own work".
+	spin_unlock(&ipi_lock);
+
+Then,
+          CPU0                             CPU1
+
+    irq_disable (somewhere)             spin_lock
+                                        send IPI and wait for notification.
+    spin_lock()
+
+deadlock.  Seeing decription of kernel/smp.c::smp_call_function_many(), it says
+this function should not be called under irq-disabled.
+(Maybe the same kind of spin-wait deadlock can happen.)
+
+
+Thanks,
+-Kame
+
+
