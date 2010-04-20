@@ -1,130 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab0DTIdL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 04:33:11 -0400
-Received: from mail.copilotco.com ([216.105.40.123]:47238 "EHLO
-	mail.copilotco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346Ab0DTIdI (ORCPT
+	id S1754003Ab0DTIff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 04:35:35 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:65011 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab0DTIfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 04:33:08 -0400
-X-Greylist: delayed 1386 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 04:33:08 EDT
-Date: Tue, 20 Apr 2010 01:09:58 -0700
-From: Tracy Reed <treed@ultraviolet.org>
-To: xen-devel@lists.xensource.com
-Cc: Aoetools-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: domU is causing misaligned disk writes
-Message-ID: <20100420080958.GN5660@tracyreed.org>
-Mail-Followup-To: Tracy Reed <treed@ultraviolet.org>,
-	xen-devel@lists.xensource.com,
-	Aoetools-discuss@lists.sourceforge.net,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1VhaNAE4Hwu38Ubd"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 20 Apr 2010 04:35:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=iSGe8acJcrQX97MP+0SmkbFrAr1ZOt70gPBBPYJPbt2JCTgOHYInVMhKPL/PHg6KTH
+         FbrQjT9WUJZ48O+IOIbU+hB3K5WoiC9fz71mARS1JHh59QN1BCg9Hh7Z9ONybwzBTSN2
+         GYqbOqshdfXYhW2u5u7Hd38ypm8gM/X3ySMqk=
+From: fabien.chouteau@gmail.com
+To: linux-usb@vger.kernel.org
+Cc: Fabien Chouteau <fabien.chouteau@barco.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Michal Nazarewicz <m.nazarewicz@samsung.com>,
+       Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Mass Storage Gadget: Handle eject request
+Date: Tue, 20 Apr 2010 10:34:09 +0200
+Message-Id: <1271752450-13964-1-git-send-email-fabien.chouteau@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Fabien Chouteau <fabien.chouteau@barco.com>
 
---1VhaNAE4Hwu38Ubd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Handle eject request + sysfs entries to detect ejected LUN and suspended gadget.
 
-Anyone know why my xen xvda devices would be doing (apparently)
-unaligned writes to my SAN causing horrible performance and massive
-seeking and lots of reading for page cache backfill? BUT writing to
-the device in the dom0 is very fast and causes no extra reads?
+Signed-off-by: Fabien Chouteau <fabien.chouteau@barco.com>
+---
+ drivers/usb/gadget/f_mass_storage.c |   75 +++++++++++++++++++++++++++++++++-
+ drivers/usb/gadget/storage_common.c |   19 +++++++++
+ 2 files changed, 91 insertions(+), 3 deletions(-)
 
-I am running the 2.6.18-164.11.1.el5xen xen/kernel which came with
-CentOS 5.4
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index f4911c0..af13a2f 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -1385,12 +1385,49 @@ static int do_mode_sense(struct fsg_common *common, struct fsg_buffhd *bh)
+ 
+ static int do_start_stop(struct fsg_common *common)
+ {
+-	if (!common->curlun) {
++	struct fsg_lun	*curlun = common->curlun;
++	int		loej, start;
++
++	if (!curlun) {
+ 		return -EINVAL;
+-	} else if (!common->curlun->removable) {
+-		common->curlun->sense_data = SS_INVALID_COMMAND;
++	} else if (!curlun->removable) {
++		curlun->sense_data = SS_INVALID_COMMAND;
+ 		return -EINVAL;
+ 	}
++
++	loej = common->cmnd[4] & 0x02;
++	start = common->cmnd[4] & 0x01;
++
++	if ((common->cmnd[1] & ~0x01) != 0 ||	  /* Mask away Immed */
++		(common->cmnd[4] & ~0x03) != 0) { /* Mask LoEj, Start */
++		curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
++		return -EINVAL;
++	}
++
++	if (!start) {
++		/* Are we allowed to unload the media? */
++		if (curlun->prevent_medium_removal) {
++			LDBG(curlun, "unload attempt prevented\n");
++			curlun->sense_data = SS_MEDIUM_REMOVAL_PREVENTED;
++			return -EINVAL;
++		}
++		if (loej) {	/* Simulate an unload/eject */
++			up_read(&common->filesem);
++			down_write(&common->filesem);
++			fsg_lun_close(curlun);
++			curlun->ejected = 1;
++			up_write(&common->filesem);
++			down_read(&common->filesem);
++		}
++	} else {
++
++		/* Our emulation doesn't support mounting; the medium is
++		 * available for use as soon as it is loaded. */
++		if (!fsg_lun_is_open(curlun)) {
++			curlun->sense_data = SS_MEDIUM_NOT_PRESENT;
++			return -EINVAL;
++		}
++	}
+ 	return 0;
+ }
+ 
+@@ -2412,6 +2449,26 @@ static void fsg_disable(struct usb_function *f)
+ 	raise_exception(fsg->common, FSG_STATE_CONFIG_CHANGE);
+ }
+ 
++static void fsg_suspend(struct usb_function *f)
++{
++	struct fsg_dev	*fsg = fsg_from_func(f);
++	struct fsg_lun	*curlun = fsg->common->luns;
++	int		i;
++
++	for (i = 0; i < fsg->common->nluns; i++, curlun++)
++		curlun->suspended = 1;
++}
++
++static void fsg_resume(struct usb_function *f)
++{
++	struct fsg_dev	*fsg = fsg_from_func(f);
++	struct fsg_lun	*curlun = fsg->common->luns;
++	int		i;
++
++	for (i = 0; i < fsg->common->nluns; i++, curlun++)
++		curlun->suspended = 0;
++}
++
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -2641,6 +2698,8 @@ static int fsg_main_thread(void *common_)
+ /* Write permission is checked per LUN in store_*() functions. */
+ static DEVICE_ATTR(ro, 0644, fsg_show_ro, fsg_store_ro);
+ static DEVICE_ATTR(file, 0644, fsg_show_file, fsg_store_file);
++static DEVICE_ATTR(ejected, 0444, fsg_show_ejected, NULL);
++static DEVICE_ATTR(suspended, 0444, fsg_show_suspended, NULL);
+ 
+ 
+ /****************************** FSG COMMON ******************************/
+@@ -2747,6 +2806,12 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+ 		rc = device_create_file(&curlun->dev, &dev_attr_file);
+ 		if (rc)
+ 			goto error_luns;
++		rc = device_create_file(&curlun->dev, &dev_attr_ejected);
++		if (rc)
++			goto error_luns;
++		rc = device_create_file(&curlun->dev, &dev_attr_suspended);
++		if (rc)
++			goto error_luns;
+ 
+ 		if (lcfg->filename) {
+ 			rc = fsg_lun_open(curlun, lcfg->filename);
+@@ -2887,6 +2952,8 @@ static void fsg_common_release(struct kref *ref)
+ 	for (; i; --i, ++lun) {
+ 		device_remove_file(&lun->dev, &dev_attr_ro);
+ 		device_remove_file(&lun->dev, &dev_attr_file);
++		device_remove_file(&lun->dev, &dev_attr_ejected);
++		device_remove_file(&lun->dev, &dev_attr_suspended);
+ 		fsg_lun_close(lun);
+ 		device_unregister(&lun->dev);
+ 	}
+@@ -2984,6 +3051,8 @@ static int fsg_add(struct usb_composite_dev *cdev,
+ 	fsg->function.setup       = fsg_setup;
+ 	fsg->function.set_alt     = fsg_set_alt;
+ 	fsg->function.disable     = fsg_disable;
++	fsg->function.suspend     = fsg_suspend;
++	fsg->function.resume      = fsg_resume;
+ 
+ 	fsg->common               = common;
+ 	/* Our caller holds a reference to common structure so we
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index 868d8ee..e50fbb8 100644
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -267,6 +267,8 @@ struct fsg_lun {
+ 	unsigned int	removable:1;
+ 	unsigned int	cdrom:1;
+ 	unsigned int	prevent_medium_removal:1;
++	unsigned int	ejected:1;
++	unsigned int	suspended:1;
+ 	unsigned int	registered:1;
+ 	unsigned int	info_valid:1;
+ 
+@@ -625,6 +627,7 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
+ 	curlun->filp = filp;
+ 	curlun->file_length = size;
+ 	curlun->num_sectors = num_sectors;
++	curlun->ejected = 0;
+ 	LDBG(curlun, "open backing file: %s\n", filename);
+ 	rc = 0;
+ 
+@@ -776,3 +779,19 @@ static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
+ 	up_write(filesem);
+ 	return (rc < 0 ? rc : count);
+ }
++
++static ssize_t fsg_show_ejected(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
++
++	return sprintf(buf, "%d\n", curlun->ejected);
++}
++
++static ssize_t fsg_show_suspended(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
++
++	return sprintf(buf, "%d\n", curlun->suspended);
++}
+-- 
+1.7.0.5
 
-After spending a lot of time banging my head on this I seem to have
-finally tracked it down to a difference between domU and dom0.  I
-never would have thought it would be this but it is extremely
-reproduceable. We're talking a difference of 4-5x in write speed.
-Reads are equally fast everywhere.
-
-I am using AoE v72 kernel module (initiator) on a Dell R610's to talk
-to vblade-19 (target) on Dell R710's all running CentOS 5.4. I have
-striped two 7200 RPM SATA disks and exported the md with AoE (although
-I have done these tests with individual disks also). Read performance
-is excellent:
-
-# dd of=3D/dev/null if=3D/dev/xvdg1 bs=3D4096 count=3D3000000
-3000000+0 records in
-3000000+0 records out
-12288000000 bytes (12 GB) copied, 106.749 seconds, 115 MB/s
-
-I dropped the cache with:
-
-echo 1 > /proc/sys/vm/drop_caches
-
-on both target and initiator before starting the test. This is great
-for just a single gig-e link. This suggests that the network is fine.
-
-However, write performance is odious. Typically around 20MB/s. It
-should be more like 70MB/s per disk or better (7200rpm SATA) and max
-out my gig-e with write performance similar to the above read
-performance. I mentioned above that these are unaligned writes because
-when running iostat on the target machine I can see lots of reads
-happening which are surely causing seeks and killing
-performance. Typical is something like 8MB/s of reads while doing
-16MB/s of writes.
-
-HOWEVER, if I do the writes from the dom0 the performance is
-excellent:
-
-# dd if=3D/dev/zero of=3D/dev/etherd/e6.2 bs=3D4096 count=3D3000000
-3000000+0 records in
-3000000+0 records out
-12288000000 bytes (12 GB) copied, 104.679 seconds, 117 MB/s
-
-And I see no reads happening on the disks being written to in
-iostat. Purely streaming writes at high speeds.
-
-I have had AoE working very well with Xen previously although not with
-this particular hardware/xen/aoe version. Also it occurs to me that in
-the past when I have done this I network booted the domU's and they
-got root over AoE using a complicated initrd that I cooked up. In the
-last year or so I decided that it was too complicated and went to
-booting my dom0's from compact flash with the AoE driver in the dom0
-instead of the domU. I now handing the domU xvd's from the AoE driver
-in dom0. I strongly suspect that this is why things worked great
-before but stink now. Unfortunately I don't have a working network
-boot initrd setup like I used to and although I still have all of the
-code etc. it would take a while to set up. I don't want to run that
-setup in production anymore anyway if I can help it.
-
-I have tried manually aligning the disk by setting the beginning of
-data on the partition from 63 to 64 (although this is usually done for
-RAID alignment) and I have tried changing the disk geometry to account
-for the extra partition table which causes a half-block page-cache
-misalignment as described by the ever insightful Kelsey Hudson in his
-writeup on the issue here:
-
-http://copilotco.com/Virtualization/wiki/aoe-caching-alignment.pdf/at_downl=
-oad/file
-
-All to no avail. What am I missing here? Why is domU apparently
-fudging my writes?
-
---=20
-Tracy Reed
-http://tracyreed.org
-
---1VhaNAE4Hwu38Ubd
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.5 (GNU/Linux)
-
-iD4DBQFLzWFW9PIYKZYVAq0RAvkrAJsGICa+vuJYjohNm8c72y9OC4I4bgCYpF5O
-uhC3asn31XF2iNKxIGsLOA==
-=H0nb
------END PGP SIGNATURE-----
-
---1VhaNAE4Hwu38Ubd--
