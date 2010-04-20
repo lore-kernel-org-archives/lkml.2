@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776Ab0DTPFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 11:05:43 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:55833 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751570Ab0DTPFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 11:05:42 -0400
-Date: Tue, 20 Apr 2010 16:05:22 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
-Message-ID: <20100420150522.GG19264@csn.ul.ie>
-References: <4BC6CB30.7030308@kernel.org> <l2u28c262361004150240q8a873b6axb73eaa32fd6e65e6@mail.gmail.com> <4BC6E581.1000604@kernel.org> <z2p28c262361004150321sc65e84b4w6cc99927ea85a52b@mail.gmail.com> <4BC6FBC8.9090204@kernel.org> <w2h28c262361004150449qdea5cde9y687c1fce30e665d@mail.gmail.com> <alpine.DEB.2.00.1004161105120.7710@router.home> <1271606079.2100.159.camel@barrios-desktop> <alpine.DEB.2.00.1004191235160.9855@router.home> <4BCCD8BD.1020307@kernel.org>
+	id S1751661Ab0DTPJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 11:09:28 -0400
+Received: from kelvin.asmallorange.com ([207.210.111.10]:55918 "EHLO
+	kelvin.asmallorange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227Ab0DTPJ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 11:09:26 -0400
+X-Greylist: delayed 3541 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 11:09:26 EDT
+Date: Tue, 20 Apr 2010 19:41:08 +0530
+From: Rabin Vincent <rabin@rab.in>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [Bug #15668] start_kernel(): bug: interrupts were enabled early
+Message-ID: <20100420141108.GA2131@debian>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh>
+ <YeFfFNFyTSF.A.sj.BSSzLB@tosh>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BCCD8BD.1020307@kernel.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <YeFfFNFyTSF.A.sj.BSSzLB@tosh>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - kelvin.asmallorange.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - rab.in
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 07:27:09AM +0900, Tejun Heo wrote:
-> Hello, Christoph.
-> 
-> On 04/20/2010 02:38 AM, Christoph Lameter wrote:
-> > alloc_pages_exact_node results in more confusion because it does suggest
-> > that fallback to other nodes is not allowed.
-> 
-> I can't see why alloc_pages_exact_node() exists at all.  It's in the
-> mainline and if you look at the difference between alloc_pages_node()
-> and alloc_pages_exact_node(), it's almost silly.  :-(
-> 
+On Tue, Apr 20, 2010 at 05:19:21AM +0200, Rafael J. Wysocki wrote:
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15668
+> Subject		: start_kernel(): bug: interrupts were enabled early
+> Submitter	: Rabin Vincent <rabin@rab.in>
+> Date		: 2010-03-25 19:53 (26 days old)
+> First-Bad-Commit: http://kernel.org/git/linus/773e3eb7b81e5ba13b5155dfb3bb75b8ce37f8f9
+> Message-ID	: <20100325194100.GA2364@debian>
+> References	: http://marc.info/?l=linux-kernel&m=126954607216519&w=2
 
-alloc_pages_exact_node() avoids a branch in a hot path that is checking for
-something the caller already knows. That's the reason it exists.
+This was fixed by 3eac4abaa69949af0e2f64e5c55ee8a22bbdd3e7 ("rwsem
+generic spinlock: use IRQ save/restore spinlocks").
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Rabin
