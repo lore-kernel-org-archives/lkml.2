@@ -1,133 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab0DTIVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 04:21:23 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:49233 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857Ab0DTIVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 04:21:20 -0400
-Date: Tue, 20 Apr 2010 09:20:57 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: error at compaction (Re: mmotm 2010-04-15-14-42 uploaded
-Message-ID: <20100420082057.GC19264@csn.ul.ie>
-References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org> <20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com> <20100419181442.GA19264@csn.ul.ie> <20100419193919.GB19264@csn.ul.ie> <s2v28c262361004191939we64e5490ld59b21dc4fa5bc8d@mail.gmail.com>
+	id S1753971Ab0DTIWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 04:22:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64685 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753857Ab0DTIWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 04:22:46 -0400
+Message-ID: <4BCD646B.1080206@cn.fujitsu.com>
+Date: Tue, 20 Apr 2010 16:23:07 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <s2v28c262361004191939we64e5490ld59b21dc4fa5bc8d@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>
+CC: Eric Paris <eparis@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Eric Paris <eparis@parisplace.org>, Miles Lane <miles.lane@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] RCU: don't turn off lockdep when find suspicious rcu_dereference_check()
+ usage
+References: <a44ae5cd1003071726u1f94336h7ab6c7b80d16723b@mail.gmail.com> <20100311032843.GE6767@linux.vnet.ibm.com> <q2x7e0fb38c1004121144rb097e521hd2a7d8cea77c54b7@mail.gmail.com> <1271098032.4807.137.camel@twins> <1271242058.32749.19.camel@laptop> <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com> <20100419230136.GA16856@linux.vnet.ibm.com> <1271726729.2972.13.camel@dhcp231-113.rdu.redhat.com> <20100420030452.GB2905@linux.vnet.ibm.com>
+In-Reply-To: <20100420030452.GB2905@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 11:39:46AM +0900, Minchan Kim wrote:
-> On Tue, Apr 20, 2010 at 4:39 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> > On Mon, Apr 19, 2010 at 07:14:42PM +0100, Mel Gorman wrote:
-> >> On Mon, Apr 19, 2010 at 07:01:33PM +0900, KAMEZAWA Hiroyuki wrote:
-> >> >
-> >> > mmotm 2010-04-15-14-42
-> >> >
-> >> > When I tried
-> >> >  # echo 0 > /proc/sys/vm/compaction
-> >> >
-> >> > I see following.
-> >> >
-> >> > My enviroment was
-> >> >   2.6.34-rc4-mm1+ (2010-04-15-14-42) (x86-64) CPUx8
-> >> >   allocating tons of hugepages and reduce free memory.
-> >> >
-> >> > What I did was:
-> >> >   # echo 0 > /proc/sys/vm/compact_memory
-> >> >
-> >> > Hmm, I see this kind of error at migation for the 1st time..
-> >> > my.config is attached. Hmm... ?
-> >> >
-> >> > (I'm sorry I'll be offline soon.)
-> >>
-> >> That's ok, thanks you for the report. I'm afraid I made little progress
-> >> as I spent most of the day on other bugs but I do have something for
-> >> you.
-> >>
-> >> First, I reproduced the problem using your .config. However, the problem does
-> >> not manifest with the .config I normally use which is derived from the distro
-> >> kernel configuration (Debian Lenny). So, there is something in your .config
-> >> that triggers the problem. I very strongly suspect this is an interaction
-> >> between migration, compaction and page allocation debug.
-> >
-> > I unexpecedly had the time to dig into this. Does the following patch fix
-> > your problem? It Worked For Me.
+Paul E. McKenney wrote:
+> On Mon, Apr 19, 2010 at 09:25:29PM -0400, Eric Paris wrote:
+>> On Mon, 2010-04-19 at 16:01 -0700, Paul E. McKenney wrote:
+>>
+>>> Yep, different code path to the same location.  Does the following
+>>> patch help?
+>>>
+>>> 							Thanx, Paul
+>>>
+>>> ------------------------------------------------------------------------
+>>>
+>>> commit 2836f18139267ea918ed2cf39023fb0eb38c4361
+>>> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>> Date:   Mon Apr 19 15:59:50 2010 -0700
+>>>
+>>>     rcu: fix RCU lockdep splat on freezer_fork path
+>>>     
+>>>     Add an RCU read-side critical section to suppress this false positive.
+>>>     
+>>>     Located-by: Eric Paris <eparis@parisplace.org>
+>>>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> That one is also fixed so feel free to add a tested or something from
+>> me.  But we've got another, weeeee!  If there some way I could get all
+>> of these at once?
+
+This patch fits your requirement.
+
 > 
-> Nice catch during shot time. Below is comment.
+> Sure!  I -think- that if you remove the first "if" statement in
+> lockdep_rcu_dereference() in kernel/lockdep.c, you will get lots of them
+> all at once.  Maybe more than your console log is able to hold...
 > 
-> >
-> > ==== CUT HERE ====
-> > mm,compaction: Map free pages in the address space after they get split for compaction
-> >
-> > split_free_page() is a helper function which takes a free page from the
-> > buddy lists and splits it into order-0 pages. It is used by memory
-> > compaction to build a list of destination pages. If
-> > CONFIG_DEBUG_PAGEALLOC is set, a kernel paging request bug is triggered
-> > because split_free_page() did not call the arch-allocation hooks or map
-> > the page into the kernel address space.
-> >
-> > This patch does not update split_free_page() as it is called with
-> > interrupts held. Instead it documents that callers of split_free_page()
-> > are responsible for calling the arch hooks and to map the page and fixes
-> > compaction.
+> So another approach would be to print only the first 100 or some such.
 > 
-> Dumb question. Why can't we call arch_alloc_page and kernel_map_pages
-> as interrupt disabled?
-
-In theory, it isn't known what arch_alloc_page is going to do but more
-practically kernel_map_pages() is updating mappings and should be
-flushing all the TLBs. It can't do that with interrupts disabled.
-
-I checked X86 and it should be fine but only because it flushes the
-local CPU and appears to just hope for the best that this doesn't cause
-problems.
-
-> It's deadlock issue or latency issue?
-
-deadlock
-
-> I don't found any comment about it.
-
-I'm not aware of any. arch_alloc_page() is only used by s390 so it's not
-well known. kernel_map_pages() is only active for a rarely used
-debugging option.
-
-> It should have added the comment around that functions. :)
-> 
-> And now compaction only uses split_free_page and it is exposed by mm.h.
-> I think it would be better to map pages inside split_free_page to
-> export others.(ie, making generic function).
-
-I considered that and it would not be ideal. It would have to disable and
-reenable interrupts as each page is taken from the list or alternatively
-require that the caller not have the zone lock taken. The latter of these
-options is more reasonable but would still result in more interrupt enabling
-and disabling.
-
-split_free_page() is extremely specialised and requires knowledge of the
-page allocator internals to call properly. There is little pressure to
-make this easier to use at the cost of increased locking.
-
-> If we can't do, how about making split_free_page static as static function?
-> And only uses it in compaction.
+> It -looks- to me that you could make __debug_locks_off() atomically
+> decrement a counter rather than just setting it to zero, see
+> include/linux/debug_locks.h.  I suspect that atomic_dec_not_zero()
+> would work very well for you here.
 > 
 
-It pretty much has to be in page_alloc.c because it uses internal
-functions of the page allocator - e.g. rmv_page_order. I could move it
-to mm/internal.h because whatever about split_page, I can't imagine why
-anyone else would need to call split_free_page.
+[PATCH] RCU: don't turn off lockdep when find suspicious rcu_dereference_check() usage
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+When suspicious rcu_dereference_check() usage is detected, lockdep is still
+available actually, so we should not call debug_locks_off() in
+lockdep_rcu_dereference().
+
+For get rid of too much "suspicious rcu_dereference_check() usage"
+output when the "if(!debug_locks_off())" statement is removed. This patch uses
+static variable '__warned's for very usage of "rcu_dereference*()".
+
+One variable per usage, so, Now, we can get multiple complaint
+when we detect multiple different suspicious rcu_dereference_check() usage.
+
+Requested-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 9f1ddfe..30b8d20 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -193,6 +193,15 @@ static inline int rcu_read_lock_sched_held(void)
+ 
+ #ifdef CONFIG_PROVE_RCU
+ 
++#define __do_rcu_dereference_check(c)					\
++	do {								\
++		static bool __warned;					\
++		if (debug_lockdep_rcu_enabled() && !__warned && !(c)) {	\
++			__warned = true;				\
++			lockdep_rcu_dereference(__FILE__, __LINE__);	\
++		}							\
++	} while (0)
++
+ /**
+  * rcu_dereference_check - rcu_dereference with debug checking
+  * @p: The pointer to read, prior to dereferencing
+@@ -222,8 +231,7 @@ static inline int rcu_read_lock_sched_held(void)
+  */
+ #define rcu_dereference_check(p, c) \
+ 	({ \
+-		if (debug_lockdep_rcu_enabled() && !(c)) \
+-			lockdep_rcu_dereference(__FILE__, __LINE__); \
++		__do_rcu_dereference_check(c); \
+ 		rcu_dereference_raw(p); \
+ 	})
+ 
+@@ -240,8 +248,7 @@ static inline int rcu_read_lock_sched_held(void)
+  */
+ #define rcu_dereference_protected(p, c) \
+ 	({ \
+-		if (debug_lockdep_rcu_enabled() && !(c)) \
+-			lockdep_rcu_dereference(__FILE__, __LINE__); \
++		__do_rcu_dereference_check(c); \
+ 		(p); \
+ 	})
+ 
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 78325f8..cc52ffe 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -3788,8 +3788,6 @@ void lockdep_rcu_dereference(const char *file, const int line)
+ {
+ 	struct task_struct *curr = current;
+ 
+-	if (!debug_locks_off())
+-		return;
+ 	printk("\n===================================================\n");
+ 	printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
+ 	printk(  "---------------------------------------------------\n");
