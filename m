@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab0DTRY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 13:24:28 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:48877 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754401Ab0DTRY0 (ORCPT
+	id S1754892Ab0DTR2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 13:28:05 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47745 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754834Ab0DTR2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 13:24:26 -0400
-Date: Tue, 20 Apr 2010 18:24:19 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jerone Young <jerone.young@canonical.com>
-Cc: Alex Chiang <achiang@canonical.com>, lenb@kernel.org,
-       colin.king@canonical.com, linux-acpi@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org
-Subject: Re: [PATCH] ACPI: DMI init_set_sci_en_on_resume for multiple
-	Lenovo ThinkPads
-Message-ID: <20100420172419.GA9719@srcf.ucam.org>
-References: <20100420140314.GA5573@canonical.com> <1271782601.25170.105.camel@laptop> <20100420171415.GA9550@srcf.ucam.org> <1271783936.25170.131.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271783936.25170.131.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 20 Apr 2010 13:28:02 -0400
+Date: Tue, 20 Apr 2010 18:32:52 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dave Wright <wrightd@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Should calculation of vm.overcommit_ratio be changed?
+Message-ID: <20100420183252.0c61208f@lxorguk.ukuu.org.uk>
+In-Reply-To: <y2kf16bc8301004200640r9485da73p920a2f5c3e2d949e@mail.gmail.com>
+References: <y2kf16bc8301004200640r9485da73p920a2f5c3e2d949e@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 12:18:56PM -0500, Jerone Young wrote:
+> might have 4GB RAM and 1GB swap. I don't think you would expect
+> Desktop users to understand or tweak overcommit_ratio, but I also
+> don't think having the distro simply change the default from 50 (to
+> 100 or something else) would cover all the cases well.
 
-> I could agree, but the only issue is if you go to the thinkpad-acpi or
-> ibm-acpi mailing list they would probably disagree as there have been
-> updates to the bios in the past required for proper functionality of
-> Thinkpads ;-) .. the bios update methods have not changed since then for
-> Thinkpads.
+Sounds like the distribution should be tuning the value according to the
+> 
+> Would it make more sense to have the overcommit formula be calculated as:
+> 
+> max commit = min(swap, ram) * overcommit_ratio + max(swap, ram) ?
+> 
+> When swap>=ram, the formula works exactly the same as it does now, but
+> when ram>>swap, you are guaranteed to always be able to your full RAM
+> (even when swap=0).
 
-If another OS works, and if Linux can be made to work without impairing 
-the functionality of working machines, then Linux should be made to 
-work. Always. Updating the BIOS should be limited to cases where it's 
-impossible to fix things up in the OS.
+Which is wromg - some of your RAM ends up eaten by the kernel, by
+pagetables and buffers etc. 50% is probably very conservative but the
+point of VM overcommit is exactly that - and you end up deploying swap
+as a precaution against disaster rather than because you need it.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
