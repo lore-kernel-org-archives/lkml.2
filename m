@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab0DTVsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 17:48:05 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:40443 "EHLO e6.ny.us.ibm.com"
+	id S1753406Ab0DTVsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:48:07 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:50406 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752531Ab0DTVpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752543Ab0DTVpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Apr 2010 17:45:10 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 09/23] rcu: refactor RCU's context-switch handling
-Date: Tue, 20 Apr 2010 14:44:41 -0700
-Message-Id: <1271799895-21028-9-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 13/23] rcu: print boot-time console messages if RCU configs out of ordinary
+Date: Tue, 20 Apr 2010 14:44:45 -0700
+Message-Id: <1271799895-21028-13-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100420214431.GA20777@linux.vnet.ibm.com>
 References: <20100420214431.GA20777@linux.vnet.ibm.com>
@@ -24,191 +24,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The addition of preemptible RCU to treercu resulted in a bit of
-confusion and inefficiency surrounding the handling of context switches
-for RCU-sched and for RCU-preempt.  For RCU-sched, a context switch
-is a quiescent state, pure and simple, just like it always has been.
-For RCU-preempt, a context switch is in no way a quiescent state, but
-special handling is required when a task blocks in an RCU read-side
-critical section.
+Print boot-time messages if tracing is enabled, if fanout is set
+to non-default values, if exact fanout is specified, if accelerated
+dyntick-idle grace periods have been enabled, if RCU-lockdep is enabled,
+if rcutorture has been boot-time enabled, if the CPU stall detector has
+been disabled, or if four-level hierarchy has been enabled.
 
-However, the callout from the scheduler and the outer loop in ksoftirqd
-still calls something named rcu_sched_qs(), whose name is no longer
-accurate.  Furthermore, when rcu_check_callbacks() notes an RCU-sched
-quiescent state, it ends up unnecessarily (though harmlessly, aside
-from the performance hit) enqueuing the current task if it happens to
-be running in an RCU-preempt read-side critical section.  This not only
-increases the maximum latency of scheduler_tick(), it also needlessly
-increases the overhead of the next outermost rcu_read_unlock() invocation.
+This is all for TREE_RCU and TREE_PREEMPT_RCU.  TINY_RCU will be handled
+separately, if at all.
 
-This patch addresses this situation by separating the notion of RCU's
-context-switch handling from that of RCU-sched's quiescent states.
-The context-switch handling is covered by rcu_note_context_switch() in
-general and by rcu_preempt_note_context_switch() for preemptible RCU.
-This permits rcu_sched_qs() to handle quiescent states and only quiescent
-states.  It also reduces the maximum latency of scheduler_tick(), though
-probably by much less than a microsecond.  Finally, it means that tasks
-within preemptible-RCU read-side critical sections avoid incurring the
-overhead of queuing unless there really is a context switch.
-
-Suggested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Suggested-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcutiny.h |    4 ++++
- include/linux/rcutree.h |    1 +
- kernel/rcutree.c        |   17 ++++++++++++-----
- kernel/rcutree_plugin.h |   11 +++++++----
- kernel/sched.c          |    2 +-
- kernel/softirq.c        |    2 +-
- 6 files changed, 26 insertions(+), 11 deletions(-)
+ kernel/rcutree.c        |    6 ------
+ kernel/rcutree_plugin.h |   44 ++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 42 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index bbeb55b..ff22b97 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -29,6 +29,10 @@
- 
- void rcu_sched_qs(int cpu);
- void rcu_bh_qs(int cpu);
-+static inline void rcu_note_context_switch(int cpu)
-+{
-+	rcu_sched_qs(cpu);
-+}
- 
- #define __rcu_read_lock()	preempt_disable()
- #define __rcu_read_unlock()	preempt_enable()
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index 7484fe6..b9f7460 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -34,6 +34,7 @@ struct notifier_block;
- 
- extern void rcu_sched_qs(int cpu);
- extern void rcu_bh_qs(int cpu);
-+extern void rcu_note_context_switch(int cpu);
- extern int rcu_needs_cpu(int cpu);
- extern int rcu_expedited_torture_stats(char *page);
- 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 86bb949..e336313 100644
+index 595fb83..ec6196f 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -97,25 +97,32 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
-  */
- void rcu_sched_qs(int cpu)
- {
--	struct rcu_data *rdp;
-+	struct rcu_data *rdp = &per_cpu(rcu_sched_data, cpu);
+@@ -1938,12 +1938,6 @@ void __init rcu_init(void)
+ 	int cpu;
  
--	rdp = &per_cpu(rcu_sched_data, cpu);
- 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
- 	barrier();
- 	rdp->passed_quiesc = 1;
--	rcu_preempt_note_context_switch(cpu);
- }
- 
- void rcu_bh_qs(int cpu)
- {
--	struct rcu_data *rdp;
-+	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
- 
--	rdp = &per_cpu(rcu_bh_data, cpu);
- 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
- 	barrier();
- 	rdp->passed_quiesc = 1;
- }
- 
-+/*
-+ * Note a context switch.  This is a quiescent state for RCU-sched,
-+ * and requires special handling for preemptible RCU.
-+ */
-+void rcu_note_context_switch(int cpu)
-+{
-+	rcu_sched_qs(cpu);
-+	rcu_preempt_note_context_switch(cpu);
-+}
-+
- #ifdef CONFIG_NO_HZ
- DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
- 	.dynticks_nesting = 1,
+ 	rcu_bootup_announce();
+-#ifdef CONFIG_RCU_CPU_STALL_DETECTOR
+-	printk(KERN_INFO "RCU-based detection of stalled CPUs is enabled.\n");
+-#endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
+-#if NUM_RCU_LVL_4 != 0
+-	printk(KERN_INFO "Experimental four-level hierarchy is enabled.\n");
+-#endif /* #if NUM_RCU_LVL_4 != 0 */
+ 	RCU_INIT_FLAVOR(&rcu_sched_state, rcu_sched_data);
+ 	RCU_INIT_FLAVOR(&rcu_bh_state, rcu_bh_data);
+ 	__rcu_init_preempt();
 diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 687c4e9..f9bc83a 100644
+index f9bc83a..0ae2339 100644
 --- a/kernel/rcutree_plugin.h
 +++ b/kernel/rcutree_plugin.h
-@@ -75,13 +75,19 @@ EXPORT_SYMBOL_GPL(rcu_force_quiescent_state);
-  * that this just means that the task currently running on the CPU is
-  * not in a quiescent state.  There might be any number of tasks blocked
-  * while in an RCU read-side critical section.
-+ *
-+ * Unlike the other rcu_*_qs() functions, callers to this function
-+ * must disable irqs in order to protect the assignment to
-+ * ->rcu_read_unlock_special.
-  */
- static void rcu_preempt_qs(int cpu)
- {
- 	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
+@@ -26,6 +26,45 @@
+ 
+ #include <linux/delay.h>
+ 
++/*
++ * Check the RCU kernel configuration parameters and print informative
++ * messages about anything out of the ordinary.  If you like #ifdef, you
++ * will love this function.
++ */
++static void __init rcu_bootup_announce_oddness(void)
++{
++#ifdef CONFIG_RCU_TRACE
++	printk(KERN_INFO "\tRCU debugfs-based tracing is enabled.\n");
++#endif
++#if (defined(CONFIG_64BIT) && CONFIG_RCU_FANOUT != 64) || (!defined(CONFIG_64BIT) && CONFIG_RCU_FANOUT != 32)
++	printk(KERN_INFO "\tCONFIG_RCU_FANOUT set to non-default value of %d\n",
++	       CONFIG_RCU_FANOUT);
++#endif
++#ifdef CONFIG_RCU_FANOUT_EXACT
++	printk(KERN_INFO "\tHierarchical RCU autobalancing is disabled.\n");
++#endif
++#ifdef CONFIG_RCU_FAST_NO_HZ
++	printk(KERN_INFO
++	       "\tRCU dyntick-idle grace-period acceleration is enabled.\n");
++#endif
++#ifdef CONFIG_PROVE_RCU
++	printk(KERN_INFO "\tRCU lockdep checking is enabled.\n");
++#endif
++#ifdef CONFIG_RCU_TORTURE_TEST_RUNNABLE
++	printk(KERN_INFO "\tRCU torture testing starts during boot.\n");
++#endif
++#ifndef CONFIG_RCU_CPU_STALL_DETECTOR
++	printk(KERN_INFO
++	       "\tRCU-based detection of stalled CPUs is disabled.\n");
++#endif
++#ifndef CONFIG_RCU_CPU_STALL_VERBOSE
++	printk(KERN_INFO "\tVerbose stalled-CPUs detection is disabled.\n");
++#endif
++#if NUM_RCU_LVL_4 != 0
++	printk(KERN_INFO "\tExperimental four-level hierarchy is enabled.\n");
++#endif
++}
 +
- 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
- 	barrier();
- 	rdp->passed_quiesc = 1;
-+	current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+ 
+ struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt_state);
+@@ -38,8 +77,8 @@ static int rcu_preempted_readers_exp(struct rcu_node *rnp);
+  */
+ static void __init rcu_bootup_announce(void)
+ {
+-	printk(KERN_INFO
+-	       "Experimental preemptable hierarchical RCU implementation.\n");
++	printk(KERN_INFO "Preemptable hierarchical RCU implementation.\n");
++	rcu_bootup_announce_oddness();
  }
  
  /*
-@@ -144,9 +150,8 @@ static void rcu_preempt_note_context_switch(int cpu)
- 	 * grace period, then the fact that the task has been enqueued
- 	 * means that we continue to block the current grace period.
- 	 */
--	rcu_preempt_qs(cpu);
- 	local_irq_save(flags);
--	t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
-+	rcu_preempt_qs(cpu);
- 	local_irq_restore(flags);
+@@ -757,6 +796,7 @@ void exit_rcu(void)
+ static void __init rcu_bootup_announce(void)
+ {
+ 	printk(KERN_INFO "Hierarchical RCU implementation.\n");
++	rcu_bootup_announce_oddness();
  }
  
-@@ -236,7 +241,6 @@ static void rcu_read_unlock_special(struct task_struct *t)
- 	 */
- 	special = t->rcu_read_unlock_special;
- 	if (special & RCU_READ_UNLOCK_NEED_QS) {
--		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
- 		rcu_preempt_qs(smp_processor_id());
- 	}
- 
-@@ -473,7 +477,6 @@ static void rcu_preempt_check_callbacks(int cpu)
- 	struct task_struct *t = current;
- 
- 	if (t->rcu_read_lock_nesting == 0) {
--		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
- 		rcu_preempt_qs(cpu);
- 		return;
- 	}
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 6af210a..f8ca2c0 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3696,7 +3696,7 @@ need_resched:
- 	preempt_disable();
- 	cpu = smp_processor_id();
- 	rq = cpu_rq(cpu);
--	rcu_sched_qs(cpu);
-+	rcu_note_context_switch(cpu);
- 	prev = rq->curr;
- 	switch_count = &prev->nivcsw;
- 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 7c1a67e..0db913a 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -716,7 +716,7 @@ static int run_ksoftirqd(void * __bind_cpu)
- 			preempt_enable_no_resched();
- 			cond_resched();
- 			preempt_disable();
--			rcu_sched_qs((long)__bind_cpu);
-+			rcu_note_context_switch((long)__bind_cpu);
- 		}
- 		preempt_enable();
- 		set_current_state(TASK_INTERRUPTIBLE);
+ /*
 -- 
 1.7.0
 
