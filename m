@@ -1,94 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab0DTK0b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 06:26:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47250 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754419Ab0DTK02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 06:26:28 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/2] NFSv4: Fix the locking in nfs_inode_reclaim_delegation()
-To: Trond.Myklebust@netapp.com
-Cc: paulmck@linux.vnet.ibm.com, dhowells@redhat.com, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Date: Tue, 20 Apr 2010 11:26:08 +0100
-Message-ID: <20100420102608.31956.93404.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1754388Ab0DTKb1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 06:31:27 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:29339
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754339Ab0DTKb0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 06:31:26 -0400
+X-SpamScore: -28
+X-BigFish: VPS-28(zz1432P98dN936eM179dN62a3Lzz1202hzzz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-FB-SS: 5,
+X-WSS-ID: 0L167VW-02-0QT-02
+X-M-MSG: 
+Date: Tue, 20 Apr 2010 12:31:06 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 11/12] perf, x86: implement AMD IBS event configuration
+Message-ID: <20100420103106.GR11907@erda.amd.com>
+References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
+ <1271190201-25705-12-git-send-email-robert.richter@amd.com>
+ <h2obd4cb8901004190646v8231b6a1sf47d0cff6481cc5e@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <h2obd4cb8901004190646v8231b6a1sf47d0cff6481cc5e@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 20 Apr 2010 10:31:06.0776 (UTC) FILETIME=[95D03980:01CAE074]
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+On 19.04.10 15:46:29, Stephane Eranian wrote:
+> > +static inline void amd_pmu_disable_ibs(void)
+> > +{
+> > +       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+> > +       u64 val;
+> > +
+> > +       if (test_bit(X86_PMC_IDX_SPECIAL_IBS_FETCH, cpuc->active_mask)) {
+> > +               rdmsrl(MSR_AMD64_IBSFETCHCTL, val);
+> > +               val &= ~IBS_FETCH_ENABLE;
+> > +               wrmsrl(MSR_AMD64_IBSFETCHCTL, val);
+> > +       }
+> > +       if (test_bit(X86_PMC_IDX_SPECIAL_IBS_OP, cpuc->active_mask)) {
+> > +               rdmsrl(MSR_AMD64_IBSOPCTL, val);
+> > +               val &= ~IBS_OP_ENABLE;
+> > +               wrmsrl(MSR_AMD64_IBSOPCTL, val);
+> > +       }
+> > +}
+> > +
+> > +static inline void amd_pmu_enable_ibs(void)
+> > +{
+> > +       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+> > +       u64 val;
+> > +
+> > +       if (test_bit(X86_PMC_IDX_SPECIAL_IBS_FETCH, cpuc->active_mask)) {
+> > +               rdmsrl(MSR_AMD64_IBSFETCHCTL, val);
+> > +               val |= IBS_FETCH_ENABLE;
+> > +               wrmsrl(MSR_AMD64_IBSFETCHCTL, val);
+> > +       }
+> > +       if (test_bit(X86_PMC_IDX_SPECIAL_IBS_OP, cpuc->active_mask)) {
+> > +               rdmsrl(MSR_AMD64_IBSOPCTL, val);
+> > +               val |= IBS_OP_ENABLE;
+> > +               wrmsrl(MSR_AMD64_IBSOPCTL, val);
+> > +       }
+> > +}
+> 
+> Aren't you picking up stale state by using read-modify-write here?
 
-Ensure that we correctly rcu-dereference the delegation itself, and that we
-protect against removal while we're changing the contents.
+Hmm, there is a reason for this implementation. Both functions are
+only used in .enable_all() and .disable_all() which was originally
+used in atomic sections to disable NMIs during event scheduling and
+setup. For this short switch off of the pmu the register state is not
+saved. On Intel this is implemented by only writing to
+MSR_CORE_PERF_GLOBAL_CTRL. The proper way to enable events is to use
+amd_pmu_enable_event() which is x86_pmu.enable(event).
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Locking at the latest sources this might have changed a little in
+between and we have to check that this functions above are not used to
+enable events. So I am not really sure if the register may be setup
+wrong. But if this happens, then only for the first sample after
+enabling or reenabling of the whole pmu since the interrupt handler is
+using __x86_pmu_enable_event() to reenable ibs. Thus I would prever
+the implementation above and instead reimplement the nmi handling (see
+below).
 
- fs/nfs/delegation.c |   42 ++++++++++++++++++++++++++++--------------
- 1 files changed, 28 insertions(+), 14 deletions(-)
+Also, We should avoid a global pmu disable generally since it is
+expensive and also the pmu state may not be restored properly for some
+events on some hw revisions. But the code must then be atomic.
 
-diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-index 1567124..8d9ec49 100644
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -129,21 +129,35 @@ again:
-  */
- void nfs_inode_reclaim_delegation(struct inode *inode, struct rpc_cred *cred, struct nfs_openres *res)
- {
--	struct nfs_delegation *delegation = NFS_I(inode)->delegation;
--	struct rpc_cred *oldcred;
-+	struct nfs_delegation *delegation;
-+	struct rpc_cred *oldcred = NULL;
- 
--	if (delegation == NULL)
--		return;
--	memcpy(delegation->stateid.data, res->delegation.data,
--			sizeof(delegation->stateid.data));
--	delegation->type = res->delegation_type;
--	delegation->maxsize = res->maxsize;
--	oldcred = delegation->cred;
--	delegation->cred = get_rpccred(cred);
--	clear_bit(NFS_DELEGATION_NEED_RECLAIM, &delegation->flags);
--	NFS_I(inode)->delegation_state = delegation->type;
--	smp_wmb();
--	put_rpccred(oldcred);
-+	rcu_read_lock();
-+	delegation = rcu_dereference(NFS_I(inode)->delegation);
-+	if (delegation != NULL) {
-+		spin_lock(&delegation->lock);
-+		if (delegation->inode != NULL) {
-+			memcpy(delegation->stateid.data, res->delegation.data,
-+			       sizeof(delegation->stateid.data));
-+			delegation->type = res->delegation_type;
-+			delegation->maxsize = res->maxsize;
-+			oldcred = delegation->cred;
-+			delegation->cred = get_rpccred(cred);
-+			clear_bit(NFS_DELEGATION_NEED_RECLAIM,
-+				  &delegation->flags);
-+			NFS_I(inode)->delegation_state = delegation->type;
-+			spin_unlock(&delegation->lock);
-+			put_rpccred(oldcred);
-+			rcu_read_unlock();
-+		} else {
-+			/* We appear to have raced with a delegation return. */
-+			spin_unlock(&delegation->lock);
-+			rcu_read_unlock();
-+			nfs_inode_set_delegation(inode, cred, res);
-+		}
-+	} else {
-+		rcu_read_unlock();
-+	}
- }
- 
- static int nfs_do_return_delegation(struct inode *inode, struct nfs_delegation *delegation, int issync)
+An alternative solution to disable NMIs on AMD could be to mask the
+nmi by writing to the lapic instead of the counter msrs. This could be
+more efficient and the pmu will go on with sampling without the need
+to restore the state. Or this way: the interrupt handler does not
+handle events and only clears the reason if some 'atomic' flag is set?
+
+IMHO I think, also the implementation for x86_pmu_enable_all() and
+x86_pmu_disable_all() is not accurate, since the state is not stored
+when disabling all counters and then reenabling it with the init
+value. On Intel counters this is without impact since the global ctrl
+msr is used. In all other cases x86_pmu_enable_all() does not restore
+the previous counter state.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
 
