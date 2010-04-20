@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab0DTXwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 19:52:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54201 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753827Ab0DTXwK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 19:52:10 -0400
-Date: Tue, 20 Apr 2010 16:51:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Marc Zyngier <maz@misterjones.org>
-Cc: Eric Miao <eric.y.miao@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: max732x: fix input configuration for open-drain
- pins
-Message-Id: <20100420165148.49711c3c.akpm@linux-foundation.org>
-In-Reply-To: <c2d04a7116b74b3717366148db5f7e54@localhost>
-References: <c2d04a7116b74b3717366148db5f7e54@localhost>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753917Ab0DTXw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 19:52:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46370 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753411Ab0DTXw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 19:52:56 -0400
+Message-ID: <4BCE3D88.4010502@zytor.com>
+Date: Tue, 20 Apr 2010 16:49:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jan Engelhardt <jengelh@medozas.de>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Alexander E. Patrakov" <patrakov@gmail.com>
+Subject: Re: [patch] vt: deactive Shift In/Out in unicode mode
+References: <alpine.LSU.2.01.1004191555290.17067@obet.zrqbmnf.qr> <20100419153136.3585281f@lxorguk.ukuu.org.uk> <alpine.LSU.2.01.1004191812570.25222@obet.zrqbmnf.qr>
+In-Reply-To: <alpine.LSU.2.01.1004191812570.25222@obet.zrqbmnf.qr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, 16 Mar 2010 10:19:00 +0100
-
-I bet you thought I'd forgotten.
-
-Marc Zyngier <maz@misterjones.org> wrote:
-
-> max732x datasheets indicate that open-drain pins must be
-> configured as output-high to be used as input...
+On 04/19/2010 09:20 AM, Jan Engelhardt wrote:
 > 
-> Signed-off-by: Marc Zyngier <maz@misterjones.org>
-> ---
->  drivers/gpio/max732x.c |   12 +++++++++++-
->  1 files changed, 11 insertions(+), 1 deletions(-)
+> On Monday 2010-04-19 16:31, Alan Cox wrote:
+>>>
+>>> I am proposing the patch below for inclusion.
+>>> Also pullable via
+>>> 	git://dev.medozas.de/linux siso
+>>
+>> It seems to do a lot of other things as well. Can you split out just the
+>> relevant bit ?
 > 
-> diff --git a/drivers/gpio/max732x.c b/drivers/gpio/max732x.c
-> index f786824..3618feb 100644
-> --- a/drivers/gpio/max732x.c
-> +++ b/drivers/gpio/max732x.c
-> @@ -179,15 +179,25 @@ static int max732x_gpio_direction_input(struct gpio_chip *gc, unsigned off)
->  {
->  	struct max732x_chip *chip;
->  	unsigned int mask = 1u << off;
-> +	unsigned int is_input;
->  
->  	chip = container_of(gc, struct max732x_chip, gpio_chip);
->  
-> -	if ((mask & chip->dir_input) == 0) {
-> +	is_input = mask & chip->dir_input;
-> +
-> +	if (!is_input) {
->  		dev_dbg(&chip->client->dev, "%s port %d is output only\n",
->  			chip->client->name, off);
->  		return -EACCES;
->  	}
->  
-> +	/*
-> +	 * Open-drain pins must be set to high impedance (which is
-> +	 * equivalent to output-high) to be turned into an input.
-> +	 */
-> +	if ((is_input & chip->dir_output))
+> It's really just the top commit. Perhaps I should rebase it to a
+> v2.6.34-rcX tag so that shortlog does what one expects.
+> 
+> Alexander mentioned:
+> 
+> [quoting the gmane nntp posting which was stripped of To:s and Cc:s]
+>>
+>> Since KOI7 is not used by any glibc locale, your use case is now 
+>> extinct. I think that, unless someone finds out a different use case, 
+>> these SI and SO characters should be deactivated completely (and not 
+>> just in unicode mode).
+> 
+> Alan, do you agree that the entire SI/SO can/should be removed?
 
-You really did mean `&' here, but one very much expects a variable
-called is_foo to be a boolean, and booleans want `&&'.
+VT line drawing characters are generally assumed to be accessible using
+SI/SO (as they are by default.)
 
-Can you think of a more appropriate name for this guy?  input_lines, maybe?
-
-> +		max732x_gpio_set_value(gc, off, 1);
-> +
->  	return 0;
->  }
+	-hpa
