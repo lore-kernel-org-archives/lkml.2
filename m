@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab0DTP2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 11:28:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38842 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab0DTP2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 11:28:45 -0400
-Date: Tue, 20 Apr 2010 17:28:44 +0200
-From: Jan Kara <jack@suse.cz>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-       adilger@sun.com, linux-ext4@vger.kernel.org,
-       Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       mszeredi@suse.cz
-Subject: Re: busy inodes -> ext3 umount crash
-Message-ID: <20100420152844.GB3885@quack.suse.cz>
-References: <4BC8A7C1.20102@gmail.com>
- <20100419141158.GB5439@quack.suse.cz>
- <4BCC69B4.2050308@gmail.com>
- <4BCDB633.9040901@gmail.com>
+	id S1752426Ab0DTPbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 11:31:07 -0400
+Received: from ironport-smtp02.maxnet.net.nz ([123.100.71.102]:53044 "EHLO
+	ironport-smtp02.maxnet.net.nz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751475Ab0DTPbE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 11:31:04 -0400
+X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 11:31:04 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgoFALNjzUt6yWS2/2dsb2JhbACQBYt8tgqIRoUPBIIi
+X-IronPort-AV: E=Sophos;i="4.52,243,1270382400"; 
+   d="scan'208";a="172654043"
+Date: Wed, 21 Apr 2010 01:20:30 +1000
+To: linux-kernel@vger.kernel.org
+From: "Mr. David Smith" <mdavidsmith210@london.com>
+Reply-to: mrdavidsmith2010@gala.net
+Subject: Your Reply
+Message-ID: <960be14b9ced34d5c61e590e938ac996@www.peoplexchange.net>
+X-Priority: 3
+X-Mailer: PHPMailer [version ]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BCDB633.9040901@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 20-04-10 16:12:03, Jiri Slaby wrote:
-> On 04/19/2010 04:33 PM, Jiri Slaby wrote:
-> > The trigger for busy inodes is as simple as (I=initialization done only
-> > once):
-> > I> # dd if=/dev/zero of=/dev/shm/ext3 bs=1024 count=1 seek=$((100*1024))
-> > I> # mkfs.ext3 -m 0 /dev/shm/ext3
-> > # mount -oloop /dev/shm/ext3 /mnt/c
-> > # umount /mnt/c
-> > # dmesg|tail
-> > VFS: Busy inodes after unmount of loop0. Self-destruct in 5 seconds.
-> > Have a nice day...
-> > 
-> > (The printk time varies -- this sequence really suffices.)
-> 
-> Well, this happens only after gnome-session is started and it's fuzzy --
-> sometimes it happens, sometimes not. I didn't find 100% trigger yet.
-  Hmph - maybe something in inotify? Dunno...
+Congratulations,
 
-> >> So if you can easily reproduce
-> >> the "busy inodes" message then I'd start with debugging that one. Do you
-> >> see it also with vanilla kernels?
-> 
-> Vanilla seems not to be affected. It's in next/master already though
-> (2603ecd9). I'll investigate it further later.
-  Do you mean it's in today's linux-next but not in Linus' tree?
+Reference to annual United Kingdom promotion conducted in UK 2010. We are happy to inform you of your winnings £980,000. Contact me immediately for more details.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thank you,
+
+Mr. David Smith.
+
+
