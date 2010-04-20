@@ -1,63 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079Ab0DTB6b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 21:58:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12392 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752305Ab0DTB63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 21:58:29 -0400
-Date: Mon, 19 Apr 2010 22:57:33 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Glauber Costa <glommer@redhat.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, avi@redhat.com,
-       Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-Message-ID: <20100420015733.GA28249@amt.cnet>
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>
- <1271356648-5108-2-git-send-email-glommer@redhat.com>
- <4BC8CA52.4090703@goop.org>
- <20100419142624.GE14158@mothafucka.localdomain>
- <4BCC829A.6000803@goop.org>
- <20100419182542.GI14158@mothafucka.localdomain>
+	id S1753037Ab0DTCJu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 22:09:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54832 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752315Ab0DTCJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Apr 2010 22:09:49 -0400
+Message-ID: <4BCD0CF5.3060600@cn.fujitsu.com>
+Date: Tue, 20 Apr 2010 10:09:57 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100419182542.GI14158@mothafucka.localdomain>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: paulmck@linux.vnet.ibm.com, Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm: use the correct RCU API
+References: <4BCC2543.7050104@cn.fujitsu.com> <4BCC2710.8090809@redhat.com> <20100419233522.GO2564@linux.vnet.ibm.com>
+In-Reply-To: <20100419233522.GO2564@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 03:25:43PM -0300, Glauber Costa wrote:
-> On Mon, Apr 19, 2010 at 09:19:38AM -0700, Jeremy Fitzhardinge wrote:
-> > On 04/19/2010 07:26 AM, Glauber Costa wrote:
-> > >> Is the problem that the tscs are starting out of sync, or that they're
-> > >> drifting relative to each other over time?  Do the problems become worse
-> > >> the longer the uptime?  How large are the offsets we're talking about here?
-> > >>     
-> > > The offsets usually seem pretty small, under a microsecond. So I don't think
-> > > it has anything to do with tscs starting out of sync. Specially because the
-> > > delta-based calculation has the exact purpose of handling that case.
-> > >   
-> > 
-> > So you think they're drifting out of sync from an initially synced
-> > state?  If so, what would bound the drift?
-> I think delta calculation introduces errors.
-
-Yes.
-
-> Marcelo can probably confirm it, but he has a nehalem with an appearently
-> very good tsc source. Even this machine warps.
+Paul E. McKenney wrote:
+> On Mon, Apr 19, 2010 at 12:49:04PM +0300, Avi Kivity wrote:
+>> On 04/19/2010 12:41 PM, Lai Jiangshan wrote:
+>>> The RCU/SRCU API have already changed for proving RCU usage.
+>>>
+>>> I got the following dmesg when PROVE_RCU=y because we used incorrect API.
+>>> This patch coverts rcu_deference() to srcu_dereference() or family API.
+>>>
+>>> ===================================================
+>>> [ INFO: suspicious rcu_dereference_check() usage. ]
+>>> ---------------------------------------------------
+>>> arch/x86/kvm/mmu.c:3020 invoked rcu_dereference_check() without protection!
+>>>
+>>> other info that might help us debug this:
+>>>
+>>>
+>>> rcu_scheduler_active = 1, debug_locks = 0
+>>> 2 locks held by qemu-system-x86/8550:
+>>>  #0:  (&kvm->slots_lock){+.+.+.}, at: [<ffffffffa011a6ac>] kvm_set_memory_region+0x29/0x50 [kvm]
+>>>  #1:  (&(&kvm->mmu_lock)->rlock){+.+...}, at: [<ffffffffa012262d>] kvm_arch_commit_memory_region+0xa6/0xe2 [kvm]
+>>>
+>>> stack backtrace:
+>>> Pid: 8550, comm: qemu-system-x86 Not tainted 2.6.34-rc4-tip-01028-g939eab1 #27
+>>> Call Trace:
+>>>  [<ffffffff8106c59e>] lockdep_rcu_dereference+0xaa/0xb3
+>>>  [<ffffffffa012f6c1>] kvm_mmu_calculate_mmu_pages+0x44/0x7d [kvm]
+>>>  [<ffffffffa012263e>] kvm_arch_commit_memory_region+0xb7/0xe2 [kvm]
+>>>  [<ffffffffa011a5d7>] __kvm_set_memory_region+0x636/0x6e2 [kvm]
+>>>  [<ffffffffa011a6ba>] kvm_set_memory_region+0x37/0x50 [kvm]
+>>>  [<ffffffffa015e956>] vmx_set_tss_addr+0x46/0x5a [kvm_intel]
+>>>  [<ffffffffa0126592>] kvm_arch_vm_ioctl+0x17a/0xcf8 [kvm]
+>>>  [<ffffffff810a8692>] ? unlock_page+0x27/0x2c
+>>>  [<ffffffff810bf879>] ? __do_fault+0x3a9/0x3e1
+>>>  [<ffffffffa011b12f>] kvm_vm_ioctl+0x364/0x38d [kvm]
+>>>  [<ffffffff81060cfa>] ? up_read+0x23/0x3d
+>>>  [<ffffffff810f3587>] vfs_ioctl+0x32/0xa6
+>>>  [<ffffffff810f3b19>] do_vfs_ioctl+0x495/0x4db
+>>>  [<ffffffff810e6b2f>] ? fget_light+0xc2/0x241
+>>>  [<ffffffff810e416c>] ? do_sys_open+0x104/0x116
+>>>  [<ffffffff81382d6d>] ? retint_swapgs+0xe/0x13
+>>>  [<ffffffff810f3ba6>] sys_ioctl+0x47/0x6a
+>>>  [<ffffffff810021db>] system_call_fastpath+0x16/0x1b
+>>>
+>>>
+>>>
+>>> +static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+>>> +{
+>>> +	return rcu_dereference_check(kvm->memslots,
+>>> +			srcu_read_lock_held(&kvm->srcu)
+>>> +			|| lockdep_is_held(&kvm->slots_lock));
+>>> +}
+>>> +
+>>
+>> This open-codes srcu_dereference().  I guess we need an
+>> srcu_dereference_check().  Paul?
 > 
-> It stops warping if we only write pvclock data structure once and forget it,
-> (which only updated tsc_timestamp once), according to him.
 
-Yes. So its not as if the guest visible TSCs go out of sync (they don't
-on this machine Glauber mentioned, or even on a multi-core Core 2 Duo),
-but the delta calculation is very hard (if not impossible) to get right.
+rcu_dereference_check() is useful when rcu_dereference(),
+rcu_dereference_bh(), rcu_dereference_sched() and srcu_dereference()
+are not appropriate.
 
-The timewarps i've seen were in the 0-200ns range, and very rare (once
-every 10 minutes or so).
+I think we don't need srcu_dereference_check() nor rcu_dereference_bh_check()
+nor rcu_dereference_sched_check().
 
-> Obviously, we can't do that everywhere.
+> One is coming in Arnd's sparse-based patchset.  It is probably best
+> to open-code this in the meantime and clean up later, but I will
+> double-check with Arnd.
+> 
+>> btw, perhaps it is possible not to call rcu_dereference from the
+>> write paths.
+> 
+> There is an rcu_dereference_protected() on its way to mainline to handle
+> the case where the reference is always protected by a lock.  Why not
+> just access it directly?  Because if you do that, the sparse-based checks
+> will yell at you.
+> 
+> There is also an rcu_access_pointer() on its way to mainline for cases
+> where you only want to test the pointer itself, not dereference it.
+> 
+> 						Thanx, Paul
+> 
+
+I reviewed the code, the functions can be called from the srcu-read-site
+or update-site, rcu_dereference_check() can simplify the code.
+
+If we use rcu_dereference_protected(), we may need duplicate the functions.
+
+I think there is very small overhead of using rcu_dereference(), so we can
+call it from write paths.
+
+Thanks,
+Lai
