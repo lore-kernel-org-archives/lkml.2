@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab0DTKch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 06:32:37 -0400
-Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:53233 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754355Ab0DTKcf (ORCPT
+	id S1754450Ab0DTKfW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 06:35:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47411 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754376Ab0DTKfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 06:32:35 -0400
-Date: Tue, 20 Apr 2010 20:32:16 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] mm: add context argument to shrinker callback
-Message-ID: <20100420103216.GK15130@dastard>
-References: <1271118255-21070-1-git-send-email-david@fromorbit.com>
- <1271118255-21070-2-git-send-email-david@fromorbit.com>
- <20100418001514.GA26575@infradead.org>
- <20100419140039.GQ5683@laptop>
- <20100420004149.GA14744@dastard>
- <20100420083840.GR5683@laptop>
+	Tue, 20 Apr 2010 06:35:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=QWBopHuvAZxfLMUlgyGpL4/CVZ2s6Ai9hiA5oUBMzj5TvYvVFZi7VMsIyhHL98ZWE9
+         Fc8lWL+rfQ3d0lAtm9rDVubqW6jUsOYW/qm8Zmpk8nS40x0/ZlhGsZE3DZnlcLrxfC/O
+         VSNbtF0jpmKSQF7vMka/oTQA3q8tCOnE9B3EA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100420083840.GR5683@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Tue, 20 Apr 2010 18:35:18 +0800
+Message-ID: <i2x9b948ee41004200335vc229a59cvc0a08c35c949d7dd@mail.gmail.com>
+Subject: A possible bug in reqsk_queue_hash_req()
+From: Li Yu <raise.sail@gmail.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 06:38:40PM +1000, Nick Piggin wrote:
-> On Tue, Apr 20, 2010 at 10:41:49AM +1000, Dave Chinner wrote:
-> > And if this is enough of a problem to disallow context based cache
-> > shrinkers, then lets fix the interface so that we encode the
-> > dependencies explicitly in the registration interface rather than
-> > doing it implicitly.
-> > 
-> > IOWs, I don't think this is a valid reason for not allowing a
-> > context to be passed with a shrinker because it is easily fixed.
-> 
-> Well yeah you could do all that maybe. I think it would definitely be
-> required if we were to do context shrinkers like this. But AFAIKS there
-> is simply no need at all. Definitely it is not preventing XFS from
-> following more like the existing shrinker implementations.
+Hi,
 
-So you're basically saying that we shouldn't improve the shrinker
-interface because you don't think that anyone should be doing
-anything different to what is already there.
+     I found out a possible bug in reqsk_queue_hash_req(), it seem
+that we should move "req->dl_next = lopt->syn_table[hash];" statement
+into follow write lock protected scope.
 
-If a change of interface means that we end up with shorter call
-chains, less global state, more flexibilty, better batching and IO
-patterns, less duplication of code and algorithms and it doesn't
-cause any regressions, then where's the problem?
+     As I browsed source code, this function only can be call at rx
+code path which is protected a spin lock over struct sock , but its
+caller (  inet_csk_reqsk_queue_hash_add() ) is a GPL exported symbol,
+so I think that we'd best move this statement into below write lock
+protected scope.
 
-Cheers,
+     Below is the patch to play this change, please do not apply it on
+source code, it's just for show.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+    Thanks.
+
+Yu
+
+--- include/net/request_sock.h  2010-04-09 15:27:14.000000000 +0800
++++ include/net/request_sock.h        2010-04-20 18:11:32.000000000 +0800
+@@ -247,9 +247,9 @@ static inline void reqsk_queue_hash_req(
+        req->expires = jiffies + timeout;
+        req->retrans = 0;
+        req->sk = NULL;
+-       req->dl_next = lopt->syn_table[hash];
+
+        write_lock(&queue->syn_wait_lock);
++       req->dl_next = lopt->syn_table[hash];
+        lopt->syn_table[hash] = req;
+        write_unlock(&queue->syn_wait_lock);
+ }
