@@ -1,149 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab0DTIcQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 04:32:16 -0400
-Received: from mail-yw0-f194.google.com ([209.85.211.194]:36801 "EHLO
-	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474Ab0DTIcO convert rfc822-to-8bit (ORCPT
+	id S1753995Ab0DTIdL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 04:33:11 -0400
+Received: from mail.copilotco.com ([216.105.40.123]:47238 "EHLO
+	mail.copilotco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753346Ab0DTIdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 04:32:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=g3EebyYUQl7yNmbwvn1uQyp6wnAeZDozegA82KBQdlSlbl+f8biOTs71ynatIBrjHQ
-         BIhgvRRih7nk6ii7YvsZl64uGgbBc/4MRL+QhIopmUZ3WZUla4zF5klNYxvtZFOxBx2c
-         VtmrK+YJL9IPZk0a5igXAoOE+7NsHM3m4w/R4=
+	Tue, 20 Apr 2010 04:33:08 -0400
+X-Greylist: delayed 1386 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 04:33:08 EDT
+Date: Tue, 20 Apr 2010 01:09:58 -0700
+From: Tracy Reed <treed@ultraviolet.org>
+To: xen-devel@lists.xensource.com
+Cc: Aoetools-discuss@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: domU is causing misaligned disk writes
+Message-ID: <20100420080958.GN5660@tracyreed.org>
+Mail-Followup-To: Tracy Reed <treed@ultraviolet.org>,
+	xen-devel@lists.xensource.com,
+	Aoetools-discuss@lists.sourceforge.net,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20100420082057.GC19264@csn.ul.ie>
-References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org>
-	 <20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100419181442.GA19264@csn.ul.ie> <20100419193919.GB19264@csn.ul.ie>
-	 <s2v28c262361004191939we64e5490ld59b21dc4fa5bc8d@mail.gmail.com>
-	 <20100420082057.GC19264@csn.ul.ie>
-Date: Tue, 20 Apr 2010 17:32:13 +0900
-Message-ID: <x2h28c262361004200132q39fe5d5ex79251643a80d28b3@mail.gmail.com>
-Subject: Re: error at compaction (Re: mmotm 2010-04-15-14-42 uploaded
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1VhaNAE4Hwu38Ubd"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 5:20 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> On Tue, Apr 20, 2010 at 11:39:46AM +0900, Minchan Kim wrote:
->> On Tue, Apr 20, 2010 at 4:39 AM, Mel Gorman <mel@csn.ul.ie> wrote:
->> > On Mon, Apr 19, 2010 at 07:14:42PM +0100, Mel Gorman wrote:
->> >> On Mon, Apr 19, 2010 at 07:01:33PM +0900, KAMEZAWA Hiroyuki wrote:
->> >> >
->> >> > mmotm 2010-04-15-14-42
->> >> >
->> >> > When I tried
->> >> >  # echo 0 > /proc/sys/vm/compaction
->> >> >
->> >> > I see following.
->> >> >
->> >> > My enviroment was
->> >> >   2.6.34-rc4-mm1+ (2010-04-15-14-42) (x86-64) CPUx8
->> >> >   allocating tons of hugepages and reduce free memory.
->> >> >
->> >> > What I did was:
->> >> >   # echo 0 > /proc/sys/vm/compact_memory
->> >> >
->> >> > Hmm, I see this kind of error at migation for the 1st time..
->> >> > my.config is attached. Hmm... ?
->> >> >
->> >> > (I'm sorry I'll be offline soon.)
->> >>
->> >> That's ok, thanks you for the report. I'm afraid I made little progress
->> >> as I spent most of the day on other bugs but I do have something for
->> >> you.
->> >>
->> >> First, I reproduced the problem using your .config. However, the problem does
->> >> not manifest with the .config I normally use which is derived from the distro
->> >> kernel configuration (Debian Lenny). So, there is something in your .config
->> >> that triggers the problem. I very strongly suspect this is an interaction
->> >> between migration, compaction and page allocation debug.
->> >
->> > I unexpecedly had the time to dig into this. Does the following patch fix
->> > your problem? It Worked For Me.
->>
->> Nice catch during shot time. Below is comment.
->>
->> >
->> > ==== CUT HERE ====
->> > mm,compaction: Map free pages in the address space after they get split for compaction
->> >
->> > split_free_page() is a helper function which takes a free page from the
->> > buddy lists and splits it into order-0 pages. It is used by memory
->> > compaction to build a list of destination pages. If
->> > CONFIG_DEBUG_PAGEALLOC is set, a kernel paging request bug is triggered
->> > because split_free_page() did not call the arch-allocation hooks or map
->> > the page into the kernel address space.
->> >
->> > This patch does not update split_free_page() as it is called with
->> > interrupts held. Instead it documents that callers of split_free_page()
->> > are responsible for calling the arch hooks and to map the page and fixes
->> > compaction.
->>
->> Dumb question. Why can't we call arch_alloc_page and kernel_map_pages
->> as interrupt disabled?
->
-> In theory, it isn't known what arch_alloc_page is going to do but more
-> practically kernel_map_pages() is updating mappings and should be
-> flushing all the TLBs. It can't do that with interrupts disabled.
->
-> I checked X86 and it should be fine but only because it flushes the
-> local CPU and appears to just hope for the best that this doesn't cause
-> problems.
 
-Okay.
+--1VhaNAE4Hwu38Ubd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> And now compaction only uses split_free_page and it is exposed by mm.h.
->> I think it would be better to map pages inside split_free_page to
->> export others.(ie, making generic function).
->
-> I considered that and it would not be ideal. It would have to disable and
-> reenable interrupts as each page is taken from the list or alternatively
-> require that the caller not have the zone lock taken. The latter of these
-> options is more reasonable but would still result in more interrupt enabling
-> and disabling.
->
-> split_free_page() is extremely specialised and requires knowledge of the
-> page allocator internals to call properly. There is little pressure to
-> make this easier to use at the cost of increased locking.
->
->> If we can't do, how about making split_free_page static as static function?
->> And only uses it in compaction.
->>
->
-> It pretty much has to be in page_alloc.c because it uses internal
-> functions of the page allocator - e.g. rmv_page_order. I could move it
-> to mm/internal.h because whatever about split_page, I can't imagine why
-> anyone else would need to call split_free_page.
+Anyone know why my xen xvda devices would be doing (apparently)
+unaligned writes to my SAN causing horrible performance and massive
+seeking and lots of reading for page cache backfill? BUT writing to
+the device in the dom0 is very fast and causes no extra reads?
 
-Yes. Then, Let's add comment like split_page. :)
- /*
- * Note: this is probably too low level an operation for use in drivers.
- * Please consult with lkml before using this in your driver.
- */
+I am running the 2.6.18-164.11.1.el5xen xen/kernel which came with
+CentOS 5.4
 
+After spending a lot of time banging my head on this I seem to have
+finally tracked it down to a difference between domU and dom0.  I
+never would have thought it would be this but it is extremely
+reproduceable. We're talking a difference of 4-5x in write speed.
+Reads are equally fast everywhere.
 
->
-> --
-> Mel Gorman
-> Part-time Phd Student                          Linux Technology Center
-> University of Limerick                         IBM Dublin Software Lab
->
+I am using AoE v72 kernel module (initiator) on a Dell R610's to talk
+to vblade-19 (target) on Dell R710's all running CentOS 5.4. I have
+striped two 7200 RPM SATA disks and exported the md with AoE (although
+I have done these tests with individual disks also). Read performance
+is excellent:
 
+# dd of=3D/dev/null if=3D/dev/xvdg1 bs=3D4096 count=3D3000000
+3000000+0 records in
+3000000+0 records out
+12288000000 bytes (12 GB) copied, 106.749 seconds, 115 MB/s
 
+I dropped the cache with:
 
--- 
-Kind regards,
-Minchan Kim
+echo 1 > /proc/sys/vm/drop_caches
+
+on both target and initiator before starting the test. This is great
+for just a single gig-e link. This suggests that the network is fine.
+
+However, write performance is odious. Typically around 20MB/s. It
+should be more like 70MB/s per disk or better (7200rpm SATA) and max
+out my gig-e with write performance similar to the above read
+performance. I mentioned above that these are unaligned writes because
+when running iostat on the target machine I can see lots of reads
+happening which are surely causing seeks and killing
+performance. Typical is something like 8MB/s of reads while doing
+16MB/s of writes.
+
+HOWEVER, if I do the writes from the dom0 the performance is
+excellent:
+
+# dd if=3D/dev/zero of=3D/dev/etherd/e6.2 bs=3D4096 count=3D3000000
+3000000+0 records in
+3000000+0 records out
+12288000000 bytes (12 GB) copied, 104.679 seconds, 117 MB/s
+
+And I see no reads happening on the disks being written to in
+iostat. Purely streaming writes at high speeds.
+
+I have had AoE working very well with Xen previously although not with
+this particular hardware/xen/aoe version. Also it occurs to me that in
+the past when I have done this I network booted the domU's and they
+got root over AoE using a complicated initrd that I cooked up. In the
+last year or so I decided that it was too complicated and went to
+booting my dom0's from compact flash with the AoE driver in the dom0
+instead of the domU. I now handing the domU xvd's from the AoE driver
+in dom0. I strongly suspect that this is why things worked great
+before but stink now. Unfortunately I don't have a working network
+boot initrd setup like I used to and although I still have all of the
+code etc. it would take a while to set up. I don't want to run that
+setup in production anymore anyway if I can help it.
+
+I have tried manually aligning the disk by setting the beginning of
+data on the partition from 63 to 64 (although this is usually done for
+RAID alignment) and I have tried changing the disk geometry to account
+for the extra partition table which causes a half-block page-cache
+misalignment as described by the ever insightful Kelsey Hudson in his
+writeup on the issue here:
+
+http://copilotco.com/Virtualization/wiki/aoe-caching-alignment.pdf/at_downl=
+oad/file
+
+All to no avail. What am I missing here? Why is domU apparently
+fudging my writes?
+
+--=20
+Tracy Reed
+http://tracyreed.org
+
+--1VhaNAE4Hwu38Ubd
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.5 (GNU/Linux)
+
+iD4DBQFLzWFW9PIYKZYVAq0RAvkrAJsGICa+vuJYjohNm8c72y9OC4I4bgCYpF5O
+uhC3asn31XF2iNKxIGsLOA==
+=H0nb
+-----END PGP SIGNATURE-----
+
+--1VhaNAE4Hwu38Ubd--
