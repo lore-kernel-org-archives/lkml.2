@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab0DTQbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 12:31:37 -0400
-Received: from kroah.org ([198.145.64.141]:48235 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752588Ab0DTQbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753525Ab0DTQbf (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 20 Apr 2010 12:31:35 -0400
-Date: Tue, 20 Apr 2010 09:32:15 -0700
-From: Greg KH <greg@kroah.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: pci_get_dev_by_id() from interrupt handlers
-Message-ID: <20100420163215.GB3270@kroah.com>
-References: <20100420160423.GD31537@amd.com>
+Received: from cantor.suse.de ([195.135.220.2]:53246 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957Ab0DTQbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 12:31:33 -0400
+Date: Tue, 20 Apr 2010 09:23:41 -0700
+From: Greg KH <gregkh@suse.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] sysfs: don't use allocated key for lockdep
+Message-ID: <20100420162341.GA3232@suse.de>
+References: <4BCD246F.4090005@cn.fujitsu.com> <20100420131420.GA27126@suse.de> <alpine.LRH.2.00.1004201805480.28179@twin.jikos.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100420160423.GD31537@amd.com>
+In-Reply-To: <alpine.LRH.2.00.1004201805480.28179@twin.jikos.cz>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 06:04:24PM +0200, Joerg Roedel wrote:
-> Hi Jesse,
+On Tue, Apr 20, 2010 at 06:09:27PM +0200, Jiri Kosina wrote:
+> On Tue, 20 Apr 2010, Greg KH wrote:
 > 
-> I have a question regarding the warning in the pci_get_dev_by_id()
-> [search.c] function which triggers when called from interrupt context.
-> As far as I have seen this function should be save to be called in
-> atomic mode.
+> > > lockdep_init_map() {
+> > > ......
+> > > 	/*
+> > > 	 * Sanity check, the lock-class key must be persistent:
+> > > 	 */
+> > > 	if (!static_obj(key)) {
+> > > 		printk("BUG: key %p not in .data!\n", key);
+> > > 		DEBUG_LOCKS_WARN_ON(1);
+> > > 		return;
+> > > 	}
+> > > 	lock->key = key;
+> > > ......
+> > > }
+> > > 
+> > > Could you please fix it.
+> > 
+> > All in-kernel attributes should now be fixed, so what exactly is the
+> > remaining issue?
+> 
+> Are they?
+> 
+> How about my fix to drivers/hwmon/asus_atk0110.c for example, I sent last 
+> week? http://lkml.org/lkml/2010/4/14/458
 
-Are you sure?
-
-> Is there any other reason it should not be called in interrupt
-> handlers?
-
-klist traversal is not safe to be done in interrupt context as the
-spinlock is not told to be interrupt safe.  Now you could go and change
-the klist core to be interrupt safe, but you should probably rethink
-your need here first.
-
-> I need to (indirectly) call this function for my IOMMU driver to
-> handle events from the IOMMU.
-
->From interrupt?  Why not use an interrupt thread instead if you really
-need to do this.
-
-Actually, what are you trying to accomplish here?
+Ick, yes, it's still waiting to get sent to Linus, sorry about that,
+still catching up on patches :(
 
 thanks,
 
