@@ -1,74 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab0DTH4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 03:56:47 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:45681 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753855Ab0DTH4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 03:56:45 -0400
-Date: Tue, 20 Apr 2010 02:56:43 -0500
-From: Robin Holt <holt@sgi.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Mike Travis <travis@sgi.com>, Christoph Lameter <cl@linux-foundation.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Jack Steiner <steiner@sgi.com>
-Subject: Re: [GIT PULL] percpu for v2.6.32
-Message-ID: <20100420075643.GO4920@sgi.com>
-References: <4AAF411C.2040501@kernel.org>
- <alpine.DEB.1.10.0909151510010.3340@V090114053VZO-1>
- <4AAFE9B2.1030006@kernel.org>
- <alpine.DEB.1.10.0909151531490.3340@V090114053VZO-1>
- <4AAFEF48.8000607@sgi.com>
- <4AB03F23.7080605@kernel.org>
+	id S1753935Ab0DTIBX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 04:01:23 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:59935 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858Ab0DTIBW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 04:01:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=t4RPTBakaJCgJEutTIb8IiNfrBb8TkWqFFi6g45w0jKDYk9PvVq5jufsbP9573zfLU
+         eZlgWnivHTh4eyvQgYIoce42JCNBeyPmQyQdViQQzpfuZkE+yk342D0ycwdzJiu0Oa2Q
+         NrV4vlAf/F31PushljqN0Bt3uNgg1W9laAlws=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4AB03F23.7080605@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <o2p9bde694e1004190623n24a4308le84451cc076d4a46@mail.gmail.com>
+References: <j2n448a67a1004190442h2d01f517ld1cd0449c7a0513@mail.gmail.com>
+	 <x2n448a67a1004190620z6b23d12vc4ba54f2d460d125@mail.gmail.com>
+	 <o2p9bde694e1004190623n24a4308le84451cc076d4a46@mail.gmail.com>
+Date: Tue, 20 Apr 2010 10:01:20 +0200
+Message-ID: <r2l19f34abd1004200101xbe260a00l98cadfe24d41b7c2@mail.gmail.com>
+Subject: Re: Kmemcheck issue
+From: Vegard Nossum <vegard.nossum@gmail.com>
+To: naveen yadav <yad.naveen@gmail.com>
+Cc: linux-arm-kernel-request@lists.arm.linux.org.uk,
+       linux newbie <linux.newbie79@gmail.com>, linux-kernel@vger.kernel.org,
+       Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike, if you can not find one, let me know.  I would try the benchmarkers.
-IIRC, they may have those already ready to go.
+On 19 April 2010 15:23, naveen yadav <yad.naveen@gmail.com> wrote:
+> Hi,
+>
+> á á á I áam átrying to á run áKmemcheck on á a áCortex ( ARM-v7)
+> board árunning áLinux 2.6.30.9
+>
+> At boot-up time, áas ásoon áas áTimer-device is áenabled, á I áfind
+> that á timer ágets ádisabled ábecause ásystem
+> gets spurious áinterrupts áon áthat áirq áline.
+>
+>
+> PID hash table entries: 1024 (order: 10, 4096 bytes)
+> Linux System timer initialize
+> irq 23: nobody cared (try booting with the "irqpoll" option)
+> [<c002e148>] (unwind_backtrace+0x0/0xe8) from [<c002c4b8>]
+> (dump_stack+0x18/0x1c)
+> [<c002c4b8>] (dump_stack+0x18/0x1c) from [<c006ad74>]
+> (__report_bad_irq+0x80/0xb0)
+> [<c006ad74>] (__report_bad_irq+0x80/0xb0) from [<c006af28>]
+> (note_interrupt+0x184/0x1f0)
+> [<c006af28>] (note_interrupt+0x184/0x1f0) from [<c006ba38>]
+> (handle_edge_irq+0xe8/0x160)
+> [<c006ba38>] (handle_edge_irq+0xe8/0x160) from [<c0027060>]
+> (asm_do_IRQ+0x60/0x74)
+> [<c0027060>] (asm_do_IRQ+0x60/0x74) from [<c0027a30>] (__irq_svc+0x30/0x80)
+> Exception stack(0xc0373ec0 to 0xc0373f08)
+> 3ec0: 00000017 c0372000 00000002 00000000 00000002 c038e8f4 00000000 0aa00000
+> 3ee0: c0372000 c03bfc40 0000001f c0373f44 00000100 c0373f08 c0047ffc c0047c98
+> 3f00: 20000153 ffffffff
+> [<c0027a30>] (__irq_svc+0x30/0x80) from [<c0047ffc>] (irq_exit+0x44/0x4c)
+> [<c0047ffc>] (irq_exit+0x44/0x4c) from [<c0047ffc>] (irq_exit+0x44/0x4c)
+> [<c0047ffc>] (irq_exit+0x44/0x4c) from [<c0027064>] (asm_do_IRQ+0x64/0x74)
+> [<c0027064>] (asm_do_IRQ+0x64/0x74) from [<c0027a30>] (__irq_svc+0x30/0x80)
+> Exception stack(0xc0373f78 to 0xc0373fc0)
+> 3f60: á á á á á á á á á á á á á á á á á á á á á á á á á á á 00000000 c037c15c
+> 3f80: 00000001 600001d3 955fffff c00242ec c0399f80 0aa00000 c0023000 412fc082
+> 3fa0: 0000001f c0373ff4 c0373fc0 c0373fc0 c0008974 c0019798 20000153 ffffffff
+> [<c0027a30>] (__irq_svc+0x30/0x80) from [<c0008974>] (start_kernel+0x168/0x3e4)
+> [<c0008974>] (start_kernel+0x168/0x3e4) from [<60008034>] (0x60008034)
+> handlers:
+> [<c003a604>] (sdp_timer_interrupt+0x0/0x38)
+> Disabling IRQ #23
+> Console: colour dummy device 80x30
+> console [ttyS1] enabled
+> Dentry cache hash table entries: 32768 (order: 5, 131072 bytes)
+> Inode-cache hash table entries: 16384 (order: 4, 65536 bytes)
+>
+>
+> Later, áwhen ácalibrating delay áloop, áthe system is hung áas timer
+> is not working.
+>
+> The problem happens áeven if áI áset kmemcheck_enabled = 0 at áboot.
+> ( I also commented out á á pagetable_init(&meminfo) á).
+>
+> áIf áyou have seen this before, áplease let me know.
+>
+> ( I know that áyour patch was written for á ARM v6. á á My cpu is
+> Cortex . á áI am aware that áI may have to make some change in the
+> áinstruction simulation handling. )
+>
+> Thanks
 
-Tejun, I have an SGI Prism at home that is normally powered off.
-I could power that up, get you set up to access it, and let you lose.
-There are basic commands for using the L2 to power on and off and to
-reset.  I think it is currently set up with some bad dimms so I would
-need to remove those before this evolution.
+Hi,
 
-I wouldn't mind helping with the patches, but I have no time right
-now.
+First up, I see a lot of funny á characters in your text.
 
-Thanks,
-Robin
+I think that this is not about kmemcheck, but kmemleak. kmemcheck is
+for catching references to uninitialized memory while kmemleak is for
+detecting memory leaks. kmemcheck only works on x86 so far (with an
+ARM patch by Ye Janboe, but it is not in mainline). kmemleak, however,
+was written on ARM.
+
+I put Catalin Marinas (kmemleak author) on Cc.
+
+Please correct me if I am wrong. Good luck.
 
 
-On Wed, Sep 16, 2009 at 10:28:03AM +0900, Tejun Heo wrote:
-> Hello,
-> 
-> Mike Travis wrote:
-> > We certainly have some in our labs but I'm not sure of one that's
-> > externally accessible.  If there's a pre-defined test you'd like to
-> > run, you can send me the details.  Otherwise, I'll check around and
-> > see if there's a system available remotely.
-> 
-> The proposed broken patch is in the following thread.  It works on ski
-> emulator but ski doesn't support SMP, so...
-> 
->  http://thread.gmane.org/gmane.linux.kernel.cross-arch/4132
-> 
-> The patch shouldn't be too broken.  It probably needs slight tweaks
-> here and there.  Just testing and providing logs would be helpful
-> enough.
-> 
-> Thanks.
-> 
-> -- 
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Vegard
