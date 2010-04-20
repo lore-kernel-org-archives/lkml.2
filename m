@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab0DTExH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 00:53:07 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60203 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901Ab0DTExF (ORCPT
+	id S1752213Ab0DTFAq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 01:00:46 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:45778 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab0DTFAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 00:53:05 -0400
-Date: Tue, 20 Apr 2010 06:53:01 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Randy Dunlap <randy.dunlap@oracle.com>, linux-mtd@lists.infradead.org,
-       hsweeten@visionengravers.com, dwmw2@infradead.org
-Subject: Re: [Bug #15729] BUG: physmap modprobe & rmmod
-Message-ID: <20100420045301.GF19957@pengutronix.de>
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.MFH.fRSzLB@tosh>
+	Tue, 20 Apr 2010 01:00:44 -0400
+Date: Tue, 20 Apr 2010 10:30:13 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Salman Qazi <sqazi@google.com>,
+       mingo@elte.hu, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       linux-pm@lists.linux-foundation.org, csadler@google.com,
+       ranjitm@google.com, kenchen@google.com, dawnchen@google.com
+Subject: Re: [PATCH 0/3] [idled]: Idle Cycle Injector for power capping
+Message-ID: <20100420050013.GC2915@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <20100413234902.29004.41655.stgit@bumblebee1.mtv.corp.google.com>
+ <1271317886.32749.69.camel@laptop>
+ <h2u4352991a1004191020q8200399oc8e9f7d8dee934bf@mail.gmail.com>
+ <1271703701.1676.235.camel@laptop>
+ <20100419180032.15586a90@infradead.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TU+u6i6jrDPzmlWF"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <YeFfFNFyTSF.A.MFH.fRSzLB@tosh>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20100419180032.15586a90@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Arjan van de Ven <arjan@infradead.org> [2010-04-19 18:00:32]:
 
---TU+u6i6jrDPzmlWF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Mon, 19 Apr 2010 21:01:41 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > Right, so the IBM folks who were looking at power aware scheduling
+> > were working on an interface to quantify the amount of power to save.
+> > 
+> > But their approach, was an extension of the regular power aware
+> > load-balancer, which basically groups tasks onto sockets so that whole
+> > sockets can go idle.
+> > 
+> > However Arjan explained to me that your approach, which idles the
+> > whole machine, has the advantage that also memory banks can go into
+> > idle mode and save power.
+> > 
+> > Still in the interest to cut back on power-saving interfaces it would
+> > be nice to see if there is anything we can do to merge these things,
+> > but I really haven't thought much about that yet.
+> 
+> one correction, this is not about power *saving*, it is about power
+> *capping*. Power capping is pretty much energy inefficient by
+> definition (and surely in practice), but it's about dealing with
+> reality about underdimensioned airconditioning or voltage rails....
+> 
+> Due to the reality that socket offlining isn't as good as idle
+> insertion.. I rather focus on the later...
 
-On Tue, Apr 20, 2010 at 05:19:23AM +0200, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary repo=
-rt
-> of recent regressions.
->=20
-> The following bug entry is on the current list of known regressions
-> from 2.6.33.  Please verify if it still should be listed and let the trac=
-king team
-> know (either way).
->=20
->=20
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D15729
-> Subject		: BUG: physmap modprobe & rmmod
-> Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
-> Date		: 2010-04-02 20:40 (18 days old)
-> Message-ID	: <20100402134058.c4682716.randy.dunlap@oracle.com>
-> References	: http://marc.info/?l=3Dlinux-kernel&m=3D127024096210230&w=3D2
+The power reduction benefit is architecture and topology dependent.
+Like on POWER platform, socket offlining could provide better power
+reduction than idle injection.
 
-Patch is here:
+As mentioned by Arjan, these approaches help reduce average power
+consumption to meet power and cooling limitation over a short
+interval.  These are not general optimizations to improve operating
+efficiency, however when use at certain workload and utilization
+levels, these can potentially provide overall energy savings.
 
-	https://patchwork.kernel.org/patch/90497/
+Having the SMP load balancer pull jobs away form a core or socket to
+allow it to remain idle  for short burst of time will be an good
+implementation.
 
-I'd ack it if I still had the original mail :)
+--Vaidy
 
-CCing linux-mtd and some more people, so it can get picked up.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---TU+u6i6jrDPzmlWF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkvNMy0ACgkQD27XaX1/VRvOjwCfR5BTbMlc8HV5GK2pT0/fk2cx
-m0MAoIBhg7erLShmPhpufA/BiydjkyeX
-=IKW4
------END PGP SIGNATURE-----
-
---TU+u6i6jrDPzmlWF--
