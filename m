@@ -1,44 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab0DTKQ5 (ORCPT <rfc822;w@1wt.eu>);
+	id S1754364Ab0DTKRC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 06:17:02 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:42422 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253Ab0DTKQ5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Apr 2010 06:16:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754153Ab0DTKQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 06:16:56 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1271355219-20714-10-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <1271355219-20714-10-git-send-email-paulmck@linux.vnet.ibm.com> <20100415181255.GA19588@linux.vnet.ibm.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 10/16] rcu: slim down rcutiny by removing rcu_scheduler_active and friends
-Date: Tue, 20 Apr 2010 11:15:08 +0100
-Message-ID: <31681.1271758508@redhat.com>
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cPN+J0aTSn7o0kvQz0c+JQdRVcWUHOx26DSPPWpjlrflpykOjcbI9m8abcZ5kp6yxI
+         8rS3+TJgGhpM/2nmBLv8x64+ywWMZu+ihVpF9e8nRQ1mwkwsGqQSKUZUb6vUat0+3Y5K
+         VznqK8rzyEL+8kSmKjveJUOtDXX174fe6gX4M=
+MIME-Version: 1.0
+In-Reply-To: <r2l19f34abd1004200101xbe260a00l98cadfe24d41b7c2@mail.gmail.com>
+References: <j2n448a67a1004190442h2d01f517ld1cd0449c7a0513@mail.gmail.com>
+	 <x2n448a67a1004190620z6b23d12vc4ba54f2d460d125@mail.gmail.com>
+	 <o2p9bde694e1004190623n24a4308le84451cc076d4a46@mail.gmail.com>
+	 <r2l19f34abd1004200101xbe260a00l98cadfe24d41b7c2@mail.gmail.com>
+Date: Tue, 20 Apr 2010 15:46:56 +0530
+Message-ID: <x2u9bde694e1004200316i6417ad36oe399b88cb385cf54@mail.gmail.com>
+Subject: Re: Kmemcheck issue
+From: naveen yadav <yad.naveen@gmail.com>
+To: Vegard Nossum <vegard.nossum@gmail.com>
+Cc: linux-arm-kernel-request@lists.arm.linux.org.uk,
+       linux newbie <linux.newbie79@gmail.com>, linux-kernel@vger.kernel.org,
+       Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+Hi Vegard,
 
-> +void rcu_scheduler_starting(void)
-> +{
-> +	WARN_ON(nr_context_switches() > 0);
-> +	rcu_scheduler_active = 1;
-> +}
+Thanks for your answer, but this is coming from kmemchek only
 
-Since rcu_scheduler_active is a global variable, does it make sense to make
-this an inline function in the header file?
-
-It looks decidedly odd in its own include file as you've done it.  Wouldn't
-the right way to do this be to split it into its own .c file and conditionally
-compile it in the Makefile?
-
-David
+thanks
+naveen
+On Tue, Apr 20, 2010 at 1:31 PM, Vegard Nossum <vegard.nossum@gmail.com> wrote:
+> On 19 April 2010 15:23, naveen yadav <yad.naveen@gmail.com> wrote:
+>> Hi,
+>>
+>> á á á I áam átrying to á run áKmemcheck on á a áCortex ( ARM-v7)
+>> board árunning áLinux 2.6.30.9
+>>
+>> At boot-up time, áas ásoon áas áTimer-device is áenabled, á I áfind
+>> that á timer ágets ádisabled ábecause ásystem
+>> gets spurious áinterrupts áon áthat áirq áline.
+>>
+>>
+>> PID hash table entries: 1024 (order: 10, 4096 bytes)
+>> Linux System timer initialize
+>> irq 23: nobody cared (try booting with the "irqpoll" option)
+>> [<c002e148>] (unwind_backtrace+0x0/0xe8) from [<c002c4b8>]
+>> (dump_stack+0x18/0x1c)
+>> [<c002c4b8>] (dump_stack+0x18/0x1c) from [<c006ad74>]
+>> (__report_bad_irq+0x80/0xb0)
+>> [<c006ad74>] (__report_bad_irq+0x80/0xb0) from [<c006af28>]
+>> (note_interrupt+0x184/0x1f0)
+>> [<c006af28>] (note_interrupt+0x184/0x1f0) from [<c006ba38>]
+>> (handle_edge_irq+0xe8/0x160)
+>> [<c006ba38>] (handle_edge_irq+0xe8/0x160) from [<c0027060>]
+>> (asm_do_IRQ+0x60/0x74)
+>> [<c0027060>] (asm_do_IRQ+0x60/0x74) from [<c0027a30>] (__irq_svc+0x30/0x80)
+>> Exception stack(0xc0373ec0 to 0xc0373f08)
+>> 3ec0: 00000017 c0372000 00000002 00000000 00000002 c038e8f4 00000000 0aa00000
+>> 3ee0: c0372000 c03bfc40 0000001f c0373f44 00000100 c0373f08 c0047ffc c0047c98
+>> 3f00: 20000153 ffffffff
+>> [<c0027a30>] (__irq_svc+0x30/0x80) from [<c0047ffc>] (irq_exit+0x44/0x4c)
+>> [<c0047ffc>] (irq_exit+0x44/0x4c) from [<c0047ffc>] (irq_exit+0x44/0x4c)
+>> [<c0047ffc>] (irq_exit+0x44/0x4c) from [<c0027064>] (asm_do_IRQ+0x64/0x74)
+>> [<c0027064>] (asm_do_IRQ+0x64/0x74) from [<c0027a30>] (__irq_svc+0x30/0x80)
+>> Exception stack(0xc0373f78 to 0xc0373fc0)
+>> 3f60: á á á á á á á á á á á á á á á á á á á á á á á á á á á 00000000 c037c15c
+>> 3f80: 00000001 600001d3 955fffff c00242ec c0399f80 0aa00000 c0023000 412fc082
+>> 3fa0: 0000001f c0373ff4 c0373fc0 c0373fc0 c0008974 c0019798 20000153 ffffffff
+>> [<c0027a30>] (__irq_svc+0x30/0x80) from [<c0008974>] (start_kernel+0x168/0x3e4)
+>> [<c0008974>] (start_kernel+0x168/0x3e4) from [<60008034>] (0x60008034)
+>> handlers:
+>> [<c003a604>] (sdp_timer_interrupt+0x0/0x38)
+>> Disabling IRQ #23
+>> Console: colour dummy device 80x30
+>> console [ttyS1] enabled
+>> Dentry cache hash table entries: 32768 (order: 5, 131072 bytes)
+>> Inode-cache hash table entries: 16384 (order: 4, 65536 bytes)
+>>
+>>
+>> Later, áwhen ácalibrating delay áloop, áthe system is hung áas timer
+>> is not working.
+>>
+>> The problem happens áeven if áI áset kmemcheck_enabled = 0 at áboot.
+>> ( I also commented out á á pagetable_init(&meminfo) á).
+>>
+>> áIf áyou have seen this before, áplease let me know.
+>>
+>> ( I know that áyour patch was written for á ARM v6. á á My cpu is
+>> Cortex . á áI am aware that áI may have to make some change in the
+>> áinstruction simulation handling. )
+>>
+>> Thanks
+>
+> Hi,
+>
+> First up, I see a lot of funny á characters in your text.
+>
+> I think that this is not about kmemcheck, but kmemleak. kmemcheck is
+> for catching references to uninitialized memory while kmemleak is for
+> detecting memory leaks. kmemcheck only works on x86 so far (with an
+> ARM patch by Ye Janboe, but it is not in mainline). kmemleak, however,
+> was written on ARM.
+>
+> I put Catalin Marinas (kmemleak author) on Cc.
+>
+> Please correct me if I am wrong. Good luck.
+>
+>
+> Vegard
+>
