@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab0DTKGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 06:06:09 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49540 "EHLO
+	id S1754212Ab0DTKHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 06:07:13 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61981 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab0DTKGH (ORCPT
+	with ESMTP id S1754106Ab0DTKHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 06:06:07 -0400
+	Tue, 20 Apr 2010 06:07:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=i2shMn5k0uQdNIUWEHExeIb2GgY0sgyFuQn12uivvJZCUo8DKEpaI3h96+bShfXlak
-         LfwrsTVyg6jqVYMT70bdxtwsvRosyoQ0tOj97J/eR+wJHnKW3iYyF0J8hZPEkQSNT/IS
-         /v5MoUZyTY/cDLN/pegC91jS+eb5T3o3EpPgc=
-Date: Tue, 20 Apr 2010 18:09:49 +0800
+        b=V0ysOKYmUF1wmhMKaclaCWDiZudlzbkTxS2hgzlhlmNIz8nBhZyhcav/YD7YOfAhQs
+         W4t/0aoUcLYJnWkSCLKPY0c7Ut7AKuVeanG61X9imWBJM3stHhHmgjrLBWcqvMqJklQ1
+         uwML0qwWdVRIJ6luJUM6RxsSiU+mSLOXNJD58=
+Date: Tue, 20 Apr 2010 18:10:56 +0800
 From: Amerigo Wang <xiyou.wangcong@gmail.com>
 To: Jan Kiszka <jan.kiszka@web.de>
 Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
        user-mode-linux-devel@lists.sourceforge.net,
        Jeff Dike <jdike@addtoit.com>
-Subject: Re: [PATCH 3/5] uml: Fix warning due to missing task_struct
- declaration
-Message-ID: <20100420100949.GB5317@cr0.nay.redhat.com>
+Subject: Re: [PATCH 4/5] uml: i386: Avoid redefinition of NR_syscalls
+Message-ID: <20100420101056.GC5317@cr0.nay.redhat.com>
 References: <cover.1271713955.git.jan.kiszka@web.de>
- <1d97cd7761a1eae73923b1adda4c6915a0647bb3.1271713955.git.jan.kiszka@web.de>
+ <3e07ad1a38e88a22d7298deb88a8f3962b101998.1271713955.git.jan.kiszka@web.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1d97cd7761a1eae73923b1adda4c6915a0647bb3.1271713955.git.jan.kiszka@web.de>
+In-Reply-To: <3e07ad1a38e88a22d7298deb88a8f3962b101998.1271713955.git.jan.kiszka@web.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 11:53:06PM +0200, Jan Kiszka wrote:
->We can't pull in linux/sched.h, so just declare the struct.
+On Mon, Apr 19, 2010 at 11:53:07PM +0200, Jan Kiszka wrote:
+>The i386 subarch happens to pull in original NR_syscalls. Maybe we can
+>make that work for all host arch, but for now just avoid the clash by
+>using an all-upper-case name.
 >
 
-Did you meet any build error? If yes, please include it.
-
-Thanks.
-
+Where?
 
 
 >Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
 >---
-> arch/um/sys-i386/asm/elf.h   |    2 ++
-> arch/um/sys-x86_64/asm/elf.h |    2 ++
-> 2 files changed, 4 insertions(+), 0 deletions(-)
+> arch/um/kernel/skas/syscall.c |    4 ++--
+> 1 files changed, 2 insertions(+), 2 deletions(-)
 >
->diff --git a/arch/um/sys-i386/asm/elf.h b/arch/um/sys-i386/asm/elf.h
->index e64cd41..a979a22 100644
->--- a/arch/um/sys-i386/asm/elf.h
->+++ b/arch/um/sys-i386/asm/elf.h
->@@ -75,6 +75,8 @@ typedef struct user_i387_struct elf_fpregset_t;
-> 	pr_reg[16] = PT_REGS_SS(regs);		\
-> } while (0);
+>diff --git a/arch/um/kernel/skas/syscall.c b/arch/um/kernel/skas/syscall.c
+>index 4e3b820..f5173e1 100644
+>--- a/arch/um/kernel/skas/syscall.c
+>+++ b/arch/um/kernel/skas/syscall.c
+>@@ -10,7 +10,7 @@
+> #include "sysdep/syscalls.h"
 > 
->+struct task_struct;
->+
-> extern int elf_core_copy_fpregs(struct task_struct *t, elf_fpregset_t *fpu);
+> extern int syscall_table_size;
+>-#define NR_syscalls (syscall_table_size / sizeof(void *))
+>+#define NR_SYSCALLS (syscall_table_size / sizeof(void *))
 > 
-> #define ELF_CORE_COPY_FPREGS(t, fpu) elf_core_copy_fpregs(t, fpu)
->diff --git a/arch/um/sys-x86_64/asm/elf.h b/arch/um/sys-x86_64/asm/elf.h
->index 49655c8..d760967 100644
->--- a/arch/um/sys-x86_64/asm/elf.h
->+++ b/arch/um/sys-x86_64/asm/elf.h
->@@ -95,6 +95,8 @@ typedef struct user_i387_struct elf_fpregset_t;
-> 	(pr_reg)[25] = 0;					\
-> 	(pr_reg)[26] = 0;
+> void handle_syscall(struct uml_pt_regs *r)
+> {
+>@@ -30,7 +30,7 @@ void handle_syscall(struct uml_pt_regs *r)
+> 	 * in case it's a compiler bug.
+> 	 */
+> 	syscall = UPT_SYSCALL_NR(r);
+>-	if ((syscall >= NR_syscalls) || (syscall < 0))
+>+	if ((syscall >= NR_SYSCALLS) || (syscall < 0))
+> 		result = -ENOSYS;
+> 	else result = EXECUTE_SYSCALL(syscall, regs);
 > 
->+struct task_struct;
->+
-> extern int elf_core_copy_fpregs(struct task_struct *t, elf_fpregset_t *fpu);
-> 
-> #define ELF_CORE_COPY_FPREGS(t, fpu) elf_core_copy_fpregs(t, fpu)
 >-- 
 >1.6.0.2
 >
