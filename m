@@ -1,38 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab0DTPbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 11:31:07 -0400
-Received: from ironport-smtp02.maxnet.net.nz ([123.100.71.102]:53044 "EHLO
-	ironport-smtp02.maxnet.net.nz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751475Ab0DTPbE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 11:31:04 -0400
-X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 11:31:04 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgoFALNjzUt6yWS2/2dsb2JhbACQBYt8tgqIRoUPBIIi
-X-IronPort-AV: E=Sophos;i="4.52,243,1270382400"; 
-   d="scan'208";a="172654043"
-Date: Wed, 21 Apr 2010 01:20:30 +1000
-To: linux-kernel@vger.kernel.org
-From: "Mr. David Smith" <mdavidsmith210@london.com>
-Reply-to: mrdavidsmith2010@gala.net
-Subject: Your Reply
-Message-ID: <960be14b9ced34d5c61e590e938ac996@www.peoplexchange.net>
-X-Priority: 3
-X-Mailer: PHPMailer [version ]
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1752568Ab0DTPch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 11:32:37 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:60447 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332Ab0DTPcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 11:32:36 -0400
+Date: Tue, 20 Apr 2010 17:32:03 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
+       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>
+Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone pressure
+Message-ID: <20100420153202.GC5336@cmpxchg.org>
+References: <20100322235053.GD9590@csn.ul.ie> <4BA940E7.2030308@redhat.com> <20100324145028.GD2024@csn.ul.ie> <4BCC4B0C.8000602@linux.vnet.ibm.com> <20100419214412.GB5336@cmpxchg.org> <4BCD55DA.2020000@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BCD55DA.2020000@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Congratulations,
+On Tue, Apr 20, 2010 at 09:20:58AM +0200, Christian Ehrhardt wrote:
+> 
+> 
+> Johannes Weiner wrote:
+> >On Mon, Apr 19, 2010 at 02:22:36PM +0200, Christian Ehrhardt wrote:
+> >>So now coming to the probably most critical part - the evict once 
+> >>discussion in this thread.
+> >>I'll try to explain what I found in the meanwhile - let me know whats 
+> >>unclear and I'll add data etc.
+> >>
+> >>In the past we identified that "echo 3 > /proc/sys/vm/drop_caches" helps 
+> >>to improve the accuracy of the used testcase by lowering the noise from 
+> >>5-8% to <1%.
+> >>Therefore I ran all tests and verifications with that drops.
+> >>In the meanwhile I unfortunately discovered that Mel's fix only helps for 
+> >>the cases when the caches are dropped.
+> >>Without it seems to be bad all the time. So don't cast the patch away due 
+> >>to that discovery :-)
+> >>
+> >>On the good side I was also able to analyze a few more things due to that 
+> >>insight - and it might give us new data to debug the root cause.
+> >>Like Mel I also had identified "56e49d21 vmscan: evict use-once pages 
+> >>first" to be related in the past. But without the watermark wait fix, 
+> >>unapplying it 56e49d21 didn't change much for my case so I left this 
+> >>analysis path.
+> >>
+> >>But now after I found dropping caches is the key to "get back good 
+> >>performance" and "subsequent writes for bad performance" even with 
+> >>watermark wait applied I checked what else changes:
+> >>- first write/read load after reboot or dropping caches -> read TP good
+> >>- second write/read load after reboot or dropping caches -> read TP bad
+> >>=> so what changed.
+> >>
+> >>I went through all kind of logs and found something in the system 
+> >>activity report which very probably is related to 56e49d21.
+> >>When issuing subsequent writes after I dropped caches to get a clean 
+> >>start I get this in Buffers/Caches from Meminfo:
+> >>
+> >>pre write 1
+> >>Buffers:             484 kB
+> >>Cached:             5664 kB
+> >>pre write 2
+> >>Buffers:           33500 kB
+> >>Cached:           149856 kB
+> >>pre write 3
+> >>Buffers:           65564 kB
+> >>Cached:           115888 kB
+> >>pre write 4
+> >>Buffers:           85556 kB
+> >>Cached:            97184 kB
+> >>
+> >>It stays at ~85M with more writes which is approx 50% of my free 160M 
+> >>memory.
+> >
+> >Ok, so I am the idiot that got quoted on 'the active set is not too big, so
+> >buffer heads are not a problem when avoiding to scan it' in eternal 
+> >history.
+> >
+> >But the threshold inactive/active ratio for skipping active file pages is
+> >actually 1:1.
+> >
+> >The easiest 'fix' is probably to change that ratio, 2:1 (or even 3:1?) 
+> >appears
+> >to be a bit more natural anyway?  Below is a patch that changes it to 2:1.
+> >Christian, can you check if it fixes your regression?
+> 
+> I'll check it out.
+> from the numbers I have up to now I know that the good->bad transition 
+> for my case is somewhere between 30M/60M e.g. first and second write.
+> The ratio 2:1 will eat max 53M of my ~160M that gets split up.
+> 
+> That means setting the ratio to 2:1 or whatever else might help or not, 
+> but eventually there is just another setting of workload vs. memory 
+> constraints that would still be affected. Still I guess 3:1 (and I'll 
+> try that as well) should be enough to be a bit more towards the save side.
+> 
+> >Additionally, we can always scan active file pages but only deactivate them
+> >when the ratio is off and otherwise strip buffers of clean pages.
+> 
+> In think we need something that allows the system to forget its history 
+> somewhen - be it 1:1 or x:1 - if the workload changes "long enough"(tm) 
+> it should eventually throw all old things out.
 
-Reference to annual United Kingdom promotion conducted in UK 2010. We are happy to inform you of your winnings £980,000. Contact me immediately for more details.
+The idea is that it pans out on its own.  If the workload changes, new
+pages get activated and when that set grows too large, we start shrinking
+it again.
 
-Thank you,
+Of course, right now this unscanned set is way too large and we can end
+up wasting up to 50% of usable page cache on false active pages.
 
-Mr. David Smith.
+A fixed ratio does not scale with varying workloads, obviously, but having
+it at a safe level still seems like a good trade-off.
 
+We can still do the optimization, and in the worst case the amount of
+memory wasted on false active pages is small enough that it should leave
+the system performant.
 
+You have a rather extreme page cache load.  If 4:1 works for you, I think
+this is a safe bet for now because we only frob the knobs into the
+direction of earlier kernel behaviour.
+
+We still have a nice amount of pages we do not need to scan regularly
+(up to 50k file pages for a streaming IO load on a 1G machine).
+
+	Hannes
