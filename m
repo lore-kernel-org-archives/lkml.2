@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab0DTApY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Apr 2010 20:45:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36798 "EHLO
+	id S1752922Ab0DTA64 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Apr 2010 20:58:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58150 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab0DTApW (ORCPT
+	with ESMTP id S1751194Ab0DTA6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Apr 2010 20:45:22 -0400
-Date: Mon, 19 Apr 2010 17:47:02 -0700
+	Mon, 19 Apr 2010 20:58:55 -0400
+Date: Mon, 19 Apr 2010 18:00:32 -0700
 From: Arjan van de Ven <arjan@infradead.org>
-To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "peterz@infradead.org" <peterz@infradead.org>,
-       "tglx@linutronix.de" <tglx@linutronix.de>,
-       "davej@redhat.com" <davej@redhat.com>,
-       "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
-Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with
- ondemand during disk IO
-Message-ID: <20100419174702.635ddad1@infradead.org>
-In-Reply-To: <201004191629.39339.tvrtko.ursulin@sophos.com>
-References: <20100418115949.7b743898@infradead.org>
-	<201004191009.56859.tvrtko.ursulin@sophos.com>
-	<20100419064617.519eb384@infradead.org>
-	<201004191629.39339.tvrtko.ursulin@sophos.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Salman Qazi <sqazi@google.com>, mingo@elte.hu,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       svaidy@linux.vnet.ibm.com, linux-pm@lists.linux-foundation.org,
+       csadler@google.com, ranjitm@google.com, kenchen@google.com,
+       dawnchen@google.com
+Subject: Re: [PATCH 0/3] [idled]: Idle Cycle Injector for power capping
+Message-ID: <20100419180032.15586a90@infradead.org>
+In-Reply-To: <1271703701.1676.235.camel@laptop>
+References: <20100413234902.29004.41655.stgit@bumblebee1.mtv.corp.google.com>
+	<1271317886.32749.69.camel@laptop>
+	<h2u4352991a1004191020q8200399oc8e9f7d8dee934bf@mail.gmail.com>
+	<1271703701.1676.235.camel@laptop>
 Organization: Intel
 X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
 Mime-Version: 1.0
@@ -36,53 +33,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Apr 2010 16:29:39 +0100
-Tvrtko Ursulin <tvrtko.ursulin@sophos.com> wrote:
+On Mon, 19 Apr 2010 21:01:41 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On Monday 19 Apr 2010 14:46:17 Arjan van de Ven wrote:
-> > On Mon, 19 Apr 2010 10:09:55 +0100
-> > > Or in other words, does a pure IO workload benefit from now higher
-> > > selected frequency?
-> >
-> > no.
-> > Mixed workloads do.
-> > but pure IO workloads also don't suffer since while idle, the
-> > voltage goes down anyway.
+> Right, so the IBM folks who were looking at power aware scheduling
+> were working on an interface to quantify the amount of power to save.
 > 
-> You mean that higher frequency does not have effect on power use if
-> CPU is idle? Is that true for all/most processors?
-
-this is true for most processors that I'm aware of.
-there's exceptions for things like where the idle time is really short,
-where going up and down in voltage will take more energy than it'll
-save and such.
-
+> But their approach, was an extension of the regular power aware
+> load-balancer, which basically groups tasks onto sockets so that whole
+> sockets can go idle.
 > 
-> > > One idea I had but a) never had time to implement it and b) was
-> > > not sure it would be accepted anyway, was to modify ondemand
-> > > governor to ramp up instantly, but slow down slowly (in a
-> > > configurable way).
-> >
-> > that's what ondemand does already.
+> However Arjan explained to me that your approach, which idles the
+> whole machine, has the advantage that also memory banks can go into
+> idle mode and save power.
 > 
-> How and where in the code and how to enable that behaviour? From my
-> experiments frequency goes down to minimum as soon as load goes away.
-> What I was talking about is gradual lowering over a configurable
-> period. It is not power efficient, but it could be good for latency
-> in some workloads.
+> Still in the interest to cut back on power-saving interfaces it would
+> be nice to see if there is anything we can do to merge these things,
+> but I really haven't thought much about that yet.
 
-it's not even good for that ;-(
+one correction, this is not about power *saving*, it is about power
+*capping*. Power capping is pretty much energy inefficient by
+definition (and surely in practice), but it's about dealing with
+reality about underdimensioned airconditioning or voltage rails....
 
-it's better then to stay high longer... at least on modern machines the
-inbetween states are pretty much either useless or actually energy
-hurting compared to the higher state.
+Due to the reality that socket offlining isn't as good as idle
+insertion.. I rather focus on the later...
 
-
-> 
-> Tvrtko
-> 
-> Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP,
-> United Kingdom. Company Reg No 2096520. VAT Reg No GB 348 3873 20.
 
 
 -- 
