@@ -1,264 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab0DTLRs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 07:17:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59102 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753892Ab0DTLRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 07:17:45 -0400
-From: Thomas Renninger <trenn@suse.de>
-To: davej@redhat.com
-Cc: Thomas Renninger <trenn@suse.de>, arjan@infradead.org,
-       linux-kernel@vger.kernel.org, robert.schoene@tu-dresden.de
-Subject: [PATCH 2/2] x86 cpufreq: Make trace_power_frequency cpufreq driver independent
-Date: Tue, 20 Apr 2010 13:17:36 +0200
-Message-Id: <1271762256-1799-2-git-send-email-trenn@suse.de>
-X-Mailer: git-send-email 1.6.3
-In-Reply-To: <1271762256-1799-1-git-send-email-trenn@suse.de>
-References: <1271762256-1799-1-git-send-email-trenn@suse.de>
+	id S1753953Ab0DTLzH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 07:55:07 -0400
+Received: from isilmar.linta.de ([213.133.102.198]:49849 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753572Ab0DTLzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 07:55:05 -0400
+Date: Tue, 20 Apr 2010 13:54:09 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: torvalds@osdl.org, akpm@osdl.org
+Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [git pull] PCMCIA bugfixes for 2.6.34-rc6
+Message-ID: <20100420115409.GA30097@comet.dominikbrodowski.net>
+Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org,
+	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-and fix the broken case if a core's frequency depends on others.
+Linus,
 
-trace_power_frequency was only implemented in a rather ungeneric way
-in acpi-cpufreq driver's target() function only.
--> Move the call to trace_power_frequency to
-   cpufreq.c:cpufreq_notify_transition() where CPUFREQ_POSTCHANGE
-   notifier is triggered.
-   This will support power frequency tracing by all cpufreq drivers
+to solve most of the outstanding PCMCIA bugs I'm aware of -- notable
+exception is the regression in kernel bugzilla 13426 --, please pull from
 
-trace_power_frequency did not trace frequency changes correctly when
-the userspace governor was used or when CPU cores' frequency depend
-on each other.
--> Moving this into the CPUFREQ_POSTCHANGE notifier and pass the cpu
-   which gets switched automatically fixes this.
+  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
 
-Robert Schoene provided some important fixes on top of my initial
-quick shot version which are integrated in this patch:
-- Forgot some changes in power_end trace (TP_printk/variable names)
-- Variable dummy in power_end must now be cpu_id
-- Use static 64 bit variable instead of unsigned int for cpu_id
+The diffstat and list of changes follows; the patches went to the PCMCIA
+list yesterday.
 
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-CC: davej@redhat.com
-CC: arjan@infradead.org
-CC: davej@redhat.com
-CC: linux-kernel@vger.kernel.org
-CC: robert.schoene@tu-dresden.de
-Tested-by: robert.schoene@tu-dresden.de
----
- arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |    3 ---
- arch/x86/kernel/process.c                  |    8 ++++----
- drivers/cpufreq/cpufreq.c                  |    5 +++++
- drivers/cpuidle/cpuidle.c                  |    2 +-
- include/trace/events/power.h               |   27 +++++++++++++++------------
- tools/perf/builtin-timechart.c             |   11 ++++++-----
- 6 files changed, 31 insertions(+), 25 deletions(-)
+Thanks,
+	Dominik
 
-diff --git a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-index c6de3a9..9241402 100644
---- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-+++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-@@ -34,7 +34,6 @@
- #include <linux/compiler.h>
- #include <linux/dmi.h>
- #include <linux/slab.h>
--#include <trace/events/power.h>
- 
- #include <linux/acpi.h>
- #include <linux/io.h>
-@@ -364,8 +363,6 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
- 		}
- 	}
- 
--	trace_power_frequency(POWER_PSTATE, data->freq_table[next_state].frequency);
--
- 	switch (data->cpu_feature) {
- 	case SYSTEM_INTEL_MSR_CAPABLE:
- 		cmd.type = SYSTEM_INTEL_MSR_CAPABLE;
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 28ad9f4..bc3bbf6 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -371,7 +371,7 @@ static inline int hlt_use_halt(void)
- void default_idle(void)
- {
- 	if (hlt_use_halt()) {
--		trace_power_start(POWER_CSTATE, 1);
-+		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
- 		current_thread_info()->status &= ~TS_POLLING;
- 		/*
- 		 * TS_POLLING-cleared state must be visible before we
-@@ -441,7 +441,7 @@ EXPORT_SYMBOL_GPL(cpu_idle_wait);
-  */
- void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
- {
--	trace_power_start(POWER_CSTATE, (ax>>4)+1);
-+	trace_power_start(POWER_CSTATE, (ax>>4)+1, smp_processor_id());
- 	if (!need_resched()) {
- 		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
- 			clflush((void *)&current_thread_info()->flags);
-@@ -457,7 +457,7 @@ void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
- static void mwait_idle(void)
- {
- 	if (!need_resched()) {
--		trace_power_start(POWER_CSTATE, 1);
-+		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
- 		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
- 			clflush((void *)&current_thread_info()->flags);
- 
-@@ -478,7 +478,7 @@ static void mwait_idle(void)
-  */
- static void poll_idle(void)
- {
--	trace_power_start(POWER_CSTATE, 0);
-+	trace_power_start(POWER_CSTATE, 0, smp_processor_id());
- 	local_irq_enable();
- 	while (!need_resched())
- 		cpu_relax();
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 2d5d575..8ec1539 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -29,6 +29,8 @@
- #include <linux/completion.h>
- #include <linux/mutex.h>
- 
-+#include <trace/events/power.h>
-+
- #define dprintk(msg...) cpufreq_debug_printk(CPUFREQ_DEBUG_CORE, \
- 						"cpufreq-core", msg)
- 
-@@ -354,6 +356,9 @@ void cpufreq_notify_transition(struct cpufreq_freqs *freqs, unsigned int state)
- 
- 	case CPUFREQ_POSTCHANGE:
- 		adjust_jiffies(CPUFREQ_POSTCHANGE, freqs);
-+                dprintk("FREQ: %lu - CPU: %lu", (unsigned long)freqs->new,
-+			(unsigned long)freqs->cpu);
-+                trace_power_frequency(POWER_PSTATE, freqs->new, freqs->cpu);
- 		srcu_notifier_call_chain(&cpufreq_transition_notifier_list,
- 				CPUFREQ_POSTCHANGE, freqs);
- 		if (likely(policy) && likely(policy->cpu == freqs->cpu))
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 12fdd39..c672f4a 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -95,7 +95,7 @@ static void cpuidle_idle_call(void)
- 	/* give the governor an opportunity to reflect on the outcome */
- 	if (cpuidle_curr_governor->reflect)
- 		cpuidle_curr_governor->reflect(dev);
--	trace_power_end(0);
-+	trace_power_end(smp_processor_id());
- }
- 
- /**
-diff --git a/include/trace/events/power.h b/include/trace/events/power.h
-index c4efe9b..35a2a6e 100644
---- a/include/trace/events/power.h
-+++ b/include/trace/events/power.h
-@@ -18,52 +18,55 @@ enum {
- 
- DECLARE_EVENT_CLASS(power,
- 
--	TP_PROTO(unsigned int type, unsigned int state),
-+	TP_PROTO(unsigned int type, unsigned int state, unsigned int cpu_id),
- 
--	TP_ARGS(type, state),
-+	TP_ARGS(type, state, cpu_id),
- 
- 	TP_STRUCT__entry(
- 		__field(	u64,		type		)
- 		__field(	u64,		state		)
-+		__field(	u64,		cpu_id		)
- 	),
- 
- 	TP_fast_assign(
- 		__entry->type = type;
- 		__entry->state = state;
-+		__entry->cpu_id = cpu_id;
- 	),
- 
--	TP_printk("type=%lu state=%lu", (unsigned long)__entry->type, (unsigned long)__entry->state)
-+	TP_printk("type=%lu state=%lu cpu_id=%lu", (unsigned long)__entry->type,
-+		(unsigned long)__entry->state, (unsigned long)__entry->cpu_id)
- );
- 
- DEFINE_EVENT(power, power_start,
- 
--	TP_PROTO(unsigned int type, unsigned int state),
-+	TP_PROTO(unsigned int type, unsigned int state, unsigned int cpu_id),
- 
--	TP_ARGS(type, state)
-+	TP_ARGS(type, state, cpu_id)
- );
- 
- DEFINE_EVENT(power, power_frequency,
- 
--	TP_PROTO(unsigned int type, unsigned int state),
-+	TP_PROTO(unsigned int type, unsigned int state, unsigned int cpu_id),
- 
--	TP_ARGS(type, state)
-+	TP_ARGS(type, state, cpu_id)
- );
- 
- TRACE_EVENT(power_end,
- 
--	TP_PROTO(int dummy),
-+	TP_PROTO(unsigned int cpu_id),
- 
--	TP_ARGS(dummy),
-+	TP_ARGS(cpu_id),
- 
- 	TP_STRUCT__entry(
--		__field(	u64,		dummy		)
-+		__field(	u64,		cpu_id		)
- 	),
- 
- 	TP_fast_assign(
--		__entry->dummy = 0xffff;
-+		__entry->cpu_id = cpu_id;
- 	),
- 
--	TP_printk("dummy=%lu", (unsigned long)__entry->dummy)
-+	TP_printk("cpu_id=%lu", (unsigned long)__entry->cpu_id)
- 
- );
- 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 0d4d8ff..7809bef 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -306,8 +306,9 @@ struct trace_entry {
- 
- struct power_entry {
- 	struct trace_entry te;
--	s64	type;
--	s64	value;
-+	u64	type;
-+	u64	value;
-+	u64	cpu_id;
- };
- 
- #define TASK_COMM_LEN 16
-@@ -504,13 +505,13 @@ static int process_sample_event(event_t *event, struct perf_session *session)
- 			return 0;
- 
- 		if (strcmp(event_str, "power:power_start") == 0)
--			c_state_start(data.cpu, data.time, pe->value);
-+			c_state_start(pe->cpu_id, data.time, pe->value);
- 
- 		if (strcmp(event_str, "power:power_end") == 0)
--			c_state_end(data.cpu, data.time);
-+			c_state_end(pe->cpu_id, data.time);
- 
- 		if (strcmp(event_str, "power:power_frequency") == 0)
--			p_state_change(data.cpu, data.time, pe->value);
-+			p_state_change(pe->cpu_id, data.time, pe->value);
- 
- 		if (strcmp(event_str, "sched:sched_wakeup") == 0)
- 			sched_wakeup(data.cpu, data.time, data.pid, te);
--- 
-1.6.3
+----
 
+Dan Carpenter (1):
+      pcmcia: fix error handling in cm4000_cs.c
+
+Dominik Brodowski (5):
+      pcmcia: use previously assigned IRQ for all card functions
+      pcmcia: fix io_probe due to parent (PCI) resources
+      pcmcia: re-start on MFC override
+      pcmcia: fix ioport size calculation in rsrc_nonstatic
+      pcmcia: avoid late calls to pccard_validate_cis
+
+Julia Lawall (1):
+      drivers/pcmcia: Add missing local_irq_restore
+
+Timur Maximov (1):
+      serial_cs: MD55x support (PCMCIA GPRS/EDGE modem) (kernel 2.6.33)
+
+ drivers/char/pcmcia/cm4000_cs.c  |    8 +++++---
+ drivers/pcmcia/cistpl.c          |    9 +++++++--
+ drivers/pcmcia/db1xxx_ss.c       |    4 +++-
+ drivers/pcmcia/ds.c              |   22 ++++++++++++++--------
+ drivers/pcmcia/pcmcia_resource.c |   10 +++++-----
+ drivers/pcmcia/rsrc_nonstatic.c  |   16 ++++++++++++----
+ drivers/serial/serial_cs.c       |    9 +++++++++
+ 7 files changed, 55 insertions(+), 23 deletions(-)
