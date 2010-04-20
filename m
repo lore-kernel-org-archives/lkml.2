@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab0DTVBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 17:01:30 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47036 "EHLO gir.skynet.ie"
+	id S1755352Ab0DTVBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:01:18 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:46975 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755366Ab0DTVBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 17:01:20 -0400
+	id S1754805Ab0DTVBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 17:01:12 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -17,150 +17,264 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 13/14] mm,compaction: Add a tunable that decides when memory should be compacted and when it should be reclaimed
-Date: Tue, 20 Apr 2010 22:01:15 +0100
-Message-Id: <1271797276-31358-14-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 0/14] Memory Compaction v8
+Date: Tue, 20 Apr 2010 22:01:02 +0100
+Message-Id: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
-References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel applies some heuristics when deciding if memory should be
-compacted or reclaimed to satisfy a high-order allocation.  One of these
-is based on the fragmentation.  If the index is below 500, memory will not
-be compacted.  This choice is arbitrary and not based on data.  To help
-optimise the system and set a sensible default for this value, this patch
-adds a sysctl extfrag_threshold.  The kernel will only compact memory if
-the fragmentation index is above the extfrag_threshold.
+This series is based on the patches in mmotm-2010-04-15-14-42.patch but
+rebased against 2.6.34-rc4 and collapsed. The cumulative fixes were getting
+tricky to follow and this series should give a clearer view of what is
+going on. It should be possible to drop all the compaction-related patches
+in mmotm and drop this series directly in its place.
 
-[randy.dunlap@oracle.com: Fix build errors when proc fs is not configured]
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- Documentation/sysctl/vm.txt |   16 +++++++++++++++-
- include/linux/compaction.h  |    3 +++
- kernel/sysctl.c             |   15 +++++++++++++++
- mm/compaction.c             |   12 +++++++++++-
- 4 files changed, 44 insertions(+), 2 deletions(-)
+Changelog since mmotm
+  o Have defer_compaction use an exponential backoff instead of time
+  o Rename COMPACT_INCOMPLETE and document the return values
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 3b3fa1b..6274970 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -27,6 +27,7 @@ Currently, these files are in /proc/sys/vm:
- - dirty_ratio
- - dirty_writeback_centisecs
- - drop_caches
-+- extfrag_threshold
- - hugepages_treat_as_movable
- - hugetlb_shm_group
- - laptop_mode
-@@ -149,6 +149,20 @@ user should run `sync' first.
- 
- ==============================================================
- 
-+extfrag_threshold
-+
-+This parameter affects whether the kernel will compact memory or direct
-+reclaim to satisfy a high-order allocation. /proc/extfrag_index shows what
-+the fragmentation index for each order is in each zone in the system. Values
-+tending towards 0 imply allocations would fail due to lack of memory,
-+values towards 1000 imply failures are due to fragmentation and -1 implies
-+that the allocation will succeed as long as watermarks are met.
-+
-+The kernel will not compact memory in a zone if the
-+fragmentation index is <= extfrag_threshold. The default value is 500.
-+
-+==============================================================
-+
- hugepages_treat_as_movable
- 
- This parameter is only useful when kernelcore= is specified at boot time to
-diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-index eed40ec..3719325 100644
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -15,6 +15,9 @@
- extern int sysctl_compact_memory;
- extern int sysctl_compaction_handler(struct ctl_table *table, int write,
- 			void __user *buffer, size_t *length, loff_t *ppos);
-+extern int sysctl_extfrag_threshold;
-+extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
-+			void __user *buffer, size_t *length, loff_t *ppos);
- 
- extern int fragmentation_index(struct zone *zone, unsigned int order);
- extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 987d6cf..43dc29d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -262,6 +262,11 @@ static int min_sched_shares_ratelimit = 100000; /* 100 usec */
- static int max_sched_shares_ratelimit = NSEC_PER_SEC; /* 1 second */
- #endif
- 
-+#ifdef CONFIG_COMPACTION
-+static int min_extfrag_threshold;
-+static int max_extfrag_threshold = 1000;
-+#endif
-+
- static struct ctl_table kern_table[] = {
- 	{
- 		.procname	= "sched_child_runs_first",
-@@ -1130,6 +1135,16 @@ static struct ctl_table vm_table[] = {
- 		.mode		= 0200,
- 		.proc_handler	= sysctl_compaction_handler,
- 	},
-+	{
-+		.procname	= "extfrag_threshold",
-+		.data		= &sysctl_extfrag_threshold,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= sysctl_extfrag_handler,
-+		.extra1		= &min_extfrag_threshold,
-+		.extra2		= &max_extfrag_threshold,
-+	},
-+
- #endif /* CONFIG_COMPACTION */
- 	{
- 		.procname	= "min_free_kbytes",
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 06aed42..bd13560 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -433,6 +433,8 @@ static unsigned long compact_zone_order(struct zone *zone,
- 	return compact_zone(zone, &cc);
- }
- 
-+int sysctl_extfrag_threshold = 500;
-+
- /**
-  * try_to_compact_pages - Direct compact to satisfy a high-order allocation
-  * @zonelist: The zonelist used for the current allocation
-@@ -491,7 +493,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 		 * Only compact if a failure would be due to fragmentation.
- 		 */
- 		fragindex = fragmentation_index(zone, order);
--		if (fragindex >= 0 && fragindex <= 500)
-+		if (fragindex >= 0 && fragindex <= sysctl_extfrag_threshold)
- 			continue;
- 
- 		if (fragindex == -1 && zone_watermark_ok(zone, order, watermark, 0, 0)) {
-@@ -572,6 +574,14 @@ int sysctl_compaction_handler(struct ctl_table *table, int write,
- 	return 0;
- }
- 
-+int sysctl_extfrag_handler(struct ctl_table *table, int write,
-+			void __user *buffer, size_t *length, loff_t *ppos)
-+{
-+	proc_dointvec_minmax(table, write, buffer, length, ppos);
-+
-+	return 0;
-+}
-+
- #if defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
- ssize_t sysfs_compact_node(struct sys_device *dev,
- 			struct sysdev_attribute *attr,
--- 
-1.6.5
+Changelog since V7 (these are the changes made while in mmotm)
+  o Have compaction depend on CONFIG_HUGETLB_PAGE instead of CONFIG_HUGETLBFS
+  o Move extfrag_index and unusable_index to debugfs
+  o Many minor cleanups in the core patch
+  o Drop unsafe optimisation on PageBuddy as zone->lock is not held
+  o Call kernel_map_pages after split_free_page
+  o Update documentation on compact_memory proc entry
+  o Initialise cc->zone properly when compacting all of memory
+  o Do not display vmstats related to compaction when disabled
+
+Changelog since V6
+  o Avoid accessing anon_vma when migrating unmapped PageSwapCache pages
+
+Changelog since V5
+  o Rebase to mmotm-2010-03-24-14-48
+  o Add more reviewed-by's
+  o Correct one spelling in vmstat.c and some leader clarifications
+  o Split the LRU isolation modes into a separate path
+  o Correct a NID change
+  o Call migrate_prep less frequently
+  o Remove unnecessary inlining
+  o Do not interfere with memory hot-remove
+  o Do not compact for orders <= PAGE_ALLOC_COSTLY_ORDER
+  o page_mapped instead of page_mapcount and allow swapcache to migrate
+  o Avoid too many pages being isolated for migration
+  o Handle PageSwapCache pages during migration
+
+Changelog since V4
+  o Remove unnecessary check for PageLRU and PageUnevictable
+  o Fix isolated accounting
+  o Close race window between page_mapcount and rcu_read_lock
+  o Added a lot more Reviewed-by tags
+
+Changelog since V3
+  o Document sysfs entries (subseqently, merged independently)
+  o COMPACTION should depend on MMU
+  o Comment updates
+  o Ensure proc/sysfs triggering of compaction fully completes
+  o Rename anon_vma refcount to external_refcount
+  o Rebase to mmotm on top of 2.6.34-rc1
+
+Changelog since V2
+  o Move unusable and fragmentation indices to separate proc files
+  o Express indices as being between 0 and 1
+  o Update copyright notice for compaction.c
+  o Avoid infinite loop when split free page fails
+  o Init compact_resume at least once (impacted x86 testing)
+  o Fewer pages are isolated during compaction.
+  o LRU lists are no longer rotated when page is busy
+  o NR_ISOLATED_* is updated to avoid isolating too many pages
+  o Update zone LRU stats correctly when isolating pages
+  o Reference count anon_vma instead of insufficient locking with
+    use-after-free races in memory compaction
+  o Watch for unmapped anon pages during migration
+  o Remove unnecessary parameters on a few functions
+  o Add Reviewed-by's. Note that I didn't add the Acks and Reviewed
+    for the proc patches as they have been split out into separate
+    files and I don't know if the Acks are still valid.
+
+Changelog since V1
+  o Update help blurb on CONFIG_MIGRATION
+  o Max unusable free space index is 100, not 1000
+  o Move blockpfn forward properly during compaction
+  o Cleanup CONFIG_COMPACTION vs CONFIG_MIGRATION confusion
+  o Permissions on /proc and /sys files should be 0200
+  o Reduce verbosity
+  o Compact all nodes when triggered via /proc
+  o Add per-node compaction via sysfs
+  o Move defer_compaction out-of-line
+  o Fix lock oddities in rmap_walk_anon
+  o Add documentation
+
+This patchset is a memory compaction mechanism that reduces external
+fragmentation memory by moving GFP_MOVABLE pages to a fewer number of
+pageblocks. The term "compaction" was chosen as there are is a number of
+mechanisms that are not mutually exclusive that can be used to defragment
+memory. For example, lumpy reclaim is a form of defragmentation as was slub
+"defragmentation" (really a form of targeted reclaim). Hence, this is called
+"compaction" to distinguish it from other forms of defragmentation.
+
+In this implementation, a full compaction run involves two scanners operating
+within a zone - a migration and a free scanner. The migration scanner
+starts at the beginning of a zone and finds all movable pages within one
+pageblock_nr_pages-sized area and isolates them on a migratepages list. The
+free scanner begins at the end of the zone and searches on a per-area
+basis for enough free pages to migrate all the pages on the migratepages
+list. As each area is respectively migrated or exhausted of free pages,
+the scanners are advanced one area.  A compaction run completes within a
+zone when the two scanners meet.
+
+This method is a bit primitive but is easy to understand and greater
+sophistication would require maintenance of counters on a per-pageblock
+basis. This would have a big impact on allocator fast-paths to improve
+compaction which is a poor trade-off.
+
+It also does not try relocate virtually contiguous pages to be physically
+contiguous. However, assuming transparent hugepages were in use, a
+hypothetical khugepaged might reuse compaction code to isolate free pages,
+split them and relocate userspace pages for promotion.
+
+Memory compaction can be triggered in one of three ways. It may be triggered
+explicitly by writing any value to /proc/sys/vm/compact_memory and compacting
+all of memory. It can be triggered on a per-node basis by writing any
+value to /sys/devices/system/node/nodeN/compact where N is the node ID to
+be compacted. When a process fails to allocate a high-order page, it may
+compact memory in an attempt to satisfy the allocation instead of entering
+direct reclaim. Explicit compaction does not finish until the two scanners
+meet and direct compaction ends if a suitable page becomes available that
+would meet watermarks.
+
+The series is in 14 patches. The first three are not "core" to the series
+but are important pre-requisites.
+
+Patch 1 reference counts anon_vma for rmap_walk_anon(). Without this
+	patch, it's possible to use anon_vma after free if the caller is
+	not holding a VMA or mmap_sem for the pages in question. While
+	there should be no existing user that causes this problem,
+	it's a requirement for memory compaction to be stable. The patch
+	is at the start of the series for bisection reasons.
+Patch 2 merges the KSM and migrate counts. It could be merged with patch 1
+	but would be slightly harder to review.
+Patch 3 skips over unmapped anon pages during migration as there are no
+	guarantees about the anon_vma existing. There is a window between
+	when a page was isolated and migration started during which anon_vma
+	could disappear.
+Patch 4 notes that PageSwapCache pages can still be migrated even if they
+	are unmapped.
+Patch 5 allows CONFIG_MIGRATION to be set without CONFIG_NUMA
+Patch 6 exports a "unusable free space index" via debugfs. It's
+	a measure of external fragmentation that takes the size of the
+	allocation request into account. It can also be calculated from
+	userspace so can be dropped if requested
+Patch 7 exports a "fragmentation index" which only has meaning when an
+	allocation request fails. It determines if an allocation failure
+	would be due to a lack of memory or external fragmentation.
+Patch 8 moves the definition for LRU isolation modes for use by compaction
+Patch 9 is the compaction mechanism although it's unreachable at this point
+Patch 10 adds a means of compacting all of memory with a proc trgger
+Patch 11 adds a means of compacting a specific node with a sysfs trigger
+Patch 12 adds "direct compaction" before "direct reclaim" if it is
+	determined there is a good chance of success.
+Patch 13 adds a sysctl that allows tuning of the threshold at which the
+	kernel will compact or direct reclaim
+Patch 14 temporarily disables compaction if an allocation failure occurs
+	after compaction.
+
+Testing of compaction was in three stages.  For the test, debugging, preempt,
+the sleep watchdog and lockdep were all enabled but nothing nasty popped
+out. min_free_kbytes was tuned as recommended by hugeadm to help fragmentation
+avoidance and high-order allocations. It was tested on X86, X86-64 and PPC64.
+
+Ths first test represents one of the easiest cases that can be faced for
+lumpy reclaim or memory compaction.
+
+1. Machine freshly booted and configured for hugepage usage with
+	a) hugeadm --create-global-mounts
+	b) hugeadm --pool-pages-max DEFAULT:8G
+	c) hugeadm --set-recommended-min_free_kbytes
+	d) hugeadm --set-recommended-shmmax
+
+	The min_free_kbytes here is important. Anti-fragmentation works best
+	when pageblocks don't mix. hugeadm knows how to calculate a value that
+	will significantly reduce the worst of external-fragmentation-related
+	events as reported by the mm_page_alloc_extfrag tracepoint.
+
+2. Load up memory
+	a) Start updatedb
+	b) Create in parallel a X files of pagesize*128 in size. Wait
+	   until files are created. By parallel, I mean that 4096 instances
+	   of dd were launched, one after the other using &. The crude
+	   objective being to mix filesystem metadata allocations with
+	   the buffer cache.
+	c) Delete every second file so that pageblocks are likely to
+	   have holes
+	d) kill updatedb if it's still running
+
+	At this point, the system is quiet, memory is full but it's full with
+	clean filesystem metadata and clean buffer cache that is unmapped.
+	This is readily migrated or discarded so you'd expect lumpy reclaim
+	to have no significant advantage over compaction but this is at
+	the POC stage.
+
+3. In increments, attempt to allocate 5% of memory as hugepages.
+	   Measure how long it took, how successful it was, how many
+	   direct reclaims took place and how how many compactions. Note
+	   the compaction figures might not fully add up as compactions
+	   can take place for orders other than the hugepage size
+
+X86				vanilla		compaction
+Final page count                    913                916 (attempted 1002)
+pages reclaimed                   68296               9791
+
+X86-64				vanilla		compaction
+Final page count:                   901                902 (attempted 1002)
+Total pages reclaimed:           112599              53234
+
+PPC64				vanilla		compaction
+Final page count:                    93                 94 (attempted 110)
+Total pages reclaimed:           103216              61838
+
+There was not a dramatic improvement in success rates but it wouldn't be
+expected in this case either. What was important is that fewer pages were
+reclaimed in all cases reducing the amount of IO required to satisfy a huge
+page allocation.
+
+The second tests were all performance related - kernbench, netperf, iozone
+and sysbench. None showed anything too remarkable.
+
+The last test was a high-order allocation stress test. Many kernel compiles
+are started to fill memory with a pressured mix of unmovable and movable
+allocations. During this, an attempt is made to allocate 90% of memory
+as huge pages - one at a time with small delays between attempts to avoid
+flooding the IO queue.
+
+                                             vanilla   compaction
+Percentage of request allocated X86               98           99
+Percentage of request allocated X86-64            95           98
+Percentage of request allocated PPC64             55           70
+
+ Documentation/ABI/testing/sysfs-devices-node |    7 +
+ Documentation/sysctl/vm.txt                  |   26 +-
+ drivers/base/node.c                          |    3 +
+ include/linux/compaction.h                   |   89 ++++
+ include/linux/mm.h                           |    1 +
+ include/linux/mmzone.h                       |    9 +
+ include/linux/rmap.h                         |   27 +-
+ include/linux/swap.h                         |    6 +
+ include/linux/vmstat.h                       |    4 +
+ kernel/sysctl.c                              |   25 +
+ mm/Kconfig                                   |   18 +-
+ mm/Makefile                                  |    1 +
+ mm/compaction.c                              |  605 ++++++++++++++++++++++++++
+ mm/ksm.c                                     |    4 +-
+ mm/migrate.c                                 |   54 ++-
+ mm/page_alloc.c                              |  111 +++++
+ mm/rmap.c                                    |   10 +-
+ mm/vmscan.c                                  |    5 -
+ mm/vmstat.c                                  |  299 ++++++++++++--
+ 19 files changed, 1246 insertions(+), 58 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-devices-node
+ create mode 100644 include/linux/compaction.h
+ create mode 100644 mm/compaction.c
 
