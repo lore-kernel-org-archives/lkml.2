@@ -1,135 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab0DTIpQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 04:45:16 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:49930 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857Ab0DTIpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 04:45:14 -0400
-Date: Tue, 20 Apr 2010 09:44:54 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: error at compaction (Re: mmotm 2010-04-15-14-42 uploaded
-Message-ID: <20100420084454.GD19264@csn.ul.ie>
-References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org> <20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com> <20100419181442.GA19264@csn.ul.ie> <20100419193919.GB19264@csn.ul.ie> <s2v28c262361004191939we64e5490ld59b21dc4fa5bc8d@mail.gmail.com> <20100420082057.GC19264@csn.ul.ie> <x2h28c262361004200132q39fe5d5ex79251643a80d28b3@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <x2h28c262361004200132q39fe5d5ex79251643a80d28b3@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1754095Ab0DTIq5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 04:46:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47994 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754047Ab0DTIqz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 04:46:55 -0400
+Subject: Re: [patch v2 1/2] sched: check for prev_cpu == this_cpu before
+ calling wake_affine()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
+       Arjan van de Ven <arjan@linux.jf.intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+       Yanmin Zhang <yanmin_zhang@linux.jf.intel.com>,
+       Gautham R Shenoy <ego@in.ibm.com>
+In-Reply-To: <1270079265.7835.8.camel@sbs-t61.sc.intel.com>
+References: <20100308221946.842728363@sbs-t61.sc.intel.com>
+	 <1270031119.5003.93.camel@laptop>
+	 <1270079265.7835.8.camel@sbs-t61.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Apr 2010 10:46:52 +0200
+Message-ID: <1271753212.1676.400.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 05:32:13PM +0900, Minchan Kim wrote:
-> On Tue, Apr 20, 2010 at 5:20 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> > On Tue, Apr 20, 2010 at 11:39:46AM +0900, Minchan Kim wrote:
-> >> On Tue, Apr 20, 2010 at 4:39 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> >> > On Mon, Apr 19, 2010 at 07:14:42PM +0100, Mel Gorman wrote:
-> >> >> On Mon, Apr 19, 2010 at 07:01:33PM +0900, KAMEZAWA Hiroyuki wrote:
-> >> >> >
-> >> >> > mmotm 2010-04-15-14-42
-> >> >> >
-> >> >> > When I tried
-> >> >> >  # echo 0 > /proc/sys/vm/compaction
-> >> >> >
-> >> >> > I see following.
-> >> >> >
-> >> >> > My enviroment was
-> >> >> >   2.6.34-rc4-mm1+ (2010-04-15-14-42) (x86-64) CPUx8
-> >> >> >   allocating tons of hugepages and reduce free memory.
-> >> >> >
-> >> >> > What I did was:
-> >> >> >   # echo 0 > /proc/sys/vm/compact_memory
-> >> >> >
-> >> >> > Hmm, I see this kind of error at migation for the 1st time..
-> >> >> > my.config is attached. Hmm... ?
-> >> >> >
-> >> >> > (I'm sorry I'll be offline soon.)
-> >> >>
-> >> >> That's ok, thanks you for the report. I'm afraid I made little progress
-> >> >> as I spent most of the day on other bugs but I do have something for
-> >> >> you.
-> >> >>
-> >> >> First, I reproduced the problem using your .config. However, the problem does
-> >> >> not manifest with the .config I normally use which is derived from the distro
-> >> >> kernel configuration (Debian Lenny). So, there is something in your .config
-> >> >> that triggers the problem. I very strongly suspect this is an interaction
-> >> >> between migration, compaction and page allocation debug.
-> >> >
-> >> > I unexpecedly had the time to dig into this. Does the following patch fix
-> >> > your problem? It Worked For Me.
-> >>
-> >> Nice catch during shot time. Below is comment.
-> >>
-> >> >
-> >> > ==== CUT HERE ====
-> >> > mm,compaction: Map free pages in the address space after they get split for compaction
-> >> >
-> >> > split_free_page() is a helper function which takes a free page from the
-> >> > buddy lists and splits it into order-0 pages. It is used by memory
-> >> > compaction to build a list of destination pages. If
-> >> > CONFIG_DEBUG_PAGEALLOC is set, a kernel paging request bug is triggered
-> >> > because split_free_page() did not call the arch-allocation hooks or map
-> >> > the page into the kernel address space.
-> >> >
-> >> > This patch does not update split_free_page() as it is called with
-> >> > interrupts held. Instead it documents that callers of split_free_page()
-> >> > are responsible for calling the arch hooks and to map the page and fixes
-> >> > compaction.
-> >>
-> >> Dumb question. Why can't we call arch_alloc_page and kernel_map_pages
-> >> as interrupt disabled?
-> >
-> > In theory, it isn't known what arch_alloc_page is going to do but more
-> > practically kernel_map_pages() is updating mappings and should be
-> > flushing all the TLBs. It can't do that with interrupts disabled.
-> >
-> > I checked X86 and it should be fine but only because it flushes the
-> > local CPU and appears to just hope for the best that this doesn't cause
-> > problems.
+On Wed, 2010-03-31 at 16:47 -0700, Suresh Siddha wrote:
+
+> From: Suresh Siddha <suresh.b.siddha@intel.com>
+> Subject: sched: fix select_idle_sibling() logic in select_task_rq_fair()
 > 
-> Okay.
+> Issues in the current select_idle_sibling() logic in select_task_rq_fair()
+> in the context of a task wake-up:
 > 
-> >> And now compaction only uses split_free_page and it is exposed by mm.h.
-> >> I think it would be better to map pages inside split_free_page to
-> >> export others.(ie, making generic function).
-> >
-> > I considered that and it would not be ideal. It would have to disable and
-> > reenable interrupts as each page is taken from the list or alternatively
-> > require that the caller not have the zone lock taken. The latter of these
-> > options is more reasonable but would still result in more interrupt enabling
-> > and disabling.
-> >
-> > split_free_page() is extremely specialised and requires knowledge of the
-> > page allocator internals to call properly. There is little pressure to
-> > make this easier to use at the cost of increased locking.
-> >
-> >> If we can't do, how about making split_free_page static as static function?
-> >> And only uses it in compaction.
-> >>
-> >
-> > It pretty much has to be in page_alloc.c because it uses internal
-> > functions of the page allocator - e.g. rmv_page_order. I could move it
-> > to mm/internal.h because whatever about split_page, I can't imagine why
-> > anyone else would need to call split_free_page.
+> a) Once we select the idle sibling, we use that domain (spanning the cpu that
+>    the task is currently woken-up and the idle sibling that we found) in our
+>    wake_affine() decisions. This domain is completely different from the
+>    domain(we are supposed to use) that spans the cpu that the task currently
+>    woken-up and the cpu where the task previously ran.
 > 
-> Yes. Then, Let's add comment like split_page. :)
->  /*
->  * Note: this is probably too low level an operation for use in drivers.
->  * Please consult with lkml before using this in your driver.
->  */
+> b) We do select_idle_sibling() check only for the cpu that the task is
+>    currently woken-up on. If select_task_rq_fair() selects the previously run
+>    cpu for waking the task, doing a select_idle_sibling() check
+>    for that cpu also helps and we don't do this currently.
+> 
+> c) In the scenarios where the cpu that the task is woken-up is busy but
+>    with its HT siblings are idle, we are selecting the task be woken-up
+>    on the idle HT sibling instead of a core that it previously ran
+>    and currently completely idle. i.e., we are not taking decisions based on
+>    wake_affine() but directly selecting an idle sibling that can cause
+>    an imbalance at the SMT/MC level which will be later corrected by the
+>    periodic load balancer.
+> 
+> Fix this by first going through the load imbalance calculations using
+> wake_affine() and once we make a decision of woken-up cpu vs previously-ran cpu,
+> then choose a possible idle sibling for waking up the task on.
+> 
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+
+OK, so I'm going to take this, but I had one concern, see below:
+
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 49ad993..f905a4b 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1385,28 +1385,48 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+>   * Try and locate an idle CPU in the sched_domain.
+>   */
+>  static int
+> +select_idle_sibling(struct task_struct *p, int target)
+>  {
+>  	int cpu = smp_processor_id();
+>  	int prev_cpu = task_cpu(p);
+>  	int i;
+> +	struct sched_domain *sd;
+>  
+>  	/*
+> +	 * If the task is going to be woken-up on this cpu and if it is
+> +	 * already idle, then it is the right target.
+>  	 */
+> +	if (target == cpu && !cpu_rq(cpu)->cfs.nr_running)
+> +		return cpu;
+> +
+> +	/*
+> +	 * If the task is going to be woken-up on the cpu where it previously
+> +	 * ran and if it is currently idle, then it the right target.
+> +	 */
+> +	if (target == prev_cpu && !cpu_rq(prev_cpu)->cfs.nr_running)
+>  		return prev_cpu;
+>  
+>  	/*
+> +	 * Otherwise, iterate the domains and find an elegible idle cpu.
+>  	 */
+> +	for_each_domain(target, sd) {
+> +		if (!(sd->flags & SD_SHARE_PKG_RESOURCES))
+>  			break;
+> +
+> +		for_each_cpu_and(i, sched_domain_span(sd), &p->cpus_allowed) {
+> +			if (!cpu_rq(i)->cfs.nr_running) {
+> +				target = i;
+> +				break;
+> +			}
+>  		}
+> +
+> +		/*
+> +		 * Lets stop looking for an idle sibling when we reached
+> +		 * the domain that spans the current cpu and prev_cpu.
+> +		 */
+> +		if (cpumask_test_cpu(cpu, sched_domain_span(sd)) &&
+> +		    cpumask_test_cpu(prev_cpu, sched_domain_span(sd)))
+> +			break;
+>  	}
+>  
+>  	return target;
+
+So here we keep using !cfs.nr_running to mean idle, which might not at
+all be true when there's real-time tasks around.
+
+So should we be using idle_cpu(i) instead?
+
+> @@ -1429,7 +1449,7 @@ static int select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flag
+>  	int cpu = smp_processor_id();
+>  	int prev_cpu = task_cpu(p);
+>  	int new_cpu = cpu;
+> +	int want_affine = 0;
+>  	int want_sd = 1;
+>  	int sync = wake_flags & WF_SYNC;
+>  
+> @@ -1467,36 +1487,15 @@ static int select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flag
+>  				want_sd = 0;
+>  		}
+>  
+>                 if (want_affine) {
+>                         /*
+>                          * If both cpu and prev_cpu are part of this domain,
+>                          * cpu is a valid SD_WAKE_AFFINE target.
+>                          */
+> +			if (cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))
+> +			    && (tmp->flags & SD_WAKE_AFFINE)) {
+> +				affine_sd = tmp;
+> +				want_affine = 0;
+>  			}
+>  		}
+>  
+> @@ -1527,8 +1526,10 @@ static int select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flag
+>  #endif
+>  
+>  	if (affine_sd) {
+> +		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
+> +			return select_idle_sibling(p, cpu);
+> +		else
+> +			return select_idle_sibling(p, prev_cpu);
+>  	}
+>  
+>  	while (sd) {
+> 
 > 
 
-I can, but the comment that was there says it's like split_page except the
-page is already free. This also covers not using it in a driver.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+
