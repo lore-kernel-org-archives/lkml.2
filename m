@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab0DTJUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 05:20:14 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33092 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754111Ab0DTJUL (ORCPT
+	id S1754164Ab0DTJVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 05:21:45 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39534 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754153Ab0DTJVm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 05:20:11 -0400
-Subject: Re: Considerations on sched APIs under RT patch
-From: Peter Zijlstra <peterz@infradead.org>
-To: Primiano Tucci <p.tucci@gmail.com>
-Cc: linux-kernel@vger.kernel.org, tglx <tglx@linutronix.de>,
-       rostedt <rostedt@goodmis.org>
-In-Reply-To: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
-References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Apr 2010 11:20:08 +0200
-Message-ID: <1271755208.1676.422.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Apr 2010 05:21:42 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with ondemand during disk IO
+Date: Tue, 20 Apr 2010 11:24:00 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.1-desktop; KDE/4.3.5; x86_64; ; )
+Cc: =?utf-8?q?=C3=89ric_Piel?= <eric.piel@tremplin-utc.net>,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
+       cpufreq@vger.kernel.org
+References: <20100418115949.7b743898@infradead.org> <4BCC147B.10708@tremplin-utc.net> <20100419064325.49cb3108@infradead.org>
+In-Reply-To: <20100419064325.49cb3108@infradead.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004201124.00326.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-19 at 22:48 +0200, Primiano Tucci wrote:
-
-> Yesterday days I found a strange behavior of the scheduler API's using
-> the RT patch, in particular the pthread_setaffinity_np (that stands on
-> sched_setaffinity).
-
-> I think the main problem is that sched_setaffinity makes use of a
-> rwlock, but rwlocks are pre-emptible with the RT patch.
-
-It does? where?
-
-sys_sched_setaffinity()
-  sched_setaffinity()
-    set_cpus_allowed_ptr()
-
-set_cpus_allowed_ptr() is the one that does the real work, and that
-takes the rq->lock and plays games with the migration thread, non of
-which should be able to cause any form of priority inversion.
-
-> So it could happen that an high priority process/thread that makes use
-> of the sched_setaffinity facility could be unwillingly preempted when
-> controlling other (even low-priority) processes/threads.
-
-Well, suppose there was a rwlock_t, then for PREEMPT_RT=y that would be
-mapped to an rt_mutex, which is PI aware.
-
-> I think sched_setaffinity should make use of raw_spinlocks, or should
-> anyway be guaranteed to not be pre-empted (maybe a preempt_disable?),
-> otherwise could lead in unwanted situations for a Real Time OS, such
-> the one described below.
-
-It does, rq->lock is a non preemptible lock, and the migration thread
-runs at a priority higher than FIFO-99.
-
-> The issue can be easily reproduced taking inspiration from this scenario:
+On Monday 19 April 2010 15:43:25 Arjan van de Ven wrote:
+> On Mon, 19 Apr 2010 10:29:47 +0200
+> Éric Piel <eric.piel@tremplin-utc.net> wrote:
+> > > 
+> > > The problem and fix are both verified with the "perf timechar" tool.
+> > Hi,
+> > I don't doubt that keeping the cpu full frequency during IO can
+> > improve some specific workloads, however in your log message you
+> > don't explain how much we are loosing.
 > 
-> I have 4 Real Time Threads (SCHED_FIFO) distributed as follows:
-> 
-> T0 : CPU 0, Priority 2 (HIGH)
-> T1 : CPU 1, Priority 2 (HIGH)
-> T3 : CPU 0, Priority 1 (LOW)
-> T4 : CPU 1, Priority 1 (LOW)
-> 
-> So T0 and T1 are actually the "big bosses" on CPUs #0 and #1, T3 and
-> T4, instead, never execute (let's assume that each thread is a simple
-> busy wait that never sleeps/yields) Now, at a certain point, from T0
-> code, I want to migrate T4 from CPU #1 to #0, keeping its low
-> priority.
-> Therefore I perform a pthread_setaffinity_np from T0 changing T4 mask
-> from CPU #1 to #0.
-> 
-> In this scenario it happens that T3 (that should never execute since
-> there is T0 with higher priority currently running on the same CPU #0)
-> "emerge" and executes for a bit.
-> It seems that the pthread_setaffinity_np syscall is somehow
-> "suspensive" for the time needed to migrate T4 and let the scheduler
-> to execute T3 for that bunch of time.
-> 
-> What do you think about this situation? Should sched APIs be revised?
+> first of all, it's so bad that people will just turn the whole power
+> management off... at which point fixing the really bad bug is actually
+> quite a win
+Not sure you fix a bug, I expect this was done on purpose.
+The ondemand governor disadvantages processes with alternating short CPU
+load peaks and idle sequences.
+IO bound processes typically show up with such a behavior.
 
-Not sure why you thinking the APIs should be changed. If this does
-indeed happen then there is a bug somewhere in the implementation, the
-trick will be finding it.
+But I follow Eric and agree that if it costs that much, changing
+above sounds sane.
+Still, I could imagine some people might want to not raise freq on IO bound
+process activity, therefore this should get another ondemand param, similar
+to ignore_nice_load.
 
-So you run these four RT tasks on CPUs 0,1 and then control them from
-another cpu, say 2?
-
-Can you get a function trace that illustrates T3 getting scheduled,
-preferably while running the latest -rt kernel?
-
+    Thomas
