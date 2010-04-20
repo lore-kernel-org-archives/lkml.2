@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab0DTVpP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 17:45:15 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:54091 "EHLO e3.ny.us.ibm.com"
+	id S1753259Ab0DTVqo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:46:44 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:47531 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752305Ab0DTVpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 17:45:05 -0400
+	id S1752673Ab0DTVpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 17:45:15 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,10 +13,13 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 01/23] rcu: substitute set_need_resched for sending resched IPIs
-Date: Tue, 20 Apr 2010 14:44:33 -0700
-Message-Id: <1271799895-21028-1-git-send-email-paulmck@linux.vnet.ibm.com>
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Alexey Dobriyan <adobriyan@gmail.com>
+Subject: [PATCH tip/core/rcu 19/23] rcu head introduce rcu head init on stack
+Date: Tue, 20 Apr 2010 14:44:51 -0700
+Message-Id: <1271799895-21028-19-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100420214431.GA20777@linux.vnet.ibm.com>
 References: <20100420214431.GA20777@linux.vnet.ibm.com>
@@ -24,39 +27,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a check to __rcu_pending() that does a local
-set_need_resched() if the current CPU is holding up the current grace
-period and if force_quiescent_state() will be called soon.  The goal is
-to reduce the probability that force_quiescent_state() will need to do
-smp_send_reschedule(), which sends an IPI and is therefore more expensive
-on most architectures.
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-Signed-off-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+PEM:
+o     Would it be possible to make this bisectable as follows?
+
+      a.      Insert a new patch after current patch 4/6 that
+              defines destroy_rcu_head_on_stack(),
+              init_rcu_head_on_stack(), and init_rcu_head() with
+              their !CONFIG_DEBUG_OBJECTS_RCU_HEAD definitions.
+
+This patch performs this transition.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: akpm@linux-foundation.org
+CC: mingo@elte.hu
+CC: laijs@cn.fujitsu.com
+CC: dipankar@in.ibm.com
+CC: josh@joshtriplett.org
+CC: dvhltc@us.ibm.com
+CC: niv@us.ibm.com
+CC: tglx@linutronix.de
+CC: peterz@infradead.org
+CC: rostedt@goodmis.org
+CC: Valdis.Kletnieks@vt.edu
+CC: dhowells@redhat.com
+CC: eric.dumazet@gmail.com
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ include/linux/rcupdate.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 3ec8160..e54c123 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1499,6 +1499,16 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 6e6f851..c63372b 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -79,6 +79,14 @@ extern void rcu_init(void);
+        (ptr)->next = NULL; (ptr)->func = NULL; \
+ } while (0)
  
- 	/* Is the RCU core waiting for a quiescent state from this CPU? */
- 	if (rdp->qs_pending) {
++static inline void init_rcu_head_on_stack(struct rcu_head *head)
++{
++}
 +
-+		/*
-+		 * If force_quiescent_state() coming soon and this CPU
-+		 * needs a quiescent state, and this is either RCU-sched
-+		 * or RCU-bh, force a local reschedule.
-+		 */
-+		if (!rdp->preemptable &&
-+		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
-+				 jiffies))
-+			set_need_resched();
- 		rdp->n_rp_qs_pending++;
- 		return 1;
- 	}
++static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
++{
++}
++
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 
+ extern struct lockdep_map rcu_lock_map;
 -- 
 1.7.0
 
