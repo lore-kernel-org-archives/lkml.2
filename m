@@ -1,166 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab0DTRz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 13:55:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47207 "EHLO hera.kernel.org"
+	id S1754937Ab0DTR5G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 13:57:06 -0400
+Received: from mga14.intel.com ([143.182.124.37]:57964 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab0DTRzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 13:55:25 -0400
-Date: Tue, 20 Apr 2010 17:54:41 GMT
-From: "tip-bot for Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       Jes.Sorensen@redhat.com, a.p.zijlstra@chello.nl, joro@8bytes.org,
-       yanmin_zhang@linux.intel.com, zamsden@redhat.com, gleb@redhat.com,
-       acme@infradead.org, mtosatti@redhat.com, tglx@linutronix.de,
-       sheng@linux.intel.com, mingo@elte.hu, avi@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, Jes.Sorensen@redhat.com,
-       yanmin_zhang@linux.intel.com, joro@8bytes.org, zamsden@redhat.com,
-       gleb@redhat.com, acme@infradead.org, mtosatti@redhat.com,
-       sheng@linux.intel.com, tglx@linutronix.de, avi@redhat.com,
-       mingo@elte.hu
-In-Reply-To: <1271729638.2078.624.camel@ymzhang.sh.intel.com>
-References: <1271729638.2078.624.camel@ymzhang.sh.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf & kvm: Clean up some of the guest profiling callback API details
-Message-ID: <tip-dcf46b9443ad48a227a61713adea001228925adf@git.kernel.org>
-Git-Commit-ID: dcf46b9443ad48a227a61713adea001228925adf
-X-Mailer: tip-git-log-daemon
+	id S1751672Ab0DTR5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 13:57:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,244,1270450800"; 
+   d="scan'208";a="267911273"
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: [PATCH linux-next 2/2] ixgbe: Example usage of the new IRQ
+	affinity_hint callback
+To: tglx@linutronix.de, davem@davemloft.net, arjan@linux.jf.intel.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 20 Apr 2010 11:01:39 -0700
+Message-ID: <20100420180139.1276.79769.stgit@ppwaskie-hc2.jf.intel.com>
+In-Reply-To: <20100420180112.1276.11906.stgit@ppwaskie-hc2.jf.intel.com>
+References: <20100420180112.1276.11906.stgit@ppwaskie-hc2.jf.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 20 Apr 2010 17:54:43 +0000 (UTC)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dcf46b9443ad48a227a61713adea001228925adf
-Gitweb:     http://git.kernel.org/tip/dcf46b9443ad48a227a61713adea001228925adf
-Author:     Zhang, Yanmin <yanmin_zhang@linux.intel.com>
-AuthorDate: Tue, 20 Apr 2010 10:13:58 +0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 20 Apr 2010 08:08:28 +0200
+This patch uses the new IRQ affinity_hint callback mechanism.
+It serves purely as an example of how a low-level driver can
+utilize this new interface.
 
-perf & kvm: Clean up some of the guest profiling callback API details
+An official ixgbe patch will be pushed through netdev once the
+IRQ patches have been accepted and merged.
 
-Fix some build bug and programming style issues:
-
- - use valid C
- - fix up various style details
-
-Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Sheng Yang <sheng@linux.intel.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: oerg Roedel <joro@8bytes.org>
-Cc: Jes Sorensen <Jes.Sorensen@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Zachary Amsden <zamsden@redhat.com>
-Cc: zhiteng.huang@intel.com
-Cc: tim.c.chen@intel.com
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-LKML-Reference: <1271729638.2078.624.camel@ymzhang.sh.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |   20 ++++++++++++++------
- arch/x86/kvm/x86.c               |    4 ++++
- include/linux/perf_event.h       |   10 ++++------
- 3 files changed, 22 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 2ea78ab..7de7061 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1752,23 +1752,31 @@ void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int ski
- unsigned long perf_instruction_pointer(struct pt_regs *regs)
- {
- 	unsigned long ip;
-+
- 	if (perf_guest_cbs && perf_guest_cbs->is_in_guest())
- 		ip = perf_guest_cbs->get_guest_ip();
- 	else
- 		ip = instruction_pointer(regs);
-+
- 	return ip;
+ drivers/net/ixgbe/ixgbe.h      |    2 ++
+ drivers/net/ixgbe/ixgbe_main.c |   51 +++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 52 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ixgbe/ixgbe.h b/drivers/net/ixgbe/ixgbe.h
+index 79c35ae..c220b9f 100644
+--- a/drivers/net/ixgbe/ixgbe.h
++++ b/drivers/net/ixgbe/ixgbe.h
+@@ -32,6 +32,7 @@
+ #include <linux/pci.h>
+ #include <linux/netdevice.h>
+ #include <linux/aer.h>
++#include <linux/cpumask.h>
+ 
+ #include "ixgbe_type.h"
+ #include "ixgbe_common.h"
+@@ -236,6 +237,7 @@ struct ixgbe_q_vector {
+ 	u8 tx_itr;
+ 	u8 rx_itr;
+ 	u32 eitr;
++	cpumask_var_t affinity_mask;
+ };
+ 
+ /* Helper macros to switch between ints/sec and what the register uses.
+diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
+index 1b1419c..3e00d41 100644
+--- a/drivers/net/ixgbe/ixgbe_main.c
++++ b/drivers/net/ixgbe/ixgbe_main.c
+@@ -1031,6 +1031,36 @@ next_desc:
+ 	return cleaned;
  }
  
- unsigned long perf_misc_flags(struct pt_regs *regs)
- {
- 	int misc = 0;
++static unsigned int ixgbe_irq_affinity_callback(cpumask_var_t mask,
++                                                unsigned int irq, void *dev)
++{
++	struct ixgbe_adapter *adapter = (struct ixgbe_adapter *)dev;
++	int i, q_vectors = adapter->num_msix_vectors - NON_Q_VECTORS;
 +
- 	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
--		misc |= perf_guest_cbs->is_user_mode() ?
--			PERF_RECORD_MISC_GUEST_USER :
--			PERF_RECORD_MISC_GUEST_KERNEL;
--	} else
--		misc |= user_mode(regs) ? PERF_RECORD_MISC_USER :
--			PERF_RECORD_MISC_KERNEL;
-+		if (perf_guest_cbs->is_user_mode())
-+			misc |= PERF_RECORD_MISC_GUEST_USER;
-+		else
-+			misc |= PERF_RECORD_MISC_GUEST_KERNEL;
-+	} else {
-+		if (user_mode(regs))
-+			misc |= PERF_RECORD_MISC_USER;
-+		else
-+			misc |= PERF_RECORD_MISC_KERNEL;
++	if (test_bit(__IXGBE_DOWN, &adapter->state))
++		return -EINVAL;
++
++	/*
++	 * Loop through the msix_entries array, looking for the vector that
++	 * matches the irq passed to us.  Once we find it, use that index to
++	 * grab the corresponding q_vector (1 to 1 mapping), and grab the
++	 * cpumask from that q_vector.
++	 */
++	for (i = 0; i < q_vectors; i++)
++		if (adapter->msix_entries[i].vector == irq)
++			break;
++
++	if (i == q_vectors)
++		return -EINVAL;
++
++	if (adapter->q_vector[i]->affinity_mask)
++		cpumask_copy(mask, adapter->q_vector[i]->affinity_mask);
++	else
++		return -EINVAL;
++
++	return 0;
++}
++
+ static int ixgbe_clean_rxonly(struct napi_struct *, int);
+ /**
+  * ixgbe_configure_msix - Configure MSI-X hardware
+@@ -1083,6 +1113,16 @@ static void ixgbe_configure_msix(struct ixgbe_adapter *adapter)
+ 			q_vector->eitr = adapter->rx_eitr_param;
+ 
+ 		ixgbe_write_eitr(q_vector);
++
++		/*
++		 * Allocate the affinity_hint cpumask, assign the mask for
++		 * this vector, and register our affinity_hint callback.
++		 */
++		alloc_cpumask_var(&q_vector->affinity_mask, GFP_KERNEL);
++		cpumask_set_cpu(v_idx, q_vector->affinity_mask);
++		irq_register_affinity_hint(adapter->msix_entries[v_idx].vector,
++		                           adapter,
++		                           &ixgbe_irq_affinity_callback);
+ 	}
+ 
+ 	if (adapter->hw.mac.type == ixgbe_mac_82598EB)
+@@ -3218,7 +3258,7 @@ void ixgbe_down(struct ixgbe_adapter *adapter)
+ 	struct ixgbe_hw *hw = &adapter->hw;
+ 	u32 rxctrl;
+ 	u32 txdctl;
+-	int i, j;
++	int i, j, num_q_vectors = adapter->num_msix_vectors - NON_Q_VECTORS;
+ 
+ 	/* signal that we are down to the interrupt handler */
+ 	set_bit(__IXGBE_DOWN, &adapter->state);
+@@ -3251,6 +3291,14 @@ void ixgbe_down(struct ixgbe_adapter *adapter)
+ 
+ 	ixgbe_napi_disable_all(adapter);
+ 
++	for (i = 0; i < num_q_vectors; i++) {
++		struct ixgbe_q_vector *q_vector = adapter->q_vector[i];
++		/* unregister the affinity_hint callback */
++		irq_unregister_affinity_hint(adapter->msix_entries[i].vector);
++		/* release the CPU mask memory */
++		free_cpumask_var(q_vector->affinity_mask);
 +	}
 +
- 	if (regs->flags & PERF_EFLAGS_EXACT)
- 		misc |= PERF_RECORD_MISC_EXACT;
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index c3a33b2..21b9b6a 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3776,16 +3776,20 @@ static int kvm_is_in_guest(void)
- static int kvm_is_user_mode(void)
- {
- 	int user_mode = 3;
-+
- 	if (percpu_read(current_vcpu))
- 		user_mode = kvm_x86_ops->get_cpl(percpu_read(current_vcpu));
-+
- 	return user_mode != 0;
+ 	clear_bit(__IXGBE_SFP_MODULE_NOT_FOUND, &adapter->state);
+ 	del_timer_sync(&adapter->sfp_timer);
+ 	del_timer_sync(&adapter->watchdog_timer);
+@@ -4052,6 +4100,7 @@ static void ixgbe_free_q_vectors(struct ixgbe_adapter *adapter)
+ 		struct ixgbe_q_vector *q_vector = adapter->q_vector[q_idx];
+ 		adapter->q_vector[q_idx] = NULL;
+ 		netif_napi_del(&q_vector->napi);
++		free_cpumask_var(q_vector->affinity_mask);
+ 		kfree(q_vector);
+ 	}
  }
- 
- static unsigned long kvm_get_guest_ip(void)
- {
- 	unsigned long ip = 0;
-+
- 	if (percpu_read(current_vcpu))
- 		ip = kvm_rip_read(percpu_read(current_vcpu));
-+
- 	return ip;
- }
- 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 24de5f1..ace31fb 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -941,10 +941,8 @@ static inline void perf_event_mmap(struct vm_area_struct *vma)
- }
- 
- extern struct perf_guest_info_callbacks *perf_guest_cbs;
--extern int perf_register_guest_info_callbacks(
--		struct perf_guest_info_callbacks *);
--extern int perf_unregister_guest_info_callbacks(
--		struct perf_guest_info_callbacks *);
-+extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
-+extern int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
- 
- extern void perf_event_comm(struct task_struct *tsk);
- extern void perf_event_fork(struct task_struct *tsk);
-@@ -1016,9 +1014,9 @@ static inline void
- perf_bp_event(struct perf_event *event, void *data)			{ }
- 
- static inline int perf_register_guest_info_callbacks
--(struct perf_guest_info_callbacks *) {return 0; }
-+(struct perf_guest_info_callbacks *callbacks) { return 0; }
- static inline int perf_unregister_guest_info_callbacks
--(struct perf_guest_info_callbacks *) {return 0; }
-+(struct perf_guest_info_callbacks *callbacks) { return 0; }
- 
- static inline void perf_event_mmap(struct vm_area_struct *vma)		{ }
- static inline void perf_event_comm(struct task_struct *tsk)		{ }
+
