@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab0DTM32 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 08:29:28 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:19956 "EHLO mx2.netapp.com"
+	id S1754494Ab0DTMcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 08:32:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14386 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753953Ab0DTM30 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 08:29:26 -0400
-X-IronPort-AV: E=Sophos;i="4.52,243,1270450800"; 
-   d="scan'208";a="347236817"
-Subject: Re: RCU-isms in fs/nfs/delegation.c
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: David Howells <dhowells@redhat.com>
-Cc: paulmck@linux.vnet.ibm.com, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <32174.1271753314@redhat.com>
-References: <1271698361.13653.79.camel@localhost.localdomain>
-	 <14317.1271691185@redhat.com>  <32174.1271753314@redhat.com>
+	id S1753918Ab0DTMcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 08:32:23 -0400
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
+ rcu_dereference_check() usage
+From: Eric Paris <eparis@redhat.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4BCD646B.1080206@cn.fujitsu.com>
+References: <a44ae5cd1003071726u1f94336h7ab6c7b80d16723b@mail.gmail.com>
+	 <20100311032843.GE6767@linux.vnet.ibm.com>
+	 <q2x7e0fb38c1004121144rb097e521hd2a7d8cea77c54b7@mail.gmail.com>
+	 <1271098032.4807.137.camel@twins> <1271242058.32749.19.camel@laptop>
+	 <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com>
+	 <20100419230136.GA16856@linux.vnet.ibm.com>
+	 <1271726729.2972.13.camel@dhcp231-113.rdu.redhat.com>
+	 <20100420030452.GB2905@linux.vnet.ibm.com>
+	 <4BCD646B.1080206@cn.fujitsu.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Tue, 20 Apr 2010 08:29:06 -0400
-Message-ID: <1271766546.25129.76.camel@localhost.localdomain>
+Date: Tue, 20 Apr 2010 08:31:56 -0400
+Message-ID: <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-X-OriginalArrivalTime: 20 Apr 2010 12:29:07.0608 (UTC) FILETIME=[12517180:01CAE085]
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-20 at 09:48 +0100, David Howells wrote: 
-> Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
-> 
-> > +		nfs_inode_set_delegation(inode, cred, res);
-> > +	}
-> > +out:
-> > +	rcu_read_unlock();
-> >  }
-> 
-> I think this is wrong.  nfs_inode_set_delegation() may sleep as it calls
-> kmalloc() with GFP_KERNEL - but you still have the RCU read lock held.  I
-> think you need to drop the RCU read lock before calling it.
-> 
-> David
+On Tue, 2010-04-20 at 16:23 +0800, Lai Jiangshan wrote:
 
-Agreed. Thanks for the review...
+> [PATCH] RCU: don't turn off lockdep when find suspicious rcu_dereference_check() usage
+> 
+> When suspicious rcu_dereference_check() usage is detected, lockdep is still
+> available actually, so we should not call debug_locks_off() in
+> lockdep_rcu_dereference().
+> 
+> For get rid of too much "suspicious rcu_dereference_check() usage"
+> output when the "if(!debug_locks_off())" statement is removed. This patch uses
+> static variable '__warned's for very usage of "rcu_dereference*()".
+> 
+> One variable per usage, so, Now, we can get multiple complaint
+> when we detect multiple different suspicious rcu_dereference_check() usage.
+> 
+> Requested-by: Eric Paris <eparis@redhat.com>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Cheers
-  Trond
+Although mine was a linux-next kernel and it doesn't appear that I have
+rcu_dereference_protected() at all, so I dropped that bit of the patch,
+it worked great!  I got 4 more complaints to harass people with.  Feel
+free to add my tested by if you care to.
+
+Tested-by: Eric Paris <eparis@redhat.com>
+
