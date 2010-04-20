@@ -1,195 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab0DTOk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 10:40:56 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:58146 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790Ab0DTOky convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 10:40:54 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1754933Ab0DTOlF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 10:41:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754912Ab0DTOk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 10:40:59 -0400
+Message-ID: <4BCDBCC4.60401@redhat.com>
+Date: Tue, 20 Apr 2010 10:40:04 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCHv5 2.6.34-rc4 2/5] mx5: Add USB device definitions for Freescale MX51 Babbage HW
-Date: Tue, 20 Apr 2010 07:40:45 -0700
-Message-ID: <86A0E76937111F4C92FABEC0A209885104733C3F@az33exm21>
-In-Reply-To: <20100420070706.GA2116@matterhorn.lan>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCHv5 2.6.34-rc4 2/5] mx5: Add USB device definitions for Freescale MX51 Babbage HW
-Thread-Index: AcrgWBuLlpgbkuGnTQus6L234zihkQAP0mMw
-References: <1271716024-22990-1-git-send-email-Dinh.Nguyen@freescale.com> <1271716024-22990-2-git-send-email-Dinh.Nguyen@freescale.com> <20100420070706.GA2116@matterhorn.lan>
-From: "Nguyen Dinh-R00091" <R00091@freescale.com>
-To: "Amit Kucheria" <amit.kucheria@canonical.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-       <linux@arm.linux.org.uk>, <s.hauer@pengutronix.de>,
-       <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
-       <grant.likely@secretlab.ca>, <bryan.wu@canonical.com>,
-       "Herring Robert-RA7055" <RA7055@freescale.com>,
-       "Li Jun-R65092" <R65092@freescale.com>,
-       "Zhang Lily-R58066" <R58066@freescale.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+       Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-mm@kvack.org, Nick Piggin <npiggin@suse.de>,
+       Chris Mason <chris.mason@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
+       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>
+Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone pressure
+References: <20100322235053.GD9590@csn.ul.ie> <4BA940E7.2030308@redhat.com> <20100324145028.GD2024@csn.ul.ie> <4BCC4B0C.8000602@linux.vnet.ibm.com> <20100419214412.GB5336@cmpxchg.org>
+In-Reply-To: <20100419214412.GB5336@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Amit,
+On 04/19/2010 05:44 PM, Johannes Weiner wrote:
 
-It was fine for me on rc4, but its failing for rc5. I'll rebase.
+> What do people think?
 
-Dinh 
+It has potential advantages and disadvantages.
 
------Original Message-----
-From: Amit Kucheria [mailto:amit.kucheria@canonical.com] 
-Sent: Tuesday, April 20, 2010 2:07 AM
-To: Nguyen Dinh-R00091
-Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-linux@arm.linux.org.uk; s.hauer@pengutronix.de;
-valentin.longchamp@epfl.ch; daniel@caiaq.de; grant.likely@secretlab.ca;
-bryan.wu@canonical.com; Herring Robert-RA7055; Li Jun-R65092; Zhang
-Lily-R58066
-Subject: Re: [PATCHv5 2.6.34-rc4 2/5] mx5: Add USB device definitions
-for Freescale MX51 Babbage HW
+On smaller desktop systems, it is entirely possible that
+the working set is close to half of the page cache.  Your
+patch reduces the amount of memory that is protected on
+the active file list, so it may cause part of the working
+set to get evicted.
 
-Dinh,
+On the other hand, having a smaller active list frees up
+more memory for sequential (streaming, use-once) disk IO.
+This can be useful on systems with large IO subsystems
+and small memory (like Christian's s390 virtual machine,
+with 256MB RAM and 4 disks!).
 
-This patch fails to apply for me. Can you confirm?
+I wonder if we could not find some automatic way to
+balance between these two situations, for example by
+excluding currently-in-flight pages from the calculations.
 
-Regards,
-Amit
+In Christian's case, he could have 160MB of cache (buffer
++ page cache), of which 70MB is in flight to disk at a
+time.  It may be worthwhile to exclude that 70MB from the
+total and aim for 45MB active file and 45MB inactive file
+pages on his system.  That way IO does not get starved.
 
-On 10 Apr 19, Dinh.Nguyen@freescale.com wrote:
-> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> 
-> This patch is part of enabling USB for Freescale MX51 Babbage HW. This
-
-> patch adds device structures for USB Host1 and OTG port, and adds 
-> clocking information for USB HW.
-> 
-> This patch applies to 2.6.34-rc4.
-> 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/mach-mx5/clock-mx51.c |    8 ++++++
->  arch/arm/mach-mx5/devices.c    |   49
-++++++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-mx5/devices.h    |    2 +
->  3 files changed, 59 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-mx5/clock-mx51.c 
-> b/arch/arm/mach-mx5/clock-mx51.c index 1ee6ce4..1fe40e1 100644
-> --- a/arch/arm/mach-mx5/clock-mx51.c
-> +++ b/arch/arm/mach-mx5/clock-mx51.c
-> @@ -762,6 +762,10 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, 
-> MXC_CCM_CCGRx_CG9_OFFSET,  DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2,
-MXC_CCM_CCGRx_CG10_OFFSET,
->  	NULL,  NULL, &ipg_clk, NULL);
->  
-> +/* USB */
-> +DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
-> +	NULL, NULL, &pll3_sw_clk, NULL);
-> +
->  /* FEC */
->  DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
->  	NULL,  NULL, &ipg_clk, NULL);
-> @@ -779,6 +783,10 @@ static struct clk_lookup lookups[] = {
->  	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
->  	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
->  	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
->  };
->  
->  static void clk_tree_init(void)
-> diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
-
-> index 5070ae1..4b456d5 100644
-> --- a/arch/arm/mach-mx5/devices.c
-> +++ b/arch/arm/mach-mx5/devices.c
-> @@ -12,6 +12,7 @@
->  
->  #include <linux/platform_device.h>
->  #include <linux/gpio.h>
-> +#include <linux/dma-mapping.h>
->  #include <mach/hardware.h>
->  #include <mach/imx-uart.h>
->  #include <mach/irqs.h>
-> @@ -92,6 +93,54 @@ struct platform_device mxc_fec_device = {
->  	.resource = mxc_fec_resources,
->  };
->  
-> +static u64 usb_dma_mask = DMA_BIT_MASK(32);
-> +
-> +static struct resource usbotg_resources[] = {
-> +	{
-> +		.start = MX51_OTG_BASE_ADDR,
-> +		.end = MX51_OTG_BASE_ADDR + 0x1ff,
-> +		.flags = IORESOURCE_MEM,
-> +	},
-> +	{
-> +		.start = MX51_MXC_INT_USB_OTG,
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +struct platform_device mxc_usbdr_host_device = {
-> +	.name = "mxc-ehci",
-> +	.id = 0,
-> +	.num_resources = ARRAY_SIZE(usbotg_resources),
-> +	.resource = usbotg_resources,
-> +	.dev = {
-> +		.dma_mask = &usb_dma_mask,
-> +		.coherent_dma_mask = DMA_BIT_MASK(32),
-> +	},
-> +};
-> +
-> +static struct resource usbh1_resources[] = {
-> +	{
-> +		.start = MX51_OTG_BASE_ADDR + 0x200,
-> +		.end = MX51_OTG_BASE_ADDR + 0x200 + 0x1ff,
-> +		.flags = IORESOURCE_MEM,
-> +	},
-> +	{
-> +		.start = MX51_MXC_INT_USB_H1,
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +struct platform_device mxc_usbh1_device = {
-> +	.name = "mxc-ehci",
-> +	.id = 1,
-> +	.num_resources = ARRAY_SIZE(usbh1_resources),
-> +	.resource = usbh1_resources,
-> +	.dev = {
-> +		.dma_mask = &usb_dma_mask,
-> +		.coherent_dma_mask = DMA_BIT_MASK(32),
-> +	},
-> +};
-> +
->  static struct mxc_gpio_port mxc_gpio_ports[] = {
->  	{
->  		.chip.label = "gpio-0",
-> diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
-
-> index f339ab8..95c45f9 100644
-> --- a/arch/arm/mach-mx5/devices.h
-> +++ b/arch/arm/mach-mx5/devices.h
-> @@ -2,3 +2,5 @@ extern struct platform_device mxc_uart_device0;  
-> extern struct platform_device mxc_uart_device1;  extern struct 
-> platform_device mxc_uart_device2;  extern struct platform_device 
-> mxc_fec_device;
-> +extern struct platform_device mxc_usbdr_host_device; extern struct 
-> +platform_device mxc_usbh1_device;
-> --
-> 1.6.0.4
-> 
-
--- 
-----------------------------------------------------------------------
-Amit Kucheria, Kernel Engineer || amit.kucheria@canonical.com
-----------------------------------------------------------------------
-
+On a desktop system, which needs the working set protected
+and does less IO, we will automatically protect more of
+the working set - since there is no IO to starve.
