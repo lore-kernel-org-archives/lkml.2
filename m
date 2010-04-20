@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab0DTFek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 01:34:40 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:45826 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab0DTFej convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 01:34:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=aTAuNjymdoJuKWPX21zhWAHLOVqZzN3EwJ80to7pdaMuLX9CIrTgDRKOaOC1K2gU66
-         fqit8cKqsQgrIAE1lA/f9t/qA6iaS6xkeb8nXB7U43uV1v0UwZeOBhm7XHVaVUEJ2n3v
-         jN5iH+J8IbRpf5ed7k/872BZZpUavR2zIp9p0=
+	id S1753462Ab0DTGHA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 02:07:00 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54707 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753343Ab0DTGG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 02:06:59 -0400
+Date: Tue, 20 Apr 2010 08:06:40 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Cc: Avi Kivity <avi@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       zhiteng.huang@intel.com, tim.c.chen@intel.com,
+       Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH V5 1/3] perf & kvm: Enhance perf to collect KVM guest os
+ statistics from host side
+Message-ID: <20100420060640.GB22277@elte.hu>
+References: <1271655161.2078.603.camel@ymzhang.sh.intel.com>
+ <20100419181154.GA14631@elte.hu>
+ <1271729638.2078.624.camel@ymzhang.sh.intel.com>
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20100419170059.GB29819@opensource.wolfsonmicro.com>
-References: <h2t427d64721004181858s4c01a195ma70d3ce96ee2d343@mail.gmail.com> 
-	<20100419170059.GB29819@opensource.wolfsonmicro.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 20 Apr 2010 13:34:18 +0800
-Message-ID: <s2y427d64721004192234x96d286e4teab6f32323d2b291@mail.gmail.com>
-Subject: Re: [PATCH] mc13783-regulator: fix a memory leak in 
-	mc13783_regulator_remove
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Sascha Hauer <s.hauer@pengutronix.de>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271729638.2078.624.camel@ymzhang.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Mark,
 
-2010/4/20 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Mon, Apr 19, 2010 at 09:58:02AM +0800, Axel Lin wrote:
->> This patch fixes a memory leak by freeing priv in mc13783_regulator_remove
->
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
->
-> but note that...
->
->> +       platform_set_drvdata(pdev, NULL);
->> +
->
-> This is completely unrelated to what your description says (and is not
-> needed).
->
+* Zhang, Yanmin <yanmin_zhang@linux.intel.com> wrote:
 
-In the probe function , the driver uses platform_set_drvdata(pdev,
-priv) to store a pointer to the priv data structure.
-To avoid leaving a dangling pointer behind, the driver should clear
-the pointer to priv before freeing priv.
+>  unsigned long perf_misc_flags(struct pt_regs *regs)
+>  {
+>  	int misc = 0;
+> +
+>  	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
+> +		if (perf_guest_cbs->is_user_mode())
+> +			misc |= PERF_RECORD_MISC_GUEST_USER;
+> +		else
+> +			misc |= PERF_RECORD_MISC_GUEST_KERNEL;
+> +	} else if (user_mode(regs))
+> +		misc |= PERF_RECORD_MISC_USER;
+> +	else
+> +		misc |= PERF_RECORD_MISC_KERNEL;
+> +
 
-Regards,
-Axel
+We try to use balanced curly braces. I.e.:
+
+	if (x) {
+		boo();
+	} else {
+		if (y)
+			foo();
+		else	
+			bar();
+	}	
+
+And avoid unbalanced ones:
+
+	if (x) {
+		boo();
+	} else
+		if (y)
+			foo();
+		else	
+			bar();
+
+	Ingo
