@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab0DTVBP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 17:01:15 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:46977 "EHLO gir.skynet.ie"
+	id S1755455Ab0DTVCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 17:02:31 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47024 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754986Ab0DTVBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 17:01:12 -0400
+	id S1755348Ab0DTVBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 17:01:17 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 01/14] mm,migration: Take a reference to the anon_vma before migrating
-Date: Tue, 20 Apr 2010 22:01:03 +0100
-Message-Id: <1271797276-31358-2-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 10/14] mm,compaction: Add /proc trigger for memory compaction
+Date: Tue, 20 Apr 2010 22:01:12 +0100
+Message-Id: <1271797276-31358-11-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
 References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
@@ -27,135 +27,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rmap_walk_anon() does not use page_lock_anon_vma() for looking up and
-locking an anon_vma and it does not appear to have sufficient locking to
-ensure the anon_vma does not disappear from under it.
-
-This patch copies an approach used by KSM to take a reference on the
-anon_vma while pages are being migrated.  This should prevent rmap_walk()
-running into nasty surprises later because anon_vma has been freed.
+This patch adds a proc file /proc/sys/vm/compact_memory.  When an
+arbitrary value is written to the file, all zones are compacted.  The
+expected user of such a trigger is a job scheduler that prepares the
+system before the target application runs.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 Acked-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Christoph Lameter <cl@linux-foundation.org>
 ---
- include/linux/rmap.h |   23 +++++++++++++++++++++++
- mm/migrate.c         |   12 ++++++++++++
- mm/rmap.c            |   10 +++++-----
- 3 files changed, 40 insertions(+), 5 deletions(-)
+ Documentation/sysctl/vm.txt |   10 +++++++
+ include/linux/compaction.h  |    6 ++++
+ kernel/sysctl.c             |   10 +++++++
+ mm/compaction.c             |   61 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 87 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index d25bd22..567d43f 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -29,6 +29,9 @@ struct anon_vma {
- #ifdef CONFIG_KSM
- 	atomic_t ksm_refcount;
- #endif
-+#ifdef CONFIG_MIGRATION
-+	atomic_t migrate_refcount;
-+#endif
- 	/*
- 	 * NOTE: the LSB of the head.next is set by
- 	 * mm_take_all_locks() _after_ taking the above lock. So the
-@@ -81,6 +84,26 @@ static inline int ksm_refcount(struct anon_vma *anon_vma)
- 	return 0;
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 56366a5..3b3fa1b 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -19,6 +19,7 @@ files can be found in mm/swap.c.
+ Currently, these files are in /proc/sys/vm:
+ 
+ - block_dump
++- compact_memory
+ - dirty_background_bytes
+ - dirty_background_ratio
+ - dirty_bytes
+@@ -64,6 +65,15 @@ information on block I/O debugging is in Documentation/laptops/laptop-mode.txt.
+ 
+ ==============================================================
+ 
++compact_memory
++
++Available only when CONFIG_COMPACTION is set. When 1 is written to the file,
++all zones are compacted such that free memory is available in contiguous
++blocks where possible. This can be important for example in the allocation of
++huge pages although processes will also directly compact memory as required.
++
++==============================================================
++
+ dirty_background_bytes
+ 
+ Contains the amount of dirty memory at which the pdflush background writeback
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index 465ca88..5723888 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -6,4 +6,10 @@
+ #define COMPACT_PARTIAL		1
+ #define COMPACT_COMPLETE	2
+ 
++#ifdef CONFIG_COMPACTION
++extern int sysctl_compact_memory;
++extern int sysctl_compaction_handler(struct ctl_table *table, int write,
++			void __user *buffer, size_t *length, loff_t *ppos);
++#endif /* CONFIG_COMPACTION */
++
+ #endif /* _LINUX_COMPACTION_H */
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 26f25eb..987d6cf 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -37,6 +37,7 @@
+ #include <linux/highuid.h>
+ #include <linux/writeback.h>
+ #include <linux/ratelimit.h>
++#include <linux/compaction.h>
+ #include <linux/hugetlb.h>
+ #include <linux/initrd.h>
+ #include <linux/key.h>
+@@ -1121,6 +1122,15 @@ static struct ctl_table vm_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= drop_caches_sysctl_handler,
+ 	},
++#ifdef CONFIG_COMPACTION
++	{
++		.procname	= "compact_memory",
++		.data		= &sysctl_compact_memory,
++		.maxlen		= sizeof(int),
++		.mode		= 0200,
++		.proc_handler	= sysctl_compaction_handler,
++	},
++#endif /* CONFIG_COMPACTION */
+ 	{
+ 		.procname	= "min_free_kbytes",
+ 		.data		= &min_free_kbytes,
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 1b80dd8..5e4444c 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -12,6 +12,7 @@
+ #include <linux/compaction.h>
+ #include <linux/mm_inline.h>
+ #include <linux/backing-dev.h>
++#include <linux/sysctl.h>
+ #include "internal.h"
+ 
+ /*
+@@ -392,3 +393,63 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 	return ret;
  }
- #endif /* CONFIG_KSM */
-+#ifdef CONFIG_MIGRATION
-+static inline void migrate_refcount_init(struct anon_vma *anon_vma)
-+{
-+	atomic_set(&anon_vma->migrate_refcount, 0);
-+}
-+
-+static inline int migrate_refcount(struct anon_vma *anon_vma)
-+{
-+	return atomic_read(&anon_vma->migrate_refcount);
-+}
-+#else
-+static inline void migrate_refcount_init(struct anon_vma *anon_vma)
-+{
-+}
-+
-+static inline int migrate_refcount(struct anon_vma *anon_vma)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_MIGRATE */
  
- static inline struct anon_vma *page_anon_vma(struct page *page)
- {
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 5938db5..b768a1d 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -543,6 +543,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	int rcu_locked = 0;
- 	int charge = 0;
- 	struct mem_cgroup *mem = NULL;
-+	struct anon_vma *anon_vma = NULL;
- 
- 	if (!newpage)
- 		return -ENOMEM;
-@@ -599,6 +600,8 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	if (PageAnon(page)) {
- 		rcu_read_lock();
- 		rcu_locked = 1;
-+		anon_vma = page_anon_vma(page);
-+		atomic_inc(&anon_vma->migrate_refcount);
- 	}
- 
- 	/*
-@@ -638,6 +641,15 @@ skip_unmap:
- 	if (rc)
- 		remove_migration_ptes(page, page);
- rcu_unlock:
++/* Compact all zones within a node */
++static int compact_node(int nid)
++{
++	int zoneid;
++	pg_data_t *pgdat;
++	struct zone *zone;
 +
-+	/* Drop an anon_vma reference if we took one */
-+	if (anon_vma && atomic_dec_and_lock(&anon_vma->migrate_refcount, &anon_vma->lock)) {
-+		int empty = list_empty(&anon_vma->head);
-+		spin_unlock(&anon_vma->lock);
-+		if (empty)
-+			anon_vma_free(anon_vma);
++	if (nid < 0 || nid >= nr_node_ids || !node_online(nid))
++		return -EINVAL;
++	pgdat = NODE_DATA(nid);
++
++	/* Flush pending updates to the LRU lists */
++	lru_add_drain_all();
++
++	for (zoneid = 0; zoneid < MAX_NR_ZONES; zoneid++) {
++		struct compact_control cc = {
++			.nr_freepages = 0,
++			.nr_migratepages = 0,
++		};
++
++		zone = &pgdat->node_zones[zoneid];
++		if (!populated_zone(zone))
++			continue;
++
++		cc.zone = zone;
++		INIT_LIST_HEAD(&cc.freepages);
++		INIT_LIST_HEAD(&cc.migratepages);
++
++		compact_zone(zone, &cc);
++
++		VM_BUG_ON(!list_empty(&cc.freepages));
++		VM_BUG_ON(!list_empty(&cc.migratepages));
 +	}
 +
- 	if (rcu_locked)
- 		rcu_read_unlock();
- uncharge:
-diff --git a/mm/rmap.c b/mm/rmap.c
-index c59eaea..4bad2c5 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -249,7 +249,8 @@ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
- 	list_del(&anon_vma_chain->same_anon_vma);
- 
- 	/* We must garbage collect the anon_vma if it's empty */
--	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma);
-+	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma) &&
-+					!migrate_refcount(anon_vma);
- 	spin_unlock(&anon_vma->lock);
- 
- 	if (empty)
-@@ -274,6 +275,7 @@ static void anon_vma_ctor(void *data)
- 
- 	spin_lock_init(&anon_vma->lock);
- 	ksm_refcount_init(anon_vma);
-+	migrate_refcount_init(anon_vma);
- 	INIT_LIST_HEAD(&anon_vma->head);
- }
- 
-@@ -1365,10 +1367,8 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
- 	/*
- 	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma()
- 	 * because that depends on page_mapped(); but not all its usages
--	 * are holding mmap_sem, which also gave the necessary guarantee
--	 * (that this anon_vma's slab has not already been destroyed).
--	 * This needs to be reviewed later: avoiding page_lock_anon_vma()
--	 * is risky, and currently limits the usefulness of rmap_walk().
-+	 * are holding mmap_sem. Users without mmap_sem are required to
-+	 * take a reference count to prevent the anon_vma disappearing
- 	 */
- 	anon_vma = page_anon_vma(page);
- 	if (!anon_vma)
++	return 0;
++}
++
++/* Compact all nodes in the system */
++static int compact_nodes(void)
++{
++	int nid;
++
++	for_each_online_node(nid)
++		compact_node(nid);
++
++	return COMPACT_COMPLETE;
++}
++
++/* The written value is actually unused, all memory is compacted */
++int sysctl_compact_memory;
++
++/* This is the entry point for compacting all nodes via /proc/sys/vm */
++int sysctl_compaction_handler(struct ctl_table *table, int write,
++			void __user *buffer, size_t *length, loff_t *ppos)
++{
++	if (write)
++		return compact_nodes();
++
++	return 0;
++}
 -- 
 1.6.5
 
