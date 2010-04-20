@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab0DTHmN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 03:42:13 -0400
-Received: from mail.gmx.net ([213.165.64.20]:60477 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753827Ab0DTHmM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 03:42:12 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX19xcnIIWZZxZiP5CwBbvEHljtO4ANZSsW0gacSR97
-	hcLmFp/4ImhqK+
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: my KDE-4.4.2 Battery Monitor ppplet dislikes the ACPI changes in 2.6.34-rc3 betweeen f5284e7..cf90bfe
-Date: Tue, 20 Apr 2010 09:42:09 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.34-rc4; KDE/4.4.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201004081812.10656.toralf.foerster@gmx.de> <201004081817.29561.toralf.foerster@gmx.de> <201004200510.47642.rjw@sisk.pl>
-In-Reply-To: <201004200510.47642.rjw@sisk.pl>
+	id S1753918Ab0DTH4r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 03:56:47 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:45681 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753855Ab0DTH4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 03:56:45 -0400
+Date: Tue, 20 Apr 2010 02:56:43 -0500
+From: Robin Holt <holt@sgi.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mike Travis <travis@sgi.com>, Christoph Lameter <cl@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Jack Steiner <steiner@sgi.com>
+Subject: Re: [GIT PULL] percpu for v2.6.32
+Message-ID: <20100420075643.GO4920@sgi.com>
+References: <4AAF411C.2040501@kernel.org>
+ <alpine.DEB.1.10.0909151510010.3340@V090114053VZO-1>
+ <4AAFE9B2.1030006@kernel.org>
+ <alpine.DEB.1.10.0909151531490.3340@V090114053VZO-1>
+ <4AAFEF48.8000607@sgi.com>
+ <4AB03F23.7080605@kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201004200942.09556.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.71999999999999997
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4AB03F23.7080605@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mike, if you can not find one, let me know.  I would try the benchmarkers.
+IIRC, they may have those already ready to go.
 
-Rafael J. Wysocki wrote at 05:10:47
-> Does that still happen with -rc5?
-No, issue is solved - bug report can be closed.
-Thx.
+Tejun, I have an SGI Prism at home that is normally powered off.
+I could power that up, get you set up to access it, and let you lose.
+There are basic commands for using the L2 to power on and off and to
+reset.  I think it is currently set up with some bad dimms so I would
+need to remove those before this evolution.
 
--- 
-MfG/Sincerely
-Toralf Förster
+I wouldn't mind helping with the patches, but I have no time right
+now.
 
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Thanks,
+Robin
 
+
+On Wed, Sep 16, 2009 at 10:28:03AM +0900, Tejun Heo wrote:
+> Hello,
+> 
+> Mike Travis wrote:
+> > We certainly have some in our labs but I'm not sure of one that's
+> > externally accessible.  If there's a pre-defined test you'd like to
+> > run, you can send me the details.  Otherwise, I'll check around and
+> > see if there's a system available remotely.
+> 
+> The proposed broken patch is in the following thread.  It works on ski
+> emulator but ski doesn't support SMP, so...
+> 
+>  http://thread.gmane.org/gmane.linux.kernel.cross-arch/4132
+> 
+> The patch shouldn't be too broken.  It probably needs slight tweaks
+> here and there.  Just testing and providing logs would be helpful
+> enough.
+> 
+> Thanks.
+> 
+> -- 
+> tejun
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
