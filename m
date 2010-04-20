@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab0DTRW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 13:22:57 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:55175 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754405Ab0DTRWy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 13:22:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=SJLX18qz1qjpyfLxaSsDaAo8XLrB55qGm63P2vJE3tcqUuXFWKc3+XrZWQFK1FdhVT
-         cAYvlo8XSLjRuDDGDhnulXTS6nD7bnlDLyo1XNtuutKemXLQGi2GolJ+RX7onb4eyNBu
-         q9RTf3RSLAjMerMkdsikRbvl6Lirf7DDY6MhQ=
+	id S1754864Ab0DTRXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 13:23:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25382 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754405Ab0DTRXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 13:23:44 -0400
+Message-ID: <4BCDE2F0.3010009@redhat.com>
+Date: Tue, 20 Apr 2010 13:22:56 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-In-Reply-To: <n2yf046f1351004200103zdcf703e6ofea41dc688a5e62e@mail.gmail.com>
-References: <4BCBFE89.9070401@ladisch.de>
-	 <o2gf046f1351004190044h6c3f6536ga916d2fa047f3fe7@mail.gmail.com>
-	 <4BCC0F10.3070208@ladisch.de>
-	 <l2sf046f1351004190142ocb2e5f1fyc0e892489caa76a3@mail.gmail.com>
-	 <4BCCA5FD.6060002@oracle.com> <1271706161.2505.6.camel@darwin.lan>
-	 <4BCD4C8D.7070805@oracle.com>
-	 <n2yf046f1351004200103zdcf703e6ofea41dc688a5e62e@mail.gmail.com>
-Date: Tue, 20 Apr 2010 10:22:53 -0700
-X-Google-Sender-Auth: 0934b2e44d88581f
-Message-ID: <r2o86802c441004201022i32f328e2n7a125df88f67e390@mail.gmail.com>
-Subject: Re: [regression, bisected] Xonar DX invalid PCI I/O range since 
-	977d17bb174
-From: Yinghai Lu <yinghai@kernel.org>
-To: Peter Henriksson <peter.henriksson@gmail.com>
-Cc: Yinghai <yinghai.lu@oracle.com>, Clemens Ladisch <clemens@ladisch.de>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+       Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-mm@kvack.org, Nick Piggin <npiggin@suse.de>,
+       Chris Mason <chris.mason@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
+       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>
+Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone pressure
+References: <20100322235053.GD9590@csn.ul.ie> <4BA940E7.2030308@redhat.com> <20100324145028.GD2024@csn.ul.ie> <4BCC4B0C.8000602@linux.vnet.ibm.com> <20100419214412.GB5336@cmpxchg.org> <4BCD55DA.2020000@linux.vnet.ibm.com> <20100420153202.GC5336@cmpxchg.org>
+In-Reply-To: <20100420153202.GC5336@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 1:03 AM, Peter Henriksson
-<peter.henriksson@gmail.com> wrote:
->> please post bootlog without patch.
->>
->> compile CONFIG_PCI_DEBUG=y and boot with "debug" in command line
->>
->> YH
->>
+On 04/20/2010 11:32 AM, Johannes Weiner wrote:
+
+> The idea is that it pans out on its own.  If the workload changes, new
+> pages get activated and when that set grows too large, we start shrinking
+> it again.
 >
-> Updated log.
+> Of course, right now this unscanned set is way too large and we can end
+> up wasting up to 50% of usable page cache on false active pages.
 
-please make sure your .config have CONFIG_PCI_DEBUG=y
+Thing is, changing workloads often change back.
 
-and in the grub.conf, the append line have "debug" there.
+Specifically, think of a desktop system that is doing
+work for the user during the day and gets backed up
+at night.
 
-YH
+You do not want the backup to kick the working set
+out of memory, because when the user returns in the
+morning the desktop should come back quickly after
+the screensaver is unlocked.
+
+The big question is, what workload suffers from
+having the inactive list at 50% of the page cache?
+
+So far the only big problem we have seen is on a
+very unbalanced virtual machine, with 256MB RAM
+and 4 fast disks.  The disks simply have more IO
+in flight at once than what fits in the inactive
+list.
+
+This is a very untypical situation, and we can
+probably solve it by excluding the in-flight pages
+from the active/inactive file calculation.
