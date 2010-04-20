@@ -1,76 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab0DTSQt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 14:16:49 -0400
-Received: from www84.your-server.de ([213.133.104.84]:33761 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719Ab0DTSQs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 14:16:48 -0400
-Subject: Re: [PATCH] Fix a huge latency problem in the MTD CFI and LPDDR
- flash drivers.
-From: Stefani Seibold <stefani@seibold.net>
-To: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       David Woodhouse <dwmw2@infradead.org>
-In-Reply-To: <1271623604.7050.0.camel@wall-e.seibold.net>
-References: <1271623604.7050.0.camel@wall-e.seibold.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 20 Apr 2010 20:16:31 +0200
-Message-ID: <1271787391.16051.4.camel@wall-e.seibold.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3.1 
+	id S1755024Ab0DTSXm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 14:23:42 -0400
+Received: from claw.goop.org ([74.207.240.146]:51255 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752746Ab0DTSXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 14:23:41 -0400
+Message-ID: <4BCDF12C.1020702@goop.org>
+Date: Tue, 20 Apr 2010 11:23:40 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Glauber Costa <glommer@redhat.com>,
+       kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>
+Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
+References: <1271356648-5108-1-git-send-email-glommer@redhat.com>	 <1271356648-5108-2-git-send-email-glommer@redhat.com>	 <4BC8CA52.4090703@goop.org> <1271673545.1674.743.camel@laptop>	 <4BCC3584.1050501@redhat.com> <1271675100.1674.818.camel@laptop>	 <4BCC3A3E.9070909@redhat.com>	 <20100419142158.GD14158@mothafucka.localdomain>	 <4BCC69D5.3050209@redhat.com> <1271688411.1488.248.camel@laptop> <4BCC8246.9040202@goop.org> <4BCD748E.7080007@redhat.com>
+In-Reply-To: <4BCD748E.7080007@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is the MTD mailing list routed to /dev/null? 
+On 04/20/2010 02:31 AM, Avi Kivity wrote:
+> btw, do you want this code in pvclock.c, or shall we keep it kvmclock
+> specific?
 
-It is very sad that nobody gives my a reply. 
+I think its a pvclock-level fix.  I'd been hoping to avoid having
+something like this, but I think its ultimately necessary.
 
-I ask for a merge for the patch, and if there any reason why not, it
-would be great to know. Otherwise i can't fix it.
-
-So again, please merge the path for the huge latency problem.
-
-Am Sonntag, den 18.04.2010, 22:46 +0200 schrieb Stefani Seibold:
-> From: Stefani Seibold <stefani@seibold.net>
-> 
-> The use of a memcpy() during a spinlock operation will cause very long
-> thread context switch delays if the flash chip bandwidth is low and the
-> data to be copied large, because a spinlock will disable preemption.
-> 
-> For example: A flash with 6,5 MB/s bandwidth will cause under ubifs,
-> which request sometimes 128 KB (the flash erase size), a preemption delay of
-> 20 milliseconds. High priority threads will not be served during this
-> time, regardless whether this threads access the flash or not. This behavior
-> breaks real time.
-> 
-> The patch changes all the use of spin_lock operations for xxxx->mutex
-> into mutex operations, which is exact what the name says and means.
-> 
-> I have checked the code of the drivers and there is no use of atomic
-> pathes like interrupt or timers. The mtdoops facility will also not be used
-> by this drivers. So it is dave to replace the spin_lock against mutex.
-> 
-> There is no performance regression since the mutex is normally not
-> acquired.
-> 
-> Changelog:
->  06.03.2010 First release
->  26.03.2010 Fix mutex[1] issue and tested it for compile failure
-> 
-> Signed-off-by: Stefani Seibold <stefani@seibold.net>
-> ---
->  drivers/mtd/chips/cfi_cmdset_0001.c |  131 +++++++++++++++++-----------------
->  drivers/mtd/chips/cfi_cmdset_0002.c |  122 ++++++++++++++++----------------
->  drivers/mtd/chips/cfi_cmdset_0020.c |  136 +++++++++++++++++-----------------
->  drivers/mtd/chips/fwh_lock.h        |    6 +-
->  drivers/mtd/chips/gen_probe.c       |    3 +-
->  drivers/mtd/lpddr/lpddr_cmds.c      |   79 ++++++++++----------
->  include/linux/mtd/flashchip.h       |    4 +-
->  7 files changed, 239 insertions(+), 242 deletions(-)
-
-
+    J
