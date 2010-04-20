@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab0DTJTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 05:19:46 -0400
-Received: from mx2.sophos.com ([195.166.81.53]:56357 "EHLO mx2.sophos.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754111Ab0DTJTo convert rfc822-to-8bit (ORCPT
+	id S1754182Ab0DTJUO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 05:20:14 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:33092 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754111Ab0DTJUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 05:19:44 -0400
-X-Greylist: delayed 524 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 05:19:43 EDT
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with ondemand during disk IO
-Date: Tue, 20 Apr 2010 10:10:49 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-desktop; KDE/4.3.5; x86_64; ; )
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "peterz@infradead.org" <peterz@infradead.org>,
-       "tglx@linutronix.de" <tglx@linutronix.de>,
-       "davej@redhat.com" <davej@redhat.com>,
-       "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
-References: <20100418115949.7b743898@infradead.org> <201004191629.39339.tvrtko.ursulin@sophos.com> <20100419174702.635ddad1@infradead.org>
-In-Reply-To: <20100419174702.635ddad1@infradead.org>
-MIME-Version: 1.0
-Message-ID: <201004201010.50725.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 20/04/2010 10:10:50,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 20/04/2010 10:10:51,
-	Serialize complete at 20/04/2010 10:10:51
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 20 Apr 2010 05:20:11 -0400
+Subject: Re: Considerations on sched APIs under RT patch
+From: Peter Zijlstra <peterz@infradead.org>
+To: Primiano Tucci <p.tucci@gmail.com>
+Cc: linux-kernel@vger.kernel.org, tglx <tglx@linutronix.de>,
+       rostedt <rostedt@goodmis.org>
+In-Reply-To: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
+References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Apr 2010 11:20:08 +0200
+Message-ID: <1271755208.1676.422.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 Apr 2010 01:47:02 Arjan van de Ven wrote:
-> > > > One idea I had but a) never had time to implement it and b) was
-> > > > not sure it would be accepted anyway, was to modify ondemand
-> > > > governor to ramp up instantly, but slow down slowly (in a
-> > > > configurable way).
-> > >
-> > > that's what ondemand does already.
-> >
-> > How and where in the code and how to enable that behaviour? From my
-> > experiments frequency goes down to minimum as soon as load goes away.
-> > What I was talking about is gradual lowering over a configurable
-> > period. It is not power efficient, but it could be good for latency
-> > in some workloads.
->
-> it's not even good for that ;-(
->
-> it's better then to stay high longer... at least on modern machines the
-> inbetween states are pretty much either useless or actually energy
-> hurting compared to the higher state.
+On Mon, 2010-04-19 at 22:48 +0200, Primiano Tucci wrote:
 
-Why do you think it is not good for latency to stay at higher frequency for
-longer? I had a machine until recently with a relatively slow Turion64 which
-had 800Mhz minimum and 1.8Ghz maximum frequency states. With ondemand governor
-when web browsing for example, frequency would drop to 800Mhz as soon as
-scrolling or such stopped, and then was pushed back up to max on user
-interaction. Overall experience was sluggish, but when switching to
-performance governor it was much much better. That is why I proposed to have a
-gradual lowering as an option in on-demand. You said it already does that - I
-ask are you sure? And also now you are saying it would not be good for latency
-- above is an example when it clearly does help (a lot).
+> Yesterday days I found a strange behavior of the scheduler API's using
+> the RT patch, in particular the pthread_setaffinity_np (that stands on
+> sched_setaffinity).
 
-Would this idea of gradual lowering help for the "git grep" use case as well?
-To me it sounds better than taking IO wait into account.  What happens with
-your scheme with a pure IO load? Ok, you say power use is not determined by
-frequency, fine, but it sounds slightly wrong to max the frequency on pure IO
-wait. If frequency per se really does not waste power then gradual lowering
-could both "git grep" and my web browsing latency use case, what do you think?
+> I think the main problem is that sched_setaffinity makes use of a
+> rwlock, but rwlocks are pre-emptible with the RT patch.
 
-Tvrtko
+It does? where?
 
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+sys_sched_setaffinity()
+  sched_setaffinity()
+    set_cpus_allowed_ptr()
+
+set_cpus_allowed_ptr() is the one that does the real work, and that
+takes the rq->lock and plays games with the migration thread, non of
+which should be able to cause any form of priority inversion.
+
+> So it could happen that an high priority process/thread that makes use
+> of the sched_setaffinity facility could be unwillingly preempted when
+> controlling other (even low-priority) processes/threads.
+
+Well, suppose there was a rwlock_t, then for PREEMPT_RT=y that would be
+mapped to an rt_mutex, which is PI aware.
+
+> I think sched_setaffinity should make use of raw_spinlocks, or should
+> anyway be guaranteed to not be pre-empted (maybe a preempt_disable?),
+> otherwise could lead in unwanted situations for a Real Time OS, such
+> the one described below.
+
+It does, rq->lock is a non preemptible lock, and the migration thread
+runs at a priority higher than FIFO-99.
+
+> The issue can be easily reproduced taking inspiration from this scenario:
+> 
+> I have 4 Real Time Threads (SCHED_FIFO) distributed as follows:
+> 
+> T0 : CPU 0, Priority 2 (HIGH)
+> T1 : CPU 1, Priority 2 (HIGH)
+> T3 : CPU 0, Priority 1 (LOW)
+> T4 : CPU 1, Priority 1 (LOW)
+> 
+> So T0 and T1 are actually the "big bosses" on CPUs #0 and #1, T3 and
+> T4, instead, never execute (let's assume that each thread is a simple
+> busy wait that never sleeps/yields) Now, at a certain point, from T0
+> code, I want to migrate T4 from CPU #1 to #0, keeping its low
+> priority.
+> Therefore I perform a pthread_setaffinity_np from T0 changing T4 mask
+> from CPU #1 to #0.
+> 
+> In this scenario it happens that T3 (that should never execute since
+> there is T0 with higher priority currently running on the same CPU #0)
+> "emerge" and executes for a bit.
+> It seems that the pthread_setaffinity_np syscall is somehow
+> "suspensive" for the time needed to migrate T4 and let the scheduler
+> to execute T3 for that bunch of time.
+> 
+> What do you think about this situation? Should sched APIs be revised?
+
+Not sure why you thinking the APIs should be changed. If this does
+indeed happen then there is a bug somewhere in the implementation, the
+trick will be finding it.
+
+So you run these four RT tasks on CPUs 0,1 and then control them from
+another cpu, say 2?
+
+Can you get a function trace that illustrates T3 getting scheduled,
+preferably while running the latest -rt kernel?
+
