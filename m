@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab0DTQJc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 12:09:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52659 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751970Ab0DTQJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 12:09:31 -0400
-Date: Tue, 20 Apr 2010 18:09:27 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Greg KH <gregkh@suse.de>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] sysfs: don't use allocated key for lockdep
-In-Reply-To: <20100420131420.GA27126@suse.de>
-Message-ID: <alpine.LRH.2.00.1004201805480.28179@twin.jikos.cz>
-References: <4BCD246F.4090005@cn.fujitsu.com> <20100420131420.GA27126@suse.de>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753997Ab0DTQKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 12:10:48 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:57731 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab0DTQKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 12:10:47 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: Jeff Newbern <jnewbern@bluespec.com>
+Date: Tue, 20 Apr 2010 12:10:26 -0400
+Message-ID: <g2z3c10cdd31004200910y322fd94fn65c548d329104f30@mail.gmail.com>
+Subject: PCIe hotplug failure
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Apr 2010, Greg KH wrote:
+Kernel: Ubuntu 9.10 (Karmic) 2.6.31-20-generic
 
-> > lockdep_init_map() {
-> > ......
-> > 	/*
-> > 	 * Sanity check, the lock-class key must be persistent:
-> > 	 */
-> > 	if (!static_obj(key)) {
-> > 		printk("BUG: key %p not in .data!\n", key);
-> > 		DEBUG_LOCKS_WARN_ON(1);
-> > 		return;
-> > 	}
-> > 	lock->key = key;
-> > ......
-> > }
-> > 
-> > Could you please fix it.
-> 
-> All in-kernel attributes should now be fixed, so what exactly is the
-> remaining issue?
+The pciehp driver is built into the kernel.
 
-Are they?
+I am connecting a custom FPGA device with a PCIe endpoint through the
+ExpressCard slot on a Lenovo T61 laptop.
 
-How about my fix to drivers/hwmon/asus_atk0110.c for example, I sent last 
-week? http://lkml.org/lkml/2010/4/14/458
+lspci -vv shows HotPlug+ and Surpise+ capabilities for the ExpressCard
+controller.
 
-> > ----------------
-> > One other comment (not relate to this bug, but relate to the commit):
-> > It is not a very good idea that use one lockdep class per sysfs attribute.
-> > 
-> > First: we don't have too much lockdep class resource.
-> > Second: lockdep validator is O(N*N) algorithm.
-> >         (N is the number of used lockdep class)
-> > 
-> > So it is recommended that use only one class for a group of locks.
-> > 
-> > For some nesting requirement, you can use
-> > lock_acquire(...,subclass,...nest_lock,...)
-> > 
-> > Or change the design.
-> > --------------------
-> > 
-> > BUG: key ffff880042c68220 not in .data!
-> > ------------[ cut here ]------------
-> > WARNING: at kernel/lockdep.c:2706 lockdep_init_map+0xe6/0x4fb()
-> > Hardware name: Lenovo WQ T168/T468 G6
-> > Modules linked in: mptsas(+) mptscsih mptbase scsi_transport_sas ext4 jbd2 crc16 uhci_hcd ohci_hcd ehci_hcd
-> > Pid: 1329, comm: modprobe Not tainted 2.6.34-rc3-22949-gbc8a97a-dirty #1
-> 
-> Please try 2.6.34-rc5 and let us know if this still shows up.
+I'm running the kernel with pciehp.pciehp_debug=1, and this is the
+dmesg output when I bring up the FPGA device:
 
-This particular one should indeed by fixed by upstream commit 
-ebd09ec93c90c8 though.
+[ 3346.553917] pciehp 0000:00:1c.3:pcie04: pcie_isr: intr_loc 8
+[ 3346.553925] pciehp 0000:00:1c.3:pcie04: Presence/Notify input change
+[ 3346.553934] pciehp 0000:00:1c.3:pcie04: Card present on Slot(5)
+[ 3346.553951] pciehp 0000:00:1c.3:pcie04: Surprise Removal
+[ 3346.553960] pciehp 0000:00:1c.3:pcie04: hpc_get_power_status:
+SLOTCTRL 58 value read 38
+[ 3346.553969] pciehp 0000:00:1c.3:pcie04: hpc_get_attention_status:
+SLOTCTRL 58, value read 38
+[ 3346.554030] pciehp 0000:00:1c.3:pcie04: board_added: slot device,
+slot offset, hp slot = 0, 0, 0
+[ 3347.122566] pciehp 0000:00:1c.3:pcie04: hpc_check_lnk_status:
+lnk_status = 3011
+[ 3347.122685] pci 0000:05:00.0: reg 10 32bit mmio: [0x000000-0x7fffff]
+[ 3347.122708] pci 0000:05:00.0: reg 14 32bit mmio: [0x000000-0x7fffff]
+[ 3347.122743] pci 0000:05:00.0: reg 18 64bit mmio: [0x000000-0x1ffffff]
+[ 3347.122795] pci 0000:05:00.0: reg 30 32bit mmio: [0x000000-0x0fffff]
+[ 3347.122884] pci 0000:05:00.0: PME# supported from D0
+[ 3347.122898] pci 0000:05:00.0: PME# disabled
+[ 3347.122974] pciehp: Could not get hotplug parameters
+[ 3347.123004] pci 0000:05:00.0: BAR 0: can't allocate mem resource
+[0xd6000000-0xd5ffffff]
+[ 3347.123012] pci 0000:05:00.0: BAR 1: can't allocate mem resource
+[0xd6000000-0xd5ffffff]
+[ 3347.123249] pciehp 0000:00:1c.3:pcie04: hpc_get_power_status:
+SLOTCTRL 58 value read 38
+[ 3347.123259] pciehp 0000:00:1c.3:pcie04: hpc_get_attention_status:
+SLOTCTRL 58, value read 38
 
-Thanks,
+The BAR types and sizes look correct in the initial pci lines, but are
+non-sensical in the "can't allocate mem resource" error messages that
+follow the "Could not get hotplug parameters" message.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+I haven't been able to find useful information on this particular
+problem through Google, the Ubuntu forums or at the Linux Hardware
+Compatibility site.  Does anyone know what is causing this problem or
+have pointers on debugging it?  I have a lot more data available
+(dmesg logs, lspci output, etc), but I didn't want to waste bandwidth
+with it unless someone indicated a desire to see it.  My ultimate goal
+is to be able to power up, power down, and reprogram the FPGA and have
+the device configured correctly and the device driver automatically
+loaded, unloaded, and reloaded as required.
 
+Thank you,
+Jeff Newbern
