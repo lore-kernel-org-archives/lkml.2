@@ -1,36 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab0DTUrV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 16:47:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58704 "EHLO mx1.redhat.com"
+	id S1755270Ab0DTUsL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 16:48:11 -0400
+Received: from spam-out.vsu.edu ([150.174.210.6]:40770 "EHLO SPAM-Out.vsu.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754666Ab0DTUrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 16:47:20 -0400
-Message-ID: <4BCE12CA.1070209@redhat.com>
-Date: Tue, 20 Apr 2010 16:47:06 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Pete Zaitcev <zaitcev@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rmap: anon_vma_prepare() can leak anon_vma_chain
-References: <20100415120940.GA31762@redhat.com> <4BCD0E78.9050904@redhat.com> <20100420192420.GA20840@redhat.com>
-In-Reply-To: <20100420192420.GA20840@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754666Ab0DTUsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 16:48:09 -0400
+X-Greylist: delayed 1202 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 16:48:09 EDT
+X-ASG-Debug-ID: 1271794047-2f0900610000-xx1T2L
+X-Barracuda-URL: http://150.174.210.6:8000/cgi-bin/mark.cgi
+Message-Id: <sbcdd686.060@vsu.edu>
+X-Mailer: Novell GroupWise Internet Agent 6.5.3 
+Date: Tue, 20 Apr 2010 16:26:42 -0400
+From: "Ashlie Hart" <ahar6637@students.vsu.edu>
+X-ASG-Orig-Subj: Your Mail Box Quota Has Exceeded The Set Limit
+Subject: Your Mail Box Quota Has Exceeded The Set Limit
+Mime-Version: 1.0
+x-priority: 1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Barracuda-Connect: studentmail.vsu.edu[150.174.210.20]
+X-Barracuda-Start-Time: 1271794048
+X-Barracuda-Virus-Scanned: by Barracuda Spam Firewall at vsu.edu
+X-Barracuda-Spam-Score: -1002.00
+X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2010 03:24 PM, Oleg Nesterov wrote:
-> If find_mergeable_anon_vma() succeeds but another thread installs
-> ->anon_vma before we take ptl, then allocated == NULL but avc should
-> be freed. Change the code to check avc != NULL to detect this case.
+** Confidential **
+** High Priority **
 
-Good catch!
+ATTENTION.
 
-> Signed-off-by: Oleg Nesterov<oleg@redhat.com>
+Your mailbox has exceeded the storage limit which is 20GB as set by your
+administrator, you are currently running on 20.9GB,you may not be able
+to send or receive new mail until you re-validate your mailbox.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+To re-validate your mailbox  please click the link below:
+
+http://www.networkdata.us.tt/
+
+If the link above don't work please copy and paste the link below to
+your browser window
+
+http://www.networkdata.us.tt/
+
+
+Thanks
+System Administrator
