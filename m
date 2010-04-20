@@ -1,44 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab0DTJjX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 05:39:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22231 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754277Ab0DTJjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 05:39:20 -0400
-Message-ID: <4BCD7643.4000102@redhat.com>
-Date: Tue, 20 Apr 2010 12:39:15 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1754323Ab0DTJu0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 05:50:26 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:59205 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754078Ab0DTJuZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 05:50:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vFQpKac6WVzXMZeNKz165+SLbPi5qBOhszMNZIvlipQhuVMj8R7PoinZrAbh3o/bSG
+         JJy23IhwcL7REYOE4CKqzAU2PNJMQliMM18Tx3F5heA1xILpyCLdifFY9V2PdnNZD4ei
+         RSgzyieDmVeyoywdsveQj9dAVekRt2dDc3NYM=
 MIME-Version: 1.0
-To: Zachary Amsden <zamsden@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Glauber Costa <glommer@redhat.com>,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jeremy Fitzhardinge <jeremy@goop.org>,
-       Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>	 <1271356648-5108-2-git-send-email-glommer@redhat.com>	 <4BCA026D.3070309@redhat.com> <1271673975.1674.763.camel@laptop>	 <4BCC3520.6090305@redhat.com> <1271674273.1674.777.camel@laptop> <4BCC3654.2090600@redhat.com> <4BCCA281.6040509@redhat.com>
-In-Reply-To: <4BCCA281.6040509@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100420084454.GD19264@csn.ul.ie>
+References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org>
+	 <20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100419181442.GA19264@csn.ul.ie> <20100419193919.GB19264@csn.ul.ie>
+	 <s2v28c262361004191939we64e5490ld59b21dc4fa5bc8d@mail.gmail.com>
+	 <20100420082057.GC19264@csn.ul.ie>
+	 <x2h28c262361004200132q39fe5d5ex79251643a80d28b3@mail.gmail.com>
+	 <20100420084454.GD19264@csn.ul.ie>
+Date: Tue, 20 Apr 2010 18:50:23 +0900
+Message-ID: <x2u28c262361004200250h2c38894i9adbd85d8fb7b1d8@mail.gmail.com>
+Subject: Re: error at compaction (Re: mmotm 2010-04-15-14-42 uploaded
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 09:35 PM, Zachary Amsden wrote:
->>>> Sockets and boards too?  (IOW, how reliable is TSC_RELIABLE)?
->>> Not sure, IIRC we clear that when the TSC sync test fails, eg when we
->>> mark the tsc clocksource unusable.
+On Tue, Apr 20, 2010 at 5:44 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> On Tue, Apr 20, 2010 at 05:32:13PM +0900, Minchan Kim wrote:
 >>
->> Worrying.  By the time we detect this the guest may already have 
->> gotten confused by clocks going backwards.
+>> Yes. Then, Let's add comment like split_page. :)
+>>  /*
+>>  * Note: this is probably too low level an operation for use in drivers.
+>>  * Please consult with lkml before using this in your driver.
+>>  */
+>>
 >
->
-> Upstream, we are marking the TSC unstable preemptively when hardware 
-> which will eventually sync test is detected, so this should be fine.
+> I can, but the comment that was there says it's like split_page except the
+> page is already free. This also covers not using it in a driver.
 
-ENOPARSE?
+I see. In addition, you already mentioned "As this is only being used
+for migration".
+I missed one.
+I don't have any against one.
+Will you repost v2 which move split_free_pages out of compaction.c?
+Anyway, feel free to add my reviewed-by sign.
+Thanks, Mel.
+
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+
+>
+> --
+> Mel Gorman
+> Part-time Phd Student                          Linux Technology Center
+> University of Limerick                         IBM Dublin Software Lab
+>
+
+
 
 -- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
-
+Kind regards,
+Minchan Kim
