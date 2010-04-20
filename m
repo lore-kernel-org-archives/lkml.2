@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab0DTHZd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 03:25:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49900 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753556Ab0DTHZc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 03:25:32 -0400
-Subject: Re: INFO: suspicious rcu_dereference_check() usage -
- include/linux/cgroup.h:492 invoked rcu_dereference_check() without
- protection!
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Eric Paris <eparis@redhat.com>, Eric Paris <eparis@parisplace.org>,
-       Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100420030452.GB2905@linux.vnet.ibm.com>
-References: <a44ae5cd1003071726u1f94336h7ab6c7b80d16723b@mail.gmail.com>
-	 <20100311032843.GE6767@linux.vnet.ibm.com>
-	 <q2x7e0fb38c1004121144rb097e521hd2a7d8cea77c54b7@mail.gmail.com>
-	 <1271098032.4807.137.camel@twins> <1271242058.32749.19.camel@laptop>
-	 <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com>
-	 <20100419230136.GA16856@linux.vnet.ibm.com>
-	 <1271726729.2972.13.camel@dhcp231-113.rdu.redhat.com>
-	 <20100420030452.GB2905@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Apr 2010 09:21:47 +0200
-Message-ID: <1271748107.1676.392.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753845Ab0DTHdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 03:33:12 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40715 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753658Ab0DTHdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 03:33:11 -0400
+Date: Tue, 20 Apr 2010 09:32:32 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       =?unknown-8bit?B?RnLDqWTDqXJpYw==?= Weisbecker 
+	<fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fix
+Message-ID: <20100420073232.GA1574@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-19 at 20:04 -0700, Paul E. McKenney wrote:
-> On Mon, Apr 19, 2010 at 09:25:29PM -0400, Eric Paris wrote:
+Linus,
 
-> > That one is also fixed so feel free to add a tested or something from
-> > me.  But we've got another, weeeee!  If there some way I could get all
-> > of these at once?
-> 
-> Sure!  I -think- that if you remove the first "if" statement in
-> lockdep_rcu_dereference() in kernel/lockdep.c, you will get lots of them
-> all at once.  Maybe more than your console log is able to hold...
-> 
-> So another approach would be to print only the first 100 or some such.
-> 
-> It -looks- to me that you could make __debug_locks_off() atomically
-> decrement a counter rather than just setting it to zero, see
-> include/linux/debug_locks.h.  I suspect that atomic_dec_not_zero()
-> would work very well for you here.
-> 
-> Peter probably knows a better approach, but those would work.
+Please pull the latest perf-fixes-for-linus git tree from:
 
-Right, so because the RCU checking stuff doesn't poke at the lockdep
-class chains, but simply validates the current task state we can delay
-or altogether not disable lockdep.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
 
-So something like the below, or simply remove that debug_locks_off()
-thing alltogether.
+ Thanks,
 
----
- kernel/lockdep.c |    8 ++++++--
+	Ingo
+
+------------------>
+Frederic Weisbecker (1):
+      perf: Fix unsafe frame rewinding with hot regs fetching
+
+
+ arch/x86/kernel/dumpstack.h |    8 ++++++--
  1 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 78325f8..31c8738 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -3784,12 +3784,16 @@ void lockdep_sys_exit(void)
- 	}
- }
+diff --git a/arch/x86/kernel/dumpstack.h b/arch/x86/kernel/dumpstack.h
+index e39e771..e1a93be 100644
+--- a/arch/x86/kernel/dumpstack.h
++++ b/arch/x86/kernel/dumpstack.h
+@@ -14,6 +14,8 @@
+ #define get_bp(bp) asm("movq %%rbp, %0" : "=r" (bp) :)
+ #endif
  
-+static atomic_t rcu_warns = ATOMIC_INIT(100);
++#include <linux/uaccess.h>
 +
- void lockdep_rcu_dereference(const char *file, const int line)
- {
- 	struct task_struct *curr = current;
+ extern void
+ show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 		unsigned long *stack, unsigned long bp, char *log_lvl);
+@@ -42,8 +44,10 @@ static inline unsigned long rewind_frame_pointer(int n)
+ 	get_bp(frame);
  
--	if (!debug_locks_off())
--		return;
-+	if (!debug_locks || atomic_dec_and_test(&rcu_warns)) {
-+		if (!debug_locks_off())
-+			return;
+ #ifdef CONFIG_FRAME_POINTER
+-	while (n--)
+-		frame = frame->next_frame;
++	while (n--) {
++		if (probe_kernel_address(&frame->next_frame, frame))
++			break;
 +	}
- 	printk("\n===================================================\n");
- 	printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
- 	printk(  "---------------------------------------------------\n");
-
-
+ #endif
+ 
+ 	return (unsigned long)frame;
