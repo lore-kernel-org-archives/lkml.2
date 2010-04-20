@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab0DTJcJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 05:32:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9839 "EHLO mx1.redhat.com"
+	id S1754246Ab0DTJfZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 05:35:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23762 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753588Ab0DTJcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 05:32:05 -0400
-Message-ID: <4BCD748E.7080007@redhat.com>
-Date: Tue, 20 Apr 2010 12:31:58 +0300
+	id S1754189Ab0DTJfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 05:35:23 -0400
+Message-ID: <4BCD7557.9090502@redhat.com>
+Date: Tue, 20 Apr 2010 12:35:19 +0300
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Glauber Costa <glommer@redhat.com>,
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Glauber Costa <glommer@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Marcelo Tosatti <mtosatti@redhat.com>,
        Zachary Amsden <zamsden@redhat.com>
 Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>	 <1271356648-5108-2-git-send-email-glommer@redhat.com>	 <4BC8CA52.4090703@goop.org> <1271673545.1674.743.camel@laptop>	 <4BCC3584.1050501@redhat.com> <1271675100.1674.818.camel@laptop>	 <4BCC3A3E.9070909@redhat.com>	 <20100419142158.GD14158@mothafucka.localdomain>	 <4BCC69D5.3050209@redhat.com> <1271688411.1488.248.camel@laptop> <4BCC8246.9040202@goop.org>
-In-Reply-To: <4BCC8246.9040202@goop.org>
+References: <1271356648-5108-1-git-send-email-glommer@redhat.com> <1271356648-5108-2-git-send-email-glommer@redhat.com> <4BC8CA52.4090703@goop.org> <20100419142624.GE14158@mothafucka.localdomain> <4BCC829A.6000803@goop.org> <20100419182542.GI14158@mothafucka.localdomain> <20100420015733.GA28249@amt.cnet>
+In-Reply-To: <20100420015733.GA28249@amt.cnet>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 07:18 PM, Jeremy Fitzhardinge wrote:
-> On 04/19/2010 07:46 AM, Peter Zijlstra wrote:
->    
->> What avi says! :-)
+On 04/20/2010 04:57 AM, Marcelo Tosatti wrote:
+>
+>> Marcelo can probably confirm it, but he has a nehalem with an appearently
+>> very good tsc source. Even this machine warps.
 >>
->> On a 32bit machine a 64bit read are two 32bit reads, so
->>
->>    last = last_value;
->>
->> becomes:
->>
->>    last.high = last_value.high;
->>    last.low  = last_vlue.low;
->>
->> (or the reverse of course)
->>
->> Now imagine a write getting interleaved with that ;-)
->>
+>> It stops warping if we only write pvclock data structure once and forget it,
+>> (which only updated tsc_timestamp once), according to him.
 >>      
-> You could explicitly do:
+> Yes. So its not as if the guest visible TSCs go out of sync (they don't
+> on this machine Glauber mentioned, or even on a multi-core Core 2 Duo),
+> but the delta calculation is very hard (if not impossible) to get right.
 >
-> 	do {
-> 		h = last.high;
-> 		barrier();
-> 		l = last.low;
-> 		barrier();
-> 	} while (last.high != h);
->
->
-> This works because we expect last to be always increasing, so the only
-> worry is low wrapping and incrementing high, and is more efficient than
-> making the read fully atomic (the write is still cmpxchg64).  But it's
-> pretty ugly to open code just for 32b architectures; its something that
-> might be useful to turn into a general abstraction (monotonic_read_64
-> FTW!).  I already have code like this in the Xen time code, so I could
-> make immediate use of it.
+> The timewarps i've seen were in the 0-200ns range, and very rare (once
+> every 10 minutes or so).
 >    
 
-I don't think this is worthwhile - the cmpxchg is not that expensive on 
-most kvm capable hosts (the exception is the Pentium D).
-
-btw, do you want this code in pvclock.c, or shall we keep it kvmclock 
-specific?
+Might be due to NMIs or SMIs interrupting the rdtsc(); ktime_get() 
+operation which establishes the timeline.  We could limit it by having a 
+loop doing rdtsc(); ktime_get(); rdtsc(); and checking for some bound, 
+but it isn't worthwhile (and will break nested virtualization for 
+sure).  Better to have the option to calibrate kvmclock just once on 
+machines with X86_FEATURE_NONSTOP_TRULY_RELIABLE _TSC_HONESTLY.
 
 -- 
 Do not meddle in the internals of kernels, for they are subtle and quick to panic.
