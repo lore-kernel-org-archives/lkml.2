@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab0DTJfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 05:35:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23762 "EHLO mx1.redhat.com"
+	id S1754257Ab0DTJjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 05:39:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20969 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754189Ab0DTJfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 05:35:23 -0400
-Message-ID: <4BCD7557.9090502@redhat.com>
-Date: Tue, 20 Apr 2010 12:35:19 +0300
+	id S1754204Ab0DTJjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 05:39:01 -0400
+Message-ID: <4BCD761D.7050001@redhat.com>
+Date: Tue, 20 Apr 2010 12:38:37 +0300
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Glauber Costa <glommer@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com> <1271356648-5108-2-git-send-email-glommer@redhat.com> <4BC8CA52.4090703@goop.org> <20100419142624.GE14158@mothafucka.localdomain> <4BCC829A.6000803@goop.org> <20100419182542.GI14158@mothafucka.localdomain> <20100420015733.GA28249@amt.cnet>
-In-Reply-To: <20100420015733.GA28249@amt.cnet>
+To: Sheng Yang <sheng@linux.intel.com>
+CC: Joerg Roedel <joro@8bytes.org>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com, Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH V3] perf & kvm: Enhance perf to collect KVM guest  os
+ statistics from host side
+References: <1902387910.2078.435.camel@ymzhang.sh.intel.com> <4BC9FA19.2070602@redhat.com> <4BCC136D.503@redhat.com> <201004201132.56039.sheng@linux.intel.com>
+In-Reply-To: <201004201132.56039.sheng@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2010 04:57 AM, Marcelo Tosatti wrote:
->
->> Marcelo can probably confirm it, but he has a nehalem with an appearently
->> very good tsc source. Even this machine warps.
->>
->> It stops warping if we only write pvclock data structure once and forget it,
->> (which only updated tsc_timestamp once), according to him.
+On 04/20/2010 06:32 AM, Sheng Yang wrote:
+> On Monday 19 April 2010 16:25:17 Avi Kivity wrote:
+>    
+>> On 04/17/2010 09:12 PM, Avi Kivity wrote:
 >>      
-> Yes. So its not as if the guest visible TSCs go out of sync (they don't
-> on this machine Glauber mentioned, or even on a multi-core Core 2 Duo),
-> but the delta calculation is very hard (if not impossible) to get right.
->
-> The timewarps i've seen were in the 0-200ns range, and very rare (once
-> every 10 minutes or so).
+>>> I think you were right the first time around.
+>>>        
+>> Re-reading again (esp. the part about treatment of indirect NMI
+>> vmexits), I think this was wrong, and that the code is correct.  I am
+>> now thoroughly confused.
+>>
+>>      
+> My fault...
 >    
 
-Might be due to NMIs or SMIs interrupting the rdtsc(); ktime_get() 
-operation which establishes the timeline.  We could limit it by having a 
-loop doing rdtsc(); ktime_get(); rdtsc(); and checking for some bound, 
-but it isn't worthwhile (and will break nested virtualization for 
-sure).  Better to have the option to calibrate kvmclock just once on 
-machines with X86_FEATURE_NONSTOP_TRULY_RELIABLE _TSC_HONESTLY.
+Not at all, it's really confusingly worded.
+
+> To my understanding now, "If an event causes a VM exit directly, it does not
+> update architectural state as it would have if it had it not caused the VM
+> exit:", means: in NMI case, NMI would involve the NMI handler, and change the
+> "architectural state" to NMI block. In VMX non-root mode, the behavior of
+> calling NMI handler changed(determine by some VMCS fields), but not the
+> affection to the "architectural state". So the NMI block state would remain
+> the same.
+>    
+
+Agree.  It's confusing because the internal "nmi pending" flag is not 
+set, while the "nmi blocking" flag is set.
+
+(on svm both are set, but the NMI is not taken until the vmexit 
+completes and the host unmasks NMIs).
 
 -- 
 Do not meddle in the internals of kernels, for they are subtle and quick to panic.
