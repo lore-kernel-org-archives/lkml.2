@@ -1,80 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab0DTGqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 02:46:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51663 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534Ab0DTGqF (ORCPT
+	id S1753677Ab0DTGwP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 02:52:15 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:45403 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab0DTGwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 02:46:05 -0400
-Date: Mon, 19 Apr 2010 23:45:56 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>, adobriyan@gmail.com,
-       linuxppc-dev@ozlabs.org, benh@kernel.crashing.org,
-       schwab@linux-m68k.org
-Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
-In-Reply-To: <YeFfFNFyTSF.A.vUB.fSSzLB@tosh>
-Message-ID: <alpine.DEB.2.01.1004192339190.13016@bogon.housecafe.de>
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.vUB.fSSzLB@tosh>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V01U2FsdGVkX18YGxwe41s8qXhzFebU7XwGg+MlkuyfQfrGrbS
- hdhssMH2GwOEkTiXsEmO848nCmXQBJK5oULJ+lw9TdLxygjFtk
- HDbwbtJlbRBzZlh45W06g==
+	Tue, 20 Apr 2010 02:52:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=inb2IOEztuOYlcFaAhIbL0li0WfWWumVdWt2JmAfzV+ZCpebzDZ5iZlQgEylHi+sAl
+         o+1DNKo0XZUke2eZYw3Z5uNTzLl+4TlAsUOr4mR4BrdOe/uLvUOxti76ifcQQfPaB6K4
+         7RwJISIWtGcvrMSsKt3Fccfcto3rQ93aOBIG8=
+Subject: Re: request to add trace off and trace on with events
+From: Tom Zanussi <tzanussi@gmail.com>
+To: rostedt@goodmis.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tim Bird <tim.bird@am.sony.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Chase Douglas <chase.douglas@canonical.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1271721566.10448.162.camel@gandalf.stny.rr.com>
+References: <1271707444.10448.12.camel@gandalf.stny.rr.com>
+	 <4BCCBF6D.3030105@am.sony.com>
+	 <1271709846.10448.29.camel@gandalf.stny.rr.com>
+	 <20100419212950.GB8811@nowhere>
+	 <1271713074.10448.101.camel@gandalf.stny.rr.com>
+	 <20100419220437.GC8811@nowhere>
+	 <1271715227.10448.145.camel@gandalf.stny.rr.com>
+	 <20100419230438.GA11493@nowhere>
+	 <1271721566.10448.162.camel@gandalf.stny.rr.com>
+Content-Type: text/plain
+Date: Tue, 20 Apr 2010 01:52:10 -0500
+Message-Id: <1271746330.6381.134.camel@tropicana>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Apr 2010 at 05:19, Rafael J. Wysocki wrote:
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15589
-> Subject		: 2.6.34-rc1: Badness at fs/proc/generic.c:316
-> Submitter	: Christian Kujau <lists@nerdbynature.de>
-> Date		: 2010-03-13 23:53 (38 days old)
-> Message-ID	: <alpine.DEB.2.01.1003131544340.5493@bogon.housecafe.de>
-> References	: http://marc.info/?l=linux-kernel&m=126852442903680&w=2
+On Mon, 2010-04-19 at 19:59 -0400, Steven Rostedt wrote:
+> On Tue, 2010-04-20 at 01:04 +0200, Frederic Weisbecker wrote:
+> 
+> > > # ls event/sched/sched_switch/triggers/tracing_off
+> > > filter   enable
+> > > 
+> > > ?
+> > 
+> > 
+> > That would be perhaps an overkill.
+> 
+> Perhaps, but I was also thinking of having triggers in the system level.
+> That way all events below it can trigger.
+> 
+> > Having a filter inside means it's on, otherwise it's off.
+> > 
+> > 
+> > 
+> > > 
+> > > > 
+> > > > > 
+> > > > > This could also allow a user to do:
+> > > > > 
+> > > > > echo "(a > 100)" > tracing_on
+> > > > > echo "(a < 100)" > tracing_off
+> > > > 
+> > > > 
+> > > > Yeah :)
+> > > > But if the scope of the "tracing off" is only for this event, then
+> > > > rather use:
+> > > > 
+> > > > echo "(a < 100)" > filter
+> > > > 
+> > > > You could have tracing_off/on that have this event scope and
+> > > > tracing_off/on_all for a global tracing scope.
+> > > 
+> > > The two are not equivalent. In fact, just enabling a trigger does not
+> > > mean that the event itself will be traced.
+> > 
+> > 
+> > Yeah, the enable file would first need to be activated before any
+> > trigger to take effect on the event, just like filters.
+> > 
+> > In fact I was thinking of tracing_on/tracing_off as kinds of
+> > local pause/resume.
+> > 
+> > And tracing_on_global/tracing_off_global would act like what does
+> > /debug/tracing/tracing_on: something that disables every tracing.
+> > 
+> > But of course, before any of these conditional triggers to be
+> > evaluated, you need to enable the corresponding event.
+> 
+> We could have a "trace_event_on" and "trace_event_off" trigger that only
+> enables the event when hit.
+> 
+> Actually, we can have these triggers enable other events, or make
+> dynamic triggers:
+> 
+> echo "enable_sched_switch" > events/sched/sched_wakeup/trigger/activate
+> 
+> or something similar.
+> 
 
-Yes, unless something in this area has changed from -rc4 to -rc5, this is 
-still printed during boot:
+Yeah, it could be pretty useful to have triggers be able to enable and
+set filters on other events to see what's going on in lower layers under
+some arbitrary condition e.g. just as a bogus example,
+
+echo "enable_block_io("dev == sdb"), enable_pagecache if ("count > 128k
+&& fd == 9999") > events/syscalls/sys_enter_read
 
 
-device-tree: Duplicate name in /cpus/PowerPC,G4@0, renamed to "l2-cache#1"
-name 'pulses/rev'
-------------[ cut here ]------------
-Badness at fs/proc/generic.c:317
-NIP: c00e14b8 LR: c00e14b8 CTR: c01fc2c0
-REGS: c045bdc0 TRAP: 0700   Not tainted  (2.6.34-rc4)
-MSR: 00029032 <EE,ME,CE,IR,DR>  CR: 22000022  XER: 20000000
-TASK = c043b410[0] 'swapper' THREAD: c045a000
-GPR00: c00e14b8 c045be70 c043b410 00000024 000012ff ffffffff ffffffff 00000000 
-GPR08: ef808320 c0458670 00000000 000012ff 42000028 00000000 00cb3ccc 00cb39b8 
-GPR16: 00cd682c 00cb3ca8 00cb38c8 00cb39ac 00240e18 00240e20 00cb3954 00240e24 
-GPR24: 00000000 0049b000 c045be98 c045bec8 c0da0a42 c0da0a42 00000006 00000000 
-NIP [c00e14b8] __xlate_proc_name+0xd0/0xf8
-LR [c00e14b8] __xlate_proc_name+0xd0/0xf8
-Call Trace:
-[c045be70] [c00e14b8] __xlate_proc_name+0xd0/0xf8 (unreliable)
-[c045be90] [c00e1a2c] __proc_create+0x60/0xf0
-[c045bec0] [c00e2194] proc_create_data+0x54/0xc4
-[c045bee0] [c00e6310] __proc_device_tree_add_prop+0x64/0xd4
-[c045bf00] [c00e64b4] proc_device_tree_add_node+0x134/0x164
-[c045bf20] [c00e6434] proc_device_tree_add_node+0xb4/0x164
-[c045bf40] [c00e6434] proc_device_tree_add_node+0xb4/0x164
-[c045bf60] [c00e6434] proc_device_tree_add_node+0xb4/0x164
-[c045bf80] [c00e6434] proc_device_tree_add_node+0xb4/0x164
-[c045bfa0] [c0421c30] proc_device_tree_init+0x4c/0x78
-[c045bfb0] [c0421698] proc_root_init+0xcc/0xf0
-[c045bfc0] [c040e798] start_kernel+0x230/0x284
-[c045bff0] [00003444] 0x3444
-Instruction dump:
-93ba0000 38600000 93fb0000 80010024 bb410008 38210020 7c0803a6 4e800020 
-3c60c03c 7f84e378 386300a8 48273a45 <0fe00000> 80010024 3860fffe bb410008 
+Dynamic triggers that could modify their own filters could also provide
+for some interesting applications.  For example, a trigger on e.g.
+block_bio_complete could be used to track sectors that have been written
+to over a certain period of time.  On each 'hit', the command would add
+a predicate that describes the sector(xxx) and nr_sector(yyy) contained
+in that event to its own filter e.g. ("!(sector >= xxx && sector <= xxx
++ yyy)") i.e. any event that matches the filter (isn't contained within
+any of current sector predicates) invokes the command to add that
+event's block to the filter.
 
+At the end of the run, the filter itself would contain all of the
+sectors that were written to; the resulting filter could simply be
+dumped to retrieve them.  I know there are some virtual disk backup
+companies out there that would probably find something like this pretty
+useful...
 
--- 
-BOFH excuse #37:
+Of course, for this to be feasible, the filter implementation would have
+to be streamlined to handle large numbers of predicates e.g. managed in
+a tree, predicate merging, etc.
 
-heavy gravity fluctuation, move computer to floor rapidly
+I don't know if it's worth it just for this, but I'm sure there are
+plenty of other examples where dynamic filters would be useful...
+
+Tom 
+
+> -- Steve
+> 
+> 
+> 
+
