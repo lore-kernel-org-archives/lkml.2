@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab0DUOzS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 10:55:18 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54986 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753495Ab0DUOzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 10:55:16 -0400
-Date: Wed, 21 Apr 2010 16:55:14 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Divyesh Shah <dpshah@google.com>, Nauman Rafique <nauman@google.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Subject: Re: [PATCH] blkio: Fix a crash during rq stats update
-Message-ID: <20100421145514.GT27497@kernel.dk>
-References: <20100421144550.GA3275@redhat.com>
+	id S1755489Ab0DUO5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 10:57:10 -0400
+Received: from exhub016-2.exch016.msoutlookonline.net ([207.5.72.164]:11540
+	"EHLO EXHUB016-2.exch016.msoutlookonline.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755339Ab0DUO5I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 10:57:08 -0400
+Message-ID: <4BCF123C.6010400@cfl.rr.com>
+Date: Wed, 21 Apr 2010 10:57:00 -0400
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100421144550.GA3275@redhat.com>
+To: Jamie Lokier <jamie@shareable.org>
+CC: linux-fsdevel@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: readahead on directories
+References: <4BCC7C05.8000803@cfl.rr.com> <20100421004434.GA27420@shareable.org>
+In-Reply-To: <20100421004434.GA27420@shareable.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21 2010, Vivek Goyal wrote:
-> @@ -1001,6 +1002,10 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
->  	return cfqg;
->  }
->  
-> +static inline void cfq_get_cfqg_ref(struct cfq_group *cfqg) {
-> +	atomic_inc(&cfqg->ref);
-> +}
+On 4/20/2010 8:44 PM, Jamie Lokier wrote:
+> readahead() doesn't make much sense on a directory - the offset and
+> size aren't meaningful.
+> 
+> But does plain opendir/readdir/closedir solve the problem?
 
-Would be nicer as
+No, since those are synchronous.  I want to have readahead() queue up
+reading the entire directory in the background to avoid blocking, and
+get the queue filled with a bunch of requests that can be merged into
+larger segments before being dispatched to the hardware.
 
-static inline void cfq_ref_get_cfqg(struct cfq_group *cfqg)
-{
-	atomic_inc(&cfqg->ref);
-        return cfqg;
-}
-
-...
-
-static inline void cfq_ref_get_cfqg(struct cfq_group *cfqg)
-{
-        return NULL;
-}
-
-...
-
-> @@ -3560,6 +3570,9 @@ new_queue:
->  
->  	rq->elevator_private = cic;
->  	rq->elevator_private2 = cfqq;
-> +	rq->elevator_private3 = cfqq->cfqg;
-> +	/* rq reference on cfqg */
-> +	cfq_get_cfqg_ref(RQ_CFQG(rq));
->  	return 0;
-
-rq->elevator_private3 = cfq_ref_get_cfqg(...);
-
--- 
-Jens Axboe
-
+I don't actually care to have the contents of the directories returned,
+so readdir() does more than I need in that respect, and also it performs
+a blocking read of one disk block at a time, which is horribly slow with
+a cold cache.
