@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab0DUVLM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 17:11:12 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64510 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755206Ab0DUVLI (ORCPT
+	id S1755206Ab0DUVMb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 17:12:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19629 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754580Ab0DUVMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 17:11:08 -0400
-From: Cory Fields <FOSS@AtlasTechnologiesInc.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-input@vger.kernel.org, jkosina@suse.cz
-Subject: [PATCH] hid: Remove annoying non-error printk
-Date: Wed, 21 Apr 2010 17:08:24 -0400
-Message-Id: <1271884104-31884-1-git-send-email-FOSS@AtlasTechnologiesInc.com>
-X-Mailer: git-send-email 1.7.0
+	Wed, 21 Apr 2010 17:12:30 -0400
+Date: Wed, 21 Apr 2010 14:11:34 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Michal Simek <monstr@monstr.eu>, microblaze-uclinux@itee.uq.edu.au,
+       akpm <akpm@linux-foundation.org>
+Subject: [PATCH] microblaze: fix divide by zero exception message
+Message-Id: <20100421141134.56eff2f5.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4BCF6A12.0063:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the only line printed on my "quiet" boot and seems completely
-unnecessary.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Signed-off-by: Cory Fields <FOSS@AtlasTechnologiesInc.com>
+Fix divide exception message to say "divide by zero".
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc:	Michal Simek <monstr@monstr.eu>
+Cc:	microblaze-uclinux@itee.uq.edu.au
 ---
- drivers/hid/hid-wacom.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ arch/microblaze/kernel/exceptions.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-index f7700cf..f947d83 100644
---- a/drivers/hid/hid-wacom.c
-+++ b/drivers/hid/hid-wacom.c
-@@ -277,7 +277,6 @@ static int __init wacom_init(void)
- 	ret = hid_register_driver(&wacom_driver);
- 	if (ret)
- 		printk(KERN_ERR "can't register wacom driver\n");
--	printk(KERN_ERR "wacom driver registered\n");
- 	return ret;
- }
- 
--- 
-1.7.0
-
+--- linux-2.6.34-rc4-git6.orig/arch/microblaze/kernel/exceptions.c
++++ linux-2.6.34-rc4-git6/arch/microblaze/kernel/exceptions.c
+@@ -121,7 +121,7 @@ asmlinkage void full_exception(struct pt
+ 		}
+ 		printk(KERN_WARNING "Divide by zero exception " \
+ 							"in kernel mode.\n");
+-		die("Divide by exception", regs, SIGBUS);
++		die("Divide by zero exception", regs, SIGBUS);
+ 		break;
+ 	case MICROBLAZE_FPU_EXCEPTION:
+ 		pr_debug(KERN_WARNING "FPU exception\n");
