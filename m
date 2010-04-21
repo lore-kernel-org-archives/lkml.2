@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab0DUJW0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 05:22:26 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:6153 "EHLO
-	VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753106Ab0DUJWZ (ORCPT
+	id S1753534Ab0DUJWy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 05:22:54 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:57003 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab0DUJWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 05:22:25 -0400
-X-SpamScore: -34
-X-BigFish: VPS-34(zz1432P98dN936eM4015L62a3L9371Pzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L17ZCY-02-4TF-02
-X-M-MSG: 
-Date: Wed, 21 Apr 2010 11:21:45 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 11/12] perf, x86: implement AMD IBS event configuration
-Message-ID: <20100421092145.GV11907@erda.amd.com>
-References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
- <1271190201-25705-12-git-send-email-robert.richter@amd.com>
- <h2obd4cb8901004190646v8231b6a1sf47d0cff6481cc5e@mail.gmail.com>
- <20100420160557.GT11907@erda.amd.com>
- <20100421084700.GU11907@erda.amd.com>
- <o2ibd4cb8901004210202i1ba91c3dlc775a9f7759ece68@mail.gmail.com>
+	Wed, 21 Apr 2010 05:22:52 -0400
+Date: Wed, 21 Apr 2010 10:22:35 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Jan Blunck <jblunck@suse.de>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Valerie Aurora <vaurora@redhat.com>,
+       dwmw2@infradead.org, viro@zeniv.linux.org.uk,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       tytso@mit.edu, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
+Message-ID: <20100421092235.GB13114@shareable.org>
+References: <1271372682-21225-14-git-send-email-vaurora@redhat.com> <20100419124025.GG10776@bolzano.suse.de> <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de> <20100419142315.GA2688@shell> <E1O3sLi-0008EA-QW@pomaz-ex.szeredi.hu> <20100420213450.GM11723@shareable.org> <20100421084211.GB22741@bolzano.suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <o2ibd4cb8901004210202i1ba91c3dlc775a9f7759ece68@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 21 Apr 2010 09:21:46.0094 (UTC) FILETIME=[104448E0:01CAE134]
-X-Reverse-DNS: unknown
+In-Reply-To: <20100421084211.GB22741@bolzano.suse.de>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.04.10 11:02:42, Stephane Eranian wrote:
-> On Wed, Apr 21, 2010 at 10:47 AM, Robert Richter <robert.richter@amd.com> wrote:
-> > On 20.04.10 18:05:57, Robert Richter wrote:
-> >> > What is the problem with directly using the period here, rejecting
-> >> > any value that is off range or with bottom 4 bits set?
-> >>
-> >> Yes, I will create an updated version of this patch.
-> >
-> > Stephane, do you think having the lower 4 bits set is worth an EINVAL?
-> > I would rather ignore them since the accuracy is not really necessary
-> > compared to a range lets say from 100000 cycles? Otherwise this will
-> > make the setup of ibs much more complicated. The check could be moved
-> > to userland and generate a waring or so.
+Jan Blunck wrote:
+> On Tue, Apr 20, Jamie Lokier wrote:
 > 
-> Explain why you think it would be more complicated?
-> If I recall there is already a function to validate the attrs:
-> amd_pmu_hw_config().
-> But may be you are talking about userland setup.
+> > Miklos Szeredi wrote:
+> > > On Mon, 19 Apr 2010, Valerie Aurora wrote:
+> > > > I don't recall there being any technical reason not to look up the
+> > > > real inode number.  I just wrote it that we because I was lazy.  So I
+> > > > like returning the directory's d_ino better than a single magic
+> > > > number, but I'd at least like to try returning the real inode number
+> > > > too.
+> > > 
+> > > Note, "struct dirent" doesn't have d_dev, so you really can't return
+> > > the "real" inode number, that's on a different filesystem and just a
+> > > random number in the context of the the readdir in question.
+> > 
+> > Agree.  Does this inappropriate inode number for the union mount's
+> > st_dev happen with stat() on the actual files too?  That could be bad.
 > 
-> Here is one argument why this might be important. Some people like to
-> know exactly
-> the sampling period because they use a particular value, like a prime
-> number. You
-> chopping off the bottom 4 bits could break this logic silently.
+> No, for stat() you do a lookup and that is returning the correct
+> dentry/inode for the filesystem the name is on.
 
-Ok, I see your point. I was thinking of some decimal value used to set
-the sample period. You will then have to check if the lower 4 bits are
-set or not by doing a dec to hex conversion and so on. But I realized
-that multiples of 10000 can be devided by 16 and thus all lower 4 bits
-are always cleared.
+Hmm.  I smell potential confusion for some otherwise POSIX-friendly
+userspaces.
 
-So, I will check the lower 4 bits and return an error if they are set.
+When I open /path/to/foo, call fstat (st_dev=2, st_ino=5678), and then
+keep the file open, then later do a readdir which includes foo
+(dir.st_dev=1, d_ino=1234), I'm going to immediately assume a rename
+or unlink happened, close the file, abort streaming from it, refresh
+the GUI windows, refresh application caches for that name entry, etc.
+
+Because in the POSIX world I think open files have stable inode
+numbers (as long as they are open), and I don't think that an open
+file can have it's name's d_ino not match the inode number unless it's
+a mount point, which my program would know about.
+
+This plays into inotify, where you have to know if you are monitoring
+every directory that contains a link to a file, to know if you need to
+monitor the file itself directly instead.
+
+Now I think it's fair enough that a union mount doesn't play all the
+traditional rules :-)  C'est la vie.
+
+This mismatch of (dir.st_dev,d_ino) and st_ino strongly resembles a
+file-bind-mount.  Like bind mounts, it's quite annoying for programs
+that like to assume they've seen all of a file's links when they've
+seen i_nlink of them.
+
+Bind mounts can be detected by looking in /proc/mounts.  st_dev
+changing doesn't work because it can be a binding of the same
+filesystem.
+
+How would I go about detecting when a union mount's directory entry
+has similar behaviour, without calling stat() on each entry?  Is it
+just a matter of recognising a particular filesystem name in
+/proc/mounts, or something more?
 
 Thanks,
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
-
+-- Jamie
