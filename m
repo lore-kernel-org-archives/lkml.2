@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab0DUAIW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 20:08:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1890 "EHLO mx1.redhat.com"
+	id S1754079Ab0DUAVm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 20:21:42 -0400
+Received: from ozlabs.org ([203.10.76.45]:48820 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753017Ab0DUAIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 20:08:21 -0400
-Message-ID: <4BCE41D2.5020005@redhat.com>
-Date: Tue, 20 Apr 2010 14:07:46 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-       Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>	 <1271356648-5108-2-git-send-email-glommer@redhat.com>	 <4BC8CA52.4090703@goop.org> <1271673545.1674.743.camel@laptop>	 <4BCC3584.1050501@redhat.com> <1271675100.1674.818.camel@laptop>	 <4BCC3A3E.9070909@redhat.com>	 <20100419142158.GD14158@mothafucka.localdomain>	 <4BCC69D5.3050209@redhat.com> <1271688411.1488.248.camel@laptop> <4BCC8246.9040202@goop.org> <4BCD748E.7080007@redhat.com> <4BCDF12C.1020702@goop.org> <4BCDF85C.3000004@redhat.com> <4BCE0399.2010708@goop.org>
-In-Reply-To: <4BCE0399.2010708@goop.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752926Ab0DUAVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 20:21:41 -0400
+Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Christian Kujau <lists@nerdbynature.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linuxppc-dev@ozlabs.org, schwab@linux-m68k.org,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+In-Reply-To: <20100421155547.GA4222@x200>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.vUB.fSSzLB@tosh>
+	 <alpine.DEB.2.01.1004192339190.13016@bogon.housecafe.de>
+	 <1271765898.4324.2.camel@concordia>  <20100421155547.GA4222@x200>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-ks/erLzbOJ+lZLQiQRTx"
+Date: Wed, 21 Apr 2010 10:21:39 +1000
+Message-ID: <1271809299.13262.6.camel@concordia>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2010 09:42 AM, Jeremy Fitzhardinge wrote:
-> On 04/20/2010 11:54 AM, Avi Kivity wrote:
->    
->> On 04/20/2010 09:23 PM, Jeremy Fitzhardinge wrote:
->>      
->>> On 04/20/2010 02:31 AM, Avi Kivity wrote:
->>>
->>>        
->>>> btw, do you want this code in pvclock.c, or shall we keep it kvmclock
->>>> specific?
->>>>
->>>>          
->>> I think its a pvclock-level fix.  I'd been hoping to avoid having
->>> something like this, but I think its ultimately necessary.
->>>
->>>        
->> Did you observe drift on Xen, or is this "ultimately" pointing at the
->> future?
->>      
-> People are reporting weirdnesses that "clocksource=jiffies" apparently
-> resolves.  Xen and KVM are faced with the same hardware constraints, and
-> it wouldn't surprise me if there were small measurable
-> non-monotonicities in the PV clock under Xen.  May as well be safe.
->    
 
-Does the drift only occur on SMP VMs?
+--=-ks/erLzbOJ+lZLQiQRTx
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, 2010-04-21 at 18:55 +0300, Alexey Dobriyan wrote:
+> On Tue, Apr 20, 2010 at 10:18:18PM +1000, Michael Ellerman wrote:
+> > On Mon, 2010-04-19 at 23:45 -0700, Christian Kujau wrote:
+> > --- a/fs/proc/proc_devtree.c
+> > +++ b/fs/proc/proc_devtree.c
+> > @@ -175,6 +175,24 @@ retry:
+> >         return fixed_name;
+> >  }
+> > =20
+> > +static const char *unslash_name(const char *name)
+> > +{
+> > +       char *p, *fixed_name;
+> > +
+> > +       fixed_name =3D kstrdup(name);
+> > +       if (!fixed_name) {
+> > +               printk(KERN_ERR "device-tree: Out of memory trying to u=
+nslash "
+> > +                               "name \"%s\"\n", name);
+> > +               return name;
+> > +       }
+> > +
+> > +       p =3D fixed_name;
+> > +       while ((p =3D strstr(p, "/")))
+> > +               *p++ =3D '_';
+>=20
+> This is wasteful. :-)
+
+Whatever, patches welcome :)
+
+> Also, I hope we won't spit message every time allocation fail.
+
+We do. Your system is mostly hosed anyway, but feel free to rate limit
+it or something.
+
+The error handling in there is a bit dubious, if the alloc fails we just
+return the old name, which we know is bogus. It should probably return
+NULL and the calling code can check - same for fixup_name().
+
+cheers
+
+--=-ks/erLzbOJ+lZLQiQRTx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEABECAAYFAkvORRAACgkQdSjSd0sB4dKJqwCgq79/5W+simjGRQJ4tQYpfcX7
+gzoAoLD3mnRvEEi8RnPB+OidBrer+tPx
+=9O+3
+-----END PGP SIGNATURE-----
+
+--=-ks/erLzbOJ+lZLQiQRTx--
 
