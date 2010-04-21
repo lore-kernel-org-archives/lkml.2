@@ -1,82 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab0DUFje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 01:39:34 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58690 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074Ab0DUFjc (ORCPT
+	id S1752326Ab0DUFkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 01:40:06 -0400
+Received: from mail-yx0-f191.google.com ([209.85.210.191]:36750 "EHLO
+	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab0DUFkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 01:39:32 -0400
-Message-ID: <4BCE8EBF.5050207@oracle.com>
-Date: Tue, 20 Apr 2010 22:35:59 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Wed, 21 Apr 2010 01:40:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Yg06GnDfn6vhdbhVVEYWmYazBDImKRj5hOsNU5TJtZyolx2PHSWH/5nx1X/1GWbBiI
+         4IS46+5rUfH4gmknI68xf/5DDljIn8LJ69/o4HP9h2lJnElaWqGkVqw6IeRk8jdPLRma
+         OeQWK6pg4RuQly7MCYnec1oSQFfvsR6Y5DQq4=
+Date: Tue, 20 Apr 2010 22:39:58 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: linux-kernel@vger.kernel.org, pingc@wacom.com, Anton@anikin.name,
+       stable@kernel.org, stable-commits@vger.kernel.org
+Subject: Re: patch input-wacom-switch-mode-upon-system-resume.patch added to
+ 2.6.33-stable tree
+Message-ID: <20100421053958.GB4364@core.coreip.homeip.net>
+References: <1271697023113@kroah.org>
+ <201004191024.43397.dmitry.torokhov@gmail.com>
+ <20100419172856.GA6965@suse.de>
+ <4BCE34CC.9030506@canonical.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Andy Isaacson <adi@hexapodia.org>,
-       guenter.roeck@ericsson.com,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>
-Subject: [PATCH 3/3] x86,pci,acpi: Handle invalid _CRS
-References: <20100409223532.GC11130@hexapodia.org>	 <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org>	 <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org>	 <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org>	 <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org>	 <4BC375D9.4040503@oracle.com> <20100412200224.GO11130@hexapodia.org>	 <4BC39F67.4090407@oracle.com> <1271192527.6035.44.camel@dc7800.home> <4BC4DD85.5030203@zytor.com> <4BC4DDEA.60202@oracle.com> <4BC4DFAD.9020600@zytor.com> <4BC4E55B.7000103@oracle.com> <4BC4E8FB.8060802@zytor.com> <4BC4F03C.1020707@oracle.com> <4BC4F320.8020902@zytor.com> <4BC4F703.5030700@oracle.com> <4BC4F80C.2020209@zytor.com> <4BC4F851.7040500@oracle.com> <4BC4F948.8050500@zytor.com> <4BC4F9C2.20503@oracle.com> <4BCE8E3E.4030809@oracle.com>
-In-Reply-To: <4BCE8E3E.4030809@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090205.4BCE8F34.0019:SCFMA4539811,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BCE34CC.9030506@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 20, 2010 at 04:12:12PM -0700, Stefan Bader wrote:
+> Greg KH wrote:
+> > On Mon, Apr 19, 2010 at 10:24:41AM -0700, Dmitry Torokhov wrote:
+> >> Greg,
+> >>
+> >> On Monday 19 April 2010 10:10:23 am gregkh@suse.de wrote:
+> >>> This is a note to let you know that we have just queued up the patch titled
+> >>>
+> >>>     Subject: Input: wacom - switch mode upon system resume
+> >>>
+> >>> to the 2.6.33-stable tree.  Its filename is
+> >>>
+> >>>     input-wacom-switch-mode-upon-system-resume.patch
+> >>>
+> >> Could you add this to .32 as well, please?
+> > 
+> > I looked, and it didn't seem to apply at all.  Can someone backport it
+> > to .32 and I will be glad to apply it.
+> > 
+> 
+> That would be my backport for .32, maybe Ping or Dmitry can sanity check.
+> 
+
+Yep, that exactly what Ping sent earlier, but since she favors wierd
+mailers with HTML I guess her patch was dropped by vger filters ;)
+
+Thanks Stefan.
+
+Greg, please apply.
+
+> Stefan
+> 
+> > thanks,
+> > 
+> > greg k-h
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe stable-commits" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+
+> From 7021bbc3685fc147eb47deee345801ffb007a7e9 Mon Sep 17 00:00:00 2001
+> From: Ping Cheng <pingc@wacom.com>
+> Date: Tue, 13 Apr 2010 23:07:52 -0700
+> Subject: [PATCH] Input: wacom - switch mode upon system resume
+> 
+> commit 014f61504af276ba9d9544d8a7401d8f8526eb73 upstream
+> 
+> When Wacom devices wake up from a sleep, the switch mode command
+> (wacom_query_tablet_data) is needed before wacom_open is called.
+> wacom_query_tablet_data should not be executed inside wacom_open
+> since wacom_open is called more than once during probe.
+> 
+> wacom_retrieve_hid_descriptor is removed from wacom_resume due
+> to the fact that the required descriptors are stored properly
+> upon system resume.
+> 
+> Reported-and-tested-by: Anton Anikin <Anton@Anikin.name>
+> Signed-off-by: Ping Cheng <pingc@wacom.com>
+> Cc: stable@kernel.org
+> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> ---
+>  drivers/input/tablet/wacom_sys.c |   10 +++++++---
+>  1 files changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+> index b5b69cc..5be07f9 100644
+> --- a/drivers/input/tablet/wacom_sys.c
+> +++ b/drivers/input/tablet/wacom_sys.c
+> @@ -562,11 +562,15 @@ static int wacom_resume(struct usb_interface *intf)
+>  	int rv;
+>  
+>  	mutex_lock(&wacom->lock);
+> -	if (wacom->open) {
+> +
+> +	/* switch to wacom mode first */
+> +	wacom_query_tablet_data(intf, features);
+> +
+> +	if (wacom->open)
+>  		rv = usb_submit_urb(wacom->irq, GFP_NOIO);
+> -		wacom_query_tablet_data(intf);
+> -	} else
+> +	else
+>  		rv = 0;
+> +
+>  	mutex_unlock(&wacom->lock);
+>  
+>  	return rv;
+> -- 
+> 1.6.3.3
+> 
 
 
-Don't clear root bus resource too early, until We can make sure _CRS works
-
-also restore it, if all _CRS get rejected because of conflicts
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/pci/acpi.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
-
-Index: linux-2.6/arch/x86/pci/acpi.c
-===================================================================
---- linux-2.6.orig/arch/x86/pci/acpi.c
-+++ linux-2.6/arch/x86/pci/acpi.c
-@@ -196,9 +196,6 @@ get_current_resources(struct acpi_device
- 	struct pci_root_info info;
- 	size_t size;
- 
--	if (pci_use_crs)
--		pci_bus_remove_resources(bus);
--
- 	info.bridge = device;
- 	info.bus = bus;
- 	info.res_num = 0;
-@@ -217,10 +214,20 @@ get_current_resources(struct acpi_device
- 		goto name_alloc_fail;
- 	sprintf(info.name, "PCI Bus %04x:%02x", domain, busnum);
- 
-+	/* Only clear that when _CRS works for sure*/
-+	if (pci_use_crs)
-+		pci_bus_remove_resources(bus);
-+
- 	info.res_num = 0;
- 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
- 				&info);
- 
-+	if (pci_use_crs && !info.res_num) {
-+		/* Restore default one */
-+		bus->resource[0] = &ioport_resource;
-+		bus->resource[1] = &iomem_resource;
-+	}
-+
- 	return;
- 
- name_alloc_fail:
+-- 
+Dmitry
