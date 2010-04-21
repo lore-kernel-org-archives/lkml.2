@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab0DUMee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 08:34:34 -0400
-Received: from reserved-DSUX-GH1-UEA02 ([63.239.65.40]:51581 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab0DUMeb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 08:34:31 -0400
-Subject: Re: [PATCH 0/3] Taming execve, setuid, and LSMs
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
-       linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       Eric Biederman <ebiederm@xmission.com>,
-       "Andrew G. Morgan" <morgan@kernel.org>
-In-Reply-To: <s2pcb0375e11004200853m62ee45b5lf447da1e1a55ffc5@mail.gmail.com>
-References: <cover.1269610458.git.luto@mit.edu>
-	 <20100419172639.GA15800@us.ibm.com>
-	 <n2ycb0375e11004191432g855540c0jab7989d75b32200d@mail.gmail.com>
-	 <20100419213952.GA28494@hallyn.com>
-	 <1271767039.30027.50.camel@moss-pluto.epoch.ncsc.mil>
-	 <v2qcb0375e11004200723w776f806elb1be2c3aa30f1671@mail.gmail.com>
-	 <1271777652.30027.131.camel@moss-pluto.epoch.ncsc.mil>
-	 <s2pcb0375e11004200853m62ee45b5lf447da1e1a55ffc5@mail.gmail.com>
-Content-Type: text/plain
-Organization: National Security Agency
-Date: Wed, 21 Apr 2010 08:34:26 -0400
-Message-Id: <1271853266.7088.40.camel@moss-pluto.epoch.ncsc.mil>
+	id S1754344Ab0DUMhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 08:37:15 -0400
+Received: from soto.provo.novell.com ([137.65.250.214]:53875 "EHLO
+	soto.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753771Ab0DUMhM convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-GHaskins@novell.com:6:1>);
+	Wed, 21 Apr 2010 08:37:12 -0400
+Message-Id: <4BCEB92E0200005A00065162@soto.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 21 Apr 2010 06:37:02 -0600
+From: "Gregory Haskins" <GHaskins@novell.com>
+To: <peterz@infradead.org>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <akpm@linux-foundation.org>,
+       <jkacur@redhat.com>, <lgoncalv@redhat.com>, <williams@redhat.com>,
+       <linux-kernel@vger.kernel.org>, <linux-rt-users@vger.kernel.org>
+Subject: Re: [PATCH v3] lockdep: Make MAX_STACK_TRACE_ENTRIES
+	 configurable.
+References: <4BCEB92D0200005A0006515F@soto.provo.novell.com>
+ <4BCEB92E0200005A00065162@soto.provo.novell.com>
+In-Reply-To: <4BCEB92E0200005A00065162@soto.provo.novell.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-20 at 11:53 -0400, Andrew Lutomirski wrote:
-> On Tue, Apr 20, 2010 at 11:34 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
-> >>
-> >> True,  but I think it's still asking for trouble -- other LSMs could
-> >> (and almost certainly will, especially the out-of-tree ones) do
-> >> something, and I think that any action at all that an LSM takes in the
-> >> bprm_set_creds hook for a nosuid (or whatever it's called) process is
-> >> wrong or at best misguided.
-> >>
-> >> Can you think of anything that an LSM should do (or even should be
-> >> able to do) when a nosuid process calls exec, other than denying the
-> >> request outright?  With my patch, LSMs can still reject the open_exec
-> >> call.
-> >
-> > In the case where the context transition would shed permissions rather
-> > than gain permissions, it has been suggested that we shouldn't disable
-> > the transition even in the presence of nosuid.  But automatically
-> > computing that for a domain transition is non-trivial, so we have the
-> > present behavior for SELinux.
-> >
-> > There also can be state updates even in the non-suid exec case, e.g.
-> > saved uids, clearing capabilities, etc.
+(Sorry for top post..mobile)
+
+Ya, I totally see and understand your point.  "Fix the problem and not the symptom" and all.  That is probably the best idea.
+
+The only thing I can say is I think debug and/or -rt kernels exacerbate the issue, and it seemed like a growing problem.  (E.g. Iirc over the years, people periodically submitting patches to -rt making it larger and larger, yet leading edge dev still tended to require carrying a custom patch making it larger still).
+
+So any work that goes into quantifing the large (and growing) footprint of this structure is probably time well spent to at least understand why.  In the meantime, I would still personally endorse Johns approach as a stopgap.  Its a better solution than code patching, and the CONFIG can always go away when it no longer serves a purpose.  
+
+That said, the bottom line is that the structure size will probably always be specific to a multitude of factors such as hardware and workload and perhaps cannot ever be truely "one size fits all".  Therefore, this might ultimately be best left as tunable...its all relative even if the overall efficiency of the subsystem is improved as part of this investigation.
+
+My 2 cents ;)
+
+Kind regards,
+-Greg 
+-----Original Message-----
+From: Peter Zijlstra <peterz@infradead.org>
+To: Gregory Haskins <GHaskins@novell.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
+Cc: Clark Williams <williams@redhat.com>
+Cc:  <linux-kernel@vger.kernel.org>
+Cc:  <linux-rt-users@vger.kernel.org>
+
+Sent: 4/21/2010 8:03:00 AM
+Subject: Re: [PATCH v3] lockdep: Make MAX_STACK_TRACE_ENTRIES configurable.
+
+On Wed, 2010-04-21 at 05:47 -0600, Gregory Haskins wrote:
 > 
-> Ah, right.
-> 
-> In my patch, execve_nosecurity is (or will be, anyway) documented to
-> skip all of this, and it's a new syscall, so nothing should need to be
-> done.  It doesn't allow anything that a userland ELF loader couldn't
-> already do.  (I'm not thrilled with changing the behavior of the
-> original execve syscall, but one way or another, any nosuid mechanism
-> will probably allow programs to exec other things without losing
-> permissions that the admin might have expected.  I don't see this is a
-> real problem, though.)
+> I am not sure if Johns solution is the right/best one per se, but I can attest
+> that I used to hit this problem _all_ the time and it was somewhat annoying
+> to need to patch the kernel on all of my machines to fix it.  I realize that I
+> perhaps do not represent the average user, but it was a pain-point for me.
+> FWIW, John's patch would indeed make my life easier since I tend to share the
+> .config between builds. 
 
-The further you deviate from existing execve semantics, the less likely
-your solution will work cleanly as a transparent replacement for execve
-for userland running in this nosuid state, and the less compelling the
-case for implementing execve_nosecurity in the kernel vs. just userspace
-emulation of it.
+Right, so all I'm wanting to know if its a symptom of some funny or an
+actual depletion, in the latter case I think the best solution is to
+simply increase the number. In the former case we should of course fix
+the real issue instead of making it disappear.
 
-> Is it even possible to purely drop permissions in SELinux?  If your
-> original type was orig_t and your new type is new_t, and if the rights
-> granted to orig_t and new_t overlap nontrivially, then what are you
-> supposed to do?  Check both types for each hook?  (Some annoying admin
-> could even *change* the rights for orig_t or new_t after execve
-> finishes.)
+So one case I remember is where some code managed to create 1k classes
+where 1 would have sufficed, this resulted in at least 1k extra stack
+traces to be stored, consuming vast amounts of stack_entries.
 
-It has always been possible to configure policy such that one type is
-less privileged than its caller, and the typebounds construct introduced
-in more recent SELinux provides a kernel-enforced mechanism for ensuring
-that one type is strictly bounded by the permissions of another type.
+So please, if you can reproduce, look at where these entries are going,
+lots of classes with the same name are a good hint that something is
+fishy. Classes with more than 13 (4*nr_states + 1) stacks should also
+never happen, etc..
 
--- 
-Stephen Smalley
-National Security Agency
+Is this specific to -RT, or do we see it without as well? If so, what in
+-RT grows this? Are we creating a class per rt_mutex spinlock or
+something silly like that?
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
