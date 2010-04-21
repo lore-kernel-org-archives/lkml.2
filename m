@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab0DUPOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 11:14:39 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34113 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755567Ab0DUPOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 11:14:36 -0400
-Date: Wed, 21 Apr 2010 16:14:17 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
-	PageSwapCache pages
-Message-ID: <20100421151417.GK30306@csn.ul.ie>
-References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie> <1271797276-31358-5-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1004210927550.4959@router.home> <20100421150037.GJ30306@csn.ul.ie> <alpine.DEB.2.00.1004211004360.4959@router.home>
+	id S1755562Ab0DUPQk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 11:16:40 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:43517 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab0DUPQj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 11:16:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=hLu28RMjg5kXcwRMMUTAW4M0L4midOjXtJ9Pwb5QrtRqtKTRYGUOhVLTQ2XaKZC9Ve
+         CnBfdsqzEnOjk2Kbbi057aKjXwg4YQG+TuFZsHInFFF18DIcE2Wg7k34qoA1mH5U9tt3
+         RTmun2CoJWb0/QAeTPlSZ6f38gduH+amtf/kE=
+Message-ID: <4BCF16CE.2080403@gmail.com>
+Date: Wed, 21 Apr 2010 17:16:30 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.5 Thunderbird/3.1b1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1004211004360.4959@router.home>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Jan Kara <jack@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>, adilger@sun.com,
+       linux-ext4@vger.kernel.org,
+       Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+       mszeredi@suse.cz, Eric Paris <eparis@redhat.com>
+Subject: Re: busy inodes -> ext3 umount crash
+References: <4BC8A7C1.20102@gmail.com> <20100419141158.GB5439@quack.suse.cz> <4BCC69B4.2050308@gmail.com> <4BCDB633.9040901@gmail.com> <20100420152844.GB3885@quack.suse.cz>
+In-Reply-To: <20100420152844.GB3885@quack.suse.cz>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 10:05:21AM -0500, Christoph Lameter wrote:
-> On Wed, 21 Apr 2010, Mel Gorman wrote:
-> 
-> > No, remap_swapcache could just be called "remap". If it's 0, it's
-> > considered unsafe to remap the page.
-> 
-> Call this "can_remap"?
-> 
+On 04/20/2010 05:28 PM, Jan Kara wrote:
+> On Tue 20-04-10 16:12:03, Jiri Slaby wrote:
+>> On 04/19/2010 04:33 PM, Jiri Slaby wrote:
+>>> The trigger for busy inodes is as simple as (I=initialization done only
+>>> once):
+>>> I> # dd if=/dev/zero of=/dev/shm/ext3 bs=1024 count=1 seek=$((100*1024))
+>>> I> # mkfs.ext3 -m 0 /dev/shm/ext3
+>>> # mount -oloop /dev/shm/ext3 /mnt/c
+>>> # umount /mnt/c
+>>> # dmesg|tail
+>>> VFS: Busy inodes after unmount of loop0. Self-destruct in 5 seconds.
+>>> Have a nice day...
+>>>
+>>> (The printk time varies -- this sequence really suffices.)
+>>
+>> Well, this happens only after gnome-session is started and it's fuzzy --
+>> sometimes it happens, sometimes not. I didn't find 100% trigger yet.
+>   Hmph - maybe something in inotify? Dunno...
 
-can_do - ba dum tisch.
+fsnotify...
 
-While you are looking though, maybe you can confirm something for me.
+>>>> So if you can easily reproduce
+>>>> the "busy inodes" message then I'd start with debugging that one. Do you
+>>>> see it also with vanilla kernels?
+>>
+>> Vanilla seems not to be affected. It's in next/master already though
+>> (2603ecd9). I'll investigate it further later.
+>   Do you mean it's in today's linux-next but not in Linus' tree?
 
-1. Is leaving a migration PTE like this behind reasonable? (I think yes
-   particularly as the page was already unmapped so it's not a new fault
-   incurred)
-2. Is the BUG_ON check in
-   include/linux/swapops.h#migration_entry_to_page() now wrong? (I
-   think yes, but I'm not sure and I'm having trouble verifying it)
+Yes, exactly.
 
-Thanks.
+And the winner is (seemingly):
+commit 69c1182c4e5d8b7da772ddad512c6f6b67ec1bb8
+Author: Eric Paris <eparis@redhat.com>
+Date:   Thu Dec 17 21:24:27 2009 -0500
 
+    fsnotify: vfsmount marks generic functions
+
+    Much like inode-mark.c has all of the code dealing with marks on inodes
+    this patch adds a vfsmount-mark.c which has similar code but is intended
+    for marks on vfsmounts.
+
+    Signed-off-by: Eric Paris <eparis@redhat.com>
+
+
+I can't verify it by reverting on the top of -mm as it doesn't revert
+cleanly. Do you see any bug in there?
+
+thanks,
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+js
