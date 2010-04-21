@@ -1,381 +1,694 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab0DUONM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 10:13:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31135 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754112Ab0DUONI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 10:13:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,250,1270450800"; 
-   d="scan'208";a="615240592"
-Subject: Re: [RFC] perf_events: support for uncore a.k.a. nest units
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1271843869.1776.65.camel@laptop>
-References: <OFA47E1D5E.A81B0A43-ON07257706.00721254-07257706.0074D40F@us-phx1.az05.bull.com>
-	 <1271424250.4807.2277.camel@twins>
-	 <1271764547.13968.69.camel@minggr.sh.intel.com>
-	 <1271764993.1676.431.camel@laptop>
-	 <1271837295.3794.3.camel@minggr.sh.intel.com>
-	 <m2q7c86c4471004210132id258e98y47134ab3bd486efe@mail.gmail.com>
-	 <1271839190.3794.5.camel@minggr.sh.intel.com>
-	 <i2j7c86c4471004210144kd8223bfbve5d6bee2820d0ccf@mail.gmail.com>
-	 <1271842974.3794.16.camel@minggr.sh.intel.com>
-	 <1271843869.1776.65.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Apr 2010 22:12:22 +0000
-Message-Id: <1271887942.3054.33.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754850Ab0DUOPU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 10:15:20 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:38032 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab0DUOPR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 10:15:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=sWlrbQ+pnFOhyFQ2RC5UbA3DvsdCNq4inyzIVqFyux5V9vu87G6ohjfo2G0fGPzyrn
+         XS2fNA2STSyNrOlJ9WloDjGE86UcIU9QCC4EciT2e5Rr/+HO+6qB4NX5+y2MawsIBNKg
+         7ZJBBTrvPFrQf89iix6KUQpJ4Z5M/T3AvASzA=
+MIME-Version: 1.0
+In-Reply-To: <1271615719-14928-1-git-send-email-agimenez@sysvalve.es>
+References: <1269984864-28159-1-git-send-email-agimenez@sysvalve.es>
+	 <1271615719-14928-1-git-send-email-agimenez@sysvalve.es>
+Date: Wed, 21 Apr 2010 11:15:15 -0300
+X-Google-Sender-Auth: bc0c235b75d928f3
+Message-ID: <x2g1b0798831004210715h37253bc5y74baf86556aea7c5@mail.gmail.com>
+Subject: Re: [PATCH] drivers/net/usb: Add new driver ipheth
+From: Diego Giagio <diego@giagio.com>
+To: =?ISO-8859-1?Q?L=2E_Alberto_Gim=E9nez?= <agimenez@sysvalve.es>
+Cc: linux-kernel@vger.kernel.org, dborca@yahoo.com,
+       "David S. Miller" <davem@davemloft.net>,
+       James Bottomley <James.Bottomley@hansenpartnership.com>,
+       Ralf Baechle <ralf@linux-mips.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+       =?ISO-8859-1?Q?Jonas_Sj=F6quist?= <jonas.sjoquist@ericsson.com>,
+       Torgny Johansson <torgny.johansson@gmail.com>,
+       Steve Glendinning <steve.glendinning@smsc.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Omar Laazimani <omar.oberthur@gmail.com>,
+       =?ISO-8859-1?Q?R=E9mi_Denis=2DCourmont?= 
+	<remi.denis-courmont@nokia.com>,
+       netdev@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-21 at 17:57 +0800, Peter Zijlstra wrote:
-> On Wed, 2010-04-21 at 17:42 +0800, Lin Ming wrote:
-> > +       /*
-> > +        * TBD: will move this to pmu register function
-> > +        * when multiple hw pmu support is added
-> > +        */
-> > +       pmu.flag = alloc_percpu(u8);
-> > +       if (!pmu.flag)
-> > +               return; 
-> 
-> Why not simply use a field in struct cpu_hw_events?
-> 
-> That's where we track all per-cpu pmu state.
+On Sun, Apr 18, 2010 at 3:35 PM, L. Alberto Giménez
+<agimenez@sysvalve.es> wrote:
+> From: Diego Giagio <diego@giagio.com>
+>
+> Add new driver to use tethering with an iPhone device. After initial submission,
+> apply fixes to fit the new driver into the kernel standards.
+>
+> There are still a couple of minor (almost cosmetic-level) issues, but the driver
+> is fully functional right now.
+>
 
-That's good idea!
+Signed-off-by: Diego Giagio <diego@giagio.com>
+Cc: Daniel Borca <dborca@yahoo.com>
 
-Thanks for the review.
+>
+>  drivers/net/Makefile     |    1 +
+>  drivers/net/usb/Kconfig  |   12 +
+>  drivers/net/usb/Makefile |    1 +
+>  drivers/net/usb/ipheth.c |  568 ++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 582 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/net/usb/ipheth.c
+>
+> diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+> index a583b50..12b280a 100644
+> --- a/drivers/net/Makefile
+> +++ b/drivers/net/Makefile
+> @@ -273,6 +273,7 @@ obj-$(CONFIG_USB_RTL8150)       += usb/
+>  obj-$(CONFIG_USB_HSO)          += usb/
+>  obj-$(CONFIG_USB_USBNET)        += usb/
+>  obj-$(CONFIG_USB_ZD1201)        += usb/
+> +obj-$(CONFIG_USB_IPHETH)        += usb/
+>
+>  obj-y += wireless/
+>  obj-$(CONFIG_NET_TULIP) += tulip/
+> diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
+> index ba56ce4..63be4ca 100644
+> --- a/drivers/net/usb/Kconfig
+> +++ b/drivers/net/usb/Kconfig
+> @@ -385,4 +385,16 @@ config USB_CDC_PHONET
+>          cellular modem, as found on most Nokia handsets with the
+>          "PC suite" USB profile.
+>
+> +config USB_IPHETH
+> +       tristate "Apple iPhone USB Ethernet driver"
+> +       default n
+> +       ---help---
+> +         Module used to share Internet connection (tethering) from your
+> +         iPhone (Original, 3G and 3GS) to your system.
+> +         Note that you need userspace libraries and programs that are needed
+> +         to pair your device with your system and that understand the iPhone
+> +         protocol.
+> +
+> +         For more information: http://giagio.com/wiki/moin.cgi/iPhoneEthernetDriver
+> +
+>  endmenu
+> diff --git a/drivers/net/usb/Makefile b/drivers/net/usb/Makefile
+> index 82ea629..edb09c0 100644
+> --- a/drivers/net/usb/Makefile
+> +++ b/drivers/net/usb/Makefile
+> @@ -23,4 +23,5 @@ obj-$(CONFIG_USB_NET_MCS7830) += mcs7830.o
+>  obj-$(CONFIG_USB_USBNET)       += usbnet.o
+>  obj-$(CONFIG_USB_NET_INT51X1)  += int51x1.o
+>  obj-$(CONFIG_USB_CDC_PHONET)   += cdc-phonet.o
+> +obj-$(CONFIG_USB_IPHETH)       += ipheth.o
+>
+> diff --git a/drivers/net/usb/ipheth.c b/drivers/net/usb/ipheth.c
+> new file mode 100644
+> index 0000000..fd10331
+> --- /dev/null
+> +++ b/drivers/net/usb/ipheth.c
+> @@ -0,0 +1,568 @@
+> +/*
+> + * ipheth.c - Apple iPhone USB Ethernet driver
+> + *
+> + * Copyright (c) 2009 Diego Giagio <diego@giagio.com>
+> + * All rights reserved.
+> + *
+> + * Redistribution and use in source and binary forms, with or without
+> + * modification, are permitted provided that the following conditions
+> + * are met:
+> + * 1. Redistributions of source code must retain the above copyright
+> + *    notice, this list of conditions and the following disclaimer.
+> + * 2. Redistributions in binary form must reproduce the above copyright
+> + *    notice, this list of conditions and the following disclaimer in the
+> + *    documentation and/or other materials provided with the distribution.
+> + * 3. Neither the name of GIAGIO.COM nor the names of its contributors
+> + *    may be used to endorse or promote products derived from this software
+> + *    without specific prior written permission.
+> + *
+> + * Alternatively, provided that this notice is retained in full, this
+> + * software may be distributed under the terms of the GNU General
+> + * Public License ("GPL") version 2, in which case the provisions of the
+> + * GPL apply INSTEAD OF those given above.
+> + *
+> + * The provided data structures and external interfaces from this code
+> + * are not restricted to be used by modules with a GPL compatible license.
+> + *
+> + * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+> + * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+> + * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+> + * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+> + * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+> + * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+> + * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+> + * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+> + * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+> + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+> + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+> + * DAMAGE.
+> + *
+> + *
+> + * Attention: iPhone device must be paired, otherwise it won't respond to our
+> + * driver. For more info: http://giagio.com/wiki/moin.cgi/iPhoneEthernetDriver
+> + *
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/errno.h>
+> +#include <linux/init.h>
+> +#include <linux/slab.h>
+> +#include <linux/module.h>
+> +#include <linux/netdevice.h>
+> +#include <linux/etherdevice.h>
+> +#include <linux/ethtool.h>
+> +#include <linux/usb.h>
+> +#include <linux/workqueue.h>
+> +
+> +#define USB_VENDOR_APPLE        0x05ac
+> +#define USB_PRODUCT_IPHONE      0x1290
+> +#define USB_PRODUCT_IPHONE_3G   0x1292
+> +#define USB_PRODUCT_IPHONE_3GS  0x1294
+> +
+> +#define IPHETH_USBINTF_CLASS    255
+> +#define IPHETH_USBINTF_SUBCLASS 253
+> +#define IPHETH_USBINTF_PROTO    1
+> +
+> +#define IPHETH_BUF_SIZE         1516
+> +#define IPHETH_TX_TIMEOUT       (5 * HZ)
+> +
+> +#define IPHETH_INTFNUM          2
+> +#define IPHETH_ALT_INTFNUM      1
+> +
+> +#define IPHETH_CTRL_ENDP        0x00
+> +#define IPHETH_CTRL_BUF_SIZE    0x40
+> +#define IPHETH_CTRL_TIMEOUT     (5 * HZ)
+> +
+> +#define IPHETH_CMD_GET_MACADDR   0x00
+> +#define IPHETH_CMD_CARRIER_CHECK 0x45
+> +
+> +#define IPHETH_CARRIER_CHECK_TIMEOUT round_jiffies_relative(1 * HZ)
+> +#define IPHETH_CARRIER_ON       0x04
+> +
+> +static struct usb_device_id ipheth_table[] = {
+> +       { USB_DEVICE_AND_INTERFACE_INFO(
+> +               USB_VENDOR_APPLE, USB_PRODUCT_IPHONE,
+> +               IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
+> +               IPHETH_USBINTF_PROTO) },
+> +       { USB_DEVICE_AND_INTERFACE_INFO(
+> +               USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_3G,
+> +               IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
+> +               IPHETH_USBINTF_PROTO) },
+> +       { USB_DEVICE_AND_INTERFACE_INFO(
+> +               USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_3GS,
+> +               IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
+> +               IPHETH_USBINTF_PROTO) },
+> +       { }
+> +};
+> +MODULE_DEVICE_TABLE(usb, ipheth_table);
+> +
+> +struct ipheth_device {
+> +       struct usb_device *udev;
+> +       struct usb_interface *intf;
+> +       struct net_device *net;
+> +       struct sk_buff *tx_skb;
+> +       struct urb *tx_urb;
+> +       struct urb *rx_urb;
+> +       unsigned char *tx_buf;
+> +       unsigned char *rx_buf;
+> +       unsigned char *ctrl_buf;
+> +       u8 bulk_in;
+> +       u8 bulk_out;
+> +       struct delayed_work carrier_work;
+> +};
+> +
+> +static int ipheth_rx_submit(struct ipheth_device *dev, gfp_t mem_flags);
+> +
+> +static int ipheth_alloc_urbs(struct ipheth_device *iphone)
+> +{
+> +       struct urb *tx_urb = NULL;
+> +       struct urb *rx_urb = NULL;
+> +       u8 *tx_buf = NULL;
+> +       u8 *rx_buf = NULL;
+> +
+> +       tx_urb = usb_alloc_urb(0, GFP_KERNEL);
+> +       if (tx_urb == NULL)
+> +               goto error;
+> +
+> +       rx_urb = usb_alloc_urb(0, GFP_KERNEL);
+> +       if (rx_urb == NULL)
+> +               goto error;
+> +
+> +       tx_buf = usb_buffer_alloc(iphone->udev,
+> +                                 IPHETH_BUF_SIZE,
+> +                                 GFP_KERNEL,
+> +                                 &tx_urb->transfer_dma);
+> +       if (tx_buf == NULL)
+> +               goto error;
+> +
+> +       rx_buf = usb_buffer_alloc(iphone->udev,
+> +                                 IPHETH_BUF_SIZE,
+> +                                 GFP_KERNEL,
+> +                                 &rx_urb->transfer_dma);
+> +       if (rx_buf == NULL)
+> +               goto error;
+> +
+> +
+> +       iphone->tx_urb = tx_urb;
+> +       iphone->rx_urb = rx_urb;
+> +       iphone->tx_buf = tx_buf;
+> +       iphone->rx_buf = rx_buf;
+> +       return 0;
+> +
+> +error:
+> +       usb_buffer_free(iphone->udev, IPHETH_BUF_SIZE, rx_buf,
+> +                       rx_urb->transfer_dma);
+> +       usb_buffer_free(iphone->udev, IPHETH_BUF_SIZE, tx_buf,
+> +                       tx_urb->transfer_dma);
+> +       usb_free_urb(rx_urb);
+> +       usb_free_urb(tx_urb);
+> +       return -ENOMEM;
+> +}
+> +
+> +static void ipheth_free_urbs(struct ipheth_device *iphone)
+> +{
+> +       usb_buffer_free(iphone->udev, IPHETH_BUF_SIZE, iphone->rx_buf,
+> +                       iphone->rx_urb->transfer_dma);
+> +       usb_buffer_free(iphone->udev, IPHETH_BUF_SIZE, iphone->tx_buf,
+> +                       iphone->tx_urb->transfer_dma);
+> +       usb_free_urb(iphone->rx_urb);
+> +       usb_free_urb(iphone->tx_urb);
+> +}
+> +
+> +static void ipheth_kill_urbs(struct ipheth_device *dev)
+> +{
+> +       usb_kill_urb(dev->tx_urb);
+> +       usb_kill_urb(dev->rx_urb);
+> +}
+> +
+> +static void ipheth_rcvbulk_callback(struct urb *urb)
+> +{
+> +       struct ipheth_device *dev;
+> +       struct sk_buff *skb;
+> +       int status;
+> +       char *buf;
+> +       int len;
+> +
+> +       dev = urb->context;
+> +       if (dev == NULL)
+> +               return;
+> +
+> +       status = urb->status;
+> +       switch (status) {
+> +       case -ENOENT:
+> +       case -ECONNRESET:
+> +       case -ESHUTDOWN:
+> +               return;
+> +       case 0:
+> +               break;
+> +       default:
+> +               err("%s: urb status: %d", __func__, urb->status);
+> +               return;
+> +       }
+> +
+> +       len = urb->actual_length;
+> +       buf = urb->transfer_buffer;
+> +
+> +       skb = dev_alloc_skb(NET_IP_ALIGN + len);
+> +       if (!skb) {
+> +               err("%s: dev_alloc_skb: -ENOMEM", __func__);
+> +               dev->net->stats.rx_dropped++;
+> +               return;
+> +       }
+> +
+> +       skb_reserve(skb, NET_IP_ALIGN);
+> +       memcpy(skb_put(skb, len), buf + NET_IP_ALIGN, len - NET_IP_ALIGN);
+> +       skb->dev = dev->net;
+> +       skb->protocol = eth_type_trans(skb, dev->net);
+> +
+> +       dev->net->stats.rx_packets++;
+> +       dev->net->stats.rx_bytes += len;
+> +
+> +       netif_rx(skb);
+> +       ipheth_rx_submit(dev, GFP_ATOMIC);
+> +}
+> +
+> +static void ipheth_sndbulk_callback(struct urb *urb)
+> +{
+> +       struct ipheth_device *dev;
+> +
+> +       dev = urb->context;
+> +       if (dev == NULL)
+> +               return;
+> +
+> +       if (urb->status != 0 &&
+> +           urb->status != -ENOENT &&
+> +           urb->status != -ECONNRESET &&
+> +           urb->status != -ESHUTDOWN)
+> +               err("%s: urb status: %d", __func__, urb->status);
+> +
+> +       dev_kfree_skb_irq(dev->tx_skb);
+> +       netif_wake_queue(dev->net);
+> +}
+> +
+> +static int ipheth_carrier_set(struct ipheth_device *dev)
+> +{
+> +       struct usb_device *udev = dev->udev;
+> +       int retval;
+> +
+> +       retval = usb_control_msg(udev,
+> +                       usb_rcvctrlpipe(udev, IPHETH_CTRL_ENDP),
+> +                       IPHETH_CMD_CARRIER_CHECK, /* request */
+> +                       0xc0, /* request type */
+> +                       0x00, /* value */
+> +                       0x02, /* index */
+> +                       dev->ctrl_buf, IPHETH_CTRL_BUF_SIZE,
+> +                       IPHETH_CTRL_TIMEOUT);
+> +       if (retval < 0) {
+> +               err("%s: usb_control_msg: %d", __func__, retval);
+> +               return retval;
+> +       }
+> +
+> +       if (dev->ctrl_buf[0] == IPHETH_CARRIER_ON)
+> +               netif_carrier_on(dev->net);
+> +       else
+> +               netif_carrier_off(dev->net);
+> +
+> +       return 0;
+> +}
+> +
+> +static void ipheth_carrier_check_work(struct work_struct *work)
+> +{
+> +       struct ipheth_device *dev = container_of(work, struct ipheth_device,
+> +                                                carrier_work.work);
+> +
+> +       ipheth_carrier_set(dev);
+> +       schedule_delayed_work(&dev->carrier_work, IPHETH_CARRIER_CHECK_TIMEOUT);
+> +}
+> +
+> +static int ipheth_get_macaddr(struct ipheth_device *dev)
+> +{
+> +       struct usb_device *udev = dev->udev;
+> +       struct net_device *net = dev->net;
+> +       int retval;
+> +
+> +       retval = usb_control_msg(udev,
+> +                                usb_rcvctrlpipe(udev, IPHETH_CTRL_ENDP),
+> +                                IPHETH_CMD_GET_MACADDR, /* request */
+> +                                0xc0, /* request type */
+> +                                0x00, /* value */
+> +                                0x02, /* index */
+> +                                dev->ctrl_buf,
+> +                                IPHETH_CTRL_BUF_SIZE,
+> +                                IPHETH_CTRL_TIMEOUT);
+> +       if (retval < 0) {
+> +               err("%s: usb_control_msg: %d", __func__, retval);
+> +       } else if (retval < ETH_ALEN) {
+> +               err("%s: usb_control_msg: short packet: %d bytes",
+> +                       __func__, retval);
+> +               retval = -EINVAL;
+> +       } else {
+> +               memcpy(net->dev_addr, dev->ctrl_buf, ETH_ALEN);
+> +               retval = 0;
+> +       }
+> +
+> +       return retval;
+> +}
+> +
+> +static int ipheth_rx_submit(struct ipheth_device *dev, gfp_t mem_flags)
+> +{
+> +       struct usb_device *udev = dev->udev;
+> +       int retval;
+> +
+> +       usb_fill_bulk_urb(dev->rx_urb, udev,
+> +                         usb_rcvbulkpipe(udev, dev->bulk_in),
+> +                         dev->rx_buf, IPHETH_BUF_SIZE,
+> +                         ipheth_rcvbulk_callback,
+> +                         dev);
+> +       dev->rx_urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+> +
+> +       retval = usb_submit_urb(dev->rx_urb, mem_flags);
+> +       if (retval)
+> +               err("%s: usb_submit_urb: %d", __func__, retval);
+> +       return retval;
+> +}
+> +
+> +static int ipheth_open(struct net_device *net)
+> +{
+> +       struct ipheth_device *dev = netdev_priv(net);
+> +       struct usb_device *udev = dev->udev;
+> +       int retval = 0;
+> +
+> +       usb_set_interface(udev, IPHETH_INTFNUM, IPHETH_ALT_INTFNUM);
+> +
+> +       retval = ipheth_carrier_set(dev);
+> +       if (retval)
+> +               return retval;
+> +
+> +       retval = ipheth_rx_submit(dev, GFP_KERNEL);
+> +       if (retval)
+> +               return retval;
+> +
+> +       schedule_delayed_work(&dev->carrier_work, IPHETH_CARRIER_CHECK_TIMEOUT);
+> +       netif_start_queue(net);
+> +       return retval;
+> +}
+> +
+> +static int ipheth_close(struct net_device *net)
+> +{
+> +       struct ipheth_device *dev = netdev_priv(net);
+> +
+> +       cancel_delayed_work_sync(&dev->carrier_work);
+> +       netif_stop_queue(net);
+> +       return 0;
+> +}
+> +
+> +static int ipheth_tx(struct sk_buff *skb, struct net_device *net)
+> +{
+> +       struct ipheth_device *dev = netdev_priv(net);
+> +       struct usb_device *udev = dev->udev;
+> +       int retval;
+> +
+> +       /* Paranoid */
+> +       if (skb->len > IPHETH_BUF_SIZE) {
+> +               WARN(1, "%s: skb too large: %d bytes", __func__, skb->len);
+> +               dev->net->stats.tx_dropped++;
+> +               dev_kfree_skb_irq(skb);
+> +               return NETDEV_TX_OK;
+> +       }
+> +
+> +       memcpy(dev->tx_buf, skb->data, skb->len);
+> +       if (skb->len < IPHETH_BUF_SIZE)
+> +               memset(dev->tx_buf + skb->len, 0, IPHETH_BUF_SIZE - skb->len);
+> +
+> +       usb_fill_bulk_urb(dev->tx_urb, udev,
+> +                         usb_sndbulkpipe(udev, dev->bulk_out),
+> +                         dev->tx_buf, IPHETH_BUF_SIZE,
+> +                         ipheth_sndbulk_callback,
+> +                         dev);
+> +       dev->tx_urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+> +
+> +       retval = usb_submit_urb(dev->tx_urb, GFP_ATOMIC);
+> +       if (retval) {
+> +               err("%s: usb_submit_urb: %d", __func__, retval);
+> +               dev->net->stats.tx_errors++;
+> +               dev_kfree_skb_irq(skb);
+> +       } else {
+> +               dev->tx_skb = skb;
+> +
+> +               dev->net->stats.tx_packets++;
+> +               dev->net->stats.tx_bytes += skb->len;
+> +               netif_stop_queue(net);
+> +       }
+> +
+> +       return NETDEV_TX_OK;
+> +}
+> +
+> +static void ipheth_tx_timeout(struct net_device *net)
+> +{
+> +       struct ipheth_device *dev = netdev_priv(net);
+> +
+> +       err("%s: TX timeout", __func__);
+> +       dev->net->stats.tx_errors++;
+> +       usb_unlink_urb(dev->tx_urb);
+> +}
+> +
+> +static struct net_device_stats *ipheth_stats(struct net_device *net)
+> +{
+> +       struct ipheth_device *dev = netdev_priv(net);
+> +       return &dev->net->stats;
+> +}
+> +
+> +static u32 ipheth_ethtool_op_get_link(struct net_device *net)
+> +{
+> +       struct ipheth_device *dev = netdev_priv(net);
+> +       return netif_carrier_ok(dev->net);
+> +}
+> +
+> +static struct ethtool_ops ops = {
+> +       .get_link = ipheth_ethtool_op_get_link
+> +};
+> +
+> +static const struct net_device_ops ipheth_netdev_ops = {
+> +       .ndo_open = &ipheth_open,
+> +       .ndo_stop = &ipheth_close,
+> +       .ndo_start_xmit = &ipheth_tx,
+> +       .ndo_tx_timeout = &ipheth_tx_timeout,
+> +       .ndo_get_stats = &ipheth_stats,
+> +};
+> +
+> +static struct device_type ipheth_type = {
+> +       .name   = "wwan",
+> +};
+> +
+> +static int ipheth_probe(struct usb_interface *intf,
+> +                       const struct usb_device_id *id)
+> +{
+> +       struct usb_device *udev = interface_to_usbdev(intf);
+> +       struct usb_host_interface *hintf;
+> +       struct usb_endpoint_descriptor *endp;
+> +       struct ipheth_device *dev;
+> +       struct net_device *netdev;
+> +       int i;
+> +       int retval;
+> +
+> +       netdev = alloc_etherdev(sizeof(struct ipheth_device));
+> +       if (!netdev)
+> +               return -ENOMEM;
+> +
+> +       netdev->netdev_ops = &ipheth_netdev_ops;
+> +       netdev->watchdog_timeo = IPHETH_TX_TIMEOUT;
+> +       strcpy(netdev->name, "wwan%d");
+> +
+> +       dev = netdev_priv(netdev);
+> +       dev->udev = udev;
+> +       dev->net = netdev;
+> +       dev->intf = intf;
+> +
+> +       /* Set up endpoints */
+> +       hintf = usb_altnum_to_altsetting(intf, IPHETH_ALT_INTFNUM);
+> +       if (hintf == NULL) {
+> +               retval = -ENODEV;
+> +               err("Unable to find alternate settings interface");
+> +               goto err_endpoints;
+> +       }
+> +
+> +       for (i = 0; i < hintf->desc.bNumEndpoints; i++) {
+> +               endp = &hintf->endpoint[i].desc;
+> +               if (usb_endpoint_is_bulk_in(endp))
+> +                       dev->bulk_in = endp->bEndpointAddress;
+> +               else if (usb_endpoint_is_bulk_out(endp))
+> +                       dev->bulk_out = endp->bEndpointAddress;
+> +       }
+> +       if (!(dev->bulk_in && dev->bulk_out)) {
+> +               retval = -ENODEV;
+> +               err("Unable to find endpoints");
+> +               goto err_endpoints;
+> +       }
+> +
+> +       dev->ctrl_buf = kmalloc(IPHETH_CTRL_BUF_SIZE, GFP_KERNEL);
+> +       if (dev->ctrl_buf == NULL) {
+> +               retval = -ENOMEM;
+> +               goto err_alloc_ctrl_buf;
+> +       }
+> +
+> +       retval = ipheth_get_macaddr(dev);
+> +       if (retval)
+> +               goto err_get_macaddr;
+> +
+> +       INIT_DELAYED_WORK(&dev->carrier_work, ipheth_carrier_check_work);
+> +
+> +       retval = ipheth_alloc_urbs(dev);
+> +       if (retval) {
+> +               err("error allocating urbs: %d", retval);
+> +               goto err_alloc_urbs;
+> +       }
+> +
+> +       usb_set_intfdata(intf, dev);
+> +
+> +       SET_NETDEV_DEV(netdev, &intf->dev);
+> +       SET_ETHTOOL_OPS(netdev, &ops);
+> +       SET_NETDEV_DEVTYPE(netdev, &ipheth_type);
+> +
+> +       retval = register_netdev(netdev);
+> +       if (retval) {
+> +               err("error registering netdev: %d", retval);
+> +               retval = -EIO;
+> +               goto err_register_netdev;
+> +       }
+> +
+> +       dev_info(&intf->dev, "Apple iPhone USB Ethernet device attached\n");
+> +       return 0;
+> +
+> +err_register_netdev:
+> +       ipheth_free_urbs(dev);
+> +err_alloc_urbs:
+> +err_get_macaddr:
+> +err_alloc_ctrl_buf:
+> +       kfree(dev->ctrl_buf);
+> +err_endpoints:
+> +       free_netdev(netdev);
+> +       return retval;
+> +}
+> +
+> +static void ipheth_disconnect(struct usb_interface *intf)
+> +{
+> +       struct ipheth_device *dev;
+> +
+> +       dev = usb_get_intfdata(intf);
+> +       if (dev != NULL) {
+> +               unregister_netdev(dev->net);
+> +               ipheth_kill_urbs(dev);
+> +               ipheth_free_urbs(dev);
+> +               kfree(dev->ctrl_buf);
+> +               free_netdev(dev->net);
+> +       }
+> +       usb_set_intfdata(intf, NULL);
+> +       dev_info(&intf->dev, "Apple iPhone USB Ethernet now disconnected\n");
+> +}
+> +
+> +static struct usb_driver ipheth_driver = {
+> +       .name =         "ipheth",
+> +       .probe =        ipheth_probe,
+> +       .disconnect =   ipheth_disconnect,
+> +       .id_table =     ipheth_table,
+> +};
+> +
+> +static int __init ipheth_init(void)
+> +{
+> +       int retval;
+> +
+> +       retval = usb_register(&ipheth_driver);
+> +       if (retval) {
+> +               err("usb_register failed: %d", retval);
+> +               return retval;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static void __exit ipheth_exit(void)
+> +{
+> +       usb_deregister(&ipheth_driver);
+> +}
+> +
+> +module_init(ipheth_init);
+> +module_exit(ipheth_exit);
+> +
+> +MODULE_AUTHOR("Diego Giagio <diego@giagio.com>");
+> +MODULE_DESCRIPTION("Apple iPhone USB Ethernet driver");
+> +MODULE_LICENSE("Dual BSD/GPL");
+> --
+> 1.7.0
+>
+>
 
-Changes log:
-
-v3.
-track per-cpu pmu transaction state in cpu_hw_events (Peter Zijlstra)
-move pmu definition back to const ("struct pmu" -> "const struct pmu")
-
-v2.
-pmu->flag should be per cpu (Stephane Eranian)
-
-change definition of "const struct pmu" to "struct pmu" since it's not
-read only now.
-
-v1.
-remove hw_perf_group_sched_in() based on Peter's idea.
-
----
- arch/x86/kernel/cpu/perf_event.c |  167 ++++++++++++-------------------------
- include/linux/perf_event.h       |    8 +-
- kernel/perf_event.c              |   23 +++---
- 3 files changed, 69 insertions(+), 129 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 626154a..4a1dc62 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -110,6 +110,8 @@ struct cpu_hw_events {
- 	u64			tags[X86_PMC_IDX_MAX];
- 	struct perf_event	*event_list[X86_PMC_IDX_MAX]; /* in enabled order */
- 
-+	u8			flag;
-+
- 	/*
- 	 * Intel DebugStore bits
- 	 */
-@@ -944,6 +946,9 @@ static int x86_pmu_enable(struct perf_event *event)
- 	if (n < 0)
- 		return n;
- 
-+	if (cpuc->flag & PERF_EVENT_TRAN_STARTED)
-+		goto out;
-+
- 	ret = x86_pmu.schedule_events(cpuc, n, assign);
- 	if (ret)
- 		return ret;
-@@ -953,6 +958,7 @@ static int x86_pmu_enable(struct perf_event *event)
- 	 */
- 	memcpy(cpuc->assign, assign, n*sizeof(int));
- 
-+out:
- 	cpuc->n_events = n;
- 	cpuc->n_added += n - n0;
- 
-@@ -1210,119 +1216,6 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- 	return &unconstrained;
- }
- 
--static int x86_event_sched_in(struct perf_event *event,
--			  struct perf_cpu_context *cpuctx)
--{
--	int ret = 0;
--
--	event->state = PERF_EVENT_STATE_ACTIVE;
--	event->oncpu = smp_processor_id();
--	event->tstamp_running += event->ctx->time - event->tstamp_stopped;
--
--	if (!is_x86_event(event))
--		ret = event->pmu->enable(event);
--
--	if (!ret && !is_software_event(event))
--		cpuctx->active_oncpu++;
--
--	if (!ret && event->attr.exclusive)
--		cpuctx->exclusive = 1;
--
--	return ret;
--}
--
--static void x86_event_sched_out(struct perf_event *event,
--			    struct perf_cpu_context *cpuctx)
--{
--	event->state = PERF_EVENT_STATE_INACTIVE;
--	event->oncpu = -1;
--
--	if (!is_x86_event(event))
--		event->pmu->disable(event);
--
--	event->tstamp_running -= event->ctx->time - event->tstamp_stopped;
--
--	if (!is_software_event(event))
--		cpuctx->active_oncpu--;
--
--	if (event->attr.exclusive || !cpuctx->active_oncpu)
--		cpuctx->exclusive = 0;
--}
--
--/*
-- * Called to enable a whole group of events.
-- * Returns 1 if the group was enabled, or -EAGAIN if it could not be.
-- * Assumes the caller has disabled interrupts and has
-- * frozen the PMU with hw_perf_save_disable.
-- *
-- * called with PMU disabled. If successful and return value 1,
-- * then guaranteed to call perf_enable() and hw_perf_enable()
-- */
--int hw_perf_group_sched_in(struct perf_event *leader,
--	       struct perf_cpu_context *cpuctx,
--	       struct perf_event_context *ctx)
--{
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
--	struct perf_event *sub;
--	int assign[X86_PMC_IDX_MAX];
--	int n0, n1, ret;
--
--	if (!x86_pmu_initialized())
--		return 0;
--
--	/* n0 = total number of events */
--	n0 = collect_events(cpuc, leader, true);
--	if (n0 < 0)
--		return n0;
--
--	ret = x86_pmu.schedule_events(cpuc, n0, assign);
--	if (ret)
--		return ret;
--
--	ret = x86_event_sched_in(leader, cpuctx);
--	if (ret)
--		return ret;
--
--	n1 = 1;
--	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
--		if (sub->state > PERF_EVENT_STATE_OFF) {
--			ret = x86_event_sched_in(sub, cpuctx);
--			if (ret)
--				goto undo;
--			++n1;
--		}
--	}
--	/*
--	 * copy new assignment, now we know it is possible
--	 * will be used by hw_perf_enable()
--	 */
--	memcpy(cpuc->assign, assign, n0*sizeof(int));
--
--	cpuc->n_events  = n0;
--	cpuc->n_added  += n1;
--	ctx->nr_active += n1;
--
--	/*
--	 * 1 means successful and events are active
--	 * This is not quite true because we defer
--	 * actual activation until hw_perf_enable() but
--	 * this way we* ensure caller won't try to enable
--	 * individual events
--	 */
--	return 1;
--undo:
--	x86_event_sched_out(leader, cpuctx);
--	n0  = 1;
--	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
--		if (sub->state == PERF_EVENT_STATE_ACTIVE) {
--			x86_event_sched_out(sub, cpuctx);
--			if (++n0 == n1)
--				break;
--		}
--	}
--	return ret;
--}
--
- #include "perf_event_amd.c"
- #include "perf_event_p6.c"
- #include "perf_event_p4.c"
-@@ -1454,6 +1347,51 @@ static inline void x86_pmu_read(struct perf_event *event)
- 	x86_perf_event_update(event);
- }
- 
-+/*
-+ * Set the flag to make pmu::enable() not perform the
-+ * schedulablilty test.
-+ */
-+static void x86_pmu_start_txn(const struct pmu *pmu)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+
-+	cpuc->flag |= PERF_EVENT_TRAN_STARTED;
-+}
-+
-+static void x86_pmu_stop_txn(const struct pmu *pmu)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+
-+	cpuc->flag &= ~PERF_EVENT_TRAN_STARTED;
-+}
-+
-+/*
-+ * Return 0 if commit transaction success
-+ */
-+static int x86_pmu_commit_txn(const struct pmu *pmu)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	int assign[X86_PMC_IDX_MAX];
-+	int n, ret;
-+
-+	n = cpuc->n_events;
-+
-+	if (!x86_pmu_initialized())
-+		return -EAGAIN;
-+
-+	ret = x86_pmu.schedule_events(cpuc, n, assign);
-+	if (ret)
-+		return ret;
-+
-+	/*
-+	 * copy new assignment, now we know it is possible
-+	 * will be used by hw_perf_enable()
-+	 */
-+	memcpy(cpuc->assign, assign, n*sizeof(int));
-+
-+	return 0;
-+}
-+
- static const struct pmu pmu = {
- 	.enable		= x86_pmu_enable,
- 	.disable	= x86_pmu_disable,
-@@ -1461,6 +1399,9 @@ static const struct pmu pmu = {
- 	.stop		= x86_pmu_stop,
- 	.read		= x86_pmu_read,
- 	.unthrottle	= x86_pmu_unthrottle,
-+	.start_txn	= x86_pmu_start_txn,
-+	.stop_txn	= x86_pmu_stop_txn,
-+	.commit_txn	= x86_pmu_commit_txn,
- };
- 
- /*
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index bf896d0..862b965 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -524,6 +524,8 @@ struct hw_perf_event {
- 
- struct perf_event;
- 
-+#define PERF_EVENT_TRAN_STARTED 1
-+
- /**
-  * struct pmu - generic performance monitoring unit
-  */
-@@ -534,6 +536,9 @@ struct pmu {
- 	void (*stop)			(struct perf_event *event);
- 	void (*read)			(struct perf_event *event);
- 	void (*unthrottle)		(struct perf_event *event);
-+	void (*start_txn)		(const struct pmu *pmu);
-+	void (*stop_txn)		(const struct pmu *pmu);
-+	int (*commit_txn)		(const struct pmu *pmu);
- };
- 
- /**
-@@ -799,9 +804,6 @@ extern void perf_disable(void);
- extern void perf_enable(void);
- extern int perf_event_task_disable(void);
- extern int perf_event_task_enable(void);
--extern int hw_perf_group_sched_in(struct perf_event *group_leader,
--	       struct perf_cpu_context *cpuctx,
--	       struct perf_event_context *ctx);
- extern void perf_event_update_userpage(struct perf_event *event);
- extern int perf_event_release_kernel(struct perf_event *event);
- extern struct perf_event *
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 07b7a43..1503174 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -83,14 +83,6 @@ extern __weak const struct pmu *hw_perf_event_init(struct perf_event *event)
- void __weak hw_perf_disable(void)		{ barrier(); }
- void __weak hw_perf_enable(void)		{ barrier(); }
- 
--int __weak
--hw_perf_group_sched_in(struct perf_event *group_leader,
--	       struct perf_cpu_context *cpuctx,
--	       struct perf_event_context *ctx)
--{
--	return 0;
--}
--
- void __weak perf_event_print_debug(void)	{ }
- 
- static DEFINE_PER_CPU(int, perf_disable_count);
-@@ -641,15 +633,14 @@ group_sched_in(struct perf_event *group_event,
- 	       struct perf_cpu_context *cpuctx,
- 	       struct perf_event_context *ctx)
- {
--	struct perf_event *event, *partial_group;
-+	struct perf_event *event, *partial_group = NULL;
-+	const struct pmu *pmu = group_event->pmu;
- 	int ret;
- 
- 	if (group_event->state == PERF_EVENT_STATE_OFF)
- 		return 0;
- 
--	ret = hw_perf_group_sched_in(group_event, cpuctx, ctx);
--	if (ret)
--		return ret < 0 ? ret : 0;
-+	pmu->start_txn(pmu);
- 
- 	if (event_sched_in(group_event, cpuctx, ctx))
- 		return -EAGAIN;
-@@ -664,9 +655,15 @@ group_sched_in(struct perf_event *group_event,
- 		}
- 	}
- 
--	return 0;
-+	ret = pmu->commit_txn(pmu);
-+	if (!ret) {
-+		pmu->stop_txn(pmu);
-+		return 0;
-+	}
- 
- group_error:
-+	pmu->stop_txn(pmu);
-+
- 	/*
- 	 * Groups can be scheduled in as one unit only, so undo any
- 	 * partial group before returning:
 
 
+-- 
+Diego Giagio
+diego@giagio.com / diego@FreeBSD.org
