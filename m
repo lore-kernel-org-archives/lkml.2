@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab0DUBku (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 21:40:50 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:33948 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754932Ab0DUBkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 21:40:49 -0400
-Message-ID: <4BCE579C.5070100@sgi.com>
-Date: Tue, 20 Apr 2010 18:40:44 -0700
+	id S1755081Ab0DUBw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 21:52:57 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:42070 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753534Ab0DUBw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 21:52:56 -0400
+Message-ID: <4BCE5A73.3000904@sgi.com>
+Date: Tue, 20 Apr 2010 18:52:51 -0700
 From: Mike Travis <travis@sgi.com>
 User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
@@ -17,11 +17,17 @@ CC: Hedi Berriche <hedi@sgi.com>, Jack Steiner <steiner@sgi.com>,
        Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
        LKML <linux-kernel@vger.kernel.org>
 Subject: [Patch 1/1] init: Provide a kernel start parameter to increase pid_max
+ v2
+References: <4BCE579C.5070100@sgi.com>
+In-Reply-To: <4BCE579C.5070100@sgi.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+[Sorry, the previous patch I sent was an incorrect version.  The arg specified
+in the Documentation file was wrong.]
 
 Subject: [Patch 1/1] init: Provide a kernel start parameter to increase pid_max
 From: Hedi Berriche <hedi@sgi.com>
@@ -46,11 +52,11 @@ Signed-off-by: Robin Holt <holt@sgi.com>
 
 --- linux-2.6.32.orig/Documentation/kernel-parameters.txt
 +++ linux-2.6.32/Documentation/kernel-parameters.txt
-@@ -1327,6 +1327,17 @@ and is between 256 and 4096 characters.
- 	max_luns=	[SCSI] Maximum number of LUNs to probe.
- 			Should be between 1 and 2^32-1.
+@@ -2033,6 +2033,17 @@ and is between 256 and 4096 characters.
+ 	pg.		[PARIDE]
+ 			See Documentation/blockdev/paride.txt.
  
-+	max_pid=nn[KMG]	[KNL] Maximum number of PID's to use.  On a system
++	pid_max=nn[KMG]	[KNL] Maximum number of PID's to use.  On a system
 +			with a large amount of processors, the default
 +			pid_max may not be sufficient to allow the system
 +			to boot.  The range of allowed values is limited from
@@ -61,9 +67,9 @@ Signed-off-by: Robin Holt <holt@sgi.com>
 +			so that value is ignored.  Using a value too large,
 +			and the largest allowed value will be used instead.
 +
- 	max_report_luns=
- 			[SCSI] Maximum number of LUNs received.
- 			Should be between 1 and 16384.
+ 	pirq=		[SMP,APIC] Manual mp-table setup
+ 			See Documentation/x86/i386/IO-APIC.txt.
+ 
 --- linux-2.6.32.orig/kernel/pid.c
 +++ linux-2.6.32/kernel/pid.c
 @@ -53,6 +53,36 @@ int pid_max_max = PID_MAX_LIMIT;
