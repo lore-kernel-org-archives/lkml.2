@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab0DUABF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 20:01:05 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:56940 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753120Ab0DUABC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 20:01:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :mime-version:content-type:content-transfer-encoding;
-        b=nmz7TnRONOqZ1cKTNrtH/U4qrDNVOATP04D6Ip2wFPSDSxBsv2e4p1KOEEuK9i6F2d
-         vCfHBN58yhsBH+FiS5rROyQDhC1uXspXDTtlCNSIXP4mNw/FZZNi/T5ZoF5BWSyYLBLd
-         aYaw0Aq1voJuTAWj4aJixcIrYPJ6o29QXuRhU=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf: Fix perf probe build error
-Date: Wed, 21 Apr 2010 02:01:05 +0200
-Message-Id: <1271808065-25290-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+	id S1753963Ab0DUABT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 20:01:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54412 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753633Ab0DUABO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 20:01:14 -0400
+Date: Wed, 21 Apr 2010 00:00:51 GMT
+From: tip-bot for Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       tglx@linutronix.de, jacob.jun.pan@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, jacob.jun.pan@linux.intel.com
+In-Reply-To: <1271701423-1162-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1271701423-1162-1-git-send-email-jacob.jun.pan@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, mrst: Conditionally register cpu hotplug notifier for apbt
+Message-ID: <tip-ae7c9b70dcb4313ea3dbcc9a2f240dae6c2b50c0@git.kernel.org>
+Git-Commit-ID: ae7c9b70dcb4313ea3dbcc9a2f240dae6c2b50c0
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 21 Apr 2010 00:00:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we run into dry run mode, we want to make write_kprobe_trace_event
-to succeed on writing the event. Let's initialize it to 0.
+Commit-ID:  ae7c9b70dcb4313ea3dbcc9a2f240dae6c2b50c0
+Gitweb:     http://git.kernel.org/tip/ae7c9b70dcb4313ea3dbcc9a2f240dae6c2b50c0
+Author:     Jacob Pan <jacob.jun.pan@linux.intel.com>
+AuthorDate: Mon, 19 Apr 2010 11:23:43 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 20 Apr 2010 14:38:28 -0700
 
-Fixes the following build error:
-	util/probe-event.c:1266: attention : «ret» may be used uninitialized in this function
-	util/probe-event.c:1266: note: «ret» was declared here
+x86, mrst: Conditionally register cpu hotplug notifier for apbt
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
+APB timer is used on Moorestown platforms but not on a standard PC.
+If APB timer code is compiled in but not initialized at run-time due
+to lack of FW reported SFI table, kernel would panic when the non-boot
+CPUs are offlined and notifier is called.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=15786
+
+This patch ensures CPU hotplug notifier for APB timer is only registered
+when the APBT timer block is initialized.
+
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+LKML-Reference: <1271701423-1162-1-git-send-email-jacob.jun.pan@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- tools/perf/util/probe-event.c |    2 +-
+ arch/x86/kernel/apb_timer.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 3967f8f..4fb4803 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1263,7 +1263,7 @@ static struct strlist *get_kprobe_trace_event_names(int fd, bool include_group)
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index ff469e4..a353475 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -429,7 +429,7 @@ static int apbt_cpuhp_notify(struct notifier_block *n,
  
- static int write_kprobe_trace_event(int fd, struct kprobe_trace_event *tev)
+ static __init int apbt_late_init(void)
  {
--	int ret;
-+	int ret = 0;
- 	char *buf = synthesize_kprobe_trace_command(tev);
- 
- 	if (!buf) {
--- 
-1.6.2.3
-
+-	if (disable_apbt_percpu)
++	if (disable_apbt_percpu || !apb_timer_block_enabled)
+ 		return 0;
+ 	/* This notifier should be called after workqueue is ready */
+ 	hotcpu_notifier(apbt_cpuhp_notify, -20);
