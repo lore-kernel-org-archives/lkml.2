@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab0DUTu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 15:50:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31618 "EHLO mx1.redhat.com"
+	id S1756299Ab0DUTv0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 15:51:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59673 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756274Ab0DUTux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 15:50:53 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip 3/4] perf probe: Fix to exit callback soon after finding
-	too many probe points
-To: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       lkml <linux-kernel@vger.kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>
-Date: Wed, 21 Apr 2010 15:56:32 -0400
-Message-ID: <20100421195632.24664.42598.stgit@localhost6.localdomain6>
-In-Reply-To: <20100421195616.24664.89980.stgit@localhost6.localdomain6>
-References: <20100421195616.24664.89980.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
+	id S1752552Ab0DUTvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 15:51:23 -0400
+Date: Wed, 21 Apr 2010 12:51:06 -0700
+From: Greg KH <gregkh@suse.de>
+To: Hedi Berriche <hedi@sgi.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Mike Travis <travis@sgi.com>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jack Steiner <steiner@sgi.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
+ pid_max v2
+Message-ID: <20100421195106.GA15958@suse.de>
+References: <4BCE579C.5070100@sgi.com>
+ <4BCE5A73.3000904@sgi.com>
+ <20100421102350.4c222e6b@lxorguk.ukuu.org.uk>
+ <20100421165934.GN16427@zorg.emea.sgi.com>
+ <20100421185852.3397f1da@lxorguk.ukuu.org.uk>
+ <20100421191213.GR16427@zorg.emea.sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100421191213.GR16427@zorg.emea.sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix to exit callback soon after finding too many probe points.
-Don't try to continue searching because it already failed.
+On Wed, Apr 21, 2010 at 08:12:13PM +0100, Hedi Berriche wrote:
+> Let's also not forget all those ephemeral user space tasks (udev and the likes)
+> that will be spawned at boot time on even large systems with even more
+> thousands of disks, arguably one might consider hack initrd and similar to work
+> around the problem and set pid_max as soon as /proc becomes available but it's
+> a bit of a PITA.
 
-Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
----
+udev should properly handle large numbers of cpus and the tasks that it
+spawns so as to not overload things.  If not, and you feel it is
+creating too many tasks, please let the udev developers know and they
+will be glad to work with you on this issue.
 
- tools/perf/util/probe-finder.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+thanks,
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 3e79775..57b51ca 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -922,6 +922,8 @@ static int probe_point_inline_cb(Dwarf_Die *in_die, void *data)
- 			 (uintmax_t)pf->addr);
- 
- 		param->retval = convert_probe_point(in_die, pf);
-+		if (param->retval < 0)
-+			return DWARF_CB_ABORT;
- 	}
- 
- 	return DWARF_CB_OK;
-@@ -1157,6 +1159,8 @@ static int line_range_funcdecl_cb(Dwarf_Die *sp_die, void *data)
- 		return DWARF_CB_OK;
- 
- 	param->retval = line_range_add_line(src, lineno, lf->lr);
-+	if (param->retval < 0)
-+		return DWARF_CB_ABORT;
- 	return DWARF_CB_OK;
- }
- 
-
-
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+greg k-h
