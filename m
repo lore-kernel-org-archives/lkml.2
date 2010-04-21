@@ -1,209 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab0DUR3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 13:29:07 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38734 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754809Ab0DUR3D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 13:29:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=IU9Cdtvy/ZsJ8BPqolLTmfl6JOxAqNYIjH0oduwjcqyCGnIoZv4N50Cy/9+dehAqd8
-         dv/R4cKfoniFHnoDfhHrzcnYoop/EsUvzRlJYbuOwg9F6MfRlZfNG0FGpkYTzIz0Dm7N
-         hbxvhqS9zEhXmCdtBMFYVXhSwOVPxXexoAgtc=
-From: Alessandro Ghedini <al3xbio@gmail.com>
-To: gregkh@suse.de, Andrew.Elwell@gmail.com, mithlesh@linsyssoft.com,
-       svenne@krap.dk, jkosina@suse.cz
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Alessandro Ghedini <al3xbio@gmail.com>
-Subject: [PATCH] Staging: wlan-ng: fix many style warnings in hfa384x_usb.c
-Date: Wed, 21 Apr 2010 19:29:10 +0200
-Message-Id: <1271870950-19305-1-git-send-email-al3xbio@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755762Ab0DURby (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 13:31:54 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:39225 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754459Ab0DURbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 13:31:53 -0400
+Date: Wed, 21 Apr 2010 10:31:45 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: akpm@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+       laijs@cn.fujitsu.com, dipankar@in.ibm.com, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+       dhowells@redhat.com, eric.dumazet@gmail.com, adobriyan@gmail.com,
+       davem@davemloft.net
+Subject: Re: [patch 0/5] rcu head debugobjects
+Message-ID: <20100421173145.GA6966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100417124837.536020244@efficios.com>
+ <20100418004849.GD2876@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100418004849.GD2876@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes most of the style warnings found with checkpatch.pl in the
-hfa384x_usb.c file.
+On Sat, Apr 17, 2010 at 05:48:49PM -0700, Paul E. McKenney wrote:
+> On Sat, Apr 17, 2010 at 08:48:37AM -0400, Mathieu Desnoyers wrote:
+> > Here is a repost of the rcu head debugobjects patchset, with updated changelogs.
+> > 
+> > Paul, this would be ready to be integrated with the RCU patches.
+> 
+> Thank you, Mathieu, queued up for 2.6.35!
 
-Signed-off-by: Alessandro Ghedini <al3xbio@gmail.com>
----
- drivers/staging/wlan-ng/hfa384x_usb.c |   59 ++++++++++++++++++--------------
- 1 files changed, 33 insertions(+), 26 deletions(-)
+And testing got me the following debugobjects splat, which baffles me.
+My first thought was that one of the synchronize_rcu() variants was
+missing the init_rcu_head_on_stack(), but not so.  Then I started
+looking through the debugobjects code, and found the following:
 
-diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
-index 5df56f0..db819be 100644
---- a/drivers/staging/wlan-ng/hfa384x_usb.c
-+++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-@@ -62,7 +62,7 @@
- *
- * hfa384x_drvr_xxxconfig  An example of the drvr level abstraction. These
- *			functions are wrappers for the RID get/set
--*			sequence. They 	call copy_[to|from]_bap() and
-+*			sequence. They call copy_[to|from]_bap() and
- *			cmd_access().	These functions operate on the
- *			RIDs and buffers without validation.  The caller
- *			is responsible for that.
-@@ -351,7 +351,9 @@ static int submit_rx_urb(hfa384x_t *hw, gfp_t memflags)
- 	hw->rx_urb_skb = skb;
- 
- 	result = -ENOLINK;
--	if (!hw->wlandev->hwremoved && !test_bit(WORK_RX_HALT, &hw->usb_flags)) {
-+	if (!hw->wlandev->hwremoved && \
-+			!test_bit(WORK_RX_HALT, &hw->usb_flags)) {
-+
- 		result = SUBMIT_URB(&hw->rx_urb, memflags);
- 
- 		/* Check whether we need to reset the RX pipe */
-@@ -451,7 +453,7 @@ static void hfa384x_usb_defer(struct work_struct *data)
- 	if (test_bit(WORK_RX_HALT, &hw->usb_flags)) {
- 		int ret;
- 
--		usb_kill_urb(&hw->rx_urb);	/* Cannot be holding spinlock! */
-+		usb_kill_urb(&hw->rx_urb); /* Cannot be holding spinlock! */
- 
- 		ret = usb_clear_halt(hw->usb, hw->endp_in);
- 		if (ret != 0) {
-@@ -1226,7 +1228,7 @@ int hfa384x_corereset(hfa384x_t *hw, int holdtime, int settletime, int genesis)
- *
- * Arguments:
- *	hw		device structure
--*	ctlx	 	CTLX ptr
-+*	ctlx		CTLX ptr
- *	completor	functor object to decide what to
- *			do with the CTLX's result.
- *
-@@ -2075,12 +2077,9 @@ int hfa384x_drvr_flashdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
- 			    (j * HFA384x_USB_RWMEM_MAXLEN);
- 
- 			writepage = HFA384x_ADDR_CMD_MKPAGE(dlbufaddr +
--							    (j *
--							     HFA384x_USB_RWMEM_MAXLEN));
--			writeoffset =
--			    HFA384x_ADDR_CMD_MKOFF(dlbufaddr +
--						   (j *
--						    HFA384x_USB_RWMEM_MAXLEN));
-+					(j * HFA384x_USB_RWMEM_MAXLEN));
-+			writeoffset = HFA384x_ADDR_CMD_MKOFF(dlbufaddr +
-+					(j * HFA384x_USB_RWMEM_MAXLEN));
- 
- 			writelen = burnlen - (j * HFA384x_USB_RWMEM_MAXLEN);
- 			writelen = writelen > HFA384x_USB_RWMEM_MAXLEN ?
-@@ -2133,7 +2132,7 @@ exit_proc:
- *	0		success
- *	>0		f/w reported error - f/w status code
- *	<0		driver reported error
--*	-ENODATA 	length mismatch between argument and retrieved
-+*	-ENODATA	length mismatch between argument and retrieved
- *			record.
- *
- * Side effects:
-@@ -2451,7 +2450,8 @@ int hfa384x_drvr_readpda(hfa384x_t *hw, void *buf, unsigned int len)
- 		currpage = HFA384x_ADDR_CMD_MKPAGE(pdaloc[i].cardaddr);
- 		curroffset = HFA384x_ADDR_CMD_MKOFF(pdaloc[i].cardaddr);
- 
--		result = hfa384x_dormem_wait(hw, currpage, curroffset, buf, len);	/* units of bytes */
-+		result = hfa384x_dormem_wait(hw, currpage, curroffset, \
-+					buf, len); /* units of bytes */
- 
- 		if (result) {
- 			printk(KERN_WARNING
-@@ -2610,20 +2610,21 @@ int hfa384x_drvr_start(hfa384x_t *hw)
- 	result = result2 = hfa384x_cmd_initialize(hw);
- 	if (result1 != 0) {
- 		if (result2 != 0) {
--			printk(KERN_ERR
--			       "cmd_initialize() failed on two attempts, results %d and %d\n",
-+			printk(KERN_ERR "cmd_initialize() failed on two" \
-+					"attempts, results %d and %d\n",
- 			       result1, result2);
- 			usb_kill_urb(&hw->rx_urb);
- 			goto done;
- 		} else {
- 			pr_debug("First cmd_initialize() failed (result %d),\n",
- 				 result1);
--			pr_debug
--			    ("but second attempt succeeded. All should be ok\n");
-+			pr_debug("but second attempt succeeded. " \
-+						"All should be ok\n");
- 		}
- 	} else if (result2 != 0) {
- 		printk(KERN_WARNING
--		       "First cmd_initialize() succeeded, but second attempt failed (result=%d)\n",
-+		       "First cmd_initialize() succeeded, but second " \
-+					"attempt failed (result=%d)\n",
- 		       result2);
- 		printk(KERN_WARNING
- 		       "Most likely the card will be functional\n");
-@@ -3382,8 +3383,9 @@ retry:
- 			 * our request has been acknowledged. Odd,
- 			 * but our OUT URB is still alive...
- 			 */
--			pr_debug
--			    ("Causality violation: please reboot Universe, or email linux-wlan-devel@lists.linux-wlan.com\n");
-+			pr_debug("Causality violation: please reboot " \
-+				"Universe, or email " \
-+				"linux-wlan-devel@lists.linux-wlan.com\n");
- 			ctlx->state = CTLX_RESP_COMPLETE;
- 			break;
- 
-@@ -3442,7 +3444,7 @@ static void hfa384x_usbin_txcompl(wlandevice_t *wlandev,
- {
- 	u16 status;
- 
--	status = le16_to_cpu(usbin->type);	/* yeah I know it says type... */
-+	status = le16_to_cpu(usbin->type); /* yeah I know it says type... */
- 
- 	/* Was there an error? */
- 	if (HFA384x_TXSTATUS_ISERROR(status))
-@@ -3583,8 +3585,10 @@ static void hfa384x_int_rxmonitor(wlandevice_t *wlandev,
- 	struct sk_buff *skb;
- 	hfa384x_t *hw = wlandev->priv;
- 
--	/* Don't forget the status, time, and data_len fields are in host order */
--	/* Figure out how big the frame is */
-+	/* Don't forget the status, time, and data_len fields are in
-+	 * host order
-+	 * Figure out how big the frame is
-+	 */
- 	fc = le16_to_cpu(rxdesc->frame_control);
- 	hdrlen = p80211_headerlen(fc);
- 	datalen = le16_to_cpu(rxdesc->data_len);
-@@ -3632,7 +3636,9 @@ static void hfa384x_int_rxmonitor(wlandevice_t *wlandev,
- 		caphdr->encoding = htonl(1);	/* cck */
- 	}
- 
--	/* Copy the 802.11 header to the skb (ctl frames may be less than a full header) */
-+	/* Copy the 802.11 header to the skb (ctl frames may be less
-+	 * than a full header)
-+	 */
- 	datap = skb_put(skb, hdrlen);
- 	memcpy(datap, &(rxdesc->frame_control), hdrlen);
- 
-@@ -3644,7 +3650,8 @@ static void hfa384x_int_rxmonitor(wlandevice_t *wlandev,
- 		/* check for unencrypted stuff if WEP bit set. */
- 		if (*(datap - hdrlen + 1) & 0x40)	/* wep set */
- 			if ((*(datap) == 0xaa) && (*(datap + 1) == 0xaa))
--				*(datap - hdrlen + 1) &= 0xbf;	/* clear wep; it's the 802.2 header! */
-+				/* clear wep; it's the 802.2 header! */
-+				*(datap - hdrlen + 1) &= 0xbf;
- 	}
- 
- 	if (hw->sniff_fcs) {
-@@ -3845,8 +3852,8 @@ retry:
- 
- 		default:
- 			/* This is NOT a valid CTLX "success" state! */
--			printk(KERN_ERR
--			       "Illegal CTLX[%d] success state(%s, %d) in OUT URB\n",
-+			printk(KERN_ERR "Illegal CTLX[%d] success " \
-+					"state(%s, %d) in OUT URB\n",
- 			       le16_to_cpu(ctlx->outbuf.type),
- 			       ctlxstr(ctlx->state), urb->status);
- 			break;
--- 
-1.7.0.4
+	static void debug_object_is_on_stack(void *addr, int onstack)
+	{
+		int is_on_stack;
+		static int limit;
+
+		if (limit > 4)
+			return;
+
+This really confuses me.  We are using a static variable, but as
+near as I can tell, it is being guarded by a per-bucket lock:
+
+	raw_spin_lock_irqsave(&db->lock, flags);
+
+If I understand correctly, this means that multiple CPUs might be
+concurrently updating the static variable "limit", which might in
+turn be causing the splat below.
+
+Or am I missing something?
+
+						Thanx, Paul
+
+------------------------------------------------------------------------
+
+ODEBUG: object is on stack, but not annotated
+------------[ cut here ]------------
+Badness at lib/debugobjects.c:294
+NIP: c0000000002c76f0 LR: c0000000002c76ec CTR: c00000000041ecd8
+REGS: c0000001de71b280 TRAP: 0700   Tainted: G        W   (2.6.34-rc3-autokern1)
+MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 24000424  XER: 0000000f
+TASK = c0000001de7dca00[3695] 'arping' THREAD: c0000001de718000 CPU: 1
+GPR00: c0000000002c76ec c0000001de71b500 c00000000096c048 0000000000000034 
+GPR04: 0000000000000001 c000000000063918 0000000000000000 0000000000000002 
+GPR08: 0000000000000003 0000000000000000 c000000000086f68 c0000001de7dca00 
+GPR12: 000000000000256d c0000000074e4200 0000000000000000 0000000000000000 
+GPR16: 0000000000000000 0000000000000000 0000000000000000 00000000201b8f60 
+GPR20: 00000000201b8f70 00000000201b8f48 0000000000000000 c0000000008766b8 
+GPR24: c0000001de71b800 0000000000000001 c0000000008ad400 c000000001247478 
+GPR28: c0000000e6abb8c0 c0000000e6abb8c0 c000000000904570 c000000001247470 
+NIP [c0000000002c76f0] .__debug_object_init+0x314/0x40c
+LR [c0000000002c76ec] .__debug_object_init+0x310/0x40c
+Call Trace:
+[c0000001de71b500] [c0000000002c76ec] .__debug_object_init+0x310/0x40c (unreliable)
+[c0000001de71b5d0] [c00000000007d990] .rcuhead_fixup_activate+0x40/0xdc
+[c0000001de71b660] [c0000000002c6a7c] .debug_object_fixup+0x4c/0x74
+[c0000001de71b6f0] [c0000000000c5e54] .__call_rcu+0x3c/0x1d4
+[c0000001de71b790] [c0000000000c6050] .synchronize_rcu+0x4c/0x6c
+[c0000001de71b870] [c0000000004be218] .synchronize_net+0x10/0x24
+[c0000001de71b8e0] [c0000000005498c8] .packet_release+0x1d4/0x274
+[c0000001de71b990] [c0000000004ac1f0] .sock_release+0x54/0x124
+[c0000001de71ba20] [c0000000004ac9e4] .sock_close+0x34/0x4c
+[c0000001de71baa0] [c00000000012469c] .__fput+0x174/0x264
+[c0000001de71bb40] [c000000000120c54] .filp_close+0xb0/0xd8
+[c0000001de71bbd0] [c000000000065e70] .put_files_struct+0x1a8/0x314
+[c0000001de71bc70] [c000000000067e04] .do_exit+0x234/0x6f0
+[c0000001de71bd30] [c000000000068354] .do_group_exit+0x94/0xc8
+[c0000001de71bdc0] [c00000000006839c] .SyS_exit_group+0x14/0x28
+[c0000001de71be30] [c000000000008554] syscall_exit+0x0/0x40
+Instruction dump:
+7f80b000 419e0030 2fa00000 e93e8140 380b0001 90090000 419e000c e87e8148 
+48000008 e87e8150 4bd9cb89 60000000 <0fe00000> 801c0010 2f800003 419e0024 
 
