@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab0DUNks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 09:40:48 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:40419 "EHLO e7.ny.us.ibm.com"
+	id S1754755Ab0DUNk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 09:40:58 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:43734 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754476Ab0DUNkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 09:40:46 -0400
-Date: Wed, 21 Apr 2010 08:40:40 -0500
+	id S1754719Ab0DUNk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 09:40:56 -0400
+Date: Wed, 21 Apr 2010 08:40:53 -0500
 From: "Serge E. Hallyn" <serue@us.ibm.com>
 To: David Howells <dhowells@redhat.com>
 Cc: lkml <linux-kernel@vger.kernel.org>, Ashwin Ganti <ashwin.ganti@gmail.com>,
@@ -15,17 +15,16 @@ Cc: lkml <linux-kernel@vger.kernel.org>, Ashwin Ganti <ashwin.ganti@gmail.com>,
        jt.beard@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
        Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
        Eric Paris <eparis@redhat.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
-Message-ID: <20100421134040.GC16326@us.ibm.com>
-References: <20100421012908.GB24251@us.ibm.com>
- <20100421012749.GA21338@us.ibm.com>
- <23120.1271846955@redhat.com>
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 1/3] p9auth: split core function out of some
+ set*{u,g}id functions
+Message-ID: <20100421134053.GD16326@us.ibm.com>
+References: <20100421012749.GA21338@us.ibm.com>
+ <23079.1271846817@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <23120.1271846955@redhat.com>
+In-Reply-To: <23079.1271846817@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,25 +33,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Quoting David Howells (dhowells@redhat.com):
 > Serge E. Hallyn <serue@us.ibm.com> wrote:
 > 
-> > +	if (ret == 0)
-> > +		commit_creds(new);
-> > +	else
-> > +		abort_creds(new);
-> > +
-> > +	return ret;
+> > +int cred_setresuid(struct cred *new, uid_t ruid, uid_t euid, uid_t suid,
+> > +		   int force);
+> > +int cred_setresgid(struct cred *new, gid_t rgid, gid_t egid, gid_t sgid,
+> > +		   int force);
+> > +int cred_setfsuid(struct cred *new, uid_t uid, uid_t *old_fsuid);
+> > +int cred_setfsgid(struct cred *new, gid_t gid, gid_t *old_fsgid);
 > 
-> If you make this:
+> Can you mark these extern please?
 > 
-> 	if (ret == 0)
-> 		return commit_creds(new);
-> 	abort_creds(new);
-> 	return ret;
-> 
-> then gcc can tail-call commit_creds(), which is guaranteed to return 0.
+> Other than that, these functions should probably be mentioned in
+> Documentation/credentials.txt.
 > 
 > David
 
-Ok, will do.
+Will do.
 
 thanks,
 -serge
