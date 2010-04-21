@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526Ab0DUEYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 00:24:08 -0400
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:54319 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab0DUEYE (ORCPT
+	id S1751573Ab0DUEif (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 00:38:35 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:24998 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab0DUEie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 00:24:04 -0400
-Message-ID: <4BCE7DD1.70900@linux.vnet.ibm.com>
-Date: Wed, 21 Apr 2010 06:23:45 +0200
-From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>
-Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone pressure
-References: <20100322235053.GD9590@csn.ul.ie> <4BA940E7.2030308@redhat.com> <20100324145028.GD2024@csn.ul.ie> <4BCC4B0C.8000602@linux.vnet.ibm.com> <20100419214412.GB5336@cmpxchg.org> <4BCD55DA.2020000@linux.vnet.ibm.com> <20100420153202.GC5336@cmpxchg.org> <4BCDE2F0.3010009@redhat.com>
-In-Reply-To: <4BCDE2F0.3010009@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 21 Apr 2010 00:38:34 -0400
+Subject: Re: PCIe hotplug failure
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Jeff Newbern <jnewbern@bluespec.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+In-Reply-To: <g2z3c10cdd31004200910y322fd94fn65c548d329104f30@mail.gmail.com>
+References: <g2z3c10cdd31004200910y322fd94fn65c548d329104f30@mail.gmail.com>
+Content-Type: text/plain
+Date: Tue, 20 Apr 2010 22:37:55 -0600
+Message-Id: <1271824675.6035.50.camel@dc7800.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Rik van Riel wrote:
-> On 04/20/2010 11:32 AM, Johannes Weiner wrote:
+On Tue, 2010-04-20 at 12:10 -0400, Jeff Newbern wrote:
+> Kernel: Ubuntu 9.10 (Karmic) 2.6.31-20-generic
 > 
->> The idea is that it pans out on its own.  If the workload changes, new
->> pages get activated and when that set grows too large, we start shrinking
->> it again.
->>
->> Of course, right now this unscanned set is way too large and we can end
->> up wasting up to 50% of usable page cache on false active pages.
+> The pciehp driver is built into the kernel.
 > 
-> Thing is, changing workloads often change back.
+> I am connecting a custom FPGA device with a PCIe endpoint through the
+> ExpressCard slot on a Lenovo T61 laptop.
 > 
-> Specifically, think of a desktop system that is doing
-> work for the user during the day and gets backed up
-> at night.
+> lspci -vv shows HotPlug+ and Surpise+ capabilities for the ExpressCard
+> controller.
 > 
-> You do not want the backup to kick the working set
-> out of memory, because when the user returns in the
-> morning the desktop should come back quickly after
-> the screensaver is unlocked.
-
-IMHO it is fine to prevent that nightly backup job from not being 
-finished when the user arrives at morning because we didn't give him 
-some more cache - and e.g. a 30 sec transition from/to both optimized 
-states is fine.
-But eventually I guess the point is that both behaviors are reasonable 
-to achieve - depending on the users needs.
-
-What we could do is combine all our thoughts we had so far:
-a) Rik could create an experimental patch that excludes the in flight pages
-b) Johannes could create one for his suggestion to "always scan active 
-file pages but only deactivate them when the ratio is off and otherwise 
-strip buffers of clean pages"
-c) I would extend the patch from Johannes setting the ratio of 
-active/inactive pages to be a userspace tunable
-
-a,b,a+b would then need to be tested if they achieve a better behavior.
-
-c on the other hand would be a fine tunable to let administrators 
-(knowing their workloads) or distributions (e.g. different values for 
-Desktop/Server defaults) adapt their installations.
-
-In theory a,b and c should work fine together in case we need all of them.
-
-> The big question is, what workload suffers from
-> having the inactive list at 50% of the page cache?
+> I'm running the kernel with pciehp.pciehp_debug=1, and this is the
+> dmesg output when I bring up the FPGA device:
 > 
-> So far the only big problem we have seen is on a
-> very unbalanced virtual machine, with 256MB RAM
-> and 4 fast disks.  The disks simply have more IO
-> in flight at once than what fits in the inactive
-> list.
+> [ 3346.553917] pciehp 0000:00:1c.3:pcie04: pcie_isr: intr_loc 8
+> [ 3346.553925] pciehp 0000:00:1c.3:pcie04: Presence/Notify input change
+> [ 3346.553934] pciehp 0000:00:1c.3:pcie04: Card present on Slot(5)
+> [ 3346.553951] pciehp 0000:00:1c.3:pcie04: Surprise Removal
+> [ 3346.553960] pciehp 0000:00:1c.3:pcie04: hpc_get_power_status:
+> SLOTCTRL 58 value read 38
+> [ 3346.553969] pciehp 0000:00:1c.3:pcie04: hpc_get_attention_status:
+> SLOTCTRL 58, value read 38
+> [ 3346.554030] pciehp 0000:00:1c.3:pcie04: board_added: slot device,
+> slot offset, hp slot = 0, 0, 0
+> [ 3347.122566] pciehp 0000:00:1c.3:pcie04: hpc_check_lnk_status:
+> lnk_status = 3011
+> [ 3347.122685] pci 0000:05:00.0: reg 10 32bit mmio: [0x000000-0x7fffff]
+> [ 3347.122708] pci 0000:05:00.0: reg 14 32bit mmio: [0x000000-0x7fffff]
+> [ 3347.122743] pci 0000:05:00.0: reg 18 64bit mmio: [0x000000-0x1ffffff]
+> [ 3347.122795] pci 0000:05:00.0: reg 30 32bit mmio: [0x000000-0x0fffff]
+> [ 3347.122884] pci 0000:05:00.0: PME# supported from D0
+> [ 3347.122898] pci 0000:05:00.0: PME# disabled
+> [ 3347.122974] pciehp: Could not get hotplug parameters
+> [ 3347.123004] pci 0000:05:00.0: BAR 0: can't allocate mem resource
+> [0xd6000000-0xd5ffffff]
+> [ 3347.123012] pci 0000:05:00.0: BAR 1: can't allocate mem resource
+> [0xd6000000-0xd5ffffff]
+> [ 3347.123249] pciehp 0000:00:1c.3:pcie04: hpc_get_power_status:
+> SLOTCTRL 58 value read 38
+> [ 3347.123259] pciehp 0000:00:1c.3:pcie04: hpc_get_attention_status:
+> SLOTCTRL 58, value read 38
+> 
+> The BAR types and sizes look correct in the initial pci lines, but are
+> non-sensical in the "can't allocate mem resource" error messages that
+> follow the "Could not get hotplug parameters" message.
 
-Did I get you right that this means the write case - explaining why it 
-is building up buffers to the 50% max?
+I added linux-pci, which is more pertinent than lkml.  If you can try a
+current upstream kernel and post the entire dmesg log, that would be
+useful.  There have been a number of recent changes related to PCI
+resource allocation.
 
-Note: It even uses up to 64 disks, with 1 disk per thread so e.g. 16 
-threads => 16 disks.
+Bjorn
 
-For being "unbalanced" I'd like to mention that over the years I learned 
-that sometimes, after a while, virtualized systems look that way without 
-being intended - this happens by adding more and more guests and let 
-guest memory balooning take care of it.
 
-> This is a very untypical situation, and we can
-> probably solve it by excluding the in-flight pages
-> from the active/inactive file calculation.
-
--- 
-
-Grüsse / regards, Christian Ehrhardt
-IBM Linux Technology Center, System z Linux Performance
