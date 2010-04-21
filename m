@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab0DUPLa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 11:11:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43091 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755485Ab0DUPL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 11:11:28 -0400
-Date: Wed, 21 Apr 2010 11:11:15 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Divyesh Shah <dpshah@google.com>, Nauman Rafique <nauman@google.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Subject: Re: [PATCH] blkio: Fix a crash during rq stats update
-Message-ID: <20100421151115.GB3275@redhat.com>
-References: <20100421144550.GA3275@redhat.com> <20100421145514.GT27497@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755531Ab0DUPNW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 11:13:22 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:34954 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755510Ab0DUPNV convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Wed, 21 Apr 2010 11:13:21 -0400
+Message-Id: <4BCF3230020000780003B3CA@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 21 Apr 2010 16:13:20 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: combine SRAT regions when possible
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20100421145514.GT27497@kernel.dk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 04:55:14PM +0200, Jens Axboe wrote:
-> On Wed, Apr 21 2010, Vivek Goyal wrote:
-> > @@ -1001,6 +1002,10 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
-> >  	return cfqg;
-> >  }
-> >  
-> > +static inline void cfq_get_cfqg_ref(struct cfq_group *cfqg) {
-> > +	atomic_inc(&cfqg->ref);
-> > +}
-> 
-> Would be nicer as
-> 
-> static inline void cfq_ref_get_cfqg(struct cfq_group *cfqg)
-> {
+... i.e. when the hole between two regions isn't occupied by memory on
+another node. This reduces the memory->node table size, thus reducing
+cache footprint of lookups, which got increased significantly some
+time ago, and things go back to how they were before that change on
+the systems I looked at.
 
-Chagne of name, will do.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-> 	atomic_inc(&cfqg->ref);
->         return cfqg;
-> }
+---
+ arch/x86/mm/srat_64.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
 
-So you want to return cfqg pointer here instead of return type being void?
+--- linux-2.6.34-rc5/arch/x86/mm/srat_64.c	2010-02-24 19:52:17.000000000 +0100
++++ 2.6.34-rc5-x86_64-srat-memblk-join/arch/x86/mm/srat_64.c	2010-01-28 10:43:33.000000000 +0100
+@@ -363,6 +363,54 @@ int __init acpi_scan_nodes(unsigned long
+ 	for (i = 0; i < MAX_NUMNODES; i++)
+ 		cutoff_node(i, start, end);
+ 
++	/*
++	 * Join together blocks on the same node, holes between
++	 * which don't overlap with memory on other nodes.
++	 */
++	for (i = 0; i < num_node_memblks; ++i) {
++		int j, k;
++
++		for (j = i + 1; j < num_node_memblks; ++j) {
++			unsigned long start, end;
++
++			if (memblk_nodeid[i] != memblk_nodeid[j])
++				continue;
++			start = min(node_memblk_range[i].end,
++			            node_memblk_range[j].end);
++			end = max(node_memblk_range[i].start,
++			          node_memblk_range[j].start);
++			for (k = 0; k < num_node_memblks; ++k) {
++				if (memblk_nodeid[i] == memblk_nodeid[k])
++					continue;
++				if (start < node_memblk_range[k].end &&
++				    end > node_memblk_range[k].start)
++					break;
++			}
++			if (k < num_node_memblks)
++				continue;
++			start = min(node_memblk_range[i].start,
++			            node_memblk_range[j].start);
++			end = max(node_memblk_range[i].end,
++			          node_memblk_range[j].end);
++			printk(KERN_INFO "SRAT: Node %d "
++			       "[%Lx,%Lx) + [%Lx,%Lx) -> [%lx,%lx)\n",
++			       memblk_nodeid[i],
++			       node_memblk_range[i].start,
++			       node_memblk_range[i].end,
++			       node_memblk_range[j].start,
++			       node_memblk_range[j].end,
++			       start, end);
++			node_memblk_range[i].start = start;
++			node_memblk_range[i].end = end;
++			k = --num_node_memblks - j;
++			memmove(memblk_nodeid + j, memblk_nodeid + j+1,
++				k * sizeof(*memblk_nodeid));
++			memmove(node_memblk_range + j, node_memblk_range + j+1,
++				k * sizeof(*node_memblk_range));
++			--j;
++		}
++	}
++
+ 	memnode_shift = compute_hash_shift(node_memblk_range, num_node_memblks,
+ 					   memblk_nodeid);
+ 	if (memnode_shift < 0) {
 
-> 
-> ...
-> 
-> static inline void cfq_ref_get_cfqg(struct cfq_group *cfqg)
-> {
->         return NULL;
-> }
 
-Will fix it.
 
-Ok, so in case of CFQ_GROUP_IOSCHED, return a poitner to cfqg upon getting
-the reference, otherwise NULL. Will fix it.
-
-Thanks
-Vivek
-> 
-> ...
-> 
-> > @@ -3560,6 +3570,9 @@ new_queue:
-> >  
-> >  	rq->elevator_private = cic;
-> >  	rq->elevator_private2 = cfqq;
-> > +	rq->elevator_private3 = cfqq->cfqg;
-> > +	/* rq reference on cfqg */
-> > +	cfq_get_cfqg_ref(RQ_CFQG(rq));
-> >  	return 0;
-> 
-> rq->elevator_private3 = cfq_ref_get_cfqg(...);
-> 
-> -- 
-> Jens Axboe
