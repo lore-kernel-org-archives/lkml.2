@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab0DUMm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 08:42:27 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:58432 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753953Ab0DUMm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 08:42:26 -0400
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] jfs update
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Message-Id: <20100421124223.1E22E4CAC45@norville.austin.ibm.com>
-Date: Wed, 21 Apr 2010 07:42:23 -0500 (CDT)
-From: shaggy@linux.vnet.ibm.com
+	id S1754389Ab0DUMrB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 08:47:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:41120 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab0DUMq6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 08:46:58 -0400
+X-Authority-Analysis: v=1.1 cv=ZUag8tkj9kgmNMrzofuoEsXxpG43g9sRv4eUZcQ4+as= c=1 sm=0 a=eOOYVsMsLpwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=oRtg6tDsmDOHrS7nfZYA:9 a=twKCPHoRJ3Xqk5MhMx0A:7 a=UodM5Gt4UhZNgPl-v1J8SPwsVfoA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: Considerations on sched APIs under RT patch
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Primiano Tucci <p.tucci@gmail.com>, linux-kernel@vger.kernel.org,
+       tglx <tglx@linutronix.de>
+In-Reply-To: <1271839772.1776.58.camel@laptop>
+References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
+	 <1271755208.1676.422.camel@laptop>
+	 <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
+	 <1271804453.10448.168.camel@gandalf.stny.rr.com>
+	 <t2nc5b2c05b1004202216pd159c9b4mbfc1dc7658fc20e7@mail.gmail.com>
+	 <1271839772.1776.58.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 21 Apr 2010 08:46:56 -0400
+Message-ID: <1271854016.10448.172.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from
+On Wed, 2010-04-21 at 10:49 +0200, Peter Zijlstra wrote:
+> On Wed, 2010-04-21 at 07:16 +0200, Primiano Tucci wrote:
+> > Hi steve
+> > > read_locks are converted into "special" rt_mutexes. The only thing
+> > > special about them, is the owner may grab the same read lock more than
+> > > once (recursive).
+> > >
+> > > If a lower priority process currently holds the tasklist_lock for write,
+> > > when a high priority process tries to take it for read (or write for
+> > > that matter) it will block on the lower priority process. But that lower
+> > > priority process will acquire the priority of the higher priority
+> > > process (priority inheritance) and will run at that priority until it
+> > > releases the lock. Then it will go back to its low priority and the
+> > > higher priority process will then preempt it and acquire the lock for
+> > > read.
+> > 
+> > In your example you implied that the low priority process, holding the
+> > lock for write, runs on the same CPU of the higher priority process
+> > that wants to lock it for read. This is clear to me.
+> > My problem is, in a SMP environment, what happens if a process (let's
+> > say T1 on CPU #1) holds the lock for write (its priority does not
+> > matter, it is not a PI problem) and now a process T0 on cpu #0 wants
+> > to lock it for read?
+> > The process T0 will be blocked! But who will run now on CPU 0, until
+> > the rwlock is held by T1? Probably the next ready process on CPU #'0.
+> > Is it right?
+> 
+> Yes. This is the reality of SMP systems, nothing much you can do about
+> that. System resources are shared between all cpus, irrespective of task
+> affinities.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/shaggy/jfs-2.6.git for-linus
+Actually, we do better than that. With adaptive locks, if the process on
+the other CPU is still running, the high priority task will spin until
+the other process releases the lock or goes to sleep. If it goes to
+sleep, then the high prio task will also sleep, otherwise it just spins
+and takes the lock when it is released.
 
-This will update the following files:
+-- Steve
 
- fs/jfs/inode.c     |    2 +-
- fs/jfs/jfs_dmap.c  |   16 ++++++++--------
- fs/jfs/jfs_dmap.h  |    6 +++---
- fs/jfs/jfs_inode.h |    1 +
- fs/jfs/namei.c     |    4 ++--
- fs/jfs/resize.c    |    6 +++++-
- fs/jfs/symlink.c   |   14 +++++++++++++-
- 7 files changed, 33 insertions(+), 16 deletions(-)
 
-through these ChangeSets:
 
-commit c7f2e1f0ac142a657a1de00d404e1c8345b20598
-Author: Dmitry Monakhov <dmonakhov@openvz.org>
-Date:   Fri Apr 16 08:05:50 2010 -0500
-
-    jfs: add jfs specific ->setattr call
-    
-    generic setattr not longer responsible for quota transfer.
-    use jfs_setattr for all jfs's inodes.
-    
-    Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-    Signed-off-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-
-commit 2b0b39517d1af5294128dbc2fd7ed39c8effa540
-Author: Bill Pemberton <wfp5p@virginia.edu>
-Date:   Fri Apr 16 08:01:20 2010 -0500
-
-    jfs: fix diAllocExt error in resizing filesystem
-    
-    Resizing the filesystem would result in an diAllocExt error in some
-    instances because changes in bmp->db_agsize would not get noticed if
-    goto extendBmap was called.
-    
-    Signed-off-by: Bill Pemberton <wfp5p@virginia.edu>
-    Signed-off-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-    Cc: jfs-discussion@lists.sourceforge.net
-    Cc: linux-kernel@vger.kernel.org
-
-commit d7eecb483cc29e929bbc5515b8def830d7fc6ad2
-Author: Daniel Mack <daniel@caiaq.de>
-Date:   Thu Jan 28 16:13:01 2010 +0800
-
-    jfs_dmap.[ch]: trivial typo fix: s/heigth/height/g
-    
-    Signed-off-by: Daniel Mack <daniel@caiaq.de>
-    Signed-off-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-    Cc: Jiri Kosina <trivial@kernel.org>
-    Cc: André Goddard Rosa <andre.goddard@gmail.com>
-    Cc: jfs-discussion@lists.sourceforge.net
