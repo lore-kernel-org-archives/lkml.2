@@ -1,92 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab0DULlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 07:41:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752779Ab0DULlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 07:41:15 -0400
-Date: Wed, 21 Apr 2010 14:35:57 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: stable@kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-       Herbert Xu <herbert@gondor.hengli.com.au>,
-       Paul Moore <paul.moore@hp.com>,
-       David Woodhouse <David.Woodhouse@intel.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jan Kiszka <jan.kiszka@siemens.com>,
-       qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] tun: orphan an skb on tx
-Message-ID: <20100421113557.GA31606@redhat.com>
-References: <20100413145944.GA7716@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753589Ab0DULrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 07:47:20 -0400
+Received: from soto.provo.novell.com ([137.65.250.214]:38858 "EHLO
+	soto.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab0DULrR convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-ghaskins@novell.com:6:1>);
+	Wed, 21 Apr 2010 07:47:17 -0400
+Message-Id: <4BCEAD7B0200005A0006513E@soto.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 21 Apr 2010 05:47:07 -0600
+From: "Gregory Haskins" <ghaskins@novell.com>
+To: "Peter Zijlstra" <peterz@infradead.org>, "John Kacur" <jkacur@redhat.com>
+Cc: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+       "Andrew Morton" <akpm@linux-foundation.org>,
+       "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
+       "Clark Williams" <williams@redhat.com>, <linux-kernel@vger.kernel.org>,
+       <linux-rt-users@vger.kernel.org>
+Subject: Re: [PATCH v3] lockdep: Make MAX_STACK_TRACE_ENTRIES
+	 configurable.
+References: <alpine.LFD.2.00.1004161329030.11320@localhost.localdomain>
+ <alpine.LFD.2.00.1004161727000.11320@localhost.localdomain>
+ <alpine.LFD.2.00.1004191841230.6259@localhost>
+ <20100420140941.d085007d.akpm@linux-foundation.org>
+ <alpine.LFD.2.00.1004211309560.6646@localhost>
+ <1271849823.1776.87.camel@laptop>
+In-Reply-To: <1271849823.1776.87.camel@laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20100413145944.GA7716@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 05:59:44PM +0300, Michael S. Tsirkin wrote:
-> The following situation was observed in the field:
-> tap1 sends packets, tap2 does not consume them, as a result
-> tap1 can not be closed. This happens because
-> tun/tap devices can hang on to skbs undefinitely.
+>>> On 4/21/2010 at 07:37 AM, in message <1271849823.1776.87.camel@laptop>, Peter
+Zijlstra <peterz@infradead.org> wrote: 
+> On Wed, 2010-04-21 at 13:12 +0200, John Kacur wrote:
+>> 
+>> Certain configurations that have LOCKDEP turned on, run into the limit
+>> where the MAX_STACK_TRACE_ENTRIES are too small. Rather than simply
+>> turning of the locking correctness validator let the user configure this
+>> value to something reasonable for their system.
 > 
-> As noted by Herbert, possible solutions include a timeout followed by a
-> copy/change of ownership of the skb, or always copying/changing
-> ownership if we're going into a hostile device.
+> I'm not sure its worth having a CONFIG_ value for this, that'll just be
+> yet another random value nobody knows what to do with.
 > 
-> This patch implements the second approach.
+> Do you actually have a machine that reproduces this? Can you see how
+> many classes, avg stacktraces per class and the avg entries per
+> stacktrace there are?
 > 
-> Note: one issue still remaining is that since skbs
-> keep reference to tun socket and tun socket has a
-> reference to tun device, we won't flush backlog,
-> instead simply waiting for all skbs to get transmitted.
-> At least this is not user-triggerable, and
-> this was not reported in practice, my assumption is
-> other devices besides tap complete an skb
-> within finite time after it has been queued.
+> Also, is there's lots of classes, are there many with a similar name?
 > 
-> A possible solution for the second issue
-> would not to have socket reference the device,
-> instead, implement dev->destructor for tun, and
-> wait for all skbs to complete there, but this
-> needs some thought, probably too risky for 2.6.34.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> Tested-by: Yan Vugenfirer <yvugenfi@redhat.com>
-> 
-> ---
-> 
-> Please review the below, and consider for 2.6.34,
-> and stable trees.
-> 
->  drivers/net/tun.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 96c39bd..4326520 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -387,6 +387,10 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
->  		}
->  	}
->  
-> +	/* Orphan the skb - required as we might hang on to it
-> +	 * for indefinite time. */
-> +	skb_orphan(skb);
-> +
->  	/* Enqueue packet */
->  	skb_queue_tail(&tun->socket.sk->sk_receive_queue, skb);
->  	dev->trans_start = jiffies;
-> -- 
-> 1.7.0.2.280.gc6f05
+> That is, is it a valid depletion or is there something wonkey with those
+> setups?
 
-This is commit 0110d6f22f392f976e84ab49da1b42f85b64a3c5 in net-2.6
-Please cherry-pick this fix in stable kernels (2.6.32 and 2.6.33).
+Hi John, Peter.
 
-Thanks!
+I am not sure if Johns solution is the right/best one per se, but I can attest
+that I used to hit this problem _all_ the time and it was somewhat annoying
+to need to patch the kernel on all of my machines to fix it.  I realize that I
+perhaps do not represent the average user, but it was a pain-point for me.
+FWIW, John's patch would indeed make my life easier since I tend to share the
+.config between builds.
 
--- 
-MST
+Kind Regards,
+-Greg
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
