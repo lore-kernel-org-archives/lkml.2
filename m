@@ -1,79 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab0DUEif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 00:38:35 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:24998 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab0DUEie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 00:38:34 -0400
-Subject: Re: PCIe hotplug failure
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Jeff Newbern <jnewbern@bluespec.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-In-Reply-To: <g2z3c10cdd31004200910y322fd94fn65c548d329104f30@mail.gmail.com>
-References: <g2z3c10cdd31004200910y322fd94fn65c548d329104f30@mail.gmail.com>
-Content-Type: text/plain
-Date: Tue, 20 Apr 2010 22:37:55 -0600
-Message-Id: <1271824675.6035.50.camel@dc7800.home>
+	id S1751623Ab0DUEmc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 00:42:32 -0400
+Received: from mail.perches.com ([173.55.12.10]:1594 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751267Ab0DUEmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 00:42:31 -0400
+Subject: [PATCH] drivers/edac: Convert logging messages direct uses of
+ __FILE__ to %s, __FILE
+From: Joe Perches <joe@perches.com>
+To: Doug Thompson <dougthompson@xmission.com>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Tim Small <tim@buttersideup.com>
+Cc: bluesmoke-devel@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Apr 2010 21:42:29 -0700
+Message-ID: <1271824949.1730.254.camel@Joe-Laptop.home>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-20 at 12:10 -0400, Jeff Newbern wrote:
-> Kernel: Ubuntu 9.10 (Karmic) 2.6.31-20-generic
-> 
-> The pciehp driver is built into the kernel.
-> 
-> I am connecting a custom FPGA device with a PCIe endpoint through the
-> ExpressCard slot on a Lenovo T61 laptop.
-> 
-> lspci -vv shows HotPlug+ and Surpise+ capabilities for the ExpressCard
-> controller.
-> 
-> I'm running the kernel with pciehp.pciehp_debug=1, and this is the
-> dmesg output when I bring up the FPGA device:
-> 
-> [ 3346.553917] pciehp 0000:00:1c.3:pcie04: pcie_isr: intr_loc 8
-> [ 3346.553925] pciehp 0000:00:1c.3:pcie04: Presence/Notify input change
-> [ 3346.553934] pciehp 0000:00:1c.3:pcie04: Card present on Slot(5)
-> [ 3346.553951] pciehp 0000:00:1c.3:pcie04: Surprise Removal
-> [ 3346.553960] pciehp 0000:00:1c.3:pcie04: hpc_get_power_status:
-> SLOTCTRL 58 value read 38
-> [ 3346.553969] pciehp 0000:00:1c.3:pcie04: hpc_get_attention_status:
-> SLOTCTRL 58, value read 38
-> [ 3346.554030] pciehp 0000:00:1c.3:pcie04: board_added: slot device,
-> slot offset, hp slot = 0, 0, 0
-> [ 3347.122566] pciehp 0000:00:1c.3:pcie04: hpc_check_lnk_status:
-> lnk_status = 3011
-> [ 3347.122685] pci 0000:05:00.0: reg 10 32bit mmio: [0x000000-0x7fffff]
-> [ 3347.122708] pci 0000:05:00.0: reg 14 32bit mmio: [0x000000-0x7fffff]
-> [ 3347.122743] pci 0000:05:00.0: reg 18 64bit mmio: [0x000000-0x1ffffff]
-> [ 3347.122795] pci 0000:05:00.0: reg 30 32bit mmio: [0x000000-0x0fffff]
-> [ 3347.122884] pci 0000:05:00.0: PME# supported from D0
-> [ 3347.122898] pci 0000:05:00.0: PME# disabled
-> [ 3347.122974] pciehp: Could not get hotplug parameters
-> [ 3347.123004] pci 0000:05:00.0: BAR 0: can't allocate mem resource
-> [0xd6000000-0xd5ffffff]
-> [ 3347.123012] pci 0000:05:00.0: BAR 1: can't allocate mem resource
-> [0xd6000000-0xd5ffffff]
-> [ 3347.123249] pciehp 0000:00:1c.3:pcie04: hpc_get_power_status:
-> SLOTCTRL 58 value read 38
-> [ 3347.123259] pciehp 0000:00:1c.3:pcie04: hpc_get_attention_status:
-> SLOTCTRL 58, value read 38
-> 
-> The BAR types and sizes look correct in the initial pci lines, but are
-> non-sensical in the "can't allocate mem resource" error messages that
-> follow the "Could not get hotplug parameters" message.
+Reduces text by eliminating multiple __FILE__ uses.
 
-I added linux-pci, which is more pertinent than lkml.  If you can try a
-current upstream kernel and post the entire dmesg log, that would be
-useful.  There have been a number of recent changes related to PCI
-resource allocation.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/edac/i5000_edac.c      |   20 ++++++++++----------
+ drivers/edac/i5400_edac.c      |   20 ++++++++++----------
+ drivers/edac/i82443bxgx_edac.c |   20 ++++++++++----------
+ 3 files changed, 30 insertions(+), 30 deletions(-)
 
-Bjorn
+diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
+index adc10a2..996c1bd 100644
+--- a/drivers/edac/i5000_edac.c
++++ b/drivers/edac/i5000_edac.c
+@@ -774,7 +774,7 @@ static void i5000_clear_error(struct mem_ctl_info *mci)
+ static void i5000_check_error(struct mem_ctl_info *mci)
+ {
+ 	struct i5000_error_info info;
+-	debugf4("MC%d: " __FILE__ ": %s()\n", mci->mc_idx, __func__);
++	debugf4("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
+ 	i5000_get_error_info(mci, &info);
+ 	i5000_process_error_info(mci, &info, 1);
+ }
+@@ -1353,8 +1353,8 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
+ 	int num_dimms_per_channel;
+ 	int num_csrows;
+ 
+-	debugf0("MC: " __FILE__ ": %s(), pdev bus %u dev=0x%x fn=0x%x\n",
+-		__func__,
++	debugf0("MC: %s: %s(), pdev bus %u dev=0x%x fn=0x%x\n",
++		__FILE__, __func__,
+ 		pdev->bus->number,
+ 		PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
+ 
+@@ -1389,7 +1389,7 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
+ 		return -ENOMEM;
+ 
+ 	kobject_get(&mci->edac_mci_kobj);
+-	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
++	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
+ 
+ 	mci->dev = &pdev->dev;	/* record ptr  to the generic device */
+ 
+@@ -1432,8 +1432,8 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
+ 
+ 	/* add this new MC control structure to EDAC's list of MCs */
+ 	if (edac_mc_add_mc(mci)) {
+-		debugf0("MC: " __FILE__
+-			": %s(): failed edac_mc_add_mc()\n", __func__);
++		debugf0("MC: %s: %s(): failed edac_mc_add_mc()\n",
++			__FILE__, __func__);
+ 		/* FIXME: perhaps some code should go here that disables error
+ 		 * reporting if we just enabled it
+ 		 */
+@@ -1478,7 +1478,7 @@ static int __devinit i5000_init_one(struct pci_dev *pdev,
+ {
+ 	int rc;
+ 
+-	debugf0("MC: " __FILE__ ": %s()\n", __func__);
++	debugf0("MC: %s: %s()\n", __FILE__, __func__);
+ 
+ 	/* wake up device */
+ 	rc = pci_enable_device(pdev);
+@@ -1497,7 +1497,7 @@ static void __devexit i5000_remove_one(struct pci_dev *pdev)
+ {
+ 	struct mem_ctl_info *mci;
+ 
+-	debugf0(__FILE__ ": %s()\n", __func__);
++	debugf0("%s: %s()\n", __FILE__, __func__);
+ 
+ 	if (i5000_pci)
+ 		edac_pci_release_generic_ctl(i5000_pci);
+@@ -1544,7 +1544,7 @@ static int __init i5000_init(void)
+ {
+ 	int pci_rc;
+ 
+-	debugf2("MC: " __FILE__ ": %s()\n", __func__);
++	debugf2("MC: %s: %s()\n", __FILE__, __func__);
+ 
+        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
+        opstate_init();
+@@ -1560,7 +1560,7 @@ static int __init i5000_init(void)
+  */
+ static void __exit i5000_exit(void)
+ {
+-	debugf2("MC: " __FILE__ ": %s()\n", __func__);
++	debugf2("MC: %s: %s()\n", __FILE__, __func__);
+ 	pci_unregister_driver(&i5000_driver);
+ }
+ 
+diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
+index f99d106..010c1d6 100644
+--- a/drivers/edac/i5400_edac.c
++++ b/drivers/edac/i5400_edac.c
+@@ -694,7 +694,7 @@ static void i5400_clear_error(struct mem_ctl_info *mci)
+ static void i5400_check_error(struct mem_ctl_info *mci)
+ {
+ 	struct i5400_error_info info;
+-	debugf4("MC%d: " __FILE__ ": %s()\n", mci->mc_idx, __func__);
++	debugf4("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
+ 	i5400_get_error_info(mci, &info);
+ 	i5400_process_error_info(mci, &info);
+ }
+@@ -1227,8 +1227,8 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
+ 	if (dev_idx >= ARRAY_SIZE(i5400_devs))
+ 		return -EINVAL;
+ 
+-	debugf0("MC: " __FILE__ ": %s(), pdev bus %u dev=0x%x fn=0x%x\n",
+-		__func__,
++	debugf0("MC: %s: %s(), pdev bus %u dev=0x%x fn=0x%x\n",
++		__FILE__, __func__,
+ 		pdev->bus->number,
+ 		PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
+ 
+@@ -1256,7 +1256,7 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
+ 	if (mci == NULL)
+ 		return -ENOMEM;
+ 
+-	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
++	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
+ 
+ 	mci->dev = &pdev->dev;	/* record ptr  to the generic device */
+ 
+@@ -1299,8 +1299,8 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
+ 
+ 	/* add this new MC control structure to EDAC's list of MCs */
+ 	if (edac_mc_add_mc(mci)) {
+-		debugf0("MC: " __FILE__
+-			": %s(): failed edac_mc_add_mc()\n", __func__);
++		debugf0("MC: %s: %s(): failed edac_mc_add_mc()\n",
++			__FILE__, __func__);
+ 		/* FIXME: perhaps some code should go here that disables error
+ 		 * reporting if we just enabled it
+ 		 */
+@@ -1344,7 +1344,7 @@ static int __devinit i5400_init_one(struct pci_dev *pdev,
+ {
+ 	int rc;
+ 
+-	debugf0("MC: " __FILE__ ": %s()\n", __func__);
++	debugf0("MC: %s: %s()\n", __FILE__, __func__);
+ 
+ 	/* wake up device */
+ 	rc = pci_enable_device(pdev);
+@@ -1363,7 +1363,7 @@ static void __devexit i5400_remove_one(struct pci_dev *pdev)
+ {
+ 	struct mem_ctl_info *mci;
+ 
+-	debugf0(__FILE__ ": %s()\n", __func__);
++	debugf0("%s: %s()\n", __FILE__, __func__);
+ 
+ 	if (i5400_pci)
+ 		edac_pci_release_generic_ctl(i5400_pci);
+@@ -1409,7 +1409,7 @@ static int __init i5400_init(void)
+ {
+ 	int pci_rc;
+ 
+-	debugf2("MC: " __FILE__ ": %s()\n", __func__);
++	debugf2("MC: %s: %s()\n", __FILE__, __func__);
+ 
+ 	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
+ 	opstate_init();
+@@ -1425,7 +1425,7 @@ static int __init i5400_init(void)
+  */
+ static void __exit i5400_exit(void)
+ {
+-	debugf2("MC: " __FILE__ ": %s()\n", __func__);
++	debugf2("MC: %s: %s()\n", __FILE__, __func__);
+ 	pci_unregister_driver(&i5400_driver);
+ }
+ 
+diff --git a/drivers/edac/i82443bxgx_edac.c b/drivers/edac/i82443bxgx_edac.c
+index 7f3884f..f3c2200 100644
+--- a/drivers/edac/i82443bxgx_edac.c
++++ b/drivers/edac/i82443bxgx_edac.c
+@@ -178,7 +178,7 @@ static void i82443bxgx_edacmc_check(struct mem_ctl_info *mci)
+ {
+ 	struct i82443bxgx_edacmc_error_info info;
+ 
+-	debugf1("MC%d: " __FILE__ ": %s()\n", mci->mc_idx, __func__);
++	debugf1("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
+ 	i82443bxgx_edacmc_get_error_info(mci, &info);
+ 	i82443bxgx_edacmc_process_error_info(mci, &info, 1);
+ }
+@@ -198,13 +198,13 @@ static void i82443bxgx_init_csrows(struct mem_ctl_info *mci,
+ 	for (index = 0; index < mci->nr_csrows; index++) {
+ 		csrow = &mci->csrows[index];
+ 		pci_read_config_byte(pdev, I82443BXGX_DRB + index, &drbar);
+-		debugf1("MC%d: " __FILE__ ": %s() Row=%d DRB = %#0x\n",
+-			mci->mc_idx, __func__, index, drbar);
++		debugf1("MC%d: %s: %s() Row=%d DRB = %#0x\n",
++			mci->mc_idx, __FILE__, __func__, index, drbar);
+ 		row_high_limit = ((u32) drbar << 23);
+ 		/* find the DRAM Chip Select Base address and mask */
+-		debugf1("MC%d: " __FILE__ ": %s() Row=%d, "
++		debugf1("MC%d: %s: %s() Row=%d, "
+ 			"Boundry Address=%#0x, Last = %#0x \n",
+-			mci->mc_idx, __func__, index, row_high_limit,
++			mci->mc_idx, __FILE__, __func__, index, row_high_limit,
+ 			row_high_limit_last);
+ 
+ 		/* 440GX goes to 2GB, represented with a DRB of 0. */
+@@ -237,7 +237,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
+ 	enum mem_type mtype;
+ 	enum edac_type edac_mode;
+ 
+-	debugf0("MC: " __FILE__ ": %s()\n", __func__);
++	debugf0("MC: %s: %s()\n", __FILE__, __func__);
+ 
+ 	/* Something is really hosed if PCI config space reads from
+ 	 * the MC aren't working.
+@@ -250,7 +250,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
+ 	if (mci == NULL)
+ 		return -ENOMEM;
+ 
+-	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
++	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
+ 	mci->dev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_EDO | MEM_FLAG_SDR | MEM_FLAG_RDR;
+ 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
+@@ -336,7 +336,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
+ 			__func__);
+ 	}
+ 
+-	debugf3("MC: " __FILE__ ": %s(): success\n", __func__);
++	debugf3("MC: %s: %s(): success\n", __FILE__, __func__);
+ 	return 0;
+ 
+ fail:
+@@ -352,7 +352,7 @@ static int __devinit i82443bxgx_edacmc_init_one(struct pci_dev *pdev,
+ {
+ 	int rc;
+ 
+-	debugf0("MC: " __FILE__ ": %s()\n", __func__);
++	debugf0("MC: %s: %s()\n", __FILE__, __func__);
+ 
+ 	/* don't need to call pci_device_enable() */
+ 	rc = i82443bxgx_edacmc_probe1(pdev, ent->driver_data);
+@@ -367,7 +367,7 @@ static void __devexit i82443bxgx_edacmc_remove_one(struct pci_dev *pdev)
+ {
+ 	struct mem_ctl_info *mci;
+ 
+-	debugf0(__FILE__ ": %s()\n", __func__);
++	debugf0("%s: %s()\n", __FILE__, __func__);
+ 
+ 	if (i82443bxgx_pci)
+ 		edac_pci_release_generic_ctl(i82443bxgx_pci);
 
 
