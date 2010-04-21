@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab0DUAZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 20:25:29 -0400
-Received: from ozlabs.org ([203.10.76.45]:38346 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753231Ab0DUAZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 20:25:28 -0400
-Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linuxppc-dev@ozlabs.org, schwab@linux-m68k.org,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       adobriyan@gmail.com, Maciej Rutecki <maciej.rutecki@gmail.com>
-In-Reply-To: <alpine.DEB.2.01.1004201104170.13016@bogon.housecafe.de>
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.vUB.fSSzLB@tosh>
-	 <alpine.DEB.2.01.1004192339190.13016@bogon.housecafe.de>
-	 <1271765898.4324.2.camel@concordia>
-	 <alpine.DEB.2.01.1004201104170.13016@bogon.housecafe.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-7mMsqZUyl6FWoxy/VMhC"
-Date: Wed, 21 Apr 2010 10:25:27 +1000
-Message-ID: <1271809527.13262.10.camel@concordia>
+	id S1754119Ab0DUA27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 20:28:59 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43496 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231Ab0DUA25 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 20:28:57 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 21 Apr 2010 09:25:02 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Larry Woodman <lwoodman@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       linux-mm@kvack.org
+Subject: Re: repost - RFC [Patch] Remove
+ "please try 'cgroup_disable=memory' option if you don't want memory cgroups"
+ printk at boot time.
+Message-Id: <20100421092502.787371b5.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1271773587.28748.134.camel@dhcp-100-19-198.bos.redhat.com>
+References: <1271773587.28748.134.camel@dhcp-100-19-198.bos.redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 20 Apr 2010 10:26:27 -0400
+Larry Woodman <lwoodman@redhat.com> wrote:
 
---=-7mMsqZUyl6FWoxy/VMhC
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Re-posting, cc'ing linux-mm as requested:
+> 
+> We are considering removing this printk at boot time from RHEL because
+> it will confuse customers, encourage them to change the boot parameters
+> and generate extraneous support calls.  Its documented in
+> Documentation/kernel-parameters.txt anyway.  Any thoughts???
+> 
+> Larry Woodman
+> 
+For RHEL, I agree removing the message makes sense.
+But I'm unsure that small machine users, who never use memcg, can notice some
+amount of memory are eaten at boot time.
 
-On Tue, 2010-04-20 at 11:15 -0700, Christian Kujau wrote:
-> On Tue, 20 Apr 2010 at 22:18, Michael Ellerman wrote:
-> > Try this 100% unbuilt, 100% untested patch.
->=20
-> I added GFP_KERNEL to kstrdup to make the compile error go away:
->=20
-> fs/proc/proc_devtree.c: In function =E2=80=98unslash_name=E2=80=99:
-> fs/proc/proc_devtree.c:183: error: too few arguments to function =E2=80=
-=98kstrdup=E2=80=99
-> make[2]: *** [fs/proc/proc_devtree.o] Error 1
-> make[1]: *** [fs/proc] Error 2
-> make: *** [fs] Error 2
+Many distro tends to enable memcg by default and consume memory.
 
-Yeah oops, told you I hadn't built it.
+ 	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
+-	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you"
+-	" don't want memory cgroups\n");
 
-> And now 2.6.34-rc5 compiles and boots without the warning. Thanks!=20
-> New dmesg and /proc/device-tree on:
->=20
->   http://nerdbynature.de/bits/2.6.34-rc1/xlate_proc_name/
+Hmm.
 
-Cool, and we see:
+	printk(KERN_INFO "If you don't want page_cgroup,
+			  you can disable this by boot option, cgroup_disable=memory".)
 
-./uni-n@f8000000/i2c@f8001000/i2c-bus@1/fan@5c/pulses_rev
+My biggest concern is that we don't have man(5) cgroup as other file systems.
+If we have man(5), the best place for this kind of information will be it.
+I think most of users will never see kernel-parameter.txt ..
 
-Which is the one that needed fixing.
+If usual distros are shipped with man(5) cgroup, I agree removing
+this in upstream.
+(We have man pages for libcgroup but not man(5) for cgroup file system.)
 
-> Alexey mentioned that this is "wasteful" - does it make the kernel slower=
-?=20
-> I have not done any performance tests, but I'd rather stick with the=20
-> warning than make this Powerbook G4 any more slower :-\
+I'm sorry if I don't notice that the latest man package has cgroup section.
 
-Maybe a little. It has to check every string to see if it contains a
-"/". But then you save the cost of taking an exeception for the WARN,
-which might make up the difference. But it's a one time fixup at boot,
-so it's not going to be noticeable.
-
-cheers
-
---=-7mMsqZUyl6FWoxy/VMhC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEABECAAYFAkvORfYACgkQdSjSd0sB4dJ5TwCfS/XLWyVT0bVe+ByKEDs3H1Ym
-Ja8AoLErg+pQjsiMOCJZsqagicowbCiV
-=mzdz
------END PGP SIGNATURE-----
-
---=-7mMsqZUyl6FWoxy/VMhC--
+Bye,
+-Kame
 
