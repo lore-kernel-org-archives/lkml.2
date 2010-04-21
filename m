@@ -1,81 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab0DUWlA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 18:41:00 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:35007 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516Ab0DUWk6 (ORCPT
+	id S1754888Ab0DUWlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 18:41:46 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:42194 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754673Ab0DUWln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 18:40:58 -0400
-To: xorg-ati <xorg-driver-ati@lists.x.org>,
-       Linux-Kernel-Mailing-List <linux-kernel@vger.kernel.org>
-Cc: xorg@lists.freedesktop.org
-Subject: Radeon KMS bug(?) after Linux kernel 2.6.32 causes a crash of X server 1.8.0+ on termination
-References: <87iq7pd68h.fsf@spindle.srvr.nix>
-From: Nix <nix@esperi.org.uk>
-Emacs: because you deserve a brk today.
-Date: Wed, 21 Apr 2010 23:40:52 +0100
-In-Reply-To: <87iq7pd68h.fsf@spindle.srvr.nix> (nix@esperi.org.uk's message of "Sun, 18 Apr 2010 00:11:42 +0100")
-Message-ID: <87pr1sfmyz.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-DCC-URT-Metrics: spindle 1060; Body=3 Fuz1=3 Fuz2=3
+	Wed, 21 Apr 2010 18:41:43 -0400
+Subject: Re: [PATCH 00/14] EVM
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       James Morris <jmorris@namei.org>,
+       David Safford <safford@watson.ibm.com>,
+       Dave Hansen <dave@linux.vnet.ibm.com>
+In-Reply-To: <4BCF7ADB.6080409@oracle.com>
+References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <20100421145848.b36ab7bd.randy.dunlap@oracle.com>
+	 <1271888338.2650.13.camel@localhost.localdomain>
+	 <4BCF7ADB.6080409@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Apr 2010 18:41:28 -0400
+Message-ID: <1271889688.2650.19.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 Apr 2010, nix@esperi.org.uk said:
+On Wed, 2010-04-21 at 15:23 -0700, Randy Dunlap wrote:
+> On 04/21/10 15:18, Mimi Zohar wrote:
+> > On Wed, 2010-04-21 at 14:58 -0700, Randy Dunlap wrote:
+> >> On Wed, 21 Apr 2010 17:49:40 -0400 Mimi Zohar wrote:
+> >>
+> >>> Extended Verification Module(EVM) detects offline tampering of the
+> >>> security extended attributes (e.g. security.selinux, security.SMACK64,
+> >>> security.ima), which is the basis for LSM permission decisions and,
+> >>> with this set of patches, integrity appraisal decisions. To detect
+> >>> offline tampering of the extended attributes, EVM maintains an
+> >>> HMAC-sha1 across a set of security extended attributes, storing the
+> >>> HMAC as the extended attribute 'security.evm'. To verify the integrity
+> >>> of an extended attribute, EVM exports evm_verifyxattr(), which
+> >>> re-calculates the HMAC and compares it with the version stored in
+> >>> 'security.evm'.
+> >>>
+> >> ...
+> >>>
+> >>> Much appreciation to Dave Hansen, Serge Hallyn, and Matt Helsley for
+> >>> reviewing the patches.
+> >>>
+> >>> Mimi
+> >>>
+> >>> Mimi Zohar (14):
+> >>>   integrity: move ima inode integrity data management
+> >>>   security: move LSM xattrnames to xattr.h
+> >>>   xattr: define vfs_getxattr_alloc and vfs_xattr_cmp
+> >>>   evm: re-release
+> >>>   ima: move ima_file_free before releasing the file
+> >>>   security: imbed evm calls in security hooks
+> >>>   evm: inode post removexattr
+> >>>   evm: imbed evm_inode_post_setattr
+> >>>   evm: inode_post_init
+> >>>   fs: add evm_inode_post_init calls
+> >>>   ima: integrity appraisal extension
+> >>>   ima: appraise default rules
+> >>>   ima: inode post_setattr
+> >>>   ima: add ima_inode_setxattr and ima_inode_removexattr
+> >>> --
+> >>
+> >> A summary diffstat would be good to see in patch 00/14.
+> >>
+> >> Lacking that, at least each individual patch should have a diffstat summary
+> >> in it.  Please read Documentation/SubmittingPatches.
+> >>
+> >> ---
+> >> ~Randy
+> >
 
-> So far, every time I've quit X 1.8.0 (1.8-stable tip of tree), it's
-> coredumped and left my console unusable until I restart. (I'm using the
-> tip of the xf86-video-ati tree, and KMS, both of which worked fine with
-> 1.7.5. Obviously I've recompiled all the drivers I'm usingt, or X
-> wouldn't work at all...)
->
-> The backtrace differs depending on whether auditing is enabled or not.
->
-> With auditing on, we are hit with a segfault here:
->
-> #0  0x00007f7e06148985 in _xstat () from /lib/libc.so.6
-> #1  0x00007f7e061198d0 in __tzfile_read () from /lib/libc.so.6
-> #2  0x00007f7e06118c8a in tzset_internal () from /lib/libc.so.6
-> #3  0x00007f7e06118df9 in __tz_convert () from /lib/libc.so.6
-> #4  0x00007f7e06117439 in ctime () from /lib/libc.so.6
-> #5  0x00000000004533c8 in AuditPrefix ()
-> #6  0x0000000000453956 in VAuditF ()
-> #7  0x0000000000453add in AuditF ()
-> #8  0x000000000043e5c6 in CloseDownClient ()
-> #9  0x0000000000443af8 in Dispatch ()
-> #10 0x0000000000420dc5 in main ()
->
-> With it off, I see this instead:
->
-> Program received signal SIGTERM, Terminated.
-> 0x000000000042904c in FreeClientResources ()
-> (gdb) bt
-> #0  0x000000000042904c in FreeClientResources ()
-> #1  0x000000000043e4c2 in CloseDownClient ()
-> #2  0x0000000000443af8 in Dispatch ()
-> #3  0x0000000000420dc5 in main ()
->
-> which might look like normal termination, except that
-> FreeClientResources() of course does not contain an exit(), and the
-> console is still unusable.
->
-> I suspect a double-free() somewhere, and/or heap corruption.
+Documentation/kernel-parameters.txt   |    4 +
+ fs/attr.c                             |    7 +-
+ fs/ext2/xattr_security.c              |   31 +++-
+ fs/ext3/xattr_security.c              |   30 +++-
+ fs/ext4/xattr_security.c              |   30 +++-
+ fs/file_table.c                       |    2 +-
+ fs/xattr.c                            |   63 ++++++-
+ include/linux/capability.h            |    3 -
+ include/linux/evm.h                   |   80 ++++++++
+ include/linux/ima.h                   |   27 ++-
+ include/linux/integrity.h             |   35 ++++
+ include/linux/xattr.h                 |   27 +++-
+ security/Kconfig                      |    2 +-
+ security/Makefile                     |    4 +-
+ security/integrity/Kconfig            |    7 +
+ security/integrity/Makefile           |   12 ++
+ security/integrity/evm/Kconfig        |   13 ++
+ security/integrity/evm/Makefile       |    7 +
+ security/integrity/evm/evm.h          |   38 ++++
+ security/integrity/evm/evm_crypto.c   |  198 +++++++++++++++++++
+ security/integrity/evm/evm_main.c     |  335 +++++++++++++++++++++++++++++++++
+ security/integrity/evm/evm_secfs.c    |  108 +++++++++++
+ security/integrity/iint.c             |  153 +++++++++++++++
+ security/integrity/ima/Kconfig        |   15 ++
+ security/integrity/ima/Makefile       |    4 +-
+ security/integrity/ima/ima.h          |   76 +++++---
+ security/integrity/ima/ima_api.c      |   61 +++++--
+ security/integrity/ima/ima_appraise.c |  152 +++++++++++++++
+ security/integrity/ima/ima_iint.c     |  145 --------------
+ security/integrity/ima/ima_main.c     |  123 ++++++++++---
+ security/integrity/ima/ima_policy.c   |   61 ++++++-
+ security/integrity/integrity.h        |   50 +++++
+ security/security.c                   |   27 +++-
+ security/selinux/hooks.c              |    3 -
+ security/smack/smack.h                |    2 -
+ 35 files changed, 1671 insertions(+), 264 deletions(-)
+ create mode 100644 include/linux/evm.h
+ create mode 100644 include/linux/integrity.h
+ create mode 100644 security/integrity/Kconfig
+ create mode 100644 security/integrity/Makefile
+ create mode 100644 security/integrity/evm/Kconfig
+ create mode 100644 security/integrity/evm/Makefile
+ create mode 100644 security/integrity/evm/evm.h
+ create mode 100644 security/integrity/evm/evm_crypto.c
+ create mode 100644 security/integrity/evm/evm_main.c
+ create mode 100644 security/integrity/evm/evm_secfs.c
+ create mode 100644 security/integrity/iint.c
+ create mode 100644 security/integrity/ima/ima_appraise.c
+ delete mode 100644 security/integrity/ima/ima_iint.c
+ create mode 100644 security/integrity/integrity.h
 
-Nope. This bug only appears with KMS enabled; it does not appear in
-2.6.32.10 (when termination happens normally, with only
+Mimi
 
-[   71.267834] Unpin not necessary for ffff88033d66dc00 !
-
-in the kernel log) but does appear with current tip; seen with 2.6.34rc3
-and later (i.e. as soon as I upgraded the X server).
-
-So this is either a KMS bug corrupting something in userspace, or a bug
-in the X server triggered by the presence of KMS and some feature only
-available in 2.6.33+. It's nearly midnight here so I'm going to leave it
-at that tonight. I'll do a bisection of the kernel tomorrow, and perhaps
-a bisection of the X server, to see where it started crashing between
-1.7.5 and 1.8.0.
