@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab0DUU6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 16:58:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57458 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968Ab0DUU6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 16:58:20 -0400
-Subject: Re: Considerations on sched APIs under RT patch
-From: Peter Zijlstra <peterz@infradead.org>
-To: Primiano Tucci <p.tucci@gmail.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-       tglx <tglx@linutronix.de>
-In-Reply-To: <s2tc5b2c05b1004211338y814bc3b2o547a6eecdf64ca7f@mail.gmail.com>
-References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
-	 <1271755208.1676.422.camel@laptop>
-	 <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
-	 <1271804453.10448.168.camel@gandalf.stny.rr.com>
-	 <t2nc5b2c05b1004202216pd159c9b4mbfc1dc7658fc20e7@mail.gmail.com>
-	 <1271839772.1776.58.camel@laptop>
-	 <1271854016.10448.172.camel@gandalf.stny.rr.com>
-	 <x2mc5b2c05b1004211224s7825933dh531f2ed030610e9e@mail.gmail.com>
-	 <1271879833.1776.186.camel@laptop>
-	 <s2tc5b2c05b1004211338y814bc3b2o547a6eecdf64ca7f@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Apr 2010 22:58:16 +0200
-Message-ID: <1271883496.1776.263.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756632Ab0DUU61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 16:58:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756600Ab0DUU6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 16:58:25 -0400
+Date: Wed, 21 Apr 2010 22:58:07 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>, Dan Carpenter <error27@gmail.com>,
+       Izik Eidus <ieidus@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, kernel-janitors@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch] ksm: check for ERR_PTR from follow_page()
+Message-ID: <20100421205807.GV32034@random.random>
+References: <20100421102759.GA29647@bicker>
+ <4BCF18A8.8080809@redhat.com>
+ <20100421174615.GO32034@random.random>
+ <20100421205305.GO20640@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100421205305.GO20640@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-21 at 22:38 +0200, Primiano Tucci wrote:
-> > No, any syscall can end up blocking/scheduling there are no exceptions.
-> > But blocking doesn't mean its non-deterministic, esp. when coupled with
-> > things like PI.
-> >
-> > But you do have to treat system resources as such, that is they can (and
-> > will) create cross-cpu dependencies, if you do not take that into
-> > account you will of course be surprised.
-> >
-> I actually don't understand why do you recall PI so frequently, it
-> seems to be the unique point of interest.
+On Wed, Apr 21, 2010 at 10:53:05PM +0200, Johannes Weiner wrote:
+> Check below that loop.  If it returns non-null, the first check is
+> whether it IS_ERR().
 
-PI keeps preemptible locks working in a RT environment. Non-preemptible
-or preemptible+PI are both valid RT constructs that can be analyzed 
+Indeed.
 
-> Actually I take care about not sharing cross-cpu resources, but I
-> cannot take care of what the kernel should do.
+> + * Returns the mapped (struct page *), %NULL if no mapping exists, or
+> + * an error pointer if there is a mapping to something not represented
+> + * by a page descriptor (see also vm_normal_page()).
 
-An SMP kernel must be treated as a cross-cpu resource. There's just no
-way around that. For instance, Unix allows two processes on different
-cpus to invoke sched_setscheduler/sched_setaffinity or any number of
-system calls on the same target process. Filesystems are shared etc..
-
-> In my viewpoint is unacceptable that the scheduler apis can led into a
-> rescheduling.
-
-They can even lead to pagefaults and disk IO if you're not careful.
-
-I'm not sure if there are blocking locks left thereabout, but spinlocks
-or rt_mutex, both create cross-cpu dependencies that need to be
-analyzed, !preempt isn't magic in any way.
-
-> It voids any form of process control.
-> If I lose the control while controlling other processes, Quis
-> custodiet ipsos custodes?
-> 
-> P.S. It actually does not happen in other RTOSes, e.g., VxWorks SMP
-
-I don't know any of those, but its impossible to migrate tasks from one
-cpu to another without creating cross-cpu dependencies.
-
-Whether locks are preemptible or not doesn't make them any less
-analyzable, if you use system-calls in your RT program, their
-implementation needs to be considered.
-
-
-
+where exactly in vm_normal_page? Note I already checked vm_normal_page
+before sending the prev email and I didn't immediately see.  I search
+return and they all return NULL except the return pfn_to_page(pfn), so
+is pfn_to_page that returns -EFAULT (the implementations I checked
+don't but there are plenty that I didn't check...).
