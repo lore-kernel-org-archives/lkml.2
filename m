@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab0DUVvH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 17:51:07 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:42332 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756685Ab0DUVu7 (ORCPT
+	id S1756875Ab0DUVwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 17:52:53 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:50879 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756702Ab0DUVvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 17:50:59 -0400
+	Wed, 21 Apr 2010 17:51:18 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org,
        Mimi Zohar <zohar@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
        David Safford <safford@watson.ibm.com>,
        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH 03/14] xattr: define vfs_getxattr_alloc and vfs_xattr_cmp
-Date: Wed, 21 Apr 2010 17:49:43 -0400
-Message-Id: <1271886594-3719-4-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH 07/14] evm: inode post removexattr
+Date: Wed, 21 Apr 2010 17:49:47 -0400
+Message-Id: <1271886594-3719-8-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -23,98 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vfs_getxattr_alloc() and vfs_xattr_cmp() are two new kernel xattr
-helper functions.  vfs_getxattr_alloc() first allocates memory for
-the requested xattr and then retrieves it. vfs_xattr_cmp() compares
-a given value with the contents of an extended attribute.
+When an EVM protected extended attribute is removed, update 'security.evm'.
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Acked-by: Serge Hallyn <serue@us.ibm.com>
 
 diff --git a/fs/xattr.c b/fs/xattr.c
-index 46f87e8..341ad71 100644
+index 341ad71..9372e77 100644
 --- a/fs/xattr.c
 +++ b/fs/xattr.c
-@@ -159,6 +159,64 @@ out_noalloc:
- }
- EXPORT_SYMBOL_GPL(xattr_getsecurity);
+@@ -14,6 +14,7 @@
+ #include <linux/mount.h>
+ #include <linux/namei.h>
+ #include <linux/security.h>
++#include <linux/evm.h>
+ #include <linux/syscalls.h>
+ #include <linux/module.h>
+ #include <linux/fsnotify.h>
+@@ -294,8 +295,10 @@ vfs_removexattr(struct dentry *dentry, const char *name)
+ 	error = inode->i_op->removexattr(dentry, name);
+ 	mutex_unlock(&inode->i_mutex);
  
-+/*
-+ * vfs_getxattr_alloc - allocate memory, if necessary, before calling getxattr
-+ *
-+ * Allocate memory, if not already allocated, or re-allocate correct size,
-+ * before retrieving the extended attribute.
-+ *
-+ * Returns the result of alloc, if failed, or the getxattr operation.
-+ */
-+ssize_t
-+vfs_getxattr_alloc(struct dentry *dentry, const char *name, char **xattr_value,
-+		   size_t xattr_size, gfp_t flags)
-+{
-+	struct inode *inode = dentry->d_inode;
-+	char *value = *xattr_value;
-+	int error;
-+
-+	error = xattr_permission(inode, name, MAY_READ);
-+	if (error)
-+		return error;
-+
-+	if (!inode->i_op->getxattr)
-+		return -EOPNOTSUPP;
-+
-+	error = inode->i_op->getxattr(dentry, name, NULL, 0);
-+	if (error < 0)
-+		return error;
-+
-+	if (!value || (error > xattr_size)) {
-+		value = krealloc(*xattr_value, error + 1, flags);
-+		if (!value)
-+			return -ENOMEM;
-+		memset(value, 0, error + 1);
+-	if (!error)
++	if (!error) {
+ 		fsnotify_xattr(dentry);
++		evm_inode_post_removexattr(dentry, name);
 +	}
-+
-+	error = inode->i_op->getxattr(dentry, name, value, error);
-+	*xattr_value = value;
-+	return error;
-+}
-+
-+/* Compare an extended attribute value with the given value */
-+int vfs_xattr_cmp(struct dentry *dentry, const char *xattr_name,
-+		  const char *value, size_t size, gfp_t flags)
-+{
-+	char *xattr_value = NULL;
-+	int rc;
-+
-+	rc = vfs_getxattr_alloc(dentry, xattr_name, &xattr_value, 0, flags);
-+	if (rc < 0)
-+		return rc;
-+
-+	if ((rc != size) || (memcmp(xattr_value, value, rc) != 0))
-+		rc = -EINVAL;
-+	else
-+		rc = 0;
-+	kfree(xattr_value);
-+	return rc;
-+}
-+
- ssize_t
- vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
+ 	return error;
+ }
+ EXPORT_SYMBOL_GPL(vfs_removexattr);
+diff --git a/include/linux/evm.h b/include/linux/evm.h
+index 1a30beb..93edadd 100644
+--- a/include/linux/evm.h
++++ b/include/linux/evm.h
+@@ -22,6 +22,8 @@ extern void evm_inode_post_setxattr(struct dentry *dentry,
+ 				    const void *xattr_value,
+ 				    size_t xattr_value_len);
+ extern int evm_inode_removexattr(struct dentry *dentry, const char *xattr_name);
++extern void evm_inode_post_removexattr(struct dentry *dentry,
++				       const char *xattr_name);
+ #else
+ static enum integrity_status evm_verifyxattr(struct dentry *dentry,
+ 					     char *xattr_name,
+@@ -50,5 +52,12 @@ static inline int evm_inode_removexattr(struct dentry *dentry,
  {
-diff --git a/include/linux/xattr.h b/include/linux/xattr.h
-index d079bec..8698de3 100644
---- a/include/linux/xattr.h
-+++ b/include/linux/xattr.h
-@@ -68,7 +68,10 @@ ssize_t generic_getxattr(struct dentry *dentry, const char *name, void *buffer,
- ssize_t generic_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size);
- int generic_setxattr(struct dentry *dentry, const char *name, const void *value, size_t size, int flags);
- int generic_removexattr(struct dentry *dentry, const char *name);
--
-+ssize_t vfs_getxattr_alloc(struct dentry *dentry, const char *name,
-+			   char **xattr_value, size_t size, gfp_t flags);
-+int vfs_xattr_cmp(struct dentry *dentry, const char *xattr_name,
-+		  const char *value, size_t size, gfp_t flags);
- #endif  /*  __KERNEL__  */
- 
- #endif	/* _LINUX_XATTR_H */
+ 	return 0;
+ }
++
++static inline void evm_inode_post_removexattr(struct dentry *dentry,
++					      const char *xattr_name)
++{
++	return;
++}
++
+ #endif /* CONFIG_EVM_H */
+ #endif /* LINUX_EVM_H */
 -- 
 1.6.6.1
 
