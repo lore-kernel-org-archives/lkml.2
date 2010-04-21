@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab0DTXw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 19:52:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46370 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753411Ab0DTXw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 19:52:56 -0400
-Message-ID: <4BCE3D88.4010502@zytor.com>
-Date: Tue, 20 Apr 2010 16:49:28 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1753573Ab0DUABF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 20:01:05 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:56940 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab0DUABC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 20:01:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :mime-version:content-type:content-transfer-encoding;
+        b=nmz7TnRONOqZ1cKTNrtH/U4qrDNVOATP04D6Ip2wFPSDSxBsv2e4p1KOEEuK9i6F2d
+         vCfHBN58yhsBH+FiS5rROyQDhC1uXspXDTtlCNSIXP4mNw/FZZNi/T5ZoF5BWSyYLBLd
+         aYaw0Aq1voJuTAWj4aJixcIrYPJ6o29QXuRhU=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH] perf: Fix perf probe build error
+Date: Wed, 21 Apr 2010 02:01:05 +0200
+Message-Id: <1271808065-25290-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 MIME-Version: 1.0
-To: Jan Engelhardt <jengelh@medozas.de>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Alexander E. Patrakov" <patrakov@gmail.com>
-Subject: Re: [patch] vt: deactive Shift In/Out in unicode mode
-References: <alpine.LSU.2.01.1004191555290.17067@obet.zrqbmnf.qr> <20100419153136.3585281f@lxorguk.ukuu.org.uk> <alpine.LSU.2.01.1004191812570.25222@obet.zrqbmnf.qr>
-In-Reply-To: <alpine.LSU.2.01.1004191812570.25222@obet.zrqbmnf.qr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2010 09:20 AM, Jan Engelhardt wrote:
-> 
-> On Monday 2010-04-19 16:31, Alan Cox wrote:
->>>
->>> I am proposing the patch below for inclusion.
->>> Also pullable via
->>> 	git://dev.medozas.de/linux siso
->>
->> It seems to do a lot of other things as well. Can you split out just the
->> relevant bit ?
-> 
-> It's really just the top commit. Perhaps I should rebase it to a
-> v2.6.34-rcX tag so that shortlog does what one expects.
-> 
-> Alexander mentioned:
-> 
-> [quoting the gmane nntp posting which was stripped of To:s and Cc:s]
->>
->> Since KOI7 is not used by any glibc locale, your use case is now 
->> extinct. I think that, unless someone finds out a different use case, 
->> these SI and SO characters should be deactivated completely (and not 
->> just in unicode mode).
-> 
-> Alan, do you agree that the entire SI/SO can/should be removed?
+When we run into dry run mode, we want to make write_kprobe_trace_event
+to succeed on writing the event. Let's initialize it to 0.
 
-VT line drawing characters are generally assumed to be accessible using
-SI/SO (as they are by default.)
+Fixes the following build error:
+	util/probe-event.c:1266: attention : «ret» may be used uninitialized in this function
+	util/probe-event.c:1266: note: «ret» was declared here
 
-	-hpa
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+---
+ tools/perf/util/probe-event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 3967f8f..4fb4803 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -1263,7 +1263,7 @@ static struct strlist *get_kprobe_trace_event_names(int fd, bool include_group)
+ 
+ static int write_kprobe_trace_event(int fd, struct kprobe_trace_event *tev)
+ {
+-	int ret;
++	int ret = 0;
+ 	char *buf = synthesize_kprobe_trace_command(tev);
+ 
+ 	if (!buf) {
+-- 
+1.6.2.3
+
