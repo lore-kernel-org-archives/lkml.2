@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab0DUVu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 17:50:28 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:44596 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755393Ab0DUVuZ (ORCPT
+	id S1756775Ab0DUVul (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 17:50:41 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:58763 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756702Ab0DUVuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 17:50:25 -0400
+	Wed, 21 Apr 2010 17:50:39 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org,
        Mimi Zohar <zohar@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
        David Safford <safford@watson.ibm.com>,
-       Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [PATCH 00/14] EVM
-Date: Wed, 21 Apr 2010 17:49:40 -0400
-Message-Id: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
+       Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH 02/14] security: move LSM xattrnames to xattr.h
+Date: Wed, 21 Apr 2010 17:49:42 -0400
+Message-Id: <1271886594-3719-3-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extended Verification Module(EVM) detects offline tampering of the
-security extended attributes (e.g. security.selinux, security.SMACK64,
-security.ima), which is the basis for LSM permission decisions and,
-with this set of patches, integrity appraisal decisions. To detect
-offline tampering of the extended attributes, EVM maintains an
-HMAC-sha1 across a set of security extended attributes, storing the
-HMAC as the extended attribute 'security.evm'. To verify the integrity
-of an extended attribute, EVM exports evm_verifyxattr(), which
-re-calculates the HMAC and compares it with the version stored in
-'security.evm'.
+Make the security extended attributes names global.
 
-IMA currently maintains an integrity measurement list, containing
-the hashes of all executables, mmaped execute files, and files open
-for read by root (assuming the default measurement policy). The
-measurement list, with other information, can be used to assert the
-integrity of the running system to a third party. The "ima: integrity
-appraisal extension" patch extends IMA with local measurement
-appraisal. The extension stores and maintains the file integrity
-measurement as an extended attribute 'security.ima', which EVM can be
-configured to protect.
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Acked-by: Serge Hallyn <serue@us.ibm.com>
 
-DAC/MAC protect the integrity of a running system.  An offline attack
-can bypass these protection mechanisms by mounting the disk under a 
-different operating system and modifying the file data/metadata.  If
-the disk is subsequently remounted under the EVM + DAC/MAC + IMA
-protected OS, then the hash of the file data won't match the hash stored
-in the IMA xattr, or the TPM-calculated HMAC of the file's metadata won't
-be valid.  Therefore, IMA + MAC + EVM can protect system integrity online
-and detect offline tampering.
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index 39e5ff5..90012b9 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -49,9 +49,6 @@ typedef struct __user_cap_data_struct {
+ } __user *cap_user_data_t;
+ 
+ 
+-#define XATTR_CAPS_SUFFIX "capability"
+-#define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
+-
+ #define VFS_CAP_REVISION_MASK	0xFF000000
+ #define VFS_CAP_REVISION_SHIFT	24
+ #define VFS_CAP_FLAGS_MASK	~VFS_CAP_REVISION_MASK
+diff --git a/include/linux/xattr.h b/include/linux/xattr.h
+index fb9b7e6..d079bec 100644
+--- a/include/linux/xattr.h
++++ b/include/linux/xattr.h
+@@ -33,6 +33,16 @@
+ #define XATTR_USER_PREFIX "user."
+ #define XATTR_USER_PREFIX_LEN (sizeof (XATTR_USER_PREFIX) - 1)
+ 
++/* Security namespace */
++#define XATTR_SELINUX_SUFFIX "selinux"
++#define XATTR_NAME_SELINUX XATTR_SECURITY_PREFIX XATTR_SELINUX_SUFFIX
++
++#define XATTR_SMACK_SUFFIX "SMACK64"
++#define XATTR_NAME_SMACK XATTR_SECURITY_PREFIX XATTR_SMACK_SUFFIX
++
++#define XATTR_CAPS_SUFFIX "capability"
++#define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
++
+ struct inode;
+ struct dentry;
+ 
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index ebee467..1973abe 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -87,9 +87,6 @@
+ #include "netlabel.h"
+ #include "audit.h"
+ 
+-#define XATTR_SELINUX_SUFFIX "selinux"
+-#define XATTR_NAME_SELINUX XATTR_SECURITY_PREFIX XATTR_SELINUX_SUFFIX
+-
+ #define NUM_SEL_MNT_OPTS 5
+ 
+ extern int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm);
+diff --git a/security/smack/smack.h b/security/smack/smack.h
+index c6e9aca..9c773e3 100644
+--- a/security/smack/smack.h
++++ b/security/smack/smack.h
+@@ -126,10 +126,8 @@ struct smack_known {
+ /*
+  * xattr names
+  */
+-#define XATTR_SMACK_SUFFIX	"SMACK64"
+ #define XATTR_SMACK_IPIN	"SMACK64IPIN"
+ #define XATTR_SMACK_IPOUT	"SMACK64IPOUT"
+-#define XATTR_NAME_SMACK	XATTR_SECURITY_PREFIX XATTR_SMACK_SUFFIX
+ #define XATTR_NAME_SMACKIPIN	XATTR_SECURITY_PREFIX XATTR_SMACK_IPIN
+ #define XATTR_NAME_SMACKIPOUT	XATTR_SECURITY_PREFIX XATTR_SMACK_IPOUT
+ 
+-- 
+1.6.6.1
 
-This patch set applies to the security-testing/next tree. They
-prereq remove-kref-set.patch (https://patchwork.kernel.org/patch/86079,
-linux-next commit 8e47f1004).
-
-Much appreciation to Dave Hansen, Serge Hallyn, and Matt Helsley for
-reviewing the patches.
-
-Mimi
-
-Mimi Zohar (14):
-  integrity: move ima inode integrity data management
-  security: move LSM xattrnames to xattr.h
-  xattr: define vfs_getxattr_alloc and vfs_xattr_cmp
-  evm: re-release
-  ima: move ima_file_free before releasing the file
-  security: imbed evm calls in security hooks
-  evm: inode post removexattr
-  evm: imbed evm_inode_post_setattr
-  evm: inode_post_init
-  fs: add evm_inode_post_init calls
-  ima: integrity appraisal extension
-  ima: appraise default rules
-  ima: inode post_setattr
-  ima: add ima_inode_setxattr and ima_inode_removexattr
