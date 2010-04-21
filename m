@@ -1,111 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab0DUBw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 21:52:57 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:42070 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753534Ab0DUBw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 21:52:56 -0400
-Message-ID: <4BCE5A73.3000904@sgi.com>
-Date: Tue, 20 Apr 2010 18:52:51 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1755146Ab0DUByi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 21:54:38 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:60978 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754833Ab0DUByg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 21:54:36 -0400
+Date: Wed, 21 Apr 2010 11:54:28 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Denys Fedorysychenko <nuclearcat@nuclearcat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: endless sync on bdi_sched_wait()? 2.6.33.1
+Message-ID: <20100421015428.GC23541@dastard>
+References: <201003311907.31342.nuclearcat@nuclearcat.com>
+ <20100408092850.GA20488@quack.suse.cz>
+ <20100419013702.GE2520@dastard>
+ <20100419070458.GF2520@dastard>
+ <20100421003309.GB4128@quack.suse.cz>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-CC: Hedi Berriche <hedi@sgi.com>, Jack Steiner <steiner@sgi.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [Patch 1/1] init: Provide a kernel start parameter to increase pid_max
- v2
-References: <4BCE579C.5070100@sgi.com>
-In-Reply-To: <4BCE579C.5070100@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100421003309.GB4128@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Sorry, the previous patch I sent was an incorrect version.  The arg specified
-in the Documentation file was wrong.]
+On Wed, Apr 21, 2010 at 02:33:09AM +0200, Jan Kara wrote:
+> On Mon 19-04-10 17:04:58, Dave Chinner wrote:
+> > The first async flush does:
+> >                                                                  vvvv
+> >     flush-253:16-2497  [000] 616072.897747: writeback_exec: work=13c0 pages=13818, sb=0, kupdate=0, range_cyclic=0 for_background=0
+> >     flush-253:16-2497  [000] 616072.897748: writeback_clear: work=ffff88003d8813c0, refs=1
+> >     flush-253:16-2497  [000] 616072.897753: wbc_writeback_start: dev 253:16 wbc=9d20 towrt=1024 skip=0 sb=0 mode=0 kupd=0 bgrd=0 reclm=0 cyclic=0 more=0 older=0x0 start=0x0 end=0x7fffffffffffffff
+> >     flush-253:16-2497  [000] 616072.897768: wbc_writeback_written: dev 253:16 wbc=9d20 towrt=1024 skip=0 sb=0 mode=0 kupd=0 bgrd=0 reclm=0 cyclic=0 more=0 older=0x0 start=0x0 end=0x7fffffffffffffff
+> > 
+> > Nothing - it does not write any pages towrt (nr_to_write) is
+> > unchanged by the attempted flush.
+>   This looks a bit strange. Surly there are plenty of dirty pages. I guess
+> we never get to ->writepages for XFS.  But then I wonder how does it
+> happen that we return without more_io set. Strange.
 
-Subject: [Patch 1/1] init: Provide a kernel start parameter to increase pid_max
-From: Hedi Berriche <hedi@sgi.com>
+more_io not being set implies that we aren't calling requeue_io().
+So that means it's not caused by I_SYNC being set. If we get down to
+write_cache_pages, it implies that there are no dirty pages
+remaining we can write back.
 
-On a system with a substantial number of processors, the early default pid_max
-of 32k will not be enough.  A system with 1664 CPU's, there are 25163 processes
-started before the login prompt.  It's estimated that with 2048 CPU's we will pass
-the 32k limit.  With 4096, we'll reach that limit very early during the boot cycle,
-and processes would stall waiting for an available pid.
+Given a background flush just completed before this queued async
+flush was executed (didn't seem relevant, so I didn't include
+it), it is entirely possible that there were no dirty pages to
+write in the followup async flushes.
 
-This provides a kernel start parameter to increase the early maximum number of
-pids available.  It does not change any of the defaults.
+> > The third flush - the sync one - does:
+> >                                                                  vvvv
+> >     flush-253:16-2497  [000] 616072.897784: writeback_exec: work=3e58 pages=9223372036854775807, sb=1, kupdate=0, range_cyclic=0 for_background=0
+> >     flush-253:16-2497  [000] 616072.897785: wbc_writeback_start: dev 253:16 wbc=9d20 towrt=1024 skip=0 sb=1 mode=1 kupd=0 bgrd=0 reclm=0 cyclic=0 more=0 older=0x0 start=0x0 end=0x7fffffffffffffff
+> > 
+> > some 75 seconds later having written only 1024 pages. In the mean
+> > time, the traces show dd blocked in balance_dirty_pages():
+> > 
+> >               dd-2498  [000] 616072.908675: wbc_balance_dirty_start: dev 253:16 wbc=fb68 towrt=1536 skip=0 sb=0 mode=0 kupd=0 bgrd=0 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+> >               dd-2498  [000] 616072.908679: wbc_balance_dirty_wait: dev 253:16 wbc=fb68 towrt=1536 skip=0 sb=0 mode=0 kupd=0 bgrd=0 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+> >               dd-2498  [000] 616073.238785: wbc_balance_dirty_start: dev 253:16 wbc=fb68 towrt=1536 skip=0 sb=0 mode=0 kupd=0 bgrd=0 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+> >               dd-2498  [000] 616073.238788: wbc_balance_dirty_wait: dev 253:16 wbc=fb68 towrt=1536 skip=0 sb=0 mode=0 kupd=0 bgrd=0 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+> > And it appears to stay blocked there without doing any writeback at
+> > all - there are no wbc_balance_dirty_pages_written traces at all.
+> > That is, it is blocking until the number of dirty pages is dropping
+> > below the dirty threshold, then continuing to write and dirty more
+> > pages.
+>   I think this happens because sync writeback is running so I_SYNC is set
+> and thus we cannot do any writeout for the inode from balance_dirty_pages.
 
-Signed-off-by: Hedi Berriche <hedi@sgi.com>
-Signed-off-by: Mike Travis <travis@sgi.com>
-Signed-off-by: Robin Holt <holt@sgi.com>
+It's not even calling into writeback so the I_SYNC flag is way out of
+scope ;)
 
----
- Documentation/kernel-parameters.txt |   11 +++++++++++
- kernel/pid.c                        |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+)
+> > <git blame>
+> > 
+> > commit 89e12190 - fix bug in nr_to_write introduced by dcf6a79d
+> > commit dcf6a79d - fix bug in nr_to_write introduced by 05fe478d
+> > commit 05fe478d - data integrity write fix: ignore nr_to_write for
+> > 			WB_SYNC_ALL writes.
+> > 		"This change does indeed make the possibility of
+> > 		long stalls la[r]ger, and that's not a good thing,
+> > 		but lying about data integrity is even worse."
+> > 
+> > IOWs, the observed sync behaviour is as intended - if you keep
+> > dirtying the file, sync will keep cleaning it because it defaults to
+> > being safe. I'd say "not a bug" then. I agree it's not ideal, but
+> > until Jan's inode sync sweep code is accepted I don't think there's
+> > much that can be done about it.
+>   Yes, my writeback sweeping patch was aimed exactly to reliably address
+> this issue. Anyway, if we could get the async stuff working properly then I
+> think livelocks should happen much less often... Need to really find some
+> time for this.
 
---- linux-2.6.32.orig/Documentation/kernel-parameters.txt
-+++ linux-2.6.32/Documentation/kernel-parameters.txt
-@@ -2033,6 +2033,17 @@ and is between 256 and 4096 characters.
- 	pg.		[PARIDE]
- 			See Documentation/blockdev/paride.txt.
- 
-+	pid_max=nn[KMG]	[KNL] Maximum number of PID's to use.  On a system
-+			with a large amount of processors, the default
-+			pid_max may not be sufficient to allow the system
-+			to boot.  The range of allowed values is limited from
-+			pid_max_min to pid_max_max (configuration dependent.)
-+			See kernel/pid.c and include/linux/threads.h for
-+			specific values.  Note that specifying a value
-+			too small may cause the system to fail to boot,
-+			so that value is ignored.  Using a value too large,
-+			and the largest allowed value will be used instead.
-+
- 	pirq=		[SMP,APIC] Manual mp-table setup
- 			See Documentation/x86/i386/IO-APIC.txt.
- 
---- linux-2.6.32.orig/kernel/pid.c
-+++ linux-2.6.32/kernel/pid.c
-@@ -53,6 +53,36 @@ int pid_max_max = PID_MAX_LIMIT;
- #define BITS_PER_PAGE		(PAGE_SIZE*8)
- #define BITS_PER_PAGE_MASK	(BITS_PER_PAGE-1)
- 
-+static int __init set_pid_max(char *str)
-+{
-+	u64 maxp;
-+
-+	if (!str)
-+		return -EINVAL;
-+
-+	maxp = memparse(str, &str);
-+
-+	if (maxp < pid_max_min) {
-+		pr_warning(
-+		    "pid_max smaller than minimum allowed value (%u)\n",
-+			pid_max_min);
-+		return -EINVAL;
-+	}
-+	if (maxp > pid_max_max) {
-+		pr_warning(
-+		    "pid_max larger than maximum allowed value, using %u\n",
-+			pid_max_max);
-+		pid_max = pid_max_max;
-+	} else {
-+		pid_max = maxp;
-+		pr_info("pid_max set to %u\n", pid_max);
-+	}
-+
-+	return 0;
-+}
-+
-+early_param("pid_max", set_pid_max);
-+
- static inline int mk_pid(struct pid_namespace *pid_ns,
- 		struct pidmap *map, int off)
- {
+I think the async writeback is working correctly. It's just that if
+we queue async writeback, and it runs directly after a previous
+async writeback command was executed, it's possible it has nothing
+to do. The problem is that the sync writeback will wait on pages
+under writeback as it finds them, so it's likely to be running while
+more pages get dirtied and that's when the the tail-chase in
+write_cache_pages() starts.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
