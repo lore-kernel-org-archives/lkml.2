@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536Ab0DUUmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 16:42:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58836 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab0DUUmk convert rfc822-to-8bit (ORCPT
+	id S1756541Ab0DUUoA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 16:44:00 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57757 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab0DUUn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 16:42:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=bIY+RU0BJ/mYDwquCaeMuP6+gTzVzQYcCRNnSJo4KoedIZ9EE7BelDFEaJ1sqFCY3q
-         xs5HvpSQP3aHiH8WMBfaLb5L18qjmO2LQlysJ86fAY8t0XU4wKRrQYoMzPCsRJgfVt0r
-         0gy3yBQJ7RDMWpP4KLE3LX+6d+6bTFFPrG1Rw=
+	Wed, 21 Apr 2010 16:43:58 -0400
+Date: Wed, 21 Apr 2010 22:43:54 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: hpa@zytor.com
+Cc: mingo@elte.hu, tglx@linutronix.de, x86@kernel.org,
+       linux-kernel@vger.kernel.org, Frank Arnold <frank.arnold@amd.com>
+Subject: Re: [PATCH 0/5] AMD L3 cache index disable fixes for .35
+Message-ID: <20100421204354.GA30770@aftab>
+References: <1271349663-16670-1-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
-In-Reply-To: <20100408140944.GQ10103@kernel.dk>
-References: <x49ochv7yi3.fsf@segfault.boston.devel.redhat.com>
-	 <20100407214631.GL3206@redhat.com> <20100408110442.GK10103@kernel.dk>
-	 <20100408140515.GB10879@redhat.com> <20100408140944.GQ10103@kernel.dk>
-Date: Wed, 21 Apr 2010 16:42:38 -0400
-X-Google-Sender-Auth: 8cf7a78a0e2d8502
-Message-ID: <z2u170fa0d21004211342ncaf04f90h2cd7ebe832dcc46a@mail.gmail.com>
-Subject: Re: [patch,rfc v2] ext3/4: enhance fsync performance when using cfq
-From: Mike Snitzer <snitzer@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <jens.axboe@oracle.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-       linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-       dm-devel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271349663-16670-1-git-send-email-bp@amd64.org>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 8, 2010 at 10:09 AM, Jens Axboe <jens.axboe@oracle.com> wrote:
-> On Thu, Apr 08 2010, Vivek Goyal wrote:
->> On Thu, Apr 08, 2010 at 01:04:42PM +0200, Jens Axboe wrote:
->> > On Wed, Apr 07 2010, Vivek Goyal wrote:
->> > > On Wed, Apr 07, 2010 at 05:18:12PM -0400, Jeff Moyer wrote:
->> > > > Hi again,
->> > > >
->> > > > So, here's another stab at fixing this.  This patch is very much an RFC,
->> > > > so do not pull it into anything bound for Linus.  ;-)  For those new to
->> > > > this topic, here is the original posting:  http://lkml.org/lkml/2010/4/1/344
->> > > >
->> > > > The basic problem is that, when running iozone on smallish files (up to
->> > > > 8MB in size) and including fsync in the timings, deadline outperforms
->> > > > CFQ by a factor of about 5 for 64KB files, and by about 10% for 8MB
->> > > > files.  From examining the blktrace data, it appears that iozone will
->> > > > issue an fsync() call, and will have to wait until it's CFQ timeslice
->> > > > has expired before the journal thread can run to actually commit data to
->> > > > disk.
->> > > >
->> > > > The approach below puts an explicit call into the filesystem-specific
->> > > > fsync code to yield the disk so that the jbd[2] process has a chance to
->> > > > issue I/O.  This bring performance of CFQ in line with deadline.
->> > > >
->> > > > There is one outstanding issue with the patch that Vivek pointed out.
->> > > > Basically, this could starve out the sync-noidle workload if there is a
->> > > > lot of fsync-ing going on.  I'll address that in a follow-on patch.  For
->> > > > now, I wanted to get the idea out there for others to comment on.
->> > > >
->> > > > Thanks a ton to Vivek for spotting the problem with the initial
->> > > > approach, and for his continued review.
->> > > >
-...
->> > > So we got to take care of two issues now.
->> > >
->> > > - Make it work with dm/md devices also. Somehow shall have to propogate
->> > >   this yield semantic down the stack.
->> >
->> > The way that Jeff set it up, it's completely parallel to eg congestion
->> > or unplugging. So that should be easily doable.
->> >
->>
->> Ok, so various dm targets now need to define "yield_fn" and propogate the
->> yield call to all the component devices.
->
-> Exactly.
+From: Borislav Petkov <bp@amd64.org>
+Date: Thu, Apr 15, 2010 at 06:40:58PM +0200
 
-To do so doesn't DM (and MD) need a blk_queue_yield() setter to
-establish its own yield_fn?  The established dm_yield_fn would call
-blk_yield() for all real devices in a given DM target.  Something like
-how blk_queue_merge_bvec() or blk_queue_make_request() allow DM to
-provide functional extensions.
+Ping.
 
-I'm not seeing such a yield_fn hook for stacking drivers to use. And
-as is, jbd and jbd2 just call blk_yield() directly and there is no way
-for the block layer to call into DM.
+It would be cool if we could sort out objections soon (in case there are
+any, of course) so that the patches can have some -tip time before the
+.35 merge window.
 
-What am I missing?
+Thanks.
 
-Thanks,
-Mike
+> From: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> Hi,
+> 
+> this is a small patchset of fixes for L3 CID which have accumulated over
+> the last couple of weeks. They serve as a preparation for disabling L3
+> cache indices whenever an L3 MCE triggers, has been evaluated and the
+> offending index thresholded and, if error rate is excessively high,
+> disabled. Those patches will be coming up later though.
+> 
+> Patches 1,3,4 are cleanups and unifications which save us a little bit
+> of percpu memory in favor of dynamic allocation. Also, we have an L3
+> cache descriptor per node now instead of having this information per
+> CPU.
+> 
+> I triggered a lockdep warning in lockdep_trace_alloc() during testing
+> due to the fact that we may run with disabled interrupts that early
+> in the boot process. Therefore, I have a GFP_ATOMIC in patch 3 there
+> allocating the cache descriptors. I'm open for suggestions in case this
+> is undesired.
+> 
+> Patch 2 is a fix which triggers when we run as a guest on Xen due to Xen
+> not exporting CPU PCI config space to the guests.
+> 
+> And finally #5 is a required fix.
+> 
+> The patchset is also available at
+> git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git l3-for-35
+> 
+> Please queue for .35,
+> thanks.
+> 
+
+-- 
+Regards/Gruss,
+Boris.
+
+--
+Advanced Micro Devices, Inc.
+Operating Systems Research Center
