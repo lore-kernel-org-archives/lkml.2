@@ -1,53 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab0DURyi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 13:54:38 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34479 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756091Ab0DURyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 13:54:36 -0400
-Date: Wed, 21 Apr 2010 18:58:52 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Hedi Berriche <hedi@sgi.com>
-Cc: Mike Travis <travis@sgi.com>, Ingo Molnar <mingo@elte.hu>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Jack Steiner <steiner@sgi.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
- pid_max v2
-Message-ID: <20100421185852.3397f1da@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100421165934.GN16427@zorg.emea.sgi.com>
-References: <4BCE579C.5070100@sgi.com>
-	<4BCE5A73.3000904@sgi.com>
-	<20100421102350.4c222e6b@lxorguk.ukuu.org.uk>
-	<20100421165934.GN16427@zorg.emea.sgi.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756101Ab0DUR52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 13:57:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40034 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756032Ab0DUR51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 13:57:27 -0400
+Message-ID: <4BCF3C5E.5000103@zytor.com>
+Date: Wed, 21 Apr 2010 10:56:46 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@novell.com>
+CC: mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: introduce and use percpu_inc()
+References: <4BCF261F020000780003B33C@vpn.id2.novell.com>
+In-Reply-To: <4BCF261F020000780003B33C@vpn.id2.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Apr 2010 17:59:34 +0100
-Hedi Berriche <hedi@sgi.com> wrote:
-
-> On Wed, Apr 21, 2010 at 10:20 Alan Cox wrote:
-> | > of 32k will not be enough.  A system with 1664 CPU's, there are 25163 processes
-> | > started before the login prompt.  It's estimated that with 2048 CPU's we will pass
-> | 
-> | Is that perhaps the bug not the 32K limit?
+On 04/21/2010 07:21 AM, Jan Beulich wrote:
+> ... generating slightly smaller code.
 > 
-> Doubt it: I just checked on an *idle* 1664 CPUs system and I can see 26844
-> tasks, all but few being kernel threads.
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-So why have we got 26844 tasks. Isn't that a rather more relevant
-question.
+How much smaller?  Keep in mind that although INC is smaller than ADD,
+the former has flag dependencies that the latter doesn't...
 
-And as I asked before - how does Tejun's work on sanitizing work queues
-affect this ?
-
-Alan
+	-hpa
