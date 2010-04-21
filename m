@@ -1,79 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab0DUGch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 02:32:37 -0400
-Received: from mail.gmx.net ([213.165.64.20]:56724 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752607Ab0DUGcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 02:32:35 -0400
-X-Authenticated: #15668376
-X-Provags-ID: V01U2FsdGVkX1+j39pgSe2jJ3NL381NI8uhgkopFA3BR9AHVbdlQq
-	Btsi2pz/pG8R42
-From: Sven Eckelmann <sven.eckelmann@gmx.de>
-To: Mikal Sande <mikal.sande@gmail.com>
-Subject: Re: [PATCH] Staging: batman-adv: fix checkpath.pl issues
-Date: Wed, 21 Apr 2010 08:32:31 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-3-amd64; KDE/4.4.2; x86_64; ; )
-Cc: andrew@lunn.ch, lindner_marek@yahoo.de, gregkh@suse.de,
-       siwu@hrz.tu-chemnitz.de, sdietrich@novell.com, linus.luessing@web.de,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1271810978.14405.14.camel@pondus>
-In-Reply-To: <1271810978.14405.14.camel@pondus>
+	id S1752766Ab0DUGkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 02:40:06 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:39336 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607Ab0DUGkC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 02:40:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EvM1jM8AZ4naDJbg8pkSvreNCpgPFoNjNbvWaeGJzb7N3CYHP7aI+QryGD7vgCXR+C
+         ScASNYdIRp0b6KfCc+UJwQ7AEWRLG416Ts0X9TtYebO8sizk+Se64FdkyhrIxK1c4l++
+         Dxh4ENJjaGKIzEVRzZF3Fk47CW5vgDFTG9Nk0=
+Date: Tue, 20 Apr 2010 23:39:54 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [PATCH 2/2] input: Add LED support to Synaptics device
+Message-ID: <20100421063954.GK4364@core.coreip.homeip.net>
+References: <1271257823-23566-1-git-send-email-tiwai@suse.de>
+ <1271257823-23566-3-git-send-email-tiwai@suse.de>
+ <20100415191217.GA1495@ucw.cz>
+ <s5hy6gnu8rv.wl%tiwai@suse.de>
+ <s5hiq7npvrb.wl%tiwai@suse.de>
+ <20100421054303.GC4364@core.coreip.homeip.net>
+ <s5hbpddz58s.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4963661.re7cq6tlug";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha512
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004210832.32710.sven.eckelmann@gmx.de>
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.57999999999999996
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hbpddz58s.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4963661.re7cq6tlug
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 21, 2010 at 08:31:15AM +0200, Takashi Iwai wrote:
+> At Tue, 20 Apr 2010 22:43:03 -0700,
+> Dmitry Torokhov wrote:
+> > 
+> > On Mon, Apr 19, 2010 at 12:44:08PM +0200, Takashi Iwai wrote:
+> > > At Fri, 16 Apr 2010 10:00:20 +0200,
+> > > I wrote:
+> > > > 
+> > > > At Thu, 15 Apr 2010 21:12:18 +0200,
+> > > > Pavel Machek wrote:
+> > > > > 
+> > > > > Hi!
+> > > > > 
+> > > > > > The new Synaptics devices have an LED on the top-left corner.
+> > > > > > This is controlled via the command 0x0a with parameters 0x88 or 0x10.
+> > > > > > 
+> > > > > > The detection of the LED isn't clear yet.  It should have been the new
+> > > > > > capability bits that indicate the presence, but on real machines, it
+> > > > > > doesn't fit.  So, for the time being, the driver checks the product id
+> > > > > > in the ext capability bits and assumes that LED exists on the known
+> > > > > > devices.
+> > > > > > 
+> > > > > > The support of LED is controlled via a normal input event with EV_LED
+> > > > > > bit mask.  It supports LED_MUTE bit.  X driver can detect the LED
+> > > > > > support by checking these bits.
+> > > > > 
+> > > > > Could we use generic LED API for this?
+> > > > 
+> > > > Yeah, actually I started implementing with LED ADI at first.
+> > > > 
+> > > > But, then it turned out to be that it's much easier to use the
+> > > > existing LED input bits since this LED is really tightly coupled with
+> > > > the synaptics input device.  An individual LED device makes hard to
+> > > > find out the corresponding input device.
+> > > > 
+> > > > If we assume there is only one synaptics and only one synaptics-LED
+> > > > device, then yes, the situation can be a bit easier, though.
+> > > > 
+> > > > > It is not really 'mute' led after all...
+> > > > 
+> > > > If the problem is the misuse of LED_MUTE bit, how about adding a new
+> > > > LED bit, e.g. LED_TOUCHPAD?
+> > > 
+> > > The revised patch with an addition of LED_TOUCHPAD is below.
+> > > 
+> > 
+> > Sorry Takashi, but I will not add any new LED types to input. Even
+> > current input LEDs are going to be accessible thought standard LED
+> > framework (even though I have not apploed Samuel's patch yet I do think
+> > it would move kernel in the right direction).
+> 
+> Hrm, OK, we can live in other way, too.  For touchpad, it wouldn't be
+> a big problem because it's likely a single device.
+> 
+> But, how can we link a led class device and another device, in
+> general?
 
-Mikal Sande wrote:
-> >>From fc01d526b79f61248191493c7ac779def6b50281 Mon Sep 17 00:00:00 2001
->=20
-> From: Mikal Sande <mikal.sande@gmail.com>
-> Date: Wed, 21 Apr 2010 00:18:14 +0200
-> Subject: [PATCH] Staging: batman-adv: fix checkpath.pl issues
->  This is a patch to all the .c files in batman-adv that fixes the
-> checkpatch.pl issues Signed-off-by: Mikal Sande <mikal.sande@gmail.com>
+I think this question is to Richard, I am a bit fuzzy on LED subsystem.
+But in general I'd expect LED have touchpad input device as parent.
 
-Your patch doesn't apply anymore. See
-1270341625-28764-1-git-send-email-luisbg@ubuntu.com and follow ups [1].
+> 
+> Also, another remaining question is the lifetime of led device.
+> The mouse device tends to be re-assigned often, e.g. at each time you
+> suspend/hibernate.
 
-Best regards,
-	Sven Eckelmann
+We go to a great lengths to properly resume the device keeping the same
+input_dev structure and the same event node (for historical reasons
+really, nowadays X is hotplug aware so we could do without), do you see
+it being recreated often?
 
-[1] https://lists.open-mesh.org/pipermail/b.a.t.m.a.n/2010-April/002476.html
+>  Should led device also be removed and revived at
+> each time, or should we keep it and just ignore event?  If we remove
+> it, how can we avoid race?
 
---nextPart4963661.re7cq6tlug
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+I am not sure what race you see - psmouse protocol switch should not
+race so if you remove LED there you shoudl be race-free. If you see
+something racing I am definitely interested in hearing about it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Thanks!
 
-iQIcBAABCgAGBQJLzpv/AAoJEF2HCgfBJntGC7gQAIMKOkDqhjRzRT3+JfgjhD7Z
-zZtxQTtwtjBvglkw2hK2aEI3uXhZyMS4I96iWxo5EN6bDW+zLWQLvvvxP6BpLrmO
-Ab2MZj+bAbrhsGIFLsEaCG21OWV/bBbtxVk3cUVXZo5O0hoLBS/mNXipFBp+mt/7
-3woqJc4liLZVKMDHVczOODYL3adDq7n4jnF6oWWGeQ3xvEHKcR/pUFu6WThg5TZ2
-hnmrIdy+V9WUnNnQOP8/akIcgAadh07vujUkYFGEhTV8+ZP3C3pn2fG21CHp6AZ7
-ig5ODkpewfJY1YQHztVcXjKqn/k6U3rUVU8V1+Ki3T5EYt00N4Zeg96d1oKDLnuj
-/bKRo5kPH2uyTDn029CCyez2b/oVLqz7P1NaJJH5+tKoA2NmJ/aar5kKZ72F9RgP
-sftgrQE7xbupRlZEt9i81rBIIyI1ZTrJb8zfJOCRJ4vSXeiXBvlGhylRBopJYbgf
-/xG02Bout6ETqScIMxTI9KP+EMLXa2SXROU+ymlmmDCb+lKwsrh5494HFPbwRmpE
-yR6zDdTXL0LqZ3l/qDkuz+8k5xcTN3uw/1dRgcezmJSbWZx6+KwVqaOG/4WXOImd
-WKRRaIiFI0twXgaLtZzzgTdyQqPFnhoKzKCk+FrY6gD93gYpkmzgIvMVDjMuC+l9
-v7BmGeMy9XU8a0cuRYut
-=QHF0
------END PGP SIGNATURE-----
-
---nextPart4963661.re7cq6tlug--
+-- 
+Dmitry
