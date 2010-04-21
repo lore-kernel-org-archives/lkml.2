@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab0DUGbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 02:31:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60774 "EHLO mx2.suse.de"
+	id S1752698Ab0DUGcd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 02:32:33 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46217 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722Ab0DUGbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 02:31:17 -0400
-Date: Wed, 21 Apr 2010 08:31:15 +0200
-Message-ID: <s5hbpddz58s.wl%tiwai@suse.de>
+	id S1752607Ab0DUGcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 02:32:31 -0400
+Date: Wed, 21 Apr 2010 08:32:30 +0200
+Message-ID: <s5haasxz56p.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] input: Add LED support to Synaptics device
-In-Reply-To: <20100421054303.GC4364@core.coreip.homeip.net>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] input: Add support of Synaptics Clickpad device
+In-Reply-To: <20100421054455.GD4364@core.coreip.homeip.net>
 References: <1271257823-23566-1-git-send-email-tiwai@suse.de>
-	<1271257823-23566-3-git-send-email-tiwai@suse.de>
-	<20100415191217.GA1495@ucw.cz>
-	<s5hy6gnu8rv.wl%tiwai@suse.de>
-	<s5hiq7npvrb.wl%tiwai@suse.de>
-	<20100421054303.GC4364@core.coreip.homeip.net>
+	<1271257823-23566-2-git-send-email-tiwai@suse.de>
+	<20100419083221.GB26102@core.coreip.homeip.net>
+	<s5hochfpwf6.wl%tiwai@suse.de>
+	<20100421054455.GD4364@core.coreip.homeip.net>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -29,69 +27,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Tue, 20 Apr 2010 22:43:03 -0700,
+At Tue, 20 Apr 2010 22:44:55 -0700,
 Dmitry Torokhov wrote:
 > 
-> On Mon, Apr 19, 2010 at 12:44:08PM +0200, Takashi Iwai wrote:
-> > At Fri, 16 Apr 2010 10:00:20 +0200,
-> > I wrote:
-> > > 
-> > > At Thu, 15 Apr 2010 21:12:18 +0200,
-> > > Pavel Machek wrote:
-> > > > 
-> > > > Hi!
-> > > > 
-> > > > > The new Synaptics devices have an LED on the top-left corner.
-> > > > > This is controlled via the command 0x0a with parameters 0x88 or 0x10.
-> > > > > 
-> > > > > The detection of the LED isn't clear yet.  It should have been the new
-> > > > > capability bits that indicate the presence, but on real machines, it
-> > > > > doesn't fit.  So, for the time being, the driver checks the product id
-> > > > > in the ext capability bits and assumes that LED exists on the known
-> > > > > devices.
-> > > > > 
-> > > > > The support of LED is controlled via a normal input event with EV_LED
-> > > > > bit mask.  It supports LED_MUTE bit.  X driver can detect the LED
-> > > > > support by checking these bits.
-> > > > 
-> > > > Could we use generic LED API for this?
-> > > 
-> > > Yeah, actually I started implementing with LED ADI at first.
-> > > 
-> > > But, then it turned out to be that it's much easier to use the
-> > > existing LED input bits since this LED is really tightly coupled with
-> > > the synaptics input device.  An individual LED device makes hard to
-> > > find out the corresponding input device.
-> > > 
-> > > If we assume there is only one synaptics and only one synaptics-LED
-> > > device, then yes, the situation can be a bit easier, though.
-> > > 
-> > > > It is not really 'mute' led after all...
-> > > 
-> > > If the problem is the misuse of LED_MUTE bit, how about adding a new
-> > > LED bit, e.g. LED_TOUCHPAD?
+> On Mon, Apr 19, 2010 at 12:29:49PM +0200, Takashi Iwai wrote:
+> > Hi Dmitry,
 > > 
-> > The revised patch with an addition of LED_TOUCHPAD is below.
+> > At Mon, 19 Apr 2010 01:32:22 -0700,
+> > Dmitry Torokhov wrote:
+> > > 
+> > > Hi Takashi,
+> > > 
+> > > On Wed, Apr 14, 2010 at 05:10:22PM +0200, Takashi Iwai wrote:
+> > > > Add the detection of Synaptics Clickpad device.
+> > > > The device can be detected a new query command 0x0c.  The clickpad
+> > > > flags are in cap[0]:4 and cap[1]:0 bits.  But, the driver checks
+> > > > first the product id bits in the ext capabilities to be sure, so
+> > > > that it skips the new check on older devices.
+> > > > 
+> > > 
+> > > Instead of looking at the product id, can we check the number of
+> > > supported extended capabilities queries and act accordingly, like the
+> > > patch below?
+> > 
+> > Yes, it worked.  (Though, I've tested only new machines.)
 > > 
 > 
-> Sorry Takashi, but I will not add any new LED types to input. Even
-> current input LEDs are going to be accessible thought standard LED
-> framework (even though I have not apploed Samuel's patch yet I do think
-> it would move kernel in the right direction).
+> 
+> Seems to be working on older (at least one ;) ) as well.
+> 
+> > 
+> > > @@ -162,6 +163,16 @@ static int synaptics_capability(struct psmouse *psmouse)
+> > >  				priv->ext_cap &= 0xff0fff;
+> > >  		}
+> > >  	}
+> > > +
+> > > +	if (SYN_EXT_CAP_REQUESTS(priv->capabilities) >= 4) {
+> > > +		if (synaptics_send_cmd(psmouse, SYN_QUE_EXT_CAPAB_0C, cap)) {
+> > > +			printk(KERN_ERR "Synaptics claims to have extended capability 0x0c,"
+> > > +			       " but I'm not able to read it.");
+> > 
+> > Here missing a newline, BTW.
+> > 
+> 
+> Fixed. Thank you for testing. I have that patch in 'for-linus' for .34.
+> Please push your synaptics X changes upstream as well.
 
-Hrm, OK, we can live in other way, too.  For touchpad, it wouldn't be
-a big problem because it's likely a single device.
+Thanks.  It was already submitted.
+I'm going to repost the revised X patch later.
 
-But, how can we link a led class device and another device, in
-general?
-
-Also, another remaining question is the lifetime of led device.
-The mouse device tends to be re-assigned often, e.g. at each time you
-suspend/hibernate.  Should led device also be removed and revived at
-each time, or should we keep it and just ignore event?  If we remove
-it, how can we avoid race?
-
-
-thanks,
 
 Takashi
