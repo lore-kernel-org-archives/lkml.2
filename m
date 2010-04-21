@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab0DUBDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 21:03:36 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:35433 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326Ab0DUBDf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 21:03:35 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 21 Apr 2010 09:59:35 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Larry Woodman <lwoodman@redhat.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       linux-mm@kvack.org
-Subject: Re: repost - RFC [Patch] Remove
- "please try 'cgroup_disable=memory' option if you don't want memory cgroups"
- printk at boot time.
-Message-Id: <20100421095935.54109d78.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4BCE4D34.5050200@cn.fujitsu.com>
-References: <1271773587.28748.134.camel@dhcp-100-19-198.bos.redhat.com>
-	<20100421092502.787371b5.kamezawa.hiroyu@jp.fujitsu.com>
-	<4BCE4D34.5050200@cn.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754455Ab0DUBEN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 21:04:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59802 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752818Ab0DUBEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 21:04:11 -0400
+Message-ID: <4BCE4F6E.10301@cn.fujitsu.com>
+Date: Wed, 21 Apr 2010 09:05:50 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Eric Paris <eparis@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Eric Paris <eparis@parisplace.org>, Miles Lane <miles.lane@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: INFO: suspicious rcu_dereference_check() usage - include/linux/cgroup.h:492
+ invoked rcu_dereference_check() without protection!
+References: <a44ae5cd1003071726u1f94336h7ab6c7b80d16723b@mail.gmail.com> <20100311032843.GE6767@linux.vnet.ibm.com> <q2x7e0fb38c1004121144rb097e521hd2a7d8cea77c54b7@mail.gmail.com> <1271098032.4807.137.camel@twins> <1271242058.32749.19.camel@laptop> <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com> <20100419230136.GA16856@linux.vnet.ibm.com>
+In-Reply-To: <20100419230136.GA16856@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Apr 2010 08:56:20 +0800
-Li Zefan <lizf@cn.fujitsu.com> wrote:
-
-> > My biggest concern is that we don't have man(5) cgroup as other file systems.
-> > If we have man(5), the best place for this kind of information will be it.
-> > I think most of users will never see kernel-parameter.txt ..
-> > 
-> > If usual distros are shipped with man(5) cgroup, I agree removing
-> > this in upstream.
-> > (We have man pages for libcgroup but not man(5) for cgroup file system.)
-> > 
-> > I'm sorry if I don't notice that the latest man package has cgroup section.
-> > 
+> commit 2836f18139267ea918ed2cf39023fb0eb38c4361
+> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Date:   Mon Apr 19 15:59:50 2010 -0700
 > 
-> We have a man-page for cpuset, which was written by Paul Jackson,
-> the author of cpuset.
+>     rcu: fix RCU lockdep splat on freezer_fork path
+>     
+>     Add an RCU read-side critical section to suppress this false positive.
+>     
+>     Located-by: Eric Paris <eparis@parisplace.org>
+>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-But there is no description about "cpuset can be mounted as cgroup".
+> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+> index da5e139..e5c0244 100644
+> --- a/kernel/cgroup_freezer.c
+> +++ b/kernel/cgroup_freezer.c
+> @@ -205,9 +205,12 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
+>  	 * No lock is needed, since the task isn't on tasklist yet,
+>  	 * so it can't be moved to another cgroup, which means the
+>  	 * freezer won't be removed and will be valid during this
+> -	 * function call.
+> +	 * function call.  Nevertheless, apply RCU read-side critical
+> +	 * section to suppress RCU lockdep false positives.
+>  	 */
 
-Maybe there are no updates for 2 years even if it exists.
+It was me that added the original comment.
 
-Thanks,
--Kame
+> +	rcu_read_lock();
+>  	freezer = task_freezer(task);
+> +	rcu_read_unlock();
+>  
+>  	/*
+>  	 * The root cgroup is non-freezable, so we can skip the
 
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
