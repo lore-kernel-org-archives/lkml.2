@@ -1,53 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab0DUDhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 23:37:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41415 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751138Ab0DUDhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 23:37:17 -0400
-Message-ID: <4BCE72D6.6010809@redhat.com>
-Date: Tue, 20 Apr 2010 23:36:54 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S1751494Ab0DUDpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 23:45:38 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:35142 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab0DUDpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 23:45:35 -0400
+Date: Tue, 20 Apr 2010 22:45:32 -0500
+From: "Serge E. Hallyn" <serue@us.ibm.com>
+To: Greg KH <greg@kroah.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>,
+       Ashwin Ganti <ashwin.ganti@gmail.com>, rsc@swtch.com, ericvh@gmail.com,
+       linux-security-module@vger.kernel.org, Ron Minnich <rminnich@gmail.com>,
+       jt.beard@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
+       Eric Paris <eparis@redhat.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
+Message-ID: <20100421034532.GA9254@us.ibm.com>
+References: <20100421012749.GA21338@us.ibm.com>
+ <20100421012908.GB24251@us.ibm.com>
+ <20100421030406.GB10258@kroah.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: [Bug #15672] KVM bug, git bisected
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.7L.6RSzLB@tosh> <4BCE188A.1060408@redhat.com>
-In-Reply-To: <4BCE188A.1060408@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100421030406.GB10258@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2010 05:11 PM, Rik van Riel wrote:
-> On 04/19/2010 11:19 PM, Rafael J. Wysocki wrote:
->> This message has been generated automatically as a part of a summary
->> report
->> of recent regressions.
->>
->> The following bug entry is on the current list of known regressions
->> from 2.6.33. Please verify if it still should be listed and let the
->> tracking team
->> know (either way).
->>
->>
->> Bug-Entry : http://bugzilla.kernel.org/show_bug.cgi?id=15672
->> Subject : KVM bug, git bisected
->> Submitter : Kent Overstreet<kent.overstreet@gmail.com>
->> Date : 2010-03-27 12:43 (24 days old)
->> First-Bad-Commit:
->> http://kernel.org/git/linus/5beb49305251e5669852ed541e8e2f2f7696c53e
->> Message-ID :<4BADFD74.8060904@gmail.com>
->> References : http://marc.info/?l=linux-kernel&m=126969385121711&w=2
->
-> Should be fixed by commit ea90002b0fa7bdee86ec22eba1d951f30bf043a6
+Quoting Greg KH (greg@kroah.com):
+> On Tue, Apr 20, 2010 at 08:29:08PM -0500, Serge E. Hallyn wrote:
+> > This is a driver that adds Plan 9 style capability device
+> > implementation.  See Documentation/p9auth.txt for a description
+> > of how to use this.
+> 
+> Hm, you didn't originally write this driver, so it would be good to get
+> some original authorship information in here to keep everything correct,
+> right?
 
-Never mind me - this is a harmless (but loud) overflow
-of PREEMPT_BITS in the preempt count.
+That's why I left the MODULE_AUTHOR line in there - not sure what
+else to do for that.  I'll add a comment in p9auth.txt, especially
+pointing back to Ashwin's original paper.
 
+> >  Documentation/p9auth.txt     |   47 ++++
+> >  drivers/char/Kconfig         |    2 +
+> >  drivers/char/Makefile        |    2 +
+> >  drivers/char/p9auth/Kconfig  |    9 +
+> >  drivers/char/p9auth/Makefile |    1 +
+> >  drivers/char/p9auth/p9auth.c |  517 ++++++++++++++++++++++++++++++++++++++++++
+> 
+> Is this code really ready for drivers/char/?  What has changed in it
+> that makes it ok to move out of the staging tree?
+
+It was dropped from staging :)  I don't particularly care to see it
+go back into staging, as opposed to working out issues out of tree
+(assuming they are solvable).  For one thing, as you note below,
+there is the question of whether it should be a device driver at
+all.
+
+> And who is going to maintain it?  You?  Or someone else?
+
+If Ashwin doesn't want to maintain it, I'll do it.  Either way.
+
+> >  6 files changed, 578 insertions(+), 0 deletions(-)
+> >  create mode 100644 Documentation/p9auth.txt
+> >  create mode 100644 drivers/char/p9auth/Kconfig
+> >  create mode 100644 drivers/char/p9auth/Makefile
+> >  create mode 100644 drivers/char/p9auth/p9auth.c
+> > 
+> > diff --git a/Documentation/p9auth.txt b/Documentation/p9auth.txt
+> > new file mode 100644
+> > index 0000000..14a69d8
+> > --- /dev/null
+> > +++ b/Documentation/p9auth.txt
+> > @@ -0,0 +1,47 @@
+> > +The p9auth device driver implements a plan-9 factotum-like
+> > +capability API.  Tasks which are privileged (authorized by
+> > +possession of the CAP_GRANT_ID privilege (POSIX capability))
+> > +can write new capabilities to /dev/caphash.  The kernel then
+> > +stores these until a task uses them by writing to the
+> > +/dev/capuse device.  Each capability represents the ability
+> > +for a task running as userid X to switch to userid Y and
+> > +some set of groups.  Each capability may be used only once,
+> > +and unused capabilities are cleared after two minutes.
+> > +
+> > +The following examples shows how to use the API.  Shell 1
+> > +contains a privileged root shell.  Shell 2 contains an
+> > +unprivileged shell as user 501 in the same user namespace.  If
+> > +not already done, the privileged shell should create the p9auth
+> > +devices:
+> > +
+> > +	majfile=/sys/module/p9auth/parameters/cap_major
+> > +	minfile=/sys/module/p9auth/parameters/cap_minor
+> > +	maj=`cat $majfile`
+> > +	mknod /dev/caphash c $maj 0
+> > +	min=`cat $minfile`
+> > +	mknod /dev/capuse c $maj 1
+> > +	chmod ugo+w /dev/capuse
+> 
+> That is incorrect, you don't need the cap_major/minor files at all, the
+> device node should be automatically created for you, right?
+
+Hmm, where?  Not in /dev on my SLES11 partition...
+
+> And do you really want to do all of this control through a device node?
+> Why?
+
+Well...
+
+At first I was thinking same as you were.  So I was going to switch
+to a pure syscall-based approach.  But it just turned out more
+complicated.  The factotum server would call sys_grantid(), and
+the target task would end up doing some huge sys_setresugid() or
+else multiple syscalls using the granted id.  It just was uglier.
+I think there's an experimental patchset sitting somewhere I could
+point to (if I weren't embarassed :).
+
+Another possibility would be to use netlink, but that doesn't
+appear as amenable to segragation by user namespaces.  The pid
+(presumably/hopefully global pid, as __u32) is available, so it
+shouldn't be impossible, but a simple device with simple synchronous
+read/write certainly has its appeal.  Firing off a message hoping
+that at some point our credentials will be changes, less so.
+
+> > +DEFINE_MUTEX(cap_mutex); /* TODO fix up the locking one day */
+> 
+> One might hope that today would be that day...
+
+Well there's nothing actually wrong with the cap_mutex.  I put in
+this comment thinking I'd switch to rcu at some point, but it doesn't
+seem worthwhile at the moment, by a long shot.
+
+> Also, please run this through sparse.  This is a variable that doesn't
+> need to be global.
+> 
+> > +struct cap_dev {
+> > +	struct cdev cdev;
+> > +};
+> 
+> Do you really need to do it this way?  A cdev for a single device node?
+> That's major overkill.
+> 
+> > +static int cap_major = CAP_MAJOR;
+> > +static int cap_minor;
+> 
+> Just always use a dynamic misc device, you never need a whole major for
+> this.
+
+Right - will switch that over, assuming we don't nix the whole idea
+first.
+
+> > +module_param(cap_major, int, S_IRUGO);
+> > +module_param(cap_minor, int, S_IRUGO);
+> 
+> Can be removed.
+> 
+> > +MODULE_AUTHOR("Ashwin Ganti");
+> 
+> Hm, who is going to maintain this, you, or Ashwin?
+
+I haven't asked Ashwin, and will be happy either way.  Ashwin, did
+you want to maintain it?
+
+> > +static void hexdump(unsigned char *buf, unsigned int len)
+> > +{
+> > +	while (len--)
+> > +		printk(KERN_DEBUG "%02x", *buf++);
+> > +	printk(KERN_DEBUG "\n");
+> > +}
+> 
+> We have a built-in function for this already.
+> 
+> Oh, this function is also incorrect, which is a good reason to use the
+> built-in ones.
+
+Really I prefer to get rid of that altogether.  Anyone who wants
+to see that can use a kprobe hooked to the exit of cap_hash().
+
+> I'm going to stop now, this doesn't belong in drivers/char/ yet, it
+> needs work...
+
+/me rolls up his sleeves.
+
+> thanks,
+> 
+> greg k-h
+> 
+> > +/*
+> > + * read an entry.  For now it is
+> > + * source_user@target_user@rand
+> > + * Next it will become
+> > + * source_user@target_user@target_group@numgroups@grp1..@grpn@rand
+> > + */
+> 
+> Hm, wait, one more....  The kernel/user api is going to change some time
+> in the future?  Please fix this now before it gets merged.
+
+Huh, no that change already happened.
+
+thanks,
+-serge
