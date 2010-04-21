@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab0DUXP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 19:15:58 -0400
-Received: from kroah.org ([198.145.64.141]:54167 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754787Ab0DUXPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 19:15:43 -0400
-Date: Wed, 21 Apr 2010 15:50:48 -0700
-From: Greg KH <greg@kroah.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: stable@kernel.org, linux-nfs@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [stable] nfsd changes for 2.6.34
-Message-ID: <20100421225048.GB27883@kroah.com>
-References: <20100306175212.GB22650@fieldses.org>
- <20100324142414.GE12057@fieldses.org>
- <20100329182443.GC3778@kroah.com>
- <20100330144054.GD11545@fieldses.org>
- <20100330200320.GB1693@kroah.com>
- <20100331193029.GC4937@fieldses.org>
+	id S1755271Ab0DUXTd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 19:19:33 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:3551 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234Ab0DUXTb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 19:19:31 -0400
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.52,252,1270425600"; 
+   d="scan'208";a="118762008"
+From: Roland Dreier <rdreier@cisco.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: sean.hefty@intel.com, amwang@redhat.com, opurdila@ixiacom.com,
+       eric.dumazet@gmail.com, netdev@vger.kernel.org, nhorman@tuxdriver.com,
+       davem@davemloft.net, ebiederm@xmission.com,
+       linux-kernel@vger.kernel.org, rolandd@cisco.com
+Subject: Re: [PATCH] Infiniband: Randomize local port allocation.
+References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain>
+	<20100412100816.5302.74919.sendpatchset@localhost.localdomain>
+	<201004130121.o3D1Lhh7099571@www262.sakura.ne.jp>
+	<4BC41994.7030707@redhat.com> <4BC42FE0.4040601@redhat.com>
+	<201004132207.GAJ52684.OJFtMQVFHOSFLO@I-love.SAKURA.ne.jp>
+	<21DAC78125424ED291B5D6477CFF9657@amr.corp.intel.com>
+	<201004140201.o3E21Aqn075978@www262.sakura.ne.jp>
+	<195EB1AD388F455AA386EB214FCD09F4@amr.corp.intel.com>
+	<201004150229.o3F2T4dZ054768@www262.sakura.ne.jp>
+X-Message-Flag: Warning: May contain useful information
+Date: Wed, 21 Apr 2010 16:19:28 -0700
+In-Reply-To: <201004150229.o3F2T4dZ054768@www262.sakura.ne.jp> (Tetsuo Handa's
+	message of "Thu, 15 Apr 2010 11:29:04 +0900")
+Message-ID: <adabpdco0lb.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100331193029.GC4937@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 03:30:29PM -0400, J. Bruce Fields wrote:
-> On Tue, Mar 30, 2010 at 01:03:20PM -0700, Greg KH wrote:
-> > On Tue, Mar 30, 2010 at 10:40:54AM -0400, J. Bruce Fields wrote:
-> > > On Mon, Mar 29, 2010 at 11:24:43AM -0700, Greg KH wrote:
-> > > > On Wed, Mar 24, 2010 at 10:24:14AM -0400, J. Bruce Fields wrote:
-> > > > > On Sat, Mar 06, 2010 at 12:52:12PM -0500, bfields wrote:
-> > > > > > Please pull the following nfsd changes from the 'nfsd' branch at:
-> > > > > > 
-> > > > > >   git://linux-nfs.org/~bfields/linux.git for-2.6.34 nfsd
-> > > > > > 
-> > > > > > This is an unusually quiet cycle for the NFS server--bugfixes, some IPv6
-> > > > > > progress, and one new export operation to improve sync performance.
-> > > > > > 
-> > > > > > One exception to the 'mostly quiet' statement was a regression in the
-> > > > > > rpc code which hit a lot of people: enormous thanks to Neil for tracking
-> > > > > > that down.
-> > > > > 
-> > > > > However, I forgot to Cc stable on all of those.  Stable people, could
-> > > > > you also take the following three commits?:
-> > > > > 
-> > > > > 	f5822754ea006563e1bf0a1f43faaad49c0d8bb2 Revert "sunrpc: fix
-> > > > > 	peername failed on closed listener"
-> > > > > 	1b644b6e6f6160ae35ce4b52c2ca89ed3e356e18 Revert "sunrpc: move
-> > > > > 	the close processing after do recvfrom method"
-> > > > > 	301e99ce4a2f42a317129230fd42e6cd874c64b0 nfsd: ensure sockets
-> > > > > 	are closed on error
-> > > > > 
-> > > > > Let me know if you need more information.
-> > > > 
-> > > > I've queued all of these up for the .33 -stable tree.  If any of them
-> > > > need to go into .32 (maybe that last one?), please let me know.
-> > > 
-> > > Thanks; .32 needs all three of those.
-> > 
-> > Ok, care to backport them and send them to stable@kernel.org?  They
-> > don't all apply cleanly from what I can see.
-> 
-> Huh.  I just checked out 2.6.32.10 and tried applying the patches a
-> couple different ways, and the worst I got was stuff like:
-> 
-> 	patching file net/sunrpc/svc_xprt.c
-> 	Hunk #1 succeeded at 711 (offset 5 lines).
-> 
-> Is that enough that you don't consider them clean?
-> 
-> In any case, I'll follow up with patches generated against 2.6.32.10.
-
-You are right, I don't know what I did wrong, sorry.  I've now queued
-all of these up for the next .32 tree, as they are already in
-.33-stable.
-
-thanks,
-
-greg k-h
+Thanks, applied this part of the patch -- I preferred this one since the
+goto into the middle of a loop seemed worse than a goto out of the loop...
+-- 
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
