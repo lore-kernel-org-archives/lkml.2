@@ -1,134 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab0DUFkG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 01:40:06 -0400
-Received: from mail-yx0-f191.google.com ([209.85.210.191]:36750 "EHLO
-	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab0DUFkD (ORCPT
+	id S1752322Ab0DUFnN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 01:43:13 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63072 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab0DUFnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 01:40:03 -0400
+	Wed, 21 Apr 2010 01:43:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=Yg06GnDfn6vhdbhVVEYWmYazBDImKRj5hOsNU5TJtZyolx2PHSWH/5nx1X/1GWbBiI
-         4IS46+5rUfH4gmknI68xf/5DDljIn8LJ69/o4HP9h2lJnElaWqGkVqw6IeRk8jdPLRma
-         OeQWK6pg4RuQly7MCYnec1oSQFfvsR6Y5DQq4=
-Date: Tue, 20 Apr 2010 22:39:58 -0700
+        b=aC0iSewynrymYZrhvxlbHCB2aFZq/lqdHfWG6k1U1er4nrgbe7E0v0vsXkYBVWFHBB
+         93vH/Dnic3gVCCWqOeQ87qCU1hFAsw/QchC3osTx3MMeeVUf4lGCs7s70yXhMaIXV188
+         yrYoeazCGtw2vkd/BCJGsrXQ8lgCtKQ2qCht4=
+Date: Tue, 20 Apr 2010 22:43:03 -0700
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: linux-kernel@vger.kernel.org, pingc@wacom.com, Anton@anikin.name,
-       stable@kernel.org, stable-commits@vger.kernel.org
-Subject: Re: patch input-wacom-switch-mode-upon-system-resume.patch added to
- 2.6.33-stable tree
-Message-ID: <20100421053958.GB4364@core.coreip.homeip.net>
-References: <1271697023113@kroah.org>
- <201004191024.43397.dmitry.torokhov@gmail.com>
- <20100419172856.GA6965@suse.de>
- <4BCE34CC.9030506@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] input: Add LED support to Synaptics device
+Message-ID: <20100421054303.GC4364@core.coreip.homeip.net>
+References: <1271257823-23566-1-git-send-email-tiwai@suse.de>
+ <1271257823-23566-3-git-send-email-tiwai@suse.de>
+ <20100415191217.GA1495@ucw.cz>
+ <s5hy6gnu8rv.wl%tiwai@suse.de>
+ <s5hiq7npvrb.wl%tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BCE34CC.9030506@canonical.com>
+In-Reply-To: <s5hiq7npvrb.wl%tiwai@suse.de>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 04:12:12PM -0700, Stefan Bader wrote:
-> Greg KH wrote:
-> > On Mon, Apr 19, 2010 at 10:24:41AM -0700, Dmitry Torokhov wrote:
-> >> Greg,
-> >>
-> >> On Monday 19 April 2010 10:10:23 am gregkh@suse.de wrote:
-> >>> This is a note to let you know that we have just queued up the patch titled
-> >>>
-> >>>     Subject: Input: wacom - switch mode upon system resume
-> >>>
-> >>> to the 2.6.33-stable tree.  Its filename is
-> >>>
-> >>>     input-wacom-switch-mode-upon-system-resume.patch
-> >>>
-> >> Could you add this to .32 as well, please?
+On Mon, Apr 19, 2010 at 12:44:08PM +0200, Takashi Iwai wrote:
+> At Fri, 16 Apr 2010 10:00:20 +0200,
+> I wrote:
 > > 
-> > I looked, and it didn't seem to apply at all.  Can someone backport it
-> > to .32 and I will be glad to apply it.
+> > At Thu, 15 Apr 2010 21:12:18 +0200,
+> > Pavel Machek wrote:
+> > > 
+> > > Hi!
+> > > 
+> > > > The new Synaptics devices have an LED on the top-left corner.
+> > > > This is controlled via the command 0x0a with parameters 0x88 or 0x10.
+> > > > 
+> > > > The detection of the LED isn't clear yet.  It should have been the new
+> > > > capability bits that indicate the presence, but on real machines, it
+> > > > doesn't fit.  So, for the time being, the driver checks the product id
+> > > > in the ext capability bits and assumes that LED exists on the known
+> > > > devices.
+> > > > 
+> > > > The support of LED is controlled via a normal input event with EV_LED
+> > > > bit mask.  It supports LED_MUTE bit.  X driver can detect the LED
+> > > > support by checking these bits.
+> > > 
+> > > Could we use generic LED API for this?
 > > 
-> 
-> That would be my backport for .32, maybe Ping or Dmitry can sanity check.
-> 
-
-Yep, that exactly what Ping sent earlier, but since she favors wierd
-mailers with HTML I guess her patch was dropped by vger filters ;)
-
-Thanks Stefan.
-
-Greg, please apply.
-
-> Stefan
-> 
-> > thanks,
+> > Yeah, actually I started implementing with LED ADI at first.
 > > 
-> > greg k-h
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe stable-commits" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > But, then it turned out to be that it's much easier to use the
+> > existing LED input bits since this LED is really tightly coupled with
+> > the synaptics input device.  An individual LED device makes hard to
+> > find out the corresponding input device.
+> > 
+> > If we assume there is only one synaptics and only one synaptics-LED
+> > device, then yes, the situation can be a bit easier, though.
+> > 
+> > > It is not really 'mute' led after all...
+> > 
+> > If the problem is the misuse of LED_MUTE bit, how about adding a new
+> > LED bit, e.g. LED_TOUCHPAD?
 > 
-> 
-
-> From 7021bbc3685fc147eb47deee345801ffb007a7e9 Mon Sep 17 00:00:00 2001
-> From: Ping Cheng <pingc@wacom.com>
-> Date: Tue, 13 Apr 2010 23:07:52 -0700
-> Subject: [PATCH] Input: wacom - switch mode upon system resume
-> 
-> commit 014f61504af276ba9d9544d8a7401d8f8526eb73 upstream
-> 
-> When Wacom devices wake up from a sleep, the switch mode command
-> (wacom_query_tablet_data) is needed before wacom_open is called.
-> wacom_query_tablet_data should not be executed inside wacom_open
-> since wacom_open is called more than once during probe.
-> 
-> wacom_retrieve_hid_descriptor is removed from wacom_resume due
-> to the fact that the required descriptors are stored properly
-> upon system resume.
-> 
-> Reported-and-tested-by: Anton Anikin <Anton@Anikin.name>
-> Signed-off-by: Ping Cheng <pingc@wacom.com>
-> Cc: stable@kernel.org
-> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-> ---
->  drivers/input/tablet/wacom_sys.c |   10 +++++++---
->  1 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-> index b5b69cc..5be07f9 100644
-> --- a/drivers/input/tablet/wacom_sys.c
-> +++ b/drivers/input/tablet/wacom_sys.c
-> @@ -562,11 +562,15 @@ static int wacom_resume(struct usb_interface *intf)
->  	int rv;
->  
->  	mutex_lock(&wacom->lock);
-> -	if (wacom->open) {
-> +
-> +	/* switch to wacom mode first */
-> +	wacom_query_tablet_data(intf, features);
-> +
-> +	if (wacom->open)
->  		rv = usb_submit_urb(wacom->irq, GFP_NOIO);
-> -		wacom_query_tablet_data(intf);
-> -	} else
-> +	else
->  		rv = 0;
-> +
->  	mutex_unlock(&wacom->lock);
->  
->  	return rv;
-> -- 
-> 1.6.3.3
+> The revised patch with an addition of LED_TOUCHPAD is below.
 > 
 
+Sorry Takashi, but I will not add any new LED types to input. Even
+current input LEDs are going to be accessible thought standard LED
+framework (even though I have not apploed Samuel's patch yet I do think
+it would move kernel in the right direction).
+
+Thanks.
 
 -- 
 Dmitry
