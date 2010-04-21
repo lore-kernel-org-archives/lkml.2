@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab0DUVwQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 17:52:16 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51069 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756842Ab0DUVwM (ORCPT
+	id S1756794Ab0DUVvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 17:51:07 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:42332 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756685Ab0DUVu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 17:52:12 -0400
+	Wed, 21 Apr 2010 17:50:59 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org,
        Mimi Zohar <zohar@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
        David Safford <safford@watson.ibm.com>,
        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH 14/14] ima: add ima_inode_setxattr and ima_inode_removexattr
-Date: Wed, 21 Apr 2010 17:49:54 -0400
-Message-Id: <1271886594-3719-15-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH 03/14] xattr: define vfs_getxattr_alloc and vfs_xattr_cmp
+Date: Wed, 21 Apr 2010 17:49:43 -0400
+Message-Id: <1271886594-3719-4-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -23,103 +23,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on xattr_permission comments, the restriction to modify
-'security' xattr is left up to the underlying fs or lsm. Ensure
-that not just anyone can modify or remove 'security.ima'.
+vfs_getxattr_alloc() and vfs_xattr_cmp() are two new kernel xattr
+helper functions.  vfs_getxattr_alloc() first allocates memory for
+the requested xattr and then retrieves it. vfs_xattr_cmp() compares
+a given value with the contents of an extended attribute.
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index ce82e29..3307420 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -20,6 +20,9 @@ extern void ima_file_free(struct file *file);
- extern int ima_file_mmap(struct file *file, unsigned long prot);
- extern void ima_counts_get(struct file *file);
- extern void ima_inode_post_setattr(struct dentry *dentry);
-+extern int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
-+		       const void *xattr_value, size_t xattr_value_len);
-+extern int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name);
- 
- #else
- static inline int ima_bprm_check(struct linux_binprm *bprm)
-@@ -52,5 +55,15 @@ static inline void ima_inode_post_setattr(struct dentry *dentry)
- 	return;
+diff --git a/fs/xattr.c b/fs/xattr.c
+index 46f87e8..341ad71 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -159,6 +159,64 @@ out_noalloc:
  }
- 
-+int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
-+		       const void *xattr_value, size_t xattr_value_len)
-+{
-+	return 0;
-+}
-+
-+int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_IMA_H */
- #endif /* _LINUX_IMA_H */
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 635a3be..e5a52a6 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -370,6 +370,32 @@ void ima_inode_post_setattr(struct dentry *dentry)
- 	return;
- }
+ EXPORT_SYMBOL_GPL(xattr_getsecurity);
  
 +/*
-+ * ima_protect_xattr - protect 'security.ima'
++ * vfs_getxattr_alloc - allocate memory, if necessary, before calling getxattr
 + *
-+ * Ensure that not just anyone can modify or remove 'security.ima'.
++ * Allocate memory, if not already allocated, or re-allocate correct size,
++ * before retrieving the extended attribute.
++ *
++ * Returns the result of alloc, if failed, or the getxattr operation.
 + */
-+int ima_protect_xattr(struct dentry *dentry, const char *xattr_name,
-+		      const void *xattr_value, size_t xattr_value_len)
++ssize_t
++vfs_getxattr_alloc(struct dentry *dentry, const char *name, char **xattr_value,
++		   size_t xattr_size, gfp_t flags)
 +{
-+	if ((strcmp(xattr_name, XATTR_NAME_IMA) == 0)
-+	    && !capable(CAP_MAC_ADMIN))
-+		return -EPERM;
-+	return 0;
++	struct inode *inode = dentry->d_inode;
++	char *value = *xattr_value;
++	int error;
++
++	error = xattr_permission(inode, name, MAY_READ);
++	if (error)
++		return error;
++
++	if (!inode->i_op->getxattr)
++		return -EOPNOTSUPP;
++
++	error = inode->i_op->getxattr(dentry, name, NULL, 0);
++	if (error < 0)
++		return error;
++
++	if (!value || (error > xattr_size)) {
++		value = krealloc(*xattr_value, error + 1, flags);
++		if (!value)
++			return -ENOMEM;
++		memset(value, 0, error + 1);
++	}
++
++	error = inode->i_op->getxattr(dentry, name, value, error);
++	*xattr_value = value;
++	return error;
 +}
 +
-+int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
-+		       const void *xattr_value, size_t xattr_value_len)
++/* Compare an extended attribute value with the given value */
++int vfs_xattr_cmp(struct dentry *dentry, const char *xattr_name,
++		  const char *value, size_t size, gfp_t flags)
 +{
-+	return ima_protect_xattr(dentry, xattr_name, xattr_value,
-+				 xattr_value_len);
++	char *xattr_value = NULL;
++	int rc;
++
++	rc = vfs_getxattr_alloc(dentry, xattr_name, &xattr_value, 0, flags);
++	if (rc < 0)
++		return rc;
++
++	if ((rc != size) || (memcmp(xattr_value, value, rc) != 0))
++		rc = -EINVAL;
++	else
++		rc = 0;
++	kfree(xattr_value);
++	return rc;
 +}
 +
-+int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name)
-+{
-+	return ima_protect_xattr(dentry, xattr_name, NULL, 0);
-+}
-+
- static int __init init_ima(void)
+ ssize_t
+ vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
  {
- 	int error;
-diff --git a/security/security.c b/security/security.c
-index 6b1e50e..9345731 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -557,6 +557,9 @@ int security_inode_setxattr(struct dentry *dentry, const char *name,
- 	ret = security_ops->inode_setxattr(dentry, name, value, size, flags);
- 	if (ret)
- 		return ret;
-+	ret = ima_inode_setxattr(dentry, name, value, size);
-+	if (ret)
-+		return ret;
- 	return evm_inode_setxattr(dentry, name, value, size);
- }
+diff --git a/include/linux/xattr.h b/include/linux/xattr.h
+index d079bec..8698de3 100644
+--- a/include/linux/xattr.h
++++ b/include/linux/xattr.h
+@@ -68,7 +68,10 @@ ssize_t generic_getxattr(struct dentry *dentry, const char *name, void *buffer,
+ ssize_t generic_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size);
+ int generic_setxattr(struct dentry *dentry, const char *name, const void *value, size_t size, int flags);
+ int generic_removexattr(struct dentry *dentry, const char *name);
+-
++ssize_t vfs_getxattr_alloc(struct dentry *dentry, const char *name,
++			   char **xattr_value, size_t size, gfp_t flags);
++int vfs_xattr_cmp(struct dentry *dentry, const char *xattr_name,
++		  const char *value, size_t size, gfp_t flags);
+ #endif  /*  __KERNEL__  */
  
-@@ -592,6 +595,9 @@ int security_inode_removexattr(struct dentry *dentry, const char *name)
- 	ret = security_ops->inode_removexattr(dentry, name);
- 	if (ret)
- 		return ret;
-+	ret = ima_inode_removexattr(dentry, name);
-+	if (ret)
-+		return ret;
- 	return evm_inode_removexattr(dentry, name);
- }
- 
+ #endif	/* _LINUX_XATTR_H */
 -- 
 1.6.6.1
 
