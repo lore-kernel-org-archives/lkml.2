@@ -1,273 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab0DUHfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 03:35:51 -0400
-Received: from mtagate4.uk.ibm.com ([194.196.100.164]:39604 "EHLO
-	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab0DUHft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 03:35:49 -0400
-Message-ID: <4BCEAAC6.7070602@linux.vnet.ibm.com>
-Date: Wed, 21 Apr 2010 09:35:34 +0200
-From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1752565Ab0DUHth (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 03:49:37 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52112 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868Ab0DUHtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 03:49:35 -0400
+Date: Wed, 21 Apr 2010 09:49:17 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       "David S . Miller" <davem@davemloft.net>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [GIT PULL] tracing update
+Message-ID: <20100421074917.GB17237@elte.hu>
+References: <1271706114-8489-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>
-Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone pressure
-References: <20100322235053.GD9590@csn.ul.ie> <4BA940E7.2030308@redhat.com> <20100324145028.GD2024@csn.ul.ie> <4BCC4B0C.8000602@linux.vnet.ibm.com> <20100419214412.GB5336@cmpxchg.org> <4BCD55DA.2020000@linux.vnet.ibm.com> <20100420153202.GC5336@cmpxchg.org> <4BCDE2F0.3010009@redhat.com> <4BCE7DD1.70900@linux.vnet.ibm.com>
-In-Reply-To: <4BCE7DD1.70900@linux.vnet.ibm.com>
-Content-Type: multipart/mixed;
- boundary="------------010109070601080809080006"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271706114-8489-1-git-send-regression-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010109070601080809080006
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
 
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-
-Christian Ehrhardt wrote:
+> Ingo,
+> 
+> Please pull the tracing/core branch that can be found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	tracing/core
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Frederic Weisbecker (1):
+>       tracing: Dump either the oops's cpu source or all cpus buffers
 > 
 > 
-> Rik van Riel wrote:
->> On 04/20/2010 11:32 AM, Johannes Weiner wrote:
->>
->>> The idea is that it pans out on its own.  If the workload changes, new
->>> pages get activated and when that set grows too large, we start 
->>> shrinking
->>> it again.
->>>
->>> Of course, right now this unscanned set is way too large and we can end
->>> up wasting up to 50% of usable page cache on false active pages.
->>
->> Thing is, changing workloads often change back.
->>
->> Specifically, think of a desktop system that is doing
->> work for the user during the day and gets backed up
->> at night.
->>
->> You do not want the backup to kick the working set
->> out of memory, because when the user returns in the
->> morning the desktop should come back quickly after
->> the screensaver is unlocked.
-> 
-> IMHO it is fine to prevent that nightly backup job from not being 
-> finished when the user arrives at morning because we didn't give him 
-> some more cache - and e.g. a 30 sec transition from/to both optimized 
-> states is fine.
-> But eventually I guess the point is that both behaviors are reasonable 
-> to achieve - depending on the users needs.
-> 
-> What we could do is combine all our thoughts we had so far:
-> a) Rik could create an experimental patch that excludes the in flight pages
-> b) Johannes could create one for his suggestion to "always scan active 
-> file pages but only deactivate them when the ratio is off and otherwise 
-> strip buffers of clean pages"
-> c) I would extend the patch from Johannes setting the ratio of 
-> active/inactive pages to be a userspace tunable
+>  Documentation/kernel-parameters.txt |    6 +++-
+>  Documentation/trace/ftrace.txt      |    6 +++-
+>  drivers/char/sysrq.c                |    2 +-
+>  include/linux/ftrace.h              |    4 ++-
+>  include/linux/kernel.h              |   11 ++++++-
+>  kernel/trace/trace.c                |   51 ++++++++++++++++++++++++++--------
+>  6 files changed, 61 insertions(+), 19 deletions(-)
 
-A first revision of patch c is attached.
-I tested assigning different percentages, so far e.g. 50 really behave 
-like before and 25 protects ~42M Buffers in my example which would match 
-the intended behavior - see patch for more details.
+Pulled, thanks Frederic!
 
-Checkpatch and some basic function tests went fine.
-While it may be not perfect yet, I think it is ready for feedback now.
-
-> a,b,a+b would then need to be tested if they achieve a better behavior.
-> 
-> c on the other hand would be a fine tunable to let administrators 
-> (knowing their workloads) or distributions (e.g. different values for 
-> Desktop/Server defaults) adapt their installations.
-> 
-> In theory a,b and c should work fine together in case we need all of them.
-> 
->> The big question is, what workload suffers from
->> having the inactive list at 50% of the page cache?
->>
->> So far the only big problem we have seen is on a
->> very unbalanced virtual machine, with 256MB RAM
->> and 4 fast disks.  The disks simply have more IO
->> in flight at once than what fits in the inactive
->> list.
-> 
-> Did I get you right that this means the write case - explaining why it 
-> is building up buffers to the 50% max?
-> 
-
-Thinking about it I wondered for what these Buffers are protected.
-If the intention to save these buffers is for reuse with similar loads I 
-wonder why I "need" three iozones to build up the 85M in my case.
-
-Buffers start at ~0, after iozone run 1 they are at ~35, then after #2 
-~65 and after run #3 ~85.
-Shouldn't that either allocate 85M for the first directly in case that 
-much is needed for a single run - or if not the second and third run 
-just "resuse" the 35M Buffers from the first run still held?
-
-Note - "1 iozone run" means "iozone ... -i 0" which sequentially writes 
-and then rewrites a 2Gb file on 16 disks in my current case.
-
-looking forward especially to patch b as I'd really like to see a kernel 
-able to win back these buffers if they are no more used for a longer 
-period while still allowing to grow&protect them while needed.
-
--- 
-
-Grüsse / regards, Christian Ehrhardt
-IBM Linux Technology Center, System z Linux Performance
-
---------------010109070601080809080006
-Content-Type: text/x-patch;
- name="active-inacte-ratio-tunable.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="active-inacte-ratio-tunable.diff"
-
-Subject: [PATCH] mm: make working set portion that is protected tunable
-
-From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-
-In discussion with Rik van Riel and Joannes Weiner we came up that there are
-cases that want the current "save 50%" for the working set all the time and
-others that would benefit from protectig only a smaller amount.
-
-Eventually no "carved in stone" in kernel ratio will match all use cases,
-therefore this patch makes the value tunable via a /proc/sys/vm/ interface
-named active_inactive_ratio.
-
-Example configurations might be:
-- 50% - like the current kernel
-- 0%  - like a kernel pre "56e49d21 vmscan: evict use-once pages first"
-- x%  - any other percentage to allow customizing the system to its needs.
-
-Due to our experiments the suggested default in this patch is 25%, but if
-preferred I'm fine keeping 50% and letting admins/distros adapt as needed.
-
-Signed-off-by: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
----
-
-[diffstat]
-
-[diff]
-Index: linux-2.6/Documentation/sysctl/vm.txt
-===================================================================
---- linux-2.6.orig/Documentation/sysctl/vm.txt	2010-04-21 06:32:23.000000000 +0200
-+++ linux-2.6/Documentation/sysctl/vm.txt	2010-04-21 07:24:35.000000000 +0200
-@@ -18,6 +18,7 @@
- 
- Currently, these files are in /proc/sys/vm:
- 
-+- active_inactive_ratio
- - block_dump
- - dirty_background_bytes
- - dirty_background_ratio
-@@ -57,6 +58,15 @@
- 
- ==============================================================
- 
-+active_inactive_ratio
-+
-+The kernel tries to protect the active working set. Therefore a portion of the
-+file pages is protected, meaning they are omitted when eviting pages until this
-+ratio is reached.
-+This tunable represents that ratio in percent and specifies the protected part
-+
-+==============================================================
-+
- block_dump
- 
- block_dump enables block I/O debugging when set to a nonzero value. More
-Index: linux-2.6/kernel/sysctl.c
-===================================================================
---- linux-2.6.orig/kernel/sysctl.c	2010-04-21 06:33:43.000000000 +0200
-+++ linux-2.6/kernel/sysctl.c	2010-04-21 07:26:35.000000000 +0200
-@@ -1271,6 +1271,15 @@
- 		.extra2		= &one,
- 	},
- #endif
-+	{
-+		.procname	= "active_inactive_ratio",
-+		.data		= &sysctl_active_inactive_ratio,
-+		.maxlen		= sizeof(sysctl_active_inactive_ratio),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &one_hundred,
-+	},
- 
- /*
-  * NOTE: do not add new entries to this table unless you have read
-Index: linux-2.6/mm/memcontrol.c
-===================================================================
---- linux-2.6.orig/mm/memcontrol.c	2010-04-21 06:31:29.000000000 +0200
-+++ linux-2.6/mm/memcontrol.c	2010-04-21 09:00:22.000000000 +0200
-@@ -893,12 +893,12 @@
- int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg)
- {
- 	unsigned long active;
--	unsigned long inactive;
-+	unsigned long file;
- 
--	inactive = mem_cgroup_get_local_zonestat(memcg, LRU_INACTIVE_FILE);
- 	active = mem_cgroup_get_local_zonestat(memcg, LRU_ACTIVE_FILE);
-+	file = active + mem_cgroup_get_local_zonestat(memcg, LRU_INACTIVE_FILE);
- 
--	return (active > inactive);
-+	return (active > file * sysctl_active_inactive_ratio / 100);
- }
- 
- unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
-Index: linux-2.6/mm/vmscan.c
-===================================================================
---- linux-2.6.orig/mm/vmscan.c	2010-04-21 06:31:29.000000000 +0200
-+++ linux-2.6/mm/vmscan.c	2010-04-21 09:00:13.000000000 +0200
-@@ -1459,14 +1459,23 @@
- 	return low;
- }
- 
-+/*
-+ * sysctl_active_inactive_ratio
-+ *
-+ * Defines the portion of file pages within the active working set is going to
-+ * be protected. The value represents the percentage that will be protected.
-+ */
-+int sysctl_active_inactive_ratio __read_mostly = 25;
-+
- static int inactive_file_is_low_global(struct zone *zone)
- {
--	unsigned long active, inactive;
-+	unsigned long active, file;
- 
- 	active = zone_page_state(zone, NR_ACTIVE_FILE);
--	inactive = zone_page_state(zone, NR_INACTIVE_FILE);
-+	file = active + zone_page_state(zone, NR_INACTIVE_FILE);
-+
-+	return (active > file * sysctl_active_inactive_ratio / 100);
- 
--	return (active > inactive);
- }
- 
- /**
-Index: linux-2.6/include/linux/mm.h
-===================================================================
---- linux-2.6.orig/include/linux/mm.h	2010-04-21 09:02:37.000000000 +0200
-+++ linux-2.6/include/linux/mm.h	2010-04-21 09:02:51.000000000 +0200
-@@ -1467,5 +1467,7 @@
- 
- extern void dump_page(struct page *page);
- 
-+extern int sysctl_active_inactive_ratio;
-+
- #endif /* __KERNEL__ */
- #endif /* _LINUX_MM_H */
-
---------------010109070601080809080006--
+	Ingo
