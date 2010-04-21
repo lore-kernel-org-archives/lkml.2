@@ -1,272 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623Ab0DUEmc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 00:42:32 -0400
-Received: from mail.perches.com ([173.55.12.10]:1594 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751267Ab0DUEmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 00:42:31 -0400
-Subject: [PATCH] drivers/edac: Convert logging messages direct uses of
- __FILE__ to %s, __FILE
-From: Joe Perches <joe@perches.com>
-To: Doug Thompson <dougthompson@xmission.com>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Tim Small <tim@buttersideup.com>
-Cc: bluesmoke-devel@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Apr 2010 21:42:29 -0700
-Message-ID: <1271824949.1730.254.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751685Ab0DUEpR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 00:45:17 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:44256 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab0DUEpM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 00:45:12 -0400
+To: "Serge E. Hallyn" <serue@us.ibm.com>
+Cc: Greg KH <greg@kroah.com>, lkml <linux-kernel@vger.kernel.org>,
+       David Howells <dhowells@redhat.com>,
+       Ashwin Ganti <ashwin.ganti@gmail.com>, rsc@swtch.com, ericvh@gmail.com,
+       linux-security-module@vger.kernel.org, Ron Minnich <rminnich@gmail.com>,
+       jt.beard@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
+       Eric Paris <eparis@redhat.com>, linux-api@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
+References: <20100421012749.GA21338@us.ibm.com>
+	<20100421012908.GB24251@us.ibm.com> <20100421030406.GB10258@kroah.com>
+	<20100421034532.GA9254@us.ibm.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 20 Apr 2010 21:45:02 -0700
+In-Reply-To: <20100421034532.GA9254@us.ibm.com> (Serge E. Hallyn's message of "Tue\, 20 Apr 2010 22\:45\:32 -0500")
+Message-ID: <m1zl0xo1m9.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: serue@us.ibm.com, rdunlap@xenotime.net, linux-api@vger.kernel.org, eparis@redhat.com, oleg@us.ibm.com, morgan@kernel.org, akpm@linux-foundation.org, jt.beard@gmail.com, rminnich@gmail.com, linux-security-module@vger.kernel.org, ericvh@gmail.com, rsc@swtch.com, ashwin.ganti@gmail.com, dhowells@redhat.com, linux-kernel@vger.kernel.org, greg@kroah.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduces text by eliminating multiple __FILE__ uses.
+"Serge E. Hallyn" <serue@us.ibm.com> writes:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/edac/i5000_edac.c      |   20 ++++++++++----------
- drivers/edac/i5400_edac.c      |   20 ++++++++++----------
- drivers/edac/i82443bxgx_edac.c |   20 ++++++++++----------
- 3 files changed, 30 insertions(+), 30 deletions(-)
+> Quoting Greg KH (greg@kroah.com):
+>> On Tue, Apr 20, 2010 at 08:29:08PM -0500, Serge E. Hallyn wrote:
+>> > This is a driver that adds Plan 9 style capability device
+>> > implementation.  See Documentation/p9auth.txt for a description
+>> > of how to use this.
+>> 
+>> Hm, you didn't originally write this driver, so it would be good to get
+>> some original authorship information in here to keep everything correct,
+>> right?
+>
+> That's why I left the MODULE_AUTHOR line in there - not sure what
+> else to do for that.  I'll add a comment in p9auth.txt, especially
+> pointing back to Ashwin's original paper.
+>
+>> >  Documentation/p9auth.txt     |   47 ++++
+>> >  drivers/char/Kconfig         |    2 +
+>> >  drivers/char/Makefile        |    2 +
+>> >  drivers/char/p9auth/Kconfig  |    9 +
+>> >  drivers/char/p9auth/Makefile |    1 +
+>> >  drivers/char/p9auth/p9auth.c |  517 ++++++++++++++++++++++++++++++++++++++++++
+>> 
+>> Is this code really ready for drivers/char/?  What has changed in it
+>> that makes it ok to move out of the staging tree?
+>
+> It was dropped from staging :)  I don't particularly care to see it
+> go back into staging, as opposed to working out issues out of tree
+> (assuming they are solvable).  For one thing, as you note below,
+> there is the question of whether it should be a device driver at
+> all.
+>
+>> And who is going to maintain it?  You?  Or someone else?
+>
+> If Ashwin doesn't want to maintain it, I'll do it.  Either way.
+>
+>> >  6 files changed, 578 insertions(+), 0 deletions(-)
+>> >  create mode 100644 Documentation/p9auth.txt
+>> >  create mode 100644 drivers/char/p9auth/Kconfig
+>> >  create mode 100644 drivers/char/p9auth/Makefile
+>> >  create mode 100644 drivers/char/p9auth/p9auth.c
+>> > 
+>> > diff --git a/Documentation/p9auth.txt b/Documentation/p9auth.txt
+>> > new file mode 100644
+>> > index 0000000..14a69d8
+>> > --- /dev/null
+>> > +++ b/Documentation/p9auth.txt
+>> > @@ -0,0 +1,47 @@
+>> > +The p9auth device driver implements a plan-9 factotum-like
+>> > +capability API.  Tasks which are privileged (authorized by
+>> > +possession of the CAP_GRANT_ID privilege (POSIX capability))
+>> > +can write new capabilities to /dev/caphash.  The kernel then
+>> > +stores these until a task uses them by writing to the
+>> > +/dev/capuse device.  Each capability represents the ability
+>> > +for a task running as userid X to switch to userid Y and
+>> > +some set of groups.  Each capability may be used only once,
+>> > +and unused capabilities are cleared after two minutes.
+>> > +
+>> > +The following examples shows how to use the API.  Shell 1
+>> > +contains a privileged root shell.  Shell 2 contains an
+>> > +unprivileged shell as user 501 in the same user namespace.  If
+>> > +not already done, the privileged shell should create the p9auth
+>> > +devices:
+>> > +
+>> > +	majfile=/sys/module/p9auth/parameters/cap_major
+>> > +	minfile=/sys/module/p9auth/parameters/cap_minor
+>> > +	maj=`cat $majfile`
+>> > +	mknod /dev/caphash c $maj 0
+>> > +	min=`cat $minfile`
+>> > +	mknod /dev/capuse c $maj 1
+>> > +	chmod ugo+w /dev/capuse
+>> 
+>> That is incorrect, you don't need the cap_major/minor files at all, the
+>> device node should be automatically created for you, right?
+>
+> Hmm, where?  Not in /dev on my SLES11 partition...
+>
+>> And do you really want to do all of this control through a device node?
+>> Why?
+>
+> Well...
+>
+> At first I was thinking same as you were.  So I was going to switch
+> to a pure syscall-based approach.  But it just turned out more
+> complicated.  The factotum server would call sys_grantid(), and
+> the target task would end up doing some huge sys_setresugid() or
+> else multiple syscalls using the granted id.  It just was uglier.
+> I think there's an experimental patchset sitting somewhere I could
+> point to (if I weren't embarassed :).
+>
+> Another possibility would be to use netlink, but that doesn't
+> appear as amenable to segragation by user namespaces.  The pid
+> (presumably/hopefully global pid, as __u32) is available, so it
+> shouldn't be impossible, but a simple device with simple synchronous
+> read/write certainly has its appeal.  Firing off a message hoping
+> that at some point our credentials will be changes, less so.
 
-diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
-index adc10a2..996c1bd 100644
---- a/drivers/edac/i5000_edac.c
-+++ b/drivers/edac/i5000_edac.c
-@@ -774,7 +774,7 @@ static void i5000_clear_error(struct mem_ctl_info *mci)
- static void i5000_check_error(struct mem_ctl_info *mci)
- {
- 	struct i5000_error_info info;
--	debugf4("MC%d: " __FILE__ ": %s()\n", mci->mc_idx, __func__);
-+	debugf4("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
- 	i5000_get_error_info(mci, &info);
- 	i5000_process_error_info(mci, &info, 1);
- }
-@@ -1353,8 +1353,8 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
- 	int num_dimms_per_channel;
- 	int num_csrows;
- 
--	debugf0("MC: " __FILE__ ": %s(), pdev bus %u dev=0x%x fn=0x%x\n",
--		__func__,
-+	debugf0("MC: %s: %s(), pdev bus %u dev=0x%x fn=0x%x\n",
-+		__FILE__, __func__,
- 		pdev->bus->number,
- 		PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
- 
-@@ -1389,7 +1389,7 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
- 		return -ENOMEM;
- 
- 	kobject_get(&mci->edac_mci_kobj);
--	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
-+	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
- 
- 	mci->dev = &pdev->dev;	/* record ptr  to the generic device */
- 
-@@ -1432,8 +1432,8 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
- 
- 	/* add this new MC control structure to EDAC's list of MCs */
- 	if (edac_mc_add_mc(mci)) {
--		debugf0("MC: " __FILE__
--			": %s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf0("MC: %s: %s(): failed edac_mc_add_mc()\n",
-+			__FILE__, __func__);
- 		/* FIXME: perhaps some code should go here that disables error
- 		 * reporting if we just enabled it
- 		 */
-@@ -1478,7 +1478,7 @@ static int __devinit i5000_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf0("MC: %s: %s()\n", __FILE__, __func__);
- 
- 	/* wake up device */
- 	rc = pci_enable_device(pdev);
-@@ -1497,7 +1497,7 @@ static void __devexit i5000_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("%s: %s()\n", __FILE__, __func__);
- 
- 	if (i5000_pci)
- 		edac_pci_release_generic_ctl(i5000_pci);
-@@ -1544,7 +1544,7 @@ static int __init i5000_init(void)
- {
- 	int pci_rc;
- 
--	debugf2("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf2("MC: %s: %s()\n", __FILE__, __func__);
- 
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -1560,7 +1560,7 @@ static int __init i5000_init(void)
-  */
- static void __exit i5000_exit(void)
- {
--	debugf2("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf2("MC: %s: %s()\n", __FILE__, __func__);
- 	pci_unregister_driver(&i5000_driver);
- }
- 
-diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
-index f99d106..010c1d6 100644
---- a/drivers/edac/i5400_edac.c
-+++ b/drivers/edac/i5400_edac.c
-@@ -694,7 +694,7 @@ static void i5400_clear_error(struct mem_ctl_info *mci)
- static void i5400_check_error(struct mem_ctl_info *mci)
- {
- 	struct i5400_error_info info;
--	debugf4("MC%d: " __FILE__ ": %s()\n", mci->mc_idx, __func__);
-+	debugf4("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
- 	i5400_get_error_info(mci, &info);
- 	i5400_process_error_info(mci, &info);
- }
-@@ -1227,8 +1227,8 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (dev_idx >= ARRAY_SIZE(i5400_devs))
- 		return -EINVAL;
- 
--	debugf0("MC: " __FILE__ ": %s(), pdev bus %u dev=0x%x fn=0x%x\n",
--		__func__,
-+	debugf0("MC: %s: %s(), pdev bus %u dev=0x%x fn=0x%x\n",
-+		__FILE__, __func__,
- 		pdev->bus->number,
- 		PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
- 
-@@ -1256,7 +1256,7 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
-+	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
- 
- 	mci->dev = &pdev->dev;	/* record ptr  to the generic device */
- 
-@@ -1299,8 +1299,8 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
- 
- 	/* add this new MC control structure to EDAC's list of MCs */
- 	if (edac_mc_add_mc(mci)) {
--		debugf0("MC: " __FILE__
--			": %s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf0("MC: %s: %s(): failed edac_mc_add_mc()\n",
-+			__FILE__, __func__);
- 		/* FIXME: perhaps some code should go here that disables error
- 		 * reporting if we just enabled it
- 		 */
-@@ -1344,7 +1344,7 @@ static int __devinit i5400_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf0("MC: %s: %s()\n", __FILE__, __func__);
- 
- 	/* wake up device */
- 	rc = pci_enable_device(pdev);
-@@ -1363,7 +1363,7 @@ static void __devexit i5400_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("%s: %s()\n", __FILE__, __func__);
- 
- 	if (i5400_pci)
- 		edac_pci_release_generic_ctl(i5400_pci);
-@@ -1409,7 +1409,7 @@ static int __init i5400_init(void)
- {
- 	int pci_rc;
- 
--	debugf2("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf2("MC: %s: %s()\n", __FILE__, __func__);
- 
- 	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
- 	opstate_init();
-@@ -1425,7 +1425,7 @@ static int __init i5400_init(void)
-  */
- static void __exit i5400_exit(void)
- {
--	debugf2("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf2("MC: %s: %s()\n", __FILE__, __func__);
- 	pci_unregister_driver(&i5400_driver);
- }
- 
-diff --git a/drivers/edac/i82443bxgx_edac.c b/drivers/edac/i82443bxgx_edac.c
-index 7f3884f..f3c2200 100644
---- a/drivers/edac/i82443bxgx_edac.c
-+++ b/drivers/edac/i82443bxgx_edac.c
-@@ -178,7 +178,7 @@ static void i82443bxgx_edacmc_check(struct mem_ctl_info *mci)
- {
- 	struct i82443bxgx_edacmc_error_info info;
- 
--	debugf1("MC%d: " __FILE__ ": %s()\n", mci->mc_idx, __func__);
-+	debugf1("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
- 	i82443bxgx_edacmc_get_error_info(mci, &info);
- 	i82443bxgx_edacmc_process_error_info(mci, &info, 1);
- }
-@@ -198,13 +198,13 @@ static void i82443bxgx_init_csrows(struct mem_ctl_info *mci,
- 	for (index = 0; index < mci->nr_csrows; index++) {
- 		csrow = &mci->csrows[index];
- 		pci_read_config_byte(pdev, I82443BXGX_DRB + index, &drbar);
--		debugf1("MC%d: " __FILE__ ": %s() Row=%d DRB = %#0x\n",
--			mci->mc_idx, __func__, index, drbar);
-+		debugf1("MC%d: %s: %s() Row=%d DRB = %#0x\n",
-+			mci->mc_idx, __FILE__, __func__, index, drbar);
- 		row_high_limit = ((u32) drbar << 23);
- 		/* find the DRAM Chip Select Base address and mask */
--		debugf1("MC%d: " __FILE__ ": %s() Row=%d, "
-+		debugf1("MC%d: %s: %s() Row=%d, "
- 			"Boundry Address=%#0x, Last = %#0x \n",
--			mci->mc_idx, __func__, index, row_high_limit,
-+			mci->mc_idx, __FILE__, __func__, index, row_high_limit,
- 			row_high_limit_last);
- 
- 		/* 440GX goes to 2GB, represented with a DRB of 0. */
-@@ -237,7 +237,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
- 	enum mem_type mtype;
- 	enum edac_type edac_mode;
- 
--	debugf0("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf0("MC: %s: %s()\n", __FILE__, __func__);
- 
- 	/* Something is really hosed if PCI config space reads from
- 	 * the MC aren't working.
-@@ -250,7 +250,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
-+	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
- 	mci->dev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_EDO | MEM_FLAG_SDR | MEM_FLAG_RDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
-@@ -336,7 +336,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
- 			__func__);
- 	}
- 
--	debugf3("MC: " __FILE__ ": %s(): success\n", __func__);
-+	debugf3("MC: %s: %s(): success\n", __FILE__, __func__);
- 	return 0;
- 
- fail:
-@@ -352,7 +352,7 @@ static int __devinit i82443bxgx_edacmc_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf0("MC: %s: %s()\n", __FILE__, __func__);
- 
- 	/* don't need to call pci_device_enable() */
- 	rc = i82443bxgx_edacmc_probe1(pdev, ent->driver_data);
-@@ -367,7 +367,7 @@ static void __devexit i82443bxgx_edacmc_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("%s: %s()\n", __FILE__, __func__);
- 
- 	if (i82443bxgx_pci)
- 		edac_pci_release_generic_ctl(i82443bxgx_pci);
+pid in the netlink context is the netlink port-id.  It is a very
+different concept from struct pid.  These days netlink calls to
+the kernel are synchronous, not that I would encourage netlink
+for anything except networking code.
 
+Can we make this a trivial filesystem?  I expect that would match
+up better with whatever plan9 userspace apps already exist,
+remove the inode double translation, and would make it much more
+reasonable to do a user namespace aware version  if and when
+that becomes necessary.
 
+Eric
