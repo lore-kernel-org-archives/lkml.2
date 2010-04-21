@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab0DUTaU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 15:30:20 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:62318 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755394Ab0DUTaS (ORCPT
+	id S1755698Ab0DUTbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 15:31:23 -0400
+Received: from straum.hexapodia.org ([207.7.131.186]:46518 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754778Ab0DUTbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 15:30:18 -0400
-X-Greylist: delayed 908 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Apr 2010 15:30:18 EDT
+	Wed, 21 Apr 2010 15:31:20 -0400
+Date: Wed, 21 Apr 2010 12:31:20 -0700
+From: Andy Isaacson <adi@hexapodia.org>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH -v4 1/3] x86: Reserve [0xa0000, 0x100000] in e820 map
+Message-ID: <20100421193120.GD11130@hexapodia.org>
+References: <4BC4E55B.7000103@oracle.com> <4BC4E8FB.8060802@zytor.com> <4BC4F03C.1020707@oracle.com> <4BC4F320.8020902@zytor.com> <4BC4F703.5030700@oracle.com> <4BC4F80C.2020209@zytor.com> <4BC4F851.7040500@oracle.com> <4BC4F948.8050500@zytor.com> <4BC4F9C2.20503@oracle.com> <4BCE8E3E.4030809@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19407.20109.308816.104856@stoffel.org>
-Date: Wed, 21 Apr 2010 15:14:21 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Hedi Berriche <hedi@sgi.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Mike Travis <travis@sgi.com>, Ingo Molnar <mingo@elte.hu>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Jack Steiner <steiner@sgi.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
- pid_max v2
-In-Reply-To: <4BCF336B.1050706@redhat.com>
-References: <4BCE579C.5070100@sgi.com>
-	<4BCE5A73.3000904@sgi.com>
-	<20100421102350.4c222e6b@lxorguk.ukuu.org.uk>
-	<20100421165934.GN16427@zorg.emea.sgi.com>
-	<4BCF336B.1050706@redhat.com>
-X-Mailer: VM 8.0.9 under Emacs 22.3.1 (i486-pc-linux-gnu)
+Content-Disposition: inline
+In-Reply-To: <4BCE8E3E.4030809@oracle.com>
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Rik" == Rik van Riel <riel@redhat.com> writes:
+On Tue, Apr 20, 2010 at 10:33:50PM -0700, Yinghai wrote:
+> Update e820 at first, and later put them resource tree.
+> Reserved that early, will not be allocated to unassigned PCI BAR
+> 
+> v3: remove probe_roms() that is not needed, because whole range is reserved
+> 	 already
 
-Rik> On 04/21/2010 12:59 PM, Hedi Berriche wrote:
->> On Wed, Apr 21, 2010 at 10:20 Alan Cox wrote:
->> |>  of 32k will not be enough.  A system with 1664 CPU's, there are 25163 processes
->> |>  started before the login prompt.  It's estimated that with 2048 CPU's we will pass
->> |
->> | Is that perhaps the bug not the 32K limit?
->> 
->> Doubt it: I just checked on an *idle* 1664 CPUs system and I can see 26844
->> tasks, all but few being kernel threads.
+Test booted this patch series on the problematic t3400, seems to work
+fine.  dmesg attached to bug 15744.
 
-Rik> That is 15 kernel threads per CPU.
-
-Rik> Reducing the number of kernel threads sounds like a
-Rik> useful thing to do.
-
-Isn't that already a project?  I thought someone (Jeff? Jorn? Tejun? Bueller
-bueller....?) was already proposing a patch set to reduce the number
-of kernel threads by having dynamic workqueues instead, so that we
-didn't spawn a bunch of threads that never did anything?
-
-John
+-andy
