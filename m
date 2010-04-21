@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab0DUFOD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 01:14:03 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53912 "EHLO ogre.sisk.pl"
+	id S1752094Ab0DUFOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 01:14:44 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53928 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751497Ab0DUFN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 01:13:59 -0400
+	id S1751848Ab0DUFOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 01:14:41 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ben Gamari <bgamari.foss@gmail.com>
+To: Nick Bowler <nbowler@elliptictech.com>
 Subject: Re: 2.6.34-rc5: Reported regressions from 2.6.33
-Date: Wed, 21 Apr 2010 07:14:52 +0200
+Date: Wed, 21 Apr 2010 07:15:38 +0200
 User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
@@ -22,34 +22,31 @@ Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        Linux SCSI List <linux-scsi@vger.kernel.org>,
        Linux Wireless List <linux-wireless@vger.kernel.org>,
        DRI <dri-devel@lists.sourceforge.net>
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <4bce5cc3.966bdc0a.2ef7.fffff5de@mx.google.com>
-In-Reply-To: <4bce5cc3.966bdc0a.2ef7.fffff5de@mx.google.com>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <20100420135636.GA10674@elliptictech.com>
+In-Reply-To: <20100420135636.GA10674@elliptictech.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-2"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004210714.53050.rjw@sisk.pl>
+Message-Id: <201004210715.38621.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 April 2010, Ben Gamari wrote:
-> On Tue, 20 Apr 2010 05:15:57 +0200 (CEST), "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> > This message contains a list of some regressions from 2.6.33,
-> > for which there are no fixes in the mainline known to the tracking team.
-> > If any of them have been fixed already, please let us know.
-> > 
+On Tuesday 20 April 2010, Nick Bowler wrote:
+> On 05:15 Tue 20 Apr     , Rafael J. Wysocki wrote:
 > > If you know of any other unresolved regressions from 2.6.33, please let us
 > > know either and we'll add them to the list.  Also, please let us know
 > > if any of the entries below are invalid.
-> > 
 > 
-> I have recently reported this suspend regression on my Dell laptop hardware.
+> Please list these two similar regressions from 2.6.33 in the r600 DRM:
 > 
-> References: http://lkml.org/lkml/2010/4/18/20
-> Bug-report: https://bugzilla.kernel.org/show_bug.cgi?id=15820
+>  * r600 CS checker rejects GL_DEPTH_TEST w/o depth buffer:
+>            https://bugs.freedesktop.org/show_bug.cgi?id=27571
+> 
+>  * r600 CS checker rejects narrow FBO renderbuffers:
+>            https://bugs.freedesktop.org/show_bug.cgi?id=27609
 
-This has been added to the list now.  Please check my comment in the Bugzilla
-entry.
+Do you want to me to add them as one entry or as two separate bugs?
 
 Rafael
