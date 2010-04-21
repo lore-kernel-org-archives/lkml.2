@@ -1,98 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab0DUTWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 15:22:13 -0400
-Received: from kroah.org ([198.145.64.141]:57115 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754679Ab0DUTWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 15:22:11 -0400
-Date: Wed, 21 Apr 2010 12:16:01 -0700
-From: Greg KH <greg@kroah.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: stable@kernel.org, Paul Moore <paul.moore@hp.com>,
-       David Woodhouse <David.Woodhouse@intel.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>,
-       Jan Kiszka <jan.kiszka@siemens.com>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: Re: [stable] [PATCH] tun: orphan an skb on tx
-Message-ID: <20100421191601.GJ13228@kroah.com>
-References: <20100413145944.GA7716@redhat.com>
- <20100421113557.GA31606@redhat.com>
+	id S1755879Ab0DUTWm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 15:22:42 -0400
+Received: from kelvin.asmallorange.com ([207.210.111.10]:35540 "EHLO
+	kelvin.asmallorange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755807Ab0DUTWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 15:22:40 -0400
+Date: Thu, 22 Apr 2010 00:53:19 +0530
+From: Rabin Vincent <rabin@rab.in>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Abhishek Sagar <sagar.abhishek@gmail.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 05/10] ARM: ftrace: add ENDPROC annotations
+Message-ID: <20100421192319.GA16719@debian>
+References: <1268462987-8271-1-git-send-email-rabin@rab.in>
+ <1268462987-8271-6-git-send-email-rabin@rab.in>
+ <20100313084546.GA30400@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100421113557.GA31606@redhat.com>
+In-Reply-To: <20100313084546.GA30400@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - kelvin.asmallorange.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - rab.in
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 02:35:57PM +0300, Michael S. Tsirkin wrote:
-> On Tue, Apr 13, 2010 at 05:59:44PM +0300, Michael S. Tsirkin wrote:
-> > The following situation was observed in the field:
-> > tap1 sends packets, tap2 does not consume them, as a result
-> > tap1 can not be closed. This happens because
-> > tun/tap devices can hang on to skbs undefinitely.
-> > 
-> > As noted by Herbert, possible solutions include a timeout followed by a
-> > copy/change of ownership of the skb, or always copying/changing
-> > ownership if we're going into a hostile device.
-> > 
-> > This patch implements the second approach.
-> > 
-> > Note: one issue still remaining is that since skbs
-> > keep reference to tun socket and tun socket has a
-> > reference to tun device, we won't flush backlog,
-> > instead simply waiting for all skbs to get transmitted.
-> > At least this is not user-triggerable, and
-> > this was not reported in practice, my assumption is
-> > other devices besides tap complete an skb
-> > within finite time after it has been queued.
-> > 
-> > A possible solution for the second issue
-> > would not to have socket reference the device,
-> > instead, implement dev->destructor for tun, and
-> > wait for all skbs to complete there, but this
-> > needs some thought, probably too risky for 2.6.34.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > Tested-by: Yan Vugenfirer <yvugenfi@redhat.com>
-> > 
-> > ---
-> > 
-> > Please review the below, and consider for 2.6.34,
-> > and stable trees.
-> > 
-> >  drivers/net/tun.c |    4 ++++
-> >  1 files changed, 4 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> > index 96c39bd..4326520 100644
-> > --- a/drivers/net/tun.c
-> > +++ b/drivers/net/tun.c
-> > @@ -387,6 +387,10 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
-> >  		}
-> >  	}
+On Sat, Mar 13, 2010 at 08:45:46AM +0000, Russell King - ARM Linux wrote:
+> On Sat, Mar 13, 2010 at 12:19:42PM +0530, Rabin Vincent wrote:
 > >  
-> > +	/* Orphan the skb - required as we might hang on to it
-> > +	 * for indefinite time. */
-> > +	skb_orphan(skb);
-> > +
-> >  	/* Enqueue packet */
-> >  	skb_queue_tail(&tun->socket.sk->sk_receive_queue, skb);
-> >  	dev->trans_start = jiffies;
-> > -- 
-> > 1.7.0.2.280.gc6f05
+> >  	.globl ftrace_stub
+> > -ftrace_stub:
+> > +ENTRY(ftrace_stub)
 > 
-> This is commit 0110d6f22f392f976e84ab49da1b42f85b64a3c5 in net-2.6
-> Please cherry-pick this fix in stable kernels (2.6.32 and 2.6.33).
+> ENTRY does the .globl for you, so please kill your own version.
 
-David Miller queues up the patches for the network subsystem for the
-stable trees, and then forwards them to me when he feels they are ready.
+Updated patch below.
 
-So I'll defer to him on this one and wait for it to come from him.
+>From 87b70ed633da00fe9873a5819c6d24e57368de43 Mon Sep 17 00:00:00 2001
+From: Rabin Vincent <rabin@rab.in>
+Date: Sun, 14 Feb 2010 01:18:33 +0530
+Subject: [PATCH] ARM: ftrace: add ENDPROC annotations
 
-thanks,
+When building as Thumb-2, the ".type foo, %function" annotation in
+ENDPROC seems to be required in order for the assembly routines to be
+recognized as Thumb-2 code.  If the ENDPROC annotations are not present,
+calls to these routines are generated as BLX instead of BL.
 
-greg k-h
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+---
+ arch/arm/kernel/entry-common.S |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index 6805a72..c7a8c20 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -146,6 +146,7 @@ mcount_call:
+ 	bl	ftrace_stub
+ 	ldr	lr, [fp, #-4]			@ restore lr
+ 	ldmia	sp!, {r0-r3, pc}
++ENDPROC(mcount)
+ 
+ ENTRY(ftrace_caller)
+ 	stmdb	sp!, {r0-r3, lr}
+@@ -158,6 +159,7 @@ ftrace_call:
+ 	bl	ftrace_stub
+ 	ldr	lr, [fp, #-4]			@ restore lr
+ 	ldmia	sp!, {r0-r3, pc}
++ENDPROC(ftrace_caller)
+ 
+ #else
+ 
+@@ -179,6 +181,7 @@ gnu_trace:
+ 	mov	pc, r2
+ 	ldmia	sp!, {r0-r3, ip, lr}
+ 	mov	pc, ip
++ENDPROC(__gnu_mcount_nc)
+ 
+ #ifdef CONFIG_OLD_MCOUNT
+ /*
+@@ -204,13 +207,14 @@ trace:
+ 	mov	pc, r2
+ 	ldr	lr, [fp, #-4]			@ restore lr
+ 	ldmia	sp!, {r0-r3, pc}
++ENDPROC(mcount)
+ #endif
+ 
+ #endif /* CONFIG_DYNAMIC_FTRACE */
+ 
+-	.globl ftrace_stub
+-ftrace_stub:
++ENTRY(ftrace_stub)
+ 	mov	pc, lr
++ENDPROC(ftrace_stub)
+ 
+ #endif /* CONFIG_FUNCTION_TRACER */
+ 
+-- 
+1.7.0.4
+
