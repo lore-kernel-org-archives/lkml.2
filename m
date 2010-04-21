@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab0DUPem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 11:34:42 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:42045 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755461Ab0DUPel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 11:34:41 -0400
-Date: Wed, 21 Apr 2010 16:34:21 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
-	PageSwapCache pages
-Message-ID: <20100421153421.GM30306@csn.ul.ie>
-References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie> <1271797276-31358-5-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1004210927550.4959@router.home> <20100421150037.GJ30306@csn.ul.ie> <alpine.DEB.2.00.1004211004360.4959@router.home> <20100421151417.GK30306@csn.ul.ie> <alpine.DEB.2.00.1004211027120.4959@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1004211027120.4959@router.home>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1755718Ab0DUPfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 11:35:42 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40488 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755558Ab0DUPfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 11:35:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=ozcFU4AACo/8b1V+ViyeiaXzl7QmLbYmXBB84hxBm19gqIspqimq5Fa4FaUOQkcpzZ
+         TRWE7oDRMwf2rQfdKAlf2qnGcPjiqVkHG25Tne+yQNbGv7sNcG8Xi0Wlfaph9YhDH9Vz
+         M7fJC5ZYHJPI5mpgMTubCzh3bZLGzL8GS8AmU=
+From: Rabin Vincent <rabin@rab.in>
+To: sameo@linux.intel.com
+Cc: broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+       Rabin Vincent <rabin@rab.in>
+Subject: [PATCH] mfd: WM8350: remove incorrect kfree
+Date: Wed, 21 Apr 2010 21:06:05 +0530
+Message-Id: <1271864165-8096-1-git-send-email-rabin@rab.in>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 10:31:29AM -0500, Christoph Lameter wrote:
-> On Wed, 21 Apr 2010, Mel Gorman wrote:
-> 
-> > On Wed, Apr 21, 2010 at 10:05:21AM -0500, Christoph Lameter wrote:
-> > > On Wed, 21 Apr 2010, Mel Gorman wrote:
-> > >
-> > > > No, remap_swapcache could just be called "remap". If it's 0, it's
-> > > > considered unsafe to remap the page.
-> > >
-> > > Call this "can_remap"?
-> > >
-> >
-> > can_do - ba dum tisch.
-> >
-> > While you are looking though, maybe you can confirm something for me.
-> >
-> > 1. Is leaving a migration PTE like this behind reasonable? (I think yes
-> >    particularly as the page was already unmapped so it's not a new fault
-> >    incurred)
-> 
-> The design of page migration only allows for the existence of these as
-> long as the page is locked. Not sure what would happen if you leave this
-> hanging around. Paths that are not prepared for a migration_pte may
-> encounter one.
-> 
+The i2c_client received in probe() should not be kfree()'d.
 
-If there are other paths, then migration of unmapped PageSwapCache is
-plain unsafe and this patch would have to go. It'd limit compaction
-somewhat but without the series, it would appear that memory hot-remove
-is unsafe (albeit almost impossible to trigger).
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+---
+ drivers/mfd/wm8350-i2c.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-> > 2. Is the BUG_ON check in
-> >    include/linux/swapops.h#migration_entry_to_page() now wrong? (I
-> >    think yes, but I'm not sure and I'm having trouble verifying it)
-> 
-> The bug check ensures that migration entries only occur when the page
-> is locked. This patch changes that behavior. This is going too oops
-> therefore in unmap_and_move() when you try to remove the migration_ptes
-> from an unlocked page.
-> 
-
-It's not unmap_and_move() that the problem is occurring on but during a
-page fault - presumably in do_swap_page but I'm not 100% certain.
-
+diff --git a/drivers/mfd/wm8350-i2c.c b/drivers/mfd/wm8350-i2c.c
+index 65830f5..5fe5de1 100644
+--- a/drivers/mfd/wm8350-i2c.c
++++ b/drivers/mfd/wm8350-i2c.c
+@@ -64,10 +64,8 @@ static int wm8350_i2c_probe(struct i2c_client *i2c,
+ 	int ret = 0;
+ 
+ 	wm8350 = kzalloc(sizeof(struct wm8350), GFP_KERNEL);
+-	if (wm8350 == NULL) {
+-		kfree(i2c);
++	if (wm8350 == NULL)
+ 		return -ENOMEM;
+-	}
+ 
+ 	i2c_set_clientdata(i2c, wm8350);
+ 	wm8350->dev = &i2c->dev;
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.7.0.4
+
