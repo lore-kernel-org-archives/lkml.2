@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab0DUUp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 16:45:57 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:38029 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754944Ab0DUUpz (ORCPT
+	id S1756566Ab0DUUqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 16:46:13 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:61061 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944Ab0DUUqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 16:45:55 -0400
+	Wed, 21 Apr 2010 16:46:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=dapEwdZ7wxHHiWWHXhClGHC2qjQuJv73VUPS1QXoDRCf0Ya7XmXz5oRf24YpqZUChB
-         MAv136cbM8bieEdAAX4jv0/eFrsSVrSCXDV7Ym/lCbxzgT0fnKK9yOrzQRm2sXKnpA1S
-         QH/tNTd+eyIWr/c4zZM1dEJ0NZMtE0ckAzgPg=
-Date: Wed, 21 Apr 2010 22:46:01 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
-       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com
-Subject: Re: [PATCH 2/6] [watchdog] convert touch_softlockup_watchdog to
-	touch_watchdog
-Message-ID: <20100421204559.GB8677@nowhere>
-References: <1271777043-3807-1-git-send-email-dzickus@redhat.com> <1271777043-3807-3-git-send-email-dzickus@redhat.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=arcR4lt1vVdlg5k0o1Up3RcFBY2oguOSpIr6wWq0sm8+bEfRpVC3oY0rFqlSRq0GC6
+         5La9wa7MS944XO594dCwoIygLX91vIwCw7lhoWMdfDHOcjW452pCAm9iH9JI4D3B+Hn7
+         APKxSedHGfNCLB3JrHC0ZXKSaKLwkfVVsHRTE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271777043-3807-3-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1271879833.1776.186.camel@laptop>
+References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
+	 <1271755208.1676.422.camel@laptop>
+	 <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
+	 <1271804453.10448.168.camel@gandalf.stny.rr.com>
+	 <t2nc5b2c05b1004202216pd159c9b4mbfc1dc7658fc20e7@mail.gmail.com>
+	 <1271839772.1776.58.camel@laptop>
+	 <1271854016.10448.172.camel@gandalf.stny.rr.com>
+	 <x2mc5b2c05b1004211224s7825933dh531f2ed030610e9e@mail.gmail.com>
+	 <1271879833.1776.186.camel@laptop>
+Date: Wed, 21 Apr 2010 22:38:36 +0200
+Message-ID: <s2tc5b2c05b1004211338y814bc3b2o547a6eecdf64ca7f@mail.gmail.com>
+Subject: Re: Considerations on sched APIs under RT patch
+From: Primiano Tucci <p.tucci@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+       tglx <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 11:23:59AM -0400, Don Zickus wrote:
-> Just a scripted conversion to remove touch_softlockup_watchdog.
-> 
-> Also converts the once case of touch_all_softlockup_watchdogs to
-> touch_all_watchdogs.
-> 
-> This is done as part of the removal of the old softlockup code and
-> transition to the new softlockup code.
-> 
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> No, any syscall can end up blocking/scheduling there are no exceptions.
+> But blocking doesn't mean its non-deterministic, esp. when coupled with
+> things like PI.
+>
+> But you do have to treat system resources as such, that is they can (and
+> will) create cross-cpu dependencies, if you do not take that into
+> account you will of course be surprised.
+>
+I actually don't understand why do you recall PI so frequently, it
+seems to be the unique point of interest.
+Actually I take care about not sharing cross-cpu resources, but I
+cannot take care of what the kernel should do.
+In my viewpoint is unacceptable that the scheduler apis can led into a
+rescheduling.
+It voids any form of process control.
+If I lose the control while controlling other processes, Quis
+custodiet ipsos custodes?
 
+P.S. It actually does not happen in other RTOSes, e.g., VxWorks SMP
 
-In fact I worry a bit about this unification of watchdog touching.
-When we touch the softlockup watchdog, do we also want to touch
-the nmi watchdog?
+Primiano,
 
-Most of the time, I think we don't want to. We usually touch the
-softlockup detector because we know we are abnormally delaying
-the softlockup kthread from being scheduled, and if we are in such
-situation, it means we are doing something in a sensitive context:
-typically the kind of context favorable to create hardlockups...
-
-But the opposite is right: if we touch the nmi watchdog: it means we
-are abnormally delaying irqs, which means we also are abnormally
-delaying the softlockup kthread from being scheduled, so if we
-touch the nmi watchdog, we also want to touch the softlockup
-detector.
-
-Hence I guess we want to keep the current state:
-
-- touch_nmi_watchdog() = touch softlockup and nmi watchdogs
-- touch_softlockup_watchdog() = only touch softlockup watchdog
-
+--
+ Primiano Tucci
+ http://www.primianotucci.com
