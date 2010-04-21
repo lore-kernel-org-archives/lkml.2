@@ -1,96 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab0DUUDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 16:03:19 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:40177 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753990Ab0DUUCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 16:02:21 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Trond Myklebust <Trond.Myklebust@netapp.com>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 4/5] NFSv4: Fix the locking in nfs_inode_reclaim_delegation()
-Date: Wed, 21 Apr 2010 13:02:10 -0700
-Message-Id: <1271880131-3951-4-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100421200150.GA3818@linux.vnet.ibm.com>
-References: <20100421200150.GA3818@linux.vnet.ibm.com>
+	id S1756058Ab0DUUDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 16:03:44 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:35763 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab0DUUDm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 16:03:42 -0400
+Message-id: <4BCF5A09.80404@acm.org>
+Date: Wed, 21 Apr 2010 15:03:21 -0500
+From: Corey Minyard <minyard@acm.org>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090707)
+MIME-version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: openipmi-developer@lists.sourceforge.net, bjorn.helgaas@hp.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] ipmi: Only register one si per bmc
+References: <1271788828-10231-1-git-send-email-mjg@redhat.com>
+ <1271788828-10231-2-git-send-email-mjg@redhat.com> <4BCF3F69.3050003@acm.org>
+ <20100421182154.GA16436@srcf.ucam.org>
+In-reply-to: <20100421182154.GA16436@srcf.ucam.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+Matthew Garrett wrote:
+> On Wed, Apr 21, 2010 at 01:09:45PM -0500, Corey Minyard wrote:
+>
+>   
+>> If I understand this correctly, this would really be "Only register one  
+>> si per system".  Unfortunately, there are systems that have more than  
+>> one BMC each with their own interface.
+>>     
+>
+> The spec explicitly says that while a system may have multiple BMCs, 
+> only one BMC may respond to GetDeviceID (6.11 of the 2.0 spec). Is the 
+> real world irritatingly incompatible with this?
+>   
+That section is quite misleading.  There may be management controllers 
+that are not BMCs, and they may have system interfaces.  There may only 
+be on BMC in a system, though, per the spec.  That really has more to do 
+with event handling and the main SDR repository, though.
 
-Ensure that we correctly rcu-dereference the delegation itself, and that we
-protect against removal while we're changing the contents.
+However, IBM makes some systems that can plug together for scalability.  
+Each individual system has a BMC, and when you plug them together into 
+an SMP system, all the BMCs are still there.  At least that's how I 
+understand it.  I'm not sure if the other BMCs become satellite MCs in 
+that case, which would be legit, sort of.  So I guess the answer to you 
+question would be: "Yes, the world is not compatible with the spec".
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- fs/nfs/delegation.c |   42 ++++++++++++++++++++++++++++--------------
- 1 files changed, 28 insertions(+), 14 deletions(-)
-
-diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-index 1567124..8d9ec49 100644
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -129,21 +129,35 @@ again:
-  */
- void nfs_inode_reclaim_delegation(struct inode *inode, struct rpc_cred *cred, struct nfs_openres *res)
- {
--	struct nfs_delegation *delegation = NFS_I(inode)->delegation;
--	struct rpc_cred *oldcred;
-+	struct nfs_delegation *delegation;
-+	struct rpc_cred *oldcred = NULL;
- 
--	if (delegation == NULL)
--		return;
--	memcpy(delegation->stateid.data, res->delegation.data,
--			sizeof(delegation->stateid.data));
--	delegation->type = res->delegation_type;
--	delegation->maxsize = res->maxsize;
--	oldcred = delegation->cred;
--	delegation->cred = get_rpccred(cred);
--	clear_bit(NFS_DELEGATION_NEED_RECLAIM, &delegation->flags);
--	NFS_I(inode)->delegation_state = delegation->type;
--	smp_wmb();
--	put_rpccred(oldcred);
-+	rcu_read_lock();
-+	delegation = rcu_dereference(NFS_I(inode)->delegation);
-+	if (delegation != NULL) {
-+		spin_lock(&delegation->lock);
-+		if (delegation->inode != NULL) {
-+			memcpy(delegation->stateid.data, res->delegation.data,
-+			       sizeof(delegation->stateid.data));
-+			delegation->type = res->delegation_type;
-+			delegation->maxsize = res->maxsize;
-+			oldcred = delegation->cred;
-+			delegation->cred = get_rpccred(cred);
-+			clear_bit(NFS_DELEGATION_NEED_RECLAIM,
-+				  &delegation->flags);
-+			NFS_I(inode)->delegation_state = delegation->type;
-+			spin_unlock(&delegation->lock);
-+			put_rpccred(oldcred);
-+			rcu_read_unlock();
-+		} else {
-+			/* We appear to have raced with a delegation return. */
-+			spin_unlock(&delegation->lock);
-+			rcu_read_unlock();
-+			nfs_inode_set_delegation(inode, cred, res);
-+		}
-+	} else {
-+		rcu_read_unlock();
-+	}
- }
- 
- static int nfs_do_return_delegation(struct inode *inode, struct nfs_delegation *delegation, int issync)
--- 
-1.7.0
-
+-corey
