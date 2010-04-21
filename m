@@ -1,113 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab0DUPW4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 11:22:56 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:15191 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755568Ab0DUPWy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 11:22:54 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai <yinghai.lu@oracle.com>
-Subject: Re: [PATCH 3/3] x86,pci,acpi: Handle invalid _CRS
-Date: Wed, 21 Apr 2010 09:21:49 -0600
-User-Agent: KMail/1.9.10
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Andy Isaacson <adi@hexapodia.org>, guenter.roeck@ericsson.com,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>
-References: <20100409223532.GC11130@hexapodia.org> <4BCE8E3E.4030809@oracle.com> <4BCE8EBF.5050207@oracle.com>
-In-Reply-To: <4BCE8EBF.5050207@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	id S1755619Ab0DUPYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 11:24:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45139 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755503Ab0DUPYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 11:24:24 -0400
+Subject: Re: busy inodes -> ext3 umount crash
+From: Eric Paris <eparis@redhat.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+       adilger@sun.com, linux-ext4@vger.kernel.org,
+       Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+       mszeredi@suse.cz
+In-Reply-To: <4BCF16CE.2080403@gmail.com>
+References: <4BC8A7C1.20102@gmail.com> <20100419141158.GB5439@quack.suse.cz>
+	 <4BCC69B4.2050308@gmail.com> <4BCDB633.9040901@gmail.com>
+	 <20100420152844.GB3885@quack.suse.cz>  <4BCF16CE.2080403@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Apr 2010 11:24:10 -0400
+Message-ID: <1271863450.2899.12.camel@dhcp235-240.rdu.redhat.com>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004210921.50502.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 April 2010 11:35:59 pm Yinghai wrote:
+On Wed, 2010-04-21 at 17:16 +0200, Jiri Slaby wrote:
+> On 04/20/2010 05:28 PM, Jan Kara wrote:
+> > On Tue 20-04-10 16:12:03, Jiri Slaby wrote:
+> >> On 04/19/2010 04:33 PM, Jiri Slaby wrote:
+> >>> The trigger for busy inodes is as simple as (I=initialization done only
+> >>> once):
+> >>> I> # dd if=/dev/zero of=/dev/shm/ext3 bs=1024 count=1 seek=$((100*1024))
+> >>> I> # mkfs.ext3 -m 0 /dev/shm/ext3
+> >>> # mount -oloop /dev/shm/ext3 /mnt/c
+> >>> # umount /mnt/c
+> >>> # dmesg|tail
+> >>> VFS: Busy inodes after unmount of loop0. Self-destruct in 5 seconds.
+> >>> Have a nice day...
+> >>>
+> >>> (The printk time varies -- this sequence really suffices.)
+> >>
+> >> Well, this happens only after gnome-session is started and it's fuzzy --
+> >> sometimes it happens, sometimes not. I didn't find 100% trigger yet.
+> >   Hmph - maybe something in inotify? Dunno...
 > 
-> Don't clear root bus resource too early, until We can make sure _CRS works
-
-Please observe English conventions like capitalizing the first word
-of a sentence (and not things like "We" in the middle) and using
-a period at the end.
-
-> also restore it, if all _CRS get rejected because of conflicts
+> fsnotify...
 > 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >>>> So if you can easily reproduce
+> >>>> the "busy inodes" message then I'd start with debugging that one. Do you
+> >>>> see it also with vanilla kernels?
+> >>
+> >> Vanilla seems not to be affected. It's in next/master already though
+> >> (2603ecd9). I'll investigate it further later.
+> >   Do you mean it's in today's linux-next but not in Linus' tree?
 > 
-> ---
->  arch/x86/pci/acpi.c |   13 ++++++++++---
->  1 file changed, 10 insertions(+), 3 deletions(-)
+> Yes, exactly.
 > 
-> Index: linux-2.6/arch/x86/pci/acpi.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/pci/acpi.c
-> +++ linux-2.6/arch/x86/pci/acpi.c
-> @@ -196,9 +196,6 @@ get_current_resources(struct acpi_device
->  	struct pci_root_info info;
->  	size_t size;
->  
-> -	if (pci_use_crs)
-> -		pci_bus_remove_resources(bus);
-> -
->  	info.bridge = device;
->  	info.bus = bus;
->  	info.res_num = 0;
-> @@ -217,10 +214,20 @@ get_current_resources(struct acpi_device
->  		goto name_alloc_fail;
->  	sprintf(info.name, "PCI Bus %04x:%02x", domain, busnum);
->  
-> +	/* Only clear that when _CRS works for sure*/
-
-If you put a comment here, please at least add a space before the
-closing "*/".  Otherwise it looks sloppy.
-
-> +	if (pci_use_crs)
-> +		pci_bus_remove_resources(bus);
-> +
->  	info.res_num = 0;
->  	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
->  				&info);
->  
-> +	if (pci_use_crs && !info.res_num) {
-> +		/* Restore default one */
-> +		bus->resource[0] = &ioport_resource;
-> +		bus->resource[1] = &iomem_resource;
-
-This is ugly because it just repeats this code from pci_create_bus(),
-and there's no indication either here or there that they are connected.
-
-Admittedly, I think it's also sort of ugly that pci_bus_remove_resources()
-exists at all -- I'd rather have some sort of hook so we could set the
-bus resources correctly the first time.
-
-Maybe you could at least add a pci_bus_set_default_resources() that
-could be called both here and from pci_create_bus().
-
-Why are you doing this patch?  Did you see a machine where the host
-bridge was left with no resources because of _CRS issues?  If so,
-this patch feels like a band-aid.  I'd rather investigate the issue
-directly, because that would probably be a Linux problem we could fix.
-
-Also, if there *is* a reported problem, you should include a link to
-the bugzilla or email thread.
-
-Bjorn
-
-> +	}
-> +
->  	return;
->  
->  name_alloc_fail:
+> And the winner is (seemingly):
+> commit 69c1182c4e5d8b7da772ddad512c6f6b67ec1bb8
+> Author: Eric Paris <eparis@redhat.com>
+> Date:   Thu Dec 17 21:24:27 2009 -0500
 > 
+>     fsnotify: vfsmount marks generic functions
+> 
+>     Much like inode-mark.c has all of the code dealing with marks on inodes
+>     this patch adds a vfsmount-mark.c which has similar code but is intended
+>     for marks on vfsmounts.
+> 
+>     Signed-off-by: Eric Paris <eparis@redhat.com>
+> 
+> 
+> I can't verify it by reverting on the top of -mm as it doesn't revert
+> cleanly. Do you see any bug in there?
 
+You cannot revert, but you can certainly reset --hard before and after
+this patch.  I'll take a look, but I'm not seeing a problem right off
+hand.  This patch wasn't supposed to mess with inode refcounting at
+all....
+
+-Eric
 
