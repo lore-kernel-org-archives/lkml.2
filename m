@@ -1,499 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab0DUFem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 01:34:42 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56354 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab0DUFel (ORCPT
+	id S1752096Ab0DUFhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 01:37:04 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61788 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab0DUFhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 01:34:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=B8YnGE0V2lPnhy7ECnUkPE+0f0UiVtoP5gZv8oOoMgj97QsiGqSW/yx3Xh73O5jGyq
-         BD58ajbbLveyPvmx12rmnhPvEjnpio59lE8TmRea5wmy09BQ2rE32Vv18mYTW3HiRCQq
-         ERrg8eY31Ds/sd21Brq8qy2qmJcAvTIxWA4Jw=
-From: Gustavo Silva <silvagustavosilva@gmail.com>
-To: gregkh@suse.de, abbotti@mev.co.uk
-Cc: fmhess@users.sourceforge.net, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org,
-       Gustavo Silva <silvagustavo@users.sourceforge.net>
-Subject: [PATCH] Staging: comedi: drivers: fix coding style issues in das16.c
-Date: Wed, 21 Apr 2010 00:34:35 -0500
-Message-Id: <1271828075-11093-1-git-send-email-silvagustavo@users.sourceforge.net>
-X-Mailer: git-send-email 1.5.4.3
-In-Reply-To: <>
-References: <>
+	Wed, 21 Apr 2010 01:37:00 -0400
+Message-ID: <4BCE8E3E.4030809@oracle.com>
+Date: Tue, 20 Apr 2010 22:33:50 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Andy Isaacson <adi@hexapodia.org>,
+       guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>
+Subject: [PATCH -v4 1/3] x86: Reserve [0xa0000, 0x100000] in e820 map
+References: <20100409223532.GC11130@hexapodia.org>	 <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org>	 <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org>	 <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org>	 <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org>	 <4BC375D9.4040503@oracle.com> <20100412200224.GO11130@hexapodia.org>	 <4BC39F67.4090407@oracle.com> <1271192527.6035.44.camel@dc7800.home> <4BC4DD85.5030203@zytor.com> <4BC4DDEA.60202@oracle.com> <4BC4DFAD.9020600@zytor.com> <4BC4E55B.7000103@oracle.com> <4BC4E8FB.8060802@zytor.com> <4BC4F03C.1020707@oracle.com> <4BC4F320.8020902@zytor.com> <4BC4F703.5030700@oracle.com> <4BC4F80C.2020209@zytor.com> <4BC4F851.7040500@oracle.com> <4BC4F948.8050500@zytor.com> <4BC4F9C2.20503@oracle.com>
+In-Reply-To: <4BC4F9C2.20503@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4BCE8E94.0071:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the das16.c file that fixes up the following issues
-found by the checkpatch.pl tool.
 
-WARNING: line over 80 characters x 23
-ERROR: spaces required around that '?' (ctx:VxV) x 2
-ERROR: spaces required around that ':' (ctx:VxV) x 2
-WARNING: printk() should include KERN_ facility level x 17
-WARNING: braces {} are not necessary for single statement blocks x 8
 
-Signed-off-by: Gustavo Silva <silvagustavo@users.sourceforge.net>
+Update e820 at first, and later put them resource tree.
+Reserved that early, will not be allocated to unassigned PCI BAR
+
+v3: remove probe_roms() that is not needed, because whole range is reserved
+	 already
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Andy Isaacson <adi@hexapodia.org>
+Tested-by: Andy Isaacson <adi@hexapodia.org>
+
 ---
- drivers/staging/comedi/drivers/das16.c |  159 ++++++++++++++++++--------------
- 1 files changed, 90 insertions(+), 69 deletions(-)
+ arch/x86/include/asm/setup.h    |    3 
+ arch/x86/include/asm/x86_init.h |    4 
+ arch/x86/kernel/Makefile        |    1 
+ arch/x86/kernel/head32.c        |    2 
+ arch/x86/kernel/mrst.c          |    2 
+ arch/x86/kernel/probe_roms_32.c |  166 ----------------------------------------
+ arch/x86/kernel/setup.c         |   25 ------
+ arch/x86/kernel/x86_init.c      |    2 
+ 8 files changed, 8 insertions(+), 197 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/das16.c b/drivers/staging/comedi/drivers/das16.c
-index f2aadda..ccee4f1 100644
---- a/drivers/staging/comedi/drivers/das16.c
-+++ b/drivers/staging/comedi/drivers/das16.c
-@@ -74,7 +74,8 @@ Keithley Manuals:
- 	4922.PDF (das-1400)
- 	4923.PDF (das1200, 1400, 1600)
+Index: linux-2.6/arch/x86/include/asm/setup.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/setup.h
++++ linux-2.6/arch/x86/include/asm/setup.h
+@@ -43,8 +43,8 @@ static inline void visws_early_detect(vo
  
--Computer boards manuals also available from their website www.measurementcomputing.com
-+Computer boards manuals also available from their website
-+www.measurementcomputing.com
+ extern unsigned long saved_video_mode;
  
- */
++void trim_bios_range(void);
+ extern void reserve_standard_io_resources(void);
+-extern void i386_reserve_resources(void);
+ extern void setup_default_timer_irq(void);
  
-@@ -92,7 +93,8 @@ Computer boards manuals also available from their website www.measurementcomputi
- /* #define DEBUG */
+ #ifdef CONFIG_X86_MRST
+@@ -96,7 +96,6 @@ void *extend_brk(size_t size, size_t ali
+ #ifdef __i386__
  
- #ifdef DEBUG
--#define DEBUG_PRINT(format, args...) printk("das16: " format, ## args)
-+#define DEBUG_PRINT(format, args...)	\
-+	printk(KERN_DEBUG "das16: " format, ## args)
+ void __init i386_start_kernel(void);
+-extern void probe_roms(void);
+ 
  #else
- #define DEBUG_PRINT(format, args...)
- #endif
-@@ -186,15 +188,16 @@ Computer boards manuals also available from their website www.measurementcomputi
+ void __init x86_64_start_kernel(char *real_mode);
+Index: linux-2.6/arch/x86/include/asm/x86_init.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/x86_init.h
++++ linux-2.6/arch/x86/include/asm/x86_init.h
+@@ -32,14 +32,14 @@ struct x86_init_mpparse {
  
- */
- 
--static const int sample_size = 2;	/*  size in bytes of a sample from board */
-+/*  size in bytes of a sample from board */
-+static const int sample_size = 2;
- 
- #define DAS16_TRIG		0
- #define DAS16_AI_LSB		0
- #define DAS16_AI_MSB		1
- #define DAS16_MUX		2
- #define DAS16_DIO		3
--#define DAS16_AO_LSB(x)	((x)?6:4)
--#define DAS16_AO_MSB(x)	((x)?7:5)
-+#define DAS16_AO_LSB(x)	((x) ? 6 : 4)
-+#define DAS16_AO_MSB(x)	((x) ? 7 : 5)
- #define DAS16_STATUS		8
- #define   BUSY			(1<<7)
- #define   UNIPOLAR			(1<<6)
-@@ -271,7 +274,7 @@ static const struct comedi_lrange range_das1x02_unip = { 4, {
+ /**
+  * struct x86_init_resources - platform specific resource related ops
+- * @probe_roms:			probe BIOS roms
++ * @trim_bios_range:		trim BIOS related range in E820
+  * @reserve_resources:		reserve the standard resources for the
+  *				platform
+  * @memory_setup:		platform specific memory setup
+  *
+  */
+ struct x86_init_resources {
+-	void (*probe_roms)(void);
++	void (*trim_bios_range)(void);
+ 	void (*reserve_resources)(void);
+ 	char *(*memory_setup)(void);
  };
- 
- static const struct comedi_lrange range_das16jr = { 9, {
--							/*  also used by 16/330 */
-+						/*  also used by 16/330 */
- 							BIP_RANGE(10),
- 							BIP_RANGE(5),
- 							BIP_RANGE(2.5),
-@@ -547,7 +550,8 @@ static const struct das16_board das16_boards[] = {
- 	 .id = 0x20,
- 	 },
- 	{
--	 .name = "das-1401",	/*  4919.pdf and 4922.pdf (keithley user's manual) */
-+	/*  4919.pdf and 4922.pdf (keithley user's manual) */
-+	 .name = "das-1401",
- 	 .ai = das16_ai_rinsn,
- 	 .ai_nbits = 12,
- 	 .ai_speed = 10000,
-@@ -558,10 +562,11 @@ static const struct das16_board das16_boards[] = {
- 	 .i8255_offset = 0x0,
- 	 .i8254_offset = 0x0c,
- 	 .size = 0x408,
--	 .id = 0xc0		/*  4919.pdf says id bits are 0xe0, 4922.pdf says 0xc0 */
-+	 .id = 0xc0   /*  4919.pdf says id bits are 0xe0, 4922.pdf says 0xc0 */
- 	 },
- 	{
--	 .name = "das-1402",	/*  4919.pdf and 4922.pdf (keithley user's manual) */
-+	/*  4919.pdf and 4922.pdf (keithley user's manual) */
-+	 .name = "das-1402",
- 	 .ai = das16_ai_rinsn,
- 	 .ai_nbits = 12,
- 	 .ai_speed = 10000,
-@@ -572,7 +577,7 @@ static const struct das16_board das16_boards[] = {
- 	 .i8255_offset = 0x0,
- 	 .i8254_offset = 0x0c,
- 	 .size = 0x408,
--	 .id = 0xc0		/*  4919.pdf says id bits are 0xe0, 4922.pdf says 0xc0 */
-+	 .id = 0xc0   /*  4919.pdf says id bits are 0xe0, 4922.pdf says 0xc0 */
- 	 },
- 	{
- 	 .name = "das-1601",	/*  4919.pdf */
-@@ -704,7 +709,8 @@ static const struct das16_board das16_boards[] = {
- 	 .name = "das16/jr/ctr5",	/*  ? */
- 	 },
- 	{
--	 .name = "cio-das16/m1/16",	/*  cio-das16_m1_16.pdf, this board is a bit quirky, no dma */
-+	/*  cio-das16_m1_16.pdf, this board is a bit quirky, no dma */
-+	 .name = "cio-das16/m1/16",
- 	 },
- #endif
- };
-@@ -736,14 +742,19 @@ struct das16_private_struct {
- 	unsigned int clockbase;	/*  master clock speed in ns */
- 	volatile unsigned int control_state;	/*  dma, interrupt and trigger control bits */
- 	volatile unsigned long adc_byte_count;	/*  number of bytes remaining */
--	unsigned int divisor1;	/*  divisor dividing master clock to get conversion frequency */
--	unsigned int divisor2;	/*  divisor dividing master clock to get conversion frequency */
-+	/*  divisor dividing master clock to get conversion frequency */
-+	unsigned int divisor1;
-+	/*  divisor dividing master clock to get conversion frequency */
-+	unsigned int divisor2;
- 	unsigned int dma_chan;	/*  dma channel */
- 	uint16_t *dma_buffer[2];
- 	dma_addr_t dma_buffer_addr[2];
- 	unsigned int current_buffer;
- 	volatile unsigned int dma_transfer_size;	/*  target number of bytes to transfer per dma shot */
--	/*  user-defined analog input and output ranges defined from config options */
-+	/**
-+	 * user-defined analog input and output ranges
-+	 * defined from config options
-+	 */
- 	struct comedi_lrange *user_ai_range_table;
- 	struct comedi_lrange *user_ao_range_table;
- 
-@@ -798,7 +809,10 @@ static int das16_cmd_test(struct comedi_device *dev, struct comedi_subdevice *s,
- 	if (err)
- 		return 1;
- 
--	/* step 2: make sure trigger sources are unique and mutually compatible */
-+	/**
-+	 * step 2: make sure trigger sources are unique and
-+	 * mutually compatible
-+	 */
- 	if (cmd->scan_begin_src != TRIG_TIMER &&
- 	    cmd->scan_begin_src != TRIG_EXT &&
- 	    cmd->scan_begin_src != TRIG_FOLLOW)
-@@ -893,12 +907,15 @@ static int das16_cmd_test(struct comedi_device *dev, struct comedi_subdevice *s,
- 			if (CR_CHAN(cmd->chanlist[i]) !=
- 			    (start_chan + i) % s->n_chan) {
- 				comedi_error(dev,
--					     "entries in chanlist must be consecutive channels, counting upwards\n");
-+						"entries in chanlist must be "
-+						"consecutive channels, "
-+						"counting upwards\n");
- 				err++;
- 			}
- 			if (CR_RANGE(cmd->chanlist[i]) != gain) {
- 				comedi_error(dev,
--					     "entries in chanlist must all have the same gain\n");
-+						"entries in chanlist must all "
-+						"have the same gain\n");
- 				err++;
- 			}
- 		}
-@@ -920,12 +937,13 @@ static int das16_cmd_exec(struct comedi_device *dev, struct comedi_subdevice *s)
- 	if (devpriv->dma_chan == 0 || (dev->irq == 0
- 				       && devpriv->timer_mode == 0)) {
- 		comedi_error(dev,
--			     "irq (or use of 'timer mode') dma required to execute comedi_cmd");
-+				"irq (or use of 'timer mode') dma required to "
-+							"execute comedi_cmd");
- 		return -1;
- 	}
- 	if (cmd->flags & TRIG_RT) {
--		comedi_error(dev,
--			     "isa dma transfers cannot be performed with TRIG_RT, aborting");
-+		comedi_error(dev, "isa dma transfers cannot be performed with "
-+							"TRIG_RT, aborting");
- 		return -1;
- 	}
- 
-@@ -933,16 +951,17 @@ static int das16_cmd_exec(struct comedi_device *dev, struct comedi_subdevice *s)
- 	    cmd->stop_arg * cmd->chanlist_len * sizeof(uint16_t);
- 
- 	/*  disable conversions for das1600 mode */
--	if (thisboard->size > 0x400) {
-+	if (thisboard->size > 0x400)
- 		outb(DAS1600_CONV_DISABLE, dev->iobase + DAS1600_CONV);
--	}
-+
- 	/*  set scan limits */
- 	byte = CR_CHAN(cmd->chanlist[0]);
- 	byte |= CR_CHAN(cmd->chanlist[cmd->chanlist_len - 1]) << 4;
- 	outb(byte, dev->iobase + DAS16_MUX);
- 
- 	/* set gain (this is also burst rate register but according to
--	 * computer boards manual, burst rate does nothing, even on keithley cards) */
-+	 * computer boards manual, burst rate does nothing, even on
-+	 * keithley cards) */
- 	if (thisboard->ai_pg != das16_pg_none) {
- 		range = CR_RANGE(cmd->chanlist[0]);
- 		outb((das16_gainlists[thisboard->ai_pg])[range],
-@@ -1005,9 +1024,9 @@ static int das16_cmd_exec(struct comedi_device *dev, struct comedi_subdevice *s)
- 	outb(devpriv->control_state, dev->iobase + DAS16_CONTROL);
- 
- 	/* Enable conversions if using das1600 mode */
--	if (thisboard->size > 0x400) {
-+	if (thisboard->size > 0x400)
- 		outb(0, dev->iobase + DAS1600_CONV);
--	}
-+
- 
- 	return 0;
- }
-@@ -1030,9 +1049,9 @@ static int das16_cancel(struct comedi_device *dev, struct comedi_subdevice *s)
- 	}
- 
- 	/* disable burst mode */
--	if (thisboard->size > 0x400) {
-+	if (thisboard->size > 0x400)
- 		outb(0, dev->iobase + DAS1600_BURST);
--	}
-+
- 
- 	spin_unlock_irqrestore(&dev->spinlock, flags);
- 
-@@ -1085,11 +1104,11 @@ static int das16_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
- 		}
- 		msb = inb(dev->iobase + DAS16_AI_MSB);
- 		lsb = inb(dev->iobase + DAS16_AI_LSB);
--		if (thisboard->ai_nbits == 12) {
-+		if (thisboard->ai_nbits == 12)
- 			data[n] = ((lsb >> 4) & 0xf) | (msb << 4);
--		} else {
-+		else
- 			data[n] = lsb | (msb << 8);
--		}
-+
- 	}
- 
- 	return n;
-@@ -1207,8 +1226,8 @@ static int disable_dma_on_even(struct comedi_device *dev)
- 		residue = get_dma_residue(devpriv->dma_chan);
- 	}
- 	if (i == disable_limit) {
--		comedi_error(dev,
--			     "failed to get an even dma transfer, could be trouble.");
-+		comedi_error(dev, "failed to get an even dma transfer, "
-+							"could be trouble.");
- 	}
- 	return residue;
- }
-@@ -1254,7 +1273,8 @@ static void das16_interrupt(struct comedi_device *dev)
- 	} else
- 		num_bytes = devpriv->dma_transfer_size - residue;
- 
--	if (cmd->stop_src == TRIG_COUNT && num_bytes >= devpriv->adc_byte_count) {
-+	if (cmd->stop_src == TRIG_COUNT &&
-+					num_bytes >= devpriv->adc_byte_count) {
- 		num_bytes = devpriv->adc_byte_count;
- 		async->events |= COMEDI_CB_EOA;
- 	}
-@@ -1275,9 +1295,9 @@ static void das16_interrupt(struct comedi_device *dev)
- 		set_dma_count(devpriv->dma_chan, devpriv->dma_transfer_size);
- 		enable_dma(devpriv->dma_chan);
- 		/* reenable conversions for das1600 mode, (stupid hardware) */
--		if (thisboard->size > 0x400 && devpriv->timer_mode == 0) {
-+		if (thisboard->size > 0x400 && devpriv->timer_mode == 0)
- 			outb(0x00, dev->iobase + DAS1600_CONV);
--		}
-+
- 	}
- 	release_dma_lock(dma_flags);
- 
-@@ -1330,25 +1350,25 @@ static int das16_probe(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	status = inb(dev->iobase + DAS16_STATUS);
- 
--	if ((status & UNIPOLAR)) {
-+	if ((status & UNIPOLAR))
- 		devpriv->ai_unipolar = 1;
--	} else {
-+	else
- 		devpriv->ai_unipolar = 0;
--	}
- 
--	if ((status & DAS16_MUXBIT)) {
-+
-+	if ((status & DAS16_MUXBIT))
- 		devpriv->ai_singleended = 1;
--	} else {
-+	else
- 		devpriv->ai_singleended = 0;
--	}
-+
- 
- 	/* diobits indicates boards */
- 
- 	diobits = inb(dev->iobase + DAS16_DIO) & 0xf0;
- 
--	printk(" id bits are 0x%02x\n", diobits);
-+	printk(KERN_INFO " id bits are 0x%02x\n", diobits);
- 	if (thisboard->id != diobits) {
--		printk(" requested board's id bits are 0x%x (ignore)\n",
-+		printk(KERN_INFO " requested board's id bits are 0x%x (ignore)\n",
- 		       thisboard->id);
- 	}
- 
-@@ -1363,10 +1383,10 @@ static int das1600_mode_detect(struct comedi_device *dev)
- 
- 	if (status & DAS1600_CLK_10MHZ) {
- 		devpriv->clockbase = 100;
--		printk(" 10MHz pacer clock\n");
-+		printk(KERN_INFO " 10MHz pacer clock\n");
- 	} else {
- 		devpriv->clockbase = 1000;
--		printk(" 1MHz pacer clock\n");
-+		printk(KERN_INFO " 1MHz pacer clock\n");
- 	}
- 
- 	reg_dump(dev);
-@@ -1406,14 +1426,15 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (timer_mode)
- 		irq = 0;
- 
--	printk("comedi%d: das16:", dev->minor);
-+	printk(KERN_INFO "comedi%d: das16:", dev->minor);
- 
- 	/*  check that clock setting is valid */
- 	if (it->options[3]) {
- 		if (it->options[3] != 0 &&
- 		    it->options[3] != 1 && it->options[3] != 10) {
- 			printk
--			    ("\n Invalid option.  Master clock must be set to 1 or 10 (MHz)\n");
-+			    ("\n Invalid option.  Master clock must be set "
-+							"to 1 or 10 (MHz)\n");
- 			return -EINVAL;
- 		}
- 	}
-@@ -1425,23 +1446,23 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (thisboard->size < 0x400) {
- 		printk(" 0x%04lx-0x%04lx\n", iobase, iobase + thisboard->size);
- 		if (!request_region(iobase, thisboard->size, "das16")) {
--			printk(" I/O port conflict\n");
-+			printk(KERN_ERR " I/O port conflict\n");
- 			return -EIO;
- 		}
- 	} else {
--		printk(" 0x%04lx-0x%04lx 0x%04lx-0x%04lx\n",
-+		printk(KERN_INFO " 0x%04lx-0x%04lx 0x%04lx-0x%04lx\n",
- 		       iobase, iobase + 0x0f,
- 		       iobase + 0x400,
- 		       iobase + 0x400 + (thisboard->size & 0x3ff));
- 		if (!request_region(iobase, 0x10, "das16")) {
--			printk(" I/O port conflict:  0x%04lx-0x%04lx\n",
-+			printk(KERN_ERR " I/O port conflict:  0x%04lx-0x%04lx\n",
- 			       iobase, iobase + 0x0f);
- 			return -EIO;
- 		}
- 		if (!request_region(iobase + 0x400, thisboard->size & 0x3ff,
- 				    "das16")) {
- 			release_region(iobase, 0x10);
--			printk(" I/O port conflict:  0x%04lx-0x%04lx\n",
-+			printk(KERN_ERR " I/O port conflict:  0x%04lx-0x%04lx\n",
- 			       iobase + 0x400,
- 			       iobase + 0x400 + (thisboard->size & 0x3ff));
- 			return -EIO;
-@@ -1452,7 +1473,7 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	/*  probe id bits to make sure they are consistent */
- 	if (das16_probe(dev, it)) {
--		printk(" id bits do not match selected board, aborting\n");
-+		printk(KERN_ERR " id bits do not match selected board, aborting\n");
- 		return -EINVAL;
- 	}
- 	dev->board_name = thisboard->name;
-@@ -1474,7 +1495,7 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		if (ret < 0)
- 			return ret;
- 		dev->irq = irq;
--		printk(" ( irq = %u )", irq);
-+		printk(KERN_INFO " ( irq = %u )", irq);
- 	} else if (irq == 0) {
- 		printk(" ( no irq )");
- 	} else {
-@@ -1488,16 +1509,15 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		/*  allocate dma buffers */
- 		int i;
- 		for (i = 0; i < 2; i++) {
--			devpriv->dma_buffer[i] = pci_alloc_consistent(NULL,
--								      DAS16_DMA_SIZE,
--								      &devpriv->
--								      dma_buffer_addr
--								      [i]);
-+			devpriv->dma_buffer[i] = pci_alloc_consistent(
-+						NULL, DAS16_DMA_SIZE,
-+						&devpriv->dma_buffer_addr[i]);
-+
- 			if (devpriv->dma_buffer[i] == NULL)
- 				return -ENOMEM;
- 		}
- 		if (request_dma(dma_chan, "das16")) {
--			printk(" failed to allocate dma channel %i\n",
-+			printk(KERN_ERR " failed to allocate dma channel %i\n",
- 			       dma_chan);
- 			return -EINVAL;
- 		}
-@@ -1506,11 +1526,11 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		disable_dma(devpriv->dma_chan);
- 		set_dma_mode(devpriv->dma_chan, DMA_MODE_READ);
- 		release_dma_lock(flags);
--		printk(" ( dma = %u)\n", dma_chan);
-+		printk(KERN_INFO " ( dma = %u)\n", dma_chan);
- 	} else if (dma_chan == 0) {
--		printk(" ( no dma )\n");
-+		printk(KERN_INFO " ( no dma )\n");
- 	} else {
--		printk(" invalid dma channel\n");
-+		printk(KERN_ERR " invalid dma channel\n");
- 		return -EINVAL;
- 	}
- 
-@@ -1569,7 +1589,7 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 			s->subdev_flags |= SDF_DIFF;
- 		}
- 		s->maxdata = (1 << thisboard->ai_nbits) - 1;
--		if (devpriv->user_ai_range_table) {	/*  user defined ai range */
-+		if (devpriv->user_ai_range_table) { /*  user defined ai range */
- 			s->range_table = devpriv->user_ai_range_table;
- 		} else if (devpriv->ai_unipolar) {
- 			s->range_table = das16_ai_uni_lranges[thisboard->ai_pg];
-@@ -1592,11 +1612,12 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		s->subdev_flags = SDF_WRITABLE;
- 		s->n_chan = 2;
- 		s->maxdata = (1 << thisboard->ao_nbits) - 1;
--		if (devpriv->user_ao_range_table) {	/*  user defined ao range */
-+		/*  user defined ao range */
-+		if (devpriv->user_ao_range_table)
- 			s->range_table = devpriv->user_ao_range_table;
--		} else {
-+		else
- 			s->range_table = &range_unknown;
--		}
-+
- 		s->insn_write = thisboard->ao;
- 	} else {
- 		s->type = COMEDI_SUBD_UNUSED;
-@@ -1656,7 +1677,7 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- static int das16_detach(struct comedi_device *dev)
+Index: linux-2.6/arch/x86/kernel/Makefile
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/Makefile
++++ linux-2.6/arch/x86/kernel/Makefile
+@@ -34,7 +34,6 @@ obj-y			+= traps.o irq.o irq_$(BITS).o d
+ obj-y			+= time.o ioport.o ldt.o dumpstack.o
+ obj-y			+= setup.o x86_init.o i8259.o irqinit.o
+ obj-$(CONFIG_X86_VISWS)	+= visws_quirks.o
+-obj-$(CONFIG_X86_32)	+= probe_roms_32.o
+ obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
+ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o
+Index: linux-2.6/arch/x86/kernel/head32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/head32.c
++++ linux-2.6/arch/x86/kernel/head32.c
+@@ -21,8 +21,6 @@
+ static void __init i386_default_early_setup(void)
  {
--	printk("comedi%d: das16: remove\n", dev->minor);
-+	printk(KERN_INFO "comedi%d: das16: remove\n", dev->minor);
+ 	/* Initilize 32bit specific setup functions */
+-	x86_init.resources.probe_roms = probe_roms;
+-	x86_init.resources.reserve_resources = i386_reserve_resources;
+ 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
  
- 	das16_reset(dev);
+ 	reserve_ebda_region();
+Index: linux-2.6/arch/x86/kernel/mrst.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/mrst.c
++++ linux-2.6/arch/x86/kernel/mrst.c
+@@ -222,7 +222,7 @@ static void __init mrst_setup_boot_clock
+  */
+ void __init x86_mrst_early_setup(void)
+ {
+-	x86_init.resources.probe_roms = x86_init_noop;
++	x86_init.resources.trim_bios_range = x86_init_noop;
+ 	x86_init.resources.reserve_resources = x86_init_noop;
  
-@@ -1750,8 +1771,8 @@ static void das16_ai_munge(struct comedi_device *dev,
- 
- 	for (i = 0; i < num_samples; i++) {
- 		data[i] = le16_to_cpu(data[i]);
--		if (thisboard->ai_nbits == 12) {
-+		if (thisboard->ai_nbits == 12)
- 			data[i] = (data[i] >> 4) & 0xfff;
+ 	x86_init.timers.timer_init = mrst_time_init;
+Index: linux-2.6/arch/x86/kernel/probe_roms_32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/probe_roms_32.c
++++ /dev/null
+@@ -1,166 +0,0 @@
+-#include <linux/sched.h>
+-#include <linux/mm.h>
+-#include <linux/uaccess.h>
+-#include <linux/mmzone.h>
+-#include <linux/ioport.h>
+-#include <linux/seq_file.h>
+-#include <linux/console.h>
+-#include <linux/init.h>
+-#include <linux/edd.h>
+-#include <linux/dmi.h>
+-#include <linux/pfn.h>
+-#include <linux/pci.h>
+-#include <asm/pci-direct.h>
+-
+-
+-#include <asm/e820.h>
+-#include <asm/mmzone.h>
+-#include <asm/setup.h>
+-#include <asm/sections.h>
+-#include <asm/io.h>
+-#include <asm/setup_arch.h>
+-
+-static struct resource system_rom_resource = {
+-	.name	= "System ROM",
+-	.start	= 0xf0000,
+-	.end	= 0xfffff,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+-};
+-
+-static struct resource extension_rom_resource = {
+-	.name	= "Extension ROM",
+-	.start	= 0xe0000,
+-	.end	= 0xeffff,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+-};
+-
+-static struct resource adapter_rom_resources[] = { {
+-	.name 	= "Adapter ROM",
+-	.start	= 0xc8000,
+-	.end	= 0,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+-}, {
+-	.name 	= "Adapter ROM",
+-	.start	= 0,
+-	.end	= 0,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+-}, {
+-	.name 	= "Adapter ROM",
+-	.start	= 0,
+-	.end	= 0,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+-}, {
+-	.name 	= "Adapter ROM",
+-	.start	= 0,
+-	.end	= 0,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+-}, {
+-	.name 	= "Adapter ROM",
+-	.start	= 0,
+-	.end	= 0,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+-}, {
+-	.name 	= "Adapter ROM",
+-	.start	= 0,
+-	.end	= 0,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+-} };
+-
+-static struct resource video_rom_resource = {
+-	.name 	= "Video ROM",
+-	.start	= 0xc0000,
+-	.end	= 0xc7fff,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+-};
+-
+-#define ROMSIGNATURE 0xaa55
+-
+-static int __init romsignature(const unsigned char *rom)
+-{
+-	const unsigned short * const ptr = (const unsigned short *)rom;
+-	unsigned short sig;
+-
+-	return probe_kernel_address(ptr, sig) == 0 && sig == ROMSIGNATURE;
+-}
+-
+-static int __init romchecksum(const unsigned char *rom, unsigned long length)
+-{
+-	unsigned char sum, c;
+-
+-	for (sum = 0; length && probe_kernel_address(rom++, c) == 0; length--)
+-		sum += c;
+-	return !length && !sum;
+-}
+-
+-void __init probe_roms(void)
+-{
+-	const unsigned char *rom;
+-	unsigned long start, length, upper;
+-	unsigned char c;
+-	int i;
+-
+-	/* video rom */
+-	upper = adapter_rom_resources[0].start;
+-	for (start = video_rom_resource.start; start < upper; start += 2048) {
+-		rom = isa_bus_to_virt(start);
+-		if (!romsignature(rom))
+-			continue;
+-
+-		video_rom_resource.start = start;
+-
+-		if (probe_kernel_address(rom + 2, c) != 0)
+-			continue;
+-
+-		/* 0 < length <= 0x7f * 512, historically */
+-		length = c * 512;
+-
+-		/* if checksum okay, trust length byte */
+-		if (length && romchecksum(rom, length))
+-			video_rom_resource.end = start + length - 1;
+-
+-		request_resource(&iomem_resource, &video_rom_resource);
+-		break;
+-	}
+-
+-	start = (video_rom_resource.end + 1 + 2047) & ~2047UL;
+-	if (start < upper)
+-		start = upper;
+-
+-	/* system rom */
+-	request_resource(&iomem_resource, &system_rom_resource);
+-	upper = system_rom_resource.start;
+-
+-	/* check for extension rom (ignore length byte!) */
+-	rom = isa_bus_to_virt(extension_rom_resource.start);
+-	if (romsignature(rom)) {
+-		length = extension_rom_resource.end - extension_rom_resource.start + 1;
+-		if (romchecksum(rom, length)) {
+-			request_resource(&iomem_resource, &extension_rom_resource);
+-			upper = extension_rom_resource.start;
 -		}
-+
- 	}
+-	}
+-
+-	/* check for adapter roms on 2k boundaries */
+-	for (i = 0; i < ARRAY_SIZE(adapter_rom_resources) && start < upper; start += 2048) {
+-		rom = isa_bus_to_virt(start);
+-		if (!romsignature(rom))
+-			continue;
+-
+-		if (probe_kernel_address(rom + 2, c) != 0)
+-			continue;
+-
+-		/* 0 < length <= 0x7f * 512, historically */
+-		length = c * 512;
+-
+-		/* but accept any length that fits if checksum okay */
+-		if (!length || start + length > upper || !romchecksum(rom, length))
+-			continue;
+-
+-		adapter_rom_resources[i].start = start;
+-		adapter_rom_resources[i].end = start + length - 1;
+-		request_resource(&iomem_resource, &adapter_rom_resources[i]);
+-
+-		start = adapter_rom_resources[i++].end & ~2047UL;
+-	}
+-}
+-
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -680,7 +680,7 @@ static struct dmi_system_id __initdata b
+ 	{}
+ };
+ 
+-static void __init trim_bios_range(void)
++void __init trim_bios_range(void)
+ {
+ 	/*
+ 	 * A special case is the first 4Kb of memory;
+@@ -693,7 +693,7 @@ static void __init trim_bios_range(void)
+ 	 * area (640->1Mb) as ram even though it is not.
+ 	 * take them out.
+ 	 */
+-	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
++	e820_add_region(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RESERVED);
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
  }
--- 
-1.5.4.3
-
+ 
+@@ -853,14 +853,12 @@ void __init setup_arch(char **cmdline_p)
+ 	 */
+ 	init_hypervisor_platform();
+ 
+-	x86_init.resources.probe_roms();
+-
+ 	/* after parse_early_param, so could debug it */
+ 	insert_resource(&iomem_resource, &code_resource);
+ 	insert_resource(&iomem_resource, &data_resource);
+ 	insert_resource(&iomem_resource, &bss_resource);
+ 
+-	trim_bios_range();
++	x86_init.resources.trim_bios_range();
+ #ifdef CONFIG_X86_32
+ 	if (ppro_with_ram_bug()) {
+ 		e820_update_range(0x70000000ULL, 0x40000ULL, E820_RAM,
+@@ -1052,20 +1050,3 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	mcheck_init();
+ }
+-
+-#ifdef CONFIG_X86_32
+-
+-static struct resource video_ram_resource = {
+-	.name	= "Video RAM area",
+-	.start	= 0xa0000,
+-	.end	= 0xbffff,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_MEM
+-};
+-
+-void __init i386_reserve_resources(void)
+-{
+-	request_resource(&iomem_resource, &video_ram_resource);
+-	reserve_standard_io_resources();
+-}
+-
+-#endif /* CONFIG_X86_32 */
+Index: linux-2.6/arch/x86/kernel/x86_init.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/x86_init.c
++++ linux-2.6/arch/x86/kernel/x86_init.c
+@@ -32,7 +32,7 @@ void iommu_shutdown_noop(void) { }
+ struct x86_init_ops x86_init __initdata = {
+ 
+ 	.resources = {
+-		.probe_roms		= x86_init_noop,
++		.trim_bios_range	= trim_bios_range,
+ 		.reserve_resources	= reserve_standard_io_resources,
+ 		.memory_setup		= default_machine_specific_memory_setup,
+ 	},
