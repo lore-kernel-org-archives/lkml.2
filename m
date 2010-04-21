@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab0DUJWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 05:22:54 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:57003 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106Ab0DUJWw (ORCPT
+	id S1753552Ab0DUJZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 05:25:29 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57959 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753510Ab0DUJZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 05:22:52 -0400
-Date: Wed, 21 Apr 2010 10:22:35 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Jan Blunck <jblunck@suse.de>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Valerie Aurora <vaurora@redhat.com>,
-       dwmw2@infradead.org, viro@zeniv.linux.org.uk,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       tytso@mit.edu, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
-Message-ID: <20100421092235.GB13114@shareable.org>
-References: <1271372682-21225-14-git-send-email-vaurora@redhat.com> <20100419124025.GG10776@bolzano.suse.de> <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de> <20100419142315.GA2688@shell> <E1O3sLi-0008EA-QW@pomaz-ex.szeredi.hu> <20100420213450.GM11723@shareable.org> <20100421084211.GB22741@bolzano.suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100421084211.GB22741@bolzano.suse.de>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Wed, 21 Apr 2010 05:25:27 -0400
+Date: Wed, 21 Apr 2010 10:27:39 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Serge E. Hallyn" <serue@us.ibm.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>,
+       Ashwin Ganti <ashwin.ganti@gmail.com>, Greg KH <greg@kroah.com>,
+       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
+       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
+       Eric Paris <eparis@redhat.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
+Message-ID: <20100421102739.6ad932fb@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100421012908.GB24251@us.ibm.com>
+References: <20100421012749.GA21338@us.ibm.com>
+	<20100421012908.GB24251@us.ibm.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Blunck wrote:
-> On Tue, Apr 20, Jamie Lokier wrote:
-> 
-> > Miklos Szeredi wrote:
-> > > On Mon, 19 Apr 2010, Valerie Aurora wrote:
-> > > > I don't recall there being any technical reason not to look up the
-> > > > real inode number.  I just wrote it that we because I was lazy.  So I
-> > > > like returning the directory's d_ino better than a single magic
-> > > > number, but I'd at least like to try returning the real inode number
-> > > > too.
-> > > 
-> > > Note, "struct dirent" doesn't have d_dev, so you really can't return
-> > > the "real" inode number, that's on a different filesystem and just a
-> > > random number in the context of the the readdir in question.
-> > 
-> > Agree.  Does this inappropriate inode number for the union mount's
-> > st_dev happen with stat() on the actual files too?  That could be bad.
-> 
-> No, for stat() you do a lookup and that is returning the correct
-> dentry/inode for the filesystem the name is on.
+> This is a change which must be discussed.  The use of this
+> privilege can be completely prevented by having init remove
+> CAP_GRANT_ID from its capability bounding set before forking any
+> processes.
 
-Hmm.  I smell potential confusion for some otherwise POSIX-friendly
-userspaces.
+Which is a minor back compat issue - but you could start without it and
+allow init to add it.
 
-When I open /path/to/foo, call fstat (st_dev=2, st_ino=5678), and then
-keep the file open, then later do a readdir which includes foo
-(dir.st_dev=1, d_ino=1234), I'm going to immediately assume a rename
-or unlink happened, close the file, abort streaming from it, refresh
-the GUI windows, refresh application caches for that name entry, etc.
+It seems a very complex interface to do a simple thing. A long time ago
+there was discussion around extending the AF_UNIX fd passing to permit
+'pass handle and auth' so you could send someone a handle with a "become
+me" token attached.
 
-Because in the POSIX world I think open files have stable inode
-numbers (as long as they are open), and I don't think that an open
-file can have it's name's d_ino not match the inode number unless it's
-a mount point, which my program would know about.
-
-This plays into inotify, where you have to know if you are monitoring
-every directory that contains a link to a file, to know if you need to
-monitor the file itself directly instead.
-
-Now I think it's fair enough that a union mount doesn't play all the
-traditional rules :-)  C'est la vie.
-
-This mismatch of (dir.st_dev,d_ino) and st_ino strongly resembles a
-file-bind-mount.  Like bind mounts, it's quite annoying for programs
-that like to assume they've seen all of a file's links when they've
-seen i_nlink of them.
-
-Bind mounts can be detected by looking in /proc/mounts.  st_dev
-changing doesn't work because it can be a binding of the same
-filesystem.
-
-How would I go about detecting when a union mount's directory entry
-has similar behaviour, without calling stat() on each entry?  Is it
-just a matter of recognising a particular filesystem name in
-/proc/mounts, or something more?
-
-Thanks,
--- Jamie
+Alan
