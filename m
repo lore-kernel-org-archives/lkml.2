@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab0DUNZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 09:25:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46699 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab0DUNZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 09:25:25 -0400
-Subject: Re: CFQ read performance regression
-From: Miklos Szeredi <mszeredi@suse.cz>
-To: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: Jens Axboe <jens.axboe@oracle.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-       Suresh Jayaraman <sjayaraman@suse.de>
-In-Reply-To: <j2t4e5e476b1004201350xbd08a002l3329fbdd4fb1b8db@mail.gmail.com>
-References: <1271420878.24780.145.camel@tucsk.pomaz.szeredi.hu>
-	 <h2m4e5e476b1004170546z8997cd90h98ecfb9cc5aad8cf@mail.gmail.com>
-	 <1271677562.24780.184.camel@tucsk.pomaz.szeredi.hu>
-	 <j2t4e5e476b1004201350xbd08a002l3329fbdd4fb1b8db@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Apr 2010 15:25:24 +0200
-Message-ID: <1271856324.24780.285.camel@tucsk.pomaz.szeredi.hu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S1754586Ab0DUNZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 09:25:53 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60139 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab0DUNZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 09:25:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=CAjRlXAoydBSL+8ci71OJiHWIqvdo3bxBGN7Vx5aMgBzK2ZoWw2fVkk3ihXilLTeLA
+         HR09sFp05WMb3pSIMNyohoIvF/ASf3K8XjJ9narRw0G6CpanfakpQsxMuxD9aIOS76/u
+         ff+0rmPc4N1gR/Q0MBCp7svj8cnrGLZWBmfYQ=
+Message-ID: <4BCEFCEA.8080509@gmail.com>
+Date: Wed, 21 Apr 2010 06:26:02 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>, trivial@kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Whitespace Coding style fixes.
+References: <1271833331-26973-1-git-send-email-justinmattock@gmail.com>	 <u2mb6fcc0a1004210003v5867afcfw4b112766a6951043@mail.gmail.com>	 <4BCEA499.6000308@gmail.com> <1271835281.1730.274.camel@Joe-Laptop.home>
+In-Reply-To: <1271835281.1730.274.camel@Joe-Laptop.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corrado,
+On 04/21/2010 12:34 AM, Joe Perches wrote:
+> On Wed, 2010-04-21 at 00:09 -0700, Justin P. Mattock wrote:
+>> On 04/21/2010 12:03 AM, Alexey Dobriyan wrote:
+>>> You screw up git-blame.
+>> how does this patch screw it up?
+>
+> Alexey just doesn't like whitespace patches.
+>
+> Whitespace patches don't really "screw up" git blame.
+>
+> git blame displays the current version of a file
+> with line-by-line commits and the date each line
+> was last modified.
+>
+> So whitespace changes make it harder to find which patch
+> introduced the last logical change for a particular line.
+>
+> A more interactive git blame with history backtracking
+> might help keep Alexey happier but who knows for sure...
+>
+>
 
-On Tue, 2010-04-20 at 22:50 +0200, Corrado Zoccolo wrote:
-> can you give more information about the setup?
-> How much memory do you have, what is the disk configuration (is this a
-> hw raid?) and so on.
 
-8G of memory 8-way Xeon CPU, fiber channel attached storage array (HP
-HSV200).  I don't know the configuration of the array.
+ahh.. so after adding this patch,
+and committing it in my branch the doing
+git blame security/commoncap.c
+only shows something from James Morris instead
+of what my change had brought.
 
-> > low_latency is set to zero in all tests.
-> >
-> > The layout difference doesn't explain why setting the scheduler to
-> > "noop" consistently speeds up read throughput in 8-thread tiobench to
-> > almost twice.  This fact alone pretty clearly indicates that the I/O
-> > scheduler is the culprit.
-> From the attached btt output, I see that a lot of time is spent
-> waiting to allocate new request structures.
-> > S2G               0.022460311   6.581680621  23.144763751          15
-> Since noop doesn't attach fancy data to each request, it can save
-> those allocations, thus resulting in no sleeps.
-> The delays in allocation, though, may not be completely imputable to
-> the I/O scheduler, and working in constrained memory conditions will
-> negatively affect it.
+Alright I can see why it screws things up..
+I'll not (L)indent the whole tree then...
 
-I verified with the simple dd test that this happens even if there's no
-memory pressure from the cache by dd-ing only 5G of files, after
-clearing the cache.  This way ~2G of memory are completely free
-throughout the test. 
-
-> > I've also tested with plain "dd" instead of tiobench where the
-> > filesystem layout stayed exactly the same between tests.  Still the
-> > speed difference is there.
-> Does dropping caches before the read test change the situation?
-
-In all my tests I drop caches before running it.
-
-Please let me know if you need more information.
-
-Thanks,
-Miklos
-
+Justin P. Mattock
