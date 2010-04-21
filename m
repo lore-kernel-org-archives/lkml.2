@@ -1,81 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab0DUVjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 17:39:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49279 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755329Ab0DUVjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 17:39:04 -0400
-Date: Wed, 21 Apr 2010 17:38:43 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Jamie Lokier <jamie@shareable.org>, jblunck@suse.de, dwmw2@infradead.org,
-       viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, tytso@mit.edu,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
-Message-ID: <20100421213843.GE5041@shell>
-References: <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de> <20100419142315.GA2688@shell> <E1O3sLi-0008EA-QW@pomaz-ex.szeredi.hu> <20100420213450.GM11723@shareable.org> <20100421084211.GB22741@bolzano.suse.de> <20100421092235.GB13114@shareable.org> <E1O4WKa-0003Pp-0y@pomaz-ex.szeredi.hu>
-Mime-Version: 1.0
+	id S1756741Ab0DUVjz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 17:39:55 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:37193 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab0DUVjx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 17:39:53 -0400
+Message-ID: <4BCF7092.2050501@canonical.com>
+Date: Wed, 21 Apr 2010 14:39:30 -0700
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: astarikovskiy@suse.de, ben@decadent.org.uk, gregkh@suse.de,
+       len.brown@intel.com, stable@kernel.org, stable-commits@vger.kernel.org
+Subject: Re: patch acpi-ec-allow-multibyte-access-to-ec.patch added to 2.6.33-stable
+ tree
+References: <1271877703610@kroah.org>
+In-Reply-To: <1271877703610@kroah.org>
+X-Enigmail-Version: 0.95.7
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1O4WKa-0003Pp-0y@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 11:34:52AM +0200, Miklos Szeredi wrote:
-> On Wed, 21 Apr 2010, Jamie Lokier wrote:
-> > Hmm.  I smell potential confusion for some otherwise POSIX-friendly
-> > userspaces.
-> > 
-> > When I open /path/to/foo, call fstat (st_dev=2, st_ino=5678), and then
-> > keep the file open, then later do a readdir which includes foo
-> > (dir.st_dev=1, d_ino=1234), I'm going to immediately assume a rename
-> > or unlink happened, close the file, abort streaming from it, refresh
-> > the GUI windows, refresh application caches for that name entry, etc.
-> > 
-> > Because in the POSIX world I think open files have stable inode
-> > numbers (as long as they are open), and I don't think that an open
-> > file can have it's name's d_ino not match the inode number unless it's
-> > a mount point, which my program would know about.
-> > 
-> > This plays into inotify, where you have to know if you are monitoring
-> > every directory that contains a link to a file, to know if you need to
-> > monitor the file itself directly instead.
-> > 
-> > Now I think it's fair enough that a union mount doesn't play all the
-> > traditional rules :-)  C'est la vie.
-> > 
-> > This mismatch of (dir.st_dev,d_ino) and st_ino strongly resembles a
-> > file-bind-mount.  Like bind mounts, it's quite annoying for programs
-> > that like to assume they've seen all of a file's links when they've
-> > seen i_nlink of them.
-> > 
-> > Bind mounts can be detected by looking in /proc/mounts.  st_dev
-> > changing doesn't work because it can be a binding of the same
-> > filesystem.
-> > 
-> > How would I go about detecting when a union mount's directory entry
-> > has similar behaviour, without calling stat() on each entry?  Is it
-> > just a matter of recognising a particular filesystem name in
-> > /proc/mounts, or something more?
+gregkh@suse.de wrote:
+> This is a note to let you know that we have just queued up the patch titled
 > 
-> Detecting mount points is best done by comparing st_dev for the parent
-> directory with st_dev of the child.  This is much simpler than parsing
-> /proc/mounts and will work for bind mounts as well as union mounts.
+>     Subject: ACPI: EC: Allow multibyte access to EC
 > 
-> I think there's no question that union mounts might break apps (POSIX
-> or not).  But I think there's hope that they are few and can easily be
-> fixed.
+> to the 2.6.33-stable tree.  Its filename is
+> 
+>     acpi-ec-allow-multibyte-access-to-ec.patch
+> 
+> A git repo of this tree can be found at 
+>     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+> 
+> 
+> From ben@decadent.org.uk  Wed Apr 21 12:11:57 2010
+> From: Alexey Starikovskiy <astarikovskiy@suse.de>
+> Date: Sat, 10 Apr 2010 02:18:35 +0100
+> Subject: ACPI: EC: Allow multibyte access to EC
+> To: stable@kernel.org
+> Cc: Len Brown <len.brown@intel.com>, 563313@bugs.debian.org, Alexey Starikovskiy <astarikovskiy@suse.de>
+> Message-ID: <1270862315.2176.69.camel@localhost>
+> 
+> 
+> From: Alexey Starikovskiy <astarikovskiy@suse.de>
+> 
+> commit dadf28a10c3eb29421837a2e413ab869ebd upstream
+> 
+> http://bugzilla.kernel.org/show_bug.cgi?id=14667
+> 
+> [bwh: Backport to 2.6.32; same applies to 2.6.33]
+> 
+> Signed-off-by: Alexey Starikovskiy <astarikovskiy@suse.de>
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> Cc: Ben Hutchings <ben@decadent.org.uk>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  drivers/acpi/acpica/exprep.c |   12 ++++++++++++
+>  drivers/acpi/ec.c            |   35 +++++++++--------------------------
+>  2 files changed, 21 insertions(+), 26 deletions(-)
+> 
+> --- a/drivers/acpi/acpica/exprep.c
+> +++ b/drivers/acpi/acpica/exprep.c
+> @@ -468,6 +468,18 @@ acpi_status acpi_ex_prep_field_value(str
+>  
+>  		acpi_ut_add_reference(obj_desc->field.region_obj);
+>  
+> +		/* allow full data read from EC address space */
+> +		if (obj_desc->field.region_obj->region.space_id ==
+> +			ACPI_ADR_SPACE_EC) {
+> +			if (obj_desc->common_field.bit_length > 8)
+> +				obj_desc->common_field.access_bit_width =
+> +				ACPI_ROUND_UP(obj_desc->common_field.
+> +							bit_length, 8);
+> +				obj_desc->common_field.access_byte_width =
+> +				ACPI_DIV_8(obj_desc->common_field.
+> +							access_bit_width);
+> +		}
+> +
+>  		ACPI_DEBUG_PRINT((ACPI_DB_BFIELD,
+>  				  "RegionField: BitOff %X, Off %X, Gran %X, Region %p\n",
+>  				  obj_desc->field.start_field_bit_offset,
+> --- a/drivers/acpi/ec.c
+> +++ b/drivers/acpi/ec.c
+> @@ -589,12 +589,12 @@ static u32 acpi_ec_gpe_handler(void *dat
+>  
+>  static acpi_status
+>  acpi_ec_space_handler(u32 function, acpi_physical_address address,
+> -		      u32 bits, acpi_integer *value,
+> +		      u32 bits, acpi_integer *value64,
+>  		      void *handler_context, void *region_context)
+>  {
+>  	struct acpi_ec *ec = handler_context;
+> -	int result = 0, i;
+> -	u8 temp = 0;
+> +	int result = 0, i, bytes = bits / 8;
+> +	u8 *value = (u8 *)value64;
+>  
+>  	if ((address > 0xFF) || !value || !handler_context)
+>  		return AE_BAD_PARAMETER;
+> @@ -602,32 +602,15 @@ acpi_ec_space_handler(u32 function, acpi
+>  	if (function != ACPI_READ && function != ACPI_WRITE)
+>  		return AE_BAD_PARAMETER;
+>  
+> -	if (bits != 8 && acpi_strict)
+> -		return AE_BAD_PARAMETER;
+> -
+> -	if (EC_FLAGS_MSI)
+> +	if (EC_FLAGS_MSI || bits > 8)
+>  		acpi_ec_burst_enable(ec);
+>  
+> -	if (function == ACPI_READ) {
+> -		result = acpi_ec_read(ec, address, &temp);
+> -		*value = temp;
+> -	} else {
+> -		temp = 0xff & (*value);
+> -		result = acpi_ec_write(ec, address, temp);
+> -	}
+> -
+> -	for (i = 8; unlikely(bits - i > 0); i += 8) {
+> -		++address;
+> -		if (function == ACPI_READ) {
+> -			result = acpi_ec_read(ec, address, &temp);
+> -			(*value) |= ((acpi_integer)temp) << i;
+> -		} else {
+> -			temp = 0xff & ((*value) >> i);
+> -			result = acpi_ec_write(ec, address, temp);
+> -		}
+> -	}
+> +	for (i = 0; i < bytes; ++i, ++address, ++value)
+> +		result = (function == ACPI_READ) ?
+> +			acpi_ec_read(ec, address, value) :
+> +			acpi_ec_write(ec, address, *value);
+>  
+> -	if (EC_FLAGS_MSI)
+> +	if (EC_FLAGS_MSI || bits > 8)
+>  		acpi_ec_burst_disable(ec);
+>  
+>  	switch (result) {
+> 
+> 
+> Patches currently in stable-queue which might be from astarikovskiy@suse.de are
+> 
+> queue-2.6.33/acpi-ec-allow-multibyte-access-to-ec.patch
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable-commits" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I couldn't have put it better myself.
+Hi Greg,
 
-To expand slightly, if the broken apps are not few and easily fixed,
-then we'll go back and make the kernel more complicated.  I'd like to
-try the simplest version we think will work, first.
+make sure to also pick the following one as it fixes a regression caused by the
+mulitbyte access patch.
 
-Thanks!
+commit 2060c44576c79086ff24718878d7edaa7384a985
+Author: Alexey Starikovskiy <astarikovskiy@suse.de>
+Date:   Fri Apr 16 15:36:40 2010 -0400
 
--VAL
+    ACPI: EC: Limit burst to 64 bits
+
+-Stefan
