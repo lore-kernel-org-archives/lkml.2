@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab0DUXfl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 19:35:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32391 "EHLO mx1.redhat.com"
+	id S1756080Ab0DUXlQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 19:41:16 -0400
+Received: from fieldses.org ([174.143.236.118]:40233 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755360Ab0DUXfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 19:35:40 -0400
-Date: Wed, 21 Apr 2010 19:35:36 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 00/35] Union mounts - everything but the xattrs
-Message-ID: <20100421233536.GB27926@shell>
-References: <1271372682-21225-1-git-send-email-vaurora@redhat.com> <20100421150634.1f01240a.randy.dunlap@oracle.com>
-Mime-Version: 1.0
+	id S1753572Ab0DUXlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 19:41:15 -0400
+Date: Wed, 21 Apr 2010 19:41:09 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Greg KH <greg@kroah.com>
+Cc: stable@kernel.org, linux-nfs@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [stable] nfsd changes for 2.6.34
+Message-ID: <20100421234108.GD23480@fieldses.org>
+References: <20100306175212.GB22650@fieldses.org> <20100324142414.GE12057@fieldses.org> <20100329182443.GC3778@kroah.com> <20100330144054.GD11545@fieldses.org> <20100330200320.GB1693@kroah.com> <20100331193029.GC4937@fieldses.org> <20100421225048.GB27883@kroah.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100421150634.1f01240a.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20100421225048.GB27883@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 03:06:34PM -0700, Randy Dunlap wrote:
-> On Thu, 15 Apr 2010 16:04:07 -0700 Valerie Aurora wrote:
-> 
-> > This patch series implements union mounts for every system call
-> > except:
+On Wed, Apr 21, 2010 at 03:50:48PM -0700, Greg KH wrote:
+> On Wed, Mar 31, 2010 at 03:30:29PM -0400, J. Bruce Fields wrote:
+> > On Tue, Mar 30, 2010 at 01:03:20PM -0700, Greg KH wrote:
+> > > Ok, care to backport them and send them to stable@kernel.org?  They
+> > > don't all apply cleanly from what I can see.
 > > 
-> > - xattr-related calls
-> > - fchmod()/fchown()/futimensat() on an fd
+> > Huh.  I just checked out 2.6.32.10 and tried applying the patches a
+> > couple different ways, and the worst I got was stuff like:
 > > 
-> > The copyup portion is a proof of concept based around union_path_nd(),
-> > which looks up both the target <mnt,dentry> pair and its parent's.  If
-> > the parent is on a union mount, and the target is on a lower layer, we
-> > copy up the target.
+> > 	patching file net/sunrpc/svc_xprt.c
+> > 	Hunk #1 succeeded at 711 (offset 5 lines).
 > > 
-> > This patch set is very raw and could use even the most superficial
-> > review.  Just take a look at Erez's review from December to see how
-> > low-hanging the fruit is on this one.
+> > Is that enough that you don't consider them clean?
 > > 
-> > -VAL
+> > In any case, I'll follow up with patches generated against 2.6.32.10.
 > 
-> 
-> Hi VAL,
-> 
-> In the future, please make patches 1-N reply/refer to patch 0 instead of to
-> the preceding numbered patch.
+> You are right, I don't know what I did wrong, sorry.  I've now queued
+> all of these up for the next .32 tree, as they are already in
+> .33-stable.
 
-Okay.
-
--VAL
+OK, thanks.--b.
