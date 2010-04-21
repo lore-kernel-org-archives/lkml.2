@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666Ab0DUVS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 17:18:27 -0400
-Received: from mail.gmx.net ([213.165.64.20]:38880 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755301Ab0DUVS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 17:18:26 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19XKF1hSgNXoIeAUxnzi4RF76Ph22VvLCCl00H46n
-	JCLKUNu52wtjAF
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Haavard Skinnemoen <hskinnemoen@atmel.com>
-Subject: [PATCH 1/2] arch/avr32: Fix build failure caused by typo
-Date: Wed, 21 Apr 2010 23:18:23 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+	id S1755823Ab0DUVSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 17:18:40 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:22545 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755724Ab0DUVSi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 17:18:38 -0400
+Date: Thu, 22 Apr 2010 00:17:07 +0300
+From: Amit Kucheria <amit.kucheria@verdurent.com>
+To: linux@arm.linux.org.uk
+Cc: Dinh Nguyen <Dinh.Nguyen@freescale.com>,
+       Sascha Hauer <s.hauer@pengutronix.de>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Fix build error for i.MX51 (mx51_defconfig)
+Message-ID: <20100421211707.GC2951@matterhorn.lan>
+Mail-Followup-To: linux@arm.linux.org.uk,
+	Dinh Nguyen <Dinh.Nguyen@freescale.com>,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004212318.23909.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.59999999999999998
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+X-URL: http://www.verdurent.com/
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+Russell,
 
-This little patch fixes a build failure[1] caused by a typo.
+Please apply the following patch to fix build failure for i.MX51 in
+2.6.34-rc5.
 
-Patch against linux-next20100421
+Regards,
+Amit
 
-References:
-[1]http://kisskb.ellerman.id.au/kisskb/buildresult/2448162/
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+>From 3a30bc0788e02ba069c003d194680a2d39ef1c1a Mon Sep 17 00:00:00 2001
+Message-Id: <3a30bc0788e02ba069c003d194680a2d39ef1c1a.1271883980.git.amit.kucheria@canonical.com>
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Date: Tue, 13 Apr 2010 14:05:08 -0500
+Subject: [2.6.34-fixes 1/1] mx5: Fix build error for mx51_defconfig
+
+Need to include <asm/div64.h> for do_div calls. Fixes the following error:
+
+arch/arm/mach-mx5/clock-mx51.c: In function 'clk_pll_get_rate':
+arch/arm/mach-mx5/clock-mx51.c:149: error: implicit declaration of function
+'do_div'
+make[1]: *** [arch/arm/mach-mx5/clock-mx51.o] Error 1
+
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Signed-off-by: Amit Kucheria <amit.kucheria@canonical.com>
 ---
- arch/avr32/kernel/time.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/arm/mach-mx5/clock-mx51.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/avr32/kernel/time.c b/arch/avr32/kernel/time.c
-index a047d69..668ed28 100644
---- a/arch/avr32/kernel/time.c
-+++ b/arch/avr32/kernel/time.c
-@@ -112,7 +112,7 @@ static struct clock_event_device comparator = {
+diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
+index 8f85f73..1ee6ce4 100644
+--- a/arch/arm/mach-mx5/clock-mx51.c
++++ b/arch/arm/mach-mx5/clock-mx51.c
+@@ -16,6 +16,7 @@
+ #include <linux/io.h>
  
- void read_persistent_clock(struct timespec *ts)
- {
--	ts->tv.sec = mktime(2007, 1, 1, 0, 0, 0);
-+	ts->tv_sec = mktime(2007, 1, 1, 0, 0, 0);
- 	ts->tv_nsec = 0;
- }
+ #include <asm/clkdev.h>
++#include <asm/div64.h>
  
+ #include <mach/hardware.h>
+ #include <mach/common.h>
 -- 
-1.6.4.4
+1.7.0.4
 
+
+-- 
+-------------------------------------------------------------------------
+Amit Kucheria,				 Kernel Developer, Verdurent
+-------------------------------------------------------------------------
