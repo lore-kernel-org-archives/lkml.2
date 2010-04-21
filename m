@@ -1,137 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab0DUQIT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 12:08:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5955 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755876Ab0DUQIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 12:08:18 -0400
-Date: Wed, 21 Apr 2010 18:05:15 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>
-Subject: Re: [PATCH v2 7/11] Uprobes Implementation
-Message-ID: <20100421160515.GA11321@redhat.com>
-References: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6> <20100331155228.4181.61294.sendpatchset@localhost6.localdomain6> <20100413183537.GA17538@redhat.com> <20100415093506.GA2064@linux.vnet.ibm.com> <20100419193139.GA24080@redhat.com> <20100420124358.GA20675@linux.vnet.ibm.com> <20100420153023.GA9351@redhat.com> <20100421065948.GA5440@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100421065948.GA5440@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755903Ab0DUQJW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 12:09:22 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:28282 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755804Ab0DUQJV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 12:09:21 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=YEmcIa0PjGq57B6mjQOcNgMOnTmJ5pQ4IOk9g3Rv17OBlIXFvgX0BB6Hm+aTaZvxk
+	kJisAtzChxDHmnTP0DWBA==
+Message-ID: <4bcf232b.698fd80a.6fbe.ffffb737@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Wed, 21 Apr 2010 18:06:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       fweisbec@gmail.com, robert.richter@amd.com, perfmon2-devel@lists.sf.net,
+       eranian@gmail.com, eranian@google.com
+Subject: [PATCH] perf: fix initialization bug in parse_single_tracepoint_event()
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21, Srikar Dronamraju wrote:
->
-> * Oleg Nesterov <oleg@redhat.com> [2010-04-20 17:30:23]:
->
-> > I must have missed something. But I do not see where do we use
-> > uprobe_process->tg_leader. We never read it, apart from
-> > BUG_ON(uproc->tg_leader != tg_leader). No?
->
-> static int free_uprocess(struct uprobe_process *uproc)
-> {
-> 	....
-> 	put_pid(uproc->tg_leader);
->         uproc->tg_leader = NULL;
->
-> }
 
-Yes, yes, I see it does get/put pid. But where do we actually use
-uproc->tg_leader? Why it is needed at all?
+  The parse_single_tracepoint_event() was setting some attributes
+  before it validated the event was indeed a tracepoint event. This
+  caused problems with other initialization routines like in the
+  builtin-top.c module whereby sample_period is not set if not 0.
 
-> > Also the declarations don't look nice... Probably I missed something,
-> > but why the code uses "void *" instead of "user_bkpt_xol_area *" for
-> > xol_area everywhere?
-> >
-> > OK, even if "void *" makes sense for uproc->uprobe_process,
-                                         ^^^^^^^^^^^^^^^^^^^^^
-I meant uprobe_process->xol_area
+  Signed-off-by: Stephane Eranian <eranian@google.com>
+--
+ parse-events.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-> why
-> > xol_alloc_area/xol_get_insn_slot/etc do not use "user_bkpt_xol_area *" ?
-> >
->
-> user_bkpt_xol_area isn't exposed. This provides flexibility in changing
-> the algorithm for more efficient slot allocation. Currently we allocate
-> slots from just one page. Later on we could end-up having to allocate
-> from more than contiguous pages. There was some discussion about
-> allocating slots from TLS.  So there is more than one reason that
-> user_bkpt_xol can change. We could expose the struct and not access the
-> fields directly but that would be hard to enforce.
-
-Still can't understand... Yes, we shouldn't expose the details, but we
-can just add "struct user_bkpt_xol_area;" into include file.
-
-OK, this is minor.
-
-> > > If the utask has to be allocated, then uprobes has to search
-> > > for the probepoint again in task context.
-> > > 	I dont think it would be an issue to search for the probepoint a
-> > > second time in the task context.
-> >
-> > Agreed. Although we need the new TIF_ bit for tracehook_notify_resume(),
-> > it can't trust "if (current->utask...)" checks.
->
-> But do we need a new TIF bit? Can we just reuse the TIF_NOTIFY_RESUME
-> flag that we use now?
-
-Probably not... But somehow tracehook_notify_resume/uprobe_notify_resume
-should know we hit the bp and we need to allocate utask. Yes,
-tracehook_notify_resume() can always call uprobe_notify_resume()
-unconditionally, and uprobe_notify_resume() can notice the
-"find_probept() && !current->utask" case, but probably it is better to
-make this more explicit. And of course, the new bit should be set along
-with TIF_NOTIFY_RESUME.
-
-Or. Instead of TIF_ bit, we can use something like
-
-	#define UTASK_PLEASE_ALLOCATE_ME ((struct uprobe_task *)1)
-
-uprobe_bkpt_notifier() sets current->utask = UTASK_PLEASE_ALLOCATE_ME,
-then tracehook_notify_resume/uprobe_notify_resume check this case.
-
-I dunno, please do what you think right.
-
-
-OK, the last questions:
-
-1. Can't multiple write_opcode()'s race with each other?
-
-   Say, pre_ssout() calls remove_bkpt() lockless. can't it race
-   with register_uprobe() which may write to the same page?
-
-   And, without uses_xol_strategy() there are more racy callers
-   of write_opcode()... Probably something else.
-
-2. Can't write_opcode() conflict with ksm doing replace_page() ?
-
-3. mprotect(). write_opcode() checks !VM_WRITE. This is correct,
-   otherwise we can race with the user-space writing to the same
-   page.
-
-   But suppose that the application does mprotect(PROT_WRITE) after
-   register_uprobe() installs the bp, now unregister_uprobe/etc can't
-   restore the original insn?
-
-4. mremap(). What if the application does mremap() and moves the
-   memory? After that vaddr of user_bkpt/uprobe no longer matches
-   the virtual address of bp. This breaks uprobe_bkpt_notifier(),
-   unregister_uprobe(), etc.
-
-   Even worse. Say, unregister_uprobe() calls remove_bkpt().
-   mremap()+mmap() can be called after ->read_opcode() verifies vaddr
-   points to bkpt_insn, but before write_opcode() changes the page.
-
-Oleg.
-
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 3b4ec67..82b8b7f 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -418,12 +418,6 @@ parse_single_tracepoint_event(char *sys_name,
+ 	u64 id;
+ 	int fd;
+ 
+-	attr->sample_type |= PERF_SAMPLE_RAW;
+-	attr->sample_type |= PERF_SAMPLE_TIME;
+-	attr->sample_type |= PERF_SAMPLE_CPU;
+-
+-	attr->sample_period = 1;
+-
+ 	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
+ 		 sys_name, evt_name);
+ 
+@@ -442,6 +436,13 @@ parse_single_tracepoint_event(char *sys_name,
+ 	attr->type = PERF_TYPE_TRACEPOINT;
+ 	*strp = evt_name + evt_length;
+ 
++	attr->sample_type |= PERF_SAMPLE_RAW;
++	attr->sample_type |= PERF_SAMPLE_TIME;
++	attr->sample_type |= PERF_SAMPLE_CPU;
++
++	attr->sample_period = 1;
++
++
+ 	return EVT_HANDLED;
+ }
+ 
