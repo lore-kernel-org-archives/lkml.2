@@ -1,134 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab0DUBBv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 21:01:51 -0400
-Received: from bertrand.catalyst.net.nz ([202.78.240.40]:41508 "EHLO
-	mail.catalyst.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab0DUBBu (ORCPT
+	id S1754370Ab0DUBDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 21:03:36 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:35433 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754326Ab0DUBDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 21:01:50 -0400
-X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Apr 2010 21:01:50 EDT
-Subject: IPv6 duplicate address detection erroneously marking address as
- duplicate when a host receives its own multicast packets?
-From: Sam Cannell <sam.cannell@catalyst.net.nz>
-To: linux-kernel@vger.kernel.org
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-aOpgf1hJo+kFrc8rVafU"
-Organization: Catalyst IT Ltd
-Date: Wed, 21 Apr 2010 12:52:25 +1200
-Message-ID: <1271811145.5214.17.camel@spathi>
+	Tue, 20 Apr 2010 21:03:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 21 Apr 2010 09:59:35 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Larry Woodman <lwoodman@redhat.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       linux-mm@kvack.org
+Subject: Re: repost - RFC [Patch] Remove
+ "please try 'cgroup_disable=memory' option if you don't want memory cgroups"
+ printk at boot time.
+Message-Id: <20100421095935.54109d78.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4BCE4D34.5050200@cn.fujitsu.com>
+References: <1271773587.28748.134.camel@dhcp-100-19-198.bos.redhat.com>
+	<20100421092502.787371b5.kamezawa.hiroyu@jp.fujitsu.com>
+	<4BCE4D34.5050200@cn.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 21 Apr 2010 08:56:20 +0800
+Li Zefan <lizf@cn.fujitsu.com> wrote:
 
---=-aOpgf1hJo+kFrc8rVafU
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> > My biggest concern is that we don't have man(5) cgroup as other file systems.
+> > If we have man(5), the best place for this kind of information will be it.
+> > I think most of users will never see kernel-parameter.txt ..
+> > 
+> > If usual distros are shipped with man(5) cgroup, I agree removing
+> > this in upstream.
+> > (We have man pages for libcgroup but not man(5) for cgroup file system.)
+> > 
+> > I'm sorry if I don't notice that the latest man package has cgroup section.
+> > 
+> 
+> We have a man-page for cpuset, which was written by Paul Jackson,
+> the author of cpuset.
+> 
+But there is no description about "cpuset can be mounted as cgroup".
 
-Hi,
-
-I've been having some trouble with ip6 duplicate address detection in a
-Linux VM (under XVM on OpenSolaris).  It seems that the ethernet bridge
-in XVM sends a host's own multicast packets back to it, which the
-duplicate address detection code in linux decide that another host on
-the network is using the same address.
-
-For instance, running:
-
-router4:~ # ip addr add fe80::216:36ff:fe4e:461c/64 dev eth0
-
-
-I get the following output in tcpdump:
-
-router4:~ # tcpdump -nevpi eth0 ip6=20
-tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 96
-bytes
-12:33:03.755897 00:16:36:4e:46:1c > 33:33:00:00:00:16, ethertype IPv6
-(0x86dd), length 90: (hlim 1, next-header Options (0) payload length:
-36) :: > ff02::16: HBH (rtalert: 0x0000) (padn)[icmp6 sum ok] ICMP6,
-multicast listener report v2, length 28, 1 group record(s) [gaddr
-ff02::1:ff4e:461c to_ex, 0 source(s)]
-12:33:04.551772 00:16:36:4e:46:1c > 33:33:ff:4e:46:1c, ethertype IPv6
-(0x86dd), length 78: (hlim 255, next-header ICMPv6 (58) payload length:
-24) :: > ff02::1:ff4e:461c: [icmp6 sum ok] ICMP6, neighbor solicitation,
-length 24, who has fe80::216:36ff:fe4e:461c
-12:33:04.551998 00:16:36:4e:46:1c > 33:33:ff:4e:46:1c, ethertype IPv6
-(0x86dd), length 78: (hlim 255, next-header ICMPv6 (58) payload length:
-24) :: > ff02::1:ff4e:461c: [icmp6 sum ok] ICMP6, neighbor solicitation,
-length 24, who has fe80::216:36ff:fe4e:461c
-^C
-3 packets captured
-3 packets received by filter
-0 packets dropped by kernel
-
-
-And dmesg says:
-
-router4:~ # dmesg
-[  371.024287] eth0: IPv6 duplicate address fe80::216:36ff:fe4e:461c
-detected!
-
-
-And the address sits in 'tentative' mode:
-
-router4:~ # ip addr show dev eth0
-2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast
-state UP qlen 1000
-    link/ether 00:16:36:4e:46:1c brd ff:ff:ff:ff:ff:ff
-    inet 192.168.2.128/24 brd 192.168.2.255 scope global eth0
-    inet6 fe80::216:36ff:fe4e:461c/64 scope link tentative flags 08=20
-       valid_lft forever preferred_lft forever
-
-
-This happens for link-local and global scope address, both when they try
-to auto-configure and when set by hand:
-
-[  463.500328] eth0: IPv6 duplicate address
-2404:130:0:1000:216:36ff:fe4e:461c detected!
-[  732.428312] eth0: IPv6 duplicate address
-2404:130:0:1000:216:36ff:fe4e:461c detected!
-[  883.812328] eth0: IPv6 duplicate address 2404:130::3:2:1 detected!
-
-
-I'd happily put this down to a failing in XVM, however the stateless
-autoconfiguration RFC (4862) states that the stack shouldn't decide an
-address is duplicate based on receipt of a neighbor solicitation message
-that it sent itself:
-
-5.4.3.  Receiving Neighbor Solicitation Messages
-[...]
-If the source address of the Neighbor Solicitation is the unspecified
-   address, the solicitation is from a node performing Duplicate Address
-   Detection.  If the solicitation is from another node, the tentative
-   address is a duplicate and should not be used (by either node).  If
-   the solicitation is from the node itself (because the node loops back
-   multicast packets), the solicitation does not indicate the presence
-   of a duplicate address.
-
-
-Assuming my understanding of the RFC is correct, this suggests to me that d=
-uplicate address detection in Linux is being a little too hasty to mark the=
- address as invalid.  Thoughts?
-
+Maybe there are no updates for 2 years even if it exists.
 
 Thanks,
-
-Sam Cannell
-
-
-
---=-aOpgf1hJo+kFrc8rVafU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (SunOS)
-
-iEYEABECAAYFAkvOTEUACgkQcuIanIzWkBKiXgCfRisvQ388zKyhzofy6Ipgz8g/
-lfEAniHeFN7pDf4jijqsMKyRTdxvoEdD
-=s9FM
------END PGP SIGNATURE-----
-
---=-aOpgf1hJo+kFrc8rVafU--
+-Kame
 
