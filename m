@@ -1,68 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab0DUOPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 10:15:31 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36711 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754867Ab0DUOP1 (ORCPT
+	id S1754920Ab0DUOQy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 10:16:54 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:56846 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab0DUOQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 10:15:27 -0400
-Date: Wed, 21 Apr 2010 15:19:17 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>,
-       Ashwin Ganti <ashwin.ganti@gmail.com>, Greg KH <greg@kroah.com>,
-       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
-       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
+	Wed, 21 Apr 2010 10:16:53 -0400
+Date: Wed, 21 Apr 2010 09:15:52 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Tejun Heo <tj@kernel.org>, Minchan Kim <minchan.kim@gmail.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
-       Eric Paris <eparis@redhat.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
-Message-ID: <20100421151917.5ae20265@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100421133917.GB16326@us.ibm.com>
-References: <20100421012749.GA21338@us.ibm.com>
-	<20100421012908.GB24251@us.ibm.com>
-	<20100421102739.6ad932fb@lxorguk.ukuu.org.uk>
-	<20100421133917.GB16326@us.ibm.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
+In-Reply-To: <20100420150522.GG19264@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1004210914570.4959@router.home>
+References: <4BC6CB30.7030308@kernel.org> <l2u28c262361004150240q8a873b6axb73eaa32fd6e65e6@mail.gmail.com> <4BC6E581.1000604@kernel.org> <z2p28c262361004150321sc65e84b4w6cc99927ea85a52b@mail.gmail.com> <4BC6FBC8.9090204@kernel.org>
+ <w2h28c262361004150449qdea5cde9y687c1fce30e665d@mail.gmail.com> <alpine.DEB.2.00.1004161105120.7710@router.home> <1271606079.2100.159.camel@barrios-desktop> <alpine.DEB.2.00.1004191235160.9855@router.home> <4BCCD8BD.1020307@kernel.org>
+ <20100420150522.GG19264@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> sorry I thought I had cc:d you, bc I was pretty sure you'd have some
-> neat ideas.  Like this one.
-> 
-> One could try to argue that this makes every linux process susceptible
-> to a trojan making it grant its userid to other tasks, but of course
-> that's silly since the trojan could just fork.  Well, what this would
-> buy the attacker is the ability to sit inconspicuously under his old
-> userid, holding on to the fd until the admin goes out to coffee before
-> switching userids.
+On Tue, 20 Apr 2010, Mel Gorman wrote:
 
-Possibly, could you put a timestamp in the passed object ? (Given the
-expiry of such a uid offer is kind of policy)
+> alloc_pages_exact_node() avoids a branch in a hot path that is checking for
+> something the caller already knows. That's the reason it exists.
 
-> The other thing is that offhand I think the server can't easily tell
-> from the socket which user namespace the client is in, as ucred only
-> has .uid.  Though (1) we might need to create a 'struct puser' analogous
-> to 'struct pid' for signals anyway, (2) userspace can segragate with
-> fs or net_ns (if abstract sock), and (3) client in a container
-> presumably won't be able to authenticate itself to server on the
-> host anyway.
+We can avoid alloc_pages_exact_node() by making all callers of
+alloc_pages_node() never use -1. -1 is ambiguous and only rarely will a
+caller pass that to alloc_pages_node().
 
-That I think needs fixing anyway and now is a good time as any to do it.
-If you are going to be able to pass userids then you need to be sure you
-don't get passed a handle with a uid change on it that you didn't want so
-adding another object type and option of some kind to accept them has to
-occur anyway.
 
-That also btw needs fixing for other reasons - more than one daemon has
-been written that generically uses recvmsg and so can be attacked with FD
-leaks >-)
-
-Alan
