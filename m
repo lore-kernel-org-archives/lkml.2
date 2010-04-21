@@ -1,186 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab0DUXBa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 19:01:30 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:65062 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab0DUXB2 convert rfc822-to-8bit (ORCPT
+	id S1754048Ab0DUXEL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 19:04:11 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:33104 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752431Ab0DUXEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 19:01:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fo/Tx3TwvkMoMIVn/wLaTRjdNMo2uon+zBW6h8mE7pOFhyqWe/EhJ9Y9QLA4C2NSGf
-         VJV2a0ja/WV1v/oR65E25Hn1gU+TzpnmR8prC4K6YCOXhGwVN2wrXBds6ew5fM6ja0D2
-         1zhsjaR9YOHhza/2Sis5zR1s7k63eRtF1pdPA=
+	Wed, 21 Apr 2010 19:04:09 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 3/3] x86,pci,acpi: Handle invalid _CRS
+Date: Wed, 21 Apr 2010 17:04:04 -0600
+User-Agent: KMail/1.9.10
+Cc: Yinghai Lu <yinghai.lu@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Andy Isaacson <adi@hexapodia.org>, guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>
+References: <20100409223532.GC11130@hexapodia.org> <201004211059.17264.bjorn.helgaas@hp.com> <4BCF7D38.8070206@zytor.com>
+In-Reply-To: <4BCF7D38.8070206@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <1271868724.2100.169.camel@barrios-desktop>
-References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org>
-	 <20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100419181442.GA19264@csn.ul.ie> <20100419193919.GB19264@csn.ul.ie>
-	 <20100421172838.0377e0cc.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100421184806.2c3ecc87.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100421102039.GG30306@csn.ul.ie>
-	 <1271868724.2100.169.camel@barrios-desktop>
-Date: Thu, 22 Apr 2010 08:01:27 +0900
-Message-ID: <t2k28c262361004211601w3f42f5e0j79b53ecb43372e3d@mail.gmail.com>
-Subject: Re: error at compaction (Re: mmotm 2010-04-15-14-42 uploaded
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201004211704.05541.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 1:52 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> Hi, Mel.
->
-> On Wed, 2010-04-21 at 11:20 +0100, Mel Gorman wrote:
->> On Wed, Apr 21, 2010 at 06:48:06PM +0900, KAMEZAWA Hiroyuki wrote:
->> > On Wed, 21 Apr 2010 17:28:38 +0900
->> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> >
->> > > On Mon, 19 Apr 2010 20:39:19 +0100
->> > > Mel Gorman <mel@csn.ul.ie> wrote:
->> > >
->> > > > On Mon, Apr 19, 2010 at 07:14:42PM +0100, Mel Gorman wrote:
->> > > > ==== CUT HERE ====
->> > > > mm,compaction: Map free pages in the address space after they get split for compaction
->> > > >
->> > > > split_free_page() is a helper function which takes a free page from the
->> > > > buddy lists and splits it into order-0 pages. It is used by memory
->> > > > compaction to build a list of destination pages. If
->> > > > CONFIG_DEBUG_PAGEALLOC is set, a kernel paging request bug is triggered
->> > > > because split_free_page() did not call the arch-allocation hooks or map
->> > > > the page into the kernel address space.
->> > > >
->> > > > This patch does not update split_free_page() as it is called with
->> > > > interrupts held. Instead it documents that callers of split_free_page()
->> > > > are responsible for calling the arch hooks and to map the page and fixes
->> > > > compaction.
->> > > >
->> > > > This is a fix to the patch mm-compaction-memory-compaction-core.patch.
->> > > >
->> > > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
->> > >
->> > > Sorry, I think I hit another? error again. (sorry, no log.)
->> > > What I did was...
->> > >    Running 2 shells.
->> > >    while true; do make -j 16;make cleanl;done
->> > >    and
->> > >    while true; do echo 0 > /proc/sys/vm/compact_memory;done
->> > >
->> > >
->> > > Using the same config.
->> > >
->> > > Apr 21 17:27:47 localhost kernel: ------------[ cut here ]------------
->> > > Apr 21 17:27:47 localhost kernel: kernel BUG at include/linux/swapops.h:105!
->> > > Apr 21 17:27:47 localhost kernel: invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
->> > > Apr 21 17:27:47 localhost kernel: last sysfs file: /sys/devices/virtual/net/br0/statistics/collisions
->> > > Apr 21 17:27:47 localhost kernel: CPU 3
->> > > Apr 21 17:27:47 localhost kernel: Modules linked in: fuse sit tunnel4 ipt_MASQUERADE iptable_nat nf_nat bridge stp llc sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf xt_physdev ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables ipv6 dm_multipath uinput ioatdma ppdev parport_pc i5000_edac bnx2 iTCO_wdt edac_core iTCO_vendor_support shpchp parport e1000e kvm_intel dca kvm i2c_i801 i2c_core i5k_amb pcspkr megaraid_sas [last unloaded: microcode]
->> > > Apr 21 17:27:47 localhost kernel:
->> > > Apr 21 17:27:47 localhost kernel: Pid: 27892, comm: cc1 Tainted: G        W   2.6.34-rc4-mm1+ #4 D2519/PRIMERGY
->> > > Apr 21 17:27:47 localhost kernel: RIP: 0010:[<ffffffff8114e9cf>]  [<ffffffff8114e9cf>] migration_entry_wait+0x16f/0x180
->> > > Apr 21 17:27:47 localhost kernel: RSP: 0000:ffff88008d9efe08  EFLAGS: 00010246
->> > > Apr 21 17:27:47 localhost kernel: RAX: ffffea0000000000 RBX: ffffea0000241100 RCX: 0000000000000001
->> > > Apr 21 17:27:47 localhost kernel: RDX: 000000000000a4e0 RSI: ffff880621a4ab00 RDI: 000000000149c03e
->> > > Apr 21 17:27:47 localhost kernel: RBP: ffff88008d9efe38 R08: 0000000000000000 R09: 0000000000000000
->> > > Apr 21 17:27:47 localhost kernel: R10: 0000000000000000 R11: 0000000000000001 R12: ffff880621a4aae8
->> > > Apr 21 17:27:47 localhost kernel: R13: 00000000bf811000 R14: 000000000149c03e R15: 0000000000000000
->> > > Apr 21 17:27:47 localhost kernel: FS:  00007fe6abc90700(0000) GS:ffff880005a00000(0000) knlGS:0000000000000000
->> > > Apr 21 17:27:47 localhost kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> > > Apr 21 17:27:47 localhost kernel: CR2: 00007fe6a37279a0 CR3: 000000008d942000 CR4: 00000000000006e0
->> > > Apr 21 17:27:47 localhost kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->> > > Apr 21 17:27:47 localhost kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->> > > Apr 21 17:27:47 localhost kernel: Process cc1 (pid: 27892, threadinfo ffff88008d9ee000, task ffff8800b23ec820)
->> > > Apr 21 17:27:47 localhost kernel: Stack:
->> > > Apr 21 17:27:47 localhost kernel: ffffea000101aee8 ffff880621a4aae8 ffff88008d9efe38 00007fe6a37279a0
->> > > Apr 21 17:27:47 localhost kernel: <0> ffff8805d9706d90 ffff880621a4aa00 ffff88008d9efef8 ffffffff81126d05
->> > > Apr 21 17:27:47 localhost kernel: <0> ffff88008d9efec8 0000000000000246 0000000000000000 ffffffff81586533
->> > > Apr 21 17:27:47 localhost kernel: Call Trace:
->> > > Apr 21 17:27:47 localhost kernel: [<ffffffff81126d05>] handle_mm_fault+0x995/0x9b0
->> > > Apr 21 17:27:47 localhost kernel: [<ffffffff81586533>] ? do_page_fault+0x103/0x330
->> > > Apr 21 17:27:47 localhost kernel: [<ffffffff8104bf40>] ? finish_task_switch+0x0/0xf0
->> > > Apr 21 17:27:47 localhost kernel: [<ffffffff8158659e>] do_page_fault+0x16e/0x330
->> > > Apr 21 17:27:47 localhost kernel: [<ffffffff81582f35>] page_fault+0x25/0x30
->> > > Apr 21 17:27:47 localhost kernel: Code: 53 08 85 c9 0f 84 32 ff ff ff 8d 41 01 89 4d d8 89 45 d4 8b 75 d4 8b 45 d8 f0 0f b1 32 89 45 dc 8b 45 dc 39 c8 74 aa 89 c1 eb d7 <0f> 0b eb fe 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5
->> > > Apr 21 17:27:47 localhost kernel: RIP  [<ffffffff8114e9cf>] migration_entry_wait+0x16f/0x180
->> > > Apr 21 17:27:47 localhost kernel: RSP <ffff88008d9efe08>
->> > > Apr 21 17:27:47 localhost kernel: ---[ end trace 4860ab585c1fcddb ]---
->> > >
->> >
->> > It seems that this is a new error.
->> >
->> >
->> > static inline struct page *migration_entry_to_page(swp_entry_t entry)
->> > {
->> >         struct page *p = pfn_to_page(swp_offset(entry));
->> >         /*
->> >          * Any use of migration entries may only occur while the
->> >          * corresponding page is locked
->> >          */
->> >         BUG_ON(!PageLocked(p));
->> >         return p;
->> > }
->> >
->> >
->> > Hits this BUG_ON()....then, the page migration_entry points to is unlocked.
->> >
->> > But we always do
->> >
->> >     lock_page(old_page);
->> >     unamp(old_page);
->> >     remap(new_page);
->> >     unlock_page(old_page);
->> >
->> > So....some pte wasn't updated at remap ?
->> >
->>
->> I'm working on reproducing the problem. I've hit it only once. My stress
->> tests were using dd instead of make like yours did and my
->> compilation-orientated test would not have been hitting compaction as
->> hard.
->>
->> The theory I'm working on is that it's a PageSwapCache page that was
->> unmapped and not remapped (remap_swapcache == 0) in move_to_new_page().
->> In this case, the page would be migrated, left in place and unlocked.
->> Later when a swap fault occurred, the migration PTE is found and the
->> bug_on triggers i.e. the bug check is no longer valid because it is
->> possible for an unlocked migration pte to be left behind.
->
-> Hmm. How about the situation?
->
->
-> CPU A                                           CPU B
->
-> 1. unmap_and_move
-> 2. lock_page
-> 3. PageAnon && !page_mapped && PageSwapCache    3' do_fork
-> 4. remap_swapcache = 0                          4' pte lock, page_dup_rmap <- race happens
-> 5. try_to_unmap - make migration entry by 4'
-> 6. move_to_newpage
-> 7. don't call remove_migration due to 4
->                                                8. do_swap_page
->                                                9. migration_entry_wait
->                                                10. goto out
->                                                11. fault!
->
-> In this case, process of CPU B will be killed although it passes PageLocked
-> So I think we have to find another method.
->
-> I might be wrong since nearly falling asleep. :(
+On Wednesday 21 April 2010 04:33:28 pm H. Peter Anvin wrote:
+> Do you have opinions on patches 1-2 of the series?
+> 
+> I'm getting concerned about how the size of the patchset has grown, and
+> we're past -rc5 already... but it is a regression so we can't just defer
+> it to .35.
 
-Yes. I was wrong.
-I seem to miss detach_vma before  unmap_region.
-Sorry, Ignore this, please. :(
+Part 1: the essential part of this seems to be the trim_bios_range()
+change, and that part is not too big.  In v4, Yinghai also removed
+probe_roms_32.c.  That sounds like the right thing to do, but I'd
+rather have that in separate patch so it doesn't obfuscate the other
+change, and I don't know whether it *has* to be done for .34; maybe
+it could be deferred.
 
--- 
-Kind regards,
-Minchan Kim
+Part 2: IMHO, we're putting way too much crap in kernel/resource.c.
+A name like "reserve_region_with_split_check_child()" is a pretty
+good clue that we've lost our way somewhere.  But that's mostly a
+cosmetic thing, and the end result does seem to be something that
+fixes the current regression.
+
+So I guess that in spite of my issues with the implementation, I'm
+still OK with the concept.
+
+Bjorn
