@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab0DUVe7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 17:34:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29750 "EHLO mx1.redhat.com"
+	id S1756712Ab0DUVf3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 17:35:29 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:46446 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755363Ab0DUVe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 17:34:57 -0400
-Date: Wed, 21 Apr 2010 17:34:36 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Jamie Lokier <jamie@shareable.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, jblunck@suse.de, dwmw2@infradead.org,
-       viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, tytso@mit.edu,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
-Message-ID: <20100421213436.GD5041@shell>
-References: <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de> <20100419142315.GA2688@shell> <E1O3sLi-0008EA-QW@pomaz-ex.szeredi.hu> <20100420213450.GM11723@shareable.org> <20100421084211.GB22741@bolzano.suse.de> <20100421092235.GB13114@shareable.org> <E1O4WKa-0003Pp-0y@pomaz-ex.szeredi.hu> <20100421095221.GD13114@shareable.org>
+	id S1755329Ab0DUVf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 17:35:26 -0400
+Subject: Re: [PATCH 1/2] arch/avr32: Fix build failure caused by typo
+From: john stultz <johnstul@us.ibm.com>
+To: Peter =?ISO-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+In-Reply-To: <201004212318.23909.PeterHuewe@gmx.de>
+References: <201004212318.23909.PeterHuewe@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Apr 2010 14:35:21 -0700
+Message-ID: <1271885721.3231.1.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100421095221.GD13114@shareable.org>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 10:52:21AM +0100, Jamie Lokier wrote:
-> Miklos Szeredi wrote:
-> > Detecting mount points is best done by comparing st_dev for the parent
-> > directory with st_dev of the child.  This is much simpler than parsing
-> > /proc/mounts and will work for bind mounts as well as union mounts.
+On Wed, 2010-04-21 at 23:18 +0200, Peter Hüwe wrote:
+> From: Peter Huewe <peterhuewe@gmx.de>
 > 
-> Sorry, no: That does not work for bind mounts.  Both layers can have
-> the same st_dev.  Nor does O_NOFOLLOW stop traversal in the middle of
-> a path, there is no handy O_NOCROSSMOUNTS, and no st_mode flag or
-> d_type to say it's a bind mount.  Bind mounts are really a big pain
-> for i_nlink+inotify name counting.
+> This little patch fixes a build failure[1] caused by a typo.
 > 
-> Besides, calling stat() on every entry in a large directory to check
-> st_ino can be orders of magnitude slower than readdir() on a large
-> directory - especially with a cold cache.  It is quicker, but much
-> more complicated, to parse /proc/mounts and apply arcane rules to find
-> the exceptions.
+> Patch against linux-next20100421
 > 
-> Can a union mount overlap two parts of the same filesystem?
-
-No.  Each layer must be a separate file system, the bottom must be
-read-only, the top must be writable, and they must be unioned at their
-mount points.
-
-> > I think there's no question that union mounts might break apps (POSIX
-> > or not).  But I think there's hope that they are few and can easily be
-> > fixed.
+> References:
+> [1]http://kisskb.ellerman.id.au/kisskb/buildresult/2448162/
 > 
-> I agree, and union moint is a very useful feature that's worth
-> breaking a few apps for :-)
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+
+Ah! Sorry about that. Thanks so much for catching this!
+-john
+
+
+> ---
+>  arch/avr32/kernel/time.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> I'm curious if there's a clear way to go about it in this case, or
-> if it'll involve a certain amount of pattern recognition in /proc/mounts.
+> diff --git a/arch/avr32/kernel/time.c b/arch/avr32/kernel/time.c
+> index a047d69..668ed28 100644
+> --- a/arch/avr32/kernel/time.c
+> +++ b/arch/avr32/kernel/time.c
+> @@ -112,7 +112,7 @@ static struct clock_event_device comparator = {
+> 
+>  void read_persistent_clock(struct timespec *ts)
+>  {
+> -	ts->tv.sec = mktime(2007, 1, 1, 0, 0, 0);
+> +	ts->tv_sec = mktime(2007, 1, 1, 0, 0, 0);
+>  	ts->tv_nsec = 0;
+>  }
+> 
 
-All it takes is looking for the "union" string in the mount options.
 
-> Basically I'm wondering if it's been thought about already.
-
-Not as much as it deserves. :) Do you have any thoughts about better
-solutions?
-
-Something to keep in mind is that most of the app issues are already
-present with bind mounts.  In many cases, if an app doesn't work with
-union mounts, it's also not going to work with bind mounts.  I think
-you have a good point that we could use a more straightforward way to
-say, "Hey, you can't use the normal st_dev/st_ino rules right now..."
-
--VAL
