@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756467Ab0DUUXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 16:23:46 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:39278 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756389Ab0DUUXo (ORCPT
+	id S1756506Ab0DUUYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 16:24:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45321 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756429Ab0DUUYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 16:23:44 -0400
-Date: Wed, 21 Apr 2010 15:23:25 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, lkml <linux-kernel@vger.kernel.org>,
-       David Howells <dhowells@redhat.com>,
-       Ashwin Ganti <ashwin.ganti@gmail.com>, Greg KH <greg@kroah.com>,
-       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
-       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
-       Eric Paris <eparis@redhat.com>, linux-api@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
-Message-ID: <20100421202325.GC30745@us.ibm.com>
-References: <20100421012749.GA21338@us.ibm.com>
- <20100421012908.GB24251@us.ibm.com>
- <20100421102739.6ad932fb@lxorguk.ukuu.org.uk>
- <20100421133917.GB16326@us.ibm.com>
- <20100421151917.5ae20265@lxorguk.ukuu.org.uk>
- <20100421150900.GB31880@us.ibm.com>
- <m11ve81usw.fsf@fess.ebiederm.org>
+	Wed, 21 Apr 2010 16:24:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=boZ9BKit+czVo+8Dz49W6Gg7mNGVl6OkEnedwQzBHaBHaAQxsSRB+cDU0yp5Al3vTZ
+         aVU1SptTwaQJJpIQxNFUXz/vKJ5yzs46OUHMD/TqHWNHVKiOOd47xMrKJ4hIlK/v+r55
+         7gtGrOyItrcw72xKey98oLc7/E4okTPt0nhYI=
+Date: Wed, 21 Apr 2010 22:24:21 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
+       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com
+Subject: Re: [PATCH 1/6] [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100421202418.GA8677@nowhere>
+References: <1271777043-3807-1-git-send-email-dzickus@redhat.com> <1271777043-3807-2-git-send-email-dzickus@redhat.com> <20100421172730.GD5650@nowhere> <20100421175021.GV15159@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m11ve81usw.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100421175021.GV15159@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> "Serge E. Hallyn" <serue@us.ibm.com> writes:
+On Wed, Apr 21, 2010 at 01:50:21PM -0400, Don Zickus wrote:
+> On Wed, Apr 21, 2010 at 07:27:33PM +0200, Frederic Weisbecker wrote:
+> > Some minor things:
+> > 
+> > 
+> > On Tue, Apr 20, 2010 at 11:23:58AM -0400, Don Zickus wrote:
+> > > +#ifdef CONFIG_PERF_EVENTS_NMI
+> > > +struct perf_event_attr wd_hw_attr = {
+> > > +	.type		= PERF_TYPE_HARDWARE,
+> > > +	.config		= PERF_COUNT_HW_CPU_CYCLES,
+> > > +	.size		= sizeof(struct perf_event_attr),
+> > > +	.pinned		= 1,
+> > > +	.disabled	= 1,
+> > > +};
+> > 
+> > 
+> > 
+> > Shouldn't it be static?
 > 
-> > Ignoring namespaces for a moment, I guess we could do something like
-> >
-> > struct credentials_pass {
-> > 	pid_t global_pid;
-> > 	unsigned long unique_id;
-> > 	uid_t new_uid;
-> > 	gid_t new_gid;
-> > 	int num_aux_gids;
-> > 	gid_t aux_gids[];
-> > }
+> yes.  thanks.
 > 
-> This looks surprising like what I am doing in passing uids and pids
-> through unix domain sockets.
+> > 
+> > 
+> > > +
+> > > +/* Callback function for perf event subsystem */
+> > > +void watchdog_overflow_callback(struct perf_event *event, int nmi,
+> > > +		 struct perf_sample_data *data,
+> > > +		 struct pt_regs *regs)
+> > > +{
+> > > +	int this_cpu = smp_processor_id();
+> > > +	unsigned long touch_ts = per_cpu(watchdog_touch_ts, this_cpu);
+> > > +	char warn = per_cpu(watchdog_warn, this_cpu);
+> > 
+> > 
+> > 
+> > You can use __get_cpu_var() here
 > 
-> So if this looks like a direction we want to go it shouldn't be too
-> difficult.
-> 
-> >> That also btw needs fixing for other reasons - more than one daemon has
-> >> been written that generically uses recvmsg and so can be attacked with FD
-> >> leaks >-)
-> >
-> > Yup.
-> >
-> > (By 'needs fixing' you just mean needs to be done right for this
-> > service?  Else I think I'm missing something...)
-> 
-> Remember my unix domain socket and the patch for converting struct cred
-> into a new context, from a month or so ago.  I think that is what we
-> are talking about.
+> well, I already have this_cpu and need it later, I figured I would just
+> use it with per_cpu and save _get_cpu_var the work of re-running
+> smp_processor_id().
 
-Zoinks!  After some digging I found it in my containers.mbox and at
-https://lists.linux-foundation.org/pipermail/containers/2010-March/023405.html
-and see you even called me out.  Sorry!  I see your tree at
-http://git.kernel.org/gitweb.cgi?p=linux/kernel/git/ebiederm/linux-2.6.33-nsfd-v5.git;a=summary
-and commit "af_unix: Allow SO_PEERCRED to work across namespaces", and
-it all looks good.  Definately useful for a SO_PASSCRED or somesuch
-implementation.
 
-thanks,
--serge
+
+This is more about code clarity in fact. per_cpu() suggests we are
+fetching something from another cpu.
+
+This is a very minor issue though.
+
