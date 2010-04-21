@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab0DUFHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 01:07:53 -0400
-Received: from 1wt.eu ([62.212.114.60]:63458 "EHLO 1wt.eu"
+	id S1751920Ab0DUFIk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 01:08:40 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53885 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426Ab0DUFHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 01:07:52 -0400
-Date: Wed, 21 Apr 2010 07:07:49 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Viswanathan Murugesan <viswa.murugesan@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Question on 2.6.25 kernel crash.
-Message-ID: <20100421050749.GC7798@1wt.eu>
-References: <j2pfe58d3641004201748uadddaf12n1cfec0c0bb98117c@mail.gmail.com> <n2pfe58d3641004201821r3805616id4a8cd5cdb745b46@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <n2pfe58d3641004201821r3805616id4a8cd5cdb745b46@mail.gmail.com>
-User-Agent: Mutt/1.5.11
+	id S1751611Ab0DUFIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 01:08:38 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Borislav Petkov <bp@alien8.de>
+Subject: Re: [Bug #15730] Ugly rmap NULL ptr deref oopsie on hibernate (was Linux 2.6.34-rc3)
+Date: Wed, 21 Apr 2010 07:09:30 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.K_G.dRSzLB@tosh> <20100420052740.GA20482@liondog.tnic>
+In-Reply-To: <20100420052740.GA20482@liondog.tnic>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004210709.30228.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 06:21:08PM -0700, Viswanathan Murugesan wrote:
-> 2.6.25 Kernel crashes when tried to upload a 2 MB file through FTP to
-> a ftp server under a ipsec gateway.
+On Tuesday 20 April 2010, Borislav Petkov wrote:
+> From: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Date: Tue, Apr 20, 2010 at 05:19:23AM +0200
+> 
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15730
+> > Subject		: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux 2.6.34-rc3)
+> > Submitter	: Borislav Petkov <bp@alien8.de>
+> > Date		: 2010-04-02 17:59 (18 days old)
+> > Message-ID	: <20100402175937.GA19690@liondog.tnic>
+> > References	: http://marc.info/?l=linux-kernel&m=127023173329741&w=2
+> 
+> Fixed by commit ea90002b0fa7bdee86ec22eba1d951f30bf043a6.
 
-Your logs are showing 2.6.25.7, which is two years old and not up to
-date at all. 2.6.25 is not maintained anymore, but at least you should
-have updated to 2.6.25.20 at that time. You basically missed 13 updates
-on this version, so it is possible that your problem was identified and
-fixed. Anyway, since it's not maintained anymore, you should probably
-retry with 2.6.32.X which is going to be maintained for a long time.
+Yup, closed.
 
-Willy
-
+Rafael
