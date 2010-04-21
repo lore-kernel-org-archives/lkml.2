@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab0DUOig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 10:38:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41548 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755393Ab0DUOif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 10:38:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,250,1270450800"; 
-   d="scan'208";a="791473369"
-Subject: Re: [RFC] perf_events: support for uncore a.k.a. nest units
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1271859755.1776.108.camel@laptop>
-References: <OFA47E1D5E.A81B0A43-ON07257706.00721254-07257706.0074D40F@us-phx1.az05.bull.com>
-	 <1271424250.4807.2277.camel@twins>
-	 <1271764547.13968.69.camel@minggr.sh.intel.com>
-	 <1271764993.1676.431.camel@laptop>
-	 <1271837295.3794.3.camel@minggr.sh.intel.com>
-	 <m2q7c86c4471004210132id258e98y47134ab3bd486efe@mail.gmail.com>
-	 <1271839190.3794.5.camel@minggr.sh.intel.com>
-	 <i2j7c86c4471004210144kd8223bfbve5d6bee2820d0ccf@mail.gmail.com>
-	 <1271842974.3794.16.camel@minggr.sh.intel.com>
-	 <1271843869.1776.65.camel@laptop>  <1271887942.3054.33.camel@localhost>
-	 <1271859755.1776.108.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Apr 2010 22:38:22 +0000
-Message-Id: <1271889502.7414.14.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1755445Ab0DUOoI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 10:44:08 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40992 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755398Ab0DUOoF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 10:44:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=x98rZXaxLaQ3cnTd5AcqrE16grbcuYDMpzrk4gcFWMt/abqKnLxdSR6rlYRgUyQi7t
+         OtnTniK4YYjndQ42c36Tqz5NDQBhtarstKh/Y4IDSjJZMTTbyo88B+SOpd0T9eSFT9j+
+         5MOeeiw0N2hCOy2kjqlAlF1hTqGYFbtlWoIW0=
+MIME-Version: 1.0
+In-Reply-To: <20100421134759.GE16326@us.ibm.com>
+References: <20100421012749.GA21338@us.ibm.com>
+	 <20100421012908.GB24251@us.ibm.com> <20100421030406.GB10258@kroah.com>
+	 <20100421034532.GA9254@us.ibm.com>
+	 <h2na67e66b21004202118w484dd8f0pe526b0a1fc7220e0@mail.gmail.com>
+	 <20100421134759.GE16326@us.ibm.com>
+Date: Wed, 21 Apr 2010 07:44:01 -0700
+Message-ID: <u2wa67e66b21004210744n48b1b189v2775665c7b2ea77f@mail.gmail.com>
+Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
+From: Ashwin Ganti <ashwin.ganti@gmail.com>
+To: "Serge E. Hallyn" <serue@us.ibm.com>
+Cc: Greg KH <greg@kroah.com>, lkml <linux-kernel@vger.kernel.org>,
+       David Howells <dhowells@redhat.com>, rsc@swtch.com, ericvh@gmail.com,
+       linux-security-module@vger.kernel.org, Ron Minnich <rminnich@gmail.com>,
+       jt.beard@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
+       Eric Paris <eparis@redhat.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-21 at 22:22 +0800, Peter Zijlstra wrote:
-> On Wed, 2010-04-21 at 22:12 +0000, Lin Ming wrote:
-> > +       ret = pmu->commit_txn(pmu);
-> > +       if (!ret) {
-> > +               pmu->stop_txn(pmu);
-> > +               return 0;
-> > +       }
-> >  
-> >  group_error:
-> > +       pmu->stop_txn(pmu); 
-> 
-> If you let commit_txn() also clear the state you can save some logic and
-> a method.
+On Wed, Apr 21, 2010 at 6:47 AM, Serge E. Hallyn <serue@us.ibm.com> wrote:
+> Quoting Ashwin Ganti (ashwin.ganti@gmail.com):
+>> On Tue, Apr 20, 2010 at 8:45 PM, Serge E. Hallyn <serue@us.ibm.com> wrote:
+>> > Quoting Greg KH (greg@kroah.com):
+>> >> Hm, who is going to maintain this, you, or Ashwin?
+>> >
+>> > I haven't asked Ashwin, and will be happy either way.  Ashwin, did
+>> > you want to maintain it?
+>>
+>> Well, since you have been driving a lot of implementation changes
+>> recently, I feel it makes sense for you to be a maintainer. Honestly I
+>> don't think I will be able to find time maintaining this in the future
+>> although I can do the code reviews for you. I will be more than happy
+>> if this feature continues to get traction.
+>>
+>> - Ashwin
+>
+> Ok.  I'll put myself in MAINTAINERS.  If we stick with the p9auth
+> driver or filesystem approach, I'd like to keep you in MODULE_AUTHOR()
+> if that's ok, bc it really is yours, and wouldn't exist without you.
 
-I add this ->stop_txn(pmu) because the rollback code also need to clear
-the state.
+Yeah, sure.
 
-> 
-> But yes, this looks good. If you don't remove the weak interface just
-> yet, you can do a patch per architecture that uses this (at least
-> powerpc and sparc do), and remove the weak thing at the end once all
-> users are gone.
-> 
-
-OK, I'll do that for powerpc and sparc.
-
-And need to check if there are transaction methods in group_sched_in for
-other arch, as below.
-
-group_sched_in(...)
-{
-	if (pmu->start_txn)
-		pmu->start_txn(pmu);
-
-	if (pmu->commit_txn)
-		pmu->commit_txn(pmu)
-}
-
-Thanks,
-Lin Ming
-
+- Ashwin
