@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab0DUVxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 17:53:15 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:58861 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756772Ab0DUVvE (ORCPT
+	id S1756841Ab0DUV40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 17:56:26 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43510 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753323Ab0DUV4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 17:51:04 -0400
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org,
-       Mimi Zohar <zohar@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
-       David Safford <safford@watson.ibm.com>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH 05/14] ima: move ima_file_free before releasing the file
-Date: Wed, 21 Apr 2010 17:49:45 -0400
-Message-Id: <1271886594-3719-6-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
+	Wed, 21 Apr 2010 17:56:24 -0400
+Date: Wed, 21 Apr 2010 14:55:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: axel.lin@gmail.com
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Eric Miao <eric.miao@marvell.com>
+Subject: Re: [PATCH] max732x: Correct nr_port checking off by one error
+Message-Id: <20100421145552.72307e9c.akpm@linux-foundation.org>
+In-Reply-To: <q2t427d64721004120029n91bb5bcg1416b34dda1a28be@mail.gmail.com>
+References: <q2t427d64721004120029n91bb5bcg1416b34dda1a28be@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Integrity appraisal measures files on file_free and stores the file
-measurement as an xattr.  Measure the file before releasing it.
+On Mon, 12 Apr 2010 15:29:16 +0800
+Axel Lin <axel.lin@gmail.com> wrote:
 
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+> Setup both client_group_a and client_group_b if nr_port > 8 (not
+> including nr_port==8).
+> 
 
-diff --git a/fs/file_table.c b/fs/file_table.c
-index 32d12b7..fac3e43 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -250,10 +250,10 @@ void __fput(struct file *file)
- 		if (file->f_op && file->f_op->fasync)
- 			file->f_op->fasync(-1, file, 0);
- 	}
-+	ima_file_free(file);
- 	if (file->f_op && file->f_op->release)
- 		file->f_op->release(inode, file);
- 	security_file_free(file);
--	ima_file_free(file);
- 	if (unlikely(S_ISCHR(inode->i_mode) && inode->i_cdev != NULL))
- 		cdev_put(inode->i_cdev);
- 	fops_put(file->f_op);
--- 
-1.6.6.1
+OK, that's what the patch does.  But why does it do it?
+
+In other words, when fixing a bug, please include a description of that
+bug!  And, if it's not obvious from the description, please also describe
+the user-visible effects of that bug.  So the poor schmuck at the other
+end (ie: me) can work out which kernel(s) the fix should be merged
+into.
+
+> 
+> diff --git a/drivers/gpio/max732x.c b/drivers/gpio/max732x.c
+> index f786824..51b02c6 100644
+> --- a/drivers/gpio/max732x.c
+> +++ b/drivers/gpio/max732x.c
+> @@ -285,14 +285,14 @@ static int __devinit max732x_probe(struct
+> i2c_client *client,
+
+The patch is wordwrapped.
+
+>         switch (client->addr & 0x70) {
+>         case 0x60:
+>                 chip->client_group_a = client;
+> -               if (nr_port > 7) {
+> +               if (nr_port > 8) {
+
+And has its tabs replaced with spaces.  sorry-youre-using-gmail.
+
+Please see if you can get that fixed up for next time
+(Documentation/email-clients.txt has some tips).  Worst-case, use
+text/plain attachments.
+
+Thanks.
 
