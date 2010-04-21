@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab0DUWeL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 18:34:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52181 "EHLO mail.zytor.com"
+	id S1753219Ab0DUWhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 18:37:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50431 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752150Ab0DUWeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 18:34:09 -0400
-Message-ID: <4BCF7D38.8070206@zytor.com>
-Date: Wed, 21 Apr 2010 15:33:28 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Yinghai Lu <yinghai.lu@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Andy Isaacson <adi@hexapodia.org>, guenter.roeck@ericsson.com,
+	id S1752641Ab0DUWha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 18:37:30 -0400
+Date: Wed, 21 Apr 2010 15:24:14 -0700
+From: Greg KH <gregkh@suse.de>
+To: John Stoffel <john@stoffel.org>
+Cc: Hedi Berriche <hedi@sgi.com>, Rik van Riel <riel@redhat.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, Mike Travis <travis@sgi.com>,
+       Ingo Molnar <mingo@elte.hu>,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH 3/3] x86,pci,acpi: Handle invalid _CRS
-References: <20100409223532.GC11130@hexapodia.org> <201004210921.50502.bjorn.helgaas@hp.com> <4BCF2BBA.4080708@oracle.com> <201004211059.17264.bjorn.helgaas@hp.com>
-In-Reply-To: <201004211059.17264.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+       Jack Steiner <steiner@sgi.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
+ pid_max v2
+Message-ID: <20100421222414.GA26241@suse.de>
+References: <4BCE579C.5070100@sgi.com>
+ <4BCE5A73.3000904@sgi.com>
+ <20100421102350.4c222e6b@lxorguk.ukuu.org.uk>
+ <20100421165934.GN16427@zorg.emea.sgi.com>
+ <4BCF336B.1050706@redhat.com>
+ <19407.20109.308816.104856@stoffel.org>
+ <20100421193350.GU16427@zorg.emea.sgi.com>
+ <19407.23456.469074.256306@stoffel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <19407.23456.469074.256306@stoffel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2010 09:59 AM, Bjorn Helgaas wrote:
-> On Wednesday 21 April 2010 10:45:46 am Yinghai Lu wrote:
->> On 04/21/2010 08:21 AM, Bjorn Helgaas wrote:
+On Wed, Apr 21, 2010 at 04:10:08PM -0400, John Stoffel wrote:
+> >>>>> "Hedi" == Hedi Berriche <hedi@sgi.com> writes:
 > 
->>> Why are you doing this patch?  Did you see a machine where the host
->>> bridge was left with no resources because of _CRS issues?  If so,
->>> this patch feels like a band-aid.  I'd rather investigate the issue
->>> directly, because that would probably be a Linux problem we could fix.
->>>
->>> Also, if there *is* a reported problem, you should include a link to
->>> the bugzilla or email thread.
->>>   
->> No, just code review.
+> Hedi> On Wed, Apr 21, 2010 at 20:15 John Stoffel wrote:
+> Hedi> | >>>>> "Rik" == Rik van Riel <riel@redhat.com> writes:
+> Hedi> | 
+> Hedi> | Rik> That is 15 kernel threads per CPU.
+> Hedi> | 
+> Hedi> | Rik> Reducing the number of kernel threads sounds like a
+> Hedi> | Rik> useful thing to do.
+> Hedi> | 
+> Hedi> | Isn't that already a project? 
 > 
-> In that case, I don't think this patch is a good idea.  Assume we have
-> a Linux problem with _CRS parsing, and as a result, we don't find any
-> host bridge resources.  This patch will cause us to silently revert to
-> the default resources, so we lose the opportunity to debug and fix the
-> Linux problem.
+> Hedi> Yes, thanks to Alan's probing I looked it up 
 > 
-> Even worse, if there's a *BIOS* problem with _CRS, this patch will hide
-> it and make it harder to diagnose.
+> Hedi>     http://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git
 > 
-> Bjorn
+> Hedi> but we're definitely talking long term solution vs. something
+> Hedi> that can ease pain now.
+> 
+> It seems to me that running Linux on such a large machine is such a
+> specialized niche, the putting in your change to the regular kernel
+> isn't a near term need either.  And from the sounds of it, Tejun's
+> work has better long term potential.
 
-Hi Bjorn,
+Tejun's work has much better long term potential, but this is still an
+issue for large #cpu systems, which we want Linux to support well.  This
+isn't a "specialized niche" for Linux, at all, Linux pretty much
+dominates this hardware area, and it would be nice to ensure that this
+continues.
 
-Do you have opinions on patches 1-2 of the series?
+thanks,
 
-I'm getting concerned about how the size of the patchset has grown, and
-we're past -rc5 already... but it is a regression so we can't just defer
-it to .35.
-
-	-hpa
+greg k-h
