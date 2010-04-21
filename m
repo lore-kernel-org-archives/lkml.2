@@ -1,97 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab0DUXrQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 19:47:16 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:29979 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755746Ab0DUXrO (ORCPT
+	id S1756738Ab0DUXuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 19:50:07 -0400
+Received: from mail-qy0-f195.google.com ([209.85.221.195]:43018 "EHLO
+	mail-qy0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754731Ab0DUXuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 19:47:14 -0400
-Message-ID: <4BCF8DAE.5020204@oracle.com>
-Date: Wed, 21 Apr 2010 16:43:42 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Andy Isaacson <adi@hexapodia.org>, guenter.roeck@ericsson.com,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH 3/3] x86,pci,acpi: Handle invalid _CRS
-References: <20100409223532.GC11130@hexapodia.org> <201004211059.17264.bjorn.helgaas@hp.com> <4BCF7D38.8070206@zytor.com> <201004211704.05541.bjorn.helgaas@hp.com> <4BCF85CF.1080101@zytor.com>
-In-Reply-To: <4BCF85CF.1080101@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Apr 2010 19:50:03 -0400
+X-Greylist: delayed 406 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Apr 2010 19:50:03 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=references:message-id:from:to:in-reply-to:content-type
+         :content-transfer-encoding:x-mailer:mime-version:subject:date:cc;
+        b=JwXuKh8o/QrisHKcjvA5+g4IbprSWKM5xnyGzAo3iwKek06j66nalxjXa35uogNwfW
+         IEYS+XUgPqxmMlvEat2+neGT1R3VqszoN6/E/0VfhgNKm4thk/Z+cbZrClCqpaP/LWYW
+         CU4UeqPaEjjPvTLBnOq+wFjZrWwdyyp19bosI=
+References: <cover.1269610458.git.luto@mit.edu> <20100419172639.GA15800@us.ibm.com> <n2ycb0375e11004191432g855540c0jab7989d75b32200d@mail.gmail.com> <20100419213952.GA28494@hallyn.com> <1271767039.30027.50.camel@moss-pluto.epoch.ncsc.mil> <v2qcb0375e11004200723w776f806elb1be2c3aa30f1671@mail.gmail.com> <20100420143545.GA19513@us.ibm.com> <q2pcb0375e11004211415ge9371513n6fad211823aba2b3@mail.gmail.com> <20100421223059.GA20626@us.ibm.com>
+Message-Id: <D0083BC1-E07B-4E43-8F3A-85688332397E@gmail.com>
+From: Andy Lutomirski <amluto@gmail.com>
+To: "Serge E. Hallyn" <serue@us.ibm.com>
+In-Reply-To: <20100421223059.GA20626@us.ibm.com>
+Content-Type: text/plain;
+	charset=us-ascii;
+	format=flowed;
+	delsp=yes
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090205.4BCF8E3F.01C3:SCFMA4539811,ss=1,fgs=0
+X-Mailer: iPhone Mail (7D11)
+Mime-Version: 1.0 (iPhone Mail 7D11)
+Subject: Re: [PATCH 0/3] Taming execve, setuid, and LSMs
+Date: Wed, 21 Apr 2010 19:42:36 -0400
+Cc: Andrew Lutomirski <luto@mit.edu>, Stephen Smalley <sds@tycho.nsa.gov>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+       Eric Biederman <ebiederm@xmission.com>,
+       "Andrew G. Morgan" <morgan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2010 04:10 PM, H. Peter Anvin wrote:
-> On 04/21/2010 04:04 PM, Bjorn Helgaas wrote:
->> On Wednesday 21 April 2010 04:33:28 pm H. Peter Anvin wrote:
->>> Do you have opinions on patches 1-2 of the series?
->>>
->>> I'm getting concerned about how the size of the patchset has grown, and
->>> we're past -rc5 already... but it is a regression so we can't just defer
->>> it to .35.
+
+
+On Apr 21, 2010, at 6:30 PM, "Serge E. Hallyn" <serue@us.ibm.com> wrote:
+
+> Quoting Andrew Lutomirski (luto@mit.edu):
+>> So if we give up on changing nosuid, there are a couple of things we
+>> might want to do:
 >>
->> Part 1: the essential part of this seems to be the trim_bios_range()
->> change, and that part is not too big.  In v4, Yinghai also removed
->> probe_roms_32.c.  That sounds like the right thing to do, but I'd
->> rather have that in separate patch so it doesn't obfuscate the other
->> change, and I don't know whether it *has* to be done for .34; maybe
->> it could be deferred.
-> 
-> I would agree with that.
+>> 1. A mode where execve acts like all filesystems are MNT_NOSUID.   
+>> This
+>> sounds like a bad idea (if nothing else, it will cause apps that use
+>> selinux's exec_sid mechanism (runcon?) to silently malfunction).
+>
+> I think at this point we've lost track of exactly what we're trying
+> to do.
+>
+> The goal, at least for myself and (I think) Eric, was to prevent
+> certain changes in environment, initiated by an unprivileged user,
+> from confusing setuid-root programs (initiated by the user).
+>
+> A concrete example was the proposed disablenet feature, with which
+> an unprivileged task can remove its ability to open any new network
+> connections.
+>
+> With that in mind, I think option 1 is actually the best option.
 
-then use -v3 please
-
--v4: also don't trim [0xa0000, 0x100000] for mrst.
-
-> 
->> Part 2: IMHO, we're putting way too much crap in kernel/resource.c.
->> A name like "reserve_region_with_split_check_child()" is a pretty
->> good clue that we've lost our way somewhere.  But that's mostly a
->> cosmetic thing, and the end result does seem to be something that
->> fixes the current regression.
-> 
-> It's not just a good clue we have lost our way, it's also completely
-> impossible for anyone but Yinghai to divine what the intended semantics
-> are supposed to be.  This *greatly* concerns me, especially given
-> previous track record.
-
-I don't know.
-
-insert_resource_expand_to_fit() is added by Linus.
-
-And at least he knew old reserve_region_with_split()
-
-> 
-> Even the checkin comment is almost unparsable, which makes it very
-> likely that someone is going to trip up on some of this in the future.
-> I really would like to get a better description.
-> 
-> The use of a string match in:
-> 
-> +       if (check_child && !conflict->child && strstr(conflict->name,
-> "PCI Bus"))
-> ^^^^^^^^^
-> 
-> ... screams "wrong! ugly! bad!" in my opinion.  I utterly fail to see
-> how that could be acceptable under any circumstances.  I thought that
-> had been flagged earlier in the conversation, but it is apparently still
-> there.
+I think the show-stopper for number 1 is the fact that nosuid has  
+really strange semantics, and I'm a bit scared of making them more  
+widespread. For example, selinux-aware apps can request a type change  
+on exec, and nosuid causes that request to be silently ignored.  This  
+could silently break otherwise-working selinux sandboxes.  Stephen  
+doesn't want to change it...
 
 
-the string checking is to make sure pci device that is hooked into bus0 directly, but pci bar is falling into
-0xa0000 - 0x100000.
-so can not put "reserved" holder under them.
+> I especially hate option 2 because of the resulting temptation to
+> fudge with pE  :)  If you're going to fudge with pE, then IMO it
+> MUST be done in a new securebits mode.
 
-YH
+I'll fight that fight later.  (I wish the original rule had been pE' =  
+pE except when setuid root, but it's way too late for that...)
+
+>
+> Now actually, re-reading my msg, given our original goal, I dare
+> say that Andrew Morgan's approach of simply returning -EPERM for
+> any app which tries to setuid or change privileges on exec just
+> might be the sanest way, at least to start with.
+>
+
+Fair enough.  It'll annoy some selinux users, but maybe the selinux  
+people will figure out how to fix it when enough users complain.
+
+I'll hack up and submit a patch series to add PR_EXEC_DISALLOW_PRIVS  
+and allow CLONE_NEWNET when it's set.  Then I'll argue with Alan Cox  
+for a week or three, I suppose :)
+
+I think I'll arrange it so that PR_EXEC_DISALLOW_PRIVS & uid==0 &&  
+(pP != all) && !SECURE_ROOT will cause execve to always fail.  nonoot  
+&& pP != 0 && !KEEPCAPS will fail as well, since it seems silly to add  
+a special case (if you're nonroot and create an unprivileged  
+container, drop the caps yourself).
+
+--Andy
+
+(My system has a setuid binary that does unshare(CLONE_NEWIPC), drops  
+privs and execs it's argument.  I'll be happy to get rid of it.)
