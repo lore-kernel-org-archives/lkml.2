@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab0DUO36 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 10:29:58 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:44246 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755081Ab0DUO3y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 10:29:54 -0400
-Subject: [GIT PULL] regulator fixes for 2.6.34-rc6
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Apr 2010 15:29:48 +0100
-Message-ID: <1271860188.3234.41.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1755348Ab0DUOad (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 10:30:33 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52815 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755276Ab0DUOa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 10:30:29 -0400
+Date: Wed, 21 Apr 2010 09:30:16 -0500
+From: "Serge E. Hallyn" <serue@us.ibm.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, lkml <linux-kernel@vger.kernel.org>,
+       David Howells <dhowells@redhat.com>,
+       Ashwin Ganti <ashwin.ganti@gmail.com>, Greg KH <greg@kroah.com>,
+       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
+       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
+       "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>, sgrubb@redhat.com
+Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
+Message-ID: <20100421143016.GA31880@us.ibm.com>
+References: <20100421012749.GA21338@us.ibm.com>
+ <20100421012908.GB24251@us.ibm.com>
+ <20100421102739.6ad932fb@lxorguk.ukuu.org.uk>
+ <1271858141.2899.7.camel@dhcp235-240.rdu.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271858141.2899.7.camel@dhcp235-240.rdu.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Quoting Eric Paris (eparis@redhat.com):
+> On Wed, 2010-04-21 at 10:27 +0100, Alan Cox wrote:
+> > > This is a change which must be discussed.  The use of this
+> > > privilege can be completely prevented by having init remove
+> > > CAP_GRANT_ID from its capability bounding set before forking any
+> > > processes.
+> > 
+> > Which is a minor back compat issue - but you could start without it and
+> > allow init to add it.
+> > 
+> > It seems a very complex interface to do a simple thing. A long time ago
+> > there was discussion around extending the AF_UNIX fd passing to permit
+> > 'pass handle and auth' so you could send someone a handle with a "become
+> > me" token attached.
+> 
+> If you do go down this path there is a separate (and actually completely
+> opposite) but related problem I might be able and willing to work with
+> you on.  When looking at how auditing works in this modern day and age
+> of dbus+polkit to get background processes to do work on behalf of a
 
-Please pull the following two regulator fixes for 2.6.34-rc6
+This actually brings up an issue I've been a bit worried about: is
+credentials passing for dbus adequate?  I thought that the last time
+I looked through some code, there was no way in particular for upstart
+to pass posix capabilities info along.  What that means is that as root
+I can do
 
-Thanks
+capsh --drop=(list of all capabilities) --
+   reboot
 
-Liam
+and, although I don't have cap_sys_boot, I can reboot the system.  So
+the only way I can prevent a container from rebooting the host is to
+start it in a fresh network namespace to segrate the abstract unix
+domain sockets.  But if I don't want a fresh network namespace, I'm out
+of luck.
 
----
-
-The following changes since commit 13bd8e4673d527a9e48f41956b11d391e7c2cfe0:
-  Linus Torvalds (1):
-        Merge branch 'for-linus' of git://git.kernel.org/.../anholt/drm-intel
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git for-linus
-
-Axel Lin (1):
-      mc13783-regulator: fix a memory leak in mc13783_regulator_remove
-
-Jean Delvare (1):
-      regulator: Let drivers know when they use the stub API
-
- drivers/regulator/mc13783-regulator.c |    3 +++
- include/linux/regulator/consumer.h    |    8 ++++++--
- 2 files changed, 9 insertions(+), 2 deletions(-)
-
-
+> user we were discussing an interface that would pass the information
+> about the user to the background server process.  The background server
+> process could do some magic such that it still had all the permissions
+> and rights of itself, but had the audit information of the original
+> user.  Thus even though it was a server process with uid=0 that did the
+> work, the audit logs could know it was actually on behalf of uid=500.  
+> 
+> It was discussed passing that token of audit information over an AF_UNIX
+> socket.
+> 
+> -Eric
