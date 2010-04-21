@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab0DUQ7j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 12:59:39 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:60798 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752248Ab0DUQ7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 12:59:38 -0400
-Date: Wed, 21 Apr 2010 17:59:34 +0100
-From: Hedi Berriche <hedi@sgi.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Mike Travis <travis@sgi.com>, Ingo Molnar <mingo@elte.hu>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Jack Steiner <steiner@sgi.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
-	pid_max v2
-Message-ID: <20100421165934.GN16427@zorg.emea.sgi.com>
-References: <4BCE579C.5070100@sgi.com> <4BCE5A73.3000904@sgi.com> <20100421102350.4c222e6b@lxorguk.ukuu.org.uk>
+	id S1753616Ab0DURBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 13:01:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62275 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752067Ab0DURBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 13:01:10 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] KEYS: Fix an RCU warning in the reading of user keys
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: eric.dumazet@gmail.com, dhowells@redhat.com, keyrings@linux-nfs.org,
+       linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
+Date: Wed, 21 Apr 2010 17:36:35 +0100
+Message-ID: <20100421163634.14538.74339.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100421102350.4c222e6b@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 10:20 Alan Cox wrote:
-| > of 32k will not be enough.  A system with 1664 CPU's, there are 25163 processes
-| > started before the login prompt.  It's estimated that with 2048 CPU's we will pass
-| 
-| Is that perhaps the bug not the 32K limit?
+Fix an RCU warning in the reading of user keys:
 
-Doubt it: I just checked on an *idle* 1664 CPUs system and I can see 26844
-tasks, all but few being kernel threads.
+===================================================
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+security/keys/user_defined.c:202 invoked rcu_dereference_check() without protection!
 
-Worst case scenario i.e. 4096 CPUs system (+ typically thousands of disks) will
-most certainly pain to boot, if it ever manages to, when pid_max is set to 32K.
+other info that might help us debug this:
 
-Cheers,
-Hedi.
--- 
-Be careful of reading health books, you might die of a misprint.
-	-- Mark Twain
+
+rcu_scheduler_active = 1, debug_locks = 0
+1 lock held by keyctl/3637:
+ #0:  (&key->sem){+++++.}, at: [<ffffffff811a80ae>] keyctl_read_key+0x9c/0xcf
+
+stack backtrace:
+Pid: 3637, comm: keyctl Not tainted 2.6.34-rc5-cachefs #18
+Call Trace:
+ [<ffffffff81051f6c>] lockdep_rcu_dereference+0xaa/0xb2
+ [<ffffffff811aa55f>] user_read+0x47/0x91
+ [<ffffffff811a80be>] keyctl_read_key+0xac/0xcf
+ [<ffffffff811a8a06>] sys_keyctl+0x75/0xb7
+ [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ security/keys/user_defined.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
+index 7c687d5..e9aa079 100644
+--- a/security/keys/user_defined.c
++++ b/security/keys/user_defined.c
+@@ -199,7 +199,8 @@ long user_read(const struct key *key, char __user *buffer, size_t buflen)
+ 	struct user_key_payload *upayload;
+ 	long ret;
+ 
+-	upayload = rcu_dereference(key->payload.data);
++	upayload = rcu_dereference_protected(
++		key->payload.data, rwsem_is_locked(&((struct key *)key)->sem));
+ 	ret = upayload->datalen;
+ 
+ 	/* we can return the data as is */
+
