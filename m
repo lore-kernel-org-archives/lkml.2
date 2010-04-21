@@ -1,79 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab0DURGZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 13:06:25 -0400
-Received: from mail-iw0-f178.google.com ([209.85.223.178]:42226 "EHLO
-	mail-iw0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753708Ab0DURGX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 13:06:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=r20Ruvag1QtgaxOe2w79iSCRgfKeba+vbn27AznspF8zjA+t+WzoZ8UhN6sFvKxUAT
-         2N0ZedZFlvRgpn3o/a83WfqV7aCJfMKW+uOkNP0YKbfa9k0jnpJEXuG1U4WGLogdXxUF
-         OWwYrLoGIpw8UF6SNPosbtqX9E5LX+Je58Nn4=
+	id S1753870Ab0DURTS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 13:19:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753074Ab0DURTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 13:19:17 -0400
+Message-ID: <4BCF336B.1050706@redhat.com>
+Date: Wed, 21 Apr 2010 13:18:35 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1004210914570.4959@router.home>
-References: <4BC6CB30.7030308@kernel.org>
-	 <z2p28c262361004150321sc65e84b4w6cc99927ea85a52b@mail.gmail.com>
-	 <4BC6FBC8.9090204@kernel.org>
-	 <w2h28c262361004150449qdea5cde9y687c1fce30e665d@mail.gmail.com>
-	 <alpine.DEB.2.00.1004161105120.7710@router.home>
-	 <1271606079.2100.159.camel@barrios-desktop>
-	 <alpine.DEB.2.00.1004191235160.9855@router.home>
-	 <4BCCD8BD.1020307@kernel.org> <20100420150522.GG19264@csn.ul.ie>
-	 <alpine.DEB.2.00.1004210914570.4959@router.home>
-Date: Thu, 22 Apr 2010 02:06:22 +0900
-Message-ID: <i2t28c262361004211006yc1301a84ncf9b3acbff37e212@mail.gmail.com>
-Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Tejun Heo <tj@kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Hedi Berriche <hedi@sgi.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Mike Travis <travis@sgi.com>,
+       Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jack Steiner <steiner@sgi.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
+ pid_max v2
+References: <4BCE579C.5070100@sgi.com> <4BCE5A73.3000904@sgi.com> <20100421102350.4c222e6b@lxorguk.ukuu.org.uk> <20100421165934.GN16427@zorg.emea.sgi.com>
+In-Reply-To: <20100421165934.GN16427@zorg.emea.sgi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 11:15 PM, Christoph Lameter
-<cl@linux-foundation.org> wrote:
-> On Tue, 20 Apr 2010, Mel Gorman wrote:
+On 04/21/2010 12:59 PM, Hedi Berriche wrote:
+> On Wed, Apr 21, 2010 at 10:20 Alan Cox wrote:
+> |>  of 32k will not be enough.  A system with 1664 CPU's, there are 25163 processes
+> |>  started before the login prompt.  It's estimated that with 2048 CPU's we will pass
+> |
+> | Is that perhaps the bug not the 32K limit?
 >
->> alloc_pages_exact_node() avoids a branch in a hot path that is checking for
->> something the caller already knows. That's the reason it exists.
->
-> We can avoid alloc_pages_exact_node() by making all callers of
-> alloc_pages_node() never use -1. -1 is ambiguous and only rarely will a
-> caller pass that to alloc_pages_node().
+> Doubt it: I just checked on an *idle* 1664 CPUs system and I can see 26844
+> tasks, all but few being kernel threads.
 
-That's very reasonable to me.
-Then, we can remove alloc_pages_exact_node and nid < 0 check in
-alloc_pages_node at the same time.
+That is 15 kernel threads per CPU.
 
-Mel. Could you agree?
-
-Firstly Tejun suggested this but I didn't got the point.
-Sorry for bothering you.
-
-Okay. I will dive into this approach.
-Thanks for careful review, All.
-
-
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
+Reducing the number of kernel threads sounds like a
+useful thing to do.
