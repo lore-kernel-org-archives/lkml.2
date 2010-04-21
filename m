@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab0DUTF5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 15:05:57 -0400
-Received: from matrixpower.ru ([195.178.208.66]:40844 "EHLO tservice.net.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753074Ab0DUTFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 15:05:55 -0400
-Date: Wed, 21 Apr 2010 22:38:53 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Jamie Lokier <jamie@shareable.org>
-Cc: Phillip Susi <psusi@cfl.rr.com>, linux-fsdevel@vger.kernel.org,
-       Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: readahead on directories
-Message-ID: <20100421183853.GA14897@ioremap.net>
-References: <4BCC7C05.8000803@cfl.rr.com> <20100421004434.GA27420@shareable.org> <4BCF123C.6010400@cfl.rr.com> <20100421161211.GC27575@shareable.org>
+	id S1754327Ab0DUTMC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 15:12:02 -0400
+Received: from stargate.chelsio.com ([67.207.112.58]:28809 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717Ab0DUTL7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 15:11:59 -0400
+Message-ID: <4BCF4E0E.1080805@chelsio.com>
+Date: Wed, 21 Apr 2010 12:12:14 -0700
+From: Divy Le Ray <divy@chelsio.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100421161211.GC27575@shareable.org>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+CC: netdev@vger.kernel.org,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cxgb3: fix linkup issue
+References: <4BCD0424.8030501@ct.jp.nec.com>
+In-Reply-To: <4BCD0424.8030501@ct.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 21 Apr 2010 19:14:56.0625 (UTC) FILETIME=[EDE05610:01CAE186]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 05:12:11PM +0100, Jamie Lokier (jamie@shareable.org) wrote:
-> A quick skim of fs/{ext3,ext4}/dir.c finds a call to
-> page_cache_sync_readahead.  Doesn't that do any reading ahead? :-)
+Hiroshi Shimamoto wrote:
+> From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+>
+> I encountered an issue that not to link up on cxgb3 fabric.
+> I bisected and found that this regression was introduced by
+> 0f07c4ee8c800923ae7918c231532a9256233eed.
+>
+> Correct to pass phy_addr to cphy_init() at t3_xaui_direct_phy_prep().
+>
+> Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+>   
 
-It goes down to fs callbacks of data reading, which is not appliable to
-directories.
+Sorry for the review delay, I just came back from some time off.
+Acked-by: Divy Le Ray <divy@chelsio.com>
 
-To implement directory 'readahead' we use separated thread to call
-readdir(). It is damn slow indeed, but it can populate cache in advance
-of actual data reading. As a higher level crunch there is a 'find'
-running in background.
+> ---
+>  drivers/net/cxgb3/ael1002.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/net/cxgb3/ael1002.c b/drivers/net/cxgb3/ael1002.c
+> index 5248f9e..35cd367 100644
+> --- a/drivers/net/cxgb3/ael1002.c
+> +++ b/drivers/net/cxgb3/ael1002.c
+> @@ -934,7 +934,7 @@ static struct cphy_ops xaui_direct_ops = {
+>  int t3_xaui_direct_phy_prep(struct cphy *phy, struct adapter *adapter,
+>  			    int phy_addr, const struct mdio_ops *mdio_ops)
+>  {
+> -	cphy_init(phy, adapter, MDIO_PRTAD_NONE, &xaui_direct_ops, mdio_ops,
+> +	cphy_init(phy, adapter, phy_addr, &xaui_direct_ops, mdio_ops,
+>  		  SUPPORTED_10000baseT_Full | SUPPORTED_AUI | SUPPORTED_TP,
+>  		  "10GBASE-CX4");
+>  	return 0;
+>   
 
-> > I don't actually care to have the contents of the
-> > directories returned, so readdir() does more than I need in that
-> > respect, and also it performs a blocking read of one disk block at a
-> > time, which is horribly slow with a cold cache.
-> 
-> I/O is the probably the biggest cost, so it's more important to get
-> the I/O pattern you want than worrying about return values you'll discard.
-> 
-> If readdir() calls are slowed by lots of calls and libc, consider
-> using the getdirentries system call directly.
-
-it is not about readdir(). Plain read() is synchronous too. But
-filesystem can respond to readahead calls and read next block to current
-one, while it won't do this for next direntry.
-
--- 
-	Evgeniy Polyakov
