@@ -1,136 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623Ab0DUJwG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 05:52:06 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:57505 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab0DUJwE (ORCPT
+	id S1753884Ab0DUJwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 05:52:33 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:56996 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab0DUJwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 05:52:04 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 21 Apr 2010 18:48:06 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-       "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: error at compaction  (Re: mmotm 2010-04-15-14-42 uploaded
-Message-Id: <20100421184806.2c3ecc87.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100421172838.0377e0cc.kamezawa.hiroyu@jp.fujitsu.com>
-References: <201004152210.o3FMA7KV001909@imap1.linux-foundation.org>
-	<20100419190133.50a13021.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100419181442.GA19264@csn.ul.ie>
-	<20100419193919.GB19264@csn.ul.ie>
-	<20100421172838.0377e0cc.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Apr 2010 05:52:31 -0400
+Date: Wed, 21 Apr 2010 10:52:21 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: jblunck@suse.de, vaurora@redhat.com, dwmw2@infradead.org,
+       viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, tytso@mit.edu,
+       linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
+Message-ID: <20100421095221.GD13114@shareable.org>
+References: <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de> <20100419142315.GA2688@shell> <E1O3sLi-0008EA-QW@pomaz-ex.szeredi.hu> <20100420213450.GM11723@shareable.org> <20100421084211.GB22741@bolzano.suse.de> <20100421092235.GB13114@shareable.org> <E1O4WKa-0003Pp-0y@pomaz-ex.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1O4WKa-0003Pp-0y@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Apr 2010 17:28:38 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> On Mon, 19 Apr 2010 20:39:19 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > On Mon, Apr 19, 2010 at 07:14:42PM +0100, Mel Gorman wrote: 
-> > ==== CUT HERE ====
-> > mm,compaction: Map free pages in the address space after they get split for compaction
+Miklos Szeredi wrote:
+> On Wed, 21 Apr 2010, Jamie Lokier wrote:
+> > Hmm.  I smell potential confusion for some otherwise POSIX-friendly
+> > userspaces.
 > > 
-> > split_free_page() is a helper function which takes a free page from the
-> > buddy lists and splits it into order-0 pages. It is used by memory
-> > compaction to build a list of destination pages. If
-> > CONFIG_DEBUG_PAGEALLOC is set, a kernel paging request bug is triggered
-> > because split_free_page() did not call the arch-allocation hooks or map
-> > the page into the kernel address space.
+> > When I open /path/to/foo, call fstat (st_dev=2, st_ino=5678), and then
+> > keep the file open, then later do a readdir which includes foo
+> > (dir.st_dev=1, d_ino=1234), I'm going to immediately assume a rename
+> > or unlink happened, close the file, abort streaming from it, refresh
+> > the GUI windows, refresh application caches for that name entry, etc.
 > > 
-> > This patch does not update split_free_page() as it is called with
-> > interrupts held. Instead it documents that callers of split_free_page()
-> > are responsible for calling the arch hooks and to map the page and fixes
-> > compaction.
+> > Because in the POSIX world I think open files have stable inode
+> > numbers (as long as they are open), and I don't think that an open
+> > file can have it's name's d_ino not match the inode number unless it's
+> > a mount point, which my program would know about.
 > > 
-> > This is a fix to the patch mm-compaction-memory-compaction-core.patch.
+> > This plays into inotify, where you have to know if you are monitoring
+> > every directory that contains a link to a file, to know if you need to
+> > monitor the file itself directly instead.
 > > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > Now I think it's fair enough that a union mount doesn't play all the
+> > traditional rules :-)  C'est la vie.
+> > 
+> > This mismatch of (dir.st_dev,d_ino) and st_ino strongly resembles a
+> > file-bind-mount.  Like bind mounts, it's quite annoying for programs
+> > that like to assume they've seen all of a file's links when they've
+> > seen i_nlink of them.
+> > 
+> > Bind mounts can be detected by looking in /proc/mounts.  st_dev
+> > changing doesn't work because it can be a binding of the same
+> > filesystem.
+> > 
+> > How would I go about detecting when a union mount's directory entry
+> > has similar behaviour, without calling stat() on each entry?  Is it
+> > just a matter of recognising a particular filesystem name in
+> > /proc/mounts, or something more?
 > 
-> Sorry, I think I hit another? error again. (sorry, no log.)
-> What I did was...
->    Running 2 shells.
->    while true; do make -j 16;make cleanl;done
->    and
->    while true; do echo 0 > /proc/sys/vm/compact_memory;done
-> 
-> 
-> Using the same config.
-> 
-> Apr 21 17:27:47 localhost kernel: ------------[ cut here ]------------
-> Apr 21 17:27:47 localhost kernel: kernel BUG at include/linux/swapops.h:105!
-> Apr 21 17:27:47 localhost kernel: invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
-> Apr 21 17:27:47 localhost kernel: last sysfs file: /sys/devices/virtual/net/br0/statistics/collisions
-> Apr 21 17:27:47 localhost kernel: CPU 3
-> Apr 21 17:27:47 localhost kernel: Modules linked in: fuse sit tunnel4 ipt_MASQUERADE iptable_nat nf_nat bridge stp llc sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf xt_physdev ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables ipv6 dm_multipath uinput ioatdma ppdev parport_pc i5000_edac bnx2 iTCO_wdt edac_core iTCO_vendor_support shpchp parport e1000e kvm_intel dca kvm i2c_i801 i2c_core i5k_amb pcspkr megaraid_sas [last unloaded: microcode]
-> Apr 21 17:27:47 localhost kernel:
-> Apr 21 17:27:47 localhost kernel: Pid: 27892, comm: cc1 Tainted: G        W   2.6.34-rc4-mm1+ #4 D2519/PRIMERGY          
-> Apr 21 17:27:47 localhost kernel: RIP: 0010:[<ffffffff8114e9cf>]  [<ffffffff8114e9cf>] migration_entry_wait+0x16f/0x180
-> Apr 21 17:27:47 localhost kernel: RSP: 0000:ffff88008d9efe08  EFLAGS: 00010246
-> Apr 21 17:27:47 localhost kernel: RAX: ffffea0000000000 RBX: ffffea0000241100 RCX: 0000000000000001
-> Apr 21 17:27:47 localhost kernel: RDX: 000000000000a4e0 RSI: ffff880621a4ab00 RDI: 000000000149c03e
-> Apr 21 17:27:47 localhost kernel: RBP: ffff88008d9efe38 R08: 0000000000000000 R09: 0000000000000000
-> Apr 21 17:27:47 localhost kernel: R10: 0000000000000000 R11: 0000000000000001 R12: ffff880621a4aae8
-> Apr 21 17:27:47 localhost kernel: R13: 00000000bf811000 R14: 000000000149c03e R15: 0000000000000000
-> Apr 21 17:27:47 localhost kernel: FS:  00007fe6abc90700(0000) GS:ffff880005a00000(0000) knlGS:0000000000000000
-> Apr 21 17:27:47 localhost kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> Apr 21 17:27:47 localhost kernel: CR2: 00007fe6a37279a0 CR3: 000000008d942000 CR4: 00000000000006e0
-> Apr 21 17:27:47 localhost kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> Apr 21 17:27:47 localhost kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Apr 21 17:27:47 localhost kernel: Process cc1 (pid: 27892, threadinfo ffff88008d9ee000, task ffff8800b23ec820)
-> Apr 21 17:27:47 localhost kernel: Stack:
-> Apr 21 17:27:47 localhost kernel: ffffea000101aee8 ffff880621a4aae8 ffff88008d9efe38 00007fe6a37279a0
-> Apr 21 17:27:47 localhost kernel: <0> ffff8805d9706d90 ffff880621a4aa00 ffff88008d9efef8 ffffffff81126d05
-> Apr 21 17:27:47 localhost kernel: <0> ffff88008d9efec8 0000000000000246 0000000000000000 ffffffff81586533
-> Apr 21 17:27:47 localhost kernel: Call Trace:
-> Apr 21 17:27:47 localhost kernel: [<ffffffff81126d05>] handle_mm_fault+0x995/0x9b0
-> Apr 21 17:27:47 localhost kernel: [<ffffffff81586533>] ? do_page_fault+0x103/0x330
-> Apr 21 17:27:47 localhost kernel: [<ffffffff8104bf40>] ? finish_task_switch+0x0/0xf0
-> Apr 21 17:27:47 localhost kernel: [<ffffffff8158659e>] do_page_fault+0x16e/0x330
-> Apr 21 17:27:47 localhost kernel: [<ffffffff81582f35>] page_fault+0x25/0x30
-> Apr 21 17:27:47 localhost kernel: Code: 53 08 85 c9 0f 84 32 ff ff ff 8d 41 01 89 4d d8 89 45 d4 8b 75 d4 8b 45 d8 f0 0f b1 32 89 45 dc 8b 45 dc 39 c8 74 aa 89 c1 eb d7 <0f> 0b eb fe 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5
-> Apr 21 17:27:47 localhost kernel: RIP  [<ffffffff8114e9cf>] migration_entry_wait+0x16f/0x180
-> Apr 21 17:27:47 localhost kernel: RSP <ffff88008d9efe08>
-> Apr 21 17:27:47 localhost kernel: ---[ end trace 4860ab585c1fcddb ]---
-> 
+> Detecting mount points is best done by comparing st_dev for the parent
+> directory with st_dev of the child.  This is much simpler than parsing
+> /proc/mounts and will work for bind mounts as well as union mounts.
 
-It seems that this is a new error.
+Sorry, no: That does not work for bind mounts.  Both layers can have
+the same st_dev.  Nor does O_NOFOLLOW stop traversal in the middle of
+a path, there is no handy O_NOCROSSMOUNTS, and no st_mode flag or
+d_type to say it's a bind mount.  Bind mounts are really a big pain
+for i_nlink+inotify name counting.
 
+Besides, calling stat() on every entry in a large directory to check
+st_ino can be orders of magnitude slower than readdir() on a large
+directory - especially with a cold cache.  It is quicker, but much
+more complicated, to parse /proc/mounts and apply arcane rules to find
+the exceptions.
 
-static inline struct page *migration_entry_to_page(swp_entry_t entry)
-{
-        struct page *p = pfn_to_page(swp_offset(entry));
-        /*
-         * Any use of migration entries may only occur while the
-         * corresponding page is locked
-         */
-        BUG_ON(!PageLocked(p));
-        return p;
-}
+Can a union mount overlap two parts of the same filesystem?
 
+> I think there's no question that union mounts might break apps (POSIX
+> or not).  But I think there's hope that they are few and can easily be
+> fixed.
 
-Hits this BUG_ON()....then, the page migration_entry points to is unlocked.
+I agree, and union moint is a very useful feature that's worth
+breaking a few apps for :-)
 
-But we always do
+I'm curious if there's a clear way to go about it in this case, or
+if it'll involve a certain amount of pattern recognition in /proc/mounts.
 
-	lock_page(old_page);
-	unamp(old_page);
-	remap(new_page);
-	unlock_page(old_page);
+Basically I'm wondering if it's been thought about already.
 
-So....some pte wasn't updated at remap ?
-
-Hmm.
--Kame
-
+-- Jamie
