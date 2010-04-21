@@ -1,121 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab0DUGkG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 02:40:06 -0400
-Received: from mail-yw0-f194.google.com ([209.85.211.194]:39336 "EHLO
-	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607Ab0DUGkC (ORCPT
+	id S1752096Ab0DUG7y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 02:59:54 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:60243 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058Ab0DUG7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 02:40:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=EvM1jM8AZ4naDJbg8pkSvreNCpgPFoNjNbvWaeGJzb7N3CYHP7aI+QryGD7vgCXR+C
-         ScASNYdIRp0b6KfCc+UJwQ7AEWRLG416Ts0X9TtYebO8sizk+Se64FdkyhrIxK1c4l++
-         Dxh4ENJjaGKIzEVRzZF3Fk47CW5vgDFTG9Nk0=
-Date: Tue, 20 Apr 2010 23:39:54 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH 2/2] input: Add LED support to Synaptics device
-Message-ID: <20100421063954.GK4364@core.coreip.homeip.net>
-References: <1271257823-23566-1-git-send-email-tiwai@suse.de>
- <1271257823-23566-3-git-send-email-tiwai@suse.de>
- <20100415191217.GA1495@ucw.cz>
- <s5hy6gnu8rv.wl%tiwai@suse.de>
- <s5hiq7npvrb.wl%tiwai@suse.de>
- <20100421054303.GC4364@core.coreip.homeip.net>
- <s5hbpddz58s.wl%tiwai@suse.de>
+	Wed, 21 Apr 2010 02:59:52 -0400
+Date: Wed, 21 Apr 2010 12:29:48 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>
+Subject: Re: [PATCH v2 7/11] Uprobes Implementation
+Message-ID: <20100421065948.GA5440@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6>
+ <20100331155228.4181.61294.sendpatchset@localhost6.localdomain6>
+ <20100413183537.GA17538@redhat.com>
+ <20100415093506.GA2064@linux.vnet.ibm.com>
+ <20100419193139.GA24080@redhat.com>
+ <20100420124358.GA20675@linux.vnet.ibm.com>
+ <20100420153023.GA9351@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <s5hbpddz58s.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100420153023.GA9351@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 08:31:15AM +0200, Takashi Iwai wrote:
-> At Tue, 20 Apr 2010 22:43:03 -0700,
-> Dmitry Torokhov wrote:
-> > 
-> > On Mon, Apr 19, 2010 at 12:44:08PM +0200, Takashi Iwai wrote:
-> > > At Fri, 16 Apr 2010 10:00:20 +0200,
-> > > I wrote:
-> > > > 
-> > > > At Thu, 15 Apr 2010 21:12:18 +0200,
-> > > > Pavel Machek wrote:
-> > > > > 
-> > > > > Hi!
-> > > > > 
-> > > > > > The new Synaptics devices have an LED on the top-left corner.
-> > > > > > This is controlled via the command 0x0a with parameters 0x88 or 0x10.
-> > > > > > 
-> > > > > > The detection of the LED isn't clear yet.  It should have been the new
-> > > > > > capability bits that indicate the presence, but on real machines, it
-> > > > > > doesn't fit.  So, for the time being, the driver checks the product id
-> > > > > > in the ext capability bits and assumes that LED exists on the known
-> > > > > > devices.
-> > > > > > 
-> > > > > > The support of LED is controlled via a normal input event with EV_LED
-> > > > > > bit mask.  It supports LED_MUTE bit.  X driver can detect the LED
-> > > > > > support by checking these bits.
-> > > > > 
-> > > > > Could we use generic LED API for this?
-> > > > 
-> > > > Yeah, actually I started implementing with LED ADI at first.
-> > > > 
-> > > > But, then it turned out to be that it's much easier to use the
-> > > > existing LED input bits since this LED is really tightly coupled with
-> > > > the synaptics input device.  An individual LED device makes hard to
-> > > > find out the corresponding input device.
-> > > > 
-> > > > If we assume there is only one synaptics and only one synaptics-LED
-> > > > device, then yes, the situation can be a bit easier, though.
-> > > > 
-> > > > > It is not really 'mute' led after all...
-> > > > 
-> > > > If the problem is the misuse of LED_MUTE bit, how about adding a new
-> > > > LED bit, e.g. LED_TOUCHPAD?
-> > > 
-> > > The revised patch with an addition of LED_TOUCHPAD is below.
-> > > 
-> > 
-> > Sorry Takashi, but I will not add any new LED types to input. Even
-> > current input LEDs are going to be accessible thought standard LED
-> > framework (even though I have not apploed Samuel's patch yet I do think
-> > it would move kernel in the right direction).
-> 
-> Hrm, OK, we can live in other way, too.  For touchpad, it wouldn't be
-> a big problem because it's likely a single device.
-> 
-> But, how can we link a led class device and another device, in
-> general?
+* Oleg Nesterov <oleg@redhat.com> [2010-04-20 17:30:23]:
 
-I think this question is to Richard, I am a bit fuzzy on LED subsystem.
-But in general I'd expect LED have touchpad input device as parent.
+> On 04/20, Srikar Dronamraju wrote:
+> >
+> > > > > > +static void cleanup_uprocess(struct uprobe_process *uproc,
+> > > > > > +					struct task_struct *start)
+> > > > > > +		tsk = next_thread(tsk);
+> > > > >
+> > > I meant, it is not safe to use next_thread(tsk) if tsk was already
+> > > removed from list by __unhash_process before we take rcu_read_lock().
+> >
+> > Okay, cleanup_process() gets called only and only if add_utask() fails
+> > to allocated utask struct.
+> 
+> Yes, but afaics we have the same issues in find_next_thread() called
+> by create_uprocess().
+
+Okay.
 
 > 
-> Also, another remaining question is the lifetime of led device.
-> The mouse device tends to be re-assigned often, e.g. at each time you
-> suspend/hibernate.
+> > Based on your inputs I will synchronize
+> > exit_signals() and uprobe_free_utask(). However it still can happen that
+> > uprobe calls cleanup_uprocess() with reference to task struct which has just
+> > called __unhash_process(). Is there a way out of this?
+> 
+> In this particular case, probably we can rely on uprobe_mutex. Currently
+> cleanup_uprocess() is called with start == cur_t. Instead, we should use
+> the last task on which add_utask() succeeded, it can't exit (assuming we
+> fix other discussed races with exit) because uprobe_free_utask() takes
+> this mutex too.
+> 
+> However, perhaps it is better to rework this all. Say, can't we move
+> uprobe_free_utask() into __put_task_struct() ? Afaics, this can greatly
+> simplify things. If we add mm_struct->uproc, then utask doesn't need
+> the pointer to uprobe_process.
 
-We go to a great lengths to properly resume the device keeping the same
-input_dev structure and the same event node (for historical reasons
-really, nowadays X is hotplug aware so we could do without), do you see
-it being recreated often?
+Okay. I will use mm_struct->uproc, dynamic allocation of utask on probe
+hit and freeing of utask on __put_task_struct.
 
->  Should led device also be removed and revived at
-> each time, or should we keep it and just ignore event?  If we remove
-> it, how can we avoid race?
+> 
+> > > > > > +static struct pid *get_tg_leader(pid_t p)
+> > > > > > +{
+> > > > > > +	struct pid *pid = NULL;
+> > > > > > +
+> > > > > > +	rcu_read_lock();
+> > > > > > +	if (current->nsproxy)
+> > > > > > +		pid = find_vpid(p);
+> > > > >
+> > > > > Is it really possible to call register/unregister with nsproxy == NULL?
+> > >
+> > > You didn't answer ;)
+> >
+> > Can you please let me know when nsproxy is set to NULL?
+> 
+> exit_notify()->exit_task_namespaces()
+> 
+> > If we are sure
+> > that register/unregister will be called with nsproxy set, then I am
+> > happy to remove this check.
+> 
+> I think the exiting task shouldn't call register/unregister.
 
-I am not sure what race you see - psmouse protocol switch should not
-race so if you remove LED there you shoudl be race-free. If you see
-something racing I am definitely interested in hearing about it.
+Okay I will remove the check for current->nsproxy being non-NULL.
 
-Thanks!
+> 
+> > > 	- uprobe_process->tg_leader is not really used ?
+> >
+> > Currently we have a reference to pid struct from the time we created a
+> > uprobe_process to the time we free the uprobe process.
+> 
+> Yes, but
+> 
+> > So are you
+> > suggesting that we dont have a reference to the pid structure or is that
+> > we dont need to cache the pid struct and access it thro
+> > task_pid(current) in free_uprobes()?
+> 
+> I must have missed something. But I do not see where do we use
+> uprobe_process->tg_leader. We never read it, apart from
+> BUG_ON(uproc->tg_leader != tg_leader). No?
 
--- 
-Dmitry
+static int free_uprocess(struct uprobe_process *uproc)
+{
+	....
+	put_pid(uproc->tg_leader);
+        uproc->tg_leader = NULL;
+	
+}
+
+> 
+> > > 	- I don't understand why do we need uprobe_{en,dis}able_interrupts
+> > > 	  helpers. pre_ssout() could just do local_irq_enable(). This path
+> > > 	  leads to get_signal_to_deliver() which enables irqs anyway, it is
+> > > 	  always safe to do this earlier and I don't think we need to disable
+> > > 	  irqs again later. In any case, I don't understand why these helpers
+> > > 	  use native_irq_xxx().
+> >
+> > On i686, (unlike x86_64), do_notify_resume() gets called with irqs
+> > disabled.  I had tried local_irq_enable couple of times but that didnt
+> > help probably because CONFIG_PARAVIRT is set in my .config and hence
+> > raw_local_irq_enable resolves to
+> >
+> > static inline void raw_local_irq_enable(void)
+> > {
+> > 	PVOP_VCALLEE0(pv_irq_ops.irq_enable);
+> > }
+> >
+> > What we need is the "sti" instruction.  It looks like local_irq_enable
+> > actually doesnt do "sti".  So I had to go back to using
+> > native_irq_enable().
+> 
+> Hmm. No, I can't explain this, I know nothing about paravirt. But this
+> doesn't look right to me. Probably this should be discussed with paravirt
+> developers...
+
+Okay.
+
+> 
+> > > 	- pre_ssout() does .xol_vaddr = xol_get_insn_slot(). This looks a
+> > > 	  bit confusing, xol_get_insn_slot() should set .xol_vaddr correctly
+> > > 	  under lock.
+> >
+> > Can you please elaborate.
+> 
+> pre_ssout() does
+> 
+> 	if (!user_bkpt.xol_vaddr)
+> 		user_bkpt.xol_vaddr = xol_get_insn_slot();
+> 
+> but it could just do
+> 
+> 	if (!user_bkpt.xol_vaddr)
+> 		xol_get_insn_slot();
+> 
+> because xol_get_insn_slot() populates user_bkpt.xol_vaddr.
+
+Agreed 
+
+> 
+> Btw. Why do we have the !CONFIG_USER_BKPT_XOL code in
+> include/linux/user_bkpt_xol.h? CONFIG_UPROBES depends on CONFIG_USER_BKPT_XOL.
+
+Okay we can remove the !CONFIG_USER_BKPT_XOL code in user_bkpt_xol.h
+
+> 
+> Also the declarations don't look nice... Probably I missed something,
+> but why the code uses "void *" instead of "user_bkpt_xol_area *" for
+> xol_area everywhere?
+> 
+> OK, even if "void *" makes sense for uproc->uprobe_process, why
+> xol_alloc_area/xol_get_insn_slot/etc do not use "user_bkpt_xol_area *" ?
+> 
+
+user_bkpt_xol_area isn't exposed. This provides flexibility in changing
+the algorithm for more efficient slot allocation. Currently we allocate
+slots from just one page. Later on we could end-up having to allocate
+from more than contiguous pages. There was some discussion about
+allocating slots from TLS.  So there is more than one reason that
+user_bkpt_xol can change. We could expose the struct and not access the
+fields directly but that would be hard to enforce.
+
+> > > 	- I don't really understand why ->handler_in_interrupt is really
+> > > 	  useful, but never mind.
+> >
+> > There is a small overhead when running the handlers in task context.
+> 
+> Sure, but
+> 
+> > overhead of task over interrupt =  (1.016851 - .907400) = .109451 usec
+> > % additional overhead = (.109451/.907400) * 100 = 12.062%
+> 
+> this overhead looks very minor. To me, it is better to simplify the
+> code, at least in the first version.
+> 
+> That said, this is up to you, I am not asking you to remove this
+> optimization. Just imho.
+
+
+Okay. 
+
+> 
+> > > 	- However, handler_in_interrupt && !uses_xol_strategy() doesn't
+> > > 	  look right. uprobe_bkpt_notifier() is called with irqs disabled,
+> > > 	  right? but set_orig_insn() is might_sleep().
+> > >
+> >
+> > 	Yes, Uprobes currently supports only xol strategy. I.e I have
+> > dropped single stepping inline strategy for uprobes. Hence when
+> > user_bkpt_pre_sstep gets called from uprobe_bkpt_notifier; we are sure
+> > that it doesnt call set_orig_insn().
+> 
+> OK, thanks. Perhaps a small comment to explain this makes sense...
+
+Okay. 
+
+> 
+> > > Suppose that register_uprobe() succeeds and does set_bkpt(). What if another
+> > > process (not sub-thread) with the same ->mm hits this bp? uprobe_bkpt_notifier()
+> > > will see ->utask == NULL and return 0. Then do_int3() sends SIGTRAP and kills
+> > > this task. OK, probably CLONE_VM alone is exotic, but CLONE_VFORK | VM is not.
+> > > ...
+> > > I think uprobe_process should be per ->mm, not per-process.
+> >
+> > True, One possibility could be to move the uprobe_process structure to
+> > mm_struct. But now sure if VM folks would be okay with that idea.
+> 
+> Yes, I was thinking about mm->struct->uproc too.
+> 
+
+Okay, I will try with mm_struct->uproc. 
+
+> And, assuming we have this pointer in mm_struct:
+> 
+> > > I wonder if there any possibility to avoid task_struct->utask, or at least,
+> > > if we can allocate it in uprobe_bkpt_notifier() on demand. Not sure.
+> >
+> > Except for the pointer to uprobe_process, all other fields in utask are
+> > per task. This per task information is mostly used at probe hit. Hence
+> > having it in task_struct makes it easily accessible.  Do you have other
+> > ideas from where we could refer utask.
+> 
+> Well, we could add the list of uprobe_task's into uprobe_process, it
+> represents the tasks "inside" the probe hit. But yes, this is not easy,
+> lets forget this, at least for now.
+> 
+> > I did think about allocating a utask on the first hit of a breakpoint. However
+> > there are couple of issues.
+> >
+> > 1. Uprobes needs access to uprobe_process to search the breakpoints
+> > installed for that process. Currently we hang it out of utask.
+> > 	However if uprobe_process is made a part of mm_struct, this would no
+> > more be an issue.
+> 
+> Yes,
+> 
+> > 2. Currently when a breakpoint is hit, uprobes increments the refcount
+> > for the corresponding probepoint, and sets active_ppt in the utask for
+> > the current thread. This happens in interrupt context. Allocating utask
+> > on first breakpoint hit for that thread; has to be handled in task
+> > context.
+> 
+> we could use GFP_ATOMIC, but I agree, this is not nice.
+> 
+> > If the utask has to be allocated, then uprobes has to search
+> > for the probepoint again in task context.
+> > 	I dont think it would be an issue to search for the probepoint a
+> > second time in the task context.
+> 
+> Agreed. Although we need the new TIF_ bit for tracehook_notify_resume(),
+> it can't trust "if (current->utask...)" checks.
+
+But do we need a new TIF bit? Can we just reuse the TIF_NOTIFY_RESUME
+flag that we use now?
+
+> 
+> 
+> Alternatively, without the "on demand" allocations, register_uprobe()
+> has to find all threads which use the same ->mm and initialize ->utask.
+> This is not easy.
+
+Okay I will try the on demand allocations in the next iteration.
+
+Thanks again for your detailed explainations and suggestions.
+
+--
+Thanks and Regards
+Srikar
+
