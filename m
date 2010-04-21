@@ -1,41 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab0DUO5K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 10:57:10 -0400
-Received: from exhub016-2.exch016.msoutlookonline.net ([207.5.72.164]:11540
-	"EHLO EXHUB016-2.exch016.msoutlookonline.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755339Ab0DUO5I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 10:57:08 -0400
-Message-ID: <4BCF123C.6010400@cfl.rr.com>
-Date: Wed, 21 Apr 2010 10:57:00 -0400
-From: Phillip Susi <psusi@cfl.rr.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1755458Ab0DUPA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 11:00:59 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:37333 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754018Ab0DUPA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 11:00:58 -0400
+Date: Wed, 21 Apr 2010 16:00:38 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
+	PageSwapCache pages
+Message-ID: <20100421150037.GJ30306@csn.ul.ie>
+References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie> <1271797276-31358-5-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1004210927550.4959@router.home>
 MIME-Version: 1.0
-To: Jamie Lokier <jamie@shareable.org>
-CC: linux-fsdevel@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: readahead on directories
-References: <4BCC7C05.8000803@cfl.rr.com> <20100421004434.GA27420@shareable.org>
-In-Reply-To: <20100421004434.GA27420@shareable.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1004210927550.4959@router.home>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/20/2010 8:44 PM, Jamie Lokier wrote:
-> readahead() doesn't make much sense on a directory - the offset and
-> size aren't meaningful.
+On Wed, Apr 21, 2010 at 09:30:20AM -0500, Christoph Lameter wrote:
+> On Tue, 20 Apr 2010, Mel Gorman wrote:
 > 
-> But does plain opendir/readdir/closedir solve the problem?
+> > @@ -520,10 +521,12 @@ static int move_to_new_page(struct page *newpage, struct page *page)
+> >  	else
+> >  		rc = fallback_migrate_page(mapping, newpage, page);
+> >
+> > -	if (!rc)
+> > -		remove_migration_ptes(page, newpage);
+> > -	else
+> > +	if (rc) {
+> >  		newpage->mapping = NULL;
+> > +	} else {
+> > +		if (remap_swapcache)
+> > +			remove_migration_ptes(page, newpage);
+> > +	}
+> 
+> You are going to keep the migration ptes after the page has been unlocked?
 
-No, since those are synchronous.  I want to have readahead() queue up
-reading the entire directory in the background to avoid blocking, and
-get the queue filled with a bunch of requests that can be merged into
-larger segments before being dispatched to the hardware.
+Yes, because it's not known if the anon_vma for the unmapped swapcache page
+still exists or not.  Now, a bug has been reported where a migration PTE is
+found where the page is not locked. I'm trying to determine if it's the same
+page or not but the problem takes ages to reproduce.
 
-I don't actually care to have the contents of the directories returned,
-so readdir() does more than I need in that respect, and also it performs
-a blocking read of one disk block at a time, which is horribly slow with
-a cold cache.
+> Or is remap_swapcache true if its not a swapcache page?
+> 
+> Maybe you meant
+> 
+> if (!remap_swapcache)
+> 
+> ?
+> 
+
+No, remap_swapcache could just be called "remap". If it's 0, it's
+considered unsafe to remap the page.
+
+> >  	unlock_page(newpage);
+> >
+> 
+> >
+> >  skip_unmap:
+> >  	if (!page_mapped(page))
+> > -		rc = move_to_new_page(newpage, page);
+> > +		rc = move_to_new_page(newpage, page, remap_swapcache);
+> >
+> > -	if (rc)
+> > +	if (rc && remap_swapcache)
+> >  		remove_migration_ptes(page, page);
+> >  rcu_unlock:
+> >
+> 
+> Looks like you meant !remap_swapcache
+> 
+
+If remap_swapcache is 1, the anon_vma is valid (or irrelevant because
+it's a file) and it's safe to remap the page by removing the migration
+PTEs.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
