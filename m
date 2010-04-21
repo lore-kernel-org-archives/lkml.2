@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab0DUEuz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 00:50:55 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53783 "EHLO ogre.sisk.pl"
+	id S1751722Ab0DUE4Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 00:56:24 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53791 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751646Ab0DUEux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 00:50:53 -0400
+	id S1750780Ab0DUE4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 00:56:22 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: [REGRESSION 2.6.34] Suspend fails in pm_test=processor on Dell laptop
-Date: Wed, 21 Apr 2010 06:51:19 +0200
+To: michael@ellerman.id.au
+Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
+Date: Wed, 21 Apr 2010 06:57:18 +0200
 User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-       pm list <linux-pm@lists.linux-foundation.org>
-References: <4bcb1cf2.116bdc0a.2008.6f5a@mx.google.com> <201004200533.13219.rjw@sisk.pl>
-In-Reply-To: <201004200533.13219.rjw@sisk.pl>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>,
+       Christian Kujau <lists@nerdbynature.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linuxppc-dev@ozlabs.org, schwab@linux-m68k.org,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <20100421155547.GA4222@x200> <1271809299.13262.6.camel@concordia>
+In-Reply-To: <1271809299.13262.6.camel@concordia>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004210651.20056.rjw@sisk.pl>
+Message-Id: <201004210657.18864.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 April 2010, Rafael J. Wysocki wrote:
-> On Sunday 18 April 2010, Ben Gamari wrote:
-> > Hey all,
+On Wednesday 21 April 2010, Michael Ellerman wrote:
+> On Wed, 2010-04-21 at 18:55 +0300, Alexey Dobriyan wrote:
+> > On Tue, Apr 20, 2010 at 10:18:18PM +1000, Michael Ellerman wrote:
+> > > On Mon, 2010-04-19 at 23:45 -0700, Christian Kujau wrote:
+> > > --- a/fs/proc/proc_devtree.c
+> > > +++ b/fs/proc/proc_devtree.c
+> > > @@ -175,6 +175,24 @@ retry:
+> > >         return fixed_name;
+> > >  }
+> > >  
+> > > +static const char *unslash_name(const char *name)
+> > > +{
+> > > +       char *p, *fixed_name;
+> > > +
+> > > +       fixed_name = kstrdup(name);
+> > > +       if (!fixed_name) {
+> > > +               printk(KERN_ERR "device-tree: Out of memory trying to unslash "
+> > > +                               "name \"%s\"\n", name);
+> > > +               return name;
+> > > +       }
+> > > +
+> > > +       p = fixed_name;
+> > > +       while ((p = strstr(p, "/")))
+> > > +               *p++ = '_';
 > > 
-> > It seems that something in the 2.6.34 merge cycle has broken suspend to RAM on
-> > my Dell Latitude D830. While suspend has been rock solid for several release
-> > cycles, as of 2.6.34-rc4 it locks up on suspend. All of the pm_test options up
-> > to processor work fine, precluding a driver issue.
+> > This is wasteful. :-)
 > 
-> Hmm, does the "processors" work?
-
-Sorry, the subject says it doesn't.
-
-> > Unfortunately, I've been unable to get any useful output from the serial
-> > console during suspend. I'll try bisecting and report back when I have more
-> > details. Let me know what else I can do to help.
+> Whatever, patches welcome :)
 > 
-> I can't reproduce this, so it looks hardware or BIOS-related.  Or it's an
-> obscure x86 bug.
+> > Also, I hope we won't spit message every time allocation fail.
+> 
+> We do. Your system is mostly hosed anyway, but feel free to rate limit
+> it or something.
 
-Does switching CPU1 on/off by echoing 0/1 to
+OK
 
-/sys/devices/system/cpu/cpu1/online
-
-work?
+Is anyone going to post a clean patch for that with a sign-off?
 
 Rafael
