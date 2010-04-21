@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab0DUMDJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 08:03:09 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39387 "EHLO
+	id S1753475Ab0DUMKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 08:10:34 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57581 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab0DUMDD (ORCPT
+	with ESMTP id S1752940Ab0DUMKd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 08:03:03 -0400
-Subject: Re: [PATCH v3] lockdep: Make MAX_STACK_TRACE_ENTRIES configurable.
+	Wed, 21 Apr 2010 08:10:33 -0400
+Subject: Re: [PATCH 00/12] perf: introduce model specific events and AMD IBS
 From: Peter Zijlstra <peterz@infradead.org>
-To: Gregory Haskins <ghaskins@novell.com>
-Cc: John Kacur <jkacur@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
-       Clark Williams <williams@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-rt-users@vger.kernel.org
-In-Reply-To: <4BCEAD7B0200005A0006513E@soto.provo.novell.com>
-References: <alpine.LFD.2.00.1004161329030.11320@localhost.localdomain>
-	 <alpine.LFD.2.00.1004161727000.11320@localhost.localdomain>
-	 <alpine.LFD.2.00.1004191841230.6259@localhost>
-	 <20100420140941.d085007d.akpm@linux-foundation.org>
-	 <alpine.LFD.2.00.1004211309560.6646@localhost>
-	 <1271849823.1776.87.camel@laptop>
-	 <4BCEAD7B0200005A0006513E@soto.provo.novell.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100415151633.GN11907@erda.amd.com>
+References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
+	 <1271317461.32749.67.camel@laptop>  <20100415151633.GN11907@erda.amd.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Apr 2010 14:03:00 +0200
-Message-ID: <1271851380.1776.96.camel@laptop>
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 21 Apr 2010 14:11:05 +0200
+Message-ID: <1271851865.4807.10284.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-21 at 05:47 -0600, Gregory Haskins wrote:
+On Thu, 2010-04-15 at 17:16 +0200, Robert Richter wrote:
+> On 15.04.10 09:44:21, Peter Zijlstra wrote:
+> > On Tue, 2010-04-13 at 22:23 +0200, Robert Richter wrote:
+> > > This patch series introduces model specific events and impments AMD
+> > > IBS (Instruction Based Sampling) for perf_events.
+> > 
+> > I would much rather it uses the ->precise thing PEBS also uses,
+> > otherwise we keep growing funny arch extensions and end up with a
+> > totally fragmented trainwreck of an ABI.
 > 
-> I am not sure if Johns solution is the right/best one per se, but I can attest
-> that I used to hit this problem _all_ the time and it was somewhat annoying
-> to need to patch the kernel on all of my machines to fix it.  I realize that I
-> perhaps do not represent the average user, but it was a pain-point for me.
-> FWIW, John's patch would indeed make my life easier since I tend to share the
-> .config between builds. 
+> I agree that an exiting flag could be reused. But the naming 'precise'
+> could be misleading. Maybe we rename it to 'model_spec' or something
+> else that underlines the idea of having model specific setups.
 
-Right, so all I'm wanting to know if its a symptom of some funny or an
-actual depletion, in the latter case I think the best solution is to
-simply increase the number. In the former case we should of course fix
-the real issue instead of making it disappear.
+Right, so I really hate PERF_SAMPLE_RAW, and I'm considering simply
+removing that for PEBS as well, its just too ugly. If we want the
+register set we need to work on getting PERF_SAMPLE_REGS in a sensible
+shape.
 
-So one case I remember is where some code managed to create 1k classes
-where 1 would have sufficed, this resulted in at least 1k extra stack
-traces to be stored, consuming vast amounts of stack_entries.
+As to the meaning for ->precise, its meant to convey the counters are
+not affected by skid and the like, I thought IBS provided exact IPs as
+well (/me should re-read the IBS docs).
 
-So please, if you can reproduce, look at where these entries are going,
-lots of classes with the same name are a good hint that something is
-fishy. Classes with more than 13 (4*nr_states + 1) stacks should also
-never happen, etc..
+The thing with something like ->model_spec and PERF_SAMPLE_RAW is that
+it doesn't provide a clear model, the user doesn't know what to expect
+of it, it could be anything.
 
-Is this specific to -RT, or do we see it without as well? If so, what in
--RT grows this? Are we creating a class per rt_mutex spinlock or
-something silly like that?
+We want the ABI to express clear concepts, and things like lets bypass
+everything and just dump stuff out to userspace really are to be avoided
+at all costs.
 
+Sadly IBS seems to be an utter trainwreck in the concept department (I'm
+still struggling how to make a sensible interpretation of the data it
+gathers).
+
+The thing I absolutely want to avoid is the ABI becoming a fragmented
+trainwreck like oprofile is.
+
+Also not using sample_period for the sample period is of course utterly
+unacceptable.
