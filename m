@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab0DUJ3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 05:29:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38037 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753591Ab0DUJ3u convert rfc822-to-8bit (ORCPT
+	id S1753731Ab0DUJfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 05:35:22 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:59822 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753683Ab0DUJfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 05:29:50 -0400
-Subject: Re: perf top broken on ppc64
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <1271827490-sup-48@au1.ibm.com>
-Date: Wed, 21 Apr 2010 11:29:44 +0200
-Cc: Paul Mackerras <paulus@samba.org>, Peter Zijlstra <peterz@infradead.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-       LKML Mailing List <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <12E39DE6-0957-43CD-8DD4-24970AAF45D3@suse.de>
-References: <594EC076-62C6-473D-9AF2-47AEE4B57ED3@suse.de> <1271827490-sup-48@au1.ibm.com>
-To: Ian Munsie <imunsie@au1.ibm.com>
-X-Mailer: Apple Mail (2.1078)
+	Wed, 21 Apr 2010 05:35:21 -0400
+To: Jamie Lokier <jamie@shareable.org>
+CC: jblunck@suse.de, miklos@szeredi.hu, vaurora@redhat.com,
+       dwmw2@infradead.org, viro@zeniv.linux.org.uk,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       tytso@mit.edu, linux-ext4@vger.kernel.org
+In-reply-to: <20100421092235.GB13114@shareable.org> (message from Jamie Lokier
+	on Wed, 21 Apr 2010 10:22:35 +0100)
+Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
+References: <1271372682-21225-14-git-send-email-vaurora@redhat.com> <20100419124025.GG10776@bolzano.suse.de> <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de> <20100419142315.GA2688@shell> <E1O3sLi-0008EA-QW@pomaz-ex.szeredi.hu> <20100420213450.GM11723@shareable.org> <20100421084211.GB22741@bolzano.suse.de> <20100421092235.GB13114@shareable.org>
+Message-Id: <E1O4WKa-0003Pp-0y@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Wed, 21 Apr 2010 11:34:52 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 21.04.2010, at 07:29, Ian Munsie wrote:
-
-> Excerpts from Alexander Graf's message of Wed Apr 21 09:21:36 +1000 2010:
->> Hi,
->> 
->> While trying to find out performance bottlenecks in KVM for PowerPC I
->> figured I'd try and use "perf top" to see what's going on in the
->> system. This works great on my G4, but doesn't on the Powerstation
->> (970MP).
->> 
->> The only weird thing I can imagine about this setup is that I'm
->> running 32 bit userland on a 64 bit kernel. So I went ahead and
->> compiled perf for ppc64 - without any change:
+On Wed, 21 Apr 2010, Jamie Lokier wrote:
+> Hmm.  I smell potential confusion for some otherwise POSIX-friendly
+> userspaces.
 > 
-> I'm using 32 bit userland and 64 bit kernel on a PowerPC box and it's working for me.
-> Are you building perf from the tip tree?
+> When I open /path/to/foo, call fstat (st_dev=2, st_ino=5678), and then
+> keep the file open, then later do a readdir which includes foo
+> (dir.st_dev=1, d_ino=1234), I'm going to immediately assume a rename
+> or unlink happened, close the file, abort streaming from it, refresh
+> the GUI windows, refresh application caches for that name entry, etc.
+> 
+> Because in the POSIX world I think open files have stable inode
+> numbers (as long as they are open), and I don't think that an open
+> file can have it's name's d_ino not match the inode number unless it's
+> a mount point, which my program would know about.
+> 
+> This plays into inotify, where you have to know if you are monitoring
+> every directory that contains a link to a file, to know if you need to
+> monitor the file itself directly instead.
+> 
+> Now I think it's fair enough that a union mount doesn't play all the
+> traditional rules :-)  C'est la vie.
+> 
+> This mismatch of (dir.st_dev,d_ino) and st_ino strongly resembles a
+> file-bind-mount.  Like bind mounts, it's quite annoying for programs
+> that like to assume they've seen all of a file's links when they've
+> seen i_nlink of them.
+> 
+> Bind mounts can be detected by looking in /proc/mounts.  st_dev
+> changing doesn't work because it can be a binding of the same
+> filesystem.
+> 
+> How would I go about detecting when a union mount's directory entry
+> has similar behaviour, without calling stat() on each entry?  Is it
+> just a matter of recognising a particular filesystem name in
+> /proc/mounts, or something more?
 
-I'm using kvm.git which is pretty close to tip. The version says something 2.6.34-rc3'ish. Has anything significantly changed since then?
+Detecting mount points is best done by comparing st_dev for the parent
+directory with st_dev of the child.  This is much simpler than parsing
+/proc/mounts and will work for bind mounts as well as union mounts.
 
-Either way - I'll give it a try.
+I think there's no question that union mounts might break apps (POSIX
+or not).  But I think there's hope that they are few and can easily be
+fixed.
 
-
-Alex
-
+Thanks,
+Miklos
