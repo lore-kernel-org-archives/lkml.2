@@ -1,44 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab0DURTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 13:19:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6776 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753074Ab0DURTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 13:19:17 -0400
-Message-ID: <4BCF336B.1050706@redhat.com>
-Date: Wed, 21 Apr 2010 13:18:35 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S1754353Ab0DURXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 13:23:32 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:56783 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab0DURXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 13:23:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YBvB9G7V+BqIyqs33rAsJPjMiJqiJx9n9TJkQLlFyWBW0Mf1672BqLgqRAWOcaE2EC
+         tiO2HbFYqcBJCGY0GU7RQaYsXSViNF6fRMCe988XmaB0aN9b2JJ2KKS/mRacvO0MgRgS
+         7dXPEGHnU2x7YmmrfZSxbow/AQYYCuib8tJmM=
+Date: Wed, 21 Apr 2010 10:23:22 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Pavel Machek <pavel@ucw.cz>, Richard Purdie <rpurdie@rpsys.net>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] input: Add LED support to Synaptics device
+Message-ID: <20100421172322.GD10566@core.coreip.homeip.net>
+References: <s5h1ve9hscs.wl%tiwai@suse.de>
+ <s5h39yohnhs.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: Hedi Berriche <hedi@sgi.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Mike Travis <travis@sgi.com>,
-       Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Jack Steiner <steiner@sgi.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
- pid_max v2
-References: <4BCE579C.5070100@sgi.com> <4BCE5A73.3000904@sgi.com> <20100421102350.4c222e6b@lxorguk.ukuu.org.uk> <20100421165934.GN16427@zorg.emea.sgi.com>
-In-Reply-To: <20100421165934.GN16427@zorg.emea.sgi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5h39yohnhs.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2010 12:59 PM, Hedi Berriche wrote:
-> On Wed, Apr 21, 2010 at 10:20 Alan Cox wrote:
-> |>  of 32k will not be enough.  A system with 1664 CPU's, there are 25163 processes
-> |>  started before the login prompt.  It's estimated that with 2048 CPU's we will pass
-> |
-> | Is that perhaps the bug not the 32K limit?
+On Wed, Apr 21, 2010 at 04:46:39PM +0200, Takashi Iwai wrote:
+> The new Synaptics devices have an LED on the top-left corner.
+> This patch adds a new LED class device to control it.  It's created
+> dynamically upon synaptics device probing.
+> 
+> The LED is controlled via the command 0x0a with parameters 0x88 or 0x10.
+> This seems only on/off control although other value might be accepted.
+> 
+> The detection of the LED isn't clear yet.  It should have been the new
+> capability bits that indicate the presence, but on real machines, it
+> doesn't fit.  So, for the time being, the driver checks the product id
+> in the ext capability bits and assumes that LED exists on the known
+> devices.
 >
-> Doubt it: I just checked on an *idle* 1664 CPUs system and I can see 26844
-> tasks, all but few being kernel threads.
 
-That is 15 kernel threads per CPU.
+Tkashi,
 
-Reducing the number of kernel threads sounds like a
-useful thing to do.
+Does it build if you disable LED subsystem? Note that I don't want
+psmouse to depend on LEDs...
+
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+> 
+> Fixed a typo in v2 patch, sorry.
+> 
+>  drivers/input/mouse/synaptics.c |   88 +++++++++++++++++++++++++++++++++++++++
+>  drivers/input/mouse/synaptics.h |    3 +
+>  2 files changed, 91 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+> index c7b5285..fcc007c 100644
+> --- a/drivers/input/mouse/synaptics.c
+> +++ b/drivers/input/mouse/synaptics.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/input.h>
+>  #include <linux/serio.h>
+>  #include <linux/libps2.h>
+> +#include <linux/leds.h>
+>  #include <linux/slab.h>
+>  #include "psmouse.h"
+>  #include "synaptics.h"
+> @@ -335,6 +336,79 @@ static void synaptics_pt_create(struct psmouse *psmouse)
+>  	serio_register_port(serio);
+>  }
+>  
+> +/*
+> + * LED handling:
+> + * Some Synaptics devices have an embeded LED at the top-left corner.
+> + */
+> +
+> +struct synaptics_led {
+> +	enum led_brightness status;
+> +	struct psmouse *psmouse;
+> +	struct work_struct work;
+> +	struct led_classdev cdev;
+> +};
+> +
+> +static void synaptics_set_led(struct psmouse *psmouse, int on)
+> +{
+> +	unsigned char param[1];
+> +
+> +	if (psmouse_sliced_command(psmouse, on ? 0x88 : 0x10))
+> +		return;
+> +	param[0] = 0x0a;
+> +	ps2_command(&psmouse->ps2dev, param, PSMOUSE_CMD_SETRATE);
+> +}
+> +
+> +static void synaptics_led_work(struct work_struct *work)
+> +{
+> +	struct synaptics_led *led;
+> +
+> +	led = container_of(work, struct synaptics_led, work);
+> +	synaptics_set_led(led->psmouse, led->status);
+
+2+ instances of work may run simultaneously on 2 CPUs; I think you need
+lcokign here. Also you need locking to prevent psmouse core access the
+device (send other commands) when user accesses sysfs attributes. Also,
+doesn't the device have to be in command mode before you start sending
+commands to it?
+
+> +}
+> +
+> +static void synaptics_led_cdev_brightness_set(struct led_classdev *cdev,
+> +					      enum led_brightness value)
+> +{
+> +	struct synaptics_led *led;
+> +
+> +	led = container_of(cdev, struct synaptics_led, cdev);
+> +	if (value != led->status) {
+> +		led->status = value;
+> +		schedule_work(&led->work);
+> +	}
+> +}
+> +
+> +static int synaptics_init_led(struct psmouse *psmouse)
+> +{
+> +	struct synaptics_data *priv = psmouse->private;
+> +	struct synaptics_led *led;
+> +	int err;
+> +
+> +	/* FIXME: LED is supposedly detectable in cap0c[1] 0x20, but it seems
+> +	 * not working on real machines.
+> +	 * So we check the product id to be sure.
+> +	 */
+> +	if (!priv->ext_cap_0c || SYN_CAP_PRODUCT_ID(priv->ext_cap) != 0xe4)
+> +		return 0;
+> +
+> +	printk(KERN_INFO "synaptics: support LED control\n");
+> +	led = kzalloc(sizeof(struct synaptics_led), GFP_KERNEL);
+> +	if (!led)
+> +		return -ENOMEM;
+
+I do not think synaptics_led structure uses that much space to be
+allocated separately and conditionally; why don't you just put lde, work
+and value directly into synaptics_data?
+
+> +	led->psmouse = psmouse;
+> +	INIT_WORK(&led->work, synaptics_led_work);
+> +	led->cdev.name = "psmouse::synaptics";
+> +	led->cdev.brightness_set = synaptics_led_cdev_brightness_set;
+> +	led->cdev.flags = LED_CORE_SUSPENDRESUME;
+> +	err = led_classdev_register(NULL, &led->cdev);
+> +	if (err < 0) {
+> +		kfree(led);
+> +		return err;
+> +	}
+> +	priv->led = led;
+> +	return 0;
+> +}
+> +
+>  /*****************************************************************************
+>   *	Functions to interpret the absolute mode packets
+>   ****************************************************************************/
+> @@ -622,6 +696,14 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+>  
+>  static void synaptics_disconnect(struct psmouse *psmouse)
+>  {
+> +	struct synaptics_data *priv = psmouse->private;
+> +
+> +	if (priv->led) {
+> +		cancel_work_sync(&priv->led->work);
+> +		synaptics_set_led(psmouse, 0);
+> +		led_classdev_unregister(&priv->led->cdev);
+> +		kfree(priv->led);
+> +	}
+>  	synaptics_reset(psmouse);
+>  	kfree(psmouse->private);
+>  	psmouse->private = NULL;
+> @@ -653,6 +735,9 @@ static int synaptics_reconnect(struct psmouse *psmouse)
+>  		return -1;
+>  	}
+>  
+> +	if (priv->led)
+> +		synaptics_set_led(psmouse, priv->led->status);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -727,6 +812,9 @@ int synaptics_init(struct psmouse *psmouse)
+>  		SYN_ID_MAJOR(priv->identity), SYN_ID_MINOR(priv->identity),
+>  		priv->model_id, priv->capabilities, priv->ext_cap, priv->ext_cap_0c);
+>  
+> +	if (synaptics_init_led(psmouse) < 0)
+> +		goto init_fail;
+> +
+>  	set_input_params(psmouse->dev, priv);
+>  
+>  	/*
+> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+> index ae37c5d..d5bb8f4 100644
+> --- a/drivers/input/mouse/synaptics.h
+> +++ b/drivers/input/mouse/synaptics.h
+> @@ -94,6 +94,8 @@ struct synaptics_hw_state {
+>  	signed char scroll;
+>  };
+>  
+> +struct synaptics_led;
+> +
+>  struct synaptics_data {
+>  	/* Data read from the touchpad */
+>  	unsigned long int model_id;		/* Model-ID */
+> @@ -107,6 +109,7 @@ struct synaptics_data {
+>  	unsigned char pkt_type;			/* packet type - old, new, etc */
+>  	unsigned char mode;			/* current mode byte */
+>  	int scroll;
+> +	struct synaptics_led *led;
+>  };
+>  
+>  void synaptics_module_init(void);
+> -- 
+> 1.7.0.4
+> 
+
+-- 
+Dmitry
