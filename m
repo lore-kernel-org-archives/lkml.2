@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab0DUJfW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 05:35:22 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:59822 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683Ab0DUJfV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 05:35:21 -0400
-To: Jamie Lokier <jamie@shareable.org>
-CC: jblunck@suse.de, miklos@szeredi.hu, vaurora@redhat.com,
-       dwmw2@infradead.org, viro@zeniv.linux.org.uk,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       tytso@mit.edu, linux-ext4@vger.kernel.org
-In-reply-to: <20100421092235.GB13114@shareable.org> (message from Jamie Lokier
-	on Wed, 21 Apr 2010 10:22:35 +0100)
-Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
-References: <1271372682-21225-14-git-send-email-vaurora@redhat.com> <20100419124025.GG10776@bolzano.suse.de> <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de> <20100419142315.GA2688@shell> <E1O3sLi-0008EA-QW@pomaz-ex.szeredi.hu> <20100420213450.GM11723@shareable.org> <20100421084211.GB22741@bolzano.suse.de> <20100421092235.GB13114@shareable.org>
-Message-Id: <E1O4WKa-0003Pp-0y@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 21 Apr 2010 11:34:52 +0200
+	id S1753717Ab0DUJi6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 05:38:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38349 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753502Ab0DUJi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 05:38:57 -0400
+Date: Wed, 21 Apr 2010 11:38:53 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Amerigo Wang <xiyou.wangcong@gmail.com>
+Cc: Jan Kiszka <jan.kiszka@web.de>, Jeff Dike <jdike@addtoit.com>,
+       linux-kernel@vger.kernel.org,
+       user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH 3/5] uml: Fix warning due to missing task_struct
+ declaration
+In-Reply-To: <20100421060651.GB4467@cr0.nay.redhat.com>
+Message-ID: <alpine.LNX.2.00.1004211138320.7579@pobox.suse.cz>
+References: <cover.1271713955.git.jan.kiszka@web.de> <1d97cd7761a1eae73923b1adda4c6915a0647bb3.1271713955.git.jan.kiszka@web.de> <20100420100949.GB5317@cr0.nay.redhat.com> <20100420143016.GB30011@c-98-229-117-200.hsd1.ma.comcast.net> <4BCDDFBB.40805@web.de>
+ <20100421060651.GB4467@cr0.nay.redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Apr 2010, Jamie Lokier wrote:
-> Hmm.  I smell potential confusion for some otherwise POSIX-friendly
-> userspaces.
-> 
-> When I open /path/to/foo, call fstat (st_dev=2, st_ino=5678), and then
-> keep the file open, then later do a readdir which includes foo
-> (dir.st_dev=1, d_ino=1234), I'm going to immediately assume a rename
-> or unlink happened, close the file, abort streaming from it, refresh
-> the GUI windows, refresh application caches for that name entry, etc.
-> 
-> Because in the POSIX world I think open files have stable inode
-> numbers (as long as they are open), and I don't think that an open
-> file can have it's name's d_ino not match the inode number unless it's
-> a mount point, which my program would know about.
-> 
-> This plays into inotify, where you have to know if you are monitoring
-> every directory that contains a link to a file, to know if you need to
-> monitor the file itself directly instead.
-> 
-> Now I think it's fair enough that a union mount doesn't play all the
-> traditional rules :-)  C'est la vie.
-> 
-> This mismatch of (dir.st_dev,d_ino) and st_ino strongly resembles a
-> file-bind-mount.  Like bind mounts, it's quite annoying for programs
-> that like to assume they've seen all of a file's links when they've
-> seen i_nlink of them.
-> 
-> Bind mounts can be detected by looking in /proc/mounts.  st_dev
-> changing doesn't work because it can be a binding of the same
-> filesystem.
-> 
-> How would I go about detecting when a union mount's directory entry
-> has similar behaviour, without calling stat() on each entry?  Is it
-> just a matter of recognising a particular filesystem name in
-> /proc/mounts, or something more?
+On Wed, 21 Apr 2010, Amerigo Wang wrote:
 
-Detecting mount points is best done by comparing st_dev for the parent
-directory with st_dev of the child.  This is much simpler than parsing
-/proc/mounts and will work for bind mounts as well as union mounts.
+> >  CC      arch/um/sys-i386/elfcore.o
+> >In file included from /data/linux-2.6/include/linux/elf.h:8,
+> >                 from /data/linux-2.6/arch/um/sys-i386/elfcore.c:2:
+> >/data/linux-2.6/arch/um/sys-i386/asm/elf.h:78: warning: ‘struct task_struct’ declared inside parameter list
+> >/data/linux-2.6/arch/um/sys-i386/asm/elf.h:78: warning: its scope is only this definition or declaration, which is probably not what you want
+> >
+> >I guess not many people build against i386 hosts anymore, so this
+> >remained widely unnoticed.
+> >
+> >> 
+> >> If it built before, without having a task_struct declaration, I think
+> >> that means that the elf_core_copy_fpregs was never used.  The
+> >> task_struct * in the declaration would become a private task_struct,
+> >> known only to the declaration.  If the implementation or callers have
+> >> the regular task_struct, it will be a different one, and the
+> >> prototypes will conflict due to the different types of the first
+> >> parameter.
+> >
+> >This is just a forward declaration (that many arch elf header include),
+> >so no such problem exists.
+> >
+> >BTW, to answer the other question in this thread: We have a circular
+> >dependency that prevents including sched.h.
+>  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> This is the right reason to do this. Ok then, thanks.
+> 
+> But it looks like x86_64 needs this too.
+> 
+> 
+> BTW, I don't think compile warning fixes are trivial enough to go
+> to trivial@kernel.org.
 
-I think there's no question that union mounts might break apps (POSIX
-or not).  But I think there's hope that they are few and can easily be
-fixed.
+Why?
 
-Thanks,
-Miklos
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
