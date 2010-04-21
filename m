@@ -1,127 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab0DUVeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 17:34:31 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:34216 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab0DUVea (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 17:34:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vwPWGxGNdnxakMQIhltcaxOeVE4LiSgZ8pAiNUd/MbcdSZHWhet+W4es/qt0CCdFLG
-         WTFEMR7V9BB32qH6W35Gz0Qd3kvSAkWsoCbqebOzXNqxrBXqNu44KxpbSPN2gEGCJp3J
-         9tDjWZpr6hd+NnR4Dj2UOUODLPKm+v78kbLKQ=
-Date: Wed, 21 Apr 2010 23:34:36 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
-       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com
-Subject: Re: [PATCH 5/6] [x86] watchdog: move trigger_all_cpu_backtrace to
-	its own die_notifier
-Message-ID: <20100421213434.GD8677@nowhere>
-References: <1271777043-3807-1-git-send-email-dzickus@redhat.com> <1271777043-3807-6-git-send-email-dzickus@redhat.com> <20100421210003.GC8677@nowhere> <20100421211012.GX15159@redhat.com>
-MIME-Version: 1.0
+	id S1756709Ab0DUVe7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 17:34:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29750 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755363Ab0DUVe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 17:34:57 -0400
+Date: Wed, 21 Apr 2010 17:34:36 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, jblunck@suse.de, dwmw2@infradead.org,
+       viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, tytso@mit.edu,
+       linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
+Message-ID: <20100421213436.GD5041@shell>
+References: <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de> <20100419142315.GA2688@shell> <E1O3sLi-0008EA-QW@pomaz-ex.szeredi.hu> <20100420213450.GM11723@shareable.org> <20100421084211.GB22741@bolzano.suse.de> <20100421092235.GB13114@shareable.org> <E1O4WKa-0003Pp-0y@pomaz-ex.szeredi.hu> <20100421095221.GD13114@shareable.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100421211012.GX15159@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100421095221.GD13114@shareable.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 05:10:12PM -0400, Don Zickus wrote:
-> On Wed, Apr 21, 2010 at 11:00:04PM +0200, Frederic Weisbecker wrote:
-> > On Tue, Apr 20, 2010 at 11:24:02AM -0400, Don Zickus wrote:
-> > > As part of the transition of the nmi watchdog to something more generic,
-> > > the trigger_all_cpu_backtrace code is getting left behind.  Put it in its
-> > > own die_notifier so it can still be used.
-> > > 
-> > > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > > ---
-> > >  arch/x86/kernel/apic/hw_nmi.c |   65 ++++++++++++++++++++++++++++++++---------
-> > >  1 files changed, 51 insertions(+), 14 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-> > > index 79425f9..19d3435 100644
-> > > --- a/arch/x86/kernel/apic/hw_nmi.c
-> > > +++ b/arch/x86/kernel/apic/hw_nmi.c
-> > > @@ -17,6 +17,10 @@
-> > >  #include <linux/cpumask.h>
-> > >  #include <linux/kernel_stat.h>
-> > >  #include <asm/mce.h>
-> > > +#include <linux/kdebug.h>
-> > > +#include <linux/notifier.h>
-> > > +#include <linux/kprobes.h>
-> > > +
-> > >  
-> > >  #include <linux/nmi.h>
-> > >  #include <linux/module.h>
-> > > @@ -54,20 +58,6 @@ int hw_nmi_is_cpu_stuck(struct pt_regs *regs)
-> > >  	unsigned int sum;
-> > >  	int cpu = smp_processor_id();
-> > >  
-> > > -	/* FIXME: cheap hack for this check, probably should get its own
-> > > -	 * die_notifier handler
-> > > -	 */
-> > > -	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
-> > > -		static DEFINE_SPINLOCK(lock);	/* Serialise the printks */
-> > > -
-> > > -		spin_lock(&lock);
-> > > -		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
-> > > -		show_regs(regs);
-> > > -		dump_stack();
-> > > -		spin_unlock(&lock);
-> > > -		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
-> > > -	}
-> > > -
-> > >  	/* if we are doing an mce, just assume the cpu is not stuck */
-> > >  	/* Could check oops_in_progress here too, but it's safer not to */
-> > >  	if (mce_in_progress())
-> > > @@ -109,6 +99,53 @@ void arch_trigger_all_cpu_backtrace(void)
-> > >  		mdelay(1);
-> > >  	}
-> > >  }
-> > > +
-> > > +static int __kprobes
-> > > +arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
-> > > +			 unsigned long cmd, void *__args)
-> > > +{
-> > > +	struct die_args *args = __args;
-> > > +	struct pt_regs *regs;
-> > > +	int cpu = smp_processor_id();
-> > > +
-> > > +	switch (cmd) {
-> > > +	case DIE_NMI:
-> > > +	case DIE_NMI_IPI:
-> > > +		break;
-> > > +
-> > > +	default:
-> > > +		return NOTIFY_DONE;
-> > > +	}
-> > > +
-> > > +	regs = args->regs;
-> > > +
-> > > +	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
-> > > +		static DEFINE_SPINLOCK(lock);	/* Serialise the printks */
-> > > +
-> > > +		spin_lock(&lock);
-> > 
-> > 
-> > 
-> > This should be an arch_spin_lock(), so that it won't sleep with rt mutex.
+On Wed, Apr 21, 2010 at 10:52:21AM +0100, Jamie Lokier wrote:
+> Miklos Szeredi wrote:
+> > Detecting mount points is best done by comparing st_dev for the parent
+> > directory with st_dev of the child.  This is much simpler than parsing
+> > /proc/mounts and will work for bind mounts as well as union mounts.
 > 
-> ok, I just copied and pasted what was there currently.
+> Sorry, no: That does not work for bind mounts.  Both layers can have
+> the same st_dev.  Nor does O_NOFOLLOW stop traversal in the middle of
+> a path, there is no handy O_NOCROSSMOUNTS, and no st_mode flag or
+> d_type to say it's a bind mount.  Bind mounts are really a big pain
+> for i_nlink+inotify name counting.
 > 
-> > 
-> > 
-> > In fact this whole function can be moved to generic code, right?
+> Besides, calling stat() on every entry in a large directory to check
+> st_ino can be orders of magnitude slower than readdir() on a large
+> directory - especially with a cold cache.  It is quicker, but much
+> more complicated, to parse /proc/mounts and apply arcane rules to find
+> the exceptions.
 > 
-> generic for x86, yes.  Ingo stuck in the nmi.c code awhile ago.  This code
-> just needs a home somewhere.  I really don't care where.
+> Can a union mount overlap two parts of the same filesystem?
 
+No.  Each layer must be a separate file system, the bottom must be
+read-only, the top must be writable, and they must be unioned at their
+mount points.
 
-Ah right, this is x86 only, sorry.
+> > I think there's no question that union mounts might break apps (POSIX
+> > or not).  But I think there's hope that they are few and can easily be
+> > fixed.
+> 
+> I agree, and union moint is a very useful feature that's worth
+> breaking a few apps for :-)
+> 
+> I'm curious if there's a clear way to go about it in this case, or
+> if it'll involve a certain amount of pattern recognition in /proc/mounts.
 
+All it takes is looking for the "union" string in the mount options.
+
+> Basically I'm wondering if it's been thought about already.
+
+Not as much as it deserves. :) Do you have any thoughts about better
+solutions?
+
+Something to keep in mind is that most of the app issues are already
+present with bind mounts.  In many cases, if an app doesn't work with
+union mounts, it's also not going to work with bind mounts.  I think
+you have a good point that we could use a more straightforward way to
+say, "Hey, you can't use the normal st_dev/st_ino rules right now..."
+
+-VAL
