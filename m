@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab0DUN44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 09:56:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44849 "EHLO mx1.redhat.com"
+	id S1753184Ab0DUOAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 10:00:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20287 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754515Ab0DUN4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 09:56:54 -0400
-Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
-From: Eric Paris <eparis@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "Serge E. Hallyn" <serue@us.ibm.com>, lkml <linux-kernel@vger.kernel.org>,
-       David Howells <dhowells@redhat.com>,
-       Ashwin Ganti <ashwin.ganti@gmail.com>, Greg KH <greg@kroah.com>,
-       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
-       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>, sgrubb@redhat.com
-In-Reply-To: <20100421102739.6ad932fb@lxorguk.ukuu.org.uk>
-References: <20100421012749.GA21338@us.ibm.com>
-	 <20100421012908.GB24251@us.ibm.com>
-	 <20100421102739.6ad932fb@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Apr 2010 09:55:41 -0400
-Message-ID: <1271858141.2899.7.camel@dhcp235-240.rdu.redhat.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751382Ab0DUOAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 10:00:40 -0400
+Date: Wed, 21 Apr 2010 10:00:33 -0400
+From: Kyle McMartin <kmcmartin@redhat.com>
+To: eparis@redhat.com
+Cc: kees@canonical.com, cebbert@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] trivial: make mmap_min_addr perms 600
+Message-ID: <20100421140033.GA8389@ihatethathostname.lab.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-21 at 10:27 +0100, Alan Cox wrote:
-> > This is a change which must be discussed.  The use of this
-> > privilege can be completely prevented by having init remove
-> > CAP_GRANT_ID from its capability bounding set before forking any
-> > processes.
-> 
-> Which is a minor back compat issue - but you could start without it and
-> allow init to add it.
-> 
-> It seems a very complex interface to do a simple thing. A long time ago
-> there was discussion around extending the AF_UNIX fd passing to permit
-> 'pass handle and auth' so you could send someone a handle with a "become
-> me" token attached.
+Chuck points out that mmap_min_addr is 644...
 
-If you do go down this path there is a separate (and actually completely
-opposite) but related problem I might be able and willing to work with
-you on.  When looking at how auditing works in this modern day and age
-of dbus+polkit to get background processes to do work on behalf of a
-user we were discussing an interface that would pass the information
-about the user to the background server process.  The background server
-process could do some magic such that it still had all the permissions
-and rights of itself, but had the audit information of the original
-user.  Thus even though it was a server process with uid=0 that did the
-work, the audit logs could know it was actually on behalf of uid=500.  
+CAP_SYS_RAWIO will deny users read/write to the file, let's let them see
+that this is intended.
 
-It was discussed passing that token of audit information over an AF_UNIX
-socket.
-
--Eric
-
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+---
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 8686b0f..5868481 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1209,7 +1209,7 @@ static struct ctl_table vm_table[] = {
+ 		.procname	= "mmap_min_addr",
+ 		.data		= &dac_mmap_min_addr,
+ 		.maxlen		= sizeof(unsigned long),
+-		.mode		= 0644,
++		.mode		= 0600,
+ 		.proc_handler	= mmap_min_addr_handler,
+ 	},
+ #endif
