@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab0DUABT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 20:01:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54412 "EHLO hera.kernel.org"
+	id S1753875Ab0DUABM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 20:01:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5288 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753633Ab0DUABO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 20:01:14 -0400
-Date: Wed, 21 Apr 2010 00:00:51 GMT
-From: tip-bot for Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       tglx@linutronix.de, jacob.jun.pan@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, jacob.jun.pan@linux.intel.com
-In-Reply-To: <1271701423-1162-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1271701423-1162-1-git-send-email-jacob.jun.pan@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, mrst: Conditionally register cpu hotplug notifier for apbt
-Message-ID: <tip-ae7c9b70dcb4313ea3dbcc9a2f240dae6c2b50c0@git.kernel.org>
-Git-Commit-ID: ae7c9b70dcb4313ea3dbcc9a2f240dae6c2b50c0
-X-Mailer: tip-git-log-daemon
+	id S1753633Ab0DUABJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 20:01:09 -0400
+Message-ID: <4BCE403E.7050605@redhat.com>
+Date: Tue, 20 Apr 2010 14:01:02 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 21 Apr 2010 00:00:52 +0000 (UTC)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Glauber Costa <glommer@redhat.com>,
+       Jeremy Fitzhardinge <jeremy@goop.org>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
+References: <1271356648-5108-1-git-send-email-glommer@redhat.com> <1271356648-5108-2-git-send-email-glommer@redhat.com> <4BC8CA52.4090703@goop.org> <20100419142624.GE14158@mothafucka.localdomain> <4BCC829A.6000803@goop.org> <20100419182542.GI14158@mothafucka.localdomain> <20100420015733.GA28249@amt.cnet> <4BCD7557.9090502@redhat.com>
+In-Reply-To: <4BCD7557.9090502@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ae7c9b70dcb4313ea3dbcc9a2f240dae6c2b50c0
-Gitweb:     http://git.kernel.org/tip/ae7c9b70dcb4313ea3dbcc9a2f240dae6c2b50c0
-Author:     Jacob Pan <jacob.jun.pan@linux.intel.com>
-AuthorDate: Mon, 19 Apr 2010 11:23:43 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 20 Apr 2010 14:38:28 -0700
+On 04/19/2010 11:35 PM, Avi Kivity wrote:
+> On 04/20/2010 04:57 AM, Marcelo Tosatti wrote:
+>>
+>>> Marcelo can probably confirm it, but he has a nehalem with an 
+>>> appearently
+>>> very good tsc source. Even this machine warps.
+>>>
+>>> It stops warping if we only write pvclock data structure once and 
+>>> forget it,
+>>> (which only updated tsc_timestamp once), according to him.
+>> Yes. So its not as if the guest visible TSCs go out of sync (they don't
+>> on this machine Glauber mentioned, or even on a multi-core Core 2 Duo),
+>> but the delta calculation is very hard (if not impossible) to get right.
+>>
+>> The timewarps i've seen were in the 0-200ns range, and very rare (once
+>> every 10 minutes or so).
+>
+> Might be due to NMIs or SMIs interrupting the rdtsc(); ktime_get() 
+> operation which establishes the timeline.  We could limit it by having 
+> a loop doing rdtsc(); ktime_get(); rdtsc(); and checking for some 
+> bound, but it isn't worthwhile (and will break nested virtualization 
+> for sure).  Better to have the option to calibrate kvmclock just once 
+> on machines with X86_FEATURE_NONSTOP_TRULY_RELIABLE _TSC_HONESTLY.
 
-x86, mrst: Conditionally register cpu hotplug notifier for apbt
+There's a perfect way to do this and it still fails to stop timewarps.  
+You can set the performance counters to overflow if more instructions 
+are issued than your code path, run an assembly instruction stream and 
+if the performance interrupt hits, restart the calibration.
 
-APB timer is used on Moorestown platforms but not on a standard PC.
-If APB timer code is compiled in but not initialized at run-time due
-to lack of FW reported SFI table, kernel would panic when the non-boot
-CPUs are offlined and notifier is called.
+The calibration happens not just once, but on every migration, and 
+currently, I believe, on every VCPU switch.  Even if we reduce the 
+number of calibrations to the bare minimum and rule out SMIs and NMIs, 
+there will still be variation due to factors beyond our control because 
+of the unpredictable nature of cache and instruction issue.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=15786
+However, X86_FEATURE_NONSTOP_TRULY_RELIABLE_TSC_HONESTLY does imply one 
+key feature which the code is missing today:  on SMP VMs, the 
+calibration of kvmclock needs to be done only once, and the clock can 
+then be used for all VCPUs.  That, I think, stops Glauber's bug from 
+appearing on the server side.
 
-This patch ensures CPU hotplug notifier for APB timer is only registered
-when the APBT timer block is initialized.
+I will spin that into my web of patches and send the cocoon out sometime 
+this evening.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-LKML-Reference: <1271701423-1162-1-git-send-email-jacob.jun.pan@linux.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/apb_timer.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-index ff469e4..a353475 100644
---- a/arch/x86/kernel/apb_timer.c
-+++ b/arch/x86/kernel/apb_timer.c
-@@ -429,7 +429,7 @@ static int apbt_cpuhp_notify(struct notifier_block *n,
- 
- static __init int apbt_late_init(void)
- {
--	if (disable_apbt_percpu)
-+	if (disable_apbt_percpu || !apb_timer_block_enabled)
- 		return 0;
- 	/* This notifier should be called after workqueue is ready */
- 	hotcpu_notifier(apbt_cpuhp_notify, -20);
+Zach
