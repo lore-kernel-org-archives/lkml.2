@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751185Ab0DUDOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 23:14:15 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:49180 "EHLO e6.ny.us.ibm.com"
+	id S1751403Ab0DUDhU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 23:37:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41415 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab0DUDON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 23:14:13 -0400
-Date: Tue, 20 Apr 2010 20:14:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Eric Paris <eparis@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-       Eric Paris <eparis@parisplace.org>, Miles Lane <miles.lane@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: INFO: suspicious rcu_dereference_check() usage -
- include/linux/cgroup.h:492 invoked rcu_dereference_check() without
- protection!
-Message-ID: <20100421031410.GB2613@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <a44ae5cd1003071726u1f94336h7ab6c7b80d16723b@mail.gmail.com>
- <20100311032843.GE6767@linux.vnet.ibm.com>
- <q2x7e0fb38c1004121144rb097e521hd2a7d8cea77c54b7@mail.gmail.com>
- <1271098032.4807.137.camel@twins>
- <1271242058.32749.19.camel@laptop>
- <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com>
- <20100419230136.GA16856@linux.vnet.ibm.com>
- <4BCE4F6E.10301@cn.fujitsu.com>
+	id S1751138Ab0DUDhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 23:37:17 -0400
+Message-ID: <4BCE72D6.6010809@redhat.com>
+Date: Tue, 20 Apr 2010 23:36:54 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BCE4F6E.10301@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: [Bug #15672] KVM bug, git bisected
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.7L.6RSzLB@tosh> <4BCE188A.1060408@redhat.com>
+In-Reply-To: <4BCE188A.1060408@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 09:05:50AM +0800, Li Zefan wrote:
-> > commit 2836f18139267ea918ed2cf39023fb0eb38c4361
-> > Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Date:   Mon Apr 19 15:59:50 2010 -0700
-> > 
-> >     rcu: fix RCU lockdep splat on freezer_fork path
-> >     
-> >     Add an RCU read-side critical section to suppress this false positive.
-> >     
-> >     Located-by: Eric Paris <eparis@parisplace.org>
-> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> > index da5e139..e5c0244 100644
-> > --- a/kernel/cgroup_freezer.c
-> > +++ b/kernel/cgroup_freezer.c
-> > @@ -205,9 +205,12 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
-> >  	 * No lock is needed, since the task isn't on tasklist yet,
-> >  	 * so it can't be moved to another cgroup, which means the
-> >  	 * freezer won't be removed and will be valid during this
-> > -	 * function call.
-> > +	 * function call.  Nevertheless, apply RCU read-side critical
-> > +	 * section to suppress RCU lockdep false positives.
-> >  	 */
-> 
-> It was me that added the original comment.
-> 
-> > +	rcu_read_lock();
-> >  	freezer = task_freezer(task);
-> > +	rcu_read_unlock();
-> >  
-> >  	/*
-> >  	 * The root cgroup is non-freezable, so we can skip the
-> 
-> Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+On 04/20/2010 05:11 PM, Rik van Riel wrote:
+> On 04/19/2010 11:19 PM, Rafael J. Wysocki wrote:
+>> This message has been generated automatically as a part of a summary
+>> report
+>> of recent regressions.
+>>
+>> The following bug entry is on the current list of known regressions
+>> from 2.6.33. Please verify if it still should be listed and let the
+>> tracking team
+>> know (either way).
+>>
+>>
+>> Bug-Entry : http://bugzilla.kernel.org/show_bug.cgi?id=15672
+>> Subject : KVM bug, git bisected
+>> Submitter : Kent Overstreet<kent.overstreet@gmail.com>
+>> Date : 2010-03-27 12:43 (24 days old)
+>> First-Bad-Commit:
+>> http://kernel.org/git/linus/5beb49305251e5669852ed541e8e2f2f7696c53e
+>> Message-ID :<4BADFD74.8060904@gmail.com>
+>> References : http://marc.info/?l=linux-kernel&m=126969385121711&w=2
+>
+> Should be fixed by commit ea90002b0fa7bdee86ec22eba1d951f30bf043a6
 
-Thank you, Li!  I have added your Acked-by.
+Never mind me - this is a harmless (but loud) overflow
+of PREEMPT_BITS in the preempt count.
 
-							Thanx, Paul
