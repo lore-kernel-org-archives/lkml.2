@@ -1,89 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab0DUAVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 20:21:42 -0400
-Received: from ozlabs.org ([203.10.76.45]:48820 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab0DUAVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 20:21:41 -0400
-Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Christian Kujau <lists@nerdbynature.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linuxppc-dev@ozlabs.org, schwab@linux-m68k.org,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-In-Reply-To: <20100421155547.GA4222@x200>
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.vUB.fSSzLB@tosh>
-	 <alpine.DEB.2.01.1004192339190.13016@bogon.housecafe.de>
-	 <1271765898.4324.2.camel@concordia>  <20100421155547.GA4222@x200>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-ks/erLzbOJ+lZLQiQRTx"
-Date: Wed, 21 Apr 2010 10:21:39 +1000
-Message-ID: <1271809299.13262.6.camel@concordia>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1754106Ab0DUAXX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 20:23:23 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:59363 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752926Ab0DUAXW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Apr 2010 20:23:22 -0400
+Date: Wed, 21 Apr 2010 02:23:07 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+       valentin.longchamp@epfl.ch, grant.likely@secretlab.ca,
+       bryan.wu@canonical.com, amit.kucheria@canonical.com,
+       Jun.Li@freescale.com, xiao-lizhang@freescale.com
+Subject: Re: [PATCHv6 2.6.34-rc5 2/5] mx5: Add USB device definitions for
+ Freescale MX51 Babbage HW
+Message-ID: <20100421002307.GN30801@buzzloop.caiaq.de>
+References: <1271805567-23068-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271805567-23068-2-git-send-email-Dinh.Nguyen@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271805567-23068-2-git-send-email-Dinh.Nguyen@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dinh,
 
---=-ks/erLzbOJ+lZLQiQRTx
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 20, 2010 at 06:19:24PM -0500, Dinh.Nguyen@freescale.com wrote:
+> This patch is part of enabling USB for Freescale MX51 Babbage HW. This
+> patch adds device structures for USB Host1 and OTG port, and adds
+> clocking information for USB HW.
+> 
+> This patch applies to 2.6.34-rc5.
 
-On Wed, 2010-04-21 at 18:55 +0300, Alexey Dobriyan wrote:
-> On Tue, Apr 20, 2010 at 10:18:18PM +1000, Michael Ellerman wrote:
-> > On Mon, 2010-04-19 at 23:45 -0700, Christian Kujau wrote:
-> > --- a/fs/proc/proc_devtree.c
-> > +++ b/fs/proc/proc_devtree.c
-> > @@ -175,6 +175,24 @@ retry:
-> >         return fixed_name;
-> >  }
-> > =20
-> > +static const char *unslash_name(const char *name)
-> > +{
-> > +       char *p, *fixed_name;
-> > +
-> > +       fixed_name =3D kstrdup(name);
-> > +       if (!fixed_name) {
-> > +               printk(KERN_ERR "device-tree: Out of memory trying to u=
-nslash "
-> > +                               "name \"%s\"\n", name);
-> > +               return name;
-> > +       }
-> > +
-> > +       p =3D fixed_name;
-> > +       while ((p =3D strstr(p, "/")))
-> > +               *p++ =3D '_';
->=20
-> This is wasteful. :-)
+Hmm, this one still doesn't apply for me. Can you double-check with a
+fresh checkout of 2.6.34-rc5 please?
 
-Whatever, patches welcome :)
+Other than that, I'm ok with the patches now. Sascha, do you have more
+objections? I couldn't test the whole thing as I lack mx5 hardware, but
+it looks sane now, and it doesn't break anything for mx3.
 
-> Also, I hope we won't spit message every time allocation fail.
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-We do. Your system is mostly hosed anyway, but feel free to rate limit
-it or something.
+For the patches 3/5 and 4/5 of this series, you can have my
 
-The error handling in there is a bit dubious, if the alloc fails we just
-return the old name, which we know is bogus. It should probably return
-NULL and the calling code can check - same for fixup_name().
+Reviewed-by: Daniel Mack <daniel@caiaq.de>
 
-cheers
+Thanks,
+Daniel
 
---=-ks/erLzbOJ+lZLQiQRTx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEABECAAYFAkvORRAACgkQdSjSd0sB4dKJqwCgq79/5W+simjGRQJ4tQYpfcX7
-gzoAoLD3mnRvEEi8RnPB+OidBrer+tPx
-=9O+3
------END PGP SIGNATURE-----
-
---=-ks/erLzbOJ+lZLQiQRTx--
-
+> ---
+>  arch/arm/mach-mx5/clock-mx51.c |    8 ++++++
+>  arch/arm/mach-mx5/devices.c    |   49 ++++++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-mx5/devices.h    |    2 +
+>  3 files changed, 59 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
+> index 8f85f73..dcca330 100644
+> --- a/arch/arm/mach-mx5/clock-mx51.c
+> +++ b/arch/arm/mach-mx5/clock-mx51.c
+> @@ -761,6 +761,10 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG9_OFFSET,
+>  DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
+>  	NULL,  NULL, &ipg_clk, NULL);
+>  
+> +/* USB */
+> +DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
+> +	NULL, NULL, &pll3_sw_clk, NULL);
+> +
+>  /* FEC */
+>  DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
+>  	NULL,  NULL, &ipg_clk, NULL);
+> @@ -778,6 +782,10 @@ static struct clk_lookup lookups[] = {
+>  	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
+>  	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
+>  	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
+> +	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
+> +	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
+> +	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
+> +	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
+>  };
+>  
+>  static void clk_tree_init(void)
+> diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
+> index 5070ae1..e6262f3 100644
+> --- a/arch/arm/mach-mx5/devices.c
+> +++ b/arch/arm/mach-mx5/devices.c
+> @@ -11,6 +11,7 @@
+>   */
+>  
+>  #include <linux/platform_device.h>
+> +#include <linux/dma-mapping.h>
+>  #include <linux/gpio.h>
+>  #include <mach/hardware.h>
+>  #include <mach/imx-uart.h>
+> @@ -92,6 +93,54 @@ struct platform_device mxc_fec_device = {
+>  	.resource = mxc_fec_resources,
+>  };
+>  
+> +static u64 usb_dma_mask = DMA_BIT_MASK(32);
+> +
+> +static struct resource usbotg_resources[] = {
+> +	{
+> +		.start = MX51_OTG_BASE_ADDR,
+> +		.end = MX51_OTG_BASE_ADDR + 0x1ff,
+> +		.flags = IORESOURCE_MEM,
+> +	},
+> +	{
+> +		.start = MX51_MXC_INT_USB_OTG,
+> +		.flags = IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +struct platform_device mxc_usbdr_host_device = {
+> +	.name = "mxc-ehci",
+> +	.id = 0,
+> +	.num_resources = ARRAY_SIZE(usbotg_resources),
+> +	.resource = usbotg_resources,
+> +	.dev = {
+> +		.dma_mask = &usb_dma_mask,
+> +		.coherent_dma_mask = DMA_BIT_MASK(32),
+> +	},
+> +};
+> +
+> +static struct resource usbh1_resources[] = {
+> +	{
+> +		.start = MX51_OTG_BASE_ADDR + 0x200,
+> +		.end = MX51_OTG_BASE_ADDR + 0x200 + 0x1ff,
+> +		.flags = IORESOURCE_MEM,
+> +	},
+> +	{
+> +		.start = MX51_MXC_INT_USB_H1,
+> +		.flags = IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +struct platform_device mxc_usbh1_device = {
+> +	.name = "mxc-ehci",
+> +	.id = 1,
+> +	.num_resources = ARRAY_SIZE(usbh1_resources),
+> +	.resource = usbh1_resources,
+> +	.dev = {
+> +		.dma_mask = &usb_dma_mask,
+> +		.coherent_dma_mask = DMA_BIT_MASK(32),
+> +	},
+> +};
+> +
+>  static struct mxc_gpio_port mxc_gpio_ports[] = {
+>  	{
+>  		.chip.label = "gpio-0",
+> diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
+> index f339ab8..95c45f9 100644
+> --- a/arch/arm/mach-mx5/devices.h
+> +++ b/arch/arm/mach-mx5/devices.h
+> @@ -2,3 +2,5 @@ extern struct platform_device mxc_uart_device0;
+>  extern struct platform_device mxc_uart_device1;
+>  extern struct platform_device mxc_uart_device2;
+>  extern struct platform_device mxc_fec_device;
+> +extern struct platform_device mxc_usbdr_host_device;
+> +extern struct platform_device mxc_usbh1_device;
+> -- 
+> 1.6.0.4
+> 
