@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab0DUTPs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 15:15:48 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:52559 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717Ab0DUTPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 15:15:46 -0400
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, lkml <linux-kernel@vger.kernel.org>,
-       David Howells <dhowells@redhat.com>,
-       Ashwin Ganti <ashwin.ganti@gmail.com>, Greg KH <greg@kroah.com>,
-       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
-       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
-       Eric Paris <eparis@redhat.com>, linux-api@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
-References: <20100421012749.GA21338@us.ibm.com>
-	<20100421012908.GB24251@us.ibm.com>
-	<20100421102739.6ad932fb@lxorguk.ukuu.org.uk>
-	<20100421133917.GB16326@us.ibm.com>
-	<20100421151917.5ae20265@lxorguk.ukuu.org.uk>
-	<20100421150900.GB31880@us.ibm.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 21 Apr 2010 12:15:27 -0700
-In-Reply-To: <20100421150900.GB31880@us.ibm.com> (Serge E. Hallyn's message of "Wed\, 21 Apr 2010 10\:09\:00 -0500")
-Message-ID: <m11ve81usw.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1755418Ab0DUTWN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 15:22:13 -0400
+Received: from kroah.org ([198.145.64.141]:57115 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754679Ab0DUTWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 15:22:11 -0400
+Date: Wed, 21 Apr 2010 12:16:01 -0700
+From: Greg KH <greg@kroah.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: stable@kernel.org, Paul Moore <paul.moore@hp.com>,
+       David Woodhouse <David.Woodhouse@intel.com>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>,
+       Jan Kiszka <jan.kiszka@siemens.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: Re: [stable] [PATCH] tun: orphan an skb on tx
+Message-ID: <20100421191601.GJ13228@kroah.com>
+References: <20100413145944.GA7716@redhat.com>
+ <20100421113557.GA31606@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: serue@us.ibm.com, rdunlap@xenotime.net, linux-api@vger.kernel.org, eparis@redhat.com, oleg@us.ibm.com, morgan@kernel.org, akpm@linux-foundation.org, jt.beard@gmail.com, rminnich@gmail.com, linux-security-module@vger.kernel.org, ericvh@gmail.com, rsc@swtch.com, greg@kroah.com, ashwin.ganti@gmail.com, dhowells@redhat.com, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Disposition: inline
+In-Reply-To: <20100421113557.GA31606@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serue@us.ibm.com> writes:
+On Wed, Apr 21, 2010 at 02:35:57PM +0300, Michael S. Tsirkin wrote:
+> On Tue, Apr 13, 2010 at 05:59:44PM +0300, Michael S. Tsirkin wrote:
+> > The following situation was observed in the field:
+> > tap1 sends packets, tap2 does not consume them, as a result
+> > tap1 can not be closed. This happens because
+> > tun/tap devices can hang on to skbs undefinitely.
+> > 
+> > As noted by Herbert, possible solutions include a timeout followed by a
+> > copy/change of ownership of the skb, or always copying/changing
+> > ownership if we're going into a hostile device.
+> > 
+> > This patch implements the second approach.
+> > 
+> > Note: one issue still remaining is that since skbs
+> > keep reference to tun socket and tun socket has a
+> > reference to tun device, we won't flush backlog,
+> > instead simply waiting for all skbs to get transmitted.
+> > At least this is not user-triggerable, and
+> > this was not reported in practice, my assumption is
+> > other devices besides tap complete an skb
+> > within finite time after it has been queued.
+> > 
+> > A possible solution for the second issue
+> > would not to have socket reference the device,
+> > instead, implement dev->destructor for tun, and
+> > wait for all skbs to complete there, but this
+> > needs some thought, probably too risky for 2.6.34.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > Tested-by: Yan Vugenfirer <yvugenfi@redhat.com>
+> > 
+> > ---
+> > 
+> > Please review the below, and consider for 2.6.34,
+> > and stable trees.
+> > 
+> >  drivers/net/tun.c |    4 ++++
+> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> > index 96c39bd..4326520 100644
+> > --- a/drivers/net/tun.c
+> > +++ b/drivers/net/tun.c
+> > @@ -387,6 +387,10 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+> >  		}
+> >  	}
+> >  
+> > +	/* Orphan the skb - required as we might hang on to it
+> > +	 * for indefinite time. */
+> > +	skb_orphan(skb);
+> > +
+> >  	/* Enqueue packet */
+> >  	skb_queue_tail(&tun->socket.sk->sk_receive_queue, skb);
+> >  	dev->trans_start = jiffies;
+> > -- 
+> > 1.7.0.2.280.gc6f05
+> 
+> This is commit 0110d6f22f392f976e84ab49da1b42f85b64a3c5 in net-2.6
+> Please cherry-pick this fix in stable kernels (2.6.32 and 2.6.33).
 
-> Ignoring namespaces for a moment, I guess we could do something like
->
-> struct credentials_pass {
-> 	pid_t global_pid;
-> 	unsigned long unique_id;
-> 	uid_t new_uid;
-> 	gid_t new_gid;
-> 	int num_aux_gids;
-> 	gid_t aux_gids[];
-> }
+David Miller queues up the patches for the network subsystem for the
+stable trees, and then forwards them to me when he feels they are ready.
 
-This looks surprising like what I am doing in passing uids and pids
-through unix domain sockets.
+So I'll defer to him on this one and wait for it to come from him.
 
-So if this looks like a direction we want to go it shouldn't be too
-difficult.
+thanks,
 
->> That also btw needs fixing for other reasons - more than one daemon has
->> been written that generically uses recvmsg and so can be attacked with FD
->> leaks >-)
->
-> Yup.
->
-> (By 'needs fixing' you just mean needs to be done right for this
-> service?  Else I think I'm missing something...)
-
-Remember my unix domain socket and the patch for converting struct cred
-into a new context, from a month or so ago.  I think that is what we
-are talking about.
-
-Eric
+greg k-h
