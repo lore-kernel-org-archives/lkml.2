@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756541Ab0DUUoA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 16:44:00 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57757 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab0DUUn6 (ORCPT
+	id S1756551Ab0DUUp5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 16:45:57 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:38029 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944Ab0DUUpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 16:43:58 -0400
-Date: Wed, 21 Apr 2010 22:43:54 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: hpa@zytor.com
-Cc: mingo@elte.hu, tglx@linutronix.de, x86@kernel.org,
-       linux-kernel@vger.kernel.org, Frank Arnold <frank.arnold@amd.com>
-Subject: Re: [PATCH 0/5] AMD L3 cache index disable fixes for .35
-Message-ID: <20100421204354.GA30770@aftab>
-References: <1271349663-16670-1-git-send-email-bp@amd64.org>
+	Wed, 21 Apr 2010 16:45:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=dapEwdZ7wxHHiWWHXhClGHC2qjQuJv73VUPS1QXoDRCf0Ya7XmXz5oRf24YpqZUChB
+         MAv136cbM8bieEdAAX4jv0/eFrsSVrSCXDV7Ym/lCbxzgT0fnKK9yOrzQRm2sXKnpA1S
+         QH/tNTd+eyIWr/c4zZM1dEJ0NZMtE0ckAzgPg=
+Date: Wed, 21 Apr 2010 22:46:01 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
+       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com
+Subject: Re: [PATCH 2/6] [watchdog] convert touch_softlockup_watchdog to
+	touch_watchdog
+Message-ID: <20100421204559.GB8677@nowhere>
+References: <1271777043-3807-1-git-send-email-dzickus@redhat.com> <1271777043-3807-3-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1271349663-16670-1-git-send-email-bp@amd64.org>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1271777043-3807-3-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@amd64.org>
-Date: Thu, Apr 15, 2010 at 06:40:58PM +0200
+On Tue, Apr 20, 2010 at 11:23:59AM -0400, Don Zickus wrote:
+> Just a scripted conversion to remove touch_softlockup_watchdog.
+> 
+> Also converts the once case of touch_all_softlockup_watchdogs to
+> touch_all_watchdogs.
+> 
+> This is done as part of the removal of the old softlockup code and
+> transition to the new softlockup code.
+> 
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
 
-Ping.
 
-It would be cool if we could sort out objections soon (in case there are
-any, of course) so that the patches can have some -tip time before the
-.35 merge window.
+In fact I worry a bit about this unification of watchdog touching.
+When we touch the softlockup watchdog, do we also want to touch
+the nmi watchdog?
 
-Thanks.
+Most of the time, I think we don't want to. We usually touch the
+softlockup detector because we know we are abnormally delaying
+the softlockup kthread from being scheduled, and if we are in such
+situation, it means we are doing something in a sensitive context:
+typically the kind of context favorable to create hardlockups...
 
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> Hi,
-> 
-> this is a small patchset of fixes for L3 CID which have accumulated over
-> the last couple of weeks. They serve as a preparation for disabling L3
-> cache indices whenever an L3 MCE triggers, has been evaluated and the
-> offending index thresholded and, if error rate is excessively high,
-> disabled. Those patches will be coming up later though.
-> 
-> Patches 1,3,4 are cleanups and unifications which save us a little bit
-> of percpu memory in favor of dynamic allocation. Also, we have an L3
-> cache descriptor per node now instead of having this information per
-> CPU.
-> 
-> I triggered a lockdep warning in lockdep_trace_alloc() during testing
-> due to the fact that we may run with disabled interrupts that early
-> in the boot process. Therefore, I have a GFP_ATOMIC in patch 3 there
-> allocating the cache descriptors. I'm open for suggestions in case this
-> is undesired.
-> 
-> Patch 2 is a fix which triggers when we run as a guest on Xen due to Xen
-> not exporting CPU PCI config space to the guests.
-> 
-> And finally #5 is a required fix.
-> 
-> The patchset is also available at
-> git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git l3-for-35
-> 
-> Please queue for .35,
-> thanks.
-> 
+But the opposite is right: if we touch the nmi watchdog: it means we
+are abnormally delaying irqs, which means we also are abnormally
+delaying the softlockup kthread from being scheduled, so if we
+touch the nmi watchdog, we also want to touch the softlockup
+detector.
 
--- 
-Regards/Gruss,
-Boris.
+Hence I guess we want to keep the current state:
 
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
+- touch_nmi_watchdog() = touch softlockup and nmi watchdogs
+- touch_softlockup_watchdog() = only touch softlockup watchdog
+
