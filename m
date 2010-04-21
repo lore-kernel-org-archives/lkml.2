@@ -1,88 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab0DUPQk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 11:16:40 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:43517 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843Ab0DUPQj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 11:16:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=hLu28RMjg5kXcwRMMUTAW4M0L4midOjXtJ9Pwb5QrtRqtKTRYGUOhVLTQ2XaKZC9Ve
-         CnBfdsqzEnOjk2Kbbi057aKjXwg4YQG+TuFZsHInFFF18DIcE2Wg7k34qoA1mH5U9tt3
-         RTmun2CoJWb0/QAeTPlSZ6f38gduH+amtf/kE=
-Message-ID: <4BCF16CE.2080403@gmail.com>
-Date: Wed, 21 Apr 2010 17:16:30 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.5 Thunderbird/3.1b1
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, adilger@sun.com,
-       linux-ext4@vger.kernel.org,
-       Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       mszeredi@suse.cz, Eric Paris <eparis@redhat.com>
-Subject: Re: busy inodes -> ext3 umount crash
-References: <4BC8A7C1.20102@gmail.com> <20100419141158.GB5439@quack.suse.cz> <4BCC69B4.2050308@gmail.com> <4BCDB633.9040901@gmail.com> <20100420152844.GB3885@quack.suse.cz>
-In-Reply-To: <20100420152844.GB3885@quack.suse.cz>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755582Ab0DUPT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 11:19:58 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:49647 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552Ab0DUPT5 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Wed, 21 Apr 2010 11:19:57 -0400
+Message-Id: <4BCF33BD020000780003B3E4@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 21 Apr 2010 16:19:57 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: don't export init_level4_pgt
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2010 05:28 PM, Jan Kara wrote:
-> On Tue 20-04-10 16:12:03, Jiri Slaby wrote:
->> On 04/19/2010 04:33 PM, Jiri Slaby wrote:
->>> The trigger for busy inodes is as simple as (I=initialization done only
->>> once):
->>> I> # dd if=/dev/zero of=/dev/shm/ext3 bs=1024 count=1 seek=$((100*1024))
->>> I> # mkfs.ext3 -m 0 /dev/shm/ext3
->>> # mount -oloop /dev/shm/ext3 /mnt/c
->>> # umount /mnt/c
->>> # dmesg|tail
->>> VFS: Busy inodes after unmount of loop0. Self-destruct in 5 seconds.
->>> Have a nice day...
->>>
->>> (The printk time varies -- this sequence really suffices.)
->>
->> Well, this happens only after gnome-session is started and it's fuzzy --
->> sometimes it happens, sometimes not. I didn't find 100% trigger yet.
->   Hmph - maybe something in inotify? Dunno...
+It's not used by any module, and ix86 (as well as some other arches)
+also doesn't export its equivalent (swapper_pg_dir).
 
-fsnotify...
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
->>>> So if you can easily reproduce
->>>> the "busy inodes" message then I'd start with debugging that one. Do you
->>>> see it also with vanilla kernels?
->>
->> Vanilla seems not to be affected. It's in next/master already though
->> (2603ecd9). I'll investigate it further later.
->   Do you mean it's in today's linux-next but not in Linus' tree?
+---
+ arch/x86/kernel/x8664_ksyms_64.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-Yes, exactly.
-
-And the winner is (seemingly):
-commit 69c1182c4e5d8b7da772ddad512c6f6b67ec1bb8
-Author: Eric Paris <eparis@redhat.com>
-Date:   Thu Dec 17 21:24:27 2009 -0500
-
-    fsnotify: vfsmount marks generic functions
-
-    Much like inode-mark.c has all of the code dealing with marks on inodes
-    this patch adds a vfsmount-mark.c which has similar code but is intended
-    for marks on vfsmounts.
-
-    Signed-off-by: Eric Paris <eparis@redhat.com>
+--- linux-2.6.34-rc5/arch/x86/kernel/x8664_ksyms_64.c	2010-04-20 16:07:32.000000000 +0200
++++ 2.6.34-rc5-x86_64-unexport-init_level4_pgt/arch/x86/kernel/x8664_ksyms_64.c	2010-04-15 11:55:40.000000000 +0200
+@@ -54,7 +54,6 @@ EXPORT_SYMBOL(memcpy);
+ EXPORT_SYMBOL(__memcpy);
+ 
+ EXPORT_SYMBOL(empty_zero_page);
+-EXPORT_SYMBOL(init_level4_pgt);
+ #ifndef CONFIG_PARAVIRT
+ EXPORT_SYMBOL(native_load_gs_index);
+ #endif
 
 
-I can't verify it by reverting on the top of -mm as it doesn't revert
-cleanly. Do you see any bug in there?
 
-thanks,
--- 
-js
