@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab0DUFLz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 01:11:55 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53904 "EHLO ogre.sisk.pl"
+	id S1752014Ab0DUFOD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 01:14:03 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53912 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab0DUFLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 01:11:53 -0400
+	id S1751497Ab0DUFN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 01:13:59 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Subject: Re: [Bug #15795] 2.6.34-rc4 : OOPS in unmap_vma
-Date: Wed, 21 Apr 2010 07:12:26 +0200
+To: Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: 2.6.34-rc5: Reported regressions from 2.6.33
+Date: Wed, 21 Apr 2010 07:14:52 +0200
 User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
        Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.GdG.KRSzLB@tosh> <alpine.DEB.2.00.1004201623280.10496@parag-laptop>
-In-Reply-To: <alpine.DEB.2.00.1004201623280.10496@parag-laptop>
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <4bce5cc3.966bdc0a.2ef7.fffff5de@mx.google.com>
+In-Reply-To: <4bce5cc3.966bdc0a.2ef7.fffff5de@mx.google.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004210712.26169.rjw@sisk.pl>
+Message-Id: <201004210714.53050.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 April 2010, Parag Warudkar wrote:
-> 
-> On Tue, 20 Apr 2010, Rafael J. Wysocki wrote:
-> 
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
+On Wednesday 21 April 2010, Ben Gamari wrote:
+> On Tue, 20 Apr 2010 05:15:57 +0200 (CEST), "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > This message contains a list of some regressions from 2.6.33,
+> > for which there are no fixes in the mainline known to the tracking team.
+> > If any of them have been fixed already, please let us know.
 > > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.33.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15795
-> > Subject		: 2.6.34-rc4 : OOPS in unmap_vma
-> > Submitter	: Parag Warudkar <parag.lkml@gmail.com>
-> > Date		: 2010-04-14 (6 days old)
-> > Message-ID	: <alpine.DEB.2.00.1004132147260.1881@parag-laptop>
-> > References	: http://marc.info/?l=linux-kernel&m=127121006625429&w=2
-> > 
-> > 
+> > If you know of any other unresolved regressions from 2.6.33, please let us
+> > know either and we'll add them to the list.  Also, please let us know
+> > if any of the entries below are invalid.
 > > 
 > 
-> Hasn't reproduced after many retries and I am not sure it can be called a 
-> regression, may be it's always been there, just not reproducible easily - 
-> let's close this, I will reopen if needed.
+> I have recently reported this suspend regression on my Dell laptop hardware.
+> 
+> References: http://lkml.org/lkml/2010/4/18/20
+> Bug-report: https://bugzilla.kernel.org/show_bug.cgi?id=15820
 
-Done.
+This has been added to the list now.  Please check my comment in the Bugzilla
+entry.
 
 Rafael
