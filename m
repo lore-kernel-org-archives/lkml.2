@@ -1,110 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab0DUPJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 11:09:18 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:54562 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754018Ab0DUPJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 11:09:16 -0400
-Date: Wed, 21 Apr 2010 10:09:00 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: lkml <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>,
-       Ashwin Ganti <ashwin.ganti@gmail.com>, Greg KH <greg@kroah.com>,
-       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
-       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
-       Eric Paris <eparis@redhat.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
-Message-ID: <20100421150900.GB31880@us.ibm.com>
-References: <20100421012749.GA21338@us.ibm.com>
- <20100421012908.GB24251@us.ibm.com>
- <20100421102739.6ad932fb@lxorguk.ukuu.org.uk>
- <20100421133917.GB16326@us.ibm.com>
- <20100421151917.5ae20265@lxorguk.ukuu.org.uk>
+	id S1755521Ab0DUPLB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 11:11:01 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:52206 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754018Ab0DUPK7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 11:10:59 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100421151917.5ae20265@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCHv6 2.6.34-rc5 2/5] mx5: Add USB device definitions for Freescale MX51 Babbage HW
+Date: Wed, 21 Apr 2010 08:10:43 -0700
+Message-ID: <86A0E76937111F4C92FABEC0A209885104733FDD@az33exm21>
+In-Reply-To: <20100421002307.GN30801@buzzloop.caiaq.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCHv6 2.6.34-rc5 2/5] mx5: Add USB device definitions for Freescale MX51 Babbage HW
+Thread-Index: Acrg6O8e/2MWbxqkRu6LBoY6rCT2JwAe5gMA
+References: <1271805567-23068-1-git-send-email-Dinh.Nguyen@freescale.com> <1271805567-23068-2-git-send-email-Dinh.Nguyen@freescale.com> <20100421002307.GN30801@buzzloop.caiaq.de>
+From: "Nguyen Dinh-R00091" <R00091@freescale.com>
+To: "Daniel Mack" <daniel@caiaq.de>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+       <linux@arm.linux.org.uk>, <s.hauer@pengutronix.de>,
+       <valentin.longchamp@epfl.ch>, <grant.likely@secretlab.ca>,
+       <bryan.wu@canonical.com>, <amit.kucheria@canonical.com>,
+       "Li Jun-R65092" <R65092@freescale.com>,
+       "Zhang Lily-R58066" <R58066@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Alan Cox (alan@lxorguk.ukuu.org.uk):
-> > sorry I thought I had cc:d you, bc I was pretty sure you'd have some
-> > neat ideas.  Like this one.
-> > 
-> > One could try to argue that this makes every linux process susceptible
-> > to a trojan making it grant its userid to other tasks, but of course
-> > that's silly since the trojan could just fork.  Well, what this would
-> > buy the attacker is the ability to sit inconspicuously under his old
-> > userid, holding on to the fd until the admin goes out to coffee before
-> > switching userids.
+Hi Daniel,
+
+Functionally, this series of 5-patches for USB is dependent on this
+commit:
+
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 > 
-> Possibly, could you put a timestamp in the passed object ? (Given the
-> expiry of such a uid offer is kind of policy)
-
-Yup, in fact I do that for the p9auth device driver anyway, to avoid
-letting a user take up all kernel memory with unused setuid tokens.
-
-> > The other thing is that offhand I think the server can't easily tell
-> > from the socket which user namespace the client is in, as ucred only
-> > has .uid.  Though (1) we might need to create a 'struct puser' analogous
-> > to 'struct pid' for signals anyway, (2) userspace can segragate with
-> > fs or net_ns (if abstract sock), and (3) client in a container
-> > presumably won't be able to authenticate itself to server on the
-> > host anyway.
+> Update /plat-mxc/gpio.c to support Freescale's MX51 Babbage HW.
+> This patch applies to 2.6.34-rc5.
 > 
-> That I think needs fixing anyway and now is a good time as any to do it.
-> If you are going to be able to pass userids then you need to be sure you
-> don't get passed a handle with a uid change on it that you didn't want so
-> adding another object type and option of some kind to accept them has to
-> occur anyway.
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Acked-by: Amit Kucheria <amit.kucheria@canonical.com>
 
-Ignoring namespaces for a moment, I guess we could do something like
+Amit said "I'll include this in the mx5 tree to push to Sascha."
 
-struct credentials_pass {
-	pid_t global_pid;
-	unsigned long unique_id;
-	uid_t new_uid;
-	gid_t new_gid;
-	int num_aux_gids;
-	gid_t aux_gids[];
-}
+Dinh
 
-The unique_id is assigned by the kernel;  the client reads the whole
-struct credentials_pass - except global_pid - from the unix sock,
-verifies the desired credentials, then does sys_acceptid(unique_id)
-to accept.
+ 
 
-Again, how to pass user namespace information is not obvious to me.
+-----Original Message-----
+From: linux-kernel-owner@vger.kernel.org
+[mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Daniel Mack
+Sent: Tuesday, April 20, 2010 7:23 PM
+To: Nguyen Dinh-R00091
+Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+linux@arm.linux.org.uk; s.hauer@pengutronix.de;
+valentin.longchamp@epfl.ch; grant.likely@secretlab.ca;
+bryan.wu@canonical.com; amit.kucheria@canonical.com; Li Jun-R65092;
+Zhang Lily-R58066
+Subject: Re: [PATCHv6 2.6.34-rc5 2/5] mx5: Add USB device definitions
+for Freescale MX51 Babbage HW
 
-And it's probably debatable whether we want to also pass info about
-posix capabilities and LSM security data.
+Hi Dinh,
 
-Still, my main concern with this approach is that it makes the server
-more complicated.  Since I'm passing along my current credentials, that
-means I have to construct just the right credentials, which if using
-sock identified by pathname may mean I can no longer write to the
-socket, right?
+On Tue, Apr 20, 2010 at 06:19:24PM -0500, Dinh.Nguyen@freescale.com
+wrote:
+> This patch is part of enabling USB for Freescale MX51 Babbage HW. This
 
-And of course one other important consideration is that the overall
-p9auth API has been heavily discussed and documented, whereas
-implementing our own entirely new approach is breaking new ground
-and therefore a lot scarier.
+> patch adds device structures for USB Host1 and OTG port, and adds 
+> clocking information for USB HW.
+> 
+> This patch applies to 2.6.34-rc5.
 
-> That also btw needs fixing for other reasons - more than one daemon has
-> been written that generically uses recvmsg and so can be attacked with FD
-> leaks >-)
+Hmm, this one still doesn't apply for me. Can you double-check with a
+fresh checkout of 2.6.34-rc5 please?
 
-Yup.
+Other than that, I'm ok with the patches now. Sascha, do you have more
+objections? I couldn't test the whole thing as I lack mx5 hardware, but
+it looks sane now, and it doesn't break anything for mx3.
 
-(By 'needs fixing' you just mean needs to be done right for this
-service?  Else I think I'm missing something...)
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-thanks,
--serge
+For the patches 3/5 and 4/5 of this series, you can have my
+
+Reviewed-by: Daniel Mack <daniel@caiaq.de>
+
+Thanks,
+Daniel
+
+> ---
+>  arch/arm/mach-mx5/clock-mx51.c |    8 ++++++
+>  arch/arm/mach-mx5/devices.c    |   49
+++++++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-mx5/devices.h    |    2 +
+>  3 files changed, 59 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-mx5/clock-mx51.c 
+> b/arch/arm/mach-mx5/clock-mx51.c index 8f85f73..dcca330 100644
+> --- a/arch/arm/mach-mx5/clock-mx51.c
+> +++ b/arch/arm/mach-mx5/clock-mx51.c
+> @@ -761,6 +761,10 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, 
+> MXC_CCM_CCGRx_CG9_OFFSET,  DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2,
+MXC_CCM_CCGRx_CG10_OFFSET,
+>  	NULL,  NULL, &ipg_clk, NULL);
+>  
+> +/* USB */
+> +DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
+> +	NULL, NULL, &pll3_sw_clk, NULL);
+> +
+>  /* FEC */
+>  DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
+>  	NULL,  NULL, &ipg_clk, NULL);
+> @@ -778,6 +782,10 @@ static struct clk_lookup lookups[] = {
+>  	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
+>  	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
+>  	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
+> +	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
+> +	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
+> +	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
+> +	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
+>  };
+>  
+>  static void clk_tree_init(void)
+> diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
+
+> index 5070ae1..e6262f3 100644
+> --- a/arch/arm/mach-mx5/devices.c
+> +++ b/arch/arm/mach-mx5/devices.c
+> @@ -11,6 +11,7 @@
+>   */
+>  
+>  #include <linux/platform_device.h>
+> +#include <linux/dma-mapping.h>
+>  #include <linux/gpio.h>
+>  #include <mach/hardware.h>
+>  #include <mach/imx-uart.h>
+> @@ -92,6 +93,54 @@ struct platform_device mxc_fec_device = {
+>  	.resource = mxc_fec_resources,
+>  };
+>  
+> +static u64 usb_dma_mask = DMA_BIT_MASK(32);
+> +
+> +static struct resource usbotg_resources[] = {
+> +	{
+> +		.start = MX51_OTG_BASE_ADDR,
+> +		.end = MX51_OTG_BASE_ADDR + 0x1ff,
+> +		.flags = IORESOURCE_MEM,
+> +	},
+> +	{
+> +		.start = MX51_MXC_INT_USB_OTG,
+> +		.flags = IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +struct platform_device mxc_usbdr_host_device = {
+> +	.name = "mxc-ehci",
+> +	.id = 0,
+> +	.num_resources = ARRAY_SIZE(usbotg_resources),
+> +	.resource = usbotg_resources,
+> +	.dev = {
+> +		.dma_mask = &usb_dma_mask,
+> +		.coherent_dma_mask = DMA_BIT_MASK(32),
+> +	},
+> +};
+> +
+> +static struct resource usbh1_resources[] = {
+> +	{
+> +		.start = MX51_OTG_BASE_ADDR + 0x200,
+> +		.end = MX51_OTG_BASE_ADDR + 0x200 + 0x1ff,
+> +		.flags = IORESOURCE_MEM,
+> +	},
+> +	{
+> +		.start = MX51_MXC_INT_USB_H1,
+> +		.flags = IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +struct platform_device mxc_usbh1_device = {
+> +	.name = "mxc-ehci",
+> +	.id = 1,
+> +	.num_resources = ARRAY_SIZE(usbh1_resources),
+> +	.resource = usbh1_resources,
+> +	.dev = {
+> +		.dma_mask = &usb_dma_mask,
+> +		.coherent_dma_mask = DMA_BIT_MASK(32),
+> +	},
+> +};
+> +
+>  static struct mxc_gpio_port mxc_gpio_ports[] = {
+>  	{
+>  		.chip.label = "gpio-0",
+> diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
+
+> index f339ab8..95c45f9 100644
+> --- a/arch/arm/mach-mx5/devices.h
+> +++ b/arch/arm/mach-mx5/devices.h
+> @@ -2,3 +2,5 @@ extern struct platform_device mxc_uart_device0;  
+> extern struct platform_device mxc_uart_device1;  extern struct 
+> platform_device mxc_uart_device2;  extern struct platform_device 
+> mxc_fec_device;
+> +extern struct platform_device mxc_usbdr_host_device; extern struct 
+> +platform_device mxc_usbh1_device;
+> --
+> 1.6.0.4
+> 
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+in the body of a message to majordomo@vger.kernel.org More majordomo
+info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
+
