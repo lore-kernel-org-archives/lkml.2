@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab0DUTZT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 15:25:19 -0400
-Received: from kelvin.asmallorange.com ([207.210.111.10]:35746 "EHLO
-	kelvin.asmallorange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326Ab0DUTZQ (ORCPT
+	id S1755623Ab0DUTaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 15:30:20 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:62318 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755394Ab0DUTaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 15:25:16 -0400
-Date: Thu, 22 Apr 2010 00:56:00 +0530
-From: Rabin Vincent <rabin@rab.in>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>,
-       Abhishek Sagar <sagar.abhishek@gmail.com>,
-       Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 00/10] ARM: ftrace: cleanups, Thumb-2, and dynamic
- ftrace (v2)
-Message-ID: <20100421192600.GA17985@debian>
-References: <1268462987-8271-1-git-send-email-rabin@rab.in>
+	Wed, 21 Apr 2010 15:30:18 -0400
+X-Greylist: delayed 908 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Apr 2010 15:30:18 EDT
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268462987-8271-1-git-send-email-rabin@rab.in>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - kelvin.asmallorange.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - rab.in
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Transfer-Encoding: 7bit
+Message-ID: <19407.20109.308816.104856@stoffel.org>
+Date: Wed, 21 Apr 2010 15:14:21 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Hedi Berriche <hedi@sgi.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Mike Travis <travis@sgi.com>, Ingo Molnar <mingo@elte.hu>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jack Steiner <steiner@sgi.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
+ pid_max v2
+In-Reply-To: <4BCF336B.1050706@redhat.com>
+References: <4BCE579C.5070100@sgi.com>
+	<4BCE5A73.3000904@sgi.com>
+	<20100421102350.4c222e6b@lxorguk.ukuu.org.uk>
+	<20100421165934.GN16427@zorg.emea.sgi.com>
+	<4BCF336B.1050706@redhat.com>
+X-Mailer: VM 8.0.9 under Emacs 22.3.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+>>>>> "Rik" == Rik van Riel <riel@redhat.com> writes:
 
-On Sat, Mar 13, 2010 at 12:19:37PM +0530, Rabin Vincent wrote:
-> This series contains fixes and improvements to the ARM ftrace support.  It adds
-> Thumb-2 support and re-implements the dynamic ftrace support.
+Rik> On 04/21/2010 12:59 PM, Hedi Berriche wrote:
+>> On Wed, Apr 21, 2010 at 10:20 Alan Cox wrote:
+>> |>  of 32k will not be enough.  A system with 1664 CPU's, there are 25163 processes
+>> |>  started before the login prompt.  It's estimated that with 2048 CPU's we will pass
+>> |
+>> | Is that perhaps the bug not the 32K limit?
+>> 
+>> Doubt it: I just checked on an *idle* 1664 CPUs system and I can see 26844
+>> tasks, all but few being kernel threads.
 
-Do you have any further concerns about this patchset?
+Rik> That is 15 kernel threads per CPU.
 
-If not, do you mind if I try to send in the series (v2 + the two updated
-patches) via the ARM patch system, since most of the patches only touch
-code under arch/arm/?
+Rik> Reducing the number of kernel threads sounds like a
+Rik> useful thing to do.
 
-Rabin
+Isn't that already a project?  I thought someone (Jeff? Jorn? Tejun? Bueller
+bueller....?) was already proposing a patch set to reduce the number
+of kernel threads by having dynamic workqueues instead, so that we
+didn't spawn a bunch of threads that never did anything?
+
+John
