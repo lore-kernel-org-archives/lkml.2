@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab0DUU4t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 16:56:49 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:34065 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279Ab0DUU4r (ORCPT
+	id S1756588Ab0DUU6V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 16:58:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57458 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968Ab0DUU6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 16:56:47 -0400
-Date: Wed, 21 Apr 2010 13:56:26 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: [PATCH] block: Add a trace point whenever a barrier IO request is
-	sent
-Message-ID: <20100421205626.GA15607@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Wed, 21 Apr 2010 16:58:20 -0400
+Subject: Re: Considerations on sched APIs under RT patch
+From: Peter Zijlstra <peterz@infradead.org>
+To: Primiano Tucci <p.tucci@gmail.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+       tglx <tglx@linutronix.de>
+In-Reply-To: <s2tc5b2c05b1004211338y814bc3b2o547a6eecdf64ca7f@mail.gmail.com>
+References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
+	 <1271755208.1676.422.camel@laptop>
+	 <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
+	 <1271804453.10448.168.camel@gandalf.stny.rr.com>
+	 <t2nc5b2c05b1004202216pd159c9b4mbfc1dc7658fc20e7@mail.gmail.com>
+	 <1271839772.1776.58.camel@laptop>
+	 <1271854016.10448.172.camel@gandalf.stny.rr.com>
+	 <x2mc5b2c05b1004211224s7825933dh531f2ed030610e9e@mail.gmail.com>
+	 <1271879833.1776.186.camel@laptop>
+	 <s2tc5b2c05b1004211338y814bc3b2o547a6eecdf64ca7f@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Apr 2010 22:58:16 +0200
+Message-ID: <1271883496.1776.263.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simple debugging patch used to watch for barrier requests.  I've been using
-this to watch ext4's barrier=1 behavior.
+On Wed, 2010-04-21 at 22:38 +0200, Primiano Tucci wrote:
+> > No, any syscall can end up blocking/scheduling there are no exceptions.
+> > But blocking doesn't mean its non-deterministic, esp. when coupled with
+> > things like PI.
+> >
+> > But you do have to treat system resources as such, that is they can (and
+> > will) create cross-cpu dependencies, if you do not take that into
+> > account you will of course be surprised.
+> >
+> I actually don't understand why do you recall PI so frequently, it
+> seems to be the unique point of interest.
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
+PI keeps preemptible locks working in a RT environment. Non-preemptible
+or preemptible+PI are both valid RT constructs that can be analyzed 
 
- block/blk-core.c             |    4 ++++
- include/trace/events/block.h |   35 +++++++++++++++++++++++++++++++++++
- 2 files changed, 39 insertions(+), 0 deletions(-)
+> Actually I take care about not sharing cross-cpu resources, but I
+> cannot take care of what the kernel should do.
+
+An SMP kernel must be treated as a cross-cpu resource. There's just no
+way around that. For instance, Unix allows two processes on different
+cpus to invoke sched_setscheduler/sched_setaffinity or any number of
+system calls on the same target process. Filesystems are shared etc..
+
+> In my viewpoint is unacceptable that the scheduler apis can led into a
+> rescheduling.
+
+They can even lead to pagefaults and disk IO if you're not careful.
+
+I'm not sure if there are blocking locks left thereabout, but spinlocks
+or rt_mutex, both create cross-cpu dependencies that need to be
+analyzed, !preempt isn't magic in any way.
+
+> It voids any form of process control.
+> If I lose the control while controlling other processes, Quis
+> custodiet ipsos custodes?
+> 
+> P.S. It actually does not happen in other RTOSes, e.g., VxWorks SMP
+
+I don't know any of those, but its impossible to migrate tasks from one
+cpu to another without creating cross-cpu dependencies.
+
+Whether locks are preemptible or not doesn't make them any less
+analyzable, if you use system-calls in your RT program, their
+implementation needs to be considered.
 
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 9fe174d..fe02ea7 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -36,6 +36,7 @@
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_complete);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_barrier);
- 
- static int __make_request(struct request_queue *q, struct bio *bio);
- 
-@@ -1135,6 +1136,9 @@ void init_request_from_bio(struct request *req, struct bio *bio)
- 	if (bio_rw_flagged(bio, BIO_RW_NOIDLE))
- 		req->cmd_flags |= REQ_NOIDLE;
- 
-+	if (req->cmd_flags & (REQ_HARDBARRIER | REQ_SOFTBARRIER))
-+		trace_block_barrier(req, bio);
-+
- 	req->errors = 0;
- 	req->__sector = bio->bi_sector;
- 	req->ioprio = bio_prio(bio);
-diff --git a/include/trace/events/block.h b/include/trace/events/block.h
-index d870a91..ccf96c3 100644
---- a/include/trace/events/block.h
-+++ b/include/trace/events/block.h
-@@ -198,6 +198,41 @@ TRACE_EVENT(block_bio_bounce,
- );
- 
- /**
-+ * block_barrier - barrier operation requested
-+ * @r: request that asked for the barrier
-+ * @bio: block operation
-+ *
-+ * This tracepoint indicates that a barrier operation has been
-+ * requested and a flush will be sent to the underlying block
-+ * device.
-+ */
-+TRACE_EVENT(block_barrier,
-+
-+	TP_PROTO(struct request *r, struct bio *bio),
-+
-+	TP_ARGS(r, bio),
-+
-+	TP_STRUCT__entry(
-+		__field( dev_t,		dev		)
-+		__field( sector_t,	sector		)
-+		__field( unsigned,	nr_sector	)
-+		__field( unsigned,	cmd_flags	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev		= bio->bi_bdev->bd_dev;
-+		__entry->sector		= bio->bi_sector;
-+		__entry->nr_sector	= bio->bi_size >> 9;
-+		__entry->cmd_flags	= r->cmd_flags;
-+	),
-+
-+	TP_printk("%d:%d %llu + %u [0x%x]",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long long)__entry->sector,
-+		  __entry->nr_sector, __entry->cmd_flags)
-+);
-+
-+/**
-  * block_bio_complete - completed all work on the block operation
-  * @q: queue holding the block operation
-  * @bio: block operation completed
+
