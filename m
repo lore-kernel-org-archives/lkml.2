@@ -1,206 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab0DUDpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Apr 2010 23:45:38 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:35142 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249Ab0DUDpf (ORCPT
+	id S1751581Ab0DUD5e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Apr 2010 23:57:34 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:48931 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab0DUD5b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Apr 2010 23:45:35 -0400
-Date: Tue, 20 Apr 2010 22:45:32 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: Greg KH <greg@kroah.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>,
-       Ashwin Ganti <ashwin.ganti@gmail.com>, rsc@swtch.com, ericvh@gmail.com,
-       linux-security-module@vger.kernel.org, Ron Minnich <rminnich@gmail.com>,
-       jt.beard@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
-       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
-       Eric Paris <eparis@redhat.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
-Message-ID: <20100421034532.GA9254@us.ibm.com>
-References: <20100421012749.GA21338@us.ibm.com>
- <20100421012908.GB24251@us.ibm.com>
- <20100421030406.GB10258@kroah.com>
+	Tue, 20 Apr 2010 23:57:31 -0400
+Message-ID: <20100421065724.a01gzqwecksogc8k@webmail.welho.com>
+Date: Wed, 21 Apr 2010 06:57:24 +0300
+From: BMW CUSTOMER SERVICE <info@bmw.org>
+Reply-to: bmwdept7@w.cn
+To: undisclosed-recipients:;
+Subject: REFNO.:BMW/74-A0802742010
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <20100421030406.GB10258@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Greg KH (greg@kroah.com):
-> On Tue, Apr 20, 2010 at 08:29:08PM -0500, Serge E. Hallyn wrote:
-> > This is a driver that adds Plan 9 style capability device
-> > implementation.  See Documentation/p9auth.txt for a description
-> > of how to use this.
-> 
-> Hm, you didn't originally write this driver, so it would be good to get
-> some original authorship information in here to keep everything correct,
-> right?
 
-That's why I left the MODULE_AUTHOR line in there - not sure what
-else to do for that.  I'll add a comment in p9auth.txt, especially
-pointing back to Ashwin's original paper.
 
-> >  Documentation/p9auth.txt     |   47 ++++
-> >  drivers/char/Kconfig         |    2 +
-> >  drivers/char/Makefile        |    2 +
-> >  drivers/char/p9auth/Kconfig  |    9 +
-> >  drivers/char/p9auth/Makefile |    1 +
-> >  drivers/char/p9auth/p9auth.c |  517 ++++++++++++++++++++++++++++++++++++++++++
-> 
-> Is this code really ready for drivers/char/?  What has changed in it
-> that makes it ok to move out of the staging tree?
+-- 
+CUSTOMER SERVICE
+REFNO.:BMW/74-A0802742010
+Batch: 044/05/ZY369
 
-It was dropped from staging :)  I don't particularly care to see it
-go back into staging, as opposed to working out issues out of tree
-(assuming they are solvable).  For one thing, as you note below,
-there is the question of whether it should be a device driver at
-all.
+Dear E-mail Owner,
 
-> And who is going to maintain it?  You?  Or someone else?
+You are a winner of the <BMW Automobile awareness Online Promo Programme> that
+was held on 9th of April 2010. You have therefore been approved to claim a
+total sum Five Hundred Thousand Great Britain Pounds (£500,000.00).  
+Please this
+informations are required for verification.
 
-If Ashwin doesn't want to maintain it, I'll do it.  Either way.
+Name:...................
+Address:...............
+Country:...............
+Age:..................
+Gender:................
+Occupation:..............
+Phone and Fax:...............
+Winning E-mail Address:................
 
-> >  6 files changed, 578 insertions(+), 0 deletions(-)
-> >  create mode 100644 Documentation/p9auth.txt
-> >  create mode 100644 drivers/char/p9auth/Kconfig
-> >  create mode 100644 drivers/char/p9auth/Makefile
-> >  create mode 100644 drivers/char/p9auth/p9auth.c
-> > 
-> > diff --git a/Documentation/p9auth.txt b/Documentation/p9auth.txt
-> > new file mode 100644
-> > index 0000000..14a69d8
-> > --- /dev/null
-> > +++ b/Documentation/p9auth.txt
-> > @@ -0,0 +1,47 @@
-> > +The p9auth device driver implements a plan-9 factotum-like
-> > +capability API.  Tasks which are privileged (authorized by
-> > +possession of the CAP_GRANT_ID privilege (POSIX capability))
-> > +can write new capabilities to /dev/caphash.  The kernel then
-> > +stores these until a task uses them by writing to the
-> > +/dev/capuse device.  Each capability represents the ability
-> > +for a task running as userid X to switch to userid Y and
-> > +some set of groups.  Each capability may be used only once,
-> > +and unused capabilities are cleared after two minutes.
-> > +
-> > +The following examples shows how to use the API.  Shell 1
-> > +contains a privileged root shell.  Shell 2 contains an
-> > +unprivileged shell as user 501 in the same user namespace.  If
-> > +not already done, the privileged shell should create the p9auth
-> > +devices:
-> > +
-> > +	majfile=/sys/module/p9auth/parameters/cap_major
-> > +	minfile=/sys/module/p9auth/parameters/cap_minor
-> > +	maj=`cat $majfile`
-> > +	mknod /dev/caphash c $maj 0
-> > +	min=`cat $minfile`
-> > +	mknod /dev/capuse c $maj 1
-> > +	chmod ugo+w /dev/capuse
-> 
-> That is incorrect, you don't need the cap_major/minor files at all, the
-> device node should be automatically created for you, right?
+Please contact:
+Thomas Wells
+Email: bmwdept7@w.cn
 
-Hmm, where?  Not in /dev on my SLES11 partition...
+Telephone: +44-704-570-7201
 
-> And do you really want to do all of this control through a device node?
-> Why?
+Alexandru Bercean
+Annoucer For BMW Automobile Awareness Online Promo
 
-Well...
 
-At first I was thinking same as you were.  So I was going to switch
-to a pure syscall-based approach.  But it just turned out more
-complicated.  The factotum server would call sys_grantid(), and
-the target task would end up doing some huge sys_setresugid() or
-else multiple syscalls using the granted id.  It just was uglier.
-I think there's an experimental patchset sitting somewhere I could
-point to (if I weren't embarassed :).
-
-Another possibility would be to use netlink, but that doesn't
-appear as amenable to segragation by user namespaces.  The pid
-(presumably/hopefully global pid, as __u32) is available, so it
-shouldn't be impossible, but a simple device with simple synchronous
-read/write certainly has its appeal.  Firing off a message hoping
-that at some point our credentials will be changes, less so.
-
-> > +DEFINE_MUTEX(cap_mutex); /* TODO fix up the locking one day */
-> 
-> One might hope that today would be that day...
-
-Well there's nothing actually wrong with the cap_mutex.  I put in
-this comment thinking I'd switch to rcu at some point, but it doesn't
-seem worthwhile at the moment, by a long shot.
-
-> Also, please run this through sparse.  This is a variable that doesn't
-> need to be global.
-> 
-> > +struct cap_dev {
-> > +	struct cdev cdev;
-> > +};
-> 
-> Do you really need to do it this way?  A cdev for a single device node?
-> That's major overkill.
-> 
-> > +static int cap_major = CAP_MAJOR;
-> > +static int cap_minor;
-> 
-> Just always use a dynamic misc device, you never need a whole major for
-> this.
-
-Right - will switch that over, assuming we don't nix the whole idea
-first.
-
-> > +module_param(cap_major, int, S_IRUGO);
-> > +module_param(cap_minor, int, S_IRUGO);
-> 
-> Can be removed.
-> 
-> > +MODULE_AUTHOR("Ashwin Ganti");
-> 
-> Hm, who is going to maintain this, you, or Ashwin?
-
-I haven't asked Ashwin, and will be happy either way.  Ashwin, did
-you want to maintain it?
-
-> > +static void hexdump(unsigned char *buf, unsigned int len)
-> > +{
-> > +	while (len--)
-> > +		printk(KERN_DEBUG "%02x", *buf++);
-> > +	printk(KERN_DEBUG "\n");
-> > +}
-> 
-> We have a built-in function for this already.
-> 
-> Oh, this function is also incorrect, which is a good reason to use the
-> built-in ones.
-
-Really I prefer to get rid of that altogether.  Anyone who wants
-to see that can use a kprobe hooked to the exit of cap_hash().
-
-> I'm going to stop now, this doesn't belong in drivers/char/ yet, it
-> needs work...
-
-/me rolls up his sleeves.
-
-> thanks,
-> 
-> greg k-h
-> 
-> > +/*
-> > + * read an entry.  For now it is
-> > + * source_user@target_user@rand
-> > + * Next it will become
-> > + * source_user@target_user@target_group@numgroups@grp1..@grpn@rand
-> > + */
-> 
-> Hm, wait, one more....  The kernel/user api is going to change some time
-> in the future?  Please fix this now before it gets merged.
-
-Huh, no that change already happened.
-
-thanks,
--serge
