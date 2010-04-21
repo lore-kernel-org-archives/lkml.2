@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab0DUSKV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 14:10:21 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:46560 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab0DUSKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 14:10:20 -0400
-Message-id: <4BCF3F69.3050003@acm.org>
-Date: Wed, 21 Apr 2010 13:09:45 -0500
-From: Corey Minyard <minyard@acm.org>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090707)
-MIME-version: 1.0
-To: Matthew Garrett <mjg@redhat.com>
-Cc: openipmi-developer@lists.sourceforge.net, bjorn.helgaas@hp.com,
+	id S1754396Ab0DUSPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 14:15:47 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43206 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752485Ab0DUSPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 14:15:46 -0400
+Date: Wed, 21 Apr 2010 11:03:49 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alessandro Ghedini <al3xbio@gmail.com>
+Cc: Andrew.Elwell@gmail.com, mithlesh@linsyssoft.com, svenne@krap.dk,
+       jkosina@suse.cz, devel@driverdev.osuosl.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] ipmi: Only register one si per bmc
-References: <1271788828-10231-1-git-send-email-mjg@redhat.com>
- <1271788828-10231-2-git-send-email-mjg@redhat.com>
-In-reply-to: <1271788828-10231-2-git-send-email-mjg@redhat.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
+Subject: Re: [PATCH] Staging: wlan-ng: fix many style warnings in
+ hfa384x_usb.c
+Message-ID: <20100421180349.GA24812@suse.de>
+References: <1271870950-19305-1-git-send-email-al3xbio@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271870950-19305-1-git-send-email-al3xbio@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett wrote:
-> Only register one si per bmc. Use any user-provided devices first, followed
-> by the first device with an irq, followed by the first device discovered.
->   
-If I understand this correctly, this would really be "Only register one 
-si per system".  Unfortunately, there are systems that have more than 
-one BMC each with their own interface.  Also, I believe the driver would 
-not function between the previous patch and this patch, which isn't the 
-best.
-
-The spec is rather fuzzy about the whole subject of multiple BMCs and 
-interfaces, but reality is that there are systems that will be broken 
-with this.
-
--corey
-
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+On Wed, Apr 21, 2010 at 07:29:10PM +0200, Alessandro Ghedini wrote:
+> This patch fixes most of the style warnings found with checkpatch.pl in the
+> hfa384x_usb.c file.
+> 
+> Signed-off-by: Alessandro Ghedini <al3xbio@gmail.com>
 > ---
->  drivers/char/ipmi/ipmi_si_intf.c |   33 +++++++++++++++++++++++++++++++++
->  1 files changed, 33 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-> index d2bdf92..95af023 100644
-> --- a/drivers/char/ipmi/ipmi_si_intf.c
-> +++ b/drivers/char/ipmi/ipmi_si_intf.c
-> @@ -3258,6 +3258,7 @@ static __devinit int init_ipmi_si(void)
->  	int  i;
->  	char *str;
->  	int  rv;
-> +	struct smi_info *e;
+>  drivers/staging/wlan-ng/hfa384x_usb.c |   59 ++++++++++++++++++--------------
+>  1 files changed, 33 insertions(+), 26 deletions(-)
+> 
+> diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
+> index 5df56f0..db819be 100644
+> --- a/drivers/staging/wlan-ng/hfa384x_usb.c
+> +++ b/drivers/staging/wlan-ng/hfa384x_usb.c
+> @@ -62,7 +62,7 @@
+>  *
+>  * hfa384x_drvr_xxxconfig  An example of the drvr level abstraction. These
+>  *			functions are wrappers for the RID get/set
+> -*			sequence. They 	call copy_[to|from]_bap() and
+> +*			sequence. They call copy_[to|from]_bap() and
+>  *			cmd_access().	These functions operate on the
+>  *			RIDs and buffers without validation.  The caller
+>  *			is responsible for that.
+> @@ -351,7 +351,9 @@ static int submit_rx_urb(hfa384x_t *hw, gfp_t memflags)
+>  	hw->rx_urb_skb = skb;
 >  
->  	if (initialized)
->  		return 0;
-> @@ -3292,6 +3293,14 @@ static __devinit int init_ipmi_si(void)
->  
->  	hardcode_find_bmc();
->  
-> +	/* If the user gave us a device, they presumably want us to use it */
-> +	mutex_lock(&smi_infos_lock);
-> +	if (!list_empty(&smi_infos)) {
-> +		mutex_unlock(&smi_infos_lock);
-> +		return 0;
-> +	}
-> +	mutex_unlock(&smi_infos_lock);
-> +
->  #ifdef CONFIG_DMI
->  	dmi_find_bmc();
->  #endif
-> @@ -3315,6 +3324,30 @@ static __devinit int init_ipmi_si(void)
->  	of_register_platform_driver(&ipmi_of_platform_driver);
->  #endif
->  
-> +	/* Try to register something with interrupts first */
-> +
-> +	mutex_lock(&smi_infos_lock);
-> +	list_for_each_entry(e, &smi_infos, link) {
-> +		if (e->irq) {
-> +			if (!try_smi_init(e)) {
-> +				mutex_unlock(&smi_infos_lock);
-> +				return 0;
-> +			}
-> +		}
-> +	}
-> +
-> +	/* Fall back to the preferred device */
-> +
-> +	list_for_each_entry(e, &smi_infos, link) {
-> +		if (!e->irq) {
-> +			if (!try_smi_init(e)) {
-> +				mutex_unlock(&smi_infos_lock);
-> +				return 0;
-> +			}
-> +		}
-> +	}
-> +	mutex_unlock(&smi_infos_lock);
-> +
->  	if (si_trydefaults) {
->  		mutex_lock(&smi_infos_lock);
->  		if (list_empty(&smi_infos)) {
->   
+>  	result = -ENOLINK;
+> -	if (!hw->wlandev->hwremoved && !test_bit(WORK_RX_HALT, &hw->usb_flags)) {
+> +	if (!hw->wlandev->hwremoved && \
+> +			!test_bit(WORK_RX_HALT, &hw->usb_flags)) {
 
+As Joe pointed out, this isn't good form.
+
+> @@ -451,7 +453,7 @@ static void hfa384x_usb_defer(struct work_struct *data)
+>  	if (test_bit(WORK_RX_HALT, &hw->usb_flags)) {
+>  		int ret;
+>  
+> -		usb_kill_urb(&hw->rx_urb);	/* Cannot be holding spinlock! */
+> +		usb_kill_urb(&hw->rx_urb); /* Cannot be holding spinlock! */
+
+Put stuff like this on the line before, not after the code please.
+
+thanks,
+
+greg k-h
