@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab0DUTMC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 15:12:02 -0400
-Received: from stargate.chelsio.com ([67.207.112.58]:28809 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717Ab0DUTL7 (ORCPT
+	id S1754859Ab0DUTMd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 15:12:33 -0400
+Received: from exhub016-3.exch016.msoutlookonline.net ([207.5.72.226]:19121
+	"EHLO EXHUB016-3.exch016.msoutlookonline.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754518Ab0DUTMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 15:11:59 -0400
-Message-ID: <4BCF4E0E.1080805@chelsio.com>
-Date: Wed, 21 Apr 2010 12:12:14 -0700
-From: Divy Le Ray <divy@chelsio.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	Wed, 21 Apr 2010 15:12:31 -0400
+Message-ID: <4BCF3FAE.7090206@cfl.rr.com>
+Date: Wed, 21 Apr 2010 14:10:54 -0400
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-CC: netdev@vger.kernel.org,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cxgb3: fix linkup issue
-References: <4BCD0424.8030501@ct.jp.nec.com>
-In-Reply-To: <4BCD0424.8030501@ct.jp.nec.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Jamie Lokier <jamie@shareable.org>
+CC: linux-fsdevel@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: readahead on directories
+References: <4BCC7C05.8000803@cfl.rr.com> <20100421004434.GA27420@shareable.org> <4BCF123C.6010400@cfl.rr.com> <20100421161211.GC27575@shareable.org>
+In-Reply-To: <20100421161211.GC27575@shareable.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Apr 2010 19:14:56.0625 (UTC) FILETIME=[EDE05610:01CAE186]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hiroshi Shimamoto wrote:
-> From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
->
-> I encountered an issue that not to link up on cxgb3 fabric.
-> I bisected and found that this regression was introduced by
-> 0f07c4ee8c800923ae7918c231532a9256233eed.
->
-> Correct to pass phy_addr to cphy_init() at t3_xaui_direct_phy_prep().
->
-> Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
->   
+On 4/21/2010 12:12 PM, Jamie Lokier wrote:
+> Asynchronous is available: Use clone or pthreads.
 
-Sorry for the review delay, I just came back from some time off.
-Acked-by: Divy Le Ray <divy@chelsio.com>
+Synchronous in another process is not the same as async.  It seems I'm
+going to have to do this for now as a workaround, but one of the reasons
+that aio was created was to avoid the inefficiencies this introduces.
+Why create a new thread context, switch to it, put a request in the
+queue, then sleep, when you could just drop the request in the queue in
+the original thread and move on?
 
-> ---
->  drivers/net/cxgb3/ael1002.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/net/cxgb3/ael1002.c b/drivers/net/cxgb3/ael1002.c
-> index 5248f9e..35cd367 100644
-> --- a/drivers/net/cxgb3/ael1002.c
-> +++ b/drivers/net/cxgb3/ael1002.c
-> @@ -934,7 +934,7 @@ static struct cphy_ops xaui_direct_ops = {
->  int t3_xaui_direct_phy_prep(struct cphy *phy, struct adapter *adapter,
->  			    int phy_addr, const struct mdio_ops *mdio_ops)
->  {
-> -	cphy_init(phy, adapter, MDIO_PRTAD_NONE, &xaui_direct_ops, mdio_ops,
-> +	cphy_init(phy, adapter, phy_addr, &xaui_direct_ops, mdio_ops,
->  		  SUPPORTED_10000baseT_Full | SUPPORTED_AUI | SUPPORTED_TP,
->  		  "10GBASE-CX4");
->  	return 0;
->   
+> A quick skim of fs/{ext3,ext4}/dir.c finds a call to
+> page_cache_sync_readahead.  Doesn't that do any reading ahead? :-)
 
+Unfortunately it does not help when it is synchronous.  The process
+still sleeps until it has fetched the blocks it needs.  I believe that
+code just ends up doing a single 4kb read if the directory is no larger
+than that, or if it is, then it reads up to readahead_size.  It puts the
+request in the queue then sleeps until all the data has been read, even
+if only the first 4kb was required before readdir() could return.
+
+This means that a single thread calling readdir() is still going to
+block reading the directory before it can move on to trying to read
+other directories that are also needed.
+
+> I/O is the probably the biggest cost, so it's more important to get
+> the I/O pattern you want than worrying about return values you'll discard.
+
+True, but it would be nice not to waste cpu cycles copying unneeded data
+around.
+
+> If not, fs/ext4/namei.c:ext4_dir_inode_operations points to
+> ext4_fiemap.  So you may have luck calling FIEMAP or FIBMAP on the
+> directory, and then reading blocks using the block device.  I'm not
+> sure if the cache loaded via the block device (when mounted) will then
+> be used for directory lookups.
+
+Yes, I had considered that.  ureadahead already makes use of ext2fslibs
+to open the block device and read the inode tables so they are already
+in the cache for later use.  It seems a bit silly to do that though,
+when that is exactly what readahead() SHOULD do for you.
