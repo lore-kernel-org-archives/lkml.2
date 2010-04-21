@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366Ab0DUUSx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 16:18:53 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42382 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754858Ab0DUUSw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 16:18:52 -0400
-Date: Wed, 21 Apr 2010 13:18:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-       Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH v2] VMware Balloon driver
-Message-Id: <20100421131836.8b31a8c6.akpm@linux-foundation.org>
-In-Reply-To: <20100421195935.GA972@dtor-ws.eng.vmware.com>
-References: <20100404215202.GA13020@dtor-ws.eng.vmware.com>
-	<20100405142419.2c9bea3d.akpm@linux-foundation.org>
-	<20100415210030.GA5359@dtor-ws.eng.vmware.com>
-	<20100421195935.GA972@dtor-ws.eng.vmware.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756397Ab0DUUVl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 16:21:41 -0400
+Received: from tservice.ru ([195.178.208.66]:40122 "EHLO tservice.net.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756335Ab0DUUVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 16:21:40 -0400
+Date: Thu, 22 Apr 2010 00:21:34 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Phillip Susi <psusi@cfl.rr.com>, linux-fsdevel@vger.kernel.org,
+       Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: readahead on directories
+Message-ID: <20100421202134.GB25130@ioremap.net>
+References: <4BCC7C05.8000803@cfl.rr.com> <20100421004434.GA27420@shareable.org> <4BCF123C.6010400@cfl.rr.com> <20100421161211.GC27575@shareable.org> <20100421183853.GA14897@ioremap.net> <20100421185124.GM27575@shareable.org> <20100421185657.GA21249@ioremap.net> <20100421200243.GU27575@shareable.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100421200243.GU27575@shareable.org>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Apr 2010 12:59:35 -0700
-Dmitry Torokhov <dtor@vmware.com> wrote:
+On Wed, Apr 21, 2010 at 09:02:43PM +0100, Jamie Lokier (jamie@shareable.org) wrote:
+> FIEMAP might not be the answer, but what part of it requires fs
+> knowledge?  It's supposed to be fs-independent.  I agree it's not
+> always appropriate to use, and I don't know if it would be effective
+> anyway.
 
-> Do you see any issues with the driver?
+At least we have to know whether given fs supports such interface.
+And more complex is to know how underlying fs is organized. What is
+extent, which types can it have, where exactly information about extent
+metadata is stored, i.e. where can we find what this object is about?
+And how to actually populate appropriate blocks into ram to speedup readdir()?
 
-Only my near-complete cluelessness on the whole topic.
+FIEMAP (which is file mapper btw :) is useful for information gathering
+about how fs is organized, but that's all I'm afraid.
 
-> Will you be the one picking it
-> up and queueing for mainline?
-
-Spose so.
+-- 
+	Evgeniy Polyakov
