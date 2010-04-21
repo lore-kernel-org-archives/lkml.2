@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab0DUPwx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 11:52:53 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:35398 "HELO
-	outbound-mail-313.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755814Ab0DUPwv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 11:52:51 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=eLOtNlvpGBZt48rFAJCtvgEcKLGhnDMeBg1mJoP+Pe0/mHZPDnB7ChFu+8XWbs6GY96vXuzbDeQfwt1b+WSKG7+OYwhUdhgis/Bg7RVHHRdtX1L95BGipQX1BpaS7/Oo;
-Date: Wed, 21 Apr 2010 08:54:08 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai <yinghai.lu@oracle.com>
-Cc: Peter Henriksson <peter.henriksson@gmail.com>,
-       Clemens Ladisch <clemens@ladisch.de>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [regression, bisected] Xonar DX invalid PCI I/O range since 
- 977d17bb174
-Message-ID: <20100421085408.33754cd0@virtuousgeek.org>
-In-Reply-To: <4BCE95D1.6070105@oracle.com>
-References: <4BCBFE89.9070401@ladisch.de>
-	<o2gf046f1351004190044h6c3f6536ga916d2fa047f3fe7@mail.gmail.com>
-	<4BCC0F10.3070208@ladisch.de>
-	<l2sf046f1351004190142ocb2e5f1fyc0e892489caa76a3@mail.gmail.com>
-	<4BCCA5FD.6060002@oracle.com>
-	<1271706161.2505.6.camel@darwin.lan>
-	<4BCD4C8D.7070805@oracle.com>
-	<n2yf046f1351004200103zdcf703e6ofea41dc688a5e62e@mail.gmail.com>
-	<r2o86802c441004201022i32f328e2n7a125df88f67e390@mail.gmail.com>
-	<1271789155.2554.2.camel@darwin.lan>
-	<4BCE95D1.6070105@oracle.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755871Ab0DUP5N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 11:57:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56127 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755820Ab0DUP5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 11:57:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [Bug #15672] KVM bug, git bisected
+Date: Wed, 21 Apr 2010 17:57:23 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Borislav Petkov <bp@alien8.de>, Rik van Riel <riel@redhat.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <20100421062015.GB3839@liondog.tnic> <1271839554.1776.56.camel@laptop>
+In-Reply-To: <1271839554.1776.56.camel@laptop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+Message-Id: <201004211757.23469.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Apr 2010 23:06:09 -0700
-Yinghai <yinghai.lu@oracle.com> wrote:
-> after several times retry, mmio ranges get assigned, but io port range can be allocated enough range. it needs 16k,
-> but under 05:01.0 to 08:00.0 and 09:04.0 orginal io port from BIOS allocation get lost.
+On Wednesday 21 April 2010, Peter Zijlstra wrote:
+> On Wed, 2010-04-21 at 08:20 +0200, Borislav Petkov wrote:
+> > From: "Rafael J. Wysocki" <rjw@sisk.pl>
+> > Date: Wed, Apr 21, 2010 at 07:02:02AM +0200
+> > 
+> > > On Wednesday 21 April 2010, Rik van Riel wrote:
+> > > > On 04/20/2010 05:11 PM, Rik van Riel wrote:
+> > > > > On 04/19/2010 11:19 PM, Rafael J. Wysocki wrote:
+> > > > >> This message has been generated automatically as a part of a summary
+> > > > >> report
+> > > > >> of recent regressions.
+> > > > >>
+> > > > >> The following bug entry is on the current list of known regressions
+> > > > >> from 2.6.33. Please verify if it still should be listed and let the
+> > > > >> tracking team
+> > > > >> know (either way).
+> > > > >>
+> > > > >>
+> > > > >> Bug-Entry : http://bugzilla.kernel.org/show_bug.cgi?id=15672
+> > > > >> Subject : KVM bug, git bisected
+> > > > >> Submitter : Kent Overstreet<kent.overstreet@gmail.com>
+> > > > >> Date : 2010-03-27 12:43 (24 days old)
+> > > > >> First-Bad-Commit:
+> > > > >> http://kernel.org/git/linus/5beb49305251e5669852ed541e8e2f2f7696c53e
+> > > > >> Message-ID :<4BADFD74.8060904@gmail.com>
+> > > > >> References : http://marc.info/?l=linux-kernel&m=126969385121711&w=2
+> > > > >
+> > > > > Should be fixed by commit ea90002b0fa7bdee86ec22eba1d951f30bf043a6
+> > > > 
+> > > > Never mind me - this is a harmless (but loud) overflow
+> > > > of PREEMPT_BITS in the preempt count.
+> > > 
+> > > OK, what am I supposed to do with this entry, then?  Close?
+> > 
+> > FWIW, I hit that warning too when chasing the anon_vma regression. It
+> > seems on certain workloads (for me it was several kvm guests) we're
+> > close to max preemption depth.
+> > 
+> > Anyway, adding some more people to Cc.
 > 
-> wonder be good, if We can restore it for such case.
+> Right, so my proposed solution to this is to make those locks
+> preemptible, but that's a large and unfinished patch-set.
 > 
-> current may have to disable bridge resizing feature by default.
-> 
-> can you send out 
-> lspci -vvxxx
-> lspci -tv 
+> As it is, its only a warning, nothing really serious should happen, but
+> the situation does suck.
 
-Since we don't really know which devices will be in use until drivers
-load (and not even then if they're userspace drivers), it might be best
-to put off the reassignment until a PCI driver expresses an interest in
-the range.
+I'm not sure if it's worth keeping that listed, though, as the problem is known
+and won't be solved before .34 final.
 
-At least, it seems like that would be closer to the ideal approach than
-trying to reassign everything at boot, potentially making devices that
-don't matter get resources and leaving important devices disabled.
+OK to close as "will fix later"?
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Rafael
