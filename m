@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab0DUFQw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 01:16:52 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:44870 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab0DUFQu (ORCPT
+	id S1752174Ab0DUFQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 01:16:57 -0400
+Received: from rex.securecomputing.com ([203.24.151.4]:50355 "EHLO
+	cyberguard.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751983Ab0DUFQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 01:16:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=OmbIxASjhUTjYLM4O84w2xJsz/NLKirsN/RYOTb/NFCeUA85Bm5mnwaFxXTX5CGcFP
-         RC2SO3J159zyN4DQPhrKTztga3zd1H+hwbRog/VYeokGai7JBP/zS3Tg5wrsbOwdLcSp
-         me0Hd3bXnYXagg2a8ZobpRBgMDYvbgMLyjQBA=
-MIME-Version: 1.0
-In-Reply-To: <1271804453.10448.168.camel@gandalf.stny.rr.com>
-References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
-	 <1271755208.1676.422.camel@laptop>
-	 <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
-	 <1271804453.10448.168.camel@gandalf.stny.rr.com>
-Date: Wed, 21 Apr 2010 07:16:48 +0200
-Message-ID: <t2nc5b2c05b1004202216pd159c9b4mbfc1dc7658fc20e7@mail.gmail.com>
-Subject: Re: Considerations on sched APIs under RT patch
-From: Primiano Tucci <p.tucci@gmail.com>
-To: rostedt@goodmis.org
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       tglx <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Apr 2010 01:16:54 -0400
+Date: Wed, 21 Apr 2010 15:22:17 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+Message-Id: <201004210522.o3L5MHnC027492@goober.internal.moreton.com.au>
+CC: <gerg@uclinux.org>, <linux-kernel@vger.kernel.org>,
+       <linux-m68k@vger.kernel.org>
+Subject: [git pull] m68knommu arch bug fixes
+To: <torvalds@linux-foundation.org>
+X-Mailer: mail (GNU Mailutils 2.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi steve
-> read_locks are converted into "special" rt_mutexes. The only thing
-> special about them, is the owner may grab the same read lock more than
-> once (recursive).
->
-> If a lower priority process currently holds the tasklist_lock for write,
-> when a high priority process tries to take it for read (or write for
-> that matter) it will block on the lower priority process. But that lower
-> priority process will acquire the priority of the higher priority
-> process (priority inheritance) and will run at that priority until it
-> releases the lock. Then it will go back to its low priority and the
-> higher priority process will then preempt it and acquire the lock for
-> read.
+Hi Linus,
 
-In your example you implied that the low priority process, holding the
-lock for write, runs on the same CPU of the higher priority process
-that wants to lock it for read. This is clear to me.
-My problem is, in a SMP environment, what happens if a process (let's
-say T1 on CPU #1) holds the lock for write (its priority does not
-matter, it is not a PI problem) and now a process T0 on cpu #0 wants
-to lock it for read?
-The process T0 will be blocked! But who will run now on CPU 0, until
-the rwlock is held by T1? Probably the next ready process on CPU #'0.
-Is it right?
+Please pull:
 
-Thanks,
-Primiano
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
 
---
- Primiano Tucci
- http://www.primianotucci.com
+to get a small collection of m68knommu arch bug fixes and one uclinux
+flat file error message improvement.
+
+Thanks
+Greg
+
+
+
+The following changes since commit 05ce7bfe547c9fa967d9cab6c37867a9cb6fb3fa:
+  Linus Torvalds (1):
+        Merge branch 'for_linus' of git://git.kernel.org/.../jack/linux-fs-2.6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
+
+Greg Ungerer (1):
+      m68knommu: remove a duplicate vector setting line for 68360
+
+Jun Sun (1):
+      uclinux: error message when FLAT reloc symbol is invalid, v2
+
+Maxim Kuvyrkov (1):
+      Fix m68k-uclinux's rt_sigreturn trampoline
+
+Philip Nye (1):
+      m68knommu: correct the CC flags for Coldfire M5272 targets
+
+Philippe De Muyter (2):
+      m68knommu: fix coldfire tcdrain
+      m68knommu: allow 4 coldfire serial ports
+
+ arch/m68k/include/asm/mcfuart.h      |    5 +++++
+ arch/m68knommu/Makefile              |    2 +-
+ arch/m68knommu/kernel/entry.S        |    2 +-
+ arch/m68knommu/platform/68360/ints.c |    1 -
+ drivers/serial/mcf.c                 |    6 ++++--
+ fs/binfmt_flat.c                     |    2 +-
+ 6 files changed, 12 insertions(+), 6 deletions(-)
