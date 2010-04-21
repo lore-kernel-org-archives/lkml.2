@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab0DUXNI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 19:13:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38004 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752431Ab0DUXND (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 19:13:03 -0400
-Date: Wed, 21 Apr 2010 16:12:17 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jing Huang <huangj@Brocade.com>
-Cc: <sfr@canb.auug.org.au>, <James.Bottomley@suse.de>,
-       <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-       <linux-scsi@vger.kernel.org>, <kgudipat@Brocade.com>,
-       <rvadivel@Brocade.com>, <vravindr@Brocade.com>
-Subject: Re: [PATCH] bfa: fix compilation warning in powerpc (resend)
-Message-Id: <20100421161217.60d5654b.akpm@linux-foundation.org>
-In-Reply-To: <1271186549-642-1-git-send-email-huangj@brocade.com>
-References: <1271186549-642-1-git-send-email-huangj@brocade.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754914Ab0DUXPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 19:15:43 -0400
+Received: from kroah.org ([198.145.64.141]:54162 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754339Ab0DUXPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 19:15:42 -0400
+Date: Wed, 21 Apr 2010 15:39:14 -0700
+From: Greg KH <greg@kroah.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Eric Dumazet <dada1@cosmosbay.com>, Tejun Heo <tj@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       stable <stable@kernel.org>
+Subject: Re: [stable] [PATCH] modules fix incorrect percpu usage
+Message-ID: <20100421223914.GA27883@kroah.com>
+References: <20100330033211.GC7683@Krystal>
+ <20100330033617.GE7683@Krystal>
+ <1269955201.19685.5867.camel@gandalf.stny.rr.com>
+ <20100330135047.GB20673@Krystal>
+ <20100419182822.GH32347@kroah.com>
+ <20100420143457.GB14622@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100420143457.GB14622@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Apr 2010 12:22:29 -0700
-Jing Huang <huangj@Brocade.com> wrote:
+On Tue, Apr 20, 2010 at 10:34:57AM -0400, Mathieu Desnoyers wrote:
+> * Greg KH (greg@kroah.com) wrote:
+> > On Tue, Mar 30, 2010 at 09:50:47AM -0400, Mathieu Desnoyers wrote:
+> > > * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > > > On Mon, 2010-03-29 at 23:36 -0400, Mathieu Desnoyers wrote:
+> > > > > * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> > > > > > Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
+> > > > > > for per cpu pointers).
+> > > > > > 
+> > > > > > Introduced by commit:
+> > > > > > 
+> > > > > > module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
+> > > > > > 
+> > > > > > This patch should be queued for the stable branch, for kernels 2.6.29.x to
+> > > > > > 2.6.33.x.
+> > > > > > (tested on 2.6.33.1 x86_64)
+> > > > > 
+> > > > > It's actually needed for mainline too (2.6.34-rc2).
+> > > > 
+> > > > Then all you need to do is submit it for mainline with a 
+> > > > "Cc: stable@kernel.org" as you did below. It will then automatically be
+> > > > added to the stable queue when Linus pulls it.
+> > > 
+> > > OK, thanks for the info.
+> > 
+> > And I need to wait until it goes into Linus's tree before it can be
+> > applied to the stable tree.  This hasn't happened yet, right?
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> 
+> Same here, for module.c fix. Feel free to choose between this fix or the
+> corresponding refactoring from Tejun.
 
-> Fix the compilation warning in powerpc.
+Thanks, I took this one.
 
-When fixing a warning, please quote that warning in the patch description!
-
-<does a cross-build>
-
-It seems that you're referring to this:
-
-drivers/scsi/bfa/bfa_ioc.c: In function 'bfa_ioc_msgget':
-drivers/scsi/bfa/bfa_ioc.c:1331: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_notify_hbfail':
-drivers/scsi/bfa/bfa_ioc_ct.c:177: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_ct.c:180: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_pll_init':
-drivers/scsi/bfa/bfa_ioc_ct.c:381: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_ownership_reset':
-drivers/scsi/bfa/bfa_ioc_ct.c:421: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_cb.c: In function 'bfa_ioc_cb_notify_hbfail':
-drivers/scsi/bfa/bfa_ioc_cb.c:99: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_cb.c: In function 'bfa_ioc_cb_ownership_reset':
-drivers/scsi/bfa/bfa_ioc_cb.c:272: warning: value computed is not used
-
-
-> The same change also fixes endian
-> issue we found in powerpc test.
-
-When fixing a bug, please fully describe the bug!
-
-If this driver has "endian issues" on powerpc then it's quite possible
-that this is a running-around-with-hair-on-fire,
-must-backport-to-2.6.33.x bugfix.
-
-But how would I know?  You didn't tell me!
-
-
+greg k-h
