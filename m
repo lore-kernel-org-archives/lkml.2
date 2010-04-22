@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab0DVTsd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:48:33 -0400
-Received: from kroah.org ([198.145.64.141]:41042 "EHLO coco.kroah.org"
+	id S1757838Ab0DVT6I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:58:08 -0400
+Received: from kroah.org ([198.145.64.141]:40769 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756600Ab0DVT26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:58 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:17 2010
-Message-Id: <20100422190917.285650147@kvm.kroah.org>
+	id S1756327Ab0DVT2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:24 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:14 2010
+Message-Id: <20100422190913.929074655@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:22 -0700
+Date: Thu, 22 Apr 2010 12:08:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dave Jones <davej@redhat.com>, David Airlie <airlied@linux.ie>,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: [111/197] intel-agp: Switch to wbinvd_on_all_cpus
+       Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+       Josip Rodin <joy+kernel@entuzijast.net>,
+       Len Brown <len.brown@intel.com>
+Subject: [073/197] thinkpad-acpi: log initial state of rfkill switches
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,63 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-commit 48a719c238bcbb72d6da79de9c5b3b93ab472107 upstream.
+commit 5451a923bbdcff6ae665947e120af7238b21a9d2 upstream.
 
-Simplify if-statement while at it.
+We already log the initial state of the hardware rfkill switch (WLSW),
+might as well log the state of the softswitches as well.
 
-[ hpa: we need to #include <asm/smp.h> ]
-
-Cc: Dave Jones <davej@redhat.com>
-Cc: David Airlie <airlied@linux.ie>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <1264172467-25155-3-git-send-email-bp@amd64.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Josip Rodin <joy+kernel@entuzijast.net>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/agp/intel-agp.c |   15 ++++-----------
- 1 file changed, 4 insertions(+), 11 deletions(-)
+ drivers/platform/x86/thinkpad_acpi.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/char/agp/intel-agp.c
-+++ b/drivers/char/agp/intel-agp.c
-@@ -8,6 +8,7 @@
- #include <linux/kernel.h>
- #include <linux/pagemap.h>
- #include <linux/agp_backend.h>
-+#include <asm/smp.h>
- #include "agp.h"
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -1264,6 +1264,7 @@ static int __init tpacpi_new_rfkill(cons
+ 	struct tpacpi_rfk *atp_rfk;
+ 	int res;
+ 	bool sw_state = false;
++	bool hw_state;
+ 	int sw_status;
  
- /*
-@@ -815,12 +816,6 @@ static void intel_i830_setup_flush(void)
- 		intel_i830_fini_flush();
+ 	BUG_ON(id >= TPACPI_RFK_SW_MAX || tpacpi_rfkill_switches[id]);
+@@ -1298,7 +1299,8 @@ static int __init tpacpi_new_rfkill(cons
+ 			rfkill_init_sw_state(atp_rfk->rfkill, sw_state);
+ 		}
+ 	}
+-	rfkill_set_hw_state(atp_rfk->rfkill, tpacpi_rfk_check_hwblock_state());
++	hw_state = tpacpi_rfk_check_hwblock_state();
++	rfkill_set_hw_state(atp_rfk->rfkill, hw_state);
+ 
+ 	res = rfkill_register(atp_rfk->rfkill);
+ 	if (res < 0) {
+@@ -1311,6 +1313,9 @@ static int __init tpacpi_new_rfkill(cons
+ 	}
+ 
+ 	tpacpi_rfkill_switches[id] = atp_rfk;
++
++	printk(TPACPI_INFO "rfkill switch %s: radio is %sblocked\n",
++		name, (sw_state || hw_state) ? "" : "un");
+ 	return 0;
  }
  
--static void
--do_wbinvd(void *null)
--{
--	wbinvd();
--}
--
- /* The chipset_flush interface needs to get data that has already been
-  * flushed out of the CPU all the way out to main memory, because the GPU
-  * doesn't snoop those buffers.
-@@ -837,12 +832,10 @@ static void intel_i830_chipset_flush(str
- 
- 	memset(pg, 0, 1024);
- 
--	if (cpu_has_clflush) {
-+	if (cpu_has_clflush)
- 		clflush_cache_range(pg, 1024);
--	} else {
--		if (on_each_cpu(do_wbinvd, NULL, 1) != 0)
--			printk(KERN_ERR "Timed out waiting for cache flush.\n");
--	}
-+	else if (wbinvd_on_all_cpus() != 0)
-+		printk(KERN_ERR "Timed out waiting for cache flush.\n");
- }
- 
- /* The intel i830 automatically initializes the agp aperture during POST.
 
 
