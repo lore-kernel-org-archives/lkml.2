@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab0DVJSn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 05:18:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:12727 "EHLO mga03.intel.com"
+	id S1753068Ab0DVJXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 05:23:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14783 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751179Ab0DVJSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 05:18:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,255,1270450800"; 
-   d="scan'208";a="268789623"
-Subject: Re: [RFC][PATCH 1/4] perf: core, add group scheduling
- transactional APIs
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1271924699.1776.316.camel@laptop>
-References: <1271922662.30535.107.camel@minggr.sh.intel.com>
-	 <1271924699.1776.316.camel@laptop>
-Content-Type: text/plain
-Date: Thu, 22 Apr 2010 17:19:02 +0800
-Message-Id: <1271927943.3412.4.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
-Content-Transfer-Encoding: 7bit
+	id S1751895Ab0DVJXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 05:23:39 -0400
+Date: Thu, 22 Apr 2010 12:19:43 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>,
+       "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
+	virtio-net.
+Message-ID: <20100422091943.GA30532@redhat.com>
+References: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com> <20100414152519.GA10792@redhat.com> <97F6D3BD476C464182C1B7BABF0B0AF5C18969CC@shzsmsx502.ccr.corp.intel.com> <20100415100546.GA17035@redhat.com> <F2E9EB7348B8264F86B6AB8151CE2D79026FA95401@shsmsx502.ccr.corp.intel.com> <20100419102118.GA16198@redhat.com> <F2E9EB7348B8264F86B6AB8151CE2D79026FAB1E5F@shsmsx502.ccr.corp.intel.com> <20100421083507.GA30855@redhat.com> <F2E9EB7348B8264F86B6AB8151CE2D79026FAE0BDB@shsmsx502.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D79026FAE0BDB@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-22 at 16:24 +0800, Peter Zijlstra wrote:
-> On Thu, 2010-04-22 at 15:51 +0800, Lin Ming wrote:
-> > +       if (pmu->commit_txn) {
-> > +               ret = pmu->commit_txn(pmu);
-> > +               if (!ret) {
-> > +                       if (pmu->stop_txn)
-> > +                               pmu->stop_txn(pmu);
-> > +
-> > +                       return 0;
-> > +               }
-> > +       } 
+On Thu, Apr 22, 2010 at 04:57:56PM +0800, Xin, Xiaohui wrote:
+> Michael,
 > 
-> I think we can mandate that if one of the _txn methods is available,
-> they all are, it would be weird otherwise.
+> >Yes, I think this packet split mode probably maps well to mergeable buffer
+> >support. Note that
+> >1. Not all devices support large packets in this way, others might map
+> >   to indirect buffers better
 > 
+> Do the indirect buffers accord to deal with the skb->frag_list?
 
-How about below?
+We currently use skb->frags.
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index ffd2360..72ea25c 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -635,12 +635,16 @@ group_sched_in(struct perf_event *group_event,
- {
- 	struct perf_event *event, *partial_group = NULL;
- 	const struct pmu *pmu = group_event->pmu;
-+	bool txn = false;
- 	int ret;
- 
- 	if (group_event->state == PERF_EVENT_STATE_OFF)
- 		return 0;
- 
- 	if (pmu->start_txn)
-+		txn = true;
-+
-+	if (txn)
- 		pmu->start_txn(pmu);
- 
- 	if (event_sched_in(group_event, cpuctx, ctx))
-@@ -656,18 +660,17 @@ group_sched_in(struct perf_event *group_event,
- 		}
- 	}
- 
--	if (pmu->commit_txn) {
-+	if (txn) {
- 		ret = pmu->commit_txn(pmu);
- 		if (!ret) {
--			if (pmu->stop_txn)
--				pmu->stop_txn(pmu);
-+			pmu->stop_txn(pmu);
- 
- 			return 0;
- 		}
- 	}
- 
- group_error:
--	if (pmu->stop_txn)
-+	if (txn)
- 		pmu->stop_txn(pmu);
- 
- 	/*
+> >   So we have to figure out how migration is going to work
+> Yes, different guest virtio-net driver may contain different features.
+> Does the qemu migration work with different features supported by virtio-net
+> driver now?
 
+For now, you must have identical feature-sets for migration to work.
+And long as we manage the buffers in software, we can always make
+features match.
 
+> >2. It's up to guest driver whether to enable features such as
+> >   mergeable buffers and indirect buffers
+> >   So we have to figure out how to notify guest which mode
+> >   is optimal for a given device
+> Yes. When a device is binded, the mp device may query the capabilities from driver.
+> Actually, there is a structure now in mp device can do this, we can add some field
+> to support more.
+> 
+> >3. We don't want to depend on jumbo frames for decent performance
+> >   So we probably should support GSO/GRO
+> GSO is for the tx side, right? I think driver can handle it itself.
+> For GRO, I'm not sure it's easy or not. Basically, the mp device now
+> we have support is doing what raw socket is doing. The packets are not going to host stack.
+
+See commit bfd5f4a3d605e0f6054df0b59fe0907ff7e696d3
+(it doesn't currently work with vhost net, but that's
+ a separate story).
+
+> -- 
+> MST
