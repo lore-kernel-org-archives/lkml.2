@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab0DVTbD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:31:03 -0400
-Received: from kroah.org ([198.145.64.141]:41640 "EHLO coco.kroah.org"
+	id S1756531Ab0DVTus (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:50:48 -0400
+Received: from kroah.org ([198.145.64.141]:40954 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756978Ab0DVTaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:30:05 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:24 2010
-Message-Id: <20100422190924.685638141@kvm.kroah.org>
+	id S1756485Ab0DVT2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:48 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:16 2010
+Message-Id: <20100422190916.148796439@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:44 -0700
+Date: Thu, 22 Apr 2010 12:09:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sridhar Samudrala <sri@us.ibm.com>, Avi Kivity <avi@redhat.com>
-Subject: [193/197] KVM: Increase NR_IOBUS_DEVS limit to 200
+       Takashi Iwai <tiwai@suse.de>
+Subject: [098/197] ALSA: usb - Fix Oops after usb-midi disconnection
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +25,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sridhar Samudrala <sri@us.ibm.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-(Cherry-picked from commit e80e2a60ff7914dae691345a976c80bbbff3ec74)
+commit 29aac005ff4dc8a5f50b80f4e5c4f59b21c0fb50 upstream.
 
-This patch increases the current hardcoded limit of NR_IOBUS_DEVS
-from 6 to 200. We are hitting this limit when creating a guest with more
-than 1 virtio-net device using vhost-net backend. Each virtio-net
-device requires 2 such devices to service notifications from rx/tx queues.
+usb-midi causes sometimes Oops at snd_usbmidi_output_drain() after
+disconnection.  This is due to the access to the endpoints which have
+been already released at disconnection while the files are still alive.
 
-Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+This patch fixes the problem by checking disconnection state at
+snd_usbmidi_output_drain() and by releasing urbs but keeping the
+endpoint instances until really all freed.
+
+Tested-by: Tvrtko Ursulin <tvrtko@ursulin.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/kvm_host.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/usb/usbmidi.c |   24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
 
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -53,7 +53,7 @@ extern struct kmem_cache *kvm_vcpu_cache
-  */
- struct kvm_io_bus {
- 	int                   dev_count;
--#define NR_IOBUS_DEVS 6
-+#define NR_IOBUS_DEVS 200
- 	struct kvm_io_device *devs[NR_IOBUS_DEVS];
- };
+--- a/sound/usb/usbmidi.c
++++ b/sound/usb/usbmidi.c
+@@ -931,6 +931,8 @@ static void snd_usbmidi_output_drain(str
+ 	DEFINE_WAIT(wait);
+ 	long timeout = msecs_to_jiffies(50);
  
++	if (ep->umidi->disconnected)
++		return;
+ 	/*
+ 	 * The substream buffer is empty, but some data might still be in the
+ 	 * currently active URBs, so we have to wait for those to complete.
+@@ -1075,14 +1077,21 @@ static unsigned int snd_usbmidi_count_bi
+  * Frees an output endpoint.
+  * May be called when ep hasn't been initialized completely.
+  */
+-static void snd_usbmidi_out_endpoint_delete(struct snd_usb_midi_out_endpoint* ep)
++static void snd_usbmidi_out_endpoint_clear(struct snd_usb_midi_out_endpoint *ep)
+ {
+ 	unsigned int i;
+ 
+ 	for (i = 0; i < OUTPUT_URBS; ++i)
+-		if (ep->urbs[i].urb)
++		if (ep->urbs[i].urb) {
+ 			free_urb_and_buffer(ep->umidi, ep->urbs[i].urb,
+ 					    ep->max_transfer);
++			ep->urbs[i].urb = NULL;
++		}
++}
++
++static void snd_usbmidi_out_endpoint_delete(struct snd_usb_midi_out_endpoint *ep)
++{
++	snd_usbmidi_out_endpoint_clear(ep);
+ 	kfree(ep);
+ }
+ 
+@@ -1201,15 +1210,18 @@ void snd_usbmidi_disconnect(struct list_
+ 				usb_kill_urb(ep->out->urbs[j].urb);
+ 			if (umidi->usb_protocol_ops->finish_out_endpoint)
+ 				umidi->usb_protocol_ops->finish_out_endpoint(ep->out);
++			ep->out->active_urbs = 0;
++			if (ep->out->drain_urbs) {
++				ep->out->drain_urbs = 0;
++				wake_up(&ep->out->drain_wait);
++			}
+ 		}
+ 		if (ep->in)
+ 			for (j = 0; j < INPUT_URBS; ++j)
+ 				usb_kill_urb(ep->in->urbs[j]);
+ 		/* free endpoints here; later call can result in Oops */
+-		if (ep->out) {
+-			snd_usbmidi_out_endpoint_delete(ep->out);
+-			ep->out = NULL;
+-		}
++		if (ep->out)
++			snd_usbmidi_out_endpoint_clear(ep->out);
+ 		if (ep->in) {
+ 			snd_usbmidi_in_endpoint_delete(ep->in);
+ 			ep->in = NULL;
 
 
