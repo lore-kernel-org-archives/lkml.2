@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab0DVAG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 20:06:59 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:37212 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752905Ab0DVAG5 (ORCPT
+	id S1755952Ab0DVAIk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 20:08:40 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41128 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755516Ab0DVAIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 20:06:57 -0400
-Date: Thu, 22 Apr 2010 10:06:52 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Denys Fedorysychenko <nuclearcat@nuclearcat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: endless sync on bdi_sched_wait()? 2.6.33.1
-Message-ID: <20100422000652.GD23541@dastard>
-References: <201003311907.31342.nuclearcat@nuclearcat.com>
- <20100408092850.GA20488@quack.suse.cz>
- <20100419013702.GE2520@dastard>
- <20100419070458.GF2520@dastard>
- <20100421003309.GB4128@quack.suse.cz>
- <20100421015428.GC23541@dastard>
- <20100421132718.GA3327@quack.suse.cz>
+	Wed, 21 Apr 2010 20:08:38 -0400
+Message-ID: <4BCF92E8.5030103@oracle.com>
+Date: Wed, 21 Apr 2010 17:06:00 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100421132718.GA3327@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Andy Isaacson <adi@hexapodia.org>, guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>,
+       "Pan, Jacob jun" <jacob.jun.pan@intel.com>
+Subject: Re: [PATCH 3/3] x86,pci,acpi: Handle invalid _CRS
+References: <20100409223532.GC11130@hexapodia.org> <201004211059.17264.bjorn.helgaas@hp.com> <4BCF7D38.8070206@zytor.com> <201004211704.05541.bjorn.helgaas@hp.com> <4BCF85CF.1080101@zytor.com> <4BCF8DAE.5020204@oracle.com> <4BCF921B.7030307@zytor.com>
+In-Reply-To: <4BCF921B.7030307@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090207.4BCF9365.002F:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 03:27:18PM +0200, Jan Kara wrote:
-> On Wed 21-04-10 11:54:28, Dave Chinner wrote:
-> > On Wed, Apr 21, 2010 at 02:33:09AM +0200, Jan Kara wrote:
-> > > On Mon 19-04-10 17:04:58, Dave Chinner wrote:
-> > > > The third flush - the sync one - does:
-.....
-> > > > some 75 seconds later having written only 1024 pages. In the mean
-> > > > time, the traces show dd blocked in balance_dirty_pages():
-.....
-> > > > And it appears to stay blocked there without doing any writeback at
-> > > > all - there are no wbc_balance_dirty_pages_written traces at all.
-> > > > That is, it is blocking until the number of dirty pages is dropping
-> > > > below the dirty threshold, then continuing to write and dirty more
-> > > > pages.
-> > >   I think this happens because sync writeback is running so I_SYNC is set
-> > > and thus we cannot do any writeout for the inode from balance_dirty_pages.
-> > 
-> > It's not even calling into writeback so the I_SYNC flag is way out of
-> > scope ;)
->   Are you sure? The tracepoints are in wb_writeback() but
-> writeback_inodes_wbc() calls directly into writeback_inodes_wb() so you
-> won't see any of the tracepoints to trigger. So how do you know we didn't
-> get to writeback_single_inode?
+On 04/21/2010 05:02 PM, H. Peter Anvin wrote:
+> On 04/21/2010 04:43 PM, Yinghai wrote:
+>>
+>> then use -v3 please
+>>
+>> -v4: also don't trim [0xa0000, 0x100000] for mrst.
+>>
+> 
+> That makes a lot of sense for 2.6.34.  I agree with moving the trimming
+> into subsystems, but I think it's .35 material at this point.
+> 
+> [Cc: Jacob Pan]
+> 
+>>>
+>>> The use of a string match in:
+>>>
+>>> +       if (check_child && !conflict->child && strstr(conflict->name,
+>>> "PCI Bus"))
+>>> ^^^^^^^^^
+>>>
+>>> ... screams "wrong! ugly! bad!" in my opinion.  I utterly fail to see
+>>> how that could be acceptable under any circumstances.  I thought that
+>>> had been flagged earlier in the conversation, but it is apparently still
+>>> there.
+>>
+>> the string checking is to make sure pci device that is hooked into bus0 directly, but pci bar is falling into
+>> 0xa0000 - 0x100000.  So can not put "reserved" holder under them.
+>>
+> 
+> It makes me extremely concerned, because such hacks tend to be extremely
+> vulnerable.  Strings are designed primarily for human consumption, and
+> "find string inside another string" is *very* much so.  As such, I
+> really would like to understand that there isn't any more sensible way,
+> such as a flag, that can be used to accomplish the objective.
 
-The balance_dirty_pages() tracing code added this hunk:
+pass function pointer to additional checking?
 
-@@ -536,11 +537,13 @@ static void balance_dirty_pages(struct address_space *mapping,
-                 * threshold otherwise wait until the disk writes catch
-                 * up.
-                 */
-+               trace_wbc_balance_dirty_start(&wbc);
-                if (bdi_nr_reclaimable > bdi_thresh) {
-                        writeback_inodes_wbc(&wbc);
-                        pages_written += write_chunk - wbc.nr_to_write;
-                        get_dirty_limits(&background_thresh, &dirty_thresh,
-                                       &bdi_thresh, bdi);
-+                       trace_wbc_balance_dirty_written(&wbc);
-                }
-
-                /*
-
-So if we tried to do writeback from here, the
-wbc_balance_dirty_written trace would have been emitted, and that is
-not showing up very often in any of the traces. e.g:
-
-$ grep balance t.t |grep start |wc -l
-4356
-$ grep balance t.t |grep wait |wc -l
-2171
-$ grep balance t.t |grep written |wc -l
-7
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+YH
