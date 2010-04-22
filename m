@@ -1,147 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab0DVWCy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 18:02:54 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:57015 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751671Ab0DVWCx (ORCPT
+	id S1752318Ab0DVWDR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 18:03:17 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:45758 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235Ab0DVWDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 18:02:53 -0400
-Date: Thu, 22 Apr 2010 18:02:49 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-       Greg KH <greg@kroah.com>, Randy Dunlap <randy.dunlap@oracle.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Eric Dumazet <dada1@cosmosbay.com>, Ingo Molnar <mingo@elte.hu>,
-       Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-       torvalds@linux-foundation.org, stable-review@kernel.org,
-       alan@lxorguk.ukuu.org.uk
-Subject: Re: [Stable-review] [170/197] lockdep: fix incorrect percpu usage
-Message-ID: <20100422220249.GB15195@Krystal>
-References: <20100422191857.GA13268@kroah.com> <20100422190922.618832798@kvm.kroah.org> <20100422210840.GB6856@nik-comp.linuxbox.cz>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
-Content-Disposition: inline
-In-Reply-To: <20100422210840.GB6856@nik-comp.linuxbox.cz>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 18:00:33 up 90 days, 37 min, 10 users,  load average: 0.03, 0.07,
-	0.08
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 22 Apr 2010 18:03:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=r6uL3uES9vYf8wBBvYHNkZGs9P+koOlIQF1udK8mM4rM8AsBLbDThPnNTlv29LrDry
+         tWjFYtJJOpND/0On/VF22abfyKg7uOimpQDilhePV40aq18Sl1OEHLzNuHychimUODdq
+         tmN4oQAszQ/RZ47yfCgVh5Go6COabZoau9RWw=
+From: Farid Hammane <farid.hammane@gmail.com>
+To: w.sang@pengutronix.de
+Cc: khali@linux-fr.org, ben-linux@fluff.org, Enrik.Berkhan@ge.com,
+       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Farid Hammane <farid.hammane@gmail.com>
+Subject: [PATCH V2] i2c-algo-pca: fix coding style issues in i2c-algo-pca.c
+Date: Fri, 23 Apr 2010 00:01:55 +0200
+Message-Id: <1271973715-18331-1-git-send-email-farid.hammane@gmail.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch fixes coding style issues found by checkpatch.pl.
+i2c-algo-pca.c has been built successfully after applying this patch.
 
---OXfL5xGRrasGEqWY
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-* Nikola Ciprich (nikola.ciprich@linuxbox.cz) wrote:
-> Hi,
-> hmm,
-> this one seems to break compilation for me:
-> kernel/lockdep.c: In function =E2=80=98static_obj=E2=80=99:
-> kernel/lockdep.c:595: error: invalid use of array with unspecified bounds
-> kernel/lockdep.c:595: error: invalid use of array with unspecified bounds
-> make[1]: *** [kernel/lockdep.o] Error 1
->=20
-> I'm using gcc-4.1.2
-> regards
-> nik
->=20
-
-Oh, you are right. I tweaked a few config options and got your error. Here =
-is an
-updated patch.
-
-Greg, this v2 should replace the original patch you have. Sorry about the
-trouble.
-
-lockdep fix incorrect percpu usage (v2)
-
-Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is n=
-eeded
-for per cpu pointers).
-
-Changelog since v1:
-- Move PERCPU_ENOUGH_ROOM outside of per_cpu_ptr(), where it belongs.
-
-git blame points to commit:
-
-lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
-
-But it's really just moving the code around. But it's enough to say that the
-problems appeared before Jul 19 01:48:54 2007, which brings us back to 2.6.=
-23.
-
-This patch applies to mainline as of 2.6.34-rc2. It also should be applied =
-to
-stable 2.6.23.x to 2.6.33.x (or whichever of these stable branches are still
-maintained).
-
-(based on 2.6.33.1, also applies to 2.6.34-rc2 -tip)
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Eric Dumazet <dada1@cosmosbay.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Tejun Heo <tj@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: stable <stable@kernel.org>
+Signed-off-by: Farid Hammane <farid.hammane@gmail.com>
 ---
- kernel/lockdep.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/i2c/algos/i2c-algo-pca.c |   36 ++++++++++++++++++------------------
+ 1 files changed, 18 insertions(+), 18 deletions(-)
 
-Index: linux-2.6-lttng/kernel/lockdep.c
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
---- linux-2.6-lttng.orig/kernel/lockdep.c	2010-04-22 17:51:28.000000000 -04=
-00
-+++ linux-2.6-lttng/kernel/lockdep.c	2010-04-22 17:55:02.000000000 -0400
-@@ -600,9 +600,9 @@ static int static_obj(void *obj)
- 	 * percpu var?
- 	 */
- 	for_each_possible_cpu(i) {
--		start =3D (unsigned long) &__per_cpu_start + per_cpu_offset(i);
--		end   =3D (unsigned long) &__per_cpu_start + PERCPU_ENOUGH_ROOM
--					+ per_cpu_offset(i);
-+		start =3D (unsigned long) per_cpu_ptr(&__per_cpu_start, i);
-+		end   =3D (unsigned long) per_cpu_ptr(&__per_cpu_start, i)
-+					+ PERCPU_ENOUGH_ROOM;
-=20
- 		if ((addr >=3D start) && (addr < end))
- 			return 1;
+diff --git a/drivers/i2c/algos/i2c-algo-pca.c b/drivers/i2c/algos/i2c-algo-pca.c
+index dcdaf8e..ca817f8 100644
+--- a/drivers/i2c/algos/i2c-algo-pca.c
++++ b/drivers/i2c/algos/i2c-algo-pca.c
+@@ -37,15 +37,15 @@
+ 
+ static int i2c_debug;
+ 
+-#define pca_outw(adap, reg, val) adap->write_byte(adap->data, reg, val)
+-#define pca_inw(adap, reg) adap->read_byte(adap->data, reg)
++#define pca_outw(adap, reg, val) (adap->write_byte(adap->data, reg, val))
++#define pca_inw(adap, reg) (adap->read_byte(adap->data, reg))
+ 
+ #define pca_status(adap) pca_inw(adap, I2C_PCA_STA)
+-#define pca_clock(adap) adap->i2c_clock
++#define pca_clock(adap) (adap->i2c_clock)
+ #define pca_set_con(adap, val) pca_outw(adap, I2C_PCA_CON, val)
+ #define pca_get_con(adap) pca_inw(adap, I2C_PCA_CON)
+-#define pca_wait(adap) adap->wait_for_completion(adap->data)
+-#define pca_reset(adap) adap->reset_chip(adap->data)
++#define pca_wait(adap) (adap->wait_for_completion(adap->data))
++#define pca_reset(adap) (adap->reset_chip(adap->data))
+ 
+ static void pca9665_reset(void *pd)
+ {
+@@ -114,8 +114,8 @@ static int pca_address(struct i2c_algo_pca_data *adap,
+ 	int sta = pca_get_con(adap);
+ 	int addr;
+ 
+-	addr = ( (0x7f & msg->addr) << 1 );
+-	if (msg->flags & I2C_M_RD )
++	addr = ((0x7f & msg->addr) << 1);
++	if (msg->flags & I2C_M_RD)
+ 		addr |= 1;
+ 	DEB2("=== SLAVE ADDRESS %#04x+%c=%#04x\n",
+ 	     msg->addr, msg->flags & I2C_M_RD ? 'R' : 'W', addr);
+@@ -170,7 +170,7 @@ static int pca_rx_ack(struct i2c_algo_pca_data *adap,
+ 
+ 	sta &= ~(I2C_PCA_CON_STO|I2C_PCA_CON_STA|I2C_PCA_CON_SI|I2C_PCA_CON_AA);
+ 
+-	if ( ack )
++	if (ack)
+ 		sta |= I2C_PCA_CON_AA;
+ 
+ 	pca_set_con(adap, sta);
+@@ -181,9 +181,9 @@ static int pca_xfer(struct i2c_adapter *i2c_adap,
+                     struct i2c_msg *msgs,
+                     int num)
+ {
+-        struct i2c_algo_pca_data *adap = i2c_adap->algo_data;
+-        struct i2c_msg *msg = NULL;
+-        int curmsg;
++	struct i2c_algo_pca_data *adap = i2c_adap->algo_data;
++	struct i2c_msg *msg = NULL;
++	int curmsg;
+ 	int numbytes = 0;
+ 	int state;
+ 	int ret;
+@@ -202,21 +202,21 @@ static int pca_xfer(struct i2c_adapter *i2c_adap,
+ 
+ 	DEB1("{{{ XFER %d messages\n", num);
+ 
+-	if (i2c_debug>=2) {
++	if (i2c_debug >= 2) {
+ 		for (curmsg = 0; curmsg < num; curmsg++) {
+ 			int addr, i;
+ 			msg = &msgs[curmsg];
+ 
+ 			addr = (0x7f & msg->addr) ;
+ 
+-			if (msg->flags & I2C_M_RD )
++			if (msg->flags & I2C_M_RD)
+ 				printk(KERN_INFO "    [%02d] RD %d bytes from %#02x [%#02x, ...]\n",
+-				       curmsg, msg->len, addr, (addr<<1) | 1);
++				       curmsg, msg->len, addr, (addr << 1) | 1);
+ 			else {
+ 				printk(KERN_INFO "    [%02d] WR %d bytes to %#02x [%#02x%s",
+-				       curmsg, msg->len, addr, addr<<1,
++				       curmsg, msg->len, addr, addr << 1,
+ 				       msg->len == 0 ? "" : ", ");
+-				for(i=0; i < msg->len; i++)
++				for (i = 0; i < msg->len; i++)
+ 					printk("%#04x%s", msg->buf[i], i == msg->len - 1 ? "" : ", ");
+ 				printk("]\n");
+ 			}
+@@ -305,7 +305,7 @@ static int pca_xfer(struct i2c_adapter *i2c_adap,
+ 			goto out;
+ 
+ 		case 0x58: /* Data byte has been received; NOT ACK has been returned */
+-			if ( numbytes == msg->len - 1 ) {
++			if (numbytes == msg->len - 1) {
+ 				pca_rx_byte(adap, &msg->buf[numbytes], 0);
+ 				curmsg++; numbytes = 0;
+ 				if (curmsg == num)
+@@ -352,7 +352,7 @@ static int pca_xfer(struct i2c_adapter *i2c_adap,
+ 
+ static u32 pca_func(struct i2c_adapter *adap)
+ {
+-        return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+ }
+ 
+ static const struct i2c_algorithm pca_algo = {
+-- 
+1.7.0
 
---=20
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
-
---OXfL5xGRrasGEqWY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iD8DBQFL0MeJPyWo/juummgRAql4AKCRhkjWSCQfaVpzFq6kAOIDAMuP4wCfQi4L
-HW270q/qIYMuKYx+2N5Atw0=
-=ICfp
------END PGP SIGNATURE-----
-
---OXfL5xGRrasGEqWY--
