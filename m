@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab0DVObo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 10:31:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26801 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754466Ab0DVObn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 10:31:43 -0400
-Date: Thu, 22 Apr 2010 10:31:05 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       "containers@lists.osdl.org" <containers@lists.osdl.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Paul Menage <menage@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <GuiJianfeng@cn.fujitsu.com>
-Subject: Re: [PATCH 5/5] blk-cgroup: Fix an RCU warning in blkiocg_create()
-Message-ID: <20100422143105.GA3228@redhat.com>
-References: <4BD016F4.8060108@cn.fujitsu.com> <4BD017AC.1020209@cn.fujitsu.com>
+	id S1755341Ab0DVOd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 10:33:59 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53236 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755169Ab0DVOd5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 10:33:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=jZN1Hj0a/AgNK4BAd6xFg+V6toTnDBqLq9DCydmi5t9+8sBdo/8508mBu6n7ZceK08
+         +agsA/tQ//Q7+hVF1Jl6DGAhlFwmZO5rC3Mr3+4U4FbgD1LcrFDdAzpwd9rp4ospZKHo
+         2moo95fppnK0B1Q6rhAmSzbJN7hsc3XVM483Y=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BD017AC.1020209@cn.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100401190205.GD6027@erda.amd.com>
+References: <20100401011725.GA27567@basil.fritz.box>
+	 <20100401190205.GD6027@erda.amd.com>
+Date: Thu, 22 Apr 2010 10:33:56 -0400
+Message-ID: <m2h5e61b72f1004220733n65451418p7c321f07eb5d6b58@mail.gmail.com>
+Subject: Re: [PATCH] oprofile: remove double ring buffering
+From: John Villalovos <sodarock@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Andi Kleen <andi@firstfloor.org>, oprofile-list@lists.sf.net,
+       linux-kernel@vger.kernel.org, rostedt@goodmis.org, stable@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 05:32:28PM +0800, Li Zefan wrote:
-> with CONFIG_PROVE_RCU=y, a warning can be triggered:
-> 
->   # mount -t cgroup -o blkio xxx /mnt
->   # mkdir /mnt/subgroup
-> 
-> ...
-> kernel/cgroup.c:4442 invoked rcu_dereference_check() without protection!
-> ...
-> 
+On Thu, Apr 1, 2010 at 3:02 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 01.04.10 03:17:25, Andi Kleen wrote:
+>> Got confirmation now this patch fixes most of the dropped oprofile
+>> samples problem on a particular intensive test on a large system.
+>> So now submitting the previous RFC formally.
+>> .34 / Stable candidate.
+>
+> Thanks Andi, will take a look at this next week.
 
-IIUC, so blkiocg_create() is being called with cgroup_mutex held and not
-with rcu read lock held. Hence rcu_dereference() in css_depth() gives
-warning.
+I was wondering what the state of this patch is.  I don't see it in
+linux-2.6 or linux-next. or in
+git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git
 
-So one easy solution is to don't use css_depth() at all. In this case
-simple check like cgroup->top_cgroup should suffice. Makese sense to
-me.
-
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-
-Thanks
-Vivek
-
-> To fix this, we avoid caling css_depth() here, which is a bit simpler
-> than the original code.
-> 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  block/blk-cgroup.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 5fe03de..2cc682b 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -286,16 +286,16 @@ done:
->  static struct cgroup_subsys_state *
->  blkiocg_create(struct cgroup_subsys *subsys, struct cgroup *cgroup)
->  {
-> -	struct blkio_cgroup *blkcg, *parent_blkcg;
-> +	struct blkio_cgroup *blkcg;
-> +	struct cgroup *parent = cgroup->parent;
->  
-> -	if (!cgroup->parent) {
-> +	if (!parent) {
->  		blkcg = &blkio_root_cgroup;
->  		goto done;
->  	}
->  
->  	/* Currently we do not support hierarchy deeper than two level (0,1) */
-> -	parent_blkcg = cgroup_to_blkio_cgroup(cgroup->parent);
-> -	if (css_depth(&parent_blkcg->css) > 0)
-> +	if (parent != cgroup->top_cgroup)
->  		return ERR_PTR(-EINVAL);
->  
->  	blkcg = kzalloc(sizeof(*blkcg), GFP_KERNEL);
-> -- 
-> 1.6.3
+Thanks,
+John
