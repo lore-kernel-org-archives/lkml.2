@@ -1,132 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab0DVURJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:17:09 -0400
-Received: from kroah.org ([198.145.64.141]:59824 "EHLO coco.kroah.org"
+	id S1757130Ab0DVTwQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:52:16 -0400
+Received: from kroah.org ([198.145.64.141]:40941 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758044Ab0DVUAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:52 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:12 2010
-Message-Id: <20100422195412.615860492@kvm.kroah.org>
+	id S1756158Ab0DVT2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:44 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:15 2010
+Message-Id: <20100422190915.711361015@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:14 -0700
+Date: Thu, 22 Apr 2010 12:09:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: [077/139] x86, cacheinfo: Fix disabling of L3 cache indices
-In-Reply-To: <20100422195715.GA25490@kroah.com>
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ulrich Drepper <drepper@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>, Jack Steiner <steiner@sgi.com>,
+       Russ Anderson <rja@sgi.com>, Mike Travis <travis@sgi.com>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: [093/197] sched: sched_getaffinity(): Allow less than NR_CPUS length
+In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit dcf39daf3d6d97f8741e82f0b9fb7554704ed2d1 upstream.
+commit cd3d8031eb4311e516329aee03c79a08333141f1 upstream.
 
-* Correct the masks used for writing the cache index disable indices.
-* Do not turn off L3 scrubber - it is not necessary.
-* Make sure wbinvd is executed on the same node where the L3 is.
-* Check for out-of-bounds values written to the registers.
-* Make show_cache_disable hex values unambiguous
-* Check for Erratum #388
+[ Note, this commit changes the syscall ABI for > 1024 CPUs systems. ]
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <1264172467-25155-4-git-send-email-bp@amd64.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Recently, some distro decided to use NR_CPUS=4096 for mysterious reasons.
+Unfortunately, glibc sched interface has the following definition:
+
+	# define __CPU_SETSIZE  1024
+	# define __NCPUBITS     (8 * sizeof (__cpu_mask))
+	typedef unsigned long int __cpu_mask;
+	typedef struct
+	{
+	  __cpu_mask __bits[__CPU_SETSIZE / __NCPUBITS];
+	} cpu_set_t;
+
+It mean, if NR_CPUS is bigger than 1024, cpu_set_t makes an
+ABI issue ...
+
+More recently, Sharyathi Nagesh reported following test program makes
+misterious syscall failure:
+
+ -----------------------------------------------------------------------
+ #define _GNU_SOURCE
+ #include<stdio.h>
+ #include<errno.h>
+ #include<sched.h>
+
+ int main()
+ {
+     cpu_set_t set;
+     if (sched_getaffinity(0, sizeof(cpu_set_t), &set) < 0)
+         printf("\n Call is failing with:%d", errno);
+ }
+ -----------------------------------------------------------------------
+
+Because the kernel assumes len argument of sched_getaffinity() is bigger
+than NR_CPUS. But now it is not correct.
+
+Now we are faced with the following annoying dilemma, due to
+the limitations of the glibc interface built in years ago:
+
+ (1) if we change glibc's __CPU_SETSIZE definition, we lost
+     binary compatibility of _all_ application.
+
+ (2) if we don't change it, we also lost binary compatibility of
+     Sharyathi's use case.
+
+Then, I would propse to change the rule of the len argument of
+sched_getaffinity().
+
+Old:
+	len should be bigger than NR_CPUS
+New:
+	len should be bigger than maximum possible cpu id
+
+This creates the following behavior:
+
+ (A) In the real 4096 cpus machine, the above test program still
+     return -EINVAL.
+
+ (B) NR_CPUS=4096 but the machine have less than 1024 cpus (almost
+     all machines in the world), the above can run successfully.
+
+Fortunatelly, BIG SGI machine is mainly used for HPC use case. It means
+they can rebuild their programs.
+
+IOW we hope they are not annoyed by this issue ...
+
+Reported-by: Sharyathi Nagesh <sharyath@in.ibm.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Ulrich Drepper <drepper@redhat.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jack Steiner <steiner@sgi.com>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Mike Travis <travis@sgi.com>
+LKML-Reference: <20100312161316.9520.A69D9226@jp.fujitsu.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/intel_cacheinfo.c |   34 +++++++++++++++++++++-------------
- 1 file changed, 21 insertions(+), 13 deletions(-)
+ kernel/sched.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -18,6 +18,7 @@
- #include <asm/processor.h>
- #include <linux/smp.h>
- #include <asm/k8.h>
-+#include <asm/smp.h>
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -6669,7 +6669,9 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t
+ 	int ret;
+ 	cpumask_var_t mask;
  
- #define LVL_1_INST	1
- #define LVL_1_DATA	2
-@@ -299,8 +300,10 @@ amd_check_l3_disable(int index, struct _
- 	if (boot_cpu_data.x86 == 0x11)
- 		return;
- 
--	/* see erratum #382 */
--	if ((boot_cpu_data.x86 == 0x10) && (boot_cpu_data.x86_model < 0x8))
-+	/* see errata #382 and #388 */
-+	if ((boot_cpu_data.x86 == 0x10) &&
-+	    ((boot_cpu_data.x86_model < 0x9) ||
-+	     (boot_cpu_data.x86_mask  < 0x1)))
- 		return;
- 
- 	this_leaf->can_disable = 1;
-@@ -726,12 +729,12 @@ static ssize_t show_cache_disable(struct
- 		return -EINVAL;
- 
- 	pci_read_config_dword(dev, 0x1BC + index * 4, &reg);
--	return sprintf(buf, "%x\n", reg);
-+	return sprintf(buf, "0x%08x\n", reg);
- }
- 
- #define SHOW_CACHE_DISABLE(index)					\
- static ssize_t								\
--show_cache_disable_##index(struct _cpuid4_info *this_leaf, char *buf)  	\
-+show_cache_disable_##index(struct _cpuid4_info *this_leaf, char *buf)	\
- {									\
- 	return show_cache_disable(this_leaf, buf, index);		\
- }
-@@ -745,7 +748,9 @@ static ssize_t store_cache_disable(struc
- 	int node = cpu_to_node(cpu);
- 	struct pci_dev *dev = node_to_k8_nb_misc(node);
- 	unsigned long val = 0;
--	unsigned int scrubber = 0;
-+
-+#define SUBCACHE_MASK	(3UL << 20)
-+#define SUBCACHE_INDEX	0xfff
- 
- 	if (!this_leaf->can_disable)
- 		return -EINVAL;
-@@ -759,21 +764,24 @@ static ssize_t store_cache_disable(struc
- 	if (strict_strtoul(buf, 10, &val) < 0)
- 		return -EINVAL;
- 
--	val |= 0xc0000000;
--
--	pci_read_config_dword(dev, 0x58, &scrubber);
--	scrubber &= ~0x1f000000;
--	pci_write_config_dword(dev, 0x58, scrubber);
-+	/* do not allow writes outside of allowed bits */
-+	if (val & ~(SUBCACHE_MASK | SUBCACHE_INDEX))
+-	if (len < cpumask_size())
++	if (len < nr_cpu_ids)
 +		return -EINVAL;
++	if (len & (sizeof(unsigned long)-1))
+ 		return -EINVAL;
  
--	pci_write_config_dword(dev, 0x1BC + index * 4, val & ~0x40000000);
--	wbinvd();
-+	val |= BIT(30);
- 	pci_write_config_dword(dev, 0x1BC + index * 4, val);
-+	/*
-+	 * We need to WBINVD on a core on the node containing the L3 cache which
-+	 * indices we disable therefore a simple wbinvd() is not sufficient.
-+	 */
-+	wbinvd_on_cpu(cpu);
-+	pci_write_config_dword(dev, 0x1BC + index * 4, val | BIT(31));
- 	return count;
- }
+ 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+@@ -6677,10 +6679,12 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t
  
- #define STORE_CACHE_DISABLE(index)					\
- static ssize_t								\
--store_cache_disable_##index(struct _cpuid4_info *this_leaf,	     	\
-+store_cache_disable_##index(struct _cpuid4_info *this_leaf,		\
- 			    const char *buf, size_t count)		\
- {									\
- 	return store_cache_disable(this_leaf, buf, count, index);	\
+ 	ret = sched_getaffinity(pid, mask);
+ 	if (ret == 0) {
+-		if (copy_to_user(user_mask_ptr, mask, cpumask_size()))
++		int retlen = min(len, cpumask_size());
++
++		if (copy_to_user(user_mask_ptr, mask, retlen))
+ 			ret = -EFAULT;
+ 		else
+-			ret = cpumask_size();
++			ret = retlen;
+ 	}
+ 	free_cpumask_var(mask);
+ 
 
 
