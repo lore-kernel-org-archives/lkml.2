@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425Ab0DVToW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:44:22 -0400
-Received: from kroah.org ([198.145.64.141]:41238 "EHLO coco.kroah.org"
+	id S1757455Ab0DVTpl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:45:41 -0400
+Received: from kroah.org ([198.145.64.141]:41159 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756704Ab0DVT3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:17 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:19 2010
-Message-Id: <20100422190919.308022705@kvm.kroah.org>
+	id S1756450Ab0DVT3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:10 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:18 2010
+Message-Id: <20100422190918.539458630@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:45 -0700
+Date: Thu, 22 Apr 2010 12:09:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andi Kleen <ak@linux.intel.com>, Youquan Song <youquan.song@intel.com>,
-       Ying Huang <ying.huang@intel.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       maximilian attems <max@stro.at>
-Subject: [134/197] PCIe AER: prevent AER injection if hardware masks error reporting
+       Andrew Perepechko <andrew.perepechko@sun.com>, Jan Kara <jack@suse.cz>
+Subject: [125/197] quota: Fix possible dq_flags corruption
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,63 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Youquan Song <youquan.song@linux.intel.com>
+From: Andrew Perepechko <andrew.perepechko@sun.com>
 
-commit b49bfd32901625e4adcfee011d2b32a43b4db67d upstream.
+commit 08261673cb6dc638c39f44d69b76fffb57b92a8b upstream.
 
-The Correcteable/Uncorrectable Error Mask Registers are used by PCIe AER
-driver which will controls the reporting of individual errors to PCIe RC
-via PCIe error messages.
+dq_flags are modified non-atomically in do_set_dqblk via __set_bit calls and
+atomically for example in mark_dquot_dirty or clear_dquot_dirty.  Hence a
+change done by an atomic operation can be overwritten by a change done by a
+non-atomic one. Fix the problem by using atomic bitops even in do_set_dqblk.
 
-If hardware masks special error reporting to RC, the aer_inject driver
-should not inject aer error.
-
-Acked-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Youquan Song <youquan.song@intel.com>
-Acked-by: Ying Huang <ying.huang@intel.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: maximilian attems <max@stro.at>
+Signed-off-by: Andrew Perepechko <andrew.perepechko@sun.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/pcie/aer/aer_inject.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ fs/quota/dquot.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/pci/pcie/aer/aer_inject.c
-+++ b/drivers/pci/pcie/aer/aer_inject.c
-@@ -302,7 +302,7 @@ static int aer_inject(struct aer_error_i
- 	unsigned long flags;
- 	unsigned int devfn = PCI_DEVFN(einj->dev, einj->fn);
- 	int pos_cap_err, rp_pos_cap_err;
--	u32 sever;
-+	u32 sever, mask;
- 	int ret = 0;
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -2389,34 +2389,34 @@ static int do_set_dqblk(struct dquot *dq
+ 	if (di->dqb_valid & QIF_SPACE) {
+ 		dm->dqb_curspace = di->dqb_curspace - dm->dqb_rsvspace;
+ 		check_blim = 1;
+-		__set_bit(DQ_LASTSET_B + QIF_SPACE_B, &dquot->dq_flags);
++		set_bit(DQ_LASTSET_B + QIF_SPACE_B, &dquot->dq_flags);
+ 	}
+ 	if (di->dqb_valid & QIF_BLIMITS) {
+ 		dm->dqb_bsoftlimit = qbtos(di->dqb_bsoftlimit);
+ 		dm->dqb_bhardlimit = qbtos(di->dqb_bhardlimit);
+ 		check_blim = 1;
+-		__set_bit(DQ_LASTSET_B + QIF_BLIMITS_B, &dquot->dq_flags);
++		set_bit(DQ_LASTSET_B + QIF_BLIMITS_B, &dquot->dq_flags);
+ 	}
+ 	if (di->dqb_valid & QIF_INODES) {
+ 		dm->dqb_curinodes = di->dqb_curinodes;
+ 		check_ilim = 1;
+-		__set_bit(DQ_LASTSET_B + QIF_INODES_B, &dquot->dq_flags);
++		set_bit(DQ_LASTSET_B + QIF_INODES_B, &dquot->dq_flags);
+ 	}
+ 	if (di->dqb_valid & QIF_ILIMITS) {
+ 		dm->dqb_isoftlimit = di->dqb_isoftlimit;
+ 		dm->dqb_ihardlimit = di->dqb_ihardlimit;
+ 		check_ilim = 1;
+-		__set_bit(DQ_LASTSET_B + QIF_ILIMITS_B, &dquot->dq_flags);
++		set_bit(DQ_LASTSET_B + QIF_ILIMITS_B, &dquot->dq_flags);
+ 	}
+ 	if (di->dqb_valid & QIF_BTIME) {
+ 		dm->dqb_btime = di->dqb_btime;
+ 		check_blim = 1;
+-		__set_bit(DQ_LASTSET_B + QIF_BTIME_B, &dquot->dq_flags);
++		set_bit(DQ_LASTSET_B + QIF_BTIME_B, &dquot->dq_flags);
+ 	}
+ 	if (di->dqb_valid & QIF_ITIME) {
+ 		dm->dqb_itime = di->dqb_itime;
+ 		check_ilim = 1;
+-		__set_bit(DQ_LASTSET_B + QIF_ITIME_B, &dquot->dq_flags);
++		set_bit(DQ_LASTSET_B + QIF_ITIME_B, &dquot->dq_flags);
+ 	}
  
- 	dev = pci_get_bus_and_slot(einj->bus, devfn);
-@@ -354,6 +354,24 @@ static int aer_inject(struct aer_error_i
- 	err->header_log2 = einj->header_log2;
- 	err->header_log3 = einj->header_log3;
- 
-+	pci_read_config_dword(dev, pos_cap_err + PCI_ERR_COR_MASK, &mask);
-+	if (einj->cor_status && !(einj->cor_status & ~mask)) {
-+		ret = -EINVAL;
-+		printk(KERN_WARNING "The correctable error(s) is masked "
-+				"by device\n");
-+		spin_unlock_irqrestore(&inject_lock, flags);
-+		goto out_put;
-+	}
-+
-+	pci_read_config_dword(dev, pos_cap_err + PCI_ERR_UNCOR_MASK, &mask);
-+	if (einj->uncor_status && !(einj->uncor_status & ~mask)) {
-+		ret = -EINVAL;
-+		printk(KERN_WARNING "The uncorrectable error(s) is masked "
-+				"by device\n");
-+		spin_unlock_irqrestore(&inject_lock, flags);
-+		goto out_put;
-+	}
-+
- 	rperr = __find_aer_error_by_dev(rpdev);
- 	if (!rperr) {
- 		rperr = rperr_alloc;
+ 	if (check_blim) {
 
 
