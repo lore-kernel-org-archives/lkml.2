@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab0DVTs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:48:28 -0400
-Received: from kroah.org ([198.145.64.141]:41076 "EHLO coco.kroah.org"
+	id S1756907Ab0DVTg3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:36:29 -0400
+Received: from kroah.org ([198.145.64.141]:41454 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756557Ab0DVT27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:59 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:17 2010
-Message-Id: <20100422190917.380978149@kvm.kroah.org>
+	id S1756859Ab0DVT3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:46 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:22 2010
+Message-Id: <20100422190922.702027944@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:23 -0700
+Date: Thu, 22 Apr 2010 12:10:22 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: [112/197] x86, cacheinfo: Add cache index disable sysfs attrs only to L3 caches
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [171/197] module: fix __module_ref_addr()
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,84 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-commit 897de50e08937663912c86fb12ad7f708af2386c upstream.
+The __module_ref_addr() problem disappears in 2.6.34-rc kernels because these
+percpu accesses were re-factored.
 
-The cache_disable_[01] attribute in
+__module_ref_addr() should use per_cpu_ptr() to obfuscate the pointer
+(RELOC_HIDE is needed for per cpu pointers).
 
-/sys/devices/system/cpu/cpu?/cache/index[0-3]/
+This non-standard per-cpu pointer use has been introduced by commit
+720eba31f47aeade8ec130ca7f4353223c49170f
 
-is enabled on all cache levels although only L3 supports it. Add it only
-to the cache level that actually supports it.
+It causes a NULL pointer exception on some configurations when CONFIG_TRACING is
+enabled on 2.6.33. This patch fixes the problem (acknowledged by Randy who
+reported the bug).
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <1264172467-25155-5-git-send-email-bp@amd64.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+It did not appear to hurt previously because most of the accesses were done
+through local_inc, which probably obfuscated the access enough that no compiler
+optimizations were done. But with local_read() done when CONFIG_TRACING is
+active, this becomes a problem. Non-CONFIG_TRACING is probably affected as well
+(module.c contains local_set and local_read that use __module_ref_addr()), but I
+guess nobody noticed because we've been lucky enough that the compiler did not
+generate the inappropriate optimization pattern there.
+
+This patch should be queued for the 2.6.29.x through 2.6.33.x stable branches.
+(tested on 2.6.33.1 x86_64)
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Eric Dumazet <dada1@cosmosbay.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Tejun Heo <tj@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/intel_cacheinfo.c |   35 +++++++++++++++++++++++++---------
- 1 file changed, 26 insertions(+), 9 deletions(-)
+ include/linux/module.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -829,16 +829,24 @@ static struct _cache_attr cache_disable_
- static struct _cache_attr cache_disable_1 = __ATTR(cache_disable_1, 0644,
- 		show_cache_disable_1, store_cache_disable_1);
- 
-+#define DEFAULT_SYSFS_CACHE_ATTRS	\
-+	&type.attr,			\
-+	&level.attr,			\
-+	&coherency_line_size.attr,	\
-+	&physical_line_partition.attr,	\
-+	&ways_of_associativity.attr,	\
-+	&number_of_sets.attr,		\
-+	&size.attr,			\
-+	&shared_cpu_map.attr,		\
-+	&shared_cpu_list.attr
-+
- static struct attribute *default_attrs[] = {
--	&type.attr,
--	&level.attr,
--	&coherency_line_size.attr,
--	&physical_line_partition.attr,
--	&ways_of_associativity.attr,
--	&number_of_sets.attr,
--	&size.attr,
--	&shared_cpu_map.attr,
--	&shared_cpu_list.attr,
-+	DEFAULT_SYSFS_CACHE_ATTRS,
-+	NULL
-+};
-+
-+static struct attribute *default_l3_attrs[] = {
-+	DEFAULT_SYSFS_CACHE_ATTRS,
- 	&cache_disable_0.attr,
- 	&cache_disable_1.attr,
- 	NULL
-@@ -931,6 +939,7 @@ static int __cpuinit cache_add_dev(struc
- 	unsigned int cpu = sys_dev->id;
- 	unsigned long i, j;
- 	struct _index_kobject *this_object;
-+	struct _cpuid4_info   *this_leaf;
- 	int retval;
- 
- 	retval = cpuid4_cache_sysfs_init(cpu);
-@@ -949,6 +958,14 @@ static int __cpuinit cache_add_dev(struc
- 		this_object = INDEX_KOBJECT_PTR(cpu, i);
- 		this_object->cpu = cpu;
- 		this_object->index = i;
-+
-+		this_leaf = CPUID4_INFO_IDX(cpu, i);
-+
-+		if (this_leaf->can_disable)
-+			ktype_cache.default_attrs = default_l3_attrs;
-+		else
-+			ktype_cache.default_attrs = default_attrs;
-+
- 		retval = kobject_init_and_add(&(this_object->kobj),
- 					      &ktype_cache,
- 					      per_cpu(cache_kobject, cpu),
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -455,7 +455,7 @@ void symbol_put_addr(void *addr);
+ static inline local_t *__module_ref_addr(struct module *mod, int cpu)
+ {
+ #ifdef CONFIG_SMP
+-	return (local_t *) (mod->refptr + per_cpu_offset(cpu));
++	return (local_t *) per_cpu_ptr(mod->refptr, cpu);
+ #else
+ 	return &mod->ref;
+ #endif
 
 
