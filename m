@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab0DVWFV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 18:05:21 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:50198 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab0DVWFM convert rfc822-to-8bit (ORCPT
+	id S1752504Ab0DVWHY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 18:07:24 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:44813 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab0DVWHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 18:05:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rgjTNc+2aoT4dR417pZhYwOYVzSbymCPFCHjBTG2hrG1b2aoZHZZkJIMG3LQfBn7U/
-         lbUO5WagP3pl01DEzoDFGscYoMuNN5A0X49PWcK/lhXU/tuUzhXq6gf7dwgiH4PawF4S
-         +6j3osCghIjcmngkJqSxY7csyGf+8UcrL20vg=
+	Thu, 22 Apr 2010 18:07:22 -0400
+To: Vitaly Mayatskikh <v.mayatskih@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Vivek Goyal <vgoyal@redhat.com>, Haren Myneni <hbabu@us.ibm.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Cong Wang <amwang@redhat.com>,
+       kexec@lists.infradead.org
+Subject: Re: [PATCH 0/5] Add second memory region for crash kernel
+References: <1271953392-6324-1-git-send-email-v.mayatskih@gmail.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Thu, 22 Apr 2010 15:07:11 -0700
+In-Reply-To: <1271953392-6324-1-git-send-email-v.mayatskih@gmail.com> (Vitaly Mayatskikh's message of "Thu\, 22 Apr 2010 18\:23\:07 +0200")
+Message-ID: <m1aasvkupc.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1004222357150.7579@pobox.suse.cz>
-References: <1271970765-11856-1-git-send-email-fgaliegue@gmail.com>
-	 <p2v8bd0f97a1004221421x4bf0850fm1b47f4838c344368@mail.gmail.com>
-	 <y2lac542ca01004221444le9b33c8as587d3382ab7ff0a9@mail.gmail.com>
-	 <alpine.LNX.2.00.1004222357150.7579@pobox.suse.cz>
-Date: Fri, 23 Apr 2010 00:05:11 +0200
-Message-ID: <h2wac542ca01004221505i825a68dendd4fd54bfffe6ac6@mail.gmail.com>
-Subject: Re: Should I really bother all maintainers with this?
-From: Francis Galiegue <fgaliegue@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Mike Frysinger <vapier.adi@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: v.mayatskih@gmail.com, kexec@lists.infradead.org, amwang@redhat.com, nhorman@tuxdriver.com, hbabu@us.ibm.com, vgoyal@redhat.com, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, linux-kernel@vger.kernel.org
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 11:57 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Thu, 22 Apr 2010, Francis Galiegue wrote:
->
->> >> This patch only fixes quite a common mistake in Documentation/, and if I
->> >> scripts/get_maintainer.pl on the patch (which is recommended), I potentially
->> >> mail thousands of people who probably have more useful/exciting stuff to do
->> >> anyway. So, I submit it as is.
->> >
->> > this kind of stuff usually goes through the trivial tree.  look at
->> > TRIVIAL PATCHES in the MAINTAINERS file.
->> > -mike
->> >
->>
->> Point taken... But the patch doesn't apply as is over trivial/master or
->> trivial/for-next, as two files don't seem to exist on either branch (trivial
->> being the git repository mentioned in MAINTAINERS):
->> Documentation/DMA-API-HOWTO.txt and Documentation/filesystems/ceph.txt.
->
-> That's not a problem, I pull Linus' tree into my tree when needed. Just
-> resend the patch (based on Linus' tree) to trivial@kernel.org and I'll
-> process it appropriately.
->
+Vitaly Mayatskikh <v.mayatskih@gmail.com> writes:
 
-Ah well, I forgot to mention that this patch was done over Linus' tree
-(specifically, commit c81eddb0e3728661d1585fbc564449c94165cc36).
-
-I'll resend right back with Cc: <trivial@kernel.org>.
-
-> Thanks,
-> --
-> Jiri Kosina
-> SUSE Labs, Novell Inc.
+> Patch applies to 2.6.34-rc5
 >
+> On x86 platform, even if hardware is 64-bit capable, kernel starts
+> execution in 32-bit mode. When system is kdump-enabled, crashed kernel
+> switches to 32 bit mode and jumps into new kernel. This automatically
+> limits location of dump-capture kernel image and it's initrd by first
+> 4Gb of memory. Switching to 32 bit mode is performed by purgatory
+> code, which has relocations of type R_X86_64_32S (32-bit signed), and
+> this cuts "good" address space for crash kernel down to 2 Gb. I/O
+> regions may cut down this space further.
+>
+> When system has a lot of memory (hundreds of gigabytes), dump-capture
+> kernel also needs relatively a lot of memory to account old kernel's
+> pages. It may be impossible to reserve enough memory below 2 or even 4
+> Gb. Simplest solution is it break dump-capture kernel's reserved
+> memory region into two pieces: first (small) region for kernel and
+> initrd images may be easily placed in "good" address space in the
+> beginning of physical memory, and second region may be located
+> anywhere.
+>
+> This serie of patches realizes this approach. It requires also changes
+> in kexec utility to make this feature work, but is
+> backward-compatible: old versions of kexec will work with new
+> kernel. I will post patch to kexec-tools upstream separately.
 
--- 
-Francis Galiegue, fgaliegue@gmail.com
-"It seems obvious [...] that at least some 'business intelligence'
-tools invest so much intelligence on the business side that they have
-nothing left for generating SQL queries" (Stéphane Faroult, in "The
-Art of SQL", ISBN 0-596-00894-5)
+Have you tried loading a 64bit vmlinux directly into a higher address
+range?  There may be a bit or two missing but you should be able to
+load a linux kernel above 4GB.  I tested the basics of that mechanism
+when I made the 64bit relocatable kernel.
+
+I don't buy the argument that there is a direct connection between
+the amount of memory you have and how much memory it takes to dump it.
+Even an indirect connections seems suspicious.
+
+Eric
