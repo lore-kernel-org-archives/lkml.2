@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165Ab0DVUHc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:07:32 -0400
-Received: from kroah.org ([198.145.64.141]:60140 "EHLO coco.kroah.org"
+	id S932155Ab0DVUI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:08:29 -0400
+Received: from kroah.org ([198.145.64.141]:60130 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758181Ab0DVUCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:02:13 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:19 2010
-Message-Id: <20100422195418.947945374@kvm.kroah.org>
+	id S1758174Ab0DVUCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:02:10 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:18 2010
+Message-Id: <20100422195418.765388130@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:55:13 -0700
+Date: Thu, 22 Apr 2010 12:55:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sridhar Samudrala <sri@us.ibm.com>, Avi Kivity <avi@redhat.com>
-Subject: [136/139] KVM: Increase NR_IOBUS_DEVS limit to 200
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [134/139] KVM: MMU: fix kvm_mmu_zap_page() and its calling path
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sridhar Samudrala <sri@us.ibm.com>
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 
-(Cherry-picked from commit e80e2a60ff7914dae691345a976c80bbbff3ec74)
+(Cherry-picked from commit 77662e0028c7c63e34257fda03ff9625c59d939d)
 
-This patch increases the current hardcoded limit of NR_IOBUS_DEVS
-from 6 to 200. We are hitting this limit when creating a guest with more
-than 1 virtio-net device using vhost-net backend. Each virtio-net
-device requires 2 such devices to service notifications from rx/tx queues.
+This patch fix:
 
-Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+- calculate zapped page number properly in mmu_zap_unsync_children()
+- calculate freeed page number properly kvm_mmu_change_mmu_pages()
+- if zapped children page it shoud restart hlist walking
+
+KVM-Stable-Tag.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/kvm_host.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/mmu.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -53,7 +53,7 @@ extern struct kmem_cache *kvm_vcpu_cache
-  */
- struct kvm_io_bus {
- 	int                   dev_count;
--#define NR_IOBUS_DEVS 6
-+#define NR_IOBUS_DEVS 200
- 	struct kvm_io_device *devs[NR_IOBUS_DEVS];
- };
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1502,8 +1502,8 @@ static int mmu_zap_unsync_children(struc
+ 		for_each_sp(pages, sp, parents, i) {
+ 			kvm_mmu_zap_page(kvm, sp);
+ 			mmu_pages_clear_parents(&parents);
++			zapped++;
+ 		}
+-		zapped += pages.nr;
+ 		kvm_mmu_pages_init(parent, &parents, &pages);
+ 	}
  
+@@ -1554,14 +1554,16 @@ void kvm_mmu_change_mmu_pages(struct kvm
+ 	 */
+ 
+ 	if (used_pages > kvm_nr_mmu_pages) {
+-		while (used_pages > kvm_nr_mmu_pages) {
++		while (used_pages > kvm_nr_mmu_pages &&
++			!list_empty(&kvm->arch.active_mmu_pages)) {
+ 			struct kvm_mmu_page *page;
+ 
+ 			page = container_of(kvm->arch.active_mmu_pages.prev,
+ 					    struct kvm_mmu_page, link);
+-			kvm_mmu_zap_page(kvm, page);
++			used_pages -= kvm_mmu_zap_page(kvm, page);
+ 			used_pages--;
+ 		}
++		kvm_nr_mmu_pages = used_pages;
+ 		kvm->arch.n_free_mmu_pages = 0;
+ 	}
+ 	else
+@@ -1608,7 +1610,8 @@ static void mmu_unshadow(struct kvm *kvm
+ 		    && !sp->role.invalid) {
+ 			pgprintk("%s: zap %lx %x\n",
+ 				 __func__, gfn, sp->role.word);
+-			kvm_mmu_zap_page(kvm, sp);
++			if (kvm_mmu_zap_page(kvm, sp))
++				nn = bucket->first;
+ 		}
+ 	}
+ }
 
 
