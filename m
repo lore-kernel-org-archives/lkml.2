@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab0DVTm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:42:58 -0400
-Received: from kroah.org ([198.145.64.141]:41302 "EHLO coco.kroah.org"
+	id S1757425Ab0DVToW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:44:22 -0400
+Received: from kroah.org ([198.145.64.141]:41238 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756736Ab0DVT3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:22 -0400
+	id S1756704Ab0DVT3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:17 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:19 2010
-Message-Id: <20100422190919.848008469@kvm.kroah.org>
+Message-Id: <20100422190919.308022705@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:51 -0700
+Date: Thu, 22 Apr 2010 12:09:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Eli Cohen <eli@mellanox.co.il>, Roland Dreier <rolandd@cisco.com>,
+       Andi Kleen <ak@linux.intel.com>, Youquan Song <youquan.song@intel.com>,
+       Ying Huang <ying.huang@intel.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
        maximilian attems <max@stro.at>
-Subject: [140/197] IPoIB: Fix TX queue lockup with mixed UD/CM traffic
+Subject: [134/197] PCIe AER: prevent AER injection if hardware masks error reporting
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eli Cohen <eli@mellanox.co.il>
+From: Youquan Song <youquan.song@linux.intel.com>
 
-commit f0dc117abdfa9a0e96c3d013d836460ef3cd08c7 upstream.
+commit b49bfd32901625e4adcfee011d2b32a43b4db67d upstream.
 
-The IPoIB UD QP reports send completions to priv->send_cq, which is
-usually left unarmed; it only gets armed when the number of
-outstanding send requests reaches the size of the TX queue. This
-arming is done only in the send path for the UD QP.  However, when
-sending CM packets, the net queue may be stopped for the same reasons
-but no measures are taken to recover the UD path from a lockup.
+The Correcteable/Uncorrectable Error Mask Registers are used by PCIe AER
+driver which will controls the reporting of individual errors to PCIe RC
+via PCIe error messages.
 
-Consider this scenario: a host sends high rate of both CM and UD
-packets, with a TX queue length of N.  If at some time the number of
-outstanding UD packets is more than N/2 and the overall outstanding
-packets is N-1, and CM sends a packet (making the number of
-outstanding sends equal N), the TX queue will be stopped.  When all
-the CM packets complete, the number of outstanding packets will still
-be higher than N/2 so the TX queue will not be restarted.
+If hardware masks special error reporting to RC, the aer_inject driver
+should not inject aer error.
 
-Fix this by calling ib_req_notify_cq() when the queue is stopped in
-the CM path.
-
-Signed-off-by: Eli Cohen <eli@mellanox.co.il>
-Signed-off-by: Roland Dreier <rolandd@cisco.com>
+Acked-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+Acked-by: Ying Huang <ying.huang@intel.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/ulp/ipoib/ipoib_cm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/pci/pcie/aer/aer_inject.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-@@ -752,6 +752,8 @@ void ipoib_cm_send(struct net_device *de
- 		if (++priv->tx_outstanding == ipoib_sendq_size) {
- 			ipoib_dbg(priv, "TX ring 0x%x full, stopping kernel net queue\n",
- 				  tx->qp->qp_num);
-+			if (ib_req_notify_cq(priv->send_cq, IB_CQ_NEXT_COMP))
-+				ipoib_warn(priv, "request notify on send CQ failed\n");
- 			netif_stop_queue(dev);
- 		}
- 	}
+--- a/drivers/pci/pcie/aer/aer_inject.c
++++ b/drivers/pci/pcie/aer/aer_inject.c
+@@ -302,7 +302,7 @@ static int aer_inject(struct aer_error_i
+ 	unsigned long flags;
+ 	unsigned int devfn = PCI_DEVFN(einj->dev, einj->fn);
+ 	int pos_cap_err, rp_pos_cap_err;
+-	u32 sever;
++	u32 sever, mask;
+ 	int ret = 0;
+ 
+ 	dev = pci_get_bus_and_slot(einj->bus, devfn);
+@@ -354,6 +354,24 @@ static int aer_inject(struct aer_error_i
+ 	err->header_log2 = einj->header_log2;
+ 	err->header_log3 = einj->header_log3;
+ 
++	pci_read_config_dword(dev, pos_cap_err + PCI_ERR_COR_MASK, &mask);
++	if (einj->cor_status && !(einj->cor_status & ~mask)) {
++		ret = -EINVAL;
++		printk(KERN_WARNING "The correctable error(s) is masked "
++				"by device\n");
++		spin_unlock_irqrestore(&inject_lock, flags);
++		goto out_put;
++	}
++
++	pci_read_config_dword(dev, pos_cap_err + PCI_ERR_UNCOR_MASK, &mask);
++	if (einj->uncor_status && !(einj->uncor_status & ~mask)) {
++		ret = -EINVAL;
++		printk(KERN_WARNING "The uncorrectable error(s) is masked "
++				"by device\n");
++		spin_unlock_irqrestore(&inject_lock, flags);
++		goto out_put;
++	}
++
+ 	rperr = __find_aer_error_by_dev(rpdev);
+ 	if (!rperr) {
+ 		rperr = rperr_alloc;
 
 
