@@ -1,74 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab0DVUg0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:36:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35705 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757906Ab0DVUgP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:36:15 -0400
-Date: Thu, 22 Apr 2010 13:35:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-       Rik van Riel <riel@redhat.com>, John Stoffel <john@stoffel.org>,
-       Hedi Berriche <hedi@sgi.com>, Mike Travis <travis@sgi.com>,
-       Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
- pid_max v2
-Message-Id: <20100422133505.6e7a24ad.akpm@linux-foundation.org>
-In-Reply-To: <20100422170801.GZ5677@sgi.com>
-References: <20100421165934.GN16427@zorg.emea.sgi.com>
-	<4BCF336B.1050706@redhat.com>
-	<19407.20109.308816.104856@stoffel.org>
-	<20100421193350.GU16427@zorg.emea.sgi.com>
-	<19407.23456.469074.256306@stoffel.org>
-	<20100421222414.GA26241@suse.de>
-	<4BCF80F2.2010906@redhat.com>
-	<20100421232200.GA22877@suse.de>
-	<20100422102852.72837494@lxorguk.ukuu.org.uk>
-	<alpine.LFD.2.00.1004220743080.9086@i5.linux-foundation.org>
-	<20100422170801.GZ5677@sgi.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756257Ab0DVT2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:28:14 -0400
+Received: from kroah.org ([198.145.64.141]:37492 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756235Ab0DVT2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:11 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:12 2010
+Message-Id: <20100422190912.388862810@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Thu, 22 Apr 2010 12:08:27 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>,
+       Stefan Bader <stefan.bader@canonical.com>
+Subject: [056/197] KVM: Fix segment descriptor loading
+In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Apr 2010 12:08:02 -0500
-Robin Holt <holt@sgi.com> wrote:
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-> > Which I'm not entirely sure makes the case for the kernel parameter much 
-> > stronger, though. I wonder if it's not more appropriate to just have a 
-> > total hack saying
-> > 
-> > 	if (max_pids < N * max_cpus) {
-> > 		printk("We have %d CPUs, increasing max_pids to %d\n");
-> > 		max_pids = N*max_cpus;
-> > 	}
-> > 
-> > where "N" is just some random fudge-factor. It's reasonable to expect a 
-> > certain minimum number of processes per CPU, after all.
-> 
-> How about:
-> 
-> 	pid_max_min = max(pid_max_min, 19 * num_possible_cpus());
-> 	pid_max_baseline = 2048 * num_possible_cpus();
-> 
-> 	if (pid_max < pid_max_baseline) {
-> 		printk("We have %d CPUs, increasing pid_max to %d\n"...
-> 		pid_max = pid_max_baseline;
-> 	}
-> 
-> 
-> This would scale pid_max_min by a sane amount, leave the default value
-> of pid_max_min and pid_max untouched below 16 cpus and then scale both
-> up linearly beyond that.
+------------------
 
-Something like that would work.  We shouild ensure that pid_max cannot
-end up being less than the current PID_MAX_DEFAULT.
+
+From: Gleb Natapov <gleb@redhat.com>
+
+commit c697518a861e6c43b92b848895f9926580ee63c3 upstream
+
+Add proper error and permission checking. This patch also change task
+switching code to load segment selectors before segment descriptors, like
+SDM requires, otherwise permission checking during segment descriptor
+loading will be incorrect.
+
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ arch/x86/include/asm/kvm_host.h |    3 
+ arch/x86/kvm/emulate.c          |   28 +-----
+ arch/x86/kvm/x86.c              |  173 ++++++++++++++++++++++++++++++++++------
+ 3 files changed, 158 insertions(+), 46 deletions(-)
+
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -602,8 +602,7 @@ int emulator_set_dr(struct x86_emulate_c
+ 		    unsigned long value);
+ 
+ void kvm_get_segment(struct kvm_vcpu *vcpu, struct kvm_segment *var, int seg);
+-int kvm_load_segment_descriptor(struct kvm_vcpu *vcpu, u16 selector,
+-				int type_bits, int seg);
++int kvm_load_segment_descriptor(struct kvm_vcpu *vcpu, u16 selector, int seg);
+ 
+ int kvm_task_switch(struct kvm_vcpu *vcpu, u16 tss_selector, int reason);
+ 
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -1396,7 +1396,7 @@ static int emulate_ret_far(struct x86_em
+ 	rc = emulate_pop(ctxt, ops, &cs, c->op_bytes);
+ 	if (rc)
+ 		return rc;
+-	rc = kvm_load_segment_descriptor(ctxt->vcpu, (u16)cs, 1, VCPU_SREG_CS);
++	rc = kvm_load_segment_descriptor(ctxt->vcpu, (u16)cs, VCPU_SREG_CS);
+ 	return rc;
+ }
+ 
+@@ -1992,12 +1992,11 @@ special_insn:
+ 		break;
+ 	case 0x8e: { /* mov seg, r/m16 */
+ 		uint16_t sel;
+-		int type_bits;
+-		int err;
+ 
+ 		sel = c->src.val;
+ 
+-		if (c->modrm_reg == VCPU_SREG_CS) {
++		if (c->modrm_reg == VCPU_SREG_CS ||
++		    c->modrm_reg > VCPU_SREG_GS) {
+ 			kvm_queue_exception(ctxt->vcpu, UD_VECTOR);
+ 			goto done;
+ 		}
+@@ -2005,18 +2004,7 @@ special_insn:
+ 		if (c->modrm_reg == VCPU_SREG_SS)
+ 			toggle_interruptibility(ctxt, X86_SHADOW_INT_MOV_SS);
+ 
+-		if (c->modrm_reg <= 5) {
+-			type_bits = (c->modrm_reg == 1) ? 9 : 1;
+-			err = kvm_load_segment_descriptor(ctxt->vcpu, sel,
+-							  type_bits, c->modrm_reg);
+-		} else {
+-			printk(KERN_INFO "Invalid segreg in modrm byte 0x%02x\n",
+-					c->modrm);
+-			goto cannot_emulate;
+-		}
+-
+-		if (err < 0)
+-			goto cannot_emulate;
++		rc = kvm_load_segment_descriptor(ctxt->vcpu, sel, c->modrm_reg);
+ 
+ 		c->dst.type = OP_NONE;  /* Disable writeback. */
+ 		break;
+@@ -2186,11 +2174,9 @@ special_insn:
+ 	case 0xe9: /* jmp rel */
+ 		goto jmp;
+ 	case 0xea: /* jmp far */
+-		if (kvm_load_segment_descriptor(ctxt->vcpu, c->src2.val, 9,
+-					VCPU_SREG_CS) < 0) {
+-			DPRINTF("jmp far: Failed to load CS descriptor\n");
+-			goto cannot_emulate;
+-		}
++		if (kvm_load_segment_descriptor(ctxt->vcpu, c->src2.val,
++						VCPU_SREG_CS))
++			goto done;
+ 
+ 		c->eip = c->src.val;
+ 		break;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4207,7 +4207,7 @@ static int kvm_load_realmode_segment(str
+ 		.unusable = 0,
+ 	};
+ 	kvm_x86_ops->set_segment(vcpu, &segvar, seg);
+-	return 0;
++	return X86EMUL_CONTINUE;
+ }
+ 
+ static int is_vm86_segment(struct kvm_vcpu *vcpu, int seg)
+@@ -4217,24 +4217,113 @@ static int is_vm86_segment(struct kvm_vc
+ 		(kvm_x86_ops->get_rflags(vcpu) & X86_EFLAGS_VM);
+ }
+ 
+-int kvm_load_segment_descriptor(struct kvm_vcpu *vcpu, u16 selector,
+-				int type_bits, int seg)
++int kvm_load_segment_descriptor(struct kvm_vcpu *vcpu, u16 selector, int seg)
+ {
+ 	struct kvm_segment kvm_seg;
++	struct desc_struct seg_desc;
++	u8 dpl, rpl, cpl;
++	unsigned err_vec = GP_VECTOR;
++	u32 err_code = 0;
++	bool null_selector = !(selector & ~0x3); /* 0000-0003 are null */
++	int ret;
+ 
+ 	if (is_vm86_segment(vcpu, seg) || !(vcpu->arch.cr0 & X86_CR0_PE))
+ 		return kvm_load_realmode_segment(vcpu, selector, seg);
+-	if (load_segment_descriptor_to_kvm_desct(vcpu, selector, &kvm_seg))
+-		return 1;
+-	kvm_seg.type |= type_bits;
+ 
+-	if (seg != VCPU_SREG_SS && seg != VCPU_SREG_CS &&
+-	    seg != VCPU_SREG_LDTR)
+-		if (!kvm_seg.s)
+-			kvm_seg.unusable = 1;
+ 
++	/* NULL selector is not valid for TR, CS and SS */
++	if ((seg == VCPU_SREG_CS || seg == VCPU_SREG_SS || seg == VCPU_SREG_TR)
++	    && null_selector)
++		goto exception;
++
++	/* TR should be in GDT only */
++	if (seg == VCPU_SREG_TR && (selector & (1 << 2)))
++		goto exception;
++
++	ret = load_guest_segment_descriptor(vcpu, selector, &seg_desc);
++	if (ret)
++		return ret;
++
++	seg_desct_to_kvm_desct(&seg_desc, selector, &kvm_seg);
++
++	if (null_selector) { /* for NULL selector skip all following checks */
++		kvm_seg.unusable = 1;
++		goto load;
++	}
++
++	err_code = selector & 0xfffc;
++	err_vec = GP_VECTOR;
++
++	/* can't load system descriptor into segment selecor */
++	if (seg <= VCPU_SREG_GS && !kvm_seg.s)
++		goto exception;
++
++	if (!kvm_seg.present) {
++		err_vec = (seg == VCPU_SREG_SS) ? SS_VECTOR : NP_VECTOR;
++		goto exception;
++	}
++
++	rpl = selector & 3;
++	dpl = kvm_seg.dpl;
++	cpl = kvm_x86_ops->get_cpl(vcpu);
++
++	switch (seg) {
++	case VCPU_SREG_SS:
++		/*
++		 * segment is not a writable data segment or segment
++		 * selector's RPL != CPL or segment selector's RPL != CPL
++		 */
++		if (rpl != cpl || (kvm_seg.type & 0xa) != 0x2 || dpl != cpl)
++			goto exception;
++		break;
++	case VCPU_SREG_CS:
++		if (!(kvm_seg.type & 8))
++			goto exception;
++
++		if (kvm_seg.type & 4) {
++			/* conforming */
++			if (dpl > cpl)
++				goto exception;
++		} else {
++			/* nonconforming */
++			if (rpl > cpl || dpl != cpl)
++				goto exception;
++		}
++		/* CS(RPL) <- CPL */
++		selector = (selector & 0xfffc) | cpl;
++		break;
++	case VCPU_SREG_TR:
++		if (kvm_seg.s || (kvm_seg.type != 1 && kvm_seg.type != 9))
++			goto exception;
++		break;
++	case VCPU_SREG_LDTR:
++		if (kvm_seg.s || kvm_seg.type != 2)
++			goto exception;
++		break;
++	default: /*  DS, ES, FS, or GS */
++		/*
++		 * segment is not a data or readable code segment or
++		 * ((segment is a data or nonconforming code segment)
++		 * and (both RPL and CPL > DPL))
++		 */
++		if ((kvm_seg.type & 0xa) == 0x8 ||
++		    (((kvm_seg.type & 0xc) != 0xc) && (rpl > dpl && cpl > dpl)))
++			goto exception;
++		break;
++	}
++
++	if (!kvm_seg.unusable && kvm_seg.s) {
++		/* mark segment as accessed */
++		kvm_seg.type |= 1;
++		seg_desc.type |= 1;
++		save_guest_segment_descriptor(vcpu, selector, &seg_desc);
++	}
++load:
+ 	kvm_set_segment(vcpu, &kvm_seg, seg);
+-	return 0;
++	return X86EMUL_CONTINUE;
++exception:
++	kvm_queue_exception_e(vcpu, err_vec, err_code);
++	return X86EMUL_PROPAGATE_FAULT;
+ }
+ 
+ static void save_state_to_tss32(struct kvm_vcpu *vcpu,
+@@ -4260,6 +4349,14 @@ static void save_state_to_tss32(struct k
+ 	tss->ldt_selector = get_segment_selector(vcpu, VCPU_SREG_LDTR);
+ }
+ 
++static void kvm_load_segment_selector(struct kvm_vcpu *vcpu, u16 sel, int seg)
++{
++	struct kvm_segment kvm_seg;
++	kvm_get_segment(vcpu, &kvm_seg, seg);
++	kvm_seg.selector = sel;
++	kvm_set_segment(vcpu, &kvm_seg, seg);
++}
++
+ static int load_state_from_tss32(struct kvm_vcpu *vcpu,
+ 				  struct tss_segment_32 *tss)
+ {
+@@ -4277,25 +4374,41 @@ static int load_state_from_tss32(struct
+ 	kvm_register_write(vcpu, VCPU_REGS_RSI, tss->esi);
+ 	kvm_register_write(vcpu, VCPU_REGS_RDI, tss->edi);
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->ldt_selector, 0, VCPU_SREG_LDTR))
++	/*
++	 * SDM says that segment selectors are loaded before segment
++	 * descriptors
++	 */
++	kvm_load_segment_selector(vcpu, tss->ldt_selector, VCPU_SREG_LDTR);
++	kvm_load_segment_selector(vcpu, tss->es, VCPU_SREG_ES);
++	kvm_load_segment_selector(vcpu, tss->cs, VCPU_SREG_CS);
++	kvm_load_segment_selector(vcpu, tss->ss, VCPU_SREG_SS);
++	kvm_load_segment_selector(vcpu, tss->ds, VCPU_SREG_DS);
++	kvm_load_segment_selector(vcpu, tss->fs, VCPU_SREG_FS);
++	kvm_load_segment_selector(vcpu, tss->gs, VCPU_SREG_GS);
++
++	/*
++	 * Now load segment descriptors. If fault happenes at this stage
++	 * it is handled in a context of new task
++	 */
++	if (kvm_load_segment_descriptor(vcpu, tss->ldt_selector, VCPU_SREG_LDTR))
+ 		return 1;
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->es, 1, VCPU_SREG_ES))
++	if (kvm_load_segment_descriptor(vcpu, tss->es, VCPU_SREG_ES))
+ 		return 1;
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->cs, 9, VCPU_SREG_CS))
++	if (kvm_load_segment_descriptor(vcpu, tss->cs, VCPU_SREG_CS))
+ 		return 1;
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->ss, 1, VCPU_SREG_SS))
++	if (kvm_load_segment_descriptor(vcpu, tss->ss, VCPU_SREG_SS))
+ 		return 1;
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->ds, 1, VCPU_SREG_DS))
++	if (kvm_load_segment_descriptor(vcpu, tss->ds, VCPU_SREG_DS))
+ 		return 1;
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->fs, 1, VCPU_SREG_FS))
++	if (kvm_load_segment_descriptor(vcpu, tss->fs, VCPU_SREG_FS))
+ 		return 1;
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->gs, 1, VCPU_SREG_GS))
++	if (kvm_load_segment_descriptor(vcpu, tss->gs, VCPU_SREG_GS))
+ 		return 1;
+ 	return 0;
+ }
+@@ -4336,19 +4449,33 @@ static int load_state_from_tss16(struct
+ 	kvm_register_write(vcpu, VCPU_REGS_RSI, tss->si);
+ 	kvm_register_write(vcpu, VCPU_REGS_RDI, tss->di);
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->ldt, 0, VCPU_SREG_LDTR))
++	/*
++	 * SDM says that segment selectors are loaded before segment
++	 * descriptors
++	 */
++	kvm_load_segment_selector(vcpu, tss->ldt, VCPU_SREG_LDTR);
++	kvm_load_segment_selector(vcpu, tss->es, VCPU_SREG_ES);
++	kvm_load_segment_selector(vcpu, tss->cs, VCPU_SREG_CS);
++	kvm_load_segment_selector(vcpu, tss->ss, VCPU_SREG_SS);
++	kvm_load_segment_selector(vcpu, tss->ds, VCPU_SREG_DS);
++
++	/*
++	 * Now load segment descriptors. If fault happenes at this stage
++	 * it is handled in a context of new task
++	 */
++	if (kvm_load_segment_descriptor(vcpu, tss->ldt, VCPU_SREG_LDTR))
+ 		return 1;
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->es, 1, VCPU_SREG_ES))
++	if (kvm_load_segment_descriptor(vcpu, tss->es, VCPU_SREG_ES))
+ 		return 1;
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->cs, 9, VCPU_SREG_CS))
++	if (kvm_load_segment_descriptor(vcpu, tss->cs, VCPU_SREG_CS))
+ 		return 1;
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->ss, 1, VCPU_SREG_SS))
++	if (kvm_load_segment_descriptor(vcpu, tss->ss, VCPU_SREG_SS))
+ 		return 1;
+ 
+-	if (kvm_load_segment_descriptor(vcpu, tss->ds, 1, VCPU_SREG_DS))
++	if (kvm_load_segment_descriptor(vcpu, tss->ds, VCPU_SREG_DS))
+ 		return 1;
+ 	return 0;
+ }
+
 
