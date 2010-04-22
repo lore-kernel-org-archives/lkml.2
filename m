@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab0DVKh5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 06:37:57 -0400
-Received: from mtoichi13.ns.itscom.net ([219.110.2.183]:56955 "EHLO
-	mtoichi13.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab0DVKhz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 06:37:55 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
-To: Jamie Lokier <jamie@shareable.org>
-Cc: Jan Blunck <jblunck@suse.de>, Miklos Szeredi <miklos@szeredi.hu>,
-       Valerie Aurora <vaurora@redhat.com>, dwmw2@infradead.org,
-       viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, tytso@mit.edu,
-       linux-ext4@vger.kernel.org
-In-Reply-To: <20100421092235.GB13114@shareable.org>
-References: <1271372682-21225-14-git-send-email-vaurora@redhat.com> <20100419124025.GG10776@bolzano.suse.de> <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de> <20100419142315.GA2688@shell> <E1O3sLi-0008EA-QW@pomaz-ex.szeredi.hu> <20100420213450.GM11723@shareable.org> <20100421084211.GB22741@bolzano.suse.de> <20100421092235.GB13114@shareable.org>
-Date: Thu, 22 Apr 2010 19:30:55 +0900
-Message-ID: <1731.1271932255@jrobl>
+	id S1754025Ab0DVKj4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 06:39:56 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51152 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753487Ab0DVKjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 06:39:54 -0400
+Date: Thu, 22 Apr 2010 12:39:53 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] [MTD] Fix JFFS2 sync silent failure
+Message-ID: <20100422103953.GB27497@kernel.dk>
+References: <20100417184016.GA17345@logfs.org> <20100419073843.GN27497@kernel.dk> <20100419101559.GA4145@logfs.org> <20100419102056.GS27497@kernel.dk> <20100422055448.GA27309@logfs.org> <20100422090303.GA27497@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100422090303.GA27497@kernel.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 22 2010, Jens Axboe wrote:
+> On Thu, Apr 22 2010, Jörn Engel wrote:
+> > On Mon, 19 April 2010 12:20:56 +0200, Jens Axboe wrote:
+> > > 
+> > > Thanks, we definitely should have put a debug statement to catch this in
+> > > from day 1, good debugging should be an important part of any new
+> > > infrastructure.
+> > 
+> > Woke up early and had another look at this.  Looks like a much more
+> > widespread problem.  Based on a quick grep an uncaffeinated brain:
+> > 
+> > 9p	no s_bdi
+> > afs	no s_bdi
+> > ceph	creates its own s_bdi
+> > cifs	no s_bdi
+> > coda	no s_bdi
+> > ecryptfs no s_bdi
+> > exofs	no s_bdi
+> > fuse	creates its own s_bdi?
+> > gfs2	creates its own s_bdi?
+> > jffs2	patch exists
+> > logfs	fixed now
+> > ncpfs	no s_bdi
+> > nfs	creates its own s_bdi
+> > ocfs2	no s_bdi
+> > smbfs	no s_bdi
+> > ubifs	creates its own s_bdi
+> > 
+> > I excluded all filesystems that appear to be read-only, block device
+> > based or lack any sort of backing store.  So there is a chance I have
+> > missed some as well.
+> 
+> It's funky, I was pretty sure there was/is code to set a default bdi for
+> non-bdev file systems. It appears to be missing, that's not good. So
+> options include:
+> 
+> - Add the appropriate per-sb bdi for these file systems (right fix), or
+> - Pre-fill default_backing_dev_info as a fallback ->s_bdi to at least
+>   ensure that data gets flushed (quick fix)
+> 
+> I'll slap together a set of fixes for this.
 
-Jamie Lokier:
-> Hmm.  I smell potential confusion for some otherwise POSIX-friendly
-> userspaces.
-	:::
-> This plays into inotify, where you have to know if you are monitoring
-> every directory that contains a link to a file, to know if you need to
-> monitor the file itself directly instead.
+Here's a series for fixing these. At this point they are totally
+untested except that I did compile them. Note that your analysis
+appeared correct for all cases but ocfs2, which does use get_sb_bdev()
+and hence gets ->s_bdi assigned.
 
-Addition to the inode number of fallthru/readdir, hardlink in union
-mount may be a problem. If you open a hardlinked file for writing or
-try chmod it, the internal copyup will happen and the hardlink will be 
-destroyed. For instance, when fileA and fileB are hardlinked on the
-lower layer, and the contents of fileA is modifed (copyup happens). You
-will not see the latest contents via fileB.
-And the IN_CREATE event may be fired to the parent dir if you monitor
-it, I am afraid.
+You can see them here, I'll post the series soon:
 
-(I have pointed out this issue before, but the posted document didn't
-seem to contain about it)
+http://git.kernel.dk/?p=linux-2.6-block.git;a=shortlog;h=refs/heads/for-linus
 
+The first patch is a helper addition, the rest are per-fs fixups.
 
-J. R. Okajima
+-- 
+Jens Axboe
+
