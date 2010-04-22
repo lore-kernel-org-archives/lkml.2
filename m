@@ -1,105 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757683Ab0DVTyb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:54:31 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:55898 "EHLO e7.ny.us.ibm.com"
+	id S1757726Ab0DVT4I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:56:08 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:38620 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757651Ab0DVTyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:54:16 -0400
+	id S1757362Ab0DVT4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:56:03 -0400
+Date: Thu, 22 Apr 2010 12:55:56 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 1/3] KEYS: Fix an RCU warning
-Date: Thu, 22 Apr 2010 12:54:05 -0700
-Message-Id: <1271966047-9701-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100422195345.GA9639@linux.vnet.ibm.com>
-References: <20100422195345.GA9639@linux.vnet.ibm.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       "containers@lists.osdl.org" <containers@lists.osdl.org>,
+       Paul Menage <menage@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KameZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/5] cgroup: Fix an RCU warning in alloc_css_id()
+Message-ID: <20100422195556.GJ2524@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4BD016F4.8060108@cn.fujitsu.com>
+ <4BD01718.7020706@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BD01718.7020706@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
+On Thu, Apr 22, 2010 at 05:30:00PM +0800, Li Zefan wrote:
+> With CONFIG_PROVE_RCU=y, a warning can be triggered:
+> 
+>   # mount -t cgroup -o memory xxx /mnt
+>   # mkdir /mnt/0
+> 
+> ...
+> kernel/cgroup.c:4442 invoked rcu_dereference_check() without protection!
+> ...
+> 
+> This is a false-positive. It's safe to directly access parent_css->id.
 
-Fix the following RCU warning:
+Also queued for 2.6.34, thank you!
 
-===================================================
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-security/keys/request_key.c:116 invoked rcu_dereference_check() without protection!
+							Thanx, Paul
 
-other info that might help us debug this:
-
-rcu_scheduler_active = 1, debug_locks = 0
-1 lock held by keyctl/5372:
- #0:  (key_types_sem){.+.+.+}, at: [<ffffffff811a4e3d>] key_type_lookup+0x1c/0x70
-
-stack backtrace:
-Pid: 5372, comm: keyctl Not tainted 2.6.34-rc3-cachefs #150
-Call Trace:
- [<ffffffff810515f8>] lockdep_rcu_dereference+0xaa/0xb2
- [<ffffffff811a9220>] call_sbin_request_key+0x156/0x2b6
- [<ffffffff811a4c66>] ? __key_instantiate_and_link+0xb1/0xdc
- [<ffffffff811a4cd3>] ? key_instantiate_and_link+0x42/0x5f
- [<ffffffff811a96b8>] ? request_key_auth_new+0x17b/0x1f3
- [<ffffffff811a8e00>] ? request_key_and_link+0x271/0x400
- [<ffffffff810aba6f>] ? kmem_cache_alloc+0xe1/0x118
- [<ffffffff811a8f1a>] request_key_and_link+0x38b/0x400
- [<ffffffff811a7b72>] sys_request_key+0xf7/0x14a
- [<ffffffff81052227>] ? trace_hardirqs_on_caller+0x10c/0x130
- [<ffffffff81393f5c>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
-
-This was caused by doing:
-
-	[root@andromeda ~]# keyctl newring fred @s
-	539196288
-	[root@andromeda ~]# keyctl request2 user a a 539196288
-	request_key: Required key not available
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- security/keys/request_key.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 03fe63e..ea97c31 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -68,7 +68,8 @@ static int call_sbin_request_key(struct key_construction *cons,
- {
- 	const struct cred *cred = current_cred();
- 	key_serial_t prkey, sskey;
--	struct key *key = cons->key, *authkey = cons->authkey, *keyring;
-+	struct key *key = cons->key, *authkey = cons->authkey, *keyring,
-+		*session;
- 	char *argv[9], *envp[3], uid_str[12], gid_str[12];
- 	char key_str[12], keyring_str[3][12];
- 	char desc[20];
-@@ -112,10 +113,12 @@ static int call_sbin_request_key(struct key_construction *cons,
- 	if (cred->tgcred->process_keyring)
- 		prkey = cred->tgcred->process_keyring->serial;
- 
--	if (cred->tgcred->session_keyring)
--		sskey = rcu_dereference(cred->tgcred->session_keyring)->serial;
--	else
--		sskey = cred->user->session_keyring->serial;
-+	rcu_read_lock();
-+	session = rcu_dereference(cred->tgcred->session_keyring);
-+	if (!session)
-+		session = cred->user->session_keyring;
-+	sskey = session->serial;
-+	rcu_read_unlock();
- 
- 	sprintf(keyring_str[2], "%d", sskey);
- 
--- 
-1.7.0
-
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> ---
+>  kernel/cgroup.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 4ca928d..3a53c77 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -4561,13 +4561,13 @@ static int alloc_css_id(struct cgroup_subsys *ss, struct cgroup *parent,
+>  {
+>  	int subsys_id, i, depth = 0;
+>  	struct cgroup_subsys_state *parent_css, *child_css;
+> -	struct css_id *child_id, *parent_id = NULL;
+> +	struct css_id *child_id, *parent_id;
+> 
+>  	subsys_id = ss->subsys_id;
+>  	parent_css = parent->subsys[subsys_id];
+>  	child_css = child->subsys[subsys_id];
+> -	depth = css_depth(parent_css) + 1;
+>  	parent_id = parent_css->id;
+> +	depth = parent_id->depth;
+> 
+>  	child_id = get_new_cssid(ss, depth);
+>  	if (IS_ERR(child_id))
+> -- 
+> 1.6.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
