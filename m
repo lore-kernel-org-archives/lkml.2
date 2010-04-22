@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab0DWAPe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 20:15:34 -0400
-Received: from kroah.org ([198.145.64.141]:41149 "EHLO coco.kroah.org"
+	id S1754193Ab0DWAPz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 20:15:55 -0400
+Received: from kroah.org ([198.145.64.141]:41020 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226Ab0DWAPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 20:15:08 -0400
-Subject: patch staging-iio-function-iio_get_new_idr_val-return-negative-value-if-fails.patch added to gregkh-2.6 tree
-To: sonic.adi@gmail.com, gregkh@suse.de, greg@kroah.com, jic23@cam.ac.uk,
-       linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-From: <gregkh@suse.de>
-Date: Thu, 22 Apr 2010 17:13:20 -0700
-In-Reply-To: <4BA76219.4030606@cam.ac.uk>
-Message-ID: <12719816003115@kroah.org>
+	id S1754140Ab0DWAOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 20:14:44 -0400
+Date: Thu, 22 Apr 2010 16:53:53 -0700
+From: Greg KH <greg@kroah.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Subject: Re: platform_bus: Allow runtime PM by default
+Message-ID: <20100422235353.GA16310@kroah.com>
+References: <1269625370-17754-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ANSI_X3.4-1968
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1269625370-17754-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 26, 2010 at 05:42:50PM +0000, Mark Brown wrote:
+> 
+> Currently the default runtime PM callbacks for platform devices return
+> -ENOSYS, preventing the use of runtime PM platforms until they have
+> provided at least a default implementation. This hinders the use of
+> runtime PM by devices which work with many platforms such as memory
+> mapped devices, MFDs and on chip IPs shared by multiple architectures.
+> 
+> Change the default implementation to the standard pm_generic_runtime
+> one, allowing drivers to use runtime PM without per-architecture
+> changes.
 
-This is a note to let you know that I've just added the patch titled
+That's nice, but it breaks the build on my system:
+  CC      drivers/base/platform.o
+drivers/base/platform.c: In function ‘platform_pm_runtime_suspend’:
+drivers/base/platform.c:970: error: implicit declaration of function ‘pm_generic_runtime_suspend’
+drivers/base/platform.c: In function ‘platform_pm_runtime_resume’:
+drivers/base/platform.c:975: error: implicit declaration of function ‘pm_generic_runtime_resume’
+drivers/base/platform.c: In function ‘platform_pm_runtime_idle’:
+drivers/base/platform.c:980: error: implicit declaration of function ‘pm_generic_runtime_idle’
+make[1]: *** [drivers/base/platform.o] Error 1
+make: *** [_module_drivers/base] Error 2
 
-    Subject: staging: iio: Function iio_get_new_idr_val() return negative value if fails.
+Care to fix it up?
 
-to my gregkh-2.6 tree.  Its filename is
+thanks,
 
-    staging-iio-function-iio_get_new_idr_val-return-negative-value-if-fails.patch
-
-This tree can be found at 
-    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
-
-
->From jic23@cam.ac.uk  Thu Apr 22 16:40:17 2010
-From: Sonic Zhang <sonic.adi@gmail.com>
-Date: Mon, 22 Mar 2010 12:27:05 +0000
-Subject: staging: iio: Function iio_get_new_idr_val() return negative value if fails.
-To: sonic zhang <sonic.adi@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,  linux-iio <linux-iio@vger.kernel.org>, Greg KH <greg@kroah.com>
-Message-ID: <4BA76219.4030606@cam.ac.uk>
-
-
-Function iio_get_new_idr_val() return negative value if fails.
-So, only error when ret < 0 in iio_device_register_eventset().
-
-Signed-off-by: Sonic Zhang <sonic.adi@gmail.com>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/staging/iio/industrialio-core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/drivers/staging/iio/industrialio-core.c
-+++ b/drivers/staging/iio/industrialio-core.c
-@@ -537,6 +537,7 @@ static void iio_device_unregister_sysfs(
- 	sysfs_remove_group(&dev_info->dev.kobj, dev_info->attrs);
- }
- 
-+/* This function return negative value if fails. */
- int iio_get_new_idr_val(struct idr *this_idr)
- {
- 	int ret;
-@@ -660,7 +661,7 @@ static int iio_device_register_eventset(
- 	for (i = 0; i < dev_info->num_interrupt_lines; i++) {
- 		dev_info->event_interfaces[i].owner = dev_info->driver_module;
- 		ret = iio_get_new_idr_val(&iio_event_idr);
--		if (ret)
-+		if (ret < 0)
- 			goto error_free_setup_ev_ints;
- 		else
- 			dev_info->event_interfaces[i].id = ret;
-
+greg k-h
