@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab0DVTdV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:33:21 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33085 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757085Ab0DVTdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:33:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=wH4UMpSQdLFCRekfuGK1JVpPcK9yWWkTq5uV7rG4lYr52EhShytkHY9Umhpd7CO10L
-         vk74gU8+lVKAqlfQi8M2gQ5zSNKqPBdXEfWzAI7AeVgf7UDB0eAkCKxNK+yZVXjGIRAU
-         395Gp4cyE+cUOJ1qwjhyYashOQHafZ6nOSuv4=
-MIME-Version: 1.0
-In-Reply-To: <1271953686.1776.372.camel@laptop>
-References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
-	 <x2mc5b2c05b1004211224s7825933dh531f2ed030610e9e@mail.gmail.com>
-	 <1271879833.1776.186.camel@laptop>
-	 <s2tc5b2c05b1004211338y814bc3b2o547a6eecdf64ca7f@mail.gmail.com>
-	 <1271883496.1776.263.camel@laptop>
-	 <1271942430.10448.196.camel@gandalf.stny.rr.com>
-	 <x2hc5b2c05b1004220650w53919f62hf3daedb822755bf4@mail.gmail.com>
-	 <1271944622.1776.349.camel@laptop>
-	 <k2gc5b2c05b1004220840z59f9417fy723a36a6fe9924dc@mail.gmail.com>
-	 <1271953686.1776.372.camel@laptop>
-Date: Thu, 22 Apr 2010 21:33:06 +0200
-Message-ID: <t2uc5b2c05b1004221233z4f071c31ia9b2be2dde72cf96@mail.gmail.com>
-Subject: Re: Considerations on sched APIs under RT patch
-From: Primiano Tucci <p.tucci@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-       tglx <tglx@linutronix.de>, Bjoern Brandenburg <bbb@email.unc.edu>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757103Ab0DVTf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:35:57 -0400
+Received: from kroah.org ([198.145.64.141]:41521 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756869Ab0DVT3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:49 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:23 2010
+Message-Id: <20100422190922.976069337@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Thu, 22 Apr 2010 12:10:25 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       "J. Bruce Fields" <bfields@citi.umich.edu>
+Subject: [174/197] Revert "sunrpc: fix peername failed on closed listener"
+In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-It is not in my intents to start a flame, but, as you pointed out
-yourself, EDF is not so common, particularly in commercial RTOSes as
-you stated (and xnu, indeed, does not fall into this category).
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-It is not surprisingly that the citation you found was from Mr
-Brandenburg and Mr. Anderson from North Carolina University,
-incidentally I had a copy of their paper (On the Implementation of
-Global RT Schedulers) at the time of reading your message. I think
-they're are among the few that concretely and deeply investigated on
-G-EDF.
-As you could read by Brandenburg and Anderson, there isn't a
-standard/reference implementation of Global EDF, but a alot of
-"variants" are possible (e.g., event-driven / tick driven promotion,
-dedicated/global interrupt handling,  typology of data structures and
-locking methods ...).
-My intent is not to make a form of top ten best kernel award, all we
-are trying to do is investigating on the various facilities offered by
-the RT operating systems in order to determine how much we can rely on
-them.
+------------------
 
->> It is how it is implemented now, and how it works under VXWorks!
->
-> But that does not, and can not, provide proper isolation and bandwidth
-> guarantees since there could be runnable tasks outside the scope of the
-> middleware.
+From: J. Bruce Fields <bfields@citi.umich.edu>
 
-Actually our implementation in VxWorks is based on kernel space tasks
-that have the maximum priority on the system, even greater of VxWorks
-system tasks (that have been shifted down after long and fruitful
-support discussions with windriver) therefore no task (except from
-interrupt service routines that are accurately weighted under VxWorks)
-can alter our middleware. Actually it is controlling real world (yet
-not production stage) manufacturing systems, and it is a bit more than
-just a play-game.
+commit f5822754ea006563e1bf0a1f43faaad49c0d8bb2 upstream.
 
-We are trying to study and understand if, and how, analogous things
-can be done on other Real Time Operating Systems.
-We choiced posix threads as a start point on linux kernel to verify
-the feasibility of the same approach, without intervening too deep on
-the kernel.
+This reverts commit b292cf9ce70d221c3f04ff62db5ab13d9a249ca8.  The
+commit that it attempted to patch up,
+b0401d725334a94d57335790b8ac2404144748ee, was fundamentally wrong, and
+will also be reverted.
 
-Thanks again for your interventions!
+Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
---
- Primiano Tucci
- http://www.primianotucci.com
+---
+ net/sunrpc/svc_xprt.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -711,8 +711,7 @@ int svc_recv(struct svc_rqst *rqstp, lon
+ 	spin_unlock_bh(&pool->sp_lock);
+ 
+ 	len = 0;
+-	if (test_bit(XPT_LISTENER, &xprt->xpt_flags) &&
+-	    !test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
++	if (test_bit(XPT_LISTENER, &xprt->xpt_flags)) {
+ 		struct svc_xprt *newxpt;
+ 		newxpt = xprt->xpt_ops->xpo_accept(xprt);
+ 		if (newxpt) {
+
+
