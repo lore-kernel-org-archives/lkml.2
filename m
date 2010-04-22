@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab0DVUXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:23:44 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:58443 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757740Ab0DVUAQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:16 -0400
-Date: Thu, 22 Apr 2010 15:58:53 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Olivier Galibert <galibert@pobox.com>, Greg KH <gregkh@suse.de>,
-       Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
+	id S1758278Ab0DVUTA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:19:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43760 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758045Ab0DVUSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:18:41 -0400
+Date: Thu, 22 Apr 2010 13:18:19 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
        LKML <linux-kernel@vger.kernel.org>
 Subject: Re: What's the staging review and acceptance process?
-Message-ID: <20100422195852.GA2391@tuxdriver.com>
+Message-ID: <20100422201819.GC26924@suse.de>
 References: <1271881967.1730.482.camel@Joe-Laptop.home>
  <20100422034532.GA25177@suse.de>
  <1271910357.1730.627.camel@Joe-Laptop.home>
  <20100422054902.GA28037@suse.de>
- <1271915718.1730.687.camel@Joe-Laptop.home>
- <20100422061242.GA28539@suse.de>
- <20100422064244.GA31653@dspnet.fr.eu.org>
+ <20100422101708.69c90142@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100422064244.GA31653@dspnet.fr.eu.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100422101708.69c90142@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 08:42:45AM +0200, Olivier Galibert wrote:
-> On Wed, Apr 21, 2010 at 11:12:42PM -0700, Greg KH wrote:
-> > On Wed, Apr 21, 2010 at 10:55:18PM -0700, Joe Perches wrote:
-> > > Not really, patchwork shows status immediately.
-> > 
-> > Immediately when someone does something with it, right?  So, the same as
-> > my development cycle?
+On Thu, Apr 22, 2010 at 10:17:08AM +0100, Alan Cox wrote:
+> On Wed, 21 Apr 2010 22:49:02 -0700
+> Greg KH <gregkh@suse.de> wrote:
 > 
-> I guess the main difference is that patchwork allows one contributor
-> to see that his patch has just not been checked yet, vs. missed/lost.
+> > On Wed, Apr 21, 2010 at 09:25:57PM -0700, Joe Perches wrote:
+> > > On Wed, 2010-04-21 at 20:45 -0700, Greg KH wrote:
+> > > > That caused the huge backlog staring at
+> > > > me right now.
+> > > 
+> > > Which likely discouraged the new contributors who
+> > > submitted stuff still in that backlog.
+> > 
+> > While a series of unfortunate events did happen to cause this, do you
+> > have any evidence of this causing people to go away? 
+> 
+> Subjectively the answer is yes I think. More quantatively it was the case.
+> I did some measurements long ago with 2.4-ac and there was direct and
+> clear connection between two things and patch submission/activity levels.
+> One was 'cycle time' (ie time from submit->response->tree) - the other was
+> putting the name of the contributor in the per -ac patch summaries that
+> used to get mailed out.
 
-In Greg's defense, I find patchwork to be fairly unwieldy (which is
-why I don't use it).  It is certainly possible that I am missing some
-key feature, but my limited experience with it suggested to me that all
-the clicky-clicky stuff required to deal with the individual messages
-queued in patchwork nearly doubled my time overhead associated with
-merging patches.
+Yeah, I know I liked seeing my name there, that was very nice to have :)
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+thanks,
+
+greg k-h
