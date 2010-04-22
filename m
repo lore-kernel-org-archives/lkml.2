@@ -1,40 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab0DVWDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 18:03:45 -0400
-Received: from mail5.childrenshospital.org ([134.174.20.115]:50829 "EHLO
-	mail5.childrenshospital.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752338Ab0DVWDm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 18:03:42 -0400
-X-Greylist: delayed 1103 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Apr 2010 18:03:42 EDT
-X-WSS-ID: 0L1ASFE-05-2FA-02
-X-CHB-Sent: True
-X-M-MSG: 
-X-WSS-ID: 0L1ASFC-03-1AX-02
-X-M-MSG: 
-From: "Rivera, Alicia" <Alicia.Rivera@childrens.harvard.edu>
-Date: Thu, 22 Apr 2010 17:45:10 -0400
-Subject: CONTACT ME VIA/WILLIAMWILCOX1943@HOTMAIL.COM
-Thread-Topic: CONTACT ME VIA/WILLIAMWILCOX1943@HOTMAIL.COM
-Thread-Index: AQHK4mUVLtBFEZ2WT0OQu+T4JRTkHA==
-Message-ID: <1C48EDF65870394A8799219DA7D8C59A417EDB7910@CHEXCCRV1.CHBOSTON.ORG>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1752396Ab0DVWFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 18:05:12 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:34304 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752292Ab0DVWFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 18:05:08 -0400
+Date: Thu, 22 Apr 2010 15:05:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Li Zefan <lizf@cn.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "containers@lists.osdl.org" <containers@lists.osdl.org>,
+       Paul Menage <menage@google.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 3/5] sched: Fix an RCU warning in print_task()
+Message-ID: <20100422220504.GP2524@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4BD016F4.8060108@cn.fujitsu.com>
+ <4BD01740.7050805@cn.fujitsu.com>
+ <1271931604.1776.337.camel@laptop>
+ <20100422211212.GA32490@count0.beaverton.ibm.com>
 MIME-Version: 1.0
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100422211212.GA32490@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My names are Mr William Wilcox, I work in the Euro Lottery. I am soliciting your assistance for a swift transfer of £4,528,000GBP, should you be willing to assist me in this project, you will be giving me just 30% of your winnings.
-contact my below private e-mail
- williamwilcox1943@hotmail.com
+On Thu, Apr 22, 2010 at 02:12:12PM -0700, Matt Helsley wrote:
+> On Thu, Apr 22, 2010 at 12:20:04PM +0200, Peter Zijlstra wrote:
+> 
+> <snip>
+> 
+> > You can also pin a cgroup by holding whatever locks are held in the
+> > ->attach method. But the RCU annotation doesn't know (nor reasonably can
+> > know about that).
+> 
+> For my future reference, what's the right way to "fix" these
+> situations with the RCU annotations? (I think your response re: Li's
+> freezer patch was correct and illustrates the problem I'm referring to.)
 
-Regards,
-Rivera, Alicia (Secetary) for William Wilcox
+There are several variants of rcu_dereference() for this purpose:
+
+o	rcu_dereference() for code that is always called within an
+	RCU read-side critical section -- rcu_read_lock().
+
+o	rcu_dereference_bh() for code that is always called within
+	an RCU-bh read-side critical section -- rcu_read_lock_bh().
+
+o	rcu_dereference_sched() for code that is always called within
+	an RCU-sched read-side critical section -- either
+	rcu_read_lock_sched() or any other primitive that disables
+	preemption.
+
+o	srcu_dereference() for code that is always called within an
+	SRCU read-side critical section -- srcu_read_lock().
+
+o	rcu_dereference_check() for code that might be called either
+	in a read-side critical section or on the update side.	This
+	interface takes a second argument, which is normally a logical
+	conjunction of rcu_read_lock_held(), rcu_read_lock_sched_held(),
+	rcu_read_lock_bh_held(), and srcu_read_lock_held for the read
+	side, and lockdep_is_held() for the update side.
+
+o	rcu_dereference_raw(p) is rcu_dereference_check(p, 1).  Expect
+	to be asked hard questions if you include this in your patch.
+	One legitimate use is for initialization and cleanup code
+	sequences where the current CPU is the only one with access
+	to the RCU-protected data structure in question.
+
+o	rcu_dereference_protected() for code that is only called from
+	the update side.  This interface takes a second argument,
+	which would normally only have a logical conjunction of
+	lockdep_is_held() invocations.  Don't even think about putting
+	rcu_read_lock_held() and friends here!!!
+
+o	rcu_access_pointer() for code that only tests the value of
+	the RCU-protected pointer, for example, against NULL.
+
+There you have it!
+
+							Thanx, Paul
