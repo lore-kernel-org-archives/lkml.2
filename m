@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab0DVT1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:27:51 -0400
-Received: from kroah.org ([198.145.64.141]:37235 "EHLO coco.kroah.org"
+	id S1756347Ab0DVT2w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:28:52 -0400
+Received: from kroah.org ([198.145.64.141]:40967 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756051Ab0DVT1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:27:44 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:09 2010
-Message-Id: <20100422190909.463653098@kvm.kroah.org>
+	id S1756524Ab0DVT2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:47 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:16 2010
+Message-Id: <20100422190916.060322829@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:07:54 -0700
+Date: Thu, 22 Apr 2010 12:09:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, xfs@oss.sgi.com,
-       Christoph Hellwig <hch@lst.de>, Alex Elder <aelder@sgi.com>
-Subject: [023/197] xfs: quota limit statvfs available blocks
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Joerg Schirottke <master@kanotix.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [097/197] ALSA: hda - add a quirk for Clevo M570U laptop
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Joerg Schirottke <master@kanotix.com>
 
-From: Christoph Hellwig <hch@infradead.org>
+commit d1501ea844eefdf925f6b711875b4b2b928fddf8 upstream.
 
-commit 9b00f30762fe9f914eb6e03057a616ed63a4e8ca upstream
+Added the matching model for Clevo laptop M570U.
 
-A "df" run on an NFS client of an exported XFS file system reports
-the wrong information for "available" blocks.  When a block quota is
-enforced, the amount reported as free is limited by the quota, but
-the amount reported available is not (and should be).
-
-Reported-by: Guk-Bong, Kwon <gbkwon@gmail.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Alex Elder <aelder@sgi.com>
+Signed-off-by: Joerg Schirottke <master@kanotix.com>
+Tested-by: Maximilian Gerhard <maxbox@directbox.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/xfs/quota/xfs_qm_bhv.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/xfs/quota/xfs_qm_bhv.c
-+++ b/fs/xfs/quota/xfs_qm_bhv.c
-@@ -59,7 +59,7 @@ xfs_fill_statvfs_from_dquot(
- 		be64_to_cpu(dp->d_blk_hardlimit);
- 	if (limit && statp->f_blocks > limit) {
- 		statp->f_blocks = limit;
--		statp->f_bfree =
-+		statp->f_bfree = statp->f_bavail =
- 			(statp->f_blocks > be64_to_cpu(dp->d_bcount)) ?
- 			 (statp->f_blocks - be64_to_cpu(dp->d_bcount)) : 0;
- 	}
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -8895,6 +8895,7 @@ static struct snd_pci_quirk alc882_cfg_t
+ 	SND_PCI_QUIRK(0x1462, 0xaa08, "MSI", ALC883_TARGA_2ch_DIG),
+ 
+ 	SND_PCI_QUIRK(0x147b, 0x1083, "Abit IP35-PRO", ALC883_6ST_DIG),
++	SND_PCI_QUIRK(0x1558, 0x0571, "Clevo laptop M570U", ALC883_3ST_6ch_DIG),
+ 	SND_PCI_QUIRK(0x1558, 0x0721, "Clevo laptop M720R", ALC883_CLEVO_M720),
+ 	SND_PCI_QUIRK(0x1558, 0x0722, "Clevo laptop M720SR", ALC883_CLEVO_M720),
+ 	SND_PCI_QUIRK(0x1558, 0x5409, "Clevo laptop M540R", ALC883_CLEVO_M540R),
 
 
