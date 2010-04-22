@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab0DVT2R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:28:17 -0400
-Received: from kroah.org ([198.145.64.141]:37496 "EHLO coco.kroah.org"
+	id S1756186Ab0DVT2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:28:00 -0400
+Received: from kroah.org ([198.145.64.141]:37368 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756240Ab0DVT2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:12 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:12 2010
-Message-Id: <20100422190912.479270783@kvm.kroah.org>
+	id S1756051Ab0DVT15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:27:57 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:10 2010
+Message-Id: <20100422190910.859866090@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:28 -0700
+Date: Thu, 22 Apr 2010 12:08:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-       Stefan Bader <stefan.bader@canonical.com>
-Subject: [057/197] KVM: VMX: Update instruction length on intercepted BP
+       Seth Heasley <seth.heasley@intel.com>, Wim Van Sebroeck <wim@iguana.be>
+Subject: [039/197] WATCHDOG: iTCO_wdt: TCO Watchdog patch for additional Intel Cougar Point DeviceIDs
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,53 +25,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Seth Heasley <seth.heasley@intel.com>
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+commit 4c7d849204341dea19be941a3c1eb4bdffac9cc4 upstream.
 
-commit c573cd22939e54fc1b8e672054a505048987a7cb upstream
+This patch adds the Intel Cougar Point PCH LPC Controller DeviceIDs for iTCO Watchdog.
 
-We intercept #BP while in guest debugging mode. As VM exits due to
-intercepted exceptions do not necessarily come with valid
-idt_vectoring, we have to update event_exit_inst_len explicitly in such
-cases. At least in the absence of migration, this ensures that
-re-injections of #BP will find and use the correct instruction length.
-
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/x86/kvm/vmx.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
 
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -2674,6 +2674,12 @@ static int handle_rmode_exception(struct
- 		kvm_queue_exception(vcpu, vec);
- 		return 1;
- 	case BP_VECTOR:
-+		/*
-+		 * Update instruction length as we may reinject the exception
-+		 * from user space while in guest debugging mode.
-+		 */
-+		to_vmx(vcpu)->vcpu.arch.event_exit_inst_len =
-+			vmcs_read32(VM_EXIT_INSTRUCTION_LEN);
- 		if (vcpu->guest_debug & KVM_GUESTDBG_USE_SW_BP)
- 			return 0;
- 		/* fall through */
-@@ -2790,6 +2796,13 @@ static int handle_exception(struct kvm_v
- 		kvm_run->debug.arch.dr7 = vmcs_readl(GUEST_DR7);
- 		/* fall through */
- 	case BP_VECTOR:
-+		/*
-+		 * Update instruction length as we may reinject #BP from
-+		 * user space while in guest debugging mode. Reading it for
-+		 * #DB as well causes no harm, it is not used in that case.
-+		 */
-+		vmx->vcpu.arch.event_exit_inst_len =
-+			vmcs_read32(VM_EXIT_INSTRUCTION_LEN);
- 		kvm_run->exit_reason = KVM_EXIT_DEBUG;
- 		kvm_run->debug.arch.pc = vmcs_readl(GUEST_CS_BASE) + rip;
- 		kvm_run->debug.arch.exception = ex_no;
+---
+ drivers/watchdog/iTCO_wdt.c |   99 +++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 93 insertions(+), 6 deletions(-)
+
+--- a/drivers/watchdog/iTCO_wdt.c
++++ b/drivers/watchdog/iTCO_wdt.c
+@@ -115,8 +115,37 @@ enum iTCO_chipsets {
+ 	TCO_3420,	/* 3420 */
+ 	TCO_3450,	/* 3450 */
+ 	TCO_EP80579,	/* EP80579 */
+-	TCO_CPTD,	/* CPT Desktop */
+-	TCO_CPTM,	/* CPT Mobile */
++	TCO_CPT1,	/* Cougar Point */
++	TCO_CPT2,	/* Cougar Point Desktop */
++	TCO_CPT3,	/* Cougar Point Mobile */
++	TCO_CPT4,	/* Cougar Point */
++	TCO_CPT5,	/* Cougar Point */
++	TCO_CPT6,	/* Cougar Point */
++	TCO_CPT7,	/* Cougar Point */
++	TCO_CPT8,	/* Cougar Point */
++	TCO_CPT9,	/* Cougar Point */
++	TCO_CPT10,	/* Cougar Point */
++	TCO_CPT11,	/* Cougar Point */
++	TCO_CPT12,	/* Cougar Point */
++	TCO_CPT13,	/* Cougar Point */
++	TCO_CPT14,	/* Cougar Point */
++	TCO_CPT15,	/* Cougar Point */
++	TCO_CPT16,	/* Cougar Point */
++	TCO_CPT17,	/* Cougar Point */
++	TCO_CPT18,	/* Cougar Point */
++	TCO_CPT19,	/* Cougar Point */
++	TCO_CPT20,	/* Cougar Point */
++	TCO_CPT21,	/* Cougar Point */
++	TCO_CPT22,	/* Cougar Point */
++	TCO_CPT23,	/* Cougar Point */
++	TCO_CPT24,	/* Cougar Point */
++	TCO_CPT25,	/* Cougar Point */
++	TCO_CPT26,	/* Cougar Point */
++	TCO_CPT27,	/* Cougar Point */
++	TCO_CPT28,	/* Cougar Point */
++	TCO_CPT29,	/* Cougar Point */
++	TCO_CPT30,	/* Cougar Point */
++	TCO_CPT31,	/* Cougar Point */
+ };
+ 
+ static struct {
+@@ -173,8 +202,37 @@ static struct {
+ 	{"3420", 2},
+ 	{"3450", 2},
+ 	{"EP80579", 2},
+-	{"CPT Desktop", 2},
+-	{"CPT Mobile", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
+ 	{NULL, 0}
+ };
+ 
+@@ -259,8 +317,37 @@ static struct pci_device_id iTCO_wdt_pci
+ 	{ ITCO_PCI_DEVICE(0x3b14,				TCO_3420)},
+ 	{ ITCO_PCI_DEVICE(0x3b16,				TCO_3450)},
+ 	{ ITCO_PCI_DEVICE(0x5031,				TCO_EP80579)},
+-	{ ITCO_PCI_DEVICE(0x1c42,				TCO_CPTD)},
+-	{ ITCO_PCI_DEVICE(0x1c43,				TCO_CPTM)},
++	{ ITCO_PCI_DEVICE(0x1c41,				TCO_CPT1)},
++	{ ITCO_PCI_DEVICE(0x1c42,				TCO_CPT2)},
++	{ ITCO_PCI_DEVICE(0x1c43,				TCO_CPT3)},
++	{ ITCO_PCI_DEVICE(0x1c44,				TCO_CPT4)},
++	{ ITCO_PCI_DEVICE(0x1c45,				TCO_CPT5)},
++	{ ITCO_PCI_DEVICE(0x1c46,				TCO_CPT6)},
++	{ ITCO_PCI_DEVICE(0x1c47,				TCO_CPT7)},
++	{ ITCO_PCI_DEVICE(0x1c48,				TCO_CPT8)},
++	{ ITCO_PCI_DEVICE(0x1c49,				TCO_CPT9)},
++	{ ITCO_PCI_DEVICE(0x1c4a,				TCO_CPT10)},
++	{ ITCO_PCI_DEVICE(0x1c4b,				TCO_CPT11)},
++	{ ITCO_PCI_DEVICE(0x1c4c,				TCO_CPT12)},
++	{ ITCO_PCI_DEVICE(0x1c4d,				TCO_CPT13)},
++	{ ITCO_PCI_DEVICE(0x1c4e,				TCO_CPT14)},
++	{ ITCO_PCI_DEVICE(0x1c4f,				TCO_CPT15)},
++	{ ITCO_PCI_DEVICE(0x1c50,				TCO_CPT16)},
++	{ ITCO_PCI_DEVICE(0x1c51,				TCO_CPT17)},
++	{ ITCO_PCI_DEVICE(0x1c52,				TCO_CPT18)},
++	{ ITCO_PCI_DEVICE(0x1c53,				TCO_CPT19)},
++	{ ITCO_PCI_DEVICE(0x1c54,				TCO_CPT20)},
++	{ ITCO_PCI_DEVICE(0x1c55,				TCO_CPT21)},
++	{ ITCO_PCI_DEVICE(0x1c56,				TCO_CPT22)},
++	{ ITCO_PCI_DEVICE(0x1c57,				TCO_CPT23)},
++	{ ITCO_PCI_DEVICE(0x1c58,				TCO_CPT24)},
++	{ ITCO_PCI_DEVICE(0x1c59,				TCO_CPT25)},
++	{ ITCO_PCI_DEVICE(0x1c5a,				TCO_CPT26)},
++	{ ITCO_PCI_DEVICE(0x1c5b,				TCO_CPT27)},
++	{ ITCO_PCI_DEVICE(0x1c5c,				TCO_CPT28)},
++	{ ITCO_PCI_DEVICE(0x1c5d,				TCO_CPT29)},
++	{ ITCO_PCI_DEVICE(0x1c5e,				TCO_CPT30)},
++	{ ITCO_PCI_DEVICE(0x1c5f,				TCO_CPT31)},
+ 	{ 0, },			/* End of list */
+ };
+ MODULE_DEVICE_TABLE(pci, iTCO_wdt_pci_tbl);
 
 
