@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab0DVE50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 00:57:26 -0400
-Received: from mail-pz0-f194.google.com ([209.85.222.194]:51881 "EHLO
-	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294Ab0DVE5Y convert rfc822-to-8bit (ORCPT
+	id S1751975Ab0DVFP4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 01:15:56 -0400
+Received: from host2.200-71-230.telecom.net.ar ([200.71.230.2]:54093 "EHLO
+	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750870Ab0DVFPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 00:57:24 -0400
+	Thu, 22 Apr 2010 01:15:55 -0400
+Message-ID: <64946.41.220.68.1.1271908800.squirrel@41.220.68.1>
+Date: Thu, 22 Apr 2010 02:00:00 -0200 (FNT)
+Subject: Congratulations - You Have Won (Winning Numbers)
+From: "MICROSOFT EMAIL PROMOTION" <info.winners@microsoft.com>
+Reply-To: mrivannickerson4@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
 MIME-Version: 1.0
-In-Reply-To: <m11ve81usw.fsf@fess.ebiederm.org>
-References: <20100421012749.GA21338@us.ibm.com> <20100421012908.GB24251@us.ibm.com> 
-	<20100421102739.6ad932fb@lxorguk.ukuu.org.uk> <20100421133917.GB16326@us.ibm.com> 
-	<20100421151917.5ae20265@lxorguk.ukuu.org.uk> <20100421150900.GB31880@us.ibm.com> 
-	<m11ve81usw.fsf@fess.ebiederm.org>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Thu, 22 Apr 2010 00:57:03 -0400
-Message-ID: <w2wf73f7ab81004212157o371c5738o10c8b6ff807ba36a@mail.gmail.com>
-Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serue@us.ibm.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       lkml <linux-kernel@vger.kernel.org>,
-       David Howells <dhowells@redhat.com>,
-       Ashwin Ganti <ashwin.ganti@gmail.com>, Greg KH <greg@kroah.com>,
-       rsc@swtch.com, ericvh@gmail.com, linux-security-module@vger.kernel.org,
-       Ron Minnich <rminnich@gmail.com>, jt.beard@gmail.com,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
-       Eric Paris <eparis@redhat.com>, linux-api@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 15:15, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> "Serge E. Hallyn" <serue@us.ibm.com> writes:
->
->> Ignoring namespaces for a moment, I guess we could do something like
->>
->> struct credentials_pass {
->>       pid_t global_pid;
->>       unsigned long unique_id;
->>       uid_t new_uid;
->>       gid_t new_gid;
->>       int num_aux_gids;
->>       gid_t aux_gids[];
->> }
->
-> This looks surprising like what I am doing in passing uids and pids
-> through unix domain sockets.
->
-> So if this looks like a direction we want to go it shouldn't be too
-> difficult.
+Congratulations - You Have Won (Winning Numbers)
 
-Hmm... for an alternative idea:
+The MICROSOFT EMAIL PROMO TEAM is glad to announce that
+after a successful completion of the PROMO DRAWS held on the
+21st April March 2010,your e-mail address,attached to winning
+numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
+lottery category.
 
-We have this nice "kernel keyring" infrastructure that lets us stuff
-arbitrary things into "keys" and grant/revoke them between processes.
-What if we created a relatively generic way for processes to package
-up privileges (of whatever form) into a "key" that could be granted to
-another process (via UNIX-domain socket)?  Then the other process
-would use a setuid()-ish syscall which would instead apply a specific
-key as your credentials, possibly including the audit context and/or
-namespaces it came from.
+You have therefore been approved to claim a total sum of
+�250,000,00 Pounds Sterling in cash credited to REF
+NO:MICRO-L/2009-END10.
 
-By using the keyring system, such tokens could be kept around across
-multiple processes easily (as opposed to FDs), in the same style as a
-"sudo" ticket file, for example (even with an expiration time).
+All participants were selected through our Microsoft computer
+ballot system drawn from 167,000 Names,as part of our
+International  "E-MAIL" Promotion Program for our prominent
+MS-WORD users all over the world and for the continuous use
+of the internet. You are advised to contact the claims
+processor with the details below via his e-mail address :
 
-Types of credentials you could pass around:
-  * Capabilities
-  * Filesystem UID/GID in a particular UID namespace (for FS operations)
-  * Process UID/GID in a particular UID namespace (for kill(), etc)
-  * Audit contexts
-  * SELinux/etc security labels
+NAME:  Ivan Nickerson
+EMAIL: mrivan_nickerson04@yahoo.com.hk
 
-All of the above could be optionally limited to effectively require a
-bprm-secure-style exec() with specific args.  So for example, instead
-of making "/usr/sbin/passwd" a setuid program, you could make it be an
-unprivileged helper.  It would connect to a privileged daemon and ask
-for a password-change cookie for that particular user.  The daemon
-would create what is essentially a "delayed exec" key which grants a
-specific UID and capabilities when that process performs an execkey().
+PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO
 
-So as an example, you could rewrite "sudo" as a partially-privileged
-daemon and an unprivileged helper.  The unpriv helper would send
-across a request (optionally including the command and environment)
-which would be checked by the daemon.  It would then issue a key to
-allow the unpriv helper to perform a limited exec.
+CLAIM YOUR PRIZE:
+1.Full Name:... 2.Address:... 3.Phone:... 4.Country:...
 
-Another option would be to rewrite network login programs (eg OpenSSH)
-to use this for privilege separation.  The listening process would get
-a non-expiring key to allow it to exec a partially-privileged
-password-checking program.  If the password-checking program likes the
-password it generates a single-use key to pass back to the forked
-network process that allows it to exec a program as that user.
+5.Sex/Gender:...
 
-Cheers,
-Kyle Moffett
+
+YOURS SINCERELY,
+ANASTACIA SHEFFIELD.
+
