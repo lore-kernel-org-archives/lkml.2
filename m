@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab0DVGm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 02:42:58 -0400
-Received: from alt.dspnet.fr.eu.org ([213.186.44.138]:4627 "EHLO
-	dspnet.fr.eu.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752691Ab0DVGmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 02:42:54 -0400
-Date: Thu, 22 Apr 2010 08:42:45 +0200
-From: Olivier Galibert <galibert@pobox.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: What's the staging review and acceptance process?
-Message-ID: <20100422064244.GA31653@dspnet.fr.eu.org>
-Mail-Followup-To: Olivier Galibert <galibert@pobox.com>,
-	Greg KH <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-	devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
-References: <1271881967.1730.482.camel@Joe-Laptop.home> <20100422034532.GA25177@suse.de> <1271910357.1730.627.camel@Joe-Laptop.home> <20100422054902.GA28037@suse.de> <1271915718.1730.687.camel@Joe-Laptop.home> <20100422061242.GA28539@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100422061242.GA28539@suse.de>
-User-Agent: Mutt/1.4.2.3i
+	id S1753214Ab0DVGse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 02:48:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57973 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751769Ab0DVGsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 02:48:33 -0400
+Message-ID: <4BCFF12D.60007@zytor.com>
+Date: Wed, 21 Apr 2010 23:48:13 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jan Beulich <jbeulich@novell.com>
+CC: mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: introduce and use percpu_inc()
+References: <4BCFFA1B020000780005CBAE@vpn.id2.novell.com>
+In-Reply-To: <4BCFFA1B020000780005CBAE@vpn.id2.novell.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 11:12:42PM -0700, Greg KH wrote:
-> On Wed, Apr 21, 2010 at 10:55:18PM -0700, Joe Perches wrote:
-> > Not really, patchwork shows status immediately.
+On 04/21/2010 11:26 PM, Jan Beulich wrote:
 > 
-> Immediately when someone does something with it, right?  So, the same as
-> my development cycle?
+>> Keep in mind that although INC is smaller than ADD,
+>> the former has flag dependencies that the latter doesn't...
+> 
+> Wasn't that a problem just on Pentium4-s, which when I submitted
+> another related patch a couple of months back I was told would
+> not be a primary target anymore?
+> 
 
-I guess the main difference is that patchwork allows one contributor
-to see that his patch has just not been checked yet, vs. missed/lost.
+It doesn't look like it, from what I could tell after the abovementioned
+conversation... I was wondering mostly how many bytes this saved across
+the kernel.  If it saves a byte in one place it's not so interesting,
+but if it is all over it might make more sense.
 
-  OG.
+It bit much worse on P4 than on most other cores, though.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
