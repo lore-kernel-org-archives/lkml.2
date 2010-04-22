@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab0DVFoj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 01:44:39 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56231
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752755Ab0DVFoa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 01:44:30 -0400
-Date: Wed, 21 Apr 2010 22:44:35 -0700 (PDT)
-Message-Id: <20100421.224435.168594051.davem@davemloft.net>
-To: diego@giagio.com
-Cc: agimenez@sysvalve.es, linux-kernel@vger.kernel.org, dborca@yahoo.com,
-       James.Bottomley@hansenpartnership.com, ralf@linux-mips.org,
-       gregkh@suse.de, jonas.sjoquist@ericsson.com, torgny.johansson@gmail.com,
-       steve.glendinning@smsc.com, dbrownell@users.sourceforge.net,
-       omar.oberthur@gmail.com, remi.denis-courmont@nokia.com,
-       netdev@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH] drivers/net/usb: Add new driver ipheth
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <x2g1b0798831004210715h37253bc5y74baf86556aea7c5@mail.gmail.com>
-References: <1269984864-28159-1-git-send-email-agimenez@sysvalve.es>
-	<1271615719-14928-1-git-send-email-agimenez@sysvalve.es>
-	<x2g1b0798831004210715h37253bc5y74baf86556aea7c5@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753537Ab0DVFp1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 01:45:27 -0400
+Received: from host2.200-71-230.telecom.net.ar ([200.71.230.2]:47611 "EHLO
+	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752250Ab0DVFpZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 01:45:25 -0400
+Message-ID: <19749.41.220.68.1.1271909116.squirrel@41.220.68.1>
+Date: Thu, 22 Apr 2010 02:05:16 -0200 (FNT)
+Subject: Congratulations - You Have Won (Winning Numbers)
+From: "MICROSOFT EMAIL PROMOTION" <info.winners@microsoft.com>
+Reply-To: mrivannickerson4@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Diego Giagio <diego@giagio.com>
-Date: Wed, 21 Apr 2010 11:15:15 -0300
+Congratulations - You Have Won (Winning Numbers)
 
-> On Sun, Apr 18, 2010 at 3:35 PM, L. Alberto Giménez
-> <agimenez@sysvalve.es> wrote:
->> From: Diego Giagio <diego@giagio.com>
->>
->> Add new driver to use tethering with an iPhone device. After initial submission,
->> apply fixes to fit the new driver into the kernel standards.
->>
->> There are still a couple of minor (almost cosmetic-level) issues, but the driver
->> is fully functional right now.
->>
-> 
-> Signed-off-by: Diego Giagio <diego@giagio.com>
-> Cc: Daniel Borca <dborca@yahoo.com>
+The MICROSOFT EMAIL PROMO TEAM is glad to announce that
+after a successful completion of the PROMO DRAWS held on the
+21st April March 2010,your e-mail address,attached to winning
+numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
+lottery category.
 
-Applied, thanks everyone.
+You have therefore been approved to claim a total sum of
+£250,000,00 Pounds Sterling in cash credited to REF
+NO:MICRO-L/2009-END10.
+
+All participants were selected through our Microsoft computer
+ballot system drawn from 167,000 Names,as part of our
+International  "E-MAIL" Promotion Program for our prominent
+MS-WORD users all over the world and for the continuous use
+of the internet. You are advised to contact the claims
+processor with the details below via his e-mail address :
+
+NAME:  Ivan Nickerson
+EMAIL: mrivan_nickerson04@yahoo.com.hk
+
+PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO
+
+CLAIM YOUR PRIZE:
+1.Full Name:... 2.Address:... 3.Phone:... 4.Country:...
+
+5.Sex/Gender:...
+
+
+YOURS SINCERELY,
+ANASTACIA SHEFFIELD.
+
