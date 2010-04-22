@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758848Ab0DVVUd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 17:20:33 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:39042 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757045Ab0DVVUb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 17:20:31 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=QSINF2fqB0Eu+avkhq+99TB+xNhsu1yHVTVrdEkdxZzUO5c4UZCgdPuJ7m3UICFHO
-	HQfDkukVYYqCnoPj1Wjzg==
-Date: Thu, 22 Apr 2010 14:20:23 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Miao Xie <miaox@cn.fujitsu.com>
-cc: Lee Schermerhorn <lee.schermerhorn@hp.com>, Nick Piggin <npiggin@suse.de>,
-       Paul Menage <menage@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] mm: fix bugs of mpol_rebind_nodemask()
-In-Reply-To: <4BD05929.8040900@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1004221415090.25350@chino.kir.corp.google.com>
-References: <4BD05929.8040900@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758853Ab0DVVVy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 17:21:54 -0400
+Received: from xenotime.net ([72.52.64.118]:59741 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757045Ab0DVVVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 17:21:51 -0400
+Message-ID: <4BD0BDEC.4020608@xenotime.net>
+Date: Thu, 22 Apr 2010 14:21:48 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Francis Galiegue <fgaliegue@gmail.com>
+CC: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH] Documentation/: it's -> its where appropriate
+References: <1271970765-11856-1-git-send-email-fgaliegue@gmail.com> <1271970765-11856-2-git-send-email-fgaliegue@gmail.com>
+In-Reply-To: <1271970765-11856-2-git-send-email-fgaliegue@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Apr 2010, Miao Xie wrote:
-
-> - local variable might be an empty nodemask, so must be checked before setting
->   pol->v.nodes to it.
+Francis Galiegue wrote:
+> Fix obvious cases of "it's" being used when "its" was meant.
 > 
-> - nodes_remap() may cause the weight of pol->v.nodes being monotonic decreasing.
->   and never become large even we pass a nodemask with large weight after
->   ->v.nodes become little.
-> 
+> Signed-off-by: Francis Galiegue <fgaliegue@gmail.com>
 
-That's always been the intention of rebinding a mempolicy nodemask: we 
-remap the current mempolicy nodes over the new nodemask given the set of 
-allowed nodes.  The nodes_remap() shouldn't be removed.
+I didn't check every last one of them, but the ones that I did check
+looked correct.
 
-> this patch fixes these two problem.
-> 
-> Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+Would the trivial patch maintainer mind merging this one, please?
+
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+
 > ---
->  mm/mempolicy.c |    9 ++++++---
->  1 files changed, 6 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index 08f40a2..03ba9fc 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -291,12 +291,15 @@ static void mpol_rebind_nodemask(struct mempolicy *pol,
->  	else if (pol->flags & MPOL_F_RELATIVE_NODES)
->  		mpol_relative_nodemask(&tmp, &pol->w.user_nodemask, nodes);
->  	else {
-> -		nodes_remap(tmp, pol->v.nodes, pol->w.cpuset_mems_allowed,
-> -			    *nodes);
-> +		tmp = *nodes;
->  		pol->w.cpuset_mems_allowed = *nodes;
->  	}
->  
-> -	pol->v.nodes = tmp;
-> +	if (nodes_empty(tmp))
-> +		pol->v.nodes = *nodes;
-> +	else
-> +		pol->v.nodes = tmp;
-> +
->  	if (!node_isset(current->il_next, tmp)) {
->  		current->il_next = next_node(current->il_next, tmp);
->  		if (current->il_next >= MAX_NUMNODES)
+>  Documentation/ABI/testing/sysfs-devices-memory     |    2 +-
+>  Documentation/DMA-API-HOWTO.txt                    |    2 +-
+>  Documentation/DocBook/libata.tmpl                  |    2 +-
+>  Documentation/PCI/pci-error-recovery.txt           |    4 ++--
+>  Documentation/Smack.txt                            |    2 +-
+>  Documentation/arm/SA1100/ADSBitsy                  |    2 +-
+>  Documentation/arm/Sharp-LH/ADC-LH7-Touchscreen     |    2 +-
+>  Documentation/atomic_ops.txt                       |    2 +-
+>  Documentation/blackfin/bfin-gpio-notes.txt         |    2 +-
+>  Documentation/cachetlb.txt                         |    6 +++---
+>  Documentation/cgroups/memcg_test.txt               |    2 +-
+>  Documentation/cgroups/memory.txt                   |    2 +-
+>  Documentation/connector/connector.txt              |    2 +-
+>  Documentation/dvb/ci.txt                           |    2 +-
+>  Documentation/dvb/contributors.txt                 |    2 +-
+>  .../filesystems/autofs4-mount-control.txt          |    2 +-
+>  Documentation/filesystems/ceph.txt                 |    2 +-
+>  Documentation/filesystems/dlmfs.txt                |    2 +-
+>  Documentation/filesystems/fiemap.txt               |   12 ++++++------
+>  Documentation/filesystems/fuse.txt                 |    4 ++--
+>  Documentation/filesystems/hpfs.txt                 |    2 +-
+>  Documentation/filesystems/nfs/rpc-cache.txt        |    2 +-
+>  Documentation/filesystems/proc.txt                 |    4 ++--
+>  Documentation/filesystems/smbfs.txt                |    2 +-
+>  Documentation/filesystems/vfs.txt                  |    2 +-
+>  Documentation/hwmon/lm85                           |    2 +-
+>  Documentation/input/joystick.txt                   |    2 +-
+>  Documentation/intel_txt.txt                        |    2 +-
+>  Documentation/kbuild/kconfig-language.txt          |    2 +-
+>  Documentation/kernel-docs.txt                      |   10 +++++-----
+>  Documentation/kprobes.txt                          |    2 +-
+>  Documentation/laptops/laptop-mode.txt              |    2 +-
+>  Documentation/lguest/lguest.c                      |    2 +-
+>  Documentation/md.txt                               |    2 +-
+>  Documentation/netlabel/lsm_interface.txt           |    2 +-
+>  Documentation/networking/ifenslave.c               |    2 +-
+>  Documentation/networking/packet_mmap.txt           |    4 ++--
+>  Documentation/power/regulator/consumer.txt         |   10 +++++-----
+>  Documentation/power/regulator/machine.txt          |    2 +-
+>  Documentation/power/regulator/overview.txt         |    6 +++---
+>  Documentation/powerpc/booting-without-of.txt       |    2 +-
+>  Documentation/powerpc/phyp-assisted-dump.txt       |    2 +-
+>  Documentation/rt-mutex-design.txt                  |    2 +-
+>  Documentation/scsi/ChangeLog.lpfc                  |    4 ++--
+>  Documentation/scsi/FlashPoint.txt                  |    2 +-
+>  Documentation/scsi/dtc3x80.txt                     |    2 +-
+>  Documentation/scsi/ncr53c8xx.txt                   |    2 +-
+>  Documentation/scsi/osst.txt                        |    2 +-
+>  Documentation/scsi/scsi_fc_transport.txt           |    4 ++--
+>  Documentation/scsi/sym53c8xx_2.txt                 |    2 +-
+>  Documentation/sound/alsa/soc/dapm.txt              |    4 ++--
+>  Documentation/sound/alsa/soc/machine.txt           |    2 +-
+>  Documentation/sound/alsa/soc/overview.txt          |    2 +-
+>  Documentation/usb/WUSB-Design-overview.txt         |    2 +-
+>  Documentation/vm/numa_memory_policy.txt            |    4 ++--
+>  Documentation/w1/w1.generic                        |    2 +-
+>  56 files changed, 81 insertions(+), 81 deletions(-)
+
