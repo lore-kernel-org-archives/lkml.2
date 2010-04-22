@@ -1,184 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab0DVOyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 10:54:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50244 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755500Ab0DVOyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 10:54:36 -0400
-Date: Thu, 22 Apr 2010 16:54:33 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Amit Kucheria <amit.kucheria@verdurent.com>
-Cc: Dinh Nguyen <Dinh.Nguyen@freescale.com>,
-       Amit Kucheria <amit.kucheria@canonical.com>,
-       Russell King <linux@arm.linux.org.uk>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] mx5: Add registration of GPIOs for MX5 devices
-Message-ID: <20100422145433.GX7882@pengutronix.de>
-References: <a2d23fc5b7650221913ad0d23d08fa4525efe194.1271942210.git.amit.kucheria@verdurent.com>
+	id S1755562Ab0DVO5j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 10:57:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24798 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755432Ab0DVO5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 10:57:37 -0400
+Date: Thu, 22 Apr 2010 10:56:40 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Miles Lane <miles.lane@gmail.com>, Eric Paris <eparis@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
+       eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
+	rcu_dereference_check() usage
+Message-ID: <20100422145640.GB3228@redhat.com>
+References: <1271701612.2972.5.camel@dhcp231-113.rdu.redhat.com> <20100419230136.GA16856@linux.vnet.ibm.com> <1271726729.2972.13.camel@dhcp231-113.rdu.redhat.com> <20100420030452.GB2905@linux.vnet.ibm.com> <4BCD646B.1080206@cn.fujitsu.com> <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com> <j2ya44ae5cd1004200545q6be4ec82o18ae99d93e8c29c7@mail.gmail.com> <20100420135227.GC2628@linux.vnet.ibm.com> <t2la44ae5cd1004200838w87256e80v9dcde91342b321db@mail.gmail.com> <20100421213543.GO2563@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <a2d23fc5b7650221913ad0d23d08fa4525efe194.1271942210.git.amit.kucheria@verdurent.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 16:53:47 up 33 days,  3:43, 54 users,  load average: 2.88, 3.63,
-	3.92
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20100421213543.GO2563@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 04:28:42PM +0300, Amit Kucheria wrote:
-> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> 
-> Register the gpio irqs on Freescale's MX51 Babbage HW.
-> 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> Signed-off-by: Amit Kucheria <amit.kucheria@canonical.com>
-> ---
->  arch/arm/mach-mx5/devices.c |   33 +++++++++++++++++++++++++++++++--
->  arch/arm/plat-mxc/gpio.c    |    5 ++---
->  arch/arm/plat-mxc/tzic.c    |    4 +++-
->  3 files changed, 36 insertions(+), 6 deletions(-)
+On Wed, Apr 21, 2010 at 02:35:43PM -0700, Paul E. McKenney wrote:
 
-Ok, applied to mxc-master.
-
-Sascha
-
-
+[..]
+> > [    3.116754] [ INFO: suspicious rcu_dereference_check() usage. ]
+> > [    3.116754] ---------------------------------------------------
+> > [    3.116754] kernel/cgroup.c:4432 invoked rcu_dereference_check()
+> > without protection!
+> > [    3.116754]
+> > [    3.116754] other info that might help us debug this:
+> > [    3.116754]
+> > [    3.116754]
+> > [    3.116754] rcu_scheduler_active = 1, debug_locks = 1
+> > [    3.116754] 2 locks held by async/1/666:
+> > [    3.116754]  #0:  (&shost->scan_mutex){+.+.+.}, at:
+> > [<ffffffff812df0a0>] __scsi_add_device+0x83/0xe4
+> > [    3.116754]  #1:  (&(&blkcg->lock)->rlock){......}, at:
+> > [<ffffffff811f2e8d>] blkiocg_add_blkio_group+0x29/0x7f
+> > [    3.116754]
+> > [    3.116754] stack backtrace:
+> > [    3.116754] Pid: 666, comm: async/1 Not tainted 2.6.34-rc5 #18
+> > [    3.116754] Call Trace:
+> > [    3.116754]  [<ffffffff81067fc2>] lockdep_rcu_dereference+0x9d/0xa5
+> > [    3.116754]  [<ffffffff8107f9b1>] css_id+0x3f/0x51
+> > [    3.116754]  [<ffffffff811f2e9c>] blkiocg_add_blkio_group+0x38/0x7f
+> > [    3.116754]  [<ffffffff811f4e64>] cfq_init_queue+0xdf/0x2dc
+> > [    3.116754]  [<ffffffff811e3445>] elevator_init+0xba/0xf5
+> > [    3.116754]  [<ffffffff812dc02a>] ? scsi_request_fn+0x0/0x451
+> > [    3.116754]  [<ffffffff811e696b>] blk_init_queue_node+0x12f/0x135
+> > [    3.116754]  [<ffffffff811e697d>] blk_init_queue+0xc/0xe
+> > [    3.116754]  [<ffffffff812dc49c>] __scsi_alloc_queue+0x21/0x111
+> > [    3.116754]  [<ffffffff812dc5a4>] scsi_alloc_queue+0x18/0x64
+> > [    3.116754]  [<ffffffff812de5a0>] scsi_alloc_sdev+0x19e/0x256
+> > [    3.116754]  [<ffffffff812de73e>] scsi_probe_and_add_lun+0xe6/0x9c5
+> > [    3.116754]  [<ffffffff81068922>] ? trace_hardirqs_on_caller+0x114/0x13f
+> > [    3.116754]  [<ffffffff813ce0d6>] ? __mutex_lock_common+0x3e4/0x43a
+> > [    3.116754]  [<ffffffff812df0a0>] ? __scsi_add_device+0x83/0xe4
+> > [    3.116754]  [<ffffffff812d0a5c>] ? transport_setup_classdev+0x0/0x17
+> > [    3.116754]  [<ffffffff812df0a0>] ? __scsi_add_device+0x83/0xe4
+> > [    3.116754]  [<ffffffff812df0d5>] __scsi_add_device+0xb8/0xe4
+> > [    3.116754]  [<ffffffff812ea9c5>] ata_scsi_scan_host+0x74/0x16e
+> > [    3.116754]  [<ffffffff81057685>] ? autoremove_wake_function+0x0/0x34
+> > [    3.116754]  [<ffffffff812e8e64>] async_port_probe+0xab/0xb7
+> > [    3.116754]  [<ffffffff8105e1b5>] ? async_thread+0x0/0x1f4
+> > [    3.116754]  [<ffffffff8105e2ba>] async_thread+0x105/0x1f4
+> > [    3.116754]  [<ffffffff81033d79>] ? default_wake_function+0x0/0xf
+> > [    3.116754]  [<ffffffff8105e1b5>] ? async_thread+0x0/0x1f4
+> > [    3.116754]  [<ffffffff8105713e>] kthread+0x89/0x91
+> > [    3.116754]  [<ffffffff81068922>] ? trace_hardirqs_on_caller+0x114/0x13f
+> > [    3.116754]  [<ffffffff81003994>] kernel_thread_helper+0x4/0x10
+> > [    3.116754]  [<ffffffff813cfcc0>] ? restore_args+0x0/0x30
+> > [    3.116754]  [<ffffffff810570b5>] ? kthread+0x0/0x91
+> > [    3.116754]  [<ffffffff81003990>] ? kernel_thread_helper+0x0/0x10
 > 
-> diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
-> index d6fd396..5070ae1 100644
-> --- a/arch/arm/mach-mx5/devices.c
-> +++ b/arch/arm/mach-mx5/devices.c
-> @@ -1,5 +1,6 @@
->  /*
->   * Copyright 2009 Amit Kucheria <amit.kucheria@canonical.com>
-> + * Copyright (C) 2010 Freescale Semiconductor, Inc.
->   *
->   * The code contained herein is licensed under the GNU General Public
->   * License. You may obtain a copy of the GNU General Public License
-> @@ -10,8 +11,10 @@
->   */
->  
->  #include <linux/platform_device.h>
-> +#include <linux/gpio.h>
->  #include <mach/hardware.h>
->  #include <mach/imx-uart.h>
-> +#include <mach/irqs.h>
->  
->  static struct resource uart0[] = {
->  	{
-> @@ -89,8 +92,34 @@ struct platform_device mxc_fec_device = {
->  	.resource = mxc_fec_resources,
->  };
->  
-> -/* Dummy definition to allow compiling in AVIC and TZIC simultaneously */
-> +static struct mxc_gpio_port mxc_gpio_ports[] = {
-> +	{
-> +		.chip.label = "gpio-0",
-> +		.base = MX51_IO_ADDRESS(MX51_GPIO1_BASE_ADDR),
-> +		.irq = MX51_MXC_INT_GPIO1_LOW,
-> +		.virtual_irq_start = MXC_GPIO_IRQ_START
-> +	},
-> +	{
-> +		.chip.label = "gpio-1",
-> +		.base = MX51_IO_ADDRESS(MX51_GPIO2_BASE_ADDR),
-> +		.irq = MX51_MXC_INT_GPIO2_LOW,
-> +		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 1
-> +	},
-> +	{
-> +		.chip.label = "gpio-2",
-> +		.base = MX51_IO_ADDRESS(MX51_GPIO3_BASE_ADDR),
-> +		.irq = MX51_MXC_INT_GPIO3_LOW,
-> +		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 2
-> +	},
-> +	{
-> +		.chip.label = "gpio-3",
-> +		.base = MX51_IO_ADDRESS(MX51_GPIO4_BASE_ADDR),
-> +		.irq = MX51_MXC_INT_GPIO4_LOW,
-> +		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 3
-> +	},
-> +};
-> +
->  int __init mxc_register_gpios(void)
->  {
-> -	return 0;
-> +	return mxc_gpio_init(mxc_gpio_ports, ARRAY_SIZE(mxc_gpio_ports));
->  }
-> diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
-> index 70b2389..71437c6 100644
-> --- a/arch/arm/plat-mxc/gpio.c
-> +++ b/arch/arm/plat-mxc/gpio.c
-> @@ -3,7 +3,7 @@
->   * Copyright 2008 Juergen Beisert, kernel@pengutronix.de
->   *
->   * Based on code from Freescale,
-> - * Copyright 2004-2006 Freescale Semiconductor, Inc. All Rights Reserved.
-> + * Copyright (C) 2004-2010 Freescale Semiconductor, Inc. All Rights Reserved.
->   *
->   * This program is free software; you can redistribute it and/or
->   * modify it under the terms of the GNU General Public License
-> @@ -38,7 +38,6 @@ static int gpio_table_size;
->  #define GPIO_ICR2	(cpu_is_mx1_mx2() ? 0x2C : 0x10)
->  #define GPIO_IMR	(cpu_is_mx1_mx2() ? 0x30 : 0x14)
->  #define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
-> -#define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
->  
->  #define GPIO_INT_LOW_LEV	(cpu_is_mx1_mx2() ? 0x3 : 0x0)
->  #define GPIO_INT_HIGH_LEV	(cpu_is_mx1_mx2() ? 0x2 : 0x1)
-> @@ -289,7 +288,7 @@ int __init mxc_gpio_init(struct mxc_gpio_port *port, int cnt)
->  		/* its a serious configuration bug when it fails */
->  		BUG_ON( gpiochip_add(&port[i].chip) < 0 );
->  
-> -		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25()) {
-> +		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25() || cpu_is_mx51()) {
->  			/* setup one handler for each entry */
->  			set_irq_chained_handler(port[i].irq, mx3_gpio_irq_handler);
->  			set_irq_data(port[i].irq, &port[i]);
-> diff --git a/arch/arm/plat-mxc/tzic.c b/arch/arm/plat-mxc/tzic.c
-> index afa6709..9b86d2a 100644
-> --- a/arch/arm/plat-mxc/tzic.c
-> +++ b/arch/arm/plat-mxc/tzic.c
-> @@ -1,5 +1,5 @@
->  /*
-> - * Copyright 2004-2009 Freescale Semiconductor, Inc. All Rights Reserved.
-> + * Copyright (C)2004-2010 Freescale Semiconductor, Inc. All Rights Reserved.
->   *
->   * The code contained herein is licensed under the GNU General Public
->   * License. You may obtain a copy of the GNU General Public License
-> @@ -19,6 +19,7 @@
->  #include <asm/mach/irq.h>
->  
->  #include <mach/hardware.h>
-> +#include <mach/common.h>
->  
->  /*
->   *****************************************
-> @@ -144,6 +145,7 @@ void __init tzic_init_irq(void __iomem *irqbase)
->  		set_irq_handler(i, handle_level_irq);
->  		set_irq_flags(i, IRQF_VALID);
->  	}
-> +	mxc_register_gpios();
->  
->  	pr_info("TrustZone Interrupt Controller (TZIC) initialized\n");
->  }
-> -- 
-> 1.7.0.4
-> 
-> 
+> I cannot convince myself that the above access is safe.  Vivek, Nauman,
+> thoughts?
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Hi Paul,
+
+blkiocg_add_blkio_group() is called from two paths.
+
+First one is following. This path should be safe as it takes rcu read
+lock.
+
+cfq_get_cfqg()
+	rcu_read_lock()
+	cfq_find_alloc_cfqg()
+		blkiocg_add_blkio_group()
+	rcu_read_unlock()
+
+Second one is as shown in above backtrace.
+
+cfq_init_queue()
+	blkiocg_add_blkio_group().
+
+This path is called at request queue and cfq initialization time and
+we access only root cgroup (root blkio_cgroup). As root cgroup can't
+go away, do we have to protect that call also using rcu_read_lock()?
+
+So I guess it is not unsafe but propably we need to fix the warning, I
+should wrap second call to blkiocg_add_blkio_group() with
+rcu_read_lock/unlock pair?
+
+Thanks
+Vivek
