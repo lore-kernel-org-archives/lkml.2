@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab0DVPCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 11:02:52 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:59046 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755477Ab0DVPCv (ORCPT
+	id S1755351Ab0DVPHn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 11:07:43 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64892 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753182Ab0DVPHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 11:02:51 -0400
-Date: Thu, 22 Apr 2010 17:02:44 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-       valentin.longchamp@epfl.ch, grant.likely@secretlab.ca,
-       bryan.wu@canonical.com, amit.kucheria@canonical.com,
-       Jun.Li@freescale.com, xiao-lizhang@freescale.com
-Subject: Re: [PATCHv7 2.6.34-rc5 4/5] mxc: Add generic USB HW
- initialization for MX51
-Message-ID: <20100422150244.GX30801@buzzloop.caiaq.de>
-References: <1271862795-7986-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271862795-7986-2-git-send-email-Dinh.Nguyen@freescale.com>
- <1271862795-7986-3-git-send-email-Dinh.Nguyen@freescale.com>
- <1271862795-7986-4-git-send-email-Dinh.Nguyen@freescale.com>
- <20100422144543.GU7882@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100422144543.GU7882@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 22 Apr 2010 11:07:41 -0400
+Date: Thu, 22 Apr 2010 08:04:21 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Guillaume Knispel <gknispel@proformatique.com>
+Cc: linux-kernel@vger.kernel.org, Linuxppc-dev@lists.ozlabs.org,
+       Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Haavard Skinnemoen <hskinnemoen@atmel.com>, Ingo Molnar <mingo@elte.hu>,
+       Lars-Peter Clausen <lars@metafoo.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Michael Buesch <mb@bu3sch.de>, Peter Zijlstra <peterz@infradead.org>,
+       Russell King <linux@arm.linux.org.uk>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/2] genirq: update doc
+Message-Id: <20100422080421.64a3006e.randy.dunlap@oracle.com>
+In-Reply-To: <1271941798-9659-3-git-send-email-gknispel@proformatique.com>
+References: <1271941798-9659-1-git-send-email-gknispel@proformatique.com>
+	<1271941798-9659-3-git-send-email-gknispel@proformatique.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090205.4BD065C7.011B:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 04:45:43PM +0200, Sascha Hauer wrote:
-> On Wed, Apr 21, 2010 at 10:13:14AM -0500, Dinh.Nguyen@freescale.com wrote:
-> > @@ -191,6 +191,11 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
-> >  		clk_enable(priv->ahbclk);
-> >  	}
-> >  
-> > +	/* setup specific usb hw */
-> > +	ret = mxc_initialize_usb_hw(pdev->id, pdata->flags);
-> > +	if (ret < 0)
-> > +		goto err_init;
-> > +
-> >  	/* set USBMODE to host mode */
-> >  	temp = readl(hcd->regs + USBMODE_OFFSET);
-> >  	writel(temp | USBMODE_CM_HOST, hcd->regs + USBMODE_OFFSET);
-> > @@ -199,11 +204,6 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
-> >  	writel(pdata->portsc, hcd->regs + PORTSC_OFFSET);
-> >  	mdelay(10);
-> >  
-> > -	/* setup USBCONTROL. */
-> > -	ret = mxc_set_usbcontrol(pdev->id, pdata->flags);
-> > -	if (ret < 0)
-> > -		goto err_init;
+On Thu, 22 Apr 2010 15:09:58 +0200 Guillaume Knispel wrote:
+
+> Following "genirq: always build resend_irqs" and previous changes, this
+> commit updates the genirq DocBook.
 > 
-> Has somebody tested if this works on other i.MXs? I remember it was quite
-> difficult to get the correct order of initialization. I don't want to
-> break this.
+> ---
+>  Documentation/DocBook/genericirq.tmpl |   73 ++++++++++++++++++--------------
+>  1 files changed, 41 insertions(+), 32 deletions(-)
+> 
+> diff --git a/Documentation/DocBook/genericirq.tmpl b/Documentation/DocBook/genericirq.tmpl
+> index 1448b33..5ee204c 100644
+> --- a/Documentation/DocBook/genericirq.tmpl
+> +++ b/Documentation/DocBook/genericirq.tmpl
+> @@ -240,8 +240,6 @@ default_enable(irq)
+>  
+>  default_disable(irq)
+>  {
+> -	if (!delay_disable(irq))
+> -		desc->chip->mask(irq);
+>  }
+>  
+>  default_ack(irq)
+> @@ -264,7 +262,11 @@ noop(irq)
+>  }
+>  
+>  		</programlisting>
+> -	        </para>
+> +	        Note: default_disable is empty so that an edge-triggered
 
-Yes, I tested it on a MX31LiteKit and it works fine, so I didn't
-consider this critical.
+		      default_disable()
 
-> We should at least make a seperate patch from it so that anybody
-> bisecting this only finds this change and not the i.MX51 support also
-> added in this patch.
+> +		interrupt happening between a disable_irq() and an enable_irq()
+> +		is catched by the kernel for later replay. See
 
-Good idea. However, I insisted to have this hunk in this one commit as
-it follows a function rename (mxc_initialize_usb_hw vs.
-mxc_set_usbcontrol). So if we want to have this seperate, we'd need one
-intermediate step.
+		   caught
 
-Daniel
+> +		<xref linkend="Delayed_interrupt_disable"/> for details.
+> +		</para>
+>  	    </sect3>
+>  	</sect2>
+>  	<sect2 id="Default_flow_handler_implementations">
+
+[snip]
+
+
+---
+~Randy
