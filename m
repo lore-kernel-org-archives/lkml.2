@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872Ab0DVVoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 17:44:10 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:57660 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab0DVVoH convert rfc822-to-8bit (ORCPT
+	id S1752016Ab0DVVw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 17:52:56 -0400
+Received: from mail-pz0-f194.google.com ([209.85.222.194]:54013 "EHLO
+	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab0DVVwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 17:44:07 -0400
+	Thu, 22 Apr 2010 17:52:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=l+OUULxNlAFsPnEtpqSpN/iAfGGDZdAMK3k0xWs/kZSdG0myMR9VcriMhzNNMKETNP
-         JWrBL6afpfB9Pp13/iI6xiTQIDm8TT3ZMfGQ0WN6c9uzJQSsfwNXbuT6u0i57qQ10wWp
-         qXXD+iH9UY2XZ98MKVq9EMHqkYqNxDYU1zr1o=
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=n6ZSdaCKxiExL+0e8EqHfYWL2E9XNzQdSKQFUMQhfKHRZT2Td7wD4n35r/dy1wytHl
+         +/DKv1uqQoUHNNu7e0X+luOErKupVurb92Q6j8nSqrDqKySqxYdM2KX+gcN2cSXeec5P
+         +GkAnmpKnjlmWuWnbIDsFZFKdAFCLlhl28GvA=
+Message-ID: <4BD0C531.9050104@lwfinger.net>
+Date: Thu, 22 Apr 2010 16:52:49 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.7 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <p2v8bd0f97a1004221421x4bf0850fm1b47f4838c344368@mail.gmail.com>
-References: <1271970765-11856-1-git-send-email-fgaliegue@gmail.com>
-	 <p2v8bd0f97a1004221421x4bf0850fm1b47f4838c344368@mail.gmail.com>
-Date: Thu, 22 Apr 2010 23:44:05 +0200
-Message-ID: <y2lac542ca01004221444le9b33c8as587d3382ab7ff0a9@mail.gmail.com>
-Subject: Re: Should I really bother all maintainers with this?
-From: Francis Galiegue <fgaliegue@gmail.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+To: Roel Van Nyen <roel.vannyen@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+       "Bartlomiej Zolnierkiewicz devel@driverdev.osuosl.org" 
+	<bzolnier@gmail.com>,
+       Bernhard Schiffner <bernhard@schiffner-limbach.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8187se: fix coding style errors of r8180_rtl8225z2.c
+References: <4BD0C19F.3030809@gmail.com>
+In-Reply-To: <4BD0C19F.3030809@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Cc:ed trivial@kernel.org]
+On 04/22/2010 04:37 PM, Roel Van Nyen wrote:
+> Fix coding style errors
+> 
+> Signed-off-by: Roel Van Nyen <roel.vannyen@gmail.com>
+> 
+> ---
+> 
+>  drivers/staging/rtl8187se/r8180_rtl8225z2.c |   58 ++++++++++++++-------------
+> 
+>  1 files changed, 30 insertions(+), 28 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8187se/r8180_rtl8225z2.c b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
+> 
+> index 6edf5a4..9c38b3a 100644
+> 
+> --- a/drivers/staging/rtl8187se/r8180_rtl8225z2.c
+> 
+> +++ b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
+> 
+> @@ -225,7 +225,7 @@ static void rtl8225_SetTXPowerLevel(struct net_device *dev, short ch)
+> 
+>  }
+> 
+>  
+> 
+>  static const u8 rtl8225z2_threshold[] = {
+>     <========================= HERE
+> -        0x8d, 0x8d, 0x8d, 0x8d, 0x9d, 0xad, 0xbd,
+> 
+> +    0x8d, 0x8d, 0x8d, 0x8d, 0x9d, 0xad, 0xbd,
+> 
+>  };
 
-On Thu, Apr 22, 2010 at 11:21 PM, Mike Frysinger <vapier.adi@gmail.com> wrote:
-> On Thu, Apr 22, 2010 at 17:12, Francis Galiegue wrote:
->> This patch only fixes quite a common mistake in Documentation/, and if I
->> scripts/get_maintainer.pl on the patch (which is recommended), I potentially
->> mail thousands of people who probably have more useful/exciting stuff to do
->> anyway. So, I submit it as is.
->
-> this kind of stuff usually goes through the trivial tree.  look at
-> TRIVIAL PATCHES in the MAINTAINERS file.
-> -mike
->
+NACK: This patch is badly broken. All of the blank lines like the one I
+marked above fail.
 
-Point taken... But the patch doesn't apply as is over trivial/master or
-trivial/for-next, as two files don't seem to exist on either branch (trivial
-being the git repository mentioned in MAINTAINERS):
-Documentation/DMA-API-HOWTO.txt and Documentation/filesystems/ceph.txt.
+Larry
 
-Thanks for the input,
--- 
-Francis Galiegue, fgaliegue@gmail.com
-"It seems obvious [...] that at least some 'business intelligence'
-tools invest so much intelligence on the business side that they have
-nothing left for generating SQL queries" (Stéphane Faroult, in "The
-Art of SQL", ISBN 0-596-00894-5)
