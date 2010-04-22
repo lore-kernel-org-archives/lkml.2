@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab0DVT5T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:57:19 -0400
-Received: from kroah.org ([198.145.64.141]:40786 "EHLO coco.kroah.org"
+	id S1757493Ab0DVTwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:52:35 -0400
+Received: from kroah.org ([198.145.64.141]:40921 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756376Ab0DVT23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:29 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:14 2010
-Message-Id: <20100422190914.106697394@kvm.kroah.org>
+	id S1755975Ab0DVT2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:43 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:15 2010
+Message-Id: <20100422190915.631896050@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:46 -0700
+Date: Thu, 22 Apr 2010 12:09:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: [075/197] thinkpad-acpi: lock down video output state access
+       Suresh Siddha <suresh.b.siddha@intel.com>, <jbarnes@virtuousgeek.org>,
+       <david.woodhouse@intel.com>, <weidong.han@intel.com>,
+       <youquan.song@intel.com>, <Jan.Grossmann@kielnet.net>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: [092/197] x86: Fix double enable_IR_x2apic() call on SMP kernel on !SMP boards
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,117 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
-commit b525c06cdbd8a3963f0173ccd23f9147d4c384b5 upstream.
+commit 472a474c6630efd195d3738339fd1bdc8aa3b1aa upstream.
 
-Given the right combination of ThinkPad and X.org, just reading the
-video output control state is enough to hard-crash X.org.
+Jan Grossmann reported kernel boot panic while booting SMP
+kernel on his system with a single core cpu. SMP kernels call
+enable_IR_x2apic() from native_smp_prepare_cpus() and on
+platforms where the kernel doesn't find SMP configuration we
+ended up again calling enable_IR_x2apic() from the
+APIC_init_uniprocessor() call in the smp_sanity_check(). Thus
+leading to kernel panic.
 
-Until the day I somehow find out a model or BIOS cut date to not
-provide this feature to ThinkPads that can do video switching through
-X RandR, change permissions so that only processes with CAP_SYS_ADMIN
-can access any sort of video output control state.
+Don't call enable_IR_x2apic() and default_setup_apic_routing()
+from APIC_init_uniprocessor() in CONFIG_SMP case.
 
-This bug could be considered a local DoS I suppose, as it allows any
-non-privledged local user to cause some versions of X.org to
-hard-crash some ThinkPads.
+NOTE: this kind of non-idempotent and assymetric initialization
+sequence is rather fragile and unclean, we'll clean that up
+in v2.6.35. This is the minimal fix for v2.6.34.
 
-Reported-by: Jidanni <jidanni@jidanni.org>
-Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Reported-by: Jan.Grossmann@kielnet.net
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: <jbarnes@virtuousgeek.org>
+Cc: <david.woodhouse@intel.com>
+Cc: <weidong.han@intel.com>
+Cc: <youquan.song@intel.com>
+Cc: <Jan.Grossmann@kielnet.net>
+LKML-Reference: <1270083887.7835.78.camel@sbs-t61.sc.intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/laptops/thinkpad-acpi.txt |    4 ++++
- drivers/platform/x86/Kconfig            |   10 ++++++++--
- drivers/platform/x86/thinkpad_acpi.c    |   15 +++++++++++++--
- 3 files changed, 25 insertions(+), 4 deletions(-)
+ arch/x86/kernel/apic/apic.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/Documentation/laptops/thinkpad-acpi.txt
-+++ b/Documentation/laptops/thinkpad-acpi.txt
-@@ -650,6 +650,10 @@ LCD, CRT or DVI (if available). The foll
- 	echo expand_toggle > /proc/acpi/ibm/video
- 	echo video_switch > /proc/acpi/ibm/video
- 
-+NOTE: Access to this feature is restricted to processes owning the
-+CAP_SYS_ADMIN capability for safety reasons, as it can interact badly
-+enough with some versions of X.org to crash it.
-+
- Each video output device can be enabled or disabled individually.
- Reading /proc/acpi/ibm/video shows the status of each device.
- 
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -291,9 +291,15 @@ config THINKPAD_ACPI_VIDEO
- 	  server running, phase of the moon, and the current mood of
- 	  Schroedinger's cat.  If you can use X.org's RandR to control
- 	  your ThinkPad's video output ports instead of this feature,
--	  don't think twice: do it and say N here to save some memory.
-+	  don't think twice: do it and say N here to save memory and avoid
-+	  bad interactions with X.org.
- 
--	  If you are not sure, say Y here.
-+	  NOTE: access to this feature is limited to processes with the
-+	  CAP_SYS_ADMIN capability, to avoid local DoS issues in platforms
-+	  where it interacts badly with X.org.
-+
-+	  If you are not sure, say Y here but do try to check if you could
-+	  be using X.org RandR instead.
- 
- config THINKPAD_ACPI_HOTKEY_POLL
- 	bool "Support NVRAM polling for hot keys"
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -281,6 +281,7 @@ struct ibm_init_struct {
- 	char param[32];
- 
- 	int (*init) (struct ibm_init_struct *);
-+	mode_t base_procfs_mode;
- 	struct ibm_struct *data;
- };
- 
-@@ -4620,6 +4621,10 @@ static int video_read(struct seq_file *m
- 		return 0;
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1664,8 +1664,10 @@ int __init APIC_init_uniprocessor(void)
  	}
- 
-+	/* Even reads can crash X.org, so... */
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
- 	status = video_outputsw_get();
- 	if (status < 0)
- 		return status;
-@@ -4653,6 +4658,10 @@ static int video_write(char *buf)
- 	if (video_supported == TPACPI_VIDEO_NONE)
- 		return -ENODEV;
- 
-+	/* Even reads can crash X.org, let alone writes... */
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
- 	enable = 0;
- 	disable = 0;
- 
-@@ -7887,9 +7896,10 @@ static int __init ibm_init(struct ibm_in
- 		"%s installed\n", ibm->name);
- 
- 	if (ibm->read) {
--		mode_t mode;
-+		mode_t mode = iibm->base_procfs_mode;
- 
--		mode = S_IRUGO;
-+		if (!mode)
-+			mode = S_IRUGO;
- 		if (ibm->write)
- 			mode |= S_IWUSR;
- 		entry = proc_create_data(ibm->name, mode, proc_dir,
-@@ -8080,6 +8090,7 @@ static struct ibm_init_struct ibms_init[
- #ifdef CONFIG_THINKPAD_ACPI_VIDEO
- 	{
- 		.init = video_init,
-+		.base_procfs_mode = S_IRUSR,
- 		.data = &video_driver_data,
- 	},
  #endif
+ 
++#ifndef CONFIG_SMP
+ 	enable_IR_x2apic();
+ 	default_setup_apic_routing();
++#endif
+ 
+ 	verify_local_APIC();
+ 	connect_bsp_APIC();
 
 
