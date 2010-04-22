@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756805Ab0DVTlg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:41:36 -0400
-Received: from kroah.org ([198.145.64.141]:41368 "EHLO coco.kroah.org"
+	id S1757112Ab0DVTcv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:32:51 -0400
+Received: from kroah.org ([198.145.64.141]:41600 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756773Ab0DVT32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:28 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:20 2010
-Message-Id: <20100422190920.561166562@kvm.kroah.org>
+	id S1756961Ab0DVTaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:30:00 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:24 2010
+Message-Id: <20100422190924.168616225@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:59 -0700
+Date: Thu, 22 Apr 2010 12:10:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Larry Finger <Larry.Finger@lwfinger.net>,
-       maximilian attems <max@stro.at>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [148/197] b43: Allow PIO mode to be selected at module load
+       Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+       Avi Kivity <avi@redhat.com>
+Subject: [187/197] KVM: SVM: Fix memory leaks that happen when svm_create_vcpu() fails
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,223 +26,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
 
-commit b02914af4d7020828ce921a572589dd793517c09 upstream.
+(Cherry-picked from commit b7af40433870aa0636932ad39b0c48a0cb319057)
 
-If userencounter the "Fatal DMA Problem" with a BCM43XX device, and
-still wish to use b43 as the driver, their only option is to rebuild
-the kernel with CONFIG_B43_FORCE_PIO. This patch removes this option and
-allows PIO mode to be selected with a load-time parameter for the module.
-Note that the configuration variable CONFIG_B43_PIO is also removed.
+svm_create_vcpu() does not free the pages allocated during the creation
+when it fails to complete the allocations. This patch fixes it.
 
-Once the DMA problem with the BCM4312 devices is solved, this patch will
-likely be reverted.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Tested-by: John Daiker <daikerjohn@gmail.com>
-Cc: maximilian attems <max@stro.at>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/b43/Kconfig  |   19 +-----------------
- drivers/net/wireless/b43/Makefile |    2 -
- drivers/net/wireless/b43/b43.h    |   13 ------------
- drivers/net/wireless/b43/dma.c    |    2 -
- drivers/net/wireless/b43/main.c   |    9 +++++---
- drivers/net/wireless/b43/pio.h    |   40 --------------------------------------
- 6 files changed, 9 insertions(+), 76 deletions(-)
+ arch/x86/kvm/svm.c |   25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
 
---- a/drivers/net/wireless/b43/Kconfig
-+++ b/drivers/net/wireless/b43/Kconfig
-@@ -3,6 +3,7 @@ config B43
- 	depends on SSB_POSSIBLE && MAC80211 && WLAN_80211 && HAS_DMA
- 	select SSB
- 	select FW_LOADER
-+	select SSB_BLOCKIO
- 	---help---
- 	  b43 is a driver for the Broadcom 43xx series wireless devices.
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -694,29 +694,28 @@ static struct kvm_vcpu *svm_create_vcpu(
+ 	if (err)
+ 		goto free_svm;
  
-@@ -78,14 +79,6 @@ config B43_SDIO
++	err = -ENOMEM;
+ 	page = alloc_page(GFP_KERNEL);
+-	if (!page) {
+-		err = -ENOMEM;
++	if (!page)
+ 		goto uninit;
+-	}
  
- 	  If unsure, say N.
+-	err = -ENOMEM;
+ 	msrpm_pages = alloc_pages(GFP_KERNEL, MSRPM_ALLOC_ORDER);
+ 	if (!msrpm_pages)
+-		goto uninit;
++		goto free_page1;
  
--# Data transfers to the device via PIO
--# This is only needed on PCMCIA and SDIO devices. All others can do DMA properly.
--config B43_PIO
--	bool
--	depends on B43 && (B43_SDIO || B43_PCMCIA || B43_FORCE_PIO)
--	select SSB_BLOCKIO
--	default y
+ 	nested_msrpm_pages = alloc_pages(GFP_KERNEL, MSRPM_ALLOC_ORDER);
+ 	if (!nested_msrpm_pages)
+-		goto uninit;
 -
- config B43_NPHY
- 	bool "Pre IEEE 802.11n support (BROKEN)"
- 	depends on B43 && EXPERIMENTAL && BROKEN
-@@ -137,12 +130,4 @@ config B43_DEBUG
- 	  for production use.
- 	  Only say Y, if you are debugging a problem in the b43 driver sourcecode.
+-	svm->msrpm = page_address(msrpm_pages);
+-	svm_vcpu_init_msrpm(svm->msrpm);
++		goto free_page2;
  
--config B43_FORCE_PIO
--	bool "Force usage of PIO instead of DMA"
--	depends on B43 && B43_DEBUG
--	---help---
--	  This will disable DMA and always enable PIO instead.
--
--	  Say N!
--	  This is only for debugging the PIO engine code. You do
--	  _NOT_ want to enable this.
+ 	hsave_page = alloc_page(GFP_KERNEL);
+ 	if (!hsave_page)
+-		goto uninit;
++		goto free_page3;
 +
---- a/drivers/net/wireless/b43/Makefile
-+++ b/drivers/net/wireless/b43/Makefile
-@@ -12,7 +12,7 @@ b43-y				+= xmit.o
- b43-y				+= lo.o
- b43-y				+= wa.o
- b43-y				+= dma.o
--b43-$(CONFIG_B43_PIO)		+= pio.o
-+b43-y				+= pio.o
- b43-y				+= rfkill.o
- b43-$(CONFIG_B43_LEDS)		+= leds.o
- b43-$(CONFIG_B43_PCMCIA)	+= pcmcia.o
---- a/drivers/net/wireless/b43/b43.h
-+++ b/drivers/net/wireless/b43/b43.h
-@@ -830,7 +830,6 @@ struct b43_wl {
- 	/* The device LEDs. */
- 	struct b43_leds leds;
+ 	svm->nested.hsave = page_address(hsave_page);
  
--#ifdef CONFIG_B43_PIO
- 	/*
- 	 * RX/TX header/tail buffers used by the frame transmit functions.
- 	 */
-@@ -838,7 +837,6 @@ struct b43_wl {
- 	struct b43_txhdr txhdr;
- 	u8 rx_tail[4];
- 	u8 tx_tail[4];
--#endif /* CONFIG_B43_PIO */
- };
++	svm->msrpm = page_address(msrpm_pages);
++	svm_vcpu_init_msrpm(svm->msrpm);
++
+ 	svm->nested.msrpm = page_address(nested_msrpm_pages);
  
- static inline struct b43_wl *hw_to_b43_wl(struct ieee80211_hw *hw)
-@@ -889,20 +887,9 @@ static inline void b43_write32(struct b4
+ 	svm->vmcb = page_address(page);
+@@ -733,6 +732,12 @@ static struct kvm_vcpu *svm_create_vcpu(
  
- static inline bool b43_using_pio_transfers(struct b43_wldev *dev)
- {
--#ifdef CONFIG_B43_PIO
- 	return dev->__using_pio_transfers;
--#else
--	return 0;
--#endif
- }
+ 	return &svm->vcpu;
  
--#ifdef CONFIG_B43_FORCE_PIO
--# define B43_FORCE_PIO	1
--#else
--# define B43_FORCE_PIO	0
--#endif
--
--
- /* Message printing */
- void b43info(struct b43_wl *wl, const char *fmt, ...)
-     __attribute__ ((format(printf, 2, 3)));
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -1620,7 +1620,6 @@ void b43_dma_tx_resume(struct b43_wldev
- 	b43_power_saving_ctl_bits(dev, 0);
- }
- 
--#ifdef CONFIG_B43_PIO
- static void direct_fifo_rx(struct b43_wldev *dev, enum b43_dmatype type,
- 			   u16 mmio_base, bool enable)
- {
-@@ -1654,4 +1653,3 @@ void b43_dma_direct_fifo_rx(struct b43_w
- 	mmio_base = b43_dmacontroller_base(type, engine_index);
- 	direct_fifo_rx(dev, type, mmio_base, enable);
- }
--#endif /* CONFIG_B43_PIO */
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -102,6 +102,9 @@ int b43_modparam_verbose = B43_VERBOSITY
- module_param_named(verbose, b43_modparam_verbose, int, 0644);
- MODULE_PARM_DESC(verbose, "Log message verbosity: 0=error, 1=warn, 2=info(default), 3=debug");
- 
-+static int modparam_pio;
-+module_param_named(pio, modparam_pio, int, 0444);
-+MODULE_PARM_DESC(pio, "enable(1) / disable(0) PIO mode");
- 
- static const struct ssb_device_id b43_ssb_tbl[] = {
- 	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 5),
-@@ -1790,8 +1793,8 @@ static void b43_do_interrupt_thread(stru
- 			       dma_reason[4], dma_reason[5]);
- 			b43err(dev->wl, "This device does not support DMA "
- 			       "on your system. Please use PIO instead.\n");
--			b43err(dev->wl, "CONFIG_B43_FORCE_PIO must be set in "
--			       "your kernel configuration.\n");
-+			b43err(dev->wl, "Unload the b43 module and reload "
-+			       "with 'pio=1'\n");
- 			return;
- 		}
- 		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
-@@ -4358,7 +4361,7 @@ static int b43_wireless_core_init(struct
- 
- 	if ((dev->dev->bus->bustype == SSB_BUSTYPE_PCMCIA) ||
- 	    (dev->dev->bus->bustype == SSB_BUSTYPE_SDIO) ||
--	    B43_FORCE_PIO) {
-+	    modparam_pio) {
- 		dev->__using_pio_transfers = 1;
- 		err = b43_pio_init(dev);
- 	} else {
---- a/drivers/net/wireless/b43/pio.h
-+++ b/drivers/net/wireless/b43/pio.h
-@@ -55,8 +55,6 @@
- #define B43_PIO_MAX_NR_TXPACKETS	32
- 
- 
--#ifdef CONFIG_B43_PIO
--
- struct b43_pio_txpacket {
- 	/* Pointer to the TX queue we belong to. */
- 	struct b43_pio_txqueue *queue;
-@@ -169,42 +167,4 @@ void b43_pio_rx(struct b43_pio_rxqueue *
- void b43_pio_tx_suspend(struct b43_wldev *dev);
- void b43_pio_tx_resume(struct b43_wldev *dev);
- 
--
--#else /* CONFIG_B43_PIO */
--
--
--static inline int b43_pio_init(struct b43_wldev *dev)
--{
--	return 0;
--}
--static inline void b43_pio_free(struct b43_wldev *dev)
--{
--}
--static inline void b43_pio_stop(struct b43_wldev *dev)
--{
--}
--static inline int b43_pio_tx(struct b43_wldev *dev,
--			     struct sk_buff *skb)
--{
--	return 0;
--}
--static inline void b43_pio_handle_txstatus(struct b43_wldev *dev,
--					   const struct b43_txstatus *status)
--{
--}
--static inline void b43_pio_get_tx_stats(struct b43_wldev *dev,
--					struct ieee80211_tx_queue_stats *stats)
--{
--}
--static inline void b43_pio_rx(struct b43_pio_rxqueue *q)
--{
--}
--static inline void b43_pio_tx_suspend(struct b43_wldev *dev)
--{
--}
--static inline void b43_pio_tx_resume(struct b43_wldev *dev)
--{
--}
--
--#endif /* CONFIG_B43_PIO */
- #endif /* B43_PIO_H_ */
++free_page3:
++	__free_pages(nested_msrpm_pages, MSRPM_ALLOC_ORDER);
++free_page2:
++	__free_pages(msrpm_pages, MSRPM_ALLOC_ORDER);
++free_page1:
++	__free_page(page);
+ uninit:
+ 	kvm_vcpu_uninit(&svm->vcpu);
+ free_svm:
 
 
