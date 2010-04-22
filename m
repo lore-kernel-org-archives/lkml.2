@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510Ab0DVEXG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 00:23:06 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:35934 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab0DVEXC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 00:23:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=esq6exSGyrohmPfsNkSBOj5xcSEM0gpvY/+YS3rT2ZB5YVpIA4/9yYemSOkWNvvhOg
-         wHATpXZbx3fFzZ+0BKDF8GEf04kmkD797N2SejyEcThupYVpS38n0n/gs7nBDA1sGFYh
-         l560jluZqcQzG93D4iE4Tnkspcxz2SoA5Wc+I=
-MIME-Version: 1.0
-In-Reply-To: <1271908811.1730.613.camel@Joe-Laptop.home>
-References: <1271907971-8793-1-git-send-email-silvagustavo@users.sourceforge.net>
-	 <1271908811.1730.613.camel@Joe-Laptop.home>
-Date: Wed, 21 Apr 2010 23:23:01 -0500
-Message-ID: <o2x7470ede81004212123qe02e9870i534829a224c05585@mail.gmail.com>
-Subject: Re: [PATCH] Staging: Comedi: Drivers: Fix coding style issues in 
-	dt2801.c
-From: Gustavo Silva <silvagustavosilva@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751589Ab0DVE0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 00:26:00 -0400
+Received: from mail.perches.com ([173.55.12.10]:1673 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751294Ab0DVEZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 00:25:59 -0400
+Subject: Re: What's the staging review and acceptance process?
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100422034532.GA25177@suse.de>
+References: <1271881967.1730.482.camel@Joe-Laptop.home>
+	 <20100422034532.GA25177@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Apr 2010 21:25:57 -0700
+Message-ID: <1271910357.1730.627.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/21 Joe Perches <joe@perches.com>
->
-> On Wed, 2010-04-21 at 22:46 -0500, Gustavo Silva wrote:
-> >  drivers/staging/comedi/drivers/dt2801.c |  100 ++++++++++++++-----------------
-> >  1 files changed, 44 insertions(+), 56 deletions(-)
->
-> Hi Gustavo.  A couple of trivial comments.
->
-> > diff --git a/drivers/staging/comedi/drivers/dt2801.c b/drivers/staging/comedi/drivers/dt2801.c
-> > index 3f365ae..c4408d8 100644
-> > --- a/drivers/staging/comedi/drivers/dt2801.c
-> > +++ b/drivers/staging/comedi/drivers/dt2801.c
-> > @@ -102,58 +102,46 @@ COMEDI_INITCLEANUP(driver_dt2801);
-> >
-> >  #if 0
->
-> You could just as well remove the #if 0 blocks
->
-> > @@ -374,8 +362,8 @@ static int dt2801_writecmd(struct comedi_device *dev, int command)
-> >
-> >       stat = inb_p(dev->iobase + DT2801_STATUS);
-> >       if (stat & DT_S_COMPOSITE_ERROR) {
-> > -             printk
-> > -                 ("dt2801: composite-error in dt2801_writecmd(), ignoring\n");
-> > +             printk(KERN_INFO "dt2801: composite-error in dt2801_writecmd()"
-> > +                                                             ", ignoring\n");
->
-> It's good to preface with KERN_, but better might be to use
->        #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> and strip the "dt2801: " intro and use
->        pr_<level>("%s(): composite-error, ignoring\n", __func__)
->
-> It's a bit shorter, always gets the appropriate prefix, and
-> would emit the proper function name if ever refactored.
->
-> cheers, Joe
->
+On Wed, 2010-04-21 at 20:45 -0700, Greg KH wrote:
+> That caused the huge backlog staring at
+> me right now.
 
-Hi Joe!
+Which likely discouraged the new contributors who
+submitted stuff still in that backlog.
 
-Thank you very much for your comments.
+> I just went through 100 patches, and only 40 of them
+> were "valid" and able to be applied, so it is a high rejection rate
+> which requires a lot of attention to be paid to them.
+> 
+> > What is your current review/notify/accept/reject workflow?
+> 
+> Like it's always been:
+>   - patch comes in
+>   - I get around to reviewing it
+>   - if valid, I apply and you get an email
+>   - if invalid, I reject and say why in email
 
-I will put in practice what you suggest.
+Unfortunately, your process has been opaque until you
+personally handle it.
 
-No comment is trivial when it comes to help. :-]
+Does the driverdev list or any list always receive a copy
+or the feedback?
 
-Cheers from Mexico!
-Gustavo Silva.
+> > Perhaps a patchwork queue for staging might help track these
+> > patches and with more feedback or reviewers, get them in
+> > shape to be applied.
+
+> patchwork doesn't work well for my patch flow, but maybe that is because
+> I haven't spent enough time with it.  Right now I have all the patches,
+> it's just a matter of getting through them.
+
+Maybe you should get some advice on using patchwork use
+from somebody like David Miller, who gets rather more
+patches for networking than staging gets.  The patchwork
+queue for networking always seems managed and it can use
+delegation, which your process doesn't seem capable of
+doing.  You're a voluntary bottleneck for staging, I
+think you either need to find personal cycles or find
+some other suckers willing to volunteer who'd make up
+more overall cycles.
+
+cheers, Joe
+
