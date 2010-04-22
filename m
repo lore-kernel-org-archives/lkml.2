@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab0DVT3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:29:31 -0400
-Received: from kroah.org ([198.145.64.141]:41189 "EHLO coco.kroah.org"
+	id S1757321Ab0DVTnk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:43:40 -0400
+Received: from kroah.org ([198.145.64.141]:41282 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756198Ab0DVT3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:13 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:18 2010
-Message-Id: <20100422190918.881914708@kvm.kroah.org>
+	id S1756247Ab0DVT3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:20 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:19 2010
+Message-Id: <20100422190919.662047032@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:40 -0700
+Date: Thu, 22 Apr 2010 12:09:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tao Ma <tao.ma@oracle.com>, Joel Becker <joel.becker@oracle.com>,
+       Paul Mundt <lethal@linux-sh.org>, Mike Travis <travis@sgi.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
        maximilian attems <max@stro.at>
-Subject: [129/197] ocfs2: Change bg_chain check for ocfs2_validate_gd_parent.
+Subject: [138/197] PCI: kill off pci_register_set_vga_state() symbol export.
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,73 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tao Ma <tao.ma@oracle.com>
+From: Paul Mundt <lethal@linux-sh.org>
 
-commit 78c37eb0d5e6a9727b12ea0f1821795ffaa66cfe upstream.
+commit ded1d8f29b4d315a2093cafc3ee17ac870a87972 upstream.
 
-In ocfs2_validate_gd_parent, we check bg_chain against the
-cl_next_free_rec of the dinode. Actually in resize, we have
-the chance of bg_chain == cl_next_free_rec. So add some
-additional condition check for it.
+When pci_register_set_vga_state() was made __init, the EXPORT_SYMBOL() was
+retained, which now leaves us with a section mismatch.
 
-I also rename paramter "clean_error" to "resize", since the
-old one is not clearly enough to indicate that we should only
-meet with this case in resize.
-
-btw, the correpsonding bug is
-http://oss.oracle.com/bugzilla/show_bug.cgi?id=1230.
-
-Signed-off-by: Tao Ma <tao.ma@oracle.com>
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Cc: Mike Travis <travis@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/suballoc.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/pci/pci.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/ocfs2/suballoc.c
-+++ b/fs/ocfs2/suballoc.c
-@@ -152,7 +152,7 @@ static u32 ocfs2_bits_per_group(struct o
- 
- #define do_error(fmt, ...)						\
- 	do{								\
--		if (clean_error)					\
-+		if (resize)					\
- 			mlog(ML_ERROR, fmt "\n", ##__VA_ARGS__);	\
- 		else							\
- 			ocfs2_error(sb, fmt, ##__VA_ARGS__);		\
-@@ -160,7 +160,7 @@ static u32 ocfs2_bits_per_group(struct o
- 
- static int ocfs2_validate_gd_self(struct super_block *sb,
- 				  struct buffer_head *bh,
--				  int clean_error)
-+				  int resize)
- {
- 	struct ocfs2_group_desc *gd = (struct ocfs2_group_desc *)bh->b_data;
- 
-@@ -211,7 +211,7 @@ static int ocfs2_validate_gd_self(struct
- static int ocfs2_validate_gd_parent(struct super_block *sb,
- 				    struct ocfs2_dinode *di,
- 				    struct buffer_head *bh,
--				    int clean_error)
-+				    int resize)
- {
- 	unsigned int max_bits;
- 	struct ocfs2_group_desc *gd = (struct ocfs2_group_desc *)bh->b_data;
-@@ -233,8 +233,11 @@ static int ocfs2_validate_gd_parent(stru
- 		return -EINVAL;
- 	}
- 
--	if (le16_to_cpu(gd->bg_chain) >=
--	    le16_to_cpu(di->id2.i_chain.cl_next_free_rec)) {
-+	/* In resize, we may meet the case bg_chain == cl_next_free_rec. */
-+	if ((le16_to_cpu(gd->bg_chain) >
-+	     le16_to_cpu(di->id2.i_chain.cl_next_free_rec)) ||
-+	    ((le16_to_cpu(gd->bg_chain) ==
-+	     le16_to_cpu(di->id2.i_chain.cl_next_free_rec)) && !resize)) {
- 		do_error("Group descriptor #%llu has bad chain %u",
- 			 (unsigned long long)bh->b_blocknr,
- 			 le16_to_cpu(gd->bg_chain));
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2794,7 +2794,6 @@ EXPORT_SYMBOL(pcim_pin_device);
+ EXPORT_SYMBOL(pci_disable_device);
+ EXPORT_SYMBOL(pci_find_capability);
+ EXPORT_SYMBOL(pci_bus_find_capability);
+-EXPORT_SYMBOL(pci_register_set_vga_state);
+ EXPORT_SYMBOL(pci_release_regions);
+ EXPORT_SYMBOL(pci_request_regions);
+ EXPORT_SYMBOL(pci_request_regions_exclusive);
 
 
