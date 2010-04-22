@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab0DVTg1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:36:27 -0400
-Received: from kroah.org ([198.145.64.141]:41466 "EHLO coco.kroah.org"
+	id S1757319Ab0DVTlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:41:47 -0400
+Received: from kroah.org ([198.145.64.141]:41352 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756864Ab0DVT3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:47 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:22 2010
-Message-Id: <20100422190922.795405930@kvm.kroah.org>
+	id S1756761Ab0DVT30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:26 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:20 2010
+Message-Id: <20100422190920.376690826@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:23 -0700
+Date: Thu, 22 Apr 2010 12:09:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       NeilBrown <neilb@suse.de>
-Subject: [172/197] md: deal with merge_bvec_fn in component devices better.
+       Seth Heasley <seth.heasley@intel.com>,
+       Jean Delvare <khali@linux-fr.org>, maximilian attems <max@stro.at>
+Subject: [146/197] i2c-i801: Add Intel Cougar Point device IDs
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,162 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit 627a2d3c29427637f4c5d31ccc7fcbd8d312cd71 upstream.
+commit 393764340beb595c1ad7dd2d2243c2b6551aaa71 upstream.
 
-If a component device has a merge_bvec_fn then as we never call it
-we must ensure we never need to.  Currently this is done by setting
-max_sector to 1 PAGE, however this does not stop a bio being created
-with several sub-page iovecs that would violate the merge_bvec_fn.
+Add the Intel Cougar Point (PCH) SMBus controller device IDs.
 
-So instead set max_phys_segments to 1 and set the segment boundary to the
-same as a page boundary to ensure there is only ever one single-page
-segment of IO requested at a time.
-
-This can particularly be an issue when 'xen' is used as it is
-known to submit multiple small buffers in a single bio.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/linear.c    |   12 +++++++-----
- drivers/md/multipath.c |   20 ++++++++++++--------
- drivers/md/raid0.c     |   13 +++++++------
- drivers/md/raid10.c    |   28 +++++++++++++++++-----------
- 4 files changed, 43 insertions(+), 30 deletions(-)
+ Documentation/i2c/busses/i2c-i801 |    3 ++-
+ drivers/i2c/busses/Kconfig        |    5 +++--
+ drivers/i2c/busses/i2c-i801.c     |    5 ++++-
+ 3 files changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/md/linear.c
-+++ b/drivers/md/linear.c
-@@ -172,12 +172,14 @@ static linear_conf_t *linear_conf(mddev_
- 		disk_stack_limits(mddev->gendisk, rdev->bdev,
- 				  rdev->data_offset << 9);
- 		/* as we don't honour merge_bvec_fn, we must never risk
--		 * violating it, so limit ->max_sector to one PAGE, as
--		 * a one page request is never in violation.
-+		 * violating it, so limit max_phys_segments to 1 lying within
-+		 * a single page.
- 		 */
--		if (rdev->bdev->bd_disk->queue->merge_bvec_fn &&
--		    queue_max_sectors(mddev->queue) > (PAGE_SIZE>>9))
--			blk_queue_max_sectors(mddev->queue, PAGE_SIZE>>9);
-+		if (rdev->bdev->bd_disk->queue->merge_bvec_fn) {
-+			blk_queue_max_phys_segments(mddev->queue, 1);
-+			blk_queue_segment_boundary(mddev->queue,
-+						   PAGE_CACHE_SIZE - 1);
-+		}
+--- a/Documentation/i2c/busses/i2c-i801
++++ b/Documentation/i2c/busses/i2c-i801
+@@ -15,7 +15,8 @@ Supported adapters:
+   * Intel 82801I (ICH9)
+   * Intel EP80579 (Tolapai)
+   * Intel 82801JI (ICH10)
+-  * Intel PCH
++  * Intel 3400/5 Series (PCH)
++  * Intel Cougar Point (PCH)
+    Datasheets: Publicly available at the Intel website
  
- 		conf->array_sectors += rdev->sectors;
- 		cnt++;
---- a/drivers/md/multipath.c
-+++ b/drivers/md/multipath.c
-@@ -301,14 +301,16 @@ static int multipath_add_disk(mddev_t *m
- 					  rdev->data_offset << 9);
+ Authors: 
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -77,7 +77,7 @@ config I2C_AMD8111
+ 	  will be called i2c-amd8111.
  
- 		/* as we don't honour merge_bvec_fn, we must never risk
--		 * violating it, so limit ->max_sector to one PAGE, as
--		 * a one page request is never in violation.
-+		 * violating it, so limit ->max_phys_segments to one, lying
-+		 * within a single page.
- 		 * (Note: it is very unlikely that a device with
- 		 * merge_bvec_fn will be involved in multipath.)
- 		 */
--			if (q->merge_bvec_fn &&
--			    queue_max_sectors(q) > (PAGE_SIZE>>9))
--				blk_queue_max_sectors(mddev->queue, PAGE_SIZE>>9);
-+			if (q->merge_bvec_fn) {
-+				blk_queue_max_phys_segments(mddev->queue, 1);
-+				blk_queue_segment_boundary(mddev->queue,
-+							   PAGE_CACHE_SIZE - 1);
-+			}
+ config I2C_I801
+-	tristate "Intel 82801 (ICH)"
++	tristate "Intel 82801 (ICH/PCH)"
+ 	depends on PCI
+ 	help
+ 	  If you say yes to this option, support will be included for the Intel
+@@ -97,7 +97,8 @@ config I2C_I801
+ 	    ICH9
+ 	    Tolapai
+ 	    ICH10
+-	    PCH
++	    3400/5 Series (PCH)
++	    Cougar Point (PCH)
  
- 			conf->working_disks++;
- 			mddev->degraded--;
-@@ -476,9 +478,11 @@ static int multipath_run (mddev_t *mddev
- 		/* as we don't honour merge_bvec_fn, we must never risk
- 		 * violating it, not that we ever expect a device with
- 		 * a merge_bvec_fn to be involved in multipath */
--		if (rdev->bdev->bd_disk->queue->merge_bvec_fn &&
--		    queue_max_sectors(mddev->queue) > (PAGE_SIZE>>9))
--			blk_queue_max_sectors(mddev->queue, PAGE_SIZE>>9);
-+		if (rdev->bdev->bd_disk->queue->merge_bvec_fn) {
-+			blk_queue_max_phys_segments(mddev->queue, 1);
-+			blk_queue_segment_boundary(mddev->queue,
-+						   PAGE_CACHE_SIZE - 1);
-+		}
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-i801.
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -41,7 +41,8 @@
+   Tolapai               0x5032     32     hard     yes     yes     yes
+   ICH10                 0x3a30     32     hard     yes     yes     yes
+   ICH10                 0x3a60     32     hard     yes     yes     yes
+-  PCH                   0x3b30     32     hard     yes     yes     yes
++  3400/5 Series (PCH)   0x3b30     32     hard     yes     yes     yes
++  Cougar Point (PCH)    0x1c22     32     hard     yes     yes     yes
  
- 		if (!test_bit(Faulty, &rdev->flags))
- 			conf->working_disks++;
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -176,14 +176,15 @@ static int create_strip_zones(mddev_t *m
- 		disk_stack_limits(mddev->gendisk, rdev1->bdev,
- 				  rdev1->data_offset << 9);
- 		/* as we don't honour merge_bvec_fn, we must never risk
--		 * violating it, so limit ->max_sector to one PAGE, as
--		 * a one page request is never in violation.
-+		 * violating it, so limit ->max_phys_segments to 1, lying within
-+		 * a single page.
- 		 */
+   Features supported by this driver:
+   Software PEC                     no
+@@ -580,6 +581,7 @@ static struct pci_device_id i801_ids[] =
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_4) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_5) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PCH_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CPT_SMBUS) },
+ 	{ 0, }
+ };
  
--		if (rdev1->bdev->bd_disk->queue->merge_bvec_fn &&
--		    queue_max_sectors(mddev->queue) > (PAGE_SIZE>>9))
--			blk_queue_max_sectors(mddev->queue, PAGE_SIZE>>9);
--
-+		if (rdev1->bdev->bd_disk->queue->merge_bvec_fn) {
-+			blk_queue_max_phys_segments(mddev->queue, 1);
-+			blk_queue_segment_boundary(mddev->queue,
-+						   PAGE_CACHE_SIZE - 1);
-+		}
- 		if (!smallest || (rdev1->sectors < smallest->sectors))
- 			smallest = rdev1;
- 		cnt++;
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1155,13 +1155,17 @@ static int raid10_add_disk(mddev_t *mdde
- 
- 			disk_stack_limits(mddev->gendisk, rdev->bdev,
- 					  rdev->data_offset << 9);
--			/* as we don't honour merge_bvec_fn, we must never risk
--			 * violating it, so limit ->max_sector to one PAGE, as
--			 * a one page request is never in violation.
-+			/* as we don't honour merge_bvec_fn, we must
-+			 * never risk violating it, so limit
-+			 * ->max_phys_segments to one lying with a single
-+			 * page, as a one page request is never in
-+			 * violation.
- 			 */
--			if (rdev->bdev->bd_disk->queue->merge_bvec_fn &&
--			    queue_max_sectors(mddev->queue) > (PAGE_SIZE>>9))
--				blk_queue_max_sectors(mddev->queue, PAGE_SIZE>>9);
-+			if (rdev->bdev->bd_disk->queue->merge_bvec_fn) {
-+				blk_queue_max_phys_segments(mddev->queue, 1);
-+				blk_queue_segment_boundary(mddev->queue,
-+							   PAGE_CACHE_SIZE - 1);
-+			}
- 
- 			p->head_position = 0;
- 			rdev->raid_disk = mirror;
-@@ -2155,12 +2159,14 @@ static int run(mddev_t *mddev)
- 		disk_stack_limits(mddev->gendisk, rdev->bdev,
- 				  rdev->data_offset << 9);
- 		/* as we don't honour merge_bvec_fn, we must never risk
--		 * violating it, so limit ->max_sector to one PAGE, as
--		 * a one page request is never in violation.
-+		 * violating it, so limit max_phys_segments to 1 lying
-+		 * within a single page.
- 		 */
--		if (rdev->bdev->bd_disk->queue->merge_bvec_fn &&
--		    queue_max_sectors(mddev->queue) > (PAGE_SIZE>>9))
--			blk_queue_max_sectors(mddev->queue, PAGE_SIZE>>9);
-+		if (rdev->bdev->bd_disk->queue->merge_bvec_fn) {
-+			blk_queue_max_phys_segments(mddev->queue, 1);
-+			blk_queue_segment_boundary(mddev->queue,
-+						   PAGE_CACHE_SIZE - 1);
-+		}
- 
- 		disk->head_position = 0;
- 	}
+@@ -709,6 +711,7 @@ static int __devinit i801_probe(struct p
+ 	case PCI_DEVICE_ID_INTEL_ICH10_4:
+ 	case PCI_DEVICE_ID_INTEL_ICH10_5:
+ 	case PCI_DEVICE_ID_INTEL_PCH_SMBUS:
++	case PCI_DEVICE_ID_INTEL_CPT_SMBUS:
+ 		i801_features |= FEATURE_I2C_BLOCK_READ;
+ 		/* fall through */
+ 	case PCI_DEVICE_ID_INTEL_82801DB_3:
 
 
