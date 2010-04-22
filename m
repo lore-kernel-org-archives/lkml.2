@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758648Ab0DVUkO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:40:14 -0400
-Received: from kroah.org ([198.145.64.141]:37414 "EHLO coco.kroah.org"
+	id S1756177Ab0DVUlI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:41:08 -0400
+Received: from kroah.org ([198.145.64.141]:37400 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756188Ab0DVT2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:01 -0400
+	id S1756173Ab0DVT17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:27:59 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:11 2010
-Message-Id: <20100422190911.293823612@kvm.kroah.org>
+Message-Id: <20100422190911.123621568@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:15 -0700
+Date: Thu, 22 Apr 2010 12:08:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jiri Kosina <jkosina@suse.cz>
-Subject: [044/197] HID: fix oops in gyration_event()
+       =?UTF-8?q?=C3=89ric=20Piel?= <eric.piel@tremplin-utc.net>,
+       Samu Onkalo <samu.p.onkalo@nokia.com>, Pavel Machek <pavel@ucw.cz>,
+       Takashi Iwai <tiwai@suse.de>
+Subject: [042/197] lis3: fix show rate for 8 bits chips
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Éric Piel <eric.piel@tremplin-utc.net>
 
-commit d8e4ebf8b603bdcd091540e6b5bddf0dec10d516 upstream.
+commit 4b5d95b3809bcd77599122494aa3f575cd6ab1b9 upstream.
 
-Fix oops caused by dereferencing field->hidinput in cases where
-the device hasn't been claimed by hid-input.
+Originally the driver was only targeted to 12bits sensors.  When support
+for 8bits sensors was added, some slight difference in the registers were
+overlooked.  This should fix it, both for initialization, and for
+displaying the rate.
 
-Reported-by: Andreas Demmer <mail@andreas-demmer.de>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Reported-by: Kalhan Trisal <kalhan.trisal@intel.com>
+Reported-by: Christoph Plattner <christoph.plattner@gmx.at>
+Tested-by: Christoph Plattner <christoph.plattner@gmx.at>
+Tested-by: Samu Onkalo <samu.p.onkalo@nokia.com>
+Signed-off-by: Éric Piel <eric.piel@tremplin-utc.net>
+Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/hid-gyration.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/hwmon/lis3lv02d.c |   24 ++++++++++++++++--------
+ drivers/hwmon/lis3lv02d.h |    1 +
+ 2 files changed, 17 insertions(+), 8 deletions(-)
 
---- a/drivers/hid/hid-gyration.c
-+++ b/drivers/hid/hid-gyration.c
-@@ -53,10 +53,13 @@ static int gyration_input_mapping(struct
- static int gyration_event(struct hid_device *hdev, struct hid_field *field,
- 		struct hid_usage *usage, __s32 value)
- {
--	struct input_dev *input = field->hidinput->input;
-+
-+	if (!(hdev->claimed & HID_CLAIMED_INPUT) || !field->hidinput)
-+		return 0;
+--- a/drivers/hwmon/lis3lv02d.c
++++ b/drivers/hwmon/lis3lv02d.c
+@@ -127,12 +127,14 @@ void lis3lv02d_poweron(struct lis3lv02d
  
- 	if ((usage->hid & HID_USAGE_PAGE) == HID_UP_GENDESK &&
- 			(usage->hid & 0xff) == 0x82) {
-+		struct input_dev *input = field->hidinput->input;
- 		input_event(input, usage->type, usage->code, 1);
- 		input_sync(input);
- 		input_event(input, usage->type, usage->code, 0);
+ 	/*
+ 	 * Common configuration
+-	 * BDU: LSB and MSB values are not updated until both have been read.
+-	 *      So the value read will always be correct.
++	 * BDU: (12 bits sensors only) LSB and MSB values are not updated until
++	 *      both have been read. So the value read will always be correct.
+ 	 */
+-	lis3->read(lis3, CTRL_REG2, &reg);
+-	reg |= CTRL2_BDU;
+-	lis3->write(lis3, CTRL_REG2, reg);
++	if (lis3->whoami == LIS_DOUBLE_ID) {
++		lis3->read(lis3, CTRL_REG2, &reg);
++		reg |= CTRL2_BDU;
++		lis3->write(lis3, CTRL_REG2, reg);
++	}
+ }
+ EXPORT_SYMBOL_GPL(lis3lv02d_poweron);
+ 
+@@ -361,7 +363,8 @@ static ssize_t lis3lv02d_calibrate_store
+ }
+ 
+ /* conversion btw sampling rate and the register values */
+-static int lis3lv02dl_df_val[4] = {40, 160, 640, 2560};
++static int lis3_12_rates[4] = {40, 160, 640, 2560};
++static int lis3_8_rates[2] = {100, 400};
+ static ssize_t lis3lv02d_rate_show(struct device *dev,
+ 			struct device_attribute *attr, char *buf)
+ {
+@@ -369,8 +372,13 @@ static ssize_t lis3lv02d_rate_show(struc
+ 	int val;
+ 
+ 	lis3_dev.read(&lis3_dev, CTRL_REG1, &ctrl);
+-	val = (ctrl & (CTRL1_DF0 | CTRL1_DF1)) >> 4;
+-	return sprintf(buf, "%d\n", lis3lv02dl_df_val[val]);
++
++	if (lis3_dev.whoami == LIS_DOUBLE_ID)
++		val = lis3_12_rates[(ctrl & (CTRL1_DF0 | CTRL1_DF1)) >> 4];
++	else
++		val = lis3_8_rates[(ctrl & CTRL1_DR) >> 7];
++
++	return sprintf(buf, "%d\n", val);
+ }
+ 
+ static DEVICE_ATTR(position, S_IRUGO, lis3lv02d_position_show, NULL);
+--- a/drivers/hwmon/lis3lv02d.h
++++ b/drivers/hwmon/lis3lv02d.h
+@@ -103,6 +103,7 @@ enum lis3lv02d_ctrl1 {
+ 	CTRL1_DF1	= 0x20,
+ 	CTRL1_PD0	= 0x40,
+ 	CTRL1_PD1	= 0x80,
++	CTRL1_DR	= 0x80, /* Data rate on 8 bits */
+ };
+ enum lis3lv02d_ctrl2 {
+ 	CTRL2_DAS	= 0x01,
 
 
