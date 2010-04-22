@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757741Ab0DVT4t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:56:49 -0400
-Received: from kroah.org ([198.145.64.141]:40803 "EHLO coco.kroah.org"
+	id S1757358Ab0DVTjx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:39:53 -0400
+Received: from kroah.org ([198.145.64.141]:41400 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756386Ab0DVT2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:31 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:14 2010
-Message-Id: <20100422190914.277347553@kvm.kroah.org>
+	id S1756799Ab0DVT3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:35 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:21 2010
+Message-Id: <20100422190921.352381029@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:48 -0700
+Date: Thu, 22 Apr 2010 12:10:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Corentin Chary <corentincj@iksaif.net>, Len Brown <len.brown@intel.com>,
-       Ben Hutchings <ben@decadent.org.uk>
-Subject: [077/197] eeepc-laptop: dmi blacklist to disable pci hotplug code
+       John Wright <john.wright@hp.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: [156/197] sched: Fix a race between ttwu() and migrate_task()
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,83 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 10ae4b5663ff3092553bfbd867e7bd474ce6c553 upstream.
+Based on commit e2912009fb7b715728311b0d8fe327a1432b3f79 upstream, but
+done differently as this issue is not present in .33 or .34 kernels due
+to rework in this area.
 
-This is a short term workaround for Eeepc 1005HA.
+If a task is in the TASK_WAITING state, then try_to_wake_up() is working
+on it, and it will place it on the correct cpu.
 
-refs: <http://bugzilla.kernel.org/show_bug.cgi?id=14570>
+This commit ensures that neither migrate_task() nor __migrate_task()
+calls set_task_cpu(p) while p is in the TASK_WAKING state.  Otherwise,
+there could be two concurrent calls to set_task_cpu(p), resulting in
+the task's cfs_rq being inconsistent with its cpu.
 
-[bwh: Backported to 2.6.32]
-
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: John Wright <john.wright@hp.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/eeepc-laptop.c |   25 ++++++++++++++++++++-----
- 1 file changed, 20 insertions(+), 5 deletions(-)
+ kernel/sched.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/platform/x86/eeepc-laptop.c
-+++ b/drivers/platform/x86/eeepc-laptop.c
-@@ -137,6 +137,7 @@ struct eeepc_hotk {
- 	u32 cm_supported;		/* the control methods supported
- 					   by this BIOS */
- 	bool cpufv_disabled;
-+	bool hotplug_disabled;
- 	uint init_flag;			/* Init flags */
- 	u16 event_count[128];		/* count for each event */
- 	struct input_dev *inputdev;
-@@ -614,6 +615,10 @@ static void eeepc_dmi_check(void)
- {
- 	const char *model;
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2116,12 +2116,10 @@ migrate_task(struct task_struct *p, int
  
-+	model = dmi_get_system_info(DMI_PRODUCT_NAME);
-+	if (!model)
-+		return;
-+
  	/*
- 	 * Blacklist for setting cpufv (cpu speed).
- 	 *
-@@ -633,17 +638,24 @@ static void eeepc_dmi_check(void)
- 	 * substring matching.  We don't want to affect the "701SD"
- 	 * and "701SDX" models, because they do support S.H.E.
+ 	 * If the task is not on a runqueue (and not running), then
+-	 * it is sufficient to simply update the task's cpu field.
++	 * the next wake-up will properly place the task.
  	 */
--
--	model = dmi_get_system_info(DMI_PRODUCT_NAME);
--	if (!model)
--		return;
--
- 	if (strcmp(model, "701") == 0 || strcmp(model, "702") == 0) {
- 		ehotk->cpufv_disabled = true;
- 		pr_info("model %s does not officially support setting cpu "
- 			"speed\n", model);
- 		pr_info("cpufv disabled to avoid instability\n");
- 	}
-+
-+	/*
-+	 * Blacklist for wlan hotplug
-+	 *
-+	 * Eeepc 1005HA doesn't work like others models and don't need the
-+	 * hotplug code. In fact, current hotplug code seems to unplug another
-+	 * device...
-+	 */
-+	if (strcmp(model, "1005HA") == 0) {
-+		ehotk->hotplug_disabled = true;
-+		pr_info("wlan hotplug disabled\n");
-+	}
- }
+-	if (!p->se.on_rq && !task_running(rq, p)) {
+-		set_task_cpu(p, dest_cpu);
++	if (!p->se.on_rq && !task_running(rq, p))
+ 		return 0;
+-	}
  
- static void cmsg_quirk(int cm, const char *name)
-@@ -1177,6 +1189,9 @@ static int eeepc_rfkill_init(struct devi
- 	if (result && result != -ENODEV)
- 		goto exit;
- 
-+	if (ehotk->hotplug_disabled)
-+		return 0;
-+
- 	result = eeepc_setup_pci_hotplug();
- 	/*
- 	 * If we get -EBUSY then something else is handling the PCI hotplug -
+ 	init_completion(&req->done);
+ 	req->task = p;
+@@ -7167,6 +7165,9 @@ static int __migrate_task(struct task_st
+ 	/* Already moved. */
+ 	if (task_cpu(p) != src_cpu)
+ 		goto done;
++	/* Waking up, don't get in the way of try_to_wake_up(). */
++	if (p->state == TASK_WAKING)
++		goto fail;
+ 	/* Affinity changed (again). */
+ 	if (!cpumask_test_cpu(dest_cpu, &p->cpus_allowed))
+ 		goto fail;
 
 
