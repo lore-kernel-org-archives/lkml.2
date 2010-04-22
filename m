@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab0DVPSU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 11:18:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1519 "EHLO mx1.redhat.com"
+	id S1755268Ab0DVPUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 11:20:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34131 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754701Ab0DVPST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 11:18:19 -0400
-Message-ID: <4BD0688A.7050806@redhat.com>
-Date: Thu, 22 Apr 2010 11:17:30 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S1755075Ab0DVPUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 11:20:39 -0400
+Date: Thu, 22 Apr 2010 17:20:23 +0200
+From: Jan Kara <jack@suse.cz>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, Jan Kara <jack@suse.cz>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       David Howells <dhowells@redhat.com>,
+       Alexander Shishkin <virtuoso@slind.org>, linux-mtd@lists.infradead.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: Do not corrupt backing device for inode
+Message-ID: <20100422152023.GD5805@quack.suse.cz>
+References: <20100415172300.GF3561@quack.suse.cz>
+ <1271863269-5423-1-git-send-email-kirill@shutemov.name>
+ <1271934535.11751.1550.camel@macbook.infradead.org>
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <andi@firstfloor.org>
-Subject: Re: [BUG] rmap: fix page_address_in_vma() to walk through anon_vma_chain
-References: <20100422054241.GB10957@spritzerA.linux.bs1.fc.nec.co.jp>
-In-Reply-To: <20100422054241.GB10957@spritzerA.linux.bs1.fc.nec.co.jp>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271934535.11751.1550.camel@macbook.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2010 01:42 AM, Naoya Horiguchi wrote:
-> I found a bug on page_address_in_vma() related to anon_vma_chain.
->
-> I wrote a patch, but according to a comment in include/linux/rmap.h,
-> I suspect this doesn't meet lock requirement of anon_vma_chain
-> (mmap_sem and page_table_lock, see below).
->
->                             mmap_sem      page_table_lock
->    mm/ksm.c:
->      write_protect_page()   hold          not hold
->      replace_page()         hold          not hold
->    mm/memory-failure.c:
->      add_to_kill()          not hold      hold
->    mm/mempolicy.c:
->      new_vma_page()         hold          not hold
->    mm/swapfile.c:
->      unuse_vma()            hold          not hold
->
-> Any comments?
+On Thu 22-04-10 12:08:55, David Woodhouse wrote:
+> On Wed, 2010-04-21 at 18:21 +0300, Kirill A. Shutemov wrote:
+> > +		/*
+> > +		 * We cannot modify file->f_mapping->backing_dev_info directly,
+> > +		 * because it will corrupt backing device for inode, since
+> > +		 * inode->i_mapping is equal to file->f_mapping. So we have to
+> > +		 * copy f_mapping first.
+> > +		 */
+> > +		file->f_mapping = kmalloc(sizeof(*file->f_mapping), GFP_KERNEL);
+> > +		memcpy(file->f_mapping, inode->i_mapping,
+> > +				sizeof(*file->f_mapping));
+> >  		file->f_mapping->backing_dev_info = mtd->backing_dev_info;
+> > +	}
+> 
+> Ick. What about the rest of file->f_mapping? That'll still be inherited.
+> 
+> Jan pointed at drivers/char/raw.c as an example, but that doesn't do
+> anything as ugly as this -- that sets file->f_mapping to point at
+> bdev->bd_inode->i_mapping instead.
+> 
+> I suspect we should do something similar -- have an inode for the MTD
+> device, with a valid i_data of its own.
+  Yes, that's what I meant by my suggestion... Sorry if I wasn't clear
+enough.
 
-Good catch.
-
-However, for anonymous pages, page_address_in_vma only
-ever determined whether the page _could_ be part of the
-VMA, never whether it actually was.
-
-The function page_address_in_vma has always given
-false positives, which means all of the callers already
-check that the page is actually part of the process.
-
-This means we may be able to get away with not verifying
-the anon_vma at all.  After all, verifying that the VMA
-has the anon_vma mapped does not mean the VMA has this
-page...
-
-Doing away with that check gets rid of your locking
-conundrum :)
-
-Opinions?
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
