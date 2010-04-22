@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab0DVTt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:49:58 -0400
-Received: from kroah.org ([198.145.64.141]:40967 "EHLO coco.kroah.org"
+	id S1757166Ab0DVTt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:49:26 -0400
+Received: from kroah.org ([198.145.64.141]:41043 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756541Ab0DVT2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:50 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:16 2010
-Message-Id: <20100422190916.405279565@kvm.kroah.org>
+	id S1756571Ab0DVT24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:56 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:17 2010
+Message-Id: <20100422190917.016196024@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:12 -0700
+Date: Thu, 22 Apr 2010 12:09:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Stephane Graber <stgraber@ubuntu.com>,
-       Stefan Bader <stefan.bader@canonical.com>,
-       Eric Anholt <eric@anholt.net>
-Subject: [101/197] drm/i915: Add no_lvds entry for the Clientron U800
+       Joerg Roedel <joerg.roedel@amd.com>,
+       Eric Biederman <ebiederm@xmission.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Vivek Goyal <vgoyal@redhat.com>,
+       Chris Wright <chrisw@sous-sol.org>
+Subject: [108/197] Revert "x86: disable IOMMUs on kernel crash"
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Bader <stefan.bader@canonical.com>
+From: Chris Wright <chrisw@sous-sol.org>
 
-commit 9875557ee8247c3f7390d378c027b45c7535a224 upstream.
+commit 8f9f55e83e939724490d7cde3833c4883c6d1310 upstream.
 
-BugLink: http://bugs.launchpad.net/ubuntu/bugs/544671
+This effectively reverts commit 61d047be99757fd9b0af900d7abce9a13a337488.
 
-This system claims to have a LVDS but has not.
+Disabling the IOMMU can potetially allow DMA transactions to
+complete without being translated.  Leave it enabled, and allow
+crash kernel to do the IOMMU reinitialization properly.
 
-Signed-off-by: Stephane Graber <stgraber@ubuntu.com>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Eric Biederman <ebiederm@xmission.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/x86/kernel/crash.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -885,6 +885,14 @@ static const struct dmi_system_id intel_
- 			DMI_MATCH(DMI_PRODUCT_VERSION, "AO00001JW"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Clientron U800",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Clientron"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "U800"),
-+		},
-+	},
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -27,7 +27,6 @@
+ #include <asm/cpu.h>
+ #include <asm/reboot.h>
+ #include <asm/virtext.h>
+-#include <asm/iommu.h>
  
- 	{ }	/* terminating entry */
- };
+ 
+ #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
+@@ -104,10 +103,5 @@ void native_machine_crash_shutdown(struc
+ #ifdef CONFIG_HPET_TIMER
+ 	hpet_disable();
+ #endif
+-
+-#ifdef CONFIG_X86_64
+-	pci_iommu_shutdown();
+-#endif
+-
+ 	crash_save_cpu(regs, safe_smp_processor_id());
+ }
 
 
