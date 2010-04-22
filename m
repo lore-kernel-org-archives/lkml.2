@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab0DVQ2M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 12:28:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35739 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab0DVQ2K (ORCPT
+	id S1754655Ab0DVQcS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 12:32:18 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59043 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754180Ab0DVQcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 12:28:10 -0400
-Subject: Re: Considerations on sched APIs under RT patch
-From: Peter Zijlstra <peterz@infradead.org>
-To: Primiano Tucci <p.tucci@gmail.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-       tglx <tglx@linutronix.de>, Bjoern Brandenburg <bbb@email.unc.edu>
-In-Reply-To: <k2gc5b2c05b1004220840z59f9417fy723a36a6fe9924dc@mail.gmail.com>
-References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
-	 <1271839772.1776.58.camel@laptop>
-	 <1271854016.10448.172.camel@gandalf.stny.rr.com>
-	 <x2mc5b2c05b1004211224s7825933dh531f2ed030610e9e@mail.gmail.com>
-	 <1271879833.1776.186.camel@laptop>
-	 <s2tc5b2c05b1004211338y814bc3b2o547a6eecdf64ca7f@mail.gmail.com>
-	 <1271883496.1776.263.camel@laptop>
-	 <1271942430.10448.196.camel@gandalf.stny.rr.com>
-	 <x2hc5b2c05b1004220650w53919f62hf3daedb822755bf4@mail.gmail.com>
-	 <1271944622.1776.349.camel@laptop>
-	 <k2gc5b2c05b1004220840z59f9417fy723a36a6fe9924dc@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Apr 2010 18:28:06 +0200
-Message-ID: <1271953686.1776.372.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 22 Apr 2010 12:32:16 -0400
+Date: Thu, 22 Apr 2010 12:32:11 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+       xfs@oss.sgi.com, Christoph Hellwig <hch@infradead.org>,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] mm: add context argument to shrinker callback
+Message-ID: <20100422163211.GA2478@infradead.org>
+References: <1271118255-21070-1-git-send-email-david@fromorbit.com> <1271118255-21070-2-git-send-email-david@fromorbit.com> <20100418001514.GA26575@infradead.org> <20100419140039.GQ5683@laptop> <20100420004149.GA14744@dastard> <20100420083840.GR5683@laptop> <20100420103216.GK15130@dastard> <20100421084004.GS5683@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100421084004.GS5683@laptop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-22 at 17:40 +0200, Primiano Tucci wrote:
+On Wed, Apr 21, 2010 at 06:40:04PM +1000, Nick Piggin wrote:
+> I'm saying that dynamic registration is no good, if we don't have a
+> way to order the shrinkers.
 
-> > Its a well studied
-> > algorithm and even available in commercial SMP operating systems
+We can happily throw in a priority field into the shrinker structure,
+but at this stage in the release process I'd rather have an as simple
+as possible fix for the regression.  And just adding the context pointer
+which is a no-op for all existing shrinkers fits that scheme very well.
+
+If it makes you happier I can queue up a patch to add the priorities
+for 2.6.35.  I think figuring out any meaningful priorities will be
+much harder than that, though.
+
+> > If a change of interface means that we end up with shorter call
+> > chains, less global state, more flexibilty, better batching and IO
+> > patterns, less duplication of code and algorithms and it doesn't
+> > cause any regressions, then where's the problem?
 > 
-> Can you cite me a commercial SMP system that supports
-> multicore/multiprocessor G-EDF?
+> Yep that would all be great but I don't see how the interface change
+> enables any of that at all. It seems to me that the advantage goes
+> the other way because it doesn't put as much crap into your mount
+> structure and you end up with an useful traversable list of mounts as
+> a side-effect.
 
-From: http://www.cs.unc.edu/~anderson/papers/rtlws09.pdf
-
-"Regarding the frequently voiced objections to G-
-EDF’s viability in a “real” system, it should be noted that
-xnu, the kernel underlying Apple’s multimedia-friendly
-OS X, has been relying on G-EDF to support real-time
-applications on multiprocessors for several years [5]."
-
-"[5] Apple Inc. xnu source code.
-http://opensource.apple.com/source/xnu/."
-
-
-> > Implementing this as userspace/middleware seems daft. But if your
-> > controlling process has a global affinity mask and runs as the highest
-> > available userspace process priority its still all valid.
-> 
-> It is how it is implemented now, and how it works under VXWorks!
-
-But that does not, and can not, provide proper isolation and bandwidth
-guarantees since there could be runnable tasks outside the scope of the
-middleware.
+There really is not need for that.  The Linux VFS is designed to have
+superblocks independent, which actually is a good thing as global
+state gets in the way of scalability or just clean code.  Note that
+a mounts list would be even worse as filesystems basically are not
+concerned with mount points themselves.
 
