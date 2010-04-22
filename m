@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab0DVHGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 03:06:24 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50883 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751561Ab0DVHGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 03:06:22 -0400
-Date: Thu, 22 Apr 2010 09:06:10 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Neil Brown <neilb@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-raid@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: tip: origin tree build failure (x86, 32-bit, allyesconfig)
-Message-ID: <20100422070610.GA18884@elte.hu>
-References: <19350.53522.385933.467438@notabene.brown>
+	id S1752989Ab0DVHHO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 03:07:14 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35061 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab0DVHHL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 03:07:11 -0400
+Date: Thu, 22 Apr 2010 15:06:25 +0800
+From: Yong Zhang <yong.zhang@windriver.com>
+To: Darren Hart <dvhltc@us.ibm.com>
+Cc: "lkml, " <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: Lockdep usage
+Message-ID: <20100422070625.GA17515@windriver.com>
+Reply-To: Yong Zhang <yong.zhang@windriver.com>
+References: <4BCFEBFF.4090505@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <19350.53522.385933.467438@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4BCFEBFF.4090505@us.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 22 Apr 2010 07:06:27.0925 (UTC) FILETIME=[53DFC050:01CAE1EA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Neil Brown <neilb@suse.de> wrote:
-
-> are available in the git repository at:
+On Wed, Apr 21, 2010 at 11:26:07PM -0700, Darren Hart wrote:
+> I'm having some trouble with lockstat. I've enabled
+> CONFIG_LOCK_STATS and then run the following commands to collect the
+> lock statistics for the futex_lock test case. I expect this test
+> case to generate a fair amount of contention on the futex hash
+> bucket locks, but they don't show up in the stats (in fact, nothing
+> shows up in the stats). I have seen much longer lock_stat files when
+> I forgot to clear them before the test, but no hb locks showed up
+> there either.
 > 
->   git://neil.brown.name/md/ for-linus
+> Is my usage below incorrect? Do I have to somehow annotate the
+> hb->lock in order for lockstat to track it?
 
-( Note, i'm re-using this old MD pull request thread to report a bug in a pull 
-  request you sent to Linus in the past two days. I havent found the pull 
-  request nor the patch on lkml. )
+IMHO, you don't need to do that.
 
-All 32-bit x86 builds (x86, allyesconfig) that enable RAID are failing with 
-this build failure:
+> lock.lockstat; echo 0 > /proc/sys/kernel/lock_stat
+> futex_lock: Measure FUTEX_LOCK operations per second
+>         Arguments: iterations=10000000 threads=256 adaptive=no
+>                    period=1000 duty-cycle=20%
+> Result: 731 Kiter/s
+> 
+> # cat lock.lockstat
+> lock_stat version 0.3
+> *WARNING* lock debugging disabled!! - possibly due to a lockdep warning
 
- drivers/built-in.o: In function `raid5_compute_sector':
- raid5.c:(.text+0x2e42ac): undefined reference to `__umoddi3'
- raid5.c:(.text+0x2e42d8): undefined reference to `__umoddi3'
- raid5.c:(.text+0x2e42ff): undefined reference to `__umoddi3'
- raid5.c:(.text+0x2e4327): undefined reference to `__umoddi3'
- raid5.c:(.text+0x2e4385): undefined reference to `__umoddi3'
- drivers/built-in.o:raid5.c:(.text+0x2e43bc): more undefined references to `__umoddi3' follow
-
-Caused by this commit:
-
-  35f2a59: md/raid5: allow for more than 2^31 chunks.
-
-I've reverted the commit from -tip for now.
+This means lockdep has detect there is something wrong.
+Can you show your 'dmesg'?
 
 Thanks,
+Yong
 
-	Ingo
+> -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+>                               class name    con-bounces
+> contentions   waittime-min   waittime-max waittime-total
+> acq-bounces acquisitions   holdtime-min   holdtime-max
+> holdtime-total
+> -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+> 
+> #
+> 
+> Thanks,
+> 
+> -- 
+> Darren Hart
+> IBM Linux Technology Center
+> Real-Time Linux Team
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
