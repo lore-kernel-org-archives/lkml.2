@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab0DVENn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 00:13:43 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52039 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab0DVENm (ORCPT
+	id S1751510Ab0DVEXG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 00:23:06 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:35934 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab0DVEXC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 00:13:42 -0400
-Date: Thu, 22 Apr 2010 06:13:38 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Joe Perches <joe@perches.com>
-Cc: Gustavo Silva <silvagustavosilva@gmail.com>, gregkh@suse.de,
-       abbotti@mev.co.uk, devel@driverdev.osuosl.org,
-       fmhess@users.sourceforge.net, linux-kernel@vger.kernel.org,
-       silvagustavo@users.sourceforge.net
-Subject: Re: [PATCH] Staging: Comedi: Drivers: Fix coding style issues in
-	dt2801.c
-Message-ID: <20100422041338.GE24384@pengutronix.de>
-References: <1271907971-8793-1-git-send-email-silvagustavo@users.sourceforge.net> <1271908811.1730.613.camel@Joe-Laptop.home>
+	Thu, 22 Apr 2010 00:23:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=esq6exSGyrohmPfsNkSBOj5xcSEM0gpvY/+YS3rT2ZB5YVpIA4/9yYemSOkWNvvhOg
+         wHATpXZbx3fFzZ+0BKDF8GEf04kmkD797N2SejyEcThupYVpS38n0n/gs7nBDA1sGFYh
+         l560jluZqcQzG93D4iE4Tnkspcxz2SoA5Wc+I=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XuV1QlJbYrcVoo+x"
-Content-Disposition: inline
 In-Reply-To: <1271908811.1730.613.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+References: <1271907971-8793-1-git-send-email-silvagustavo@users.sourceforge.net>
+	 <1271908811.1730.613.camel@Joe-Laptop.home>
+Date: Wed, 21 Apr 2010 23:23:01 -0500
+Message-ID: <o2x7470ede81004212123qe02e9870i534829a224c05585@mail.gmail.com>
+Subject: Re: [PATCH] Staging: Comedi: Drivers: Fix coding style issues in 
+	dt2801.c
+From: Gustavo Silva <silvagustavosilva@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---XuV1QlJbYrcVoo+x
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Apr 21, 2010 at 09:00:11PM -0700, Joe Perches wrote:
-
-> > @@ -374,8 +362,8 @@ static int dt2801_writecmd(struct comedi_device *de=
-v, int command)
-> > =20
-> >  	stat =3D inb_p(dev->iobase + DT2801_STATUS);
-> >  	if (stat & DT_S_COMPOSITE_ERROR) {
-> > -		printk
-> > -		    ("dt2801: composite-error in dt2801_writecmd(), ignoring\n");
-> > +		printk(KERN_INFO "dt2801: composite-error in dt2801_writecmd()"
-> > +								", ignoring\n");
->=20
+2010/4/21 Joe Perches <joe@perches.com>
+>
+> On Wed, 2010-04-21 at 22:46 -0500, Gustavo Silva wrote:
+> >  drivers/staging/comedi/drivers/dt2801.c |  100 ++++++++++++++-----------------
+> >  1 files changed, 44 insertions(+), 56 deletions(-)
+>
+> Hi Gustavo.  A couple of trivial comments.
+>
+> > diff --git a/drivers/staging/comedi/drivers/dt2801.c b/drivers/staging/comedi/drivers/dt2801.c
+> > index 3f365ae..c4408d8 100644
+> > --- a/drivers/staging/comedi/drivers/dt2801.c
+> > +++ b/drivers/staging/comedi/drivers/dt2801.c
+> > @@ -102,58 +102,46 @@ COMEDI_INITCLEANUP(driver_dt2801);
+> >
+> >  #if 0
+>
+> You could just as well remove the #if 0 blocks
+>
+> > @@ -374,8 +362,8 @@ static int dt2801_writecmd(struct comedi_device *dev, int command)
+> >
+> >       stat = inb_p(dev->iobase + DT2801_STATUS);
+> >       if (stat & DT_S_COMPOSITE_ERROR) {
+> > -             printk
+> > -                 ("dt2801: composite-error in dt2801_writecmd(), ignoring\n");
+> > +             printk(KERN_INFO "dt2801: composite-error in dt2801_writecmd()"
+> > +                                                             ", ignoring\n");
+>
 > It's good to preface with KERN_, but better might be to use
-> 	#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>        #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 > and strip the "dt2801: " intro and use
-> 	pr_<level>("%s(): composite-error, ignoring\n", __func__)
->=20
+>        pr_<level>("%s(): composite-error, ignoring\n", __func__)
+>
 > It's a bit shorter, always gets the appropriate prefix, and
 > would emit the proper function name if ever refactored.
+>
+> cheers, Joe
+>
 
-What about dev_* in case there are more than one of those devices?
-Also, KERN_INFO doesn't look right, KERN_WARN?
+Hi Joe!
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Thank you very much for your comments.
 
---XuV1QlJbYrcVoo+x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+I will put in practice what you suggest.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
+No comment is trivial when it comes to help. :-]
 
-iEYEARECAAYFAkvPzPIACgkQD27XaX1/VRsE6QCgtItaJeEb6ct/PgTMIbmHmod/
-g1sAoJIjo6ZcKD3/UG06JN6AZAFjRz/5
-=RRnX
------END PGP SIGNATURE-----
-
---XuV1QlJbYrcVoo+x--
+Cheers from Mexico!
+Gustavo Silva.
