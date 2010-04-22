@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933Ab0DVT7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:59:52 -0400
-Received: from kroah.org ([198.145.64.141]:59418 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757895Ab0DVT7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:59:43 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:06 2010
-Message-Id: <20100422195406.090651965@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:10 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeff Mahoney <jeffm@suse.com>,
-       Thomas Siedentopf <thomas.siedentopf@novell.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [013/139] reiserfs: Fix locking BUG during mount failure
-In-Reply-To: <20100422195715.GA25490@kroah.com>
+	id S932282Ab0DVUJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:09:28 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:52595 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932264Ab0DVUJA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:09:00 -0400
+Subject: Re: [PATCH 4/5] freezer cgroup: Fix an RCU warning in
+ cgroup_freezing_or_frozen()
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+       "containers@lists.osdl.org" <containers@lists.osdl.org>,
+       Paul Menage <menage@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Matt Helsley <matthltc@us.ibm.com>, Cedric Le Goater <clg@vnet.ibm.com>
+In-Reply-To: <20100422195911.GN2524@linux.vnet.ibm.com>
+References: <4BD016F4.8060108@cn.fujitsu.com>
+	 <4BD01768.2020606@cn.fujitsu.com> <1271939275.1776.345.camel@laptop>
+	 <20100422195911.GN2524@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Apr 2010 22:08:55 +0200
+Message-ID: <1271966935.1646.4.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+On Thu, 2010-04-22 at 12:59 -0700, Paul E. McKenney wrote:
+> On Thu, Apr 22, 2010 at 02:27:55PM +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-04-22 at 17:31 +0800, Li Zefan wrote:
+> > > with CONFIG_PROVE_RCU, a warning can be triggered when we
+> > > resume from suspend:
+> > > 
+> > > ...
+> > > include/linux/cgroup.h:533 invoked rcu_dereference_check() without protection!
+> > > ...
+> > > 
+> > > task_freezer() calls task_subsys_state(), which needs to be
+> > > protected by rcu_read_lock or cgroup_mutex.
+> > > 
+> > > Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> > > ---
+> > >  kernel/cgroup_freezer.c |    2 ++
+> > >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+> > > index 5038f4c..ac76983 100644
+> > > --- a/kernel/cgroup_freezer.c
+> > > +++ b/kernel/cgroup_freezer.c
+> > > @@ -53,6 +53,7 @@ int cgroup_freezing_or_frozen(struct task_struct *task)
+> > >  	struct freezer *freezer;
+> > >  	enum freezer_state state;
+> > >  
+> > > +	rcu_read_lock();
+> > >  	task_lock(task);
+> > >  	freezer = task_freezer(task);
+> > >  	if (!freezer->css.cgroup->parent)
+> > > @@ -60,6 +61,7 @@ int cgroup_freezing_or_frozen(struct task_struct *task)
+> > >  	else
+> > >  		state = freezer->state;
+> > >  	task_unlock(task);
+> > > +	rcu_read_unlock();
+> > >  
+> > >  	return (state == CGROUP_FREEZING) || (state == CGROUP_FROZEN);
+> > >  }
+> > 
+> > Hmm cgroup_attach_task() does hold task_lock() over setting
+> > tsk->cgroups, so doesn't that also pin the task to the cgroup and thus
+> > the cgroup itself?
+> 
+> So you are advocating for the rcu_dereference check including the
+> task lock, correct?
 
-------------------
-
-From: Jeff Mahoney <jeffm@jeffreymahoney.com>
-
-commit b7b7fa43103a9fb30dbcc60cbd5161fdfc25f904 upstream.
-
-Commit 8ebc423238341b52912c7295b045a32477b33f09 (reiserfs: kill-the-BKL)
-introduced a bug in the mount failure case.
-
-The error label releases the lock before calling journal_release_error,
-but it requires that the lock be held. do_journal_release unlocks and
-retakes it. When it releases it without it held, we trigger a BUG().
-
-The error_alloc label skips the unlock since the lock isn't held yet
-but none of the other conditions that are clean up exist yet either.
-
-This patch returns immediately after the kzalloc failure and moves
-the reiserfs_write_unlock after the journal_release_error call.
-
-This was reported in https://bugzilla.novell.com/show_bug.cgi?id=591807
-
-Reported-by:  Thomas Siedentopf <thomas.siedentopf@novell.com>
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Cc: Thomas Siedentopf <thomas.siedentopf@novell.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/reiserfs/super.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
-
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -1619,10 +1619,8 @@ static int reiserfs_fill_super(struct su
- 	save_mount_options(s, data);
- 
- 	sbi = kzalloc(sizeof(struct reiserfs_sb_info), GFP_KERNEL);
--	if (!sbi) {
--		errval = -ENOMEM;
--		goto error_alloc;
--	}
-+	if (!sbi)
-+		return -ENOMEM;
- 	s->s_fs_info = sbi;
- 	/* Set default values for options: non-aggressive tails, RO on errors */
- 	REISERFS_SB(s)->s_mount_opt |= (1 << REISERFS_SMALLTAIL);
-@@ -1879,12 +1877,12 @@ static int reiserfs_fill_super(struct su
- 	return (0);
- 
- error:
--	reiserfs_write_unlock(s);
--error_alloc:
- 	if (jinit_done) {	/* kill the commit thread, free journal ram */
- 		journal_release_error(NULL, s);
- 	}
- 
-+	reiserfs_write_unlock(s);
-+
- 	reiserfs_free_bitmap_cache(s);
- 	if (SB_BUFFER_WITH_SB(s))
- 		brelse(SB_BUFFER_WITH_SB(s));
-
+I think that might be correct yes, although I would prefer confirmation
+from someone who actually knows kernel/cgroup.c ;-)
 
