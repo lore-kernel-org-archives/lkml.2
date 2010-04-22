@@ -1,185 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757696Ab0DVT7C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:59:02 -0400
-Received: from kroah.org ([198.145.64.141]:40711 "EHLO coco.kroah.org"
+	id S1758013Ab0DVUAe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:00:34 -0400
+Received: from kroah.org ([198.145.64.141]:59659 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756291Ab0DVT2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:19 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:13 2010
-Message-Id: <20100422190913.288255858@kvm.kroah.org>
+	id S1757986Ab0DVUAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:00:19 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:10 2010
+Message-Id: <20100422195410.190671452@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:37 -0700
+Date: Thu, 22 Apr 2010 12:53:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-       Matthew Garrett <mjg@redhat.com>,
-       Richard Purdie <rpurdie@linux.intel.com>,
-       Len Brown <len.brown@intel.com>
-Subject: [066/197] thinkpad-acpi: issue backlight class events
-In-Reply-To: <20100422191857.GA13268@kroah.com>
+       Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [053/139] x86: Handle overlapping mptables
+In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+From: Andi Kleen <andi@firstfloor.org>
 
-commit 347a26860e2293b1347996876d3550499c7bb31f upstream.
+commit 909fc87b32b3b9e3f0b87dcc5d98319c41900c58 upstream.
 
-Take advantage of the new events capabilities of the backlight class to
-notify userspace of backlight changes.
+We found a system where the MP table MPC and MPF structures overlap.
 
-This depends on "backlight: Allow drivers to update the core, and
-generate events on changes", by Matthew Garrett.
+That doesn't really matter because the mptable is not used anyways with ACPI,
+but it leads to a panic in the early allocator due to the overlapping
+reservations in 2.6.33.
 
-Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Richard Purdie <rpurdie@linux.intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Earlier kernels handled this without problems.
+
+Simply change these reservations to reserve_early_overlap_ok to avoid
+the panic.
+
+Reported-by: Thomas Renninger <trenn@suse.de>
+Tested-by: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+LKML-Reference: <20100329074111.GA22821@basil.fritz.box>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/laptops/thinkpad-acpi.txt |   51 +++++++-------------------------
- drivers/platform/x86/thinkpad_acpi.c    |   24 ++++++++++++++-
- 2 files changed, 35 insertions(+), 40 deletions(-)
+ arch/x86/kernel/mpparse.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/Documentation/laptops/thinkpad-acpi.txt
-+++ b/Documentation/laptops/thinkpad-acpi.txt
-@@ -460,6 +460,8 @@ event	code	Key		Notes
- 				For Lenovo ThinkPads with a new
- 				BIOS, it has to be handled either
- 				by the ACPI OSI, or by userspace.
-+				The driver does the right thing,
-+				never mess with this.
- 0x1011	0x10	FN+END		Brightness down.  See brightness
- 				up for details.
- 
-@@ -582,46 +584,15 @@ with hotkey_report_mode.
- 
- Brightness hotkey notes:
- 
--These are the current sane choices for brightness key mapping in
--thinkpad-acpi:
-+Don't mess with the brightness hotkeys in a Thinkpad.  If you want
-+notifications for OSD, use the sysfs backlight class event support.
- 
--For IBM and Lenovo models *without* ACPI backlight control (the ones on
--which thinkpad-acpi will autoload its backlight interface by default,
--and on which ACPI video does not export a backlight interface):
--
--1. Don't enable or map the brightness hotkeys in thinkpad-acpi, as
--   these older firmware versions unfortunately won't respect the hotkey
--   mask for brightness keys anyway, and always reacts to them.  This
--   usually work fine, unless X.org drivers are doing something to block
--   the BIOS.  In that case, use (3) below.  This is the default mode of
--   operation.
--
--2. Enable the hotkeys, but map them to something else that is NOT
--   KEY_BRIGHTNESS_UP/DOWN or any other keycode that would cause
--   userspace to try to change the backlight level, and use that as an
--   on-screen-display hint.
--
--3. IF AND ONLY IF X.org drivers find a way to block the firmware from
--   automatically changing the brightness, enable the hotkeys and map
--   them to KEY_BRIGHTNESS_UP and KEY_BRIGHTNESS_DOWN, and feed that to
--   something that calls xbacklight.  thinkpad-acpi will not be able to
--   change brightness in that case either, so you should disable its
--   backlight interface.
--
--For Lenovo models *with* ACPI backlight control:
--
--1. Load up ACPI video and use that.  ACPI video will report ACPI
--   events for brightness change keys.  Do not mess with thinkpad-acpi
--   defaults in this case.  thinkpad-acpi should not have anything to do
--   with backlight events in a scenario where ACPI video is loaded:
--   brightness hotkeys must be disabled, and the backlight interface is
--   to be kept disabled as well.  This is the default mode of operation.
--
--2. Do *NOT* load up ACPI video, enable the hotkeys in thinkpad-acpi,
--   and map them to KEY_BRIGHTNESS_UP and KEY_BRIGHTNESS_DOWN.  Process
--   these keys on userspace somehow (e.g. by calling xbacklight).
--   The driver will do this automatically if it detects that ACPI video
--   has been disabled.
-+The driver will issue KEY_BRIGHTNESS_UP and KEY_BRIGHTNESS_DOWN events
-+automatically for the cases were userspace has to do something to
-+implement brightness changes.  When you override these events, you will
-+either fail to handle properly the ThinkPads that require explicit
-+action to change backlight brightness, or the ThinkPads that require
-+that no action be taken to work properly.
- 
- 
- Bluetooth
-@@ -1465,3 +1436,5 @@ Sysfs interface changelog:
- 		and it is always able to disable hot keys.  Very old
- 		thinkpads are properly supported.  hotkey_bios_mask
- 		is deprecated and marked for removal.
-+
-+0x020600:	Marker for backlight change event support.
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -22,7 +22,7 @@
-  */
- 
- #define TPACPI_VERSION "0.23"
--#define TPACPI_SYSFS_VERSION 0x020500
-+#define TPACPI_SYSFS_VERSION 0x020600
- 
- /*
-  *  Changelog:
-@@ -6083,6 +6083,12 @@ static int brightness_get(struct backlig
- 	return status & TP_EC_BACKLIGHT_LVLMSK;
- }
- 
-+static void tpacpi_brightness_notify_change(void)
-+{
-+	backlight_force_update(ibm_backlight_device,
-+			       BACKLIGHT_UPDATE_HOTKEY);
-+}
-+
- static struct backlight_ops ibm_backlight_data = {
- 	.get_brightness = brightness_get,
- 	.update_status  = brightness_update_status,
-@@ -6237,6 +6243,12 @@ static int __init brightness_init(struct
- 	ibm_backlight_device->props.brightness = b & TP_EC_BACKLIGHT_LVLMSK;
- 	backlight_update_status(ibm_backlight_device);
- 
-+	vdbg_printk(TPACPI_DBG_INIT | TPACPI_DBG_BRGHT,
-+			"brightness: registering brightness hotkeys "
-+			"as change notification\n");
-+	tpacpi_hotkey_driver_mask_set(hotkey_driver_mask
-+				| TP_ACPI_HKEY_BRGHTUP_MASK
-+				| TP_ACPI_HKEY_BRGHTDWN_MASK);;
- 	return 0;
- }
- 
-@@ -6313,6 +6325,9 @@ static int brightness_write(char *buf)
- 	 * Doing it this way makes the syscall restartable in case of EINTR
- 	 */
- 	rc = brightness_set(level);
-+	if (!rc && ibm_backlight_device)
-+		backlight_force_update(ibm_backlight_device,
-+					BACKLIGHT_UPDATE_SYSFS);
- 	return (rc == -EINTR)? -ERESTARTSYS : rc;
- }
- 
-@@ -7712,6 +7727,13 @@ static struct ibm_struct fan_driver_data
-  */
- static void tpacpi_driver_event(const unsigned int hkey_event)
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -664,7 +664,7 @@ static void __init smp_reserve_memory(st
  {
-+	if (ibm_backlight_device) {
-+		switch (hkey_event) {
-+		case TP_HKEY_EV_BRGHT_UP:
-+		case TP_HKEY_EV_BRGHT_DOWN:
-+			tpacpi_brightness_notify_change();
-+		}
-+	}
+ 	unsigned long size = get_mpc_size(mpf->physptr);
+ 
+-	reserve_early(mpf->physptr, mpf->physptr+size, "MP-table mpc");
++	reserve_early_overlap_ok(mpf->physptr, mpf->physptr+size, "MP-table mpc");
  }
  
+ static int __init smp_scan_config(unsigned long base, unsigned long length)
+@@ -693,7 +693,7 @@ static int __init smp_scan_config(unsign
+ 			       mpf, (u64)virt_to_phys(mpf));
+ 
+ 			mem = virt_to_phys(mpf);
+-			reserve_early(mem, mem + sizeof(*mpf), "MP-table mpf");
++			reserve_early_overlap_ok(mem, mem + sizeof(*mpf), "MP-table mpf");
+ 			if (mpf->physptr)
+ 				smp_reserve_memory(mpf);
  
 
 
