@@ -1,104 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab0DVRgH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 13:36:07 -0400
-Received: from fg-out-1718.google.com ([72.14.220.152]:29874 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693Ab0DVRgE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 13:36:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=E8c53oK9QuYEmFn2oFsg5NsBgX5XGANmArj/XkbxNVt7YKj+RP6tT2BLsKpHE4/0o+
-         l7z5RwsKtmqvQAkSNE0Ta7Q3SAdN5lQWOn1XsFJC0Pc66ZM8SfJPn52XBRuDptiptsfD
-         632NhXePMAyYRz4iGnpv1ZkBLWuQN3lxFv2DU=
-Date: Thu, 22 Apr 2010 19:31:55 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>, arjan@linux.intel.com,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/4] perf: core, add group scheduling
-	transactional APIs
-Message-ID: <20100422173152.GA5600@nowhere>
-References: <1271922662.30535.107.camel@minggr.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271922662.30535.107.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755111Ab0DVRok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 13:44:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754829Ab0DVRoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 13:44:38 -0400
+From: Glauber Costa <glommer@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com
+Subject: [PATCH] Enable pvclock flags in vcpu_time_info structure
+Date: Thu, 22 Apr 2010 13:41:24 -0400
+Message-Id: <1271958084-5876-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 03:51:02PM +0800, Lin Ming wrote:
-> Add group scheduling transactional APIs to struct pmu.
-> These APIs will be implemented in arch code, based on Peter's idea as
-> below.
-> 
-> > the idea behind hw_perf_group_sched_in() is to not perform
-> > schedulability tests on each event in the group, but to add the group
-> as
-> > a whole and then perform one test.
-> >
-> > Of course, when that test fails, you'll have to roll-back the whole
-> > group again.
-> >
-> > So start_txn (or a better name) would simply toggle a flag in the pmu
-> > implementation that will make pmu::enable() not perform the
-> > schedulablilty test.
-> >
-> > Then commit_txn() will perform the schedulability test (so note the
-> > method has to have a !void return value, my mistake in the earlier
-> > email).
-> >
-> > This will allow us to use the regular
-> > kernel/perf_event.c::group_sched_in() and all the rollback code.
-> > Currently each hw_perf_group_sched_in() implementation duplicates all
-> > the rolllback code (with various bugs).
-> 
-> 
-> Reviewed-by: Stephane Eranian <eranian@google.com>
-> Reviewed-by: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
->  include/linux/perf_event.h |    8 +++++---
->  kernel/perf_event.c        |   29 ++++++++++++++++-------------
->  2 files changed, 21 insertions(+), 16 deletions(-)
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index ace31fb..b16cfba 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -532,6 +532,8 @@ struct hw_perf_event {
->  
->  struct perf_event;
->  
-> +#define PERF_EVENT_TRAN_STARTED 1
-> +
->  /**
->   * struct pmu - generic performance monitoring unit
->   */
-> @@ -542,6 +544,9 @@ struct pmu {
->  	void (*stop)			(struct perf_event *event);
->  	void (*read)			(struct perf_event *event);
->  	void (*unthrottle)		(struct perf_event *event);
-> +	void (*start_txn)		(const struct pmu *pmu);
-> +	void (*stop_txn)		(const struct pmu *pmu);
-> +	int (*commit_txn)		(const struct pmu *pmu);
+This patch removes one padding byte and transform it into a flags
+field. New versions of guests using pvclock will query these flags
+upon each read.
 
+Flags, however, will only be interpreted when the guest decides to.
+It uses the pvclock_valid_flags function to signal that a specific
+set of flags should be taken into consideration. Which flags are valid
+are usually devised via HV negotiation.
 
-Please add a few comments that briefly explain what these
-*_txn callbacks are supposed to mean.
+Signed-off-by: Glauber Costa <glommer@redhat.com>
+---
+ arch/x86/include/asm/pvclock-abi.h |    3 ++-
+ arch/x86/include/asm/pvclock.h     |    1 +
+ arch/x86/kernel/pvclock.c          |    9 +++++++++
+ 3 files changed, 12 insertions(+), 1 deletions(-)
 
-Unless txn is an acronym that most kernel developers are used to.
-
-Thanks.
+diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
+index 6d93508..ec5c41a 100644
+--- a/arch/x86/include/asm/pvclock-abi.h
++++ b/arch/x86/include/asm/pvclock-abi.h
+@@ -29,7 +29,8 @@ struct pvclock_vcpu_time_info {
+ 	u64   system_time;
+ 	u32   tsc_to_system_mul;
+ 	s8    tsc_shift;
+-	u8    pad[3];
++	u8    flags;
++	u8    pad[2];
+ } __attribute__((__packed__)); /* 32 bytes */
+ 
+ struct pvclock_wall_clock {
+diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
+index 53235fd..c50823f 100644
+--- a/arch/x86/include/asm/pvclock.h
++++ b/arch/x86/include/asm/pvclock.h
+@@ -6,6 +6,7 @@
+ 
+ /* some helper functions for xen and kvm pv clock sources */
+ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src);
++void pvclock_valid_flags(u8 flags);
+ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src);
+ void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
+ 			    struct pvclock_vcpu_time_info *vcpu,
+diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
+index 03801f2..8f4af7b 100644
+--- a/arch/x86/kernel/pvclock.c
++++ b/arch/x86/kernel/pvclock.c
+@@ -31,8 +31,16 @@ struct pvclock_shadow_time {
+ 	u32 tsc_to_nsec_mul;
+ 	int tsc_shift;
+ 	u32 version;
++	u8  flags;
+ };
+ 
++static u8 valid_flags = 0;
++
++void pvclock_valid_flags(u8 flags)
++{
++	valid_flags = flags;
++}
++
+ /*
+  * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
+  * yielding a 64-bit result.
+@@ -91,6 +99,7 @@ static unsigned pvclock_get_time_values(struct pvclock_shadow_time *dst,
+ 		dst->system_timestamp  = src->system_time;
+ 		dst->tsc_to_nsec_mul   = src->tsc_to_system_mul;
+ 		dst->tsc_shift         = src->tsc_shift;
++		dst->flags             = src->flags;
+ 		rmb();		/* test version after fetching data */
+ 	} while ((src->version & 1) || (dst->version != src->version));
+ 
+-- 
+1.6.2.2
 
