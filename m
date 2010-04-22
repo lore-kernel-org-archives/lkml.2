@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab0DVNSf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 09:18:35 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56657 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754478Ab0DVNSe convert rfc822-to-8bit (ORCPT
+	id S1754699Ab0DVNUe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 09:20:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:55995 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754602Ab0DVNUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 09:18:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=saFgU4o5oqdeTlI5NCmMX/mU/TVzPP7eeBiZEt1AEKu6bGMxbXGWWGc0Loq8/4dXgk
-         Mrtc/XMulLT22h86iACdoP6Op4Mr5q95mC5l0o74a1OfMdhpEhQUsIdErg9ujxsPNDRQ
-         8zeSQc2paFeTpxOxQ8VKq0qMQmxBzpXPu0Sk8=
-MIME-Version: 1.0
-In-Reply-To: <1271934490.1776.343.camel@laptop>
-References: <1271200751-18697-1-git-send-email-chase.douglas@canonical.com>
-	 <1271934490.1776.343.camel@laptop>
-Date: Thu, 22 Apr 2010 09:18:32 -0400
-X-Google-Sender-Auth: f37f9e7b6c89e8c1
-Message-ID: <x2j40ec3ea41004220618sd05bca74pea1180862e7b0907@mail.gmail.com>
-Subject: Re: [REGRESSION 2.6.30][PATCH v3] sched: update load count only once 
-	per cpu in 10 tick update window
-From: Chase Douglas <chase.douglas@canonical.com>
+	Thu, 22 Apr 2010 09:20:33 -0400
+X-Authority-Analysis: v=1.1 cv=ZUag8tkj9kgmNMrzofuoEsXxpG43g9sRv4eUZcQ4+as= c=1 sm=0 a=eOOYVsMsLpwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=T1qvVmCMXHU_hkTaPgUA:9 a=RWnJd-SjZLEOXN8BOBGL-6yI-zIA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: Considerations on sched APIs under RT patch
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       kernel-team <kernel-team@lists.ubuntu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Cc: Primiano Tucci <p.tucci@gmail.com>, linux-kernel@vger.kernel.org,
+       tglx <tglx@linutronix.de>
+In-Reply-To: <1271883496.1776.263.camel@laptop>
+References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
+	 <1271755208.1676.422.camel@laptop>
+	 <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
+	 <1271804453.10448.168.camel@gandalf.stny.rr.com>
+	 <t2nc5b2c05b1004202216pd159c9b4mbfc1dc7658fc20e7@mail.gmail.com>
+	 <1271839772.1776.58.camel@laptop>
+	 <1271854016.10448.172.camel@gandalf.stny.rr.com>
+	 <x2mc5b2c05b1004211224s7825933dh531f2ed030610e9e@mail.gmail.com>
+	 <1271879833.1776.186.camel@laptop>
+	 <s2tc5b2c05b1004211338y814bc3b2o547a6eecdf64ca7f@mail.gmail.com>
+	 <1271883496.1776.263.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 22 Apr 2010 09:20:30 -0400
+Message-ID: <1271942430.10448.196.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 7:08 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2010-04-13 at 16:19 -0700, Chase Douglas wrote:
->>
->> There's a period of 10 ticks where calc_load_tasks is updated by all the
->> cpus for the load avg. Usually all the cpus do this during the first
->> tick. If any cpus go idle, calc_load_tasks is decremented accordingly.
->> However, if they wake up calc_load_tasks is not incremented. Thus, if
->> cpus go idle during the 10 tick period, calc_load_tasks may be
->> decremented to a non-representative value. This issue can lead to
->> systems having a load avg of exactly 0, even though the real load avg
->> could theoretically be up to NR_CPUS.
->>
->> This change defers calc_load_tasks accounting after each cpu updates the
->> count until after the 10 tick update window.
->>
->> A few points:
->>
->> * A global atomic deferral counter, and not per-cpu vars, is needed
->>   because a cpu may go NOHZ idle and not be able to update the global
->>   calc_load_tasks variable for subsequent load calculations.
->> * It is not enough to add calls to account for the load when a cpu is
->>   awakened:
->>   - Load avg calculation must be independent of cpu load.
->>   - If a cpu is awakend by one tasks, but then has more scheduled before
->>     the end of the update window, only the first task will be accounted.
->>
->
-> Ok, so delaying the whole ILB angle for now, the below is a similar
-> approach to yours but with a more explicit code flow.
->
-> Does that work for you?
+On Wed, 2010-04-21 at 22:58 +0200, Peter Zijlstra wrote:
 
-This looks good. I'll run my test case to make sure it fixes the
-scenario we hit, and then I'll ack it when I've confirmed it works.
+> > P.S. It actually does not happen in other RTOSes, e.g., VxWorks SMP
+> 
+> I don't know any of those, but its impossible to migrate tasks from one
+> cpu to another without creating cross-cpu dependencies.
+> 
+> Whether locks are preemptible or not doesn't make them any less
+> analyzable, if you use system-calls in your RT program, their
+> implementation needs to be considered
 
-Thanks
+It's been a while since I've used SMP VxWorks, but back then what it did
+was to copy an image for ever CPU separately. It was not really SMP but
+instead a separate OS for each CPU. Things may have changed since then
+(it was around 2002 when I saw this).
 
--- Chase
+There's projects to do the same for Linux, and I feel it may give you
+the most control of the system. But the hardware is still shared, so the
+contention does not go away, it just gets moved to the hardware
+resources.
+
+-- Steve
+
+
