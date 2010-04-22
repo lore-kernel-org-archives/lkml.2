@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab0DVRok (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 13:44:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53706 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754829Ab0DVRoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 13:44:38 -0400
-From: Glauber Costa <glommer@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com
-Subject: [PATCH] Enable pvclock flags in vcpu_time_info structure
-Date: Thu, 22 Apr 2010 13:41:24 -0400
-Message-Id: <1271958084-5876-1-git-send-email-glommer@redhat.com>
+	id S1755755Ab0DVRpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 13:45:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62376 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147Ab0DVRpF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 13:45:05 -0400
+Date: Thu, 22 Apr 2010 10:44:50 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>
+Subject: [PATCH] Documentation: additions to SubmitChecklist
+Message-Id: <20100422104450.f559b794.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090203.4BD08B18.0015:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes one padding byte and transform it into a flags
-field. New versions of guests using pvclock will query these flags
-upon each read.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Flags, however, will only be interpreted when the guest decides to.
-It uses the pvclock_valid_flags function to signal that a specific
-set of flags should be taken into consideration. Which flags are valid
-are usually devised via HV negotiation.
+Add build testing using 'O=builddir'.
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
+Add build testing with various kconfig symbols disabled, listing
+common ones that are known to cause build problems.
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
- arch/x86/include/asm/pvclock-abi.h |    3 ++-
- arch/x86/include/asm/pvclock.h     |    1 +
- arch/x86/kernel/pvclock.c          |    9 +++++++++
- 3 files changed, 12 insertions(+), 1 deletions(-)
+ Documentation/SubmitChecklist |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
-index 6d93508..ec5c41a 100644
---- a/arch/x86/include/asm/pvclock-abi.h
-+++ b/arch/x86/include/asm/pvclock-abi.h
-@@ -29,7 +29,8 @@ struct pvclock_vcpu_time_info {
- 	u64   system_time;
- 	u32   tsc_to_system_mul;
- 	s8    tsc_shift;
--	u8    pad[3];
-+	u8    flags;
-+	u8    pad[2];
- } __attribute__((__packed__)); /* 32 bytes */
+--- linux-2.6.34-rc3-git5.orig/Documentation/SubmitChecklist
++++ linux-2.6.34-rc3-git5/Documentation/SubmitChecklist
+@@ -18,6 +18,8 @@ kernel patches.
  
- struct pvclock_wall_clock {
-diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
-index 53235fd..c50823f 100644
---- a/arch/x86/include/asm/pvclock.h
-+++ b/arch/x86/include/asm/pvclock.h
-@@ -6,6 +6,7 @@
+ 2b: Passes allnoconfig, allmodconfig
  
- /* some helper functions for xen and kvm pv clock sources */
- cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src);
-+void pvclock_valid_flags(u8 flags);
- unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src);
- void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
- 			    struct pvclock_vcpu_time_info *vcpu,
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 03801f2..8f4af7b 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -31,8 +31,16 @@ struct pvclock_shadow_time {
- 	u32 tsc_to_nsec_mul;
- 	int tsc_shift;
- 	u32 version;
-+	u8  flags;
- };
- 
-+static u8 valid_flags = 0;
++2c: Builds successfully when using O=builddir
 +
-+void pvclock_valid_flags(u8 flags)
-+{
-+	valid_flags = flags;
-+}
-+
- /*
-  * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
-  * yielding a 64-bit result.
-@@ -91,6 +99,7 @@ static unsigned pvclock_get_time_values(struct pvclock_shadow_time *dst,
- 		dst->system_timestamp  = src->system_time;
- 		dst->tsc_to_nsec_mul   = src->tsc_to_system_mul;
- 		dst->tsc_shift         = src->tsc_shift;
-+		dst->flags             = src->flags;
- 		rmb();		/* test version after fetching data */
- 	} while ((src->version & 1) || (dst->version != src->version));
+ 3: Builds on multiple CPU architectures by using local cross-compile tools
+    or some other build farm.
  
--- 
-1.6.2.2
-
+@@ -95,3 +97,13 @@ kernel patches.
+ 
+ 25: If any ioctl's are added by the patch, then also update
+     Documentation/ioctl/ioctl-number.txt.
++
++26: If your modified source code depends on or uses any of the kernel
++    APIs or features that are related to the following kconfig symbols,
++    then test multiple builds with the related kconfig symbols disabled
++    and/or =m (if that option is available) [not all of these at the
++    same time, just various/random combinations of them]:
++
++    CONFIG_SMP, CONFIG_SYSFS, CONFIG_PROC_FS, CONFIG_INPUT, CONFIG_PCI,
++    CONFIG_BLOCK, CONFIG_PM, CONFIG_HOTPLUG, CONFIG_MAGIC_SYSRQ,
++    CONFIG_NET, CONFIG_INET=n (but latter with CONFIG_NET=y)
