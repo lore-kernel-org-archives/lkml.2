@@ -1,148 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757024Ab0DVVbs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 17:31:48 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:50917 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755754Ab0DVVbo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 17:31:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:subject:date:user-agent:references:in-reply-to:mime-version:to
-         :content-type:content-transfer-encoding:message-id;
-        b=ZijxTRCqaHFvbYo1KIlUNF9kVMkqR2GiRnWpnHipUcyYRv+qXLAsLhA4L63AlfW/9n
-         UOiZOeQTEqL8qo2cwgIJfQCtUeSLX20HZ6xiXubJmnQrXKRdPm6T/U1riWNKY9POr5F4
-         YGqYGr5wkP+G8XL/7DdhInZZVy1st008/dZ+0=
-From: Farid Hammane <farid.hammane@gmail.com>
-Subject: Re: [PATCH] i2c-algo-pca: fix all coding style issues in i2c-algo-pca.c
-Date: Thu, 22 Apr 2010 23:30:34 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.30-2-686; KDE/4.3.4; i686; ; )
-References: <1271877097-10939-1-git-send-email-farid.hammane@gmail.com> <20100422092524.77b7aa84@hyperion.delvare> <20100422075937.GN24384@pengutronix.de>
-In-Reply-To: <20100422075937.GN24384@pengutronix.de>
+	id S1751409Ab0DVVdV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 17:33:21 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:41981 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750752Ab0DVVdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 17:33:19 -0400
+X-Greylist: delayed 1366 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Apr 2010 17:33:18 EDT
+Date: Thu, 22 Apr 2010 23:08:40 +0200
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Eric Dumazet <dada1@cosmosbay.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [170/197] lockdep: fix incorrect percpu usage
+Message-ID: <20100422210840.GB6856@nik-comp.linuxbox.cz>
+References: <20100422191857.GA13268@kroah.com>
+ <20100422190922.618832798@kvm.kroah.org>
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>, Jean Delvare <khali@linux-fr.org>,
-       ben-linux@fluff.org, Enrik.Berkhan@ge.com, linux-i2c@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004222330.34660.farid.hammane@gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="d9ADC0YsG2v16Js0"
+Content-Disposition: inline
+In-Reply-To: <20100422190922.618832798@kvm.kroah.org>
+"X-PGP-Key: http://nik.lbox.cz/downloads/nikola.ciprich.asc"
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Milter-Copy-Status: I
+X-Milter-Copy-Status: I
+X-Antivirus: on proxybox by Kaspersky antivirus, engine 5.5.10, data 3688405 records(08-04-2010)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean and Wolfram,
 
-On Thursday 22 April 2010 09:59:37 you wrote:
-> On Thu, Apr 22, 2010 at 09:25:24AM +0200, Jean Delvare wrote:
-> > On Thu, 22 Apr 2010 01:57:38 +0200, Wolfram Sang wrote:
-> > > Hi Farid,
-> > >
-> > > thanks for this approach. Have you checked that the binary is the same
-> > > before/after your patch? If so, please mention in your patch
-> > > description.
+--d9ADC0YsG2v16Js0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok, I think that nothing can be broken with this kind of patch. I just built 
-i2c-algo-pca.c and everything was ok.
+Hi,
+hmm,
+this one seems to break compilation for me:
+kernel/lockdep.c: In function =E2=80=98static_obj=E2=80=99:
+kernel/lockdep.c:595: error: invalid use of array with unspecified bounds
+kernel/lockdep.c:595: error: invalid use of array with unspecified bounds
+make[1]: *** [kernel/lockdep.o] Error 1
 
-For further patchs I will mention that it has been tested. Thanks for the 
-advice !
+I'm using gcc-4.1.2
+regards
+nik
 
-> > >
-> > > Also, always keep in mind that checkpatch helps to make code readable.
-> > > Some of your changes should keep readability in mind not just fixing
-> > > the warnings.
+On Thu, Apr 22, 2010 at 12:10:21PM -0700, Greg KH wrote:
+> 2.6.32-stable review patch.  If anyone has any objections, please let us =
+know.
+>=20
+> ------------------
+>=20
+> From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+>=20
+> The mainline kernel as of 2.6.34-rc5 is not affected by this problem beca=
+use
+> commit 10fad5e46f6c7bdfb01b1a012380a38e3c6ab346 fixed it by refactoring.
+>=20
+> lockdep fix incorrect percpu usage
+>=20
+> Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is=
+ needed
+> for per cpu pointers).
+>=20
+> git blame points to commit:
+>=20
+> lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
+>=20
+> But it's really just moving the code around. But it's enough to say that =
+the
+> problems appeared before Jul 19 01:48:54 2007, which brings us back to 2.=
+6.23.
+>=20
+> It should be applied to stable 2.6.23.x to 2.6.33.x (or whichever of these
+> stable branches are still maintained).
+>=20
+> (tested on 2.6.33.1 x86_64)
+>=20
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> CC: Randy Dunlap <randy.dunlap@oracle.com>
+> CC: Eric Dumazet <dada1@cosmosbay.com>
+> CC: Rusty Russell <rusty@rustcorp.com.au>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Greg Kroah-Hartman <gregkh@suse.de>
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+>=20
+> ---
+>  kernel/lockdep.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>=20
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -591,9 +591,9 @@ static int static_obj(void *obj)
+>  	 * percpu var?
+>  	 */
+>  	for_each_possible_cpu(i) {
+> -		start =3D (unsigned long) &__per_cpu_start + per_cpu_offset(i);
+> -		end   =3D (unsigned long) &__per_cpu_start + PERCPU_ENOUGH_ROOM
+> -					+ per_cpu_offset(i);
+> +		start =3D (unsigned long) per_cpu_ptr(&__per_cpu_start, i);
+> +		end   =3D (unsigned long) per_cpu_ptr(&__per_cpu_start
+> +						    + PERCPU_ENOUGH_ROOM, i);
+> =20
+>  		if ((addr >=3D start) && (addr < end))
+>  			return 1;
+>=20
+>=20
+> _______________________________________________
+> Stable-review mailing list
+> Stable-review@linux.kernel.org
+> http://linux.kernel.org/mailman/listinfo/stable-review
+>=20
 
-Ok
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
 
-> > >
-> > > On Wed, Apr 21, 2010 at 09:11:37PM +0200, Farid Hammane wrote:
-> > > > This patch fixes all coding style issues found by checkpatch.pl.
-> > > >
-> > > >
-> > > > Signed-off-by: Farid Hammane <farid.hammane@gmail.com>
-> > > > ---
-> > > >  drivers/i2c/algos/i2c-algo-pca.c |   74
-> > > > ++++++++++++++++++++++--------------- 1 files changed, 44
-> > > > insertions(+), 30 deletions(-)
-> > > >
-> > > > diff --git a/drivers/i2c/algos/i2c-algo-pca.c
-> > > > b/drivers/i2c/algos/i2c-algo-pca.c (...)
-> > > > @@ -178,12 +178,12 @@ static int pca_rx_ack(struct i2c_algo_pca_data
-> > > > *adap, }
-> > > >
-> > > >  static int pca_xfer(struct i2c_adapter *i2c_adap,
-> > > > -                    struct i2c_msg *msgs,
-> > > > -                    int num)
-> > > > +		struct i2c_msg *msgs,
-> > > > +		int num)
-> > >
-> > > One more tab maybe?
-> >
-> > Better use tab + spaces and align on the opening parenthesis. What
-> > checkpatch.pl complains about here isn't the alignment, it's the use of
-> > more than 8 consecutive spaces.
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
 
-Ok
+www.linuxbox.cz
 
-> 
-> OK
-> 
-> > > > (...)
-> > > > @@ -241,8 +244,10 @@ static int pca_xfer(struct i2c_adapter
-> > > > *i2c_adap, completed = pca_address(adap, msg);
-> > > >  			break;
-> > > >
-> > > > -		case 0x18: /* SLA+W has been transmitted; ACK has been received 
-*/
-> > > > -		case 0x28: /* Data byte in I2CDAT has been transmitted; ACK has
-> > > > been received */ +		case 0x18: /* SLA+W has been transmitted;
-> > > > +			      ACK has been received */
-> > > > +		case 0x28: /* Data byte in I2CDAT has been transmitted;
-> > > > +			      ACK has been received */
-> > >
-> > > First, check CodingStyle for how multiline comments should look like.
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
 
-Done ;)
+--d9ADC0YsG2v16Js0
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-> > > For readability, I'd like to keep them single line, though. I think
-> > > this could be done by rewording. Same for all following comments.
-> >
-> > Please keep in mind that Farid doesn't know the code. He is "only"
-> > helping with formatting cleanups. Asking him to reword the comments
-> 
-> I think s/has been//g will help already. And getting accoustomed to the
->  code you are modifying is not that bad ;)
-> 
-> > doesn't seem wise. And there's nothing wrong with two-line comments as
-> > above. The "preferred comment format" in CodingStyle is often
-> > unrealistic IMHO, I'm not always following it in my own code.
-> 
-> I disagree here. I'd rather break the 80 columns limit than having
->  multiline comments not really standing out.
-> 
-> Also, I feel a bit uneasy as changing the comments spoils the history for
-> git-blame in case you want to know when/if the state-machine was changed.
->  Then again, I like properly formatted code.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.5 (GNU/Linux)
 
-To keep readability, I broke every line after the semicolon.
-I understand both your points of view and I prefer not to change these lines.
+iD8DBQFL0LrY3xdJJrLygV4RAoFjAKCGRsu2j/68jFg9+e6bmBnQ9gD2qgCdGHd4
+8TrlQwLBmM0gA0aK+lh8wEo=
+=OLCt
+-----END PGP SIGNATURE-----
 
-> 
-> Summa summarum, just send V2, it's not really worth fighting over it :)
-
-Patch V2 will come with the next email.
-
-Thanks,
-I'll keep in mind your advices.
-
-Regards,
-
-Farid
-
-> 
-> Regards,
-> 
->    Wolfram
-> 
+--d9ADC0YsG2v16Js0--
