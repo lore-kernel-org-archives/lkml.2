@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757838Ab0DVT6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:58:08 -0400
-Received: from kroah.org ([198.145.64.141]:40769 "EHLO coco.kroah.org"
+	id S1757197Ab0DVTdn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:33:43 -0400
+Received: from kroah.org ([198.145.64.141]:41578 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756327Ab0DVT2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:24 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:14 2010
-Message-Id: <20100422190913.929074655@kvm.kroah.org>
+	id S1756782Ab0DVT35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:57 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:23 2010
+Message-Id: <20100422190923.903359954@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:44 -0700
+Date: Thu, 22 Apr 2010 12:10:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-       Josip Rodin <joy+kernel@entuzijast.net>,
-       Len Brown <len.brown@intel.com>
-Subject: [073/197] thinkpad-acpi: log initial state of rfkill switches
+       Kashyap Desai <kashyap.desai@lsi.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       maximilian attems <max@stro.at>
+Subject: [184/197] [SCSI] mptctl : Remove printk which floods unnecessary messages to var/log/message
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,51 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+From: Kashyap, Desai <kashyap.desai@lsi.com>
 
-commit 5451a923bbdcff6ae665947e120af7238b21a9d2 upstream.
+commit e39e145dfb78d4e20d89139d2576306b4279c126 upstream.
 
-We already log the initial state of the hardware rfkill switch (WLSW),
-might as well log the state of the softswitches as well.
-
-Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Josip Rodin <joy+kernel@entuzijast.net>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/thinkpad_acpi.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/message/fusion/mptctl.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -1264,6 +1264,7 @@ static int __init tpacpi_new_rfkill(cons
- 	struct tpacpi_rfk *atp_rfk;
- 	int res;
- 	bool sw_state = false;
-+	bool hw_state;
- 	int sw_status;
+--- a/drivers/message/fusion/mptctl.c
++++ b/drivers/message/fusion/mptctl.c
+@@ -621,11 +621,8 @@ __mptctl_ioctl(struct file *file, unsign
+ 	 */
+ 	iocnumX = khdr.iocnum & 0xFF;
+ 	if (((iocnum = mpt_verify_adapter(iocnumX, &iocp)) < 0) ||
+-	    (iocp == NULL)) {
+-		printk(KERN_DEBUG MYNAM "%s::mptctl_ioctl() @%d - ioc%d not found!\n",
+-				__FILE__, __LINE__, iocnumX);
++	    (iocp == NULL))
+ 		return -ENODEV;
+-	}
  
- 	BUG_ON(id >= TPACPI_RFK_SW_MAX || tpacpi_rfkill_switches[id]);
-@@ -1298,7 +1299,8 @@ static int __init tpacpi_new_rfkill(cons
- 			rfkill_init_sw_state(atp_rfk->rfkill, sw_state);
- 		}
- 	}
--	rfkill_set_hw_state(atp_rfk->rfkill, tpacpi_rfk_check_hwblock_state());
-+	hw_state = tpacpi_rfk_check_hwblock_state();
-+	rfkill_set_hw_state(atp_rfk->rfkill, hw_state);
- 
- 	res = rfkill_register(atp_rfk->rfkill);
- 	if (res < 0) {
-@@ -1311,6 +1313,9 @@ static int __init tpacpi_new_rfkill(cons
- 	}
- 
- 	tpacpi_rfkill_switches[id] = atp_rfk;
-+
-+	printk(TPACPI_INFO "rfkill switch %s: radio is %sblocked\n",
-+		name, (sw_state || hw_state) ? "" : "un");
- 	return 0;
- }
- 
+ 	if (!iocp->active) {
+ 		printk(KERN_DEBUG MYNAM "%s::mptctl_ioctl() @%d - Controller disabled.\n",
 
 
