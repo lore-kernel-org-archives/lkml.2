@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab0DVKj4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 06:39:56 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51152 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753487Ab0DVKjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 06:39:54 -0400
-Date: Thu, 22 Apr 2010 12:39:53 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] [MTD] Fix JFFS2 sync silent failure
-Message-ID: <20100422103953.GB27497@kernel.dk>
-References: <20100417184016.GA17345@logfs.org> <20100419073843.GN27497@kernel.dk> <20100419101559.GA4145@logfs.org> <20100419102056.GS27497@kernel.dk> <20100422055448.GA27309@logfs.org> <20100422090303.GA27497@kernel.dk>
+	id S1754048Ab0DVKvM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 06:51:12 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:62728 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753916Ab0DVKvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 06:51:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Eq5uHO5f6eUkmozIyWnpDQR3wQppRVjd5MMnI+8EfXkVBTP8FzgAVL7+SaouMSuJwm
+         C1FJrfBK0r6YKlukW5DMmwIZLxZ2eYYiSEvHMbg5/U6gZEN2ejdIM2130yuplkEH9dhR
+         Al35IY7zhYaxThuq5npaag/R1nLZD6YC4bZlo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100422090303.GA27497@kernel.dk>
+In-Reply-To: <20100422013721.GC8938@windriver.com>
+References: <l2u87a5b0801004210935wf6ca2991ua777c39c737391f8@mail.gmail.com>
+	 <20100422013721.GC8938@windriver.com>
+Date: Thu, 22 Apr 2010 11:51:06 +0100
+Message-ID: <r2l87a5b0801004220351h4ba2d1ect49c33893a30806e9@mail.gmail.com>
+Subject: Re: Threaded irq handler question
+From: Will Newton <will.newton@gmail.com>
+To: Yong Zhang <yong.zhang@windriver.com>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22 2010, Jens Axboe wrote:
-> On Thu, Apr 22 2010, Jörn Engel wrote:
-> > On Mon, 19 April 2010 12:20:56 +0200, Jens Axboe wrote:
-> > > 
-> > > Thanks, we definitely should have put a debug statement to catch this in
-> > > from day 1, good debugging should be an important part of any new
-> > > infrastructure.
-> > 
-> > Woke up early and had another look at this.  Looks like a much more
-> > widespread problem.  Based on a quick grep an uncaffeinated brain:
-> > 
-> > 9p	no s_bdi
-> > afs	no s_bdi
-> > ceph	creates its own s_bdi
-> > cifs	no s_bdi
-> > coda	no s_bdi
-> > ecryptfs no s_bdi
-> > exofs	no s_bdi
-> > fuse	creates its own s_bdi?
-> > gfs2	creates its own s_bdi?
-> > jffs2	patch exists
-> > logfs	fixed now
-> > ncpfs	no s_bdi
-> > nfs	creates its own s_bdi
-> > ocfs2	no s_bdi
-> > smbfs	no s_bdi
-> > ubifs	creates its own s_bdi
-> > 
-> > I excluded all filesystems that appear to be read-only, block device
-> > based or lack any sort of backing store.  So there is a chance I have
-> > missed some as well.
-> 
-> It's funky, I was pretty sure there was/is code to set a default bdi for
-> non-bdev file systems. It appears to be missing, that's not good. So
-> options include:
-> 
-> - Add the appropriate per-sb bdi for these file systems (right fix), or
-> - Pre-fill default_backing_dev_info as a fallback ->s_bdi to at least
->   ensure that data gets flushed (quick fix)
-> 
-> I'll slap together a set of fixes for this.
+On Thu, Apr 22, 2010 at 2:37 AM, Yong Zhang <yong.zhang@windriver.com> wrote:
+> On Wed, Apr 21, 2010 at 05:35:32PM +0100, Will Newton wrote:
+>> Hi all,
+>> My problem is that this structure does not work, because once I call
+>> disable_irq_nosync() on the irq in the check handler the thread will
+>> no longer run because the irq is disabled. However if I don't call
+>> disable_irq_nosync() I will get endless irqs because the line is
+>> level-triggered and will not be deasserted until the thread has run.
+>>
+>> Could someone tell me what I'm doing wrong here?
+>
+> Does IRQF_ONESHOT meet your need?
 
-Here's a series for fixing these. At this point they are totally
-untested except that I did compile them. Note that your analysis
-appeared correct for all cases but ocfs2, which does use get_sb_bdev()
-and hence gets ->s_bdi assigned.
+Almost I think, but I believe if my check handler does not wake the
+thread then I don't get another interrupt ever. I can fix this by
+making my check handler always return WAKE_THREAD, which is slightly
+sub-optimal, but not a big problem.
 
-You can see them here, I'll post the series soon:
-
-http://git.kernel.dk/?p=linux-2.6-block.git;a=shortlog;h=refs/heads/for-linus
-
-The first patch is a helper addition, the rest are per-fs fixups.
-
--- 
-Jens Axboe
-
+Thank you for your help!
