@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757998Ab0DVUA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:00:27 -0400
-Received: from kroah.org ([198.145.64.141]:59616 "EHLO coco.kroah.org"
+	id S1757622Ab0DVTzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:55:17 -0400
+Received: from kroah.org ([198.145.64.141]:40846 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757960Ab0DVUAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:09 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:09 2010
-Message-Id: <20100422195409.044498667@kvm.kroah.org>
+	id S1756421Ab0DVT2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:35 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:14 2010
+Message-Id: <20100422190914.637184780@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:40 -0700
+Date: Thu, 22 Apr 2010 12:08:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Suresh Jayaraman <sjayaraman@suse.de>,
-       Steve French <sfrench@us.ibm.com>
-Subject: [043/139] CIFS: initialize nbytes at the beginning of CIFSSMBWrite()
-In-Reply-To: <20100422195715.GA25490@kroah.com>
+       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [081/197] libata: disable NCQ on Crucial C300 SSD
+In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Steve French <sfrench@us.ibm.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit a24e2d7d8f512340991ef0a59cb5d08d491b8e98 upstream.
+commit 68b0ddb289220b6d4d865be128939663be34959d upstream.
 
-By doing this we always overwrite nbytes value that is being passed on to
-CIFSSMBWrite() and need not rely on the callers to initialize. CIFSSMBWrite2 is
-doing this already.
+Crucial said,
 
-Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Reviewed-by: Jeff Layton <jlayton@samba.org>
-Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+  Thank you for contacting us. We know that with our M225 line of SSDs
+  you sometimes need to disable NCQ (native command queuing) to avoid
+  just the type of errors you're seeing. Our recommendation for the
+  M225 is to add libata.force=noncq to your Linux kernel boot options,
+  under the kernel ATA library option.
+
+  I have sent your feedback to the engineers working on the C300, and
+  asked them to please pass it on to the firmware team. I have been
+  notified that they are in the process of testing and finalizing a
+  new firmware version, that you can expect to see released around the
+  end of April. We’ll keep you posted as to when it will be available
+  for download.
+
+So, turn off NCQ on the drive w/ the current firmware revision.
+
+Reported in the following bug.
+
+  https://bugzilla.kernel.org/show_bug.cgi?id=15573
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: lethalwp@scarlet.be
+Reported-by: Luke Macken <lmacken@redhat.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/cifssmb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/ata/libata-core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -1430,6 +1430,8 @@ CIFSSMBWrite(const int xid, struct cifsT
- 	__u32 bytes_sent;
- 	__u16 byte_count;
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4348,6 +4348,9 @@ static const struct ata_blacklist_entry
+ 	{ "HTS541080G9SA00",    "MB4OC60D",     ATA_HORKAGE_NONCQ, },
+ 	{ "HTS541010G9SA00",    "MBZOC60D",     ATA_HORKAGE_NONCQ, },
  
-+	*nbytes = 0;
++	/* https://bugzilla.kernel.org/show_bug.cgi?id=15573 */
++	{ "C300-CTFDDAC128MAG",	"0001",		ATA_HORKAGE_NONCQ, },
 +
- 	/* cFYI(1, ("write at %lld %d bytes", offset, count));*/
- 	if (tcon->ses == NULL)
- 		return -ECONNABORTED;
-@@ -1512,7 +1514,6 @@ CIFSSMBWrite(const int xid, struct cifsT
- 	cifs_stats_inc(&tcon->num_writes);
- 	if (rc) {
- 		cFYI(1, ("Send error in write = %d", rc));
--		*nbytes = 0;
- 	} else {
- 		*nbytes = le16_to_cpu(pSMBr->CountHigh);
- 		*nbytes = (*nbytes) << 16;
+ 	/* devices which puke on READ_NATIVE_MAX */
+ 	{ "HDS724040KLSA80",	"KFAOA20N",	ATA_HORKAGE_BROKEN_HPA, },
+ 	{ "WDC WD3200JD-00KLB0", "WD-WCAMR1130137", ATA_HORKAGE_BROKEN_HPA },
 
 
