@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab0DVQ5R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 12:57:17 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53115 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752367Ab0DVQ5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 12:57:15 -0400
-Date: Fri, 23 Apr 2010 02:57:11 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-       xfs@oss.sgi.com, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] mm: add context argument to shrinker callback
-Message-ID: <20100422165711.GA5683@laptop>
-References: <1271118255-21070-2-git-send-email-david@fromorbit.com>
- <20100418001514.GA26575@infradead.org>
- <20100419140039.GQ5683@laptop>
- <20100420004149.GA14744@dastard>
- <20100420083840.GR5683@laptop>
- <20100420103216.GK15130@dastard>
- <20100421084004.GS5683@laptop>
- <20100422163211.GA2478@infradead.org>
- <20100422163801.GZ5683@laptop>
- <20100422164247.GA15882@infradead.org>
+	id S1755676Ab0DVQ71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 12:59:27 -0400
+Received: from relay.ihostexchange.net ([66.46.182.52]:28741 "EHLO
+	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755512Ab0DVQ70 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 12:59:26 -0400
+X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Apr 2010 12:59:26 EDT
+Message-ID: <4BD07F2A.8080808@VirtualLogix.com>
+Date: Thu, 22 Apr 2010 18:54:02 +0200
+From: Eric Lescouet <Eric.Lescouet@VirtualLogix.com>
+Reply-To: Eric Lescouet <eric.lescouet@vlx.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc11 Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100422164247.GA15882@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+CC: "usbip-devel@lists.sourceforge.net" 
+	<usbip-devel@lists.sourceforge.net>
+Subject: [PATCH]: Fix deadlock in USBIP driver (staging), linux-2.6.34-rc5
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 12:42:47PM -0400, Christoph Hellwig wrote:
-> On Fri, Apr 23, 2010 at 02:38:01AM +1000, Nick Piggin wrote:
-> > I don't understand, it should be implemented like just all the other
-> > shrinkers AFAIKS. Like the dcache one that has to shrink multiple
-> > superblocks. There is absolutely no requirement for this API change
-> > to implement it in XFS.
-> 
-> The dcache shrinker is an example for a complete mess.
+Hi,
+When detaching a port from the client side (usbip --detach 0),
+the event thread, on the server side, is going to deadlock.
+The "eh" server thread is getting USBIP_EH_RESET event and calls:
+  -> stub_device_reset() -> usb_reset_device()
+the USB framework is then calling back _in the same "eh" thread_ :
+  -> stub_disconnect() -> usbip_stop_eh() -> wait_for_completion()
+the "eh" thread is being asleep forever, waiting for its own completion.
+The patch checks if "eh" is the current thread, in usbip_stop_eh().
 
-I don't know. It's not really caused by not registering multiple
-shrinkers. It seems to be caused more by the locking, which is not
-going away when you have multiple shrinkers.
+Please Cc me in reply, I'm not in the list.
 
-The XFS patch seems to be pinning the mount structure when it is
-registered, so it would have no such locking/refcounting problems
-using a private list AFAIKS.
+b.r.
 
+------------------
 
-> > But the shrinker list *is* a global list. The downside of it in the way
-> > it was done in the XFS patch is that 1) it is much larger than a simple
-> > list head, and 2) not usable by anything other then the shrinker.
-> 
-> It is an existing global list just made more useful.  Whenever a driver
-> has muliple instances of pool that need shrinking this comes in useful,
-> it's not related to filesystems at all. 
+diff -Nur linux-2.6.34-rc5/drivers/staging/usbip/usbip_event.c 
+linux-2.6.34-rc5.new/drivers/staging/usbip/usbip_event.c
+--- linux-2.6.34-rc5/drivers/staging/usbip/usbip_event.c    2010-04-20 
+01:29:56.000000000 +0200
++++ linux-2.6.34-rc5.new/drivers/staging/usbip/usbip_event.c    
+2010-04-22 17:07:36.249588273 +0200
+@@ -116,6 +116,13 @@
+  void usbip_stop_eh(struct usbip_device *ud)
+  {
+      struct usbip_task *eh = &ud->eh;
++    int                i_am_eh;
++
++    lock_kernel();
++    i_am_eh = (eh->thread == current);
++    unlock_kernel();
++    if (i_am_eh)
++        return; /* do not wait for myself */
 
-I would say less useful, because shrinker structure cannot be used
-by anything but the shrinker, wheras a private list can be used by
-anything, including the applicable shrinker.
+      wait_for_completion(&eh->thread_done);
+      usbip_dbg_eh("usbip_eh has finished\n");
 
