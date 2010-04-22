@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758527Ab0DVUau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:30:50 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:62560 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757927Ab0DVUa1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:30:27 -0400
-From: Amit Kucheria <amit.kucheria@verdurent.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Amit Kucheria <amit.kucheria@canonical.com>,
-       Russell King <linux@arm.linux.org.uk>,
-       =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] arm: mxc: utilise usecount field in clock operations
-Date: Thu, 22 Apr 2010 23:30:20 +0300
-Message-Id: <d501dcf8dbe98ed7f5aa9e7b34e68f0e1076ac84.1271968118.git.amit.kucheria@verdurent.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1758534Ab0DVUbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:31:05 -0400
+Received: from kroah.org ([198.145.64.141]:59461 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757906Ab0DVT7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:59:47 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:06 2010
+Message-Id: <20100422195406.530319760@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Thu, 22 Apr 2010 12:53:15 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+       Reinette Chatre <reinette.chatre@intel.com>
+Subject: [018/139] iwlwifi: counting number of tfds can be free for 4965
+In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Amit Kucheria <amit.kucheria@canonical.com>
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-This patch fixes the clock refcounting when reparenting is used.
+------------------
 
-Sascha just pointed out a good explanation of refcounting here:
-http://www.spinics.net/lists/arm-kernel/msg85879.html
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
-Signed-off-by: Amit Kucheria <amit.kucheria@canonical.com>
+commit be6b38bcb175613f239e0b302607db346472c6b6 upstream.
+
+Forget one hunk in 4965 during "iwlwifi: error checking for number of tfds
+in queue" patch.
+
+Reported-by: Shanyu Zhao <shanyu.zhao@intel.com>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- arch/arm/plat-mxc/clock.c |   34 ++++++++++++++++++++++------------
- 1 files changed, 22 insertions(+), 12 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-4965.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/plat-mxc/clock.c b/arch/arm/plat-mxc/clock.c
-index 323ff8c..14781cc 100644
---- a/arch/arm/plat-mxc/clock.c
-+++ b/arch/arm/plat-mxc/clock.c
-@@ -50,15 +50,16 @@ static DEFINE_MUTEX(clocks_mutex);
+--- a/drivers/net/wireless/iwlwifi/iwl-4965.c
++++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
+@@ -2034,16 +2034,14 @@ static void iwl4965_rx_reply_tx(struct i
+ 				   tx_resp->failure_frame);
  
- static void __clk_disable(struct clk *clk)
- {
--	if (clk == NULL || IS_ERR(clk))
-+	WARN_ON(!clk->usecount);
-+	if (clk == NULL || IS_ERR(clk) || !clk->usecount)
- 		return;
+ 		freed = iwl_tx_queue_reclaim(priv, txq_id, index);
+-		if (qc && likely(sta_id != IWL_INVALID_STATION))
+-			priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
++		iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
  
--	__clk_disable(clk->parent);
--	__clk_disable(clk->secondary);
--
--	WARN_ON(!clk->usecount);
--	if (!(--clk->usecount) && clk->disable)
--		clk->disable(clk);
-+	if (!(--clk->usecount)) {
-+		if (clk->disable)
-+			clk->disable(clk);
-+		__clk_disable(clk->parent);
-+		__clk_disable(clk->secondary);
-+	}
- }
+ 		if (priv->mac80211_registered &&
+ 		    (iwl_queue_space(&txq->q) > txq->q.low_mark))
+ 			iwl_wake_queue(priv, txq_id);
+ 	}
  
- static int __clk_enable(struct clk *clk)
-@@ -66,12 +67,13 @@ static int __clk_enable(struct clk *clk)
- 	if (clk == NULL || IS_ERR(clk))
- 		return -EINVAL;
+-	if (qc && likely(sta_id != IWL_INVALID_STATION))
+-		iwl_txq_check_empty(priv, sta_id, tid, txq_id);
++	iwl_txq_check_empty(priv, sta_id, tid, txq_id);
  
--	__clk_enable(clk->parent);
--	__clk_enable(clk->secondary);
--
--	if (clk->usecount++ == 0 && clk->enable)
--		clk->enable(clk);
-+	if (clk->usecount++ == 0) {
-+		__clk_enable(clk->parent);
-+		__clk_enable(clk->secondary);
- 
-+		if (clk->enable)
-+			clk->enable(clk);
-+	}
- 	return 0;
- }
- 
-@@ -160,17 +162,25 @@ EXPORT_SYMBOL(clk_set_rate);
- int clk_set_parent(struct clk *clk, struct clk *parent)
- {
- 	int ret = -EINVAL;
-+	struct clk *prev_parent = clk->parent;
- 
- 	if (clk == NULL || IS_ERR(clk) || parent == NULL ||
- 	    IS_ERR(parent) || clk->set_parent == NULL)
- 		return ret;
- 
-+	if (clk->usecount != 0)
-+		clk_enable(parent);
-+
- 	mutex_lock(&clocks_mutex);
- 	ret = clk->set_parent(clk, parent);
- 	if (ret == 0)
- 		clk->parent = parent;
-+
- 	mutex_unlock(&clocks_mutex);
- 
-+	if (clk->usecount != 0)
-+		clk_disable(prev_parent);
-+
- 	return ret;
- }
- EXPORT_SYMBOL(clk_set_parent);
--- 
-1.7.0.4
+ 	if (iwl_check_bits(status, TX_ABORT_REQUIRED_MSK))
+ 		IWL_ERR(priv, "TODO:  Implement Tx ABORT REQUIRED!!!\n");
+
 
