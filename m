@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab0DVT2o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:28:44 -0400
-Received: from kroah.org ([198.145.64.141]:40898 "EHLO coco.kroah.org"
+	id S1756234Ab0DVT2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:28:11 -0400
+Received: from kroah.org ([198.145.64.141]:37430 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756480Ab0DVT2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:40 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:15 2010
-Message-Id: <20100422190915.352290938@kvm.kroah.org>
+	id S1756209Ab0DVT2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:06 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:12 2010
+Message-Id: <20100422190911.935042749@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:00 -0700
+Date: Thu, 22 Apr 2010 12:08:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Shaohua Li <shaohua.li@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: [089/197] x86-32, resume: do a global tlb flush in S4 resume
+       Evan McClain <evan.mcclain@gatech.edu>,
+       Richard Purdie <rpurdie@linux.intel.com>
+Subject: [051/197] backlight: mbp_nvidia_bl - add five more MacBook variants
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,71 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shaohua.li@intel.com>
+From: Evan McClain <evan.mcclain@gatech.edu>
 
-commit 8ae06d223f8203c72104e5c0c4ee49a000aedb42 upstream.
+commit 36bc5ee6a8d13333980fa54e97d3469d3d4cda98 upstream.
 
-Colin King reported a strange oops in S4 resume code path (see below). The test
-system has i5/i7 CPU. The kernel doesn't open PAE, so 4M page table is used.
-The oops always happen a virtual address 0xc03ff000, which is mapped to the
-last 4k of first 4M memory. Doing a global tlb flush fixes the issue.
+This adds the MacBook 1,1 2,1 3,1 4,1 and 4,2 to the DMI tables.
 
-EIP: 0060:[<c0493a01>] EFLAGS: 00010086 CPU: 0
-EIP is at copy_loop+0xe/0x15
-EAX: 36aeb000 EBX: 00000000 ECX: 00000400 EDX: f55ad46c
-ESI: 0f800000 EDI: c03ff000 EBP: f67fbec4 ESP: f67fbea8
-DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-...
-...
-CR2: 00000000c03ff000
-
-Tested-by: Colin Ian King <colin.king@canonical.com>
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-LKML-Reference: <20100305005932.GA22675@sli10-desk.sh.intel.com>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Evan McClain <evan.mcclain@gatech.edu>
+Signed-off-by: Richard Purdie <rpurdie@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/power/hibernate_asm_32.S |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ drivers/video/backlight/mbp_nvidia_bl.c |   45 ++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
 
---- a/arch/x86/power/hibernate_asm_32.S
-+++ b/arch/x86/power/hibernate_asm_32.S
-@@ -27,10 +27,17 @@ ENTRY(swsusp_arch_suspend)
- 	ret
- 
- ENTRY(restore_image)
-+	movl	mmu_cr4_features, %ecx
- 	movl	resume_pg_dir, %eax
- 	subl	$__PAGE_OFFSET, %eax
- 	movl	%eax, %cr3
- 
-+	jecxz	1f	# cr4 Pentium and higher, skip if zero
-+	andl	$~(X86_CR4_PGE), %ecx
-+	movl	%ecx, %cr4;  # turn off PGE
-+	movl	%cr3, %eax;  # flush TLB
-+	movl	%eax, %cr3
-+1:
- 	movl	restore_pblist, %edx
- 	.p2align 4,,7
- 
-@@ -54,16 +61,8 @@ done:
- 	movl	$swapper_pg_dir, %eax
- 	subl	$__PAGE_OFFSET, %eax
- 	movl	%eax, %cr3
--	/* Flush TLB, including "global" things (vmalloc) */
- 	movl	mmu_cr4_features, %ecx
- 	jecxz	1f	# cr4 Pentium and higher, skip if zero
--	movl	%ecx, %edx
--	andl	$~(X86_CR4_PGE), %edx
--	movl	%edx, %cr4;  # turn off PGE
--1:
--	movl	%cr3, %eax;  # flush TLB
--	movl	%eax, %cr3
--	jecxz	1f	# cr4 Pentium and higher, skip if zero
- 	movl	%ecx, %cr4;  # turn PGE back on
- 1:
- 
+--- a/drivers/video/backlight/mbp_nvidia_bl.c
++++ b/drivers/video/backlight/mbp_nvidia_bl.c
+@@ -139,6 +139,51 @@ static int mbp_dmi_match(const struct dm
+ static const struct dmi_system_id __initdata mbp_device_table[] = {
+ 	{
+ 		.callback	= mbp_dmi_match,
++		.ident		= "MacBook 1,1",
++		.matches	= {
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook1,1"),
++		},
++		.driver_data	= (void *)&intel_chipset_data,
++	},
++	{
++		.callback	= mbp_dmi_match,
++		.ident		= "MacBook 2,1",
++		.matches	= {
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook2,1"),
++		},
++		.driver_data	= (void *)&intel_chipset_data,
++	},
++	{
++		.callback	= mbp_dmi_match,
++		.ident		= "MacBook 3,1",
++		.matches	= {
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook3,1"),
++		},
++		.driver_data	= (void *)&intel_chipset_data,
++	},
++	{
++		.callback	= mbp_dmi_match,
++		.ident		= "MacBook 4,1",
++		.matches	= {
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook4,1"),
++		},
++		.driver_data	= (void *)&intel_chipset_data,
++	},
++	{
++		.callback	= mbp_dmi_match,
++		.ident		= "MacBook 4,2",
++		.matches	= {
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook4,2"),
++		},
++		.driver_data	= (void *)&intel_chipset_data,
++	},
++	{
++		.callback	= mbp_dmi_match,
+ 		.ident		= "MacBookPro 3,1",
+ 		.matches	= {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
 
 
