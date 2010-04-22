@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758444Ab0DVU0q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:26:46 -0400
-Received: from kroah.org ([198.145.64.141]:59587 "EHLO coco.kroah.org"
+	id S932174Ab0DVUDN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:03:13 -0400
+Received: from kroah.org ([198.145.64.141]:60073 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757950Ab0DVUAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:02 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:08 2010
-Message-Id: <20100422195408.225879635@kvm.kroah.org>
+	id S1757791Ab0DVUBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:01:54 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:17 2010
+Message-Id: <20100422195417.709715504@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:32 -0700
+Date: Thu, 22 Apr 2010 12:55:00 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [035/139] ALSA: hda: Fix 0 dB offset for Lenovo Thinkpad models using AD1981
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [123/139] lockdep: fix incorrect percpu usage
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-commit b8e80cf386419453678b01bef830f53445ebb15d upstream.
+The mainline kernel as of 2.6.34-rc5 is not affected by this problem because
+commit 10fad5e46f6c7bdfb01b1a012380a38e3c6ab346 fixed it by refactoring.
 
-BugLink: https://launchpad.net/bugs/551606
+lockdep fix incorrect percpu usage
 
-The OR's hardware distorts at PCM 100% because it does not correspond to
-0 dB. Fix this in patch_ad1981() for all models using the Thinkpad
-quirk.
+Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
+for per cpu pointers).
 
-Reported-by: Jane Silber
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+git blame points to commit:
+
+lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
+
+But it's really just moving the code around. But it's enough to say that the
+problems appeared before Jul 19 01:48:54 2007, which brings us back to 2.6.23.
+
+It should be applied to stable 2.6.23.x to 2.6.33.x (or whichever of these
+stable branches are still maintained).
+
+(tested on 2.6.33.1 x86_64)
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Eric Dumazet <dada1@cosmosbay.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Tejun Heo <tj@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_analog.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ kernel/lockdep.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -1805,6 +1805,14 @@ static int patch_ad1981(struct hda_codec
- 	case AD1981_THINKPAD:
- 		spec->mixers[0] = ad1981_thinkpad_mixers;
- 		spec->input_mux = &ad1981_thinkpad_capture_source;
-+		/* set the upper-limit for mixer amp to 0dB for avoiding the
-+		 * possible damage by overloading
-+		 */
-+		snd_hda_override_amp_caps(codec, 0x11, HDA_INPUT,
-+					  (0x17 << AC_AMPCAP_OFFSET_SHIFT) |
-+					  (0x17 << AC_AMPCAP_NUM_STEPS_SHIFT) |
-+					  (0x05 << AC_AMPCAP_STEP_SIZE_SHIFT) |
-+					  (1 << AC_AMPCAP_MUTE_SHIFT));
- 		break;
- 	case AD1981_TOSHIBA:
- 		spec->mixers[0] = ad1981_hp_mixers;
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -600,9 +600,9 @@ static int static_obj(void *obj)
+ 	 * percpu var?
+ 	 */
+ 	for_each_possible_cpu(i) {
+-		start = (unsigned long) &__per_cpu_start + per_cpu_offset(i);
+-		end   = (unsigned long) &__per_cpu_start + PERCPU_ENOUGH_ROOM
+-					+ per_cpu_offset(i);
++		start = (unsigned long) per_cpu_ptr(&__per_cpu_start, i);
++		end   = (unsigned long) per_cpu_ptr(&__per_cpu_start
++						    + PERCPU_ENOUGH_ROOM, i);
+ 
+ 		if ((addr >= start) && (addr < end))
+ 			return 1;
 
 
