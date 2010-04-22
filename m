@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758752Ab0DVUqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:46:10 -0400
-Received: from kroah.org ([198.145.64.141]:37193 "EHLO coco.kroah.org"
+	id S1758773Ab0DVUsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:48:32 -0400
+Received: from kroah.org ([198.145.64.141]:37129 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755968Ab0DVT1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:27:39 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:09 2010
-Message-Id: <20100422190908.936014751@kvm.kroah.org>
+	id S1755559Ab0DVT1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:27:32 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:08 2010
+Message-Id: <20100422190908.134711585@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:07:48 -0700
+Date: Thu, 22 Apr 2010 12:07:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, xfs@oss.sgi.com,
-       Dave Chinner <david@fromorbit.com>, Alex Elder <aelder@sgi.com>
-Subject: [017/197] xfs: Ensure we force all busy extents in range to disk
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Chris Wilson <chris@chris-wilson.co.uk>,
+       Dave Airlie <airlied@redhat.com>
+Subject: [008/197] drm: Return ENODEV if the inode mapping changes
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,112 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <david@fromorbit.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit fd45e4784164d1017521086524e3442318c67370 upstream
+commit da58405860b992d2bb21ebae5d685fe3204dd3f0 upstream.
 
-When we search for and find a busy extent during allocation we
-force the log out to ensure the extent free transaction is on
-disk before the allocation transaction. The current implementation
-has a subtle bug in it--it does not handle multiple overlapping
-ranges.
+Replace a BUG_ON with an error code in the event that the inode mapping
+changes between calls to drm_open. This may happen for instance if udev
+is loaded subsequent to the original opening of the device:
 
-That is, if we free lots of little extents into a single
-contiguous extent, then allocate the contiguous extent, the busy
-search code stops searching at the first extent it finds that
-overlaps the allocated range. It then uses the commit LSN of the
-transaction to force the log out to.
+[  644.291870] kernel BUG at drivers/gpu/drm/drm_fops.c:146!
+[  644.291876] invalid opcode: 0000 [#1] SMP
+[  644.291882] last sysfs file: /sys/kernel/uevent_seqnum
+[  644.291888]
+[  644.291895] Pid: 7276, comm: lt-cairo-test-s Not tainted 2.6.34-rc1 #2 N150/N210/N220             /N150/N210/N220
+[  644.291903] EIP: 0060:[<c11c70e3>] EFLAGS: 00210283 CPU: 0
+[  644.291912] EIP is at drm_open+0x4b1/0x4e2
+[  644.291918] EAX: f72d8d18 EBX: f790a400 ECX: f73176b8 EDX: 00000000
+[  644.291923] ESI: f790a414 EDI: f790a414 EBP: f647ae20 ESP: f647adfc
+[  644.291929]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  644.291937] Process lt-cairo-test-s (pid: 7276, ti=f647a000 task=f73f5c80 task.ti=f647a000)
+[  644.291941] Stack:
+[  644.291945]  00000000 f7bb7400 00000080 f6451100 f73176b8 f6479214 f6451100 f73176b8
+[  644.291957] <0> c1297ce0 f647ae34 c11c6c04 f73176b8 f7949800 00000000 f647ae54 c1080ac5
+[  644.291969] <0> f7949800 f6451100 00000000 f6451100 f73176b8 f6452780 f647ae70 c107d1e6
+[  644.291982] Call Trace:
+[  644.291991]  [<c11c6c04>] ? drm_stub_open+0x8a/0xb8
+[  644.292000]  [<c1080ac5>] ? chrdev_open+0xef/0x106
+[  644.292008]  [<c107d1e6>] ? __dentry_open+0xd4/0x1a6
+[  644.292015]  [<c107d35b>] ? nameidata_to_filp+0x31/0x45
+[  644.292022]  [<c10809d6>] ? chrdev_open+0x0/0x106
+[  644.292030]  [<c10864e2>] ? do_last+0x346/0x423
+[  644.292037]  [<c108789f>] ? do_filp_open+0x190/0x415
+[  644.292046]  [<c1071eb5>] ? handle_mm_fault+0x214/0x710
+[  644.292053]  [<c107d008>] ? do_sys_open+0x4d/0xe9
+[  644.292061]  [<c1016462>] ? do_page_fault+0x211/0x23f
+[  644.292068]  [<c107d0f0>] ? sys_open+0x23/0x2b
+[  644.292075]  [<c1002650>] ? sysenter_do_call+0x12/0x26
+[  644.292079] Code: 89 f0 89 55 dc e8 8d 96 0a 00 8b 45 e0 8b 55 dc 83 78 04 01 75 28 8b 83 18 02 00 00 85 c0 74 0f 8b 4d ec 3b 81 ac 00 00 00 74 13 <0f> 0b eb fe 8b 4d ec 8b 81 ac 00 00 00 89 83 18 02 00 00 89 f0
+[  644.292143] EIP: [<c11c70e3>] drm_open+0x4b1/0x4e2 SS:ESP 0068:f647adfc
+[  644.292175] ---[ end trace 2ddd476af89a60fa ]---
 
-Unfortunately, the other busy ranges might have more recent
-commit LSNs than the first busy extent that is found, and this
-results in xfs_alloc_search_busy() returning before all the
-extent free transactions are on disk for the range being
-allocated. This can lead to potential metadata corruption or
-stale data exposure after a crash because log replay won't replay
-all the extent free transactions that cover the allocation range.
-
-Modified-by: Alex Elder <aelder@sgi.com>
-
-(Dropped the "found" argument from the xfs_alloc_busysearch trace
-event.)
-
-Signed-off-by: Dave Chinner <david@fromorbit.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Alex Elder <aelder@sgi.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- fs/xfs/xfs_alloc.c |   52 +++++++++++++++++++++-------------------------------
- 1 file changed, 21 insertions(+), 31 deletions(-)
-
---- a/fs/xfs/xfs_alloc.c
-+++ b/fs/xfs/xfs_alloc.c
-@@ -2703,45 +2703,35 @@ xfs_alloc_search_busy(xfs_trans_t *tp,
- 	xfs_mount_t		*mp;
- 	xfs_perag_busy_t	*bsy;
- 	xfs_agblock_t		uend, bend;
--	xfs_lsn_t		lsn;
-+	xfs_lsn_t		lsn = 0;
- 	int			cnt;
- 
- 	mp = tp->t_mountp;
- 
- 	spin_lock(&mp->m_perag[agno].pagb_lock);
--	cnt = mp->m_perag[agno].pagb_count;
--
- 	uend = bno + len - 1;
- 
--	/* search pagb_list for this slot, skipping open slots */
--	for (bsy = mp->m_perag[agno].pagb_list; cnt; bsy++) {
--
--		/*
--		 * (start1,length1) within (start2, length2)
--		 */
--		if (bsy->busy_tp != NULL) {
--			bend = bsy->busy_start + bsy->busy_length - 1;
--			if ((bno > bend) || (uend < bsy->busy_start)) {
--				cnt--;
--			} else {
--				TRACE_BUSYSEARCH("xfs_alloc_search_busy",
--					 "found1", agno, bno, len, tp);
--				break;
--			}
--		}
--	}
--
- 	/*
--	 * If a block was found, force the log through the LSN of the
--	 * transaction that freed the block
-+	 * search pagb_list for this slot, skipping open slots. We have to
-+	 * search the entire array as there may be multiple overlaps and
-+	 * we have to get the most recent LSN for the log force to push out
-+	 * all the transactions that span the range.
- 	 */
--	if (cnt) {
--		TRACE_BUSYSEARCH("xfs_alloc_search_busy", "found", agno, bno, len, tp);
--		lsn = bsy->busy_tp->t_commit_lsn;
--		spin_unlock(&mp->m_perag[agno].pagb_lock);
--		xfs_log_force(mp, lsn, XFS_LOG_FORCE|XFS_LOG_SYNC);
--	} else {
--		TRACE_BUSYSEARCH("xfs_alloc_search_busy", "not-found", agno, bno, len, tp);
--		spin_unlock(&mp->m_perag[agno].pagb_lock);
-+	for (cnt = 0; cnt < mp->m_perag[agno].pagb_count; cnt++) {
-+		bsy = &mp->m_perag[agno].pagb_list[cnt];
-+		if (!bsy->busy_tp)
-+			continue;
-+		bend = bsy->busy_start + bsy->busy_length - 1;
-+		if (bno > bend || uend < bsy->busy_start)
-+			continue;
-+
-+		/* (start1,length1) within (start2, length2) */
-+		if (XFS_LSN_CMP(bsy->busy_tp->t_commit_lsn, lsn) > 0)
-+			lsn = bsy->busy_tp->t_commit_lsn;
+--- a/drivers/gpu/drm/drm_fops.c
++++ b/drivers/gpu/drm/drm_fops.c
+@@ -140,14 +140,16 @@ int drm_open(struct inode *inode, struct file *filp)
+ 		spin_unlock(&dev->count_lock);
  	}
-+	spin_unlock(&mp->m_perag[agno].pagb_lock);
-+	TRACE_BUSYSEARCH("xfs_alloc_search_busy", lsn ? "found" : "not-found",
-+						agno, bno, len, tp);
-+	if (lsn)
-+		xfs_log_force(mp, lsn, XFS_LOG_FORCE|XFS_LOG_SYNC);
+ out:
+-	mutex_lock(&dev->struct_mutex);
+-	if (minor->type == DRM_MINOR_LEGACY) {
+-		BUG_ON((dev->dev_mapping != NULL) &&
+-			(dev->dev_mapping != inode->i_mapping));
+-		if (dev->dev_mapping == NULL)
+-			dev->dev_mapping = inode->i_mapping;
++	if (!retcode) {
++		mutex_lock(&dev->struct_mutex);
++		if (minor->type == DRM_MINOR_LEGACY) {
++			if (dev->dev_mapping == NULL)
++				dev->dev_mapping = inode->i_mapping;
++			else if (dev->dev_mapping != inode->i_mapping)
++				retcode = -ENODEV;
++		}
++		mutex_unlock(&dev->struct_mutex);
+ 	}
+-	mutex_unlock(&dev->struct_mutex);
+ 
+ 	return retcode;
  }
 
 
