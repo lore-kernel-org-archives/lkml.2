@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab0DVTsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:48:52 -0400
-Received: from kroah.org ([198.145.64.141]:41055 "EHLO coco.kroah.org"
+	id S1757356Ab0DVTk5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:40:57 -0400
+Received: from kroah.org ([198.145.64.141]:41377 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756578Ab0DVT25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:57 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:17 2010
-Message-Id: <20100422190917.107862583@kvm.kroah.org>
+	id S1756779Ab0DVT3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:30 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:20 2010
+Message-Id: <20100422190920.825534147@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:20 -0700
+Date: Thu, 22 Apr 2010 12:10:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: [109/197] x86, lib: Add wbinvd smp helpers
+       Bjorn Helgaas <bjorn.helgaas@hp.com>, Dave Airlie <airlied@redhat.com>
+Subject: [151/197] agp/hp: fixup hp agp after ACPI changes
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,86 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 
-commit a7b480e7f30b3813353ec009f10f2ac7a6669f3b upstream.
+commit 67fe63b0715ccfaefa0af8a6e705c5470ee5cada upstream.
 
-Add wbinvd_on_cpu and wbinvd_on_all_cpus stubs for executing wbinvd on a
-particular CPU.
+Commit 15b8dd53f5ffa changed the string in info->hardware_id from a static
+array to a pointer and added a length field.  But instead of changing
+"sizeof(array)" to "length", we changed it to "sizeof(length)" (== 4),
+which corrupts the string we're trying to null-terminate.
 
-[ hpa: renamed lib/smp.c to lib/cache-smp.c ]
-[ hpa: wbinvd_on_all_cpus() returns int, but wbinvd() returns
-  void.  Thus, the former cannot be a macro for the latter,
-  replace with an inline function. ]
+We no longer even need to null-terminate the string, but we *do* need to
+check whether we found a HID.  If there's no HID, we used to have an empty
+array, but now we have a null pointer.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <1264172467-25155-2-git-send-email-bp@amd64.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+The combination of these defects causes this oops:
+
+  Unable to handle kernel NULL pointer dereference (address 0000000000000003)
+  modprobe[895]: Oops 8804682956800 [1]
+  ip is at zx1_gart_probe+0xd0/0xcc0 [hp_agp]
+
+  http://marc.info/?l=linux-ia64&m=126264484923647&w=2
+
+Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Reported-by: Émeric Maschino <emeric.maschino@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/smp.h |    9 +++++++++
- arch/x86/lib/Makefile      |    2 +-
- arch/x86/lib/cache-smp.c   |   19 +++++++++++++++++++
- 3 files changed, 29 insertions(+), 1 deletion(-)
+ drivers/char/agp/hp-agp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -135,6 +135,8 @@ int native_cpu_disable(void);
- void native_cpu_die(unsigned int cpu);
- void native_play_dead(void);
- void play_dead_common(void);
-+void wbinvd_on_cpu(int cpu);
-+int wbinvd_on_all_cpus(void);
- 
- void native_send_call_func_ipi(const struct cpumask *mask);
- void native_send_call_func_single_ipi(int cpu);
-@@ -147,6 +149,13 @@ static inline int num_booting_cpus(void)
- {
- 	return cpumask_weight(cpu_callout_mask);
- }
-+#else /* !CONFIG_SMP */
-+#define wbinvd_on_cpu(cpu)     wbinvd()
-+static inline int wbinvd_on_all_cpus(void)
-+{
-+	wbinvd();
-+	return 0;
-+}
- #endif /* CONFIG_SMP */
- 
- extern unsigned disabled_cpus __cpuinitdata;
---- a/arch/x86/lib/Makefile
-+++ b/arch/x86/lib/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for x86 specific library files.
- #
- 
--obj-$(CONFIG_SMP) += msr-smp.o
-+obj-$(CONFIG_SMP) += msr-smp.o cache-smp.o
- 
- lib-y := delay.o
- lib-y += thunk_$(BITS).o
---- /dev/null
-+++ b/arch/x86/lib/cache-smp.c
-@@ -0,0 +1,19 @@
-+#include <linux/smp.h>
-+#include <linux/module.h>
-+
-+static void __wbinvd(void *dummy)
-+{
-+	wbinvd();
-+}
-+
-+void wbinvd_on_cpu(int cpu)
-+{
-+	smp_call_function_single(cpu, __wbinvd, NULL, 1);
-+}
-+EXPORT_SYMBOL(wbinvd_on_cpu);
-+
-+int wbinvd_on_all_cpus(void)
-+{
-+	return on_each_cpu(__wbinvd, NULL, 1);
-+}
-+EXPORT_SYMBOL(wbinvd_on_all_cpus);
+--- a/drivers/char/agp/hp-agp.c
++++ b/drivers/char/agp/hp-agp.c
+@@ -488,9 +488,8 @@ zx1_gart_probe (acpi_handle obj, u32 dep
+ 	handle = obj;
+ 	do {
+ 		status = acpi_get_object_info(handle, &info);
+-		if (ACPI_SUCCESS(status)) {
++		if (ACPI_SUCCESS(status) && (info->valid & ACPI_VALID_HID)) {
+ 			/* TBD check _CID also */
+-			info->hardware_id.string[sizeof(info->hardware_id.length)-1] = '\0';
+ 			match = (strcmp(info->hardware_id.string, "HWP0001") == 0);
+ 			kfree(info);
+ 			if (match) {
 
 
