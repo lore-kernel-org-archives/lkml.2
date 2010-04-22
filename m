@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab0DVUGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:06:54 -0400
-Received: from kroah.org ([198.145.64.141]:60144 "EHLO coco.kroah.org"
+	id S1756311Ab0DVT2V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:28:21 -0400
+Received: from kroah.org ([198.145.64.141]:40697 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758076Ab0DVUCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:02:14 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:19 2010
-Message-Id: <20100422195419.039231393@kvm.kroah.org>
+	id S1756281Ab0DVT2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:17 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:13 2010
+Message-Id: <20100422190913.109630735@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:55:14 -0700
+Date: Thu, 22 Apr 2010 12:08:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jan Kiszka <jan.kiszka@siemens.com>, Avi Kivity <avi@redhat.com>
-Subject: [137/139] KVM: x86: Fix TSS size check for 16-bit tasks
-In-Reply-To: <20100422195715.GA25490@kroah.com>
+       Eric Sandeen <sandeen@redhat.com>, Jan Kara <jack@suse.cz>,
+       maximilian attems <max@stro.at>
+Subject: [064/197] ext3: journal all modifications in ext3_xattr_set_handle
+In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-(Cherry-picked from commit e8861cfe2c75bdce36655b64d7ce02c2b31b604d)
+commit d965736b8cb42ae51ba9c3f13488035a98d025c6 upstream.
 
-A 16-bit TSS is only 44 bytes long. So make sure to test for the correct
-size on task switch.
+ext3_xattr_set_handle() was zeroing out an inode outside
+of journaling constraints; this is one of the accesses that
+was causing the crc errors in journal replay as seen in
+kernel.org bugzilla #14354.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+Although ext3 doesn't have the crc issue, modifications
+out of journal control are a Bad Thing.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kvm/x86.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/ext3/xattr.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4576,6 +4576,7 @@ int kvm_task_switch(struct kvm_vcpu *vcp
- 	int ret = 0;
- 	u32 old_tss_base = get_segment_base(vcpu, VCPU_SREG_TR);
- 	u16 old_tss_sel = get_segment_selector(vcpu, VCPU_SREG_TR);
-+	u32 desc_limit;
+--- a/fs/ext3/xattr.c
++++ b/fs/ext3/xattr.c
+@@ -960,6 +960,10 @@ ext3_xattr_set_handle(handle_t *handle,
+ 	if (error)
+ 		goto cleanup;
  
- 	old_tss_base = vcpu->arch.mmu.gva_to_gpa(vcpu, old_tss_base);
- 
-@@ -4598,7 +4599,10 @@ int kvm_task_switch(struct kvm_vcpu *vcp
- 		}
++	error = ext3_journal_get_write_access(handle, is.iloc.bh);
++	if (error)
++		goto cleanup;
++
+ 	if (EXT3_I(inode)->i_state & EXT3_STATE_NEW) {
+ 		struct ext3_inode *raw_inode = ext3_raw_inode(&is.iloc);
+ 		memset(raw_inode, 0, EXT3_SB(inode->i_sb)->s_inode_size);
+@@ -985,9 +989,6 @@ ext3_xattr_set_handle(handle_t *handle,
+ 		if (flags & XATTR_CREATE)
+ 			goto cleanup;
  	}
- 
--	if (!nseg_desc.p || get_desc_limit(&nseg_desc) < 0x67) {
-+	desc_limit = get_desc_limit(&nseg_desc);
-+	if (!nseg_desc.p ||
-+	    ((desc_limit < 0x67 && (nseg_desc.type & 8)) ||
-+	     desc_limit < 0x2b)) {
- 		kvm_queue_exception_e(vcpu, TS_VECTOR, tss_selector & 0xfffc);
- 		return 1;
- 	}
+-	error = ext3_journal_get_write_access(handle, is.iloc.bh);
+-	if (error)
+-		goto cleanup;
+ 	if (!value) {
+ 		if (!is.s.not_found)
+ 			error = ext3_xattr_ibody_set(handle, inode, &i, &is);
 
 
