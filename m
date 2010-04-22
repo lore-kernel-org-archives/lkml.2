@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab0DVUAe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:00:34 -0400
-Received: from kroah.org ([198.145.64.141]:59659 "EHLO coco.kroah.org"
+	id S932200Ab0DVUDu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:03:50 -0400
+Received: from kroah.org ([198.145.64.141]:60101 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757986Ab0DVUAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:19 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:10 2010
-Message-Id: <20100422195410.190671452@kvm.kroah.org>
+	id S1758162Ab0DVUCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:02:02 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:18 2010
+Message-Id: <20100422195418.187113373@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:50 -0700
+Date: Thu, 22 Apr 2010 12:55:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [053/139] x86: Handle overlapping mptables
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, travis@sgi.com,
+       peterz@infradead.org, drepper@redhat.com, rja@sgi.com,
+       sharyath@in.ibm.com, steiner@sgi.com, Ingo Molnar <mingo@elte.hu>
+Subject: [128/139] sched: Use proper type in sched_getaffinity()
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <andi@firstfloor.org>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 909fc87b32b3b9e3f0b87dcc5d98319c41900c58 upstream.
+commit 8bc037fb89bb3104b9ae290d18c877624cd7d9cc upstream.
 
-We found a system where the MP table MPC and MPF structures overlap.
+Using the proper type fixes the following compiler warning:
 
-That doesn't really matter because the mptable is not used anyways with ACPI,
-but it leads to a panic in the early allocator due to the overlapping
-reservations in 2.6.33.
+  kernel/sched.c:4850: warning: comparison of distinct pointer types lacks a cast
 
-Earlier kernels handled this without problems.
-
-Simply change these reservations to reserve_early_overlap_ok to avoid
-the panic.
-
-Reported-by: Thomas Renninger <trenn@suse.de>
-Tested-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <20100329074111.GA22821@basil.fritz.box>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: torvalds@linux-foundation.org
+Cc: travis@sgi.com
+Cc: peterz@infradead.org
+Cc: drepper@redhat.com
+Cc: rja@sgi.com
+Cc: sharyath@in.ibm.com
+Cc: steiner@sgi.com
+LKML-Reference: <20100317090046.4C79.A69D9226@jp.fujitsu.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/mpparse.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -664,7 +664,7 @@ static void __init smp_reserve_memory(st
- {
- 	unsigned long size = get_mpc_size(mpf->physptr);
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -6727,7 +6727,7 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t
  
--	reserve_early(mpf->physptr, mpf->physptr+size, "MP-table mpc");
-+	reserve_early_overlap_ok(mpf->physptr, mpf->physptr+size, "MP-table mpc");
- }
+ 	ret = sched_getaffinity(pid, mask);
+ 	if (ret == 0) {
+-		int retlen = min(len, cpumask_size());
++		size_t retlen = min_t(size_t, len, cpumask_size());
  
- static int __init smp_scan_config(unsigned long base, unsigned long length)
-@@ -693,7 +693,7 @@ static int __init smp_scan_config(unsign
- 			       mpf, (u64)virt_to_phys(mpf));
- 
- 			mem = virt_to_phys(mpf);
--			reserve_early(mem, mem + sizeof(*mpf), "MP-table mpf");
-+			reserve_early_overlap_ok(mem, mem + sizeof(*mpf), "MP-table mpf");
- 			if (mpf->physptr)
- 				smp_reserve_memory(mpf);
- 
+ 		if (copy_to_user(user_mask_ptr, mask, retlen))
+ 			ret = -EFAULT;
 
 
