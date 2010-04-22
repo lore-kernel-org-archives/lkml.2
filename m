@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab0DVGeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 02:34:11 -0400
-Received: from anumail8.anu.edu.au ([130.56.64.134]:57902 "EHLO
-	anumail8.anu.edu.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab0DVGeJ (ORCPT
+	id S1753205Ab0DVGf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 02:35:27 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62236 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab0DVGf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 02:34:09 -0400
-X-Greylist: delayed 2025 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Apr 2010 02:34:09 EDT
-Subject: Re: help!
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Ben Nizette <bn@niasdigital.com>
-In-Reply-To: <x2kfc260d631004212244s5e433f7dybefc14b9029af903@mail.gmail.com>
-Date: Thu, 22 Apr 2010 16:00:14 +1000
-Cc: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <8622E706-1336-4571-A9E7-589B542F91D6@niasdigital.com>
-References: <x2kfc260d631004212244s5e433f7dybefc14b9029af903@mail.gmail.com>
-To: Angel Fish <dolphinysj@gmail.com>
-X-Mailer: Apple Mail (2.1078)
-X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.22.54814 internal
-X-PMX-Outbound: anu.edu.au
-X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_500_599 0, BODY_SIZE_7000_LESS 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CP_URI_IN_BODY 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __MIME_VERSION_APPLEMAIL 0, __MSGID_APPLEMAIL 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NS , __USER_AGENT_APPLEMAIL 0, __X_MAILER_APPLEMAIL 0'
+	Thu, 22 Apr 2010 02:35:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ZOP8UanwifRohE5KwQKNON+lHx5fRnSL2gVzQnU6kuExcAGkq8u43icRp1LP/9jeSE
+         +cACzBVRb0QDuUWB31+7B5qKlH+5w9AjktVy8lH5y5rha8U7l2dcgZL2s9lpNfcVZ+Af
+         3CX/C6Pmrbg/CIM9+d5fyy93bFpfX6goYf2fE=
+MIME-Version: 1.0
+In-Reply-To: <1271917738.1730.699.camel@Joe-Laptop.home>
+References: <1271881967.1730.482.camel@Joe-Laptop.home>
+	 <20100422034532.GA25177@suse.de>
+	 <1271910357.1730.627.camel@Joe-Laptop.home>
+	 <20100422054902.GA28037@suse.de>
+	 <1271915718.1730.687.camel@Joe-Laptop.home>
+	 <20100422061242.GA28539@suse.de>
+	 <1271917738.1730.699.camel@Joe-Laptop.home>
+Date: Thu, 22 Apr 2010 14:35:25 +0800
+Message-ID: <y2l45a44e481004212335wdec046a3l49da3d352bbf7c5d@mail.gmail.com>
+Subject: Re: What's the staging review and acceptance process?
+From: Jaya Kumar <jayakumar.lkml@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg KH <gregkh@suse.de>, devel@driverdev.osuosl.org,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 22, 2010 at 2:28 PM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2010-04-21 at 23:12 -0700, Greg KH wrote:
+>> On Wed, Apr 21, 2010 at 10:55:18PM -0700, Joe Perches wrote:
+>> > I think it's pretty established that response delays
+>> > cause losses of one type or another.
+>> Established where?
+>> What type of losses?
+>
+> Seriously?
+> Google much?
+> Take or study economics or psychology?
+> Have children?
+>
 
-On 22/04/2010, at 3:44 PM, Angel Fish wrote:
-
-> Hi,
-> I'm new to this mail list. And I want to touch the linux kernel. But I
-> can't find way to start.
-> Can anyone help to give me some advice?
-
-kernelnewbies.org :-)
-
-	--Ben.
-
-> 
-> Thanks
-> Angel Fish
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+On a lighter note, I read above as suggesting that response delays
+caused one to have children. :-)
