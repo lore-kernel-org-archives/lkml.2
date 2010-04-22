@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab0DVTlC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:41:02 -0400
-Received: from kroah.org ([198.145.64.141]:41377 "EHLO coco.kroah.org"
+	id S1756805Ab0DVTlg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:41:36 -0400
+Received: from kroah.org ([198.145.64.141]:41368 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756777Ab0DVT33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:29 -0400
+	id S1756773Ab0DVT32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:28 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:20 2010
-Message-Id: <20100422190920.648798702@kvm.kroah.org>
+Message-Id: <20100422190920.561166562@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:00 -0700
+Date: Thu, 22 Apr 2010 12:09:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "John W. Linville" <linville@tuxdriver.com>,
-       maximilian attems <max@stro.at>
-Subject: [149/197] b43: fall back gracefully to PIO mode after fatal DMA errors
+       Larry Finger <Larry.Finger@lwfinger.net>,
+       maximilian attems <max@stro.at>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [148/197] b43: Allow PIO mode to be selected at module load
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,138 +27,223 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 9e3bd9190800e8209b4a3e1d724c35f0738dcad2 upstream.
+commit b02914af4d7020828ce921a572589dd793517c09 upstream.
 
-This makes the b43 driver just automatically fall back to PIO mode when
-DMA doesn't work.
+If userencounter the "Fatal DMA Problem" with a BCM43XX device, and
+still wish to use b43 as the driver, their only option is to rebuild
+the kernel with CONFIG_B43_FORCE_PIO. This patch removes this option and
+allows PIO mode to be selected with a load-time parameter for the module.
+Note that the configuration variable CONFIG_B43_PIO is also removed.
 
-The driver already told the user to do it, so rather than have the user
-reload the module with a new flag, just make the driver do it
-automatically. We keep the message as an indication that something is
-wrong, but now just automatically fall back to the hopefully working PIO
-case.
+Once the DMA problem with the BCM4312 devices is solved, this patch will
+likely be reverted.
 
-(Some post-2.6.33 merge fixups by Larry Finger <Larry.Finger@lwfinger.net>
-and yours truly... -- JWL)
-
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Tested-by: John Daiker <daikerjohn@gmail.com>
 Cc: maximilian attems <max@stro.at>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/b43/Kconfig |   19 +++++++++++++++++--
- drivers/net/wireless/b43/b43.h   |    7 +++++++
- drivers/net/wireless/b43/main.c  |   14 ++++++++------
- 3 files changed, 32 insertions(+), 8 deletions(-)
+ drivers/net/wireless/b43/Kconfig  |   19 +-----------------
+ drivers/net/wireless/b43/Makefile |    2 -
+ drivers/net/wireless/b43/b43.h    |   13 ------------
+ drivers/net/wireless/b43/dma.c    |    2 -
+ drivers/net/wireless/b43/main.c   |    9 +++++---
+ drivers/net/wireless/b43/pio.h    |   40 --------------------------------------
+ 6 files changed, 9 insertions(+), 76 deletions(-)
 
 --- a/drivers/net/wireless/b43/Kconfig
 +++ b/drivers/net/wireless/b43/Kconfig
-@@ -3,7 +3,6 @@ config B43
+@@ -3,6 +3,7 @@ config B43
  	depends on SSB_POSSIBLE && MAC80211 && WLAN_80211 && HAS_DMA
  	select SSB
  	select FW_LOADER
--	select SSB_BLOCKIO
++	select SSB_BLOCKIO
  	---help---
  	  b43 is a driver for the Broadcom 43xx series wireless devices.
  
-@@ -79,6 +78,14 @@ config B43_SDIO
+@@ -78,14 +79,6 @@ config B43_SDIO
  
  	  If unsure, say N.
  
-+#Data transfers to the device via PIO. We want it as a fallback even
-+# if we can do DMA.
-+config B43_PIO
-+	bool
-+	depends on B43
-+	select SSB_BLOCKIO
-+	default y
-+
+-# Data transfers to the device via PIO
+-# This is only needed on PCMCIA and SDIO devices. All others can do DMA properly.
+-config B43_PIO
+-	bool
+-	depends on B43 && (B43_SDIO || B43_PCMCIA || B43_FORCE_PIO)
+-	select SSB_BLOCKIO
+-	default y
+-
  config B43_NPHY
  	bool "Pre IEEE 802.11n support (BROKEN)"
  	depends on B43 && EXPERIMENTAL && BROKEN
-@@ -130,4 +137,12 @@ config B43_DEBUG
+@@ -137,12 +130,4 @@ config B43_DEBUG
  	  for production use.
  	  Only say Y, if you are debugging a problem in the b43 driver sourcecode.
  
+-config B43_FORCE_PIO
+-	bool "Force usage of PIO instead of DMA"
+-	depends on B43 && B43_DEBUG
+-	---help---
+-	  This will disable DMA and always enable PIO instead.
 -
-+config B43_FORCE_PIO
-+	bool "Force usage of PIO instead of DMA"
-+	depends on B43 && B43_DEBUG
-+	---help---
-+	  This will disable DMA and always enable PIO instead.
+-	  Say N!
+-	  This is only for debugging the PIO engine code. You do
+-	  _NOT_ want to enable this.
 +
-+	  Say N!
-+	  This is only for debugging the PIO engine code. You do
-+	  _NOT_ want to enable this.
+--- a/drivers/net/wireless/b43/Makefile
++++ b/drivers/net/wireless/b43/Makefile
+@@ -12,7 +12,7 @@ b43-y				+= xmit.o
+ b43-y				+= lo.o
+ b43-y				+= wa.o
+ b43-y				+= dma.o
+-b43-$(CONFIG_B43_PIO)		+= pio.o
++b43-y				+= pio.o
+ b43-y				+= rfkill.o
+ b43-$(CONFIG_B43_LEDS)		+= leds.o
+ b43-$(CONFIG_B43_PCMCIA)	+= pcmcia.o
 --- a/drivers/net/wireless/b43/b43.h
 +++ b/drivers/net/wireless/b43/b43.h
-@@ -696,6 +696,7 @@ struct b43_wldev {
- 	bool radio_hw_enable;	/* saved state of radio hardware enabled state */
- 	bool qos_enabled;		/* TRUE, if QoS is used. */
- 	bool hwcrypto_enabled;		/* TRUE, if HW crypto acceleration is enabled. */
-+	bool use_pio;			/* TRUE if next init should use PIO */
+@@ -830,7 +830,6 @@ struct b43_wl {
+ 	/* The device LEDs. */
+ 	struct b43_leds leds;
  
- 	/* PHY/Radio device. */
- 	struct b43_phy phy;
-@@ -890,6 +891,12 @@ static inline bool b43_using_pio_transfe
+-#ifdef CONFIG_B43_PIO
+ 	/*
+ 	 * RX/TX header/tail buffers used by the frame transmit functions.
+ 	 */
+@@ -838,7 +837,6 @@ struct b43_wl {
+ 	struct b43_txhdr txhdr;
+ 	u8 rx_tail[4];
+ 	u8 tx_tail[4];
+-#endif /* CONFIG_B43_PIO */
+ };
+ 
+ static inline struct b43_wl *hw_to_b43_wl(struct ieee80211_hw *hw)
+@@ -889,20 +887,9 @@ static inline void b43_write32(struct b4
+ 
+ static inline bool b43_using_pio_transfers(struct b43_wldev *dev)
+ {
+-#ifdef CONFIG_B43_PIO
  	return dev->__using_pio_transfers;
+-#else
+-	return 0;
+-#endif
  }
  
-+#ifdef CONFIG_B43_FORCE_PIO
-+# define B43_PIO_DEFAULT 1
-+#else
-+# define B43_PIO_DEFAULT 0
-+#endif
-+
+-#ifdef CONFIG_B43_FORCE_PIO
+-# define B43_FORCE_PIO	1
+-#else
+-# define B43_FORCE_PIO	0
+-#endif
+-
+-
  /* Message printing */
  void b43info(struct b43_wl *wl, const char *fmt, ...)
      __attribute__ ((format(printf, 2, 3)));
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@ -1620,7 +1620,6 @@ void b43_dma_tx_resume(struct b43_wldev
+ 	b43_power_saving_ctl_bits(dev, 0);
+ }
+ 
+-#ifdef CONFIG_B43_PIO
+ static void direct_fifo_rx(struct b43_wldev *dev, enum b43_dmatype type,
+ 			   u16 mmio_base, bool enable)
+ {
+@@ -1654,4 +1653,3 @@ void b43_dma_direct_fifo_rx(struct b43_w
+ 	mmio_base = b43_dmacontroller_base(type, engine_index);
+ 	direct_fifo_rx(dev, type, mmio_base, enable);
+ }
+-#endif /* CONFIG_B43_PIO */
 --- a/drivers/net/wireless/b43/main.c
 +++ b/drivers/net/wireless/b43/main.c
-@@ -102,9 +102,9 @@ int b43_modparam_verbose = B43_VERBOSITY
+@@ -102,6 +102,9 @@ int b43_modparam_verbose = B43_VERBOSITY
  module_param_named(verbose, b43_modparam_verbose, int, 0644);
  MODULE_PARM_DESC(verbose, "Log message verbosity: 0=error, 1=warn, 2=info(default), 3=debug");
  
--static int modparam_pio;
--module_param_named(pio, modparam_pio, int, 0444);
--MODULE_PARM_DESC(pio, "enable(1) / disable(0) PIO mode");
-+int b43_modparam_pio = B43_PIO_DEFAULT;
-+module_param_named(pio, b43_modparam_pio, int, 0644);
-+MODULE_PARM_DESC(pio, "Use PIO accesses by default: 0=DMA, 1=PIO");
++static int modparam_pio;
++module_param_named(pio, modparam_pio, int, 0444);
++MODULE_PARM_DESC(pio, "enable(1) / disable(0) PIO mode");
  
  static const struct ssb_device_id b43_ssb_tbl[] = {
  	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 5),
-@@ -1793,8 +1793,9 @@ static void b43_do_interrupt_thread(stru
+@@ -1790,8 +1793,8 @@ static void b43_do_interrupt_thread(stru
  			       dma_reason[4], dma_reason[5]);
  			b43err(dev->wl, "This device does not support DMA "
  			       "on your system. Please use PIO instead.\n");
--			b43err(dev->wl, "Unload the b43 module and reload "
--			       "with 'pio=1'\n");
-+			/* Fall back to PIO transfers if we get fatal DMA errors! */
-+			dev->use_pio = 1;
-+			b43_controller_restart(dev, "DMA error");
+-			b43err(dev->wl, "CONFIG_B43_FORCE_PIO must be set in "
+-			       "your kernel configuration.\n");
++			b43err(dev->wl, "Unload the b43 module and reload "
++			       "with 'pio=1'\n");
  			return;
  		}
  		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
-@@ -4361,7 +4362,7 @@ static int b43_wireless_core_init(struct
+@@ -4358,7 +4361,7 @@ static int b43_wireless_core_init(struct
  
  	if ((dev->dev->bus->bustype == SSB_BUSTYPE_PCMCIA) ||
  	    (dev->dev->bus->bustype == SSB_BUSTYPE_SDIO) ||
--	    modparam_pio) {
-+	    dev->use_pio) {
+-	    B43_FORCE_PIO) {
++	    modparam_pio) {
  		dev->__using_pio_transfers = 1;
  		err = b43_pio_init(dev);
  	} else {
-@@ -4829,6 +4830,7 @@ static int b43_one_core_attach(struct ss
- 	if (!wldev)
- 		goto out;
+--- a/drivers/net/wireless/b43/pio.h
++++ b/drivers/net/wireless/b43/pio.h
+@@ -55,8 +55,6 @@
+ #define B43_PIO_MAX_NR_TXPACKETS	32
  
-+	wldev->use_pio = b43_modparam_pio;
- 	wldev->dev = dev;
- 	wldev->wl = wl;
- 	b43_set_status(wldev, B43_STAT_UNINIT);
+ 
+-#ifdef CONFIG_B43_PIO
+-
+ struct b43_pio_txpacket {
+ 	/* Pointer to the TX queue we belong to. */
+ 	struct b43_pio_txqueue *queue;
+@@ -169,42 +167,4 @@ void b43_pio_rx(struct b43_pio_rxqueue *
+ void b43_pio_tx_suspend(struct b43_wldev *dev);
+ void b43_pio_tx_resume(struct b43_wldev *dev);
+ 
+-
+-#else /* CONFIG_B43_PIO */
+-
+-
+-static inline int b43_pio_init(struct b43_wldev *dev)
+-{
+-	return 0;
+-}
+-static inline void b43_pio_free(struct b43_wldev *dev)
+-{
+-}
+-static inline void b43_pio_stop(struct b43_wldev *dev)
+-{
+-}
+-static inline int b43_pio_tx(struct b43_wldev *dev,
+-			     struct sk_buff *skb)
+-{
+-	return 0;
+-}
+-static inline void b43_pio_handle_txstatus(struct b43_wldev *dev,
+-					   const struct b43_txstatus *status)
+-{
+-}
+-static inline void b43_pio_get_tx_stats(struct b43_wldev *dev,
+-					struct ieee80211_tx_queue_stats *stats)
+-{
+-}
+-static inline void b43_pio_rx(struct b43_pio_rxqueue *q)
+-{
+-}
+-static inline void b43_pio_tx_suspend(struct b43_wldev *dev)
+-{
+-}
+-static inline void b43_pio_tx_resume(struct b43_wldev *dev)
+-{
+-}
+-
+-#endif /* CONFIG_B43_PIO */
+ #endif /* B43_PIO_H_ */
 
 
