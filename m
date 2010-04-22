@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab0DVHhB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 03:37:01 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46964 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab0DVHg4 (ORCPT
+	id S1752828Ab0DVHiV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 03:38:21 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:60409 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab0DVHiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 03:36:56 -0400
-Date: Thu, 22 Apr 2010 16:36:33 +0900
+	Thu, 22 Apr 2010 03:38:19 -0400
+Date: Thu, 22 Apr 2010 16:37:55 +0900
 From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
 To: David Howells <dhowells@redhat.com>
 Cc: keyrings@linux-nfs.org, security@kernel.org,
        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1][BUG][IMPORTANT] KEYRINGS: find_keyring_by_name() can
+Subject: [PATCH 1/1][BUG][IMPORTANT] KEYRINGS: find_keyring_by_name() can
  gain the freed keyring
-Message-Id: <20100422163633.de233f25.toshi.okajima@jp.fujitsu.com>
+Message-Id: <20100422163755.355794e3.toshi.okajima@jp.fujitsu.com>
 Organization: Fujitsu co.,ltd.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.12.8; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
 
 With linux-2.6.34-rc5, find_keyring_by_name() can gain the keyring which has
 been already freed. And then, its space (which is gained by 
 find_keyring_by_name()) is broken by accessing the freed keyring as the 
-available keyring:
+available keyring.
+This problem is serious because it may trigger the user data destructions.
 
-1) If the space of the freed keyring is reallocated for other purpose 
- (ie. filp SLUB), the data of the filp object may be destroyed by the user of 
- the freed keyring.
-(SLUB configuration can share the freed space with other same-size slabs.)
+[Figure Description](Example)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+|(cleaner)				(user)
+| free_user(user)			sys_keyctl()
+|  |                                     |
+|  key_put(user->session_keyring)        keyctl_get_keyring_ID()
+|  ||	//=> keyring->usage = 0           |
+|  |schedule_work(&key_cleanup_task)      lookup_user_key()
+|  ||                                      |
+|  kmem_cache_free(,user)                  |
+|  .                                       |[KEY_SPEC_USER_KEYRING]
+|  .                                       install_user_keyrings()
+|  .                                       ||
+| key_cleanup() [<= worker_thread()]       ||
+|  |                                       ||
+|  [spin_lock(&key_serial_lock)]           |[mutex_lock(&key_user_keyr..mutex)]
+|  |                                       ||
+|  rb_ease(&key->serial_node,)             ||
+|  |                                       ||
+|  [spin_unlock(&key_serial_lock)]         |find_keyring_by_name()
+|  |                                       |||
+|  keyring_destroy(keyring)                ||[read_lock(&keyring_name_lock)]
+|  ||                                      |||
+|  |[write_lock(&keyring_name_lock)]       ||*** GET freeing keyring ***
+|  |.                                      ||[read_unlock(&keyring_name_lock)]
+|  ||                                      |||
+|  |list_del()                             |||
+|  ||                                      |||
+|  |[write_unlock(&keyring_name_lock)]     |||
+|  |                                       |||
+|  kmem_cache_free(,keyring)               |||
+|                                          ||atomic_inc(&keyring->usage) 
+|                                          || ***DESTROYED***
+|                                          |[mutex_unlock(&key_user_k..mutex)]
+v                                          |
+TIME                                       ** INVALID keyring is returned **
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-2) If the slab space of the freed keyring is released into the system,
- the system panic may happen because accessing the space of the freed keyring 
- causes the page-fault.
- 
-Example: (we can easily confirm this problem if CONFIG_SLUB is "y".)
-[1] with CONFIG_SLUB_DEBUG_ON
- While we are executing my reproducer (which is attached),
-we can notice that the user of the freed keyring breaks its space:
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# ./reproducer &
-...
-# dmesg 
-...
+If CONFIG_SLUB_DEBUG_ON is configured, we may see the following message in
+dmesg:
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 =============================================================================
 BUG key_jar: Poison overwritten
 -----------------------------------------------------------------------------
@@ -61,72 +85,17 @@ INFO: Object 0xffff880197a7e200 @offset=512 fp=0xffff880197a7e300
 
 Bytes b4 0xffff880197a7e1f0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
   Object 0xffff880197a7e200:  6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b jkkkkkkkkkkkkkkk
-  Object 0xffff880197a7e210:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-  Object 0xffff880197a7e220:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-  Object 0xffff880197a7e230:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-  Object 0xffff880197a7e240:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-  Object 0xffff880197a7e250:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-  Object 0xffff880197a7e260:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-  Object 0xffff880197a7e270:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-  Object 0xffff880197a7e280:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-  Object 0xffff880197a7e290:  6b 6b 6b 6b 6b 6b 6b a5                         kkkkkkk�        
- Redzone 0xffff880197a7e298:  bb bb bb bb bb bb bb bb                         ��������        
- Padding 0xffff880197a7e2d8:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
- Padding 0xffff880197a7e2e8:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
- Padding 0xffff880197a7e2f8:  5a 5a 5a 5a 5a 5a 5a 5a                         ZZZZZZZZ        
-Pid: 5090, comm: su Not tainted 2.6.34-rc5-nofixed #1
-Call Trace:
- [<ffffffff810e3e9c>] ? check_bytes_and_report+0xb5/0xe6
- [<ffffffff81152994>] ? key_alloc+0x10b/0x35f
- [<ffffffff810e3f8f>] ? check_object+0xc2/0x1a4
- [<ffffffff810e5c09>] ? __slab_alloc+0x2ff/0x3a6
- [<ffffffff81152994>] ? key_alloc+0x10b/0x35f
- [<ffffffff81152780>] ? key_user_lookup+0x78/0x181
- [<ffffffff81152994>] ? key_alloc+0x10b/0x35f
- [<ffffffff810e658a>] ? kmem_cache_alloc+0x75/0xe9
- [<ffffffff81152994>] ? key_alloc+0x10b/0x35f
- [<ffffffff8115360a>] ? keyring_alloc+0x29/0x61
- [<ffffffff81155897>] ? install_user_keyrings+0x99/0x168
- [<ffffffff81155ae6>] ? lookup_user_key+0x180/0x30a
- [<ffffffff81153eaf>] ? keyctl_get_keyring_ID+0x15/0x38
- [<ffffffff81008a02>] ? system_call_fastpath+0x16/0x1b
-FIX key_jar: Restoring 0xffff880197a7e200-0xffff880197a7e200=0x6b
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-FIX key_jar: Marking all objects used
-=============================================================================
-BUG key_jar: Poison overwritten
------------------------------------------------------------------------------
-...
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
-[2] without CONFIG_SLUB_DEBUG_ON
- While we are executing my reproducer (which is attached),
-we may find such the back-trace at the system panic:
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# ls -l /sys/kernel/slab
-total 0
-drwxr-xr-x 2 root root 0 Apr 21 00:45 :at-0000016
-...
-lrwxrwxrwx 1 root root 0 Apr 21 00:45 cred_jar -> :t-0000192
-...
-lrwxrwxrwx 1 root root 0 Apr 21 00:45 filp -> :t-0000192
-...
-lrwxrwxrwx 1 root root 0 Apr 21 00:45 key_jar -> :t-0000192
-...
-lrwxrwxrwx 1 root root 0 Apr 21 00:45 kmalloc-192 -> :t-0000192
-...
-
-# ./reproducer.sh
-(PANIC)
+Otherwise, such a system panic may happen:
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 <1>BUG: unable to handle kernel NULL pointer dereference at 0000000000000001
 <1>IP: [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
 <4>PGD 6b2b4067 PUD 6a80d067 PMD 0 
 <0>Oops: 0000 [#1] SMP 
 <0>last sysfs file: /sys/kernel/kexec_crash_loaded
 <4>CPU 1 
-<4>Modules linked in: nfsd lockd nfs_acl auth_rpcgss exportfs sunrpc autofs4 ipv6 ext4 jbd2 dm_mirror dm_region_hash dm_log dm_mul
-tipath uinput shpchp i2c_i801 ppdev parport_pc e752x_edac edac_core i2c_core tg3 iTCO_wdt iTCO_vendor_support parport pcspkr ext3 
-jbd mbcache ata_generic pata_acpi megaraid_mbox megaraid_mm ata_piix floppy dm_mod [last unloaded: scsi_wait_scan]
+...
 <4>Pid: 31245, comm: su Not tainted 2.6.34-rc5-nofixed-nodebug #2 D2089/PRIMERGY
 <4>RIP: 0010:[<ffffffff810e61a3>]  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
 <4>RSP: 0018:ffff88006af3bd98  EFLAGS: 00010002
@@ -158,31 +127,127 @@ jbd mbcache ata_generic pata_acpi megaraid_mbox megaraid_mm ata_piix floppy dm_m
 <1>RIP  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-[reproducer.sh]
+This root cause is not to confirm the keyring is valid.
+So, adding its validate confirmation with spin_lock(&key_serial_lock) 
+can fix this problem.
+[Figure Description]
+Case 1)
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-#!/bin/sh
-
-LOOP=100000
-USER=dummy_user
-# add
-/bin/su -c "exit;" $USER || { /usr/sbin/adduser -m $USER; add=1; }
-
-for ((i=0; i<LOOP; i++))
-do
-        /bin/su -c "echo '$i' > /dev/null" $USER
-done
-
-# del
-(( add == 1 )) && /usr/sbin/userdel -r $USER
-exit
+|(cleaner)				(user)
+| free_user(user)			sys_keyctl()
+|  |                                     |
+|  key_put(user->session_keyring)        keyctl_get_keyring_ID()
+|  ||	//=> keyring->usage = 0           |
+|  |schedule_work(&key_cleanup_task)      lookup_user_key()
+|  ||                                      |
+|  kmem_cache_free(,user)                  |
+|  .                                       |[KEY_SPEC_USER_KEYRING]
+|  .                                       install_user_keyrings()
+|  .                                       ||
+| key_cleanup() [<= worker_thread()]       ||
+|  |                                       ||
+|  [spin_lock(&key_serial_lock)]           |[mutex_lock(&key_user_keyr..mutex)]
+|  |                                       ||
+|  rb_ease(&key->serial_node,)             ||
+|  |                                       ||
+|  [spin_unlock(&key_serial_lock)]         |find_keyring_by_name()
+|  |                                       |||
+|  keyring_destroy(keyring)                ||[read_lock(&keyring_name_lock)]
+|  ||                                      |||
+|  ||                                      ||[spin_lock(&key_serial_lock)]
+|  ||                                      |||
+|  ||                                      ||*** THIS keyring is freeing ***
+|  |[write_lock(&keyring_name_lock)]       |||  So, returns with -ENOKEY
+|  |.                                      ||[spin_unlock(&key_serial_lock)]
+|  |.                                      |||
+|  |.                                      ||[read_unlock(&keyring_name_lock)]
+|  ||                                      ||
+|  |list_del()                             |[mutex_unlock(&key_user_k..mutex)]
+|  ||                                      | 
+|  |[write_unlock(&keyring_name_lock)]     ** Keyring is not found. **  
+|  |                                         
+|  kmem_cache_free(,keyring)                 
+v                                             
+TIME
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Case 2)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+|(cleaner)				(user)
+| free_user(user)			sys_keyctl()
+|  |                                     |
+|  key_put(user->session_keyring)        keyctl_get_keyring_ID()
+|  ||	//=> keyring->usage = 0           |
+|  |schedule_work(&key_cleanup_task)      lookup_user_key()
+|  ||                                      |[KEY_SPEC_USER_KEYRING]
+|  kmem_cache_free(,user)                  install_user_keyrings() 
+|  .                                       ||
+|  .                                       |[mutex_lock(&key_user_keyr..mutex)] 
+|  .                                       ||
+| key_cleanup() [<= worker_thread()]       |find_keyring_by_name() 
+|  |                                       |||
+|  |                                       ||[read_lock(&keyring_name_lock)]
+|  |                                       |||
+|  |                                       ||[spin_lock(&key_serial_lock)]
+|  [spin_lock(&key_serial_lock)]           |||
+|  .                                       ||*** GET this keyring ***
+|  .                                       |||
+|  .                                       ||atomic_inc(&keyring->usage)
+|  .                                       |||
+|  .                                       ||[spin_unlock(&keyring_name_lock)]
+|  |                                       |||
+|  *** NOT erase because usage>0 ***       ||[read_unlock(&keyring_name_lock)]
+|  |                                       ||
+|  [spin_unlock(&key_serial_lock)]         |[mutex_unlock(&key_user_k..mutex)]
+v                                          |  
+TIME                                       ** VALID keyring is returned **
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-I created the patch which fixes this problem.
-(I attach it into the following mail. And I couldn't see the "Poison" lines 
-of dmesg with the fixed kernel while I was executing my reproducer. So, this 
-problem seems to be fixed by this patch.)
-This problem is serious because it may trigger the user data destructions.
-Please confirm and fix this problem.
+Signed-off-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+---
+ security/keys/key.c     |    1 +
+ security/keys/keyring.c |   12 +++++++++++-
+ 2 files changed, 12 insertions(+), 1 deletions(-)
 
-Best Regards,
-Toshiyuki Okajima
+diff --git a/security/keys/key.c b/security/keys/key.c
+index e50d264..3728bc9 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -559,6 +559,7 @@ static void key_cleanup(struct work_struct *work)
+ 	/* we found a dead key - once we've removed it from the tree, we can
+ 	 * drop the lock */
+ 	rb_erase(&key->serial_node, &key_serial_tree);
++	RB_CLEAR_NODE(&key->serial_node); //this can enable RB_EMPTY_NODE()
+ 	spin_unlock(&key_serial_lock);
+ 
+ 	key_check(key);
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index e814d21..72e2b74 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -555,13 +555,23 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
+ 					   KEY_SEARCH) < 0)
+ 				continue;
+ 
+-			/* we've got a match */
++			/* we've got a match but must confirm this keyring
++			* hasn't been yet removed from rb-tree */
++			spin_lock(&key_serial_lock);
++			if (RB_EMPTY_NODE(&keyring->serial_node)) {
++				/* this keyring is now freeing */
++				spin_unlock(&key_serial_lock);
++				goto not_found;
++			}
++			/* we let key_cleanup() not release this keyring */
+ 			atomic_inc(&keyring->usage);
++			spin_unlock(&key_serial_lock);
+ 			read_unlock(&keyring_name_lock);
+ 			goto error;
+ 		}
+ 	}
+ 
++not_found:
+ 	read_unlock(&keyring_name_lock);
+ 	keyring = ERR_PTR(-ENOKEY);
+ 
+-- 
+1.5.5.6
