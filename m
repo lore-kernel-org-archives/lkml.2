@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117Ab0DVUDm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:03:42 -0400
-Received: from kroah.org ([198.145.64.141]:60091 "EHLO coco.kroah.org"
+	id S932387Ab0DVUVe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:21:34 -0400
+Received: from kroah.org ([198.145.64.141]:59736 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758158Ab0DVUB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:01:59 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:18 2010
-Message-Id: <20100422195417.995921837@kvm.kroah.org>
+	id S1758000Ab0DVUA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:00:27 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:10 2010
+Message-Id: <20100422195410.817723775@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:55:03 -0700
+Date: Thu, 22 Apr 2010 12:53:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Adam Lackorzynski <adam@os.inf.tu-dresden.de>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [126/139] powerpc: Fix SMP build with disabled CPU hotplugging.
+       Ping Cheng <pingc@wacom.com>, Dmitry Torokhov <dtor@mail.ru>
+Subject: [060/139] Input: wacom - switch mode upon system resume
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
+From: Ping Cheng <pingc@wacom.com>
 
-commit 5b72d74ce2fccca2a301de60f31b16ddf5c93984 upstream.
+commit 014f61504af276ba9d9544d8a7401d8f8526eb73 upstream.
 
-Compiling 2.6.33 with SMP enabled and HOTPLUG_CPU disabled gives me the
-following link errors:
+When Wacom devices wake up from a sleep, the switch mode command
+(wacom_query_tablet_data) is needed before wacom_open is called.
+wacom_query_tablet_data should not be executed inside wacom_open
+since wacom_open is called more than once during probe.
 
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-arch/powerpc/platforms/built-in.o: In function `.smp_xics_setup_cpu':
-smp.c:(.devinit.text+0x88): undefined reference to `.set_cpu_current_state'
-smp.c:(.devinit.text+0x94): undefined reference to `.set_default_offline_state'
-arch/powerpc/platforms/built-in.o: In function `.smp_pSeries_kick_cpu':
-smp.c:(.devinit.text+0x13c): undefined reference to `.set_preferred_offline_state'
-smp.c:(.devinit.text+0x148): undefined reference to `.get_cpu_current_state'
-smp.c:(.devinit.text+0x1a8): undefined reference to `.get_cpu_current_state'
-make: *** [.tmp_vmlinux1] Error 1
+wacom_retrieve_hid_descriptor is removed from wacom_resume due
+to the fact that the required descriptors are stored properly
+upon system resume.
 
-The following change fixes that for me and seems to work as expected.
-
-Signed-off-by: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-and-tested-by: Anton Anikin <Anton@Anikin.name>
+Signed-off-by: Ping Cheng <pingc@wacom.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/platforms/pseries/offline_states.h |   22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ drivers/input/tablet/wacom_sys.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/offline_states.h
-+++ b/arch/powerpc/platforms/pseries/offline_states.h
-@@ -9,10 +9,30 @@ enum cpu_state_vals {
- 	CPU_MAX_OFFLINE_STATES
- };
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -644,13 +644,15 @@ static int wacom_resume(struct usb_inter
+ 	int rv;
  
-+#ifdef CONFIG_HOTPLUG_CPU
- extern enum cpu_state_vals get_cpu_current_state(int cpu);
- extern void set_cpu_current_state(int cpu, enum cpu_state_vals state);
--extern enum cpu_state_vals get_preferred_offline_state(int cpu);
- extern void set_preferred_offline_state(int cpu, enum cpu_state_vals state);
- extern void set_default_offline_state(int cpu);
-+#else
-+static inline enum cpu_state_vals get_cpu_current_state(int cpu)
-+{
-+	return CPU_STATE_ONLINE;
-+}
+ 	mutex_lock(&wacom->lock);
+-	if (wacom->open) {
 +
-+static inline void set_cpu_current_state(int cpu, enum cpu_state_vals state)
-+{
-+}
++	/* switch to wacom mode first */
++	wacom_query_tablet_data(intf, features);
 +
-+static inline void set_preferred_offline_state(int cpu, enum cpu_state_vals state)
-+{
-+}
++	if (wacom->open)
+ 		rv = usb_submit_urb(wacom->irq, GFP_NOIO);
+-		/* switch to wacom mode if needed */
+-		if (!wacom_retrieve_hid_descriptor(intf, features))
+-			wacom_query_tablet_data(intf, features);
+-	} else
++	else
+ 		rv = 0;
 +
-+static inline void set_default_offline_state(int cpu)
-+{
-+}
-+#endif
-+
-+extern enum cpu_state_vals get_preferred_offline_state(int cpu);
- extern int start_secondary(void);
- #endif
+ 	mutex_unlock(&wacom->lock);
+ 
+ 	return rv;
 
 
