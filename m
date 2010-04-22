@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757762Ab0DVUiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:38:00 -0400
-Received: from kroah.org ([198.145.64.141]:37478 "EHLO coco.kroah.org"
+	id S1758589Ab0DVUhr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:37:47 -0400
+Received: from kroah.org ([198.145.64.141]:37486 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756225Ab0DVT2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:09 -0400
+	id S1756233Ab0DVT2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:10 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:12 2010
-Message-Id: <20100422190912.199313677@kvm.kroah.org>
+Message-Id: <20100422190912.304483692@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:25 -0700
+Date: Thu, 22 Apr 2010 12:08:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -17,7 +17,7 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
        Gleb Natapov <gleb@redhat.com>,
        Stefan Bader <stefan.bader@canonical.com>
-Subject: [054/197] KVM: x86 emulator: Check IOPL level during io instruction emulation
+Subject: [055/197] KVM: x86 emulator: Fix popf emulation
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,198 +30,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Gleb Natapov <gleb@redhat.com>
 
-commit f850e2e603bf5a05b0aee7901857cf85715aa694 upstream
+commit d4c6a1549c056f1d817e8f6f2f97d8b44933472f upstream
 
-Make emulator check that vcpu is allowed to execute IN, INS, OUT,
-OUTS, CLI, STI.
+POPF behaves differently depending on current CPU mode. Emulate correct
+logic to prevent guest from changing flags that it can't change otherwise.
 
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/x86/include/asm/kvm_host.h |    1 
- arch/x86/kvm/emulate.c          |   89 ++++++++++++++++++++++++++++++++++++----
- arch/x86/kvm/x86.c              |   10 +---
- 3 files changed, 87 insertions(+), 13 deletions(-)
+ arch/x86/kvm/emulate.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 54 insertions(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -663,6 +663,7 @@ void kvm_disable_tdp(void);
- 
- int load_pdptrs(struct kvm_vcpu *vcpu, unsigned long cr3);
- int complete_pio(struct kvm_vcpu *vcpu);
-+bool kvm_check_iopl(struct kvm_vcpu *vcpu);
- 
- struct kvm_memory_slot *gfn_to_memslot_unaliased(struct kvm *kvm, gfn_t gfn);
- 
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -1620,6 +1620,57 @@ emulate_sysexit(struct x86_emulate_ctxt
- 	return 0;
+@@ -339,11 +339,18 @@ static u32 group2_table[] = {
+ };
+ 
+ /* EFLAGS bit definitions. */
++#define EFLG_ID (1<<21)
++#define EFLG_VIP (1<<20)
++#define EFLG_VIF (1<<19)
++#define EFLG_AC (1<<18)
+ #define EFLG_VM (1<<17)
+ #define EFLG_RF (1<<16)
++#define EFLG_IOPL (3<<12)
++#define EFLG_NT (1<<14)
+ #define EFLG_OF (1<<11)
+ #define EFLG_DF (1<<10)
+ #define EFLG_IF (1<<9)
++#define EFLG_TF (1<<8)
+ #define EFLG_SF (1<<7)
+ #define EFLG_ZF (1<<6)
+ #define EFLG_AF (1<<4)
+@@ -1205,6 +1212,49 @@ static int emulate_pop(struct x86_emulat
+ 	return rc;
  }
  
-+static bool emulator_bad_iopl(struct x86_emulate_ctxt *ctxt)
++static int emulate_popf(struct x86_emulate_ctxt *ctxt,
++		       struct x86_emulate_ops *ops,
++		       void *dest, int len)
 +{
-+	int iopl;
-+	if (ctxt->mode == X86EMUL_MODE_REAL)
-+		return false;
-+	if (ctxt->mode == X86EMUL_MODE_VM86)
-+		return true;
-+	iopl = (ctxt->eflags & X86_EFLAGS_IOPL) >> IOPL_SHIFT;
-+	return kvm_x86_ops->get_cpl(ctxt->vcpu) > iopl;
++	int rc;
++	unsigned long val, change_mask;
++	int iopl = (ctxt->eflags & X86_EFLAGS_IOPL) >> IOPL_SHIFT;
++	int cpl = kvm_x86_ops->get_cpl(ctxt->vcpu);
++
++	rc = emulate_pop(ctxt, ops, &val, len);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
++
++	change_mask = EFLG_CF | EFLG_PF | EFLG_AF | EFLG_ZF | EFLG_SF | EFLG_OF
++		| EFLG_TF | EFLG_DF | EFLG_NT | EFLG_RF | EFLG_AC | EFLG_ID;
++
++	switch(ctxt->mode) {
++	case X86EMUL_MODE_PROT64:
++	case X86EMUL_MODE_PROT32:
++	case X86EMUL_MODE_PROT16:
++		if (cpl == 0)
++			change_mask |= EFLG_IOPL;
++		if (cpl <= iopl)
++			change_mask |= EFLG_IF;
++		break;
++	case X86EMUL_MODE_VM86:
++		if (iopl < 3) {
++			kvm_inject_gp(ctxt->vcpu, 0);
++			return X86EMUL_PROPAGATE_FAULT;
++		}
++		change_mask |= EFLG_IF;
++		break;
++	default: /* real mode */
++		change_mask |= (EFLG_IOPL | EFLG_IF);
++		break;
++	}
++
++	*(unsigned long *)dest =
++		(ctxt->eflags & ~change_mask) | (val & change_mask);
++
++	return rc;
 +}
 +
-+static bool emulator_io_port_access_allowed(struct x86_emulate_ctxt *ctxt,
-+					    struct x86_emulate_ops *ops,
-+					    u16 port, u16 len)
-+{
-+	struct kvm_segment tr_seg;
-+	int r;
-+	u16 io_bitmap_ptr;
-+	u8 perm, bit_idx = port & 0x7;
-+	unsigned mask = (1 << len) - 1;
-+
-+	kvm_get_segment(ctxt->vcpu, &tr_seg, VCPU_SREG_TR);
-+	if (tr_seg.unusable)
-+		return false;
-+	if (tr_seg.limit < 103)
-+		return false;
-+	r = ops->read_std(tr_seg.base + 102, &io_bitmap_ptr, 2, ctxt->vcpu,
-+			  NULL);
-+	if (r != X86EMUL_CONTINUE)
-+		return false;
-+	if (io_bitmap_ptr + port/8 > tr_seg.limit)
-+		return false;
-+	r = ops->read_std(tr_seg.base + io_bitmap_ptr + port/8, &perm, 1,
-+			  ctxt->vcpu, NULL);
-+	if (r != X86EMUL_CONTINUE)
-+		return false;
-+	if ((perm >> bit_idx) & mask)
-+		return false;
-+	return true;
-+}
-+
-+static bool emulator_io_permited(struct x86_emulate_ctxt *ctxt,
-+				 struct x86_emulate_ops *ops,
-+				 u16 port, u16 len)
-+{
-+	if (emulator_bad_iopl(ctxt))
-+		if (!emulator_io_port_access_allowed(ctxt, ops, port, len))
-+			return false;
-+	return true;
-+}
-+
- int
- x86_emulate_insn(struct x86_emulate_ctxt *ctxt, struct x86_emulate_ops *ops)
+ static inline int emulate_grp1a(struct x86_emulate_ctxt *ctxt,
+ 				struct x86_emulate_ops *ops)
  {
-@@ -1779,7 +1830,12 @@ special_insn:
- 		break;
- 	case 0x6c:		/* insb */
- 	case 0x6d:		/* insw/insd */
--		 if (kvm_emulate_pio_string(ctxt->vcpu, NULL,
-+		if (!emulator_io_permited(ctxt, ops, c->regs[VCPU_REGS_RDX],
-+					  (c->d & ByteOp) ? 1 : c->op_bytes)) {
-+			kvm_inject_gp(ctxt->vcpu, 0);
+@@ -1995,7 +2045,10 @@ special_insn:
+ 		c->dst.type = OP_REG;
+ 		c->dst.ptr = (unsigned long *) &ctxt->eflags;
+ 		c->dst.bytes = c->op_bytes;
+-		goto pop_instruction;
++		rc = emulate_popf(ctxt, ops, &c->dst.val, c->op_bytes);
++		if (rc != X86EMUL_CONTINUE)
 +			goto done;
-+		}
-+		if (kvm_emulate_pio_string(ctxt->vcpu, NULL,
- 				1,
- 				(c->d & ByteOp) ? 1 : c->op_bytes,
- 				c->rep_prefix ?
-@@ -1795,6 +1851,11 @@ special_insn:
- 		return 0;
- 	case 0x6e:		/* outsb */
- 	case 0x6f:		/* outsw/outsd */
-+		if (!emulator_io_permited(ctxt, ops, c->regs[VCPU_REGS_RDX],
-+					  (c->d & ByteOp) ? 1 : c->op_bytes)) {
-+			kvm_inject_gp(ctxt->vcpu, 0);
-+			goto done;
-+		}
- 		if (kvm_emulate_pio_string(ctxt->vcpu, NULL,
- 				0,
- 				(c->d & ByteOp) ? 1 : c->op_bytes,
-@@ -2094,7 +2155,13 @@ special_insn:
- 	case 0xef: /* out (e/r)ax,dx */
- 		port = c->regs[VCPU_REGS_RDX];
- 		io_dir_in = 0;
--	do_io:	if (kvm_emulate_pio(ctxt->vcpu, NULL, io_dir_in,
-+	do_io:
-+		if (!emulator_io_permited(ctxt, ops, port,
-+					  (c->d & ByteOp) ? 1 : c->op_bytes)) {
-+			kvm_inject_gp(ctxt->vcpu, 0);
-+			goto done;
-+		}
-+		if (kvm_emulate_pio(ctxt->vcpu, NULL, io_dir_in,
- 				   (c->d & ByteOp) ? 1 : c->op_bytes,
- 				   port) != 0) {
- 			c->eip = saved_eip;
-@@ -2119,13 +2186,21 @@ special_insn:
- 		c->dst.type = OP_NONE;	/* Disable writeback. */
- 		break;
- 	case 0xfa: /* cli */
--		ctxt->eflags &= ~X86_EFLAGS_IF;
--		c->dst.type = OP_NONE;	/* Disable writeback. */
-+		if (emulator_bad_iopl(ctxt))
-+			kvm_inject_gp(ctxt->vcpu, 0);
-+		else {
-+			ctxt->eflags &= ~X86_EFLAGS_IF;
-+			c->dst.type = OP_NONE;	/* Disable writeback. */
-+		}
- 		break;
- 	case 0xfb: /* sti */
--		toggle_interruptibility(ctxt, X86_SHADOW_INT_STI);
--		ctxt->eflags |= X86_EFLAGS_IF;
--		c->dst.type = OP_NONE;	/* Disable writeback. */
-+		if (emulator_bad_iopl(ctxt))
-+			kvm_inject_gp(ctxt->vcpu, 0);
-+		else {
-+			toggle_interruptibility(ctxt, X86_SHADOW_INT_STI);
-+			ctxt->eflags |= X86_EFLAGS_IF;
-+			c->dst.type = OP_NONE;	/* Disable writeback. */
-+		}
- 		break;
- 	case 0xfc: /* cld */
- 		ctxt->eflags &= ~EFLG_DF;
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3079,6 +3079,8 @@ int kvm_emulate_pio(struct kvm_vcpu *vcp
- {
- 	unsigned long val;
- 
-+	trace_kvm_pio(!in, port, size, 1);
-+
- 	vcpu->run->exit_reason = KVM_EXIT_IO;
- 	vcpu->run->io.direction = in ? KVM_EXIT_IO_IN : KVM_EXIT_IO_OUT;
- 	vcpu->run->io.size = vcpu->arch.pio.size = size;
-@@ -3090,9 +3092,6 @@ int kvm_emulate_pio(struct kvm_vcpu *vcp
- 	vcpu->arch.pio.down = 0;
- 	vcpu->arch.pio.rep = 0;
- 
--	trace_kvm_pio(vcpu->run->io.direction == KVM_EXIT_IO_OUT, port,
--		      size, 1);
--
- 	val = kvm_register_read(vcpu, VCPU_REGS_RAX);
- 	memcpy(vcpu->arch.pio_data, &val, 4);
- 
-@@ -3111,6 +3110,8 @@ int kvm_emulate_pio_string(struct kvm_vc
- 	unsigned now, in_page;
- 	int ret = 0;
- 
-+	trace_kvm_pio(!in, port, size, count);
-+
- 	vcpu->run->exit_reason = KVM_EXIT_IO;
- 	vcpu->run->io.direction = in ? KVM_EXIT_IO_IN : KVM_EXIT_IO_OUT;
- 	vcpu->run->io.size = vcpu->arch.pio.size = size;
-@@ -3122,9 +3123,6 @@ int kvm_emulate_pio_string(struct kvm_vc
- 	vcpu->arch.pio.down = down;
- 	vcpu->arch.pio.rep = rep;
- 
--	trace_kvm_pio(vcpu->run->io.direction == KVM_EXIT_IO_OUT, port,
--		      size, count);
--
- 	if (!count) {
- 		kvm_x86_ops->skip_emulated_instruction(vcpu);
- 		return 1;
++		break;
+ 	case 0xa0 ... 0xa1:	/* mov */
+ 		c->dst.ptr = (unsigned long *)&c->regs[VCPU_REGS_RAX];
+ 		c->dst.val = c->src.val;
 
 
