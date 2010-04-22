@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab0DVUCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:02:38 -0400
-Received: from kroah.org ([198.145.64.141]:59990 "EHLO coco.kroah.org"
+	id S1758179Ab0DVUKE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:10:04 -0400
+Received: from kroah.org ([198.145.64.141]:60041 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758105Ab0DVUBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:01:36 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:16 2010
-Message-Id: <20100422195416.468660333@kvm.kroah.org>
+	id S1758136Ab0DVUBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:01:48 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:17 2010
+Message-Id: <20100422195417.337536239@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:47 -0700
+Date: Thu, 22 Apr 2010 12:54:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Oliver Neukum <oliver@neukum.org>
-Subject: [110/139] USB: cdc-acm: Update to new autopm API
+       Len Brown <len.brown@intel.com>, 563313@bugs.debian.org,
+       Alexey Starikovskiy <astarikovskiy@suse.de>,
+       Ben Hutchings <ben@decadent.org.uk>
+Subject: [119/139] ACPI: EC: Allow multibyte access to EC
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,126 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
 
-commit 97d35f95552c9a0ee4777a7f04431a9fd1260478 upstream.
+From: Alexey Starikovskiy <astarikovskiy@suse.de>
 
-Update cdc-acm to the async methods eliminating the workqueue
+commit dadf28a10c3eb29421837a2e413ab869ebd upstream
 
-[This fixes a reported lockup for the cdc-acm driver - gregkh]
+http://bugzilla.kernel.org/show_bug.cgi?id=14667
 
-Signed-off-by: Oliver Neukum <oliver@neukum.org>
+[bwh: Backport to 2.6.32; same applies to 2.6.33]
+
+Signed-off-by: Alexey Starikovskiy <astarikovskiy@suse.de>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |   43 ++++++++++++++++++++++---------------------
- drivers/usb/class/cdc-acm.h |    1 -
- 2 files changed, 22 insertions(+), 22 deletions(-)
+ drivers/acpi/acpica/exprep.c |   12 ++++++++++++
+ drivers/acpi/ec.c            |   35 +++++++++--------------------------
+ 2 files changed, 21 insertions(+), 26 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -170,6 +170,7 @@ static void acm_write_done(struct acm *a
- {
- 	wb->use = 0;
- 	acm->transmitting--;
-+	usb_autopm_put_interface_async(acm->control);
- }
+--- a/drivers/acpi/acpica/exprep.c
++++ b/drivers/acpi/acpica/exprep.c
+@@ -468,6 +468,18 @@ acpi_status acpi_ex_prep_field_value(str
  
- /*
-@@ -211,9 +212,12 @@ static int acm_write_start(struct acm *a
- 	}
+ 		acpi_ut_add_reference(obj_desc->field.region_obj);
  
- 	dbg("%s susp_count: %d", __func__, acm->susp_count);
-+	usb_autopm_get_interface_async(acm->control);
- 	if (acm->susp_count) {
--		acm->delayed_wb = wb;
--		schedule_work(&acm->waker);
-+		if (!acm->delayed_wb)
-+			acm->delayed_wb = wb;
-+		else
-+			usb_autopm_put_interface_async(acm->control);
- 		spin_unlock_irqrestore(&acm->write_lock, flags);
- 		return 0;	/* A white lie */
- 	}
-@@ -534,23 +538,6 @@ static void acm_softint(struct work_stru
- 	tty_kref_put(tty);
- }
- 
--static void acm_waker(struct work_struct *waker)
--{
--	struct acm *acm = container_of(waker, struct acm, waker);
--	int rv;
--
--	rv = usb_autopm_get_interface(acm->control);
--	if (rv < 0) {
--		dev_err(&acm->dev->dev, "Autopm failure in %s\n", __func__);
--		return;
--	}
--	if (acm->delayed_wb) {
--		acm_start_wb(acm, acm->delayed_wb);
--		acm->delayed_wb = NULL;
--	}
--	usb_autopm_put_interface(acm->control);
--}
--
- /*
-  * TTY handlers
-  */
-@@ -1178,7 +1165,6 @@ made_compressed_probe:
- 	acm->urb_task.func = acm_rx_tasklet;
- 	acm->urb_task.data = (unsigned long) acm;
- 	INIT_WORK(&acm->work, acm_softint);
--	INIT_WORK(&acm->waker, acm_waker);
- 	init_waitqueue_head(&acm->drain_wait);
- 	spin_lock_init(&acm->throttle_lock);
- 	spin_lock_init(&acm->write_lock);
-@@ -1343,7 +1329,6 @@ static void stop_data_traffic(struct acm
- 	tasklet_enable(&acm->urb_task);
- 
- 	cancel_work_sync(&acm->work);
--	cancel_work_sync(&acm->waker);
- }
- 
- static void acm_disconnect(struct usb_interface *intf)
-@@ -1435,6 +1420,7 @@ static int acm_suspend(struct usb_interf
- static int acm_resume(struct usb_interface *intf)
- {
- 	struct acm *acm = usb_get_intfdata(intf);
-+	struct acm_wb *wb;
- 	int rv = 0;
- 	int cnt;
- 
-@@ -1449,6 +1435,21 @@ static int acm_resume(struct usb_interfa
- 	mutex_lock(&acm->mutex);
- 	if (acm->port.count) {
- 		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
-+
-+		spin_lock_irq(&acm->write_lock);
-+		if (acm->delayed_wb) {
-+			wb = acm->delayed_wb;
-+			acm->delayed_wb = NULL;
-+			spin_unlock_irq(&acm->write_lock);
-+			acm_start_wb(acm, acm->delayed_wb);
-+		} else {
-+			spin_unlock_irq(&acm->write_lock);
++		/* allow full data read from EC address space */
++		if (obj_desc->field.region_obj->region.space_id ==
++			ACPI_ADR_SPACE_EC) {
++			if (obj_desc->common_field.bit_length > 8)
++				obj_desc->common_field.access_bit_width =
++				ACPI_ROUND_UP(obj_desc->common_field.
++							bit_length, 8);
++				obj_desc->common_field.access_byte_width =
++				ACPI_DIV_8(obj_desc->common_field.
++							access_bit_width);
 +		}
 +
-+		/*
-+		 * delayed error checking because we must
-+		 * do the write path at all cost
-+		 */
- 		if (rv < 0)
- 			goto err_out;
+ 		ACPI_DEBUG_PRINT((ACPI_DB_BFIELD,
+ 				  "RegionField: BitOff %X, Off %X, Gran %X, Region %p\n",
+ 				  obj_desc->field.start_field_bit_offset,
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -589,12 +589,12 @@ static u32 acpi_ec_gpe_handler(void *dat
  
---- a/drivers/usb/class/cdc-acm.h
-+++ b/drivers/usb/class/cdc-acm.h
-@@ -112,7 +112,6 @@ struct acm {
- 	struct mutex mutex;
- 	struct usb_cdc_line_coding line;		/* bits, stop, parity */
- 	struct work_struct work;			/* work queue entry for line discipline waking up */
--	struct work_struct waker;
- 	wait_queue_head_t drain_wait;			/* close processing */
- 	struct tasklet_struct urb_task;                 /* rx processing */
- 	spinlock_t throttle_lock;			/* synchronize throtteling and read callback */
+ static acpi_status
+ acpi_ec_space_handler(u32 function, acpi_physical_address address,
+-		      u32 bits, acpi_integer *value,
++		      u32 bits, acpi_integer *value64,
+ 		      void *handler_context, void *region_context)
+ {
+ 	struct acpi_ec *ec = handler_context;
+-	int result = 0, i;
+-	u8 temp = 0;
++	int result = 0, i, bytes = bits / 8;
++	u8 *value = (u8 *)value64;
+ 
+ 	if ((address > 0xFF) || !value || !handler_context)
+ 		return AE_BAD_PARAMETER;
+@@ -602,32 +602,15 @@ acpi_ec_space_handler(u32 function, acpi
+ 	if (function != ACPI_READ && function != ACPI_WRITE)
+ 		return AE_BAD_PARAMETER;
+ 
+-	if (bits != 8 && acpi_strict)
+-		return AE_BAD_PARAMETER;
+-
+-	if (EC_FLAGS_MSI)
++	if (EC_FLAGS_MSI || bits > 8)
+ 		acpi_ec_burst_enable(ec);
+ 
+-	if (function == ACPI_READ) {
+-		result = acpi_ec_read(ec, address, &temp);
+-		*value = temp;
+-	} else {
+-		temp = 0xff & (*value);
+-		result = acpi_ec_write(ec, address, temp);
+-	}
+-
+-	for (i = 8; unlikely(bits - i > 0); i += 8) {
+-		++address;
+-		if (function == ACPI_READ) {
+-			result = acpi_ec_read(ec, address, &temp);
+-			(*value) |= ((acpi_integer)temp) << i;
+-		} else {
+-			temp = 0xff & ((*value) >> i);
+-			result = acpi_ec_write(ec, address, temp);
+-		}
+-	}
++	for (i = 0; i < bytes; ++i, ++address, ++value)
++		result = (function == ACPI_READ) ?
++			acpi_ec_read(ec, address, value) :
++			acpi_ec_write(ec, address, *value);
+ 
+-	if (EC_FLAGS_MSI)
++	if (EC_FLAGS_MSI || bits > 8)
+ 		acpi_ec_burst_disable(ec);
+ 
+ 	switch (result) {
 
 
