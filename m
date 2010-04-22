@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758149Ab0DVUBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:01:52 -0400
-Received: from kroah.org ([198.145.64.141]:59899 "EHLO coco.kroah.org"
+	id S1758168Ab0DVUCR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:02:17 -0400
+Received: from kroah.org ([198.145.64.141]:59939 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757728Ab0DVUBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:01:11 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:14 2010
-Message-Id: <20100422195414.678552487@kvm.kroah.org>
+	id S1758075Ab0DVUBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:01:22 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:15 2010
+Message-Id: <20100422195415.479531125@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:31 -0700
+Date: Thu, 22 Apr 2010 12:54:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sachin Prabhu <sprabhu@redhat.com>,
-       Eric Van Hensbergen <ericvh@gmail.com>, maximilian attems <max@stro.at>
-Subject: [094/139] 9p: Skip check for mandatory locks when unlocking
+       Seth Heasley <seth.heasley@intel.com>, Takashi Iwai <tiwai@suse.de>,
+       maximilian attems <max@stro.at>
+Subject: [100/139] ALSA: hda - enable snoop for Intel Cougar Point
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit f78233dd44a110c574fe760ad6f9c1e8741a0d00 upstream.
+commit 32679f95cac3b1bdf27dce8b5273e06af186fd91 upstream.
 
-While investigating a bug, I came across a possible bug in v9fs. The
-problem is similar to the one reported for NFS by ASANO Masahiro in
-http://lkml.org/lkml/2005/12/21/334.
+This patch enables snoop, eliminating static during playback.
+This patch supersedes the previous Cougar Point audio patch.
 
-v9fs_file_lock() will skip locks on file which has mode set to 02666.
-This is a problem in cases where the mode of the file is changed after
-a process has obtained a lock on the file. Such a lock will be skipped
-during unlock and the machine will end up with a BUG in
-locks_remove_flock().
-
-v9fs_file_lock() should skip the check for mandatory locks when
-unlocking a file.
-
-Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/9p/vfs_file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/hda_intel.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/9p/vfs_file.c
-+++ b/fs/9p/vfs_file.c
-@@ -114,7 +114,7 @@ static int v9fs_file_lock(struct file *f
- 	P9_DPRINTK(P9_DEBUG_VFS, "filp: %p lock: %p\n", filp, fl);
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -450,6 +450,7 @@ struct azx {
+ /* driver types */
+ enum {
+ 	AZX_DRIVER_ICH,
++	AZX_DRIVER_PCH,
+ 	AZX_DRIVER_SCH,
+ 	AZX_DRIVER_ATI,
+ 	AZX_DRIVER_ATIHDMI,
+@@ -464,6 +465,7 @@ enum {
  
- 	/* No mandatory locks */
--	if (__mandatory_lock(inode))
-+	if (__mandatory_lock(inode) && fl->fl_type != F_UNLCK)
- 		return -ENOLCK;
- 
- 	if ((IS_SETLK(cmd) || IS_SETLKW(cmd)) && fl->fl_type != F_UNLCK) {
+ static char *driver_short_names[] __devinitdata = {
+ 	[AZX_DRIVER_ICH] = "HDA Intel",
++	[AZX_DRIVER_PCH] = "HDA Intel PCH",
+ 	[AZX_DRIVER_SCH] = "HDA Intel MID",
+ 	[AZX_DRIVER_ATI] = "HDA ATI SB",
+ 	[AZX_DRIVER_ATIHDMI] = "HDA ATI HDMI",
+@@ -1066,6 +1068,7 @@ static void azx_init_pci(struct azx *chi
+ 				0x01, NVIDIA_HDA_ENABLE_COHBIT);
+ 		break;
+ 	case AZX_DRIVER_SCH:
++	case AZX_DRIVER_PCH:
+ 		pci_read_config_word(chip->pci, INTEL_SCH_HDA_DEVC, &snoop);
+ 		if (snoop & INTEL_SCH_HDA_DEVC_NOSNOOP) {
+ 			pci_write_config_word(chip->pci, INTEL_SCH_HDA_DEVC,
+@@ -2434,6 +2437,7 @@ static int __devinit azx_create(struct s
+ 	if (bdl_pos_adj[dev] < 0) {
+ 		switch (chip->driver_type) {
+ 		case AZX_DRIVER_ICH:
++		case AZX_DRIVER_PCH:
+ 			bdl_pos_adj[dev] = 1;
+ 			break;
+ 		default:
+@@ -2713,7 +2717,7 @@ static struct pci_device_id azx_ids[] =
+ 	/* PCH */
+ 	{ PCI_DEVICE(0x8086, 0x3b56), .driver_data = AZX_DRIVER_ICH },
+ 	/* CPT */
+-	{ PCI_DEVICE(0x8086, 0x1c20), .driver_data = AZX_DRIVER_ICH },
++	{ PCI_DEVICE(0x8086, 0x1c20), .driver_data = AZX_DRIVER_PCH },
+ 	/* SCH */
+ 	{ PCI_DEVICE(0x8086, 0x811b), .driver_data = AZX_DRIVER_SCH },
+ 	/* ATI SB 450/600 */
 
 
