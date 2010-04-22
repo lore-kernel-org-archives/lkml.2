@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab0DVBXN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 21:23:13 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:36381 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754790Ab0DVBXM (ORCPT
+	id S1755513Ab0DVB2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 21:28:35 -0400
+Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:50863 "EHLO
+	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562Ab0DVB2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 21:23:12 -0400
-Date: Wed, 21 Apr 2010 21:23:09 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: akpm@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       laijs@cn.fujitsu.com, dipankar@in.ibm.com, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-       dhowells@redhat.com, eric.dumazet@gmail.com, adobriyan@gmail.com,
-       davem@davemloft.net
-Subject: [PATCH] rcu fix rcu head init on stack in rcutree_plugin.h
-Message-ID: <20100422012309.GB32400@Krystal>
-References: <20100417124837.536020244@efficios.com> <20100418004849.GD2876@linux.vnet.ibm.com> <20100421173145.GA6966@linux.vnet.ibm.com>
+	Wed, 21 Apr 2010 21:28:34 -0400
+X-Greylist: delayed 1954 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Apr 2010 21:28:33 EDT
+Date: Thu, 22 Apr 2010 02:55:58 +0200 (CEST)
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+To: linux-kernel@vger.kernel.org
+cc: linux-mm@vger.kernel.org
+Subject: swapping when there's a free memory
+Message-ID: <alpine.DEB.1.10.1004220248280.19246@artax.karlin.mff.cuni.cz>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+X-Personality-Disorder: Schizoid
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100421173145.GA6966@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 21:20:52 up 89 days,  3:58,  9 users,  load average: 0.00, 0.01,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Paul]
-[...]
-And testing got me the following debugobjects splat
-[...]
-ODEBUG: object is on stack, but not annotated
-------------[ cut here ]------------
-Badness at lib/debugobjects.c:294
-NIP: c0000000002c76f0 LR: c0000000002c76ec CTR: c00000000041ecd8
-REGS: c0000001de71b280 TRAP: 0700   Tainted: G        W   (2.6.34-rc3-autokern1)
-MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 24000424  XER: 0000000f
-TASK = c0000001de7dca00[3695] 'arping' THREAD: c0000001de718000 CPU: 1
-GPR00: c0000000002c76ec c0000001de71b500 c00000000096c048 0000000000000034 
-GPR04: 0000000000000001 c000000000063918 0000000000000000 0000000000000002 
-GPR08: 0000000000000003 0000000000000000 c000000000086f68 c0000001de7dca00 
-GPR12: 000000000000256d c0000000074e4200 0000000000000000 0000000000000000 
-GPR16: 0000000000000000 0000000000000000 0000000000000000 00000000201b8f60 
-GPR20: 00000000201b8f70 00000000201b8f48 0000000000000000 c0000000008766b8 
-GPR24: c0000001de71b800 0000000000000001 c0000000008ad400 c000000001247478 
-GPR28: c0000000e6abb8c0 c0000000e6abb8c0 c000000000904570 c000000001247470 
-NIP [c0000000002c76f0] .__debug_object_init+0x314/0x40c
-LR [c0000000002c76ec] .__debug_object_init+0x310/0x40c
-Call Trace:
-[c0000001de71b500] [c0000000002c76ec] .__debug_object_init+0x310/0x40c (unreliable)
-[c0000001de71b5d0] [c00000000007d990] .rcuhead_fixup_activate+0x40/0xdc
-[c0000001de71b660] [c0000000002c6a7c] .debug_object_fixup+0x4c/0x74
-[c0000001de71b6f0] [c0000000000c5e54] .__call_rcu+0x3c/0x1d4
-[c0000001de71b790] [c0000000000c6050] .synchronize_rcu+0x4c/0x6c
-[c0000001de71b870] [c0000000004be218] .synchronize_net+0x10/0x24
-[c0000001de71b8e0] [c0000000005498c8] .packet_release+0x1d4/0x274
-[c0000001de71b990] [c0000000004ac1f0] .sock_release+0x54/0x124
-[c0000001de71ba20] [c0000000004ac9e4] .sock_close+0x34/0x4c
-[c0000001de71baa0] [c00000000012469c] .__fput+0x174/0x264
-[c0000001de71bb40] [c000000000120c54] .filp_close+0xb0/0xd8
-[c0000001de71bbd0] [c000000000065e70] .put_files_struct+0x1a8/0x314
-[c0000001de71bc70] [c000000000067e04] .do_exit+0x234/0x6f0
-[c0000001de71bd30] [c000000000068354] .do_group_exit+0x94/0xc8
-[c0000001de71bdc0] [c00000000006839c] .SyS_exit_group+0x14/0x28
-[c0000001de71be30] [c000000000008554] syscall_exit+0x0/0x40
-Instruction dump:
-7f80b000 419e0030 2fa00000 e93e8140 380b0001 90090000 419e000c e87e8148 
-48000008 e87e8150 4bd9cb89 60000000 <0fe00000> 801c0010 2f800003 419e0024 
+Hi
 
-[Mathieu]
+I captured this output of vmstat. The machine was freeing cache and 
+swapping out pages even when there was a plenty of free memory.
 
-Here is the fix.
+The machine is sparc64 with 1GB RAM with 2.6.34-rc4. This abnormal 
+swapping happened during running spadfsck --- a fsck program for a custom 
+filesystem that caches most reads in its internal cache --- so it reads 
+buffers and allocates memory at the same time.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutree_plugin.h |    2 ++
- 1 file changed, 2 insertions(+)
+Note that sparc64 doesn't have any low/high memory zones, so it couldn't 
+be explained by filling one zone and needing to allocate pages in it.
 
-Index: linux.trees.git/kernel/rcutree_plugin.h
-===================================================================
---- linux.trees.git.orig/kernel/rcutree_plugin.h	2010-04-21 21:15:45.000000000 -0400
-+++ linux.trees.git/kernel/rcutree_plugin.h	2010-04-21 21:16:57.000000000 -0400
-@@ -515,11 +515,13 @@ void synchronize_rcu(void)
- 	if (!rcu_scheduler_active)
- 		return;
- 
-+	init_rcu_head_on_stack(&rcu.head);
- 	init_completion(&rcu.completion);
- 	/* Will wake me after RCU finished. */
- 	call_rcu(&rcu.head, wakeme_after_rcu);
- 	/* Wait for it. */
- 	wait_for_completion(&rcu.completion);
-+	destroy_rcu_head_on_stack(&rcu.head);
- }
- EXPORT_SYMBOL_GPL(synchronize_rcu);
- 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+This abnormal behavior doesn't happen everytime, it happend about twice 
+for many spadfsck attempts.
+
+Mikulas
+
+ 1  0  36736 289176 389504  57200    0    0  9776     0  346  292 34 36  0 31
+ 1  0  36736 260496 402664  57200    0    0 13167     0  459  426 12 41  0 48
+ 1  0  36736 231936 415464  57200    0    0 12800     0  422  333 22 35  0 44
+ 1  0  36736 206016 426984  57200    0    0 11520     0  408  319 36 35  0 30
+ 1  0  36736 193056 432360  57200    0    0  5376     0  240  195 61 18  0 21
+*** here it starts unreasonable swappping and cache-trimming
+ 0  2  59216 200136 429424  47992    0 22528  3216 22528  219  194 55 25  0 20
+ 1  1  68096 194376 431880  45192    0 8960  4896  8968  311  292 58 34  0  8
+procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+ 1  1  74752 179856 438632  43240    0 6656  8456  6656  387  348 36 29  0 36
+ 2  1  78824 165336 444944  42136    0 4096  7939  4104  400  452 43 27  0 31
+ 0  2  86368 152736 449416  41008    0 7552  8069  7552  387  376 48 30  0 23
+ 2  1  94400 159696 434344  38920    0 8064  9624  8072  483  443 30 40  0 31
+ 2  0 102688 150696 435104  37992    0 8304  7504  8304  355  366 32 27  0 42
+ 2  2 105768 168696 411672  34816    0 3088  9144  3104  450  416 52 27  0 21
+ 2  2 111384 183576 394016  34416    8 5640  3640  5728  322  282 62 27  0 11
+ 1  1 117056 266256 318136  29536  128 5672   136  5688  153  175 54 24  0 22
+ 2  1 117032 259776 321536  29600  240    0  3697     0  253  259 46 16  0 39
+ 1  0 117016 243816 329640  29600    0    0  8127     8  399  389 53 35  0 12
+ 1  0 116968 241536 330800  29600   64    0  1224     0  156  122 70 18  0 12
+ 1  0 114856 300456 292536  29600   64    0  3264     0  190   99 58 34  0  8
+*** here, spadfsck finished
+ 0  0  54152 736072 132392  29600    0    0     0     0   84   27  0 60 40  0
+ 0  0  54072 736072 132392  29600    0    0     0     0   30   34  3  0 97  0
+ 0  1  54064 736640 132392  29632    0    0    32     0   33   51  1  0 93  6
+ 3  0  54064 731640 132408  32136    0    0  2512     0  219  425 12  7  0 81
+ 0  1  54064 733112 132432  32536    0    0   432     0  155  311 47 29  0 25
+ 0  1  54064 732528 132440  32848    0    0   328     0  146  298 43 22  0 36
+ 1  0  54064 726960 132448  33456    0    0   616     0  152  175 29  7  0 64
+ 0  1  54064 723840 132448  33856    0    0   400     0  163  136 43  2  0 55
+ 1  0  54064 720480 132448  34248    0    0   392     0  203  132 45  3  0 52
+ 0  1  54064 717056 132448  34496    0    0   248     0  137   91 51  1  0 48
+ 1  0  54064 712632 132456  34840    0    0   352     0  145   70 85  3  0 12
+ 1  0  54064 710952 132456  34952    0    0   112     0  129   50 92  0  0  8
+ 1  0  54064 709872 132456  34952    0    0     0     0  123   24 98  2  0  0
+ 1  0  54064 708792 132456  34952    0    0     0     0  121   24 100  0  0  0
+^C
+[slunicko:~]#
+
