@@ -1,125 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab0DVPoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 11:44:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52707 "EHLO mx1.redhat.com"
+	id S1755837Ab0DVPpE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 11:45:04 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:43608 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755729Ab0DVPoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 11:44:16 -0400
-Date: Thu, 22 Apr 2010 17:40:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+	id S1755433Ab0DVPpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 11:45:02 -0400
+Date: Thu, 22 Apr 2010 16:44:43 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
-       Mel Gorman <mel@csn.ul.ie>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 7/11] Uprobes Implementation
-Message-ID: <20100422154059.GA5916@redhat.com>
-References: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6> <20100331155228.4181.61294.sendpatchset@localhost6.localdomain6> <20100413183537.GA17538@redhat.com> <20100415093506.GA2064@linux.vnet.ibm.com> <20100419193139.GA24080@redhat.com> <20100420124358.GA20675@linux.vnet.ibm.com> <20100420153023.GA9351@redhat.com> <20100421065948.GA5440@linux.vnet.ibm.com> <20100421160515.GA11321@redhat.com> <20100422133154.GA10776@linux.vnet.ibm.com>
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
+	PageSwapCache  pages
+Message-ID: <20100422154443.GD30306@csn.ul.ie>
+References: <alpine.DEB.2.00.1004211027120.4959@router.home> <20100421153421.GM30306@csn.ul.ie> <alpine.DEB.2.00.1004211038020.4959@router.home> <20100422092819.GR30306@csn.ul.ie> <20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com> <x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com> <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com> <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com> <1271946226.2100.211.camel@barrios-desktop> <1271947206.2100.216.camel@barrios-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100422133154.GA10776@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1271947206.2100.216.camel@barrios-desktop>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22, Srikar Dronamraju wrote:
->
-> * Oleg Nesterov <oleg@redhat.com> [2010-04-21 18:05:15]:
->
-> > 3. mprotect(). write_opcode() checks !VM_WRITE. This is correct,
-> >    otherwise we can race with the user-space writing to the same
-> >    page.
-> >
-> >    But suppose that the application does mprotect(PROT_WRITE) after
-> >    register_uprobe() installs the bp, now unregister_uprobe/etc can't
-> >    restore the original insn?
-> >
->
-> I still need to verify this. I shall get back to you on this.
-> However are there applications that mprotect(PROT_WRITE) text pages?
+On Thu, Apr 22, 2010 at 11:40:06PM +0900, Minchan Kim wrote:
+> On Thu, 2010-04-22 at 23:23 +0900, Minchan Kim wrote:
+> > On Thu, 2010-04-22 at 19:51 +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 22 Apr 2010 19:31:06 +0900
+> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > 
+> > > > On Thu, 22 Apr 2010 19:13:12 +0900
+> > > > Minchan Kim <minchan.kim@gmail.com> wrote:
+> > > > 
+> > > > > On Thu, Apr 22, 2010 at 6:46 PM, KAMEZAWA Hiroyuki
+> > > > > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > > 
+> > > > > > Hmm..in my test, the case was.
+> > > > > >
+> > > > > > Before try_to_unmap:
+> > > > > >        mapcount=1, SwapCache, remap_swapcache=1
+> > > > > > After remap
+> > > > > >        mapcount=0, SwapCache, rc=0.
+> > > > > >
+> > > > > > So, I think there may be some race in rmap_walk() and vma handling or
+> > > > > > anon_vma handling. migration_entry isn't found by rmap_walk.
+> > > > > >
+> > > > > > Hmm..it seems this kind patch will be required for debug.
+> > > > > 
+> > > 
+> > > Ok, here is my patch for _fix_. But still testing...
+> > > Running well at least for 30 minutes, where I can see bug in 10minutes.
+> > > But this patch is too naive. please think about something better fix.
+> > > 
+> > > ==
+> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > 
+> > > At adjust_vma(), vma's start address and pgoff is updated under
+> > > write lock of mmap_sem. This means the vma's rmap information
+> > > update is atoimic only under read lock of mmap_sem.
+> > > 
+> > > 
+> > > Even if it's not atomic, in usual case, try_to_ummap() etc...
+> > > just fails to decrease mapcount to be 0. no problem.
+> > > 
+> > > But at page migration's rmap_walk(), it requires to know all
+> > > migration_entry in page tables and recover mapcount.
+> > > 
+> > > So, this race in vma's address is critical. When rmap_walk meet
+> > > the race, rmap_walk will mistakenly get -EFAULT and don't call
+> > > rmap_one(). This patch adds a lock for vma's rmap information. 
+> > > But, this is _very slow_.
+> > > We need something sophisitcated, light-weight update for this..
+> > > 
+> > > 
+> > > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > ---
+> > >  include/linux/mm_types.h |    1 +
+> > >  kernel/fork.c            |    1 +
+> > >  mm/mmap.c                |   11 ++++++++++-
+> > >  mm/rmap.c                |    3 +++
+> > >  4 files changed, 15 insertions(+), 1 deletion(-)
+> > > 
+> > > Index: linux-2.6.34-rc4-mm1/include/linux/mm_types.h
+> > > ===================================================================
+> > > --- linux-2.6.34-rc4-mm1.orig/include/linux/mm_types.h
+> > > +++ linux-2.6.34-rc4-mm1/include/linux/mm_types.h
+> > > @@ -183,6 +183,7 @@ struct vm_area_struct {
+> > >  #ifdef CONFIG_NUMA
+> > >  	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
+> > >  #endif
+> > > +	spinlock_t adjust_lock;
+> > >  };
+> > >  
+> > >  struct core_thread {
+> > > Index: linux-2.6.34-rc4-mm1/mm/mmap.c
+> > > ===================================================================
+> > > --- linux-2.6.34-rc4-mm1.orig/mm/mmap.c
+> > > +++ linux-2.6.34-rc4-mm1/mm/mmap.c
+> > > @@ -584,13 +584,20 @@ again:			remove_next = 1 + (end > next->
+> > >  		if (adjust_next)
+> > >  			vma_prio_tree_remove(next, root);
+> > >  	}
+> > > -
+> > > +	/*
+> > > +	 * changing all params in atomic. If not, vma_address in rmap.c
+> > > + 	 * can see wrong result.
+> > > + 	 */
+> > > +	spin_lock(&vma->adjust_lock);
+> > >  	vma->vm_start = start;
+> > >  	vma->vm_end = end;
+> > >  	vma->vm_pgoff = pgoff;
+> > > +	spin_unlock(&vma->adjust_lock);
+> > >  	if (adjust_next) {
+> > > +		spin_lock(&next->adjust_lock);
+> > >  		next->vm_start += adjust_next << PAGE_SHIFT;
+> > >  		next->vm_pgoff += adjust_next;
+> > > +		spin_unlock(&next->adjust_lock);
+> > >  	}
+> > >  
+> > >  	if (root) {
+> > > @@ -1939,6 +1946,7 @@ static int __split_vma(struct mm_struct 
+> > >  	*new = *vma;
+> > >  
+> > >  	INIT_LIST_HEAD(&new->anon_vma_chain);
+> > > +	spin_lock_init(&new->adjust_lock);
+> > >  
+> > >  	if (new_below)
+> > >  		new->vm_end = addr;
+> > > @@ -2338,6 +2346,7 @@ struct vm_area_struct *copy_vma(struct v
+> > >  			if (IS_ERR(pol))
+> > >  				goto out_free_vma;
+> > >  			INIT_LIST_HEAD(&new_vma->anon_vma_chain);
+> > > +			spin_lock_init(&new_vma->adjust_lock);
+> > >  			if (anon_vma_clone(new_vma, vma))
+> > >  				goto out_free_mempol;
+> > >  			vma_set_policy(new_vma, pol);
+> > > Index: linux-2.6.34-rc4-mm1/kernel/fork.c
+> > > ===================================================================
+> > > --- linux-2.6.34-rc4-mm1.orig/kernel/fork.c
+> > > +++ linux-2.6.34-rc4-mm1/kernel/fork.c
+> > > @@ -350,6 +350,7 @@ static int dup_mmap(struct mm_struct *mm
+> > >  			goto fail_nomem;
+> > >  		*tmp = *mpnt;
+> > >  		INIT_LIST_HEAD(&tmp->anon_vma_chain);
+> > > +		spin_lock_init(&tmp->adjust_lock);
+> > >  		pol = mpol_dup(vma_policy(mpnt));
+> > >  		retval = PTR_ERR(pol);
+> > >  		if (IS_ERR(pol))
+> > > Index: linux-2.6.34-rc4-mm1/mm/rmap.c
+> > > ===================================================================
+> > > --- linux-2.6.34-rc4-mm1.orig/mm/rmap.c
+> > > +++ linux-2.6.34-rc4-mm1/mm/rmap.c
+> > > @@ -332,11 +332,14 @@ vma_address(struct page *page, struct vm
+> > >  	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+> > >  	unsigned long address;
+> > >  
+> > > +	spin_lock(&vma->adjust_lock);
+> > >  	address = vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
+> > >  	if (unlikely(address < vma->vm_start || address >= vma->vm_end)) {
+> > > +		spin_unlock(&vma->adjust_lock);
+> > >  		/* page should be within @vma mapping range */
+> > >  		return -EFAULT;
+> > >  	}
+> > > +	spin_unlock(&vma->adjust_lock);
+> > >  	return address;
+> > >  }
+> > >  
+> > 
+> > Nice Catch, Kame. :)
+> > 
+> > For further optimization, we can hold vma->adjust_lock if vma_address
+> > returns -EFAULT. But I hope we redesigns it without new locking. 
+> > But I don't have good idea, now. :(
+> 
+> How about this?
+> I just merged ideas of Mel and Kame.:)
+> 
+> It just shows the concept, not formal patch. 
+> 
+> 
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index f90ea92..61ea742 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -578,6 +578,8 @@ again:			remove_next = 1 + (end > next->vm_end);
+>  		}
+>  	}
+>  
+> +	if (vma->anon_vma)
+> +		spin_lock(&vma->anon_vma->lock);
+>  	if (root) {
+>  		flush_dcache_mmap_lock(mapping);
+>  		vma_prio_tree_remove(vma, root);
+> @@ -619,7 +621,8 @@ again:			remove_next = 1 + (end > next->vm_end);
+>  
+>  	if (mapping)
+>  		spin_unlock(&mapping->i_mmap_lock);
+> -
+> +	if (vma->anon_vma) 
+> +		spin_unlock(&vma->anon_vma->lock);
+>  	if (remove_next) {
+>  		if (file) {
+>  			fput(file);
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 3a53d9f..8075057 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -1359,9 +1359,22 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+>  	spin_lock(&anon_vma->lock);
+>  	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
+>  		struct vm_area_struct *vma = avc->vma;
+> -		unsigned long address = vma_address(page, vma);
+> -		if (address == -EFAULT)
+> +		struct anon_vma *tmp_anon_vma = vma->anon_vma;
+> +		unsigned long address;
+> +		int tmp_vma_lock = 0;
+> +		
+> +		if (tmp_anon_vma != anon_vma) {
+> +			spin_lock(&tmp_anon_vma->lock);	
+> +			tmp_vma_lock = 1;
+> +		}
 
-Well, I think the kernel should assume that the user-space can do
-anything.
+heh, I thought of a similar approach at the same time as you but missed
+this mail until later. However, with this approach I suspect there is a
+possibility that two walkers of the same anon_vma list could livelock if
+two locks on the list are held at the same time. Am still thinking of
+how it could be resolved without introducing new locking.
 
-Hmm. And if this vma is VM_SHARED, then this bp could be actually
-written to vm_file after mprotect().
+> +		address = vma_address(page, vma);
+> +		if (address == -EFAULT) {
+> +			if (tmp_vma_lock)
+> +				spin_unlock(&tmp_anon_vma->lock);
+>  			continue;
+> +		}
+> +		if (tmp_vma_lock)
+> +			spin_unlock(&tmp_anon_vma->lock);
+>  		ret = rmap_one(page, vma, address, arg);
+>  		if (ret != SWAP_AGAIN)
+>  			break;
+> -- 
+> 1.7.0.5
+> 
+> 
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
+> 
 
-But I think this doesn't really matter. When I actually look at
-patches 3 and 4, I am starting to think this all is very wrong.
-
-> I am copying Mel Gorman and Andrea Arcangeli so that they can provide
-> their inputs on VM and KSM related issues.
-
-Yes. We need vm experts here, I am not. Still, I'd like to share my
-concerns. I also added Rik and Hugh.
-
-
-So, 3/11 does
-
-	@@ -2617,7 +2617,10 @@ int replace_page(struct vm_area_struct *vma, struct page *page,
-		}
-	 
-		get_page(kpage);
-	-	page_add_anon_rmap(kpage, vma, addr);
-	+	if (PageAnon(kpage))
-	+		page_add_anon_rmap(kpage, vma, addr);
-	+	else
-	+		page_add_file_rmap(kpage);
-	 
-		flush_cache_page(vma, addr, pte_pfn(*ptep));
-		ptep_clear_flush(vma, addr, ptep);
-
-I see no point in this patch, please see below.
-
-The next 4/11 patch introduces write_opcode() which roughly does:
-
-	int write_opcode(unsigned long vaddr, user_bkpt_opcode_t opcode)
-	{
-		get_user_pages(write => false, &old_page);
-
-		new_page = alloc_page_vma(...);
-
-		... insert the bp into the new_page ...
-
-		new_page->mapping = old_page->mapping;
-		new_page->index = old_page->index;
-
-		replace_page(old_page, new_page);
-	}
-
-This doesn't look right at all to me.
-
-	IF PageAnon(old_page):
-
-		in this case replace_page() calls page_add_anon_rmap() which
-		needs the locked page.
-
-	ELSE:
-
-		I don't think the new page should evere preserve the mapping,
-		this looks just wrong. It should be always anonymous.
-
-
-And in fact, I do not understand why write_opcode() needs replace_page().
-It could just use get_user_pages(FOLL_WRITE | FOLL_FORCE), no? It should
-create the anonymous page correctly.
-
-Either way, I think register_uprobe() should disallow the probes in
-VM_SHARED/VM_MAYWRITE vmas.
-
-Oleg.
-
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
