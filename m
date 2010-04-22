@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab0DVT3r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:29:47 -0400
-Received: from kroah.org ([198.145.64.141]:41262 "EHLO coco.kroah.org"
+	id S1757223Ab0DVTgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:36:12 -0400
+Received: from kroah.org ([198.145.64.141]:41518 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756711Ab0DVT3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:18 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:19 2010
-Message-Id: <20100422190919.487435363@kvm.kroah.org>
+	id S1756711Ab0DVT3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:48 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:22 2010
+Message-Id: <20100422190922.890490597@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:47 -0700
+Date: Thu, 22 Apr 2010 12:10:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Giridhar Malavali <giridhar.malavali@qlogic.com>,
-       James Bottomley <James.Bottomley@suse.de>,
-       maximilian attems <max@stro.at>
-Subject: [136/197] SCSI: fc-transport: Use packed modifier for fc_bsg_request structure.
+       "J. Bruce Fields" <bfields@citi.umich.edu>
+Subject: [173/197] nfsd4: dont try to map gids in generic rpc code
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,33 +25,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Harish Zunjarrao <harish.zunjarrao@qlogic.com>
+From: J. Bruce Fields <bfields@citi.umich.edu>
 
-commit eda05a28ec52be40086400a1b606d211276f0e41 upstream.
+commit dc83d6e27fa80babe31c80aa8568f125f72edf57 upstream.
 
-The 32bit kernel does not add padding bytes in the fc_bsg_request structure
-whereas the 64bit kernel adds padding bytes in the fc_bsg_request structure.
-Due to this, structure elements gets mismatched with 32bit application and
-64bit kernel.To resolve this, used packed modifier to avoid adding padding bytes.
-Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-Cc: maximilian attems <max@stro.at>
+For nfsd we provide users the option of mapping uid's to server-side
+supplementary group lists.  That makes sense for nfsd, but not
+necessarily for other rpc users (such as the callback client).
+
+So move that lookup to svcauth_unix_set_client, which is a
+program-specific method.
+
+Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/scsi/scsi_bsg_fc.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sunrpc/svcauth_unix.c |   53 ++++++++++++++++++++++++++--------------------
+ 1 file changed, 30 insertions(+), 23 deletions(-)
 
---- a/include/scsi/scsi_bsg_fc.h
-+++ b/include/scsi/scsi_bsg_fc.h
-@@ -292,7 +292,7 @@ struct fc_bsg_request {
- 		struct fc_bsg_rport_els		r_els;
- 		struct fc_bsg_rport_ct		r_ct;
- 	} rqst_data;
--};
-+} __attribute__((packed));
+--- a/net/sunrpc/svcauth_unix.c
++++ b/net/sunrpc/svcauth_unix.c
+@@ -655,23 +655,25 @@ static struct unix_gid *unix_gid_lookup(
+ 		return NULL;
+ }
  
+-static int unix_gid_find(uid_t uid, struct group_info **gip,
+-			 struct svc_rqst *rqstp)
++static struct group_info *unix_gid_find(uid_t uid, struct svc_rqst *rqstp)
+ {
+-	struct unix_gid *ug = unix_gid_lookup(uid);
++	struct unix_gid *ug;
++	struct group_info *gi;
++	int ret;
++
++	ug = unix_gid_lookup(uid);
+ 	if (!ug)
+-		return -EAGAIN;
+-	switch (cache_check(&unix_gid_cache, &ug->h, &rqstp->rq_chandle)) {
++		return ERR_PTR(-EAGAIN);
++	ret = cache_check(&unix_gid_cache, &ug->h, &rqstp->rq_chandle);
++	switch (ret) {
+ 	case -ENOENT:
+-		*gip = NULL;
+-		return 0;
++		return ERR_PTR(-ENOENT);
+ 	case 0:
+-		*gip = ug->gi;
+-		get_group_info(*gip);
++		gi = get_group_info(ug->gi);
+ 		cache_put(&ug->h, &unix_gid_cache);
+-		return 0;
++		return gi;
+ 	default:
+-		return -EAGAIN;
++		return ERR_PTR(-EAGAIN);
+ 	}
+ }
  
- /* response (request sense data) structure of the sg_io_v4 */
+@@ -681,6 +683,8 @@ svcauth_unix_set_client(struct svc_rqst
+ 	struct sockaddr_in *sin;
+ 	struct sockaddr_in6 *sin6, sin6_storage;
+ 	struct ip_map *ipm;
++	struct group_info *gi;
++	struct svc_cred *cred = &rqstp->rq_cred;
+ 
+ 	switch (rqstp->rq_addr.ss_family) {
+ 	case AF_INET:
+@@ -722,6 +726,17 @@ svcauth_unix_set_client(struct svc_rqst
+ 			ip_map_cached_put(rqstp, ipm);
+ 			break;
+ 	}
++
++	gi = unix_gid_find(cred->cr_uid, rqstp);
++	switch (PTR_ERR(gi)) {
++	case -EAGAIN:
++		return SVC_DROP;
++	case -ENOENT:
++		break;
++	default:
++		put_group_info(cred->cr_group_info);
++		cred->cr_group_info = gi;
++	}
+ 	return SVC_OK;
+ }
+ 
+@@ -818,19 +833,11 @@ svcauth_unix_accept(struct svc_rqst *rqs
+ 	slen = svc_getnl(argv);			/* gids length */
+ 	if (slen > 16 || (len -= (slen + 2)*4) < 0)
+ 		goto badcred;
+-	if (unix_gid_find(cred->cr_uid, &cred->cr_group_info, rqstp)
+-	    == -EAGAIN)
++	cred->cr_group_info = groups_alloc(slen);
++	if (cred->cr_group_info == NULL)
+ 		return SVC_DROP;
+-	if (cred->cr_group_info == NULL) {
+-		cred->cr_group_info = groups_alloc(slen);
+-		if (cred->cr_group_info == NULL)
+-			return SVC_DROP;
+-		for (i = 0; i < slen; i++)
+-			GROUP_AT(cred->cr_group_info, i) = svc_getnl(argv);
+-	} else {
+-		for (i = 0; i < slen ; i++)
+-			svc_getnl(argv);
+-	}
++	for (i = 0; i < slen; i++)
++		GROUP_AT(cred->cr_group_info, i) = svc_getnl(argv);
+ 	if (svc_getu32(argv) != htonl(RPC_AUTH_NULL) || svc_getu32(argv) != 0) {
+ 		*authp = rpc_autherr_badverf;
+ 		return SVC_DENIED;
 
 
