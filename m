@@ -1,98 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab0DVTuw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:50:52 -0400
-Received: from kroah.org ([198.145.64.141]:40954 "EHLO coco.kroah.org"
+	id S1757116Ab0DVTbs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:31:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30426 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756520Ab0DVT2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:47 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:16 2010
-Message-Id: <20100422190915.971917382@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:07 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [096/197] NFSv4: fix delegated locking
-In-Reply-To: <20100422191857.GA13268@kroah.com>
+	id S1756974Ab0DVTaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:30:03 -0400
+Date: Thu, 22 Apr 2010 16:29:47 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/10] KVM MMU: don't write-protect if have new mapping to
+ unsync page
+Message-ID: <20100422192947.GA2280@amt.cnet>
+References: <4BCFE581.8050305@cn.fujitsu.com>
+ <4BCFE8F0.7010509@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BCFE8F0.7010509@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Thu, Apr 22, 2010 at 02:13:04PM +0800, Xiao Guangrong wrote:
+> If have new mapping to the unsync page(i.e, add a new parent), just
+> update the page from sp->gfn but not write-protect gfn, and if need
+> create new shadow page form sp->gfn, we should sync it
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  arch/x86/kvm/mmu.c |   27 +++++++++++++++++++--------
+>  1 files changed, 19 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index fd027a6..8607a64 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -1196,16 +1196,20 @@ static void kvm_unlink_unsync_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+>  
+>  static int kvm_mmu_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp);
+>  
+> -static int kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+> +static int kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+> +			 bool clear_unsync)
+>  {
+>  	if (sp->role.cr4_pae != !!is_pae(vcpu)) {
+>  		kvm_mmu_zap_page(vcpu->kvm, sp);
+>  		return 1;
+>  	}
+>  
+> -	if (rmap_write_protect(vcpu->kvm, sp->gfn))
+> -		kvm_flush_remote_tlbs(vcpu->kvm);
+> -	kvm_unlink_unsync_page(vcpu->kvm, sp);
+> +	if (clear_unsync) {
+> +		if (rmap_write_protect(vcpu->kvm, sp->gfn))
+> +			kvm_flush_remote_tlbs(vcpu->kvm);
+> +		kvm_unlink_unsync_page(vcpu->kvm, sp);
+> +	}
+> +
+>  	if (vcpu->arch.mmu.sync_page(vcpu, sp)) {
+>  		kvm_mmu_zap_page(vcpu->kvm, sp);
+>  		return 1;
+> @@ -1293,7 +1297,7 @@ static void mmu_sync_children(struct kvm_vcpu *vcpu,
+>  			kvm_flush_remote_tlbs(vcpu->kvm);
+>  
+>  		for_each_sp(pages, sp, parents, i) {
+> -			kvm_sync_page(vcpu, sp);
+> +			kvm_sync_page(vcpu, sp, true);
+>  			mmu_pages_clear_parents(&parents);
+>  		}
+>  		cond_resched_lock(&vcpu->kvm->mmu_lock);
+> @@ -1313,7 +1317,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>  	unsigned index;
+>  	unsigned quadrant;
+>  	struct hlist_head *bucket;
+> -	struct kvm_mmu_page *sp;
+> +	struct kvm_mmu_page *sp, *unsync_sp = NULL;
+>  	struct hlist_node *node, *tmp;
+>  
+>  	role = vcpu->arch.mmu.base_role;
+> @@ -1332,12 +1336,16 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>  	hlist_for_each_entry_safe(sp, node, tmp, bucket, hash_link)
+>  		if (sp->gfn == gfn) {
+>  			if (sp->unsync)
+> -				if (kvm_sync_page(vcpu, sp))
+> -					continue;
+> +				unsync_sp = sp;
 
-------------------
+Xiao,
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+I don't see a reason why you can't create a new mapping to an unsync
+page. The code already creates shadow pte entries using unsync
+pagetables.
 
-commit 0df5dd4aae211edeeeb84f7f84f6d093406d7c22 upstream.
+So all you need would be to kvm_sync_pages before write protecting.
 
-Arnaud Giersch reports that NFSv4 locking is broken when we hold a
-delegation since commit 8e469ebd6dc32cbaf620e134d79f740bf0ebab79 (NFSv4:
-Don't allow posix locking against servers that don't support it).
+Also make sure kvm_sync_pages is in place here before enabling multiple
+unsync shadows, in the patch series.
 
-According to Arnaud, the lock succeeds the first time he opens the file
-(since we cannot do a delegated open) but then fails after we start using
-delegated opens.
-
-The following patch fixes it by ensuring that locking behaviour is
-governed by a per-filesystem capability flag that is initially set, but
-gets cleared if the server ever returns an OPEN without the
-NFS4_OPEN_RESULT_LOCKTYPE_POSIX flag being set.
-
-Reported-by: Arnaud Giersch <arnaud.giersch@iut-bm.univ-fcomte.fr>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/nfs/client.c           |    3 ++-
- fs/nfs/nfs4proc.c         |    4 +++-
- include/linux/nfs_fs_sb.h |    1 +
- 3 files changed, 6 insertions(+), 2 deletions(-)
-
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -1283,7 +1283,8 @@ static int nfs4_init_server(struct nfs_s
- 
- 	/* Initialise the client representation from the mount data */
- 	server->flags = data->flags;
--	server->caps |= NFS_CAP_ATOMIC_OPEN|NFS_CAP_CHANGE_ATTR;
-+	server->caps |= NFS_CAP_ATOMIC_OPEN|NFS_CAP_CHANGE_ATTR|
-+		NFS_CAP_POSIX_LOCK;
- 	server->options = data->options;
- 
- 	/* Get a client record */
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1439,6 +1439,8 @@ static int _nfs4_proc_open(struct nfs4_o
- 		nfs_post_op_update_inode(dir, o_res->dir_attr);
- 	} else
- 		nfs_refresh_inode(dir, o_res->dir_attr);
-+	if ((o_res->rflags & NFS4_OPEN_RESULT_LOCKTYPE_POSIX) == 0)
-+		server->caps &= ~NFS_CAP_POSIX_LOCK;
- 	if(o_res->rflags & NFS4_OPEN_RESULT_CONFIRM) {
- 		status = _nfs4_proc_open_confirm(data);
- 		if (status != 0)
-@@ -1573,7 +1575,7 @@ static int _nfs4_do_open(struct inode *d
- 	status = PTR_ERR(state);
- 	if (IS_ERR(state))
- 		goto err_opendata_put;
--	if ((opendata->o_res.rflags & NFS4_OPEN_RESULT_LOCKTYPE_POSIX) != 0)
-+	if (server->caps & NFS_CAP_POSIX_LOCK)
- 		set_bit(NFS_STATE_POSIX_LOCKS, &state->flags);
- 	nfs4_opendata_put(opendata);
- 	nfs4_put_state_owner(sp);
---- a/include/linux/nfs_fs_sb.h
-+++ b/include/linux/nfs_fs_sb.h
-@@ -176,6 +176,7 @@ struct nfs_server {
- #define NFS_CAP_ATIME		(1U << 11)
- #define NFS_CAP_CTIME		(1U << 12)
- #define NFS_CAP_MTIME		(1U << 13)
-+#define NFS_CAP_POSIX_LOCK	(1U << 14)
- 
- 
- /* maximum number of slots to use */
-
-
+>  
+>  			if (sp->role.word != role.word)
+>  				continue;
+>  
+> +			if (unsync_sp && kvm_sync_page(vcpu, unsync_sp, false)) {
+> +				unsync_sp = NULL;
+> +				continue;
+> +			}
+> +
+>  			mmu_page_add_parent_pte(vcpu, sp, parent_pte);
+>  			if (sp->unsync_children) {
+>  				set_bit(KVM_REQ_MMU_SYNC, &vcpu->requests);
+> @@ -1346,6 +1354,9 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>  			trace_kvm_mmu_get_page(sp, false);
+>  			return sp;
+>  		}
+> +	if (unsync_sp)
+> +		kvm_sync_page(vcpu, unsync_sp, true);
+> +
+>  	++vcpu->kvm->stat.mmu_cache_miss;
+>  	sp = kvm_mmu_alloc_page(vcpu, parent_pte);
+>  	if (!sp)
+> -- 
+> 1.6.1.2
+> 
