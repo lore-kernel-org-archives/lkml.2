@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757166Ab0DVTt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:49:26 -0400
-Received: from kroah.org ([198.145.64.141]:41043 "EHLO coco.kroah.org"
+	id S1756833Ab0DVTbD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:31:03 -0400
+Received: from kroah.org ([198.145.64.141]:41640 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756571Ab0DVT24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:56 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:17 2010
-Message-Id: <20100422190917.016196024@kvm.kroah.org>
+	id S1756978Ab0DVTaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:30:05 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:24 2010
+Message-Id: <20100422190924.685638141@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:19 -0700
+Date: Thu, 22 Apr 2010 12:10:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Joerg Roedel <joerg.roedel@amd.com>,
-       Eric Biederman <ebiederm@xmission.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Chris Wright <chrisw@sous-sol.org>
-Subject: [108/197] Revert "x86: disable IOMMUs on kernel crash"
+       Sridhar Samudrala <sri@us.ibm.com>, Avi Kivity <avi@redhat.com>
+Subject: [193/197] KVM: Increase NR_IOBUS_DEVS limit to 200
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,48 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wright <chrisw@sous-sol.org>
+From: Sridhar Samudrala <sri@us.ibm.com>
 
-commit 8f9f55e83e939724490d7cde3833c4883c6d1310 upstream.
+(Cherry-picked from commit e80e2a60ff7914dae691345a976c80bbbff3ec74)
 
-This effectively reverts commit 61d047be99757fd9b0af900d7abce9a13a337488.
+This patch increases the current hardcoded limit of NR_IOBUS_DEVS
+from 6 to 200. We are hitting this limit when creating a guest with more
+than 1 virtio-net device using vhost-net backend. Each virtio-net
+device requires 2 such devices to service notifications from rx/tx queues.
 
-Disabling the IOMMU can potetially allow DMA transactions to
-complete without being translated.  Leave it enabled, and allow
-crash kernel to do the IOMMU reinitialization properly.
-
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Eric Biederman <ebiederm@xmission.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/crash.c |    6 ------
- 1 file changed, 6 deletions(-)
+ include/linux/kvm_host.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -27,7 +27,6 @@
- #include <asm/cpu.h>
- #include <asm/reboot.h>
- #include <asm/virtext.h>
--#include <asm/iommu.h>
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -53,7 +53,7 @@ extern struct kmem_cache *kvm_vcpu_cache
+  */
+ struct kvm_io_bus {
+ 	int                   dev_count;
+-#define NR_IOBUS_DEVS 6
++#define NR_IOBUS_DEVS 200
+ 	struct kvm_io_device *devs[NR_IOBUS_DEVS];
+ };
  
- 
- #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
-@@ -104,10 +103,5 @@ void native_machine_crash_shutdown(struc
- #ifdef CONFIG_HPET_TIMER
- 	hpet_disable();
- #endif
--
--#ifdef CONFIG_X86_64
--	pci_iommu_shutdown();
--#endif
--
- 	crash_save_cpu(regs, safe_smp_processor_id());
- }
 
 
