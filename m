@@ -1,78 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab0DVCE7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 22:04:59 -0400
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:55114 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752164Ab0DVCE6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 22:04:58 -0400
-X-Greylist: delayed 1595 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Apr 2010 22:04:58 EDT
-Message-ID: <4BCFA855.8070407@lougher.demon.co.uk>
-Date: Thu, 22 Apr 2010 02:37:25 +0100
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1753304Ab0DVCIj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 22:08:39 -0400
+Received: from mail.gmx.net ([213.165.64.20]:33895 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752658Ab0DVCIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 22:08:37 -0400
+X-Authenticated: #1587495
+X-Provags-ID: V01U2FsdGVkX1/r7JU808briMBHGhAvPOz37lQjwgci9UwNaEXH4f
+	+t5gffMCoemENR
+From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+To: gregkh@suse.de
+Subject: Re: patch md-raid5-allow-for-more-than-2-31-chunks.patch added to 2.6.33-stable tree
+Date: Thu, 22 Apr 2010 04:08:30 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.33-2.slh.8-sidux-686; KDE/4.4.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org, neilb@suse.de, king.br@gmail.com,
+       stable@kernel.org
+References: <12718801381479@kroah.org>
+In-Reply-To: <12718801381479@kroah.org>
 MIME-Version: 1.0
-To: Tim Bird <tim.bird@am.sony.com>
-CC: squashfs-devel@lists.sourceforge.net,
-       linux-embedded <linux-embedded@vger.kernel.org>,
-       linux kernel <linux-kernel@vger.kernel.org>,
-       Matt Mackall <mpm@selenic.com>
-Subject: Re: Status of SquashFS LZMA support in mainline
-References: <4BCF9863.2000903@am.sony.com>
-In-Reply-To: <4BCF9863.2000903@am.sony.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004220408.33822.s.L-H@gmx.de>
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.46000000000000002
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tim Bird wrote:
-> Does anyone (Phillip?) know the status of SquashFS support
-> for LZMA compression in mainline?  I seem to recall that
-> Phillip got the patches for this into linux-next sometime
-> in January, but I'm not sure if the latest kernel
-> (2.6.34-rcxx) includes this or not.
+Hi
+
+On Thursday 22 April 2010, gregkh@suse.de wrote:
+> This is a note to let you know that we have just queued up the patch titled
 > 
-
-Short answer, no it doesn't include this, Linus rejected my
-changes to the LZMA code that made it available for
-use by non init code (the LZMA code is currently only used by
-initramfs/initrd and the kernel decompression code).
-
-See the thread with the response from Linus here
-http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-03/msg01462.html
-
-So even though AFAIK there was no issues with the Squashfs LZMA
-wrapper, I had to drop it because it's useless without my changes
-to the LZMA code.
-
-I salvaged as much as possible, and submitted a second pull request
-with only the new Squashfs decompression framework (so it can use different
-decompressors cleanly).  This was accepted.
-
-
-> I also see in Linus' git tree the following commits in
-> March:
+>     Subject: md/raid5: allow for more than 2^31 chunks.
 > 
-> 2010-03-05	Linus Torvalds	Merge git://git.kernel.org/pub/scm/linux/kernel/git...
-> ...git://git./linux/kernel/git/pkl/squashfs-linus
-> ...org/pub/scm/linux/kernel/git/pkl/squashfs-linus:
-> Squashfs: get rid of obsolete definition...
-> Squashfs: get rid of obsolete variable...
-> Squashfs: add decompressor entries for...
-> Squashfs: add a decompressor framework
-> Squashfs: factor out remaining zlib dependencies...
-> Squashfs: move zlib decompression wrapper...
+> to the 2.6.33-stable tree.  Its filename is
+> 
+>     md-raid5-allow-for-more-than-2-31-chunks.patch
+> 
+> A git repo of this tree can be found at 
+>     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+> 
+> 
+> From 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d Mon Sep 17 00:00:00 2001
+> From: NeilBrown <neilb@suse.de>
+> Date: Tue, 20 Apr 2010 14:13:34 +1000
+> Subject: md/raid5: allow for more than 2^31 chunks.
+> 
+> From: NeilBrown <neilb@suse.de>
+> 
+> commit 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d upstream.
+> 
+> With many large drives and small chunk sizes it is possible
+> to create a RAID5 with more than 2^31 chunks.  Make sure this
+> works.
+> 
+> Reported-by: Brett King <king.br@gmail.com>
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-The partial pull is why the commit history is slightly confusing, part of the
-work is there, but all LZMA work is mysteriously missing.
+This patch, as part of the current 2.6.33 stable queue, breaks compiling
+on i386 (CONFIG_LBDAF=y) for me (amd64 builds fine):
 
-What now?  It's clear the Squashfs LZMA work isn't going to be accepted until
-I clean up the STATIC and __init mess that Linus objected to.  This is one
-of my next tasks when I get enough free time to work through the issues.  It
-may be quite a lot of work because to fix this requires touching quite a
-few different architecture files.  It's not something that's going to be fixed
-in a couple of evenings :-(
+[...]
+  BUILD   arch/x86/boot/bzImage
+Root device is (254, 6)
+Setup is 12700 bytes (padded to 12800 bytes).
+System is 2415 kB
+CRC db6fa5fa
+Kernel: arch/x86/boot/bzImage is ready  (#1)
+ERROR: "__umoddi3" [drivers/md/raid456.ko] undefined!
 
-Phillip
+reverting just this patch fixes the problem for me.
+
+Current Debian/ unstable:
+ii  binutils                                            2.20.1-7                   The GNU assembler, linker and binary utilities
+ii  gcc-4.4                                             4.4.3-9                    The GNU C compiler
+ii  make                                                3.81-8                     An utility for Directing compilation.
+
+Regards
+	Stefan Lippers-Hollmann
+
+-- 
+> ---
+>  drivers/md/raid5.c |   19 +++++++------------
+>  1 file changed, 7 insertions(+), 12 deletions(-)
+> 
+> --- a/drivers/md/raid5.c
+> +++ b/drivers/md/raid5.c
+> @@ -1649,8 +1649,8 @@ static sector_t raid5_compute_sector(rai
+>  				     int previous, int *dd_idx,
+>  				     struct stripe_head *sh)
+>  {
+> -	long stripe;
+> -	unsigned long chunk_number;
+> +	sector_t stripe;
+> +	sector_t chunk_number;
+>  	unsigned int chunk_offset;
+>  	int pd_idx, qd_idx;
+>  	int ddf_layout = 0;
+> @@ -1670,17 +1670,12 @@ static sector_t raid5_compute_sector(rai
+>  	 */
+>  	chunk_offset = sector_div(r_sector, sectors_per_chunk);
+>  	chunk_number = r_sector;
+> -	BUG_ON(r_sector != chunk_number);
+>  
+>  	/*
+>  	 * Compute the stripe number
+>  	 */
+> -	stripe = chunk_number / data_disks;
+> -
+> -	/*
+> -	 * Compute the data disk and parity disk indexes inside the stripe
+> -	 */
+> -	*dd_idx = chunk_number % data_disks;
+> +	stripe = chunk_number;
+> +	*dd_idx = sector_div(stripe, data_disks);
+>  
+>  	/*
+>  	 * Select the parity disk based on the user selected algorithm.
+> @@ -1869,14 +1864,14 @@ static sector_t compute_blocknr(struct s
+>  				 : conf->algorithm;
+>  	sector_t stripe;
+>  	int chunk_offset;
+> -	int chunk_number, dummy1, dd_idx = i;
+> +	sector_t chunk_number;
+> +	int dummy1, dd_idx = i;
+>  	sector_t r_sector;
+>  	struct stripe_head sh2;
+>  
+>  
+>  	chunk_offset = sector_div(new_sector, sectors_per_chunk);
+>  	stripe = new_sector;
+> -	BUG_ON(new_sector != stripe);
+>  
+>  	if (i == sh->pd_idx)
+>  		return 0;
+> @@ -1969,7 +1964,7 @@ static sector_t compute_blocknr(struct s
+>  	}
+>  
+>  	chunk_number = stripe * data_disks + i;
+> -	r_sector = (sector_t)chunk_number * sectors_per_chunk + chunk_offset;
+> +	r_sector = chunk_number * sectors_per_chunk + chunk_offset;
+>  
+>  	check = raid5_compute_sector(conf, r_sector,
+>  				     previous, &dummy1, &sh2);
