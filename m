@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab0DVUNF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:13:05 -0400
-Received: from kroah.org ([198.145.64.141]:59951 "EHLO coco.kroah.org"
+	id S1757210Ab0DVURJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:17:09 -0400
+Received: from kroah.org ([198.145.64.141]:59824 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758077Ab0DVUBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:01:24 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:15 2010
-Message-Id: <20100422195415.658919458@kvm.kroah.org>
+	id S1758044Ab0DVUAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:00:52 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:12 2010
+Message-Id: <20100422195412.615860492@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:39 -0700
+Date: Thu, 22 Apr 2010 12:54:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Seth Heasley <seth.heasley@intel.com>, Jeff Garzik <jgarzik@redhat.com>,
-       maximilian attems <max@stro.at>
-Subject: [102/139] ahci: AHCI and RAID mode SATA patch for Intel Cougar Point DeviceIDs
+       Borislav Petkov <borislav.petkov@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: [077/139] x86, cacheinfo: Fix disabling of L3 cache indices
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +26,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Heasley <seth.heasley@intel.com>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit 5623cab83ea61e0420f2064216d83eab067a24c6 upstream.
+commit dcf39daf3d6d97f8741e82f0b9fb7554704ed2d1 upstream.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Cc: maximilian attems <max@stro.at>
+* Correct the masks used for writing the cache index disable indices.
+* Do not turn off L3 scrubber - it is not necessary.
+* Make sure wbinvd is executed on the same node where the L3 is.
+* Check for out-of-bounds values written to the registers.
+* Make show_cache_disable hex values unambiguous
+* Check for Erratum #388
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <1264172467-25155-4-git-send-email-bp@amd64.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ahci.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/kernel/cpu/intel_cacheinfo.c |   34 +++++++++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 13 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -570,6 +570,12 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x3b2b), board_ahci }, /* PCH RAID */
- 	{ PCI_VDEVICE(INTEL, 0x3b2c), board_ahci }, /* PCH RAID */
- 	{ PCI_VDEVICE(INTEL, 0x3b2f), board_ahci }, /* PCH AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x1c02), board_ahci }, /* CPT AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x1c03), board_ahci }, /* CPT AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x1c04), board_ahci }, /* CPT RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1c05), board_ahci }, /* CPT RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1c06), board_ahci }, /* CPT RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1c07), board_ahci }, /* CPT RAID */
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -18,6 +18,7 @@
+ #include <asm/processor.h>
+ #include <linux/smp.h>
+ #include <asm/k8.h>
++#include <asm/smp.h>
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ #define LVL_1_INST	1
+ #define LVL_1_DATA	2
+@@ -299,8 +300,10 @@ amd_check_l3_disable(int index, struct _
+ 	if (boot_cpu_data.x86 == 0x11)
+ 		return;
+ 
+-	/* see erratum #382 */
+-	if ((boot_cpu_data.x86 == 0x10) && (boot_cpu_data.x86_model < 0x8))
++	/* see errata #382 and #388 */
++	if ((boot_cpu_data.x86 == 0x10) &&
++	    ((boot_cpu_data.x86_model < 0x9) ||
++	     (boot_cpu_data.x86_mask  < 0x1)))
+ 		return;
+ 
+ 	this_leaf->can_disable = 1;
+@@ -726,12 +729,12 @@ static ssize_t show_cache_disable(struct
+ 		return -EINVAL;
+ 
+ 	pci_read_config_dword(dev, 0x1BC + index * 4, &reg);
+-	return sprintf(buf, "%x\n", reg);
++	return sprintf(buf, "0x%08x\n", reg);
+ }
+ 
+ #define SHOW_CACHE_DISABLE(index)					\
+ static ssize_t								\
+-show_cache_disable_##index(struct _cpuid4_info *this_leaf, char *buf)  	\
++show_cache_disable_##index(struct _cpuid4_info *this_leaf, char *buf)	\
+ {									\
+ 	return show_cache_disable(this_leaf, buf, index);		\
+ }
+@@ -745,7 +748,9 @@ static ssize_t store_cache_disable(struc
+ 	int node = cpu_to_node(cpu);
+ 	struct pci_dev *dev = node_to_k8_nb_misc(node);
+ 	unsigned long val = 0;
+-	unsigned int scrubber = 0;
++
++#define SUBCACHE_MASK	(3UL << 20)
++#define SUBCACHE_INDEX	0xfff
+ 
+ 	if (!this_leaf->can_disable)
+ 		return -EINVAL;
+@@ -759,21 +764,24 @@ static ssize_t store_cache_disable(struc
+ 	if (strict_strtoul(buf, 10, &val) < 0)
+ 		return -EINVAL;
+ 
+-	val |= 0xc0000000;
+-
+-	pci_read_config_dword(dev, 0x58, &scrubber);
+-	scrubber &= ~0x1f000000;
+-	pci_write_config_dword(dev, 0x58, scrubber);
++	/* do not allow writes outside of allowed bits */
++	if (val & ~(SUBCACHE_MASK | SUBCACHE_INDEX))
++		return -EINVAL;
+ 
+-	pci_write_config_dword(dev, 0x1BC + index * 4, val & ~0x40000000);
+-	wbinvd();
++	val |= BIT(30);
+ 	pci_write_config_dword(dev, 0x1BC + index * 4, val);
++	/*
++	 * We need to WBINVD on a core on the node containing the L3 cache which
++	 * indices we disable therefore a simple wbinvd() is not sufficient.
++	 */
++	wbinvd_on_cpu(cpu);
++	pci_write_config_dword(dev, 0x1BC + index * 4, val | BIT(31));
+ 	return count;
+ }
+ 
+ #define STORE_CACHE_DISABLE(index)					\
+ static ssize_t								\
+-store_cache_disable_##index(struct _cpuid4_info *this_leaf,	     	\
++store_cache_disable_##index(struct _cpuid4_info *this_leaf,		\
+ 			    const char *buf, size_t count)		\
+ {									\
+ 	return store_cache_disable(this_leaf, buf, count, index);	\
 
 
