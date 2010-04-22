@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab0DVSMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 14:12:24 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:41188 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605Ab0DVSMX (ORCPT
+	id S1754701Ab0DVSMx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 14:12:53 -0400
+Received: from relay.ihostexchange.net ([66.46.182.52]:45610 "EHLO
+	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab0DVSMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 14:12:23 -0400
+	Thu, 22 Apr 2010 14:12:52 -0400
+Message-ID: <4BD09175.9030703@VirtualLogix.com>
+Date: Thu, 22 Apr 2010 20:12:05 +0200
+From: Eric Lescouet <Eric.Lescouet@VirtualLogix.com>
+User-Agent: Thunderbird 2.0.0.19 (X11/20090105)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "usbip-devel@lists.sourceforge.net" 
+	<usbip-devel@lists.sourceforge.net>
+Subject: Re: [PATCH]: Fix deadlock in USBIP driver (staging), linux-2.6.34-rc5
+References: <4BD07F2A.8080808@VirtualLogix.com> <20100422170207.GA18830@suse.de>
+In-Reply-To: <20100422170207.GA18830@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-ID: <19408.37169.630371.794587@stoffel.org>
-Date: Thu, 22 Apr 2010 14:10:57 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-       Rik van Riel <riel@redhat.com>, John Stoffel <john@stoffel.org>,
-       Hedi Berriche <hedi@sgi.com>, Mike Travis <travis@sgi.com>,
-       Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
- pid_max v2
-In-Reply-To: <20100422170801.GZ5677@sgi.com>
-References: <20100421165934.GN16427@zorg.emea.sgi.com>
-	<4BCF336B.1050706@redhat.com>
-	<19407.20109.308816.104856@stoffel.org>
-	<20100421193350.GU16427@zorg.emea.sgi.com>
-	<19407.23456.469074.256306@stoffel.org>
-	<20100421222414.GA26241@suse.de>
-	<4BCF80F2.2010906@redhat.com>
-	<20100421232200.GA22877@suse.de>
-	<20100422102852.72837494@lxorguk.ukuu.org.uk>
-	<alpine.LFD.2.00.1004220743080.9086@i5.linux-foundation.org>
-	<20100422170801.GZ5677@sgi.com>
-X-Mailer: VM 8.0.9 under Emacs 22.3.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Robin" == Robin Holt <holt@sgi.com> writes:
+Greg KH wrote:
+[...]
+> Ok, but does the lock_kernel() call you just made actually prevent this
+> from happening?  Isn't there some other lock you can use instead?
+> 
 
->> Which I'm not entirely sure makes the case for the kernel parameter much 
->> stronger, though. I wonder if it's not more appropriate to just have a 
->> total hack saying
->> 
->> if (max_pids < N * max_cpus) {
->> printk("We have %d CPUs, increasing max_pids to %d\n");
->> max_pids = N*max_cpus;
->> }
->> 
->> where "N" is just some random fudge-factor. It's reasonable to expect a 
->> certain minimum number of processes per CPU, after all.
+Right. lock_kernel() is not needed (was copy/paste).
+The deadlock is avoided by not calling wait_for_completion()
+when the code is executed by the "eh" thread itself.
 
-Robin> How about:
+> Also, to have patches that we can apply, we need a "Signed-off-by:"
+> line.  See the file, Documentation/SubmittingPatches for what this
+> means.
 
-Robin> 	pid_max_min = max(pid_max_min, 19 * num_possible_cpus());
-Robin> 	pid_max_baseline = 2048 * num_possible_cpus();
+Understood.
 
-Robin> 	if (pid_max < pid_max_baseline) {
-Robin> 		printk("We have %d CPUs, increasing pid_max to %d\n"...
-Robin> 		pid_max = pid_max_baseline;
-Robin> 	}
+> Your email client wrapped the patch and made it unappliable :(
+> 
+> thanks,
+> 
+> greg k-h
+
+Sorry about that. Please find below an hopefully better one.
+Thanks,
+	Eric.
 
 
-Robin> This would scale pid_max_min by a sane amount, leave the default value
-Robin> of pid_max_min and pid_max untouched below 16 cpus and then scale both
-Robin> up linearly beyond that.
+Signed-off-by: Eric Lescouet <eric@lescouet.org>
+-------------
 
-Looks good, but how about some comments and some defines for the magic
-numbers of 2048 and 19?  
-
-John
+diff -Nur linux-2.6.34-rc5/drivers/staging/usbip/usbip_event.c linux-2.6.34-rc5.new/drivers/staging/usbip/usbip_event.c                   
+--- linux-2.6.34-rc5/drivers/staging/usbip/usbip_event.c        2010-04-20 01:29:56.000000000 +0200                                       
++++ linux-2.6.34-rc5.new/drivers/staging/usbip/usbip_event.c    2010-04-22 19:19:52.997889126 +0200                                       
+@@ -117,6 +117,9 @@
+ {                                                                                                                                        
+        struct usbip_task *eh = &ud->eh;                                                                                                  
+                                                                                                                                          
++       if (eh->thread == current)                                                                                                        
++               return; /* do not wait for myself */                                                                                      
++                                                                                                                                         
+        wait_for_completion(&eh->thread_done);                                                                                            
+        usbip_dbg_eh("usbip_eh has finished\n");                                                                                          
+ }                                                                                                                                        
 
