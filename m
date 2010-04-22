@@ -1,163 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab0DVUC3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:02:29 -0400
-Received: from kroah.org ([198.145.64.141]:59966 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758085Ab0DVUB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:01:28 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:16 2010
-Message-Id: <20100422195415.962821799@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:42 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "John W. Linville" <linville@tuxdriver.com>,
-       maximilian attems <max@stro.at>
-Subject: [105/139] b43: fall back gracefully to PIO mode after fatal DMA errors
-In-Reply-To: <20100422195715.GA25490@kroah.com>
+	id S1757572Ab0DVTvN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:51:13 -0400
+Received: from mx0b-000f0801.pphosted.com ([67.231.152.113]:60046 "EHLO
+	mx0b-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757557Ab0DVTu6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:50:58 -0400
+From: Jing Huang <huangj@Brocade.COM>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+       "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+       Krishna Gudipati <kgudipat@Brocade.COM>,
+       Ramkumar Vadivelu <rvadivel@Brocade.COM>,
+       Vinodh Ravindran <vravindr@Brocade.COM>
+Date: Thu, 22 Apr 2010 12:50:31 -0700
+Subject: RE: [PATCH] bfa: fix compilation warning in powerpc (resend)
+Thread-Topic: [PATCH] bfa: fix compilation warning in powerpc (resend)
+Thread-Index: AcrhqDHoUzNc6wlFQbWscv2kkmCq+QArHs4w
+Message-ID: <04391A4E90BB2149B010D22452FA1687B99CCFDD@HQ-EXCH-6.corp.brocade.com>
+References: <1271186549-642-1-git-send-email-huangj@brocade.com>
+ <20100421161217.60d5654b.akpm@linux-foundation.org>
+In-Reply-To: <20100421161217.60d5654b.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
+ definitions=2010-04-22_11:2010-02-06,2010-04-22,2010-04-21 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
+ bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=6.0.2-0911030000 definitions=main-1004220178
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+>> Fix the compilation warning in powerpc.
+>
+>When fixing a warning, please quote that warning in the patch description!
+>
+><does a cross-build>
+>
+>It seems that you're referring to this:
+>
+>drivers/scsi/bfa/bfa_ioc.c: In function 'bfa_ioc_msgget':
+>drivers/scsi/bfa/bfa_ioc.c:1331: warning: value computed is not used
+>drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_notify_hbfail':
+>drivers/scsi/bfa/bfa_ioc_ct.c:177: warning: value computed is not used
+>drivers/scsi/bfa/bfa_ioc_ct.c:180: warning: value computed is not used
+>drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_pll_init':
+>drivers/scsi/bfa/bfa_ioc_ct.c:381: warning: value computed is not used
+>drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_ownership_reset':
+>drivers/scsi/bfa/bfa_ioc_ct.c:421: warning: value computed is not used
+>drivers/scsi/bfa/bfa_ioc_cb.c: In function 'bfa_ioc_cb_notify_hbfail':
+>drivers/scsi/bfa/bfa_ioc_cb.c:99: warning: value computed is not used
+>drivers/scsi/bfa/bfa_ioc_cb.c: In function 'bfa_ioc_cb_ownership_reset':
+>drivers/scsi/bfa/bfa_ioc_cb.c:272: warning: value computed is not used
+>
+>
+>> The same change also fixes endian
+>> issue we found in powerpc test.
+>
+>When fixing a bug, please fully describe the bug!
+>
+>If this driver has "endian issues" on powerpc then it's quite possible
+>that this is a running-around-with-hair-on-fire,
+>must-backport-to-2.6.33.x bugfix.
+>
+>But how would I know?  You didn't tell me!
+>
 
-------------------
+Hi Andrew,
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+Sorry about the obscure description of the patch, I will provide detailed
+description in the future patch submission.
 
-commit 9e3bd9190800e8209b4a3e1d724c35f0738dcad2 upstream.
+Yes this patch is intended to fix the compilation warning you listed above.
 
-This makes the b43 driver just automatically fall back to PIO mode when
-DMA doesn't work.
+Regarding the big endian issue I mentioned, basically I remove an
+unnecessary word swap in bfa_os_reg_read() and bfa_os_reg_write()
+because the kernel provided readl and writel are already doing so. The
+compilation warning also goes away after this change. For
+bfa_os_mem_read() and bfa_os_mem_write() macros, I add a swap since
+these two macros are designed to read/write from/to a memory region
+that is in BE format per ASIC spec.
 
-The driver already told the user to do it, so rather than have the user
-reload the module with a new flag, just make the driver do it
-automatically. We keep the message as an indication that something is
-wrong, but now just automatically fall back to the hopefully working PIO
-case.
+Thanks
 
-(Some post-2.6.33 merge fixups by Larry Finger <Larry.Finger@lwfinger.net>
-and yours truly... -- JWL)
-
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: maximilian attems <max@stro.at>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/net/wireless/b43/Kconfig |   19 +++++++++++++++++--
- drivers/net/wireless/b43/b43.h   |    7 +++++++
- drivers/net/wireless/b43/main.c  |   14 ++++++++------
- 3 files changed, 32 insertions(+), 8 deletions(-)
-
---- a/drivers/net/wireless/b43/Kconfig
-+++ b/drivers/net/wireless/b43/Kconfig
-@@ -3,7 +3,6 @@ config B43
- 	depends on SSB_POSSIBLE && MAC80211 && HAS_DMA
- 	select SSB
- 	select FW_LOADER
--	select SSB_BLOCKIO
- 	---help---
- 	  b43 is a driver for the Broadcom 43xx series wireless devices.
- 
-@@ -79,6 +78,14 @@ config B43_SDIO
- 
- 	  If unsure, say N.
- 
-+#Data transfers to the device via PIO. We want it as a fallback even
-+# if we can do DMA.
-+config B43_PIO
-+	bool
-+	depends on B43
-+	select SSB_BLOCKIO
-+	default y
-+
- config B43_NPHY
- 	bool "Pre IEEE 802.11n support (BROKEN)"
- 	depends on B43 && EXPERIMENTAL && BROKEN
-@@ -130,4 +137,12 @@ config B43_DEBUG
- 	  for production use.
- 	  Only say Y, if you are debugging a problem in the b43 driver sourcecode.
- 
--
-+config B43_FORCE_PIO
-+	bool "Force usage of PIO instead of DMA"
-+	depends on B43 && B43_DEBUG
-+	---help---
-+	  This will disable DMA and always enable PIO instead.
-+
-+	  Say N!
-+	  This is only for debugging the PIO engine code. You do
-+	  _NOT_ want to enable this.
---- a/drivers/net/wireless/b43/b43.h
-+++ b/drivers/net/wireless/b43/b43.h
-@@ -694,6 +694,7 @@ struct b43_wldev {
- 	bool radio_hw_enable;	/* saved state of radio hardware enabled state */
- 	bool qos_enabled;		/* TRUE, if QoS is used. */
- 	bool hwcrypto_enabled;		/* TRUE, if HW crypto acceleration is enabled. */
-+	bool use_pio;			/* TRUE if next init should use PIO */
- 
- 	/* PHY/Radio device. */
- 	struct b43_phy phy;
-@@ -878,6 +879,12 @@ static inline bool b43_using_pio_transfe
- 	return dev->__using_pio_transfers;
- }
- 
-+#ifdef CONFIG_B43_FORCE_PIO
-+# define B43_PIO_DEFAULT 1
-+#else
-+# define B43_PIO_DEFAULT 0
-+#endif
-+
- /* Message printing */
- void b43info(struct b43_wl *wl, const char *fmt, ...)
-     __attribute__ ((format(printf, 2, 3)));
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -102,9 +102,9 @@ int b43_modparam_verbose = B43_VERBOSITY
- module_param_named(verbose, b43_modparam_verbose, int, 0644);
- MODULE_PARM_DESC(verbose, "Log message verbosity: 0=error, 1=warn, 2=info(default), 3=debug");
- 
--static int modparam_pio;
--module_param_named(pio, modparam_pio, int, 0444);
--MODULE_PARM_DESC(pio, "enable(1) / disable(0) PIO mode");
-+int b43_modparam_pio = B43_PIO_DEFAULT;
-+module_param_named(pio, b43_modparam_pio, int, 0644);
-+MODULE_PARM_DESC(pio, "Use PIO accesses by default: 0=DMA, 1=PIO");
- 
- static const struct ssb_device_id b43_ssb_tbl[] = {
- 	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 5),
-@@ -1793,8 +1793,9 @@ static void b43_do_interrupt_thread(stru
- 			       dma_reason[4], dma_reason[5]);
- 			b43err(dev->wl, "This device does not support DMA "
- 			       "on your system. Please use PIO instead.\n");
--			b43err(dev->wl, "Unload the b43 module and reload "
--			       "with 'pio=1'\n");
-+			/* Fall back to PIO transfers if we get fatal DMA errors! */
-+			dev->use_pio = 1;
-+			b43_controller_restart(dev, "DMA error");
- 			return;
- 		}
- 		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
-@@ -4361,7 +4362,7 @@ static int b43_wireless_core_init(struct
- 
- 	if ((dev->dev->bus->bustype == SSB_BUSTYPE_PCMCIA) ||
- 	    (dev->dev->bus->bustype == SSB_BUSTYPE_SDIO) ||
--	    modparam_pio) {
-+	    dev->use_pio) {
- 		dev->__using_pio_transfers = 1;
- 		err = b43_pio_init(dev);
- 	} else {
-@@ -4829,6 +4830,7 @@ static int b43_one_core_attach(struct ss
- 	if (!wldev)
- 		goto out;
- 
-+	wldev->use_pio = b43_modparam_pio;
- 	wldev->dev = dev;
- 	wldev->wl = wl;
- 	b43_set_status(wldev, B43_STAT_UNINIT);
-
+Jing
 
