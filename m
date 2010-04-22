@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab0DVUAl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:00:41 -0400
-Received: from kroah.org ([198.145.64.141]:59718 "EHLO coco.kroah.org"
+	id S932267Ab0DVUPP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:15:15 -0400
+Received: from kroah.org ([198.145.64.141]:59865 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757852Ab0DVUAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:22 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:10 2010
-Message-Id: <20100422195410.458296174@kvm.kroah.org>
+	id S932079Ab0DVUBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:01:04 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:13 2010
+Message-Id: <20100422195413.620846591@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:53 -0700
+Date: Thu, 22 Apr 2010 12:54:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Ulrich Drepper <drepper@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>, Jack Steiner <steiner@sgi.com>,
-       Russ Anderson <rja@sgi.com>, Mike Travis <travis@sgi.com>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: [056/139] sched: sched_getaffinity(): Allow less than NR_CPUS length
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: [086/139] x86-64, rwsem: 64-bit xadd rwsem implementation
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,120 +25,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: H. Peter Anvin <hpa@zytor.com>
 
-commit cd3d8031eb4311e516329aee03c79a08333141f1 upstream.
+commit 1838ef1d782f7527e6defe87e180598622d2d071 upstream.
 
-[ Note, this commit changes the syscall ABI for > 1024 CPUs systems. ]
+For x86-64, 32767 threads really is not enough.  Change rwsem_count_t
+to a signed long, so that it is 64 bits on x86-64.
 
-Recently, some distro decided to use NR_CPUS=4096 for mysterious reasons.
-Unfortunately, glibc sched interface has the following definition:
+This required the following changes to the assembly code:
 
-	# define __CPU_SETSIZE  1024
-	# define __NCPUBITS     (8 * sizeof (__cpu_mask))
-	typedef unsigned long int __cpu_mask;
-	typedef struct
-	{
-	  __cpu_mask __bits[__CPU_SETSIZE / __NCPUBITS];
-	} cpu_set_t;
+a) %z0 doesn't work on all versions of gcc!  At least gcc 4.4.2 as
+   shipped with Fedora 12 emits "ll" not "q" for 64 bits, even for
+   integer operands.  Newer gccs apparently do this correctly, but
+   avoid this problem by using the _ASM_ macros instead of %z.
+b) 64 bits immediates are only allowed in "movq $imm,%reg"
+   constructs... no others.  Change some of the constraints to "e",
+   and fix the one case where we would have had to use an invalid
+   immediate -- in that case, we only care about the upper half
+   anyway, so just access the upper half.
 
-It mean, if NR_CPUS is bigger than 1024, cpu_set_t makes an
-ABI issue ...
-
-More recently, Sharyathi Nagesh reported following test program makes
-misterious syscall failure:
-
- -----------------------------------------------------------------------
- #define _GNU_SOURCE
- #include<stdio.h>
- #include<errno.h>
- #include<sched.h>
-
- int main()
- {
-     cpu_set_t set;
-     if (sched_getaffinity(0, sizeof(cpu_set_t), &set) < 0)
-         printf("\n Call is failing with:%d", errno);
- }
- -----------------------------------------------------------------------
-
-Because the kernel assumes len argument of sched_getaffinity() is bigger
-than NR_CPUS. But now it is not correct.
-
-Now we are faced with the following annoying dilemma, due to
-the limitations of the glibc interface built in years ago:
-
- (1) if we change glibc's __CPU_SETSIZE definition, we lost
-     binary compatibility of _all_ application.
-
- (2) if we don't change it, we also lost binary compatibility of
-     Sharyathi's use case.
-
-Then, I would propse to change the rule of the len argument of
-sched_getaffinity().
-
-Old:
-	len should be bigger than NR_CPUS
-New:
-	len should be bigger than maximum possible cpu id
-
-This creates the following behavior:
-
- (A) In the real 4096 cpus machine, the above test program still
-     return -EINVAL.
-
- (B) NR_CPUS=4096 but the machine have less than 1024 cpus (almost
-     all machines in the world), the above can run successfully.
-
-Fortunatelly, BIG SGI machine is mainly used for HPC use case. It means
-they can rebuild their programs.
-
-IOW we hope they are not annoyed by this issue ...
-
-Reported-by: Sharyathi Nagesh <sharyath@in.ibm.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Ulrich Drepper <drepper@redhat.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jack Steiner <steiner@sgi.com>
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Mike Travis <travis@sgi.com>
-LKML-Reference: <20100312161316.9520.A69D9226@jp.fujitsu.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+LKML-Reference: <tip-bafaecd11df15ad5b1e598adc7736afcd38ee13d@git.kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/sched.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/rwsem.h |   53 ++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 40 insertions(+), 13 deletions(-)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -6717,7 +6717,9 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t
- 	int ret;
- 	cpumask_var_t mask;
+--- a/arch/x86/include/asm/rwsem.h
++++ b/arch/x86/include/asm/rwsem.h
+@@ -41,6 +41,7 @@
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
+ #include <linux/lockdep.h>
++#include <asm/asm.h>
  
--	if (len < cpumask_size())
-+	if (len < nr_cpu_ids)
-+		return -EINVAL;
-+	if (len & (sizeof(unsigned long)-1))
- 		return -EINVAL;
+ struct rwsem_waiter;
  
- 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-@@ -6725,10 +6727,12 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t
+@@ -56,18 +57,24 @@ extern asmregparm struct rw_semaphore *
+ /*
+  * the semaphore definition
+  *
+- * The bias values and the counter type needs to be extended to 64 bits
+- * if we want to have more than 32767 potential readers/writers
++ * The bias values and the counter type limits the number of
++ * potential readers/writers to 32767 for 32 bits and 2147483647
++ * for 64 bits.
+  */
  
- 	ret = sched_getaffinity(pid, mask);
- 	if (ret == 0) {
--		if (copy_to_user(user_mask_ptr, mask, cpumask_size()))
-+		int retlen = min(len, cpumask_size());
+-#define RWSEM_UNLOCKED_VALUE		0x00000000
+-#define RWSEM_ACTIVE_BIAS		0x00000001
+-#define RWSEM_ACTIVE_MASK		0x0000ffff
+-#define RWSEM_WAITING_BIAS		(-0x00010000)
++#ifdef CONFIG_X86_64
++# define RWSEM_ACTIVE_MASK		0xffffffffL
++#else
++# define RWSEM_ACTIVE_MASK		0x0000ffffL
++#endif
 +
-+		if (copy_to_user(user_mask_ptr, mask, retlen))
- 			ret = -EFAULT;
- 		else
--			ret = cpumask_size();
-+			ret = retlen;
- 	}
- 	free_cpumask_var(mask);
++#define RWSEM_UNLOCKED_VALUE		0x00000000L
++#define RWSEM_ACTIVE_BIAS		0x00000001L
++#define RWSEM_WAITING_BIAS		(-RWSEM_ACTIVE_MASK-1)
+ #define RWSEM_ACTIVE_READ_BIAS		RWSEM_ACTIVE_BIAS
+ #define RWSEM_ACTIVE_WRITE_BIAS		(RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS)
+ 
+-typedef signed int rwsem_count_t;
++typedef signed long rwsem_count_t;
+ 
+ struct rw_semaphore {
+ 	rwsem_count_t		count;
+@@ -110,7 +117,7 @@ do {								\
+ static inline void __down_read(struct rw_semaphore *sem)
+ {
+ 	asm volatile("# beginning down_read\n\t"
+-		     LOCK_PREFIX "  inc%z0      (%1)\n\t"
++		     LOCK_PREFIX _ASM_INC "(%1)\n\t"
+ 		     /* adds 0x00000001, returns the old value */
+ 		     "  jns        1f\n"
+ 		     "  call call_rwsem_down_read_failed\n"
+@@ -225,8 +232,25 @@ static inline void __up_write(struct rw_
+  */
+ static inline void __downgrade_write(struct rw_semaphore *sem)
+ {
++#ifdef CONFIG_X86_64
++# if RWSEM_WAITING_BIAS != -0x100000000
++#  error "This code assumes RWSEM_WAITING_BIAS == -2^32"
++# endif
++
++	/* 64-bit immediates are special and expensive, and not needed here */
++	asm volatile("# beginning __downgrade_write\n\t"
++		     LOCK_PREFIX "incl 4(%1)\n\t"
++		     /* transitions 0xZZZZZZZZ00000001 -> 0xYYYYYYYY00000001 */
++		     "  jns       1f\n\t"
++		     "  call call_rwsem_downgrade_wake\n"
++		     "1:\n\t"
++		     "# ending __downgrade_write\n"
++		     : "+m" (sem->count)
++		     : "a" (sem)
++		     : "memory", "cc");
++#else
+ 	asm volatile("# beginning __downgrade_write\n\t"
+-		     LOCK_PREFIX "  add%z0    %2,(%1)\n\t"
++		     LOCK_PREFIX _ASM_ADD "%2,(%1)\n\t"
+ 		     /* transitions 0xZZZZ0001 -> 0xYYYY0001 */
+ 		     "  jns       1f\n\t"
+ 		     "  call call_rwsem_downgrade_wake\n"
+@@ -235,22 +259,25 @@ static inline void __downgrade_write(str
+ 		     : "+m" (sem->count)
+ 		     : "a" (sem), "i" (-RWSEM_WAITING_BIAS)
+ 		     : "memory", "cc");
++#endif
+ }
+ 
+ /*
+  * implement atomic add functionality
+  */
+-static inline void rwsem_atomic_add(int delta, struct rw_semaphore *sem)
++static inline void rwsem_atomic_add(rwsem_count_t delta,
++				    struct rw_semaphore *sem)
+ {
+-	asm volatile(LOCK_PREFIX "add%z0 %1,%0"
++	asm volatile(LOCK_PREFIX _ASM_ADD "%1,%0"
+ 		     : "+m" (sem->count)
+-		     : "ir" (delta));
++		     : "er" (delta));
+ }
+ 
+ /*
+  * implement exchange and add functionality
+  */
+-static inline rwsem_count_t rwsem_atomic_update(int delta, struct rw_semaphore *sem)
++static inline rwsem_count_t rwsem_atomic_update(rwsem_count_t delta,
++						struct rw_semaphore *sem)
+ {
+ 	rwsem_count_t tmp = delta;
  
 
 
