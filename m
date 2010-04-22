@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab0DVKvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 06:51:36 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:62728 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753916Ab0DVKve convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 06:51:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qARKeZGykogaeoOr+sRbVcMb2ij8q/sHhc5w/ZupHOdQ2opfTCzKTZW2wcDCarqik0
-         yWlsmx47ehWtRTY/son1eoimm4IjHPJI5fA84AZHrvy/N06w42fwzDAYDuZ3QEWSD2s1
-         zjUKkXObG0RIOXNyl6eTtgPsZV9qefB4nZVZ4=
-MIME-Version: 1.0
-In-Reply-To: <20100421112807.5eca9f9d@bike.lwn.net>
-References: <l2u87a5b0801004210935wf6ca2991ua777c39c737391f8@mail.gmail.com>
-	 <20100421112807.5eca9f9d@bike.lwn.net>
-Date: Thu, 22 Apr 2010 11:51:33 +0100
-Message-ID: <j2o87a5b0801004220351ze6948d6dn3d995122aff355b6@mail.gmail.com>
-Subject: Re: Threaded irq handler question
-From: Will Newton <will.newton@gmail.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754112Ab0DVKwk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 06:52:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40380 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753916Ab0DVKwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 06:52:37 -0400
+From: Xiaotian Feng <dfeng@redhat.com>
+To: linux-nfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>,
+       Chuck Lever <chuck.lever@oracle.com>,
+       Benny Halevy <bhalevy@panasas.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+       Andy Adamson <andros@netapp.com>
+Subject: [PATCH] nfs: fix memory leak in nfs_get_sb with CONFIG_NFS_V4
+Date: Thu, 22 Apr 2010 18:56:17 +0800
+Message-Id: <1271933777-26244-1-git-send-email-dfeng@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 6:28 PM, Jonathan Corbet <corbet@lwn.net> wrote:
-> On Wed, 21 Apr 2010 17:35:32 +0100
-> Will Newton <will.newton@gmail.com> wrote:
->
->> My problem is that this structure does not work, because once I call
->> disable_irq_nosync() on the irq in the check handler the thread will
->> no longer run because the irq is disabled. However if I don't call
->> disable_irq_nosync() I will get endless irqs because the line is
->> level-triggered and will not be deasserted until the thread has run.
->
-> Trying to disable IRQs at this level is the wrong approach.  You need to
-> do enough in the primary interrupt handler to cause the hardware to
-> stop interrupting in the first place; usually that's just a matter of
-> some sort of acknowledgment.  Then the threaded handler can move data
-> around in peace.
+With CONFIG_NFS_V4 and data version 4, nfs_get_sb will allocate memory for
+export_path in nfs4_validate_text_mount_data, so we need to free it then.
+This is addressed in following kmemleak report:
 
-Unfortunately this device has no way of doing that - deasserting the
-interrupt line involves doing i2c transactions which will likely sleep
-so cannot be done in the check handler. This is quite a common problem
-for i2c connected devices.
+unreferenced object 0xffff88016bf48a50 (size 16):
+  comm "mount.nfs", pid 22567, jiffies 4651574704 (age 175471.200s)
+  hex dump (first 16 bytes):
+    2f 6f 70 74 2f 77 6f 72 6b 00 6b 6b 6b 6b 6b a5  /opt/work.kkkkk.
+  backtrace:
+    [<ffffffff814b34f9>] kmemleak_alloc+0x60/0xa7
+    [<ffffffff81102c76>] kmemleak_alloc_recursive.clone.5+0x1b/0x1d
+    [<ffffffff811046b3>] __kmalloc_track_caller+0x18f/0x1b7
+    [<ffffffff810e1b08>] kstrndup+0x37/0x54
+    [<ffffffffa0336971>] nfs_parse_devname+0x152/0x204 [nfs]
+    [<ffffffffa0336af3>] nfs4_validate_text_mount_data+0xd0/0xdc [nfs]
+    [<ffffffffa0338deb>] nfs_get_sb+0x325/0x736 [nfs]
+    [<ffffffff81113671>] vfs_kern_mount+0xbd/0x17c
+    [<ffffffff81113798>] do_kern_mount+0x4d/0xed
+    [<ffffffff81129a87>] do_mount+0x787/0x7fe
+    [<ffffffff81129b86>] sys_mount+0x88/0xc2
+    [<ffffffff81009b42>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Cc: Benny Halevy <bhalevy@panasas.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andy Adamson <andros@netapp.com>
+---
+ fs/nfs/super.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index e016372..44e6567 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2187,6 +2187,7 @@ static int nfs_get_sb(struct file_system_type *fs_type,
+ 	if (data->version == 4) {
+ 		error = nfs4_try_mount(flags, dev_name, data, mnt);
+ 		kfree(data->client_address);
++		kfree(data->nfs_server.export_path);
+ 		goto out;
+ 	}
+ #endif	/* CONFIG_NFS_V4 */
+-- 
+1.7.0.1
+
