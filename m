@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab0DVTo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:44:59 -0400
-Received: from kroah.org ([198.145.64.141]:41177 "EHLO coco.kroah.org"
+	id S1756028Ab0DVT1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:27:42 -0400
+Received: from kroah.org ([198.145.64.141]:37202 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756389Ab0DVT3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:12 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:18 2010
-Message-Id: <20100422190918.796743849@kvm.kroah.org>
+	id S1755839Ab0DVT1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:27:40 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:09 2010
+Message-Id: <20100422190909.024649557@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:39 -0700
+Date: Thu, 22 Apr 2010 12:07:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>,
-       maximilian attems <max@stro.at>
-Subject: [128/197] ocfs2: set i_mode on disk during acl operations
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, xfs@oss.sgi.com,
+       Dave Chinner <david@fromorbit.com>, Alex Elder <aelder@sgi.com>
+Subject: [018/197] xfs: reclaim inodes under a write lock
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,151 +25,306 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Fasheh <mfasheh@suse.com>
+From: Dave Chinner <david@fromorbit.com>
 
-commit fcefd25ac89239cb57fa198f125a79ff85468c75 upstream.
+commit c8e20be020f234c8d492927a424a7d8bbefd5b5d upstream
 
-ocfs2_set_acl() and ocfs2_init_acl() were setting i_mode on the in-memory
-inode, but never setting it on the disk copy. Thus, acls were some times not
-getting propagated between nodes. This patch fixes the issue by adding a
-helper function ocfs2_acl_set_mode() which does this the right way.
-ocfs2_set_acl() and ocfs2_init_acl() are then updated to call
-ocfs2_acl_set_mode().
+Make the inode tree reclaim walk exclusive to avoid races with
+concurrent sync walkers and lookups. This is a version of a patch
+posted by Christoph Hellwig that avoids all the code duplication.
 
-Signed-off-by: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
-Cc: maximilian attems <max@stro.at>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Alex Elder <aelder@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- fs/ocfs2/acl.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 72 insertions(+), 5 deletions(-)
+ fs/xfs/linux-2.6/xfs_sync.c    |  154 ++++++++++++++++++-----------------------
+ fs/xfs/linux-2.6/xfs_sync.h    |    2 
+ fs/xfs/quota/xfs_qm_syscalls.c |    2 
+ 3 files changed, 71 insertions(+), 87 deletions(-)
 
---- a/fs/ocfs2/acl.c
-+++ b/fs/ocfs2/acl.c
-@@ -30,6 +30,8 @@
- #include "alloc.h"
- #include "dlmglue.h"
- #include "file.h"
-+#include "inode.h"
-+#include "journal.h"
- #include "ocfs2_fs.h"
+--- a/fs/xfs/linux-2.6/xfs_sync.c
++++ b/fs/xfs/linux-2.6/xfs_sync.c
+@@ -64,7 +64,6 @@ xfs_inode_ag_lookup(
+ 	 * as the tree is sparse and a gang lookup walks to find
+ 	 * the number of objects requested.
+ 	 */
+-	read_lock(&pag->pag_ici_lock);
+ 	if (tag == XFS_ICI_NO_TAG) {
+ 		nr_found = radix_tree_gang_lookup(&pag->pag_ici_root,
+ 				(void **)&ip, *first_index, 1);
+@@ -73,7 +72,7 @@ xfs_inode_ag_lookup(
+ 				(void **)&ip, *first_index, 1, tag);
+ 	}
+ 	if (!nr_found)
+-		goto unlock;
++		return NULL;
  
- #include "xattr.h"
-@@ -170,6 +172,60 @@ static struct posix_acl *ocfs2_get_acl(s
+ 	/*
+ 	 * Update the index for the next lookup. Catch overflows
+@@ -83,13 +82,8 @@ xfs_inode_ag_lookup(
+ 	 */
+ 	*first_index = XFS_INO_TO_AGINO(mp, ip->i_ino + 1);
+ 	if (*first_index < XFS_INO_TO_AGINO(mp, ip->i_ino))
+-		goto unlock;
+-
++		return NULL;
+ 	return ip;
+-
+-unlock:
+-	read_unlock(&pag->pag_ici_lock);
+-	return NULL;
  }
  
- /*
-+ * Helper function to set i_mode in memory and disk. Some call paths
-+ * will not have di_bh or a journal handle to pass, in which case it
-+ * will create it's own.
-+ */
-+static int ocfs2_acl_set_mode(struct inode *inode, struct buffer_head *di_bh,
-+			      handle_t *handle, umode_t new_mode)
-+{
-+	int ret, commit_handle = 0;
-+	struct ocfs2_dinode *di;
-+
-+	if (di_bh == NULL) {
-+		ret = ocfs2_read_inode_block(inode, &di_bh);
-+		if (ret) {
-+			mlog_errno(ret);
-+			goto out;
-+		}
-+	} else
-+		get_bh(di_bh);
-+
-+	if (handle == NULL) {
-+		handle = ocfs2_start_trans(OCFS2_SB(inode->i_sb),
-+					   OCFS2_INODE_UPDATE_CREDITS);
-+		if (IS_ERR(handle)) {
-+			ret = PTR_ERR(handle);
-+			mlog_errno(ret);
-+			goto out_brelse;
-+		}
-+
-+		commit_handle = 1;
-+	}
-+
-+	di = (struct ocfs2_dinode *)di_bh->b_data;
-+	ret = ocfs2_journal_access_di(handle, INODE_CACHE(inode), di_bh,
-+				      OCFS2_JOURNAL_ACCESS_WRITE);
-+	if (ret) {
-+		mlog_errno(ret);
-+		goto out_commit;
-+	}
-+
-+	inode->i_mode = new_mode;
-+	di->i_mode = cpu_to_le16(inode->i_mode);
-+
-+	ocfs2_journal_dirty(handle, di_bh);
-+
-+out_commit:
-+	if (commit_handle)
-+		ocfs2_commit_trans(OCFS2_SB(inode->i_sb), handle);
-+out_brelse:
-+	brelse(di_bh);
-+out:
-+	return ret;
-+}
-+
-+/*
-  * Set the access or default ACL of an inode.
-  */
- static int ocfs2_set_acl(handle_t *handle,
-@@ -197,9 +253,14 @@ static int ocfs2_set_acl(handle_t *handl
- 			if (ret < 0)
- 				return ret;
- 			else {
--				inode->i_mode = mode;
- 				if (ret == 0)
- 					acl = NULL;
-+
-+				ret = ocfs2_acl_set_mode(inode, di_bh,
-+							 handle, mode);
-+				if (ret)
-+					return ret;
-+
- 			}
- 		}
- 		break;
-@@ -287,6 +348,7 @@ int ocfs2_init_acl(handle_t *handle,
- 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
- 	struct posix_acl *acl = NULL;
- 	int ret = 0;
-+	mode_t mode;
+ STATIC int
+@@ -99,7 +93,8 @@ xfs_inode_ag_walk(
+ 	int			(*execute)(struct xfs_inode *ip,
+ 					   struct xfs_perag *pag, int flags),
+ 	int			flags,
+-	int			tag)
++	int			tag,
++	int			exclusive)
+ {
+ 	struct xfs_perag	*pag = &mp->m_perag[ag];
+ 	uint32_t		first_index;
+@@ -113,10 +108,20 @@ restart:
+ 		int		error = 0;
+ 		xfs_inode_t	*ip;
  
- 	if (!S_ISLNK(inode->i_mode)) {
- 		if (osb->s_mount_opt & OCFS2_MOUNT_POSIX_ACL) {
-@@ -295,12 +357,17 @@ int ocfs2_init_acl(handle_t *handle,
- 			if (IS_ERR(acl))
- 				return PTR_ERR(acl);
- 		}
--		if (!acl)
--			inode->i_mode &= ~current_umask();
-+		if (!acl) {
-+			mode = inode->i_mode & ~current_umask();
-+			ret = ocfs2_acl_set_mode(inode, di_bh, handle, mode);
-+			if (ret) {
-+				mlog_errno(ret);
-+				goto cleanup;
-+			}
++		if (exclusive)
++			write_lock(&pag->pag_ici_lock);
++		else
++			read_lock(&pag->pag_ici_lock);
+ 		ip = xfs_inode_ag_lookup(mp, pag, &first_index, tag);
+-		if (!ip)
++		if (!ip) {
++			if (exclusive)
++				write_unlock(&pag->pag_ici_lock);
++			else
++				read_unlock(&pag->pag_ici_lock);
+ 			break;
 +		}
+ 
++		/* execute releases pag->pag_ici_lock */
+ 		error = execute(ip, pag, flags);
+ 		if (error == EAGAIN) {
+ 			skipped++;
+@@ -124,9 +129,8 @@ restart:
+ 		}
+ 		if (error)
+ 			last_error = error;
+-		/*
+-		 * bail out if the filesystem is corrupted.
+-		 */
++
++		/* bail out if the filesystem is corrupted.  */
+ 		if (error == EFSCORRUPTED)
+ 			break;
+ 
+@@ -147,7 +151,8 @@ xfs_inode_ag_iterator(
+ 	int			(*execute)(struct xfs_inode *ip,
+ 					   struct xfs_perag *pag, int flags),
+ 	int			flags,
+-	int			tag)
++	int			tag,
++	int			exclusive)
+ {
+ 	int			error = 0;
+ 	int			last_error = 0;
+@@ -156,7 +161,8 @@ xfs_inode_ag_iterator(
+ 	for (ag = 0; ag < mp->m_sb.sb_agcount; ag++) {
+ 		if (!mp->m_perag[ag].pag_ici_init)
+ 			continue;
+-		error = xfs_inode_ag_walk(mp, ag, execute, flags, tag);
++		error = xfs_inode_ag_walk(mp, ag, execute, flags, tag,
++						exclusive);
+ 		if (error) {
+ 			last_error = error;
+ 			if (error == EFSCORRUPTED)
+@@ -180,11 +186,7 @@ xfs_sync_inode_valid(
+ 		return EFSCORRUPTED;
  	}
- 	if ((osb->s_mount_opt & OCFS2_MOUNT_POSIX_ACL) && acl) {
- 		struct posix_acl *clone;
--		mode_t mode;
  
- 		if (S_ISDIR(inode->i_mode)) {
- 			ret = ocfs2_set_acl(handle, inode, di_bh,
-@@ -317,7 +384,7 @@ int ocfs2_init_acl(handle_t *handle,
- 		mode = inode->i_mode;
- 		ret = posix_acl_create_masq(clone, &mode);
- 		if (ret >= 0) {
--			inode->i_mode = mode;
-+			ret = ocfs2_acl_set_mode(inode, di_bh, handle, mode);
- 			if (ret > 0) {
- 				ret = ocfs2_set_acl(handle, inode,
- 						    di_bh, ACL_TYPE_ACCESS,
+-	/*
+-	 * If we can't get a reference on the inode, it must be in reclaim.
+-	 * Leave it for the reclaim code to flush. Also avoid inodes that
+-	 * haven't been fully initialised.
+-	 */
++	/* If we can't get a reference on the inode, it must be in reclaim. */
+ 	if (!igrab(inode)) {
+ 		read_unlock(&pag->pag_ici_lock);
+ 		return ENOENT;
+@@ -281,7 +283,7 @@ xfs_sync_data(
+ 	ASSERT((flags & ~(SYNC_TRYLOCK|SYNC_WAIT)) == 0);
+ 
+ 	error = xfs_inode_ag_iterator(mp, xfs_sync_inode_data, flags,
+-				      XFS_ICI_NO_TAG);
++				      XFS_ICI_NO_TAG, 0);
+ 	if (error)
+ 		return XFS_ERROR(error);
+ 
+@@ -303,7 +305,7 @@ xfs_sync_attr(
+ 	ASSERT((flags & ~SYNC_WAIT) == 0);
+ 
+ 	return xfs_inode_ag_iterator(mp, xfs_sync_inode_attr, flags,
+-				     XFS_ICI_NO_TAG);
++				     XFS_ICI_NO_TAG, 0);
+ }
+ 
+ STATIC int
+@@ -663,60 +665,6 @@ xfs_syncd_stop(
+ 	kthread_stop(mp->m_sync_task);
+ }
+ 
+-STATIC int
+-xfs_reclaim_inode(
+-	xfs_inode_t	*ip,
+-	int		sync_mode)
+-{
+-	xfs_perag_t	*pag = xfs_get_perag(ip->i_mount, ip->i_ino);
+-
+-	/* The hash lock here protects a thread in xfs_iget_core from
+-	 * racing with us on linking the inode back with a vnode.
+-	 * Once we have the XFS_IRECLAIM flag set it will not touch
+-	 * us.
+-	 */
+-	write_lock(&pag->pag_ici_lock);
+-	spin_lock(&ip->i_flags_lock);
+-	if (__xfs_iflags_test(ip, XFS_IRECLAIM) ||
+-	    !__xfs_iflags_test(ip, XFS_IRECLAIMABLE)) {
+-		spin_unlock(&ip->i_flags_lock);
+-		write_unlock(&pag->pag_ici_lock);
+-		return -EAGAIN;
+-	}
+-	__xfs_iflags_set(ip, XFS_IRECLAIM);
+-	spin_unlock(&ip->i_flags_lock);
+-	write_unlock(&pag->pag_ici_lock);
+-	xfs_put_perag(ip->i_mount, pag);
+-
+-	/*
+-	 * If the inode is still dirty, then flush it out.  If the inode
+-	 * is not in the AIL, then it will be OK to flush it delwri as
+-	 * long as xfs_iflush() does not keep any references to the inode.
+-	 * We leave that decision up to xfs_iflush() since it has the
+-	 * knowledge of whether it's OK to simply do a delwri flush of
+-	 * the inode or whether we need to wait until the inode is
+-	 * pulled from the AIL.
+-	 * We get the flush lock regardless, though, just to make sure
+-	 * we don't free it while it is being flushed.
+-	 */
+-	xfs_ilock(ip, XFS_ILOCK_EXCL);
+-	xfs_iflock(ip);
+-
+-	/*
+-	 * In the case of a forced shutdown we rely on xfs_iflush() to
+-	 * wait for the inode to be unpinned before returning an error.
+-	 */
+-	if (!is_bad_inode(VFS_I(ip)) && xfs_iflush(ip, sync_mode) == 0) {
+-		/* synchronize with xfs_iflush_done */
+-		xfs_iflock(ip);
+-		xfs_ifunlock(ip);
+-	}
+-
+-	xfs_iunlock(ip, XFS_ILOCK_EXCL);
+-	xfs_ireclaim(ip);
+-	return 0;
+-}
+-
+ void
+ __xfs_inode_set_reclaim_tag(
+ 	struct xfs_perag	*pag,
+@@ -759,19 +707,55 @@ __xfs_inode_clear_reclaim_tag(
+ }
+ 
+ STATIC int
+-xfs_reclaim_inode_now(
++xfs_reclaim_inode(
+ 	struct xfs_inode	*ip,
+ 	struct xfs_perag	*pag,
+-	int			flags)
++	int			sync_mode)
+ {
+-	/* ignore if already under reclaim */
+-	if (xfs_iflags_test(ip, XFS_IRECLAIM)) {
+-		read_unlock(&pag->pag_ici_lock);
++	/*
++	 * The radix tree lock here protects a thread in xfs_iget from racing
++	 * with us starting reclaim on the inode.  Once we have the
++	 * XFS_IRECLAIM flag set it will not touch us.
++	 */
++	spin_lock(&ip->i_flags_lock);
++	ASSERT_ALWAYS(__xfs_iflags_test(ip, XFS_IRECLAIMABLE));
++	if (__xfs_iflags_test(ip, XFS_IRECLAIM)) {
++		/* ignore as it is already under reclaim */
++		spin_unlock(&ip->i_flags_lock);
++		write_unlock(&pag->pag_ici_lock);
+ 		return 0;
+ 	}
+-	read_unlock(&pag->pag_ici_lock);
++	__xfs_iflags_set(ip, XFS_IRECLAIM);
++	spin_unlock(&ip->i_flags_lock);
++	write_unlock(&pag->pag_ici_lock);
+ 
+-	return xfs_reclaim_inode(ip, flags);
++	/*
++	 * If the inode is still dirty, then flush it out.  If the inode
++	 * is not in the AIL, then it will be OK to flush it delwri as
++	 * long as xfs_iflush() does not keep any references to the inode.
++	 * We leave that decision up to xfs_iflush() since it has the
++	 * knowledge of whether it's OK to simply do a delwri flush of
++	 * the inode or whether we need to wait until the inode is
++	 * pulled from the AIL.
++	 * We get the flush lock regardless, though, just to make sure
++	 * we don't free it while it is being flushed.
++	 */
++	xfs_ilock(ip, XFS_ILOCK_EXCL);
++	xfs_iflock(ip);
++
++	/*
++	 * In the case of a forced shutdown we rely on xfs_iflush() to
++	 * wait for the inode to be unpinned before returning an error.
++	 */
++	if (!is_bad_inode(VFS_I(ip)) && xfs_iflush(ip, sync_mode) == 0) {
++		/* synchronize with xfs_iflush_done */
++		xfs_iflock(ip);
++		xfs_ifunlock(ip);
++	}
++
++	xfs_iunlock(ip, XFS_ILOCK_EXCL);
++	xfs_ireclaim(ip);
++	return 0;
+ }
+ 
+ int
+@@ -779,6 +763,6 @@ xfs_reclaim_inodes(
+ 	xfs_mount_t	*mp,
+ 	int		mode)
+ {
+-	return xfs_inode_ag_iterator(mp, xfs_reclaim_inode_now, mode,
+-					XFS_ICI_RECLAIM_TAG);
++	return xfs_inode_ag_iterator(mp, xfs_reclaim_inode, mode,
++					XFS_ICI_RECLAIM_TAG, 1);
+ }
+--- a/fs/xfs/linux-2.6/xfs_sync.h
++++ b/fs/xfs/linux-2.6/xfs_sync.h
+@@ -54,6 +54,6 @@ void __xfs_inode_clear_reclaim_tag(struc
+ int xfs_sync_inode_valid(struct xfs_inode *ip, struct xfs_perag *pag);
+ int xfs_inode_ag_iterator(struct xfs_mount *mp,
+ 	int (*execute)(struct xfs_inode *ip, struct xfs_perag *pag, int flags),
+-	int flags, int tag);
++	int flags, int tag, int write_lock);
+ 
+ #endif
+--- a/fs/xfs/quota/xfs_qm_syscalls.c
++++ b/fs/xfs/quota/xfs_qm_syscalls.c
+@@ -893,7 +893,7 @@ xfs_qm_dqrele_all_inodes(
+ 	uint		 flags)
+ {
+ 	ASSERT(mp->m_quotainfo);
+-	xfs_inode_ag_iterator(mp, xfs_dqrele_inode, flags, XFS_ICI_NO_TAG);
++	xfs_inode_ag_iterator(mp, xfs_dqrele_inode, flags, XFS_ICI_NO_TAG, 0);
+ }
+ 
+ /*------------------------------------------------------------------------*/
 
 
