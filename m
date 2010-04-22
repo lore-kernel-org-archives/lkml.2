@@ -1,229 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab0DVCke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 22:40:34 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55981 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754518Ab0DVCkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 22:40:32 -0400
-Date: Thu, 22 Apr 2010 12:40:22 +1000
-From: Neil Brown <neilb@suse.de>
-To: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, king.br@gmail.com,
-       stable@kernel.org
-Subject: Re: patch md-raid5-allow-for-more-than-2-31-chunks.patch added to
- 2.6.33-stable tree
-Message-ID: <20100422124022.1320e49c@notabene.brown>
-In-Reply-To: <201004220408.33822.s.L-H@gmx.de>
-References: <12718801381479@kroah.org>
-	<201004220408.33822.s.L-H@gmx.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755689Ab0DVCwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 22:52:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:32856 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab0DVCwV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 22:52:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NF4Q2Oxgg72E7epZKBaIjY086ZNVwYoCfTtJi3R8/Vlk1pCXt+clkAnmUejaVm6fdU
+         s0UVdDT+ce5qmYIifr/TdvBiwiAnhi1Abz+5JLgKCp0imnVKXsDcgZxZhUdcEbNAQVW6
+         qeQcFAtH1djnJh0ZEGpW+08NiM5xdkaOWmAUw=
+Date: Thu, 22 Apr 2010 04:52:27 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Alexander Beregalov <a.beregalov@gmail.com>,
+       Jeff Mahoney <jeffm@jeffreymahoney.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Bug #15805] reiserfs locking
+Message-ID: <20100422025224.GA12888@nowhere>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.wMG.FRSzLB@tosh>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <YeFfFNFyTSF.A.wMG.FRSzLB@tosh>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Apr 2010 04:08:30 +0200
-"Stefan Lippers-Hollmann" <s.L-H@gmx.de> wrote:
-
-> Hi
+On Tue, Apr 20, 2010 at 05:19:25AM +0200, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
 > 
-> On Thursday 22 April 2010, gregkh@suse.de wrote:
-> > This is a note to let you know that we have just queued up the patch titled
-> > 
-> >     Subject: md/raid5: allow for more than 2^31 chunks.
-> > 
-> > to the 2.6.33-stable tree.  Its filename is
-> > 
-> >     md-raid5-allow-for-more-than-2-31-chunks.patch
-> > 
-> > A git repo of this tree can be found at 
-> >     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
-> > 
-> > 
-> > From 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d Mon Sep 17 00:00:00 2001
-> > From: NeilBrown <neilb@suse.de>
-> > Date: Tue, 20 Apr 2010 14:13:34 +1000
-> > Subject: md/raid5: allow for more than 2^31 chunks.
-> > 
-> > From: NeilBrown <neilb@suse.de>
-> > 
-> > commit 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d upstream.
-> > 
-> > With many large drives and small chunk sizes it is possible
-> > to create a RAID5 with more than 2^31 chunks.  Make sure this
-> > works.
-> > 
-> > Reported-by: Brett King <king.br@gmail.com>
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> The following bug entry is on the current list of known regressions
+> from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 > 
-> This patch, as part of the current 2.6.33 stable queue, breaks compiling
-> on i386 (CONFIG_LBDAF=y) for me (amd64 builds fine):
 > 
-> [...]
->   BUILD   arch/x86/boot/bzImage
-> Root device is (254, 6)
-> Setup is 12700 bytes (padded to 12800 bytes).
-> System is 2415 kB
-> CRC db6fa5fa
-> Kernel: arch/x86/boot/bzImage is ready  (#1)
-> ERROR: "__umoddi3" [drivers/md/raid456.ko] undefined!
-> 
-> reverting just this patch fixes the problem for me.
-
-Thanks for testing and reporting.
-
-If you could verify that this additional patch fixes the compile error I
-would really appreciate it.
-
-Thanks,
-NeilBrown
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15805
+> Subject		: reiserfs locking
+> Submitter	: Alexander Beregalov <a.beregalov@gmail.com>
+> Date		: 2010-04-15 21:02 (5 days old)
+> Message-ID	: <t2ka4423d671004151402n7b2dc425mdc9c6bb9640d63fb@mail.gmail.com>
+> References	: http://marc.info/?l=linux-kernel&m=127136535323933&w=2
 
 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 20e4840..58ea0ec 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -1650,7 +1650,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
- 				     int previous, int *dd_idx,
- 				     struct stripe_head *sh)
- {
--	sector_t stripe;
-+	sector_t stripe, stripe2;
- 	sector_t chunk_number;
- 	unsigned int chunk_offset;
- 	int pd_idx, qd_idx;
-@@ -1677,7 +1677,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
- 	 */
- 	stripe = chunk_number;
- 	*dd_idx = sector_div(stripe, data_disks);
--
-+	stripe2 = stripe;
- 	/*
- 	 * Select the parity disk based on the user selected algorithm.
- 	 */
-@@ -1689,21 +1689,21 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
- 	case 5:
- 		switch (algorithm) {
- 		case ALGORITHM_LEFT_ASYMMETRIC:
--			pd_idx = data_disks - stripe % raid_disks;
-+			pd_idx = data_disks - sector_div(stripe2, raid_disks);
- 			if (*dd_idx >= pd_idx)
- 				(*dd_idx)++;
- 			break;
- 		case ALGORITHM_RIGHT_ASYMMETRIC:
--			pd_idx = stripe % raid_disks;
-+			pd_idx = sector_div(stripe2, raid_disks);
- 			if (*dd_idx >= pd_idx)
- 				(*dd_idx)++;
- 			break;
- 		case ALGORITHM_LEFT_SYMMETRIC:
--			pd_idx = data_disks - stripe % raid_disks;
-+			pd_idx = data_disks - sector_div(stripe2, raid_disks);
- 			*dd_idx = (pd_idx + 1 + *dd_idx) % raid_disks;
- 			break;
- 		case ALGORITHM_RIGHT_SYMMETRIC:
--			pd_idx = stripe % raid_disks;
-+			pd_idx = sector_div(stripe2, raid_disks);
- 			*dd_idx = (pd_idx + 1 + *dd_idx) % raid_disks;
- 			break;
- 		case ALGORITHM_PARITY_0:
-@@ -1723,7 +1723,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
- 
- 		switch (algorithm) {
- 		case ALGORITHM_LEFT_ASYMMETRIC:
--			pd_idx = raid_disks - 1 - (stripe % raid_disks);
-+			pd_idx = raid_disks - 1 - sector_div(stripe2, raid_disks);
- 			qd_idx = pd_idx + 1;
- 			if (pd_idx == raid_disks-1) {
- 				(*dd_idx)++;	/* Q D D D P */
-@@ -1732,7 +1732,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
- 				(*dd_idx) += 2; /* D D P Q D */
- 			break;
- 		case ALGORITHM_RIGHT_ASYMMETRIC:
--			pd_idx = stripe % raid_disks;
-+			pd_idx = sector_div(stripe2, raid_disks);
- 			qd_idx = pd_idx + 1;
- 			if (pd_idx == raid_disks-1) {
- 				(*dd_idx)++;	/* Q D D D P */
-@@ -1741,12 +1741,12 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
- 				(*dd_idx) += 2; /* D D P Q D */
- 			break;
- 		case ALGORITHM_LEFT_SYMMETRIC:
--			pd_idx = raid_disks - 1 - (stripe % raid_disks);
-+			pd_idx = raid_disks - 1 - sector_div(stripe2, raid_disks);
- 			qd_idx = (pd_idx + 1) % raid_disks;
- 			*dd_idx = (pd_idx + 2 + *dd_idx) % raid_disks;
- 			break;
- 		case ALGORITHM_RIGHT_SYMMETRIC:
--			pd_idx = stripe % raid_disks;
-+			pd_idx = sector_div(stripe2, raid_disks);
- 			qd_idx = (pd_idx + 1) % raid_disks;
- 			*dd_idx = (pd_idx + 2 + *dd_idx) % raid_disks;
- 			break;
-@@ -1765,7 +1765,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
- 			/* Exactly the same as RIGHT_ASYMMETRIC, but or
- 			 * of blocks for computing Q is different.
- 			 */
--			pd_idx = stripe % raid_disks;
-+			pd_idx = sector_div(stripe2, raid_disks);
- 			qd_idx = pd_idx + 1;
- 			if (pd_idx == raid_disks-1) {
- 				(*dd_idx)++;	/* Q D D D P */
-@@ -1780,7 +1780,8 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
- 			 * D D D P Q  rather than
- 			 * Q D D D P
- 			 */
--			pd_idx = raid_disks - 1 - ((stripe + 1) % raid_disks);
-+			stripe2 += 1;
-+			pd_idx = raid_disks - 1 - sector_div(stripe2, raid_disks);
- 			qd_idx = pd_idx + 1;
- 			if (pd_idx == raid_disks-1) {
- 				(*dd_idx)++;	/* Q D D D P */
-@@ -1792,7 +1793,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
- 
- 		case ALGORITHM_ROTATING_N_CONTINUE:
- 			/* Same as left_symmetric but Q is before P */
--			pd_idx = raid_disks - 1 - (stripe % raid_disks);
-+			pd_idx = raid_disks - 1 - sector_div(stripe2, raid_disks);
- 			qd_idx = (pd_idx + raid_disks - 1) % raid_disks;
- 			*dd_idx = (pd_idx + 1 + *dd_idx) % raid_disks;
- 			ddf_layout = 1;
-@@ -1800,27 +1801,27 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
- 
- 		case ALGORITHM_LEFT_ASYMMETRIC_6:
- 			/* RAID5 left_asymmetric, with Q on last device */
--			pd_idx = data_disks - stripe % (raid_disks-1);
-+			pd_idx = data_disks - sector_div(stripe2, raid_disks-1);
- 			if (*dd_idx >= pd_idx)
- 				(*dd_idx)++;
- 			qd_idx = raid_disks - 1;
- 			break;
- 
- 		case ALGORITHM_RIGHT_ASYMMETRIC_6:
--			pd_idx = stripe % (raid_disks-1);
-+			pd_idx = sector_div(stripe2, raid_disks-1);
- 			if (*dd_idx >= pd_idx)
- 				(*dd_idx)++;
- 			qd_idx = raid_disks - 1;
- 			break;
- 
- 		case ALGORITHM_LEFT_SYMMETRIC_6:
--			pd_idx = data_disks - stripe % (raid_disks-1);
-+			pd_idx = data_disks - sector_div(stripe2, raid_disks-1);
- 			*dd_idx = (pd_idx + 1 + *dd_idx) % (raid_disks-1);
- 			qd_idx = raid_disks - 1;
- 			break;
- 
- 		case ALGORITHM_RIGHT_SYMMETRIC_6:
--			pd_idx = stripe % (raid_disks-1);
-+			pd_idx = sector_div(stripe2, raid_disks-1);
- 			*dd_idx = (pd_idx + 1 + *dd_idx) % (raid_disks-1);
- 			qd_idx = raid_disks - 1;
- 			break;
+That doesn't look like related to the bkl removal.
+
+In fact what I wonder is how we missed that before.
+
+vfs_readdir() take the directory inode mutex
+    |
+    ------- copy_to_user() takes the mm->mmap_sem
+
+sys_unmap() takes mm->mmap_sem
+    |
+    ------- reiserfs_file_release() takes inode mutex
 
 
+The lock inversion can not happen as sys_getdents() can't be called
+after the directory is closed.
+
+I'm not sure what to do. Adding more people in Cc.
 
