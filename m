@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab0DVTpn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:45:43 -0400
-Received: from kroah.org ([198.145.64.141]:41151 "EHLO coco.kroah.org"
+	id S1757794Ab0DVT5T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:57:19 -0400
+Received: from kroah.org ([198.145.64.141]:40786 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756166Ab0DVT3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:09 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:18 2010
-Message-Id: <20100422190918.449035839@kvm.kroah.org>
+	id S1756376Ab0DVT23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:29 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:14 2010
+Message-Id: <20100422190914.106697394@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:35 -0700
+Date: Thu, 22 Apr 2010 12:08:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "Junichi Nomura" <j-nomura@ce.jp.nec.com>,
-       Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, Alasdair G Kergon <agk@redhat.com>,
-       Nikanth Karthikesan <knikanth@suse.de>
-Subject: [124/197] dm mpath: fix stall when requeueing io
+       Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: [075/197] thinkpad-acpi: lock down video output state access
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,103 +25,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-upstream commit 9eef87da2a8ea4920e0d913ff977cac064b68ee0 backported to
-2.6.32.10 by Nikanth Karthikesan <knikanth@suse.de>
+commit b525c06cdbd8a3963f0173ccd23f9147d4c384b5 upstream.
 
-This patch fixes the problem that system may stall if target's ->map_rq
-returns DM_MAPIO_REQUEUE in map_request().
-E.g. stall happens on 1 CPU box when a dm-mpath device with queue_if_no_path
-     bounces between all-paths-down and paths-up on I/O load.
+Given the right combination of ThinkPad and X.org, just reading the
+video output control state is enough to hard-crash X.org.
 
-When target's ->map_rq returns DM_MAPIO_REQUEUE, map_request() requeues
-the request and returns to dm_request_fn().  Then, dm_request_fn()
-doesn't exit the I/O dispatching loop and continues processing
-the requeued request again.
-This map and requeue loop can be done with interrupt disabled,
-so 1 CPU system can be stalled if this situation happens.
+Until the day I somehow find out a model or BIOS cut date to not
+provide this feature to ThinkPads that can do video switching through
+X RandR, change permissions so that only processes with CAP_SYS_ADMIN
+can access any sort of video output control state.
 
-For example, commands below can stall my 1 CPU box within 1 minute or so:
-  # dmsetup table mp
-  mp: 0 2097152 multipath 1 queue_if_no_path 0 1 1 service-time 0 1 2 8:144 1 1
-  # while true; do dd if=/dev/mapper/mp of=/dev/null bs=1M count=100; done &
-  # while true; do \
-  > dmsetup message mp 0 "fail_path 8:144" \
-  > dmsetup suspend --noflush mp \
-  > dmsetup resume mp \
-  > dmsetup message mp 0 "reinstate_path 8:144" \
-  > done
+This bug could be considered a local DoS I suppose, as it allows any
+non-privledged local user to cause some versions of X.org to
+hard-crash some ThinkPads.
 
-To fix the problem above, this patch changes dm_request_fn() to exit
-the I/O dispatching loop once if a request is requeued in map_request().
-
-Signed-off-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
+Reported-by: Jidanni <jidanni@jidanni.org>
+Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/dm.c |   21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
+ Documentation/laptops/thinkpad-acpi.txt |    4 ++++
+ drivers/platform/x86/Kconfig            |   10 ++++++++--
+ drivers/platform/x86/thinkpad_acpi.c    |   15 +++++++++++++--
+ 3 files changed, 25 insertions(+), 4 deletions(-)
 
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1487,10 +1487,15 @@ static int dm_prep_fn(struct request_que
- 	return BLKPREP_OK;
- }
+--- a/Documentation/laptops/thinkpad-acpi.txt
++++ b/Documentation/laptops/thinkpad-acpi.txt
+@@ -650,6 +650,10 @@ LCD, CRT or DVI (if available). The foll
+ 	echo expand_toggle > /proc/acpi/ibm/video
+ 	echo video_switch > /proc/acpi/ibm/video
  
--static void map_request(struct dm_target *ti, struct request *rq,
--			struct mapped_device *md)
-+/*
-+ * Returns:
-+ * 0  : the request has been processed (not requeued)
-+ * !0 : the request has been requeued
-+ */
-+static int map_request(struct dm_target *ti, struct request *rq,
-+		       struct mapped_device *md)
- {
--	int r;
-+	int r, requeued = 0;
- 	struct request *clone = rq->special;
- 	struct dm_rq_target_io *tio = clone->end_io_data;
- 
-@@ -1516,6 +1521,7 @@ static void map_request(struct dm_target
- 	case DM_MAPIO_REQUEUE:
- 		/* The target wants to requeue the I/O */
- 		dm_requeue_unmapped_request(clone);
-+		requeued = 1;
- 		break;
- 	default:
- 		if (r > 0) {
-@@ -1527,6 +1533,8 @@ static void map_request(struct dm_target
- 		dm_kill_unmapped_request(clone, r);
- 		break;
- 	}
++NOTE: Access to this feature is restricted to processes owning the
++CAP_SYS_ADMIN capability for safety reasons, as it can interact badly
++enough with some versions of X.org to crash it.
 +
-+	return requeued;
- }
+ Each video output device can be enabled or disabled individually.
+ Reading /proc/acpi/ibm/video shows the status of each device.
  
- /*
-@@ -1568,12 +1576,17 @@ static void dm_request_fn(struct request
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -291,9 +291,15 @@ config THINKPAD_ACPI_VIDEO
+ 	  server running, phase of the moon, and the current mood of
+ 	  Schroedinger's cat.  If you can use X.org's RandR to control
+ 	  your ThinkPad's video output ports instead of this feature,
+-	  don't think twice: do it and say N here to save some memory.
++	  don't think twice: do it and say N here to save memory and avoid
++	  bad interactions with X.org.
  
- 		blk_start_request(rq);
- 		spin_unlock(q->queue_lock);
--		map_request(ti, rq, md);
-+		if (map_request(ti, rq, md))
-+			goto requeued;
+-	  If you are not sure, say Y here.
++	  NOTE: access to this feature is limited to processes with the
++	  CAP_SYS_ADMIN capability, to avoid local DoS issues in platforms
++	  where it interacts badly with X.org.
 +
- 		spin_lock_irq(q->queue_lock);
++	  If you are not sure, say Y here but do try to check if you could
++	  be using X.org RandR instead.
+ 
+ config THINKPAD_ACPI_HOTKEY_POLL
+ 	bool "Support NVRAM polling for hot keys"
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -281,6 +281,7 @@ struct ibm_init_struct {
+ 	char param[32];
+ 
+ 	int (*init) (struct ibm_init_struct *);
++	mode_t base_procfs_mode;
+ 	struct ibm_struct *data;
+ };
+ 
+@@ -4620,6 +4621,10 @@ static int video_read(struct seq_file *m
+ 		return 0;
  	}
  
- 	goto out;
- 
-+requeued:
-+	spin_lock_irq(q->queue_lock);
++	/* Even reads can crash X.org, so... */
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
 +
- plug_and_out:
- 	if (!elv_queue_empty(q))
- 		/* Some requests still remain, retry later */
+ 	status = video_outputsw_get();
+ 	if (status < 0)
+ 		return status;
+@@ -4653,6 +4658,10 @@ static int video_write(char *buf)
+ 	if (video_supported == TPACPI_VIDEO_NONE)
+ 		return -ENODEV;
+ 
++	/* Even reads can crash X.org, let alone writes... */
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
+ 	enable = 0;
+ 	disable = 0;
+ 
+@@ -7887,9 +7896,10 @@ static int __init ibm_init(struct ibm_in
+ 		"%s installed\n", ibm->name);
+ 
+ 	if (ibm->read) {
+-		mode_t mode;
++		mode_t mode = iibm->base_procfs_mode;
+ 
+-		mode = S_IRUGO;
++		if (!mode)
++			mode = S_IRUGO;
+ 		if (ibm->write)
+ 			mode |= S_IWUSR;
+ 		entry = proc_create_data(ibm->name, mode, proc_dir,
+@@ -8080,6 +8090,7 @@ static struct ibm_init_struct ibms_init[
+ #ifdef CONFIG_THINKPAD_ACPI_VIDEO
+ 	{
+ 		.init = video_init,
++		.base_procfs_mode = S_IRUSR,
+ 		.data = &video_driver_data,
+ 	},
+ #endif
 
 
