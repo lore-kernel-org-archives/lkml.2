@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474Ab0DVT2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:28:40 -0400
-Received: from kroah.org ([198.145.64.141]:40792 "EHLO coco.kroah.org"
+	id S1757260Ab0DVThv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:37:51 -0400
+Received: from kroah.org ([198.145.64.141]:41474 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756395Ab0DVT2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:32 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:14 2010
-Message-Id: <20100422190914.369894682@kvm.kroah.org>
+	id S1756839Ab0DVT3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:43 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:22 2010
+Message-Id: <20100422190922.238365037@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:49 -0700
+Date: Thu, 22 Apr 2010 12:10:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Corentin Chary <corentincj@iksaif.net>, Len Brown <len.brown@intel.com>,
-       Ben Hutchings <ben@decadent.org.uk>
-Subject: [078/197] eeepc-laptop: add hotplug_disable parameter
+       NeilBrown <neilb@suse.de>
+Subject: [166/197] md/raid5: allow for more than 2^31 chunks.
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +25,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 322a1356be96bcc4b97e8e370f6468c821330077 upstream.
+From: NeilBrown <neilb@suse.de>
 
-Some new models need to disable wireless hotplug.
-For the moment, we don't know excactly what models need that,
-except 1005HA.
-Users will be able to use that param as a workaround.
+commit 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d upstream.
 
-[bwh: Backported to 2.6.32]
+With many large drives and small chunk sizes it is possible
+to create a RAID5 with more than 2^31 chunks.  Make sure this
+works.
 
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: Brett King <king.br@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/eeepc-laptop.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/md/raid5.c |   19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
 
---- a/drivers/platform/x86/eeepc-laptop.c
-+++ b/drivers/platform/x86/eeepc-laptop.c
-@@ -254,6 +254,14 @@ MODULE_AUTHOR("Corentin Chary, Eric Coop
- MODULE_DESCRIPTION(EEEPC_HOTK_NAME);
- MODULE_LICENSE("GPL");
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -1649,8 +1649,8 @@ static sector_t raid5_compute_sector(rai
+ 				     int previous, int *dd_idx,
+ 				     struct stripe_head *sh)
+ {
+-	long stripe;
+-	unsigned long chunk_number;
++	sector_t stripe;
++	sector_t chunk_number;
+ 	unsigned int chunk_offset;
+ 	int pd_idx, qd_idx;
+ 	int ddf_layout = 0;
+@@ -1670,17 +1670,12 @@ static sector_t raid5_compute_sector(rai
+ 	 */
+ 	chunk_offset = sector_div(r_sector, sectors_per_chunk);
+ 	chunk_number = r_sector;
+-	BUG_ON(r_sector != chunk_number);
  
-+static bool hotplug_disabled;
-+
-+module_param(hotplug_disabled, bool, 0644);
-+MODULE_PARM_DESC(hotplug_disabled,
-+		 "Disable hotplug for wireless device. "
-+		 "If your laptop need that, please report to "
-+		 "acpi4asus-user@lists.sourceforge.net.");
-+
- /*
-  * ACPI Helpers
-  */
-@@ -1305,6 +1313,8 @@ static int __devinit eeepc_hotk_add(stru
- 	device->driver_data = ehotk;
- 	ehotk->device = device;
+ 	/*
+ 	 * Compute the stripe number
+ 	 */
+-	stripe = chunk_number / data_disks;
+-
+-	/*
+-	 * Compute the data disk and parity disk indexes inside the stripe
+-	 */
+-	*dd_idx = chunk_number % data_disks;
++	stripe = chunk_number;
++	*dd_idx = sector_div(stripe, data_disks);
  
-+	ehotk->hotplug_disabled = hotplug_disabled;
-+
- 	eeepc_dmi_check();
+ 	/*
+ 	 * Select the parity disk based on the user selected algorithm.
+@@ -1869,14 +1864,14 @@ static sector_t compute_blocknr(struct s
+ 				 : conf->algorithm;
+ 	sector_t stripe;
+ 	int chunk_offset;
+-	int chunk_number, dummy1, dd_idx = i;
++	sector_t chunk_number;
++	int dummy1, dd_idx = i;
+ 	sector_t r_sector;
+ 	struct stripe_head sh2;
  
- 	result = eeepc_hotk_check();
+ 
+ 	chunk_offset = sector_div(new_sector, sectors_per_chunk);
+ 	stripe = new_sector;
+-	BUG_ON(new_sector != stripe);
+ 
+ 	if (i == sh->pd_idx)
+ 		return 0;
+@@ -1969,7 +1964,7 @@ static sector_t compute_blocknr(struct s
+ 	}
+ 
+ 	chunk_number = stripe * data_disks + i;
+-	r_sector = (sector_t)chunk_number * sectors_per_chunk + chunk_offset;
++	r_sector = chunk_number * sectors_per_chunk + chunk_offset;
+ 
+ 	check = raid5_compute_sector(conf, r_sector,
+ 				     previous, &dummy1, &sh2);
 
 
