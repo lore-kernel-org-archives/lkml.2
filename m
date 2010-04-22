@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab0DVPHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 11:07:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64892 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753182Ab0DVPHl (ORCPT
+	id S1754855Ab0DVPPi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 11:15:38 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:39738 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754220Ab0DVPPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 11:07:41 -0400
-Date: Thu, 22 Apr 2010 08:04:21 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Guillaume Knispel <gknispel@proformatique.com>
-Cc: linux-kernel@vger.kernel.org, Linuxppc-dev@lists.ozlabs.org,
-       Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Haavard Skinnemoen <hskinnemoen@atmel.com>, Ingo Molnar <mingo@elte.hu>,
-       Lars-Peter Clausen <lars@metafoo.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Michael Buesch <mb@bu3sch.de>, Peter Zijlstra <peterz@infradead.org>,
-       Russell King <linux@arm.linux.org.uk>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/2] genirq: update doc
-Message-Id: <20100422080421.64a3006e.randy.dunlap@oracle.com>
-In-Reply-To: <1271941798-9659-3-git-send-email-gknispel@proformatique.com>
-References: <1271941798-9659-1-git-send-email-gknispel@proformatique.com>
-	<1271941798-9659-3-git-send-email-gknispel@proformatique.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090205.4BD065C7.011B:SCFMA4539811,ss=1,fgs=0
+	Thu, 22 Apr 2010 11:15:37 -0400
+Date: Thu, 22 Apr 2010 10:14:04 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Minchan Kim <minchan.kim@gmail.com>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of PageSwapCache
+  pages
+In-Reply-To: <1271946226.2100.211.camel@barrios-desktop>
+Message-ID: <alpine.DEB.2.00.1004221009150.32107@router.home>
+References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>  <alpine.DEB.2.00.1004210927550.4959@router.home>  <20100421150037.GJ30306@csn.ul.ie>  <alpine.DEB.2.00.1004211004360.4959@router.home>  <20100421151417.GK30306@csn.ul.ie> 
+ <alpine.DEB.2.00.1004211027120.4959@router.home>  <20100421153421.GM30306@csn.ul.ie>  <alpine.DEB.2.00.1004211038020.4959@router.home>  <20100422092819.GR30306@csn.ul.ie>  <20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com> 
+ <x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com>  <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com>  <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com> <1271946226.2100.211.camel@barrios-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Apr 2010 15:09:58 +0200 Guillaume Knispel wrote:
+On Thu, 22 Apr 2010, Minchan Kim wrote:
 
-> Following "genirq: always build resend_irqs" and previous changes, this
-> commit updates the genirq DocBook.
-> 
-> ---
->  Documentation/DocBook/genericirq.tmpl |   73 ++++++++++++++++++--------------
->  1 files changed, 41 insertions(+), 32 deletions(-)
-> 
-> diff --git a/Documentation/DocBook/genericirq.tmpl b/Documentation/DocBook/genericirq.tmpl
-> index 1448b33..5ee204c 100644
-> --- a/Documentation/DocBook/genericirq.tmpl
-> +++ b/Documentation/DocBook/genericirq.tmpl
-> @@ -240,8 +240,6 @@ default_enable(irq)
->  
->  default_disable(irq)
->  {
-> -	if (!delay_disable(irq))
-> -		desc->chip->mask(irq);
->  }
->  
->  default_ack(irq)
-> @@ -264,7 +262,11 @@ noop(irq)
->  }
->  
->  		</programlisting>
-> -	        </para>
-> +	        Note: default_disable is empty so that an edge-triggered
+> For further optimization, we can hold vma->adjust_lock if vma_address
+> returns -EFAULT. But I hope we redesigns it without new locking.
+> But I don't have good idea, now. :(
 
-		      default_disable()
+You could make it atomic through the use of RCU.
 
-> +		interrupt happening between a disable_irq() and an enable_irq()
-> +		is catched by the kernel for later replay. See
+Create a new vma entry with the changed parameters and then atomically
+switch to the new vma.
 
-		   caught
+Problem is that you have some list_heads in there.
 
-> +		<xref linkend="Delayed_interrupt_disable"/> for details.
-> +		</para>
->  	    </sect3>
->  	</sect2>
->  	<sect2 id="Default_flow_handler_implementations">
-
-[snip]
-
-
----
-~Randy
