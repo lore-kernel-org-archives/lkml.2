@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab0DVTmG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:42:06 -0400
-Received: from kroah.org ([198.145.64.141]:41324 "EHLO coco.kroah.org"
+	id S1756989Ab0DVTeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:34:37 -0400
+Received: from kroah.org ([198.145.64.141]:41558 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756749Ab0DVT3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:24 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:20 2010
-Message-Id: <20100422190920.111145973@kvm.kroah.org>
+	id S1756712Ab0DVT3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:55 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:23 2010
+Message-Id: <20100422190923.622687367@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:54 -0700
+Date: Thu, 22 Apr 2010 12:10:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Seth Heasley <seth.heasley@intel.com>, Takashi Iwai <tiwai@suse.de>,
-       maximilian attems <max@stro.at>
-Subject: [143/197] ALSA: hda - enable snoop for Intel Cougar Point
+       Eric Sandeen <sandeen@redhat.com>, maximilian attems <max@stro.at>
+Subject: [181/197] ext4: fix async i/o writes beyond 4GB to a sparse file
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,64 +25,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Heasley <seth.heasley@intel.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit 32679f95cac3b1bdf27dce8b5273e06af186fd91 upstream.
+commit a1de02dccf906faba2ee2d99cac56799bda3b96a upstream.
 
-This patch enables snoop, eliminating static during playback.
-This patch supersedes the previous Cougar Point audio patch.
+The "offset" member in ext4_io_end holds bytes, not blocks, so
+ext4_lblk_t is wrong - and too small (u32).
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This caused the async i/o writes to sparse files beyond 4GB to fail
+when they wrapped around to 0.
+
+Also fix up the type of arguments to ext4_convert_unwritten_extents(),
+it gets ssize_t from ext4_end_aio_dio_nolock() and
+ext4_ext_direct_IO().
+
+Reported-by: Giel de Nijs <giel@vectorwise.com>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
 Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_intel.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/ext4/ext4.h    |    6 +++---
+ fs/ext4/extents.c |    2 +-
+ fs/ext4/inode.c   |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -438,6 +438,7 @@ struct azx {
- /* driver types */
- enum {
- 	AZX_DRIVER_ICH,
-+	AZX_DRIVER_PCH,
- 	AZX_DRIVER_SCH,
- 	AZX_DRIVER_ATI,
- 	AZX_DRIVER_ATIHDMI,
-@@ -452,6 +453,7 @@ enum {
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -139,8 +139,8 @@ typedef struct ext4_io_end {
+ 	struct inode		*inode;		/* file being written to */
+ 	unsigned int		flag;		/* unwritten or not */
+ 	int			error;		/* I/O error code */
+-	ext4_lblk_t		offset;		/* offset in the file */
+-	size_t			size;		/* size of the extent */
++	loff_t			offset;		/* offset in the file */
++	ssize_t			size;		/* size of the extent */
+ 	struct work_struct	work;		/* data work queue */
+ } ext4_io_end_t;
  
- static char *driver_short_names[] __devinitdata = {
- 	[AZX_DRIVER_ICH] = "HDA Intel",
-+	[AZX_DRIVER_PCH] = "HDA Intel PCH",
- 	[AZX_DRIVER_SCH] = "HDA Intel MID",
- 	[AZX_DRIVER_ATI] = "HDA ATI SB",
- 	[AZX_DRIVER_ATIHDMI] = "HDA ATI HDMI",
-@@ -1040,6 +1042,7 @@ static void azx_init_pci(struct azx *chi
- 				0x01, NVIDIA_HDA_ENABLE_COHBIT);
- 		break;
- 	case AZX_DRIVER_SCH:
-+	case AZX_DRIVER_PCH:
- 		pci_read_config_word(chip->pci, INTEL_SCH_HDA_DEVC, &snoop);
- 		if (snoop & INTEL_SCH_HDA_DEVC_NOSNOOP) {
- 			pci_write_config_word(chip->pci, INTEL_SCH_HDA_DEVC,
-@@ -2393,6 +2396,7 @@ static int __devinit azx_create(struct s
- 	if (bdl_pos_adj[dev] < 0) {
- 		switch (chip->driver_type) {
- 		case AZX_DRIVER_ICH:
-+		case AZX_DRIVER_PCH:
- 			bdl_pos_adj[dev] = 1;
- 			break;
- 		default:
-@@ -2668,7 +2672,7 @@ static struct pci_device_id azx_ids[] =
- 	/* PCH */
- 	{ PCI_DEVICE(0x8086, 0x3b56), .driver_data = AZX_DRIVER_ICH },
- 	/* CPT */
--	{ PCI_DEVICE(0x8086, 0x1c20), .driver_data = AZX_DRIVER_ICH },
-+	{ PCI_DEVICE(0x8086, 0x1c20), .driver_data = AZX_DRIVER_PCH },
- 	/* SCH */
- 	{ PCI_DEVICE(0x8086, 0x811b), .driver_data = AZX_DRIVER_SCH },
- 	/* ATI SB 450/600 */
+@@ -1740,7 +1740,7 @@ extern void ext4_ext_release(struct supe
+ extern long ext4_fallocate(struct inode *inode, int mode, loff_t offset,
+ 			  loff_t len);
+ extern int ext4_convert_unwritten_extents(struct inode *inode, loff_t offset,
+-			  loff_t len);
++			  ssize_t len);
+ extern int ext4_get_blocks(handle_t *handle, struct inode *inode,
+ 			   sector_t block, unsigned int max_blocks,
+ 			   struct buffer_head *bh, int flags);
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -3547,7 +3547,7 @@ retry:
+  * Returns 0 on success.
+  */
+ int ext4_convert_unwritten_extents(struct inode *inode, loff_t offset,
+-				    loff_t len)
++				    ssize_t len)
+ {
+ 	handle_t *handle;
+ 	ext4_lblk_t block;
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3547,7 +3547,7 @@ static int ext4_end_aio_dio_nolock(ext4_
+ {
+ 	struct inode *inode = io->inode;
+ 	loff_t offset = io->offset;
+-	size_t size = io->size;
++	ssize_t size = io->size;
+ 	int ret = 0;
+ 
+ 	ext4_debug("end_aio_dio_onlock: io 0x%p from inode %lu,list->next 0x%p,"
 
 
