@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256Ab0DVTf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:35:26 -0400
-Received: from kroah.org ([198.145.64.141]:41528 "EHLO coco.kroah.org"
+	id S1757200Ab0DVTjm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:39:42 -0400
+Received: from kroah.org ([198.145.64.141]:41400 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756884Ab0DVT3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:51 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:23 2010
-Message-Id: <20100422190923.158036324@kvm.kroah.org>
+	id S1756810Ab0DVT3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:35 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:21 2010
+Message-Id: <20100422190921.456355044@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:27 -0700
+Date: Thu, 22 Apr 2010 12:10:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "J. Bruce Fields" <bfields@citi.umich.edu>
-Subject: [176/197] nfsd: ensure sockets are closed on error
+       Oliver Neukum <oliver@neukum.org>
+Subject: [157/197] USB: cdc-acm: Update to new autopm API
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Brown <neilb@suse.de>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit 301e99ce4a2f42a317129230fd42e6cd874c64b0 upstream.
+commit 97d35f95552c9a0ee4777a7f04431a9fd1260478 upstream.
 
-One the changes in commit d7979ae4a "svc: Move close processing to a
-single place" is:
+Update cdc-acm to the async methods eliminating the workqueue
 
-  err_delete:
--       svc_delete_socket(svsk);
-+       set_bit(SK_CLOSE, &svsk->sk_flags);
-        return -EAGAIN;
+[This fixes a reported lockup for the cdc-acm driver - gregkh]
 
-This is insufficient. The recvfrom methods must always call
-svc_xprt_received on completion so that the socket gets re-queued if
-there is any more work to do.  This particular path did not make that
-call because it actually destroyed the svsk, making requeue pointless.
-When the svc_delete_socket was change to just set a bit, we should have
-added a call to svc_xprt_received,
-
-This is the problem that b0401d7253 attempted to fix, incorrectly.
-
-Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+Signed-off-by: Oliver Neukum <oliver@neukum.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/svcsock.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/class/cdc-acm.c |   43 ++++++++++++++++++++++---------------------
+ drivers/usb/class/cdc-acm.h |    1 -
+ 2 files changed, 22 insertions(+), 22 deletions(-)
 
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -968,6 +968,7 @@ static int svc_tcp_recv_record(struct sv
- 	return len;
-  err_delete:
- 	set_bit(XPT_CLOSE, &svsk->sk_xprt.xpt_flags);
-+	svc_xprt_received(&svsk->sk_xprt);
-  err_again:
- 	return -EAGAIN;
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -170,6 +170,7 @@ static void acm_write_done(struct acm *a
+ {
+ 	wb->use = 0;
+ 	acm->transmitting--;
++	usb_autopm_put_interface_async(acm->control);
  }
+ 
+ /*
+@@ -211,9 +212,12 @@ static int acm_write_start(struct acm *a
+ 	}
+ 
+ 	dbg("%s susp_count: %d", __func__, acm->susp_count);
++	usb_autopm_get_interface_async(acm->control);
+ 	if (acm->susp_count) {
+-		acm->delayed_wb = wb;
+-		schedule_work(&acm->waker);
++		if (!acm->delayed_wb)
++			acm->delayed_wb = wb;
++		else
++			usb_autopm_put_interface_async(acm->control);
+ 		spin_unlock_irqrestore(&acm->write_lock, flags);
+ 		return 0;	/* A white lie */
+ 	}
+@@ -534,23 +538,6 @@ static void acm_softint(struct work_stru
+ 	tty_kref_put(tty);
+ }
+ 
+-static void acm_waker(struct work_struct *waker)
+-{
+-	struct acm *acm = container_of(waker, struct acm, waker);
+-	int rv;
+-
+-	rv = usb_autopm_get_interface(acm->control);
+-	if (rv < 0) {
+-		dev_err(&acm->dev->dev, "Autopm failure in %s\n", __func__);
+-		return;
+-	}
+-	if (acm->delayed_wb) {
+-		acm_start_wb(acm, acm->delayed_wb);
+-		acm->delayed_wb = NULL;
+-	}
+-	usb_autopm_put_interface(acm->control);
+-}
+-
+ /*
+  * TTY handlers
+  */
+@@ -1178,7 +1165,6 @@ made_compressed_probe:
+ 	acm->urb_task.func = acm_rx_tasklet;
+ 	acm->urb_task.data = (unsigned long) acm;
+ 	INIT_WORK(&acm->work, acm_softint);
+-	INIT_WORK(&acm->waker, acm_waker);
+ 	init_waitqueue_head(&acm->drain_wait);
+ 	spin_lock_init(&acm->throttle_lock);
+ 	spin_lock_init(&acm->write_lock);
+@@ -1343,7 +1329,6 @@ static void stop_data_traffic(struct acm
+ 	tasklet_enable(&acm->urb_task);
+ 
+ 	cancel_work_sync(&acm->work);
+-	cancel_work_sync(&acm->waker);
+ }
+ 
+ static void acm_disconnect(struct usb_interface *intf)
+@@ -1435,6 +1420,7 @@ static int acm_suspend(struct usb_interf
+ static int acm_resume(struct usb_interface *intf)
+ {
+ 	struct acm *acm = usb_get_intfdata(intf);
++	struct acm_wb *wb;
+ 	int rv = 0;
+ 	int cnt;
+ 
+@@ -1449,6 +1435,21 @@ static int acm_resume(struct usb_interfa
+ 	mutex_lock(&acm->mutex);
+ 	if (acm->port.count) {
+ 		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
++
++		spin_lock_irq(&acm->write_lock);
++		if (acm->delayed_wb) {
++			wb = acm->delayed_wb;
++			acm->delayed_wb = NULL;
++			spin_unlock_irq(&acm->write_lock);
++			acm_start_wb(acm, acm->delayed_wb);
++		} else {
++			spin_unlock_irq(&acm->write_lock);
++		}
++
++		/*
++		 * delayed error checking because we must
++		 * do the write path at all cost
++		 */
+ 		if (rv < 0)
+ 			goto err_out;
+ 
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -112,7 +112,6 @@ struct acm {
+ 	struct mutex mutex;
+ 	struct usb_cdc_line_coding line;		/* bits, stop, parity */
+ 	struct work_struct work;			/* work queue entry for line discipline waking up */
+-	struct work_struct waker;
+ 	wait_queue_head_t drain_wait;			/* close processing */
+ 	struct tasklet_struct urb_task;                 /* rx processing */
+ 	spinlock_t throttle_lock;			/* synchronize throtteling and read callback */
 
 
