@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757866Ab0DVT7Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:59:25 -0400
-Received: from kroah.org ([198.145.64.141]:40704 "EHLO coco.kroah.org"
+	id S1757998Ab0DVUA1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:00:27 -0400
+Received: from kroah.org ([198.145.64.141]:59616 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756287Ab0DVT2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:18 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:13 2010
-Message-Id: <20100422190913.199792032@kvm.kroah.org>
+	id S1757960Ab0DVUAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:00:09 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:09 2010
+Message-Id: <20100422195409.044498667@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:36 -0700
+Date: Thu, 22 Apr 2010 12:53:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-       Len Brown <len.brown@intel.com>
-Subject: [065/197] thinkpad-acpi: fix some version quirks
-In-Reply-To: <20100422191857.GA13268@kroah.com>
+       Suresh Jayaraman <sjayaraman@suse.de>,
+       Steve French <sfrench@us.ibm.com>
+Subject: [043/139] CIFS: initialize nbytes at the beginning of CIFSSMBWrite()
+In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+From: Steve French <sfrench@us.ibm.com>
 
-commit 90765c6aee568137521ba19347c744b5abde8161 upstream.
+commit a24e2d7d8f512340991ef0a59cb5d08d491b8e98 upstream.
 
-Update some of the BIOS/EC version quirks.
+By doing this we always overwrite nbytes value that is being passed on to
+CIFSSMBWrite() and need not rely on the callers to initialize. CIFSSMBWrite2 is
+doing this already.
 
-Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@samba.org>
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/thinkpad_acpi.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/cifs/cifssmb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -1779,7 +1779,7 @@ static const struct tpacpi_quirk tpacpi_
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -1430,6 +1430,8 @@ CIFSSMBWrite(const int xid, struct cifsT
+ 	__u32 bytes_sent;
+ 	__u16 byte_count;
  
- 	TPV_QL1('7', '9',  'E', '3',  '5', '0'), /* T60/p */
- 	TPV_QL1('7', 'C',  'D', '2',  '2', '2'), /* R60, R60i */
--	TPV_QL0('7', 'E',  'D', '0'),		 /* R60e, R60i */
-+	TPV_QL1('7', 'E',  'D', '0',  '1', '5'), /* R60e, R60i */
- 
- 	/*      BIOS FW    BIOS VERS  EC FW     EC VERS */
- 	TPV_QI2('1', 'W',  '9', '0',  '1', 'V', '2', '8'), /* R50e (1) */
-@@ -1795,8 +1795,8 @@ static const struct tpacpi_quirk tpacpi_
- 	TPV_QI1('7', '4',  '6', '4',  '2', '7'), /* X41 (0) */
- 	TPV_QI1('7', '5',  '6', '0',  '2', '0'), /* X41t (0) */
- 
--	TPV_QL0('7', 'B',  'D', '7'),		 /* X60/s */
--	TPV_QL0('7', 'J',  '3', '0'),		 /* X60t */
-+	TPV_QL1('7', 'B',  'D', '7',  '4', '0'), /* X60/s */
-+	TPV_QL1('7', 'J',  '3', '0',  '1', '3'), /* X60t */
- 
- 	/* (0) - older versions lack DMI EC fw string and functionality */
- 	/* (1) - older versions known to lack functionality */
++	*nbytes = 0;
++
+ 	/* cFYI(1, ("write at %lld %d bytes", offset, count));*/
+ 	if (tcon->ses == NULL)
+ 		return -ECONNABORTED;
+@@ -1512,7 +1514,6 @@ CIFSSMBWrite(const int xid, struct cifsT
+ 	cifs_stats_inc(&tcon->num_writes);
+ 	if (rc) {
+ 		cFYI(1, ("Send error in write = %d", rc));
+-		*nbytes = 0;
+ 	} else {
+ 		*nbytes = le16_to_cpu(pSMBr->CountHigh);
+ 		*nbytes = (*nbytes) << 16;
 
 
