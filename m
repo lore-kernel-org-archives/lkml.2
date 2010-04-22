@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab0DVU2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:28:00 -0400
-Received: from kroah.org ([198.145.64.141]:59546 "EHLO coco.kroah.org"
+	id S1758399Ab0DVU2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:28:35 -0400
+Received: from kroah.org ([198.145.64.141]:59519 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757942Ab0DVT75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:59:57 -0400
+	id S1757939Ab0DVT7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:59:54 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:07 2010
-Message-Id: <20100422195407.702747955@kvm.kroah.org>
+Message-Id: <20100422195407.411773568@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:27 -0700
+Date: Thu, 22 Apr 2010 12:53:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jiri Kosina <jkosina@suse.cz>
-Subject: [030/139] HID: fix oops in gyration_event()
+       Seth Heasley <seth.heasley@intel.com>, Wim Van Sebroeck <wim@iguana.be>
+Subject: [027/139] WATCHDOG: iTCO_wdt: TCO Watchdog patch for additional Intel Cougar Point DeviceIDs
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit d8e4ebf8b603bdcd091540e6b5bddf0dec10d516 upstream.
+commit 4c7d849204341dea19be941a3c1eb4bdffac9cc4 upstream.
 
-Fix oops caused by dereferencing field->hidinput in cases where
-the device hasn't been claimed by hid-input.
+This patch adds the Intel Cougar Point PCH LPC Controller DeviceIDs for iTCO Watchdog.
 
-Reported-by: Andreas Demmer <mail@andreas-demmer.de>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/hid-gyration.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/watchdog/iTCO_wdt.c |   99 +++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 93 insertions(+), 6 deletions(-)
 
---- a/drivers/hid/hid-gyration.c
-+++ b/drivers/hid/hid-gyration.c
-@@ -53,10 +53,13 @@ static int gyration_input_mapping(struct
- static int gyration_event(struct hid_device *hdev, struct hid_field *field,
- 		struct hid_usage *usage, __s32 value)
- {
--	struct input_dev *input = field->hidinput->input;
-+
-+	if (!(hdev->claimed & HID_CLAIMED_INPUT) || !field->hidinput)
-+		return 0;
+--- a/drivers/watchdog/iTCO_wdt.c
++++ b/drivers/watchdog/iTCO_wdt.c
+@@ -115,8 +115,37 @@ enum iTCO_chipsets {
+ 	TCO_3420,	/* 3420 */
+ 	TCO_3450,	/* 3450 */
+ 	TCO_EP80579,	/* EP80579 */
+-	TCO_CPTD,	/* CPT Desktop */
+-	TCO_CPTM,	/* CPT Mobile */
++	TCO_CPT1,	/* Cougar Point */
++	TCO_CPT2,	/* Cougar Point Desktop */
++	TCO_CPT3,	/* Cougar Point Mobile */
++	TCO_CPT4,	/* Cougar Point */
++	TCO_CPT5,	/* Cougar Point */
++	TCO_CPT6,	/* Cougar Point */
++	TCO_CPT7,	/* Cougar Point */
++	TCO_CPT8,	/* Cougar Point */
++	TCO_CPT9,	/* Cougar Point */
++	TCO_CPT10,	/* Cougar Point */
++	TCO_CPT11,	/* Cougar Point */
++	TCO_CPT12,	/* Cougar Point */
++	TCO_CPT13,	/* Cougar Point */
++	TCO_CPT14,	/* Cougar Point */
++	TCO_CPT15,	/* Cougar Point */
++	TCO_CPT16,	/* Cougar Point */
++	TCO_CPT17,	/* Cougar Point */
++	TCO_CPT18,	/* Cougar Point */
++	TCO_CPT19,	/* Cougar Point */
++	TCO_CPT20,	/* Cougar Point */
++	TCO_CPT21,	/* Cougar Point */
++	TCO_CPT22,	/* Cougar Point */
++	TCO_CPT23,	/* Cougar Point */
++	TCO_CPT24,	/* Cougar Point */
++	TCO_CPT25,	/* Cougar Point */
++	TCO_CPT26,	/* Cougar Point */
++	TCO_CPT27,	/* Cougar Point */
++	TCO_CPT28,	/* Cougar Point */
++	TCO_CPT29,	/* Cougar Point */
++	TCO_CPT30,	/* Cougar Point */
++	TCO_CPT31,	/* Cougar Point */
+ };
  
- 	if ((usage->hid & HID_USAGE_PAGE) == HID_UP_GENDESK &&
- 			(usage->hid & 0xff) == 0x82) {
-+		struct input_dev *input = field->hidinput->input;
- 		input_event(input, usage->type, usage->code, 1);
- 		input_sync(input);
- 		input_event(input, usage->type, usage->code, 0);
+ static struct {
+@@ -173,8 +202,37 @@ static struct {
+ 	{"3420", 2},
+ 	{"3450", 2},
+ 	{"EP80579", 2},
+-	{"CPT Desktop", 2},
+-	{"CPT Mobile", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
++	{"Cougar Point", 2},
+ 	{NULL, 0}
+ };
+ 
+@@ -259,8 +317,37 @@ static struct pci_device_id iTCO_wdt_pci
+ 	{ ITCO_PCI_DEVICE(0x3b14,				TCO_3420)},
+ 	{ ITCO_PCI_DEVICE(0x3b16,				TCO_3450)},
+ 	{ ITCO_PCI_DEVICE(0x5031,				TCO_EP80579)},
+-	{ ITCO_PCI_DEVICE(0x1c42,				TCO_CPTD)},
+-	{ ITCO_PCI_DEVICE(0x1c43,				TCO_CPTM)},
++	{ ITCO_PCI_DEVICE(0x1c41,				TCO_CPT1)},
++	{ ITCO_PCI_DEVICE(0x1c42,				TCO_CPT2)},
++	{ ITCO_PCI_DEVICE(0x1c43,				TCO_CPT3)},
++	{ ITCO_PCI_DEVICE(0x1c44,				TCO_CPT4)},
++	{ ITCO_PCI_DEVICE(0x1c45,				TCO_CPT5)},
++	{ ITCO_PCI_DEVICE(0x1c46,				TCO_CPT6)},
++	{ ITCO_PCI_DEVICE(0x1c47,				TCO_CPT7)},
++	{ ITCO_PCI_DEVICE(0x1c48,				TCO_CPT8)},
++	{ ITCO_PCI_DEVICE(0x1c49,				TCO_CPT9)},
++	{ ITCO_PCI_DEVICE(0x1c4a,				TCO_CPT10)},
++	{ ITCO_PCI_DEVICE(0x1c4b,				TCO_CPT11)},
++	{ ITCO_PCI_DEVICE(0x1c4c,				TCO_CPT12)},
++	{ ITCO_PCI_DEVICE(0x1c4d,				TCO_CPT13)},
++	{ ITCO_PCI_DEVICE(0x1c4e,				TCO_CPT14)},
++	{ ITCO_PCI_DEVICE(0x1c4f,				TCO_CPT15)},
++	{ ITCO_PCI_DEVICE(0x1c50,				TCO_CPT16)},
++	{ ITCO_PCI_DEVICE(0x1c51,				TCO_CPT17)},
++	{ ITCO_PCI_DEVICE(0x1c52,				TCO_CPT18)},
++	{ ITCO_PCI_DEVICE(0x1c53,				TCO_CPT19)},
++	{ ITCO_PCI_DEVICE(0x1c54,				TCO_CPT20)},
++	{ ITCO_PCI_DEVICE(0x1c55,				TCO_CPT21)},
++	{ ITCO_PCI_DEVICE(0x1c56,				TCO_CPT22)},
++	{ ITCO_PCI_DEVICE(0x1c57,				TCO_CPT23)},
++	{ ITCO_PCI_DEVICE(0x1c58,				TCO_CPT24)},
++	{ ITCO_PCI_DEVICE(0x1c59,				TCO_CPT25)},
++	{ ITCO_PCI_DEVICE(0x1c5a,				TCO_CPT26)},
++	{ ITCO_PCI_DEVICE(0x1c5b,				TCO_CPT27)},
++	{ ITCO_PCI_DEVICE(0x1c5c,				TCO_CPT28)},
++	{ ITCO_PCI_DEVICE(0x1c5d,				TCO_CPT29)},
++	{ ITCO_PCI_DEVICE(0x1c5e,				TCO_CPT30)},
++	{ ITCO_PCI_DEVICE(0x1c5f,				TCO_CPT31)},
+ 	{ 0, },			/* End of list */
+ };
+ MODULE_DEVICE_TABLE(pci, iTCO_wdt_pci_tbl);
 
 
