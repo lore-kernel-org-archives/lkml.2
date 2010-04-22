@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab0DVTqe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:46:34 -0400
-Received: from kroah.org ([198.145.64.141]:41144 "EHLO coco.kroah.org"
+	id S1756660Ab0DVT3G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:29:06 -0400
+Received: from kroah.org ([198.145.64.141]:41019 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756493Ab0DVT3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:08 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:18 2010
-Message-Id: <20100422190918.362261106@kvm.kroah.org>
+	id S1756562Ab0DVT2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:53 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:16 2010
+Message-Id: <20100422190916.669209096@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:34 -0700
+Date: Thu, 22 Apr 2010 12:09:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: [123/197] fix NFS4 handling of mountpoint stat
+       Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>
+Subject: [104/197] drm/radeon/kms: fix rs600 tlb flush
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 462d60577a997aa87c935ae4521bd303733a9f2b upstream.
+commit 30f69f3fb20bd719b5e1bf879339914063d38f47 upstream.
 
-RFC says we need to follow the chain of mounts if there's more
-than one stacked on that point.
+Typo in in flush leaded to no flush of the RS600 tlb which
+ultimately leaded to massive system ram corruption, with
+this patch everythings seems to work properly.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4xdr.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/rs600.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2129,9 +2129,15 @@ out_acl:
- 		 * and this is the root of a cross-mounted filesystem.
- 		 */
- 		if (ignore_crossmnt == 0 &&
--		    exp->ex_path.mnt->mnt_root->d_inode == dentry->d_inode) {
--			err = vfs_getattr(exp->ex_path.mnt->mnt_parent,
--				exp->ex_path.mnt->mnt_mountpoint, &stat);
-+		    dentry == exp->ex_path.mnt->mnt_root) {
-+			struct path path = exp->ex_path;
-+			path_get(&path);
-+			while (follow_up(&path)) {
-+				if (path.dentry != path.mnt->mnt_root)
-+					break;
-+			}
-+			err = vfs_getattr(path.mnt, path.dentry, &stat);
-+			path_put(&path);
- 			if (err)
- 				goto out_nfserr;
- 		}
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -57,7 +57,7 @@ void rs600_gart_tlb_flush(struct radeon_
+ 	WREG32_MC(R_000100_MC_PT0_CNTL, tmp);
+ 
+ 	tmp = RREG32_MC(R_000100_MC_PT0_CNTL);
+-	tmp |= S_000100_INVALIDATE_ALL_L1_TLBS(1) & S_000100_INVALIDATE_L2_CACHE(1);
++	tmp |= S_000100_INVALIDATE_ALL_L1_TLBS(1) | S_000100_INVALIDATE_L2_CACHE(1);
+ 	WREG32_MC(R_000100_MC_PT0_CNTL, tmp);
+ 
+ 	tmp = RREG32_MC(R_000100_MC_PT0_CNTL);
 
 
