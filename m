@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab0DVUp6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:45:58 -0400
-Received: from kroah.org ([198.145.64.141]:37208 "EHLO coco.kroah.org"
+	id S1755568Ab0DVT1c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:27:32 -0400
+Received: from kroah.org ([198.145.64.141]:37121 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755976Ab0DVT1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:27:41 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:09 2010
-Message-Id: <20100422190909.113628274@kvm.kroah.org>
+	id S1754466Ab0DVT1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:27:30 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:08 2010
+Message-Id: <20100422190907.954471397@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:07:50 -0700
+Date: Thu, 22 Apr 2010 12:07:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, xfs@oss.sgi.com,
-       Dave Chinner <david@fromorbit.com>, Alex Elder <aelder@sgi.com>
-Subject: [019/197] xfs: Avoid inodes in reclaim when flushing from inode cache
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Dave Airlie <airlied@redhat.com>
+Subject: [006/197] drm/radeon/kms: dont print error on -ERESTARTSYS.
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,70 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <david@fromorbit.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 018027be90a6946e8cf3f9b17b5582384f7ed117 upstream
+commit 97f23b3d85a4d734a8584dade3a34579931c8f8d upstream.
 
-The reclaim code will handle flushing of dirty inodes before reclaim
-occurs, so avoid them when determining whether an inode is a
-candidate for flushing to disk when walking the radix trees.  This
-is based on a test patch from Christoph Hellwig.
+We can get this if the user moves the mouse when we are waiting to move
+some stuff around in the validate. Don't fail.
 
-Signed-off-by: Dave Chinner <david@fromorbit.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Alex Elder <aelder@sgi.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/xfs/linux-2.6/xfs_sync.c |   31 ++++++++++++++++++-------------
- 1 file changed, 18 insertions(+), 13 deletions(-)
+ drivers/gpu/drm/radeon/radeon_cs.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/xfs/linux-2.6/xfs_sync.c
-+++ b/fs/xfs/linux-2.6/xfs_sync.c
-@@ -179,26 +179,31 @@ xfs_sync_inode_valid(
- 	struct xfs_perag	*pag)
- {
- 	struct inode		*inode = VFS_I(ip);
-+	int			error = EFSCORRUPTED;
- 
- 	/* nothing to sync during shutdown */
--	if (XFS_FORCED_SHUTDOWN(ip->i_mount)) {
--		read_unlock(&pag->pag_ici_lock);
--		return EFSCORRUPTED;
--	}
-+	if (XFS_FORCED_SHUTDOWN(ip->i_mount))
-+		goto out_unlock;
- 
--	/* If we can't get a reference on the inode, it must be in reclaim. */
--	if (!igrab(inode)) {
--		read_unlock(&pag->pag_ici_lock);
--		return ENOENT;
--	}
--	read_unlock(&pag->pag_ici_lock);
-+	/* avoid new or reclaimable inodes. Leave for reclaim code to flush */
-+	error = ENOENT;
-+	if (xfs_iflags_test(ip, XFS_INEW | XFS_IRECLAIMABLE | XFS_IRECLAIM))
-+		goto out_unlock;
- 
--	if (is_bad_inode(inode) || xfs_iflags_test(ip, XFS_INEW)) {
-+	/* If we can't grab the inode, it must on it's way to reclaim. */
-+	if (!igrab(inode))
-+		goto out_unlock;
-+
-+	if (is_bad_inode(inode)) {
- 		IRELE(ip);
--		return ENOENT;
-+		goto out_unlock;
+--- a/drivers/gpu/drm/radeon/radeon_cs.c
++++ b/drivers/gpu/drm/radeon/radeon_cs.c
+@@ -247,7 +247,8 @@ int radeon_cs_ioctl(struct drm_device *d
  	}
- 
--	return 0;
-+	/* inode is valid */
-+	error = 0;
-+out_unlock:
-+	read_unlock(&pag->pag_ici_lock);
-+	return error;
- }
- 
- STATIC int
+ 	r = radeon_cs_parser_relocs(&parser);
+ 	if (r) {
+-		DRM_ERROR("Failed to parse relocation !\n");
++		if (r != -ERESTARTSYS)
++			DRM_ERROR("Failed to parse relocation %d!\n", r);
+ 		radeon_cs_parser_fini(&parser, r);
+ 		mutex_unlock(&rdev->cs_mutex);
+ 		return r;
 
 
