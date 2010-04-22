@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145Ab0DVTd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:33:59 -0400
-Received: from kroah.org ([198.145.64.141]:41571 "EHLO coco.kroah.org"
+	id S1757056Ab0DVTa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:30:58 -0400
+Received: from kroah.org ([198.145.64.141]:41649 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756937Ab0DVT34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:56 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:23 2010
-Message-Id: <20100422190923.821364162@kvm.kroah.org>
+	id S1756984Ab0DVTaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:30:06 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:24 2010
+Message-Id: <20100422190924.859582652@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:34 -0700
+Date: Thu, 22 Apr 2010 12:10:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alexander Nezhinsky <alexandern@voltaire.com>,
-       Or Gerlitz <ogerlitz@voltaire.com>, Roland Dreier <rolandd@cisco.com>,
-       maximilian attems <max@stro.at>
-Subject: [183/197] IB/iser: Rewrite SG handling for RDMA logic
+       Joerg Roedel <joerg.roedel@amd.com>
+Subject: [195/197] x86/gart: Disable GART explicitly before initialization
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,203 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Or Gerlitz <ogerlitz@voltaire.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit c1ccaf2478f84c2665cf57f981db143aa582d646 upstream.
+commit 4b83873d3da0704987cb116833818ed96214ee29 upstream.
 
-After dma-mapping an SG list provided by the SCSI midlayer, iser has
-to make sure the mapped SG is "aligned for RDMA" in the sense that its
-possible to produce one mapping in the HCA IOMMU which represents the
-whole SG. Next, the mapped SG is formatted for registration with the HCA.
+If we boot into a crash-kernel the gart might still be
+enabled and its caches might be dirty. This can result in
+undefined behavior later. Fix it by explicitly disabling the
+gart hardware before initialization and flushing the caches
+after enablement.
 
-This patch re-writes the logic that does the above, to make it clearer
-and simpler. It also fixes a bug in the being aligned for RDMA checks,
-where a "start" check wasn't done but rather only "end" check.
-
-[commit message in RH kernel tree: "Under heavy load, without the patch,
-the HCA can be programmed to write (corrupt) into pages/location which
-doesn't belong to the SG associated with the actual I/O and cause a
-kernel oops."]
-
-Signed-off-by: Alexander Nezhinsky <alexandern@voltaire.com>
-Signed-off-by: Or Gerlitz <ogerlitz@voltaire.com>
-Signed-off-by: Roland Dreier <rolandd@cisco.com>
-Cc: maximilian attems <max@stro.at>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/ulp/iser/iser_memory.c |  120 +++++++++++++-----------------
- 1 file changed, 55 insertions(+), 65 deletions(-)
+ arch/x86/kernel/aperture_64.c |   15 ++++++++++++++-
+ arch/x86/kernel/pci-gart_64.c |    3 +++
+ 2 files changed, 17 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/ulp/iser/iser_memory.c
-+++ b/drivers/infiniband/ulp/iser/iser_memory.c
-@@ -209,6 +209,8 @@ void iser_finalize_rdma_unaligned_sg(str
- 	mem_copy->copy_buf = NULL;
- }
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -389,6 +389,7 @@ void __init gart_iommu_hole_init(void)
+ 	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
+ 		int bus;
+ 		int dev_base, dev_limit;
++		u32 ctl;
  
-+#define IS_4K_ALIGNED(addr)	((((unsigned long)addr) & ~MASK_4K) == 0)
+ 		bus = bus_dev_ranges[i].bus;
+ 		dev_base = bus_dev_ranges[i].dev_base;
+@@ -401,7 +402,19 @@ void __init gart_iommu_hole_init(void)
+ 			iommu_detected = 1;
+ 			gart_iommu_aperture = 1;
+ 
+-			aper_order = (read_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL) >> 1) & 7;
++			ctl = read_pci_config(bus, slot, 3,
++					      AMD64_GARTAPERTURECTL);
 +
- /**
-  * iser_sg_to_page_vec - Translates scatterlist entries to physical addresses
-  * and returns the length of resulting physical address array (may be less than
-@@ -221,62 +223,52 @@ void iser_finalize_rdma_unaligned_sg(str
-  * where --few fragments of the same page-- are present in the SG as
-  * consecutive elements. Also, it handles one entry SG.
-  */
++			/*
++			 * Before we do anything else disable the GART. It may
++			 * still be enabled if we boot into a crash-kernel here.
++			 * Reconfiguring the GART while it is enabled could have
++			 * unknown side-effects.
++			 */
++			ctl &= ~GARTEN;
++			write_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL, ctl);
 +
- static int iser_sg_to_page_vec(struct iser_data_buf *data,
- 			       struct iser_page_vec *page_vec,
- 			       struct ib_device *ibdev)
- {
--	struct scatterlist *sgl = (struct scatterlist *)data->buf;
--	struct scatterlist *sg;
--	u64 first_addr, last_addr, page;
--	int end_aligned;
--	unsigned int cur_page = 0;
-+	struct scatterlist *sg, *sgl = (struct scatterlist *)data->buf;
-+	u64 start_addr, end_addr, page, chunk_start = 0;
- 	unsigned long total_sz = 0;
--	int i;
-+	unsigned int dma_len;
-+	int i, new_chunk, cur_page, last_ent = data->dma_nents - 1;
++			aper_order = (ctl >> 1) & 7;
+ 			aper_size = (32 * 1024 * 1024) << aper_order;
+ 			aper_base = read_pci_config(bus, slot, 3, AMD64_GARTAPERTUREBASE) & 0x7fff;
+ 			aper_base <<= 25;
+--- a/arch/x86/kernel/pci-gart_64.c
++++ b/arch/x86/kernel/pci-gart_64.c
+@@ -553,6 +553,9 @@ static void enable_gart_translations(voi
  
- 	/* compute the offset of first element */
- 	page_vec->offset = (u64) sgl[0].offset & ~MASK_4K;
- 
-+	new_chunk = 1;
-+	cur_page  = 0;
- 	for_each_sg(sgl, sg, data->dma_nents, i) {
--		unsigned int dma_len = ib_sg_dma_len(ibdev, sg);
--
-+		start_addr = ib_sg_dma_address(ibdev, sg);
-+		if (new_chunk)
-+			chunk_start = start_addr;
-+		dma_len = ib_sg_dma_len(ibdev, sg);
-+		end_addr = start_addr + dma_len;
- 		total_sz += dma_len;
- 
--		first_addr = ib_sg_dma_address(ibdev, sg);
--		last_addr  = first_addr + dma_len;
--
--		end_aligned   = !(last_addr  & ~MASK_4K);
--
--		/* continue to collect page fragments till aligned or SG ends */
--		while (!end_aligned && (i + 1 < data->dma_nents)) {
--			sg = sg_next(sg);
--			i++;
--			dma_len = ib_sg_dma_len(ibdev, sg);
--			total_sz += dma_len;
--			last_addr = ib_sg_dma_address(ibdev, sg) + dma_len;
--			end_aligned = !(last_addr  & ~MASK_4K);
-+		/* collect page fragments until aligned or end of SG list */
-+		if (!IS_4K_ALIGNED(end_addr) && i < last_ent) {
-+			new_chunk = 0;
-+			continue;
- 		}
-+		new_chunk = 1;
- 
--		/* handle the 1st page in the 1st DMA element */
--		if (cur_page == 0) {
--			page = first_addr & MASK_4K;
--			page_vec->pages[cur_page] = page;
--			cur_page++;
-+		/* address of the first page in the contiguous chunk;
-+		   masking relevant for the very first SG entry,
-+		   which might be unaligned */
-+		page = chunk_start & MASK_4K;
-+		do {
-+			page_vec->pages[cur_page++] = page;
- 			page += SIZE_4K;
--		} else
--			page = first_addr;
--
--		for (; page < last_addr; page += SIZE_4K) {
--			page_vec->pages[cur_page] = page;
--			cur_page++;
--		}
--
-+		} while (page < end_addr);
+ 		enable_gart_translation(dev, __pa(agp_gatt_table));
  	}
 +
- 	page_vec->data_size = total_sz;
- 	iser_dbg("page_vec->data_size:%d cur_page %d\n", page_vec->data_size,cur_page);
- 	return cur_page;
++	/* Flush the GART-TLB to remove stale entries */
++	k8_flush_garts();
  }
  
--#define IS_4K_ALIGNED(addr)	((((unsigned long)addr) & ~MASK_4K) == 0)
- 
- /**
-  * iser_data_buf_aligned_len - Tries to determine the maximal correctly aligned
-@@ -284,42 +276,40 @@ static int iser_sg_to_page_vec(struct is
-  * the number of entries which are aligned correctly. Supports the case where
-  * consecutive SG elements are actually fragments of the same physcial page.
-  */
--static unsigned int iser_data_buf_aligned_len(struct iser_data_buf *data,
--					      struct ib_device *ibdev)
-+static int iser_data_buf_aligned_len(struct iser_data_buf *data,
-+				      struct ib_device *ibdev)
- {
--	struct scatterlist *sgl, *sg;
--	u64 end_addr, next_addr;
--	int i, cnt;
--	unsigned int ret_len = 0;
-+	struct scatterlist *sgl, *sg, *next_sg = NULL;
-+	u64 start_addr, end_addr;
-+	int i, ret_len, start_check = 0;
-+
-+	if (data->dma_nents == 1)
-+		return 1;
- 
- 	sgl = (struct scatterlist *)data->buf;
-+	start_addr  = ib_sg_dma_address(ibdev, sgl);
- 
--	cnt = 0;
- 	for_each_sg(sgl, sg, data->dma_nents, i) {
--		/* iser_dbg("Checking sg iobuf [%d]: phys=0x%08lX "
--		   "offset: %ld sz: %ld\n", i,
--		   (unsigned long)sg_phys(sg),
--		   (unsigned long)sg->offset,
--		   (unsigned long)sg->length); */
--		end_addr = ib_sg_dma_address(ibdev, sg) +
--			   ib_sg_dma_len(ibdev, sg);
--		/* iser_dbg("Checking sg iobuf end address "
--		       "0x%08lX\n", end_addr); */
--		if (i + 1 < data->dma_nents) {
--			next_addr = ib_sg_dma_address(ibdev, sg_next(sg));
--			/* are i, i+1 fragments of the same page? */
--			if (end_addr == next_addr) {
--				cnt++;
--				continue;
--			} else if (!IS_4K_ALIGNED(end_addr)) {
--				ret_len = cnt + 1;
--				break;
--			}
--		}
--		cnt++;
-+		if (start_check && !IS_4K_ALIGNED(start_addr))
-+			break;
-+
-+		next_sg = sg_next(sg);
-+		if (!next_sg)
-+			break;
-+
-+		end_addr    = start_addr + ib_sg_dma_len(ibdev, sg);
-+		start_addr  = ib_sg_dma_address(ibdev, next_sg);
-+
-+		if (end_addr == start_addr) {
-+			start_check = 0;
-+			continue;
-+		} else
-+			start_check = 1;
-+
-+		if (!IS_4K_ALIGNED(end_addr))
-+			break;
- 	}
--	if (i == data->dma_nents)
--		ret_len = cnt;	/* loop ended */
-+	ret_len = (next_sg) ? i : i+1;
- 	iser_dbg("Found %d aligned entries out of %d in sg:0x%p\n",
- 		 ret_len, data->dma_nents, data);
- 	return ret_len;
+ /*
 
 
