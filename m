@@ -1,182 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab0DVTaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:30:12 -0400
-Received: from kroah.org ([198.145.64.141]:41607 "EHLO coco.kroah.org"
+	id S1757675Ab0DVTy1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:54:27 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:52029 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756970Ab0DVTaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:30:00 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:24 2010
-Message-Id: <20100422190924.251074663@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:39 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Avi Kivity <avi@redhat.com>
-Subject: [188/197] KVM: Dont spam kernel log when injecting exceptions due to bad cr writes
-In-Reply-To: <20100422191857.GA13268@kroah.com>
+	id S1757654Ab0DVTyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:54:16 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 3/3] sched: protect __sched_setscheduler() access to cgroups
+Date: Thu, 22 Apr 2010 12:54:07 -0700
+Message-Id: <1271966047-9701-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <20100422195345.GA9639@linux.vnet.ibm.com>
+References: <20100422195345.GA9639@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+A given task's cgroups structures must remain while that task is running
+due to reference counting, so this is presumably a false positive.
+Updated to reflect feedback from Tetsuo Handa.
 
-------------------
-
-From: Avi Kivity <avi@redhat.com>
-
-(Cherry-picked from commit d6a23895aa82353788a1cc5a1d9a1c963465463e)
-
-These are guest-triggerable.
-
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/x86.c |   27 ---------------------------
- 1 file changed, 27 deletions(-)
+ kernel/sched.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -297,21 +297,16 @@ out:
- void kvm_set_cr0(struct kvm_vcpu *vcpu, unsigned long cr0)
- {
- 	if (cr0 & CR0_RESERVED_BITS) {
--		printk(KERN_DEBUG "set_cr0: 0x%lx #GP, reserved bits 0x%lx\n",
--		       cr0, vcpu->arch.cr0);
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
- 
- 	if ((cr0 & X86_CR0_NW) && !(cr0 & X86_CR0_CD)) {
--		printk(KERN_DEBUG "set_cr0: #GP, CD == 0 && NW == 1\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
- 
- 	if ((cr0 & X86_CR0_PG) && !(cr0 & X86_CR0_PE)) {
--		printk(KERN_DEBUG "set_cr0: #GP, set PG flag "
--		       "and a clear PE flag\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
-@@ -322,15 +317,11 @@ void kvm_set_cr0(struct kvm_vcpu *vcpu,
- 			int cs_db, cs_l;
- 
- 			if (!is_pae(vcpu)) {
--				printk(KERN_DEBUG "set_cr0: #GP, start paging "
--				       "in long mode while PAE is disabled\n");
- 				kvm_inject_gp(vcpu, 0);
- 				return;
- 			}
- 			kvm_x86_ops->get_cs_db_l_bits(vcpu, &cs_db, &cs_l);
- 			if (cs_l) {
--				printk(KERN_DEBUG "set_cr0: #GP, start paging "
--				       "in long mode while CS.L == 1\n");
- 				kvm_inject_gp(vcpu, 0);
- 				return;
- 
-@@ -338,8 +329,6 @@ void kvm_set_cr0(struct kvm_vcpu *vcpu,
- 		} else
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 14c44ec..f425a2b 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4575,9 +4575,13 @@ recheck:
+ 		 * Do not allow realtime tasks into groups that have no runtime
+ 		 * assigned.
+ 		 */
++		rcu_read_lock();
+ 		if (rt_bandwidth_enabled() && rt_policy(policy) &&
+-				task_group(p)->rt_bandwidth.rt_runtime == 0)
++				task_group(p)->rt_bandwidth.rt_runtime == 0) {
++			rcu_read_unlock();
+ 			return -EPERM;
++		}
++		rcu_read_unlock();
  #endif
- 		if (is_pae(vcpu) && !load_pdptrs(vcpu, vcpu->arch.cr3)) {
--			printk(KERN_DEBUG "set_cr0: #GP, pdptrs "
--			       "reserved bits\n");
- 			kvm_inject_gp(vcpu, 0);
- 			return;
- 		}
-@@ -366,28 +355,23 @@ void kvm_set_cr4(struct kvm_vcpu *vcpu,
- 	unsigned long pdptr_bits = X86_CR4_PGE | X86_CR4_PSE | X86_CR4_PAE;
  
- 	if (cr4 & CR4_RESERVED_BITS) {
--		printk(KERN_DEBUG "set_cr4: #GP, reserved bits\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
- 
- 	if (is_long_mode(vcpu)) {
- 		if (!(cr4 & X86_CR4_PAE)) {
--			printk(KERN_DEBUG "set_cr4: #GP, clearing PAE while "
--			       "in long mode\n");
- 			kvm_inject_gp(vcpu, 0);
- 			return;
- 		}
- 	} else if (is_paging(vcpu) && (cr4 & X86_CR4_PAE)
- 		   && ((cr4 ^ old_cr4) & pdptr_bits)
- 		   && !load_pdptrs(vcpu, vcpu->arch.cr3)) {
--		printk(KERN_DEBUG "set_cr4: #GP, pdptrs reserved bits\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
- 
- 	if (cr4 & X86_CR4_VMXE) {
--		printk(KERN_DEBUG "set_cr4: #GP, setting VMXE\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
-@@ -408,21 +392,16 @@ void kvm_set_cr3(struct kvm_vcpu *vcpu,
- 
- 	if (is_long_mode(vcpu)) {
- 		if (cr3 & CR3_L_MODE_RESERVED_BITS) {
--			printk(KERN_DEBUG "set_cr3: #GP, reserved bits\n");
- 			kvm_inject_gp(vcpu, 0);
- 			return;
- 		}
- 	} else {
- 		if (is_pae(vcpu)) {
- 			if (cr3 & CR3_PAE_RESERVED_BITS) {
--				printk(KERN_DEBUG
--				       "set_cr3: #GP, reserved bits\n");
- 				kvm_inject_gp(vcpu, 0);
- 				return;
- 			}
- 			if (is_paging(vcpu) && !load_pdptrs(vcpu, cr3)) {
--				printk(KERN_DEBUG "set_cr3: #GP, pdptrs "
--				       "reserved bits\n");
- 				kvm_inject_gp(vcpu, 0);
- 				return;
- 			}
-@@ -454,7 +433,6 @@ EXPORT_SYMBOL_GPL(kvm_set_cr3);
- void kvm_set_cr8(struct kvm_vcpu *vcpu, unsigned long cr8)
- {
- 	if (cr8 & CR8_RESERVED_BITS) {
--		printk(KERN_DEBUG "set_cr8: #GP, reserved bits 0x%lx\n", cr8);
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
-@@ -508,15 +486,12 @@ static u32 emulated_msrs[] = {
- static void set_efer(struct kvm_vcpu *vcpu, u64 efer)
- {
- 	if (efer & efer_reserved_bits) {
--		printk(KERN_DEBUG "set_efer: 0x%llx #GP, reserved bits\n",
--		       efer);
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
- 
- 	if (is_paging(vcpu)
- 	    && (vcpu->arch.shadow_efer & EFER_LME) != (efer & EFER_LME)) {
--		printk(KERN_DEBUG "set_efer: #GP, change LME while paging\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
-@@ -526,7 +501,6 @@ static void set_efer(struct kvm_vcpu *vc
- 
- 		feat = kvm_find_cpuid_entry(vcpu, 0x80000001, 0);
- 		if (!feat || !(feat->edx & bit(X86_FEATURE_FXSR_OPT))) {
--			printk(KERN_DEBUG "set_efer: #GP, enable FFXSR w/o CPUID capability\n");
- 			kvm_inject_gp(vcpu, 0);
- 			return;
- 		}
-@@ -537,7 +511,6 @@ static void set_efer(struct kvm_vcpu *vc
- 
- 		feat = kvm_find_cpuid_entry(vcpu, 0x80000001, 0);
- 		if (!feat || !(feat->ecx & bit(X86_FEATURE_SVM))) {
--			printk(KERN_DEBUG "set_efer: #GP, enable SVM w/o SVM\n");
- 			kvm_inject_gp(vcpu, 0);
- 			return;
- 		}
-
+ 		retval = security_task_setscheduler(p, policy, param);
+-- 
+1.7.0
 
