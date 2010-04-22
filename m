@@ -1,115 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107Ab0DVOZT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 10:25:19 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42413 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754875Ab0DVOZR convert rfc822-to-8bit (ORCPT
+	id S1755165Ab0DVO0n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 10:26:43 -0400
+Received: from exhub016-4.exch016.msoutlookonline.net ([207.5.72.225]:11513
+	"EHLO EXHUB016-4.exch016.msoutlookonline.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754875Ab0DVO0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 10:25:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UFfqXLGblFZebWsgGUTE3IW/BF0Otyba3xpf1grgZvO3e0D1vdgsh455aURw8zTDPZ
-         GJdz9QIL54UszCH5FB0+8r9PeV0ZINkasb+7w0lFrSOxpRUwEqRGQWy8HZGYEcBqkpiC
-         vqE6hXSFaIv7JMnOTVQ5UgHWPhxSzGchaOy1c=
+	Thu, 22 Apr 2010 10:26:42 -0400
+Message-ID: <4BD05C9C.9020101@cfl.rr.com>
+Date: Thu, 22 Apr 2010 10:26:36 -0400
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100422141404.GA30306@csn.ul.ie>
-References: <alpine.DEB.2.00.1004211004360.4959@router.home>
-	 <alpine.DEB.2.00.1004211027120.4959@router.home>
-	 <20100421153421.GM30306@csn.ul.ie>
-	 <alpine.DEB.2.00.1004211038020.4959@router.home>
-	 <20100422092819.GR30306@csn.ul.ie>
-	 <20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com>
-	 <x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com>
-	 <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100422141404.GA30306@csn.ul.ie>
-Date: Thu, 22 Apr 2010 23:18:14 +0900
-Message-ID: <p2y28c262361004220718m3a5e3e2ekee1fef7ebdae8e73@mail.gmail.com>
-Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of PageSwapCache 
-	pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Jamie Lokier <jamie@shareable.org>
+CC: linux-fsdevel@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: readahead on directories
+References: <4BCC7C05.8000803@cfl.rr.com> <20100421004434.GA27420@shareable.org> <4BCF123C.6010400@cfl.rr.com> <20100421161211.GC27575@shareable.org> <4BCF3FAE.7090206@cfl.rr.com> <20100421202209.GV27575@shareable.org> <4BCF6731.1070404@cfl.rr.com> <20100421220612.GD27575@shareable.org>
+In-Reply-To: <20100421220612.GD27575@shareable.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 11:14 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> On Thu, Apr 22, 2010 at 07:51:53PM +0900, KAMEZAWA Hiroyuki wrote:
->> On Thu, 22 Apr 2010 19:31:06 +0900
->> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->>
->> > On Thu, 22 Apr 2010 19:13:12 +0900
->> > Minchan Kim <minchan.kim@gmail.com> wrote:
->> >
->> > > On Thu, Apr 22, 2010 at 6:46 PM, KAMEZAWA Hiroyuki
->> > > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> >
->> > > > Hmm..in my test, the case was.
->> > > >
->> > > > Before try_to_unmap:
->> > > >        mapcount=1, SwapCache, remap_swapcache=1
->> > > > After remap
->> > > >        mapcount=0, SwapCache, rc=0.
->> > > >
->> > > > So, I think there may be some race in rmap_walk() and vma handling or
->> > > > anon_vma handling. migration_entry isn't found by rmap_walk.
->> > > >
->> > > > Hmm..it seems this kind patch will be required for debug.
->> > >
->>
->> Ok, here is my patch for _fix_. But still testing...
->> Running well at least for 30 minutes, where I can see bug in 10minutes.
->> But this patch is too naive. please think about something better fix.
->>
->> ==
->> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>
->> At adjust_vma(), vma's start address and pgoff is updated under
->> write lock of mmap_sem. This means the vma's rmap information
->> update is atoimic only under read lock of mmap_sem.
->>
->>
->> Even if it's not atomic, in usual case, try_to_ummap() etc...
->> just fails to decrease mapcount to be 0. no problem.
->>
->> But at page migration's rmap_walk(), it requires to know all
->> migration_entry in page tables and recover mapcount.
->>
->> So, this race in vma's address is critical. When rmap_walk meet
->> the race, rmap_walk will mistakenly get -EFAULT and don't call
->> rmap_one(). This patch adds a lock for vma's rmap information.
->> But, this is _very slow_.
->
-> Ok wow. That is exceptionally well-spotted. This looks like a proper bug
-> that compaction exposes as opposed to a bug that compaction introduces.
->
->> We need something sophisitcated, light-weight update for this..
->>
->
-> In the event the VMA is backed by a file, the mapping i_mmap_lock is taken for
-> the duration of the update and is  taken elsewhere where the VMA information
-> is read such as rmap_walk_file()
->
-> In the event the VMA is anon, vma_adjust currently talks no locks and your
-> patch introduces a new one but why not use the anon_vma lock here? Am I
-> missing something that requires the new lock?
+On 4/21/2010 6:06 PM, Jamie Lokier wrote:
+> Why am I reading all over the place that Linux AIO only works with O_DIRECT?
+> Is it out of date? :-)
 
-rmap_walk_anon doesn't hold vma's anon_vma->lock.
-It holds page->anon_vma->lock.
+Dunno, where did you read that?  If you are using O_DIRECT then you
+really should be using aio or you will suffer a pretty heavy performance
+loss from all of the sleeping, but strictly speaking the two do not have
+to be used together.
 
--- 
-Kind regards,
-Minchan Kim
+Personally I wish there was another flag besides O_DIRECT that split the
+two semantics O_DIRECT now carries.  Right now it FORCES the cache to be
+bypassed and the IO to go to the disk, even if it's already in the
+cache.  It would be nice if you could ask a read to done such that IF
+it's already cached, then copy it from there, otherwise, send the read
+direct down to the disk to dma into my buffer.
+
+> To read an indirect block, you have to allocate memory: another
+> callback after you've slept waiting for memory to be freed up.
+
+You allocate the cache pages in the initial readahead() before
+returning.  No need to do it from the bio completion callback.
+
+> Then you allocate a request: another callback while you wait for the
+> request queue to drain.
+
+Same thing.  Get everything set up and ready to go in readahead() and
+the only thing that has to wait on the indirect block to be read is
+filling in the block addresses of the bios and submitting them.  This
+last part can be done in the bio completion callback.
+
+As an added optimization, you only need to allocate one bio in
+readahead() since it is likely that only one will be needed if all of
+the blocks are sequential.  Then the callback can use the gfp_mask flags
+to prevent allocations from sleeping and if more can not be allocated,
+then you sumbit what you've got and when THAT completes, you try to
+build more requests.
+
+> Plus every little mutex / rwlock is another place where you need those
+> callback functions.  We don't even _have_ an async mutex facility in
+> the kernel.  So every user of a mutex has to be changed to use
+> waitqueues or something.  No more lockdep checking, no more RT
+> priority inheritance.
+
+Yes, it looks like ext4_get_blocks() does use mutexes so it can't be
+called from bh context.  Perhaps it could be changed to avoid this if
+possible and if it must, return -EWOULDBLOCK and the completion callback
+would have to punt to a work queue to retry.  In the common case though,
+it looks like it would be possible for ext4_get_blocks() to avoid using
+mutexes and just parse the newly read indirect block and return, then
+the completion callback can queue its bios and be done.
+
+> A compromise where just a few synchronisation points are made async is
+> ok.  But then it's a compromise... so you still need a multi-threaded
+> caller to keep the queues full in all situations.
+
+Right, which tends to negate most of the gains of having any async at
+all.  For example, if we have multiple threads calling readahead()
+instead of just one since it may sleep reading an indirect block, then
+we can end up with this:
+
+Thread 1 queues reads of the first 12 blocks of the first file, and the
+indirect block.  Thread then sleeps waiting for the indirect block.
+
+Thread 2 queues reads of the first 12 blocks of the second file and its
+indirect block.  Thread then sleeps waiting for the indirect block.
+
+Now we have the disk read 12 contiguous blocks of data + indirect from
+the first file, then 12 contiguous blocks of data + indirect from the
+second file, which are further down the disk, so the head has to seek
+forward.  Then thread 1 wakes up and parses the indirect block and
+queues reading of the subsequent sectors, which now requires a backwards
+seek since we skipped reading those sectors to move ahead to the second
+file.
+
+So in our attempt to use threads to keep the queue full, we have
+introduced more seeking, which tends to have a higher penalty than just
+using a single thread and having the queue drain and the disk idle for a
+few ns while we wake up and parse the indirect block.
+
+Come to think of it, I guess that is a good argument NOT to make
+readahead() fully async.
+
+> Generically is not likely. It's not about blocking, it's about the
+> fact that directories don't always consist of data blocks on the store
+> organised similarly to a file.  For example NFS, CIFS, or (I'm not
+> sure), maybe even reiserfs/btrfs?
+
+The contents are stored in blocks somewhere.  It doesn't really matter
+how or where as long as the fs figures out what it will need to resolve
+names in that directory and reads that into the cache.
