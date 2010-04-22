@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab0DVOHY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 10:07:24 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41293 "EHLO
+	id S1755190Ab0DVOHQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 10:07:16 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41275 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755109Ab0DVOHO (ORCPT
+	with ESMTP id S1754787Ab0DVOHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Apr 2010 10:07:14 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: <hpa@zytor.com>, <mingo@elte.hu>, <tglx@linutronix.de>
 Cc: <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-       Frank Arnold <frank.arnold@amd.com>,
-       Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 3/5] x86, cacheinfo: Reorganize AMD L3 cache structure
-Date: Thu, 22 Apr 2010 16:07:00 +0200
-Message-Id: <1271945222-5283-4-git-send-email-bp@amd64.org>
+       Frank Arnold <frank.arnold@amd.com>
+Subject: [PATCH 2/5] x86, cacheinfo: Turn off L3 cache index disable feature in virtualized environments
+Date: Thu, 22 Apr 2010 16:06:59 +0200
+Message-Id: <1271945222-5283-3-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1271945222-5283-1-git-send-email-bp@amd64.org>
 References: <1271945222-5283-1-git-send-email-bp@amd64.org>
@@ -22,160 +21,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Frank Arnold <frank.arnold@amd.com>
 
-Add a struct representing L3 cache attributes (subcache sizes and
-indices count) and move the respective members out of _cpuid4_info.
-Also, stash the struct pci_dev ptr into the struct simplifying the code
-even more.
+When running a quest kernel on xen we get:
 
-There should be no functionality change resulting from this patch except
-slightly slimming the _cpuid4_info per-cpu vars.
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+IP: [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
+PGD 0
+Oops: 0000 [#1] SMP
+last sysfs file:
+CPU 0
+Modules linked in:
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Pid: 0, comm: swapper Tainted: G        W  2.6.34-rc3 #1 /HVM domU
+RIP: 0010:[<ffffffff8142f2fb>]  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x
+2ca/0x3df
+RSP: 0018:ffff880002203e08  EFLAGS: 00010046
+RAX: 0000000000000000 RBX: 0000000000000003 RCX: 0000000000000060
+RDX: 0000000000000000 RSI: 0000000000000040 RDI: 0000000000000000
+RBP: ffff880002203ed8 R08: 00000000000017c0 R09: ffff880002203e38
+R10: ffff8800023d5d40 R11: ffffffff81a01e28 R12: ffff880187e6f5c0
+R13: ffff880002203e34 R14: ffff880002203e58 R15: ffff880002203e68
+FS:  0000000000000000(0000) GS:ffff880002200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000038 CR3: 0000000001a3c000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a44020)
+Stack:
+ ffffffff810d7ecb ffff880002203e20 ffffffff81059140 ffff880002203e30
+<0> ffffffff810d7ec9 0000000002203e40 000000000050d140 ffff880002203e70
+<0> 0000000002008140 0000000000000086 ffff880040020140 ffffffff81068b8b
+Call Trace:
+ <IRQ>
+ [<ffffffff810d7ecb>] ? sync_supers_timer_fn+0x0/0x1c
+ [<ffffffff81059140>] ? mod_timer+0x23/0x25
+ [<ffffffff810d7ec9>] ? arm_supers_timer+0x34/0x36
+ [<ffffffff81068b8b>] ? hrtimer_get_next_event+0xa7/0xc3
+ [<ffffffff81058e85>] ? get_next_timer_interrupt+0x19a/0x20d
+ [<ffffffff8142fa23>] get_cpu_leaves+0x5c/0x232
+ [<ffffffff8106a7b1>] ? sched_clock_local+0x1c/0x82
+ [<ffffffff8106a9a0>] ? sched_clock_tick+0x75/0x7a
+ [<ffffffff8107748c>] generic_smp_call_function_single_interrupt+0xae/0xd0
+ [<ffffffff8101f6ef>] smp_call_function_single_interrupt+0x18/0x27
+ [<ffffffff8100a773>] call_function_single_interrupt+0x13/0x20
+ <EOI>
+ [<ffffffff8143c468>] ? notifier_call_chain+0x14/0x63
+ [<ffffffff810295c6>] ? native_safe_halt+0xc/0xd
+ [<ffffffff810114eb>] ? default_idle+0x36/0x53
+ [<ffffffff81008c22>] cpu_idle+0xaa/0xe4
+ [<ffffffff81423a9a>] rest_init+0x7e/0x80
+ [<ffffffff81b10dd2>] start_kernel+0x40e/0x419
+ [<ffffffff81b102c8>] x86_64_start_reservations+0xb3/0xb7
+ [<ffffffff81b103c4>] x86_64_start_kernel+0xf8/0x107
+Code: 14 d5 40 ff ae 81 8b 14 02 31 c0 3b 15 47 1c 8b 00 7d 0e 48 8b 05 36 1c 8b
+ 00 48 63 d2 48 8b 04 d0 c7 85 5c ff ff ff 00 00 00 00 <8b> 70 38 48 8d 8d 5c ff
+ ff ff 48 8b 78 10 ba c4 01 00 00 e8 eb
+RIP  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
+ RSP <ffff880002203e08>
+CR2: 0000000000000038
+---[ end trace a7919e7f17c0a726 ]---
+
+The L3 cache index disable feature of AMD CPUs has to be disabled if the
+kernel is running as guest on top of a hypervisor because northbridge
+devices are not available to the guest. Currently, this fixes a boot
+crash on top of Xen. In the future this will become an issue on KVM as
+well.
+
+Check if northbridge devices are present and do not enable the feature
+if there are none.
+
+Signed-off-by: Frank Arnold <frank.arnold@amd.com>
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/kernel/cpu/intel_cacheinfo.c |   53 ++++++++++++++++++++-------------
- 1 files changed, 32 insertions(+), 21 deletions(-)
+ arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 5ab14c8..ff663ca 100644
+index acfb083..5ab14c8 100644
 --- a/arch/x86/kernel/cpu/intel_cacheinfo.c
 +++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -148,13 +148,19 @@ union _cpuid4_leaf_ecx {
- 	u32 full;
- };
+@@ -344,6 +344,10 @@ amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
+ 	     boot_cpu_data.x86_mask < 0x1)
+ 			return;
  
-+struct amd_l3_cache {
-+	struct	 pci_dev *dev;
-+	bool	 can_disable;
-+	unsigned indices;
-+	u8	 subcaches[4];
-+};
-+
- struct _cpuid4_info {
- 	union _cpuid4_leaf_eax eax;
- 	union _cpuid4_leaf_ebx ebx;
- 	union _cpuid4_leaf_ecx ecx;
- 	unsigned long size;
--	bool can_disable;
--	unsigned int l3_indices;
-+	struct amd_l3_cache *l3;
- 	DECLARE_BITMAP(shared_cpu_map, NR_CPUS);
- };
- 
-@@ -164,8 +170,7 @@ struct _cpuid4_info_regs {
- 	union _cpuid4_leaf_ebx ebx;
- 	union _cpuid4_leaf_ecx ecx;
- 	unsigned long size;
--	bool can_disable;
--	unsigned int l3_indices;
-+	struct amd_l3_cache *l3;
- };
- 
- unsigned short			num_cache_leaves;
-@@ -302,7 +307,7 @@ struct _cache_attr {
- };
- 
- #ifdef CONFIG_CPU_SUP_AMD
--static unsigned int __cpuinit amd_calc_l3_indices(void)
-+static void __cpuinit amd_calc_l3_indices(struct amd_l3_cache *l3)
- {
- 	/*
- 	 * We're called over smp_call_function_single() and therefore
-@@ -317,12 +322,14 @@ static unsigned int __cpuinit amd_calc_l3_indices(void)
- 	pci_read_config_dword(dev, 0x1C4, &val);
- 
- 	/* calculate subcache sizes */
--	sc0 = !(val & BIT(0));
--	sc1 = !(val & BIT(4));
--	sc2 = !(val & BIT(8))  + !(val & BIT(9));
--	sc3 = !(val & BIT(12)) + !(val & BIT(13));
-+	l3->subcaches[0] = sc0 = !(val & BIT(0));
-+	l3->subcaches[1] = sc1 = !(val & BIT(4));
-+	l3->subcaches[2] = sc2 = !(val & BIT(8))  + !(val & BIT(9));
-+	l3->subcaches[3] = sc3 = !(val & BIT(12)) + !(val & BIT(13));
-+
-+	l3->indices = (max(max(max(sc0, sc1), sc2), sc3) << 10) - 1;
- 
--	return (max(max(max(sc0, sc1), sc2), sc3) << 10) - 1;
-+	l3->dev = dev;
- }
- 
- static void __cpuinit
-@@ -348,19 +355,23 @@ amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
- 	if (num_k8_northbridges == 0)
- 		return;
- 
--	this_leaf->can_disable = true;
--	this_leaf->l3_indices  = amd_calc_l3_indices();
-+	this_leaf->l3 = kzalloc(sizeof(struct amd_l3_cache), GFP_ATOMIC);
-+	if (!this_leaf->l3) {
-+		printk(KERN_WARNING "Error allocating L3 struct\n");
++	/* not in virtualized environments */
++	if (num_k8_northbridges == 0)
 +		return;
-+	}
 +
-+	this_leaf->l3->can_disable = true;
-+	amd_calc_l3_indices(this_leaf->l3);
+ 	this_leaf->can_disable = true;
+ 	this_leaf->l3_indices  = amd_calc_l3_indices();
  }
- 
- static ssize_t show_cache_disable(struct _cpuid4_info *this_leaf, char *buf,
- 				  unsigned int index)
- {
--	int cpu = cpumask_first(to_cpumask(this_leaf->shared_cpu_map));
--	int node = amd_get_nb_id(cpu);
--	struct pci_dev *dev = node_to_k8_nb_misc(node);
-+	struct pci_dev *dev = this_leaf->l3->dev;
- 	unsigned int reg = 0;
- 
--	if (!this_leaf->can_disable)
-+	if (!this_leaf->l3 || !this_leaf->l3->can_disable)
- 		return -EINVAL;
- 
- 	if (!dev)
-@@ -382,15 +393,14 @@ SHOW_CACHE_DISABLE(1)
- static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
- 	const char *buf, size_t count, unsigned int index)
- {
-+	struct pci_dev *dev = this_leaf->l3->dev;
- 	int cpu = cpumask_first(to_cpumask(this_leaf->shared_cpu_map));
--	int node = amd_get_nb_id(cpu);
--	struct pci_dev *dev = node_to_k8_nb_misc(node);
- 	unsigned long val = 0;
- 
- #define SUBCACHE_MASK	(3UL << 20)
- #define SUBCACHE_INDEX	0xfff
- 
--	if (!this_leaf->can_disable)
-+	if (!this_leaf->l3 || !this_leaf->l3->can_disable)
- 		return -EINVAL;
- 
- 	if (!capable(CAP_SYS_ADMIN))
-@@ -404,7 +414,7 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
- 
- 	/* do not allow writes outside of allowed bits */
- 	if ((val & ~(SUBCACHE_MASK | SUBCACHE_INDEX)) ||
--	    ((val & SUBCACHE_INDEX) > this_leaf->l3_indices))
-+	    ((val & SUBCACHE_INDEX) > this_leaf->l3->indices))
- 		return -EINVAL;
- 
- 	val |= BIT(30);
-@@ -708,6 +718,7 @@ static void __cpuinit free_cache_attributes(unsigned int cpu)
- 	for (i = 0; i < num_cache_leaves; i++)
- 		cache_remove_shared_cpu_map(cpu, i);
- 
-+	kfree(per_cpu(ici_cpuid4_info, cpu)->l3);
- 	kfree(per_cpu(ici_cpuid4_info, cpu));
- 	per_cpu(ici_cpuid4_info, cpu) = NULL;
- }
-@@ -992,7 +1003,7 @@ static int __cpuinit cache_add_dev(struct sys_device * sys_dev)
- 
- 		this_leaf = CPUID4_INFO_IDX(cpu, i);
- 
--		if (this_leaf->can_disable)
-+		if (this_leaf->l3 && this_leaf->l3->can_disable)
- 			ktype_cache.default_attrs = default_l3_attrs;
- 		else
- 			ktype_cache.default_attrs = default_attrs;
 -- 
 1.7.1.rc1
 
