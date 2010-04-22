@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab0DVUoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:44:14 -0400
-Received: from kroah.org ([198.145.64.141]:37260 "EHLO coco.kroah.org"
+	id S1758663Ab0DVUoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:44:09 -0400
+Received: from kroah.org ([198.145.64.141]:37266 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756070Ab0DVT1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755510Ab0DVT1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Apr 2010 15:27:47 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:09 2010
-Message-Id: <20100422190909.720368125@kvm.kroah.org>
+Message-Id: <20100422190909.805502390@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:07:57 -0700
+Date: Thu, 22 Apr 2010 12:07:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, xfs@oss.sgi.com,
-       Dave Chinner <david@fromorbit.com>, Alex Elder <aelder@sgi.com>
-Subject: [026/197] xfs: Non-blocking inode locking in IO completion
+       Christoph Hellwig <hch@lst.de>, Alex Elder <aelder@sgi.com>
+Subject: [027/197] xfs: fix locking for inode cache radix tree tag updates
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,219 +25,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <david@fromorbit.com>
 
-commit 77d7a0c2eeb285c9069e15396703d0cb9690ac50 upstream
+From: Christoph Hellwig <hch@infradead.org>
 
-The introduction of barriers to loop devices has created a new IO
-order completion dependency that XFS does not handle. The loop
-device implements barriers using fsync and so turns a log IO in the
-XFS filesystem on the loop device into a data IO in the backing
-filesystem. That is, the completion of log IOs in the loop
-filesystem are now dependent on completion of data IO in the backing
-filesystem.
+commit f1f724e4b523d444c5a598d74505aefa3d6844d2 upstream
 
-This can cause deadlocks when a flush daemon issues a log force with
-an inode locked because the IO completion of IO on the inode is
-blocked by the inode lock. This in turn prevents further data IO
-completion from occuring on all XFS filesystems on that CPU (due to
-the shared nature of the completion queues). This then prevents the
-log IO from completing because the log is waiting for data IO
-completion as well.
+The radix-tree code requires it's users to serialize tag updates
+against other updates to the tree.  While XFS protects tag updates
+against each other it does not serialize them against updates of the
+tree contents, which can lead to tag corruption.  Fix the inode
+cache to always take pag_ici_lock in exclusive mode when updating
+radix tree tags.
 
-The fix for this new completion order dependency issue is to make
-the IO completion inode locking non-blocking. If the inode lock
-can't be grabbed, simply requeue the IO completion back to the work
-queue so that it can be processed later. This prevents the
-completion queue from being blocked and allows data IO completion on
-other inodes to proceed, hence avoiding completion order dependent
-deadlocks.
-
-Signed-off-by: Dave Chinner <david@fromorbit.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Patrick Schreurs <patrick@news-service.com>
+Tested-by: Patrick Schreurs <patrick@news-service.com>
 Signed-off-by: Alex Elder <aelder@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/xfs/linux-2.6/xfs_aops.c |  118 ++++++++++++++++++++++++++++++--------------
- 1 file changed, 82 insertions(+), 36 deletions(-)
+ fs/xfs/linux-2.6/xfs_sync.c |    4 ++--
+ fs/xfs/xfs_iget.c           |   19 +++++++++++++------
+ 2 files changed, 15 insertions(+), 8 deletions(-)
 
---- a/fs/xfs/linux-2.6/xfs_aops.c
-+++ b/fs/xfs/linux-2.6/xfs_aops.c
-@@ -204,14 +204,17 @@ xfs_ioend_new_eof(
+--- a/fs/xfs/linux-2.6/xfs_sync.c
++++ b/fs/xfs/linux-2.6/xfs_sync.c
+@@ -692,12 +692,12 @@ xfs_inode_set_reclaim_tag(
+ 	xfs_mount_t	*mp = ip->i_mount;
+ 	xfs_perag_t	*pag = xfs_get_perag(mp, ip->i_ino);
+ 
+-	read_lock(&pag->pag_ici_lock);
++	write_lock(&pag->pag_ici_lock);
+ 	spin_lock(&ip->i_flags_lock);
+ 	__xfs_inode_set_reclaim_tag(pag, ip);
+ 	__xfs_iflags_set(ip, XFS_IRECLAIMABLE);
+ 	spin_unlock(&ip->i_flags_lock);
+-	read_unlock(&pag->pag_ici_lock);
++	write_unlock(&pag->pag_ici_lock);
+ 	xfs_put_perag(mp, pag);
  }
  
- /*
-- * Update on-disk file size now that data has been written to disk.
-- * The current in-memory file size is i_size.  If a write is beyond
-- * eof i_new_size will be the intended file size until i_size is
-- * updated.  If this write does not extend all the way to the valid
-- * file size then restrict this update to the end of the write.
-+ * Update on-disk file size now that data has been written to disk.  The
-+ * current in-memory file size is i_size.  If a write is beyond eof i_new_size
-+ * will be the intended file size until i_size is updated.  If this write does
-+ * not extend all the way to the valid file size then restrict this update to
-+ * the end of the write.
-+ *
-+ * This function does not block as blocking on the inode lock in IO completion
-+ * can lead to IO completion order dependency deadlocks.. If it can't get the
-+ * inode ilock it will return EAGAIN. Callers must handle this.
-  */
--
--STATIC void
-+STATIC int
- xfs_setfilesize(
- 	xfs_ioend_t		*ioend)
- {
-@@ -222,9 +225,11 @@ xfs_setfilesize(
- 	ASSERT(ioend->io_type != IOMAP_READ);
+--- a/fs/xfs/xfs_iget.c
++++ b/fs/xfs/xfs_iget.c
+@@ -228,13 +228,12 @@ xfs_iget_cache_hit(
+ 		xfs_itrace_exit_tag(ip, "xfs_iget.alloc");
  
- 	if (unlikely(ioend->io_error))
--		return;
-+		return 0;
-+
-+	if (!xfs_ilock_nowait(ip, XFS_ILOCK_EXCL))
-+		return EAGAIN;
+ 		/*
+-		 * We need to set XFS_INEW atomically with clearing the
+-		 * reclaimable tag so that we do have an indicator of the
+-		 * inode still being initialized.
++		 * We need to set XFS_IRECLAIM to prevent xfs_reclaim_inode
++		 * from stomping over us while we recycle the inode.  We can't
++		 * clear the radix tree reclaimable tag yet as it requires
++		 * pag_ici_lock to be held exclusive.
+ 		 */
+-		ip->i_flags |= XFS_INEW;
+-		ip->i_flags &= ~XFS_IRECLAIMABLE;
+-		__xfs_inode_clear_reclaim_tag(mp, pag, ip);
++		ip->i_flags |= XFS_IRECLAIM;
  
--	xfs_ilock(ip, XFS_ILOCK_EXCL);
- 	isize = xfs_ioend_new_eof(ioend);
- 	if (isize) {
- 		ip->i_d.di_size = isize;
-@@ -232,6 +237,28 @@ xfs_setfilesize(
- 	}
- 
- 	xfs_iunlock(ip, XFS_ILOCK_EXCL);
-+	return 0;
-+}
-+
-+/*
-+ * Schedule IO completion handling on a xfsdatad if this was
-+ * the final hold on this ioend. If we are asked to wait,
-+ * flush the workqueue.
-+ */
-+STATIC void
-+xfs_finish_ioend(
-+	xfs_ioend_t	*ioend,
-+	int		wait)
-+{
-+	if (atomic_dec_and_test(&ioend->io_remaining)) {
-+		struct workqueue_struct *wq;
-+
-+		wq = (ioend->io_type == IOMAP_UNWRITTEN) ?
-+			xfsconvertd_workqueue : xfsdatad_workqueue;
-+		queue_work(wq, &ioend->io_work);
-+		if (wait)
-+			flush_workqueue(wq);
-+	}
- }
- 
- /*
-@@ -243,9 +270,23 @@ xfs_end_bio_delalloc(
- {
- 	xfs_ioend_t		*ioend =
- 		container_of(work, xfs_ioend_t, io_work);
-+	int			error;
- 
--	xfs_setfilesize(ioend);
--	xfs_destroy_ioend(ioend);
-+	/*
-+	 * If we didn't complete processing of the ioend, requeue it to the
-+	 * tail of the workqueue for another attempt later. Otherwise destroy
-+	 * it.
-+	 */
-+	error = xfs_setfilesize(ioend);
-+	if (error == EAGAIN) {
-+		atomic_inc(&ioend->io_remaining);
-+		xfs_finish_ioend(ioend, 0);
-+		/* ensure we don't spin on blocked ioends */
-+		delay(1);
-+	} else {
-+		ASSERT(!error);
-+		xfs_destroy_ioend(ioend);
-+	}
- }
- 
- /*
-@@ -257,9 +298,23 @@ xfs_end_bio_written(
- {
- 	xfs_ioend_t		*ioend =
- 		container_of(work, xfs_ioend_t, io_work);
-+	int			error;
- 
--	xfs_setfilesize(ioend);
--	xfs_destroy_ioend(ioend);
-+	/*
-+	 * If we didn't complete processing of the ioend, requeue it to the
-+	 * tail of the workqueue for another attempt later. Otherwise destroy
-+	 * it.
-+	 */
-+	error = xfs_setfilesize(ioend);
-+	if (error == EAGAIN) {
-+		atomic_inc(&ioend->io_remaining);
-+		xfs_finish_ioend(ioend, 0);
-+		/* ensure we don't spin on blocked ioends */
-+		delay(1);
-+	} else {
-+		ASSERT(!error);
-+		xfs_destroy_ioend(ioend);
-+	}
- }
- 
- /*
-@@ -279,13 +334,25 @@ xfs_end_bio_unwritten(
- 	size_t			size = ioend->io_size;
- 
- 	if (likely(!ioend->io_error)) {
-+		int	error;
- 		if (!XFS_FORCED_SHUTDOWN(ip->i_mount)) {
--			int error;
- 			error = xfs_iomap_write_unwritten(ip, offset, size);
- 			if (error)
- 				ioend->io_error = error;
+ 		spin_unlock(&ip->i_flags_lock);
+ 		read_unlock(&pag->pag_ici_lock);
+@@ -253,7 +252,15 @@ xfs_iget_cache_hit(
+ 			__xfs_inode_set_reclaim_tag(pag, ip);
+ 			goto out_error;
  		}
--		xfs_setfilesize(ioend);
-+		/*
-+		 * If we didn't complete processing of the ioend, requeue it to the
-+		 * tail of the workqueue for another attempt later. Otherwise destroy
-+		 * it.
-+		 */
-+		error = xfs_setfilesize(ioend);
-+		if (error == EAGAIN) {
-+			atomic_inc(&ioend->io_remaining);
-+			xfs_finish_ioend(ioend, 0);
-+			/* ensure we don't spin on blocked ioends */
-+			delay(1);
-+			return;
-+		}
- 	}
- 	xfs_destroy_ioend(ioend);
- }
-@@ -304,27 +371,6 @@ xfs_end_bio_read(
- }
- 
- /*
-- * Schedule IO completion handling on a xfsdatad if this was
-- * the final hold on this ioend. If we are asked to wait,
-- * flush the workqueue.
-- */
--STATIC void
--xfs_finish_ioend(
--	xfs_ioend_t	*ioend,
--	int		wait)
--{
--	if (atomic_dec_and_test(&ioend->io_remaining)) {
--		struct workqueue_struct *wq = xfsdatad_workqueue;
--		if (ioend->io_work.func == xfs_end_bio_unwritten)
--			wq = xfsconvertd_workqueue;
--
--		queue_work(wq, &ioend->io_work);
--		if (wait)
--			flush_workqueue(wq);
--	}
--}
--
--/*
-  * Allocate and initialise an IO completion structure.
-  * We need to track unwritten extent write completion here initially.
-  * We'll need to extend this for updating the ondisk inode size later
++
++		write_lock(&pag->pag_ici_lock);
++		spin_lock(&ip->i_flags_lock);
++		ip->i_flags &= ~(XFS_IRECLAIMABLE | XFS_IRECLAIM);
++		ip->i_flags |= XFS_INEW;
++		__xfs_inode_clear_reclaim_tag(mp, pag, ip);
+ 		inode->i_state = I_LOCK|I_NEW;
++		spin_unlock(&ip->i_flags_lock);
++		write_unlock(&pag->pag_ici_lock);
+ 	} else {
+ 		/* If the VFS inode is being torn down, pause and try again. */
+ 		if (!igrab(inode)) {
 
 
