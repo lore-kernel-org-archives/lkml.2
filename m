@@ -1,78 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757593Ab0DVTxG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:53:06 -0400
-Received: from kroah.org ([198.145.64.141]:40915 "EHLO coco.kroah.org"
+	id S1757562Ab0DVTvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:51:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56456 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756488Ab0DVT2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:42 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:15 2010
-Message-Id: <20100422190915.448262052@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:01 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Venki Pallipadi <venkatesh.pallipadi@intel.com>
-Subject: [090/197] x86: hpet: Make WARN_ON understandable
-In-Reply-To: <20100422191857.GA13268@kroah.com>
+	id S1757555Ab0DVTu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:50:56 -0400
+Message-ID: <4BD0A874.10806@redhat.com>
+Date: Thu, 22 Apr 2010 16:50:12 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Doug Thompson <dougthompson@xmission.com>,
+       Tim Small <tim@buttersideup.com>, bluesmoke-devel@lists.sourceforge.net,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/edac: Convert logging messages direct uses of
+ __FILE__ to %s, __FILE
+References: <1271824949.1730.254.camel@Joe-Laptop.home>
+In-Reply-To: <1271824949.1730.254.camel@Joe-Laptop.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+Joe Perches wrote:
+> Reduces text by eliminating multiple __FILE__ uses.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-------------------
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-From: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  drivers/edac/i5000_edac.c      |   20 ++++++++++----------
+>  drivers/edac/i5400_edac.c      |   20 ++++++++++----------
+>  drivers/edac/i82443bxgx_edac.c |   20 ++++++++++----------
+>  3 files changed, 30 insertions(+), 30 deletions(-)
+> 
+> diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
+> index adc10a2..996c1bd 100644
+> --- a/drivers/edac/i5000_edac.c
+> +++ b/drivers/edac/i5000_edac.c
+> @@ -774,7 +774,7 @@ static void i5000_clear_error(struct mem_ctl_info *mci)
+>  static void i5000_check_error(struct mem_ctl_info *mci)
+>  {
+>  	struct i5000_error_info info;
+> -	debugf4("MC%d: " __FILE__ ": %s()\n", mci->mc_idx, __func__);
+> +	debugf4("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
+>  	i5000_get_error_info(mci, &info);
+>  	i5000_process_error_info(mci, &info, 1);
+>  }
+> @@ -1353,8 +1353,8 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
+>  	int num_dimms_per_channel;
+>  	int num_csrows;
+>  
+> -	debugf0("MC: " __FILE__ ": %s(), pdev bus %u dev=0x%x fn=0x%x\n",
+> -		__func__,
+> +	debugf0("MC: %s: %s(), pdev bus %u dev=0x%x fn=0x%x\n",
+> +		__FILE__, __func__,
+>  		pdev->bus->number,
+>  		PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
+>  
+> @@ -1389,7 +1389,7 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
+>  		return -ENOMEM;
+>  
+>  	kobject_get(&mci->edac_mci_kobj);
+> -	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
+> +	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
+>  
+>  	mci->dev = &pdev->dev;	/* record ptr  to the generic device */
+>  
+> @@ -1432,8 +1432,8 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
+>  
+>  	/* add this new MC control structure to EDAC's list of MCs */
+>  	if (edac_mc_add_mc(mci)) {
+> -		debugf0("MC: " __FILE__
+> -			": %s(): failed edac_mc_add_mc()\n", __func__);
+> +		debugf0("MC: %s: %s(): failed edac_mc_add_mc()\n",
+> +			__FILE__, __func__);
+>  		/* FIXME: perhaps some code should go here that disables error
+>  		 * reporting if we just enabled it
+>  		 */
+> @@ -1478,7 +1478,7 @@ static int __devinit i5000_init_one(struct pci_dev *pdev,
+>  {
+>  	int rc;
+>  
+> -	debugf0("MC: " __FILE__ ": %s()\n", __func__);
+> +	debugf0("MC: %s: %s()\n", __FILE__, __func__);
+>  
+>  	/* wake up device */
+>  	rc = pci_enable_device(pdev);
+> @@ -1497,7 +1497,7 @@ static void __devexit i5000_remove_one(struct pci_dev *pdev)
+>  {
+>  	struct mem_ctl_info *mci;
+>  
+> -	debugf0(__FILE__ ": %s()\n", __func__);
+> +	debugf0("%s: %s()\n", __FILE__, __func__);
+>  
+>  	if (i5000_pci)
+>  		edac_pci_release_generic_ctl(i5000_pci);
+> @@ -1544,7 +1544,7 @@ static int __init i5000_init(void)
+>  {
+>  	int pci_rc;
+>  
+> -	debugf2("MC: " __FILE__ ": %s()\n", __func__);
+> +	debugf2("MC: %s: %s()\n", __FILE__, __func__);
+>  
+>         /* Ensure that the OPSTATE is set correctly for POLL or NMI */
+>         opstate_init();
+> @@ -1560,7 +1560,7 @@ static int __init i5000_init(void)
+>   */
+>  static void __exit i5000_exit(void)
+>  {
+> -	debugf2("MC: " __FILE__ ": %s()\n", __func__);
+> +	debugf2("MC: %s: %s()\n", __FILE__, __func__);
+>  	pci_unregister_driver(&i5000_driver);
+>  }
+>  
+> diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
+> index f99d106..010c1d6 100644
+> --- a/drivers/edac/i5400_edac.c
+> +++ b/drivers/edac/i5400_edac.c
+> @@ -694,7 +694,7 @@ static void i5400_clear_error(struct mem_ctl_info *mci)
+>  static void i5400_check_error(struct mem_ctl_info *mci)
+>  {
+>  	struct i5400_error_info info;
+> -	debugf4("MC%d: " __FILE__ ": %s()\n", mci->mc_idx, __func__);
+> +	debugf4("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
+>  	i5400_get_error_info(mci, &info);
+>  	i5400_process_error_info(mci, &info);
+>  }
+> @@ -1227,8 +1227,8 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
+>  	if (dev_idx >= ARRAY_SIZE(i5400_devs))
+>  		return -EINVAL;
+>  
+> -	debugf0("MC: " __FILE__ ": %s(), pdev bus %u dev=0x%x fn=0x%x\n",
+> -		__func__,
+> +	debugf0("MC: %s: %s(), pdev bus %u dev=0x%x fn=0x%x\n",
+> +		__FILE__, __func__,
+>  		pdev->bus->number,
+>  		PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
+>  
+> @@ -1256,7 +1256,7 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
+>  	if (mci == NULL)
+>  		return -ENOMEM;
+>  
+> -	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
+> +	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
+>  
+>  	mci->dev = &pdev->dev;	/* record ptr  to the generic device */
+>  
+> @@ -1299,8 +1299,8 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
+>  
+>  	/* add this new MC control structure to EDAC's list of MCs */
+>  	if (edac_mc_add_mc(mci)) {
+> -		debugf0("MC: " __FILE__
+> -			": %s(): failed edac_mc_add_mc()\n", __func__);
+> +		debugf0("MC: %s: %s(): failed edac_mc_add_mc()\n",
+> +			__FILE__, __func__);
+>  		/* FIXME: perhaps some code should go here that disables error
+>  		 * reporting if we just enabled it
+>  		 */
+> @@ -1344,7 +1344,7 @@ static int __devinit i5400_init_one(struct pci_dev *pdev,
+>  {
+>  	int rc;
+>  
+> -	debugf0("MC: " __FILE__ ": %s()\n", __func__);
+> +	debugf0("MC: %s: %s()\n", __FILE__, __func__);
+>  
+>  	/* wake up device */
+>  	rc = pci_enable_device(pdev);
+> @@ -1363,7 +1363,7 @@ static void __devexit i5400_remove_one(struct pci_dev *pdev)
+>  {
+>  	struct mem_ctl_info *mci;
+>  
+> -	debugf0(__FILE__ ": %s()\n", __func__);
+> +	debugf0("%s: %s()\n", __FILE__, __func__);
+>  
+>  	if (i5400_pci)
+>  		edac_pci_release_generic_ctl(i5400_pci);
+> @@ -1409,7 +1409,7 @@ static int __init i5400_init(void)
+>  {
+>  	int pci_rc;
+>  
+> -	debugf2("MC: " __FILE__ ": %s()\n", __func__);
+> +	debugf2("MC: %s: %s()\n", __FILE__, __func__);
+>  
+>  	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
+>  	opstate_init();
+> @@ -1425,7 +1425,7 @@ static int __init i5400_init(void)
+>   */
+>  static void __exit i5400_exit(void)
+>  {
+> -	debugf2("MC: " __FILE__ ": %s()\n", __func__);
+> +	debugf2("MC: %s: %s()\n", __FILE__, __func__);
+>  	pci_unregister_driver(&i5400_driver);
+>  }
+>  
+> diff --git a/drivers/edac/i82443bxgx_edac.c b/drivers/edac/i82443bxgx_edac.c
+> index 7f3884f..f3c2200 100644
+> --- a/drivers/edac/i82443bxgx_edac.c
+> +++ b/drivers/edac/i82443bxgx_edac.c
+> @@ -178,7 +178,7 @@ static void i82443bxgx_edacmc_check(struct mem_ctl_info *mci)
+>  {
+>  	struct i82443bxgx_edacmc_error_info info;
+>  
+> -	debugf1("MC%d: " __FILE__ ": %s()\n", mci->mc_idx, __func__);
+> +	debugf1("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
+>  	i82443bxgx_edacmc_get_error_info(mci, &info);
+>  	i82443bxgx_edacmc_process_error_info(mci, &info, 1);
+>  }
+> @@ -198,13 +198,13 @@ static void i82443bxgx_init_csrows(struct mem_ctl_info *mci,
+>  	for (index = 0; index < mci->nr_csrows; index++) {
+>  		csrow = &mci->csrows[index];
+>  		pci_read_config_byte(pdev, I82443BXGX_DRB + index, &drbar);
+> -		debugf1("MC%d: " __FILE__ ": %s() Row=%d DRB = %#0x\n",
+> -			mci->mc_idx, __func__, index, drbar);
+> +		debugf1("MC%d: %s: %s() Row=%d DRB = %#0x\n",
+> +			mci->mc_idx, __FILE__, __func__, index, drbar);
+>  		row_high_limit = ((u32) drbar << 23);
+>  		/* find the DRAM Chip Select Base address and mask */
+> -		debugf1("MC%d: " __FILE__ ": %s() Row=%d, "
+> +		debugf1("MC%d: %s: %s() Row=%d, "
+>  			"Boundry Address=%#0x, Last = %#0x \n",
+> -			mci->mc_idx, __func__, index, row_high_limit,
+> +			mci->mc_idx, __FILE__, __func__, index, row_high_limit,
+>  			row_high_limit_last);
+>  
+>  		/* 440GX goes to 2GB, represented with a DRB of 0. */
+> @@ -237,7 +237,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
+>  	enum mem_type mtype;
+>  	enum edac_type edac_mode;
+>  
+> -	debugf0("MC: " __FILE__ ": %s()\n", __func__);
+> +	debugf0("MC: %s: %s()\n", __FILE__, __func__);
+>  
+>  	/* Something is really hosed if PCI config space reads from
+>  	 * the MC aren't working.
+> @@ -250,7 +250,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
+>  	if (mci == NULL)
+>  		return -ENOMEM;
+>  
+> -	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
+> +	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
+>  	mci->dev = &pdev->dev;
+>  	mci->mtype_cap = MEM_FLAG_EDO | MEM_FLAG_SDR | MEM_FLAG_RDR;
+>  	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
+> @@ -336,7 +336,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
+>  			__func__);
+>  	}
+>  
+> -	debugf3("MC: " __FILE__ ": %s(): success\n", __func__);
+> +	debugf3("MC: %s: %s(): success\n", __FILE__, __func__);
+>  	return 0;
+>  
+>  fail:
+> @@ -352,7 +352,7 @@ static int __devinit i82443bxgx_edacmc_init_one(struct pci_dev *pdev,
+>  {
+>  	int rc;
+>  
+> -	debugf0("MC: " __FILE__ ": %s()\n", __func__);
+> +	debugf0("MC: %s: %s()\n", __FILE__, __func__);
+>  
+>  	/* don't need to call pci_device_enable() */
+>  	rc = i82443bxgx_edacmc_probe1(pdev, ent->driver_data);
+> @@ -367,7 +367,7 @@ static void __devexit i82443bxgx_edacmc_remove_one(struct pci_dev *pdev)
+>  {
+>  	struct mem_ctl_info *mci;
+>  
+> -	debugf0(__FILE__ ": %s()\n", __func__);
+> +	debugf0("%s: %s()\n", __FILE__, __func__);
+>  
+>  	if (i82443bxgx_pci)
+>  		edac_pci_release_generic_ctl(i82443bxgx_pci);
+> 
+> 
 
-commit 18ed61da985c57eea3fe8038b13fa2837c9b3c3f upstream.
 
-Andrew complained rightly that the WARN_ON in hpet_next_event() is
-confusing and the code comment not really helpful.
+-- 
 
-Change it to WARN_ONCE and print the reason in clear text. Change the
-comment to explain what kind of hardware wreckage we deal with.
-
-Pointed-out-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Venki Pallipadi <venkatesh.pallipadi@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/x86/kernel/hpet.c |   19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
-
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -385,11 +385,22 @@ static int hpet_next_event(unsigned long
- 	hpet_writel(cnt, HPET_Tn_CMP(timer));
- 
- 	/*
--	 * We need to read back the CMP register to make sure that
--	 * what we wrote hit the chip before we compare it to the
--	 * counter.
-+	 * We need to read back the CMP register on certain HPET
-+	 * implementations (ATI chipsets) which seem to delay the
-+	 * transfer of the compare register into the internal compare
-+	 * logic. With small deltas this might actually be too late as
-+	 * the counter could already be higher than the compare value
-+	 * at that point and we would wait for the next hpet interrupt
-+	 * forever. We found out that reading the CMP register back
-+	 * forces the transfer so we can rely on the comparison with
-+	 * the counter register below. If the read back from the
-+	 * compare register does not match the value we programmed
-+	 * then we might have a real hardware problem. We can not do
-+	 * much about it here, but at least alert the user/admin with
-+	 * a prominent warning.
- 	 */
--	WARN_ON_ONCE((u32)hpet_readl(HPET_Tn_CMP(timer)) != cnt);
-+	WARN_ONCE((u32)hpet_readl(HPET_Tn_CMP(timer)) != cnt,
-+		  KERN_WARNING "hpet: compare register read back failed.\n");
- 
- 	return (s32)((u32)hpet_readl(HPET_COUNTER) - cnt) >= 0 ? -ETIME : 0;
- }
-
-
+Cheers,
+Mauro
