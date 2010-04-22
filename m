@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab0DVFzX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 01:55:23 -0400
-Received: from mail.perches.com ([173.55.12.10]:1687 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753476Ab0DVFzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 01:55:20 -0400
-Subject: Re: What's the staging review and acceptance process?
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@suse.de>
-Cc: devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100422054902.GA28037@suse.de>
-References: <1271881967.1730.482.camel@Joe-Laptop.home>
-	 <20100422034532.GA25177@suse.de>
-	 <1271910357.1730.627.camel@Joe-Laptop.home>
-	 <20100422054902.GA28037@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Apr 2010 22:55:18 -0700
-Message-ID: <1271915718.1730.687.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751561Ab0DVGFF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 02:05:05 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:42025 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab0DVGFC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 02:05:02 -0400
+Date: Thu, 22 Apr 2010 15:03:47 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [BUG] rmap: fix page_address_in_vma() to walk through
+ anon_vma_chain
+Message-ID: <20100422060347.GA10601@spritzerA.linux.bs1.fc.nec.co.jp>
+References: <20100422054241.GB10957@spritzerA.linux.bs1.fc.nec.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20100422054241.GB10957@spritzerA.linux.bs1.fc.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-21 at 22:49 -0700, Greg KH wrote:
-> On Wed, Apr 21, 2010 at 09:25:57PM -0700, Joe Perches wrote:
-> > On Wed, 2010-04-21 at 20:45 -0700, Greg KH wrote:
-> > > That caused the huge backlog staring at me right now.
-> > Which likely discouraged the new contributors who
-> > submitted stuff still in that backlog.
-> do you have any evidence of this causing people to go away?
+>                            mmap_sem      page_table_lock
+>   mm/ksm.c:
+>     write_protect_page()   hold          not hold
+>     replace_page()         hold          not hold
+>   mm/memory-failure.c:
+>     add_to_kill()          not hold      hold
+                                           ^^^^
+Sorry, I misread here. This is "not hold".
 
-I think it's pretty established that response delays
-cause losses of one type or another.
-
-> > Unfortunately, your process has been opaque until you
-> > personally handle it.
-> Yes, like all subsystem maintainers, right?
-
-Not really, patchwork shows status immediately.
-
-> Are you volunteering?
-
-Guess so.
-
+Thanks,
+Naoya Horiguchi
