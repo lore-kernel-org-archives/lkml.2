@@ -1,269 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab0DVOkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 10:40:22 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:52513 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754964Ab0DVOkV (ORCPT
+	id S1755444Ab0DVOpt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 10:45:49 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55647 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab0DVOpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 10:40:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=RS98Y6Z85fCv7+sulvHEgq+0mlVfLRd+2w47uEf6mXURBTo0M/3+qJNXgV7VYHrk7/
-         gtg1mCxPqxeQXMxCG2Y2hLtPf8vX8dnlTRU5nrBzldAbyYCG9BOvsbx11JTgRhS/JPGr
-         NfkQUztKN14cNy6EZ9nMD9lP3fPGu4vHMowNg=
-Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
- PageSwapCache  pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-In-Reply-To: <1271946226.2100.211.camel@barrios-desktop>
-References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
-	 <alpine.DEB.2.00.1004210927550.4959@router.home>
-	 <20100421150037.GJ30306@csn.ul.ie>
-	 <alpine.DEB.2.00.1004211004360.4959@router.home>
-	 <20100421151417.GK30306@csn.ul.ie>
-	 <alpine.DEB.2.00.1004211027120.4959@router.home>
-	 <20100421153421.GM30306@csn.ul.ie>
-	 <alpine.DEB.2.00.1004211038020.4959@router.home>
-	 <20100422092819.GR30306@csn.ul.ie>
-	 <20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com>
-	 <x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com>
-	 <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com>
-	 <1271946226.2100.211.camel@barrios-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Apr 2010 23:40:06 +0900
-Message-ID: <1271947206.2100.216.camel@barrios-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Apr 2010 10:45:47 -0400
+Date: Thu, 22 Apr 2010 16:45:43 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       linux@arm.linux.org.uk, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, Jun.Li@freescale.com,
+       xiao-lizhang@freescale.com
+Subject: Re: [PATCHv7 2.6.34-rc5 4/5] mxc: Add generic USB HW
+	initialization for MX51
+Message-ID: <20100422144543.GU7882@pengutronix.de>
+References: <1271862795-7986-1-git-send-email-Dinh.Nguyen@freescale.com> <1271862795-7986-2-git-send-email-Dinh.Nguyen@freescale.com> <1271862795-7986-3-git-send-email-Dinh.Nguyen@freescale.com> <1271862795-7986-4-git-send-email-Dinh.Nguyen@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271862795-7986-4-git-send-email-Dinh.Nguyen@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:00:12 up 33 days,  2:49, 51 users,  load average: 11.44,
+	12.56, 11.09
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-22 at 23:23 +0900, Minchan Kim wrote:
-> On Thu, 2010-04-22 at 19:51 +0900, KAMEZAWA Hiroyuki wrote:
-> > On Thu, 22 Apr 2010 19:31:06 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > 
-> > > On Thu, 22 Apr 2010 19:13:12 +0900
-> > > Minchan Kim <minchan.kim@gmail.com> wrote:
-> > > 
-> > > > On Thu, Apr 22, 2010 at 6:46 PM, KAMEZAWA Hiroyuki
-> > > > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > > 
-> > > > > Hmm..in my test, the case was.
-> > > > >
-> > > > > Before try_to_unmap:
-> > > > >        mapcount=1, SwapCache, remap_swapcache=1
-> > > > > After remap
-> > > > >        mapcount=0, SwapCache, rc=0.
-> > > > >
-> > > > > So, I think there may be some race in rmap_walk() and vma handling or
-> > > > > anon_vma handling. migration_entry isn't found by rmap_walk.
-> > > > >
-> > > > > Hmm..it seems this kind patch will be required for debug.
-> > > > 
-> > 
-> > Ok, here is my patch for _fix_. But still testing...
-> > Running well at least for 30 minutes, where I can see bug in 10minutes.
-> > But this patch is too naive. please think about something better fix.
-> > 
-> > ==
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> > At adjust_vma(), vma's start address and pgoff is updated under
-> > write lock of mmap_sem. This means the vma's rmap information
-> > update is atoimic only under read lock of mmap_sem.
-> > 
-> > 
-> > Even if it's not atomic, in usual case, try_to_ummap() etc...
-> > just fails to decrease mapcount to be 0. no problem.
-> > 
-> > But at page migration's rmap_walk(), it requires to know all
-> > migration_entry in page tables and recover mapcount.
-> > 
-> > So, this race in vma's address is critical. When rmap_walk meet
-> > the race, rmap_walk will mistakenly get -EFAULT and don't call
-> > rmap_one(). This patch adds a lock for vma's rmap information. 
-> > But, this is _very slow_.
-> > We need something sophisitcated, light-weight update for this..
-> > 
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  include/linux/mm_types.h |    1 +
-> >  kernel/fork.c            |    1 +
-> >  mm/mmap.c                |   11 ++++++++++-
-> >  mm/rmap.c                |    3 +++
-> >  4 files changed, 15 insertions(+), 1 deletion(-)
-> > 
-> > Index: linux-2.6.34-rc4-mm1/include/linux/mm_types.h
-> > ===================================================================
-> > --- linux-2.6.34-rc4-mm1.orig/include/linux/mm_types.h
-> > +++ linux-2.6.34-rc4-mm1/include/linux/mm_types.h
-> > @@ -183,6 +183,7 @@ struct vm_area_struct {
-> >  #ifdef CONFIG_NUMA
-> >  	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
-> >  #endif
-> > +	spinlock_t adjust_lock;
-> >  };
-> >  
-> >  struct core_thread {
-> > Index: linux-2.6.34-rc4-mm1/mm/mmap.c
-> > ===================================================================
-> > --- linux-2.6.34-rc4-mm1.orig/mm/mmap.c
-> > +++ linux-2.6.34-rc4-mm1/mm/mmap.c
-> > @@ -584,13 +584,20 @@ again:			remove_next = 1 + (end > next->
-> >  		if (adjust_next)
-> >  			vma_prio_tree_remove(next, root);
-> >  	}
-> > -
-> > +	/*
-> > +	 * changing all params in atomic. If not, vma_address in rmap.c
-> > + 	 * can see wrong result.
-> > + 	 */
-> > +	spin_lock(&vma->adjust_lock);
-> >  	vma->vm_start = start;
-> >  	vma->vm_end = end;
-> >  	vma->vm_pgoff = pgoff;
-> > +	spin_unlock(&vma->adjust_lock);
-> >  	if (adjust_next) {
-> > +		spin_lock(&next->adjust_lock);
-> >  		next->vm_start += adjust_next << PAGE_SHIFT;
-> >  		next->vm_pgoff += adjust_next;
-> > +		spin_unlock(&next->adjust_lock);
-> >  	}
-> >  
-> >  	if (root) {
-> > @@ -1939,6 +1946,7 @@ static int __split_vma(struct mm_struct 
-> >  	*new = *vma;
-> >  
-> >  	INIT_LIST_HEAD(&new->anon_vma_chain);
-> > +	spin_lock_init(&new->adjust_lock);
-> >  
-> >  	if (new_below)
-> >  		new->vm_end = addr;
-> > @@ -2338,6 +2346,7 @@ struct vm_area_struct *copy_vma(struct v
-> >  			if (IS_ERR(pol))
-> >  				goto out_free_vma;
-> >  			INIT_LIST_HEAD(&new_vma->anon_vma_chain);
-> > +			spin_lock_init(&new_vma->adjust_lock);
-> >  			if (anon_vma_clone(new_vma, vma))
-> >  				goto out_free_mempol;
-> >  			vma_set_policy(new_vma, pol);
-> > Index: linux-2.6.34-rc4-mm1/kernel/fork.c
-> > ===================================================================
-> > --- linux-2.6.34-rc4-mm1.orig/kernel/fork.c
-> > +++ linux-2.6.34-rc4-mm1/kernel/fork.c
-> > @@ -350,6 +350,7 @@ static int dup_mmap(struct mm_struct *mm
-> >  			goto fail_nomem;
-> >  		*tmp = *mpnt;
-> >  		INIT_LIST_HEAD(&tmp->anon_vma_chain);
-> > +		spin_lock_init(&tmp->adjust_lock);
-> >  		pol = mpol_dup(vma_policy(mpnt));
-> >  		retval = PTR_ERR(pol);
-> >  		if (IS_ERR(pol))
-> > Index: linux-2.6.34-rc4-mm1/mm/rmap.c
-> > ===================================================================
-> > --- linux-2.6.34-rc4-mm1.orig/mm/rmap.c
-> > +++ linux-2.6.34-rc4-mm1/mm/rmap.c
-> > @@ -332,11 +332,14 @@ vma_address(struct page *page, struct vm
-> >  	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-> >  	unsigned long address;
-> >  
-> > +	spin_lock(&vma->adjust_lock);
-> >  	address = vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
-> >  	if (unlikely(address < vma->vm_start || address >= vma->vm_end)) {
-> > +		spin_unlock(&vma->adjust_lock);
-> >  		/* page should be within @vma mapping range */
-> >  		return -EFAULT;
-> >  	}
-> > +	spin_unlock(&vma->adjust_lock);
-> >  	return address;
-> >  }
-> >  
+On Wed, Apr 21, 2010 at 10:13:14AM -0500, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 > 
-> Nice Catch, Kame. :)
+> This patch adds USB HW initializiation code to /plat-mxc/ehci.c.
+> 	-Stops and resets USB HW
+> 	-Sets some specific PHY settings
+> 	-Stop and restart the USB HW.
+> Renames mxc_set_usbcontrol to mxc_initialize_usb_hw.
+> The placing of the mxc_initialize_usb_hw needs to be before setting
+> the USBMODE register to host, since a reset and restart is done in
+> mxc_initialize_usb_hw.
+> Adds new register bit defines for the USB HW on Freescale
+> SoCs.
 > 
-> For further optimization, we can hold vma->adjust_lock if vma_address
-> returns -EFAULT. But I hope we redesigns it without new locking. 
-> But I don't have good idea, now. :(
+> This patch applies to 2.6.34-rc5.
+> 
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> Reviewed-by: Daniel Mack <daniel@caiaq.de>
+> ---
+>  arch/arm/plat-mxc/ehci.c                  |  149 ++++++++++++++++++++++++++++-
+>  arch/arm/plat-mxc/include/mach/mxc_ehci.h |   58 +++++++++++-
+>  drivers/usb/host/ehci-mxc.c               |   10 +-
+>  3 files changed, 209 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/arm/plat-mxc/ehci.c b/arch/arm/plat-mxc/ehci.c
+> index cb0b638..b52335d 100644
+> --- a/arch/arm/plat-mxc/ehci.c
+> +++ b/arch/arm/plat-mxc/ehci.c
+> @@ -1,5 +1,6 @@
+>  /*
+>   * Copyright (c) 2009 Daniel Mack <daniel@caiaq.de>
+> + * Copyright (C) 2010 Freescale Semiconductor, Inc.
+>   *
+>   * This program is free software; you can redistribute it and/or modify it
+>   * under the terms of the GNU General Public License as published by the
+> @@ -18,6 +19,7 @@
+>  
+>  #include <linux/platform_device.h>
+>  #include <linux/io.h>
+> +#include <linux/delay.h>
+>  
+>  #include <mach/hardware.h>
+>  #include <mach/mxc_ehci.h>
+> @@ -50,7 +52,29 @@
+>  #define MX35_H1_TLL_BIT		(1 << 5)
+>  #define MX35_H1_USBTE_BIT	(1 << 4)
+>  
+> -int mxc_set_usbcontrol(int port, unsigned int flags)
+> +/* This function is a version of David Brownell's handshake function in
+> + * ehci-hcd.c. This function uses cpu_relax instead of udelay().
+> + *
+> + * @addr: Address of register
+> + * @mask: bits to look at in result of read
+> + * @done: value of those bits when handshake succeeds
+> + * @timeout: timeout in count
+> + *
+> + * This function waits for certain bits in the HW to stick before moving
+> + * on and provides a timeout in the case where those bits do not stick.
+> + */
+> +static inline int hw_handshake(u32 addr, u32 mask, int done, int timeout)
+> +{
+> +	while (--timeout && ((__raw_readl(addr) & mask) != done))
+> +			cpu_relax();
+> +
+> +	if (timeout)
+> +		return 0;
+> +	else
+> +		return -ETIMEDOUT;
+> +}
+> +
+> +int mxc_initialize_usb_hw(int port, unsigned int flags)
+>  {
+>  	unsigned int v;
+>  #ifdef CONFIG_ARCH_MX3
+> @@ -186,9 +210,130 @@ int mxc_set_usbcontrol(int port, unsigned int flags)
+>  		return 0;
+>  	}
+>  #endif /* CONFIG_MACH_MX27 */
+> +#ifdef CONFIG_ARCH_MX51
+> +	if (cpu_is_mx51()) {
+> +		void __iomem *usb_base;
+> +		u32 usbotg_base;
+> +		u32 usbother_base;
+> +		int ret = 0;
+> +
+> +		usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
+> +
+> +		switch (port) {
+> +		case 0:	/* OTG port */
+> +			usbotg_base = usb_base + USBOTG_OFFSET;
+> +			break;
+> +		case 1:	/* Host 1 port */
+> +			usbotg_base = usb_base + USBH1_OFFSET;
+> +			break;
+> +		default:
+> +			printk(KERN_ERR"%s no such port %d\n", __func__, port);
+> +			ret = -ENOENT;
+> +			goto error;
+> +		}
+> +		usbother_base = usb_base + USBOTHER_REGS_OFFSET;
+> +
+> +		/* Stop then Reset */
+> +		v = __raw_readl(usbotg_base + USBCMD_OFFSET);
+> +		v &= ~UCMD_RUN_STOP;
+> +		__raw_writel(v, usbotg_base + USBCMD_OFFSET);
+> +		ret = hw_handshake(usbotg_base + USBCMD_OFFSET, UCMD_RUN_STOP, 0, 500);
+> +		if (ret) {
+> +			printk(KERN_ERR "%s could not stop usb hardware\n", __func__);
+> +			goto error;
+> +		}
+> +
+> +		v = __raw_readl(usbotg_base + USBCMD_OFFSET);
+> +		v |= UCMD_RESET;
+> +		__raw_writel(v, usbotg_base + USBCMD_OFFSET);
+> +		ret = hw_handshake(usbotg_base + USBCMD_OFFSET, UCMD_RESET, 0, 500);
+> +		if (ret) {
+> +			printk(KERN_ERR "%s could not reset usb hardware\n", __func__);
+> +			goto error;
+> +		}
+> +
+> +		switch (port) {
+> +		case 0:	/*OTG port */
+> +			if (flags & MXC_EHCI_INTERNAL_PHY) {
+> +				v = __raw_readl(usbother_base + USB_PHY_CTR_FUNC_OFFSET);
+> +
+> +				if (flags & MXC_EHCI_POWER_PINS_ENABLED)
+> +					v |= (USB_UTMI_PHYCTRL_OC_DIS | UCTRL_OPM); /* OC/USBPWR is not used */
+> +				else
+> +					v &= ~(USB_UTMI_PHYCTRL_OC_DIS | UCTRL_OPM); /* OC/USBPWR is used */
+> +				__raw_writel(v, usbother_base + USB_PHY_CTR_FUNC_OFFSET);
+> +
+> +				v = __raw_readl(usbother_base + USBCTRL_OFFSET);
+> +				if (flags & MXC_EHCI_WAKEUP_ENABLED)
+> +					v |= UCTRL_OWIE;/* OTG wakeup enable */
+> +				else
+> +					v &= ~UCTRL_OWIE;/* OTG wakeup disable */
+> +				__raw_writel(v, usbother_base + USBCTRL_OFFSET);
+> +			}
+> +			break;
+> +		case 1:	/* Host 1 */
+> +			/*Host ULPI */
+> +			v = __raw_readl(usbother_base + USBCTRL_OFFSET);
+> +			if (flags & MXC_EHCI_WAKEUP_ENABLED)
+> +				v &= ~(UCTRL_H1WIE | UCTRL_H1UIE);/* HOST1 wakeup/ULPI intr disable */
+> +			else
+> +				v &= ~(UCTRL_H1WIE | UCTRL_H1UIE);/* HOST1 wakeup/ULPI intr disable */
+> +
+> +			if (flags & MXC_EHCI_POWER_PINS_ENABLED)
+> +				v &= ~UCTRL_H1PM; /* HOST1 power mask used*/
+> +			else
+> +				v |= UCTRL_H1PM; /* HOST1 power mask used*/
+> +			__raw_writel(v, usbother_base + USBCTRL_OFFSET);
+> +
+> +			v = __raw_readl(usbother_base + USB_PHY_CTR_FUNC_OFFSET);
+> +			if (flags & MXC_EHCI_POWER_PINS_ENABLED)
+> +				v &= ~USB_UH1_OC_DIS; /* OC is used */
+> +			else
+> +				v |= USB_UH1_OC_DIS; /* OC is not used */
+> +			__raw_writel(v, usbother_base + USB_PHY_CTR_FUNC_OFFSET);
+> +
+> +			v = __raw_readl(usbotg_base + USBCMD_OFFSET);
+> +			if (flags & MXC_EHCI_ITC_NO_THRESHOLD)
+> +				/* Interrupt Threshold Control:Immediate (no threshold) */
+> +				v &= UCMD_ITC_NO_THRESHOLD;
+> +			__raw_writel(v, usbotg_base + USBCMD_OFFSET);
+> +			break;
+> +		}
+> +
+> +		/* need to reset the controller here so that the ID pin
+> +		 * is correctly detected.
+> +		 */
+> +		/* Stop then Reset */
+> +		v = __raw_readl(usbotg_base + USBCMD_OFFSET);
+> +		v &= ~UCMD_RUN_STOP;
+> +		__raw_writel(v, usbotg_base + USBCMD_OFFSET);
+> +		ret = hw_handshake(usbotg_base + USBCMD_OFFSET, UCMD_RUN_STOP, 0, 500);
+> +		if (ret) {
+> +			printk(KERN_ERR "%s could not stop usb hardware\n", __func__);
+> +			goto error;
+> +		}
+> +
+> +		v = __raw_readl(usbotg_base + USBCMD_OFFSET);
+> +		v |= UCMD_RESET;
+> +		__raw_writel(v, usbotg_base + USBCMD_OFFSET);
+> +		ret = hw_handshake(usbotg_base + USBCMD_OFFSET, UCMD_RESET, 0, 500);
+> +		if (ret) {
+> +			printk(KERN_ERR "%s could not reset usb hardware\n", __func__);
+> +			goto error;
+> +		}
+> +
+> +		/* allow controller to reset, and leave time for
+> +		 * the ULPI transceiver to reset too.
+> +		 */
+> +		msleep(100);
+> +error:
+> +		iounmap(usb_base);
+> +		return ret;
+> +	}
+> +#endif
+>  	printk(KERN_WARNING
+>  		"%s() unable to setup USBCONTROL for this CPU\n", __func__);
+>  	return -EINVAL;
+>  }
+> -EXPORT_SYMBOL(mxc_set_usbcontrol);
+> +EXPORT_SYMBOL(mxc_initialize_usb_hw);
+>  
+> diff --git a/arch/arm/plat-mxc/include/mach/mxc_ehci.h b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
+> index 4b9b836..0ec88bb 100644
+> --- a/arch/arm/plat-mxc/include/mach/mxc_ehci.h
+> +++ b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
+> @@ -1,6 +1,30 @@
+>  #ifndef __INCLUDE_ASM_ARCH_MXC_EHCI_H
+>  #define __INCLUDE_ASM_ARCH_MXC_EHCI_H
+>  
+> +#define USBOTG_OFFSET			0
+> +#define USBH1_OFFSET			0x200
+> +#define USBH2_OFFSET			0x400
+> +#define USBH3_OFFSET			0x600
+> +#define USBOTHER_REGS_OFFSET	0x800
+> +
+> +#define USBCMD_OFFSET			0x140
+> +
+> +#define ULPI_VIEWPORT_OFFSET	0x170
+> +#define PORTSC_OFFSET		0x184
+> +#define USBMODE_OFFSET		0x1a8
+> +#define USBMODE_CM_HOST		3
+> +
+> +#define USBCTRL_OFFSET					0
+> +#define USB_PHY_CTR_FUNC_OFFSET		0x8
+> +#define USB_PHY_CTR_FUNC2_OFFSET		0xc
+> +#define USB_CTRL_1_OFFSET				0x10
+> +
+> +
+> +/* USBCMD */
+> +#define UCMD_RUN_STOP           (1 << 0)        /* controller run/stop */
+> +#define UCMD_RESET		(1 << 1)	/* controller reset */
+> +#define UCMD_ITC_NO_THRESHOLD		(~(0xff << 16))	/* Interrupt Threshold Control */
+> +
+>  /* values for portsc field */
+>  #define MXC_EHCI_PHY_LOW_POWER_SUSPEND	(1 << 23)
+>  #define MXC_EHCI_FORCE_FS		(1 << 24)
+> @@ -25,6 +49,38 @@
+>  #define MXC_EHCI_INTERNAL_PHY		(1 << 7)
+>  #define MXC_EHCI_IPPUE_DOWN		(1 << 8)
+>  #define MXC_EHCI_IPPUE_UP		(1 << 9)
+> +#define MXC_EHCI_WAKEUP_ENABLED	(1 << 10)
+> +#define MXC_EHCI_ITC_NO_THRESHOLD	(1 << 11)
+> +
+> +/* USB_CTRL */
+> +#define UCTRL_OUIE		(1 << 28)	/* OTG ULPI intr enable */
+> +#define UCTRL_OWIE		(1 << 27)	/* OTG wakeup intr enable */
+> +#define UCTRL_OBPVAL_RXDP	(1 << 26)	/* OTG RxDp status in bypass mode */
+> +#define UCTRL_OBPVAL_RXDM	(1 << 25)	/* OTG RxDm status in bypass mode */
+> +#define UCTRL_OPM		(1 << 24)	/* OTG power mask */
+> +#define UCTRL_H1UIE		(1 << 12)	/* Host1 ULPI interrupt enable */
+> +#define UCTRL_H1WIE		(1 << 11)	/* HOST1 wakeup intr enable */
+> +#define UCTRL_H1PM		(1 <<  8)		/* HOST1 power mask */
+> +
+> +/* USB_PHY_CTRL_FUNC */
+> +#define USB_UTMI_PHYCTRL_OC_DIS	(1 << 8)	/* OTG Disable Overcurrent Event */
+> +#define USB_UH1_OC_DIS	(1 << 5)		/* UH1 Disable Overcurrent Event */
+> +
+> +/* USB_CTRL_1 */
+> +#define USB_CTRL_UH1_EXT_CLK_EN			(1 << 25)
+> +#define USB_CTRL_UH2_EXT_CLK_EN			(1 << 26)
+> +
+> +/* USB_PHY_CTRL_FUNC2*/
+> +#define USB_UTMI_PHYCTRL2_PLLDIV_MASK		0x3
+> +#define USB_UTMI_PHYCTRL2_PLLDIV_SHIFT		0
+> +#define USB_UTMI_PHYCTRL2_HSDEVSEL_MASK		0x3
+> +#define USB_UTMI_PHYCTRL2_HSDEVSEL_SHIFT	19
+> +
+> +#ifdef CONFIG_ARCH_MX51
+> +#define	USB_PLLDIV_12_MHZ		0x00
+> +#define	USB_PLL_DIV_19_2_MHZ	0x01
+> +#define	USB_PLL_DIV_24_MHZ	0x02
+> +#endif
 
-How about this?
-I just merged ideas of Mel and Kame.:)
+Please have a general look over these defines. All defines in
+include/mach should at least have a MXC_ prefix. Most of these are
+i.MX51 specific and thus should have a MX51_ prefix.
+I think many of these do not have to be here anyway since they are
+already in drivers/usb/host/ehci-mxc.c, are unused, or are only used
+in plat-mxc/ehci.c.
 
-It just shows the concept, not formal patch. 
+> @@ -191,6 +191,11 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+>  		clk_enable(priv->ahbclk);
+>  	}
+>  
+> +	/* setup specific usb hw */
+> +	ret = mxc_initialize_usb_hw(pdev->id, pdata->flags);
+> +	if (ret < 0)
+> +		goto err_init;
+> +
+>  	/* set USBMODE to host mode */
+>  	temp = readl(hcd->regs + USBMODE_OFFSET);
+>  	writel(temp | USBMODE_CM_HOST, hcd->regs + USBMODE_OFFSET);
+> @@ -199,11 +204,6 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+>  	writel(pdata->portsc, hcd->regs + PORTSC_OFFSET);
+>  	mdelay(10);
+>  
+> -	/* setup USBCONTROL. */
+> -	ret = mxc_set_usbcontrol(pdev->id, pdata->flags);
+> -	if (ret < 0)
+> -		goto err_init;
+
+Has somebody tested if this works on other i.MXs? I remember it was quite
+difficult to get the correct order of initialization. I don't want to
+break this.
+We should at least make a seperate patch from it so that anybody
+bisecting this only finds this change and not the i.MX51 support also
+added in this patch.
+
+Sascha
 
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index f90ea92..61ea742 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -578,6 +578,8 @@ again:			remove_next = 1 + (end > next->vm_end);
- 		}
- 	}
- 
-+	if (vma->anon_vma)
-+		spin_lock(&vma->anon_vma->lock);
- 	if (root) {
- 		flush_dcache_mmap_lock(mapping);
- 		vma_prio_tree_remove(vma, root);
-@@ -619,7 +621,8 @@ again:			remove_next = 1 + (end > next->vm_end);
- 
- 	if (mapping)
- 		spin_unlock(&mapping->i_mmap_lock);
--
-+	if (vma->anon_vma) 
-+		spin_unlock(&vma->anon_vma->lock);
- 	if (remove_next) {
- 		if (file) {
- 			fput(file);
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 3a53d9f..8075057 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1359,9 +1359,22 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
- 	spin_lock(&anon_vma->lock);
- 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
- 		struct vm_area_struct *vma = avc->vma;
--		unsigned long address = vma_address(page, vma);
--		if (address == -EFAULT)
-+		struct anon_vma *tmp_anon_vma = vma->anon_vma;
-+		unsigned long address;
-+		int tmp_vma_lock = 0;
-+		
-+		if (tmp_anon_vma != anon_vma) {
-+			spin_lock(&tmp_anon_vma->lock);	
-+			tmp_vma_lock = 1;
-+		}
-+		address = vma_address(page, vma);
-+		if (address == -EFAULT) {
-+			if (tmp_vma_lock)
-+				spin_unlock(&tmp_anon_vma->lock);
- 			continue;
-+		}
-+		if (tmp_vma_lock)
-+			spin_unlock(&tmp_anon_vma->lock);
- 		ret = rmap_one(page, vma, address, arg);
- 		if (ret != SWAP_AGAIN)
- 			break;
 -- 
-1.7.0.5
-
-
-
--- 
-Kind regards,
-Minchan Kim
-
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
