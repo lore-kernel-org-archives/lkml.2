@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab0DVUEO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:04:14 -0400
-Received: from kroah.org ([198.145.64.141]:60116 "EHLO coco.kroah.org"
+	id S932230Ab0DVUEZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:04:25 -0400
+Received: from kroah.org ([198.145.64.141]:60121 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758069Ab0DVUCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:02:06 -0400
+	id S1758170Ab0DVUCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:02:08 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:18 2010
-Message-Id: <20100422195418.470479332@kvm.kroah.org>
+Message-Id: <20100422195418.579475887@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:55:08 -0700
+Date: Thu, 22 Apr 2010 12:55:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Avi Kivity <avi@redhat.com>
-Subject: [131/139] KVM: Dont spam kernel log when injecting exceptions due to bad cr writes
+       Andre Przywara <andre.przywara@amd.com>, Avi Kivity <avi@redhat.com>
+Subject: [132/139] KVM: allow bit 10 to be cleared in MSR_IA32_MC4_CTL
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,158 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Andre Przywara <andre.przywara@amd.com>
 
-(Cherry-picked from commit d6a23895aa82353788a1cc5a1d9a1c963465463e)
+(Cherry-picked from commit 114be429c8cd44e57f312af2bbd6734e5a185b0d)
 
-These are guest-triggerable.
+There is a quirk for AMD K8 CPUs in many Linux kernels (see
+arch/x86/kernel/cpu/mcheck/mce.c:__mcheck_cpu_apply_quirks()) that
+clears bit 10 in that MCE related MSR. KVM can only cope with all
+zeros or all ones, so it will inject a #GP into the guest, which
+will let it panic.
+So lets add a quirk to the quirk and ignore this single cleared bit.
+This fixes -cpu kvm64 on all machines and -cpu host on K8 machines
+with some guest Linux kernels.
 
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kvm/x86.c |   27 ---------------------------
- 1 file changed, 27 deletions(-)
+ arch/x86/kvm/x86.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -384,21 +384,16 @@ out:
- void kvm_set_cr0(struct kvm_vcpu *vcpu, unsigned long cr0)
- {
- 	if (cr0 & CR0_RESERVED_BITS) {
--		printk(KERN_DEBUG "set_cr0: 0x%lx #GP, reserved bits 0x%lx\n",
--		       cr0, vcpu->arch.cr0);
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
- 
- 	if ((cr0 & X86_CR0_NW) && !(cr0 & X86_CR0_CD)) {
--		printk(KERN_DEBUG "set_cr0: #GP, CD == 0 && NW == 1\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
- 
- 	if ((cr0 & X86_CR0_PG) && !(cr0 & X86_CR0_PE)) {
--		printk(KERN_DEBUG "set_cr0: #GP, set PG flag "
--		       "and a clear PE flag\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
-@@ -409,15 +404,11 @@ void kvm_set_cr0(struct kvm_vcpu *vcpu,
- 			int cs_db, cs_l;
- 
- 			if (!is_pae(vcpu)) {
--				printk(KERN_DEBUG "set_cr0: #GP, start paging "
--				       "in long mode while PAE is disabled\n");
- 				kvm_inject_gp(vcpu, 0);
- 				return;
- 			}
- 			kvm_x86_ops->get_cs_db_l_bits(vcpu, &cs_db, &cs_l);
- 			if (cs_l) {
--				printk(KERN_DEBUG "set_cr0: #GP, start paging "
--				       "in long mode while CS.L == 1\n");
- 				kvm_inject_gp(vcpu, 0);
- 				return;
- 
-@@ -425,8 +416,6 @@ void kvm_set_cr0(struct kvm_vcpu *vcpu,
- 		} else
- #endif
- 		if (is_pae(vcpu) && !load_pdptrs(vcpu, vcpu->arch.cr3)) {
--			printk(KERN_DEBUG "set_cr0: #GP, pdptrs "
--			       "reserved bits\n");
- 			kvm_inject_gp(vcpu, 0);
- 			return;
- 		}
-@@ -453,28 +442,23 @@ void kvm_set_cr4(struct kvm_vcpu *vcpu,
- 	unsigned long pdptr_bits = X86_CR4_PGE | X86_CR4_PSE | X86_CR4_PAE;
- 
- 	if (cr4 & CR4_RESERVED_BITS) {
--		printk(KERN_DEBUG "set_cr4: #GP, reserved bits\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
- 
- 	if (is_long_mode(vcpu)) {
- 		if (!(cr4 & X86_CR4_PAE)) {
--			printk(KERN_DEBUG "set_cr4: #GP, clearing PAE while "
--			       "in long mode\n");
- 			kvm_inject_gp(vcpu, 0);
- 			return;
- 		}
- 	} else if (is_paging(vcpu) && (cr4 & X86_CR4_PAE)
- 		   && ((cr4 ^ old_cr4) & pdptr_bits)
- 		   && !load_pdptrs(vcpu, vcpu->arch.cr3)) {
--		printk(KERN_DEBUG "set_cr4: #GP, pdptrs reserved bits\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
- 
- 	if (cr4 & X86_CR4_VMXE) {
--		printk(KERN_DEBUG "set_cr4: #GP, setting VMXE\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
-@@ -495,21 +479,16 @@ void kvm_set_cr3(struct kvm_vcpu *vcpu,
- 
- 	if (is_long_mode(vcpu)) {
- 		if (cr3 & CR3_L_MODE_RESERVED_BITS) {
--			printk(KERN_DEBUG "set_cr3: #GP, reserved bits\n");
- 			kvm_inject_gp(vcpu, 0);
- 			return;
- 		}
- 	} else {
- 		if (is_pae(vcpu)) {
- 			if (cr3 & CR3_PAE_RESERVED_BITS) {
--				printk(KERN_DEBUG
--				       "set_cr3: #GP, reserved bits\n");
- 				kvm_inject_gp(vcpu, 0);
- 				return;
- 			}
- 			if (is_paging(vcpu) && !load_pdptrs(vcpu, cr3)) {
--				printk(KERN_DEBUG "set_cr3: #GP, pdptrs "
--				       "reserved bits\n");
- 				kvm_inject_gp(vcpu, 0);
- 				return;
- 			}
-@@ -541,7 +520,6 @@ EXPORT_SYMBOL_GPL(kvm_set_cr3);
- void kvm_set_cr8(struct kvm_vcpu *vcpu, unsigned long cr8)
- {
- 	if (cr8 & CR8_RESERVED_BITS) {
--		printk(KERN_DEBUG "set_cr8: #GP, reserved bits 0x%lx\n", cr8);
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
-@@ -595,15 +573,12 @@ static u32 emulated_msrs[] = {
- static void set_efer(struct kvm_vcpu *vcpu, u64 efer)
- {
- 	if (efer & efer_reserved_bits) {
--		printk(KERN_DEBUG "set_efer: 0x%llx #GP, reserved bits\n",
--		       efer);
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
- 
- 	if (is_paging(vcpu)
- 	    && (vcpu->arch.shadow_efer & EFER_LME) != (efer & EFER_LME)) {
--		printk(KERN_DEBUG "set_efer: #GP, change LME while paging\n");
- 		kvm_inject_gp(vcpu, 0);
- 		return;
- 	}
-@@ -613,7 +588,6 @@ static void set_efer(struct kvm_vcpu *vc
- 
- 		feat = kvm_find_cpuid_entry(vcpu, 0x80000001, 0);
- 		if (!feat || !(feat->edx & bit(X86_FEATURE_FXSR_OPT))) {
--			printk(KERN_DEBUG "set_efer: #GP, enable FFXSR w/o CPUID capability\n");
- 			kvm_inject_gp(vcpu, 0);
- 			return;
- 		}
-@@ -624,7 +598,6 @@ static void set_efer(struct kvm_vcpu *vc
- 
- 		feat = kvm_find_cpuid_entry(vcpu, 0x80000001, 0);
- 		if (!feat || !(feat->ecx & bit(X86_FEATURE_SVM))) {
--			printk(KERN_DEBUG "set_efer: #GP, enable SVM w/o SVM\n");
- 			kvm_inject_gp(vcpu, 0);
- 			return;
- 		}
+@@ -886,9 +886,13 @@ static int set_msr_mce(struct kvm_vcpu *
+ 		if (msr >= MSR_IA32_MC0_CTL &&
+ 		    msr < MSR_IA32_MC0_CTL + 4 * bank_num) {
+ 			u32 offset = msr - MSR_IA32_MC0_CTL;
+-			/* only 0 or all 1s can be written to IA32_MCi_CTL */
++			/* only 0 or all 1s can be written to IA32_MCi_CTL
++			 * some Linux kernels though clear bit 10 in bank 4 to
++			 * workaround a BIOS/GART TBL issue on AMD K8s, ignore
++			 * this to avoid an uncatched #GP in the guest
++			 */
+ 			if ((offset & 0x3) == 0 &&
+-			    data != 0 && data != ~(u64)0)
++			    data != 0 && (data | (1 << 10)) != ~(u64)0)
+ 				return -1;
+ 			vcpu->arch.mce_banks[offset] = data;
+ 			break;
 
 
