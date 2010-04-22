@@ -1,59 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab0DVChd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 22:37:33 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:63356 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394Ab0DVChc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 22:37:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:content-type;
-        b=K/uSdf4K6/QPfq2rLQvTZE9mACyevbI8RBXuRoSESPtn2xWem6xojCY5lO743kV0Zt
-         YFFv3UaobtYvG3tVaZx+YL7zgJco6kJE2v/xUCGENlU439FyvnJCwTmTVGWeY/H21rcb
-         PBKuGMdGPjRNVjTuuH6wkbffCm4Pn9O3iSPlE=
-MIME-Version: 1.0
-From: Kevin Burton <burton@spinn3r.com>
-Date: Wed, 21 Apr 2010 19:37:09 -0700
-X-Google-Sender-Auth: 4432e0e0397b07f8
-Message-ID: <h2s30c6373b1004211937z30ddf457g3eea0c621229187@mail.gmail.com>
-Subject: Filesystem page cache hit rate for tuning performance of VFS page 
-	cache?
-To: linux kernel <linux-kernel@vger.kernel.org>,
-       Jonathan Moore <moore@spinn3r.com>, Leif Ryge <leif@spinn3r.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755238Ab0DVCke (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 22:40:34 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55981 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754518Ab0DVCkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Apr 2010 22:40:32 -0400
+Date: Thu, 22 Apr 2010 12:40:22 +1000
+From: Neil Brown <neilb@suse.de>
+To: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, king.br@gmail.com,
+       stable@kernel.org
+Subject: Re: patch md-raid5-allow-for-more-than-2-31-chunks.patch added to
+ 2.6.33-stable tree
+Message-ID: <20100422124022.1320e49c@notabene.brown>
+In-Reply-To: <201004220408.33822.s.L-H@gmx.de>
+References: <12718801381479@kroah.org>
+	<201004220408.33822.s.L-H@gmx.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm trying to find out a way to tune the Linux VFS page cache.
+On Thu, 22 Apr 2010 04:08:30 +0200
+"Stefan Lippers-Hollmann" <s.L-H@gmx.de> wrote:
 
-A number of caching systems like memcached, MySQL/InnoDB page cache
-export stats which can help you determine how efficient you are with
-memory.
+> Hi
+> 
+> On Thursday 22 April 2010, gregkh@suse.de wrote:
+> > This is a note to let you know that we have just queued up the patch titled
+> > 
+> >     Subject: md/raid5: allow for more than 2^31 chunks.
+> > 
+> > to the 2.6.33-stable tree.  Its filename is
+> > 
+> >     md-raid5-allow-for-more-than-2-31-chunks.patch
+> > 
+> > A git repo of this tree can be found at 
+> >     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+> > 
+> > 
+> > From 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d Mon Sep 17 00:00:00 2001
+> > From: NeilBrown <neilb@suse.de>
+> > Date: Tue, 20 Apr 2010 14:13:34 +1000
+> > Subject: md/raid5: allow for more than 2^31 chunks.
+> > 
+> > From: NeilBrown <neilb@suse.de>
+> > 
+> > commit 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d upstream.
+> > 
+> > With many large drives and small chunk sizes it is possible
+> > to create a RAID5 with more than 2^31 chunks.  Make sure this
+> > works.
+> > 
+> > Reported-by: Brett King <king.br@gmail.com>
+> > Signed-off-by: NeilBrown <neilb@suse.de>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> This patch, as part of the current 2.6.33 stable queue, breaks compiling
+> on i386 (CONFIG_LBDAF=y) for me (amd64 builds fine):
+> 
+> [...]
+>   BUILD   arch/x86/boot/bzImage
+> Root device is (254, 6)
+> Setup is 12700 bytes (padded to 12800 bytes).
+> System is 2415 kB
+> CRC db6fa5fa
+> Kernel: arch/x86/boot/bzImage is ready  (#1)
+> ERROR: "__umoddi3" [drivers/md/raid456.ko] undefined!
+> 
+> reverting just this patch fixes the problem for me.
 
-The key values I need are number of hits from the page cache and total
-requests to the page cache.
+Thanks for testing and reporting.
 
-These should just continually increment and rollover until we run out
-of unsigned long space (2^64).
+If you could verify that this additional patch fixes the compile error I
+would really appreciate it.
 
-Is it possible to do this with Linux?  I'm pretty sure it's not.....
-I would LOVE to be proven wrong.
+Thanks,
+NeilBrown
 
-I'll buy anyone a beer who solves this problem for me :)
 
--- 
-Join the Spinn3r mailing lists:
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 20e4840..58ea0ec 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -1650,7 +1650,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
+ 				     int previous, int *dd_idx,
+ 				     struct stripe_head *sh)
+ {
+-	sector_t stripe;
++	sector_t stripe, stripe2;
+ 	sector_t chunk_number;
+ 	unsigned int chunk_offset;
+ 	int pd_idx, qd_idx;
+@@ -1677,7 +1677,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
+ 	 */
+ 	stripe = chunk_number;
+ 	*dd_idx = sector_div(stripe, data_disks);
+-
++	stripe2 = stripe;
+ 	/*
+ 	 * Select the parity disk based on the user selected algorithm.
+ 	 */
+@@ -1689,21 +1689,21 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
+ 	case 5:
+ 		switch (algorithm) {
+ 		case ALGORITHM_LEFT_ASYMMETRIC:
+-			pd_idx = data_disks - stripe % raid_disks;
++			pd_idx = data_disks - sector_div(stripe2, raid_disks);
+ 			if (*dd_idx >= pd_idx)
+ 				(*dd_idx)++;
+ 			break;
+ 		case ALGORITHM_RIGHT_ASYMMETRIC:
+-			pd_idx = stripe % raid_disks;
++			pd_idx = sector_div(stripe2, raid_disks);
+ 			if (*dd_idx >= pd_idx)
+ 				(*dd_idx)++;
+ 			break;
+ 		case ALGORITHM_LEFT_SYMMETRIC:
+-			pd_idx = data_disks - stripe % raid_disks;
++			pd_idx = data_disks - sector_div(stripe2, raid_disks);
+ 			*dd_idx = (pd_idx + 1 + *dd_idx) % raid_disks;
+ 			break;
+ 		case ALGORITHM_RIGHT_SYMMETRIC:
+-			pd_idx = stripe % raid_disks;
++			pd_idx = sector_div(stripe2, raid_disks);
+ 			*dd_idx = (pd_idx + 1 + *dd_idx) % raid_disks;
+ 			break;
+ 		case ALGORITHM_PARITY_0:
+@@ -1723,7 +1723,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
+ 
+ 		switch (algorithm) {
+ 		case ALGORITHM_LEFT_ASYMMETRIC:
+-			pd_idx = raid_disks - 1 - (stripe % raid_disks);
++			pd_idx = raid_disks - 1 - sector_div(stripe2, raid_disks);
+ 			qd_idx = pd_idx + 1;
+ 			if (pd_idx == raid_disks-1) {
+ 				(*dd_idx)++;	/* Q D D D P */
+@@ -1732,7 +1732,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
+ 				(*dd_idx) += 2; /* D D P Q D */
+ 			break;
+ 		case ALGORITHM_RIGHT_ASYMMETRIC:
+-			pd_idx = stripe % raid_disks;
++			pd_idx = sector_div(stripe2, raid_disks);
+ 			qd_idx = pd_idx + 1;
+ 			if (pd_idx == raid_disks-1) {
+ 				(*dd_idx)++;	/* Q D D D P */
+@@ -1741,12 +1741,12 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
+ 				(*dd_idx) += 2; /* D D P Q D */
+ 			break;
+ 		case ALGORITHM_LEFT_SYMMETRIC:
+-			pd_idx = raid_disks - 1 - (stripe % raid_disks);
++			pd_idx = raid_disks - 1 - sector_div(stripe2, raid_disks);
+ 			qd_idx = (pd_idx + 1) % raid_disks;
+ 			*dd_idx = (pd_idx + 2 + *dd_idx) % raid_disks;
+ 			break;
+ 		case ALGORITHM_RIGHT_SYMMETRIC:
+-			pd_idx = stripe % raid_disks;
++			pd_idx = sector_div(stripe2, raid_disks);
+ 			qd_idx = (pd_idx + 1) % raid_disks;
+ 			*dd_idx = (pd_idx + 2 + *dd_idx) % raid_disks;
+ 			break;
+@@ -1765,7 +1765,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
+ 			/* Exactly the same as RIGHT_ASYMMETRIC, but or
+ 			 * of blocks for computing Q is different.
+ 			 */
+-			pd_idx = stripe % raid_disks;
++			pd_idx = sector_div(stripe2, raid_disks);
+ 			qd_idx = pd_idx + 1;
+ 			if (pd_idx == raid_disks-1) {
+ 				(*dd_idx)++;	/* Q D D D P */
+@@ -1780,7 +1780,8 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
+ 			 * D D D P Q  rather than
+ 			 * Q D D D P
+ 			 */
+-			pd_idx = raid_disks - 1 - ((stripe + 1) % raid_disks);
++			stripe2 += 1;
++			pd_idx = raid_disks - 1 - sector_div(stripe2, raid_disks);
+ 			qd_idx = pd_idx + 1;
+ 			if (pd_idx == raid_disks-1) {
+ 				(*dd_idx)++;	/* Q D D D P */
+@@ -1792,7 +1793,7 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
+ 
+ 		case ALGORITHM_ROTATING_N_CONTINUE:
+ 			/* Same as left_symmetric but Q is before P */
+-			pd_idx = raid_disks - 1 - (stripe % raid_disks);
++			pd_idx = raid_disks - 1 - sector_div(stripe2, raid_disks);
+ 			qd_idx = (pd_idx + raid_disks - 1) % raid_disks;
+ 			*dd_idx = (pd_idx + 1 + *dd_idx) % raid_disks;
+ 			ddf_layout = 1;
+@@ -1800,27 +1801,27 @@ static sector_t raid5_compute_sector(raid5_conf_t *conf, sector_t r_sector,
+ 
+ 		case ALGORITHM_LEFT_ASYMMETRIC_6:
+ 			/* RAID5 left_asymmetric, with Q on last device */
+-			pd_idx = data_disks - stripe % (raid_disks-1);
++			pd_idx = data_disks - sector_div(stripe2, raid_disks-1);
+ 			if (*dd_idx >= pd_idx)
+ 				(*dd_idx)++;
+ 			qd_idx = raid_disks - 1;
+ 			break;
+ 
+ 		case ALGORITHM_RIGHT_ASYMMETRIC_6:
+-			pd_idx = stripe % (raid_disks-1);
++			pd_idx = sector_div(stripe2, raid_disks-1);
+ 			if (*dd_idx >= pd_idx)
+ 				(*dd_idx)++;
+ 			qd_idx = raid_disks - 1;
+ 			break;
+ 
+ 		case ALGORITHM_LEFT_SYMMETRIC_6:
+-			pd_idx = data_disks - stripe % (raid_disks-1);
++			pd_idx = data_disks - sector_div(stripe2, raid_disks-1);
+ 			*dd_idx = (pd_idx + 1 + *dd_idx) % (raid_disks-1);
+ 			qd_idx = raid_disks - 1;
+ 			break;
+ 
+ 		case ALGORITHM_RIGHT_SYMMETRIC_6:
+-			pd_idx = stripe % (raid_disks-1);
++			pd_idx = sector_div(stripe2, raid_disks-1);
+ 			*dd_idx = (pd_idx + 1 + *dd_idx) % (raid_disks-1);
+ 			qd_idx = raid_disks - 1;
+ 			break;
 
-http://groups.google.com/group/spinn3r-announce
 
-http://groups.google.com/group/spinn3r
 
-Founder/CEO Spinn3r.com
-Location: San Francisco, CA
-AIM/YIM: sfburtonator
-Skype: burtonator
-Work: http://spinn3r.com
