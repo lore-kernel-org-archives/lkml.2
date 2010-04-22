@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab0DVTuR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:50:17 -0400
-Received: from kroah.org ([198.145.64.141]:40954 "EHLO coco.kroah.org"
+	id S1757683Ab0DVTyb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:54:31 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:55898 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756532Ab0DVT2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:49 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:16 2010
-Message-Id: <20100422190916.328282863@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:11 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@cam.ac.uk>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [100/197] hwmon: (sht15) Properly handle the case CONFIG_REGULATOR=n
-In-Reply-To: <20100422191857.GA13268@kroah.com>
+	id S1757651Ab0DVTyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:54:16 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 1/3] KEYS: Fix an RCU warning
+Date: Thu, 22 Apr 2010 12:54:05 -0700
+Message-Id: <1271966047-9701-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <20100422195345.GA9639@linux.vnet.ibm.com>
+References: <20100422195345.GA9639@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+From: David Howells <dhowells@redhat.com>
 
-------------------
+Fix the following RCU warning:
 
-From: Jean Delvare <khali@linux-fr.org>
+===================================================
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+security/keys/request_key.c:116 invoked rcu_dereference_check() without protection!
 
-commit c7a78d2c2e2537fd24903e966f34aae50319d587 upstream.
+other info that might help us debug this:
 
-When CONFIG_REGULATOR isn't set, regulator_get_voltage() returns 0.
-Properly handle this case by not trusting the value.
+rcu_scheduler_active = 1, debug_locks = 0
+1 lock held by keyctl/5372:
+ #0:  (key_types_sem){.+.+.+}, at: [<ffffffff811a4e3d>] key_type_lookup+0x1c/0x70
 
-Reported-by: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+stack backtrace:
+Pid: 5372, comm: keyctl Not tainted 2.6.34-rc3-cachefs #150
+Call Trace:
+ [<ffffffff810515f8>] lockdep_rcu_dereference+0xaa/0xb2
+ [<ffffffff811a9220>] call_sbin_request_key+0x156/0x2b6
+ [<ffffffff811a4c66>] ? __key_instantiate_and_link+0xb1/0xdc
+ [<ffffffff811a4cd3>] ? key_instantiate_and_link+0x42/0x5f
+ [<ffffffff811a96b8>] ? request_key_auth_new+0x17b/0x1f3
+ [<ffffffff811a8e00>] ? request_key_and_link+0x271/0x400
+ [<ffffffff810aba6f>] ? kmem_cache_alloc+0xe1/0x118
+ [<ffffffff811a8f1a>] request_key_and_link+0x38b/0x400
+ [<ffffffff811a7b72>] sys_request_key+0xf7/0x14a
+ [<ffffffff81052227>] ? trace_hardirqs_on_caller+0x10c/0x130
+ [<ffffffff81393f5c>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
 
+This was caused by doing:
+
+	[root@andromeda ~]# keyctl newring fred @s
+	539196288
+	[root@andromeda ~]# keyctl request2 user a a 539196288
+	request_key: Required key not available
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- drivers/hwmon/sht15.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ security/keys/request_key.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
---- a/drivers/hwmon/sht15.c
-+++ b/drivers/hwmon/sht15.c
-@@ -541,7 +541,12 @@ static int __devinit sht15_probe(struct
- /* If a regulator is available, query what the supply voltage actually is!*/
- 	data->reg = regulator_get(data->dev, "vcc");
- 	if (!IS_ERR(data->reg)) {
--		data->supply_uV = regulator_get_voltage(data->reg);
-+		int voltage;
-+
-+		voltage = regulator_get_voltage(data->reg);
-+		if (voltage)
-+			data->supply_uV = voltage;
-+
- 		regulator_enable(data->reg);
- 		/* setup a notifier block to update this if another device
- 		 *  causes the voltage to change */
-
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 03fe63e..ea97c31 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -68,7 +68,8 @@ static int call_sbin_request_key(struct key_construction *cons,
+ {
+ 	const struct cred *cred = current_cred();
+ 	key_serial_t prkey, sskey;
+-	struct key *key = cons->key, *authkey = cons->authkey, *keyring;
++	struct key *key = cons->key, *authkey = cons->authkey, *keyring,
++		*session;
+ 	char *argv[9], *envp[3], uid_str[12], gid_str[12];
+ 	char key_str[12], keyring_str[3][12];
+ 	char desc[20];
+@@ -112,10 +113,12 @@ static int call_sbin_request_key(struct key_construction *cons,
+ 	if (cred->tgcred->process_keyring)
+ 		prkey = cred->tgcred->process_keyring->serial;
+ 
+-	if (cred->tgcred->session_keyring)
+-		sskey = rcu_dereference(cred->tgcred->session_keyring)->serial;
+-	else
+-		sskey = cred->user->session_keyring->serial;
++	rcu_read_lock();
++	session = rcu_dereference(cred->tgcred->session_keyring);
++	if (!session)
++		session = cred->user->session_keyring;
++	sskey = session->serial;
++	rcu_read_unlock();
+ 
+ 	sprintf(keyring_str[2], "%d", sskey);
+ 
+-- 
+1.7.0
 
