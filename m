@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab0DVNMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 09:12:09 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53276 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753068Ab0DVNMG (ORCPT
+	id S1754678Ab0DVNSf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 09:18:35 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56657 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754478Ab0DVNSe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 09:12:06 -0400
-Date: Thu, 22 Apr 2010 14:16:11 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alan Cox <alan@linux.intel.com>, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, Sreedhara DS <sreedhara.ds@intel.com>
-Subject: Re: [PATCH] IPC driver for Intel Mobile Internet Device (MID)
- platforms
-Message-ID: <20100422141611.2599ee67@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100421131615.d8430a50.akpm@linux-foundation.org>
-References: <20100409102629.22832.30883.stgit@localhost.localdomain>
-	<20100421131615.d8430a50.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Apr 2010 09:18:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=saFgU4o5oqdeTlI5NCmMX/mU/TVzPP7eeBiZEt1AEKu6bGMxbXGWWGc0Loq8/4dXgk
+         Mrtc/XMulLT22h86iACdoP6Op4Mr5q95mC5l0o74a1OfMdhpEhQUsIdErg9ujxsPNDRQ
+         8zeSQc2paFeTpxOxQ8VKq0qMQmxBzpXPu0Sk8=
+MIME-Version: 1.0
+In-Reply-To: <1271934490.1776.343.camel@laptop>
+References: <1271200751-18697-1-git-send-email-chase.douglas@canonical.com>
+	 <1271934490.1776.343.camel@laptop>
+Date: Thu, 22 Apr 2010 09:18:32 -0400
+X-Google-Sender-Auth: f37f9e7b6c89e8c1
+Message-ID: <x2j40ec3ea41004220618sd05bca74pea1180862e7b0907@mail.gmail.com>
+Subject: Re: [REGRESSION 2.6.30][PATCH v3] sched: update load count only once 
+	per cpu in 10 tick update window
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       kernel-team <kernel-team@lists.ubuntu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> __packed, please.  (I've requested that this be added to checkpatch,
-> but Mr Checkpatch is asleep).
+On Thu, Apr 22, 2010 at 7:08 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-04-13 at 16:19 -0700, Chase Douglas wrote:
+>>
+>> There's a period of 10 ticks where calc_load_tasks is updated by all the
+>> cpus for the load avg. Usually all the cpus do this during the first
+>> tick. If any cpus go idle, calc_load_tasks is decremented accordingly.
+>> However, if they wake up calc_load_tasks is not incremented. Thus, if
+>> cpus go idle during the 10 tick period, calc_load_tasks may be
+>> decremented to a non-representative value. This issue can lead to
+>> systems having a load avg of exactly 0, even though the real load avg
+>> could theoretically be up to NR_CPUS.
+>>
+>> This change defers calc_load_tasks accounting after each cpu updates the
+>> count until after the 10 tick update window.
+>>
+>> A few points:
+>>
+>> * A global atomic deferral counter, and not per-cpu vars, is needed
+>>   because a cpu may go NOHZ idle and not be able to update the global
+>>   calc_load_tasks variable for subsequent load calculations.
+>> * It is not enough to add calls to account for the load when a cpu is
+>>   awakened:
+>>   - Load avg calculation must be independent of cpu load.
+>>   - If a cpu is awakend by one tasks, but then has more scheduled before
+>>     the end of the update window, only the first task will be accounted.
+>>
+>
+> Ok, so delaying the whole ILB angle for now, the below is a similar
+> approach to yours but with a more explicit code flow.
+>
+> Does that work for you?
 
-Done
+This looks good. I'll run my test case to make sure it fixes the
+scenario we hit, and then I'll ack it when I've confirmed it works.
 
+Thanks
 
-> > +static inline int busy_loop(void) /* Wait till scu status is busy */
-> > +{
-> > +	u32 status = 0;
-> > +	u32 loop_count = 0;
-> > +
-> > +	status = __raw_readl(IPC_STATUS_REG);
-> > +	while (status & 1) {
-> > +		udelay(1); /* scu processing time is in few u secods */
-> > +		status = __raw_readl(IPC_STATUS_REG);
-> > +		loop_count++;
-> > +		/* break if scu doesn't reset busy bit after huge retry */
-> > +		if (loop_count > 100000)
-> > +			return -ETIMEDOUT;
-
-> This function has seven-odd callsites and is waaaaaaaay to fat and slow
-> to be inlined.
-
-Looking at the asm I'm not convinced.
-
-
-> > +	if (id == IPC_CMD_PCNTRL_R) { /* Read rbuf */
-> > +		/* Workaround: values are read as 0 without memcpy_fromio */
-> > +		memcpy_fromio(cbuf, IPC_READ_BUFFER, 16);
-> 
-> Should we still be doing this if busy_loop() failed?
-> 
-> (Lots of dittoes on this question)
-
-Does no harm
-
-> > +}
-> 
-> I wonder if this function would look better if cbuf had type u16[],
-
-No - we do byte aligned access to it. and cbuf[offset + 1.5] is sadly not
-supported by C (although I suspect you can make it work in C++ ;))
-
-> > +	mutex_lock(&ipclock);
-> > +	if (ipcdev.pdev == NULL) {
-> 
-> This check happens a lot.  Can it really happen?
-
-Yes.
-
-> I think mailbox_base could/should have had type `struct
-> fw_update_mailbox __iomem *'.  ioremap_nocache() should handle that
-> cleanly, and this cast goes away.
-
-Definitely - and the rest them cleans up by magic
-
-Alan
+-- Chase
