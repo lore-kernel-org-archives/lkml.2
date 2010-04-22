@@ -1,154 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab0DVNaS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 09:30:18 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:25975 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754762Ab0DVNaN (ORCPT
+	id S1754879Ab0DVN3r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 09:29:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30796 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754768Ab0DVN3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 09:30:13 -0400
-From: Amit Kucheria <amit.kucheria@verdurent.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Dinh Nguyen <Dinh.Nguyen@freescale.com>,
-       Amit Kucheria <amit.kucheria@canonical.com>,
-       Russell King <linux@arm.linux.org.uk>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] mx5: Add registration of GPIOs for MX5 devices
-Date: Thu, 22 Apr 2010 16:28:42 +0300
-Message-Id: <a2d23fc5b7650221913ad0d23d08fa4525efe194.1271942210.git.amit.kucheria@verdurent.com>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 22 Apr 2010 09:29:17 -0400
+Date: Thu, 22 Apr 2010 06:27:28 -0700
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
+       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com
+Subject: Cleancache [PATCH 0/7] (was Transcendent Memory): overview
+Message-ID: <20100422132728.GA24243@ca-server1.us.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.16 (2007-06-11)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090202.4BD04F13.00F3:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+(Sorry for resend... Mail server DNS problems sending to some recipients)
 
-Register the gpio irqs on Freescale's MX51 Babbage HW.
+Cleancache [PATCH 0/7] (was Transcendent Memory): overview
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Signed-off-by: Amit Kucheria <amit.kucheria@canonical.com>
----
- arch/arm/mach-mx5/devices.c |   33 +++++++++++++++++++++++++++++++--
- arch/arm/plat-mxc/gpio.c    |    5 ++---
- arch/arm/plat-mxc/tzic.c    |    4 +++-
- 3 files changed, 36 insertions(+), 6 deletions(-)
+Patch applies to 2.6.34-rc5
 
-diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
-index d6fd396..5070ae1 100644
---- a/arch/arm/mach-mx5/devices.c
-+++ b/arch/arm/mach-mx5/devices.c
-@@ -1,5 +1,6 @@
- /*
-  * Copyright 2009 Amit Kucheria <amit.kucheria@canonical.com>
-+ * Copyright (C) 2010 Freescale Semiconductor, Inc.
-  *
-  * The code contained herein is licensed under the GNU General Public
-  * License. You may obtain a copy of the GNU General Public License
-@@ -10,8 +11,10 @@
-  */
- 
- #include <linux/platform_device.h>
-+#include <linux/gpio.h>
- #include <mach/hardware.h>
- #include <mach/imx-uart.h>
-+#include <mach/irqs.h>
- 
- static struct resource uart0[] = {
- 	{
-@@ -89,8 +92,34 @@ struct platform_device mxc_fec_device = {
- 	.resource = mxc_fec_resources,
- };
- 
--/* Dummy definition to allow compiling in AVIC and TZIC simultaneously */
-+static struct mxc_gpio_port mxc_gpio_ports[] = {
-+	{
-+		.chip.label = "gpio-0",
-+		.base = MX51_IO_ADDRESS(MX51_GPIO1_BASE_ADDR),
-+		.irq = MX51_MXC_INT_GPIO1_LOW,
-+		.virtual_irq_start = MXC_GPIO_IRQ_START
-+	},
-+	{
-+		.chip.label = "gpio-1",
-+		.base = MX51_IO_ADDRESS(MX51_GPIO2_BASE_ADDR),
-+		.irq = MX51_MXC_INT_GPIO2_LOW,
-+		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 1
-+	},
-+	{
-+		.chip.label = "gpio-2",
-+		.base = MX51_IO_ADDRESS(MX51_GPIO3_BASE_ADDR),
-+		.irq = MX51_MXC_INT_GPIO3_LOW,
-+		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 2
-+	},
-+	{
-+		.chip.label = "gpio-3",
-+		.base = MX51_IO_ADDRESS(MX51_GPIO4_BASE_ADDR),
-+		.irq = MX51_MXC_INT_GPIO4_LOW,
-+		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 3
-+	},
-+};
-+
- int __init mxc_register_gpios(void)
- {
--	return 0;
-+	return mxc_gpio_init(mxc_gpio_ports, ARRAY_SIZE(mxc_gpio_ports));
- }
-diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
-index 70b2389..71437c6 100644
---- a/arch/arm/plat-mxc/gpio.c
-+++ b/arch/arm/plat-mxc/gpio.c
-@@ -3,7 +3,7 @@
-  * Copyright 2008 Juergen Beisert, kernel@pengutronix.de
-  *
-  * Based on code from Freescale,
-- * Copyright 2004-2006 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Copyright (C) 2004-2010 Freescale Semiconductor, Inc. All Rights Reserved.
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-@@ -38,7 +38,6 @@ static int gpio_table_size;
- #define GPIO_ICR2	(cpu_is_mx1_mx2() ? 0x2C : 0x10)
- #define GPIO_IMR	(cpu_is_mx1_mx2() ? 0x30 : 0x14)
- #define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
--#define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
- 
- #define GPIO_INT_LOW_LEV	(cpu_is_mx1_mx2() ? 0x3 : 0x0)
- #define GPIO_INT_HIGH_LEV	(cpu_is_mx1_mx2() ? 0x2 : 0x1)
-@@ -289,7 +288,7 @@ int __init mxc_gpio_init(struct mxc_gpio_port *port, int cnt)
- 		/* its a serious configuration bug when it fails */
- 		BUG_ON( gpiochip_add(&port[i].chip) < 0 );
- 
--		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25()) {
-+		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25() || cpu_is_mx51()) {
- 			/* setup one handler for each entry */
- 			set_irq_chained_handler(port[i].irq, mx3_gpio_irq_handler);
- 			set_irq_data(port[i].irq, &port[i]);
-diff --git a/arch/arm/plat-mxc/tzic.c b/arch/arm/plat-mxc/tzic.c
-index afa6709..9b86d2a 100644
---- a/arch/arm/plat-mxc/tzic.c
-+++ b/arch/arm/plat-mxc/tzic.c
-@@ -1,5 +1,5 @@
- /*
-- * Copyright 2004-2009 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Copyright (C)2004-2010 Freescale Semiconductor, Inc. All Rights Reserved.
-  *
-  * The code contained herein is licensed under the GNU General Public
-  * License. You may obtain a copy of the GNU General Public License
-@@ -19,6 +19,7 @@
- #include <asm/mach/irq.h>
- 
- #include <mach/hardware.h>
-+#include <mach/common.h>
- 
- /*
-  *****************************************
-@@ -144,6 +145,7 @@ void __init tzic_init_irq(void __iomem *irqbase)
- 		set_irq_handler(i, handle_level_irq);
- 		set_irq_flags(i, IRQF_VALID);
- 	}
-+	mxc_register_gpios();
- 
- 	pr_info("TrustZone Interrupt Controller (TZIC) initialized\n");
- }
--- 
-1.7.0.4
+In previous patch postings, cleancache was part of the Transcendent
+Memory ("tmem") patchset.  This patchset refocuses not on the underlying
+technology (tmem) but instead on the useful functionality provided for Linux,
+and provides a clean API so that cleancache can provide this very useful
+functionality either via a Xen tmem driver OR completely independent of tmem.
+For example: Nitin Gupta (of compcache and ramzswap fame) is implementing
+an in-kernel compression "backend" for cleancache; some believe
+cleancache will be a very nice interface for building RAM-like functionality
+for pseudo-RAM devices such as SSD or phase-change memory; and a Pune
+University team is looking at a backend for virtio (see OLS'2010).
 
+A more complete description of cleancache can be found in the introductory
+comment in mm/cleancache.c (in PATCH 2/7) which is included below
+for convenience.
+
+Note that an earlier version of this patch is now shipping in OpenSuSE 11.2
+and will soon ship in a release of Oracle Enterprise Linux.  Underlying
+tmem technology is now shipping in Oracle VM 2.2 and was just released
+in Xen 4.0 on April 15, 2010.  (Search news.google.com for Transcendent
+Memory)
+
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Reviewed-by: Jeremy Fitzhardinge <jeremy@goop.org>
+
+ fs/btrfs/extent_io.c       |    9 ++
+ fs/btrfs/super.c           |    2 
+ fs/buffer.c                |    5 +
+ fs/ext3/super.c            |    2 
+ fs/ext4/super.c            |    2 
+ fs/mpage.c                 |    7 +
+ fs/ocfs2/super.c           |    3 
+ fs/super.c                 |    8 +
+ include/linux/cleancache.h |   88 ++++++++++++++++++++
+ include/linux/fs.h         |    5 +
+ mm/Kconfig                 |   22 +++++
+ mm/Makefile                |    1 
+ mm/cleancache.c            |  198 +++++++++++++++++++++++++++++++++++++++++++++
+ mm/filemap.c               |   11 ++
+ mm/truncate.c              |   10 ++
+ 15 files changed, 373 insertions(+)
+
+Cleancache can be thought of as a page-granularity victim cache for clean
+pages that the kernel's pageframe replacement algorithm (PFRA) would like
+to keep around, but can't since there isn't enough memory.  So when the
+PFRA "evicts" a page, it first attempts to put it into a synchronous
+concurrency-safe page-oriented pseudo-RAM device (such as Xen's Transcendent
+Memory, aka "tmem", or in-kernel compressed memory, aka "zmem", or other
+RAM-like devices) which is not directly accessible or addressable by the
+kernel and is of unknown and possibly time-varying size.  And when a
+cleancache-enabled filesystem wishes to access a page in a file on disk,
+it first checks cleancache to see if it already contains it; if it does,
+the page is copied into the kernel and a disk access is avoided.
+This pseudo-RAM device links itself to cleancache by setting the
+cleancache_ops pointer appropriately and the functions it provides must
+conform to certain semantics as follows:
+
+Most important, cleancache is "ephemeral".  Pages which are copied into
+cleancache have an indefinite lifetime which is completely unknowable
+by the kernel and so may or may not still be in cleancache at any later time.
+Thus, as its name implies, cleancache is not suitable for dirty pages.  The
+pseudo-RAM has complete discretion over what pages to preserve and what
+pages to discard and when.
+
+A filesystem calls "init_fs" to obtain a pool id which, if positive, must be
+saved in the filesystem's superblock; a negative return value indicates
+failure.  A "put_page" will copy a (presumably about-to-be-evicted) page into
+pseudo-RAM and associate it with the pool id, the file inode, and a page
+index into the file.  (The combination of a pool id, an inode, and an index
+is called a "handle".)  A "get_page" will copy the page, if found, from
+pseudo-RAM into kernel memory.  A "flush_page" will ensure the page no longer
+is present in pseudo-RAM; a "flush_inode" will flush all pages associated
+with the specified inode; and a "flush_fs" will flush all pages in all
+inodes specified by the given pool id.
+
+A "init_shared_fs", like init, obtains a pool id but tells the pseudo-RAM
+to treat the pool as shared using a 128-bit UUID as a key.  On systems
+that may run multiple kernels (such as hard partitioned or virtualized
+systems) that may share a clustered filesystem, and where the pseudo-RAM
+may be shared among those kernels, calls to init_shared_fs that specify the
+same UUID will receive the same pool id, thus allowing the pages to
+be shared.  Note that any security requirements must be imposed outside
+of the kernel (e.g. by "tools" that control the pseudo-RAM).  Or a
+pseudo-RAM implementation can simply disable shared_init by always
+returning a negative value.
+
+If a get_page is successful on a non-shared pool, the page is flushed (thus
+making cleancache an "exclusive" cache).  On a shared pool, the page
+is NOT flushed on a successful get_page so that it remains accessible to
+other sharers.  The kernel is responsible for ensuring coherency between
+cleancache (shared or not), the page cache, and the filesystem, using
+cleancache flush operations as required.
+
+Note that the pseudo-RAM must enforce put-put-get coherency and get-get
+coherency.  For the former, if two puts are made to the same handle but
+with different data, say AAA by the first put and BBB by the second, a
+subsequent get can never return the stale data (AAA).  For get-get coherency,
+if a get for a given handle fails, subsequent gets for that handle will
+never succeed unless preceded by a successful put with that handle.
+
+Last, pseudo-RAM provides no SMP serialization guarantees; if two
+different Linux threads are putting an flushing a page with the same
+handle, the results are indeterminate.
