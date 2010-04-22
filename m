@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab0DVKfl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 06:35:41 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:25223 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485Ab0DVKdb (ORCPT
+	id S1753723Ab0DVKh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 06:37:57 -0400
+Received: from mtoichi13.ns.itscom.net ([219.110.2.183]:56955 "EHLO
+	mtoichi13.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441Ab0DVKhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 06:33:31 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzab9bhzz1202hzzz32i2a8h87h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L19XBL-01-034-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 2/8] KVM: SVM: Make sure rip is synced to vmcb before nested vmexit
-Date: Thu, 22 Apr 2010 12:33:08 +0200
-Message-ID: <1271932394-13968-3-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com>
-References: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com>
-X-OriginalArrivalTime: 22 Apr 2010 10:33:18.0981 (UTC) FILETIME=[39709B50:01CAE207]
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: unknown
+	Thu, 22 Apr 2010 06:37:55 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH 13/35] fallthru: ext2 fallthru support
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Jan Blunck <jblunck@suse.de>, Miklos Szeredi <miklos@szeredi.hu>,
+       Valerie Aurora <vaurora@redhat.com>, dwmw2@infradead.org,
+       viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, tytso@mit.edu,
+       linux-ext4@vger.kernel.org
+In-Reply-To: <20100421092235.GB13114@shareable.org>
+References: <1271372682-21225-14-git-send-email-vaurora@redhat.com> <20100419124025.GG10776@bolzano.suse.de> <1271682168.14748.718.camel@macbook.infradead.org> <20100419132344.GI10776@bolzano.suse.de> <20100419133028.GA3631@shareable.org> <20100419141248.GK10776@bolzano.suse.de> <20100419142315.GA2688@shell> <E1O3sLi-0008EA-QW@pomaz-ex.szeredi.hu> <20100420213450.GM11723@shareable.org> <20100421084211.GB22741@bolzano.suse.de> <20100421092235.GB13114@shareable.org>
+Date: Thu, 22 Apr 2010 19:30:55 +0900
+Message-ID: <1731.1271932255@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a bug where a nested guest always went over
-the same instruction because the rip was not advanced on a
-nested vmexit.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/kvm/svm.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Jamie Lokier:
+> Hmm.  I smell potential confusion for some otherwise POSIX-friendly
+> userspaces.
+	:::
+> This plays into inotify, where you have to know if you are monitoring
+> every directory that contains a link to a file, to know if you need to
+> monitor the file itself directly instead.
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index ec20584..c480d7f 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -2960,6 +2960,10 @@ static void svm_vcpu_run(struct kvm_vcpu *vcpu)
- 	u16 gs_selector;
- 	u16 ldt_selector;
- 
-+	svm->vmcb->save.rax = vcpu->arch.regs[VCPU_REGS_RAX];
-+	svm->vmcb->save.rsp = vcpu->arch.regs[VCPU_REGS_RSP];
-+	svm->vmcb->save.rip = vcpu->arch.regs[VCPU_REGS_RIP];
-+
- 	/*
- 	 * A vmexit emulation is required before the vcpu can be executed
- 	 * again.
-@@ -2967,10 +2971,6 @@ static void svm_vcpu_run(struct kvm_vcpu *vcpu)
- 	if (unlikely(svm->nested.exit_required))
- 		return;
- 
--	svm->vmcb->save.rax = vcpu->arch.regs[VCPU_REGS_RAX];
--	svm->vmcb->save.rsp = vcpu->arch.regs[VCPU_REGS_RSP];
--	svm->vmcb->save.rip = vcpu->arch.regs[VCPU_REGS_RIP];
--
- 	pre_svm_run(svm);
- 
- 	sync_lapic_to_cr8(vcpu);
--- 
-1.7.0.4
+Addition to the inode number of fallthru/readdir, hardlink in union
+mount may be a problem. If you open a hardlinked file for writing or
+try chmod it, the internal copyup will happen and the hardlink will be 
+destroyed. For instance, when fileA and fileB are hardlinked on the
+lower layer, and the contents of fileA is modifed (copyup happens). You
+will not see the latest contents via fileB.
+And the IN_CREATE event may be fired to the parent dir if you monitor
+it, I am afraid.
+
+(I have pointed out this issue before, but the posted document didn't
+seem to contain about it)
 
 
+J. R. Okajima
