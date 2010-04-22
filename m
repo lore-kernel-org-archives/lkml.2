@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab0DVDXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 23:23:43 -0400
-Received: from cluster-g.mailcontrol.com ([208.87.233.190]:39644 "EHLO
-	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab0DVDXm convert rfc822-to-8bit (ORCPT
+	id S1753373Ab0DVD32 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 23:29:28 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:58149 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab0DVD31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 23:23:42 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Wed, 21 Apr 2010 23:29:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: core: workque: workqueue recursion when unplugging usb WCDMA modem on 2.6.32 kernel
-Date: Wed, 21 Apr 2010 20:15:52 -0700
-Message-ID: <ED2979D1CA1B3E4BB166ED9990088522765E30@SJOAMSEXB01.AMERICAS.ROOT.PRI>
-In-Reply-To: <20100421182747.GB7876@kroah.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: core: workque: workqueue recursion when unplugging usb WCDMA modem on 2.6.32 kernel
-Thread-Index: AcrhgJX3WtfqbC0eS/apoxqcDt4rFgAR1KTA
-References: <ED2979D1CA1B3E4BB166ED9990088522765C8C@SJOAMSEXB01.AMERICAS.ROOT.PRI> <20100421182747.GB7876@kroah.com>
-From: "YuPing Luo" <YuPing.Luo@csr.com>
-To: "Greg KH" <greg@kroah.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-X-OriginalArrivalTime: 22 Apr 2010 03:22:44.0522 (UTC) FILETIME=[12E700A0:01CAE1CB]
+Date: Wed, 21 Apr 2010 20:29:25 -0700
+X-Google-Sender-Auth: f0cdc17fa41408db
+Message-ID: <v2x7447a0ac1004212029qd1866eaekc769fee5b13ac09d@mail.gmail.com>
+Subject: [PATCH] net: change recvform to return same address length as 
+	getsockname on unnamed unix sockets
+From: Pavel Pergamenshchik <ppergame@gmail.com>
+To: netdev@vger.kernel.org, davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > On Tue, Apr 20, 2010 at 11:27:55PM -0700, YuPing Luo wrote:
-> Is your console on a usb to serial device?  Or a serial port?
-> if usb to serial, can you try .33-rc5 and let us know if that solves
-the problem?
-> greg k-h
+unix_*_recvmsg() returns zero-length sockaddr if the sender is an
+unnamed AF_UNIX socket. Change it to return a two-byte sockaddr with
+just the address family, to be consistent with unix_getname().
 
- The console is over serial port, while the usb modem exported 2 serial
-ports .
- The recursion can be avoided if introducing one dedicated work queue
-thread for binder (
-http://android.git.kernel.org/?p=kernel/common.git;a=blob;f=drivers/stag
-ing/android/binder.c;h=99010d4b3044b2c33c9d709e334b5be7871b9599;hb=andro
-id-2.6.32).
+Signed-off-by: Pavel Pergamenshchik <ppergame@gmail.com>
 
-Thanks
-Yuping
+---
+Minimal example at http://xzrq.net/uaddrwtf.c
+Solaris/OS X print 16 and 16. Linux prints 0 and 2 as described above.
 
+--- a/net/unix/af_unix.c	2010-04-01 16:02:33.000000000 -0700
++++ b/net/unix/af_unix.c	2010-04-21 20:17:43.564703748 -0700
+@@ -1634,9 +1634,13 @@
+ static void unix_copy_addr(struct msghdr *msg, struct sock *sk)
+ {
+ 	struct unix_sock *u = unix_sk(sk);
++	struct sockaddr_un *sunaddr;
 
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+-	msg->msg_namelen = 0;
+-	if (u->addr) {
++	if (!u->addr) {
++		msg->msg_namelen = sizeof(short);
++		sunaddr = msg->msg_name;
++		sunaddr->sun_family = AF_UNIX;
++	} else {
+ 		msg->msg_namelen = u->addr->len;
+ 		memcpy(msg->msg_name, u->addr->name, u->addr->len);
+ 	}
