@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab0DVFP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 01:15:56 -0400
-Received: from host2.200-71-230.telecom.net.ar ([200.71.230.2]:54093 "EHLO
-	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750870Ab0DVFPz (ORCPT
+	id S1752014Ab0DVFZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 01:25:58 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51727
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750870Ab0DVFZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 01:15:55 -0400
-Message-ID: <64946.41.220.68.1.1271908800.squirrel@41.220.68.1>
-Date: Thu, 22 Apr 2010 02:00:00 -0200 (FNT)
-Subject: Congratulations - You Have Won (Winning Numbers)
-From: "MICROSOFT EMAIL PROMOTION" <info.winners@microsoft.com>
-Reply-To: mrivannickerson4@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	Thu, 22 Apr 2010 01:25:57 -0400
+Date: Wed, 21 Apr 2010 22:26:02 -0700 (PDT)
+Message-Id: <20100421.222602.211557559.davem@davemloft.net>
+To: ppergame@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: change recvform to return same address length as
+ getsockname on unnamed unix sockets
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <v2x7447a0ac1004212029qd1866eaekc769fee5b13ac09d@mail.gmail.com>
+References: <v2x7447a0ac1004212029qd1866eaekc769fee5b13ac09d@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Congratulations - You Have Won (Winning Numbers)
+From: Pavel Pergamenshchik <ppergame@gmail.com>
+Date: Wed, 21 Apr 2010 20:29:25 -0700
 
-The MICROSOFT EMAIL PROMO TEAM is glad to announce that
-after a successful completion of the PROMO DRAWS held on the
-21st April March 2010,your e-mail address,attached to winning
-numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
-lottery category.
+> unix_*_recvmsg() returns zero-length sockaddr if the sender is an
+> unnamed AF_UNIX socket. Change it to return a two-byte sockaddr with
+> just the address family, to be consistent with unix_getname().
+> 
+> Signed-off-by: Pavel Pergamenshchik <ppergame@gmail.com>
 
-You have therefore been approved to claim a total sum of
-£250,000,00 Pounds Sterling in cash credited to REF
-NO:MICRO-L/2009-END10.
+Since we've behaved this way for at least 10 years, the existing
+behavior is the user visible ABI and the risk of breaking things by
+making the change is too great.
 
-All participants were selected through our Microsoft computer
-ballot system drawn from 167,000 Names,as part of our
-International  "E-MAIL" Promotion Program for our prominent
-MS-WORD users all over the world and for the continuous use
-of the internet. You are advised to contact the claims
-processor with the details below via his e-mail address :
-
-NAME:  Ivan Nickerson
-EMAIL: mrivan_nickerson04@yahoo.com.hk
-
-PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO
-
-CLAIM YOUR PRIZE:
-1.Full Name:... 2.Address:... 3.Phone:... 4.Country:...
-
-5.Sex/Gender:...
-
-
-YOURS SINCERELY,
-ANASTACIA SHEFFIELD.
-
+I'm not applying this, sorry.
