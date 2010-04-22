@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758179Ab0DVUKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:10:04 -0400
-Received: from kroah.org ([198.145.64.141]:60041 "EHLO coco.kroah.org"
+	id S932187Ab0DVUG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:06:29 -0400
+Received: from kroah.org ([198.145.64.141]:60147 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758136Ab0DVUBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:01:48 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:17 2010
-Message-Id: <20100422195417.337536239@kvm.kroah.org>
+	id S1758188Ab0DVUCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:02:15 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:19 2010
+Message-Id: <20100422195419.160232032@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:56 -0700
+Date: Thu, 22 Apr 2010 12:55:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Len Brown <len.brown@intel.com>, 563313@bugs.debian.org,
-       Alexey Starikovskiy <astarikovskiy@suse.de>,
-       Ben Hutchings <ben@decadent.org.uk>
-Subject: [119/139] ACPI: EC: Allow multibyte access to EC
+       Joerg Roedel <joerg.roedel@amd.com>
+Subject: [138/139] x86/gart: Disable GART explicitly before initialization
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,102 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-From: Alexey Starikovskiy <astarikovskiy@suse.de>
+commit 4b83873d3da0704987cb116833818ed96214ee29 upstream.
 
-commit dadf28a10c3eb29421837a2e413ab869ebd upstream
+If we boot into a crash-kernel the gart might still be
+enabled and its caches might be dirty. This can result in
+undefined behavior later. Fix it by explicitly disabling the
+gart hardware before initialization and flushing the caches
+after enablement.
 
-http://bugzilla.kernel.org/show_bug.cgi?id=14667
-
-[bwh: Backport to 2.6.32; same applies to 2.6.33]
-
-Signed-off-by: Alexey Starikovskiy <astarikovskiy@suse.de>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/acpica/exprep.c |   12 ++++++++++++
- drivers/acpi/ec.c            |   35 +++++++++--------------------------
- 2 files changed, 21 insertions(+), 26 deletions(-)
+ arch/x86/kernel/aperture_64.c |   15 ++++++++++++++-
+ arch/x86/kernel/pci-gart_64.c |    3 +++
+ 2 files changed, 17 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/acpica/exprep.c
-+++ b/drivers/acpi/acpica/exprep.c
-@@ -468,6 +468,18 @@ acpi_status acpi_ex_prep_field_value(str
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -394,6 +394,7 @@ void __init gart_iommu_hole_init(void)
+ 	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
+ 		int bus;
+ 		int dev_base, dev_limit;
++		u32 ctl;
  
- 		acpi_ut_add_reference(obj_desc->field.region_obj);
+ 		bus = bus_dev_ranges[i].bus;
+ 		dev_base = bus_dev_ranges[i].dev_base;
+@@ -407,7 +408,19 @@ void __init gart_iommu_hole_init(void)
+ 			gart_iommu_aperture = 1;
+ 			x86_init.iommu.iommu_init = gart_iommu_init;
  
-+		/* allow full data read from EC address space */
-+		if (obj_desc->field.region_obj->region.space_id ==
-+			ACPI_ADR_SPACE_EC) {
-+			if (obj_desc->common_field.bit_length > 8)
-+				obj_desc->common_field.access_bit_width =
-+				ACPI_ROUND_UP(obj_desc->common_field.
-+							bit_length, 8);
-+				obj_desc->common_field.access_byte_width =
-+				ACPI_DIV_8(obj_desc->common_field.
-+							access_bit_width);
-+		}
+-			aper_order = (read_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL) >> 1) & 7;
++			ctl = read_pci_config(bus, slot, 3,
++					      AMD64_GARTAPERTURECTL);
 +
- 		ACPI_DEBUG_PRINT((ACPI_DB_BFIELD,
- 				  "RegionField: BitOff %X, Off %X, Gran %X, Region %p\n",
- 				  obj_desc->field.start_field_bit_offset,
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -589,12 +589,12 @@ static u32 acpi_ec_gpe_handler(void *dat
++			/*
++			 * Before we do anything else disable the GART. It may
++			 * still be enabled if we boot into a crash-kernel here.
++			 * Reconfiguring the GART while it is enabled could have
++			 * unknown side-effects.
++			 */
++			ctl &= ~GARTEN;
++			write_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL, ctl);
++
++			aper_order = (ctl >> 1) & 7;
+ 			aper_size = (32 * 1024 * 1024) << aper_order;
+ 			aper_base = read_pci_config(bus, slot, 3, AMD64_GARTAPERTUREBASE) & 0x7fff;
+ 			aper_base <<= 25;
+--- a/arch/x86/kernel/pci-gart_64.c
++++ b/arch/x86/kernel/pci-gart_64.c
+@@ -564,6 +564,9 @@ static void enable_gart_translations(voi
  
- static acpi_status
- acpi_ec_space_handler(u32 function, acpi_physical_address address,
--		      u32 bits, acpi_integer *value,
-+		      u32 bits, acpi_integer *value64,
- 		      void *handler_context, void *region_context)
- {
- 	struct acpi_ec *ec = handler_context;
--	int result = 0, i;
--	u8 temp = 0;
-+	int result = 0, i, bytes = bits / 8;
-+	u8 *value = (u8 *)value64;
+ 		enable_gart_translation(dev, __pa(agp_gatt_table));
+ 	}
++
++	/* Flush the GART-TLB to remove stale entries */
++	k8_flush_garts();
+ }
  
- 	if ((address > 0xFF) || !value || !handler_context)
- 		return AE_BAD_PARAMETER;
-@@ -602,32 +602,15 @@ acpi_ec_space_handler(u32 function, acpi
- 	if (function != ACPI_READ && function != ACPI_WRITE)
- 		return AE_BAD_PARAMETER;
- 
--	if (bits != 8 && acpi_strict)
--		return AE_BAD_PARAMETER;
--
--	if (EC_FLAGS_MSI)
-+	if (EC_FLAGS_MSI || bits > 8)
- 		acpi_ec_burst_enable(ec);
- 
--	if (function == ACPI_READ) {
--		result = acpi_ec_read(ec, address, &temp);
--		*value = temp;
--	} else {
--		temp = 0xff & (*value);
--		result = acpi_ec_write(ec, address, temp);
--	}
--
--	for (i = 8; unlikely(bits - i > 0); i += 8) {
--		++address;
--		if (function == ACPI_READ) {
--			result = acpi_ec_read(ec, address, &temp);
--			(*value) |= ((acpi_integer)temp) << i;
--		} else {
--			temp = 0xff & ((*value) >> i);
--			result = acpi_ec_write(ec, address, temp);
--		}
--	}
-+	for (i = 0; i < bytes; ++i, ++address, ++value)
-+		result = (function == ACPI_READ) ?
-+			acpi_ec_read(ec, address, value) :
-+			acpi_ec_write(ec, address, *value);
- 
--	if (EC_FLAGS_MSI)
-+	if (EC_FLAGS_MSI || bits > 8)
- 		acpi_ec_burst_disable(ec);
- 
- 	switch (result) {
+ /*
 
 
