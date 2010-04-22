@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab0DVHCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 03:02:12 -0400
-Received: from [76.245.85.235] ([76.245.85.235]:54250 "EHLO cynthia.pants.nu"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751952Ab0DVHCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 03:02:10 -0400
-Date: Thu, 22 Apr 2010 00:01:29 -0700
-From: Brad Boyer <flar@allandria.com>
-To: Jamie Lokier <jamie@shareable.org>
-Cc: Phillip Susi <psusi@cfl.rr.com>, linux-fsdevel@vger.kernel.org,
-       Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: readahead on directories
-Message-ID: <20100422070129.GB10662@cynthia.pants.nu>
-References: <4BCC7C05.8000803@cfl.rr.com> <20100421004434.GA27420@shareable.org> <4BCF123C.6010400@cfl.rr.com> <20100421161211.GC27575@shareable.org> <4BCF3FAE.7090206@cfl.rr.com> <20100421202209.GV27575@shareable.org> <4BCF6731.1070404@cfl.rr.com> <20100421220612.GD27575@shareable.org>
+	id S1752847Ab0DVHGY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 03:06:24 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:50883 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751561Ab0DVHGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 03:06:22 -0400
+Date: Thu, 22 Apr 2010 09:06:10 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Neil Brown <neilb@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-raid@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: tip: origin tree build failure (x86, 32-bit, allyesconfig)
+Message-ID: <20100422070610.GA18884@elte.hu>
+References: <19350.53522.385933.467438@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100421220612.GD27575@shareable.org>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <19350.53522.385933.467438@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 11:06:12PM +0100, Jamie Lokier wrote:
-> For specific filesystems, you could do it.  readahead() on directories
-> is not an unreasonable thing to add on.
+
+* Neil Brown <neilb@suse.de> wrote:
+
+> are available in the git repository at:
 > 
-> Generically is not likely. It's not about blocking, it's about the
-> fact that directories don't always consist of data blocks on the store
-> organised similarly to a file.  For example NFS, CIFS, or (I'm not
-> sure), maybe even reiserfs/btrfs?
+>   git://neil.brown.name/md/ for-linus
 
-Some non-UNIX file systems don't have anything that looks like a
-directory either. Just as an example, HFS and HFS+ both have a single
-catalog file for the whole file system. The directory listing method
-involves walking the tree from this file and picking a few fields out
-of each record matching the appropriate parent directory. This would
-make it hard to do something generic, although it would be possible
-to readahead some range of blocks of the catalog and produce a
-similar effect. This would really need to be FS specific, and the
-current readahead impementation is mostly common code.
+( Note, i'm re-using this old MD pull request thread to report a bug in a pull 
+  request you sent to Linus in the past two days. I havent found the pull 
+  request nor the patch on lkml. )
 
-	Brad Boyer
-	flar@allandria.com
+All 32-bit x86 builds (x86, allyesconfig) that enable RAID are failing with 
+this build failure:
 
+ drivers/built-in.o: In function `raid5_compute_sector':
+ raid5.c:(.text+0x2e42ac): undefined reference to `__umoddi3'
+ raid5.c:(.text+0x2e42d8): undefined reference to `__umoddi3'
+ raid5.c:(.text+0x2e42ff): undefined reference to `__umoddi3'
+ raid5.c:(.text+0x2e4327): undefined reference to `__umoddi3'
+ raid5.c:(.text+0x2e4385): undefined reference to `__umoddi3'
+ drivers/built-in.o:raid5.c:(.text+0x2e43bc): more undefined references to `__umoddi3' follow
+
+Caused by this commit:
+
+  35f2a59: md/raid5: allow for more than 2^31 chunks.
+
+I've reverted the commit from -tip for now.
+
+Thanks,
+
+	Ingo
