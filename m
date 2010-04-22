@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab0DVULS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:11:18 -0400
-Received: from kroah.org ([198.145.64.141]:60007 "EHLO coco.kroah.org"
+	id S1758256Ab0DVUTX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:19:23 -0400
+Received: from kroah.org ([198.145.64.141]:59785 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757959Ab0DVUBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:01:41 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:16 2010
-Message-Id: <20100422195416.857418398@kvm.kroah.org>
+	id S1758025Ab0DVUAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:00:40 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:11 2010
+Message-Id: <20100422195411.679310845@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:51 -0700
+Date: Thu, 22 Apr 2010 12:54:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Terry Loftin <terry.loftin@hp.com>,
-       Bruce Allan <bruce.w.allan@intel.com>,
-       Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Matthew Burgess <matthew@linuxfromscratch.org>
-Subject: [114/139] e1000e: stop cleaning when we reach tx_ring->next_to_use
+       Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [069/139] drm/radeon/kms: fix tv dac conflict resolver
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,35 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Terry Loftin <terry.loftin@hp.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit dac876193cd79ced36d0462749ea47c05844fb49 upstream.
+commit 08d075116db3592db218bfe0f554cd93c9e12505 upstream.
 
-Tx ring buffers after tx_ring->next_to_use are volatile and could
-change, possibly causing a crash.  Stop cleaning when we hit
-tx_ring->next_to_use.
+On systems with the tv dac shared between DVI and TV,
+we can only use the dac for one of the connectors.
+However, when using a digital monitor on the DVI port,
+you can use the dac for the TV connector just fine.
+Check the use_digital status when resolving the conflict.
 
-Signed-off-by: Terry Loftin <terry.loftin@hp.com>
-Acked-by: Bruce Allan <bruce.w.allan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Matthew Burgess <matthew@linuxfromscratch.org>
+Fixes fdo bug 27649, possibly others.
+
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/e1000e/netdev.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/radeon/radeon_connectors.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/net/e1000e/netdev.c
-+++ b/drivers/net/e1000e/netdev.c
-@@ -660,6 +660,8 @@ static bool e1000_clean_tx_irq(struct e1
- 				i = 0;
- 		}
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -162,12 +162,14 @@ radeon_connector_analog_encoder_conflict
+ {
+ 	struct drm_device *dev = connector->dev;
+ 	struct drm_connector *conflict;
++	struct radeon_connector *radeon_conflict;
+ 	int i;
  
-+		if (i == tx_ring->next_to_use)
-+			break;
- 		eop = tx_ring->buffer_info[i].next_to_watch;
- 		eop_desc = E1000_TX_DESC(*tx_ring, eop);
- 	}
+ 	list_for_each_entry(conflict, &dev->mode_config.connector_list, head) {
+ 		if (conflict == connector)
+ 			continue;
+ 
++		radeon_conflict = to_radeon_connector(conflict);
+ 		for (i = 0; i < DRM_CONNECTOR_MAX_ENCODER; i++) {
+ 			if (conflict->encoder_ids[i] == 0)
+ 				break;
+@@ -177,6 +179,9 @@ radeon_connector_analog_encoder_conflict
+ 				if (conflict->status != connector_status_connected)
+ 					continue;
+ 
++				if (radeon_conflict->use_digital)
++					continue;
++
+ 				if (priority == true) {
+ 					DRM_INFO("1: conflicting encoders switching off %s\n", drm_get_connector_name(conflict));
+ 					DRM_INFO("in favor of %s\n", drm_get_connector_name(connector));
 
 
