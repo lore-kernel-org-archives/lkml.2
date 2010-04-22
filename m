@@ -1,1029 +1,1170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567Ab0DVWIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 18:08:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63480 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab0DVWIg (ORCPT
+	id S1752790Ab0DVWO4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 18:14:56 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:42791 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab0DVWOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 18:08:36 -0400
+	Thu, 22 Apr 2010 18:14:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=p249Ib0JgQRqTm0QMZQBcS7S/Vu2piVUbDpRM38rVdSBxK4pgJs3CHMLQG1sv3jVhf
-         tjiCjjNaxfReTevfK/0UJ6uV5rvatKhW3q7lexRx8ok2JsEryyF5S3KVaSIoe1ciBaAn
-         Qh48jfvRoYIgnXenYeDOaf5LBdel10v+WWMIk=
-From: Francis Galiegue <fgaliegue@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Francis Galiegue <fgaliegue@gmail.com>, <trivial@kernel.org>
-Subject: [PATCH] Documentation/: it's -> its where appropriate
-Date: Fri, 23 Apr 2010 00:08:02 +0200
-Message-Id: <1271974082-12152-1-git-send-email-fgaliegue@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <h2wac542ca01004221505i825a68dendd4fd54bfffe6ac6@mail.gmail.com>
-References: <h2wac542ca01004221505i825a68dendd4fd54bfffe6ac6@mail.gmail.com>
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=AJDT3YC8taIJfhuSC3jMSfoAvIv0tuEvL0lg9wxxkRV8gg+VlmzOZKLRGNDEaa2TtF
+         9NFF0IZ2oGyTcEoDeWusAs67jB8lLf0h0tAblvOryO++7r5CTeux5wdOjmnRgYDLPLGS
+         AEMtz4y5QlXLADP5+0B0OrCwzyOMySJ7NO1e8=
+MIME-Version: 1.0
+Date: Fri, 23 Apr 2010 00:14:49 +0200
+Message-ID: <h2x4bc8bc021004221514w944a8694ne34b39bcf3163ee3@mail.gmail.com>
+Subject: [PATCH] compal-laptop: added JHL90, battery & hwmon interface
+From: Roald Frederickx <roald.frederickx@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix obvious cases of "it's" being used when "its" was meant.
+From: Roald Frederickx <roald.frederickx@gmail.com>
 
-Signed-off-by: Francis Galiegue <fgaliegue@gmail.com>
-Cc: <trivial@kernel.org>
+The driver now supports the Compal JHL90 (which I use) and it has some
+added features. The biggest novelties are a battery interface
+(power_supply) and a temperature and fan control interface (hmwon).
+It also adds a power-off feature to the backlight subsystem and it exports
+a few files that can enable/disable wake_on_XXX events.
 
+Much of the original code of the old features is still there, but I've
+changed some names to keep the naming more coherent with the added
+functionalities. (Sorry for the huge patch)
+
+This is my first kernel patch, so I'm new to this. I've added my name
+and email address as an author (I'm willing to respond to questions,
+and/or to test future versions on a JHL90 platform). I also bumped up
+the version number to 0.2.7 as this is quite a big change.
+
+
+Some technical stuff about the new driver:
+
+First of all, I'm not sure if the extra features also work on the other
+Compal boards. Currently they only get enabled if the DMI data
+indicates you are on a JHL90 board.
+
+Secondly, I've noticed a quirk in my fan controller. I have to re-send the
+wanted pwm-level to the controller every so often. If I don't do this,
+the fanspeed will slowly rise until after a couple of minutes it's at
+full speed. (Note that every normal userland application will probably
+update the pwm-level every so often anyway, based on temperature
+readings, so this might not be an issue in practice) If this turns out
+to be a problem with all the controllers, maybe we should implement a
+kernel timer and have the driver re-send the pwm level every XX
+seconds to make this transparent to userspace? (However, I couldn't
+immediately find a way to do this cleanly.)
+
+Additional information can be found in the source comments.
+
+(Note: my mail client may wordwrap the header of the patch, my apologies.)
+
+Signed-off-by: Roald Frederickx <roald.frederickx@gmail.com>
 ---
- Documentation/ABI/testing/sysfs-devices-memory     |    2 +-
- Documentation/DMA-API-HOWTO.txt                    |    2 +-
- Documentation/DocBook/libata.tmpl                  |    2 +-
- Documentation/PCI/pci-error-recovery.txt           |    4 ++--
- Documentation/Smack.txt                            |    2 +-
- Documentation/arm/SA1100/ADSBitsy                  |    2 +-
- Documentation/arm/Sharp-LH/ADC-LH7-Touchscreen     |    2 +-
- Documentation/atomic_ops.txt                       |    2 +-
- Documentation/blackfin/bfin-gpio-notes.txt         |    2 +-
- Documentation/cachetlb.txt                         |    6 +++---
- Documentation/cgroups/memcg_test.txt               |    2 +-
- Documentation/cgroups/memory.txt                   |    2 +-
- Documentation/connector/connector.txt              |    2 +-
- Documentation/dvb/ci.txt                           |    2 +-
- Documentation/dvb/contributors.txt                 |    2 +-
- .../filesystems/autofs4-mount-control.txt          |    2 +-
- Documentation/filesystems/ceph.txt                 |    2 +-
- Documentation/filesystems/dlmfs.txt                |    2 +-
- Documentation/filesystems/fiemap.txt               |   12 ++++++------
- Documentation/filesystems/fuse.txt                 |    4 ++--
- Documentation/filesystems/hpfs.txt                 |    2 +-
- Documentation/filesystems/nfs/rpc-cache.txt        |    2 +-
- Documentation/filesystems/proc.txt                 |    4 ++--
- Documentation/filesystems/smbfs.txt                |    2 +-
- Documentation/filesystems/vfs.txt                  |    2 +-
- Documentation/hwmon/lm85                           |    2 +-
- Documentation/input/joystick.txt                   |    2 +-
- Documentation/intel_txt.txt                        |    2 +-
- Documentation/kbuild/kconfig-language.txt          |    2 +-
- Documentation/kernel-docs.txt                      |   10 +++++-----
- Documentation/kprobes.txt                          |    2 +-
- Documentation/laptops/laptop-mode.txt              |    2 +-
- Documentation/lguest/lguest.c                      |    2 +-
- Documentation/md.txt                               |    2 +-
- Documentation/netlabel/lsm_interface.txt           |    2 +-
- Documentation/networking/ifenslave.c               |    2 +-
- Documentation/networking/packet_mmap.txt           |    4 ++--
- Documentation/power/regulator/consumer.txt         |   10 +++++-----
- Documentation/power/regulator/machine.txt          |    2 +-
- Documentation/power/regulator/overview.txt         |    6 +++---
- Documentation/powerpc/booting-without-of.txt       |    2 +-
- Documentation/powerpc/phyp-assisted-dump.txt       |    2 +-
- Documentation/rt-mutex-design.txt                  |    2 +-
- Documentation/scsi/ChangeLog.lpfc                  |    4 ++--
- Documentation/scsi/FlashPoint.txt                  |    2 +-
- Documentation/scsi/dtc3x80.txt                     |    2 +-
- Documentation/scsi/ncr53c8xx.txt                   |    2 +-
- Documentation/scsi/osst.txt                        |    2 +-
- Documentation/scsi/scsi_fc_transport.txt           |    4 ++--
- Documentation/scsi/sym53c8xx_2.txt                 |    2 +-
- Documentation/sound/alsa/soc/dapm.txt              |    4 ++--
- Documentation/sound/alsa/soc/machine.txt           |    2 +-
- Documentation/sound/alsa/soc/overview.txt          |    2 +-
- Documentation/usb/WUSB-Design-overview.txt         |    2 +-
- Documentation/vm/numa_memory_policy.txt            |    4 ++--
- Documentation/w1/w1.generic                        |    2 +-
- 56 files changed, 81 insertions(+), 81 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
-index bf1627b..aba7d98 100644
---- a/Documentation/ABI/testing/sysfs-devices-memory
-+++ b/Documentation/ABI/testing/sysfs-devices-memory
-@@ -43,7 +43,7 @@ Date:		September 2008
- Contact:	Badari Pulavarty <pbadari@us.ibm.com>
- Description:
- 		The file /sys/devices/system/memory/memoryX/state
--		is read-write.  When read, it's contents show the
-+		is read-write.  When read, its contents show the
- 		online/offline state of the memory section.  When written,
- 		root can toggle the the online/offline state of a removable
- 		memory section (see removable file description above)
-diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/DMA-API-HOWTO.txt
-index 52618ab..2e435ad 100644
---- a/Documentation/DMA-API-HOWTO.txt
-+++ b/Documentation/DMA-API-HOWTO.txt
-@@ -742,7 +742,7 @@ failure can be determined by:
- 
- 			   Closing
- 
--This document, and the API itself, would not be in it's current
-+This document, and the API itself, would not be in its current
- form without the feedback and suggestions from numerous individuals.
- We would like to specifically mention, in no particular order, the
- following people:
-diff --git a/Documentation/DocBook/libata.tmpl b/Documentation/DocBook/libata.tmpl
-index ba99757..261b57b 100644
---- a/Documentation/DocBook/libata.tmpl
-+++ b/Documentation/DocBook/libata.tmpl
-@@ -490,7 +490,7 @@ void (*host_stop) (struct ata_host_set *host_set);
- 	allocates space for a legacy IDE PRD table and returns.
- 	</para>
- 	<para>
--	->port_stop() is called after ->host_stop().  It's sole function
-+	->port_stop() is called after ->host_stop().  Its sole function
- 	is to release DMA/memory resources, now that they are no longer
- 	actively being used.  Many drivers also free driver-private
- 	data from port at this time.
-diff --git a/Documentation/PCI/pci-error-recovery.txt b/Documentation/PCI/pci-error-recovery.txt
-index e83f2ea..898ded2 100644
---- a/Documentation/PCI/pci-error-recovery.txt
-+++ b/Documentation/PCI/pci-error-recovery.txt
-@@ -216,7 +216,7 @@ The driver should return one of the following result codes:
- 
- 		- PCI_ERS_RESULT_NEED_RESET
- 		  Driver returns this if it thinks the device is not
--		  recoverable in it's current state and it needs a slot
-+		  recoverable in its current state and it needs a slot
- 		  reset to proceed.
- 
- 		- PCI_ERS_RESULT_DISCONNECT
-@@ -241,7 +241,7 @@ in working condition.
- 
- The driver is not supposed to restart normal driver I/O operations
- at this point.  It should limit itself to "probing" the device to
--check it's recoverability status. If all is right, then the platform
-+check its recoverability status. If all is right, then the platform
- will call resume() once all drivers have ack'd link_reset().
- 
- 	Result codes:
-diff --git a/Documentation/Smack.txt b/Documentation/Smack.txt
-index 34614b4..e9dab41 100644
---- a/Documentation/Smack.txt
-+++ b/Documentation/Smack.txt
-@@ -73,7 +73,7 @@ NOTE: Smack labels are limited to 23 characters. The attr command
- If you don't do anything special all users will get the floor ("_")
- label when they log in. If you do want to log in via the hacked ssh
- at other labels use the attr command to set the smack value on the
--home directory and it's contents.
-+home directory and its contents.
- 
- You can add access rules in /etc/smack/accesses. They take the form:
- 
-diff --git a/Documentation/arm/SA1100/ADSBitsy b/Documentation/arm/SA1100/ADSBitsy
-index 7197a9e..f9f62e8 100644
---- a/Documentation/arm/SA1100/ADSBitsy
-+++ b/Documentation/arm/SA1100/ADSBitsy
-@@ -32,7 +32,7 @@ Notes:
- 
- - The flash on board is divided into 3 partitions.
-   You should be careful to use flash on board.
--  It's partition is different from GraphicsClient Plus and GraphicsMaster
-+  Its partition is different from GraphicsClient Plus and GraphicsMaster
- 
- - 16bpp mode requires a different cable than what ships with the board.
-   Contact ADS or look through the manual to wire your own. Currently,
-diff --git a/Documentation/arm/Sharp-LH/ADC-LH7-Touchscreen b/Documentation/arm/Sharp-LH/ADC-LH7-Touchscreen
-index 1e6a23f..dc460f0 100644
---- a/Documentation/arm/Sharp-LH/ADC-LH7-Touchscreen
-+++ b/Documentation/arm/Sharp-LH/ADC-LH7-Touchscreen
-@@ -7,7 +7,7 @@ The driver only implements a four-wire touch panel protocol.
- 
- The touchscreen driver is maintenance free except for the pen-down or
- touch threshold.  Some resistive displays and board combinations may
--require tuning of this threshold.  The driver exposes some of it's
-+require tuning of this threshold.  The driver exposes some of its
- internal state in the sys filesystem.  If the kernel is configured
- with it, CONFIG_SYSFS, and sysfs is mounted at /sys, there will be a
- directory
-diff --git a/Documentation/atomic_ops.txt b/Documentation/atomic_ops.txt
-index 396bec3..ac4d471 100644
---- a/Documentation/atomic_ops.txt
-+++ b/Documentation/atomic_ops.txt
-@@ -320,7 +320,7 @@ counter decrement would not become globally visible until the
- obj->active update does.
- 
- As a historical note, 32-bit Sparc used to only allow usage of
--24-bits of it's atomic_t type.  This was because it used 8 bits
-+24-bits of its atomic_t type.  This was because it used 8 bits
- as a spinlock for SMP safety.  Sparc32 lacked a "compare and swap"
- type instruction.  However, 32-bit Sparc has since been moved over
- to a "hash table of spinlocks" scheme, that allows the full 32-bit
-diff --git a/Documentation/blackfin/bfin-gpio-notes.txt b/Documentation/blackfin/bfin-gpio-notes.txt
-index 9898c7d..f731c1e 100644
---- a/Documentation/blackfin/bfin-gpio-notes.txt
-+++ b/Documentation/blackfin/bfin-gpio-notes.txt
-@@ -43,7 +43,7 @@
- 	void bfin_gpio_irq_free(unsigned gpio);
- 
-     The request functions will record the function state for a certain pin,
--    the free functions will clear it's function state.
-+    the free functions will clear its function state.
-     Once a pin is requested, it can't be requested again before it is freed by
-     previous caller, otherwise kernel will dump stacks, and the request
-     function fail.
-diff --git a/Documentation/cachetlb.txt b/Documentation/cachetlb.txt
-index 2b5f823..9164ae3 100644
---- a/Documentation/cachetlb.txt
-+++ b/Documentation/cachetlb.txt
-@@ -5,7 +5,7 @@
- 
- This document describes the cache/tlb flushing interfaces called
- by the Linux VM subsystem.  It enumerates over each interface,
--describes it's intended purpose, and what side effect is expected
-+describes its intended purpose, and what side effect is expected
- after the interface is invoked.
- 
- The side effects described below are stated for a uniprocessor
-@@ -231,7 +231,7 @@ require a whole different set of interfaces to handle properly.
- The biggest problem is that of virtual aliasing in the data cache
- of a processor.
- 
--Is your port susceptible to virtual aliasing in it's D-cache?
-+Is your port susceptible to virtual aliasing in its D-cache?
- Well, if your D-cache is virtually indexed, is larger in size than
- PAGE_SIZE, and does not prevent multiple cache lines for the same
- physical address from existing at once, you have this problem.
-@@ -249,7 +249,7 @@ one way to solve this (in particular SPARC_FLAG_MMAPSHARED).
- Next, you have to solve the D-cache aliasing issue for all
- other cases.  Please keep in mind that fact that, for a given page
- mapped into some user address space, there is always at least one more
--mapping, that of the kernel in it's linear mapping starting at
-+mapping, that of the kernel in its linear mapping starting at
- PAGE_OFFSET.  So immediately, once the first user maps a given
- physical page into its address space, by implication the D-cache
- aliasing problem has the potential to exist since the kernel already
-diff --git a/Documentation/cgroups/memcg_test.txt b/Documentation/cgroups/memcg_test.txt
-index f7f68b2..b7eecec 100644
---- a/Documentation/cgroups/memcg_test.txt
-+++ b/Documentation/cgroups/memcg_test.txt
-@@ -244,7 +244,7 @@ Under below explanation, we assume CONFIG_MEM_RES_CTRL_SWAP=y.
- 	  we have to check if OLDPAGE/NEWPAGE is a valid page after commit().
- 
- 8. LRU
--        Each memcg has its own private LRU. Now, it's handling is under global
-+        Each memcg has its own private LRU. Now, its handling is under global
- 	VM's control (means that it's handled under global zone->lru_lock).
- 	Almost all routines around memcg's LRU is called by global LRU's
- 	list management functions under zone->lru_lock().
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 3a6aecd..6cab1f2 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -263,7 +263,7 @@ some of the pages cached in the cgroup (page cache pages).
- 
- 4.2 Task migration
- 
--When a task migrates from one cgroup to another, it's charge is not
-+When a task migrates from one cgroup to another, its charge is not
- carried forward by default. The pages allocated from the original cgroup still
- remain charged to it, the charge is dropped when the page is freed or
- reclaimed.
-diff --git a/Documentation/connector/connector.txt b/Documentation/connector/connector.txt
-index 78c9466..e5c5f5e 100644
---- a/Documentation/connector/connector.txt
-+++ b/Documentation/connector/connector.txt
-@@ -88,7 +88,7 @@ int cn_netlink_send(struct cn_msg *msg, u32 __groups, int gfp_mask);
-  int gfp_mask			- GFP mask.
- 
-  Note: When registering new callback user, connector core assigns
-- netlink group to the user which is equal to it's id.idx.
-+ netlink group to the user which is equal to its id.idx.
- 
- /*****************************************/
- Protocol description.
-diff --git a/Documentation/dvb/ci.txt b/Documentation/dvb/ci.txt
-index 2ecd834..4a0c2b5 100644
---- a/Documentation/dvb/ci.txt
-+++ b/Documentation/dvb/ci.txt
-@@ -41,7 +41,7 @@ This application requires the following to function properly as of now.
- 
- * Cards that fall in this category
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--At present the cards that fall in this category are the Twinhan and it's
-+At present the cards that fall in this category are the Twinhan and its
- clones, these cards are available as VVMER, Tomato, Hercules, Orange and
- so on.
- 
-diff --git a/Documentation/dvb/contributors.txt b/Documentation/dvb/contributors.txt
-index 4865add..47c3009 100644
---- a/Documentation/dvb/contributors.txt
-+++ b/Documentation/dvb/contributors.txt
-@@ -1,7 +1,7 @@
- Thanks go to the following people for patches and contributions:
- 
- Michael Hunold <m.hunold@gmx.de>
--  for the initial saa7146 driver and it's recent overhaul
-+  for the initial saa7146 driver and its recent overhaul
- 
- Christian Theiss
-   for his work on the initial Linux DVB driver
-diff --git a/Documentation/filesystems/autofs4-mount-control.txt b/Documentation/filesystems/autofs4-mount-control.txt
-index 8f78ded..51986bf 100644
---- a/Documentation/filesystems/autofs4-mount-control.txt
-+++ b/Documentation/filesystems/autofs4-mount-control.txt
-@@ -146,7 +146,7 @@ found to be inadequate, in this case. The Generic Netlink system was
- used for this as raw Netlink would lead to a significant increase in
- complexity. There's no question that the Generic Netlink system is an
- elegant solution for common case ioctl functions but it's not a complete
--replacement probably because it's primary purpose in life is to be a
-+replacement probably because its primary purpose in life is to be a
- message bus implementation rather than specifically an ioctl replacement.
- While it would be possible to work around this there is one concern
- that lead to the decision to not use it. This is that the autofs
-diff --git a/Documentation/filesystems/ceph.txt b/Documentation/filesystems/ceph.txt
-index 0660c9f..763d8eb 100644
---- a/Documentation/filesystems/ceph.txt
-+++ b/Documentation/filesystems/ceph.txt
-@@ -90,7 +90,7 @@ Mount Options
- 	Specify the IP and/or port the client should bind to locally.
- 	There is normally not much reason to do this.  If the IP is not
- 	specified, the client's IP address is determined by looking at the
--	address it's connection to the monitor originates from.
-+	address its connection to the monitor originates from.
- 
-   wsize=X
- 	Specify the maximum write size in bytes.  By default there is no
-diff --git a/Documentation/filesystems/dlmfs.txt b/Documentation/filesystems/dlmfs.txt
-index c50bbb2..1b528b2 100644
---- a/Documentation/filesystems/dlmfs.txt
-+++ b/Documentation/filesystems/dlmfs.txt
-@@ -47,7 +47,7 @@ You'll want to start heartbeating on a volume which all the nodes in
- your lockspace can access. The easiest way to do this is via
- ocfs2_hb_ctl (distributed with ocfs2-tools). Right now it requires
- that an OCFS2 file system be in place so that it can automatically
--find it's heartbeat area, though it will eventually support heartbeat
-+find its heartbeat area, though it will eventually support heartbeat
- against raw disks.
- 
- Please see the ocfs2_hb_ctl and mkfs.ocfs2 manual pages distributed
-diff --git a/Documentation/filesystems/fiemap.txt b/Documentation/filesystems/fiemap.txt
-index 606233c..1b805a0 100644
---- a/Documentation/filesystems/fiemap.txt
-+++ b/Documentation/filesystems/fiemap.txt
-@@ -38,7 +38,7 @@ flags, it will return EBADR and the contents of fm_flags will contain
- the set of flags which caused the error. If the kernel is compatible
- with all flags passed, the contents of fm_flags will be unmodified.
- It is up to userspace to determine whether rejection of a particular
--flag is fatal to it's operation. This scheme is intended to allow the
-+flag is fatal to its operation. This scheme is intended to allow the
- fiemap interface to grow in the future but without losing
- compatibility with old software.
- 
-@@ -56,7 +56,7 @@ If this flag is set, the kernel will sync the file before mapping extents.
- 
- * FIEMAP_FLAG_XATTR
- If this flag is set, the extents returned will describe the inodes
--extended attribute lookup tree, instead of it's data tree.
-+extended attribute lookup tree, instead of its data tree.
- 
- 
- Extent Mapping
-@@ -89,7 +89,7 @@ struct fiemap_extent {
- };
- 
- All offsets and lengths are in bytes and mirror those on disk.  It is valid
--for an extents logical offset to start before the request or it's logical
-+for an extents logical offset to start before the request or its logical
- length to extend past the request.  Unless FIEMAP_EXTENT_NOT_ALIGNED is
- returned, fe_logical, fe_physical, and fe_length will be aligned to the
- block size of the file system.  With the exception of extents flagged as
-@@ -125,7 +125,7 @@ been allocated for the file yet.
- 
- * FIEMAP_EXTENT_DELALLOC
-   - This will also set FIEMAP_EXTENT_UNKNOWN.
--Delayed allocation - while there is data for this extent, it's
-+Delayed allocation - while there is data for this extent, its
- physical location has not been allocated yet.
- 
- * FIEMAP_EXTENT_ENCODED
-@@ -159,7 +159,7 @@ Data is located within a meta data block.
- Data is packed into a block with data from other files.
- 
- * FIEMAP_EXTENT_UNWRITTEN
--Unwritten extent - the extent is allocated but it's data has not been
-+Unwritten extent - the extent is allocated but its data has not been
- initialized.  This indicates the extent's data will be all zero if read
- through the filesystem but the contents are undefined if read directly from
- the device.
-@@ -176,7 +176,7 @@ VFS -> File System Implementation
- 
- File systems wishing to support fiemap must implement a ->fiemap callback on
- their inode_operations structure. The fs ->fiemap call is responsible for
--defining it's set of supported fiemap flags, and calling a helper function on
-+defining its set of supported fiemap flags, and calling a helper function on
- each discovered extent:
- 
- struct inode_operations {
-diff --git a/Documentation/filesystems/fuse.txt b/Documentation/filesystems/fuse.txt
-index 397a41a..13af4a4 100644
---- a/Documentation/filesystems/fuse.txt
-+++ b/Documentation/filesystems/fuse.txt
-@@ -91,7 +91,7 @@ Mount options
- 'default_permissions'
- 
-   By default FUSE doesn't check file access permissions, the
--  filesystem is free to implement it's access policy or leave it to
-+  filesystem is free to implement its access policy or leave it to
-   the underlying file access mechanism (e.g. in case of network
-   filesystems).  This option enables permission checking, restricting
-   access based on file mode.  It is usually useful together with the
-@@ -171,7 +171,7 @@ or may honor them by sending a reply to the _original_ request, with
- the error set to EINTR.
- 
- It is also possible that there's a race between processing the
--original request and it's INTERRUPT request.  There are two possibilities:
-+original request and its INTERRUPT request.  There are two possibilities:
- 
-   1) The INTERRUPT request is processed before the original request is
-      processed
-diff --git a/Documentation/filesystems/hpfs.txt b/Documentation/filesystems/hpfs.txt
-index fa45c3b..74630bd 100644
---- a/Documentation/filesystems/hpfs.txt
-+++ b/Documentation/filesystems/hpfs.txt
-@@ -103,7 +103,7 @@ to analyze or change OS2SYS.INI.
- Codepages
- 
- HPFS can contain several uppercasing tables for several codepages and each
--file has a pointer to codepage it's name is in. However OS/2 was created in
-+file has a pointer to codepage its name is in. However OS/2 was created in
- America where people don't care much about codepages and so multiple codepages
- support is quite buggy. I have Czech OS/2 working in codepage 852 on my disk.
- Once I booted English OS/2 working in cp 850 and I created a file on my 852
-diff --git a/Documentation/filesystems/nfs/rpc-cache.txt b/Documentation/filesystems/nfs/rpc-cache.txt
-index 8a382be..ebcaaee 100644
---- a/Documentation/filesystems/nfs/rpc-cache.txt
-+++ b/Documentation/filesystems/nfs/rpc-cache.txt
-@@ -185,7 +185,7 @@ failed lookup meant a definite 'no'.
- request/response format
- -----------------------
- 
--While each cache is free to use it's own format for requests
-+While each cache is free to use its own format for requests
- and responses over channel, the following is recommended as
- appropriate and support routines are available to help:
- Each request or response record should be printable ASCII
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index a4f30fa..944be87 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -965,7 +965,7 @@ your system and how much traffic was routed over those devices:
-   ...] 1375103    17405    0    0    0     0       0          0 
-   ...] 1703981     5535    0    0    0     3       0          0 
- 
--In addition, each Channel Bond interface has it's own directory.  For
-+In addition, each Channel Bond interface has its own directory.  For
- example, the bond0 device will have a directory called /proc/net/bond0/.
- It will contain information that is specific to that bond, such as the
- current slaves of the bond, the link status of the slaves, and how
-@@ -1362,7 +1362,7 @@ been accounted as having caused 1MB of write.
- In other words: The number of bytes which this process caused to not happen,
- by truncating pagecache. A task can cause "negative" IO too. If this task
- truncates some dirty pagecache, some IO which another task has been accounted
--for (in it's write_bytes) will not be happening. We _could_ just subtract that
-+for (in its write_bytes) will not be happening. We _could_ just subtract that
- from the truncating task's write_bytes, but there is information loss in doing
- that.
- 
-diff --git a/Documentation/filesystems/smbfs.txt b/Documentation/filesystems/smbfs.txt
-index f673ef0..194fb0d 100644
---- a/Documentation/filesystems/smbfs.txt
-+++ b/Documentation/filesystems/smbfs.txt
-@@ -3,6 +3,6 @@ protocol used by Windows for Workgroups, Windows 95 and Windows NT.
- Smbfs was inspired by Samba, the program written by Andrew Tridgell
- that turns any Unix host into a file server for DOS or Windows clients.
- 
--Smbfs is a SMB client, but uses parts of samba for it's operation. For
-+Smbfs is a SMB client, but uses parts of samba for its operation. For
- more info on samba, including documentation, please go to
- http://www.samba.org/ and then on to your nearest mirror.
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 3de2f32..b668585 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -72,7 +72,7 @@ structure (this is the kernel-side implementation of file
- descriptors). The freshly allocated file structure is initialized with
- a pointer to the dentry and a set of file operation member functions.
- These are taken from the inode data. The open() file method is then
--called so the specific filesystem implementation can do it's work. You
-+called so the specific filesystem implementation can do its work. You
- can see that this is another switch performed by the VFS. The file
- structure is placed into the file descriptor table for the process.
- 
-diff --git a/Documentation/hwmon/lm85 b/Documentation/hwmon/lm85
-index a136808..a76aefe 100644
---- a/Documentation/hwmon/lm85
-+++ b/Documentation/hwmon/lm85
-@@ -157,7 +157,7 @@ temperature configuration points:
- 
- There are three PWM outputs. The LM85 datasheet suggests that the
- pwm3 output control both fan3 and fan4. Each PWM can be individually
--configured and assigned to a zone for it's control value. Each PWM can be
-+configured and assigned to a zone for its control value. Each PWM can be
- configured individually according to the following options.
- 
- * pwm#_auto_pwm_min - this specifies the PWM value for temp#_auto_temp_off
-diff --git a/Documentation/input/joystick.txt b/Documentation/input/joystick.txt
-index 154d767..8007b7c 100644
---- a/Documentation/input/joystick.txt
-+++ b/Documentation/input/joystick.txt
-@@ -402,7 +402,7 @@ for the port of the SoundFusion is supported by the cs461x.c module.
- ~~~~~~~~~~~~~~~~~~~~~~~~
-   The Live! has a special PCI gameport, which, although it doesn't provide
- any "Enhanced" stuff like 4DWave and friends, is quite a bit faster than
--it's ISA counterparts. It also requires special support, hence the
-+its ISA counterparts. It also requires special support, hence the
- emu10k1-gp.c module for it instead of the normal ns558.c one.
- 
- 3.15 SoundBlaster 64 and 128 - ES1370 and ES1371, ESS Solo1 and S3 SonicVibes
-diff --git a/Documentation/intel_txt.txt b/Documentation/intel_txt.txt
-index f40a1f0..1423bcc 100644
---- a/Documentation/intel_txt.txt
-+++ b/Documentation/intel_txt.txt
-@@ -126,7 +126,7 @@ o  Tboot then applies an (optional) user-defined launch policy to
- o  Tboot adjusts the e820 table provided by the bootloader to reserve
-    its own location in memory as well as to reserve certain other
-    TXT-related regions.
--o  As part of it's launch, tboot DMA protects all of RAM (using the
-+o  As part of its launch, tboot DMA protects all of RAM (using the
-    VT-d PMRs).  Thus, the kernel must be booted with 'intel_iommu=on'
-    in order to remove this blanket protection and use VT-d's
-    page-level protection.
-diff --git a/Documentation/kbuild/kconfig-language.txt b/Documentation/kbuild/kconfig-language.txt
-index c412c24..b472e4e 100644
---- a/Documentation/kbuild/kconfig-language.txt
-+++ b/Documentation/kbuild/kconfig-language.txt
-@@ -181,7 +181,7 @@ Expressions are listed in decreasing order of precedence.
- (7) Returns the result of max(/expr/, /expr/).
- 
- An expression can have a value of 'n', 'm' or 'y' (or 0, 1, 2
--respectively for calculations). A menu entry becomes visible when it's
-+respectively for calculations). A menu entry becomes visible when its
- expression evaluates to 'm' or 'y'.
- 
- There are two types of symbols: constant and non-constant symbols.
-diff --git a/Documentation/kernel-docs.txt b/Documentation/kernel-docs.txt
-index 28cdc2a..ec8d31e 100644
---- a/Documentation/kernel-docs.txt
-+++ b/Documentation/kernel-docs.txt
-@@ -116,7 +116,7 @@
-        Author: Ingo Molnar, Gadi Oxman and Miguel de Icaza.
-        URL: http://www.linuxjournal.com/article.php?sid=2391
-        Keywords: RAID, MD driver.
--       Description: Linux Journal Kernel Korner article. Here is it's
-+       Description: Linux Journal Kernel Korner article. Here is its
-        abstract: "A description of the implementation of the RAID-1,
-        RAID-4 and RAID-5 personalities of the MD device driver in the
-        Linux kernel, providing users with high performance and reliable,
-@@ -127,7 +127,7 @@
-        URL: http://www.linuxjournal.com/article.php?sid=1219
-        Keywords: device driver, module, loading/unloading modules,
-        allocating resources.
--       Description: Linux Journal Kernel Korner article. Here is it's
-+       Description: Linux Journal Kernel Korner article. Here is its
-        abstract: "This is the first of a series of four articles
-        co-authored by Alessandro Rubini and Georg Zezchwitz which present
-        a practical approach to writing Linux device drivers as kernel
-@@ -141,7 +141,7 @@
-        Keywords: character driver, init_module, clean_up module,
-        autodetection, mayor number, minor number, file operations,
-        open(), close().
--       Description: Linux Journal Kernel Korner article. Here is it's
-+       Description: Linux Journal Kernel Korner article. Here is its
-        abstract: "This article, the second of four, introduces part of
-        the actual code to create custom module implementing a character
-        device driver. It describes the code for module initialization and
-@@ -152,7 +152,7 @@
-        URL: http://www.linuxjournal.com/article.php?sid=1221
-        Keywords: read(), write(), select(), ioctl(), blocking/non
-        blocking mode, interrupt handler.
--       Description: Linux Journal Kernel Korner article. Here is it's
-+       Description: Linux Journal Kernel Korner article. Here is its
-        abstract: "This article, the third of four on writing character
-        device drivers, introduces concepts of reading, writing, and using
-        ioctl-calls".
-@@ -161,7 +161,7 @@
-        Author: Alessandro Rubini and Georg v. Zezschwitz.
-        URL: http://www.linuxjournal.com/article.php?sid=1222
-        Keywords: interrupts, irqs, DMA, bottom halves, task queues.
--       Description: Linux Journal Kernel Korner article. Here is it's
-+       Description: Linux Journal Kernel Korner article. Here is its
-        abstract: "This is the fourth in a series of articles about
-        writing character device drivers as loadable kernel modules. This
-        month, we further investigate the field of interrupt handling.
-diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
-index 2f9115c..51ec634 100644
---- a/Documentation/kprobes.txt
-+++ b/Documentation/kprobes.txt
-@@ -332,7 +332,7 @@ occurs during execution of kp->pre_handler or kp->post_handler,
- or during single-stepping of the probed instruction, Kprobes calls
- kp->fault_handler.  Any or all handlers can be NULL. If kp->flags
- is set KPROBE_FLAG_DISABLED, that kp will be registered but disabled,
--so, it's handlers aren't hit until calling enable_kprobe(kp).
-+so, its handlers aren't hit until calling enable_kprobe(kp).
- 
- NOTE:
- 1. With the introduction of the "symbol_name" field to struct kprobe,
-diff --git a/Documentation/laptops/laptop-mode.txt b/Documentation/laptops/laptop-mode.txt
-index 2c3c350..0bf25ee 100644
---- a/Documentation/laptops/laptop-mode.txt
-+++ b/Documentation/laptops/laptop-mode.txt
-@@ -207,7 +207,7 @@ Tips & Tricks
- * Drew Scott Daniels observed: "I don't know why, but when I decrease the number
-   of colours that my display uses it consumes less battery power. I've seen
-   this on powerbooks too. I hope that this is a piece of information that
--  might be useful to the Laptop Mode patch or it's users."
-+  might be useful to the Laptop Mode patch or its users."
- 
- * In syslog.conf, you can prefix entries with a dash ``-'' to omit syncing the
-   file after every logging. When you're using laptop-mode and your disk doesn't
-diff --git a/Documentation/lguest/lguest.c b/Documentation/lguest/lguest.c
-index 3119f5d..e9ce3c5 100644
---- a/Documentation/lguest/lguest.c
-+++ b/Documentation/lguest/lguest.c
-@@ -263,7 +263,7 @@ static u8 *get_feature_bits(struct device *dev)
-  * Launcher virtual with an offset.
-  *
-  * This can be tough to get your head around, but usually it just means that we
-- * use these trivial conversion functions when the Guest gives us it's
-+ * use these trivial conversion functions when the Guest gives us its
-  * "physical" addresses:
+--- linux-2.6/drivers/platform/x86/compal-laptop.c.orig	2010-04-21
+20:59:40.519654313 +0200
++++ linux-2.6/drivers/platform/x86/compal-laptop.c	2010-04-23
+00:02:51.249769795 +0200
+@@ -24,17 +24,50 @@
   */
- static void *from_guest_phys(unsigned long addr)
-diff --git a/Documentation/md.txt b/Documentation/md.txt
-index 188f476..e4e893e 100644
---- a/Documentation/md.txt
-+++ b/Documentation/md.txt
-@@ -136,7 +136,7 @@ raid_disks != 0.
- 
- Then uninitialized devices can be added with ADD_NEW_DISK.  The
- structure passed to ADD_NEW_DISK must specify the state of the device
--and it's role in the array.
-+and its role in the array.
- 
- Once started with RUN_ARRAY, uninitialized spares can be added with
- HOT_ADD_DISK.
-diff --git a/Documentation/netlabel/lsm_interface.txt b/Documentation/netlabel/lsm_interface.txt
-index 98dd9f7..638c74f 100644
---- a/Documentation/netlabel/lsm_interface.txt
-+++ b/Documentation/netlabel/lsm_interface.txt
-@@ -38,7 +38,7 @@ Depending on the exact configuration, translation between the network packet
- label and the internal LSM security identifier can be time consuming.  The
- NetLabel label mapping cache is a caching mechanism which can be used to
- sidestep much of this overhead once a mapping has been established.  Once the
--LSM has received a packet, used NetLabel to decode it's security attributes,
-+LSM has received a packet, used NetLabel to decode its security attributes,
- and translated the security attributes into a LSM internal identifier the LSM
- can use the NetLabel caching functions to associate the LSM internal
- identifier with the network packet's label.  This means that in the future
-diff --git a/Documentation/networking/ifenslave.c b/Documentation/networking/ifenslave.c
-index 1b96ccd..2bac961 100644
---- a/Documentation/networking/ifenslave.c
-+++ b/Documentation/networking/ifenslave.c
-@@ -756,7 +756,7 @@ static int enslave(char *master_ifname, char *slave_ifname)
- 		 */
- 		if (abi_ver < 1) {
- 			/* For old ABI, the master needs to be
--			 * down before setting it's hwaddr
-+			 * down before setting its hwaddr
- 			 */
- 			res = set_if_down(master_ifname, master_flags.ifr_flags);
- 			if (res) {
-diff --git a/Documentation/networking/packet_mmap.txt b/Documentation/networking/packet_mmap.txt
-index 09ab0d2..98f71a5 100644
---- a/Documentation/networking/packet_mmap.txt
-+++ b/Documentation/networking/packet_mmap.txt
-@@ -100,7 +100,7 @@ by the kernel.
- The destruction of the socket and all associated resources
- is done by a simple call to close(fd).
- 
--Next I will describe PACKET_MMAP settings and it's constraints,
-+Next I will describe PACKET_MMAP settings and its constraints,
- also the mapping of the circular buffer in the user process and 
- the use of this buffer.
- 
-@@ -432,7 +432,7 @@ TP_STATUS_LOSING      : indicates there were packet drops from last time
-                         the PACKET_STATISTICS option.
- 
- TP_STATUS_CSUMNOTREADY: currently it's used for outgoing IP packets which 
--                        it's checksum will be done in hardware. So while 
-+                        its checksum will be done in hardware. So while
-                         reading the packet we should not try to check the 
-                         checksum. 
- 
-diff --git a/Documentation/power/regulator/consumer.txt b/Documentation/power/regulator/consumer.txt
-index cdebb51..55c4175 100644
---- a/Documentation/power/regulator/consumer.txt
-+++ b/Documentation/power/regulator/consumer.txt
-@@ -8,11 +8,11 @@ Please see overview.txt for a description of the terms used in this text.
- 1. Consumer Regulator Access (static & dynamic drivers)
- =======================================================
- 
--A consumer driver can get access to it's supply regulator by calling :-
-+A consumer driver can get access to its supply regulator by calling :-
- 
- regulator = regulator_get(dev, "Vcc");
- 
--The consumer passes in it's struct device pointer and power supply ID. The core
-+The consumer passes in its struct device pointer and power supply ID. The core
- then finds the correct regulator by consulting a machine specific lookup table.
- If the lookup is successful then this call will return a pointer to the struct
- regulator that supplies this consumer.
-@@ -34,7 +34,7 @@ usually be called in your device drivers probe() and remove() respectively.
- 2. Regulator Output Enable & Disable (static & dynamic drivers)
- ====================================================================
- 
--A consumer can enable it's power supply by calling:-
-+A consumer can enable its power supply by calling:-
- 
- int regulator_enable(regulator);
- 
-@@ -49,7 +49,7 @@ int regulator_is_enabled(regulator);
- This will return > zero when the regulator is enabled.
- 
- 
--A consumer can disable it's supply when no longer needed by calling :-
-+A consumer can disable its supply when no longer needed by calling :-
- 
- int regulator_disable(regulator);
- 
-@@ -140,7 +140,7 @@ by calling :-
- int regulator_set_optimum_mode(struct regulator *regulator, int load_uA);
- 
- This will cause the core to recalculate the total load on the regulator (based
--on all it's consumers) and change operating mode (if necessary and permitted)
-+on all its consumers) and change operating mode (if necessary and permitted)
- to best match the current operating load.
- 
- The load_uA value can be determined from the consumers datasheet. e.g.most
-diff --git a/Documentation/power/regulator/machine.txt b/Documentation/power/regulator/machine.txt
-index 63728fe..bdec39b 100644
---- a/Documentation/power/regulator/machine.txt
-+++ b/Documentation/power/regulator/machine.txt
-@@ -52,7 +52,7 @@ static struct regulator_init_data regulator1_data = {
- };
- 
- Regulator-1 supplies power to Regulator-2. This relationship must be registered
--with the core so that Regulator-1 is also enabled when Consumer A enables it's
-+with the core so that Regulator-1 is also enabled when Consumer A enables its
- supply (Regulator-2). The supply regulator is set by the supply_regulator_dev
- field below:-
- 
-diff --git a/Documentation/power/regulator/overview.txt b/Documentation/power/regulator/overview.txt
-index ffd185b..9363e05 100644
---- a/Documentation/power/regulator/overview.txt
-+++ b/Documentation/power/regulator/overview.txt
-@@ -35,16 +35,16 @@ Some terms used in this document:-
-   o Consumer     - Electronic device that is supplied power by a regulator.
-                    Consumers can be classified into two types:-
- 
--                   Static: consumer does not change it's supply voltage or
-+                   Static: consumer does not change its supply voltage or
-                    current limit. It only needs to enable or disable it's
--                   power supply. It's supply voltage is set by the hardware,
-+                   power supply. Its supply voltage is set by the hardware,
-                    bootloader, firmware or kernel board initialisation code.
- 
-                    Dynamic: consumer needs to change it's supply voltage or
-                    current limit to meet operation demands.
- 
- 
--  o Power Domain - Electronic circuit that is supplied it's input power by the
-+  o Power Domain - Electronic circuit that is supplied its input power by the
-                    output power of a regulator, switch or by another power
-                    domain.
- 
-diff --git a/Documentation/powerpc/booting-without-of.txt b/Documentation/powerpc/booting-without-of.txt
-index 79f533f..46d2210 100644
---- a/Documentation/powerpc/booting-without-of.txt
-+++ b/Documentation/powerpc/booting-without-of.txt
-@@ -1289,7 +1289,7 @@ link between a device node and its interrupt parent in
- the interrupt tree.  The value of interrupt-parent is the
- phandle of the parent node.
- 
--If the interrupt-parent property is not defined for a node, it's
-+If the interrupt-parent property is not defined for a node, its
- interrupt parent is assumed to be an ancestor in the node's
- _device tree_ hierarchy.
- 
-diff --git a/Documentation/powerpc/phyp-assisted-dump.txt b/Documentation/powerpc/phyp-assisted-dump.txt
-index c4682b9..ad34020 100644
---- a/Documentation/powerpc/phyp-assisted-dump.txt
-+++ b/Documentation/powerpc/phyp-assisted-dump.txt
-@@ -19,7 +19,7 @@ dump offers several strong, practical advantages:
-    immediately available to the system for normal use.
- -- After the dump is completed, no further reboots are
-    required; the system will be fully usable, and running
--   in it's normal, production mode on it normal kernel.
-+   in its normal, production mode on its normal kernel.
- 
- The above can only be accomplished by coordination with,
- and assistance from the hypervisor. The procedure is
-diff --git a/Documentation/rt-mutex-design.txt b/Documentation/rt-mutex-design.txt
-index 4b736d2..8df0b78 100644
---- a/Documentation/rt-mutex-design.txt
-+++ b/Documentation/rt-mutex-design.txt
-@@ -657,7 +657,7 @@ here.
- 
- The waiter structure has a "task" field that points to the task that is blocked
- on the mutex.  This field can be NULL the first time it goes through the loop
--or if the task is a pending owner and had it's mutex stolen.  If the "task"
-+or if the task is a pending owner and had its mutex stolen.  If the "task"
- field is NULL then we need to set up the accounting for it.
- 
- Task blocks on mutex
-diff --git a/Documentation/scsi/ChangeLog.lpfc b/Documentation/scsi/ChangeLog.lpfc
-index 2ffc114..e759e92 100644
---- a/Documentation/scsi/ChangeLog.lpfc
-+++ b/Documentation/scsi/ChangeLog.lpfc
-@@ -707,7 +707,7 @@ Changes from 20040920 to 20041018
- 	* Integrate patches from Christoph Hellwig: two new helpers common
- 	  to lpfc_sli_resume_iocb and lpfc_sli_issue_iocb - singificant
- 	  cleanup of those two functions - the unused SLI_IOCB_USE_TXQ is
--	  gone - lpfc_sli_issue_iocb_wait loses it's flags argument
-+	  gone - lpfc_sli_issue_iocb_wait loses its flags argument
- 	  totally.
- 	* Fix in lpfc_sli.c: we can not store a 5 bit value in a 4-bit
- 	  field.
-@@ -1028,7 +1028,7 @@ Changes from 20040614 to 20040709
- 	* Remove the need for buf_tmo.
- 	* Changed ULP_BDE64 to struct ulp_bde64.
- 	* Changed ULP_BDE to struct ulp_bde.
--	* Cleanup lpfc_os_return_scsi_cmd() and it's call path.
-+	* Cleanup lpfc_os_return_scsi_cmd() and its call path.
- 	* Removed lpfc_no_device_delay.
- 	* Consolidating lpfc_hba_put_event() into lpfc_put_event().
- 	* Removed following attributes and their functionality:
-diff --git a/Documentation/scsi/FlashPoint.txt b/Documentation/scsi/FlashPoint.txt
-index d5acaa3..1540a92 100644
---- a/Documentation/scsi/FlashPoint.txt
-+++ b/Documentation/scsi/FlashPoint.txt
-@@ -71,7 +71,7 @@ peters@mylex.com
- 
- Ever since its introduction last October, the BusLogic FlashPoint LT has
- been problematic for members of the Linux community, in that no Linux
--drivers have been available for this new Ultra SCSI product.  Despite it's
-+drivers have been available for this new Ultra SCSI product.  Despite its
- officially being positioned as a desktop workstation product, and not being
- particularly well suited for a high performance multitasking operating
- system like Linux, the FlashPoint LT has been touted by computer system
-diff --git a/Documentation/scsi/dtc3x80.txt b/Documentation/scsi/dtc3x80.txt
-index e8ae623..1d7af9f 100644
---- a/Documentation/scsi/dtc3x80.txt
-+++ b/Documentation/scsi/dtc3x80.txt
-@@ -12,7 +12,7 @@ The 3180 does not.  Otherwise, they are identical.
- The DTC3x80 does not support DMA but it does have Pseudo-DMA which is
- supported by the driver.
- 
--It's DTC406 scsi chip is supposedly compatible with the NCR 53C400.
-+Its DTC406 scsi chip is supposedly compatible with the NCR 53C400.
- It is memory mapped, uses an IRQ, but no dma or io-port.  There is
- internal DMA, between SCSI bus and an on-chip 128-byte buffer.  Double
- buffering is done automagically by the chip.  Data is transferred
-diff --git a/Documentation/scsi/ncr53c8xx.txt b/Documentation/scsi/ncr53c8xx.txt
-index 08e2b4d..cda5f8f 100644
---- a/Documentation/scsi/ncr53c8xx.txt
-+++ b/Documentation/scsi/ncr53c8xx.txt
-@@ -1479,7 +1479,7 @@ Wide16 SCSI.
- Enabling serial NVRAM support enables detection of the serial NVRAM included
- on Symbios and some Symbios compatible host adaptors, and Tekram boards. The 
- serial NVRAM is used by Symbios and Tekram to hold set up parameters for the 
--host adaptor and it's attached drives.
-+host adaptor and its attached drives.
- 
- The Symbios NVRAM also holds data on the boot order of host adaptors in a
- system with more than one host adaptor. This enables the order of scanning
-diff --git a/Documentation/scsi/osst.txt b/Documentation/scsi/osst.txt
-index f536907..2b21890 100644
---- a/Documentation/scsi/osst.txt
-+++ b/Documentation/scsi/osst.txt
-@@ -40,7 +40,7 @@ behavior looks very much the same as st to the userspace applications.
- 
- History
- -------
--In the first place, osst shared it's identity very much with st. That meant
-+In the first place, osst shared its identity very much with st. That meant
- that it used the same kernel structures and the same device node as st.
- So you could only have either of them being present in the kernel. This has
- been fixed by registering an own device, now.
-diff --git a/Documentation/scsi/scsi_fc_transport.txt b/Documentation/scsi/scsi_fc_transport.txt
-index aec6549..e00192d 100644
---- a/Documentation/scsi/scsi_fc_transport.txt
-+++ b/Documentation/scsi/scsi_fc_transport.txt
-@@ -70,7 +70,7 @@ Overview:
-     up to an administrative entity controlling the vport. For example,
-     if vports are to be associated with virtual machines, a XEN mgmt
-     utility would be responsible for creating wwpn/wwnn's for the vport,
--    using it's own naming authority and OUI. (Note: it already does this
-+    using its own naming authority and OUI. (Note: it already does this
-     for virtual MAC addresses).
- 
- 
-@@ -81,7 +81,7 @@ Device Trees and Vport Objects:
-   with rports and scsi target objects underneath it. Currently the FC
-   transport creates the vport object and places it under the scsi_host
-   object corresponding to the physical adapter.  The LLDD will allocate
--  a new scsi_host for the vport and link it's object under the vport.
-+  a new scsi_host for the vport and link its object under the vport.
-   The remainder of the tree under the vports scsi_host is the same
-   as the non-NPIV case. The transport is written currently to easily
-   allow the parent of the vport to be something other than the scsi_host.
-diff --git a/Documentation/scsi/sym53c8xx_2.txt b/Documentation/scsi/sym53c8xx_2.txt
-index eb9a7b9..6f63b79 100644
---- a/Documentation/scsi/sym53c8xx_2.txt
-+++ b/Documentation/scsi/sym53c8xx_2.txt
-@@ -687,7 +687,7 @@ maintain the driver code.
- Enabling serial NVRAM support enables detection of the serial NVRAM included
- on Symbios and some Symbios compatible host adaptors, and Tekram boards. The 
- serial NVRAM is used by Symbios and Tekram to hold set up parameters for the 
--host adaptor and it's attached drives.
-+host adaptor and its attached drives.
- 
- The Symbios NVRAM also holds data on the boot order of host adaptors in a
- system with more than one host adaptor.  This information is no longer used
-diff --git a/Documentation/sound/alsa/soc/dapm.txt b/Documentation/sound/alsa/soc/dapm.txt
-index 9ac842b..05bf5a0 100644
---- a/Documentation/sound/alsa/soc/dapm.txt
-+++ b/Documentation/sound/alsa/soc/dapm.txt
-@@ -188,8 +188,8 @@ The WM8731 output mixer has 3 inputs (sources)
-  3. Mic Sidetone Input
- 
- Each input in this example has a kcontrol associated with it (defined in example
--above) and is connected to the output mixer via it's kcontrol name. We can now
--connect the destination widget (wrt audio signal) with it's source widgets.
-+above) and is connected to the output mixer via its kcontrol name. We can now
-+connect the destination widget (wrt audio signal) with its source widgets.
- 
- 	/* output mixer */
- 	{"Output Mixer", "Line Bypass Switch", "Line Input"},
-diff --git a/Documentation/sound/alsa/soc/machine.txt b/Documentation/sound/alsa/soc/machine.txt
-index bab7711..2524c75 100644
---- a/Documentation/sound/alsa/soc/machine.txt
-+++ b/Documentation/sound/alsa/soc/machine.txt
-@@ -67,7 +67,7 @@ static struct snd_soc_dai_link corgi_dai = {
- 	.ops = &corgi_ops,
- };
- 
--struct snd_soc_card then sets up the machine with it's DAIs. e.g.
-+struct snd_soc_card then sets up the machine with its DAIs. e.g.
- 
- /* corgi audio machine driver */
- static struct snd_soc_card snd_soc_corgi = {
-diff --git a/Documentation/sound/alsa/soc/overview.txt b/Documentation/sound/alsa/soc/overview.txt
-index 1e4c6d3..138ac88 100644
---- a/Documentation/sound/alsa/soc/overview.txt
-+++ b/Documentation/sound/alsa/soc/overview.txt
-@@ -33,7 +33,7 @@ features :-
-     and machines.
- 
-   * Easy I2S/PCM audio interface setup between codec and SoC. Each SoC
--    interface and codec registers it's audio interface capabilities with the
-+    interface and codec registers its audio interface capabilities with the
-     core and are subsequently matched and configured when the application
-     hardware parameters are known.
- 
-diff --git a/Documentation/usb/WUSB-Design-overview.txt b/Documentation/usb/WUSB-Design-overview.txt
-index c480e9c..4c5e379 100644
---- a/Documentation/usb/WUSB-Design-overview.txt
-+++ b/Documentation/usb/WUSB-Design-overview.txt
-@@ -381,7 +381,7 @@ descriptor that gives us the status of the transfer, its identification
- we issue another URB to read into the destination buffer the chunk of
- data coming out of the remote endpoint. Done, wait for the next guy. The
- callbacks for the URBs issued from here are the ones that will declare
--the xfer complete at some point and call it's callback.
-+the xfer complete at some point and call its callback.
- 
- Seems simple, but the implementation is not trivial.
- 
-diff --git a/Documentation/vm/numa_memory_policy.txt b/Documentation/vm/numa_memory_policy.txt
-index be45dbb..6690fc3 100644
---- a/Documentation/vm/numa_memory_policy.txt
-+++ b/Documentation/vm/numa_memory_policy.txt
-@@ -45,7 +45,7 @@ most general to most specific:
- 	to establish the task policy for a child task exec()'d from an
- 	executable image that has no awareness of memory policy.  See the
- 	MEMORY POLICY APIS section, below, for an overview of the system call
--	that a task may use to set/change it's task/process policy.
-+	that a task may use to set/change its task/process policy.
- 
- 	In a multi-threaded task, task policies apply only to the thread
- 	[Linux kernel task] that installs the policy and any threads
-@@ -301,7 +301,7 @@ decrement this reference count, respectively.  mpol_put() will only free
- the structure back to the mempolicy kmem cache when the reference count
- goes to zero.
- 
--When a new memory policy is allocated, it's reference count is initialized
-+When a new memory policy is allocated, its reference count is initialized
- to '1', representing the reference held by the task that is installing the
- new policy.  When a pointer to a memory policy structure is stored in another
- structure, another reference is added, as the task's reference will be dropped
-diff --git a/Documentation/w1/w1.generic b/Documentation/w1/w1.generic
-index e3333ee..212f4ac 100644
---- a/Documentation/w1/w1.generic
-+++ b/Documentation/w1/w1.generic
-@@ -25,7 +25,7 @@ When a w1 master driver registers with the w1 subsystem, the following occurs:
-  - sysfs entries for that w1 master are created
-  - the w1 bus is periodically searched for new slave devices
- 
--When a device is found on the bus, w1 core checks if driver for it's family is
-+When a device is found on the bus, w1 core checks if driver for its family is
- loaded. If so, the family driver is attached to the slave.
- If there is no driver for the family, default one is assigned, which allows to perform
- almost any kind of operations. Each logical operation is a transaction
--- 
-1.7.0.4
 
+ /*
+- * comapl-laptop.c - Compal laptop support.
++ * compal-laptop.c - Compal laptop support.
++ *
++ * This driver exports a few files in /sys/devices/platform/compal-laptop/:
++ *   wake_up_XXX   Whether or not we listen to such wake up events (rw)
++ *
++ * In addition to these platform device attributes the driver
++ * registers itself in the Linux backlight control, power_supply, rfkill
++ * and hwmon subsystem and is available to userspace under:
++ *
++ *   /sys/class/backlight/compal-laptop/
++ *   /sys/class/power_supply/compal-laptop/
++ *   /sys/class/rfkill/rfkillX/
++ *   /sys/class/hwmon/hwmonX/
++ *
++ * Notes on the power_supply battery interface:
++ *   - the "minimum" design voltage is *the* design voltage
++ *   - the ambient temperature is the average battery temperature
++ *     and the value is an educated guess (see commented code below)
+  *
+- * The driver registers itself with the rfkill subsystem and
+- * the Linux backlight control subsystem.
+  *
+  * This driver might work on other laptops produced by Compal. If you
+  * want to try it you can pass force=1 as argument to the module which
+  * will force it to load even when the DMI data doesn't identify the
+- * laptop as FL9x.
++ * laptop as compatible.
++ *
++ * Lots of data available at:
++ * http://service1.marasst.com/Compal/JHL90_91/Service%20Manual/
++ * JHL90%20service%20manual-Final-0725.pdf
++ *
++ *
++ *
++ * Support for the Compal JHL90 added by Roald Frederickx
++ * (roald.frederickx@gmail.com):
++ * Driver got large revision. Added functionalities: backlight
++ * power, wake_on_XXX, a hwmon and power_supply interface.
++ *
++ * In case this gets merged into the kernel source: I want to dedicate this
++ * to Kasper Meerts, the awesome guy who showed me Linux and C!
+  */
+
++/* NOTE: currently the wake_on_XXX, hwmon and power_supply interfaces are
++ * only enabled on a JHL90 board until it is verified that they work on the
++ * other boards too.  See the extra_features variable. */
++
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+@@ -43,71 +76,296 @@
+ #include <linux/backlight.h>
+ #include <linux/platform_device.h>
+ #include <linux/rfkill.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/power_supply.h>
++#include <linux/fb.h>
++
++
++/* ======= */
++/* Defines */
++/* ======= */
++#define DRIVER_NAME "compal-laptop"
++#define DRIVER_VERSION 	"0.2.7"
++
++#define BACKLIGHT_LEVEL_ADDR		0xB9
++#define BACKLIGHT_LEVEL_MAX 		7
++#define BACKLIGHT_STATE_ADDR		0x59
++#define BACKLIGHT_STATE_ON_DATA		0xE1
++#define BACKLIGHT_STATE_OFF_DATA	0xE2
++
++#define WAKE_UP_ADDR			0xA4
++#define WAKE_UP_PME			(1 << 0)
++#define WAKE_UP_MODEM			(1 << 1)
++#define WAKE_UP_LAN			(1 << 2)
++#define WAKE_UP_WLAN			(1 << 4)
++#define WAKE_UP_KEY			(1 << 6)
++#define WAKE_UP_MOUSE			(1 << 7)
++
++#define WIRELESS_ADDR			0xBB
++#define WIRELESS_WLAN			(1 << 0)
++#define WIRELESS_BT 			(1 << 1)
++#define WIRELESS_WLAN_EXISTS		(1 << 2)
++#define WIRELESS_BT_EXISTS		(1 << 3)
++#define WIRELESS_KILLSWITCH		(1 << 4)
++
++#define PWM_ADDRESS			0x46
++#define PWM_DISABLE_ADDR		0x59
++#define PWM_DISABLE_DATA		0xA5
++#define PWM_ENABLE_ADDR			0x59
++#define PWM_ENABLE_DATA			0xA8
++
++#define FAN_ADDRESS			0x46
++#define FAN_DATA			0x81
++#define FAN_FULL_ON_CMD			0x59 /* Doesn't seem to work. Just */
++#define FAN_FULL_ON_ENABLE		0x76 /* force the pwm signal to its */
++#define FAN_FULL_ON_DISABLE		0x77 /* maximum value instead */
++
++#define TEMP_CPU			0xB0
++#define TEMP_CPU_LOCAL			0xB1
++#define TEMP_CPU_DTS			0xB5
++#define TEMP_NORTHBRIDGE		0xB6
++#define TEMP_VGA			0xB4
++#define TEMP_SKIN			0xB2
++
++#define BAT_MANUFACTURER_NAME_ADDR	0x10
++#define BAT_MANUFACTURER_NAME_LEN	9
++#define BAT_MODEL_NAME_ADDR		0x19
++#define BAT_MODEL_NAME_LEN		6
++#define BAT_SERIAL_NUMBER_ADDR		0xC4
++#define BAT_SERIAL_NUMBER_LEN		5
++#define BAT_CHARGE_NOW			0xC2
++#define BAT_CHARGE_DESIGN		0xCA
++#define BAT_VOLTAGE_NOW			0xC6
++#define BAT_VOLTAGE_DESIGN		0xC8
++#define BAT_CURRENT_NOW			0xD0
++#define BAT_CURRENT_AVG			0xD2
++#define BAT_POWER			0xD4
++#define BAT_CAPACITY			0xCE
++#define BAT_TEMP			0xD6
++#define BAT_TEMP_AVG			0xD7
++#define BAT_STATUS0			0xC1
++#define BAT_STATUS1			0xF0
++#define BAT_STATUS2			0xF1
++#define BAT_STOP_CHARGE1		0xF2
++#define BAT_STOP_CHARGE2		0xF3
++
++#define BAT_S0_DISCHARGE		(1 << 0)
++#define BAT_S0_DISCHRG_CRITICAL		(1 << 2)
++#define BAT_S0_LOW			(1 << 3)
++#define BAT_S0_CHARGING			(1 << 1)
++#define BAT_S0_AC			(1 << 7)
++#define BAT_S1_EXISTS			(1 << 0)
++#define BAT_S1_FULL			(1 << 1)
++#define BAT_S1_EMPTY			(1 << 2)
++#define BAT_S1_LiION_OR_NiMH		(1 << 7)
++#define BAT_S2_LOW_LOW			(1 << 0)
++#define BAT_STOP_CHRG1_BAD_CELL		(1 << 1)
++#define BAT_STOP_CHRG1_COMM_FAIL	(1 << 2)
++#define BAT_STOP_CHRG1_OVERVOLTAGE	(1 << 6)
++#define BAT_STOP_CHRG1_OVERTEMPERATURE	(1 << 7)
++
++
++/* ======= */
++/* Structs */
++/* ======= */
++struct compal_data{
++	/* Fan control */
++	struct device *hwmon_dev;
++	int pwm_enable; /* 0:full on, 1:set by pwm1, 2:control by moterboard */
++	unsigned char curr_pwm;
++
++	/* Power supply */
++	struct power_supply psy;
++	struct power_supply_info psy_info;
++	char bat_model_name[BAT_MODEL_NAME_LEN + 1];
++	char bat_manufacturer_name[BAT_MANUFACTURER_NAME_LEN + 1];
++	char bat_serial_number[BAT_SERIAL_NUMBER_LEN + 1];
++};
+
+-#define COMPAL_DRIVER_VERSION "0.2.6"
+
+-#define COMPAL_LCD_LEVEL_MAX 8
++/* =============== */
++/* General globals */
++/* =============== */
++static int force;
++module_param(force, bool, 0);
++MODULE_PARM_DESC(force, "Force driver load, ignore DMI data");
+
+-#define COMPAL_EC_COMMAND_WIRELESS 0xBB
+-#define COMPAL_EC_COMMAND_LCD_LEVEL 0xB9
++/* Support for the wake_on_XXX, hwmon and power_supply interface. Currently
++ * only gets enabled on a JHL90 board. Might work with the others too */
++static bool extra_features;
++
++/* Nasty stuff. For some reason the fan control is very un-linear.  I've
++ * come up with these values by looping through the possible inputs and
++ * watching the output of address 0x4F (do an ec_transaction writing 0x33
++ * into 0x4F and read a few bytes from the output, like so:
++ * 	u8 writeData = 0x33;
++ * 	ec_transaction(0x4F, &writeData, 1, buffer, 32, 0);
++ * That address is labled "fan1 table information" in the service manual.
++ * It should be clear which value in 'buffer' changes). This seems to be
++ * related to fan speed. It isn't a proper 'realtime' fan speed value
++ * though, because physically stopping or speeding up the fan doesn't
++ * change it. It might be the average voltage or current of the pwm output.
++ * Nevertheless, it is more fine-grained than the actual RPM reading */
++static const unsigned char pwm_lookup_table[256] = {
++	0, 0, 0, 1, 1, 1, 2, 253, 254, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6,
++	7, 7, 7, 8, 86, 86, 9, 9, 9, 10, 10, 10, 11, 92, 92, 12, 12, 95,
++	13, 66, 66, 14, 14, 98, 15, 15, 15, 16, 16, 67, 17, 17, 72, 18, 70,
++	75, 19, 90, 90, 73, 73, 73, 21, 21, 91, 91, 91, 96, 23, 94, 94, 94,
++	94, 94, 94, 94, 94, 94, 94, 141, 141, 238, 223, 192, 139, 139, 139,
++	139, 139, 142, 142, 142, 142, 142, 78, 78, 78, 78, 78, 76, 76, 76,
++	76, 76, 79, 79, 79, 79, 79, 79, 79, 20, 20, 20, 20, 20, 22, 22, 22,
++	22, 22, 24, 24, 24, 24, 24, 24, 219, 219, 219, 219, 219, 219, 219,
++	219, 27, 27, 188, 188, 28, 28, 28, 29, 186, 186, 186, 186, 186,
++	186, 186, 186, 186, 186, 31, 31, 31, 31, 31, 32, 32, 32, 41, 33,
++	33, 33, 33, 33, 252, 252, 34, 34, 34, 43, 35, 35, 35, 36, 36, 38,
++	206, 206, 206, 206, 206, 206, 206, 206, 206, 37, 37, 37, 46, 46,
++	47, 47, 232, 232, 232, 232, 232, 232, 232, 232, 232, 232, 48, 48,
++	48, 48, 48, 40, 40, 40, 49, 42, 42, 42, 42, 42, 42, 42, 42, 44,
++	189, 189, 189, 189, 54, 54, 45, 45, 45, 45, 45, 45, 45, 45, 251,
++	191, 199, 199, 199, 199, 199, 215, 215, 215, 215, 187, 187, 187,
++	187, 187, 193, 50
++};
+
+-#define KILLSWITCH_MASK 0x10
+-#define WLAN_MASK	0x01
+-#define BT_MASK 	0x02
+
+-static struct rfkill *wifi_rfkill;
+-static struct rfkill *bt_rfkill;
+-static struct platform_device *compal_device;
+
+-static int force;
+-module_param(force, bool, 0);
+-MODULE_PARM_DESC(force, "Force driver load, ignore DMI data");
+
+-/* Hardware access */
++/* ========================= */
++/* Hardware access functions */
++/* ========================= */
++/* General access */
++static u8 ec_read_u8(u8 addr)
++{
++	u8 value;
++	ec_read(addr, &value);
++	return value;
++}
++
++static s8 ec_read_s8(u8 addr)
++{
++	return (s8)ec_read_u8(addr);
++}
++
++static u16 ec_read_u16(u8 addr)
++{
++	int hi, lo;
++	lo = ec_read_u8(addr);
++	hi = ec_read_u8(addr + 1);
++	return (hi << 8) + lo;
++}
++
++static s16 ec_read_s16(u8 addr)
++{
++	return (s16) ec_read_u16(addr);
++}
+
+-static int set_lcd_level(int level)
++static void ec_read_sequence(u8 addr, u8 *buf, int len)
+ {
+-	if (level < 0 || level >= COMPAL_LCD_LEVEL_MAX)
++	int i;
++	for (i = 0; i < len; i++)
++		ec_read(addr + i, buf + i);
++}
++
++
++/* Backlight access */
++static int set_backlight_level(int level)
++{
++	if (level < 0 || level > BACKLIGHT_LEVEL_MAX)
+ 		return -EINVAL;
+
+-	ec_write(COMPAL_EC_COMMAND_LCD_LEVEL, level);
++	ec_write(BACKLIGHT_LEVEL_ADDR, level);
+
+ 	return 0;
+ }
+
+-static int get_lcd_level(void)
++static int get_backlight_level(void)
++{
++	return (int) ec_read_u8(BACKLIGHT_LEVEL_ADDR);
++}
++
++static void set_backlight_state(bool on)
++{
++	u8 data = on ? BACKLIGHT_STATE_ON_DATA : BACKLIGHT_STATE_OFF_DATA;
++	ec_transaction(BACKLIGHT_STATE_ADDR, &data, 1, NULL, 0, 0);
++}
++
++
++/* Fan control access */
++static void pwm_enable_control(void)
++{
++	unsigned char writeData = PWM_ENABLE_DATA;
++	ec_transaction(PWM_ENABLE_ADDR, &writeData, 1, NULL, 0, 0);
++}
++
++static void pwm_disable_control(void)
++{
++	unsigned char writeData = PWM_DISABLE_DATA;
++	ec_transaction(PWM_DISABLE_ADDR, &writeData, 1, NULL, 0, 0);
++}
++
++static void set_pwm(int pwm)
+ {
+-	u8 result;
++	ec_transaction(PWM_ADDRESS, &pwm_lookup_table[pwm], 1, NULL, 0, 0);
++}
++
++static int get_fan_rpm(void)
++{
++	u8 value, data = FAN_DATA;
++	ec_transaction(FAN_ADDRESS, &data, 1, &value, 1, 0);
++	return 100 * (int)value;
++}
++
++
++
++
++/* =================== */
++/* Interface functions */
++/* =================== */
+
+-	ec_read(COMPAL_EC_COMMAND_LCD_LEVEL, &result);
++/* Backlight interface */
++static int bl_get_brightness(struct backlight_device *b)
++{
++	return get_backlight_level();
++}
++
++static int bl_update_status(struct backlight_device *b)
++{
++	int ret = set_backlight_level(b->props.brightness);
++	if (ret)
++		return ret;
+
+-	return (int) result;
++	set_backlight_state((b->props.power == FB_BLANK_UNBLANK)
++		&&    !(b->props.state & BL_CORE_SUSPENDED)
++		&&    !(b->props.state & BL_CORE_FBBLANK));
++	return 0;
+ }
+
++static struct backlight_ops compalbl_ops = {
++	.get_brightness = bl_get_brightness,
++	.update_status	= bl_update_status,
++};
++
++
++/* Wireless interface */
+ static int compal_rfkill_set(void *data, bool blocked)
+ {
+ 	unsigned long radio = (unsigned long) data;
+-	u8 result, value;
+-
+-	ec_read(COMPAL_EC_COMMAND_WIRELESS, &result);
++	u8 result = ec_read_u8(WIRELESS_ADDR);
++	u8 value;
+
+ 	if (!blocked)
+ 		value = (u8) (result | radio);
+ 	else
+ 		value = (u8) (result & ~radio);
+-	ec_write(COMPAL_EC_COMMAND_WIRELESS, value);
++	ec_write(WIRELESS_ADDR, value);
+
+ 	return 0;
+ }
+
+ static void compal_rfkill_poll(struct rfkill *rfkill, void *data)
+ {
+-	u8 result;
+-	bool hw_blocked;
+-
+-	ec_read(COMPAL_EC_COMMAND_WIRELESS, &result);
+-
+-	hw_blocked = !(result & KILLSWITCH_MASK);
++	u8 result = ec_read_u8(WIRELESS_ADDR);
++	bool hw_blocked = !(result & WIRELESS_KILLSWITCH);
+ 	rfkill_set_hw_state(rfkill, hw_blocked);
+ }
+
+@@ -116,80 +374,404 @@ static const struct rfkill_ops compal_rf
+ 	.set_block = compal_rfkill_set,
+ };
+
+-static int setup_rfkill(void)
++
++/* Wake_up interface */
++#define SIMPLE_MASKED_STORE_SHOW(NAME, ADDR, MASK)			\
++static ssize_t NAME##_show(struct device *dev,				\
++	struct device_attribute *attr, char *buf) 			\
++{ 									\
++	return sprintf(buf, "%d\n", ((ec_read_u8(ADDR) & MASK) != 0));	\
++}									\
++static ssize_t NAME##_store(struct device *dev,				\
++	struct device_attribute *attr, const char *buf, size_t count)	\
++{									\
++	int state;							\
++	u8 old_val = ec_read_u8(ADDR);					\
++	if (sscanf(buf, "%d", &state) != 1 || (state < 0 || state > 1))	\
++		return -EINVAL;						\
++	ec_write(ADDR, state ? (old_val | MASK) : (old_val & ~MASK));	\
++	return count;							\
++}
++
++SIMPLE_MASKED_STORE_SHOW(wake_up_pme,	WAKE_UP_ADDR, WAKE_UP_PME)
++SIMPLE_MASKED_STORE_SHOW(wake_up_modem,	WAKE_UP_ADDR, WAKE_UP_MODEM)
++SIMPLE_MASKED_STORE_SHOW(wake_up_lan,	WAKE_UP_ADDR, WAKE_UP_LAN)
++SIMPLE_MASKED_STORE_SHOW(wake_up_wlan,	WAKE_UP_ADDR, WAKE_UP_WLAN)
++SIMPLE_MASKED_STORE_SHOW(wake_up_key,	WAKE_UP_ADDR, WAKE_UP_KEY)
++SIMPLE_MASKED_STORE_SHOW(wake_up_mouse,	WAKE_UP_ADDR, WAKE_UP_MOUSE)
++
++
++/* General hwmon interface */
++static ssize_t hwmon_name_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
+ {
+-	int ret;
++	return sprintf(buf, "%s\n", DRIVER_NAME);
++}
+
+-	wifi_rfkill = rfkill_alloc("compal-wifi", &compal_device->dev,
+-				RFKILL_TYPE_WLAN, &compal_rfkill_ops,
+-				(void *) WLAN_MASK);
+-	if (!wifi_rfkill)
+-		return -ENOMEM;
+
+-	ret = rfkill_register(wifi_rfkill);
+-	if (ret)
+-		goto err_wifi;
++/* Fan control interface */
++static ssize_t pwm_enable_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct compal_data *data = dev_get_drvdata(dev);
++	return sprintf(buf, "%d\n", data->pwm_enable);
++}
+
+-	bt_rfkill = rfkill_alloc("compal-bluetooth", &compal_device->dev,
+-				RFKILL_TYPE_BLUETOOTH, &compal_rfkill_ops,
+-				(void *) BT_MASK);
+-	if (!bt_rfkill) {
+-		ret = -ENOMEM;
+-		goto err_allocate_bt;
++static ssize_t pwm_enable_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct compal_data *data = dev_get_drvdata(dev);
++	long val;
++	int err;
++	err = strict_strtol(buf, 10, &val);
++	if (err)
++		return err;
++	if (val < 0)
++		return -EINVAL;
++
++	data->pwm_enable = val;
++
++	switch (val) {
++	case 0:  /* Full speed */
++		pwm_enable_control();
++		set_pwm(255);
++		break;
++	case 1:  /* As set by pwm1 */
++		pwm_enable_control();
++		set_pwm(data->curr_pwm);
++		break;
++	default: /* Control by motherboard */
++		pwm_disable_control();
++		break;
+ 	}
+-	ret = rfkill_register(bt_rfkill);
+-	if (ret)
+-		goto err_register_bt;
+
+-	return 0;
++	return count;
++}
+
+-err_register_bt:
+-	rfkill_destroy(bt_rfkill);
++static ssize_t pwm_show(struct device *dev, struct device_attribute *attr,
++		char *buf)
++{
++	struct compal_data *data = dev_get_drvdata(dev);
++	return sprintf(buf, "%hhu\n", data->curr_pwm);
++}
+
+-err_allocate_bt:
+-	rfkill_unregister(wifi_rfkill);
++static ssize_t pwm_store(struct device *dev, struct device_attribute *attr,
++		const char *buf, size_t count)
++{
++	struct compal_data *data = dev_get_drvdata(dev);
++	long val;
++	int err;
++	err = strict_strtol(buf, 10, &val);
++	if (err)
++		return err;
++	if (val < 0 || val > 255)
++		return -EINVAL;
+
+-err_wifi:
+-	rfkill_destroy(wifi_rfkill);
++	data->curr_pwm = val;
+
+-	return ret;
++	if (data->pwm_enable != 1)
++		return count;
++	set_pwm(val);
++
++	return count;
+ }
+
+-/* Backlight device stuff */
++static ssize_t fan_show(struct device *dev, struct device_attribute *attr,
++		char *buf)
++{
++	return sprintf(buf, "%d\n", get_fan_rpm());
++}
+
+-static int bl_get_brightness(struct backlight_device *b)
++
++/* Temperature interface */
++#define TEMPERATURE_SHOW_TEMP_AND_LABEL(POSTFIX, ADDRESS, LABEL) 	\
++static ssize_t temp_##POSTFIX(struct device *dev, 			\
++		struct device_attribute *attr, char *buf) 		\
++{									\
++	return sprintf(buf, "%d\n", 1000 * (int)ec_read_s8(ADDRESS));	\
++}									\
++static ssize_t label_##POSTFIX(struct device *dev, 			\
++		struct device_attribute *attr, char *buf) 		\
++{									\
++	return sprintf(buf, "%s\n", LABEL); 				\
++}
++
++/* Labels as in service guide */
++TEMPERATURE_SHOW_TEMP_AND_LABEL(cpu,        TEMP_CPU,        "CPU_TEMP");
++TEMPERATURE_SHOW_TEMP_AND_LABEL(cpu_local,  TEMP_CPU_LOCAL,  "CPU_TEMP_LOCAL");
++TEMPERATURE_SHOW_TEMP_AND_LABEL(cpu_DTS,    TEMP_CPU_DTS,    "CPU_DTS");
++TEMPERATURE_SHOW_TEMP_AND_LABEL(northbridge,TEMP_NORTHBRIDGE,"NorthBridge");
++TEMPERATURE_SHOW_TEMP_AND_LABEL(vga,        TEMP_VGA,        "VGA_TEMP");
++TEMPERATURE_SHOW_TEMP_AND_LABEL(SKIN,       TEMP_SKIN,       "SKIN_TEMP90");
++
++
++/* Power supply interface */
++static int bat_status(void)
+ {
+-	return get_lcd_level();
++	u8 status0 = ec_read_u8(BAT_STATUS0);
++	u8 status1 = ec_read_u8(BAT_STATUS1);
++
++	if (status0 & BAT_S0_CHARGING)
++		return POWER_SUPPLY_STATUS_CHARGING;
++	if (status0 & BAT_S0_DISCHARGE)
++		return POWER_SUPPLY_STATUS_DISCHARGING;
++	if (status1 & BAT_S1_FULL)
++		return POWER_SUPPLY_STATUS_FULL;
++	return POWER_SUPPLY_STATUS_NOT_CHARGING;
+ }
+
++static int bat_health(void)
++{
++	u8 status = ec_read_u8(BAT_STOP_CHARGE1);
+
+-static int bl_update_status(struct backlight_device *b)
++	if (status & BAT_STOP_CHRG1_OVERTEMPERATURE)
++		return POWER_SUPPLY_HEALTH_OVERHEAT;
++	if (status & BAT_STOP_CHRG1_OVERVOLTAGE)
++		return POWER_SUPPLY_HEALTH_OVERVOLTAGE;
++	if (status & BAT_STOP_CHRG1_BAD_CELL)
++		return POWER_SUPPLY_HEALTH_DEAD;
++	if (status & BAT_STOP_CHRG1_COMM_FAIL)
++		return POWER_SUPPLY_HEALTH_UNKNOWN;
++	return POWER_SUPPLY_HEALTH_GOOD;
++}
++
++static int bat_is_present(void)
+ {
+-	return set_lcd_level(b->props.brightness);
++	u8 status = ec_read_u8(BAT_STATUS2);
++	return ((status & BAT_S1_EXISTS) != 0);
+ }
+
+-static struct backlight_ops compalbl_ops = {
+-	.get_brightness = bl_get_brightness,
+-	.update_status	= bl_update_status,
+-};
++static int bat_technology(void)
++{
++	u8 status = ec_read_u8(BAT_STATUS1);
++
++	if (status & BAT_S1_LiION_OR_NiMH)
++		return POWER_SUPPLY_TECHNOLOGY_LION;
++	return POWER_SUPPLY_TECHNOLOGY_NiMH;
++}
++
++static int bat_capacity_level(void)
++{
++	u8 status0 = ec_read_u8(BAT_STATUS0);
++	u8 status1 = ec_read_u8(BAT_STATUS1);
++	u8 status2 = ec_read_u8(BAT_STATUS2);
++
++	if (status0 & BAT_S0_DISCHRG_CRITICAL
++			|| status1 & BAT_S1_EMPTY
++			|| status2 & BAT_S2_LOW_LOW)
++		return POWER_SUPPLY_CAPACITY_LEVEL_CRITICAL;
++	if (status0 & BAT_S0_LOW)
++		return POWER_SUPPLY_CAPACITY_LEVEL_LOW;
++	if (status1 & BAT_S1_FULL)
++		return POWER_SUPPLY_CAPACITY_LEVEL_FULL;
++	return POWER_SUPPLY_CAPACITY_LEVEL_NORMAL;
++}
++
++static int bat_get_property(struct power_supply *psy,
++				enum power_supply_property psp,
++				union power_supply_propval *val)
++{
++	struct compal_data *data;
++	data = container_of(psy, struct compal_data, psy);
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		val->intval = bat_status();
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		val->intval = bat_health();
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		val->intval = bat_is_present();
++		break;
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		val->intval = bat_technology();
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN: /* THE design voltage... */
++		val->intval = ec_read_u16(BAT_VOLTAGE_DESIGN) * 1000;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		val->intval = ec_read_u16(BAT_VOLTAGE_NOW) * 1000;
++		break;
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++		val->intval = ec_read_s16(BAT_CURRENT_NOW) * 1000;
++		break;
++	case POWER_SUPPLY_PROP_CURRENT_AVG:
++		val->intval = ec_read_s16(BAT_CURRENT_AVG) * 1000;
++		break;
++	case POWER_SUPPLY_PROP_POWER_NOW:
++		val->intval = ec_read_u8(BAT_POWER) * 1000000;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
++		val->intval = ec_read_u16(BAT_CHARGE_DESIGN) * 1000;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_NOW:
++		val->intval = ec_read_u16(BAT_CHARGE_NOW) * 1000;
++		break;
++	case POWER_SUPPLY_PROP_CAPACITY:
++		val->intval = ec_read_u8(BAT_CAPACITY);
++		break;
++	case POWER_SUPPLY_PROP_CAPACITY_LEVEL:
++		val->intval = bat_capacity_level();
++		break;
++	/* It smees that BAT_TEMP_AVG is a (2's complement?) value showing
++	 * the number of degrees, whereas BAT_TEMP is somewhat more
++	 * complicated. It looks like this is a negative nember with a
++	 * 100/256 divider and an offset of 222. Both were determined
++	 * experimentally by comparing BAT_TEMP and BAT_TEMP_AVG. */
++	case POWER_SUPPLY_PROP_TEMP:
++		val->intval = ((222 - (int)ec_read_u8(BAT_TEMP)) * 1000) >> 8;
++		break;
++	case POWER_SUPPLY_PROP_TEMP_AMBIENT: /* Ambient, Avg, ... same thing */
++		val->intval = ec_read_s8(BAT_TEMP_AVG) * 10;
++		break;
++	/* Neither the model name nor manufacturer name work for me. */
++	case POWER_SUPPLY_PROP_MODEL_NAME:
++		val->strval = data->bat_model_name;
++		break;
++	case POWER_SUPPLY_PROP_MANUFACTURER:
++		val->strval = data->bat_manufacturer_name;
++		break;
++	case POWER_SUPPLY_PROP_SERIAL_NUMBER:
++		val->strval = data->bat_serial_number;
++		break;
++	default:
++		break;
++	}
++	return 0;
++}
++
++
+
+-static struct backlight_device *compalbl_device;
+
+
++/* ============== */
++/* Driver Globals */
++/* ============== */
++static DEVICE_ATTR(wake_up_pme,
++		0644, wake_up_pme_show,		wake_up_pme_store);
++static DEVICE_ATTR(wake_up_modem,
++		0644, wake_up_modem_show,	wake_up_modem_store);
++static DEVICE_ATTR(wake_up_lan,
++		0644, wake_up_lan_show,	wake_up_lan_store);
++static DEVICE_ATTR(wake_up_wlan,
++		0644, wake_up_wlan_show,	wake_up_wlan_store);
++static DEVICE_ATTR(wake_up_key,
++		0644, wake_up_key_show,	wake_up_key_store);
++static DEVICE_ATTR(wake_up_mouse,
++		0644, wake_up_mouse_show,	wake_up_mouse_store);
++
++static SENSOR_DEVICE_ATTR(name,        S_IRUGO, hwmon_name_show,   NULL, 1);
++static SENSOR_DEVICE_ATTR(fan1_input,  S_IRUGO, fan_show,          NULL, 1);
++static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, temp_cpu,          NULL, 1);
++static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, temp_cpu_local,    NULL, 1);
++static SENSOR_DEVICE_ATTR(temp3_input, S_IRUGO, temp_cpu_DTS,      NULL, 1);
++static SENSOR_DEVICE_ATTR(temp4_input, S_IRUGO, temp_northbridge,  NULL, 1);
++static SENSOR_DEVICE_ATTR(temp5_input, S_IRUGO, temp_vga,          NULL, 1);
++static SENSOR_DEVICE_ATTR(temp6_input, S_IRUGO, temp_SKIN,         NULL, 1);
++static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, label_cpu,         NULL, 1);
++static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, label_cpu_local,   NULL, 1);
++static SENSOR_DEVICE_ATTR(temp3_label, S_IRUGO, label_cpu_DTS,     NULL, 1);
++static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO, label_northbridge, NULL, 1);
++static SENSOR_DEVICE_ATTR(temp5_label, S_IRUGO, label_vga,         NULL, 1);
++static SENSOR_DEVICE_ATTR(temp6_label, S_IRUGO, label_SKIN,        NULL, 1);
++static SENSOR_DEVICE_ATTR(pwm1, S_IRUGO | S_IWUSR, pwm_show, pwm_store, 1);
++static SENSOR_DEVICE_ATTR(pwm1_enable,
++		S_IRUGO | S_IWUSR, pwm_enable_show, pwm_enable_store, 0);
++
++static struct attribute *compal_attributes[] = {
++	&dev_attr_wake_up_pme.attr,
++	&dev_attr_wake_up_modem.attr,
++	&dev_attr_wake_up_lan.attr,
++	&dev_attr_wake_up_wlan.attr,
++	&dev_attr_wake_up_key.attr,
++	&dev_attr_wake_up_mouse.attr,
++	/* Maybe put the sensor-stuff in a separate hwmon-driver? That way,
++	 * the hwmon sysfs won't be cluttered with the above files. */
++	&sensor_dev_attr_name.dev_attr.attr,
++	&sensor_dev_attr_pwm1_enable.dev_attr.attr,
++	&sensor_dev_attr_pwm1.dev_attr.attr,
++	&sensor_dev_attr_fan1_input.dev_attr.attr,
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++	&sensor_dev_attr_temp2_input.dev_attr.attr,
++	&sensor_dev_attr_temp3_input.dev_attr.attr,
++	&sensor_dev_attr_temp4_input.dev_attr.attr,
++	&sensor_dev_attr_temp5_input.dev_attr.attr,
++	&sensor_dev_attr_temp6_input.dev_attr.attr,
++	&sensor_dev_attr_temp1_label.dev_attr.attr,
++	&sensor_dev_attr_temp2_label.dev_attr.attr,
++	&sensor_dev_attr_temp3_label.dev_attr.attr,
++	&sensor_dev_attr_temp4_label.dev_attr.attr,
++	&sensor_dev_attr_temp5_label.dev_attr.attr,
++	&sensor_dev_attr_temp6_label.dev_attr.attr,
++	NULL
++};
++
++static struct attribute_group compal_attribute_group = {
++	.attrs = compal_attributes
++};
++
++static int __devinit compal_probe(struct platform_device *);
++static int __devexit compal_remove(struct platform_device *);
+ static struct platform_driver compal_driver = {
+ 	.driver = {
+-		.name = "compal-laptop",
++		.name = DRIVER_NAME,
+ 		.owner = THIS_MODULE,
+-	}
++	},
++	.probe	= compal_probe,
++	.remove	= __devexit_p(compal_remove)
++};
++
++static enum power_supply_property compal_bat_properties[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_CURRENT_AVG,
++	POWER_SUPPLY_PROP_POWER_NOW,
++	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
++	POWER_SUPPLY_PROP_CHARGE_NOW,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
++	POWER_SUPPLY_PROP_TEMP,
++	POWER_SUPPLY_PROP_TEMP_AMBIENT,
++	POWER_SUPPLY_PROP_MODEL_NAME,
++	POWER_SUPPLY_PROP_MANUFACTURER,
++	POWER_SUPPLY_PROP_SERIAL_NUMBER,
+ };
+
+-/* Initialization */
++static struct backlight_device *compalbl_device;
++
++static struct platform_device *compal_device;
++
++static struct rfkill *wifi_rfkill;
++static struct rfkill *bt_rfkill;
++
++
++
++
++
++/* =================================== */
++/* Initialization & clean-up functions */
++/* =================================== */
+
+ static int dmi_check_cb(const struct dmi_system_id *id)
+ {
+-	printk(KERN_INFO "compal-laptop: Identified laptop model '%s'.\n",
++	printk(KERN_INFO DRIVER_NAME": Identified laptop model '%s'\n",
+ 		id->ident);
++	extra_features = false;
++	return 0;
++}
+
++static int dmi_check_cb_extra(const struct dmi_system_id *id)
++{
++	printk(KERN_INFO DRIVER_NAME": Identified laptop model '%s', "
++		"enabling extra features\n",
++		id->ident);
++	extra_features = true;
+ 	return 0;
+ }
+
+@@ -274,27 +856,106 @@ static struct dmi_system_id __initdata c
+ 		},
+ 		.callback = dmi_check_cb
+ 	},
+-
++	{
++		.ident = "JHL90",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_NAME, "JHL90"),
++			DMI_MATCH(DMI_BOARD_VERSION, "REFERENCE"),
++		},
++		.callback = dmi_check_cb_extra
++	},
+ 	{ }
+ };
+
++static void initialize_power_supply_data(struct compal_data *data)
++{
++	data->psy.name = DRIVER_NAME;
++	data->psy.type = POWER_SUPPLY_TYPE_BATTERY;
++	data->psy.properties = compal_bat_properties;
++	data->psy.num_properties = ARRAY_SIZE(compal_bat_properties);
++	data->psy.get_property = bat_get_property;
++
++	ec_read_sequence(BAT_MANUFACTURER_NAME_ADDR,
++					data->bat_manufacturer_name,
++					BAT_MANUFACTURER_NAME_LEN);
++	data->bat_manufacturer_name[BAT_MANUFACTURER_NAME_LEN] = 0;
++
++	ec_read_sequence(BAT_MODEL_NAME_ADDR,
++					data->bat_model_name,
++					BAT_MODEL_NAME_LEN);
++	data->bat_model_name[BAT_MODEL_NAME_LEN] = 0;
++
++	scnprintf(data->bat_serial_number, BAT_SERIAL_NUMBER_LEN + 1, "%d",
++				ec_read_u16(BAT_SERIAL_NUMBER_ADDR));
++}
++
++static void initialize_fan_control_data(struct compal_data *data)
++{
++	data->pwm_enable = 2; /* Keep motherboard in control for now */
++	data->curr_pwm = 255; /* Try not to cause a CPU_on_fire exception
++				 if we take over... */
++}
++
++static int setup_rfkill(void)
++{
++	int ret;
++
++	wifi_rfkill = rfkill_alloc("compal-wifi", &compal_device->dev,
++				RFKILL_TYPE_WLAN, &compal_rfkill_ops,
++				(void *) WIRELESS_WLAN);
++	if (!wifi_rfkill)
++		return -ENOMEM;
++
++	ret = rfkill_register(wifi_rfkill);
++	if (ret)
++		goto err_wifi;
++
++	bt_rfkill = rfkill_alloc("compal-bluetooth", &compal_device->dev,
++				RFKILL_TYPE_BLUETOOTH, &compal_rfkill_ops,
++				(void *) WIRELESS_BT);
++	if (!bt_rfkill) {
++		ret = -ENOMEM;
++		goto err_allocate_bt;
++	}
++	ret = rfkill_register(bt_rfkill);
++	if (ret)
++		goto err_register_bt;
++
++	return 0;
++
++err_register_bt:
++	rfkill_destroy(bt_rfkill);
++
++err_allocate_bt:
++	rfkill_unregister(wifi_rfkill);
++
++err_wifi:
++	rfkill_destroy(wifi_rfkill);
++
++	return ret;
++}
++
+ static int __init compal_init(void)
+ {
+ 	int ret;
+
+-	if (acpi_disabled)
++	if (acpi_disabled) {
++		printk(KERN_ERR DRIVER_NAME": ACPI needs to be enabled for "
++						"this driver to work!\n");
+ 		return -ENODEV;
++	}
+
+-	if (!force && !dmi_check_system(compal_dmi_table))
++	if (!force && !dmi_check_system(compal_dmi_table)) {
++		printk(KERN_ERR DRIVER_NAME": Motherboard not recognized (You "
++				"could try the module's force-parameter)");
+ 		return -ENODEV;
+-
+-	/* Register backlight stuff */
++	}
+
+ 	if (!acpi_video_backlight_support()) {
+ 		struct backlight_properties props;
+ 		memset(&props, 0, sizeof(struct backlight_properties));
+-		props.max_brightness = COMPAL_LCD_LEVEL_MAX - 1;
+-		compalbl_device = backlight_device_register("compal-laptop",
++		props.max_brightness = BACKLIGHT_LEVEL_MAX;
++		compalbl_device = backlight_device_register(DRIVER_NAME,
+ 							    NULL, NULL,
+ 							    &compalbl_ops,
+ 							    &props);
+@@ -304,67 +965,122 @@ static int __init compal_init(void)
+
+ 	ret = platform_driver_register(&compal_driver);
+ 	if (ret)
+-		goto fail_backlight;
++		goto err_backlight;
+
+-	/* Register platform stuff */
+-
+-	compal_device = platform_device_alloc("compal-laptop", -1);
++	compal_device = platform_device_alloc(DRIVER_NAME, -1);
+ 	if (!compal_device) {
+ 		ret = -ENOMEM;
+-		goto fail_platform_driver;
++		goto err_platform_driver;
+ 	}
+
+-	ret = platform_device_add(compal_device);
++	ret = platform_device_add(compal_device); /* This calls compal_probe */
+ 	if (ret)
+-		goto fail_platform_device;
++		goto err_platform_device;
+
+ 	ret = setup_rfkill();
+ 	if (ret)
+-		goto fail_rfkill;
+-
+-	printk(KERN_INFO "compal-laptop: driver "COMPAL_DRIVER_VERSION
+-		" successfully loaded.\n");
++		goto err_rfkill;
+
++	printk(KERN_INFO DRIVER_NAME": Driver "DRIVER_VERSION
++						" successfully loaded\n");
+ 	return 0;
+
+-fail_rfkill:
++err_rfkill:
+ 	platform_device_del(compal_device);
+
+-fail_platform_device:
+-
++err_platform_device:
+ 	platform_device_put(compal_device);
+
+-fail_platform_driver:
+-
++err_platform_driver:
+ 	platform_driver_unregister(&compal_driver);
+
+-fail_backlight:
+-
++err_backlight:
+ 	backlight_device_unregister(compalbl_device);
+
+ 	return ret;
+ }
+
+-static void __exit compal_cleanup(void)
++static int __devinit compal_probe(struct platform_device *pdev)
+ {
++	int err;
++	struct compal_data *data;
++
++	if (!extra_features)
++		return 0;
++
++	/* Fan control */
++	data = kzalloc(sizeof(struct compal_data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	initialize_fan_control_data(data);
++
++	err = sysfs_create_group(&pdev->dev.kobj, &compal_attribute_group)
++	if (err)
++		return err;
++
++	data->hwmon_dev = hwmon_device_register(&pdev->dev);
++	if (IS_ERR(data->hwmon_dev)) {
++		err = PTR_ERR(data->hwmon_dev);
++		sysfs_remove_group(&pdev->dev.kobj,
++				&compal_attribute_group);
++		kfree(data);
++		return err;
++	}
++
++	/* Power supply */
++	initialize_power_supply_data(data);
++	power_supply_register(&compal_device->dev, &data->psy);
++
++	platform_set_drvdata(pdev, data);
++
++	return 0;
++}
+
++static void __exit compal_cleanup(void)
++{
+ 	platform_device_unregister(compal_device);
+ 	platform_driver_unregister(&compal_driver);
+ 	backlight_device_unregister(compalbl_device);
+ 	rfkill_unregister(wifi_rfkill);
+-	rfkill_destroy(wifi_rfkill);
+ 	rfkill_unregister(bt_rfkill);
++	rfkill_destroy(wifi_rfkill);
+ 	rfkill_destroy(bt_rfkill);
+
+-	printk(KERN_INFO "compal-laptop: driver unloaded.\n");
++	printk(KERN_INFO DRIVER_NAME": Driver unloaded\n");
++}
++
++static int __devexit compal_remove(struct platform_device *pdev)
++{
++	struct compal_data *data;
++
++	if (!extra_features)
++		return 0;
++
++	printk(KERN_INFO DRIVER_NAME": Unloading: resetting fan control "
++							"to motherboard\n");
++	pwm_disable_control();
++
++	data = platform_get_drvdata(pdev);
++	hwmon_device_unregister(data->hwmon_dev);
++	power_supply_unregister(&data->psy);
++
++	platform_set_drvdata(pdev, NULL);
++	kfree(data);
++
++	sysfs_remove_group(&pdev->dev.kobj, &compal_attribute_group);
++
++	return 0;
+ }
+
++
+ module_init(compal_init);
+ module_exit(compal_cleanup);
+
+ MODULE_AUTHOR("Cezary Jackiewicz");
++MODULE_AUTHOR("Roald Frederickx (roald.frederickx@gmail.com)");
+ MODULE_DESCRIPTION("Compal Laptop Support");
+-MODULE_VERSION(COMPAL_DRIVER_VERSION);
++MODULE_VERSION(DRIVER_VERSION);
+ MODULE_LICENSE("GPL");
+
+ MODULE_ALIAS("dmi:*:rnIFL90:rvrIFT00:*");
+@@ -372,6 +1088,7 @@ MODULE_ALIAS("dmi:*:rnIFL90:rvrREFERENCE
+ MODULE_ALIAS("dmi:*:rnIFL91:rvrIFT00:*");
+ MODULE_ALIAS("dmi:*:rnJFL92:rvrIFT00:*");
+ MODULE_ALIAS("dmi:*:rnIFT00:rvrIFT00:*");
++MODULE_ALIAS("dmi:*:rnJHL90:rvrREFERENCE:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron910:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1010:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1011:*");
