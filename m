@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab0DVUN3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:13:29 -0400
-Received: from kroah.org ([198.145.64.141]:59944 "EHLO coco.kroah.org"
+	id S1757602Ab0DVUB0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:01:26 -0400
+Received: from kroah.org ([198.145.64.141]:59858 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758063Ab0DVUBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:01:23 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:15 2010
-Message-Id: <20100422195415.564340461@kvm.kroah.org>
+	id S932073Ab0DVUBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:01:00 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:13 2010
+Message-Id: <20100422195413.380330483@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:38 -0700
+Date: Thu, 22 Apr 2010 12:54:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Seth Heasley <seth.heasley@intel.com>, Jeff Garzik <jgarzik@redhat.com>,
-       maximilian attems <max@stro.at>
-Subject: [101/139] ata_piix: IDE Mode SATA patch for Intel Cougar Point DeviceIDs
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: [084/139] x86-32: clean up rwsem inline asm statements
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Heasley <seth.heasley@intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 88e8201e67aace3d86de9e75122ea525f0e7248e upstream.
+commit 59c33fa7791e9948ba467c2b83e307a0d087ab49 upstream.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Cc: maximilian attems <max@stro.at>
+This makes gcc use the right register names and instruction operand sizes
+automatically for the rwsem inline asm statements.
+
+So instead of using "(%%eax)" to specify the memory address that is the
+semaphore, we use "(%1)" or similar. And instead of forcing the operation
+to always be 32-bit, we use "%z0", taking the size from the actual
+semaphore data structure itself.
+
+This doesn't actually matter on x86-32, but if we want to use the same
+inline asm for x86-64, we'll need to have the compiler generate the proper
+64-bit names for the registers (%rax instead of %eax), and if we want to
+use a 64-bit counter too (in order to avoid the 15-bit limit on the
+write counter that limits concurrent users to 32767 threads), we'll need
+to be able to generate instructions with "q" accesses rather than "l".
+
+Since this header currently isn't enabled on x86-64, none of that matters,
+but we do want to use the xadd version of the semaphores rather than have
+to take spinlocks to do a rwsem. The mm->mmap_sem can be heavily contended
+when you have lots of threads all taking page faults, and the fallback
+rwsem code that uses a spinlock performs abysmally badly in that case.
+
+[ hpa: modified the patch to skip size suffixes entirely when they are
+  redundant due to register operands. ]
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <alpine.LFD.2.00.1001121613560.17145@localhost.localdomain>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ata_piix.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/x86/include/asm/rwsem.h |   30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -291,6 +291,14 @@ static const struct pci_device_id piix_p
- 	{ 0x8086, 0x3b2d, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (PCH) */
- 	{ 0x8086, 0x3b2e, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	/* SATA Controller IDE (CPT) */
-+	{ 0x8086, 0x1c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	/* SATA Controller IDE (CPT) */
-+	{ 0x8086, 0x1c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	/* SATA Controller IDE (CPT) */
-+	{ 0x8086, 0x1c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (CPT) */
-+	{ 0x8086, 0x1c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	{ }	/* terminate list */
- };
+--- a/arch/x86/include/asm/rwsem.h
++++ b/arch/x86/include/asm/rwsem.h
+@@ -105,7 +105,7 @@ do {								\
+ static inline void __down_read(struct rw_semaphore *sem)
+ {
+ 	asm volatile("# beginning down_read\n\t"
+-		     LOCK_PREFIX "  incl      (%%eax)\n\t"
++		     LOCK_PREFIX "  inc%z0      (%1)\n\t"
+ 		     /* adds 0x00000001, returns the old value */
+ 		     "  jns        1f\n"
+ 		     "  call call_rwsem_down_read_failed\n"
+@@ -123,12 +123,12 @@ static inline int __down_read_trylock(st
+ {
+ 	__s32 result, tmp;
+ 	asm volatile("# beginning __down_read_trylock\n\t"
+-		     "  movl      %0,%1\n\t"
++		     "  mov          %0,%1\n\t"
+ 		     "1:\n\t"
+-		     "  movl	     %1,%2\n\t"
+-		     "  addl      %3,%2\n\t"
++		     "  mov          %1,%2\n\t"
++		     "  add          %3,%2\n\t"
+ 		     "  jle	     2f\n\t"
+-		     LOCK_PREFIX "  cmpxchgl  %2,%0\n\t"
++		     LOCK_PREFIX "  cmpxchg  %2,%0\n\t"
+ 		     "  jnz	     1b\n\t"
+ 		     "2:\n\t"
+ 		     "# ending __down_read_trylock\n\t"
+@@ -147,9 +147,9 @@ static inline void __down_write_nested(s
  
+ 	tmp = RWSEM_ACTIVE_WRITE_BIAS;
+ 	asm volatile("# beginning down_write\n\t"
+-		     LOCK_PREFIX "  xadd      %%edx,(%%eax)\n\t"
++		     LOCK_PREFIX "  xadd      %1,(%2)\n\t"
+ 		     /* subtract 0x0000ffff, returns the old value */
+-		     "  testl     %%edx,%%edx\n\t"
++		     "  test      %1,%1\n\t"
+ 		     /* was the count 0 before? */
+ 		     "  jz        1f\n"
+ 		     "  call call_rwsem_down_write_failed\n"
+@@ -185,7 +185,7 @@ static inline void __up_read(struct rw_s
+ {
+ 	__s32 tmp = -RWSEM_ACTIVE_READ_BIAS;
+ 	asm volatile("# beginning __up_read\n\t"
+-		     LOCK_PREFIX "  xadd      %%edx,(%%eax)\n\t"
++		     LOCK_PREFIX "  xadd      %1,(%2)\n\t"
+ 		     /* subtracts 1, returns the old value */
+ 		     "  jns        1f\n\t"
+ 		     "  call call_rwsem_wake\n"
+@@ -201,18 +201,18 @@ static inline void __up_read(struct rw_s
+  */
+ static inline void __up_write(struct rw_semaphore *sem)
+ {
++	unsigned long tmp;
+ 	asm volatile("# beginning __up_write\n\t"
+-		     "  movl      %2,%%edx\n\t"
+-		     LOCK_PREFIX "  xaddl     %%edx,(%%eax)\n\t"
++		     LOCK_PREFIX "  xadd      %1,(%2)\n\t"
+ 		     /* tries to transition
+ 			0xffff0001 -> 0x00000000 */
+ 		     "  jz       1f\n"
+ 		     "  call call_rwsem_wake\n"
+ 		     "1:\n\t"
+ 		     "# ending __up_write\n"
+-		     : "+m" (sem->count)
+-		     : "a" (sem), "i" (-RWSEM_ACTIVE_WRITE_BIAS)
+-		     : "memory", "cc", "edx");
++		     : "+m" (sem->count), "=d" (tmp)
++		     : "a" (sem), "1" (-RWSEM_ACTIVE_WRITE_BIAS)
++		     : "memory", "cc");
+ }
+ 
+ /*
+@@ -221,7 +221,7 @@ static inline void __up_write(struct rw_
+ static inline void __downgrade_write(struct rw_semaphore *sem)
+ {
+ 	asm volatile("# beginning __downgrade_write\n\t"
+-		     LOCK_PREFIX "  addl      %2,(%%eax)\n\t"
++		     LOCK_PREFIX "  add%z0    %2,(%1)\n\t"
+ 		     /* transitions 0xZZZZ0001 -> 0xYYYY0001 */
+ 		     "  jns       1f\n\t"
+ 		     "  call call_rwsem_downgrade_wake\n"
+@@ -237,7 +237,7 @@ static inline void __downgrade_write(str
+  */
+ static inline void rwsem_atomic_add(int delta, struct rw_semaphore *sem)
+ {
+-	asm volatile(LOCK_PREFIX "addl %1,%0"
++	asm volatile(LOCK_PREFIX "add%z0 %1,%0"
+ 		     : "+m" (sem->count)
+ 		     : "ir" (delta));
+ }
 
 
