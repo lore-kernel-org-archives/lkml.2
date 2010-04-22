@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab0DVT4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:56:08 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:38620 "EHLO e3.ny.us.ibm.com"
+	id S1757632Ab0DVTzH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:55:07 -0400
+Received: from kroah.org ([198.145.64.141]:40862 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757362Ab0DVT4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:56:03 -0400
-Date: Thu, 22 Apr 2010 12:55:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       "containers@lists.osdl.org" <containers@lists.osdl.org>,
-       Paul Menage <menage@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KameZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 2/5] cgroup: Fix an RCU warning in alloc_css_id()
-Message-ID: <20100422195556.GJ2524@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4BD016F4.8060108@cn.fujitsu.com>
- <4BD01718.7020706@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BD01718.7020706@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756431Ab0DVT2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:36 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:14 2010
+Message-Id: <20100422190914.831868504@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Thu, 22 Apr 2010 12:08:54 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Suresh Jayaraman <sjayaraman@suse.de>,
+       Steve French <sfrench@us.ibm.com>
+Subject: [083/197] CIFS: initialize nbytes at the beginning of CIFSSMBWrite()
+In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 05:30:00PM +0800, Li Zefan wrote:
-> With CONFIG_PROVE_RCU=y, a warning can be triggered:
-> 
->   # mount -t cgroup -o memory xxx /mnt
->   # mkdir /mnt/0
-> 
-> ...
-> kernel/cgroup.c:4442 invoked rcu_dereference_check() without protection!
-> ...
-> 
-> This is a false-positive. It's safe to directly access parent_css->id.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Also queued for 2.6.34, thank you!
+------------------
 
-							Thanx, Paul
+From: Steve French <sfrench@us.ibm.com>
 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  kernel/cgroup.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 4ca928d..3a53c77 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -4561,13 +4561,13 @@ static int alloc_css_id(struct cgroup_subsys *ss, struct cgroup *parent,
->  {
->  	int subsys_id, i, depth = 0;
->  	struct cgroup_subsys_state *parent_css, *child_css;
-> -	struct css_id *child_id, *parent_id = NULL;
-> +	struct css_id *child_id, *parent_id;
-> 
->  	subsys_id = ss->subsys_id;
->  	parent_css = parent->subsys[subsys_id];
->  	child_css = child->subsys[subsys_id];
-> -	depth = css_depth(parent_css) + 1;
->  	parent_id = parent_css->id;
-> +	depth = parent_id->depth;
-> 
->  	child_id = get_new_cssid(ss, depth);
->  	if (IS_ERR(child_id))
-> -- 
-> 1.6.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+commit a24e2d7d8f512340991ef0a59cb5d08d491b8e98 upstream.
+
+By doing this we always overwrite nbytes value that is being passed on to
+CIFSSMBWrite() and need not rely on the callers to initialize. CIFSSMBWrite2 is
+doing this already.
+
+Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@samba.org>
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/cifs/cifssmb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -1430,6 +1430,8 @@ CIFSSMBWrite(const int xid, struct cifsT
+ 	__u32 bytes_sent;
+ 	__u16 byte_count;
+ 
++	*nbytes = 0;
++
+ 	/* cFYI(1, ("write at %lld %d bytes", offset, count));*/
+ 	if (tcon->ses == NULL)
+ 		return -ECONNABORTED;
+@@ -1512,7 +1514,6 @@ CIFSSMBWrite(const int xid, struct cifsT
+ 	cifs_stats_inc(&tcon->num_writes);
+ 	if (rc) {
+ 		cFYI(1, ("Send error in write = %d", rc));
+-		*nbytes = 0;
+ 	} else {
+ 		*nbytes = le16_to_cpu(pSMBr->CountHigh);
+ 		*nbytes = (*nbytes) << 16;
+
+
