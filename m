@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab0DVFsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 01:48:24 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59974 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751580Ab0DVFsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 01:48:23 -0400
-Date: Wed, 21 Apr 2010 22:49:02 -0700
-From: Greg KH <gregkh@suse.de>
-To: Joe Perches <joe@perches.com>
-Cc: devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: What's the staging review and acceptance process?
-Message-ID: <20100422054902.GA28037@suse.de>
-References: <1271881967.1730.482.camel@Joe-Laptop.home> <20100422034532.GA25177@suse.de> <1271910357.1730.627.camel@Joe-Laptop.home>
+	id S1753219Ab0DVFzH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 01:55:07 -0400
+Received: from lazybastard.de ([212.112.238.170]:58619 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab0DVFzE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 01:55:04 -0400
+Date: Thu, 22 Apr 2010 07:54:48 +0200
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] [MTD] Fix JFFS2 sync silent failure
+Message-ID: <20100422055448.GA27309@logfs.org>
+References: <20100417184016.GA17345@logfs.org> <20100419073843.GN27497@kernel.dk> <20100419101559.GA4145@logfs.org> <20100419102056.GS27497@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1271910357.1730.627.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100419102056.GS27497@kernel.dk>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 09:25:57PM -0700, Joe Perches wrote:
-> On Wed, 2010-04-21 at 20:45 -0700, Greg KH wrote:
-> > That caused the huge backlog staring at
-> > me right now.
+On Mon, 19 April 2010 12:20:56 +0200, Jens Axboe wrote:
 > 
-> Which likely discouraged the new contributors who
-> submitted stuff still in that backlog.
+> Thanks, we definitely should have put a debug statement to catch this in
+> from day 1, good debugging should be an important part of any new
+> infrastructure.
 
-While a series of unfortunate events did happen to cause this, do you
-have any evidence of this causing people to go away?  I have had a
-number of queries about pending patches, all of which I quickly
-responded to (travel being easy to write emails, just not do "real"
-work).
+Woke up early and had another look at this.  Looks like a much more
+widespread problem.  Based on a quick grep an uncaffeinated brain:
 
-> > I just went through 100 patches, and only 40 of them
-> > were "valid" and able to be applied, so it is a high rejection rate
-> > which requires a lot of attention to be paid to them.
-> > 
-> > > What is your current review/notify/accept/reject workflow?
-> > 
-> > Like it's always been:
-> >   - patch comes in
-> >   - I get around to reviewing it
-> >   - if valid, I apply and you get an email
-> >   - if invalid, I reject and say why in email
-> 
-> Unfortunately, your process has been opaque until you
-> personally handle it.
+9p	no s_bdi
+afs	no s_bdi
+ceph	creates its own s_bdi
+cifs	no s_bdi
+coda	no s_bdi
+ecryptfs no s_bdi
+exofs	no s_bdi
+fuse	creates its own s_bdi?
+gfs2	creates its own s_bdi?
+jffs2	patch exists
+logfs	fixed now
+ncpfs	no s_bdi
+nfs	creates its own s_bdi
+ocfs2	no s_bdi
+smbfs	no s_bdi
+ubifs	creates its own s_bdi
 
-Yes, like all subsystem maintainers, right?
+I excluded all filesystems that appear to be read-only, block device
+based or lack any sort of backing store.  So there is a chance I have
+missed some as well.
 
-> Does the driverdev list or any list always receive a copy
-> or the feedback?
+Jörn
 
-If it was copied, yes, it does.  I can't control who the original
-submitters copy on their emails, but they usually do hit the driverdev
-mailing list for the most part.
-
-> > > Perhaps a patchwork queue for staging might help track these
-> > > patches and with more feedback or reviewers, get them in
-> > > shape to be applied.
-> 
-> > patchwork doesn't work well for my patch flow, but maybe that is because
-> > I haven't spent enough time with it.  Right now I have all the patches,
-> > it's just a matter of getting through them.
-> 
-> Maybe you should get some advice on using patchwork use
-> from somebody like David Miller, who gets rather more
-> patches for networking than staging gets.  The patchwork
-> queue for networking always seems managed and it can use
-> delegation, which your process doesn't seem capable of
-> doing.  You're a voluntary bottleneck for staging, I
-> think you either need to find personal cycles or find
-> some other suckers willing to volunteer who'd make up
-> more overall cycles.
-
-Are you volunteering?
-
-thanks,
-
-greg k-h
+-- 
+Simplicity is prerequisite for reliability.
+-- Edsger W. Dijkstra
