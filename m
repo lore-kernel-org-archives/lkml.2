@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab0DVWFM (ORCPT <rfc822;w@1wt.eu>);
+	id S1752546Ab0DVWFV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 18:05:21 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:50198 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357Ab0DVWFM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Apr 2010 18:05:12 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:34304 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752292Ab0DVWFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 18:05:08 -0400
-Date: Thu, 22 Apr 2010 15:05:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Li Zefan <lizf@cn.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "containers@lists.osdl.org" <containers@lists.osdl.org>,
-       Paul Menage <menage@google.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 3/5] sched: Fix an RCU warning in print_task()
-Message-ID: <20100422220504.GP2524@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4BD016F4.8060108@cn.fujitsu.com>
- <4BD01740.7050805@cn.fujitsu.com>
- <1271931604.1776.337.camel@laptop>
- <20100422211212.GA32490@count0.beaverton.ibm.com>
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rgjTNc+2aoT4dR417pZhYwOYVzSbymCPFCHjBTG2hrG1b2aoZHZZkJIMG3LQfBn7U/
+         lbUO5WagP3pl01DEzoDFGscYoMuNN5A0X49PWcK/lhXU/tuUzhXq6gf7dwgiH4PawF4S
+         +6j3osCghIjcmngkJqSxY7csyGf+8UcrL20vg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100422211212.GA32490@count0.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LNX.2.00.1004222357150.7579@pobox.suse.cz>
+References: <1271970765-11856-1-git-send-email-fgaliegue@gmail.com>
+	 <p2v8bd0f97a1004221421x4bf0850fm1b47f4838c344368@mail.gmail.com>
+	 <y2lac542ca01004221444le9b33c8as587d3382ab7ff0a9@mail.gmail.com>
+	 <alpine.LNX.2.00.1004222357150.7579@pobox.suse.cz>
+Date: Fri, 23 Apr 2010 00:05:11 +0200
+Message-ID: <h2wac542ca01004221505i825a68dendd4fd54bfffe6ac6@mail.gmail.com>
+Subject: Re: Should I really bother all maintainers with this?
+From: Francis Galiegue <fgaliegue@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Mike Frysinger <vapier.adi@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 02:12:12PM -0700, Matt Helsley wrote:
-> On Thu, Apr 22, 2010 at 12:20:04PM +0200, Peter Zijlstra wrote:
-> 
-> <snip>
-> 
-> > You can also pin a cgroup by holding whatever locks are held in the
-> > ->attach method. But the RCU annotation doesn't know (nor reasonably can
-> > know about that).
-> 
-> For my future reference, what's the right way to "fix" these
-> situations with the RCU annotations? (I think your response re: Li's
-> freezer patch was correct and illustrates the problem I'm referring to.)
+On Thu, Apr 22, 2010 at 11:57 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Thu, 22 Apr 2010, Francis Galiegue wrote:
+>
+>> >> This patch only fixes quite a common mistake in Documentation/, and if I
+>> >> scripts/get_maintainer.pl on the patch (which is recommended), I potentially
+>> >> mail thousands of people who probably have more useful/exciting stuff to do
+>> >> anyway. So, I submit it as is.
+>> >
+>> > this kind of stuff usually goes through the trivial tree.  look at
+>> > TRIVIAL PATCHES in the MAINTAINERS file.
+>> > -mike
+>> >
+>>
+>> Point taken... But the patch doesn't apply as is over trivial/master or
+>> trivial/for-next, as two files don't seem to exist on either branch (trivial
+>> being the git repository mentioned in MAINTAINERS):
+>> Documentation/DMA-API-HOWTO.txt and Documentation/filesystems/ceph.txt.
+>
+> That's not a problem, I pull Linus' tree into my tree when needed. Just
+> resend the patch (based on Linus' tree) to trivial@kernel.org and I'll
+> process it appropriately.
+>
 
-There are several variants of rcu_dereference() for this purpose:
+Ah well, I forgot to mention that this patch was done over Linus' tree
+(specifically, commit c81eddb0e3728661d1585fbc564449c94165cc36).
 
-o	rcu_dereference() for code that is always called within an
-	RCU read-side critical section -- rcu_read_lock().
+I'll resend right back with Cc: <trivial@kernel.org>.
 
-o	rcu_dereference_bh() for code that is always called within
-	an RCU-bh read-side critical section -- rcu_read_lock_bh().
+> Thanks,
+> --
+> Jiri Kosina
+> SUSE Labs, Novell Inc.
+>
 
-o	rcu_dereference_sched() for code that is always called within
-	an RCU-sched read-side critical section -- either
-	rcu_read_lock_sched() or any other primitive that disables
-	preemption.
-
-o	srcu_dereference() for code that is always called within an
-	SRCU read-side critical section -- srcu_read_lock().
-
-o	rcu_dereference_check() for code that might be called either
-	in a read-side critical section or on the update side.	This
-	interface takes a second argument, which is normally a logical
-	conjunction of rcu_read_lock_held(), rcu_read_lock_sched_held(),
-	rcu_read_lock_bh_held(), and srcu_read_lock_held for the read
-	side, and lockdep_is_held() for the update side.
-
-o	rcu_dereference_raw(p) is rcu_dereference_check(p, 1).  Expect
-	to be asked hard questions if you include this in your patch.
-	One legitimate use is for initialization and cleanup code
-	sequences where the current CPU is the only one with access
-	to the RCU-protected data structure in question.
-
-o	rcu_dereference_protected() for code that is only called from
-	the update side.  This interface takes a second argument,
-	which would normally only have a logical conjunction of
-	lockdep_is_held() invocations.  Don't even think about putting
-	rcu_read_lock_held() and friends here!!!
-
-o	rcu_access_pointer() for code that only tests the value of
-	the RCU-protected pointer, for example, against NULL.
-
-There you have it!
-
-							Thanx, Paul
+-- 
+Francis Galiegue, fgaliegue@gmail.com
+"It seems obvious [...] that at least some 'business intelligence'
+tools invest so much intelligence on the business side that they have
+nothing left for generating SQL queries" (Stéphane Faroult, in "The
+Art of SQL", ISBN 0-596-00894-5)
