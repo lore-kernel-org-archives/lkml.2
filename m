@@ -1,116 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab0DVWwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 18:52:17 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:37257 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753268Ab0DVWwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 18:52:15 -0400
-Date: Thu, 22 Apr 2010 15:52:09 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: akpm@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       laijs@cn.fujitsu.com, dipankar@in.ibm.com, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-       dhowells@redhat.com, eric.dumazet@gmail.com, adobriyan@gmail.com,
-       davem@davemloft.net
-Subject: Re: [PATCH] rcu fix rcu head init on stack in rcutree_plugin.h
-Message-ID: <20100422225209.GT2524@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100417124837.536020244@efficios.com>
- <20100418004849.GD2876@linux.vnet.ibm.com>
- <20100421173145.GA6966@linux.vnet.ibm.com>
- <20100422012309.GB32400@Krystal>
+	id S1753527Ab0DVWyq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 18:54:46 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63189 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab0DVWyo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 18:54:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=dKY7kha4yo7x8MX0dddLGtvvuD4v1vuPGAPAxg/neTKVKIGU9e1vIoRB31qb0E1KXz
+         5RAFoaRRcqm+E2MikKOwHcmGIXZ8V7AbwXGqtOr5iVj+aYHaRl/LQcxNYwwnpp7frdem
+         ipWAkerGRy5O/JucbMOoVuYQKh9aOIuWIbNYA=
+Date: Fri, 23 Apr 2010 00:54:50 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v2] perf lock: Fix state machine to recognize lock
+	sequence
+Message-ID: <20100422225448.GD5600@nowhere>
+References: <20100421012651.GC7120@nowhere> <1271852634-9351-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100422012309.GB32400@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1271852634-9351-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 09:23:09PM -0400, Mathieu Desnoyers wrote:
-> [Paul]
-> [...]
-> And testing got me the following debugobjects splat
-> [...]
-> ODEBUG: object is on stack, but not annotated
-> ------------[ cut here ]------------
-> Badness at lib/debugobjects.c:294
-> NIP: c0000000002c76f0 LR: c0000000002c76ec CTR: c00000000041ecd8
-> REGS: c0000001de71b280 TRAP: 0700   Tainted: G        W   (2.6.34-rc3-autokern1)
-> MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 24000424  XER: 0000000f
-> TASK = c0000001de7dca00[3695] 'arping' THREAD: c0000001de718000 CPU: 1
-> GPR00: c0000000002c76ec c0000001de71b500 c00000000096c048 0000000000000034 
-> GPR04: 0000000000000001 c000000000063918 0000000000000000 0000000000000002 
-> GPR08: 0000000000000003 0000000000000000 c000000000086f68 c0000001de7dca00 
-> GPR12: 000000000000256d c0000000074e4200 0000000000000000 0000000000000000 
-> GPR16: 0000000000000000 0000000000000000 0000000000000000 00000000201b8f60 
-> GPR20: 00000000201b8f70 00000000201b8f48 0000000000000000 c0000000008766b8 
-> GPR24: c0000001de71b800 0000000000000001 c0000000008ad400 c000000001247478 
-> GPR28: c0000000e6abb8c0 c0000000e6abb8c0 c000000000904570 c000000001247470 
-> NIP [c0000000002c76f0] .__debug_object_init+0x314/0x40c
-> LR [c0000000002c76ec] .__debug_object_init+0x310/0x40c
-> Call Trace:
-> [c0000001de71b500] [c0000000002c76ec] .__debug_object_init+0x310/0x40c (unreliable)
-> [c0000001de71b5d0] [c00000000007d990] .rcuhead_fixup_activate+0x40/0xdc
-> [c0000001de71b660] [c0000000002c6a7c] .debug_object_fixup+0x4c/0x74
-> [c0000001de71b6f0] [c0000000000c5e54] .__call_rcu+0x3c/0x1d4
-> [c0000001de71b790] [c0000000000c6050] .synchronize_rcu+0x4c/0x6c
-> [c0000001de71b870] [c0000000004be218] .synchronize_net+0x10/0x24
-> [c0000001de71b8e0] [c0000000005498c8] .packet_release+0x1d4/0x274
-> [c0000001de71b990] [c0000000004ac1f0] .sock_release+0x54/0x124
-> [c0000001de71ba20] [c0000000004ac9e4] .sock_close+0x34/0x4c
-> [c0000001de71baa0] [c00000000012469c] .__fput+0x174/0x264
-> [c0000001de71bb40] [c000000000120c54] .filp_close+0xb0/0xd8
-> [c0000001de71bbd0] [c000000000065e70] .put_files_struct+0x1a8/0x314
-> [c0000001de71bc70] [c000000000067e04] .do_exit+0x234/0x6f0
-> [c0000001de71bd30] [c000000000068354] .do_group_exit+0x94/0xc8
-> [c0000001de71bdc0] [c00000000006839c] .SyS_exit_group+0x14/0x28
-> [c0000001de71be30] [c000000000008554] syscall_exit+0x0/0x40
-> Instruction dump:
-> 7f80b000 419e0030 2fa00000 e93e8140 380b0001 90090000 419e000c e87e8148 
-> 48000008 e87e8150 4bd9cb89 60000000 <0fe00000> 801c0010 2f800003 419e0024 
+On Wed, Apr 21, 2010 at 09:23:54PM +0900, Hitoshi Mitake wrote:
+> Hi Frederic,
 > 
-> [Mathieu]
-> 
-> Here is the fix.
+> I'm sending this v2 patch.
+> It seems that your tree doesn't contain previous one.
+> So could you queue this new one?
 
-Thank you very much, Mathieu!!!  Queued for 2.6.35.
 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> ---
->  kernel/rcutree_plugin.h |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> Index: linux.trees.git/kernel/rcutree_plugin.h
-> ===================================================================
-> --- linux.trees.git.orig/kernel/rcutree_plugin.h	2010-04-21 21:15:45.000000000 -0400
-> +++ linux.trees.git/kernel/rcutree_plugin.h	2010-04-21 21:16:57.000000000 -0400
-> @@ -515,11 +515,13 @@ void synchronize_rcu(void)
->  	if (!rcu_scheduler_active)
->  		return;
-> 
-> +	init_rcu_head_on_stack(&rcu.head);
->  	init_completion(&rcu.completion);
->  	/* Will wake me after RCU finished. */
->  	call_rcu(&rcu.head, wakeme_after_rcu);
->  	/* Wait for it. */
->  	wait_for_completion(&rcu.completion);
-> +	destroy_rcu_head_on_stack(&rcu.head);
->  }
->  EXPORT_SYMBOL_GPL(synchronize_rcu);
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Yep, thanks for this work.
+
+I'm applying it.
+
