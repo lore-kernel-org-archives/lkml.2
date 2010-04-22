@@ -1,74 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab0DVAIk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 20:08:40 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41128 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755516Ab0DVAIi (ORCPT
+	id S1756683Ab0DVAJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 20:09:17 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:33090 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754949Ab0DVAJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 20:08:38 -0400
-Message-ID: <4BCF92E8.5030103@oracle.com>
-Date: Wed, 21 Apr 2010 17:06:00 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Andy Isaacson <adi@hexapodia.org>, guenter.roeck@ericsson.com,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>,
-       "Pan, Jacob jun" <jacob.jun.pan@intel.com>
-Subject: Re: [PATCH 3/3] x86,pci,acpi: Handle invalid _CRS
-References: <20100409223532.GC11130@hexapodia.org> <201004211059.17264.bjorn.helgaas@hp.com> <4BCF7D38.8070206@zytor.com> <201004211704.05541.bjorn.helgaas@hp.com> <4BCF85CF.1080101@zytor.com> <4BCF8DAE.5020204@oracle.com> <4BCF921B.7030307@zytor.com>
-In-Reply-To: <4BCF921B.7030307@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090207.4BCF9365.002F:SCFMA4539811,ss=1,fgs=0
+	Wed, 21 Apr 2010 20:09:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :in-reply-to:references;
+        b=qXB32Hk1EwRiIYkV+xDZzO4mXHK86oDvXbUTGN2K1lhvQgEd3sVUKYAB3XkdalH/Eq
+         8j1dr2ZwHLTiKjTu9Qq6H0b4/sbGp3q8yTp9w1Os6OX9vMn3/dsB2nqiRYYnNevf1B1h
+         Pm0qtvF79I+5aHrW8s1SC4Xf5aaoc3ZciZowI=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: [GIT PULL] tracing update v2
+Date: Thu, 22 Apr 2010 02:09:19 +0200
+Message-Id: <1271894959-14131-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+In-Reply-To: <20100421080544.GA13107@elte.hu>
+References: <20100421080544.GA13107@elte.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2010 05:02 PM, H. Peter Anvin wrote:
-> On 04/21/2010 04:43 PM, Yinghai wrote:
->>
->> then use -v3 please
->>
->> -v4: also don't trim [0xa0000, 0x100000] for mrst.
->>
-> 
-> That makes a lot of sense for 2.6.34.  I agree with moving the trimming
-> into subsystems, but I think it's .35 material at this point.
-> 
-> [Cc: Jacob Pan]
-> 
->>>
->>> The use of a string match in:
->>>
->>> +       if (check_child && !conflict->child && strstr(conflict->name,
->>> "PCI Bus"))
->>> ^^^^^^^^^
->>>
->>> ... screams "wrong! ugly! bad!" in my opinion.  I utterly fail to see
->>> how that could be acceptable under any circumstances.  I thought that
->>> had been flagged earlier in the conversation, but it is apparently still
->>> there.
->>
->> the string checking is to make sure pci device that is hooked into bus0 directly, but pci bar is falling into
->> 0xa0000 - 0x100000.  So can not put "reserved" holder under them.
->>
-> 
-> It makes me extremely concerned, because such hacks tend to be extremely
-> vulnerable.  Strings are designed primarily for human consumption, and
-> "find string inside another string" is *very* much so.  As such, I
-> really would like to understand that there isn't any more sensible way,
-> such as a flag, that can be used to accomplish the objective.
+Ingo,
 
-pass function pointer to additional checking?
+Please pull the tracing/core branch that can be found at:
 
-YH
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	tracing/core
+
+Thanks,
+	Frederic
+---
+
+Frederic Weisbecker (1):
+      tracing: Dump either the oops's cpu source or all cpus buffers
+
+
+ Documentation/kernel-parameters.txt |    6 +++-
+ Documentation/trace/ftrace.txt      |    6 +++-
+ drivers/char/sysrq.c                |    2 +-
+ include/linux/ftrace.h              |    4 ++-
+ include/linux/kernel.h              |   11 ++++++-
+ kernel/trace/trace.c                |   51 ++++++++++++++++++++++++++--------
+ kernel/trace/trace_selftest.c       |    5 ++-
+ 7 files changed, 64 insertions(+), 21 deletions(-)
+
+---
+commit cecbca96da387428e220e307a9c945e37e2f4d9e
+Author: Frederic Weisbecker <fweisbec@gmail.com>
+Date:   Sun Apr 18 19:08:41 2010 +0200
+
+    tracing: Dump either the oops's cpu source or all cpus buffers
+    
+    The ftrace_dump_on_oops kernel parameter, sysctl and sysrq let one
+    dump every cpu buffers when an oops or panic happens.
+    
+    It's nice when you have few cpus but it may take ages if have many,
+    plus you miss the real origin of the problem in all the cpu traces.
+    
+    Sometimes, all you need is to dump the cpu buffer that triggered the
+    opps, most of the time it is our main interest.
+    
+    This patch modifies ftrace_dump_on_oops to handle this choice.
+    
+    The ftrace_dump_on_oops kernel parameter, when it comes alone, has
+    the same behaviour than before. But ftrace_dump_on_oops=orig_cpu
+    will only dump the buffer of the cpu that oops'ed.
+    
+    Similarly, sysctl kernel.ftrace_dump_on_oops=1 and
+    echo 1 > /proc/sys/kernel/ftrace_dump_on_oops keep their previous
+    behaviour. But setting 2 jumps into cpu origin dump mode.
+    
+    v2: Fix double setup
+    v3: Fix spelling issues reported by Randy Dunlap
+    v4: Also update __ftrace_dump in the selftests
+    
+    Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+    Acked-by: David S. Miller <davem@davemloft.net>
+    Acked-by: Steven Rostedt <rostedt@goodmis.org>
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Cc: Thomas Gleixner <tglx@linutronix.de>
+    Cc: Li Zefan <lizf@cn.fujitsu.com>
+    Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index e4cbca5..ab67b33 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -789,8 +789,12 @@ and is between 256 and 4096 characters. It is defined in the file
+ 			as early as possible in order to facilitate early
+ 			boot debugging.
+ 
+-	ftrace_dump_on_oops
++	ftrace_dump_on_oops[=orig_cpu]
+ 			[FTRACE] will dump the trace buffers on oops.
++			If no parameter is passed, ftrace will dump
++			buffers of all CPUs, but if you pass orig_cpu, it will
++			dump only the buffer of the CPU that triggered the
++			oops.
+ 
+ 	ftrace_filter=[function-list]
+ 			[FTRACE] Limit the functions traced by the function
+diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+index 03485bf..5201181 100644
+--- a/Documentation/trace/ftrace.txt
++++ b/Documentation/trace/ftrace.txt
+@@ -1337,12 +1337,14 @@ ftrace_dump_on_oops must be set. To set ftrace_dump_on_oops, one
+ can either use the sysctl function or set it via the proc system
+ interface.
+ 
+-  sysctl kernel.ftrace_dump_on_oops=1
++  sysctl kernel.ftrace_dump_on_oops=n
+ 
+ or
+ 
+-  echo 1 > /proc/sys/kernel/ftrace_dump_on_oops
++  echo n > /proc/sys/kernel/ftrace_dump_on_oops
+ 
++If n = 1, ftrace will dump buffers of all CPUs, if n = 2 ftrace will
++only dump the buffer of the CPU that triggered the oops.
+ 
+ Here's an example of such a dump after a null pointer
+ dereference in a kernel module:
+diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
+index 59de252..d4e8b21 100644
+--- a/drivers/char/sysrq.c
++++ b/drivers/char/sysrq.c
+@@ -289,7 +289,7 @@ static struct sysrq_key_op sysrq_showstate_blocked_op = {
+ 
+ static void sysrq_ftrace_dump(int key, struct tty_struct *tty)
+ {
+-	ftrace_dump();
++	ftrace_dump(DUMP_ALL);
+ }
+ static struct sysrq_key_op sysrq_ftrace_dump_op = {
+ 	.handler	= sysrq_ftrace_dump,
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 01e6ade..ea5b1aa 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -492,7 +492,9 @@ static inline int test_tsk_trace_graph(struct task_struct *tsk)
+ 	return tsk->trace & TSK_TRACE_FL_GRAPH;
+ }
+ 
+-extern int ftrace_dump_on_oops;
++enum ftrace_dump_mode;
++
++extern enum ftrace_dump_mode ftrace_dump_on_oops;
+ 
+ #ifdef CONFIG_PREEMPT
+ #define INIT_TRACE_RECURSION		.trace_recursion = 0,
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 9365227..9fb1c12 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -490,6 +490,13 @@ static inline void tracing_off(void) { }
+ static inline void tracing_off_permanent(void) { }
+ static inline int tracing_is_on(void) { return 0; }
+ #endif
++
++enum ftrace_dump_mode {
++	DUMP_NONE,
++	DUMP_ALL,
++	DUMP_ORIG,
++};
++
+ #ifdef CONFIG_TRACING
+ extern void tracing_start(void);
+ extern void tracing_stop(void);
+@@ -571,7 +578,7 @@ __ftrace_vbprintk(unsigned long ip, const char *fmt, va_list ap);
+ extern int
+ __ftrace_vprintk(unsigned long ip, const char *fmt, va_list ap);
+ 
+-extern void ftrace_dump(void);
++extern void ftrace_dump(enum ftrace_dump_mode oops_dump_mode);
+ #else
+ static inline void
+ ftrace_special(unsigned long arg1, unsigned long arg2, unsigned long arg3) { }
+@@ -592,7 +599,7 @@ ftrace_vprintk(const char *fmt, va_list ap)
+ {
+ 	return 0;
+ }
+-static inline void ftrace_dump(void) { }
++static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ #endif /* CONFIG_TRACING */
+ 
+ /*
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index bed83ca..7b516c7 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -117,9 +117,12 @@ static cpumask_var_t __read_mostly	tracing_buffer_mask;
+  *
+  * It is default off, but you can enable it with either specifying
+  * "ftrace_dump_on_oops" in the kernel command line, or setting
+- * /proc/sys/kernel/ftrace_dump_on_oops to true.
++ * /proc/sys/kernel/ftrace_dump_on_oops
++ * Set 1 if you want to dump buffers of all CPUs
++ * Set 2 if you want to dump the buffer of the CPU that triggered oops
+  */
+-int ftrace_dump_on_oops;
++
++enum ftrace_dump_mode ftrace_dump_on_oops;
+ 
+ static int tracing_set_tracer(const char *buf);
+ 
+@@ -139,8 +142,17 @@ __setup("ftrace=", set_cmdline_ftrace);
+ 
+ static int __init set_ftrace_dump_on_oops(char *str)
+ {
+-	ftrace_dump_on_oops = 1;
+-	return 1;
++	if (*str++ != '=' || !*str) {
++		ftrace_dump_on_oops = DUMP_ALL;
++		return 1;
++	}
++
++	if (!strcmp("orig_cpu", str)) {
++		ftrace_dump_on_oops = DUMP_ORIG;
++                return 1;
++        }
++
++        return 0;
+ }
+ __setup("ftrace_dump_on_oops", set_ftrace_dump_on_oops);
+ 
+@@ -4338,7 +4350,7 @@ static int trace_panic_handler(struct notifier_block *this,
+ 			       unsigned long event, void *unused)
+ {
+ 	if (ftrace_dump_on_oops)
+-		ftrace_dump();
++		ftrace_dump(ftrace_dump_on_oops);
+ 	return NOTIFY_OK;
+ }
+ 
+@@ -4355,7 +4367,7 @@ static int trace_die_handler(struct notifier_block *self,
+ 	switch (val) {
+ 	case DIE_OOPS:
+ 		if (ftrace_dump_on_oops)
+-			ftrace_dump();
++			ftrace_dump(ftrace_dump_on_oops);
+ 		break;
+ 	default:
+ 		break;
+@@ -4396,7 +4408,8 @@ trace_printk_seq(struct trace_seq *s)
+ 	trace_seq_init(s);
+ }
+ 
+-static void __ftrace_dump(bool disable_tracing)
++static void
++__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
+ {
+ 	static arch_spinlock_t ftrace_dump_lock =
+ 		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+@@ -4429,12 +4442,25 @@ static void __ftrace_dump(bool disable_tracing)
+ 	/* don't look at user memory in panic mode */
+ 	trace_flags &= ~TRACE_ITER_SYM_USEROBJ;
+ 
+-	printk(KERN_TRACE "Dumping ftrace buffer:\n");
+-
+ 	/* Simulate the iterator */
+ 	iter.tr = &global_trace;
+ 	iter.trace = current_trace;
+-	iter.cpu_file = TRACE_PIPE_ALL_CPU;
++
++	switch (oops_dump_mode) {
++	case DUMP_ALL:
++		iter.cpu_file = TRACE_PIPE_ALL_CPU;
++		break;
++	case DUMP_ORIG:
++		iter.cpu_file = raw_smp_processor_id();
++		break;
++	case DUMP_NONE:
++		goto out_enable;
++	default:
++		printk(KERN_TRACE "Bad dumping mode, switching to all CPUs dump\n");
++		iter.cpu_file = TRACE_PIPE_ALL_CPU;
++	}
++
++	printk(KERN_TRACE "Dumping ftrace buffer:\n");
+ 
+ 	/*
+ 	 * We need to stop all tracing on all CPUS to read the
+@@ -4473,6 +4499,7 @@ static void __ftrace_dump(bool disable_tracing)
+ 	else
+ 		printk(KERN_TRACE "---------------------------------\n");
+ 
++ out_enable:
+ 	/* Re-enable tracing if requested */
+ 	if (!disable_tracing) {
+ 		trace_flags |= old_userobj;
+@@ -4489,9 +4516,9 @@ static void __ftrace_dump(bool disable_tracing)
+ }
+ 
+ /* By default: disable tracing after the dump */
+-void ftrace_dump(void)
++void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
+ {
+-	__ftrace_dump(true);
++	__ftrace_dump(true, oops_dump_mode);
+ }
+ 
+ __init static int tracer_alloc_buffers(void)
+diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+index 9398034..6a9d36d 100644
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -256,7 +256,8 @@ trace_selftest_startup_function(struct tracer *trace, struct trace_array *tr)
+ /* Maximum number of functions to trace before diagnosing a hang */
+ #define GRAPH_MAX_FUNC_TEST	100000000
+ 
+-static void __ftrace_dump(bool disable_tracing);
++static void
++__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode);
+ static unsigned int graph_hang_thresh;
+ 
+ /* Wrap the real function entry probe to avoid possible hanging */
+@@ -267,7 +268,7 @@ static int trace_graph_entry_watchdog(struct ftrace_graph_ent *trace)
+ 		ftrace_graph_stop();
+ 		printk(KERN_WARNING "BUG: Function graph tracer hang!\n");
+ 		if (ftrace_dump_on_oops)
+-			__ftrace_dump(false);
++			__ftrace_dump(false, DUMP_ALL);
+ 		return 0;
+ 	}
+ 
