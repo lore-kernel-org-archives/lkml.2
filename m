@@ -1,81 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab0DVV6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 17:58:50 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:56067 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab0DVV6s (ORCPT
+	id S1752228Ab0DVWCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 18:02:54 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:57015 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751671Ab0DVWCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 17:58:48 -0400
-From: Eric Anholt <eric@anholt.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [git pull] drm-intel fixes for 2.6.34-rc4
-Date: Thu, 22 Apr 2010 14:58:22 -0700
-Message-ID: <87hbn3kv41.fsf@pollan.anholt.net>
+	Thu, 22 Apr 2010 18:02:53 -0400
+Date: Thu, 22 Apr 2010 18:02:49 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+       Greg KH <greg@kroah.com>, Randy Dunlap <randy.dunlap@oracle.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Eric Dumazet <dada1@cosmosbay.com>, Ingo Molnar <mingo@elte.hu>,
+       Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+       torvalds@linux-foundation.org, stable-review@kernel.org,
+       alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [170/197] lockdep: fix incorrect percpu usage
+Message-ID: <20100422220249.GB15195@Krystal>
+References: <20100422191857.GA13268@kroah.com> <20100422190922.618832798@kvm.kroah.org> <20100422210840.GB6856@nik-comp.linuxbox.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
+Content-Disposition: inline
+In-Reply-To: <20100422210840.GB6856@nik-comp.linuxbox.cz>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 18:00:33 up 90 days, 37 min, 10 users,  load average: 0.03, 0.07,
+	0.08
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
 
-The following changes since commit 13bd8e4673d527a9e48f41956b11d391e7c2cfe0:
-  Linus Torvalds (1):
-        Merge branch 'for-linus' of git://git.kernel.org/.../anholt/drm-intel
+--OXfL5xGRrasGEqWY
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-are available in the git repository at:
+* Nikola Ciprich (nikola.ciprich@linuxbox.cz) wrote:
+> Hi,
+> hmm,
+> this one seems to break compilation for me:
+> kernel/lockdep.c: In function =E2=80=98static_obj=E2=80=99:
+> kernel/lockdep.c:595: error: invalid use of array with unspecified bounds
+> kernel/lockdep.c:595: error: invalid use of array with unspecified bounds
+> make[1]: *** [kernel/lockdep.o] Error 1
+>=20
+> I'm using gcc-4.1.2
+> regards
+> nik
+>=20
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/anholt/drm-intel for-linus
+Oh, you are right. I tweaked a few config options and got your error. Here =
+is an
+updated patch.
 
-I hear you've got an Ironlake laptop. If so, it's time to get excited.
-The interrupt wedging fix is here.
+Greg, this v2 should replace the original patch you have. Sorry about the
+trouble.
 
-The docs since the original gen4 have said "stop using
-MI_STORE_DWORD_INDEX+MI_USER_INTERRUPT, it's not guaranteed to be
-ordered, so use the fancy new PIPE_CONTROL."  I was thinking that
-ignoring this might be the problem with our interrupts.  So jbarnes
-tried it, and it made things hang even faster.  Then Zhenyu found an
-errata: Pipe control doesn't have working ordering on Ironlake, so do it
-twice, with 6 dummy PIPE_CONTROLs in between.
+lockdep fix incorrect percpu usage (v2)
 
-GPUs are awesome.
+Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is n=
+eeded
+for per cpu pointers).
 
-Adam Jackson (2):
-      drm/i915: Attempt to fix watermark setup on 85x (v2)
-      drm/i915: Fix 82854 PCI ID, and treat it like other 85X
+Changelog since v1:
+- Move PERCPU_ENOUGH_ROOM outside of per_cpu_ptr(), where it belongs.
 
-Daniel Vetter (1):
-      drm/i915: fix tiling limits for i915 class hw v2
+git blame points to commit:
 
-Jesse Barnes (2):
-      drm/i915: cleanup FBC buffers at unload time
-      drm/i915: use PIPE_CONTROL instruction on Ironlake and Sandy Bridge
+lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
 
-Zhang Rui (1):
-      drm/i915: set DIDL using the ACPI video output device _ADR method return.
+But it's really just moving the code around. But it's enough to say that the
+problems appeared before Jul 19 01:48:54 2007, which brings us back to 2.6.=
+23.
 
- drivers/gpu/drm/i915/i915_dma.c        |   14 +++
- drivers/gpu/drm/i915/i915_drv.c        |    5 +-
- drivers/gpu/drm/i915/i915_drv.h        |   10 ++-
- drivers/gpu/drm/i915/i915_gem.c        |  151 +++++++++++++++++++++++++++++---
- drivers/gpu/drm/i915/i915_gem_tiling.c |   22 ++---
- drivers/gpu/drm/i915/i915_irq.c        |    8 +-
- drivers/gpu/drm/i915/i915_opregion.c   |   54 +++++++++++-
- drivers/gpu/drm/i915/i915_reg.h        |   13 +++-
- drivers/gpu/drm/i915/intel_display.c   |   11 ++-
- 9 files changed, 246 insertions(+), 42 deletions(-)
+This patch applies to mainline as of 2.6.34-rc2. It also should be applied =
+to
+stable 2.6.23.x to 2.6.33.x (or whichever of these stable branches are still
+maintained).
 
---=-=-=
-Content-Type: application/pgp-signature
+(based on 2.6.33.1, also applies to 2.6.34-rc2 -tip)
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Eric Dumazet <dada1@cosmosbay.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Tejun Heo <tj@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: stable <stable@kernel.org>
+---
+ kernel/lockdep.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: linux-2.6-lttng/kernel/lockdep.c
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+--- linux-2.6-lttng.orig/kernel/lockdep.c	2010-04-22 17:51:28.000000000 -04=
+00
++++ linux-2.6-lttng/kernel/lockdep.c	2010-04-22 17:55:02.000000000 -0400
+@@ -600,9 +600,9 @@ static int static_obj(void *obj)
+ 	 * percpu var?
+ 	 */
+ 	for_each_possible_cpu(i) {
+-		start =3D (unsigned long) &__per_cpu_start + per_cpu_offset(i);
+-		end   =3D (unsigned long) &__per_cpu_start + PERCPU_ENOUGH_ROOM
+-					+ per_cpu_offset(i);
++		start =3D (unsigned long) per_cpu_ptr(&__per_cpu_start, i);
++		end   =3D (unsigned long) per_cpu_ptr(&__per_cpu_start, i)
++					+ PERCPU_ENOUGH_ROOM;
+=20
+ 		if ((addr >=3D start) && (addr < end))
+ 			return 1;
+
+--=20
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
+
+--OXfL5xGRrasGEqWY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-iEYEARECAAYFAkvQxn4ACgkQHUdvYGzw6vf3twCghI4C/h2kSzylRDFtgIIPzOAS
-69cAn1Wv3yRoXwsEpaxbXK9b/ZxvFtRM
-=CM7/
+iD8DBQFL0MeJPyWo/juummgRAql4AKCRhkjWSCQfaVpzFq6kAOIDAMuP4wCfQi4L
+HW270q/qIYMuKYx+2N5Atw0=
+=ICfp
 -----END PGP SIGNATURE-----
---=-=-=--
+
+--OXfL5xGRrasGEqWY--
