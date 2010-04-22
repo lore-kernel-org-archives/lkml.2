@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932469Ab0DVUd4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:33:56 -0400
-Received: from kroah.org ([198.145.64.141]:59387 "EHLO coco.kroah.org"
+	id S932479Ab0DVUd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:33:59 -0400
+Received: from kroah.org ([198.145.64.141]:59380 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757872Ab0DVT7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:59:36 -0400
+	id S1757835Ab0DVT7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:59:35 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:05 2010
-Message-Id: <20100422195405.384861908@kvm.kroah.org>
+Message-Id: <20100422195405.304205441@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:02 -0700
+Date: Thu, 22 Apr 2010 12:53:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Oleg Nesterov <oleg@redhat.com>
-Subject: [005/139] oom: fix the unsafe usage of badness() in proc_oom_score()
+       Nikolaus Schulz <microschulz@web.de>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Subject: [004/139] fat: fix buffer overflow in vfat_create_shortname()
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Nikolaus Schulz <microschulz@web.de>
 
-commit b95c35e76b29ba812e5dabdd91592e25ec640e93 upstream.
+commit 30d1872d9eb3663b4cf7bdebcbf5cd465674cced upstream.
 
-proc_oom_score(task) has a reference to task_struct, but that is all.
-If this task was already released before we take tasklist_lock
+When using the string representation of a random counter as part of the base
+name, ensure that it is no longer than 4 bytes.
 
-	- we can't use task->group_leader, it points to nowhere
+Since we are repeatedly decrementing the counter in a loop until we have found a
+unique base name, the counter may wrap around zero; therefore, it is not enough
+to mask its higher bits before entering the loop, this must be done inside the
+loop.
 
-	- it is not safe to call badness() even if this task is
-	  ->group_leader, has_intersects_mems_allowed() assumes
-	  it is safe to iterate over ->thread_group list.
-
-	- even worse, badness() can hit ->signal == NULL
-
-Add the pid_alive() check to ensure __unhash_process() was not called.
-
-Also, use "task" instead of task->group_leader. badness() should return
-the same result for any sub-thread. Currently this is not true, but
-this should be changed anyway.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+[hirofumi@mail.parknet.co.jp: use snprintf()]
+Signed-off-by: Nikolaus Schulz <microschulz@web.de>
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/base.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/fat/namei_vfat.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -442,12 +442,13 @@ static const struct file_operations proc
- unsigned long badness(struct task_struct *p, unsigned long uptime);
- static int proc_oom_score(struct task_struct *task, char *buffer)
+--- a/fs/fat/namei_vfat.c
++++ b/fs/fat/namei_vfat.c
+@@ -309,7 +309,7 @@ static int vfat_create_shortname(struct
  {
--	unsigned long points;
-+	unsigned long points = 0;
- 	struct timespec uptime;
+ 	struct fat_mount_options *opts = &MSDOS_SB(dir->i_sb)->options;
+ 	wchar_t *ip, *ext_start, *end, *name_start;
+-	unsigned char base[9], ext[4], buf[8], *p;
++	unsigned char base[9], ext[4], buf[5], *p;
+ 	unsigned char charbuf[NLS_MAX_CHARSET_SIZE];
+ 	int chl, chi;
+ 	int sz = 0, extlen, baselen, i, numtail_baselen, numtail2_baselen;
+@@ -467,7 +467,7 @@ static int vfat_create_shortname(struct
+ 			return 0;
+ 	}
  
- 	do_posix_clock_monotonic_gettime(&uptime);
- 	read_lock(&tasklist_lock);
--	points = badness(task->group_leader, uptime.tv_sec);
-+	if (pid_alive(task))
-+		points = badness(task, uptime.tv_sec);
- 	read_unlock(&tasklist_lock);
- 	return sprintf(buffer, "%lu\n", points);
- }
+-	i = jiffies & 0xffff;
++	i = jiffies;
+ 	sz = (jiffies >> 16) & 0x7;
+ 	if (baselen > 2) {
+ 		baselen = numtail2_baselen;
+@@ -476,7 +476,7 @@ static int vfat_create_shortname(struct
+ 	name_res[baselen + 4] = '~';
+ 	name_res[baselen + 5] = '1' + sz;
+ 	while (1) {
+-		sprintf(buf, "%04X", i);
++		snprintf(buf, sizeof(buf), "%04X", i & 0xffff);
+ 		memcpy(&name_res[baselen], buf, 4);
+ 		if (vfat_find_form(dir, name_res) < 0)
+ 			break;
 
 
