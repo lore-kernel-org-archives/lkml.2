@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab0DVW3l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 18:29:41 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34631 "EHLO mx1.suse.de"
+	id S1753078Ab0DVWaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 18:30:06 -0400
+Received: from kroah.org ([198.145.64.141]:56349 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752776Ab0DVW3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 18:29:36 -0400
-Date: Thu, 22 Apr 2010 15:07:26 -0700
+	id S1752872Ab0DVW3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 18:29:37 -0400
+Date: Thu, 22 Apr 2010 15:29:28 -0700
 From: Greg KH <gregkh@suse.de>
-To: Roel Van Nyen <roel.vannyen@gmail.com>
-Cc: "Bartlomiej Zolnierkiewicz devel@driverdev.osuosl.org" 
-	<bzolnier@gmail.com>,
-       Larry Finger <Larry.Finger@lwfinger.net>,
-       Bernhard Schiffner <bernhard@schiffner-limbach.de>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8187se: fix coding style errors of
- r8180_rtl8225z2.c
-Message-ID: <20100422220726.GA23095@suse.de>
-References: <4BD0C19F.3030809@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] driver core fixes for 2.6.34-git
+Message-ID: <20100422222928.GA3268@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BD0C19F.3030809@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 11:37:35PM +0200, Roel Van Nyen wrote:
-> Fix coding style errors
-> 
-> Signed-off-by: Roel Van Nyen <roel.vannyen@gmail.com>
-> 
-> ---
-> 
->  drivers/staging/rtl8187se/r8180_rtl8225z2.c |   58 ++++++++++++++-------------
-> 
->  1 files changed, 30 insertions(+), 28 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8187se/r8180_rtl8225z2.c b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
-> 
-> index 6edf5a4..9c38b3a 100644
-> 
-> --- a/drivers/staging/rtl8187se/r8180_rtl8225z2.c
-> 
-> +++ b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
+Here are 3 patches for your 2.6.34-git tree.
 
-Very wierd, your email client doubled all of the lines.
+Two documentation updates, and one fix for the sysfs attribute warning
+that people have reported.
 
-Did you use git send-email to send this patch, or did you cut-and-paste
-into gmail?  If the latter, please don't :)
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git/
+
+All of these patches have been in the linux-next and mm trees.
+
+The patches will be sent as a follow-on to this message to lkml for
+people to see.
 
 thanks,
 
 greg k-h
+
+------------
+
+ Documentation/HOWTO                   |    2 +-
+ Documentation/stable_kernel_rules.txt |    9 ++++-----
+ drivers/hwmon/asus_atk0110.c          |    4 ++++
+ 3 files changed, 9 insertions(+), 6 deletions(-)
+
+---------------
+
+Jiri Kosina (1):
+      sysfs: use sysfs_attr_init in ASUS atk0110 driver
+
+Randy Dunlap (1):
+      Documentation/HOWTO: update git home URL
+
+Stefan Richter (1):
+      Documentation: -stable rules: upstream commit ID requirement reworded
+
