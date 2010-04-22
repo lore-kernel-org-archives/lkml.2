@@ -1,53 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab0DVT7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:59:41 -0400
-Received: from kroah.org ([198.145.64.141]:59368 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757362Ab0DVT7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:59:33 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:05 2010
-Message-Id: <20100422195405.118194860@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:52:59 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [002/139] drm/radeon: add new RS880 pci id
-In-Reply-To: <20100422195715.GA25490@kroah.com>
+	id S932463Ab0DVUde (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:33:34 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:39764 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758561Ab0DVUdX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:33:23 -0400
+Subject: Re: [PATCH tip/core/urgent 3/3] sched: protect
+ __sched_setscheduler() access to cgroups
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
+In-Reply-To: <1271966047-9701-3-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20100422195345.GA9639@linux.vnet.ibm.com>
+	 <1271966047-9701-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Apr 2010 22:33:18 +0200
+Message-ID: <1271968398.1646.16.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+On Thu, 2010-04-22 at 12:54 -0700, Paul E. McKenney wrote:
+> A given task's cgroups structures must remain while that task is running
+> due to reference counting, so this is presumably a false positive.
+> Updated to reflect feedback from Tetsuo Handa.
 
-------------------
+I think its not a false positive, I think we can race with the task
+being placed in another cgroup. We don't hold task_lock() [our other
+discussion] nor does it hold rq->lock [used by the sched ->attach()
+method].
 
-From: Alex Deucher <alexdeucher@gmail.com>
+That said, we should probably cure the race condition of
+sched_setscheduler() vs ->attach().
 
-commit 338e2b1d571e4873908b199c90d6a31f65137fe3 upstream.
+Something like the below perhaps?
 
-This should go to 2.6.33 stable as well.
-
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/drm/drm_pciids.h |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/sched.c |   38 ++++++++++++++++++++++++++------------
+ 1 files changed, 26 insertions(+), 12 deletions(-)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -375,6 +375,7 @@
- 	{0x1002, 0x9712, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS880|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9713, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS880|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9714, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS880|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x9715, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS880|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0, 0, 0}
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 95eaecc..345df67 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4425,16 +4425,6 @@ recheck:
+ 	}
  
- #define r128_PCI_IDS \
+ 	if (user) {
+-#ifdef CONFIG_RT_GROUP_SCHED
+-		/*
+-		 * Do not allow realtime tasks into groups that have no runtime
+-		 * assigned.
+-		 */
+-		if (rt_bandwidth_enabled() && rt_policy(policy) &&
+-				task_group(p)->rt_bandwidth.rt_runtime == 0)
+-			return -EPERM;
+-#endif
+-
+ 		retval = security_task_setscheduler(p, policy, param);
+ 		if (retval)
+ 			return retval;
+@@ -4450,6 +4440,28 @@ recheck:
+ 	 * runqueue lock must be held.
+ 	 */
+ 	rq = __task_rq_lock(p);
++	retval = 0;
++#ifdef CONFIG_RT_GROUP_SCHED
++	if (user) {
++		/*
++		 * Do not allow realtime tasks into groups that have no runtime
++		 * assigned.
++		 *
++		 * RCU read lock not strictly required but here for PROVE_RCU,
++		 * the task is pinned by holding rq->lock which avoids races
++		 * with ->attach().
++		 */
++		rcu_read_lock();
++		if (rt_bandwidth_enabled() && rt_policy(policy) &&
++				task_group(p)->rt_bandwidth.rt_runtime == 0)
++			retval = -EPERM;
++		rcu_read_unlock();
++
++		if (retval)
++			goto unlock;
++	}
++#endif
++
+ 	/* recheck policy now with rq lock held */
+ 	if (unlikely(oldpolicy != -1 && oldpolicy != p->policy)) {
+ 		policy = oldpolicy = -1;
+@@ -4477,12 +4489,14 @@ recheck:
+ 
+ 		check_class_changed(rq, p, prev_class, oldprio, running);
+ 	}
++unlock:
+ 	__task_rq_unlock(rq);
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 
+-	rt_mutex_adjust_pi(p);
++	if (!retval)
++		rt_mutex_adjust_pi(p);
+ 
+-	return 0;
++	return retval;
+ }
+ 
+ /**
 
 
