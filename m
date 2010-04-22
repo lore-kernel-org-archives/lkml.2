@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab0DVToZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:44:25 -0400
-Received: from kroah.org ([198.145.64.141]:41229 "EHLO coco.kroah.org"
+	id S1757458Ab0DVTta (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:49:30 -0400
+Received: from kroah.org ([198.145.64.141]:41042 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756701Ab0DVT3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:16 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:19 2010
-Message-Id: <20100422190919.219099032@kvm.kroah.org>
+	id S1756566Ab0DVT2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:55 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:17 2010
+Message-Id: <20100422190916.931886465@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:44 -0700
+Date: Thu, 22 Apr 2010 12:09:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alexander Duyck <alexander.h.duyck@intel.com>,
-       Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       maximilian attems <max@stro.at>
-Subject: [133/197] igb: add support for 82576NS SerDes adapter
+       Neil Horman <nhorman@tuxdriver.com>, Vivek Goyal <vgoyal@redhat.com>,
+       Chris Wright <chrisw@sous-sol.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [107/197] x86/amd-iommu: enable iommu before attaching devices
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,54 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Duyck <alexander.h.duyck@intel.com>
+From: Chris Wright <chrisw@sous-sol.org>
 
-commit 747d49baaf4e3f4ad5ae77477830da026eeef69d upstream.
+commit 75f66533bc883f761a7adcab3281fe3323efbc90 upstream.
 
-This patch adds the device ID necessary to support the 82576NS SerDes
-adapter.
+Hit another kdump problem as reported by Neil Horman.  When initializaing
+the IOMMU, we attach devices to their domains before the IOMMU is
+fully (re)initialized.  Attaching a device will issue some important
+invalidations.  In the context of the newly kexec'd kdump kernel, the
+IOMMU may have stale cached data from the original kernel.  Because we
+do the attach too early, the invalidation commands are placed in the new
+command buffer before the IOMMU is updated w/ that buffer.  This leaves
+the stale entries in the kdump context and can renders device unusable.
+Simply enable the IOMMU before we do the attach.
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: maximilian attems <max@stro.at>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/igb/e1000_82575.c |    1 +
- drivers/net/igb/e1000_hw.h    |    1 +
- drivers/net/igb/igb_main.c    |    1 +
- 3 files changed, 3 insertions(+)
+ arch/x86/kernel/amd_iommu_init.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/net/igb/e1000_82575.c
-+++ b/drivers/net/igb/e1000_82575.c
-@@ -81,6 +81,7 @@ static s32 igb_get_invariants_82575(stru
- 		break;
- 	case E1000_DEV_ID_82576:
- 	case E1000_DEV_ID_82576_NS:
-+	case E1000_DEV_ID_82576_NS_SERDES:
- 	case E1000_DEV_ID_82576_FIBER:
- 	case E1000_DEV_ID_82576_SERDES:
- 	case E1000_DEV_ID_82576_QUAD_COPPER:
---- a/drivers/net/igb/e1000_hw.h
-+++ b/drivers/net/igb/e1000_hw.h
-@@ -42,6 +42,7 @@ struct e1000_hw;
- #define E1000_DEV_ID_82576_SERDES             0x10E7
- #define E1000_DEV_ID_82576_QUAD_COPPER        0x10E8
- #define E1000_DEV_ID_82576_NS                 0x150A
-+#define E1000_DEV_ID_82576_NS_SERDES          0x1518
- #define E1000_DEV_ID_82576_SERDES_QUAD        0x150D
- #define E1000_DEV_ID_82575EB_COPPER           0x10A7
- #define E1000_DEV_ID_82575EB_FIBER_SERDES     0x10A9
---- a/drivers/net/igb/igb_main.c
-+++ b/drivers/net/igb/igb_main.c
-@@ -63,6 +63,7 @@ static const struct e1000_info *igb_info
- static struct pci_device_id igb_pci_tbl[] = {
- 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82576), board_82575 },
- 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82576_NS), board_82575 },
-+	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82576_NS_SERDES), board_82575 },
- 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82576_FIBER), board_82575 },
- 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82576_SERDES), board_82575 },
- 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82576_SERDES_QUAD), board_82575 },
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -1284,6 +1284,8 @@ int __init amd_iommu_init(void)
+ 	if (ret)
+ 		goto free;
+ 
++	enable_iommus();
++
+ 	if (iommu_pass_through)
+ 		ret = amd_iommu_init_passthrough();
+ 	else
+@@ -1294,8 +1296,6 @@ int __init amd_iommu_init(void)
+ 
+ 	amd_iommu_init_api();
+ 
+-	enable_iommus();
+-
+ 	if (iommu_pass_through)
+ 		goto out;
+ 
+@@ -1314,6 +1314,8 @@ out:
+ 	return ret;
+ 
+ free:
++	disable_iommus();
++
+ 	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
+ 		   get_order(MAX_DOMAIN_ID/8));
+ 
 
 
