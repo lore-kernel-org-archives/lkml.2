@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab0DVU1c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:27:32 -0400
-Received: from kroah.org ([198.145.64.141]:59556 "EHLO coco.kroah.org"
+	id S1758338Ab0DVUYw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:24:52 -0400
+Received: from kroah.org ([198.145.64.141]:59646 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757851Ab0DVT76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:59:58 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:07 2010
-Message-Id: <20100422195407.836386830@kvm.kroah.org>
+	id S1757970Ab0DVUAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:00:12 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:09 2010
+Message-Id: <20100422195409.382551496@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:28 -0700
+Date: Thu, 22 Apr 2010 12:53:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Anton Blanchard <anton@samba.org>, Christoph Hellwig <hch@lst.de>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: [031/139] raw: fsync method is now required
+       Javier Cardona <javier@cozybit.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [046/139] mac80211: Handle mesh action frames in ieee80211_rx_h_action
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,89 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Javier Cardona <javier@cozybit.com>
 
-commit 55ab3a1ff843e3f0e24d2da44e71bffa5d853010 upstream.
+commit 1cb561f83793191cf86a2db3948d28f5f42df9ff upstream.
 
-Commit 148f948ba877f4d3cdef036b1ff6d9f68986706a (vfs: Introduce new
-helpers for syncing after writing to O_SYNC file or IS_SYNC inode) broke
-the raw driver.
+This fixes the problem introduced in commit
+8404080568613d93ad7cf0a16dfb68 which broke mesh peer link establishment.
 
-We now call through generic_file_aio_write -> generic_write_sync ->
-vfs_fsync_range.  vfs_fsync_range has:
+changes:
+v2 	Added missing break (Johannes)
+v3 	Broke original patch into two (Johannes)
 
-        if (!fop || !fop->fsync) {
-                ret = -EINVAL;
-                goto out;
-        }
-
-But drivers/char/raw.c doesn't set an fsync method.
-
-We have two options: fix it or remove the raw driver completely.  I'm
-happy to do either, the fact this has been broken for so long suggests it
-is rarely used.
-
-The patch below adds an fsync method to the raw driver.  My knowledge of
-the block layer is pretty sketchy so this could do with a once over.
-
-If we instead decide to remove the raw driver, this patch might still be
-useful as a backport to 2.6.33 and 2.6.32.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Jens Axboe <jens.axboe@oracle.com>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Tested-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Javier Cardona <javier@cozybit.com>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/raw.c |    1 +
- fs/block_dev.c     |    3 ++-
- include/linux/fs.h |    1 +
- 3 files changed, 4 insertions(+), 1 deletion(-)
+ net/mac80211/mesh.c |    3 ---
+ net/mac80211/rx.c   |    5 +++++
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/char/raw.c
-+++ b/drivers/char/raw.c
-@@ -247,6 +247,7 @@ static const struct file_operations raw_
- 	.aio_read = 	generic_file_aio_read,
- 	.write	=	do_sync_write,
- 	.aio_write =	blkdev_aio_write,
-+	.fsync	=	block_fsync,
- 	.open	=	raw_open,
- 	.release=	raw_release,
- 	.ioctl	=	raw_ioctl,
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -404,7 +404,7 @@ static loff_t block_llseek(struct file *
-  *	NULL first argument is nfsd_sync_dir() and that's not a directory.
-  */
-  
--static int block_fsync(struct file *filp, struct dentry *dentry, int datasync)
-+int block_fsync(struct file *filp, struct dentry *dentry, int datasync)
- {
- 	struct block_device *bdev = I_BDEV(filp->f_mapping->host);
- 	int error;
-@@ -418,6 +418,7 @@ static int block_fsync(struct file *filp
- 		error = 0;
- 	return error;
- }
-+EXPORT_SYMBOL(block_fsync);
+--- a/net/mac80211/mesh.c
++++ b/net/mac80211/mesh.c
+@@ -749,9 +749,6 @@ ieee80211_mesh_rx_mgmt(struct ieee80211_
  
- /*
-  * pseudo-fs
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2214,6 +2214,7 @@ extern int generic_segment_checks(const
- /* fs/block_dev.c */
- extern ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 				unsigned long nr_segs, loff_t pos);
-+extern int block_fsync(struct file *filp, struct dentry *dentry, int datasync);
+ 	switch (fc & IEEE80211_FCTL_STYPE) {
+ 	case IEEE80211_STYPE_ACTION:
+-		if (skb->len < IEEE80211_MIN_ACTION_SIZE)
+-			return RX_DROP_MONITOR;
+-		/* fall through */
+ 	case IEEE80211_STYPE_PROBE_RESP:
+ 	case IEEE80211_STYPE_BEACON:
+ 		skb_queue_tail(&ifmsh->skb_queue, skb);
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -2355,6 +2355,11 @@ static int prepare_for_handlers(struct i
+ 		/* should never get here */
+ 		WARN_ON(1);
+ 		break;
++	case MESH_PLINK_CATEGORY:
++	case MESH_PATH_SEL_CATEGORY:
++		if (ieee80211_vif_is_mesh(&sdata->vif))
++			return ieee80211_mesh_rx_mgmt(sdata, rx->skb);
++		break;
+ 	}
  
- /* fs/splice.c */
- extern ssize_t generic_file_splice_read(struct file *, loff_t *,
+ 	return 1;
 
 
