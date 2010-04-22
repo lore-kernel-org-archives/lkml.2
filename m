@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab0DVR6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 13:58:00 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39274 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755147Ab0DVR56 convert rfc822-to-8bit (ORCPT
+	id S1756038Ab0DVSDu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 14:03:50 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27624 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821Ab0DVSDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 13:57:58 -0400
-From: "Woodruff, Richard" <r-woodruff2@ti.com>
-To: Kevin Hilman <khilman@deeprootsystems.com>, Mike Chan <mike@android.com>
-CC: "tony@atomide.com" <tony@atomide.com>, "paul@pwsan.com" <paul@pwsan.com>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 22 Apr 2010 12:57:51 -0500
-Subject: RE: [PATCH 1/2] omap: pm34xx: Enable IO / IO-CHAIN wakeups for PER
-Thread-Topic: [PATCH 1/2] omap: pm34xx: Enable IO / IO-CHAIN wakeups for PER
-Thread-Index: AcrhsMiKK3Pr1iKAQn+M4MwWhvZKrgAjnB1A
-Message-ID: <13B9B4C6EF24D648824FF11BE896716203BABB8733@dlee02.ent.ti.com>
-References: <1271295665-26187-1-git-send-email-mike@android.com>
- <87aasw5oyx.fsf@deeprootsystems.com>
-In-Reply-To: <87aasw5oyx.fsf@deeprootsystems.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 22 Apr 2010 14:03:48 -0400
+Date: Thu, 22 Apr 2010 11:02:14 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: James Bottomley <James.Bottomley@suse.de>,
+       Ravi Anand <ravi.anand@qlogic.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-scsi <linux-scsi@vger.kernel.org>, linux-kernel@vger.kernel.org,
+       David C Somayajulu <david.somayajulu@qlogic.com>,
+       Karen Higgins <karen.higgins@qlogic.com>,
+       Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+Subject: [PATCH 3rd_time] scsi: fix operator precedence warning
+Message-Id: <20100422110214.e7c62688.randy.dunlap@oracle.com>
+In-Reply-To: <1271945825.2889.138.camel@mulgrave.site>
+References: <1271945825.2889.138.camel@mulgrave.site>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090209.4BD08F71.0033:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-> From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
-> owner@vger.kernel.org] On Behalf Of Kevin Hilman
+Fix operator precedence warning (from sparse), which results in the
+data value always being 0:
 
-> I'm a little puzzled on this one.  My understanding is that the IO pad
-> is only armed when CORE is in RET or OFF.
+drivers/scsi/qla4xxx/ql4_mbx.c:470:66: warning: right shift by bigger than source value
 
-For ES3 and before the io ring wake was 'armed' when ever core went to idle.  When core power state changed accounting was done for state.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Acked-by: Ravi Anand <ravi.anand@qlogic.com>
+Cc: David C Somayajulu <david.somayajulu@qlogic.com>
+Cc: Karen Higgins <karen.higgins@qlogic.com>
+Cc: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+---
 
-This scheme created a small time window where per wake events could be lost in handoff from gpio to io daisy chain when targeting chip off.
+ drivers/scsi/qla4xxx/ql4_mbx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-In ES3.1 the EN_IO_CHAIN bit was added as a way to cover this hole.  It allows enabling the wake up daisy chain in software prior to idling core.  The trm does detail the exact steps.
-
-The 3.1 bug fix covered the transition window observed going to chip states but probably can cover here.  I'm not sure about the patch as applied with studying.
-
-Regards,
-Richard W.
-
+--- linux-2.6.34-rc3-git5.orig/drivers/scsi/qla4xxx/ql4_mbx.c
++++ linux-2.6.34-rc3-git5/drivers/scsi/qla4xxx/ql4_mbx.c
+@@ -467,7 +467,7 @@ int qla4xxx_get_fwddb_entry(struct scsi_
+ 	if (conn_err_detail)
+ 		*conn_err_detail = mbox_sts[5];
+ 	if (tcp_source_port_num)
+-		*tcp_source_port_num = (uint16_t) mbox_sts[6] >> 16;
++		*tcp_source_port_num = (uint16_t) (mbox_sts[6] >> 16);
+ 	if (connection_id)
+ 		*connection_id = (uint16_t) mbox_sts[6] & 0x00FF;
+ 	status = QLA_SUCCESS;
