@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab0DVRDj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 13:03:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37359 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755647Ab0DVRDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 13:03:38 -0400
-Date: Thu, 22 Apr 2010 10:02:07 -0700
-From: Greg KH <gregkh@suse.de>
-To: Eric Lescouet <eric.lescouet@vlx.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "usbip-devel@lists.sourceforge.net" 
-	<usbip-devel@lists.sourceforge.net>
-Subject: Re: [PATCH]: Fix deadlock in USBIP driver (staging),
- linux-2.6.34-rc5
-Message-ID: <20100422170207.GA18830@suse.de>
-References: <4BD07F2A.8080808@VirtualLogix.com>
+	id S1755893Ab0DVRIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 13:08:11 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:37768 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755114Ab0DVRIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 13:08:09 -0400
+Date: Thu, 22 Apr 2010 12:08:02 -0500
+From: Robin Holt <holt@sgi.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
+       Rik van Riel <riel@redhat.com>, John Stoffel <john@stoffel.org>,
+       Hedi Berriche <hedi@sgi.com>, Mike Travis <travis@sgi.com>,
+       Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
+ pid_max v2
+Message-ID: <20100422170801.GZ5677@sgi.com>
+References: <20100421165934.GN16427@zorg.emea.sgi.com>
+ <4BCF336B.1050706@redhat.com>
+ <19407.20109.308816.104856@stoffel.org>
+ <20100421193350.GU16427@zorg.emea.sgi.com>
+ <19407.23456.469074.256306@stoffel.org>
+ <20100421222414.GA26241@suse.de>
+ <4BCF80F2.2010906@redhat.com>
+ <20100421232200.GA22877@suse.de>
+ <20100422102852.72837494@lxorguk.ukuu.org.uk>
+ <alpine.LFD.2.00.1004220743080.9086@i5.linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BD07F2A.8080808@VirtualLogix.com>
+In-Reply-To: <alpine.LFD.2.00.1004220743080.9086@i5.linux-foundation.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 06:54:02PM +0200, Eric Lescouet wrote:
-> Hi,
-> When detaching a port from the client side (usbip --detach 0),
-> the event thread, on the server side, is going to deadlock.
-> The "eh" server thread is getting USBIP_EH_RESET event and calls:
->  -> stub_device_reset() -> usb_reset_device()
-> the USB framework is then calling back _in the same "eh" thread_ :
->  -> stub_disconnect() -> usbip_stop_eh() -> wait_for_completion()
-> the "eh" thread is being asleep forever, waiting for its own completion.
-> The patch checks if "eh" is the current thread, in usbip_stop_eh().
-
-Ok, but does the lock_kernel() call you just made actually prevent this
-from happening?  Isn't there some other lock you can use instead?
-
-> Please Cc me in reply, I'm not in the list.
-
-Also, to have patches that we can apply, we need a "Signed-off-by:"
-line.  See the file, Documentation/SubmittingPatches for what this
-means.
+> Which I'm not entirely sure makes the case for the kernel parameter much 
+> stronger, though. I wonder if it's not more appropriate to just have a 
+> total hack saying
 > 
-> b.r.
+> 	if (max_pids < N * max_cpus) {
+> 		printk("We have %d CPUs, increasing max_pids to %d\n");
+> 		max_pids = N*max_cpus;
+> 	}
 > 
-> ------------------
-> 
-> diff -Nur linux-2.6.34-rc5/drivers/staging/usbip/usbip_event.c
-> linux-2.6.34-rc5.new/drivers/staging/usbip/usbip_event.c
-> --- linux-2.6.34-rc5/drivers/staging/usbip/usbip_event.c
-> 2010-04-20 01:29:56.000000000 +0200
+> where "N" is just some random fudge-factor. It's reasonable to expect a 
+> certain minimum number of processes per CPU, after all.
 
-Your email client wrapped the patch and made it unappliable :(
+How about:
 
-thanks,
+	pid_max_min = max(pid_max_min, 19 * num_possible_cpus());
+	pid_max_baseline = 2048 * num_possible_cpus();
 
-greg k-h
+	if (pid_max < pid_max_baseline) {
+		printk("We have %d CPUs, increasing pid_max to %d\n"...
+		pid_max = pid_max_baseline;
+	}
+
+
+This would scale pid_max_min by a sane amount, leave the default value
+of pid_max_min and pid_max untouched below 16 cpus and then scale both
+up linearly beyond that.
+
+Robin
