@@ -1,499 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab0DVHgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 03:36:41 -0400
-Received: from compulab.co.il ([67.18.134.219]:49947 "EHLO compulab.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751433Ab0DVHgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 03:36:39 -0400
-From: Mike Rapoport <mike@compulab.co.il>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Ryan Mallon <ryan@bluewatersys.com>, linux-kernel@vger.kernel.org,
-       Yulia Vilensky <vilensky@compulab.co.il>,
-       Mike Rapoport <mike@compulab.co.il>
-Subject: [PATCH] ds2782_battery: add support for ds2786 battery gas gauge
-Date: Thu, 22 Apr 2010 10:35:23 +0300
-Message-Id: <1271921723-18289-1-git-send-email-mike@compulab.co.il>
-X-Mailer: git-send-email 1.6.6.2
-In-Reply-To: <20100422071437.GA32489@oksana.dev.rtsoft.ru>
-References: <20100422071437.GA32489@oksana.dev.rtsoft.ru>
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752762Ab0DVHhB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 03:37:01 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46964 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752684Ab0DVHg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 03:36:56 -0400
+Date: Thu, 22 Apr 2010 16:36:33 +0900
+From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@linux-nfs.org, security@kernel.org,
+       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1][BUG][IMPORTANT] KEYRINGS: find_keyring_by_name() can
+ gain the freed keyring
+Message-Id: <20100422163633.de233f25.toshi.okajima@jp.fujitsu.com>
+Organization: Fujitsu co.,ltd.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.12.8; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yulia Vilensky <vilensky@compulab.co.il>
+Hi.
 
-Signed-off-by: Yulia Vilensky <vilensky@compulab.co.il>
-Signed-off-by: Mike Rapoport <mike@compulab.co.il>
----
- drivers/power/Kconfig          |    4 +-
- drivers/power/ds2782_battery.c |  217 +++++++++++++++++++++++++++++++--------
- include/linux/ds2782_battery.h |    8 ++
- 3 files changed, 182 insertions(+), 47 deletions(-)
- create mode 100644 include/linux/ds2782_battery.h
+With linux-2.6.34-rc5, find_keyring_by_name() can gain the keyring which has
+been already freed. And then, its space (which is gained by 
+find_keyring_by_name()) is broken by accessing the freed keyring as the 
+available keyring:
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index faaa9b4..d8b8a19 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -65,10 +65,10 @@ config BATTERY_DS2760
- 	  Say Y here to enable support for batteries with ds2760 chip.
- 
- config BATTERY_DS2782
--	tristate "DS2782 standalone gas-gauge"
-+	tristate "DS2782/DS2786 standalone gas-gauge"
- 	depends on I2C
- 	help
--	  Say Y here to enable support for the DS2782 standalone battery
-+	  Say Y here to enable support for the DS2782/DS2786 standalone battery
- 	  gas-gauge.
- 
- config BATTERY_PMU
-diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-index 99c8997..0df49b4 100644
---- a/drivers/power/ds2782_battery.c
-+++ b/drivers/power/ds2782_battery.c
-@@ -5,6 +5,8 @@
-  *
-  * Author: Ryan Mallon <ryan@bluewatersys.com>
-  *
-+ * DS278 added by Yulia Vilensky <vilensky@compulab.co.il>
-+ *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-@@ -20,6 +22,7 @@
- #include <linux/idr.h>
- #include <linux/power_supply.h>
- #include <linux/slab.h>
-+#include <linux/ds2782_battery.h>
- 
- #define DS2782_REG_RARC		0x06	/* Remaining active relative capacity */
- 
-@@ -33,18 +36,39 @@
- /* Current unit measurement in uA for a 1 milli-ohm sense resistor */
- #define DS2782_CURRENT_UNITS	1563
- 
--#define to_ds2782_info(x) container_of(x, struct ds2782_info, battery)
-+#define DS2786_REG_RARC		0x02	/* Remaining active relative capacity */
-+
-+#define DS2786_REG_VOLT_MSB	0x0c
-+#define DS2786_REG_TEMP_MSB	0x0a
-+#define DS2786_REG_CURRENT_MSB	0x0e
-+
-+#define DS2786_CURRENT_UNITS	25
-+
-+#define DS278X_SIGN_BIT_MASK16  0x8000
-+
-+struct ds278x_info;
- 
--struct ds2782_info {
-+struct ds278x_battery_ops {
-+	int	(*get_temp)(struct ds278x_info *info, int *temp);
-+	int	(*get_current)(struct ds278x_info *info, int *current_uA);
-+	int	(*get_voltage)(struct ds278x_info *info, int *voltage_uA);
-+	int	(*get_capacity)(struct ds278x_info *info, int *capacity_uA);
-+};
-+
-+#define to_ds278x_info(x) container_of(x, struct ds278x_info, battery)
-+
-+struct ds278x_info {
- 	struct i2c_client	*client;
- 	struct power_supply	battery;
-+	struct ds278x_battery_ops  *ops;
- 	int			id;
-+	int                     rsns;
- };
- 
- static DEFINE_IDR(battery_id);
- static DEFINE_MUTEX(battery_lock);
- 
--static inline int ds2782_read_reg(struct ds2782_info *info, int reg, u8 *val)
-+static inline int ds278x_read_reg(struct ds278x_info *info, int reg, u8 *val)
- {
- 	int ret;
- 
-@@ -58,7 +82,7 @@ static inline int ds2782_read_reg(struct ds2782_info *info, int reg, u8 *val)
- 	return 0;
- }
- 
--static inline int ds2782_read_reg16(struct ds2782_info *info, int reg_msb,
-+static inline int ds278x_read_reg16(struct ds278x_info *info, int reg_msb,
- 				    s16 *val)
- {
- 	int ret;
-@@ -73,7 +97,7 @@ static inline int ds2782_read_reg16(struct ds2782_info *info, int reg_msb,
- 	return 0;
- }
- 
--static int ds2782_get_temp(struct ds2782_info *info, int *temp)
-+static int ds2782_get_temp(struct ds278x_info *info, int *temp)
- {
- 	s16 raw;
- 	int err;
-@@ -84,14 +108,14 @@ static int ds2782_get_temp(struct ds2782_info *info, int *temp)
- 	 * celsius. The temperature value is stored as a 10 bit number, plus
- 	 * sign in the upper bits of a 16 bit register.
- 	 */
--	err = ds2782_read_reg16(info, DS2782_REG_TEMP_MSB, &raw);
-+	err = ds278x_read_reg16(info, DS2782_REG_TEMP_MSB, &raw);
- 	if (err)
- 		return err;
- 	*temp = ((raw / 32) * 125) / 100;
- 	return 0;
- }
- 
--static int ds2782_get_current(struct ds2782_info *info, int *current_uA)
-+static int ds2782_get_current(struct ds278x_info *info, int *current_uA)
- {
- 	int sense_res;
- 	int err;
-@@ -102,7 +126,7 @@ static int ds2782_get_current(struct ds2782_info *info, int *current_uA)
- 	 * The units of measurement for current are dependent on the value of
- 	 * the sense resistor.
- 	 */
--	err = ds2782_read_reg(info, DS2782_REG_RSNSP, &sense_res_raw);
-+	err = ds278x_read_reg(info, DS2782_REG_RSNSP, &sense_res_raw);
- 	if (err)
- 		return err;
- 	if (sense_res_raw == 0) {
-@@ -113,14 +137,14 @@ static int ds2782_get_current(struct ds2782_info *info, int *current_uA)
- 
- 	dev_dbg(&info->client->dev, "sense resistor = %d milli-ohms\n",
- 		sense_res);
--	err = ds2782_read_reg16(info, DS2782_REG_CURRENT_MSB, &raw);
-+	err = ds278x_read_reg16(info, DS2782_REG_CURRENT_MSB, &raw);
- 	if (err)
- 		return err;
- 	*current_uA = raw * (DS2782_CURRENT_UNITS / sense_res);
- 	return 0;
- }
- 
--static int ds2782_get_voltage(struct ds2782_info *info, int *voltage_uA)
-+static int ds2782_get_voltage(struct ds278x_info *info, int *voltage_uA)
- {
- 	s16 raw;
- 	int err;
-@@ -129,36 +153,110 @@ static int ds2782_get_voltage(struct ds2782_info *info, int *voltage_uA)
- 	 * Voltage is measured in units of 4.88mV. The voltage is stored as
- 	 * a 10-bit number plus sign, in the upper bits of a 16-bit register
- 	 */
--	err = ds2782_read_reg16(info, DS2782_REG_VOLT_MSB, &raw);
-+	err = ds278x_read_reg16(info, DS2782_REG_VOLT_MSB, &raw);
- 	if (err)
- 		return err;
- 	*voltage_uA = (raw / 32) * 4800;
- 	return 0;
- }
- 
--static int ds2782_get_capacity(struct ds2782_info *info, int *capacity)
-+static int ds2782_get_capacity(struct ds278x_info *info, int *capacity)
- {
- 	int err;
- 	u8 raw;
- 
--	err = ds2782_read_reg(info, DS2782_REG_RARC, &raw);
-+	err = ds278x_read_reg(info, DS2782_REG_RARC, &raw);
- 	if (err)
- 		return err;
- 	*capacity = raw;
- 	return raw;
- }
- 
--static int ds2782_get_status(struct ds2782_info *info, int *status)
-+static int ds2786_get_temp(struct ds278x_info *info, int *temp)
-+{
-+	s16 raw;
-+	int err;
-+
-+	/*
-+	 * Temperature is measured in units of 0.125 degrees celcius, the
-+	 * power_supply class measures temperature in tenths of degrees
-+	 * celsius. The temperature value is stored as a 10 bit number, plus
-+	 * sign in the upper bits of a 16 bit register.
-+	 */
-+	err = ds278x_read_reg16(info, DS2786_REG_TEMP_MSB, &raw);
-+	if (err)
-+		return err;
-+
-+	if (raw &  DS278X_SIGN_BIT_MASK16)
-+		*temp = -(((~raw >> 5)+1) * 125)/100;
-+	else
-+		*temp = ((raw >> 5) * 125)/100;
-+
-+	return 0;
-+}
-+
-+static int ds2786_get_current(struct ds278x_info *info, int *current_uA)
-+{
-+	int err;
-+	s16 raw;
-+
-+	err = ds278x_read_reg16(info, DS2786_REG_CURRENT_MSB, &raw);
-+	if (err)
-+		return err;
-+
-+	if (raw &  DS278X_SIGN_BIT_MASK16)
-+		*current_uA = -(((~raw >> 4)+1) *
-+			       (DS2786_CURRENT_UNITS / info->rsns));
-+	else
-+		*current_uA = (raw >> 4) *
-+			      (DS2786_CURRENT_UNITS / info->rsns);
-+	return 0;
-+}
-+
-+static int ds2786_get_voltage(struct ds278x_info *info, int *voltage_uA)
-+{
-+	s16 raw;
-+	int err;
-+
-+	/*
-+	 * Voltage is measured in units of 1.22mV. The voltage is stored as
-+	 * a 10-bit number plus sign, in the upper bits of a 16-bit register
-+	 */
-+	err = ds278x_read_reg16(info, DS2786_REG_VOLT_MSB, &raw);
-+	if (err)
-+		return err;
-+
-+	if (raw &  DS278X_SIGN_BIT_MASK16)
-+		*voltage_uA = -(((~raw >> 3)+1) * 1220);
-+	else
-+		*voltage_uA = (raw >> 3) * 1220;
-+	return 0;
-+}
-+
-+static int ds2786_get_capacity(struct ds278x_info *info, int *capacity)
-+{
-+	int err;
-+	u8 raw;
-+
-+	err = ds278x_read_reg(info, DS2786_REG_RARC, &raw);
-+	if (err)
-+		return err;
-+	/* Relative capacity is displayed with resolution 0.5 % */
-+	*capacity = raw/2 ;
-+	return 0;
-+}
-+
-+static int ds278x_get_status(struct ds278x_info *info, int *status)
- {
- 	int err;
- 	int current_uA;
- 	int capacity;
- 
--	err = ds2782_get_current(info, &current_uA);
-+	err = info->ops->get_current(info, &current_uA);
- 	if (err)
- 		return err;
- 
--	err = ds2782_get_capacity(info, &capacity);
-+	err = info->ops->get_capacity(info, &capacity);
- 	if (err)
- 		return err;
- 
-@@ -174,32 +272,32 @@ static int ds2782_get_status(struct ds2782_info *info, int *status)
- 	return 0;
- }
- 
--static int ds2782_battery_get_property(struct power_supply *psy,
-+static int ds278x_battery_get_property(struct power_supply *psy,
- 				       enum power_supply_property prop,
- 				       union power_supply_propval *val)
- {
--	struct ds2782_info *info = to_ds2782_info(psy);
-+	struct ds278x_info *info = to_ds278x_info(psy);
- 	int ret;
- 
- 	switch (prop) {
- 	case POWER_SUPPLY_PROP_STATUS:
--		ret = ds2782_get_status(info, &val->intval);
-+		ret = ds278x_get_status(info, &val->intval);
- 		break;
- 
- 	case POWER_SUPPLY_PROP_CAPACITY:
--		ret = ds2782_get_capacity(info, &val->intval);
-+		ret = info->ops->get_capacity(info, &val->intval);
- 		break;
- 
- 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
--		ret = ds2782_get_voltage(info, &val->intval);
-+		ret = info->ops->get_voltage(info, &val->intval);
- 		break;
- 
- 	case POWER_SUPPLY_PROP_CURRENT_NOW:
--		ret = ds2782_get_current(info, &val->intval);
-+		ret = info->ops->get_current(info, &val->intval);
- 		break;
- 
- 	case POWER_SUPPLY_PROP_TEMP:
--		ret = ds2782_get_temp(info, &val->intval);
-+		ret = info->ops->get_temp(info, &val->intval);
- 		break;
- 
- 	default:
-@@ -209,7 +307,7 @@ static int ds2782_battery_get_property(struct power_supply *psy,
- 	return ret;
- }
- 
--static enum power_supply_property ds2782_battery_props[] = {
-+static enum power_supply_property ds278x_battery_props[] = {
- 	POWER_SUPPLY_PROP_STATUS,
- 	POWER_SUPPLY_PROP_CAPACITY,
- 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-@@ -217,18 +315,18 @@ static enum power_supply_property ds2782_battery_props[] = {
- 	POWER_SUPPLY_PROP_TEMP,
- };
- 
--static void ds2782_power_supply_init(struct power_supply *battery)
-+static void ds278x_power_supply_init(struct power_supply *battery)
- {
- 	battery->type			= POWER_SUPPLY_TYPE_BATTERY;
--	battery->properties		= ds2782_battery_props;
--	battery->num_properties		= ARRAY_SIZE(ds2782_battery_props);
--	battery->get_property		= ds2782_battery_get_property;
-+	battery->properties		= ds278x_battery_props;
-+	battery->num_properties		= ARRAY_SIZE(ds278x_battery_props);
-+	battery->get_property		= ds278x_battery_get_property;
- 	battery->external_power_changed	= NULL;
- }
- 
--static int ds2782_battery_remove(struct i2c_client *client)
-+static int ds278x_battery_remove(struct i2c_client *client)
- {
--	struct ds2782_info *info = i2c_get_clientdata(client);
-+	struct ds278x_info *info = i2c_get_clientdata(client);
- 
- 	power_supply_unregister(&info->battery);
- 	kfree(info->battery.name);
-@@ -243,13 +341,38 @@ static int ds2782_battery_remove(struct i2c_client *client)
- 	return 0;
- }
- 
--static int ds2782_battery_probe(struct i2c_client *client,
-+static struct ds278x_battery_ops ds278x_ops[] = {
-+	[0] = {
-+		.get_temp     = ds2782_get_temp,
-+		.get_current  = ds2782_get_current,
-+		.get_voltage  = ds2782_get_voltage,
-+		.get_capacity = ds2782_get_capacity,
-+	},
-+	[1] = {
-+		.get_temp     = ds2786_get_temp,
-+		.get_current  = ds2786_get_current,
-+		.get_voltage  = ds2786_get_voltage,
-+		.get_capacity = ds2786_get_capacity,
-+	}
-+};
-+
-+static int ds278x_battery_probe(struct i2c_client *client,
- 				const struct i2c_device_id *id)
- {
--	struct ds2782_info *info;
-+	struct ds278x_platform_data *pdata = client->dev.platform_data;
-+	struct ds278x_info *info;
- 	int ret;
- 	int num;
- 
-+	/*
-+	 * ds2786 should have the sense resistor value set
-+	 * in the platform data .
-+	 */
-+	if (id->driver_data == 1 && pdata == 0) {
-+		dev_err(&client->dev, "missing platform data for ds2786\n");
-+		return -EINVAL;
-+	}
-+
- 	/* Get an ID for this battery */
- 	ret = idr_pre_get(&battery_id, GFP_KERNEL);
- 	if (ret == 0) {
-@@ -269,7 +392,7 @@ static int ds2782_battery_probe(struct i2c_client *client,
- 		goto fail_info;
- 	}
- 
--	info->battery.name = kasprintf(GFP_KERNEL, "ds2782-%d", num);
-+	info->battery.name = kasprintf(GFP_KERNEL, "%s-%d", client->name, num);
- 	if (!info->battery.name) {
- 		ret = -ENOMEM;
- 		goto fail_name;
-@@ -277,7 +400,10 @@ static int ds2782_battery_probe(struct i2c_client *client,
- 
- 	i2c_set_clientdata(client, info);
- 	info->client = client;
--	ds2782_power_supply_init(&info->battery);
-+	info->id = num;
-+	info->ops  = &ds278x_ops[id->driver_data];
-+	info->rsns = pdata->rsns;
-+	ds278x_power_supply_init(&info->battery);
- 
- 	ret = power_supply_register(&client->dev, &info->battery);
- 	if (ret) {
-@@ -300,31 +426,32 @@ fail_id:
- 	return ret;
- }
- 
--static const struct i2c_device_id ds2782_id[] = {
-+static const struct i2c_device_id ds278x_id[] = {
- 	{"ds2782", 0},
-+	{"ds2786", 1},
- 	{},
- };
- 
--static struct i2c_driver ds2782_battery_driver = {
-+static struct i2c_driver ds278x_battery_driver = {
- 	.driver 	= {
- 		.name	= "ds2782-battery",
- 	},
--	.probe		= ds2782_battery_probe,
--	.remove		= ds2782_battery_remove,
--	.id_table	= ds2782_id,
-+	.probe		= ds278x_battery_probe,
-+	.remove		= ds278x_battery_remove,
-+	.id_table	= ds278x_id,
- };
- 
--static int __init ds2782_init(void)
-+static int __init ds278x_init(void)
- {
--	return i2c_add_driver(&ds2782_battery_driver);
-+	return i2c_add_driver(&ds278x_battery_driver);
- }
--module_init(ds2782_init);
-+module_init(ds278x_init);
- 
--static void __exit ds2782_exit(void)
-+static void __exit ds278x_exit(void)
- {
--	i2c_del_driver(&ds2782_battery_driver);
-+	i2c_del_driver(&ds278x_battery_driver);
- }
--module_exit(ds2782_exit);
-+module_exit(ds278x_exit);
- 
- MODULE_AUTHOR("Ryan Mallon <ryan@bluewatersys.com>");
- MODULE_DESCRIPTION("Maxim/Dallas DS2782 Stand-Alone Fuel Gauage IC driver");
-diff --git a/include/linux/ds2782_battery.h b/include/linux/ds2782_battery.h
-new file mode 100644
-index 0000000..b4e281f
---- /dev/null
-+++ b/include/linux/ds2782_battery.h
-@@ -0,0 +1,8 @@
-+#ifndef __LINUX_DS2782_BATTERY_H
-+#define __LINUX_DS2782_BATTERY_H
-+
-+struct ds278x_platform_data {
-+	int rsns;
-+};
-+
-+#endif
--- 
-1.6.6.2
+1) If the space of the freed keyring is reallocated for other purpose 
+ (ie. filp SLUB), the data of the filp object may be destroyed by the user of 
+ the freed keyring.
+(SLUB configuration can share the freed space with other same-size slabs.)
 
+2) If the slab space of the freed keyring is released into the system,
+ the system panic may happen because accessing the space of the freed keyring 
+ causes the page-fault.
+ 
+Example: (we can easily confirm this problem if CONFIG_SLUB is "y".)
+[1] with CONFIG_SLUB_DEBUG_ON
+ While we are executing my reproducer (which is attached),
+we can notice that the user of the freed keyring breaks its space:
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# ./reproducer &
+...
+# dmesg 
+...
+=============================================================================
+BUG key_jar: Poison overwritten
+-----------------------------------------------------------------------------
+
+INFO: 0xffff880197a7e200-0xffff880197a7e200. First byte 0x6a instead of 0x6b
+INFO: Allocated in key_alloc+0x10b/0x35f age=25 cpu=1 pid=5086
+INFO: Freed in key_cleanup+0xd0/0xd5 age=12 cpu=1 pid=10
+INFO: Slab 0xffffea000592cb90 objects=16 used=2 fp=0xffff880197a7e200 flags=0x200000000000c3
+INFO: Object 0xffff880197a7e200 @offset=512 fp=0xffff880197a7e300
+
+Bytes b4 0xffff880197a7e1f0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+  Object 0xffff880197a7e200:  6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b jkkkkkkkkkkkkkkk
+  Object 0xffff880197a7e210:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+  Object 0xffff880197a7e220:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+  Object 0xffff880197a7e230:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+  Object 0xffff880197a7e240:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+  Object 0xffff880197a7e250:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+  Object 0xffff880197a7e260:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+  Object 0xffff880197a7e270:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+  Object 0xffff880197a7e280:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+  Object 0xffff880197a7e290:  6b 6b 6b 6b 6b 6b 6b a5                         kkkkkkk�        
+ Redzone 0xffff880197a7e298:  bb bb bb bb bb bb bb bb                         ��������        
+ Padding 0xffff880197a7e2d8:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+ Padding 0xffff880197a7e2e8:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+ Padding 0xffff880197a7e2f8:  5a 5a 5a 5a 5a 5a 5a 5a                         ZZZZZZZZ        
+Pid: 5090, comm: su Not tainted 2.6.34-rc5-nofixed #1
+Call Trace:
+ [<ffffffff810e3e9c>] ? check_bytes_and_report+0xb5/0xe6
+ [<ffffffff81152994>] ? key_alloc+0x10b/0x35f
+ [<ffffffff810e3f8f>] ? check_object+0xc2/0x1a4
+ [<ffffffff810e5c09>] ? __slab_alloc+0x2ff/0x3a6
+ [<ffffffff81152994>] ? key_alloc+0x10b/0x35f
+ [<ffffffff81152780>] ? key_user_lookup+0x78/0x181
+ [<ffffffff81152994>] ? key_alloc+0x10b/0x35f
+ [<ffffffff810e658a>] ? kmem_cache_alloc+0x75/0xe9
+ [<ffffffff81152994>] ? key_alloc+0x10b/0x35f
+ [<ffffffff8115360a>] ? keyring_alloc+0x29/0x61
+ [<ffffffff81155897>] ? install_user_keyrings+0x99/0x168
+ [<ffffffff81155ae6>] ? lookup_user_key+0x180/0x30a
+ [<ffffffff81153eaf>] ? keyctl_get_keyring_ID+0x15/0x38
+ [<ffffffff81008a02>] ? system_call_fastpath+0x16/0x1b
+FIX key_jar: Restoring 0xffff880197a7e200-0xffff880197a7e200=0x6b
+
+FIX key_jar: Marking all objects used
+=============================================================================
+BUG key_jar: Poison overwritten
+-----------------------------------------------------------------------------
+...
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+[2] without CONFIG_SLUB_DEBUG_ON
+ While we are executing my reproducer (which is attached),
+we may find such the back-trace at the system panic:
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# ls -l /sys/kernel/slab
+total 0
+drwxr-xr-x 2 root root 0 Apr 21 00:45 :at-0000016
+...
+lrwxrwxrwx 1 root root 0 Apr 21 00:45 cred_jar -> :t-0000192
+...
+lrwxrwxrwx 1 root root 0 Apr 21 00:45 filp -> :t-0000192
+...
+lrwxrwxrwx 1 root root 0 Apr 21 00:45 key_jar -> :t-0000192
+...
+lrwxrwxrwx 1 root root 0 Apr 21 00:45 kmalloc-192 -> :t-0000192
+...
+
+# ./reproducer.sh
+(PANIC)
+<1>BUG: unable to handle kernel NULL pointer dereference at 0000000000000001
+<1>IP: [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+<4>PGD 6b2b4067 PUD 6a80d067 PMD 0 
+<0>Oops: 0000 [#1] SMP 
+<0>last sysfs file: /sys/kernel/kexec_crash_loaded
+<4>CPU 1 
+<4>Modules linked in: nfsd lockd nfs_acl auth_rpcgss exportfs sunrpc autofs4 ipv6 ext4 jbd2 dm_mirror dm_region_hash dm_log dm_mul
+tipath uinput shpchp i2c_i801 ppdev parport_pc e752x_edac edac_core i2c_core tg3 iTCO_wdt iTCO_vendor_support parport pcspkr ext3 
+jbd mbcache ata_generic pata_acpi megaraid_mbox megaraid_mm ata_piix floppy dm_mod [last unloaded: scsi_wait_scan]
+<4>Pid: 31245, comm: su Not tainted 2.6.34-rc5-nofixed-nodebug #2 D2089/PRIMERGY
+<4>RIP: 0010:[<ffffffff810e61a3>]  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+<4>RSP: 0018:ffff88006af3bd98  EFLAGS: 00010002
+<4>RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88007d19900b
+<4>RDX: 0000000100000000 RSI: 00000000000080d0 RDI: ffffffff81828430
+<4>RBP: ffffffff81828430 R08: ffff88000a293750 R09: 0000000000000000
+<4>R10: 0000000000000001 R11: 0000000000100000 R12: 00000000000080d0
+<4>R13: 00000000000080d0 R14: 0000000000000296 R15: ffffffff810f20ce
+<4>FS:  00007f97116bc700(0000) GS:ffff88000a280000(0000) knlGS:0000000000000000
+<4>CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+<4>CR2: 0000000000000001 CR3: 000000006a91c000 CR4: 00000000000006e0
+<4>DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+<4>DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+<4>Process su (pid: 31245, threadinfo ffff88006af3a000, task ffff8800374414c0)
+<0>Stack:
+<4> 0000000512e0958e 0000000000008000 ffff880037f8d180 0000000000000001
+<4><0> 0000000000000000 0000000000008001 ffff88007d199000 ffffffff810f20ce
+<4><0> 0000000000008000 ffff88006af3be48 0000000000000024 ffffffff810face3
+<0>Call Trace:
+<4> [<ffffffff810f20ce>] ? get_empty_filp+0x70/0x12f
+<4> [<ffffffff810face3>] ? do_filp_open+0x145/0x590
+<4> [<ffffffff810ce208>] ? tlb_finish_mmu+0x2a/0x33
+<4> [<ffffffff810ce43c>] ? unmap_region+0xd3/0xe2
+<4> [<ffffffff810e4393>] ? virt_to_head_page+0x9/0x2d
+<4> [<ffffffff81103916>] ? alloc_fd+0x69/0x10e
+<4> [<ffffffff810ef4ed>] ? do_sys_open+0x56/0xfc
+<4> [<ffffffff81008a02>] ? system_call_fastpath+0x16/0x1b
+<0>Code: 0f 1f 44 00 00 49 89 c6 fa 66 0f 1f 44 00 00 65 4c 8b 04 25 60 e8 00 00 48 8b 45 00 49 01 c0 49 8b 18 48 85 db 74 0d 48 63 45 18 <48> 8b 04 03 49 89 00 eb 14 4c 89 f9 83 ca ff 44 89 e6 48 89 ef 
+<1>RIP  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+[reproducer.sh]
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+#!/bin/sh
+
+LOOP=100000
+USER=dummy_user
+# add
+/bin/su -c "exit;" $USER || { /usr/sbin/adduser -m $USER; add=1; }
+
+for ((i=0; i<LOOP; i++))
+do
+        /bin/su -c "echo '$i' > /dev/null" $USER
+done
+
+# del
+(( add == 1 )) && /usr/sbin/userdel -r $USER
+exit
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+I created the patch which fixes this problem.
+(I attach it into the following mail. And I couldn't see the "Poison" lines 
+of dmesg with the fixed kernel while I was executing my reproducer. So, this 
+problem seems to be fixed by this patch.)
+This problem is serious because it may trigger the user data destructions.
+Please confirm and fix this problem.
+
+Best Regards,
+Toshiyuki Okajima
