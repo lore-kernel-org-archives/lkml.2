@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab0DVUJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:09:53 -0400
-Received: from kroah.org ([198.145.64.141]:60046 "EHLO coco.kroah.org"
+	id S1758188Ab0DVUM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:12:56 -0400
+Received: from kroah.org ([198.145.64.141]:59961 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758140Ab0DVUBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:01:50 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:17 2010
-Message-Id: <20100422195417.436604458@kvm.kroah.org>
+	id S1758083Ab0DVUB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:01:27 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:15 2010
+Message-Id: <20100422195415.872137545@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:57 -0700
+Date: Thu, 22 Apr 2010 12:54:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       NeilBrown <neilb@suse.de>
-Subject: [120/139] md/raid5: allow for more than 2^31 chunks.
+       Larry Finger <Larry.Finger@lwfinger.net>,
+       maximilian attems <max@stro.at>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [104/139] b43: Allow PIO mode to be selected at module load
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,80 +27,219 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d upstream.
+commit b02914af4d7020828ce921a572589dd793517c09 upstream.
 
-With many large drives and small chunk sizes it is possible
-to create a RAID5 with more than 2^31 chunks.  Make sure this
-works.
+If userencounter the "Fatal DMA Problem" with a BCM43XX device, and
+still wish to use b43 as the driver, their only option is to rebuild
+the kernel with CONFIG_B43_FORCE_PIO. This patch removes this option and
+allows PIO mode to be selected with a load-time parameter for the module.
+Note that the configuration variable CONFIG_B43_PIO is also removed.
 
-Reported-by: Brett King <king.br@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Once the DMA problem with the BCM4312 devices is solved, this patch will
+likely be reverted.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Tested-by: John Daiker <daikerjohn@gmail.com>
+Cc: maximilian attems <max@stro.at>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/raid5.c |   19 +++++++------------
- 1 file changed, 7 insertions(+), 12 deletions(-)
+ drivers/net/wireless/b43/Kconfig  |   19 +-----------------
+ drivers/net/wireless/b43/Makefile |    2 -
+ drivers/net/wireless/b43/b43.h    |   13 ------------
+ drivers/net/wireless/b43/dma.c    |    2 -
+ drivers/net/wireless/b43/main.c   |    9 +++++---
+ drivers/net/wireless/b43/pio.h    |   40 --------------------------------------
+ 6 files changed, 9 insertions(+), 76 deletions(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -1649,8 +1649,8 @@ static sector_t raid5_compute_sector(rai
- 				     int previous, int *dd_idx,
- 				     struct stripe_head *sh)
- {
--	long stripe;
--	unsigned long chunk_number;
-+	sector_t stripe;
-+	sector_t chunk_number;
- 	unsigned int chunk_offset;
- 	int pd_idx, qd_idx;
- 	int ddf_layout = 0;
-@@ -1670,17 +1670,12 @@ static sector_t raid5_compute_sector(rai
- 	 */
- 	chunk_offset = sector_div(r_sector, sectors_per_chunk);
- 	chunk_number = r_sector;
--	BUG_ON(r_sector != chunk_number);
+--- a/drivers/net/wireless/b43/Kconfig
++++ b/drivers/net/wireless/b43/Kconfig
+@@ -3,6 +3,7 @@ config B43
+ 	depends on SSB_POSSIBLE && MAC80211 && HAS_DMA
+ 	select SSB
+ 	select FW_LOADER
++	select SSB_BLOCKIO
+ 	---help---
+ 	  b43 is a driver for the Broadcom 43xx series wireless devices.
  
- 	/*
- 	 * Compute the stripe number
- 	 */
--	stripe = chunk_number / data_disks;
+@@ -78,14 +79,6 @@ config B43_SDIO
+ 
+ 	  If unsure, say N.
+ 
+-# Data transfers to the device via PIO
+-# This is only needed on PCMCIA and SDIO devices. All others can do DMA properly.
+-config B43_PIO
+-	bool
+-	depends on B43 && (B43_SDIO || B43_PCMCIA || B43_FORCE_PIO)
+-	select SSB_BLOCKIO
+-	default y
 -
--	/*
--	 * Compute the data disk and parity disk indexes inside the stripe
--	 */
--	*dd_idx = chunk_number % data_disks;
-+	stripe = chunk_number;
-+	*dd_idx = sector_div(stripe, data_disks);
+ config B43_NPHY
+ 	bool "Pre IEEE 802.11n support (BROKEN)"
+ 	depends on B43 && EXPERIMENTAL && BROKEN
+@@ -137,12 +130,4 @@ config B43_DEBUG
+ 	  for production use.
+ 	  Only say Y, if you are debugging a problem in the b43 driver sourcecode.
  
- 	/*
- 	 * Select the parity disk based on the user selected algorithm.
-@@ -1869,14 +1864,14 @@ static sector_t compute_blocknr(struct s
- 				 : conf->algorithm;
- 	sector_t stripe;
- 	int chunk_offset;
--	int chunk_number, dummy1, dd_idx = i;
-+	sector_t chunk_number;
-+	int dummy1, dd_idx = i;
- 	sector_t r_sector;
- 	struct stripe_head sh2;
+-config B43_FORCE_PIO
+-	bool "Force usage of PIO instead of DMA"
+-	depends on B43 && B43_DEBUG
+-	---help---
+-	  This will disable DMA and always enable PIO instead.
+-
+-	  Say N!
+-	  This is only for debugging the PIO engine code. You do
+-	  _NOT_ want to enable this.
++
+--- a/drivers/net/wireless/b43/Makefile
++++ b/drivers/net/wireless/b43/Makefile
+@@ -12,7 +12,7 @@ b43-y				+= xmit.o
+ b43-y				+= lo.o
+ b43-y				+= wa.o
+ b43-y				+= dma.o
+-b43-$(CONFIG_B43_PIO)		+= pio.o
++b43-y				+= pio.o
+ b43-y				+= rfkill.o
+ b43-$(CONFIG_B43_LEDS)		+= leds.o
+ b43-$(CONFIG_B43_PCMCIA)	+= pcmcia.o
+--- a/drivers/net/wireless/b43/b43.h
++++ b/drivers/net/wireless/b43/b43.h
+@@ -822,11 +822,9 @@ struct b43_wl {
+ 	/* The device LEDs. */
+ 	struct b43_leds leds;
+ 
+-#ifdef CONFIG_B43_PIO
+ 	/* Kmalloc'ed scratch space for PIO TX/RX. Protected by wl->mutex. */
+ 	u8 pio_scratchspace[110] __attribute__((__aligned__(8)));
+ 	u8 pio_tailspace[4] __attribute__((__aligned__(8)));
+-#endif /* CONFIG_B43_PIO */
+ };
+ 
+ static inline struct b43_wl *hw_to_b43_wl(struct ieee80211_hw *hw)
+@@ -877,20 +875,9 @@ static inline void b43_write32(struct b4
+ 
+ static inline bool b43_using_pio_transfers(struct b43_wldev *dev)
+ {
+-#ifdef CONFIG_B43_PIO
+ 	return dev->__using_pio_transfers;
+-#else
+-	return 0;
+-#endif
+ }
+ 
+-#ifdef CONFIG_B43_FORCE_PIO
+-# define B43_FORCE_PIO	1
+-#else
+-# define B43_FORCE_PIO	0
+-#endif
+-
+-
+ /* Message printing */
+ void b43info(struct b43_wl *wl, const char *fmt, ...)
+     __attribute__ ((format(printf, 2, 3)));
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@ -1653,7 +1653,6 @@ void b43_dma_tx_resume(struct b43_wldev
+ 	b43_power_saving_ctl_bits(dev, 0);
+ }
+ 
+-#ifdef CONFIG_B43_PIO
+ static void direct_fifo_rx(struct b43_wldev *dev, enum b43_dmatype type,
+ 			   u16 mmio_base, bool enable)
+ {
+@@ -1687,4 +1686,3 @@ void b43_dma_direct_fifo_rx(struct b43_w
+ 	mmio_base = b43_dmacontroller_base(type, engine_index);
+ 	direct_fifo_rx(dev, type, mmio_base, enable);
+ }
+-#endif /* CONFIG_B43_PIO */
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -102,6 +102,9 @@ int b43_modparam_verbose = B43_VERBOSITY
+ module_param_named(verbose, b43_modparam_verbose, int, 0644);
+ MODULE_PARM_DESC(verbose, "Log message verbosity: 0=error, 1=warn, 2=info(default), 3=debug");
+ 
++static int modparam_pio;
++module_param_named(pio, modparam_pio, int, 0444);
++MODULE_PARM_DESC(pio, "enable(1) / disable(0) PIO mode");
+ 
+ static const struct ssb_device_id b43_ssb_tbl[] = {
+ 	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 5),
+@@ -1790,8 +1793,8 @@ static void b43_do_interrupt_thread(stru
+ 			       dma_reason[4], dma_reason[5]);
+ 			b43err(dev->wl, "This device does not support DMA "
+ 			       "on your system. Please use PIO instead.\n");
+-			b43err(dev->wl, "CONFIG_B43_FORCE_PIO must be set in "
+-			       "your kernel configuration.\n");
++			b43err(dev->wl, "Unload the b43 module and reload "
++			       "with 'pio=1'\n");
+ 			return;
+ 		}
+ 		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
+@@ -4358,7 +4361,7 @@ static int b43_wireless_core_init(struct
+ 
+ 	if ((dev->dev->bus->bustype == SSB_BUSTYPE_PCMCIA) ||
+ 	    (dev->dev->bus->bustype == SSB_BUSTYPE_SDIO) ||
+-	    B43_FORCE_PIO) {
++	    modparam_pio) {
+ 		dev->__using_pio_transfers = 1;
+ 		err = b43_pio_init(dev);
+ 	} else {
+--- a/drivers/net/wireless/b43/pio.h
++++ b/drivers/net/wireless/b43/pio.h
+@@ -55,8 +55,6 @@
+ #define B43_PIO_MAX_NR_TXPACKETS	32
  
  
- 	chunk_offset = sector_div(new_sector, sectors_per_chunk);
- 	stripe = new_sector;
--	BUG_ON(new_sector != stripe);
+-#ifdef CONFIG_B43_PIO
+-
+ struct b43_pio_txpacket {
+ 	/* Pointer to the TX queue we belong to. */
+ 	struct b43_pio_txqueue *queue;
+@@ -169,42 +167,4 @@ void b43_pio_rx(struct b43_pio_rxqueue *
+ void b43_pio_tx_suspend(struct b43_wldev *dev);
+ void b43_pio_tx_resume(struct b43_wldev *dev);
  
- 	if (i == sh->pd_idx)
- 		return 0;
-@@ -1969,7 +1964,7 @@ static sector_t compute_blocknr(struct s
- 	}
- 
- 	chunk_number = stripe * data_disks + i;
--	r_sector = (sector_t)chunk_number * sectors_per_chunk + chunk_offset;
-+	r_sector = chunk_number * sectors_per_chunk + chunk_offset;
- 
- 	check = raid5_compute_sector(conf, r_sector,
- 				     previous, &dummy1, &sh2);
+-
+-#else /* CONFIG_B43_PIO */
+-
+-
+-static inline int b43_pio_init(struct b43_wldev *dev)
+-{
+-	return 0;
+-}
+-static inline void b43_pio_free(struct b43_wldev *dev)
+-{
+-}
+-static inline void b43_pio_stop(struct b43_wldev *dev)
+-{
+-}
+-static inline int b43_pio_tx(struct b43_wldev *dev,
+-			     struct sk_buff *skb)
+-{
+-	return 0;
+-}
+-static inline void b43_pio_handle_txstatus(struct b43_wldev *dev,
+-					   const struct b43_txstatus *status)
+-{
+-}
+-static inline void b43_pio_get_tx_stats(struct b43_wldev *dev,
+-					struct ieee80211_tx_queue_stats *stats)
+-{
+-}
+-static inline void b43_pio_rx(struct b43_pio_rxqueue *q)
+-{
+-}
+-static inline void b43_pio_tx_suspend(struct b43_wldev *dev)
+-{
+-}
+-static inline void b43_pio_tx_resume(struct b43_wldev *dev)
+-{
+-}
+-
+-#endif /* CONFIG_B43_PIO */
+ #endif /* B43_PIO_H_ */
 
 
