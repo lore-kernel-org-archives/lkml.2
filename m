@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758513Ab0DVUdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:33:09 -0400
-Received: from kroah.org ([198.145.64.141]:59399 "EHLO coco.kroah.org"
+	id S932469Ab0DVUd4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:33:56 -0400
+Received: from kroah.org ([198.145.64.141]:59387 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757881Ab0DVT7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:59:38 -0400
+	id S1757872Ab0DVT7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:59:36 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:05 2010
-Message-Id: <20100422195405.652345274@kvm.kroah.org>
+Message-Id: <20100422195405.384861908@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:05 -0700
+Date: Thu, 22 Apr 2010 12:53:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dave Airlie <airlied@redhat.com>
-Subject: [008/139] drm/radeon/kms: dont print error on -ERESTARTSYS.
+       Oleg Nesterov <oleg@redhat.com>
+Subject: [005/139] oom: fix the unsafe usage of badness() in proc_oom_score()
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 97f23b3d85a4d734a8584dade3a34579931c8f8d upstream.
+commit b95c35e76b29ba812e5dabdd91592e25ec640e93 upstream.
 
-We can get this if the user moves the mouse when we are waiting to move
-some stuff around in the validate. Don't fail.
+proc_oom_score(task) has a reference to task_struct, but that is all.
+If this task was already released before we take tasklist_lock
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+	- we can't use task->group_leader, it points to nowhere
+
+	- it is not safe to call badness() even if this task is
+	  ->group_leader, has_intersects_mems_allowed() assumes
+	  it is safe to iterate over ->thread_group list.
+
+	- even worse, badness() can hit ->signal == NULL
+
+Add the pid_alive() check to ensure __unhash_process() was not called.
+
+Also, use "task" instead of task->group_leader. badness() should return
+the same result for any sub-thread. Currently this is not true, but
+this should be changed anyway.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_cs.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/proc/base.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -248,7 +248,8 @@ int radeon_cs_ioctl(struct drm_device *d
- 	}
- 	r = radeon_cs_parser_relocs(&parser);
- 	if (r) {
--		DRM_ERROR("Failed to parse relocation !\n");
-+		if (r != -ERESTARTSYS)
-+			DRM_ERROR("Failed to parse relocation %d!\n", r);
- 		radeon_cs_parser_fini(&parser, r);
- 		mutex_unlock(&rdev->cs_mutex);
- 		return r;
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -442,12 +442,13 @@ static const struct file_operations proc
+ unsigned long badness(struct task_struct *p, unsigned long uptime);
+ static int proc_oom_score(struct task_struct *task, char *buffer)
+ {
+-	unsigned long points;
++	unsigned long points = 0;
+ 	struct timespec uptime;
+ 
+ 	do_posix_clock_monotonic_gettime(&uptime);
+ 	read_lock(&tasklist_lock);
+-	points = badness(task->group_leader, uptime.tv_sec);
++	if (pid_alive(task))
++		points = badness(task, uptime.tv_sec);
+ 	read_unlock(&tasklist_lock);
+ 	return sprintf(buffer, "%lu\n", points);
+ }
 
 
