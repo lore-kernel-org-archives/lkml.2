@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758361Ab0DVUZu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:25:50 -0400
-Received: from kroah.org ([198.145.64.141]:59616 "EHLO coco.kroah.org"
+	id S1758460Ab0DVU0u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:26:50 -0400
+Received: from kroah.org ([198.145.64.141]:59574 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757956Ab0DVUAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:06 -0400
+	id S1757764Ab0DVUAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:00:01 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:08 2010
-Message-Id: <20100422195408.744313948@kvm.kroah.org>
+Message-Id: <20100422195408.129918306@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:37 -0700
+Date: Thu, 22 Apr 2010 12:53:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [040/139] libata: disable NCQ on Crucial C300 SSD
+       Dan Carpenter <error27@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [034/139] ALSA: mixart: range checking proc file
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Dan Carpenter <error27@gmail.com>
 
-commit 68b0ddb289220b6d4d865be128939663be34959d upstream.
+commit b0cc58a25d04160d39a80e436847eaa2fbc5aa09 upstream.
 
-Crucial said,
+The original code doesn't take into consideration that the value of
+MIXART_BA0_SIZE - pos can be less than zero which would lead to a large
+unsigned value for "count".
 
-  Thank you for contacting us. We know that with our M225 line of SSDs
-  you sometimes need to disable NCQ (native command queuing) to avoid
-  just the type of errors you're seeing. Our recommendation for the
-  M225 is to add libata.force=noncq to your Linux kernel boot options,
-  under the kernel ATA library option.
+Also I moved the check that read size is a multiple of 4 bytes below
+the code that adjusts "count".
 
-  I have sent your feedback to the engineers working on the C300, and
-  asked them to please pass it on to the firmware team. I have been
-  notified that they are in the process of testing and finalizing a
-  new firmware version, that you can expect to see released around the
-  end of April. We’ll keep you posted as to when it will be available
-  for download.
-
-So, turn off NCQ on the drive w/ the current firmware revision.
-
-Reported in the following bug.
-
-  https://bugzilla.kernel.org/show_bug.cgi?id=15573
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: lethalwp@scarlet.be
-Reported-by: Luke Macken <lmacken@redhat.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/pci/mixart/mixart.c |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4348,6 +4348,9 @@ static const struct ata_blacklist_entry
- 	{ "HTS541080G9SA00",    "MB4OC60D",     ATA_HORKAGE_NONCQ, },
- 	{ "HTS541010G9SA00",    "MBZOC60D",     ATA_HORKAGE_NONCQ, },
+--- a/sound/pci/mixart/mixart.c
++++ b/sound/pci/mixart/mixart.c
+@@ -1161,13 +1161,15 @@ static long snd_mixart_BA0_read(struct s
+ 				unsigned long count, unsigned long pos)
+ {
+ 	struct mixart_mgr *mgr = entry->private_data;
++	unsigned long maxsize;
  
-+	/* https://bugzilla.kernel.org/show_bug.cgi?id=15573 */
-+	{ "C300-CTFDDAC128MAG",	"0001",		ATA_HORKAGE_NONCQ, },
-+
- 	/* devices which puke on READ_NATIVE_MAX */
- 	{ "HDS724040KLSA80",	"KFAOA20N",	ATA_HORKAGE_BROKEN_HPA, },
- 	{ "WDC WD3200JD-00KLB0", "WD-WCAMR1130137", ATA_HORKAGE_BROKEN_HPA },
+-	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+-	if(count <= 0)
++	if (pos >= MIXART_BA0_SIZE)
+ 		return 0;
+-	if(pos + count > MIXART_BA0_SIZE)
+-		count = (long)(MIXART_BA0_SIZE - pos);
+-	if(copy_to_user_fromio(buf, MIXART_MEM( mgr, pos ), count))
++	maxsize = MIXART_BA0_SIZE - pos;
++	if (count > maxsize)
++		count = maxsize;
++	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
++	if (copy_to_user_fromio(buf, MIXART_MEM(mgr, pos), count))
+ 		return -EFAULT;
+ 	return count;
+ }
+@@ -1180,13 +1182,15 @@ static long snd_mixart_BA1_read(struct s
+ 				unsigned long count, unsigned long pos)
+ {
+ 	struct mixart_mgr *mgr = entry->private_data;
++	unsigned long maxsize;
+ 
+-	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+-	if(count <= 0)
++	if (pos > MIXART_BA1_SIZE)
+ 		return 0;
+-	if(pos + count > MIXART_BA1_SIZE)
+-		count = (long)(MIXART_BA1_SIZE - pos);
+-	if(copy_to_user_fromio(buf, MIXART_REG( mgr, pos ), count))
++	maxsize = MIXART_BA1_SIZE - pos;
++	if (count > maxsize)
++		count = maxsize;
++	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
++	if (copy_to_user_fromio(buf, MIXART_REG(mgr, pos), count))
+ 		return -EFAULT;
+ 	return count;
+ }
 
 
