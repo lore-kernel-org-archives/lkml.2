@@ -1,89 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab0DVPfR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 11:35:17 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34185 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831Ab0DVPfP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 11:35:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=DLWeGG9Lx/8rrcrvMb/ydhvwcT46kvBc7FLpdlNuVv1CUKtHYYVMyYseQsPwfyQdQA
-         Zgbe/cGi6Dn/u2XXuuhWzvYQnDRniI6TsE+XCDLNrOUFBQy0d6qluhe+G4GoHaKtNLP1
-         W4nDAduWLQLnONqwcdremEsmLmlquxTEwTMcU=
+	id S1755746Ab0DVPk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 11:40:26 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:51437 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754701Ab0DVPkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 11:40:24 -0400
+Date: Thu, 22 Apr 2010 16:40:04 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
+	PageSwapCache pages
+Message-ID: <20100422154003.GC30306@csn.ul.ie>
+References: <alpine.DEB.2.00.1004211027120.4959@router.home> <20100421153421.GM30306@csn.ul.ie> <alpine.DEB.2.00.1004211038020.4959@router.home> <20100422092819.GR30306@csn.ul.ie> <20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com> <x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com> <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com> <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com> <20100422141404.GA30306@csn.ul.ie> <p2y28c262361004220718m3a5e3e2ekee1fef7ebdae8e73@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <x2j40ec3ea41004220618sd05bca74pea1180862e7b0907@mail.gmail.com>
-References: <1271200751-18697-1-git-send-email-chase.douglas@canonical.com>
-	 <1271934490.1776.343.camel@laptop>
-	 <x2j40ec3ea41004220618sd05bca74pea1180862e7b0907@mail.gmail.com>
-Date: Thu, 22 Apr 2010 11:35:11 -0400
-X-Google-Sender-Auth: 5dac976bfe1dcbcf
-Message-ID: <u2l40ec3ea41004220835m25e0f6c8v7a8ea7fabe756dc@mail.gmail.com>
-Subject: Re: [REGRESSION 2.6.30][PATCH v3] sched: update load count only once 
-	per cpu in 10 tick update window
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       kernel-team <kernel-team@lists.ubuntu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <p2y28c262361004220718m3a5e3e2ekee1fef7ebdae8e73@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 9:18 AM, Chase Douglas
-<chase.douglas@canonical.com> wrote:
-> On Thu, Apr 22, 2010 at 7:08 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Tue, 2010-04-13 at 16:19 -0700, Chase Douglas wrote:
->>>
->>> There's a period of 10 ticks where calc_load_tasks is updated by all the
->>> cpus for the load avg. Usually all the cpus do this during the first
->>> tick. If any cpus go idle, calc_load_tasks is decremented accordingly.
->>> However, if they wake up calc_load_tasks is not incremented. Thus, if
->>> cpus go idle during the 10 tick period, calc_load_tasks may be
->>> decremented to a non-representative value. This issue can lead to
->>> systems having a load avg of exactly 0, even though the real load avg
->>> could theoretically be up to NR_CPUS.
->>>
->>> This change defers calc_load_tasks accounting after each cpu updates the
->>> count until after the 10 tick update window.
->>>
->>> A few points:
->>>
->>> * A global atomic deferral counter, and not per-cpu vars, is needed
->>>   because a cpu may go NOHZ idle and not be able to update the global
->>>   calc_load_tasks variable for subsequent load calculations.
->>> * It is not enough to add calls to account for the load when a cpu is
->>>   awakened:
->>>   - Load avg calculation must be independent of cpu load.
->>>   - If a cpu is awakend by one tasks, but then has more scheduled before
->>>     the end of the update window, only the first task will be accounted.
->>>
->>
->> Ok, so delaying the whole ILB angle for now, the below is a similar
->> approach to yours but with a more explicit code flow.
->>
->> Does that work for you?
->
-> This looks good. I'll run my test case to make sure it fixes the
-> scenario we hit, and then I'll ack it when I've confirmed it works.
+On Thu, Apr 22, 2010 at 11:18:14PM +0900, Minchan Kim wrote:
+> On Thu, Apr 22, 2010 at 11:14 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> > On Thu, Apr 22, 2010 at 07:51:53PM +0900, KAMEZAWA Hiroyuki wrote:
+> >> On Thu, 22 Apr 2010 19:31:06 +0900
+> >> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >>
+> >> > On Thu, 22 Apr 2010 19:13:12 +0900
+> >> > Minchan Kim <minchan.kim@gmail.com> wrote:
+> >> >
+> >> > > On Thu, Apr 22, 2010 at 6:46 PM, KAMEZAWA Hiroyuki
+> >> > > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >> >
+> >> > > > Hmm..in my test, the case was.
+> >> > > >
+> >> > > > Before try_to_unmap:
+> >> > > >        mapcount=1, SwapCache, remap_swapcache=1
+> >> > > > After remap
+> >> > > >        mapcount=0, SwapCache, rc=0.
+> >> > > >
+> >> > > > So, I think there may be some race in rmap_walk() and vma handling or
+> >> > > > anon_vma handling. migration_entry isn't found by rmap_walk.
+> >> > > >
+> >> > > > Hmm..it seems this kind patch will be required for debug.
+> >> > >
+> >>
+> >> Ok, here is my patch for _fix_. But still testing...
+> >> Running well at least for 30 minutes, where I can see bug in 10minutes.
+> >> But this patch is too naive. please think about something better fix.
+> >>
+> >> ==
+> >> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >>
+> >> At adjust_vma(), vma's start address and pgoff is updated under
+> >> write lock of mmap_sem. This means the vma's rmap information
+> >> update is atoimic only under read lock of mmap_sem.
+> >>
+> >>
+> >> Even if it's not atomic, in usual case, try_to_ummap() etc...
+> >> just fails to decrease mapcount to be 0. no problem.
+> >>
+> >> But at page migration's rmap_walk(), it requires to know all
+> >> migration_entry in page tables and recover mapcount.
+> >>
+> >> So, this race in vma's address is critical. When rmap_walk meet
+> >> the race, rmap_walk will mistakenly get -EFAULT and don't call
+> >> rmap_one(). This patch adds a lock for vma's rmap information.
+> >> But, this is _very slow_.
+> >
+> > Ok wow. That is exceptionally well-spotted. This looks like a proper bug
+> > that compaction exposes as opposed to a bug that compaction introduces.
+> >
+> >> We need something sophisitcated, light-weight update for this..
+> >>
+> >
+> > In the event the VMA is backed by a file, the mapping i_mmap_lock is taken for
+> > the duration of the update and is  taken elsewhere where the VMA information
+> > is read such as rmap_walk_file()
+> >
+> > In the event the VMA is anon, vma_adjust currently talks no locks and your
+> > patch introduces a new one but why not use the anon_vma lock here? Am I
+> > missing something that requires the new lock?
+> 
+> rmap_walk_anon doesn't hold vma's anon_vma->lock.
+> It holds page->anon_vma->lock.
+> 
 
-I've run my test case and it seems to push the load avg numbers as expected.
+Of course, thank you for pointing out my error. With multiple
+anon_vma's, the locking is a bit of a mess. We cannot hold spinlocks on
+two vma's in the same list at the same time without potentially causing
+a livelock. The problem becomes how we can safely drop one anon_vma and
+acquire the other without them disappearing from under us.
 
-Acked-by: Chase Douglas <chase.douglas@canonical.com>
+See the XXX mark in the following incomplete patch for example. It's
+incomplete because the list traversal is also not safe once the lock has
+been dropped and -EFAULT is returned by vma_address.
 
-BTW, I noticed some trailing whitespace, so I ran it through checkpatch.pl:
+==== CUT HERE ====
+mm: Take the vma anon_vma lock in vma_adjust and during rmap_walk
 
-ERROR: trailing whitespace
-#44: FILE: kernel/sched.c:2936:
-+       $
+vma_adjust() is updating anon VMA information without any locks taken.
+In constract, file-backed mappings use the i_mmap_lock. This lack of
+locking can result in races with page migration. During rmap_walk(),
+vma_address() can return -EFAULT for an address that will soon be valid.
+This leaves a dangling migration PTE behind which can later cause a
+BUG_ON to trigger when the page is faulted in.
 
-Thanks
+This patch takes the anon_vma->lock during vma_adjust to avoid such
+races. During rmap_walk, the page anon_vma is locked but as it walks the
+VMA list, it'll lock the VMA->anon_vma if they differ as well.
 
--- Chase
+---
+ mm/mmap.c |    6 ++++++
+ mm/rmap.c |   48 ++++++++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 46 insertions(+), 8 deletions(-)
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f90ea92..61d6f1d 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -578,6 +578,9 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		}
+ 	}
+ 
++	if (vma->anon_vma)
++		spin_lock(&vma->anon_vma->lock);
++
+ 	if (root) {
+ 		flush_dcache_mmap_lock(mapping);
+ 		vma_prio_tree_remove(vma, root);
+@@ -620,6 +623,9 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 	if (mapping)
+ 		spin_unlock(&mapping->i_mmap_lock);
+ 
++	if (vma->anon_vma)
++		spin_unlock(&vma->anon_vma->lock);
++
+ 	if (remove_next) {
+ 		if (file) {
+ 			fput(file);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 85f203e..1ea0cae 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1358,7 +1358,7 @@ int try_to_munlock(struct page *page)
+ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+ 		struct vm_area_struct *, unsigned long, void *), void *arg)
+ {
+-	struct anon_vma *anon_vma;
++	struct anon_vma *page_avma;
+ 	struct anon_vma_chain *avc;
+ 	int ret = SWAP_AGAIN;
+ 
+@@ -1368,20 +1368,52 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+ 	 * are holding mmap_sem. Users without mmap_sem are required to
+ 	 * take a reference count to prevent the anon_vma disappearing
+ 	 */
+-	anon_vma = page_anon_vma(page);
+-	if (!anon_vma)
++	page_avma = page_anon_vma(page);
++	if (!page_avma)
+ 		return ret;
+-	spin_lock(&anon_vma->lock);
+-	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
++	spin_lock(&page_avma->lock);
++restart:
++	list_for_each_entry(avc, &page_avma->head, same_anon_vma) {
++		struct anon_vma *vma_avma;
+ 		struct vm_area_struct *vma = avc->vma;
+ 		unsigned long address = vma_address(page, vma);
+-		if (address == -EFAULT)
+-			continue;
++		if (address == -EFAULT) {
++			/*
++			 * If the pages anon_vma and the VMAs anon_vma differ,
++			 * vma_address was called without the lock being held
++			 * but we cannot hold more than one lock on the anon_vma
++			 * list at a time without potentially causing a livelock.
++			 * Drop the page anon_vma lock, acquire the vma one and
++			 * then restart the whole operation
++			 */
++			if (vma->anon_vma != page_avma) {
++				vma_avma = vma->anon_vma;
++				spin_unlock(&page_avma->lock);
++
++				/*
++				 * XXX: rcu_read_lock will ensure that the
++				 *      anon_vma still exists but how can we be
++				 *      sure it has not been freed and reused?
++				 */
++				spin_lock(&vma_avma->lock);
++				address = vma_address(page, vma);
++				spin_unlock(&vma_avma->lock);
++
++				/* page_avma with elevated external_refcount exists */
++				spin_lock(&page_avma->lock);
++				if (address == -EFAULT)
++					continue;
++			}
++		}
+ 		ret = rmap_one(page, vma, address, arg);
+ 		if (ret != SWAP_AGAIN)
+ 			break;
++
++		/* Restart the whole list walk if the lock was dropped */
++		if (vma_avma)
++			goto restart;
+ 	}
+-	spin_unlock(&anon_vma->lock);
++	spin_unlock(&page_avma->lock);
+ 	return ret;
+ }
+ 
