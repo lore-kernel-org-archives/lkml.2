@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757369Ab0DVTjz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:39:55 -0400
-Received: from kroah.org ([198.145.64.141]:41400 "EHLO coco.kroah.org"
+	id S1757417Ab0DVTm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:42:56 -0400
+Received: from kroah.org ([198.145.64.141]:41315 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756802Ab0DVT3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:34 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:21 2010
-Message-Id: <20100422190921.235116706@kvm.kroah.org>
+	id S1756738Ab0DVT3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:22 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:20 2010
+Message-Id: <20100422190919.947812013@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:06 -0700
+Date: Thu, 22 Apr 2010 12:09:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Christian Pulvermacher <pulvermacher@gmx.de>,
-       Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [155/197] ecryptfs: fix error code for missing xattrs in lower fs
+       Seth Heasley <seth.heasley@intel.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       maximilian attems <max@stro.at>
+Subject: [141/197] x86/PCI: irq and pci_ids patch for Intel Cougar Point DeviceIDs
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,61 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Pulvermacher <pulvermacher@gmx.de>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit cfce08c6bdfb20ade979284e55001ca1f100ed51 upstream.
+commit 93da6202264ce1256b04db8008a43882ae62d060 upstream.
 
-If the lower file system driver has extended attributes disabled,
-ecryptfs' own access functions return -ENOSYS instead of -EOPNOTSUPP.
-This breaks execution of programs in the ecryptfs mount, since the
-kernel expects the latter error when checking for security
-capabilities in xattrs.
+This patch adds the Intel Cougar Point (PCH) LPC and SMBus Controller DeviceIDs.
 
-Signed-off-by: Christian Pulvermacher <pulvermacher@gmx.de>
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ecryptfs/inode.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/pci/irq.c      |    2 ++
+ include/linux/pci_ids.h |    3 +++
+ 2 files changed, 5 insertions(+)
 
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -998,7 +998,7 @@ ecryptfs_setxattr(struct dentry *dentry,
- 
- 	lower_dentry = ecryptfs_dentry_to_lower(dentry);
- 	if (!lower_dentry->d_inode->i_op->setxattr) {
--		rc = -ENOSYS;
-+		rc = -EOPNOTSUPP;
- 		goto out;
- 	}
- 	mutex_lock(&lower_dentry->d_inode->i_mutex);
-@@ -1016,7 +1016,7 @@ ecryptfs_getxattr_lower(struct dentry *l
- 	int rc = 0;
- 
- 	if (!lower_dentry->d_inode->i_op->getxattr) {
--		rc = -ENOSYS;
-+		rc = -EOPNOTSUPP;
- 		goto out;
- 	}
- 	mutex_lock(&lower_dentry->d_inode->i_mutex);
-@@ -1043,7 +1043,7 @@ ecryptfs_listxattr(struct dentry *dentry
- 
- 	lower_dentry = ecryptfs_dentry_to_lower(dentry);
- 	if (!lower_dentry->d_inode->i_op->listxattr) {
--		rc = -ENOSYS;
-+		rc = -EOPNOTSUPP;
- 		goto out;
- 	}
- 	mutex_lock(&lower_dentry->d_inode->i_mutex);
-@@ -1060,7 +1060,7 @@ static int ecryptfs_removexattr(struct d
- 
- 	lower_dentry = ecryptfs_dentry_to_lower(dentry);
- 	if (!lower_dentry->d_inode->i_op->removexattr) {
--		rc = -ENOSYS;
-+		rc = -EOPNOTSUPP;
- 		goto out;
- 	}
- 	mutex_lock(&lower_dentry->d_inode->i_mutex);
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -590,6 +590,8 @@ static __init int intel_router_probe(str
+ 	case PCI_DEVICE_ID_INTEL_ICH10_1:
+ 	case PCI_DEVICE_ID_INTEL_ICH10_2:
+ 	case PCI_DEVICE_ID_INTEL_ICH10_3:
++	case PCI_DEVICE_ID_INTEL_CPT_LPC1:
++	case PCI_DEVICE_ID_INTEL_CPT_LPC2:
+ 		r->name = "PIIX/ICH";
+ 		r->get = pirq_piix_get;
+ 		r->set = pirq_piix_set;
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2412,6 +2412,9 @@
+ #define PCI_DEVICE_ID_INTEL_82840_HB	0x1a21
+ #define PCI_DEVICE_ID_INTEL_82845_HB	0x1a30
+ #define PCI_DEVICE_ID_INTEL_IOAT	0x1a38
++#define PCI_DEVICE_ID_INTEL_CPT_SMBUS	0x1c22
++#define PCI_DEVICE_ID_INTEL_CPT_LPC1	0x1c42
++#define PCI_DEVICE_ID_INTEL_CPT_LPC2	0x1c43
+ #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
+ #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
+ #define PCI_DEVICE_ID_INTEL_82801AA_3	0x2413
 
 
