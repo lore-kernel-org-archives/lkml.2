@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab0DVTNK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:13:10 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56906 "EHLO mx1.suse.de"
+	id S1755059Ab0DVTTQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:19:16 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57128 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752742Ab0DVTNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:13:08 -0400
-Date: Thu, 22 Apr 2010 21:13:09 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       xfs@oss.sgi.com
-Subject: Re: [PATCH 5/4] writeback: limit write_cache_pages integrity
- scanning to current EOF
-Message-ID: <20100422191309.GC19286@quack.suse.cz>
-References: <1271731314-5893-1-git-send-email-david@fromorbit.com>
- <20100420034005.GA15130@dastard>
+	id S1752858Ab0DVTTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:19:13 -0400
+Date: Thu, 22 Apr 2010 11:51:36 -0700
+From: Greg KH <gregkh@suse.de>
+To: Eric Lescouet <Eric.Lescouet@VirtualLogix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "usbip-devel@lists.sourceforge.net" 
+	<usbip-devel@lists.sourceforge.net>
+Subject: Re: [PATCH]: Fix deadlock in USBIP driver (staging),
+ linux-2.6.34-rc5
+Message-ID: <20100422185136.GA2937@suse.de>
+References: <4BD07F2A.8080808@VirtualLogix.com>
+ <20100422170207.GA18830@suse.de>
+ <4BD09175.9030703@VirtualLogix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100420034005.GA15130@dastard>
+In-Reply-To: <4BD09175.9030703@VirtualLogix.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 20-04-10 13:40:05, Dave Chinner wrote:
+On Thu, Apr 22, 2010 at 08:12:05PM +0200, Eric Lescouet wrote:
+> Greg KH wrote:
+> [...]
+> >Ok, but does the lock_kernel() call you just made actually prevent this
+> >from happening?  Isn't there some other lock you can use instead?
+> >
 > 
-> sync can currently take a really long time if a concurrent writer is
-> extending a file. The problem is that the dirty pages on the address
-> space grow in the same direction as write_cache_pages scans, so if
-> the writer keeps ahead of writeback, the writeback will not
-> terminate until the writer stops adding dirty pages.
+> Right. lock_kernel() is not needed (was copy/paste).
+> The deadlock is avoided by not calling wait_for_completion()
+> when the code is executed by the "eh" thread itself.
 > 
-> For a data integrity sync, we only need to write the pages dirty at
-> the time we start the writeback, so we can stop scanning once we get
-> to the page that was at the end of the file at the time the scan
-> started.
+> >Also, to have patches that we can apply, we need a "Signed-off-by:"
+> >line.  See the file, Documentation/SubmittingPatches for what this
+> >means.
 > 
-> This will prevent operations like copying a large file preventing
-> sync from completing as it will not write back pages that were
-> dirtied after the sync was started. This does not impact the
-> existing integrity guarantees, as any dirty page (old or new)
-> within the EOF range at the start of the scan will still be
-> captured.
-  Looks good.
-
-Acked-by: Jan Kara <jack@suse.cz>
-
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  mm/page-writeback.c |   15 +++++++++++++++
->  1 files changed, 15 insertions(+), 0 deletions(-)
+> Understood.
 > 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index e22af84..4ba2728 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -852,7 +852,22 @@ int write_cache_pages(struct address_space *mapping,
->  		if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
->  			range_whole = 1;
->  		cycled = 1; /* ignore range_cyclic tests */
+> >Your email client wrapped the patch and made it unappliable :(
+> >
+> >thanks,
+> >
+> >greg k-h
+> 
+> Sorry about that. Please find below an hopefully better one.
+> Thanks,
+> 	Eric.
+> 
+> 
+> Signed-off-by: Eric Lescouet <eric@lescouet.org>
+> -------------
+> 
+> diff -Nur linux-2.6.34-rc5/drivers/staging/usbip/usbip_event.c
+> linux-2.6.34-rc5.new/drivers/staging/usbip/usbip_event.c
+> --- linux-2.6.34-rc5/drivers/staging/usbip/usbip_event.c
+> 2010-04-20 01:29:56.000000000 +0200
+> +++ linux-2.6.34-rc5.new/drivers/staging/usbip/usbip_event.c
+> 2010-04-22 19:19:52.997889126 +0200
+> @@ -117,6 +117,9 @@
+> {
+> struct usbip_task *eh = &ud->eh;
+> +       if (eh->thread == current)
+> +               return; /* do not wait for myself */
 > +
-> +		/*
-> +		 * If this is a data integrity sync, cap the writeback to the
-> +		 * current end of file. Any extension to the file that occurs
-> +		 * after this is a new write and we don't need to write those
-> +		 * pages out to fulfil our data integrity requirements. If we
-> +		 * try to write them out, we can get stuck in this scan until
-> +		 * the concurrent writer stops adding dirty pages and extending
-> +		 * EOF.
-> +		 */
-> +		if (wbc->sync_mode == WB_SYNC_ALL &&
-> +		    wbc->range_end == LLONG_MAX) {
-> +			end = i_size_read(mapping->host) >> PAGE_CACHE_SHIFT;
-> +		}
->  	}
-> +
->  retry:
->  	done_index = index;
->  	while (!done && (index <= end)) {
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> wait_for_completion(&eh->thread_done);
+> usbip_dbg_eh("usbip_eh has finished\n");
+
+Odd, the patch has all leading tabs and spaces stripped out of it, is
+linewrapped, and the tabs are converted to spaces :(
+
+Care to try again, third time's a charm...
+
+thanks,
+
+greg k-h
