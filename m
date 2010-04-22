@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab0DVUTX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:19:23 -0400
-Received: from kroah.org ([198.145.64.141]:59785 "EHLO coco.kroah.org"
+	id S932255Ab0DVUHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:07:54 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59361 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758025Ab0DVUAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:40 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:11 2010
-Message-Id: <20100422195411.679310845@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:06 -0700
+	id S1757812Ab0DVUHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:07:39 -0400
+Date: Thu, 22 Apr 2010 13:07:22 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [069/139] drm/radeon/kms: fix tv dac conflict resolver
-In-Reply-To: <20100422195715.GA25490@kroah.com>
+       Len Brown <len.brown@intel.com>, 563313@bugs.debian.org,
+       Alexey Starikovskiy <astarikovskiy@suse.de>,
+       Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [165/197] ACPI: EC: Allow multibyte access to EC
+Message-ID: <20100422200722.GA26287@suse.de>
+References: <20100422190922.146928687@kvm.kroah.org>
+ <alpine.LFD.2.00.1004221257390.26046@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004221257390.26046@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+On Thu, Apr 22, 2010 at 12:59:16PM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Thu, 22 Apr 2010, Greg KH wrote:
+> > 
+> > From: Alexey Starikovskiy <astarikovskiy@suse.de>
+> > 
+> > commit dadf28a10c3eb29421837a2e413ab869ebd upstream
+> 
+> Hmm. Doesn't this need commit 2060c44576c79086ff24718878d7edaa7384a985
+> to fix things up for crazy access_bit_width values?
+> 
+> Maybe it's there in the series somewhere, but I didn't see it.
 
-------------------
+Yes, it's two patches later:
+	Subject: [167/197] ACPI: EC: Limit burst to 64 bits
 
-From: Alex Deucher <alexdeucher@gmail.com>
+good catch.
 
-commit 08d075116db3592db218bfe0f554cd93c9e12505 upstream.
+thanks,
 
-On systems with the tv dac shared between DVI and TV,
-we can only use the dac for one of the connectors.
-However, when using a digital monitor on the DVI port,
-you can use the dac for the TV connector just fine.
-Check the use_digital status when resolving the conflict.
-
-Fixes fdo bug 27649, possibly others.
-
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/gpu/drm/radeon/radeon_connectors.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -162,12 +162,14 @@ radeon_connector_analog_encoder_conflict
- {
- 	struct drm_device *dev = connector->dev;
- 	struct drm_connector *conflict;
-+	struct radeon_connector *radeon_conflict;
- 	int i;
- 
- 	list_for_each_entry(conflict, &dev->mode_config.connector_list, head) {
- 		if (conflict == connector)
- 			continue;
- 
-+		radeon_conflict = to_radeon_connector(conflict);
- 		for (i = 0; i < DRM_CONNECTOR_MAX_ENCODER; i++) {
- 			if (conflict->encoder_ids[i] == 0)
- 				break;
-@@ -177,6 +179,9 @@ radeon_connector_analog_encoder_conflict
- 				if (conflict->status != connector_status_connected)
- 					continue;
- 
-+				if (radeon_conflict->use_digital)
-+					continue;
-+
- 				if (priority == true) {
- 					DRM_INFO("1: conflicting encoders switching off %s\n", drm_get_connector_name(conflict));
- 					DRM_INFO("in favor of %s\n", drm_get_connector_name(connector));
-
-
+greg k-h
