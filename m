@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab0DVTby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:31:54 -0400
-Received: from kroah.org ([198.145.64.141]:41626 "EHLO coco.kroah.org"
+	id S1756737Ab0DVTaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:30:08 -0400
+Received: from kroah.org ([198.145.64.141]:41551 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756972Ab0DVTaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:30:03 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:24 2010
-Message-Id: <20100422190924.510147289@kvm.kroah.org>
+	id S1756917Ab0DVT3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:54 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:23 2010
+Message-Id: <20100422190923.532359003@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:42 -0700
+Date: Thu, 22 Apr 2010 12:10:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [191/197] KVM: MMU: fix kvm_mmu_zap_page() and its calling path
+       Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
+       maximilian attems <max@stro.at>
+Subject: [180/197] ext4: flush delalloc blocks when space is low
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,65 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-(Cherry-picked from commit 77662e0028c7c63e34257fda03ff9625c59d939d)
+commit c8afb44682fcef6273e8b8eb19fab13ddd05b386 upstream.
 
-This patch fix:
+Creating many small files in rapid succession on a small
+filesystem can lead to spurious ENOSPC; on a 104MB filesystem:
 
-- calculate zapped page number properly in mmu_zap_unsync_children()
-- calculate freeed page number properly kvm_mmu_change_mmu_pages()
-- if zapped children page it shoud restart hlist walking
+for i in `seq 1 22500`; do
+    echo -n > $SCRATCH_MNT/$i
+    echo XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX > $SCRATCH_MNT/$i
+done
 
-KVM-Stable-Tag.
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+leads to ENOSPC even though after a sync, 40% of the fs is free
+again.
+
+This is because we reserve worst-case metadata for delalloc writes,
+and when data is allocated that worst-case reservation is not
+usually needed.
+
+When freespace is low, kicking off an async writeback will start
+converting that worst-case space usage into something more realistic,
+almost always freeing up space to continue.
+
+This resolves the testcase for me, and survives all 4 generic
+ENOSPC tests in xfstests.
+
+We'll still need a hard synchronous sync to squeeze out the last bit,
+but this fixes things up to a large degree.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kvm/mmu.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ fs/ext4/inode.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1496,8 +1496,8 @@ static int mmu_zap_unsync_children(struc
- 		for_each_sp(pages, sp, parents, i) {
- 			kvm_mmu_zap_page(kvm, sp);
- 			mmu_pages_clear_parents(&parents);
-+			zapped++;
- 		}
--		zapped += pages.nr;
- 		kvm_mmu_pages_init(parent, &parents, &pages);
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3031,11 +3031,18 @@ static int ext4_nonda_switch(struct supe
+ 	if (2 * free_blocks < 3 * dirty_blocks ||
+ 		free_blocks < (dirty_blocks + EXT4_FREEBLOCKS_WATERMARK)) {
+ 		/*
+-		 * free block count is less that 150% of dirty blocks
+-		 * or free blocks is less that watermark
++		 * free block count is less than 150% of dirty blocks
++		 * or free blocks is less than watermark
+ 		 */
+ 		return 1;
  	}
- 
-@@ -1548,14 +1548,16 @@ void kvm_mmu_change_mmu_pages(struct kvm
- 	 */
- 
- 	if (used_pages > kvm_nr_mmu_pages) {
--		while (used_pages > kvm_nr_mmu_pages) {
-+		while (used_pages > kvm_nr_mmu_pages &&
-+			!list_empty(&kvm->arch.active_mmu_pages)) {
- 			struct kvm_mmu_page *page;
- 
- 			page = container_of(kvm->arch.active_mmu_pages.prev,
- 					    struct kvm_mmu_page, link);
--			kvm_mmu_zap_page(kvm, page);
-+			used_pages -= kvm_mmu_zap_page(kvm, page);
- 			used_pages--;
- 		}
-+		kvm_nr_mmu_pages = used_pages;
- 		kvm->arch.n_free_mmu_pages = 0;
- 	}
- 	else
-@@ -1602,7 +1604,8 @@ static void mmu_unshadow(struct kvm *kvm
- 		    && !sp->role.invalid) {
- 			pgprintk("%s: zap %lx %x\n",
- 				 __func__, gfn, sp->role.word);
--			kvm_mmu_zap_page(kvm, sp);
-+			if (kvm_mmu_zap_page(kvm, sp))
-+				nn = bucket->first;
- 		}
- 	}
++	/*
++	 * Even if we don't switch but are nearing capacity,
++	 * start pushing delalloc when 1/2 of free blocks are dirty.
++	 */
++	if (free_blocks < 2 * dirty_blocks)
++		writeback_inodes_sb_if_idle(sb);
++
+ 	return 0;
  }
+ 
 
 
