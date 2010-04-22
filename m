@@ -1,104 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab0DVThv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:37:51 -0400
-Received: from kroah.org ([198.145.64.141]:41474 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756839Ab0DVT3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:43 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:22 2010
-Message-Id: <20100422190922.238365037@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:17 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       NeilBrown <neilb@suse.de>
-Subject: [166/197] md/raid5: allow for more than 2^31 chunks.
-In-Reply-To: <20100422191857.GA13268@kroah.com>
+	id S1757059Ab0DVTdV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:33:21 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33085 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757085Ab0DVTdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:33:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=wH4UMpSQdLFCRekfuGK1JVpPcK9yWWkTq5uV7rG4lYr52EhShytkHY9Umhpd7CO10L
+         vk74gU8+lVKAqlfQi8M2gQ5zSNKqPBdXEfWzAI7AeVgf7UDB0eAkCKxNK+yZVXjGIRAU
+         395Gp4cyE+cUOJ1qwjhyYashOQHafZ6nOSuv4=
+MIME-Version: 1.0
+In-Reply-To: <1271953686.1776.372.camel@laptop>
+References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
+	 <x2mc5b2c05b1004211224s7825933dh531f2ed030610e9e@mail.gmail.com>
+	 <1271879833.1776.186.camel@laptop>
+	 <s2tc5b2c05b1004211338y814bc3b2o547a6eecdf64ca7f@mail.gmail.com>
+	 <1271883496.1776.263.camel@laptop>
+	 <1271942430.10448.196.camel@gandalf.stny.rr.com>
+	 <x2hc5b2c05b1004220650w53919f62hf3daedb822755bf4@mail.gmail.com>
+	 <1271944622.1776.349.camel@laptop>
+	 <k2gc5b2c05b1004220840z59f9417fy723a36a6fe9924dc@mail.gmail.com>
+	 <1271953686.1776.372.camel@laptop>
+Date: Thu, 22 Apr 2010 21:33:06 +0200
+Message-ID: <t2uc5b2c05b1004221233z4f071c31ia9b2be2dde72cf96@mail.gmail.com>
+Subject: Re: Considerations on sched APIs under RT patch
+From: Primiano Tucci <p.tucci@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+       tglx <tglx@linutronix.de>, Bjoern Brandenburg <bbb@email.unc.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+Hi Peter,
+It is not in my intents to start a flame, but, as you pointed out
+yourself, EDF is not so common, particularly in commercial RTOSes as
+you stated (and xnu, indeed, does not fall into this category).
 
-------------------
+It is not surprisingly that the citation you found was from Mr
+Brandenburg and Mr. Anderson from North Carolina University,
+incidentally I had a copy of their paper (On the Implementation of
+Global RT Schedulers) at the time of reading your message. I think
+they're are among the few that concretely and deeply investigated on
+G-EDF.
+As you could read by Brandenburg and Anderson, there isn't a
+standard/reference implementation of Global EDF, but a alot of
+"variants" are possible (e.g., event-driven / tick driven promotion,
+dedicated/global interrupt handling,  typology of data structures and
+locking methods ...).
+My intent is not to make a form of top ten best kernel award, all we
+are trying to do is investigating on the various facilities offered by
+the RT operating systems in order to determine how much we can rely on
+them.
 
-From: NeilBrown <neilb@suse.de>
+>> It is how it is implemented now, and how it works under VXWorks!
+>
+> But that does not, and can not, provide proper isolation and bandwidth
+> guarantees since there could be runnable tasks outside the scope of the
+> middleware.
 
-commit 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d upstream.
+Actually our implementation in VxWorks is based on kernel space tasks
+that have the maximum priority on the system, even greater of VxWorks
+system tasks (that have been shifted down after long and fruitful
+support discussions with windriver) therefore no task (except from
+interrupt service routines that are accurately weighted under VxWorks)
+can alter our middleware. Actually it is controlling real world (yet
+not production stage) manufacturing systems, and it is a bit more than
+just a play-game.
 
-With many large drives and small chunk sizes it is possible
-to create a RAID5 with more than 2^31 chunks.  Make sure this
-works.
+We are trying to study and understand if, and how, analogous things
+can be done on other Real Time Operating Systems.
+We choiced posix threads as a start point on linux kernel to verify
+the feasibility of the same approach, without intervening too deep on
+the kernel.
 
-Reported-by: Brett King <king.br@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Thanks again for your interventions!
 
----
- drivers/md/raid5.c |   19 +++++++------------
- 1 file changed, 7 insertions(+), 12 deletions(-)
-
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -1649,8 +1649,8 @@ static sector_t raid5_compute_sector(rai
- 				     int previous, int *dd_idx,
- 				     struct stripe_head *sh)
- {
--	long stripe;
--	unsigned long chunk_number;
-+	sector_t stripe;
-+	sector_t chunk_number;
- 	unsigned int chunk_offset;
- 	int pd_idx, qd_idx;
- 	int ddf_layout = 0;
-@@ -1670,17 +1670,12 @@ static sector_t raid5_compute_sector(rai
- 	 */
- 	chunk_offset = sector_div(r_sector, sectors_per_chunk);
- 	chunk_number = r_sector;
--	BUG_ON(r_sector != chunk_number);
- 
- 	/*
- 	 * Compute the stripe number
- 	 */
--	stripe = chunk_number / data_disks;
--
--	/*
--	 * Compute the data disk and parity disk indexes inside the stripe
--	 */
--	*dd_idx = chunk_number % data_disks;
-+	stripe = chunk_number;
-+	*dd_idx = sector_div(stripe, data_disks);
- 
- 	/*
- 	 * Select the parity disk based on the user selected algorithm.
-@@ -1869,14 +1864,14 @@ static sector_t compute_blocknr(struct s
- 				 : conf->algorithm;
- 	sector_t stripe;
- 	int chunk_offset;
--	int chunk_number, dummy1, dd_idx = i;
-+	sector_t chunk_number;
-+	int dummy1, dd_idx = i;
- 	sector_t r_sector;
- 	struct stripe_head sh2;
- 
- 
- 	chunk_offset = sector_div(new_sector, sectors_per_chunk);
- 	stripe = new_sector;
--	BUG_ON(new_sector != stripe);
- 
- 	if (i == sh->pd_idx)
- 		return 0;
-@@ -1969,7 +1964,7 @@ static sector_t compute_blocknr(struct s
- 	}
- 
- 	chunk_number = stripe * data_disks + i;
--	r_sector = (sector_t)chunk_number * sectors_per_chunk + chunk_offset;
-+	r_sector = chunk_number * sectors_per_chunk + chunk_offset;
- 
- 	check = raid5_compute_sector(conf, r_sector,
- 				     previous, &dummy1, &sh2);
-
-
+--
+ Primiano Tucci
+ http://www.primianotucci.com
