@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab0DVTpi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:45:38 -0400
-Received: from kroah.org ([198.145.64.141]:41166 "EHLO coco.kroah.org"
+	id S1757310Ab0DVTke (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:40:34 -0400
+Received: from kroah.org ([198.145.64.141]:41392 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756673Ab0DVT3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:10 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:18 2010
-Message-Id: <20100422190918.619621191@kvm.kroah.org>
+	id S1756789Ab0DVT3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:31 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:21 2010
+Message-Id: <20100422190920.914838878@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:37 -0700
+Date: Thu, 22 Apr 2010 12:10:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Leann Ogasawara <leann.ogasawara@canonical.com>
-Subject: [126/197] Staging: comedi: fix usbdux timeout bug
+       Michael Buesch <mb@bu3sch.de>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [152/197] b43: Optimize PIO scratchbuffer usage
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,94 +26,256 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bernd Porr <BerndPorr@f2s.com>
+From: Michael Buesch <mb@bu3sch.de>
 
-commit ea25371a78c33e276527361d3ab19393d558b2fd upstream.
+commit 88499ab3d8dbbf9c080416952603742666c71262 upstream.
 
-I've fixed a bug in the USBDUX driver which caused timeouts while
-sending commands to the boards. This was mainly because of one bulk
-transfer which had a timeout of 1ms (!). I've now set all timeouts to
-1000ms.
+This optimizes the PIO scratchbuffer usage.
 
-From: Bernd Porr <BerndPorr@f2s.com>
-Signed-off-by: Leann Ogasawara <leann.ogasawara@canonical.com>
+Signed-off-by: Michael Buesch <mb@bu3sch.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/comedi/drivers/usbdux.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/net/wireless/b43/b43.h  |   16 +-------
+ drivers/net/wireless/b43/pio.c  |   79 +++++++++++++++++++++++-----------------
+ drivers/net/wireless/b43/xmit.c |    2 -
+ 3 files changed, 51 insertions(+), 46 deletions(-)
 
---- a/drivers/staging/comedi/drivers/usbdux.c
-+++ b/drivers/staging/comedi/drivers/usbdux.c
-@@ -1,4 +1,4 @@
--#define DRIVER_VERSION "v2.2"
-+#define DRIVER_VERSION "v2.3"
- #define DRIVER_AUTHOR "Bernd Porr, BerndPorr@f2s.com"
- #define DRIVER_DESC "Stirling/ITL USB-DUX -- Bernd.Porr@f2s.com"
- /*
-@@ -80,6 +80,7 @@ sampling rate. If you sample two channel
-  * 2.0:  PWM seems to be stable and is not interfering with the other functions
-  * 2.1:  changed PWM API
-  * 2.2:  added firmware kernel request to fix an udev problem
-+ * 2.3:  corrected a bug in bulk timeouts which were far too short
-  *
-  */
+--- a/drivers/net/wireless/b43/b43.h
++++ b/drivers/net/wireless/b43/b43.h
+@@ -751,12 +751,6 @@ struct b43_wldev {
+ #endif
+ };
  
-@@ -101,8 +102,8 @@ sampling rate. If you sample two channel
+-/*
+- * Include goes here to avoid a dependency problem.
+- * A better fix would be to integrate xmit.h into b43.h.
+- */
+-#include "xmit.h"
+-
+ /* Data structure for the WLAN parts (802.11 cores) of the b43 chip. */
+ struct b43_wl {
+ 	/* Pointer to the active wireless device on this chip */
+@@ -831,13 +825,9 @@ struct b43_wl {
+ 	/* The device LEDs. */
+ 	struct b43_leds leds;
  
- #define BOARDNAME "usbdux"
+-	/*
+-	 * RX/TX header/tail buffers used by the frame transmit functions.
+-	 */
+-	struct b43_rxhdr_fw4 rxhdr;
+-	struct b43_txhdr txhdr;
+-	u8 rx_tail[4];
+-	u8 tx_tail[4];
++	/* Kmalloc'ed scratch space for PIO TX/RX. Protected by wl->mutex. */
++	u8 pio_scratchspace[110] __attribute__((__aligned__(8)));
++	u8 pio_tailspace[4] __attribute__((__aligned__(8)));
+ };
  
--/* timeout for the USB-transfer */
--#define EZTIMEOUT 30
-+/* timeout for the USB-transfer in ms*/
-+#define BULK_TIMEOUT 1000
+ static inline struct b43_wl *hw_to_b43_wl(struct ieee80211_hw *hw)
+--- a/drivers/net/wireless/b43/pio.c
++++ b/drivers/net/wireless/b43/pio.c
+@@ -342,12 +342,15 @@ static u16 tx_write_2byte_queue(struct b
+ 			q->mmio_base + B43_PIO_TXDATA,
+ 			sizeof(u16));
+ 	if (data_len & 1) {
++		u8 *tail = wl->pio_tailspace;
++		BUILD_BUG_ON(sizeof(wl->pio_tailspace) < 2);
++
+ 		/* Write the last byte. */
+ 		ctl &= ~B43_PIO_TXCTL_WRITEHI;
+ 		b43_piotx_write16(q, B43_PIO_TXCTL, ctl);
+-		wl->tx_tail[0] = data[data_len - 1];
+-		wl->tx_tail[1] = 0;
+-		ssb_block_write(dev->dev, wl->tx_tail, 2,
++		tail[0] = data[data_len - 1];
++		tail[1] = 0;
++		ssb_block_write(dev->dev, tail, 2,
+ 				q->mmio_base + B43_PIO_TXDATA,
+ 				sizeof(u16));
+ 	}
+@@ -393,31 +396,31 @@ static u32 tx_write_4byte_queue(struct b
+ 			q->mmio_base + B43_PIO8_TXDATA,
+ 			sizeof(u32));
+ 	if (data_len & 3) {
+-		wl->tx_tail[3] = 0;
++		u8 *tail = wl->pio_tailspace;
++		BUILD_BUG_ON(sizeof(wl->pio_tailspace) < 4);
++
++		memset(tail, 0, 4);
+ 		/* Write the last few bytes. */
+ 		ctl &= ~(B43_PIO8_TXCTL_8_15 | B43_PIO8_TXCTL_16_23 |
+ 			 B43_PIO8_TXCTL_24_31);
+ 		switch (data_len & 3) {
+ 		case 3:
+ 			ctl |= B43_PIO8_TXCTL_16_23 | B43_PIO8_TXCTL_8_15;
+-			wl->tx_tail[0] = data[data_len - 3];
+-			wl->tx_tail[1] = data[data_len - 2];
+-			wl->tx_tail[2] = data[data_len - 1];
++			tail[0] = data[data_len - 3];
++			tail[1] = data[data_len - 2];
++			tail[2] = data[data_len - 1];
+ 			break;
+ 		case 2:
+ 			ctl |= B43_PIO8_TXCTL_8_15;
+-			wl->tx_tail[0] = data[data_len - 2];
+-			wl->tx_tail[1] = data[data_len - 1];
+-			wl->tx_tail[2] = 0;
++			tail[0] = data[data_len - 2];
++			tail[1] = data[data_len - 1];
+ 			break;
+ 		case 1:
+-			wl->tx_tail[0] = data[data_len - 1];
+-			wl->tx_tail[1] = 0;
+-			wl->tx_tail[2] = 0;
++			tail[0] = data[data_len - 1];
+ 			break;
+ 		}
+ 		b43_piotx_write32(q, B43_PIO8_TXCTL, ctl);
+-		ssb_block_write(dev->dev, wl->tx_tail, 4,
++		ssb_block_write(dev->dev, tail, 4,
+ 				q->mmio_base + B43_PIO8_TXDATA,
+ 				sizeof(u32));
+ 	}
+@@ -456,6 +459,7 @@ static int pio_tx_frame(struct b43_pio_t
+ 	int err;
+ 	unsigned int hdrlen;
+ 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
++	struct b43_txhdr *txhdr = (struct b43_txhdr *)wl->pio_scratchspace;
  
- /* constants for "firmware" upload and download */
- #define USBDUXSUB_FIRMWARE 0xA0
-@@ -750,7 +751,7 @@ static int usbduxsub_start(struct usbdux
- 				  /* Length */
- 				  1,
- 				  /* Timeout */
--				  EZTIMEOUT);
-+				  BULK_TIMEOUT);
- 	if (errcode < 0) {
- 		dev_err(&usbduxsub->interface->dev,
- 			"comedi_: control msg failed (start)\n");
-@@ -780,7 +781,7 @@ static int usbduxsub_stop(struct usbduxs
- 				  /* Length */
- 				  1,
- 				  /* Timeout */
--				  EZTIMEOUT);
-+				  BULK_TIMEOUT);
- 	if (errcode < 0) {
- 		dev_err(&usbduxsub->interface->dev,
- 			"comedi_: control msg failed (stop)\n");
-@@ -810,7 +811,7 @@ static int usbduxsub_upload(struct usbdu
- 				  /* length */
- 				  len,
- 				  /* timeout */
--				  EZTIMEOUT);
-+				  BULK_TIMEOUT);
- 	dev_dbg(&usbduxsub->interface->dev, "comedi_: result=%d\n", errcode);
- 	if (errcode < 0) {
- 		dev_err(&usbduxsub->interface->dev, "comedi_: upload failed\n");
-@@ -1110,7 +1111,7 @@ static int send_dux_commands(struct usbd
- 			      usb_sndbulkpipe(this_usbduxsub->usbdev,
- 					      COMMAND_OUT_EP),
- 			      this_usbduxsub->dux_commands, SIZEOFDUXBUFFER,
--			      &nsent, 10);
-+			      &nsent, BULK_TIMEOUT);
- 	if (result < 0)
- 		dev_err(&this_usbduxsub->interface->dev, "comedi%d: "
- 			"could not transmit dux_command to the usb-device, "
-@@ -1130,7 +1131,7 @@ static int receive_dux_commands(struct u
- 				      usb_rcvbulkpipe(this_usbduxsub->usbdev,
- 						      COMMAND_IN_EP),
- 				      this_usbduxsub->insnBuffer, SIZEINSNBUF,
--				      &nrec, 1);
-+				      &nrec, BULK_TIMEOUT);
- 		if (result < 0) {
- 			dev_err(&this_usbduxsub->interface->dev, "comedi%d: "
- 				"insn: USB error %d while receiving DUX command"
+ 	B43_WARN_ON(list_empty(&q->packets_list));
+ 	pack = list_entry(q->packets_list.next,
+@@ -463,7 +467,9 @@ static int pio_tx_frame(struct b43_pio_t
+ 
+ 	cookie = generate_cookie(q, pack);
+ 	hdrlen = b43_txhdr_size(dev);
+-	err = b43_generate_txhdr(dev, (u8 *)&wl->txhdr, skb,
++	BUILD_BUG_ON(sizeof(wl->pio_scratchspace) < sizeof(struct b43_txhdr));
++	B43_WARN_ON(sizeof(wl->pio_scratchspace) < hdrlen);
++	err = b43_generate_txhdr(dev, (u8 *)txhdr, skb,
+ 				 info, cookie);
+ 	if (err)
+ 		return err;
+@@ -477,9 +483,9 @@ static int pio_tx_frame(struct b43_pio_t
+ 
+ 	pack->skb = skb;
+ 	if (q->rev >= 8)
+-		pio_tx_frame_4byte_queue(pack, (const u8 *)&wl->txhdr, hdrlen);
++		pio_tx_frame_4byte_queue(pack, (const u8 *)txhdr, hdrlen);
+ 	else
+-		pio_tx_frame_2byte_queue(pack, (const u8 *)&wl->txhdr, hdrlen);
++		pio_tx_frame_2byte_queue(pack, (const u8 *)txhdr, hdrlen);
+ 
+ 	/* Remove it from the list of available packet slots.
+ 	 * It will be put back when we receive the status report. */
+@@ -625,8 +631,11 @@ static bool pio_rx_frame(struct b43_pio_
+ 	unsigned int i, padding;
+ 	struct sk_buff *skb;
+ 	const char *err_msg = NULL;
++	struct b43_rxhdr_fw4 *rxhdr =
++		(struct b43_rxhdr_fw4 *)wl->pio_scratchspace;
+ 
+-	memset(&wl->rxhdr, 0, sizeof(wl->rxhdr));
++	BUILD_BUG_ON(sizeof(wl->pio_scratchspace) < sizeof(*rxhdr));
++	memset(rxhdr, 0, sizeof(*rxhdr));
+ 
+ 	/* Check if we have data and wait for it to get ready. */
+ 	if (q->rev >= 8) {
+@@ -664,16 +673,16 @@ data_ready:
+ 
+ 	/* Get the preamble (RX header) */
+ 	if (q->rev >= 8) {
+-		ssb_block_read(dev->dev, &wl->rxhdr, sizeof(wl->rxhdr),
++		ssb_block_read(dev->dev, rxhdr, sizeof(*rxhdr),
+ 			       q->mmio_base + B43_PIO8_RXDATA,
+ 			       sizeof(u32));
+ 	} else {
+-		ssb_block_read(dev->dev, &wl->rxhdr, sizeof(wl->rxhdr),
++		ssb_block_read(dev->dev, rxhdr, sizeof(*rxhdr),
+ 			       q->mmio_base + B43_PIO_RXDATA,
+ 			       sizeof(u16));
+ 	}
+ 	/* Sanity checks. */
+-	len = le16_to_cpu(wl->rxhdr.frame_len);
++	len = le16_to_cpu(rxhdr->frame_len);
+ 	if (unlikely(len > 0x700)) {
+ 		err_msg = "len > 0x700";
+ 		goto rx_error;
+@@ -683,7 +692,7 @@ data_ready:
+ 		goto rx_error;
+ 	}
+ 
+-	macstat = le32_to_cpu(wl->rxhdr.mac_status);
++	macstat = le32_to_cpu(rxhdr->mac_status);
+ 	if (macstat & B43_RX_MAC_FCSERR) {
+ 		if (!(q->dev->wl->filter_flags & FIF_FCSFAIL)) {
+ 			/* Drop frames with failed FCS. */
+@@ -708,22 +717,25 @@ data_ready:
+ 			       q->mmio_base + B43_PIO8_RXDATA,
+ 			       sizeof(u32));
+ 		if (len & 3) {
++			u8 *tail = wl->pio_tailspace;
++			BUILD_BUG_ON(sizeof(wl->pio_tailspace) < 4);
++
+ 			/* Read the last few bytes. */
+-			ssb_block_read(dev->dev, wl->rx_tail, 4,
++			ssb_block_read(dev->dev, tail, 4,
+ 				       q->mmio_base + B43_PIO8_RXDATA,
+ 				       sizeof(u32));
+ 			switch (len & 3) {
+ 			case 3:
+-				skb->data[len + padding - 3] = wl->rx_tail[0];
+-				skb->data[len + padding - 2] = wl->rx_tail[1];
+-				skb->data[len + padding - 1] = wl->rx_tail[2];
++				skb->data[len + padding - 3] = tail[0];
++				skb->data[len + padding - 2] = tail[1];
++				skb->data[len + padding - 1] = tail[2];
+ 				break;
+ 			case 2:
+-				skb->data[len + padding - 2] = wl->rx_tail[0];
+-				skb->data[len + padding - 1] = wl->rx_tail[1];
++				skb->data[len + padding - 2] = tail[0];
++				skb->data[len + padding - 1] = tail[1];
+ 				break;
+ 			case 1:
+-				skb->data[len + padding - 1] = wl->rx_tail[0];
++				skb->data[len + padding - 1] = tail[0];
+ 				break;
+ 			}
+ 		}
+@@ -732,15 +744,18 @@ data_ready:
+ 			       q->mmio_base + B43_PIO_RXDATA,
+ 			       sizeof(u16));
+ 		if (len & 1) {
++			u8 *tail = wl->pio_tailspace;
++			BUILD_BUG_ON(sizeof(wl->pio_tailspace) < 2);
++
+ 			/* Read the last byte. */
+-			ssb_block_read(dev->dev, wl->rx_tail, 2,
++			ssb_block_read(dev->dev, tail, 2,
+ 				       q->mmio_base + B43_PIO_RXDATA,
+ 				       sizeof(u16));
+-			skb->data[len + padding - 1] = wl->rx_tail[0];
++			skb->data[len + padding - 1] = tail[0];
+ 		}
+ 	}
+ 
+-	b43_rx(q->dev, skb, &wl->rxhdr);
++	b43_rx(q->dev, skb, rxhdr);
+ 
+ 	return 1;
+ 
+--- a/drivers/net/wireless/b43/xmit.c
++++ b/drivers/net/wireless/b43/xmit.c
+@@ -27,7 +27,7 @@
+ 
+ */
+ 
+-#include "b43.h"
++#include "xmit.h"
+ #include "phy_common.h"
+ #include "dma.h"
+ #include "pio.h"
 
 
