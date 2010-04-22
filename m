@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab0DVKvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 06:51:12 -0400
+	id S1754129Ab0DVKvg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 06:51:36 -0400
 Received: from mail-bw0-f225.google.com ([209.85.218.225]:62728 "EHLO
 	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753916Ab0DVKvK (ORCPT
+	with ESMTP id S1753916Ab0DVKve convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 06:51:10 -0400
+	Thu, 22 Apr 2010 06:51:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Eq5uHO5f6eUkmozIyWnpDQR3wQppRVjd5MMnI+8EfXkVBTP8FzgAVL7+SaouMSuJwm
-         C1FJrfBK0r6YKlukW5DMmwIZLxZ2eYYiSEvHMbg5/U6gZEN2ejdIM2130yuplkEH9dhR
-         Al35IY7zhYaxThuq5npaag/R1nLZD6YC4bZlo=
+         :cc:content-type:content-transfer-encoding;
+        b=qARKeZGykogaeoOr+sRbVcMb2ij8q/sHhc5w/ZupHOdQ2opfTCzKTZW2wcDCarqik0
+         yWlsmx47ehWtRTY/son1eoimm4IjHPJI5fA84AZHrvy/N06w42fwzDAYDuZ3QEWSD2s1
+         zjUKkXObG0RIOXNyl6eTtgPsZV9qefB4nZVZ4=
 MIME-Version: 1.0
-In-Reply-To: <20100422013721.GC8938@windriver.com>
+In-Reply-To: <20100421112807.5eca9f9d@bike.lwn.net>
 References: <l2u87a5b0801004210935wf6ca2991ua777c39c737391f8@mail.gmail.com>
-	 <20100422013721.GC8938@windriver.com>
-Date: Thu, 22 Apr 2010 11:51:06 +0100
-Message-ID: <r2l87a5b0801004220351h4ba2d1ect49c33893a30806e9@mail.gmail.com>
+	 <20100421112807.5eca9f9d@bike.lwn.net>
+Date: Thu, 22 Apr 2010 11:51:33 +0100
+Message-ID: <j2o87a5b0801004220351ze6948d6dn3d995122aff355b6@mail.gmail.com>
 Subject: Re: Threaded irq handler question
 From: Will Newton <will.newton@gmail.com>
-To: Yong Zhang <yong.zhang@windriver.com>
+To: Jonathan Corbet <corbet@lwn.net>
 Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 2:37 AM, Yong Zhang <yong.zhang@windriver.com> wrote:
-> On Wed, Apr 21, 2010 at 05:35:32PM +0100, Will Newton wrote:
->> Hi all,
+On Wed, Apr 21, 2010 at 6:28 PM, Jonathan Corbet <corbet@lwn.net> wrote:
+> On Wed, 21 Apr 2010 17:35:32 +0100
+> Will Newton <will.newton@gmail.com> wrote:
+>
 >> My problem is that this structure does not work, because once I call
 >> disable_irq_nosync() on the irq in the check handler the thread will
 >> no longer run because the irq is disabled. However if I don't call
 >> disable_irq_nosync() I will get endless irqs because the line is
 >> level-triggered and will not be deasserted until the thread has run.
->>
->> Could someone tell me what I'm doing wrong here?
 >
-> Does IRQF_ONESHOT meet your need?
+> Trying to disable IRQs at this level is the wrong approach.  You need to
+> do enough in the primary interrupt handler to cause the hardware to
+> stop interrupting in the first place; usually that's just a matter of
+> some sort of acknowledgment.  Then the threaded handler can move data
+> around in peace.
 
-Almost I think, but I believe if my check handler does not wake the
-thread then I don't get another interrupt ever. I can fix this by
-making my check handler always return WAKE_THREAD, which is slightly
-sub-optimal, but not a big problem.
-
-Thank you for your help!
+Unfortunately this device has no way of doing that - deasserting the
+interrupt line involves doing i2c transactions which will likely sleep
+so cannot be done in the check handler. This is quite a common problem
+for i2c connected devices.
