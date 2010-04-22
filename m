@@ -1,147 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab0DVL4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 07:56:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44762 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404Ab0DVL41 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 07:56:27 -0400
-Date: Thu, 22 Apr 2010 13:56:23 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Amit Kucheria <amit.kucheria@canonical.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-       Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: mxc: utilise usecount field in clock operations
-Message-ID: <20100422115623.GR7882@pengutronix.de>
-References: <b9f250fee8e5300e859b2afc234868ba7632f619.1271864861.git.amit.kucheria@canonical.com>
+	id S1753411Ab0DVMIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 08:08:40 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:56866 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752319Ab0DVMIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 08:08:39 -0400
+Date: Thu, 22 Apr 2010 14:08:37 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] [MTD] Fix JFFS2 sync silent failure
+Message-ID: <20100422120837.GE27497@kernel.dk>
+References: <20100417184016.GA17345@logfs.org> <20100419073843.GN27497@kernel.dk> <20100419101559.GA4145@logfs.org> <20100419102056.GS27497@kernel.dk> <20100422055448.GA27309@logfs.org> <20100422090303.GA27497@kernel.dk> <20100422103953.GB27497@kernel.dk> <20100422115539.GE27309@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <b9f250fee8e5300e859b2afc234868ba7632f619.1271864861.git.amit.kucheria@canonical.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 13:45:17 up 33 days, 34 min, 62 users,  load average: 3.76, 3.14,
-	3.08
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100422115539.GE27309@logfs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 09:37:31PM +0300, Amit Kucheria wrote:
-> clk->usecount can be used by platform code to check if a clock is active or
-> not.
-
-The patch seems mostly fine but the commit log not. How about something like
-'This patch fixes the clock refcounting when reparenting is used.'
-
-A reference to
-
-http://www.spinics.net/lists/arm-kernel/msg85879.html
-
-might help aswell.
-
+On Thu, Apr 22 2010, Jörn Engel wrote:
+> On Thu, 22 April 2010 12:39:53 +0200, Jens Axboe wrote:
+> > 
+> > Here's a series for fixing these. At this point they are totally
+> > untested except that I did compile them. Note that your analysis
+> > appeared correct for all cases but ocfs2, which does use get_sb_bdev()
+> > and hence gets ->s_bdi assigned.
+> > 
+> > You can see them here, I'll post the series soon:
+> > 
+> > http://git.kernel.dk/?p=linux-2.6-block.git;a=shortlog;h=refs/heads/for-linus
+> > 
+> > The first patch is a helper addition, the rest are per-fs fixups.
 > 
-> Signed-off-by: Amit Kucheria <amit.kucheria@canonical.com>
-> ---
->  arch/arm/plat-mxc/clock.c |   37 ++++++++++++++++++++++++-------------
->  1 files changed, 24 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/arm/plat-mxc/clock.c b/arch/arm/plat-mxc/clock.c
-> index 323ff8c..c791f38 100644
-> --- a/arch/arm/plat-mxc/clock.c
-> +++ b/arch/arm/plat-mxc/clock.c
-> @@ -50,15 +50,15 @@ static DEFINE_MUTEX(clocks_mutex);
->  
->  static void __clk_disable(struct clk *clk)
->  {
-> -	if (clk == NULL || IS_ERR(clk))
-> +	if (clk == NULL || IS_ERR(clk) || !clk->usecount)
->  		return;
->  
-> -	__clk_disable(clk->parent);
-> -	__clk_disable(clk->secondary);
-> -
-> -	WARN_ON(!clk->usecount);
-> -	if (!(--clk->usecount) && clk->disable)
-> -		clk->disable(clk);
-> +	if (!(--clk->usecount)) {
-> +		if (clk->disable)
-> +			clk->disable(clk);
-> +		__clk_disable(clk->parent);
-> +		__clk_disable(clk->secondary);
-> +	}
->  }
->  
->  static int __clk_enable(struct clk *clk)
-> @@ -66,12 +66,13 @@ static int __clk_enable(struct clk *clk)
->  	if (clk == NULL || IS_ERR(clk))
->  		return -EINVAL;
->  
-> -	__clk_enable(clk->parent);
-> -	__clk_enable(clk->secondary);
-> -
-> -	if (clk->usecount++ == 0 && clk->enable)
-> -		clk->enable(clk);
-> +	if (clk->usecount++ == 0) {
-> +		__clk_enable(clk->parent);
-> +		__clk_enable(clk->secondary);
->  
-> +		if (clk->enable)
-> +			clk->enable(clk);
-> +	}
->  	return 0;
->  }
->  
-> @@ -160,17 +161,27 @@ EXPORT_SYMBOL(clk_set_rate);
->  int clk_set_parent(struct clk *clk, struct clk *parent)
->  {
->  	int ret = -EINVAL;
-> +	struct clk *prev_parent = clk->parent;
->  
->  	if (clk == NULL || IS_ERR(clk) || parent == NULL ||
->  	    IS_ERR(parent) || clk->set_parent == NULL)
->  		return ret;
->  
-> +	if (clk->usecount != 0) {
-> +		clk_enable(parent);
-> +	}
-> +
->  	mutex_lock(&clocks_mutex);
->  	ret = clk->set_parent(clk, parent);
-> -	if (ret == 0)
-> +	if (ret == 0) {
->  		clk->parent = parent;
-> +	}
+> Looks good at a cursory glance.  What's still missing is some sort of
+> assertion.  You are a smart person and missed this problem, twice even.
+> Even if you hadn't, a not so smart person can add a new filesystem and
+> miss s_bdi, like I did.  We want some automatism to catch this.
 
-Please remove this hunk. It does not change anything except violating
-the coding style. Also, please remove unnecessary braces.
+I totally agree, we want some way to catch this problem in the future.
+Really the check needs to be something ala:
 
->  	mutex_unlock(&clocks_mutex);
->  
-> +	if (clk->usecount != 0) {
-> +		clk_disable(prev_parent);
-> +	}
-> +
->  	return ret;
->  }
->  EXPORT_SYMBOL(clk_set_parent);
-> -- 
-> 1.7.0.4
-> 
-> 
+        if (!sb->s_bdi && mnt_has_storage_backing() && rw_mount)
+                yell_and_fail;
+
+but I'm not sure how best to accomplish that. We can check for ->s_bdev
+and mtd like you did, but that does not catch network file systems for
+instance.
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Jens Axboe
+
