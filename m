@@ -1,81 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479Ab0DVUd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:33:59 -0400
-Received: from kroah.org ([198.145.64.141]:59380 "EHLO coco.kroah.org"
+	id S932491Ab0DVUeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:34:13 -0400
+Received: from aliencamel.com ([69.93.184.242]:57462 "EHLO aliencamel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757835Ab0DVT7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:59:35 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:05 2010
-Message-Id: <20100422195405.304205441@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:01 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Nikolaus Schulz <microschulz@web.de>,
-       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: [004/139] fat: fix buffer overflow in vfat_create_shortname()
-In-Reply-To: <20100422195715.GA25490@kroah.com>
+	id S932478Ab0DVUeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:34:05 -0400
+X-Greylist: delayed 3599 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Apr 2010 16:34:04 EDT
+Message-ID: <4BD0A49C.1050200@aliencamel.com>
+Date: Thu, 22 Apr 2010 20:33:48 +0100
+From: Stewart Robertson <stewart_r@aliencamel.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>, wfp5p@virginia.edu,
+       Stewart Robertson <stewart_r@aliencamel.com>, mithlesh@linsyssoft.com,
+       allison@parrot.org
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: 1832-Staging-comedi-add-missing-KERN_INFO-in-ni_at_ao.c.patch
+Content-Type: multipart/mixed; boundary="------------050000030405050205090308"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+This is a multi-part message in MIME format.
+--------------050000030405050205090308
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-------------------
+>From d9d326dc344759c63048418507fae13fcedc406f Mon Sep 17 00:00:00 2001
+From: Stewart Robertson <stewart_r@aliencamel.com>
+Date: Thu, 22 Apr 2010 20:12:48 +0100
 
-From: Nikolaus Schulz <microschulz@web.de>
+Subject: [PATCH] Staging: comedi: add missing KERN_INFO in ni_at_ao.c
 
-commit 30d1872d9eb3663b4cf7bdebcbf5cd465674cced upstream.
+This is a patch to the ni_at_ao.c file that adds the missing
+KERN_INFO requested by the checkpatch.pl tool.
 
-When using the string representation of a random counter as part of the base
-name, ensure that it is no longer than 4 bytes.
-
-Since we are repeatedly decrementing the counter in a loop until we have found a
-unique base name, the counter may wrap around zero; therefore, it is not enough
-to mask its higher bits before entering the loop, this must be done inside the
-loop.
-
-[hirofumi@mail.parknet.co.jp: use snprintf()]
-Signed-off-by: Nikolaus Schulz <microschulz@web.de>
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Stewart Robertson <stewart_r@aliencamel.com>
 
 ---
- fs/fat/namei_vfat.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/comedi/drivers/ni_at_ao.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/fat/namei_vfat.c
-+++ b/fs/fat/namei_vfat.c
-@@ -309,7 +309,7 @@ static int vfat_create_shortname(struct
- {
- 	struct fat_mount_options *opts = &MSDOS_SB(dir->i_sb)->options;
- 	wchar_t *ip, *ext_start, *end, *name_start;
--	unsigned char base[9], ext[4], buf[8], *p;
-+	unsigned char base[9], ext[4], buf[5], *p;
- 	unsigned char charbuf[NLS_MAX_CHARSET_SIZE];
- 	int chl, chi;
- 	int sz = 0, extlen, baselen, i, numtail_baselen, numtail2_baselen;
-@@ -467,7 +467,7 @@ static int vfat_create_shortname(struct
- 			return 0;
- 	}
+diff --git a/drivers/staging/comedi/drivers/ni_at_ao.c b/drivers/staging/comedi/drivers/ni_at_ao.c
+index 3778565..ce60224 100644
+--- a/drivers/staging/comedi/drivers/ni_at_ao.c
++++ b/drivers/staging/comedi/drivers/ni_at_ao.c
+@@ -226,7 +226,7 @@ static int atao_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		iobase = 0x1c0;
+ 	ao_unipolar = it->options[3];
  
--	i = jiffies & 0xffff;
-+	i = jiffies;
- 	sz = (jiffies >> 16) & 0x7;
- 	if (baselen > 2) {
- 		baselen = numtail2_baselen;
-@@ -476,7 +476,7 @@ static int vfat_create_shortname(struct
- 	name_res[baselen + 4] = '~';
- 	name_res[baselen + 5] = '1' + sz;
- 	while (1) {
--		sprintf(buf, "%04X", i);
-+		snprintf(buf, sizeof(buf), "%04X", i & 0xffff);
- 		memcpy(&name_res[baselen], buf, 4);
- 		if (vfat_find_form(dir, name_res) < 0)
- 			break;
+-	printk("comedi%d: ni_at_ao: 0x%04lx", dev->minor, iobase);
++	printk(KERN_INFO "comedi%d: ni_at_ao: 0x%04lx", dev->minor, iobase);
+ 
+ 	if (!request_region(iobase, ATAO_SIZE, "ni_at_ao")) {
+ 		printk(" I/O port conflict\n");
+@@ -283,14 +283,14 @@ static int atao_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	atao_reset(dev);
+ 
+-	printk("\n");
++	printk(KERN_INFO "\n");
+ 
+ 	return 0;
+ }
+ 
+ static int atao_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: atao: remove\n", dev->minor);
++	printk(KERN_INFO "comedi%d: atao: remove\n", dev->minor);
+ 
+ 	if (dev->iobase)
+ 		release_region(dev->iobase, ATAO_SIZE);
+-- 
+1.6.0.4
 
 
+
+--------------050000030405050205090308
+Content-Type: text/x-patch;
+ name="1832-Staging-comedi-add-missing-KERN_INFO-in-ni_at_ao.c.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename*0="1832-Staging-comedi-add-missing-KERN_INFO-in-ni_at_ao.c.patc";
+ filename*1="h"
+
+>From d9d326dc344759c63048418507fae13fcedc406f Mon Sep 17 00:00:00 2001
+From: Stewart Robertson <stewart_r@aliencamel.com>
+Date: Thu, 22 Apr 2010 20:12:48 +0100
+
+Subject: [PATCH] Staging: comedi: add missing KERN_INFO in ni_at_ao.c
+
+This is a patch to the ni_at_ao.c file that adds the missing
+KERN_INFO requested by the checkpatch.pl tool.
+
+Signed-off-by: Stewart Robertson <stewart_r@aliencamel.com>
+---
+ drivers/staging/comedi/drivers/ni_at_ao.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/ni_at_ao.c b/drivers/staging/comedi/drivers/ni_at_ao.c
+index 3778565..ce60224 100644
+--- a/drivers/staging/comedi/drivers/ni_at_ao.c
++++ b/drivers/staging/comedi/drivers/ni_at_ao.c
+@@ -226,7 +226,7 @@ static int atao_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		iobase = 0x1c0;
+ 	ao_unipolar = it->options[3];
+ 
+-	printk("comedi%d: ni_at_ao: 0x%04lx", dev->minor, iobase);
++	printk(KERN_INFO "comedi%d: ni_at_ao: 0x%04lx", dev->minor, iobase);
+ 
+ 	if (!request_region(iobase, ATAO_SIZE, "ni_at_ao")) {
+ 		printk(" I/O port conflict\n");
+@@ -283,14 +283,14 @@ static int atao_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	atao_reset(dev);
+ 
+-	printk("\n");
++	printk(KERN_INFO "\n");
+ 
+ 	return 0;
+ }
+ 
+ static int atao_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: atao: remove\n", dev->minor);
++	printk(KERN_INFO "comedi%d: atao: remove\n", dev->minor);
+ 
+ 	if (dev->iobase)
+ 		release_region(dev->iobase, ATAO_SIZE);
+-- 
+1.6.0.4
+
+
+--------------050000030405050205090308--
