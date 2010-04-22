@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab0DVWk0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 18:40:26 -0400
-Received: from kroah.org ([198.145.64.141]:42681 "EHLO coco.kroah.org"
+	id S1753340Ab0DVWkZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 18:40:25 -0400
+Received: from kroah.org ([198.145.64.141]:42678 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753245Ab0DVWkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 18:40:21 -0400
+	id S1753241Ab0DVWkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 18:40:20 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Kosina <jkosina@suse.cz>, "Eric W. Biederman" <ebiederm@xmission.com>,
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 3/3] sysfs: use sysfs_attr_init in ASUS atk0110 driver
-Date: Thu, 22 Apr 2010 15:40:16 -0700
-Message-Id: <1271976016-3584-3-git-send-email-gregkh@suse.de>
+Subject: [PATCH 2/3] Documentation/HOWTO: update git home URL
+Date: Thu, 22 Apr 2010 15:40:15 -0700
+Message-Id: <1271976016-3584-2-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <20100422222928.GA3268@kroah.com>
 References: <20100422222928.GA3268@kroah.com>
@@ -20,116 +20,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Annotate dynamic sysfs attribute in atk_create_files(). This gets
-rid of the following lockdep warning:
+Update git home page info.
 
- BUG: key ffff8800379ca670 not in .data!
- ------------[ cut here ]------------
- WARNING: at kernel/lockdep.c:2696 lockdep_init_map+0xd2/0x108()
- Hardware name: P5K PRO
- Modules linked in: asus_atk0110(+) pata_acpi firewire_ohci ata_generic
- dm_multipath firewire_core crc_itu_t pata_marvell floppy
- Pid: 599, comm: modprobe Not tainted 2.6.34-rc4 #27
- Call Trace:
-  [<ffffffff8104cdb0>] warn_slowpath_common+0x7c/0x94
-  [<ffffffff8104cddc>] warn_slowpath_null+0x14/0x16
-  [<ffffffff81077c4d>] lockdep_init_map+0xd2/0x108
-  [<ffffffff81165873>] sysfs_add_file_mode+0x66/0xa2
-  [<ffffffff811658c0>] sysfs_add_file+0x11/0x13
-  [<ffffffff8116594b>] sysfs_create_file+0x2a/0x2c
-  [<ffffffff812c1f9c>] device_create_file+0x19/0x1b
-  [<ffffffffa005b4fd>] atk_add+0x58b/0x72e [asus_atk0110]
-  [<ffffffff812572a1>] acpi_device_probe+0x50/0x122
-  [<ffffffff812c46af>] driver_probe_device+0xa2/0x127
-  [<ffffffff812c4783>] __driver_attach+0x4f/0x6b
-  [<ffffffff812c4734>] ? __driver_attach+0x0/0x6b
-  [<ffffffff812c3c94>] bus_for_each_dev+0x59/0x8e
-  [<ffffffff812c4519>] driver_attach+0x1e/0x20
-  [<ffffffff812c4152>] bus_add_driver+0xb9/0x207
-  [<ffffffff812c4a5f>] driver_register+0x9d/0x10e
-  [<ffffffffa005f000>] ? atk0110_init+0x0/0x31 [asus_atk0110]
-  [<ffffffff81257c7c>] acpi_bus_register_driver+0x43/0x45
-  [<ffffffffa005f015>] atk0110_init+0x15/0x31 [asus_atk0110]
-  [<ffffffffa005f000>] ? atk0110_init+0x0/0x31 [asus_atk0110]
-  [<ffffffff81002069>] do_one_initcall+0x5e/0x15e
-  [<ffffffff81085075>] sys_init_module+0xd8/0x239
-  [<ffffffff81009cf2>] system_call_fastpath+0x16/0x1b
- ---[ end trace 4d0c84007055efb9 ]---
- BUG: key ffff8800379ca638 not in .data!
- BUG: key ffff8800379ca6a8 not in .data!
- BUG: key ffff8800379ca6e0 not in .data!
- BUG: key ffff880036f73670 not in .data!
- BUG: key ffff880036f73638 not in .data!
- BUG: key ffff880036f736a8 not in .data!
- BUG: key ffff880036f736e0 not in .data!
- BUG: key ffff880036f76c70 not in .data!
- BUG: key ffff880036f76c38 not in .data!
- BUG: key ffff880036f76ca8 not in .data!
- BUG: key ffff880036f76ce0 not in .data!
- BUG: key ffff8800368e7670 not in .data!
- BUG: key ffff8800368e7638 not in .data!
- BUG: key ffff8800368e76a8 not in .data!
- BUG: key ffff8800368e76e0 not in .data!
- BUG: key ffff880036ef7670 not in .data!
- BUG: key ffff880036ef7638 not in .data!
- BUG: key ffff880036ef76a8 not in .data!
- BUG: key ffff880036ef76e0 not in .data!
- BUG: key ffff8800373ccc70 not in .data!
- BUG: key ffff8800373ccc38 not in .data!
- BUG: key ffff8800373ccca8 not in .data!
- BUG: key ffff8800373ccce0 not in .data!
- BUG: key ffff880037a60870 not in .data!
- BUG: key ffff880037a60838 not in .data!
- BUG: key ffff880037a608a8 not in .data!
- BUG: key ffff880037a608e0 not in .data!
- BUG: key ffff880037355070 not in .data!
- BUG: key ffff880037355038 not in .data!
- BUG: key ffff8800373550a8 not in .data!
- BUG: key ffff8800373550e0 not in .data!
- BUG: key ffff8800378c2670 not in .data!
- BUG: key ffff8800378c2638 not in .data!
- BUG: key ffff8800378c26a8 not in .data!
- BUG: key ffff8800378c26e0 not in .data!
- BUG: key ffff880036ef7e70 not in .data!
- BUG: key ffff880036ef7e38 not in .data!
- BUG: key ffff880036ef7ea8 not in .data!
- BUG: key ffff880036ef7ee0 not in .data!
-
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Reported-by: Dhaval Giani <dhaval.giani@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Tested-by: Dhaval Giani <dhaval.giani@gmail.com>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/hwmon/asus_atk0110.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ Documentation/HOWTO |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/hwmon/asus_atk0110.c b/drivers/hwmon/asus_atk0110.c
-index 75f3fa5..16c4202 100644
---- a/drivers/hwmon/asus_atk0110.c
-+++ b/drivers/hwmon/asus_atk0110.c
-@@ -1169,15 +1169,19 @@ static int atk_create_files(struct atk_data *data)
- 	int err;
- 
- 	list_for_each_entry(s, &data->sensor_list, list) {
-+		sysfs_attr_init(&s->input_attr.attr);
- 		err = device_create_file(data->hwmon_dev, &s->input_attr);
- 		if (err)
- 			return err;
-+		sysfs_attr_init(&s->label_attr.attr);
- 		err = device_create_file(data->hwmon_dev, &s->label_attr);
- 		if (err)
- 			return err;
-+		sysfs_attr_init(&s->limit1_attr.attr);
- 		err = device_create_file(data->hwmon_dev, &s->limit1_attr);
- 		if (err)
- 			return err;
-+		sysfs_attr_init(&s->limit2_attr.attr);
- 		err = device_create_file(data->hwmon_dev, &s->limit2_attr);
- 		if (err)
- 			return err;
+diff --git a/Documentation/HOWTO b/Documentation/HOWTO
+index f5395af..40ada93 100644
+--- a/Documentation/HOWTO
++++ b/Documentation/HOWTO
+@@ -234,7 +234,7 @@ process is as follows:
+     Linus, usually the patches that have already been included in the
+     -next kernel for a few weeks.  The preferred way to submit big changes
+     is using git (the kernel's source management tool, more information
+-    can be found at http://git.or.cz/) but plain patches are also just
++    can be found at http://git-scm.com/) but plain patches are also just
+     fine.
+   - After two weeks a -rc1 kernel is released it is now possible to push
+     only patches that do not include new features that could affect the
 -- 
 1.7.0.4
 
