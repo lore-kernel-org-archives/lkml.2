@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab0DVTqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:46:45 -0400
-Received: from kroah.org ([198.145.64.141]:41136 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756663Ab0DVT3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:07 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:18 2010
-Message-Id: <20100422190918.274974838@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:33 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Avi Kivity <avi@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [122/197] x86-64, rwsem: Avoid store forwarding hazard in __downgrade_write
-In-Reply-To: <20100422191857.GA13268@kroah.com>
+	id S1758245Ab0DVUS1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:18:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49043 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758058Ab0DVUSW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:18:22 -0400
+MIME-Version: 1.0
+Message-ID: <b1036777-129b-4531-a730-1e9e5a87cea9@default>
+Date: Thu, 22 Apr 2010 13:15:50 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <20100422134249.GA2963@ca-server1.us.oracle.com>
+ <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default
+ 4BD07594.9080905@redhat.com>
+In-Reply-To: <4BD07594.9080905@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4BD0AEF0.006E:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+> > Synchronous is required, but likely could be simulated by ensuring
+> all
+> > coherency (and concurrency) requirements are met by some intermediate
+> > "buffering driver" -- at the cost of an extra page copy into a buffer
+> > and overhead of tracking the handles (poolid/inode/index) of pages in
+> > the buffer that are "in flight".  This is an approach we are
+> considering
+> > to implement an SSD backend, but hasn't been tested yet so, ahem, the
+> > proof will be in the put'ing. ;-)
+> 
+> Much easier to simulate an asynchronous API with a synchronous backend.
 
-------------------
-
-From: Avi Kivity <avi@redhat.com>
-
-commit 0d1622d7f526311d87d7da2ee7dd14b73e45d3fc upstream.
-
-The Intel Architecture Optimization Reference Manual states that a short
-load that follows a long store to the same object will suffer a store
-forwading penalty, particularly if the two accesses use different addresses.
-Trivially, a long load that follows a short store will also suffer a penalty.
-
-__downgrade_write() in rwsem incurs both penalties:  the increment operation
-will not be able to reuse a recently-loaded rwsem value, and its result will
-not be reused by any recently-following rwsem operation.
-
-A comment in the code states that this is because 64-bit immediates are
-special and expensive; but while they are slightly special (only a single
-instruction allows them), they aren't expensive: a test shows that two loops,
-one loading a 32-bit immediate and one loading a 64-bit immediate, both take
-1.5 cycles per iteration.
-
-Fix this by changing __downgrade_write to use the same add instruction on
-i386 and on x86_64, so that it uses the same operand size as all the other
-rwsem functions.
-
-Signed-off-by: Avi Kivity <avi@redhat.com>
-LKML-Reference: <1266049992-17419-1-git-send-email-avi@redhat.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/x86/include/asm/rwsem.h |   25 +++++--------------------
- 1 file changed, 5 insertions(+), 20 deletions(-)
-
---- a/arch/x86/include/asm/rwsem.h
-+++ b/arch/x86/include/asm/rwsem.h
-@@ -232,34 +232,19 @@ static inline void __up_write(struct rw_
-  */
- static inline void __downgrade_write(struct rw_semaphore *sem)
- {
--#ifdef CONFIG_X86_64
--# if RWSEM_WAITING_BIAS != -0x100000000
--#  error "This code assumes RWSEM_WAITING_BIAS == -2^32"
--# endif
--
--	/* 64-bit immediates are special and expensive, and not needed here */
--	asm volatile("# beginning __downgrade_write\n\t"
--		     LOCK_PREFIX "incl 4(%1)\n\t"
--		     /* transitions 0xZZZZZZZZ00000001 -> 0xYYYYYYYY00000001 */
--		     "  jns       1f\n\t"
--		     "  call call_rwsem_downgrade_wake\n"
--		     "1:\n\t"
--		     "# ending __downgrade_write\n"
--		     : "+m" (sem->count)
--		     : "a" (sem)
--		     : "memory", "cc");
--#else
- 	asm volatile("# beginning __downgrade_write\n\t"
- 		     LOCK_PREFIX _ASM_ADD "%2,(%1)\n\t"
--		     /* transitions 0xZZZZ0001 -> 0xYYYY0001 */
-+		     /*
-+		      * transitions 0xZZZZ0001 -> 0xYYYY0001 (i386)
-+		      *     0xZZZZZZZZ00000001 -> 0xYYYYYYYY00000001 (x86_64)
-+		      */
- 		     "  jns       1f\n\t"
- 		     "  call call_rwsem_downgrade_wake\n"
- 		     "1:\n\t"
- 		     "# ending __downgrade_write\n"
- 		     : "+m" (sem->count)
--		     : "a" (sem), "i" (-RWSEM_WAITING_BIAS)
-+		     : "a" (sem), "er" (-RWSEM_WAITING_BIAS)
- 		     : "memory", "cc");
--#endif
- }
+Indeed.  But an asynchronous API is not appropriate for frontswap
+(or cleancache).  The reason the hooks are so simple is because they
+are assumed to be synchronous so that the page can be immediately
+freed/reused.
  
- /*
+> Well, copying memory so you can use a zero-copy dma engine is
+> counterproductive.
 
-
+Yes, but for something like an SSD where copying can be used to
+build up a full 64K write, the cost of copying memory may not be
+counterproductive.
