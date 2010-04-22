@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab0DVJXl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 05:23:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14783 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895Ab0DVJXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 05:23:39 -0400
-Date: Thu, 22 Apr 2010 12:19:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>,
-       "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
-	virtio-net.
-Message-ID: <20100422091943.GA30532@redhat.com>
-References: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com> <20100414152519.GA10792@redhat.com> <97F6D3BD476C464182C1B7BABF0B0AF5C18969CC@shzsmsx502.ccr.corp.intel.com> <20100415100546.GA17035@redhat.com> <F2E9EB7348B8264F86B6AB8151CE2D79026FA95401@shsmsx502.ccr.corp.intel.com> <20100419102118.GA16198@redhat.com> <F2E9EB7348B8264F86B6AB8151CE2D79026FAB1E5F@shsmsx502.ccr.corp.intel.com> <20100421083507.GA30855@redhat.com> <F2E9EB7348B8264F86B6AB8151CE2D79026FAE0BDB@shsmsx502.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D79026FAE0BDB@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753281Ab0DVJYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 05:24:31 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60411 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752741Ab0DVJY3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 05:24:29 -0400
+Date: Thu, 22 Apr 2010 10:28:52 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: Rik van Riel <riel@redhat.com>, John Stoffel <john@stoffel.org>,
+       Hedi Berriche <hedi@sgi.com>, Mike Travis <travis@sgi.com>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jack Steiner <steiner@sgi.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
+ pid_max v2
+Message-ID: <20100422102852.72837494@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100421232200.GA22877@suse.de>
+References: <4BCE579C.5070100@sgi.com>
+	<4BCE5A73.3000904@sgi.com>
+	<20100421102350.4c222e6b@lxorguk.ukuu.org.uk>
+	<20100421165934.GN16427@zorg.emea.sgi.com>
+	<4BCF336B.1050706@redhat.com>
+	<19407.20109.308816.104856@stoffel.org>
+	<20100421193350.GU16427@zorg.emea.sgi.com>
+	<19407.23456.469074.256306@stoffel.org>
+	<20100421222414.GA26241@suse.de>
+	<4BCF80F2.2010906@redhat.com>
+	<20100421232200.GA22877@suse.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 04:57:56PM +0800, Xin, Xiaohui wrote:
-> Michael,
+> Distros don't want to take a patch that adds a new boot param that is
+> not accepted upstream, otherwise they will be stuck forward porting it
+> from now until, well, forever :)
+
+So for an obscure IA64 specific problem you want the upstream kernel to
+port it forward forever instead ?
 > 
-> >Yes, I think this packet split mode probably maps well to mergeable buffer
-> >support. Note that
-> >1. Not all devices support large packets in this way, others might map
-> >   to indirect buffers better
+> As this solves a problem that people are having today, on the kernel.org
+> kernel, on a known machine, and we really don't know when the "reduce
+> the number of processes per cpu" work will be done, or if it really will
+> solve this issue, then why can't we take it now?  If the work does solve
+> the problem in the future, then we can take the command line option out,
+> and everyone is happy.
 > 
-> Do the indirect buffers accord to deal with the skb->frag_list?
+> Sound reasonable?
 
-We currently use skb->frags.
+No - to start with it would be far saner for everything involved if the
+4096 processor minority fixed it for the moment in their arch code by
+doing something like
 
-> >   So we have to figure out how migration is going to work
-> Yes, different guest virtio-net driver may contain different features.
-> Does the qemu migration work with different features supported by virtio-net
-> driver now?
+	if (max_pids < PIDS_PER_CPU * num_cpus) {
+		max_pids = ...
+		printk(something informative)
+	}
 
-For now, you must have identical feature-sets for migration to work.
-And long as we manage the buffers in software, we can always make
-features match.
+in their __init marked code.
 
-> >2. It's up to guest driver whether to enable features such as
-> >   mergeable buffers and indirect buffers
-> >   So we have to figure out how to notify guest which mode
-> >   is optimal for a given device
-> Yes. When a device is binded, the mp device may query the capabilities from driver.
-> Actually, there is a structure now in mp device can do this, we can add some field
-> to support more.
-> 
-> >3. We don't want to depend on jumbo frames for decent performance
-> >   So we probably should support GSO/GRO
-> GSO is for the tx side, right? I think driver can handle it itself.
-> For GRO, I'm not sure it's easy or not. Basically, the mp device now
-> we have support is doing what raw socket is doing. The packets are not going to host stack.
+Because when Tejun's stuff is in the patch can go away, and also if it's
+not sufficient then the patch above should keep it sane when they go to
+32000 cpus or whatever is next.
 
-See commit bfd5f4a3d605e0f6054df0b59fe0907ff7e696d3
-(it doesn't currently work with vhost net, but that's
- a separate story).
-
-> -- 
-> MST
+Alan
