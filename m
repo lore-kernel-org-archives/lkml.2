@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab0DVUQJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:16:09 -0400
-Received: from kroah.org ([198.145.64.141]:59853 "EHLO coco.kroah.org"
+	id S932165Ab0DVUHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:07:32 -0400
+Received: from kroah.org ([198.145.64.141]:60140 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932065Ab0DVUA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:58 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:13 2010
-Message-Id: <20100422195413.304704115@kvm.kroah.org>
+	id S1758181Ab0DVUCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:02:13 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:19 2010
+Message-Id: <20100422195418.947945374@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:20 -0700
+Date: Thu, 22 Apr 2010 12:55:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Peter Rajnoha <prajnoha@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [083/139] dm ioctl: introduce flag indicating uevent was generated
+       Sridhar Samudrala <sri@us.ibm.com>, Avi Kivity <avi@redhat.com>
+Subject: [136/139] KVM: Increase NR_IOBUS_DEVS limit to 200
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,151 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Rajnoha <prajnoha@redhat.com>
+From: Sridhar Samudrala <sri@us.ibm.com>
 
-commit 3abf85b5b5851b5f28d3d8a920ebb844edd08352 upstream.
+(Cherry-picked from commit e80e2a60ff7914dae691345a976c80bbbff3ec74)
 
-Set a new DM_UEVENT_GENERATED_FLAG when returning from ioctls to
-indicate that a uevent was actually generated.  This tells the userspace
-caller that it may need to wait for the event to be processed.
+This patch increases the current hardcoded limit of NR_IOBUS_DEVS
+from 6 to 200. We are hitting this limit when creating a guest with more
+than 1 virtio-net device using vhost-net backend. Each virtio-net
+device requires 2 such devices to service notifications from rx/tx queues.
 
-Signed-off-by: Peter Rajnoha <prajnoha@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/dm-ioctl.c    |   19 ++++++++++++-------
- drivers/md/dm.c          |    7 ++++---
- drivers/md/dm.h          |    4 ++--
- include/linux/dm-ioctl.h |    9 +++++++--
- 4 files changed, 25 insertions(+), 14 deletions(-)
+ include/linux/kvm_host.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-ioctl.c
-+++ b/drivers/md/dm-ioctl.c
-@@ -285,7 +285,8 @@ retry:
- 	up_write(&_hash_lock);
- }
- 
--static int dm_hash_rename(uint32_t cookie, const char *old, const char *new)
-+static int dm_hash_rename(uint32_t cookie, uint32_t *flags, const char *old,
-+			  const char *new)
- {
- 	char *new_name, *old_name;
- 	struct hash_cell *hc;
-@@ -344,7 +345,8 @@ static int dm_hash_rename(uint32_t cooki
- 		dm_table_put(table);
- 	}
- 
--	dm_kobject_uevent(hc->md, KOBJ_CHANGE, cookie);
-+	if (!dm_kobject_uevent(hc->md, KOBJ_CHANGE, cookie))
-+		*flags |= DM_UEVENT_GENERATED_FLAG;
- 
- 	dm_put(hc->md);
- 	up_write(&_hash_lock);
-@@ -736,10 +738,10 @@ static int dev_remove(struct dm_ioctl *p
- 	__hash_remove(hc);
- 	up_write(&_hash_lock);
- 
--	dm_kobject_uevent(md, KOBJ_REMOVE, param->event_nr);
-+	if (!dm_kobject_uevent(md, KOBJ_REMOVE, param->event_nr))
-+		param->flags |= DM_UEVENT_GENERATED_FLAG;
- 
- 	dm_put(md);
--	param->data_size = 0;
- 	return 0;
- }
- 
-@@ -773,7 +775,9 @@ static int dev_rename(struct dm_ioctl *p
- 		return r;
- 
- 	param->data_size = 0;
--	return dm_hash_rename(param->event_nr, param->name, new_name);
-+
-+	return dm_hash_rename(param->event_nr, &param->flags, param->name,
-+			      new_name);
- }
- 
- static int dev_set_geometry(struct dm_ioctl *param, size_t param_size)
-@@ -899,8 +903,8 @@ static int do_resume(struct dm_ioctl *pa
- 
- 	if (dm_suspended_md(md)) {
- 		r = dm_resume(md);
--		if (!r)
--			dm_kobject_uevent(md, KOBJ_CHANGE, param->event_nr);
-+		if (!r && !dm_kobject_uevent(md, KOBJ_CHANGE, param->event_nr))
-+			param->flags |= DM_UEVENT_GENERATED_FLAG;
- 	}
- 
- 	if (old_map)
-@@ -1477,6 +1481,7 @@ static int validate_params(uint cmd, str
- {
- 	/* Always clear this flag */
- 	param->flags &= ~DM_BUFFER_FULL_FLAG;
-+	param->flags &= ~DM_UEVENT_GENERATED_FLAG;
- 
- 	/* Ignores parameters */
- 	if (cmd == DM_REMOVE_ALL_CMD ||
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -2618,18 +2618,19 @@ out:
- /*-----------------------------------------------------------------
-  * Event notification.
-  *---------------------------------------------------------------*/
--void dm_kobject_uevent(struct mapped_device *md, enum kobject_action action,
-+int dm_kobject_uevent(struct mapped_device *md, enum kobject_action action,
- 		       unsigned cookie)
- {
- 	char udev_cookie[DM_COOKIE_LENGTH];
- 	char *envp[] = { udev_cookie, NULL };
- 
- 	if (!cookie)
--		kobject_uevent(&disk_to_dev(md->disk)->kobj, action);
-+		return kobject_uevent(&disk_to_dev(md->disk)->kobj, action);
- 	else {
- 		snprintf(udev_cookie, DM_COOKIE_LENGTH, "%s=%u",
- 			 DM_COOKIE_ENV_VAR_NAME, cookie);
--		kobject_uevent_env(&disk_to_dev(md->disk)->kobj, action, envp);
-+		return kobject_uevent_env(&disk_to_dev(md->disk)->kobj,
-+					  action, envp);
- 	}
- }
- 
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -125,8 +125,8 @@ void dm_stripe_exit(void);
- int dm_open_count(struct mapped_device *md);
- int dm_lock_for_deletion(struct mapped_device *md);
- 
--void dm_kobject_uevent(struct mapped_device *md, enum kobject_action action,
--		       unsigned cookie);
-+int dm_kobject_uevent(struct mapped_device *md, enum kobject_action action,
-+		      unsigned cookie);
- 
- int dm_io_init(void);
- void dm_io_exit(void);
---- a/include/linux/dm-ioctl.h
-+++ b/include/linux/dm-ioctl.h
-@@ -266,9 +266,9 @@ enum {
- #define DM_DEV_SET_GEOMETRY	_IOWR(DM_IOCTL, DM_DEV_SET_GEOMETRY_CMD, struct dm_ioctl)
- 
- #define DM_VERSION_MAJOR	4
--#define DM_VERSION_MINOR	16
-+#define DM_VERSION_MINOR	17
- #define DM_VERSION_PATCHLEVEL	0
--#define DM_VERSION_EXTRA	"-ioctl (2009-11-05)"
-+#define DM_VERSION_EXTRA	"-ioctl (2010-03-05)"
- 
- /* Status bits */
- #define DM_READONLY_FLAG	(1 << 0) /* In/Out */
-@@ -316,4 +316,9 @@ enum {
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -53,7 +53,7 @@ extern struct kmem_cache *kvm_vcpu_cache
   */
- #define DM_QUERY_INACTIVE_TABLE_FLAG	(1 << 12) /* In */
+ struct kvm_io_bus {
+ 	int                   dev_count;
+-#define NR_IOBUS_DEVS 6
++#define NR_IOBUS_DEVS 200
+ 	struct kvm_io_device *devs[NR_IOBUS_DEVS];
+ };
  
-+/*
-+ * If set, a uevent was generated for which the caller may need to wait.
-+ */
-+#define DM_UEVENT_GENERATED_FLAG	(1 << 13) /* Out */
-+
- #endif				/* _LINUX_DM_IOCTL_H */
 
 
