@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab0DVTta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:49:30 -0400
-Received: from kroah.org ([198.145.64.141]:41042 "EHLO coco.kroah.org"
+	id S1757540Ab0DVTuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:50:52 -0400
+Received: from kroah.org ([198.145.64.141]:40954 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756566Ab0DVT2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:55 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:17 2010
-Message-Id: <20100422190916.931886465@kvm.kroah.org>
+	id S1756520Ab0DVT2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:47 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:16 2010
+Message-Id: <20100422190915.971917382@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:18 -0700
+Date: Thu, 22 Apr 2010 12:09:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Neil Horman <nhorman@tuxdriver.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Chris Wright <chrisw@sous-sol.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [107/197] x86/amd-iommu: enable iommu before attaching devices
+       Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [096/197] NFSv4: fix delegated locking
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +25,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wright <chrisw@sous-sol.org>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 75f66533bc883f761a7adcab3281fe3323efbc90 upstream.
+commit 0df5dd4aae211edeeeb84f7f84f6d093406d7c22 upstream.
 
-Hit another kdump problem as reported by Neil Horman.  When initializaing
-the IOMMU, we attach devices to their domains before the IOMMU is
-fully (re)initialized.  Attaching a device will issue some important
-invalidations.  In the context of the newly kexec'd kdump kernel, the
-IOMMU may have stale cached data from the original kernel.  Because we
-do the attach too early, the invalidation commands are placed in the new
-command buffer before the IOMMU is updated w/ that buffer.  This leaves
-the stale entries in the kdump context and can renders device unusable.
-Simply enable the IOMMU before we do the attach.
+Arnaud Giersch reports that NFSv4 locking is broken when we hold a
+delegation since commit 8e469ebd6dc32cbaf620e134d79f740bf0ebab79 (NFSv4:
+Don't allow posix locking against servers that don't support it).
 
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+According to Arnaud, the lock succeeds the first time he opens the file
+(since we cannot do a delegated open) but then fails after we start using
+delegated opens.
+
+The following patch fixes it by ensuring that locking behaviour is
+governed by a per-filesystem capability flag that is initially set, but
+gets cleared if the server ever returns an OPEN without the
+NFS4_OPEN_RESULT_LOCKTYPE_POSIX flag being set.
+
+Reported-by: Arnaud Giersch <arnaud.giersch@iut-bm.univ-fcomte.fr>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/amd_iommu_init.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/nfs/client.c           |    3 ++-
+ fs/nfs/nfs4proc.c         |    4 +++-
+ include/linux/nfs_fs_sb.h |    1 +
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/amd_iommu_init.c
-+++ b/arch/x86/kernel/amd_iommu_init.c
-@@ -1284,6 +1284,8 @@ int __init amd_iommu_init(void)
- 	if (ret)
- 		goto free;
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -1283,7 +1283,8 @@ static int nfs4_init_server(struct nfs_s
  
-+	enable_iommus();
-+
- 	if (iommu_pass_through)
- 		ret = amd_iommu_init_passthrough();
- 	else
-@@ -1294,8 +1296,6 @@ int __init amd_iommu_init(void)
+ 	/* Initialise the client representation from the mount data */
+ 	server->flags = data->flags;
+-	server->caps |= NFS_CAP_ATOMIC_OPEN|NFS_CAP_CHANGE_ATTR;
++	server->caps |= NFS_CAP_ATOMIC_OPEN|NFS_CAP_CHANGE_ATTR|
++		NFS_CAP_POSIX_LOCK;
+ 	server->options = data->options;
  
- 	amd_iommu_init_api();
+ 	/* Get a client record */
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1439,6 +1439,8 @@ static int _nfs4_proc_open(struct nfs4_o
+ 		nfs_post_op_update_inode(dir, o_res->dir_attr);
+ 	} else
+ 		nfs_refresh_inode(dir, o_res->dir_attr);
++	if ((o_res->rflags & NFS4_OPEN_RESULT_LOCKTYPE_POSIX) == 0)
++		server->caps &= ~NFS_CAP_POSIX_LOCK;
+ 	if(o_res->rflags & NFS4_OPEN_RESULT_CONFIRM) {
+ 		status = _nfs4_proc_open_confirm(data);
+ 		if (status != 0)
+@@ -1573,7 +1575,7 @@ static int _nfs4_do_open(struct inode *d
+ 	status = PTR_ERR(state);
+ 	if (IS_ERR(state))
+ 		goto err_opendata_put;
+-	if ((opendata->o_res.rflags & NFS4_OPEN_RESULT_LOCKTYPE_POSIX) != 0)
++	if (server->caps & NFS_CAP_POSIX_LOCK)
+ 		set_bit(NFS_STATE_POSIX_LOCKS, &state->flags);
+ 	nfs4_opendata_put(opendata);
+ 	nfs4_put_state_owner(sp);
+--- a/include/linux/nfs_fs_sb.h
++++ b/include/linux/nfs_fs_sb.h
+@@ -176,6 +176,7 @@ struct nfs_server {
+ #define NFS_CAP_ATIME		(1U << 11)
+ #define NFS_CAP_CTIME		(1U << 12)
+ #define NFS_CAP_MTIME		(1U << 13)
++#define NFS_CAP_POSIX_LOCK	(1U << 14)
  
--	enable_iommus();
--
- 	if (iommu_pass_through)
- 		goto out;
  
-@@ -1314,6 +1314,8 @@ out:
- 	return ret;
- 
- free:
-+	disable_iommus();
-+
- 	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
- 		   get_order(MAX_DOMAIN_ID/8));
- 
+ /* maximum number of slots to use */
 
 
