@@ -1,155 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab0DVNB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 09:01:26 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:36092 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754687Ab0DVNBY (ORCPT
+	id S1754646Ab0DVNKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 09:10:13 -0400
+Received: from mx1.corp.avencall.com ([91.194.178.12]:59999 "EHLO
+	mx1.corp.avencall.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab0DVNKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 09:01:24 -0400
-Date: Thu, 22 Apr 2010 16:01:01 +0300
-From: Amit Kucheria <amit.kucheria@canonical.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>,
-       Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: mxc: utilise usecount field in clock operations
-Message-ID: <20100422130101.GA2701@matterhorn.lan>
-Mail-Followup-To: Sascha Hauer <s.hauer@pengutronix.de>,
-	Russell King <linux@arm.linux.org.uk>,
-	Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <b9f250fee8e5300e859b2afc234868ba7632f619.1271864861.git.amit.kucheria@canonical.com>
- <20100422115623.GR7882@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100422115623.GR7882@pengutronix.de>
-X-URL: http://www.verdurent.com/
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 22 Apr 2010 09:10:09 -0400
+From: Guillaume Knispel <gknispel@proformatique.com>
+To: linux-kernel@vger.kernel.org, Linuxppc-dev@lists.ozlabs.org
+Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Haavard Skinnemoen <hskinnemoen@atmel.com>, Ingo Molnar <mingo@elte.hu>,
+       Lars-Peter Clausen <lars@metafoo.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Michael Buesch <mb@bu3sch.de>, Peter Zijlstra <peterz@infradead.org>,
+       Russell King <linux@arm.linux.org.uk>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Guillaume Knispel <gknispel@proformatique.com>
+Subject: [PATCH 2/2] genirq: update doc
+Date: Thu, 22 Apr 2010 15:09:58 +0200
+Message-Id: <1271941798-9659-3-git-send-email-gknispel@proformatique.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1271941798-9659-1-git-send-email-gknispel@proformatique.com>
+References: <1271941798-9659-1-git-send-email-gknispel@proformatique.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 Apr 22, Sascha Hauer wrote:
-> On Wed, Apr 21, 2010 at 09:37:31PM +0300, Amit Kucheria wrote:
-> > clk->usecount can be used by platform code to check if a clock is active or
-> > not.
-> 
-> The patch seems mostly fine but the commit log not. How about something like
-> 'This patch fixes the clock refcounting when reparenting is used.'
-> 
-> A reference to
-> 
-> http://www.spinics.net/lists/arm-kernel/msg85879.html
-> 
-> might help aswell.
+Following "genirq: always build resend_irqs" and previous changes, this
+commit updates the genirq DocBook.
 
-Interesting. I had no idea about this work. I was just resurrecting old
-patches from January.
+Signed-off-by: Guillaume Knispel <gknispel@proformatique.com>
+CC: linux-kernel@vger.kernel.org
+CC: Linuxppc-dev@lists.ozlabs.org
+CC: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Haavard Skinnemoen <hskinnemoen@atmel.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Lars-Peter Clausen <lars@metafoo.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Michael Buesch <mb@bu3sch.de>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Russell King <linux@arm.linux.org.uk>
+CC: Thomas Gleixner <tglx@linutronix.de>
+---
+ Documentation/DocBook/genericirq.tmpl |   73 ++++++++++++++++++--------------
+ 1 files changed, 41 insertions(+), 32 deletions(-)
 
-Will fix and resend.
-
-/Amit
-
-> > 
-> > Signed-off-by: Amit Kucheria <amit.kucheria@canonical.com>
-> > ---
-> >  arch/arm/plat-mxc/clock.c |   37 ++++++++++++++++++++++++-------------
-> >  1 files changed, 24 insertions(+), 13 deletions(-)
-> > 
-> > diff --git a/arch/arm/plat-mxc/clock.c b/arch/arm/plat-mxc/clock.c
-> > index 323ff8c..c791f38 100644
-> > --- a/arch/arm/plat-mxc/clock.c
-> > +++ b/arch/arm/plat-mxc/clock.c
-> > @@ -50,15 +50,15 @@ static DEFINE_MUTEX(clocks_mutex);
-> >  
-> >  static void __clk_disable(struct clk *clk)
-> >  {
-> > -	if (clk == NULL || IS_ERR(clk))
-> > +	if (clk == NULL || IS_ERR(clk) || !clk->usecount)
-> >  		return;
-> >  
-> > -	__clk_disable(clk->parent);
-> > -	__clk_disable(clk->secondary);
-> > -
-> > -	WARN_ON(!clk->usecount);
-> > -	if (!(--clk->usecount) && clk->disable)
-> > -		clk->disable(clk);
-> > +	if (!(--clk->usecount)) {
-> > +		if (clk->disable)
-> > +			clk->disable(clk);
-> > +		__clk_disable(clk->parent);
-> > +		__clk_disable(clk->secondary);
-> > +	}
-> >  }
-> >  
-> >  static int __clk_enable(struct clk *clk)
-> > @@ -66,12 +66,13 @@ static int __clk_enable(struct clk *clk)
-> >  	if (clk == NULL || IS_ERR(clk))
-> >  		return -EINVAL;
-> >  
-> > -	__clk_enable(clk->parent);
-> > -	__clk_enable(clk->secondary);
-> > -
-> > -	if (clk->usecount++ == 0 && clk->enable)
-> > -		clk->enable(clk);
-> > +	if (clk->usecount++ == 0) {
-> > +		__clk_enable(clk->parent);
-> > +		__clk_enable(clk->secondary);
-> >  
-> > +		if (clk->enable)
-> > +			clk->enable(clk);
-> > +	}
-> >  	return 0;
-> >  }
-> >  
-> > @@ -160,17 +161,27 @@ EXPORT_SYMBOL(clk_set_rate);
-> >  int clk_set_parent(struct clk *clk, struct clk *parent)
-> >  {
-> >  	int ret = -EINVAL;
-> > +	struct clk *prev_parent = clk->parent;
-> >  
-> >  	if (clk == NULL || IS_ERR(clk) || parent == NULL ||
-> >  	    IS_ERR(parent) || clk->set_parent == NULL)
-> >  		return ret;
-> >  
-> > +	if (clk->usecount != 0) {
-> > +		clk_enable(parent);
-> > +	}
-> > +
-> >  	mutex_lock(&clocks_mutex);
-> >  	ret = clk->set_parent(clk, parent);
-> > -	if (ret == 0)
-> > +	if (ret == 0) {
-> >  		clk->parent = parent;
-> > +	}
-> 
-> Please remove this hunk. It does not change anything except violating
-> the coding style. Also, please remove unnecessary braces.
-> 
-> >  	mutex_unlock(&clocks_mutex);
-> >  
-> > +	if (clk->usecount != 0) {
-> > +		clk_disable(prev_parent);
-> > +	}
-> > +
-> >  	return ret;
-> >  }
-> >  EXPORT_SYMBOL(clk_set_parent);
-> > -- 
-> > 1.7.0.4
-> > 
-> > 
-> 
-> -- 
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
+diff --git a/Documentation/DocBook/genericirq.tmpl b/Documentation/DocBook/genericirq.tmpl
+index 1448b33..5ee204c 100644
+--- a/Documentation/DocBook/genericirq.tmpl
++++ b/Documentation/DocBook/genericirq.tmpl
+@@ -240,8 +240,6 @@ default_enable(irq)
+ 
+ default_disable(irq)
+ {
+-	if (!delay_disable(irq))
+-		desc->chip->mask(irq);
+ }
+ 
+ default_ack(irq)
+@@ -264,7 +262,11 @@ noop(irq)
+ }
+ 
+ 		</programlisting>
+-	        </para>
++	        Note: default_disable is empty so that an edge-triggered
++		interrupt happening between a disable_irq() and an enable_irq()
++		is catched by the kernel for later replay. See
++		<xref linkend="Delayed_interrupt_disable"/> for details.
++		</para>
+ 	    </sect3>
+ 	</sect2>
+ 	<sect2 id="Default_flow_handler_implementations">
+@@ -278,9 +280,14 @@ noop(irq)
+ 		<para>
+ 		The following control flow is implemented (simplified excerpt):
+ 		<programlisting>
+-desc->chip->start();
++desc->chip->mask_ack();
++if (desc->status &amp; inprogress)
++	return;
++desc->status |= inprogress;
+ handle_IRQ_event(desc->action);
+-desc->chip->end();
++desc->status &amp;= inprogress;
++if (!(desc->status &amp; disabled))
++	desc->chip->unmask_ack();
+ 		</programlisting>
+ 		</para>
+    	    </sect3>
+@@ -293,21 +300,23 @@ desc->chip->end();
+ 		<para>
+ 		The following control flow is implemented (simplified excerpt):
+ 		<programlisting>
+-if (desc->status &amp; running) {
+-	desc->chip->hold();
++if (desc->status &amp; (inprogress | disabled)) {
+ 	desc->status |= pending | masked;
++	desc->chip->mask_ack();
+ 	return;
+ }
+-desc->chip->start();
+-desc->status |= running;
++desc->chip->ack();
++desc->status |= inprogress;
+ do {
+-	if (desc->status &amp; masked)
+-		desc->chip->enable();
++	if ((desc->status &amp; (pending | masked | disabled))
++			     == (pending | masked)) {
++		desc->chip->unmask();
++		desc->status &amp;= ~masked;
++	}
+ 	desc->status &amp;= ~pending;
+ 	handle_IRQ_event(desc->action);
+-} while (status &amp; pending);
+-desc->status &amp;= ~running;
+-desc->chip->end();
++} while ((status &amp; (pending | disabled)) == pending);
++desc->status &amp;= inprogress;
+ 		</programlisting>
+ 		</para>
+    	    </sect3>
+@@ -342,9 +351,9 @@ handle_IRQ_event(desc->action);
+ 		<para>
+ 		The following control flow is implemented (simplified excerpt):
+ 		<programlisting>
+-desc->chip->start();
++desc->chip->ack();
+ handle_IRQ_event(desc->action);
+-desc->chip->end();
++desc->chip->eoi();
+ 		</programlisting>
+ 		</para>
+    	    </sect3>
+@@ -361,22 +370,20 @@ desc->chip->end();
+ 	<sect2 id="Delayed_interrupt_disable">
+ 	<title>Delayed interrupt disable</title>
+ 	<para>
+-	This per interrupt selectable feature, which was introduced by Russell
+-	King in the ARM interrupt implementation, does not mask an interrupt
+-	at the hardware level when disable_irq() is called. The interrupt is
+-	kept enabled and is masked in the flow handler when an interrupt event
+-	happens. This prevents losing edge interrupts on hardware which does
+-	not store an edge interrupt event while the interrupt is disabled at
+-	the hardware level. When an interrupt arrives while the IRQ_DISABLED
+-	flag is set, then the interrupt is masked at the hardware level and
+-	the IRQ_PENDING bit is set. When the interrupt is re-enabled by
+-	enable_irq() the pending bit is checked and if it is set, the
+-	interrupt is resent either via hardware or by a software resend
+-	mechanism. (It's necessary to enable CONFIG_HARDIRQS_SW_RESEND when
+-	you want to use the delayed interrupt disable feature and your
+-	hardware is not capable of retriggering	an interrupt.)
+-	The delayed interrupt disable can be runtime enabled, per interrupt,
+-	by setting the IRQ_DELAYED_DISABLE flag in the irq_desc status field.
++	At least when using default_disable as the ->disable() callback of a
++	chip handler, an interrupt is not masked at the hardware level when
++	disable_irq() is called. The interrupt is kept enabled and is masked
++	in the flow handler when an interrupt event happens. This prevents
++	losing edge interrupts on hardware which does not store an edge
++	interrupt event while the interrupt is disabled at the hardware level.
++	This makes use of the replay mechanism that is mandatory anyway to
++	prevent potential race conditions between an interrupt event and a call
++	to disable_irq() at the same time. When an interrupt arrives in
++	handle_edge_irq() while the IRQ_DISABLED flag is set, then the
++	interrupt is masked at the hardware level and the IRQ_PENDING bit is
++	set. When the interrupt is re-enabled by enable_irq() the pending bit
++	is checked and if it is set, the interrupt is resent either via
++	hardware or by a software resend mechanism.
+ 	</para>
+ 	</sect2>
+     </sect1>
+@@ -387,6 +394,8 @@ desc->chip->end();
+ 	contains all the direct chip relevant functions, which
+ 	can be utilized by the irq flow implementations.
+ 	  <itemizedlist>
++	  <listitem><para>disable() - Optional</para></listitem>
++	  <listitem><para>enable() - Optional</para></listitem>
+ 	  <listitem><para>ack()</para></listitem>
+ 	  <listitem><para>mask_ack() - Optional, recommended for performance</para></listitem>
+ 	  <listitem><para>mask()</para></listitem>
 -- 
-----------------------------------------------------------------------
-Amit Kucheria, Kernel Engineer || amit.kucheria@canonical.com
-----------------------------------------------------------------------
+1.5.6.5
+
