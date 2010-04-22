@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758695Ab0DVUjm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:39:42 -0400
-Received: from kroah.org ([198.145.64.141]:37437 "EHLO coco.kroah.org"
+	id S1758661Ab0DVUjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:39:06 -0400
+Received: from kroah.org ([198.145.64.141]:37423 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756051Ab0DVT2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:03 -0400
+	id S1756201Ab0DVT2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:05 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:11 2010
-Message-Id: <20100422190911.560544899@kvm.kroah.org>
+Message-Id: <20100422190911.735233389@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:18 -0700
+Date: Thu, 22 Apr 2010 12:08:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [047/197] ALSA: mixart: range checking proc file
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: [049/197] x86, amd: Get multi-node CPU info from NodeId MSR instead of PCI config space
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +26,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
 
-commit b0cc58a25d04160d39a80e436847eaa2fbc5aa09 upstream.
+commit 9d260ebc09a0ad6b5c73e17676df42c7bc75ff64 upstream.
 
-The original code doesn't take into consideration that the value of
-MIXART_BA0_SIZE - pos can be less than zero which would lead to a large
-unsigned value for "count".
+Use NodeId MSR to get NodeId and number of nodes per processor.
 
-Also I moved the check that read size is a multiple of 4 bytes below
-the code that adjusts "count".
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+LKML-Reference: <20091216144355.GB28798@alberich.amd.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/mixart/mixart.c |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/cpufeature.h |    1 
+ arch/x86/include/asm/msr-index.h  |    1 
+ arch/x86/kernel/cpu/amd.c         |   53 ++++++++++----------------------------
+ 3 files changed, 17 insertions(+), 38 deletions(-)
 
---- a/sound/pci/mixart/mixart.c
-+++ b/sound/pci/mixart/mixart.c
-@@ -1161,13 +1161,15 @@ static long snd_mixart_BA0_read(struct s
- 				unsigned long count, unsigned long pos)
- {
- 	struct mixart_mgr *mgr = entry->private_data;
-+	unsigned long maxsize;
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -153,6 +153,7 @@
+ #define X86_FEATURE_SSE5	(6*32+11) /* SSE-5 */
+ #define X86_FEATURE_SKINIT	(6*32+12) /* SKINIT/STGI instructions */
+ #define X86_FEATURE_WDT		(6*32+13) /* Watchdog timer */
++#define X86_FEATURE_NODEID_MSR	(6*32+19) /* NodeId MSR */
  
--	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
--	if(count <= 0)
-+	if (pos >= MIXART_BA0_SIZE)
- 		return 0;
--	if(pos + count > MIXART_BA0_SIZE)
--		count = (long)(MIXART_BA0_SIZE - pos);
--	if(copy_to_user_fromio(buf, MIXART_MEM( mgr, pos ), count))
-+	maxsize = MIXART_BA0_SIZE - pos;
-+	if (count > maxsize)
-+		count = maxsize;
-+	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
-+	if (copy_to_user_fromio(buf, MIXART_MEM(mgr, pos), count))
- 		return -EFAULT;
- 	return count;
- }
-@@ -1180,13 +1182,15 @@ static long snd_mixart_BA1_read(struct s
- 				unsigned long count, unsigned long pos)
- {
- 	struct mixart_mgr *mgr = entry->private_data;
-+	unsigned long maxsize;
+ /*
+  * Auxiliary flags: Linux defined - For features scattered in various
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -125,6 +125,7 @@
+ #define FAM10H_MMIO_CONF_BUSRANGE_SHIFT 2
+ #define FAM10H_MMIO_CONF_BASE_MASK	0xfffffff
+ #define FAM10H_MMIO_CONF_BASE_SHIFT	20
++#define MSR_FAM10H_NODE_ID		0xc001100c
  
--	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
--	if(count <= 0)
-+	if (pos > MIXART_BA1_SIZE)
- 		return 0;
--	if(pos + count > MIXART_BA1_SIZE)
--		count = (long)(MIXART_BA1_SIZE - pos);
--	if(copy_to_user_fromio(buf, MIXART_REG( mgr, pos ), count))
-+	maxsize = MIXART_BA1_SIZE - pos;
-+	if (count > maxsize)
-+		count = maxsize;
-+	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
-+	if (copy_to_user_fromio(buf, MIXART_REG(mgr, pos), count))
- 		return -EFAULT;
- 	return count;
+ /* K8 MSRs */
+ #define MSR_K8_TOP_MEM1			0xc001001a
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -254,59 +254,36 @@ static int __cpuinit nearby_node(int api
+ 
+ /*
+  * Fixup core topology information for AMD multi-node processors.
+- * Assumption 1: Number of cores in each internal node is the same.
+- * Assumption 2: Mixed systems with both single-node and dual-node
+- *               processors are not supported.
++ * Assumption: Number of cores in each internal node is the same.
+  */
+ #ifdef CONFIG_X86_HT
+ static void __cpuinit amd_fixup_dcm(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_PCI
+-	u32 t, cpn;
+-	u8 n, n_id;
++	unsigned long long value;
++	u32 nodes, cores_per_node;
+ 	int cpu = smp_processor_id();
+ 
++	if (!cpu_has(c, X86_FEATURE_NODEID_MSR))
++		return;
++
+ 	/* fixup topology information only once for a core */
+ 	if (cpu_has(c, X86_FEATURE_AMD_DCM))
+ 		return;
+ 
+-	/* check for multi-node processor on boot cpu */
+-	t = read_pci_config(0, 24, 3, 0xe8);
+-	if (!(t & (1 << 29)))
++	rdmsrl(MSR_FAM10H_NODE_ID, value);
++
++	nodes = ((value >> 3) & 7) + 1;
++	if (nodes == 1)
+ 		return;
+ 
+ 	set_cpu_cap(c, X86_FEATURE_AMD_DCM);
++	cores_per_node = c->x86_max_cores / nodes;
+ 
+-	/* cores per node: each internal node has half the number of cores */
+-	cpn = c->x86_max_cores >> 1;
+-
+-	/* even-numbered NB_id of this dual-node processor */
+-	n = c->phys_proc_id << 1;
++	/* store NodeID, use llc_shared_map to store sibling info */
++	per_cpu(cpu_llc_id, cpu) = value & 7;
+ 
+-	/*
+-	 * determine internal node id and assign cores fifty-fifty to
+-	 * each node of the dual-node processor
+-	 */
+-	t = read_pci_config(0, 24 + n, 3, 0xe8);
+-	n = (t>>30) & 0x3;
+-	if (n == 0) {
+-		if (c->cpu_core_id < cpn)
+-			n_id = 0;
+-		else
+-			n_id = 1;
+-	} else {
+-		if (c->cpu_core_id < cpn)
+-			n_id = 1;
+-		else
+-			n_id = 0;
+-	}
+-
+-	/* compute entire NodeID, use llc_shared_map to store sibling info */
+-	per_cpu(cpu_llc_id, cpu) = (c->phys_proc_id << 1) + n_id;
+-
+-	/* fixup core id to be in range from 0 to cpn */
+-	c->cpu_core_id = c->cpu_core_id % cpn;
+-#endif
++	/* fixup core id to be in range from 0 to (cores_per_node - 1) */
++	c->cpu_core_id = c->cpu_core_id % cores_per_node;
  }
+ #endif
+ 
 
 
