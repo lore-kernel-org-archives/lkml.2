@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab0DVQ1N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 12:27:13 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51712 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754348Ab0DVQ1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 12:27:11 -0400
-Date: Thu, 22 Apr 2010 18:27:10 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] [MTD] Fix JFFS2 sync silent failure
-Message-ID: <20100422162709.GJ27497@kernel.dk>
-References: <20100417184016.GA17345@logfs.org> <20100419073843.GN27497@kernel.dk> <20100419101559.GA4145@logfs.org> <20100419102056.GS27497@kernel.dk> <20100422055448.GA27309@logfs.org> <20100422062631.GC27309@logfs.org> <alpine.LFD.2.00.1004220724170.9086@i5.linux-foundation.org> <alpine.LFD.2.00.1004220730280.9086@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004220730280.9086@i5.linux-foundation.org>
+	id S1754945Ab0DVQ2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 12:28:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35739 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348Ab0DVQ2K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 12:28:10 -0400
+Subject: Re: Considerations on sched APIs under RT patch
+From: Peter Zijlstra <peterz@infradead.org>
+To: Primiano Tucci <p.tucci@gmail.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+       tglx <tglx@linutronix.de>, Bjoern Brandenburg <bbb@email.unc.edu>
+In-Reply-To: <k2gc5b2c05b1004220840z59f9417fy723a36a6fe9924dc@mail.gmail.com>
+References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>
+	 <1271839772.1776.58.camel@laptop>
+	 <1271854016.10448.172.camel@gandalf.stny.rr.com>
+	 <x2mc5b2c05b1004211224s7825933dh531f2ed030610e9e@mail.gmail.com>
+	 <1271879833.1776.186.camel@laptop>
+	 <s2tc5b2c05b1004211338y814bc3b2o547a6eecdf64ca7f@mail.gmail.com>
+	 <1271883496.1776.263.camel@laptop>
+	 <1271942430.10448.196.camel@gandalf.stny.rr.com>
+	 <x2hc5b2c05b1004220650w53919f62hf3daedb822755bf4@mail.gmail.com>
+	 <1271944622.1776.349.camel@laptop>
+	 <k2gc5b2c05b1004220840z59f9417fy723a36a6fe9924dc@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Apr 2010 18:28:06 +0200
+Message-ID: <1271953686.1776.372.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22 2010, Linus Torvalds wrote:
-> 
-> 
-> On Thu, 22 Apr 2010, Linus Torvalds wrote:
-> >
-> > Umm. Why not just remove the two-liner? It was incorrect. The comment says 
-> > "this should be safe", and if it wasn't, then the commit that caused this 
-> > all was total crap to begin with.
-> 
-> Grr. Ok, so we do need it. Because Jens made it not work without it, and 
-> didn't fix up the filesystems, just added a random comment saying "we 
-> shouldn't need to".
-> 
-> Double-grr. I hate misleading comments. It makes the patch and the code 
-> look like people knew what they were doing.
+On Thu, 2010-04-22 at 17:40 +0200, Primiano Tucci wrote:
 
-Yeah sorry, that part was apparently not well thought through. It did go
-through review and testing, but at least the latter was not good enough.
+> > Its a well studied
+> > algorithm and even available in commercial SMP operating systems
+> 
+> Can you cite me a commercial SMP system that supports
+> multicore/multiprocessor G-EDF?
 
-> Jens - please help fix this up.
+From: http://www.cs.unc.edu/~anderson/papers/rtlws09.pdf
 
-Of course, I already posted a series of patches to fix this up. I want
-to test them a bit, and I'll send them in tomorrow.
+"Regarding the frequently voiced objections to G-
+EDF’s viability in a “real” system, it should be noted that
+xnu, the kernel underlying Apple’s multimedia-friendly
+OS X, has been relying on G-EDF to support real-time
+applications on multiprocessors for several years [5]."
 
--- 
-Jens Axboe
+"[5] Apple Inc. xnu source code.
+http://opensource.apple.com/source/xnu/."
+
+
+> > Implementing this as userspace/middleware seems daft. But if your
+> > controlling process has a global affinity mask and runs as the highest
+> > available userspace process priority its still all valid.
+> 
+> It is how it is implemented now, and how it works under VXWorks!
+
+But that does not, and can not, provide proper isolation and bandwidth
+guarantees since there could be runnable tasks outside the scope of the
+middleware.
 
