@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab0DVTgb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:36:31 -0400
-Received: from kroah.org ([198.145.64.141]:41448 "EHLO coco.kroah.org"
+	id S1757588Ab0DVTwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:52:39 -0400
+Received: from kroah.org ([198.145.64.141]:40916 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756639Ab0DVT3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:46 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:22 2010
-Message-Id: <20100422190922.618832798@kvm.kroah.org>
+	id S1756487Ab0DVT2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:42 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:15 2010
+Message-Id: <20100422190915.563848474@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:21 -0700
+Date: Thu, 22 Apr 2010 12:09:02 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [170/197] lockdep: fix incorrect percpu usage
+       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>
+Subject: [091/197] x86, hpet: Erratum workaround for read after write of HPET comparator
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,59 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+From: Pallipadi, Venkatesh <venkatesh.pallipadi@intel.com>
 
-The mainline kernel as of 2.6.34-rc5 is not affected by this problem because
-commit 10fad5e46f6c7bdfb01b1a012380a38e3c6ab346 fixed it by refactoring.
+commit 8da854cb02156c90028233ae1e85ce46a1d3f82c upstream.
 
-lockdep fix incorrect percpu usage
+On Wed, Feb 24, 2010 at 03:37:04PM -0800, Justin Piszcz wrote:
+> Hello,
+>
+> Again, on the Intel DP55KG board:
+>
+> # uname -a
+> Linux host 2.6.33 #1 SMP Wed Feb 24 18:31:00 EST 2010 x86_64 GNU/Linux
+>
+> [    1.237600] ------------[ cut here ]------------
+> [    1.237890] WARNING: at arch/x86/kernel/hpet.c:404 hpet_next_event+0x70/0x80()
+> [    1.238221] Hardware name:
+> [    1.238504] hpet: compare register read back failed.
+> [    1.238793] Modules linked in:
+> [    1.239315] Pid: 0, comm: swapper Not tainted 2.6.33 #1
+> [    1.239605] Call Trace:
+> [    1.239886]  <IRQ>  [<ffffffff81056c13>] ? warn_slowpath_common+0x73/0xb0
+> [    1.240409]  [<ffffffff81079608>] ? tick_dev_program_event+0x38/0xc0
+> [    1.240699]  [<ffffffff81056cb0>] ? warn_slowpath_fmt+0x40/0x50
+> [    1.240992]  [<ffffffff81079608>] ? tick_dev_program_event+0x38/0xc0
+> [    1.241281]  [<ffffffff81041ad0>] ? hpet_next_event+0x70/0x80
+> [    1.241573]  [<ffffffff81079608>] ? tick_dev_program_event+0x38/0xc0
+> [    1.241859]  [<ffffffff81078e32>] ? tick_handle_oneshot_broadcast+0xe2/0x100
+> [    1.246533]  [<ffffffff8102a67a>] ? timer_interrupt+0x1a/0x30
+> [    1.246826]  [<ffffffff81085499>] ? handle_IRQ_event+0x39/0xd0
+> [    1.247118]  [<ffffffff81087368>] ? handle_edge_irq+0xb8/0x160
+> [    1.247407]  [<ffffffff81029f55>] ? handle_irq+0x15/0x20
+> [    1.247689]  [<ffffffff810294a2>] ? do_IRQ+0x62/0xe0
+> [    1.247976]  [<ffffffff8146be53>] ? ret_from_intr+0x0/0xa
+> [    1.248262]  <EOI>  [<ffffffff8102f277>] ? mwait_idle+0x57/0x80
+> [    1.248796]  [<ffffffff8102645c>] ? cpu_idle+0x5c/0xb0
+> [    1.249080] ---[ end trace db7f668fb6fef4e1 ]---
+>
+> Is this something Intel has to fix or is it a bug in the kernel?
 
-Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
-for per cpu pointers).
+This is a chipset erratum.
 
-git blame points to commit:
+Thomas: You mentioned we can retain this check only for known-buggy and
+hpet debug kind of options. But here is the simple workaround patch for
+this particular erratum.
 
-lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
+Some chipsets have a erratum due to which read immediately following a
+write of HPET comparator returns old comparator value instead of most
+recently written value.
 
-But it's really just moving the code around. But it's enough to say that the
-problems appeared before Jul 19 01:48:54 2007, which brings us back to 2.6.23.
+Erratum 15 in
+"Intel I/O Controller Hub 9 (ICH9) Family Specification Update"
+(http://www.intel.com/assets/pdf/specupdate/316973.pdf)
 
-It should be applied to stable 2.6.23.x to 2.6.33.x (or whichever of these
-stable branches are still maintained).
+Workaround for the errata is to read the comparator twice if the first
+one fails.
 
-(tested on 2.6.33.1 x86_64)
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Eric Dumazet <dada1@cosmosbay.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Tejun Heo <tj@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
+LKML-Reference: <20100225185348.GA9674@linux-os.sc.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/lockdep.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/hpet.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -591,9 +591,9 @@ static int static_obj(void *obj)
- 	 * percpu var?
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -398,9 +398,15 @@ static int hpet_next_event(unsigned long
+ 	 * then we might have a real hardware problem. We can not do
+ 	 * much about it here, but at least alert the user/admin with
+ 	 * a prominent warning.
++	 * An erratum on some chipsets (ICH9,..), results in comparator read
++	 * immediately following a write returning old value. Workaround
++	 * for this is to read this value second time, when first
++	 * read returns old value.
  	 */
- 	for_each_possible_cpu(i) {
--		start = (unsigned long) &__per_cpu_start + per_cpu_offset(i);
--		end   = (unsigned long) &__per_cpu_start + PERCPU_ENOUGH_ROOM
--					+ per_cpu_offset(i);
-+		start = (unsigned long) per_cpu_ptr(&__per_cpu_start, i);
-+		end   = (unsigned long) per_cpu_ptr(&__per_cpu_start
-+						    + PERCPU_ENOUGH_ROOM, i);
+-	WARN_ONCE((u32)hpet_readl(HPET_Tn_CMP(timer)) != cnt,
++	if (unlikely((u32)hpet_readl(HPET_Tn_CMP(timer)) != cnt)) {
++		WARN_ONCE((u32)hpet_readl(HPET_Tn_CMP(timer)) != cnt,
+ 		  KERN_WARNING "hpet: compare register read back failed.\n");
++	}
  
- 		if ((addr >= start) && (addr < end))
- 			return 1;
+ 	return (s32)((u32)hpet_readl(HPET_COUNTER) - cnt) >= 0 ? -ETIME : 0;
+ }
 
 
