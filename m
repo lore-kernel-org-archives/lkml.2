@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab0DVIYO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 04:24:14 -0400
-Received: from host2.200-71-230.telecom.net.ar ([200.71.230.2]:44168 "EHLO
-	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751836Ab0DVIYM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 04:24:12 -0400
-Message-ID: <41312.41.220.68.1.1271911448.squirrel@41.220.68.1>
-Date: Thu, 22 Apr 2010 02:44:08 -0200 (FNT)
-Subject: Congratulations - You Have Won (Winning Numbers)
-From: "MICROSOFT EMAIL PROMOTION" <info.winners@microsoft.com>
-Reply-To: mrivannickerson4@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
+	id S1752320Ab0DVI06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 04:26:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49784 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751179Ab0DVI04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 04:26:56 -0400
+Message-ID: <4BD00928.5010909@redhat.com>
+Date: Thu, 22 Apr 2010 16:30:32 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+To: Vitaly Mayatskikh <v.mayatskih@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: Fix OOPS in crash_kernel_shrink
+References: <87iq7n8toc.wl%vmayatsk@redhat.com>	<4BCDA46E.9030405@redhat.com> <87r5maqleh.wl%vmayatsk@redhat.com>
+In-Reply-To: <87r5maqleh.wl%vmayatsk@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Congratulations - You Have Won (Winning Numbers)
+Vitaly Mayatskikh wrote:
+> At Tue, 20 Apr 2010 20:56:14 +0800, Cong Wang wrote:
+>> Vitaly Mayatskikh wrote:
+>>> Two "echo 0 > /sys/kernel/kexec_crash_size" OOPSes kernel. Also
+>>> content of this file is invalid after first shrink to zero: it shows 1
+>>> instead of 0.
+>>>
+>>> This patch fixes it.
+>> Hmmm, I certainly did tests for 'echo 0 > kexec_crash_size' when I
+>> worked on this, but I didn't get any oops. Can you show me the full
+>> oops?
+> 
+> Do it twice. start == end condition will work over and over, and
+> kernel will try to release_resource() again (and that's causes OOPS).
+> 
 
-The MICROSOFT EMAIL PROMO TEAM is glad to announce that
-after a successful completion of the PROMO DRAWS held on the
-21st April March 2010,your e-mail address,attached to winning
-numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
-lottery category.
+Hmm, I see. ACK to your patch.
 
-You have therefore been approved to claim a total sum of
-£250,000,00 Pounds Sterling in cash credited to REF
-NO:MICRO-L/2009-END10.
-
-All participants were selected through our Microsoft computer
-ballot system drawn from 167,000 Names,as part of our
-International  "E-MAIL" Promotion Program for our prominent
-MS-WORD users all over the world and for the continuous use
-of the internet. You are advised to contact the claims
-processor with the details below via his e-mail address :
-
-NAME:  Ivan Nickerson
-EMAIL: mrivan_nickerson04@yahoo.com.hk
-
-PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO
-
-CLAIM YOUR PRIZE:
-1.Full Name:... 2.Address:... 3.Phone:... 4.Country:...
-
-5.Sex/Gender:...
-
-
-YOURS SINCERELY,
-ANASTACIA SHEFFIELD.
+Thanks much!
 
