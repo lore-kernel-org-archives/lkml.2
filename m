@@ -1,71 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab0DWAOp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 20:14:45 -0400
-Received: from kroah.org ([198.145.64.141]:41013 "EHLO coco.kroah.org"
+	id S1754213Ab0DWAOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 20:14:48 -0400
+Received: from kroah.org ([198.145.64.141]:41018 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753263Ab0DWAOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753864Ab0DWAOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Apr 2010 20:14:43 -0400
-Date: Thu, 22 Apr 2010 16:37:41 -0700
+Date: Thu, 22 Apr 2010 16:51:47 -0700
 From: Greg KH <greg@kroah.com>
-To: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-       "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-       Jonathan Cameron <jic23@cam.ac.uk>
-Subject: Re: [PATCH] iio-trig-gpio:Remove redundant gpio_request
-Message-ID: <20100422233741.GA4414@kroah.com>
-References: <544AC56F16B56944AEC3BD4E3D5917712D6B1D9767@LIMKCMBX1.ad.analog.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] firmware loader: use statically initialized data
+ attribute
+Message-ID: <20100422235147.GB4414@kroah.com>
+References: <20100314074330.27035.38765.stgit@localhost.localdomain>
+ <20100314074907.27035.41960.stgit@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <544AC56F16B56944AEC3BD4E3D5917712D6B1D9767@LIMKCMBX1.ad.analog.com>
+In-Reply-To: <20100314074907.27035.41960.stgit@localhost.localdomain>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 09, 2010 at 12:58:29PM +0000, Hennerich, Michael wrote:
-> 
-> Remove redundant gpio_request:
-> The GPIO used as trigger IRQ, is also requested as gpio, but actually never read.
-> 
-> Use platform resource facility to get IRQs numbers and flags.
-> Make sure this driver can be used with any system IRQ, not necessarily limited to GPIO-IRQs.
-> Use dev_err(dev...) and friends instead of printk(KERN_ERR...)
-> 
-> 
-> Signed-off-by: Michael Hennerich <Michael.Hennerich@analog.com>
-> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
-> 
-> 
-> Index: drivers/staging/iio/trigger/iio-trig-gpio.c
-> ===================================================================
-> --- drivers/staging/iio/trigger/iio-trig-gpio.c (revision 7916)
-> +++ drivers/staging/iio/trigger/iio-trig-gpio.c (working copy)
-> @@ -13,7 +13,6 @@
->   * TODO:
->   *
->   * Add board config elements to allow specification of startup settings.
-> - * Add configuration settings (irq type etc)
->   */
-> 
->  #include <linux/kernel.h>
-> @@ -30,7 +29,7 @@
-> 
->  struct iio_gpio_trigger_info {
->         struct mutex in_use;
-> -       int gpio;
-> +       unsigned int irq;
+On Sat, Mar 13, 2010 at 11:49:07PM -0800, Dmitry Torokhov wrote:
+> There is no reason why we are using a template for binary attribute
+> and copying it into per-firmware data before registering. Using the
+> original works as well and gets rid of the following lockdep
+> compaint:
 
-Your email client turned the tabs into spaces, and made this patch
-unappliable.  Can you fix this and resend your other patches as well
-(they also had the same problem.)
-
-Take a look at Documentation/SubmittingPatches for how to do this
-correctly (you also need to make the diff one level down).
+This patch isn't needed anymore, right?
 
 thanks,
 
