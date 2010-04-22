@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab0DVTi4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:38:56 -0400
-Received: from kroah.org ([198.145.64.141]:41400 "EHLO coco.kroah.org"
+	id S1757266Ab0DVTfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:35:44 -0400
+Received: from kroah.org ([198.145.64.141]:41525 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756828Ab0DVT3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:38 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:21 2010
-Message-Id: <20100422190921.791470901@kvm.kroah.org>
+	id S1756875Ab0DVT3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:50 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:23 2010
+Message-Id: <20100422190923.080178028@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:12 -0700
+Date: Thu, 22 Apr 2010 12:10:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Terry Loftin <terry.loftin@hp.com>,
-       Bruce Allan <bruce.w.allan@intel.com>,
-       Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Matthew Burgess <matthew@linuxfromscratch.org>
-Subject: [161/197] e1000e: stop cleaning when we reach tx_ring->next_to_use
+       "J. Bruce Fields" <bfields@citi.umich.edu>
+Subject: [175/197] Revert "sunrpc: move the close processing after do recvfrom method"
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,35 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Terry Loftin <terry.loftin@hp.com>
+From: J. Bruce Fields <bfields@citi.umich.edu>
 
-commit dac876193cd79ced36d0462749ea47c05844fb49 upstream.
+commit 1b644b6e6f6160ae35ce4b52c2ca89ed3e356e18 upstream.
 
-Tx ring buffers after tx_ring->next_to_use are volatile and could
-change, possibly causing a crash.  Stop cleaning when we hit
-tx_ring->next_to_use.
+This reverts commit b0401d725334a94d57335790b8ac2404144748ee, which
+moved svc_delete_xprt() outside of XPT_BUSY, and allowed it to be called
+after svc_xpt_recived(), removing its last reference and destroying it
+after it had already been queued for future processing.
 
-Signed-off-by: Terry Loftin <terry.loftin@hp.com>
-Acked-by: Bruce Allan <bruce.w.allan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Matthew Burgess <matthew@linuxfromscratch.org>
+Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/e1000e/netdev.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/sunrpc/svc_xprt.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/drivers/net/e1000e/netdev.c
-+++ b/drivers/net/e1000e/netdev.c
-@@ -665,6 +665,8 @@ static bool e1000_clean_tx_irq(struct e1
- 				i = 0;
- 		}
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -711,7 +711,10 @@ int svc_recv(struct svc_rqst *rqstp, lon
+ 	spin_unlock_bh(&pool->sp_lock);
  
-+		if (i == tx_ring->next_to_use)
-+			break;
- 		eop = tx_ring->buffer_info[i].next_to_watch;
- 		eop_desc = E1000_TX_DESC(*tx_ring, eop);
+ 	len = 0;
+-	if (test_bit(XPT_LISTENER, &xprt->xpt_flags)) {
++	if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
++		dprintk("svc_recv: found XPT_CLOSE\n");
++		svc_delete_xprt(xprt);
++	} else if (test_bit(XPT_LISTENER, &xprt->xpt_flags)) {
+ 		struct svc_xprt *newxpt;
+ 		newxpt = xprt->xpt_ops->xpo_accept(xprt);
+ 		if (newxpt) {
+@@ -737,7 +740,7 @@ int svc_recv(struct svc_rqst *rqstp, lon
+ 			svc_xprt_received(newxpt);
+ 		}
+ 		svc_xprt_received(xprt);
+-	} else if (!test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
++	} else {
+ 		dprintk("svc: server %p, pool %u, transport %p, inuse=%d\n",
+ 			rqstp, pool->sp_id, xprt,
+ 			atomic_read(&xprt->xpt_ref.refcount));
+@@ -750,11 +753,6 @@ int svc_recv(struct svc_rqst *rqstp, lon
+ 		dprintk("svc: got len=%d\n", len);
  	}
+ 
+-	if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
+-		dprintk("svc_recv: found XPT_CLOSE\n");
+-		svc_delete_xprt(xprt);
+-	}
+-
+ 	/* No data, incomplete (TCP) read, or accept() */
+ 	if (len == 0 || len == -EAGAIN) {
+ 		rqstp->rq_res.len = 0;
 
 
