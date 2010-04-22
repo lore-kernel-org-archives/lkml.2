@@ -1,61 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab0DVKDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 06:03:12 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:34558 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab0DVKDK (ORCPT
+	id S1753252Ab0DVKF0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 06:05:26 -0400
+Received: from web82706.mail.mud.yahoo.com ([68.142.201.87]:36943 "HELO
+	web82706.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752793Ab0DVKFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 06:03:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=NkcHZVSs8TQwBTtxiB//sofI1Aoifvhjzf5MJmztIAQt0tnYczko/3YgtWWg9IQftM
-         YqJ99fRsvvZ2CdcfPRxVCfLFRj3k1g6RYkO+FIhhMuG5FVuffqyiJs8sy+PD51wxEfuG
-         Qs78I8CvJcWk89+xDffZ6KAoLMOk0KIo5IfhU=
-Date: Thu, 22 Apr 2010 12:00:52 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alessio Igor Bogani <abogani@texware.it>, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] usb: testing the wrong variable in fs_create_by_name()
-Message-ID: <20100422100052.GT29647@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Alessio Igor Bogani <abogani@texware.it>, linux-usb@vger.kernel.org,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+	Thu, 22 Apr 2010 06:05:24 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=sbcglobal.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=ZsaY7tJKHRxbPa0i3uvWn0SmRkEkaAgBc/gHlb2E2k9KRzkM0ao4JCuDLBsdT5bjkICUSsC5M+O0iA2ZUjOxqGNkj5bQ+wKfBznmIFMPX/M3o9KjDwuNWpFMZgruSEsadNUyDMJZQKMkoEuARwU2EQwYp8fCerw3x+zCx5Vwy0U=;
+Message-ID: <555556.72107.qm@web82706.mail.mud.yahoo.com>
+X-YMail-OSG: l2IRUBYVM1lsiFyHJXEmTCKarQGBJfH7cXwEd2wOZfGsImk
+ h9CHqOhQ07jziXrATBiS5iiLDF1JrAjSVdvn9XswG7ccuYzIHVARdvFg7mYy
+ SeZYSQCi1PGtWIonKRUNSGyff.Dtltz2CMhXlQ.TCuYnPV__32p8Bf5sglWU
+ jNaW8w9v7ElkU.y4rJerbYUH2HE3k1lAvKwvHR_askTuiPJQ6URjwiD2i.qt
+ 8SzpyA0omvZfr7I6FF5PuVhgLFXRxJaZZ3SgpDeYopxu5BZqX3a7Bj5ll6PP
+ buZnxuGrul1cp6UNuBpmIN9Jx_oAz9eyAerzToHKNydyEtBXQ5U1kYN5H7lt
+ yYwj6N2lZjO020Xwq7xhMYlS0wUqa7X57rq7o.zy5_lMrbkwI1cu1mMHCWA1
+ l86oZpY1pVB2lAkqWlTXGdFykkVrmB7tOUDByj3_mgw1VYOoAqhyKrOQ7GoG
+ jyV2zMU2f1XpsBKyLYI3ZXpYSCsWar55klr5Ya6ZVoGGRt7Po7XqnqvzxTQr
+ FqtzKLgJnlfxWTpRpC_lNZSy.BPwoU0_3vukRFldhE6pkX2.EtrrkDA4lRgV
+ fWbHzloVuk3xsSB90NQsyIH1wAzkkq8_MgXwQOSLdyAqr9Dj9OBVbozzcGbC
+ .9vujQG4bCoHF.E2m2a7nwQhlf_m6QVe.V8T9mFuELjGEPL37pkDllKZRceR
+ 9xn19g9F6eYHevRwp0pobxYiKlwaj0k3kAa9oXhDLgg--
+X-Mailer: YahooMailClassic/10.1.9 YahooMailWebService/0.8.102.267879
+Date: Thu, 22 Apr 2010 03:05:22 -0700 (PDT)
+From: Tom Coffey <tom-coffey@sbcglobal.net>
+Subject: 750,000.00 Pounds has been Awarded to your E-mail ID in our Toyota 2010 Promo.
+To: undisclosed recipients:;
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a typo here.  We should be testing "*dentry" which was just
-assigned instead of "dentry".  This could result in dereferencing an
-ERR_PTR inside either usbfs_mkdir() or usbfs_create().
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-
-diff --git a/drivers/usb/core/inode.c b/drivers/usb/core/inode.c
-index 97b40ce..4a6366a 100644
---- a/drivers/usb/core/inode.c
-+++ b/drivers/usb/core/inode.c
-@@ -515,13 +515,13 @@ static int fs_create_by_name (const char *name, mode_t mode,
- 	*dentry = NULL;
- 	mutex_lock(&parent->d_inode->i_mutex);
- 	*dentry = lookup_one_len(name, parent, strlen(name));
--	if (!IS_ERR(dentry)) {
-+	if (!IS_ERR(*dentry)) {
- 		if ((mode & S_IFMT) == S_IFDIR)
- 			error = usbfs_mkdir (parent->d_inode, *dentry, mode);
- 		else 
- 			error = usbfs_create (parent->d_inode, *dentry, mode);
- 	} else
--		error = PTR_ERR(dentry);
-+		error = PTR_ERR(*dentry);
- 	mutex_unlock(&parent->d_inode->i_mutex);
- 
- 	return error;
+Name:...
+Address:.
