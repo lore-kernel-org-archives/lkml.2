@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758773Ab0DVUsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:48:32 -0400
-Received: from kroah.org ([198.145.64.141]:37129 "EHLO coco.kroah.org"
+	id S1755930Ab0DVT1h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:27:37 -0400
+Received: from kroah.org ([198.145.64.141]:37145 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755559Ab0DVT1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:27:32 -0400
+	id S1755653Ab0DVT1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:27:33 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:08 2010
-Message-Id: <20100422190908.134711585@kvm.kroah.org>
+Message-Id: <20100422190908.307904873@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:07:39 -0700
+Date: Thu, 22 Apr 2010 12:07:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Chris Wilson <chris@chris-wilson.co.uk>,
-       Dave Airlie <airlied@redhat.com>
-Subject: [008/197] drm: Return ENODEV if the inode mapping changes
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, xfs@oss.sgi.com,
+       Christoph Hellwig <hch@lst.de>, Alex Elder <aelder@sgi.com>
+Subject: [010/197] xfs: fix mmap_sem/iolock inversion in xfs_free_eofblocks
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,75 +25,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit da58405860b992d2bb21ebae5d685fe3204dd3f0 upstream.
+From: Christoph Hellwig <hch@infradead.org>
 
-Replace a BUG_ON with an error code in the event that the inode mapping
-changes between calls to drm_open. This may happen for instance if udev
-is loaded subsequent to the original opening of the device:
+commit c56c9631cbe88f08854a56ff9776c1f310916830 upstream
 
-[  644.291870] kernel BUG at drivers/gpu/drm/drm_fops.c:146!
-[  644.291876] invalid opcode: 0000 [#1] SMP
-[  644.291882] last sysfs file: /sys/kernel/uevent_seqnum
-[  644.291888]
-[  644.291895] Pid: 7276, comm: lt-cairo-test-s Not tainted 2.6.34-rc1 #2 N150/N210/N220             /N150/N210/N220
-[  644.291903] EIP: 0060:[<c11c70e3>] EFLAGS: 00210283 CPU: 0
-[  644.291912] EIP is at drm_open+0x4b1/0x4e2
-[  644.291918] EAX: f72d8d18 EBX: f790a400 ECX: f73176b8 EDX: 00000000
-[  644.291923] ESI: f790a414 EDI: f790a414 EBP: f647ae20 ESP: f647adfc
-[  644.291929]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  644.291937] Process lt-cairo-test-s (pid: 7276, ti=f647a000 task=f73f5c80 task.ti=f647a000)
-[  644.291941] Stack:
-[  644.291945]  00000000 f7bb7400 00000080 f6451100 f73176b8 f6479214 f6451100 f73176b8
-[  644.291957] <0> c1297ce0 f647ae34 c11c6c04 f73176b8 f7949800 00000000 f647ae54 c1080ac5
-[  644.291969] <0> f7949800 f6451100 00000000 f6451100 f73176b8 f6452780 f647ae70 c107d1e6
-[  644.291982] Call Trace:
-[  644.291991]  [<c11c6c04>] ? drm_stub_open+0x8a/0xb8
-[  644.292000]  [<c1080ac5>] ? chrdev_open+0xef/0x106
-[  644.292008]  [<c107d1e6>] ? __dentry_open+0xd4/0x1a6
-[  644.292015]  [<c107d35b>] ? nameidata_to_filp+0x31/0x45
-[  644.292022]  [<c10809d6>] ? chrdev_open+0x0/0x106
-[  644.292030]  [<c10864e2>] ? do_last+0x346/0x423
-[  644.292037]  [<c108789f>] ? do_filp_open+0x190/0x415
-[  644.292046]  [<c1071eb5>] ? handle_mm_fault+0x214/0x710
-[  644.292053]  [<c107d008>] ? do_sys_open+0x4d/0xe9
-[  644.292061]  [<c1016462>] ? do_page_fault+0x211/0x23f
-[  644.292068]  [<c107d0f0>] ? sys_open+0x23/0x2b
-[  644.292075]  [<c1002650>] ? sysenter_do_call+0x12/0x26
-[  644.292079] Code: 89 f0 89 55 dc e8 8d 96 0a 00 8b 45 e0 8b 55 dc 83 78 04 01 75 28 8b 83 18 02 00 00 85 c0 74 0f 8b 4d ec 3b 81 ac 00 00 00 74 13 <0f> 0b eb fe 8b 4d ec 8b 81 ac 00 00 00 89 83 18 02 00 00 89 f0
-[  644.292143] EIP: [<c11c70e3>] drm_open+0x4b1/0x4e2 SS:ESP 0068:f647adfc
-[  644.292175] ---[ end trace 2ddd476af89a60fa ]---
+When xfs_free_eofblocks is called from ->release the VM might already
+hold the mmap_sem, but in the write path we take the iolock before
+taking the mmap_sem in the generic write code.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Switch xfs_free_eofblocks to only trylock the iolock if called from
+->release and skip trimming the prellocated blocks in that case.
+We'll still free them later on the final iput.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Alex Elder <aelder@sgi.com>
+Signed-off-by: Alex Elder <aelder@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ fs/xfs/xfs_rw.h       |    7 -------
+ fs/xfs/xfs_vnodeops.c |   34 ++++++++++++++++++++++++++--------
+ 2 files changed, 26 insertions(+), 15 deletions(-)
 
---- a/drivers/gpu/drm/drm_fops.c
-+++ b/drivers/gpu/drm/drm_fops.c
-@@ -140,14 +140,16 @@ int drm_open(struct inode *inode, struct file *filp)
- 		spin_unlock(&dev->count_lock);
- 	}
- out:
--	mutex_lock(&dev->struct_mutex);
--	if (minor->type == DRM_MINOR_LEGACY) {
--		BUG_ON((dev->dev_mapping != NULL) &&
--			(dev->dev_mapping != inode->i_mapping));
--		if (dev->dev_mapping == NULL)
--			dev->dev_mapping = inode->i_mapping;
-+	if (!retcode) {
-+		mutex_lock(&dev->struct_mutex);
-+		if (minor->type == DRM_MINOR_LEGACY) {
-+			if (dev->dev_mapping == NULL)
-+				dev->dev_mapping = inode->i_mapping;
-+			else if (dev->dev_mapping != inode->i_mapping)
-+				retcode = -ENODEV;
-+		}
-+		mutex_unlock(&dev->struct_mutex);
- 	}
--	mutex_unlock(&dev->struct_mutex);
- 
- 	return retcode;
+--- a/fs/xfs/xfs_rw.h
++++ b/fs/xfs/xfs_rw.h
+@@ -37,13 +37,6 @@ xfs_fsb_to_db(struct xfs_inode *ip, xfs_
  }
+ 
+ /*
+- * Flags for xfs_free_eofblocks
+- */
+-#define XFS_FREE_EOF_LOCK	(1<<0)
+-#define XFS_FREE_EOF_NOLOCK	(1<<1)
+-
+-
+-/*
+  * helper function to extract extent size hint from inode
+  */
+ STATIC_INLINE xfs_extlen_t
+--- a/fs/xfs/xfs_vnodeops.c
++++ b/fs/xfs/xfs_vnodeops.c
+@@ -709,6 +709,11 @@ xfs_fsync(
+ }
+ 
+ /*
++ * Flags for xfs_free_eofblocks
++ */
++#define XFS_FREE_EOF_TRYLOCK	(1<<0)
++
++/*
+  * This is called by xfs_inactive to free any blocks beyond eof
+  * when the link count isn't zero and by xfs_dm_punch_hole() when
+  * punching a hole to EOF.
+@@ -726,7 +731,6 @@ xfs_free_eofblocks(
+ 	xfs_filblks_t	map_len;
+ 	int		nimaps;
+ 	xfs_bmbt_irec_t	imap;
+-	int		use_iolock = (flags & XFS_FREE_EOF_LOCK);
+ 
+ 	/*
+ 	 * Figure out if there are any blocks beyond the end
+@@ -768,14 +772,19 @@ xfs_free_eofblocks(
+ 		 * cache and we can't
+ 		 * do that within a transaction.
+ 		 */
+-		if (use_iolock)
++		if (flags & XFS_FREE_EOF_TRYLOCK) {
++			if (!xfs_ilock_nowait(ip, XFS_IOLOCK_EXCL)) {
++				xfs_trans_cancel(tp, 0);
++				return 0;
++			}
++		} else {
+ 			xfs_ilock(ip, XFS_IOLOCK_EXCL);
++		}
+ 		error = xfs_itruncate_start(ip, XFS_ITRUNC_DEFINITE,
+ 				    ip->i_size);
+ 		if (error) {
+ 			xfs_trans_cancel(tp, 0);
+-			if (use_iolock)
+-				xfs_iunlock(ip, XFS_IOLOCK_EXCL);
++			xfs_iunlock(ip, XFS_IOLOCK_EXCL);
+ 			return error;
+ 		}
+ 
+@@ -812,8 +821,7 @@ xfs_free_eofblocks(
+ 			error = xfs_trans_commit(tp,
+ 						XFS_TRANS_RELEASE_LOG_RES);
+ 		}
+-		xfs_iunlock(ip, (use_iolock ? (XFS_IOLOCK_EXCL|XFS_ILOCK_EXCL)
+-					    : XFS_ILOCK_EXCL));
++		xfs_iunlock(ip, XFS_IOLOCK_EXCL|XFS_ILOCK_EXCL);
+ 	}
+ 	return error;
+ }
+@@ -1113,7 +1121,17 @@ xfs_release(
+ 		     (ip->i_df.if_flags & XFS_IFEXTENTS))  &&
+ 		    (!(ip->i_d.di_flags &
+ 				(XFS_DIFLAG_PREALLOC | XFS_DIFLAG_APPEND)))) {
+-			error = xfs_free_eofblocks(mp, ip, XFS_FREE_EOF_LOCK);
++
++			/*
++			 * If we can't get the iolock just skip truncating
++			 * the blocks past EOF because we could deadlock
++			 * with the mmap_sem otherwise.  We'll get another
++			 * chance to drop them once the last reference to
++			 * the inode is dropped, so we'll never leak blocks
++			 * permanently.
++			 */
++			error = xfs_free_eofblocks(mp, ip,
++						   XFS_FREE_EOF_TRYLOCK);
+ 			if (error)
+ 				return error;
+ 		}
+@@ -1184,7 +1202,7 @@ xfs_inactive(
+ 		     (!(ip->i_d.di_flags &
+ 				(XFS_DIFLAG_PREALLOC | XFS_DIFLAG_APPEND)) ||
+ 		      (ip->i_delayed_blks != 0)))) {
+-			error = xfs_free_eofblocks(mp, ip, XFS_FREE_EOF_LOCK);
++			error = xfs_free_eofblocks(mp, ip, 0);
+ 			if (error)
+ 				return VN_INACTIVE_CACHE;
+ 		}
 
 
