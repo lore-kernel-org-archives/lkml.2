@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758236Ab0DVUVm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:21:42 -0400
-Received: from kroah.org ([198.145.64.141]:59733 "EHLO coco.kroah.org"
+	id S1758357Ab0DVUWl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:22:41 -0400
+Received: from kroah.org ([198.145.64.141]:59687 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757996Ab0DVUA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:26 -0400
+	id S1757867Ab0DVUAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:00:21 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:10 2010
-Message-Id: <20100422195410.725321096@kvm.kroah.org>
+Message-Id: <20100422195410.361876407@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:56 -0700
+Date: Thu, 22 Apr 2010 12:53:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [059/139] NFSv4: fix delegated locking
+       Suresh Siddha <suresh.b.siddha@intel.com>, <jbarnes@virtuousgeek.org>,
+       <david.woodhouse@intel.com>, <weidong.han@intel.com>,
+       <youquan.song@intel.com>, <Jan.Grossmann@kielnet.net>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: [055/139] x86: Fix double enable_IR_x2apic() call on SMP kernel on !SMP boards
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,74 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
-commit 0df5dd4aae211edeeeb84f7f84f6d093406d7c22 upstream.
+commit 472a474c6630efd195d3738339fd1bdc8aa3b1aa upstream.
 
-Arnaud Giersch reports that NFSv4 locking is broken when we hold a
-delegation since commit 8e469ebd6dc32cbaf620e134d79f740bf0ebab79 (NFSv4:
-Don't allow posix locking against servers that don't support it).
+Jan Grossmann reported kernel boot panic while booting SMP
+kernel on his system with a single core cpu. SMP kernels call
+enable_IR_x2apic() from native_smp_prepare_cpus() and on
+platforms where the kernel doesn't find SMP configuration we
+ended up again calling enable_IR_x2apic() from the
+APIC_init_uniprocessor() call in the smp_sanity_check(). Thus
+leading to kernel panic.
 
-According to Arnaud, the lock succeeds the first time he opens the file
-(since we cannot do a delegated open) but then fails after we start using
-delegated opens.
+Don't call enable_IR_x2apic() and default_setup_apic_routing()
+from APIC_init_uniprocessor() in CONFIG_SMP case.
 
-The following patch fixes it by ensuring that locking behaviour is
-governed by a per-filesystem capability flag that is initially set, but
-gets cleared if the server ever returns an OPEN without the
-NFS4_OPEN_RESULT_LOCKTYPE_POSIX flag being set.
+NOTE: this kind of non-idempotent and assymetric initialization
+sequence is rather fragile and unclean, we'll clean that up
+in v2.6.35. This is the minimal fix for v2.6.34.
 
-Reported-by: Arnaud Giersch <arnaud.giersch@iut-bm.univ-fcomte.fr>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-by: Jan.Grossmann@kielnet.net
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: <jbarnes@virtuousgeek.org>
+Cc: <david.woodhouse@intel.com>
+Cc: <weidong.han@intel.com>
+Cc: <youquan.song@intel.com>
+Cc: <Jan.Grossmann@kielnet.net>
+LKML-Reference: <1270083887.7835.78.camel@sbs-t61.sc.intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/client.c           |    3 ++-
- fs/nfs/nfs4proc.c         |    4 +++-
- include/linux/nfs_fs_sb.h |    1 +
- 3 files changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/kernel/apic/apic.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -1293,7 +1293,8 @@ static int nfs4_init_server(struct nfs_s
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1640,8 +1640,10 @@ int __init APIC_init_uniprocessor(void)
+ 	}
+ #endif
  
- 	/* Initialise the client representation from the mount data */
- 	server->flags = data->flags;
--	server->caps |= NFS_CAP_ATOMIC_OPEN|NFS_CAP_CHANGE_ATTR;
-+	server->caps |= NFS_CAP_ATOMIC_OPEN|NFS_CAP_CHANGE_ATTR|
-+		NFS_CAP_POSIX_LOCK;
- 	server->options = data->options;
++#ifndef CONFIG_SMP
+ 	enable_IR_x2apic();
+ 	default_setup_apic_routing();
++#endif
  
- 	/* Get a client record */
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1520,6 +1520,8 @@ static int _nfs4_proc_open(struct nfs4_o
- 		nfs_post_op_update_inode(dir, o_res->dir_attr);
- 	} else
- 		nfs_refresh_inode(dir, o_res->dir_attr);
-+	if ((o_res->rflags & NFS4_OPEN_RESULT_LOCKTYPE_POSIX) == 0)
-+		server->caps &= ~NFS_CAP_POSIX_LOCK;
- 	if(o_res->rflags & NFS4_OPEN_RESULT_CONFIRM) {
- 		status = _nfs4_proc_open_confirm(data);
- 		if (status != 0)
-@@ -1660,7 +1662,7 @@ static int _nfs4_do_open(struct inode *d
- 	status = PTR_ERR(state);
- 	if (IS_ERR(state))
- 		goto err_opendata_put;
--	if ((opendata->o_res.rflags & NFS4_OPEN_RESULT_LOCKTYPE_POSIX) != 0)
-+	if (server->caps & NFS_CAP_POSIX_LOCK)
- 		set_bit(NFS_STATE_POSIX_LOCKS, &state->flags);
- 	nfs4_opendata_put(opendata);
- 	nfs4_put_state_owner(sp);
---- a/include/linux/nfs_fs_sb.h
-+++ b/include/linux/nfs_fs_sb.h
-@@ -176,6 +176,7 @@ struct nfs_server {
- #define NFS_CAP_ATIME		(1U << 11)
- #define NFS_CAP_CTIME		(1U << 12)
- #define NFS_CAP_MTIME		(1U << 13)
-+#define NFS_CAP_POSIX_LOCK	(1U << 14)
- 
- 
- /* maximum number of slots to use */
+ 	verify_local_APIC();
+ 	connect_bsp_APIC();
 
 
