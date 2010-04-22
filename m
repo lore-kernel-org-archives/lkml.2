@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234Ab0DVT2L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:28:11 -0400
-Received: from kroah.org ([198.145.64.141]:37430 "EHLO coco.kroah.org"
+	id S1756447Ab0DVT2h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:28:37 -0400
+Received: from kroah.org ([198.145.64.141]:40826 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756209Ab0DVT2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:06 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:12 2010
-Message-Id: <20100422190911.935042749@kvm.kroah.org>
+	id S1756399Ab0DVT2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:33 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:14 2010
+Message-Id: <20100422190914.458099522@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:22 -0700
+Date: Thu, 22 Apr 2010 12:08:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Evan McClain <evan.mcclain@gatech.edu>,
-       Richard Purdie <rpurdie@linux.intel.com>
-Subject: [051/197] backlight: mbp_nvidia_bl - add five more MacBook variants
+       Corentin Chary <corentincj@iksaif.net>, Len Brown <len.brown@intel.com>,
+       Ben Hutchings <ben@decadent.org.uk>
+Subject: [079/197] eeepc-laptop: disable wireless hotplug for 1201N
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,73 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Evan McClain <evan.mcclain@gatech.edu>
+commit 4194e2f551a6308e6ab34ac88210bf54858aa7df upstream.
 
-commit 36bc5ee6a8d13333980fa54e97d3469d3d4cda98 upstream.
+[bwh: Backported to 2.6.32]
 
-This adds the MacBook 1,1 2,1 3,1 4,1 and 4,2 to the DMI tables.
-
-Signed-off-by: Evan McClain <evan.mcclain@gatech.edu>
-Signed-off-by: Richard Purdie <rpurdie@linux.intel.com>
+Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/backlight/mbp_nvidia_bl.c |   45 ++++++++++++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
+ drivers/platform/x86/eeepc-laptop.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/video/backlight/mbp_nvidia_bl.c
-+++ b/drivers/video/backlight/mbp_nvidia_bl.c
-@@ -139,6 +139,51 @@ static int mbp_dmi_match(const struct dm
- static const struct dmi_system_id __initdata mbp_device_table[] = {
- 	{
- 		.callback	= mbp_dmi_match,
-+		.ident		= "MacBook 1,1",
-+		.matches	= {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook1,1"),
-+		},
-+		.driver_data	= (void *)&intel_chipset_data,
-+	},
-+	{
-+		.callback	= mbp_dmi_match,
-+		.ident		= "MacBook 2,1",
-+		.matches	= {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook2,1"),
-+		},
-+		.driver_data	= (void *)&intel_chipset_data,
-+	},
-+	{
-+		.callback	= mbp_dmi_match,
-+		.ident		= "MacBook 3,1",
-+		.matches	= {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook3,1"),
-+		},
-+		.driver_data	= (void *)&intel_chipset_data,
-+	},
-+	{
-+		.callback	= mbp_dmi_match,
-+		.ident		= "MacBook 4,1",
-+		.matches	= {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook4,1"),
-+		},
-+		.driver_data	= (void *)&intel_chipset_data,
-+	},
-+	{
-+		.callback	= mbp_dmi_match,
-+		.ident		= "MacBook 4,2",
-+		.matches	= {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook4,2"),
-+		},
-+		.driver_data	= (void *)&intel_chipset_data,
-+	},
-+	{
-+		.callback	= mbp_dmi_match,
- 		.ident		= "MacBookPro 3,1",
- 		.matches	= {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -660,7 +660,7 @@ static void eeepc_dmi_check(void)
+ 	 * hotplug code. In fact, current hotplug code seems to unplug another
+ 	 * device...
+ 	 */
+-	if (strcmp(model, "1005HA") == 0) {
++	if (strcmp(model, "1005HA") == 0 || strcmp(model, "1201N") == 0) {
+ 		ehotk->hotplug_disabled = true;
+ 		pr_info("wlan hotplug disabled\n");
+ 	}
 
 
