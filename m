@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758523Ab0DVUcg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:32:36 -0400
-Received: from kroah.org ([198.145.64.141]:59412 "EHLO coco.kroah.org"
+	id S1758557Ab0DVUdR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:33:17 -0400
+Received: from kroah.org ([198.145.64.141]:59390 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757892Ab0DVT7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:59:40 -0400
+	id S1757877Ab0DVT7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:59:37 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:05 2010
-Message-Id: <20100422195405.824196980@kvm.kroah.org>
+Message-Id: <20100422195405.472999964@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:07 -0700
+Date: Thu, 22 Apr 2010 12:53:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Chris Wilson <chris@chris-wilson.co.uk>,
-       Dave Airlie <airlied@redhat.com>
-Subject: [010/139] drm: Return ENODEV if the inode mapping changes
+       Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [006/139] drm/radeon/kms: never treat rs4xx as AGP
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,79 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit da58405860b992d2bb21ebae5d685fe3204dd3f0 upstream.
+commit f95df9ca6896978108201a77422a1ae2cdc595ec upstream.
 
-Replace a BUG_ON with an error code in the event that the inode mapping
-changes between calls to drm_open. This may happen for instance if udev
-is loaded subsequent to the original opening of the device:
+RS4xx+ IGP chips use an internal gart, however,
+some of them have the agp cap bits set in their pci
+configs.  Make sure to clear the AGP flag as AGP will
+not work with them.
 
-[  644.291870] kernel BUG at drivers/gpu/drm/drm_fops.c:146!
-[  644.291876] invalid opcode: 0000 [#1] SMP
-[  644.291882] last sysfs file: /sys/kernel/uevent_seqnum
-[  644.291888]
-[  644.291895] Pid: 7276, comm: lt-cairo-test-s Not tainted 2.6.34-rc1 #2 N150/N210/N220             /N150/N210/N220
-[  644.291903] EIP: 0060:[<c11c70e3>] EFLAGS: 00210283 CPU: 0
-[  644.291912] EIP is at drm_open+0x4b1/0x4e2
-[  644.291918] EAX: f72d8d18 EBX: f790a400 ECX: f73176b8 EDX: 00000000
-[  644.291923] ESI: f790a414 EDI: f790a414 EBP: f647ae20 ESP: f647adfc
-[  644.291929]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  644.291937] Process lt-cairo-test-s (pid: 7276, ti=f647a000 task=f73f5c80 task.ti=f647a000)
-[  644.291941] Stack:
-[  644.291945]  00000000 f7bb7400 00000080 f6451100 f73176b8 f6479214 f6451100 f73176b8
-[  644.291957] <0> c1297ce0 f647ae34 c11c6c04 f73176b8 f7949800 00000000 f647ae54 c1080ac5
-[  644.291969] <0> f7949800 f6451100 00000000 f6451100 f73176b8 f6452780 f647ae70 c107d1e6
-[  644.291982] Call Trace:
-[  644.291991]  [<c11c6c04>] ? drm_stub_open+0x8a/0xb8
-[  644.292000]  [<c1080ac5>] ? chrdev_open+0xef/0x106
-[  644.292008]  [<c107d1e6>] ? __dentry_open+0xd4/0x1a6
-[  644.292015]  [<c107d35b>] ? nameidata_to_filp+0x31/0x45
-[  644.292022]  [<c10809d6>] ? chrdev_open+0x0/0x106
-[  644.292030]  [<c10864e2>] ? do_last+0x346/0x423
-[  644.292037]  [<c108789f>] ? do_filp_open+0x190/0x415
-[  644.292046]  [<c1071eb5>] ? handle_mm_fault+0x214/0x710
-[  644.292053]  [<c107d008>] ? do_sys_open+0x4d/0xe9
-[  644.292061]  [<c1016462>] ? do_page_fault+0x211/0x23f
-[  644.292068]  [<c107d0f0>] ? sys_open+0x23/0x2b
-[  644.292075]  [<c1002650>] ? sysenter_do_call+0x12/0x26
-[  644.292079] Code: 89 f0 89 55 dc e8 8d 96 0a 00 8b 45 e0 8b 55 dc 83 78 04 01 75 28 8b 83 18 02 00 00 85 c0 74 0f 8b 4d ec 3b 81 ac 00 00 00 74 13 <0f> 0b eb fe 8b 4d ec 8b 81 ac 00 00 00 89 83 18 02 00 00 89 f0
-[  644.292143] EIP: [<c11c70e3>] drm_open+0x4b1/0x4e2 SS:ESP 0068:f647adfc
-[  644.292175] ---[ end trace 2ddd476af89a60fa ]---
+Should fix fdo bug 27225
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/drm_fops.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/radeon/radeon_device.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/gpu/drm/drm_fops.c
-+++ b/drivers/gpu/drm/drm_fops.c
-@@ -140,14 +140,16 @@ int drm_open(struct inode *inode, struct
- 		spin_unlock(&dev->count_lock);
- 	}
- out:
--	mutex_lock(&dev->struct_mutex);
--	if (minor->type == DRM_MINOR_LEGACY) {
--		BUG_ON((dev->dev_mapping != NULL) &&
--			(dev->dev_mapping != inode->i_mapping));
--		if (dev->dev_mapping == NULL)
--			dev->dev_mapping = inode->i_mapping;
-+	if (!retcode) {
-+		mutex_lock(&dev->struct_mutex);
-+		if (minor->type == DRM_MINOR_LEGACY) {
-+			if (dev->dev_mapping == NULL)
-+				dev->dev_mapping = inode->i_mapping;
-+			else if (dev->dev_mapping != inode->i_mapping)
-+				retcode = -ENODEV;
-+		}
-+		mutex_unlock(&dev->struct_mutex);
- 	}
--	mutex_unlock(&dev->struct_mutex);
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -655,6 +655,14 @@ int radeon_device_init(struct radeon_dev
+ 		return r;
+ 	radeon_check_arguments(rdev);
  
- 	return retcode;
- }
++	/* all of the newer IGP chips have an internal gart
++	 * However some rs4xx report as AGP, so remove that here.
++	 */
++	if ((rdev->family >= CHIP_RS400) &&
++	    (rdev->flags & RADEON_IS_IGP)) {
++		rdev->flags &= ~RADEON_IS_AGP;
++	}
++
+ 	if (rdev->flags & RADEON_IS_AGP && radeon_agpmode == -1) {
+ 		radeon_agp_disable(rdev);
+ 	}
 
 
