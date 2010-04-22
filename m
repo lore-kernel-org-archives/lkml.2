@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758512Ab0DVU3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:29:52 -0400
-Received: from kroah.org ([198.145.64.141]:59478 "EHLO coco.kroah.org"
+	id S932352Ab0DVUW0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:22:26 -0400
+Received: from kroah.org ([198.145.64.141]:59726 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756335Ab0DVT7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:59:49 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:06 2010
-Message-Id: <20100422195406.803312363@kvm.kroah.org>
+	id S1757743Ab0DVUAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:00:24 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:10 2010
+Message-Id: <20100422195410.545948957@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:18 -0700
+Date: Thu, 22 Apr 2010 12:53:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Marco Porsch <marco.porsch@siemens.com>,
-       Javier Cardona <javier@cozybit.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [021/139] mac80211: fix PREQ processing and one small bug
+       Anton Blanchard <anton@samba.org>,
+       Sharyathi Nagesh <sharyath@in.ibm.com>,
+       Ulrich Drepper <drepper@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>, Jack Steiner <steiner@sgi.com>,
+       Russ Anderson <rja@sgi.com>, Mike Travis <travis@sgi.com>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: [057/139] sched: Fix sched_getaffinity()
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Porsch, Marco <marco.porsch@siemens.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 533866b12cce484994163b1e201778cbac4c04c5 upstream.
+commit 84fba5ec91f11c0efb27d0ed6098f7447491f0df upstream.
 
-1st) a PREQ should only be processed, if it has the same SN and better
-metric (instead of better or equal).
-2nd) next_hop[ETH_ALEN] now actually used to buffer
-mpath->next_hop->sta.addr for use out of lock.
+taskset on 2.6.34-rc3 fails on one of my ppc64 test boxes with
+the following error:
 
-Signed-off-by: Marco Porsch <marco.porsch@siemens.com>
-Acked-by: Javier Cardona <javier@cozybit.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+  sched_getaffinity(0, 16, 0x10029650030) = -1 EINVAL (Invalid argument)
+
+This box has 128 threads and 16 bytes is enough to cover it.
+
+Commit cd3d8031eb4311e516329aee03c79a08333141f1 (sched:
+sched_getaffinity(): Allow less than NR_CPUS length) is
+comparing this 16 bytes agains nr_cpu_ids.
+
+Fix it by comparing nr_cpu_ids to the number of bits in the
+cpumask we pass in.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Sharyathi Nagesh <sharyath@in.ibm.com>
+Cc: Ulrich Drepper <drepper@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jack Steiner <steiner@sgi.com>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Mike Travis <travis@sgi.com>
+LKML-Reference: <20100406070218.GM5594@kryten>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/mesh_hwmp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/mesh_hwmp.c
-+++ b/net/mac80211/mesh_hwmp.c
-@@ -391,7 +391,7 @@ static u32 hwmp_route_info_get(struct ie
- 				if (SN_GT(mpath->sn, orig_sn) ||
- 				    (mpath->sn == orig_sn &&
- 				     action == MPATH_PREQ &&
--				     new_metric > mpath->metric)) {
-+				     new_metric >= mpath->metric)) {
- 					process = false;
- 					fresh_info = false;
- 				}
-@@ -611,7 +611,7 @@ static void hwmp_prep_frame_process(stru
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -6717,7 +6717,7 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t
+ 	int ret;
+ 	cpumask_var_t mask;
  
- 	mesh_path_sel_frame_tx(MPATH_PREP, flags, orig_addr,
- 		cpu_to_le32(orig_sn), 0, target_addr,
--		cpu_to_le32(target_sn), mpath->next_hop->sta.addr, hopcount,
-+		cpu_to_le32(target_sn), next_hop, hopcount,
- 		ttl, cpu_to_le32(lifetime), cpu_to_le32(metric),
- 		0, sdata);
- 	rcu_read_unlock();
+-	if (len < nr_cpu_ids)
++	if ((len * BITS_PER_BYTE) < nr_cpu_ids)
+ 		return -EINVAL;
+ 	if (len & (sizeof(unsigned long)-1))
+ 		return -EINVAL;
 
 
