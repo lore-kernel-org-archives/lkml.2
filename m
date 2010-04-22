@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab0DVSX0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 14:23:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38499 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753409Ab0DVSXX (ORCPT
+	id S1755143Ab0DVSaF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 14:30:05 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57433 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab0DVSaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 14:23:23 -0400
-Date: Thu, 22 Apr 2010 11:23:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-security-module@vger.kernel.org, mathieu.desnoyers@efficios.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] CRED: Fix double free in prepare_usermodehelper_creds()
- error handling
-Message-Id: <20100422112307.5375e085.akpm@linux-foundation.org>
-In-Reply-To: <20100420214117.10400.82534.stgit@warthog.procyon.org.uk>
-References: <20100420214117.10400.82534.stgit@warthog.procyon.org.uk>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Thu, 22 Apr 2010 14:30:01 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       David Airlie <airlied@linux.ie>
+cc: linux-kernel@vger.kernel.org
+Subject: dri-devel mailing list moved - update MAINTAINERS
+From: Valdis.Kletnieks@vt.edu
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Date: Thu, 22 Apr 2010 14:29:10 -0400
+Message-ID: <12135.1271960950@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020207.4BD09576.0284,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Apr 2010 22:41:18 +0100
-David Howells <dhowells@redhat.com> wrote:
+I posted to dri-devel@lists.sourceforge.net, and got a bounce back:
 
-> Patch 570b8fb505896e007fd3bb07573ba6640e51851d:
-> 
-> 	Author: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> 	Date:   Tue Mar 30 00:04:00 2010 +0100
-> 	Subject: CRED: Fix memory leak in error handling
-> 
-> attempts to fix a memory leak in the error handling by making the offending
-> return statement into a jump down to the bottom of the function where a
-> kfree(tgcred) is inserted.
-> 
-> This is, however, incorrect, as it does a kfree() after doing put_cred() if
-> security_prepare_creds() fails.  That will result in a double free if 'error'
-> is jumped to as put_cred() will also attempt to free the new tgcred record by
-> virtue of it being pointed to by the new cred record.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> 
->  kernel/cred.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/cred.c b/kernel/cred.c
-> index e1dbe9e..ce1a52b 100644
-> --- a/kernel/cred.c
-> +++ b/kernel/cred.c
-> @@ -398,6 +398,8 @@ struct cred *prepare_usermodehelper_creds(void)
->  
->  error:
->  	put_cred(new);
-> +	return NULL;
-> +
->  free_tgcred:
->  #ifdef CONFIG_KEYS
->  	kfree(tgcred);
+   The dri-devel list has moved to freedesktop.org (see
+   http://lists.freedesktop.org/mailman/listinfo/dri-devel). If you were
+   subscribed to the list here, the subscription should have been
+   transferred to the new location.
 
-Oleg's umh-creds-kill-subprocess_info-cred-logic.patch removes
-prepare_usermodehelper_creds() altogether.  An option would have been
-to promote that into 2.6.34?
+   Please only post to the new list.
+
+Fix MAINTAINERS to correspond.
+
+Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+
+--- linux-2.6/MAINTAINERS.dist	2010-04-22 14:25:03.244700280 -0400
++++ linux-2.6/MAINTAINERS	2010-04-22 14:27:55.594669681 -0400
+@@ -1960,7 +1960,7 @@ F:	lib/kobj*
+ 
+ DRM DRIVERS
+ M:	David Airlie <airlied@linux.ie>
+-L:	dri-devel@lists.sourceforge.net
++L:	dri-devel@lists.freedesktop.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git
+ S:	Maintained
+ F:	drivers/gpu/drm/
 
 
