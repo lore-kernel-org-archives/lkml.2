@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757876Ab0DVT7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:59:36 -0400
-Received: from kroah.org ([198.145.64.141]:59363 "EHLO coco.kroah.org"
+	id S1758523Ab0DVUcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:32:36 -0400
+Received: from kroah.org ([198.145.64.141]:59412 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756656Ab0DVT7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:59:32 -0400
+	id S1757892Ab0DVT7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:59:40 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:05 2010
-Message-Id: <20100422195405.032851075@kvm.kroah.org>
+Message-Id: <20100422195405.824196980@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:52:58 -0700
+Date: Thu, 22 Apr 2010 12:53:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ben Skeggs <bskeggs@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [001/139] drm/edid: allow certain bogus edids to hit a fixup path rather than fail
+       Chris Wilson <chris@chris-wilson.co.uk>,
+       Dave Airlie <airlied@redhat.com>
+Subject: [010/139] drm: Return ENODEV if the inode mapping changes
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 44fef22416886a04d432043f741a6faf2c6ffefd upstream.
+commit da58405860b992d2bb21ebae5d685fe3204dd3f0 upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Replace a BUG_ON with an error code in the event that the inode mapping
+changes between calls to drm_open. This may happen for instance if udev
+is loaded subsequent to the original opening of the device:
+
+[  644.291870] kernel BUG at drivers/gpu/drm/drm_fops.c:146!
+[  644.291876] invalid opcode: 0000 [#1] SMP
+[  644.291882] last sysfs file: /sys/kernel/uevent_seqnum
+[  644.291888]
+[  644.291895] Pid: 7276, comm: lt-cairo-test-s Not tainted 2.6.34-rc1 #2 N150/N210/N220             /N150/N210/N220
+[  644.291903] EIP: 0060:[<c11c70e3>] EFLAGS: 00210283 CPU: 0
+[  644.291912] EIP is at drm_open+0x4b1/0x4e2
+[  644.291918] EAX: f72d8d18 EBX: f790a400 ECX: f73176b8 EDX: 00000000
+[  644.291923] ESI: f790a414 EDI: f790a414 EBP: f647ae20 ESP: f647adfc
+[  644.291929]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  644.291937] Process lt-cairo-test-s (pid: 7276, ti=f647a000 task=f73f5c80 task.ti=f647a000)
+[  644.291941] Stack:
+[  644.291945]  00000000 f7bb7400 00000080 f6451100 f73176b8 f6479214 f6451100 f73176b8
+[  644.291957] <0> c1297ce0 f647ae34 c11c6c04 f73176b8 f7949800 00000000 f647ae54 c1080ac5
+[  644.291969] <0> f7949800 f6451100 00000000 f6451100 f73176b8 f6452780 f647ae70 c107d1e6
+[  644.291982] Call Trace:
+[  644.291991]  [<c11c6c04>] ? drm_stub_open+0x8a/0xb8
+[  644.292000]  [<c1080ac5>] ? chrdev_open+0xef/0x106
+[  644.292008]  [<c107d1e6>] ? __dentry_open+0xd4/0x1a6
+[  644.292015]  [<c107d35b>] ? nameidata_to_filp+0x31/0x45
+[  644.292022]  [<c10809d6>] ? chrdev_open+0x0/0x106
+[  644.292030]  [<c10864e2>] ? do_last+0x346/0x423
+[  644.292037]  [<c108789f>] ? do_filp_open+0x190/0x415
+[  644.292046]  [<c1071eb5>] ? handle_mm_fault+0x214/0x710
+[  644.292053]  [<c107d008>] ? do_sys_open+0x4d/0xe9
+[  644.292061]  [<c1016462>] ? do_page_fault+0x211/0x23f
+[  644.292068]  [<c107d0f0>] ? sys_open+0x23/0x2b
+[  644.292075]  [<c1002650>] ? sysenter_do_call+0x12/0x26
+[  644.292079] Code: 89 f0 89 55 dc e8 8d 96 0a 00 8b 45 e0 8b 55 dc 83 78 04 01 75 28 8b 83 18 02 00 00 85 c0 74 0f 8b 4d ec 3b 81 ac 00 00 00 74 13 <0f> 0b eb fe 8b 4d ec 8b 81 ac 00 00 00 89 83 18 02 00 00 89 f0
+[  644.292143] EIP: [<c11c70e3>] drm_open+0x4b1/0x4e2 SS:ESP 0068:f647adfc
+[  644.292175] ---[ end trace 2ddd476af89a60fa ]---
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/drm_edid.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/gpu/drm/drm_fops.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -707,15 +707,6 @@ static struct drm_display_mode *drm_mode
- 	mode->vsync_end = mode->vsync_start + vsync_pulse_width;
- 	mode->vtotal = mode->vdisplay + vblank;
+--- a/drivers/gpu/drm/drm_fops.c
++++ b/drivers/gpu/drm/drm_fops.c
+@@ -140,14 +140,16 @@ int drm_open(struct inode *inode, struct
+ 		spin_unlock(&dev->count_lock);
+ 	}
+ out:
+-	mutex_lock(&dev->struct_mutex);
+-	if (minor->type == DRM_MINOR_LEGACY) {
+-		BUG_ON((dev->dev_mapping != NULL) &&
+-			(dev->dev_mapping != inode->i_mapping));
+-		if (dev->dev_mapping == NULL)
+-			dev->dev_mapping = inode->i_mapping;
++	if (!retcode) {
++		mutex_lock(&dev->struct_mutex);
++		if (minor->type == DRM_MINOR_LEGACY) {
++			if (dev->dev_mapping == NULL)
++				dev->dev_mapping = inode->i_mapping;
++			else if (dev->dev_mapping != inode->i_mapping)
++				retcode = -ENODEV;
++		}
++		mutex_unlock(&dev->struct_mutex);
+ 	}
+-	mutex_unlock(&dev->struct_mutex);
  
--	/* perform the basic check for the detailed timing */
--	if (mode->hsync_end > mode->htotal ||
--		mode->vsync_end > mode->vtotal) {
--		drm_mode_destroy(dev, mode);
--		DRM_DEBUG_KMS("Incorrect detailed timing. "
--				"Sync is beyond the blank.\n");
--		return NULL;
--	}
--
- 	/* Some EDIDs have bogus h/vtotal values */
- 	if (mode->hsync_end > mode->htotal)
- 		mode->htotal = mode->hsync_end + 1;
+ 	return retcode;
+ }
 
 
