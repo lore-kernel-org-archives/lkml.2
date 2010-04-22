@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757675Ab0DVTy1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:54:27 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:52029 "EHLO e5.ny.us.ibm.com"
+	id S1757736Ab0DVT4X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:56:23 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:52384 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757654Ab0DVTyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:54:16 -0400
+	id S1757720Ab0DVT4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:56:19 -0400
+Date: Thu, 22 Apr 2010 12:56:14 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 3/3] sched: protect __sched_setscheduler() access to cgroups
-Date: Thu, 22 Apr 2010 12:54:07 -0700
-Message-Id: <1271966047-9701-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100422195345.GA9639@linux.vnet.ibm.com>
-References: <20100422195345.GA9639@linux.vnet.ibm.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       "containers@lists.osdl.org" <containers@lists.osdl.org>,
+       Paul Menage <menage@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 3/5] sched: Fix an RCU warning in print_task()
+Message-ID: <20100422195614.GK2524@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4BD016F4.8060108@cn.fujitsu.com>
+ <4BD01740.7050805@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BD01740.7050805@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A given task's cgroups structures must remain while that task is running
-due to reference counting, so this is presumably a false positive.
-Updated to reflect feedback from Tetsuo Handa.
+On Thu, Apr 22, 2010 at 05:30:40PM +0800, Li Zefan wrote:
+> With CONFIG_PROVE_RCU=y, a warning can be triggered:
+> 
+>   $ cat /proc/sched_debug
+> 
+> ...
+> kernel/cgroup.c:1649 invoked rcu_dereference_check() without protection!
+> ...
+> 
+> Both cgroup_path() and task_group() should be called with either
+> rcu_read_lock or cgroup_mutex held.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/sched.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+Queued for 2.6.34, thank you!
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 14c44ec..f425a2b 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4575,9 +4575,13 @@ recheck:
- 		 * Do not allow realtime tasks into groups that have no runtime
- 		 * assigned.
- 		 */
-+		rcu_read_lock();
- 		if (rt_bandwidth_enabled() && rt_policy(policy) &&
--				task_group(p)->rt_bandwidth.rt_runtime == 0)
-+				task_group(p)->rt_bandwidth.rt_runtime == 0) {
-+			rcu_read_unlock();
- 			return -EPERM;
-+		}
-+		rcu_read_unlock();
- #endif
- 
- 		retval = security_task_setscheduler(p, policy, param);
--- 
-1.7.0
+							Thanx, Paul
 
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> ---
+>  kernel/sched_debug.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
+> index 9cf1baf..87a330a 100644
+> --- a/kernel/sched_debug.c
+> +++ b/kernel/sched_debug.c
+> @@ -114,7 +114,9 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
+>  	{
+>  		char path[64];
+> 
+> +		rcu_read_lock();
+>  		cgroup_path(task_group(p)->css.cgroup, path, sizeof(path));
+> +		rcu_read_unlock();
+>  		SEQ_printf(m, " %s", path);
+>  	}
+>  #endif
+> -- 
+> 1.6.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
