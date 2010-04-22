@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758627Ab0DVUkU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:40:20 -0400
-Received: from kroah.org ([198.145.64.141]:37410 "EHLO coco.kroah.org"
+	id S1758695Ab0DVUjm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:39:42 -0400
+Received: from kroah.org ([198.145.64.141]:37437 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756185Ab0DVT2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:01 -0400
+	id S1756051Ab0DVT2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:03 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:11 2010
-Message-Id: <20100422190911.206616403@kvm.kroah.org>
+Message-Id: <20100422190911.560544899@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:14 -0700
+Date: Thu, 22 Apr 2010 12:08:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alan Cox <alan@linux.intel.com>, Jeff Garzik <jgarzik@redhat.com>,
-       Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
-Subject: [043/197] pata_ali: Fix regression with old devices
+       Dan Carpenter <error27@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [047/197] ALSA: mixart: range checking proc file
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Dan Carpenter <error27@gmail.com>
 
-commit d6250a03fa736c1bff4df4601f5af2dc21f2bf9e upstream.
+commit b0cc58a25d04160d39a80e436847eaa2fbc5aa09 upstream.
 
-Making the new stuff work broke some of the old chipsets. We need to go
-back to the old set up values for these it seems. Unfortunately even with
-documentation this is basically a mix of cargoculting and guesswork.
+The original code doesn't take into consideration that the value of
+MIXART_BA0_SIZE - pos can be less than zero which would lead to a large
+unsigned value for "count".
 
-Chased down to the exact line by Gianluca.
+Also I moved the check that read size is a multiple of 4 bytes below
+the code that adjusts "count".
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Cc: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/pata_ali.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/pci/mixart/mixart.c |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
---- a/drivers/ata/pata_ali.c
-+++ b/drivers/ata/pata_ali.c
-@@ -453,7 +453,9 @@ static void ali_init_chipset(struct pci_
- 			/* Clear CD-ROM DMA write bit */
- 			tmp &= 0x7F;
- 		/* Cable and UDMA */
--		pci_write_config_byte(pdev, 0x4B, tmp | 0x09);
-+		if (pdev->revision >= 0xc2)
-+			tmp |= 0x01;
-+		pci_write_config_byte(pdev, 0x4B, tmp | 0x08);
- 		/*
- 		 * CD_ROM DMA on (0x53 bit 0). Enable this even if we want
- 		 * to use PIO. 0x53 bit 1 (rev 20 only) - enable FIFO control
+--- a/sound/pci/mixart/mixart.c
++++ b/sound/pci/mixart/mixart.c
+@@ -1161,13 +1161,15 @@ static long snd_mixart_BA0_read(struct s
+ 				unsigned long count, unsigned long pos)
+ {
+ 	struct mixart_mgr *mgr = entry->private_data;
++	unsigned long maxsize;
+ 
+-	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+-	if(count <= 0)
++	if (pos >= MIXART_BA0_SIZE)
+ 		return 0;
+-	if(pos + count > MIXART_BA0_SIZE)
+-		count = (long)(MIXART_BA0_SIZE - pos);
+-	if(copy_to_user_fromio(buf, MIXART_MEM( mgr, pos ), count))
++	maxsize = MIXART_BA0_SIZE - pos;
++	if (count > maxsize)
++		count = maxsize;
++	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
++	if (copy_to_user_fromio(buf, MIXART_MEM(mgr, pos), count))
+ 		return -EFAULT;
+ 	return count;
+ }
+@@ -1180,13 +1182,15 @@ static long snd_mixart_BA1_read(struct s
+ 				unsigned long count, unsigned long pos)
+ {
+ 	struct mixart_mgr *mgr = entry->private_data;
++	unsigned long maxsize;
+ 
+-	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+-	if(count <= 0)
++	if (pos > MIXART_BA1_SIZE)
+ 		return 0;
+-	if(pos + count > MIXART_BA1_SIZE)
+-		count = (long)(MIXART_BA1_SIZE - pos);
+-	if(copy_to_user_fromio(buf, MIXART_REG( mgr, pos ), count))
++	maxsize = MIXART_BA1_SIZE - pos;
++	if (count > maxsize)
++		count = maxsize;
++	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
++	if (copy_to_user_fromio(buf, MIXART_REG(mgr, pos), count))
+ 		return -EFAULT;
+ 	return count;
+ }
 
 
