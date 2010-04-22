@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757223Ab0DVTgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:36:12 -0400
-Received: from kroah.org ([198.145.64.141]:41518 "EHLO coco.kroah.org"
+	id S1756630Ab0DVT3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:29:01 -0400
+Received: from kroah.org ([198.145.64.141]:41026 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756711Ab0DVT3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:48 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:22 2010
-Message-Id: <20100422190922.890490597@kvm.kroah.org>
+	id S1756524Ab0DVT2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:53 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:16 2010
+Message-Id: <20100422190916.757931343@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:24 -0700
+Date: Thu, 22 Apr 2010 12:09:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "J. Bruce Fields" <bfields@citi.umich.edu>
-Subject: [173/197] nfsd4: dont try to map gids in generic rpc code
+       Dave Airlie <airlied@redhat.com>
+Subject: [105/197] drm/radeon/kms: add FireMV 2400 PCI ID.
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,113 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: J. Bruce Fields <bfields@citi.umich.edu>
+From: Dave Airlie <airlied@redhat.com>
 
-commit dc83d6e27fa80babe31c80aa8568f125f72edf57 upstream.
+commit 79b9517a33a283c5d9db875c263670ed1e055f7e upstream.
 
-For nfsd we provide users the option of mapping uid's to server-side
-supplementary group lists.  That makes sense for nfsd, but not
-necessarily for other rpc users (such as the callback client).
+This is an M24/X600 chip.
 
-So move that lookup to svcauth_unix_set_client, which is a
-program-specific method.
+>From RH# 581927
 
-Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/svcauth_unix.c |   53 ++++++++++++++++++++++++++--------------------
- 1 file changed, 30 insertions(+), 23 deletions(-)
+ include/drm/drm_pciids.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/sunrpc/svcauth_unix.c
-+++ b/net/sunrpc/svcauth_unix.c
-@@ -655,23 +655,25 @@ static struct unix_gid *unix_gid_lookup(
- 		return NULL;
- }
- 
--static int unix_gid_find(uid_t uid, struct group_info **gip,
--			 struct svc_rqst *rqstp)
-+static struct group_info *unix_gid_find(uid_t uid, struct svc_rqst *rqstp)
- {
--	struct unix_gid *ug = unix_gid_lookup(uid);
-+	struct unix_gid *ug;
-+	struct group_info *gi;
-+	int ret;
-+
-+	ug = unix_gid_lookup(uid);
- 	if (!ug)
--		return -EAGAIN;
--	switch (cache_check(&unix_gid_cache, &ug->h, &rqstp->rq_chandle)) {
-+		return ERR_PTR(-EAGAIN);
-+	ret = cache_check(&unix_gid_cache, &ug->h, &rqstp->rq_chandle);
-+	switch (ret) {
- 	case -ENOENT:
--		*gip = NULL;
--		return 0;
-+		return ERR_PTR(-ENOENT);
- 	case 0:
--		*gip = ug->gi;
--		get_group_info(*gip);
-+		gi = get_group_info(ug->gi);
- 		cache_put(&ug->h, &unix_gid_cache);
--		return 0;
-+		return gi;
- 	default:
--		return -EAGAIN;
-+		return ERR_PTR(-EAGAIN);
- 	}
- }
- 
-@@ -681,6 +683,8 @@ svcauth_unix_set_client(struct svc_rqst
- 	struct sockaddr_in *sin;
- 	struct sockaddr_in6 *sin6, sin6_storage;
- 	struct ip_map *ipm;
-+	struct group_info *gi;
-+	struct svc_cred *cred = &rqstp->rq_cred;
- 
- 	switch (rqstp->rq_addr.ss_family) {
- 	case AF_INET:
-@@ -722,6 +726,17 @@ svcauth_unix_set_client(struct svc_rqst
- 			ip_map_cached_put(rqstp, ipm);
- 			break;
- 	}
-+
-+	gi = unix_gid_find(cred->cr_uid, rqstp);
-+	switch (PTR_ERR(gi)) {
-+	case -EAGAIN:
-+		return SVC_DROP;
-+	case -ENOENT:
-+		break;
-+	default:
-+		put_group_info(cred->cr_group_info);
-+		cred->cr_group_info = gi;
-+	}
- 	return SVC_OK;
- }
- 
-@@ -818,19 +833,11 @@ svcauth_unix_accept(struct svc_rqst *rqs
- 	slen = svc_getnl(argv);			/* gids length */
- 	if (slen > 16 || (len -= (slen + 2)*4) < 0)
- 		goto badcred;
--	if (unix_gid_find(cred->cr_uid, &cred->cr_group_info, rqstp)
--	    == -EAGAIN)
-+	cred->cr_group_info = groups_alloc(slen);
-+	if (cred->cr_group_info == NULL)
- 		return SVC_DROP;
--	if (cred->cr_group_info == NULL) {
--		cred->cr_group_info = groups_alloc(slen);
--		if (cred->cr_group_info == NULL)
--			return SVC_DROP;
--		for (i = 0; i < slen; i++)
--			GROUP_AT(cred->cr_group_info, i) = svc_getnl(argv);
--	} else {
--		for (i = 0; i < slen ; i++)
--			svc_getnl(argv);
--	}
-+	for (i = 0; i < slen; i++)
-+		GROUP_AT(cred->cr_group_info, i) = svc_getnl(argv);
- 	if (svc_getu32(argv) != htonl(RPC_AUTH_NULL) || svc_getu32(argv) != 0) {
- 		*authp = rpc_autherr_badverf;
- 		return SVC_DENIED;
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -6,6 +6,7 @@
+ 	{0x1002, 0x3150, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY}, \
+ 	{0x1002, 0x3152, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x3154, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x3155, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x3E50, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x3E54, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x4136, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS100|RADEON_IS_IGP}, \
 
 
