@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab0DVQzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 12:55:20 -0400
-Received: from compulab.co.il ([67.18.134.219]:54255 "EHLO compulab.co.il"
+	id S1754830Ab0DVQ5R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 12:57:17 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53115 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752740Ab0DVQzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 12:55:18 -0400
-Message-ID: <4BD07F3C.8080404@compulab.co.il>
-Date: Thu, 22 Apr 2010 19:54:20 +0300
-From: Denis Turischev <denis@compulab.co.il>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1752367Ab0DVQ5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 12:57:15 -0400
+Date: Fri, 23 Apr 2010 02:57:11 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+       xfs@oss.sgi.com, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] mm: add context argument to shrinker callback
+Message-ID: <20100422165711.GA5683@laptop>
+References: <1271118255-21070-2-git-send-email-david@fromorbit.com>
+ <20100418001514.GA26575@infradead.org>
+ <20100419140039.GQ5683@laptop>
+ <20100420004149.GA14744@dastard>
+ <20100420083840.GR5683@laptop>
+ <20100420103216.GK15130@dastard>
+ <20100421084004.GS5683@laptop>
+ <20100422163211.GA2478@infradead.org>
+ <20100422163801.GZ5683@laptop>
+ <20100422164247.GA15882@infradead.org>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Wim Van Sebroeck <wim@iguana.be>, Andrey Panin <pazke@centrinvest.ru>
-Subject: "scheduling while atomic" bug in SBC-FITPC2 watchdog
-References: <4A6492EB.1080709@compulab.co.il> <4AF2B7D8.1010903@compulab.co.il> <4B58603F.5030407@compulab.co.il> <4BD07E3B.3030504@compulab.co.il>
-In-Reply-To: <4BD07E3B.3030504@compulab.co.il>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100422164247.GA15882@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sbc_fitpc2_wdt: fixed "scheduling while atomic" bug.
+On Thu, Apr 22, 2010 at 12:42:47PM -0400, Christoph Hellwig wrote:
+> On Fri, Apr 23, 2010 at 02:38:01AM +1000, Nick Piggin wrote:
+> > I don't understand, it should be implemented like just all the other
+> > shrinkers AFAIKS. Like the dcache one that has to shrink multiple
+> > superblocks. There is absolutely no requirement for this API change
+> > to implement it in XFS.
+> 
+> The dcache shrinker is an example for a complete mess.
 
-speenlock need to be replaced by mutex because of sleep functions
-inside wdt_send_data.
+I don't know. It's not really caused by not registering multiple
+shrinkers. It seems to be caused more by the locking, which is not
+going away when you have multiple shrinkers.
 
-Signed-off-by: Denis Turischev <denis@compulab.co.il>
----
- drivers/watchdog/sbc_fitpc2_wdt.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+The XFS patch seems to be pinning the mount structure when it is
+registered, so it would have no such locking/refcounting problems
+using a private list AFAIKS.
 
-diff --git a/drivers/watchdog/sbc_fitpc2_wdt.c b/drivers/watchdog/sbc_fitpc2_wdt.c
-index 226f0f2..23da5cb 100644
---- a/drivers/watchdog/sbc_fitpc2_wdt.c
-+++ b/drivers/watchdog/sbc_fitpc2_wdt.c
-@@ -30,7 +30,7 @@
- static int nowayout = WATCHDOG_NOWAYOUT;
- static unsigned int margin = 60;	/* (secs) Default is 1 minute */
- static unsigned long wdt_status;
--static DEFINE_SPINLOCK(wdt_lock);
-+static DEFINE_MUTEX(wdt_lock);
 
- #define WDT_IN_USE		0
- #define WDT_OK_TO_CLOSE		1
-@@ -53,18 +53,18 @@ static void wdt_send_data(unsigned char command, unsigned char data)
+> > But the shrinker list *is* a global list. The downside of it in the way
+> > it was done in the XFS patch is that 1) it is much larger than a simple
+> > list head, and 2) not usable by anything other then the shrinker.
+> 
+> It is an existing global list just made more useful.  Whenever a driver
+> has muliple instances of pool that need shrinking this comes in useful,
+> it's not related to filesystems at all. 
 
- static void wdt_enable(void)
- {
--	spin_lock(&wdt_lock);
-+	mutex_lock(&wdt_lock);
- 	wdt_send_data(IFACE_ON_COMMAND, 1);
- 	wdt_send_data(REBOOT_COMMAND, margin);
--	spin_unlock(&wdt_lock);
-+	mutex_unlock(&wdt_lock);
- }
+I would say less useful, because shrinker structure cannot be used
+by anything but the shrinker, wheras a private list can be used by
+anything, including the applicable shrinker.
 
- static void wdt_disable(void)
- {
--	spin_lock(&wdt_lock);
-+	mutex_lock(&wdt_lock);
- 	wdt_send_data(IFACE_ON_COMMAND, 0);
- 	wdt_send_data(REBOOT_COMMAND, 0);
--	spin_unlock(&wdt_lock);
-+	mutex_unlock(&wdt_lock);
- }
-
- static int fitpc2_wdt_open(struct inode *inode, struct file *file)
