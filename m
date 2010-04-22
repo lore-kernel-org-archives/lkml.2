@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab0DVQnz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 12:43:55 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57331 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755271Ab0DVQny (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 12:43:54 -0400
-Date: Thu, 22 Apr 2010 09:41:56 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Alan Cox <alan@linux.intel.com>, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, Sreedhara DS <sreedhara.ds@intel.com>
-Subject: Re: [PATCH] IPC driver for Intel Mobile Internet Device (MID)
- platforms
-Message-Id: <20100422094156.11b0e119.akpm@linux-foundation.org>
-In-Reply-To: <20100422141611.2599ee67@lxorguk.ukuu.org.uk>
-References: <20100409102629.22832.30883.stgit@localhost.localdomain>
-	<20100421131615.d8430a50.akpm@linux-foundation.org>
-	<20100422141611.2599ee67@lxorguk.ukuu.org.uk>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755393Ab0DVQvI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 12:51:08 -0400
+Received: from compulab.co.il ([67.18.134.219]:54229 "EHLO compulab.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753986Ab0DVQvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 12:51:06 -0400
+Message-ID: <4BD07E3B.3030504@compulab.co.il>
+Date: Thu, 22 Apr 2010 19:50:03 +0300
+From: Denis Turischev <denis@compulab.co.il>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Wim Van Sebroeck <wim@iguana.be>, Andrey Panin <pazke@centrinvest.ru>
+Subject: I/O operations order fix for SBC-FITPC2 watchdog
+References: <4A6492EB.1080709@compulab.co.il> <4AF2B7D8.1010903@compulab.co.il> <4B58603F.5030407@compulab.co.il>
+In-Reply-To: <4B58603F.5030407@compulab.co.il>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Apr 2010 14:16:11 +0100 Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+sbc_fitpc2_wdt: fixed I/O operations order
 
-> > > +static inline int busy_loop(void) /* Wait till scu status is busy */
-> > > +{
-> > > +	u32 status = 0;
-> > > +	u32 loop_count = 0;
-> > > +
-> > > +	status = __raw_readl(IPC_STATUS_REG);
-> > > +	while (status & 1) {
-> > > +		udelay(1); /* scu processing time is in few u secods */
-> > > +		status = __raw_readl(IPC_STATUS_REG);
-> > > +		loop_count++;
-> > > +		/* break if scu doesn't reset busy bit after huge retry */
-> > > +		if (loop_count > 100000)
-> > > +			return -ETIMEDOUT;
-> 
-> > This function has seven-odd callsites and is waaaaaaaay to fat and slow
-> > to be inlined.
-> 
-> Looking at the asm I'm not convinced.
+There are fitpc2 compatible boards that hang with existent i/o
+operations order. Solution is to switch between writing to data
+and command ports.
 
-I tried two version of gcc and both of them just refuse to inline
-the function anyway.
+Signed-off-by: Denis Turischev <denis@compulab.co.il>
+---
+ drivers/watchdog/sbc_fitpc2_wdt.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-If the function is changed to __always_inline, gcc will then inline it.
+diff --git a/drivers/watchdog/sbc_fitpc2_wdt.c b/drivers/watchdog/sbc_fitpc2_wdt.c
+index 8d44c9b..226f0f2 100644
+--- a/drivers/watchdog/sbc_fitpc2_wdt.c
++++ b/drivers/watchdog/sbc_fitpc2_wdt.c
+@@ -45,10 +45,10 @@ static DEFINE_SPINLOCK(wdt_lock);
 
-                  text    data     bss     dec     hex filename
-inline            6182     960    1680    8822    2276 arch/x86/kernel/intel_scu_ipc.o
-__always_inline   6582     928    1760    9270    2436 arch/x86/kernel/intel_scu_ipc.o
+ static void wdt_send_data(unsigned char command, unsigned char data)
+ {
+-	outb(command, COMMAND_PORT);
+-	msleep(100);
+ 	outb(data, DATA_PORT);
+ 	msleep(200);
++	outb(command, COMMAND_PORT);
++	msleep(100);	
+ }
 
-I agree with gcc ;)
+ static void wdt_enable(void)
