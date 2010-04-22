@@ -1,120 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab0DVUde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:33:34 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39764 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758561Ab0DVUdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:33:23 -0400
-Subject: Re: [PATCH tip/core/urgent 3/3] sched: protect
- __sched_setscheduler() access to cgroups
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
-In-Reply-To: <1271966047-9701-3-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20100422195345.GA9639@linux.vnet.ibm.com>
-	 <1271966047-9701-3-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Apr 2010 22:33:18 +0200
-Message-ID: <1271968398.1646.16.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932455Ab0DVUcI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:32:08 -0400
+Received: from kroah.org ([198.145.64.141]:59425 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757596Ab0DVT7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:59:43 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:06 2010
+Message-Id: <20100422195406.187843932@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Thu, 22 Apr 2010 12:53:11 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Mike Christie <michaelc@cs.wisc.edu>,
+       James Bottomley <James.Bottomley@suse.de>
+Subject: [014/139] [SCSI] libiscsi: Fix recovery slowdown regression
+In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-22 at 12:54 -0700, Paul E. McKenney wrote:
-> A given task's cgroups structures must remain while that task is running
-> due to reference counting, so this is presumably a false positive.
-> Updated to reflect feedback from Tetsuo Handa.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-I think its not a false positive, I think we can race with the task
-being placed in another cgroup. We don't hold task_lock() [our other
-discussion] nor does it hold rq->lock [used by the sched ->attach()
-method].
+------------------
 
-That said, we should probably cure the race condition of
-sched_setscheduler() vs ->attach().
+From: Mike Christie <michaelc@cs.wisc.edu>
 
-Something like the below perhaps?
+commit 4ae0a6c15efcc37e94e3f30e3533bdec03c53126 upstream.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+We could be failing/stopping a connection due to libiscsi starting
+recovery/cleanup, but the xmit path or scsi eh thread path
+could be dropping the connection at the same time.
+
+As a result the session->state gets set to failed instead of in
+recovery. We end up not blocking the session
+and so the replacement timeout never gets started and we only end up
+failing the IO when scsi_softirq_done sees that the
+cmd has been running for (cmd->allowed + 1) * rq->timeout secs.
+
+We used to fail the IO right away so users are seeing a long
+delay when using dm-multipath. This problem was added in
+2.6.28.
+
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- kernel/sched.c |   38 ++++++++++++++++++++++++++------------
- 1 files changed, 26 insertions(+), 12 deletions(-)
+ drivers/scsi/libiscsi.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 95eaecc..345df67 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4425,16 +4425,6 @@ recheck:
- 	}
- 
- 	if (user) {
--#ifdef CONFIG_RT_GROUP_SCHED
--		/*
--		 * Do not allow realtime tasks into groups that have no runtime
--		 * assigned.
--		 */
--		if (rt_bandwidth_enabled() && rt_policy(policy) &&
--				task_group(p)->rt_bandwidth.rt_runtime == 0)
--			return -EPERM;
--#endif
--
- 		retval = security_task_setscheduler(p, policy, param);
- 		if (retval)
- 			return retval;
-@@ -4450,6 +4440,28 @@ recheck:
- 	 * runqueue lock must be held.
- 	 */
- 	rq = __task_rq_lock(p);
-+	retval = 0;
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	if (user) {
-+		/*
-+		 * Do not allow realtime tasks into groups that have no runtime
-+		 * assigned.
-+		 *
-+		 * RCU read lock not strictly required but here for PROVE_RCU,
-+		 * the task is pinned by holding rq->lock which avoids races
-+		 * with ->attach().
-+		 */
-+		rcu_read_lock();
-+		if (rt_bandwidth_enabled() && rt_policy(policy) &&
-+				task_group(p)->rt_bandwidth.rt_runtime == 0)
-+			retval = -EPERM;
-+		rcu_read_unlock();
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -3027,14 +3027,15 @@ static void iscsi_start_session_recovery
+ 		session->state = ISCSI_STATE_TERMINATE;
+ 	else if (conn->stop_stage != STOP_CONN_RECOVER)
+ 		session->state = ISCSI_STATE_IN_RECOVERY;
 +
-+		if (retval)
-+			goto unlock;
-+	}
-+#endif
-+
- 	/* recheck policy now with rq lock held */
- 	if (unlikely(oldpolicy != -1 && oldpolicy != p->policy)) {
- 		policy = oldpolicy = -1;
-@@ -4477,12 +4489,14 @@ recheck:
++	old_stop_stage = conn->stop_stage;
++	conn->stop_stage = flag;
+ 	spin_unlock_bh(&session->lock);
  
- 		check_class_changed(rq, p, prev_class, oldprio, running);
- 	}
-+unlock:
- 	__task_rq_unlock(rq);
- 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 	del_timer_sync(&conn->transport_timer);
+ 	iscsi_suspend_tx(conn);
  
--	rt_mutex_adjust_pi(p);
-+	if (!retval)
-+		rt_mutex_adjust_pi(p);
+ 	spin_lock_bh(&session->lock);
+-	old_stop_stage = conn->stop_stage;
+-	conn->stop_stage = flag;
+ 	conn->c_stage = ISCSI_CONN_STOPPED;
+ 	spin_unlock_bh(&session->lock);
  
--	return 0;
-+	return retval;
- }
- 
- /**
 
 
