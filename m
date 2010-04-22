@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab0DVI7Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 04:59:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23556 "EHLO mga02.intel.com"
+	id S1753618Ab0DVJDI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 05:03:08 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:38428 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753175Ab0DVI7O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 04:59:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,255,1270450800"; 
-   d="scan'208";a="615487923"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>,
-       "davem@davemloft.net" <davem@davemloft.net>
-Date: Thu, 22 Apr 2010 16:57:56 +0800
-Subject: RE: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
-	virtio-net.
-Thread-Topic: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
-	virtio-net.
-Thread-Index: AcrhLh94ExjlzDb9TDWF+hXUmrIJ4wAyJuTA
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D79026FAE0BDB@shsmsx502.ccr.corp.intel.com>
-References: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com>
- <20100414152519.GA10792@redhat.com>
- <97F6D3BD476C464182C1B7BABF0B0AF5C18969CC@shzsmsx502.ccr.corp.intel.com>
- <20100415100546.GA17035@redhat.com>
- <F2E9EB7348B8264F86B6AB8151CE2D79026FA95401@shsmsx502.ccr.corp.intel.com>
- <20100419102118.GA16198@redhat.com>
- <F2E9EB7348B8264F86B6AB8151CE2D79026FAB1E5F@shsmsx502.ccr.corp.intel.com>
- <20100421083507.GA30855@redhat.com>
-In-Reply-To: <20100421083507.GA30855@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753455Ab0DVJDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 05:03:06 -0400
+Date: Thu, 22 Apr 2010 11:03:03 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] [MTD] Fix JFFS2 sync silent failure
+Message-ID: <20100422090303.GA27497@kernel.dk>
+References: <20100417184016.GA17345@logfs.org> <20100419073843.GN27497@kernel.dk> <20100419101559.GA4145@logfs.org> <20100419102056.GS27497@kernel.dk> <20100422055448.GA27309@logfs.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100422055448.GA27309@logfs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael,
+On Thu, Apr 22 2010, Jörn Engel wrote:
+> On Mon, 19 April 2010 12:20:56 +0200, Jens Axboe wrote:
+> > 
+> > Thanks, we definitely should have put a debug statement to catch this in
+> > from day 1, good debugging should be an important part of any new
+> > infrastructure.
+> 
+> Woke up early and had another look at this.  Looks like a much more
+> widespread problem.  Based on a quick grep an uncaffeinated brain:
+> 
+> 9p	no s_bdi
+> afs	no s_bdi
+> ceph	creates its own s_bdi
+> cifs	no s_bdi
+> coda	no s_bdi
+> ecryptfs no s_bdi
+> exofs	no s_bdi
+> fuse	creates its own s_bdi?
+> gfs2	creates its own s_bdi?
+> jffs2	patch exists
+> logfs	fixed now
+> ncpfs	no s_bdi
+> nfs	creates its own s_bdi
+> ocfs2	no s_bdi
+> smbfs	no s_bdi
+> ubifs	creates its own s_bdi
+> 
+> I excluded all filesystems that appear to be read-only, block device
+> based or lack any sort of backing store.  So there is a chance I have
+> missed some as well.
 
->Yes, I think this packet split mode probably maps well to mergeable buffer
->support. Note that
->1. Not all devices support large packets in this way, others might map
->   to indirect buffers better
+It's funky, I was pretty sure there was/is code to set a default bdi for
+non-bdev file systems. It appears to be missing, that's not good. So
+options include:
 
-Do the indirect buffers accord to deal with the skb->frag_list?
+- Add the appropriate per-sb bdi for these file systems (right fix), or
+- Pre-fill default_backing_dev_info as a fallback ->s_bdi to at least
+  ensure that data gets flushed (quick fix)
 
->   So we have to figure out how migration is going to work
-Yes, different guest virtio-net driver may contain different features.
-Does the qemu migration work with different features supported by virtio-net
-driver now?
+I'll slap together a set of fixes for this.
 
->2. It's up to guest driver whether to enable features such as
->   mergeable buffers and indirect buffers
->   So we have to figure out how to notify guest which mode
->   is optimal for a given device
-Yes. When a device is binded, the mp device may query the capabilities from driver.
-Actually, there is a structure now in mp device can do this, we can add some field
-to support more.
-
->3. We don't want to depend on jumbo frames for decent performance
->   So we probably should support GSO/GRO
-GSO is for the tx side, right? I think driver can handle it itself.
-For GRO, I'm not sure it's easy or not. Basically, the mp device now
-we have support is doing what raw socket is doing. The packets are not going to host stack.
 -- 
-MST
+Jens Axboe
+
