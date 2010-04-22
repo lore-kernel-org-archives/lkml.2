@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab0DVAE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Apr 2010 20:04:29 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33312 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab0DVAE2 (ORCPT
+	id S1755745Ab0DVAG7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Apr 2010 20:06:59 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:37212 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752905Ab0DVAG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Apr 2010 20:04:28 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 22 Apr 2010 08:59:43 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
- PageSwapCache pages
-Message-Id: <20100422085943.3d908a4b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.DEB.2.00.1004210927550.4959@router.home>
-References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
-	<1271797276-31358-5-git-send-email-mel@csn.ul.ie>
-	<alpine.DEB.2.00.1004210927550.4959@router.home>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Apr 2010 20:06:57 -0400
+Date: Thu, 22 Apr 2010 10:06:52 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Denys Fedorysychenko <nuclearcat@nuclearcat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: endless sync on bdi_sched_wait()? 2.6.33.1
+Message-ID: <20100422000652.GD23541@dastard>
+References: <201003311907.31342.nuclearcat@nuclearcat.com>
+ <20100408092850.GA20488@quack.suse.cz>
+ <20100419013702.GE2520@dastard>
+ <20100419070458.GF2520@dastard>
+ <20100421003309.GB4128@quack.suse.cz>
+ <20100421015428.GC23541@dastard>
+ <20100421132718.GA3327@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100421132718.GA3327@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Apr 2010 09:30:20 -0500 (CDT)
-Christoph Lameter <cl@linux-foundation.org> wrote:
+On Wed, Apr 21, 2010 at 03:27:18PM +0200, Jan Kara wrote:
+> On Wed 21-04-10 11:54:28, Dave Chinner wrote:
+> > On Wed, Apr 21, 2010 at 02:33:09AM +0200, Jan Kara wrote:
+> > > On Mon 19-04-10 17:04:58, Dave Chinner wrote:
+> > > > The third flush - the sync one - does:
+.....
+> > > > some 75 seconds later having written only 1024 pages. In the mean
+> > > > time, the traces show dd blocked in balance_dirty_pages():
+.....
+> > > > And it appears to stay blocked there without doing any writeback at
+> > > > all - there are no wbc_balance_dirty_pages_written traces at all.
+> > > > That is, it is blocking until the number of dirty pages is dropping
+> > > > below the dirty threshold, then continuing to write and dirty more
+> > > > pages.
+> > >   I think this happens because sync writeback is running so I_SYNC is set
+> > > and thus we cannot do any writeout for the inode from balance_dirty_pages.
+> > 
+> > It's not even calling into writeback so the I_SYNC flag is way out of
+> > scope ;)
+>   Are you sure? The tracepoints are in wb_writeback() but
+> writeback_inodes_wbc() calls directly into writeback_inodes_wb() so you
+> won't see any of the tracepoints to trigger. So how do you know we didn't
+> get to writeback_single_inode?
 
-> On Tue, 20 Apr 2010, Mel Gorman wrote:
-> 
-> > @@ -520,10 +521,12 @@ static int move_to_new_page(struct page *newpage, struct page *page)
-> >  	else
-> >  		rc = fallback_migrate_page(mapping, newpage, page);
-> >
-> > -	if (!rc)
-> > -		remove_migration_ptes(page, newpage);
-> > -	else
-> > +	if (rc) {
-> >  		newpage->mapping = NULL;
-> > +	} else {
-> > +		if (remap_swapcache)
-> > +			remove_migration_ptes(page, newpage);
-> > +	}
-> 
-> You are going to keep the migration ptes after the page has been unlocked?
-> Or is remap_swapcache true if its not a swapcache page?
-> 
-> Maybe you meant
-> 
-> if (!remap_swapcache)
-> 
+The balance_dirty_pages() tracing code added this hunk:
 
-Ah....Can I confirm my understanding ?
+@@ -536,11 +537,13 @@ static void balance_dirty_pages(struct address_space *mapping,
+                 * threshold otherwise wait until the disk writes catch
+                 * up.
+                 */
++               trace_wbc_balance_dirty_start(&wbc);
+                if (bdi_nr_reclaimable > bdi_thresh) {
+                        writeback_inodes_wbc(&wbc);
+                        pages_written += write_chunk - wbc.nr_to_write;
+                        get_dirty_limits(&background_thresh, &dirty_thresh,
+                                       &bdi_thresh, bdi);
++                       trace_wbc_balance_dirty_written(&wbc);
+                }
 
-remap_swapcache == true only when
-  The old page was ANON && it is not mapped. && it is SwapCache.
+                /*
 
-We do above check under lock_page(). So, this SwapCache is never mapped until
-we release lock_page() on the old page. So, we don't use migration_pte in
-this case because try_to_unmap() do nothing and don't need to call
-remove_migration_pte().
+So if we tried to do writeback from here, the
+wbc_balance_dirty_written trace would have been emitted, and that is
+not showing up very often in any of the traces. e.g:
 
-If migration_pte is used somewhere...I think it's bug.
+$ grep balance t.t |grep start |wc -l
+4356
+$ grep balance t.t |grep wait |wc -l
+2171
+$ grep balance t.t |grep written |wc -l
+7
 
--Kame
+Cheers,
 
-
-
-> ?
-> 
-> >  	unlock_page(newpage);
-> >
-> 
-> >
-> >  skip_unmap:
-> >  	if (!page_mapped(page))
-> > -		rc = move_to_new_page(newpage, page);
-> > +		rc = move_to_new_page(newpage, page, remap_swapcache);
-> >
-> > -	if (rc)
-> > +	if (rc && remap_swapcache)
-> >  		remove_migration_ptes(page, page);
-> >  rcu_unlock:
-> >
-> 
-> Looks like you meant !remap_swapcache
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
