@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab0DVJam (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 05:30:42 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52078 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752684Ab0DVJal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 05:30:41 -0400
-Message-ID: <4BD017AC.1020209@cn.fujitsu.com>
-Date: Thu, 22 Apr 2010 17:32:28 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1753882Ab0DVJre (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 05:47:34 -0400
+Received: from relay01.mx.bawue.net ([193.7.176.67]:42785 "EHLO
+	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631Ab0DVJrc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 05:47:32 -0400
+X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Apr 2010 05:47:32 EDT
+Date: Thu, 22 Apr 2010 11:39:49 +0200
+From: Nils Radtke <Nils.Radtke@Think-Future.de>
+To: linux-kernel@vger.kernel.org
+Subject: iwlagn + some accesspoint = hardlock
+Message-ID: <20100422093949.GC16001@localhost>
+Reply-To: Nils Radtke <Nils.Radtke@Think-Future.de>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: "containers@lists.osdl.org" <containers@lists.osdl.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Paul Menage <menage@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jens Axboe <jens.axboe@oracle.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Gui Jianfeng <GuiJianfeng@cn.fujitsu.com>
-Subject: [PATCH 5/5] blk-cgroup: Fix an RCU warning in blkiocg_create()
-References: <4BD016F4.8060108@cn.fujitsu.com>
-In-Reply-To: <4BD016F4.8060108@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Url: http://www.Think-Future.de
+X-Editor: Vi it! http://www.vim.org
+X-Bkp: p2mi
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-with CONFIG_PROVE_RCU=y, a warning can be triggered:
+  Hello there,
 
-  # mount -t cgroup -o blkio xxx /mnt
-  # mkdir /mnt/subgroup
+ today a somewhat unprecise report:
 
-...
-kernel/cgroup.c:4442 invoked rcu_dereference_check() without protection!
-...
+When connecting to the local university's wireless APs, rather regularly 
+presumably the kernel crashes.
 
-To fix this, we avoid caling css_depth() here, which is a bit simpler
-than the original code.
+So, connecting to one of those the system hardlocks. No panic LED blinking, no mouse cursor moving, 
+no magic sysreq key working. Poweroff is the only way to revive the machine. Until the upcoming
+lock-up.
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- block/blk-cgroup.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+What might serve as a hint: using knemo and kwifimanager (with wpa_supplicant in the bg) it feels like it is 
+freezing more frequently. Not running kwifimanager seems to reduce the frequency w/o however eliminating it
+completely. Sometimes iceweasel has been touched and then the crash occurred. 
+Maybe some TX (or subsequent RX) provokes the crash? Some idea that also came up was that accessing iwlagn 
+drivers isn't clean when it's happening from more that one place at the same time 
+(->wpa_supplicant + kwifimanager)?
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 5fe03de..2cc682b 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -286,16 +286,16 @@ done:
- static struct cgroup_subsys_state *
- blkiocg_create(struct cgroup_subsys *subsys, struct cgroup *cgroup)
- {
--	struct blkio_cgroup *blkcg, *parent_blkcg;
-+	struct blkio_cgroup *blkcg;
-+	struct cgroup *parent = cgroup->parent;
- 
--	if (!cgroup->parent) {
-+	if (!parent) {
- 		blkcg = &blkio_root_cgroup;
- 		goto done;
- 	}
- 
- 	/* Currently we do not support hierarchy deeper than two level (0,1) */
--	parent_blkcg = cgroup_to_blkio_cgroup(cgroup->parent);
--	if (css_depth(&parent_blkcg->css) > 0)
-+	if (parent != cgroup->top_cgroup)
- 		return ERR_PTR(-EINVAL);
- 
- 	blkcg = kzalloc(sizeof(*blkcg), GFP_KERNEL);
--- 
-1.6.3
+This behaviour is currently only known to happen in this exact place/location. So one assumption is that it
+is somehow correlated to a particular type of access point, firmware respectively. Nonetheless, even
+if there's some fw sending kill packets, the kernel should not crash, obviously.
+
+The access points in range are of type:
+
+- one 0:1d:8b PIRELLI BROADBAND SOLUTIONS 
+- couple of those 0:40:96 Cisco Systems, Inc.
+- one 0:1a:70 Cisco-Linksys
+
+This notebook has no serial port, so we haven't been able to get a glimpse on what is happening at that 
+precise moment. xconsole or dmesg haven't been helpful as the system just freezes and that's it.
+
+Comments, ideas, fixes welcome...
+
+Cheers,
+
+  Nils
 
