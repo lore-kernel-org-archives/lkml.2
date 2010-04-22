@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab0DVTqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:46:51 -0400
-Received: from kroah.org ([198.145.64.141]:41129 "EHLO coco.kroah.org"
+	id S1757442Ab0DVTqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:46:34 -0400
+Received: from kroah.org ([198.145.64.141]:41144 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756656Ab0DVT3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:06 -0400
+	id S1756493Ab0DVT3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:08 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:18 2010
-Message-Id: <20100422190918.192425604@kvm.kroah.org>
+Message-Id: <20100422190918.362261106@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:32 -0700
+Date: Thu, 22 Apr 2010 12:09:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: [121/197] x86: Fix breakage of UML from the changes in the rwsem system
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: [123/197] fix NFS4 handling of mountpoint stat
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 4126faf0ab7417fbc6eb99fb0fd407e01e9e9dfe upstream.
+commit 462d60577a997aa87c935ae4521bd303733a9f2b upstream.
 
-The patches 5d0b7235d83eefdafda300656e97d368afcafc9a and
-bafaecd11df15ad5b1e598adc7736afcd38ee13d broke the UML build:
+RFC says we need to follow the chain of mounts if there's more
+than one stacked on that point.
 
-On Sun, 17 Jan 2010, Ingo Molnar wrote:
->
-> FYI, -tip testing found that these changes break the UML build:
->
-> kernel/built-in.o: In function `__up_read':
-> /home/mingo/tip/arch/x86/include/asm/rwsem.h:192: undefined reference to `call_rwsem_wake'
-> kernel/built-in.o: In function `__up_write':
-> /home/mingo/tip/arch/x86/include/asm/rwsem.h:210: undefined reference to `call_rwsem_wake'
-> kernel/built-in.o: In function `__downgrade_write':
-> /home/mingo/tip/arch/x86/include/asm/rwsem.h:228: undefined reference to `call_rwsem_downgrade_wake'
-> kernel/built-in.o: In function `__down_read':
-> /home/mingo/tip/arch/x86/include/asm/rwsem.h:112: undefined reference to `call_rwsem_down_read_failed'
-> kernel/built-in.o: In function `__down_write_nested':
-> /home/mingo/tip/arch/x86/include/asm/rwsem.h:154: undefined reference to `call_rwsem_down_write_failed'
-> collect2: ld returned 1 exit status
-
-Add lib/rwsem_64.o to the UML subarch objects to fix.
-
-LKML-Reference: <alpine.LFD.2.00.1001171023440.13231@localhost.localdomain>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/um/sys-x86_64/Makefile |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/nfsd/nfs4xdr.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/arch/um/sys-x86_64/Makefile
-+++ b/arch/um/sys-x86_64/Makefile
-@@ -8,7 +8,8 @@ obj-y = bug.o bugs.o delay.o fault.o ldt
- 	setjmp.o signal.o stub.o stub_segv.o syscalls.o syscall_table.o \
- 	sysrq.o ksyms.o tls.o
- 
--subarch-obj-y = lib/csum-partial_64.o lib/memcpy_64.o lib/thunk_64.o
-+subarch-obj-y = lib/csum-partial_64.o lib/memcpy_64.o lib/thunk_64.o \
-+		lib/rwsem_64.o
- subarch-obj-$(CONFIG_MODULES) += kernel/module.o
- 
- ldt-y = ../sys-i386/ldt.o
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -2129,9 +2129,15 @@ out_acl:
+ 		 * and this is the root of a cross-mounted filesystem.
+ 		 */
+ 		if (ignore_crossmnt == 0 &&
+-		    exp->ex_path.mnt->mnt_root->d_inode == dentry->d_inode) {
+-			err = vfs_getattr(exp->ex_path.mnt->mnt_parent,
+-				exp->ex_path.mnt->mnt_mountpoint, &stat);
++		    dentry == exp->ex_path.mnt->mnt_root) {
++			struct path path = exp->ex_path;
++			path_get(&path);
++			while (follow_up(&path)) {
++				if (path.dentry != path.mnt->mnt_root)
++					break;
++			}
++			err = vfs_getattr(path.mnt, path.dentry, &stat);
++			path_put(&path);
+ 			if (err)
+ 				goto out_nfserr;
+ 		}
 
 
