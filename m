@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab0DVTzR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:55:17 -0400
-Received: from kroah.org ([198.145.64.141]:40846 "EHLO coco.kroah.org"
+	id S1757543Ab0DVTuX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:50:23 -0400
+Received: from kroah.org ([198.145.64.141]:40967 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756421Ab0DVT2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:28:35 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:14 2010
-Message-Id: <20100422190914.637184780@kvm.kroah.org>
+	id S1756531Ab0DVT2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:49 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:16 2010
+Message-Id: <20100422190916.233781522@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:08:52 -0700
+Date: Thu, 22 Apr 2010 12:09:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [081/197] libata: disable NCQ on Crucial C300 SSD
+       Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+       Jonathan Cameron <jic23@cam.ac.uk>, Jean Delvare <khali@linux-fr.org>
+Subject: [099/197] hwmon: (sht15) Fix sht15_calc_temp interpolation function
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
 
-commit 68b0ddb289220b6d4d865be128939663be34959d upstream.
+commit 328a2c22abd08911e37fa66f1358f829cecd72e9 upstream.
 
-Crucial said,
+I discovered two issues.
+First the previous sht15_calc_temp() loop did not iterate through the
+temppoints array since the (data->supply_uV > temppoints[i - 1].vdd)
+test is always true in this direction.
 
-  Thank you for contacting us. We know that with our M225 line of SSDs
-  you sometimes need to disable NCQ (native command queuing) to avoid
-  just the type of errors you're seeing. Our recommendation for the
-  M225 is to add libata.force=noncq to your Linux kernel boot options,
-  under the kernel ATA library option.
+Also the two-points linear interpolation function was returning biased
+values due to a stray division by 1000 which shouldn't be there.
 
-  I have sent your feedback to the engineers working on the C300, and
-  asked them to please pass it on to the firmware team. I have been
-  notified that they are in the process of testing and finalizing a
-  new firmware version, that you can expect to see released around the
-  end of April. We’ll keep you posted as to when it will be available
-  for download.
+[JD: Also change the default value for d1 from 0 to something saner.]
 
-So, turn off NCQ on the drive w/ the current firmware revision.
-
-Reported in the following bug.
-
-  https://bugzilla.kernel.org/show_bug.cgi?id=15573
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: lethalwp@scarlet.be
-Reported-by: Luke Macken <lmacken@redhat.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/hwmon/sht15.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4348,6 +4348,9 @@ static const struct ata_blacklist_entry
- 	{ "HTS541080G9SA00",    "MB4OC60D",     ATA_HORKAGE_NONCQ, },
- 	{ "HTS541010G9SA00",    "MBZOC60D",     ATA_HORKAGE_NONCQ, },
+--- a/drivers/hwmon/sht15.c
++++ b/drivers/hwmon/sht15.c
+@@ -302,13 +302,13 @@ error_ret:
+  **/
+ static inline int sht15_calc_temp(struct sht15_data *data)
+ {
+-	int d1 = 0;
++	int d1 = temppoints[0].d1;
+ 	int i;
  
-+	/* https://bugzilla.kernel.org/show_bug.cgi?id=15573 */
-+	{ "C300-CTFDDAC128MAG",	"0001",		ATA_HORKAGE_NONCQ, },
-+
- 	/* devices which puke on READ_NATIVE_MAX */
- 	{ "HDS724040KLSA80",	"KFAOA20N",	ATA_HORKAGE_BROKEN_HPA, },
- 	{ "WDC WD3200JD-00KLB0", "WD-WCAMR1130137", ATA_HORKAGE_BROKEN_HPA },
+-	for (i = 1; i < ARRAY_SIZE(temppoints); i++)
++	for (i = ARRAY_SIZE(temppoints) - 1; i > 0; i--)
+ 		/* Find pointer to interpolate */
+ 		if (data->supply_uV > temppoints[i - 1].vdd) {
+-			d1 = (data->supply_uV/1000 - temppoints[i - 1].vdd)
++			d1 = (data->supply_uV - temppoints[i - 1].vdd)
+ 				* (temppoints[i].d1 - temppoints[i - 1].d1)
+ 				/ (temppoints[i].vdd - temppoints[i - 1].vdd)
+ 				+ temppoints[i - 1].d1;
 
 
