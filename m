@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab0DVURg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:17:36 -0400
-Received: from kroah.org ([198.145.64.141]:59818 "EHLO coco.kroah.org"
+	id S1757980Ab0DVU20 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:28:26 -0400
+Received: from kroah.org ([198.145.64.141]:59532 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757853Ab0DVUAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:50 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:12 2010
-Message-Id: <20100422195412.491432243@kvm.kroah.org>
+	id S1757940Ab0DVT7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:59:55 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:07 2010
+Message-Id: <20100422195407.510102284@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:13 -0700
+Date: Thu, 22 Apr 2010 12:53:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: [076/139] x86, lib: Add wbinvd smp helpers
+       Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+       Linus Torvalds <torvalds@osdl.org>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Miller <davem@davemloft.net>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [028/139] genirq: Force MSI irq handlers to run with interrupts disabled
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,86 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit a7b480e7f30b3813353ec009f10f2ac7a6669f3b upstream.
+commit 753649dbc49345a73a2454c770a3f2d54d11aec6 upstream.
 
-Add wbinvd_on_cpu and wbinvd_on_all_cpus stubs for executing wbinvd on a
-particular CPU.
+Network folks reported that directing all MSI-X vectors of their multi
+queue NICs to a single core can cause interrupt stack overflows when
+enough interrupts fire at the same time.
 
-[ hpa: renamed lib/smp.c to lib/cache-smp.c ]
-[ hpa: wbinvd_on_all_cpus() returns int, but wbinvd() returns
-  void.  Thus, the former cannot be a macro for the latter,
-  replace with an inline function. ]
+This is caused by the fact that we run interrupt handlers by default
+with interrupts enabled unless the driver reuqests the interrupt with
+the IRQF_DISABLED set. The NIC handlers do not set this flag, so
+simultaneous interrupts can nest unlimited and cause the stack
+overflow.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <1264172467-25155-2-git-send-email-bp@amd64.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+The only safe counter measure is to run the interrupt handlers with
+interrupts disabled. We can't switch to this mode in general right
+now, but it is safe to do so for MSI interrupts.
+
+Force IRQF_DISABLED for MSI interrupt handlers.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Linus Torvalds <torvalds@osdl.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: David Miller <davem@davemloft.net>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/smp.h |    9 +++++++++
- arch/x86/lib/Makefile      |    2 +-
- arch/x86/lib/cache-smp.c   |   19 +++++++++++++++++++
- 3 files changed, 29 insertions(+), 1 deletion(-)
+ kernel/irq/manage.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -135,6 +135,8 @@ int native_cpu_disable(void);
- void native_cpu_die(unsigned int cpu);
- void native_play_dead(void);
- void play_dead_common(void);
-+void wbinvd_on_cpu(int cpu);
-+int wbinvd_on_all_cpus(void);
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -753,6 +753,16 @@ __setup_irq(unsigned int irq, struct irq
+ 		if (new->flags & IRQF_ONESHOT)
+ 			desc->status |= IRQ_ONESHOT;
  
- void native_send_call_func_ipi(const struct cpumask *mask);
- void native_send_call_func_single_ipi(int cpu);
-@@ -147,6 +149,13 @@ static inline int num_booting_cpus(void)
- {
- 	return cpumask_weight(cpu_callout_mask);
- }
-+#else /* !CONFIG_SMP */
-+#define wbinvd_on_cpu(cpu)     wbinvd()
-+static inline int wbinvd_on_all_cpus(void)
-+{
-+	wbinvd();
-+	return 0;
-+}
- #endif /* CONFIG_SMP */
- 
- extern unsigned disabled_cpus __cpuinitdata;
---- a/arch/x86/lib/Makefile
-+++ b/arch/x86/lib/Makefile
-@@ -14,7 +14,7 @@ $(obj)/inat.o: $(obj)/inat-tables.c
- 
- clean-files := inat-tables.c
- 
--obj-$(CONFIG_SMP) += msr-smp.o
-+obj-$(CONFIG_SMP) += msr-smp.o cache-smp.o
- 
- lib-y := delay.o
- lib-y += thunk_$(BITS).o
---- /dev/null
-+++ b/arch/x86/lib/cache-smp.c
-@@ -0,0 +1,19 @@
-+#include <linux/smp.h>
-+#include <linux/module.h>
++		/*
++		 * Force MSI interrupts to run with interrupts
++		 * disabled. The multi vector cards can cause stack
++		 * overflows due to nested interrupts when enough of
++		 * them are directed to a core and fire at the same
++		 * time.
++		 */
++		if (desc->msi_desc)
++			new->flags |= IRQF_DISABLED;
 +
-+static void __wbinvd(void *dummy)
-+{
-+	wbinvd();
-+}
-+
-+void wbinvd_on_cpu(int cpu)
-+{
-+	smp_call_function_single(cpu, __wbinvd, NULL, 1);
-+}
-+EXPORT_SYMBOL(wbinvd_on_cpu);
-+
-+int wbinvd_on_all_cpus(void)
-+{
-+	return on_each_cpu(__wbinvd, NULL, 1);
-+}
-+EXPORT_SYMBOL(wbinvd_on_all_cpus);
+ 		if (!(desc->status & IRQ_NOAUTOEN)) {
+ 			desc->depth = 0;
+ 			desc->status &= ~IRQ_DISABLED;
 
 
