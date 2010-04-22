@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab0DVTfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:35:44 -0400
-Received: from kroah.org ([198.145.64.141]:41525 "EHLO coco.kroah.org"
+	id S1757388Ab0DVTlC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:41:02 -0400
+Received: from kroah.org ([198.145.64.141]:41377 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756875Ab0DVT3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:50 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:23 2010
-Message-Id: <20100422190923.080178028@kvm.kroah.org>
+	id S1756777Ab0DVT33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:29 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:20 2010
+Message-Id: <20100422190920.648798702@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:26 -0700
+Date: Thu, 22 Apr 2010 12:10:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "J. Bruce Fields" <bfields@citi.umich.edu>
-Subject: [175/197] Revert "sunrpc: move the close processing after do recvfrom method"
+       "John W. Linville" <linville@tuxdriver.com>,
+       maximilian attems <max@stro.at>
+Subject: [149/197] b43: fall back gracefully to PIO mode after fatal DMA errors
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +26,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: J. Bruce Fields <bfields@citi.umich.edu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 1b644b6e6f6160ae35ce4b52c2ca89ed3e356e18 upstream.
+commit 9e3bd9190800e8209b4a3e1d724c35f0738dcad2 upstream.
 
-This reverts commit b0401d725334a94d57335790b8ac2404144748ee, which
-moved svc_delete_xprt() outside of XPT_BUSY, and allowed it to be called
-after svc_xpt_recived(), removing its last reference and destroying it
-after it had already been queued for future processing.
+This makes the b43 driver just automatically fall back to PIO mode when
+DMA doesn't work.
 
-Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+The driver already told the user to do it, so rather than have the user
+reload the module with a new flag, just make the driver do it
+automatically. We keep the message as an indication that something is
+wrong, but now just automatically fall back to the hopefully working PIO
+case.
+
+(Some post-2.6.33 merge fixups by Larry Finger <Larry.Finger@lwfinger.net>
+and yours truly... -- JWL)
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/svc_xprt.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ drivers/net/wireless/b43/Kconfig |   19 +++++++++++++++++--
+ drivers/net/wireless/b43/b43.h   |    7 +++++++
+ drivers/net/wireless/b43/main.c  |   14 ++++++++------
+ 3 files changed, 32 insertions(+), 8 deletions(-)
 
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -711,7 +711,10 @@ int svc_recv(struct svc_rqst *rqstp, lon
- 	spin_unlock_bh(&pool->sp_lock);
+--- a/drivers/net/wireless/b43/Kconfig
++++ b/drivers/net/wireless/b43/Kconfig
+@@ -3,7 +3,6 @@ config B43
+ 	depends on SSB_POSSIBLE && MAC80211 && WLAN_80211 && HAS_DMA
+ 	select SSB
+ 	select FW_LOADER
+-	select SSB_BLOCKIO
+ 	---help---
+ 	  b43 is a driver for the Broadcom 43xx series wireless devices.
  
- 	len = 0;
--	if (test_bit(XPT_LISTENER, &xprt->xpt_flags)) {
-+	if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
-+		dprintk("svc_recv: found XPT_CLOSE\n");
-+		svc_delete_xprt(xprt);
-+	} else if (test_bit(XPT_LISTENER, &xprt->xpt_flags)) {
- 		struct svc_xprt *newxpt;
- 		newxpt = xprt->xpt_ops->xpo_accept(xprt);
- 		if (newxpt) {
-@@ -737,7 +740,7 @@ int svc_recv(struct svc_rqst *rqstp, lon
- 			svc_xprt_received(newxpt);
- 		}
- 		svc_xprt_received(xprt);
--	} else if (!test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
-+	} else {
- 		dprintk("svc: server %p, pool %u, transport %p, inuse=%d\n",
- 			rqstp, pool->sp_id, xprt,
- 			atomic_read(&xprt->xpt_ref.refcount));
-@@ -750,11 +753,6 @@ int svc_recv(struct svc_rqst *rqstp, lon
- 		dprintk("svc: got len=%d\n", len);
- 	}
+@@ -79,6 +78,14 @@ config B43_SDIO
  
--	if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
--		dprintk("svc_recv: found XPT_CLOSE\n");
--		svc_delete_xprt(xprt);
--	}
+ 	  If unsure, say N.
+ 
++#Data transfers to the device via PIO. We want it as a fallback even
++# if we can do DMA.
++config B43_PIO
++	bool
++	depends on B43
++	select SSB_BLOCKIO
++	default y
++
+ config B43_NPHY
+ 	bool "Pre IEEE 802.11n support (BROKEN)"
+ 	depends on B43 && EXPERIMENTAL && BROKEN
+@@ -130,4 +137,12 @@ config B43_DEBUG
+ 	  for production use.
+ 	  Only say Y, if you are debugging a problem in the b43 driver sourcecode.
+ 
 -
- 	/* No data, incomplete (TCP) read, or accept() */
- 	if (len == 0 || len == -EAGAIN) {
- 		rqstp->rq_res.len = 0;
++config B43_FORCE_PIO
++	bool "Force usage of PIO instead of DMA"
++	depends on B43 && B43_DEBUG
++	---help---
++	  This will disable DMA and always enable PIO instead.
++
++	  Say N!
++	  This is only for debugging the PIO engine code. You do
++	  _NOT_ want to enable this.
+--- a/drivers/net/wireless/b43/b43.h
++++ b/drivers/net/wireless/b43/b43.h
+@@ -696,6 +696,7 @@ struct b43_wldev {
+ 	bool radio_hw_enable;	/* saved state of radio hardware enabled state */
+ 	bool qos_enabled;		/* TRUE, if QoS is used. */
+ 	bool hwcrypto_enabled;		/* TRUE, if HW crypto acceleration is enabled. */
++	bool use_pio;			/* TRUE if next init should use PIO */
+ 
+ 	/* PHY/Radio device. */
+ 	struct b43_phy phy;
+@@ -890,6 +891,12 @@ static inline bool b43_using_pio_transfe
+ 	return dev->__using_pio_transfers;
+ }
+ 
++#ifdef CONFIG_B43_FORCE_PIO
++# define B43_PIO_DEFAULT 1
++#else
++# define B43_PIO_DEFAULT 0
++#endif
++
+ /* Message printing */
+ void b43info(struct b43_wl *wl, const char *fmt, ...)
+     __attribute__ ((format(printf, 2, 3)));
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -102,9 +102,9 @@ int b43_modparam_verbose = B43_VERBOSITY
+ module_param_named(verbose, b43_modparam_verbose, int, 0644);
+ MODULE_PARM_DESC(verbose, "Log message verbosity: 0=error, 1=warn, 2=info(default), 3=debug");
+ 
+-static int modparam_pio;
+-module_param_named(pio, modparam_pio, int, 0444);
+-MODULE_PARM_DESC(pio, "enable(1) / disable(0) PIO mode");
++int b43_modparam_pio = B43_PIO_DEFAULT;
++module_param_named(pio, b43_modparam_pio, int, 0644);
++MODULE_PARM_DESC(pio, "Use PIO accesses by default: 0=DMA, 1=PIO");
+ 
+ static const struct ssb_device_id b43_ssb_tbl[] = {
+ 	SSB_DEVICE(SSB_VENDOR_BROADCOM, SSB_DEV_80211, 5),
+@@ -1793,8 +1793,9 @@ static void b43_do_interrupt_thread(stru
+ 			       dma_reason[4], dma_reason[5]);
+ 			b43err(dev->wl, "This device does not support DMA "
+ 			       "on your system. Please use PIO instead.\n");
+-			b43err(dev->wl, "Unload the b43 module and reload "
+-			       "with 'pio=1'\n");
++			/* Fall back to PIO transfers if we get fatal DMA errors! */
++			dev->use_pio = 1;
++			b43_controller_restart(dev, "DMA error");
+ 			return;
+ 		}
+ 		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
+@@ -4361,7 +4362,7 @@ static int b43_wireless_core_init(struct
+ 
+ 	if ((dev->dev->bus->bustype == SSB_BUSTYPE_PCMCIA) ||
+ 	    (dev->dev->bus->bustype == SSB_BUSTYPE_SDIO) ||
+-	    modparam_pio) {
++	    dev->use_pio) {
+ 		dev->__using_pio_transfers = 1;
+ 		err = b43_pio_init(dev);
+ 	} else {
+@@ -4829,6 +4830,7 @@ static int b43_one_core_attach(struct ss
+ 	if (!wldev)
+ 		goto out;
+ 
++	wldev->use_pio = b43_modparam_pio;
+ 	wldev->dev = dev;
+ 	wldev->wl = wl;
+ 	b43_set_status(wldev, B43_STAT_UNINIT);
 
 
