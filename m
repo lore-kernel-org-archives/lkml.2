@@ -1,193 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab0DVUEo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:04:44 -0400
-Received: from kroah.org ([198.145.64.141]:60134 "EHLO coco.kroah.org"
+	id S1757703Ab0DVTzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:55:11 -0400
+Received: from kroah.org ([198.145.64.141]:40857 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758178Ab0DVUCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:02:12 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:18 2010
-Message-Id: <20100422195418.860251800@kvm.kroah.org>
+	id S1756427Ab0DVT2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:28:36 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:14 2010
+Message-Id: <20100422190914.729285199@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:55:12 -0700
+Date: Thu, 22 Apr 2010 12:08:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-       Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [135/139] KVM: fix the handling of dirty bitmaps to avoid overflows
-In-Reply-To: <20100422195715.GA25490@kroah.com>
+       Suresh Jayaraman <sjayaraman@suse.de>,
+       Steve French <sfrench@us.ibm.com>
+Subject: [082/197] cifs: Fix a kernel BUG with remote OS/2 server (try #3)
+In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+From: Suresh Jayaraman <sjayaraman@suse.de>
 
-(Cherry-picked from commit 87bf6e7de1134f48681fd2ce4b7c1ec45458cb6d)
+commit 6513a81e9325d712f1bfb9a1d7b750134e49ff18 upstream.
 
-Int is not long enough to store the size of a dirty bitmap.
+While chasing a bug report involving a OS/2 server, I noticed the server sets
+pSMBr->CountHigh to a incorrect value even in case of normal writes. This
+results in 'nbytes' being computed wrongly and triggers a kernel BUG at
+mm/filemap.c.
 
-This patch fixes this problem with the introduction of a wrapper
-function to calculate the sizes of dirty bitmaps.
+void iov_iter_advance(struct iov_iter *i, size_t bytes)
+{
+        BUG_ON(i->count < bytes);    <--- BUG here
 
-Note: in mark_page_dirty(), we have to consider the fact that
-  __set_bit() takes the offset as int, not long.
+Why the server is setting 'CountHigh' is not clear but only does so after
+writing 64k bytes. Though this looks like the server bug, the client side
+crash may not be acceptable.
 
-Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+The workaround is to mask off high 16 bits if the number of bytes written as
+returned by the server is greater than the bytes requested by the client as
+suggested by Jeff Layton.
+
+Reviewed-by: Jeff Layton <jlayton@samba.org>
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/ia64/kvm/kvm-ia64.c  |    9 +++++----
- arch/powerpc/kvm/book3s.c |    5 +++--
- arch/x86/kvm/x86.c        |    4 ++--
- include/linux/kvm_host.h  |    5 +++++
- virt/kvm/kvm_main.c       |   13 ++++++++-----
- 5 files changed, 23 insertions(+), 13 deletions(-)
+ fs/cifs/cifssmb.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/arch/ia64/kvm/kvm-ia64.c
-+++ b/arch/ia64/kvm/kvm-ia64.c
-@@ -1794,7 +1794,8 @@ static int kvm_ia64_sync_dirty_log(struc
- {
- 	struct kvm_memory_slot *memslot;
- 	int r, i;
--	long n, base;
-+	long base;
-+	unsigned long n;
- 	unsigned long *dirty_bitmap = (unsigned long *)(kvm->arch.vm_base +
- 			offsetof(struct kvm_vm_data, kvm_mem_dirty_log));
- 
-@@ -1807,7 +1808,7 @@ static int kvm_ia64_sync_dirty_log(struc
- 	if (!memslot->dirty_bitmap)
- 		goto out;
- 
--	n = ALIGN(memslot->npages, BITS_PER_LONG) / 8;
-+	n = kvm_dirty_bitmap_bytes(memslot);
- 	base = memslot->base_gfn / BITS_PER_LONG;
- 
- 	for (i = 0; i < n/sizeof(long); ++i) {
-@@ -1823,7 +1824,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kv
- 		struct kvm_dirty_log *log)
- {
- 	int r;
--	int n;
-+	unsigned long n;
- 	struct kvm_memory_slot *memslot;
- 	int is_dirty = 0;
- 
-@@ -1841,7 +1842,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kv
- 	if (is_dirty) {
- 		kvm_flush_remote_tlbs(kvm);
- 		memslot = &kvm->memslots[log->slot];
--		n = ALIGN(memslot->npages, BITS_PER_LONG) / 8;
-+		n = kvm_dirty_bitmap_bytes(memslot);
- 		memset(memslot->dirty_bitmap, 0, n);
- 	}
- 	r = 0;
---- a/arch/powerpc/kvm/book3s.c
-+++ b/arch/powerpc/kvm/book3s.c
-@@ -848,7 +848,8 @@ int kvm_vm_ioctl_get_dirty_log(struct kv
- 	struct kvm_vcpu *vcpu;
- 	ulong ga, ga_end;
- 	int is_dirty = 0;
--	int r, n;
-+	int r;
-+	unsigned long n;
- 
- 	down_write(&kvm->slots_lock);
- 
-@@ -866,7 +867,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kv
- 		kvm_for_each_vcpu(n, vcpu, kvm)
- 			kvmppc_mmu_pte_pflush(vcpu, ga, ga_end);
- 
--		n = ALIGN(memslot->npages, BITS_PER_LONG) / 8;
-+		n = kvm_dirty_bitmap_bytes(memslot);
- 		memset(memslot->dirty_bitmap, 0, n);
- 	}
- 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2343,7 +2343,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kv
- 				      struct kvm_dirty_log *log)
- {
- 	int r;
--	int n;
-+	unsigned long n;
- 	struct kvm_memory_slot *memslot;
- 	int is_dirty = 0;
- 
-@@ -2359,7 +2359,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kv
- 		kvm_mmu_slot_remove_write_access(kvm, log->slot);
- 		spin_unlock(&kvm->mmu_lock);
- 		memslot = &kvm->memslots[log->slot];
--		n = ALIGN(memslot->npages, BITS_PER_LONG) / 8;
-+		n = kvm_dirty_bitmap_bytes(memslot);
- 		memset(memslot->dirty_bitmap, 0, n);
- 	}
- 	r = 0;
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -116,6 +116,11 @@ struct kvm_memory_slot {
- 	int user_alloc;
- };
- 
-+static inline unsigned long kvm_dirty_bitmap_bytes(struct kvm_memory_slot *memslot)
-+{
-+	return ALIGN(memslot->npages, BITS_PER_LONG) / 8;
-+}
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -1517,6 +1517,14 @@ CIFSSMBWrite(const int xid, struct cifsT
+ 		*nbytes = le16_to_cpu(pSMBr->CountHigh);
+ 		*nbytes = (*nbytes) << 16;
+ 		*nbytes += le16_to_cpu(pSMBr->Count);
 +
- struct kvm_kernel_irq_routing_entry {
- 	u32 gsi;
- 	u32 type;
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -636,7 +636,7 @@ skip_lpage:
- 
- 	/* Allocate page dirty bitmap if needed */
- 	if ((new.flags & KVM_MEM_LOG_DIRTY_PAGES) && !new.dirty_bitmap) {
--		unsigned dirty_bytes = ALIGN(npages, BITS_PER_LONG) / 8;
-+		unsigned long dirty_bytes = kvm_dirty_bitmap_bytes(&new);
- 
- 		new.dirty_bitmap = vmalloc(dirty_bytes);
- 		if (!new.dirty_bitmap)
-@@ -719,7 +719,7 @@ int kvm_get_dirty_log(struct kvm *kvm,
- {
- 	struct kvm_memory_slot *memslot;
- 	int r, i;
--	int n;
-+	unsigned long n;
- 	unsigned long any = 0;
- 
- 	r = -EINVAL;
-@@ -731,7 +731,7 @@ int kvm_get_dirty_log(struct kvm *kvm,
- 	if (!memslot->dirty_bitmap)
- 		goto out;
- 
--	n = ALIGN(memslot->npages, BITS_PER_LONG) / 8;
-+	n = kvm_dirty_bitmap_bytes(memslot);
- 
- 	for (i = 0; !any && i < n/sizeof(long); ++i)
- 		any = memslot->dirty_bitmap[i];
-@@ -1073,10 +1073,13 @@ void mark_page_dirty(struct kvm *kvm, gf
- 	memslot = gfn_to_memslot_unaliased(kvm, gfn);
- 	if (memslot && memslot->dirty_bitmap) {
- 		unsigned long rel_gfn = gfn - memslot->base_gfn;
-+		unsigned long *p = memslot->dirty_bitmap +
-+					rel_gfn / BITS_PER_LONG;
-+		int offset = rel_gfn % BITS_PER_LONG;
- 
- 		/* avoid RMW */
--		if (!generic_test_le_bit(rel_gfn, memslot->dirty_bitmap))
--			generic___set_le_bit(rel_gfn, memslot->dirty_bitmap);
-+		if (!generic_test_le_bit(offset, p))
-+			generic___set_le_bit(offset, p);
++		/*
++		 * Mask off high 16 bits when bytes written as returned by the
++		 * server is greater than bytes requested by the client. Some
++		 * OS/2 servers are known to set incorrect CountHigh values.
++		 */
++		if (*nbytes > count)
++			*nbytes &= 0xFFFF;
  	}
- }
  
+ 	cifs_buf_release(pSMB);
+@@ -1605,6 +1613,14 @@ CIFSSMBWrite2(const int xid, struct cifs
+ 		*nbytes = le16_to_cpu(pSMBr->CountHigh);
+ 		*nbytes = (*nbytes) << 16;
+ 		*nbytes += le16_to_cpu(pSMBr->Count);
++
++		/*
++		 * Mask off high 16 bits when bytes written as returned by the
++		 * server is greater than bytes requested by the client. OS/2
++		 * servers are known to set incorrect CountHigh values.
++		 */
++		if (*nbytes > count)
++			*nbytes &= 0xFFFF;
+ 	}
+ 
+ /*	cifs_small_buf_release(pSMB); */ /* Freed earlier now in SendReceive2 */
 
 
