@@ -1,69 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab0DVKwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 06:52:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40380 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753916Ab0DVKwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 06:52:37 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
-       Trond Myklebust <Trond.Myklebust@netapp.com>,
-       Chuck Lever <chuck.lever@oracle.com>,
-       Benny Halevy <bhalevy@panasas.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-       Andy Adamson <andros@netapp.com>
-Subject: [PATCH] nfs: fix memory leak in nfs_get_sb with CONFIG_NFS_V4
-Date: Thu, 22 Apr 2010 18:56:17 +0800
-Message-Id: <1271933777-26244-1-git-send-email-dfeng@redhat.com>
+	id S1754190Ab0DVKz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 06:55:58 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:39823 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753916Ab0DVKz4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 06:55:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 22 Apr 2010 19:51:53 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
+ PageSwapCache  pages
+Message-Id: <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
+	<alpine.DEB.2.00.1004210927550.4959@router.home>
+	<20100421150037.GJ30306@csn.ul.ie>
+	<alpine.DEB.2.00.1004211004360.4959@router.home>
+	<20100421151417.GK30306@csn.ul.ie>
+	<alpine.DEB.2.00.1004211027120.4959@router.home>
+	<20100421153421.GM30306@csn.ul.ie>
+	<alpine.DEB.2.00.1004211038020.4959@router.home>
+	<20100422092819.GR30306@csn.ul.ie>
+	<20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com>
+	<x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com>
+	<20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With CONFIG_NFS_V4 and data version 4, nfs_get_sb will allocate memory for
-export_path in nfs4_validate_text_mount_data, so we need to free it then.
-This is addressed in following kmemleak report:
+On Thu, 22 Apr 2010 19:31:06 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-unreferenced object 0xffff88016bf48a50 (size 16):
-  comm "mount.nfs", pid 22567, jiffies 4651574704 (age 175471.200s)
-  hex dump (first 16 bytes):
-    2f 6f 70 74 2f 77 6f 72 6b 00 6b 6b 6b 6b 6b a5  /opt/work.kkkkk.
-  backtrace:
-    [<ffffffff814b34f9>] kmemleak_alloc+0x60/0xa7
-    [<ffffffff81102c76>] kmemleak_alloc_recursive.clone.5+0x1b/0x1d
-    [<ffffffff811046b3>] __kmalloc_track_caller+0x18f/0x1b7
-    [<ffffffff810e1b08>] kstrndup+0x37/0x54
-    [<ffffffffa0336971>] nfs_parse_devname+0x152/0x204 [nfs]
-    [<ffffffffa0336af3>] nfs4_validate_text_mount_data+0xd0/0xdc [nfs]
-    [<ffffffffa0338deb>] nfs_get_sb+0x325/0x736 [nfs]
-    [<ffffffff81113671>] vfs_kern_mount+0xbd/0x17c
-    [<ffffffff81113798>] do_kern_mount+0x4d/0xed
-    [<ffffffff81129a87>] do_mount+0x787/0x7fe
-    [<ffffffff81129b86>] sys_mount+0x88/0xc2
-    [<ffffffff81009b42>] system_call_fastpath+0x16/0x1b
+> On Thu, 22 Apr 2010 19:13:12 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+> 
+> > On Thu, Apr 22, 2010 at 6:46 PM, KAMEZAWA Hiroyuki
+> > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > > Hmm..in my test, the case was.
+> > >
+> > > Before try_to_unmap:
+> > >        mapcount=1, SwapCache, remap_swapcache=1
+> > > After remap
+> > >        mapcount=0, SwapCache, rc=0.
+> > >
+> > > So, I think there may be some race in rmap_walk() and vma handling or
+> > > anon_vma handling. migration_entry isn't found by rmap_walk.
+> > >
+> > > Hmm..it seems this kind patch will be required for debug.
+> > 
 
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Chuck Lever <chuck.lever@oracle.com>
-Cc: Benny Halevy <bhalevy@panasas.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andy Adamson <andros@netapp.com>
+Ok, here is my patch for _fix_. But still testing...
+Running well at least for 30 minutes, where I can see bug in 10minutes.
+But this patch is too naive. please think about something better fix.
+
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+At adjust_vma(), vma's start address and pgoff is updated under
+write lock of mmap_sem. This means the vma's rmap information
+update is atoimic only under read lock of mmap_sem.
+
+
+Even if it's not atomic, in usual case, try_to_ummap() etc...
+just fails to decrease mapcount to be 0. no problem.
+
+But at page migration's rmap_walk(), it requires to know all
+migration_entry in page tables and recover mapcount.
+
+So, this race in vma's address is critical. When rmap_walk meet
+the race, rmap_walk will mistakenly get -EFAULT and don't call
+rmap_one(). This patch adds a lock for vma's rmap information. 
+But, this is _very slow_.
+We need something sophisitcated, light-weight update for this..
+
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- fs/nfs/super.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ include/linux/mm_types.h |    1 +
+ kernel/fork.c            |    1 +
+ mm/mmap.c                |   11 ++++++++++-
+ mm/rmap.c                |    3 +++
+ 4 files changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index e016372..44e6567 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2187,6 +2187,7 @@ static int nfs_get_sb(struct file_system_type *fs_type,
- 	if (data->version == 4) {
- 		error = nfs4_try_mount(flags, dev_name, data, mnt);
- 		kfree(data->client_address);
-+		kfree(data->nfs_server.export_path);
- 		goto out;
+Index: linux-2.6.34-rc4-mm1/include/linux/mm_types.h
+===================================================================
+--- linux-2.6.34-rc4-mm1.orig/include/linux/mm_types.h
++++ linux-2.6.34-rc4-mm1/include/linux/mm_types.h
+@@ -183,6 +183,7 @@ struct vm_area_struct {
+ #ifdef CONFIG_NUMA
+ 	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
+ #endif
++	spinlock_t adjust_lock;
+ };
+ 
+ struct core_thread {
+Index: linux-2.6.34-rc4-mm1/mm/mmap.c
+===================================================================
+--- linux-2.6.34-rc4-mm1.orig/mm/mmap.c
++++ linux-2.6.34-rc4-mm1/mm/mmap.c
+@@ -584,13 +584,20 @@ again:			remove_next = 1 + (end > next->
+ 		if (adjust_next)
+ 			vma_prio_tree_remove(next, root);
  	}
- #endif	/* CONFIG_NFS_V4 */
--- 
-1.7.0.1
+-
++	/*
++	 * changing all params in atomic. If not, vma_address in rmap.c
++ 	 * can see wrong result.
++ 	 */
++	spin_lock(&vma->adjust_lock);
+ 	vma->vm_start = start;
+ 	vma->vm_end = end;
+ 	vma->vm_pgoff = pgoff;
++	spin_unlock(&vma->adjust_lock);
+ 	if (adjust_next) {
++		spin_lock(&next->adjust_lock);
+ 		next->vm_start += adjust_next << PAGE_SHIFT;
+ 		next->vm_pgoff += adjust_next;
++		spin_unlock(&next->adjust_lock);
+ 	}
+ 
+ 	if (root) {
+@@ -1939,6 +1946,7 @@ static int __split_vma(struct mm_struct 
+ 	*new = *vma;
+ 
+ 	INIT_LIST_HEAD(&new->anon_vma_chain);
++	spin_lock_init(&new->adjust_lock);
+ 
+ 	if (new_below)
+ 		new->vm_end = addr;
+@@ -2338,6 +2346,7 @@ struct vm_area_struct *copy_vma(struct v
+ 			if (IS_ERR(pol))
+ 				goto out_free_vma;
+ 			INIT_LIST_HEAD(&new_vma->anon_vma_chain);
++			spin_lock_init(&new_vma->adjust_lock);
+ 			if (anon_vma_clone(new_vma, vma))
+ 				goto out_free_mempol;
+ 			vma_set_policy(new_vma, pol);
+Index: linux-2.6.34-rc4-mm1/kernel/fork.c
+===================================================================
+--- linux-2.6.34-rc4-mm1.orig/kernel/fork.c
++++ linux-2.6.34-rc4-mm1/kernel/fork.c
+@@ -350,6 +350,7 @@ static int dup_mmap(struct mm_struct *mm
+ 			goto fail_nomem;
+ 		*tmp = *mpnt;
+ 		INIT_LIST_HEAD(&tmp->anon_vma_chain);
++		spin_lock_init(&tmp->adjust_lock);
+ 		pol = mpol_dup(vma_policy(mpnt));
+ 		retval = PTR_ERR(pol);
+ 		if (IS_ERR(pol))
+Index: linux-2.6.34-rc4-mm1/mm/rmap.c
+===================================================================
+--- linux-2.6.34-rc4-mm1.orig/mm/rmap.c
++++ linux-2.6.34-rc4-mm1/mm/rmap.c
+@@ -332,11 +332,14 @@ vma_address(struct page *page, struct vm
+ 	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+ 	unsigned long address;
+ 
++	spin_lock(&vma->adjust_lock);
+ 	address = vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
+ 	if (unlikely(address < vma->vm_start || address >= vma->vm_end)) {
++		spin_unlock(&vma->adjust_lock);
+ 		/* page should be within @vma mapping range */
+ 		return -EFAULT;
+ 	}
++	spin_unlock(&vma->adjust_lock);
+ 	return address;
+ }
+ 
+
+
+
 
