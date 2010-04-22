@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab0DVJZp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 05:25:45 -0400
-Received: from hp3.statik.tu-cottbus.de ([141.43.120.68]:38941 "EHLO
-	hp3.statik.tu-cottbus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab0DVJZo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 05:25:44 -0400
-Message-ID: <4BD015F0.5090901@s5r6.in-berlin.de>
-Date: Thu, 22 Apr 2010 11:25:04 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.8.1.24) Gecko/20100228 SeaMonkey/1.1.19
+	id S1753523Ab0DVJ1j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 05:27:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56858 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752909Ab0DVJ1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 05:27:38 -0400
+Message-ID: <4BD016F4.8060108@cn.fujitsu.com>
+Date: Thu, 22 Apr 2010 17:29:24 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Greg KH <gregkh@suse.de>, devel@driverdev.osuosl.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: What's the staging review and acceptance process?
-References: <1271881967.1730.482.camel@Joe-Laptop.home>	 <20100422034532.GA25177@suse.de>	 <1271910357.1730.627.camel@Joe-Laptop.home>	 <20100422054902.GA28037@suse.de> <1271915718.1730.687.camel@Joe-Laptop.home>
-In-Reply-To: <1271915718.1730.687.camel@Joe-Laptop.home>
+To: LKML <linux-kernel@vger.kernel.org>
+CC: "containers@lists.osdl.org" <containers@lists.osdl.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Paul Menage <menage@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/5] cgroup: Fix an RCU warning in cgroup_path()
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/22/2010 7:55 AM, Joe Perches wrote:
-> On Wed, 2010-04-21 at 22:49 -0700, Greg KH wrote:
->> On Wed, Apr 21, 2010 at 09:25:57PM -0700, Joe Perches wrote:
->> > On Wed, 2010-04-21 at 20:45 -0700, Greg KH wrote:
->> > > That caused the huge backlog staring at me right now.
->> > Which likely discouraged the new contributors who
->> > submitted stuff still in that backlog.
->> do you have any evidence of this causing people to go away?
-> 
-> I think it's pretty established that response delays
-> cause losses of one type or another.
+with CONFIG_PROVE_RCU=y, a warning can be triggered:
 
-Perhaps, perhaps not.  OTOH, the development process documentation
-contains the advice not to be discouraged if feedback isn't immediate,
-and if in doubt, simply resubmit sometime later.
-http://lxr.linux.no/#linux-old+v2.4.0/Documentation/SubmittingPatches#L180
-I.e. it is well known that delays may happen and that people should not
-worry about them.
+  # mount -t cgroup -o debug xxx /mnt
+  # cat /proc/$$/cgroup
 
-If people /do/ get discouraged nevertheless, then this is because they
-do not want or cannot afford to spend the (little) time to resubmit or
-just ask what the review progress is.  If this happened to a bug fix of
-an existing feature, than that is sad and our loss.  But if this
-happened to a patch that is meant to develop a new feature --- such as
-fundamentally all patches to drivers/staging/ --- then there is not any
-real loss of a potential contributor, IMO:  Mid-term or long-term
-contributors need to be people who work with the reviewers and
-maintainers, and that means to cope with occasional delays.
+...
+kernel/cgroup.c:1649 invoked rcu_dereference_check() without protection!
+...
 
-Of course, if there is a subsystem with _permanent_ huge delays or
-actual patch loss or is orphaned entirely, then somebody needs to step
-in and offer help with review (which is a hard task and only worthwhile
-if the volunteering reviewer is credible) and perhaps with maintenance
-duties (which is easier).
+This is a false-positive, because cgroup_path() can be called
+with either rcu_read_lock() held or cgroup_mutex held.
+
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+---
+ kernel/cgroup.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index e2769e1..4ca928d 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1646,7 +1646,9 @@ static inline struct cftype *__d_cft(struct dentry *dentry)
+ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
+ {
+ 	char *start;
+-	struct dentry *dentry = rcu_dereference(cgrp->dentry);
++	struct dentry *dentry = rcu_dereference_check(cgrp->dentry,
++						      rcu_read_lock_held() ||
++						      cgroup_lock_is_held());
+ 
+ 	if (!dentry || cgrp == dummytop) {
+ 		/*
+@@ -1662,13 +1664,17 @@ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
+ 	*--start = '\0';
+ 	for (;;) {
+ 		int len = dentry->d_name.len;
++
+ 		if ((start -= len) < buf)
+ 			return -ENAMETOOLONG;
+-		memcpy(start, cgrp->dentry->d_name.name, len);
++		memcpy(start, dentry->d_name.name, len);
+ 		cgrp = cgrp->parent;
+ 		if (!cgrp)
+ 			break;
+-		dentry = rcu_dereference(cgrp->dentry);
++
++		dentry = rcu_dereference_check(cgrp->dentry,
++					       rcu_read_lock_held() ||
++					       cgroup_lock_is_held());
+ 		if (!cgrp->parent)
+ 			continue;
+ 		if (--start < buf)
 -- 
-Stefan Richter
--=====-==-=- -=-- =-==-
-http://arcgraph.de/sr/
+1.6.3
+
