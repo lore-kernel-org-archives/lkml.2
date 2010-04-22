@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307Ab0DVTiy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:38:54 -0400
-Received: from kroah.org ([198.145.64.141]:41443 "EHLO coco.kroah.org"
+	id S1757401Ab0DVTmB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:42:01 -0400
+Received: from kroah.org ([198.145.64.141]:41336 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755405Ab0DVT3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:39 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:21 2010
-Message-Id: <20100422190921.880624493@kvm.kroah.org>
+	id S1756536Ab0DVT3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:25 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:20 2010
+Message-Id: <20100422190920.208941400@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:10:13 -0700
+Date: Thu, 22 Apr 2010 12:09:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Neil Horman <nhorman@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>,
+       Seth Heasley <seth.heasley@intel.com>, Jeff Garzik <jgarzik@redhat.com>,
        maximilian attems <max@stro.at>
-Subject: [162/197] r8169: offical fix for CVE-2009-4537 (overlength frame DMAs)
+Subject: [144/197] ata_piix: IDE Mode SATA patch for Intel Cougar Point DeviceIDs
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,121 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@redhat.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit c0cd884af045338476b8e69a61fceb3f34ff22f1 upstream.
+commit 88e8201e67aace3d86de9e75122ea525f0e7248e upstream.
 
-Official patch to fix the r8169 frame length check error.
-
-Based on this initial thread:
-http://marc.info/?l=linux-netdev&m=126202972828626&w=1
-This is the official patch to fix the frame length problems in the r8169
-driver.  As noted in the previous thread, while this patch incurs a performance
-hit on the driver, its possible to improve performance dynamically by updating
-the mtu and rx_copybreak values at runtime to return performance to what it was
-for those NICS which are unaffected by the ideosyncracy (if there are any).
-
-Summary:
-
-    A while back Eric submitted a patch for r8169 in which the proper
-allocated frame size was written to RXMaxSize to prevent the NIC from dmaing too
-much data.  This was done in commit fdd7b4c3302c93f6833e338903ea77245eb510b4.  A
-long time prior to that however, Francois posted
-126fa4b9ca5d9d7cb7d46f779ad3bd3631ca387c, which expiclitly disabled the MaxSize
-setting due to the fact that the hardware behaved in odd ways when overlong
-frames were received on NIC's supported by this driver.  This was mentioned in a
-security conference recently:
-http://events.ccc.de/congress/2009/Fahrplan//events/3596.en.html
-
-It seems that if we can't enable frame size filtering, then, as Eric correctly
-noticed, we can find ourselves DMA-ing too much data to a buffer, causing
-corruption.  As a result is seems that we are forced to allocate a frame which
-is ready to handle a maximally sized receive.
-
-This obviously has performance issues with it, so to mitigate that issue, this
-patch does two things:
-
-1) Raises the copybreak value to the frame allocation size, which should force
-appropriately sized packets to get allocated on rx, rather than a full new 16k
-buffer.
-
-2) This patch only disables frame filtering initially (i.e., during the NIC
-open), changing the MTU results in ring buffer allocation of a size in relation
-to the new mtu (along with a warning indicating that this is dangerous).
-
-Because of item (2), individuals who can't cope with the performance hit (or can
-otherwise filter frames to prevent the bug), or who have hardware they are sure
-is unaffected by this issue, can manually lower the copybreak and reset the mtu
-such that performance is restored easily.
-
-Signed-off-by: Neil Horman <nhorman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/r8169.c |   29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
+ drivers/ata/ata_piix.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -186,7 +186,12 @@ static struct pci_device_id rtl8169_pci_
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -291,6 +291,14 @@ static const struct pci_device_id piix_p
+ 	{ 0x8086, 0x3b2d, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (PCH) */
+ 	{ 0x8086, 0x3b2e, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
++	/* SATA Controller IDE (CPT) */
++	{ 0x8086, 0x1c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
++	/* SATA Controller IDE (CPT) */
++	{ 0x8086, 0x1c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
++	/* SATA Controller IDE (CPT) */
++	{ 0x8086, 0x1c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (CPT) */
++	{ 0x8086, 0x1c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	{ }	/* terminate list */
+ };
  
- MODULE_DEVICE_TABLE(pci, rtl8169_pci_tbl);
- 
--static int rx_copybreak = 200;
-+/*
-+ * we set our copybreak very high so that we don't have
-+ * to allocate 16k frames all the time (see note in
-+ * rtl8169_open()
-+ */
-+static int rx_copybreak = 16383;
- static int use_dac;
- static struct {
- 	u32 msg_enable;
-@@ -3245,9 +3250,13 @@ static void __devexit rtl8169_remove_one
- }
- 
- static void rtl8169_set_rxbufsize(struct rtl8169_private *tp,
--				  struct net_device *dev)
-+				  unsigned int mtu)
- {
--	unsigned int max_frame = dev->mtu + VLAN_ETH_HLEN + ETH_FCS_LEN;
-+	unsigned int max_frame = mtu + VLAN_ETH_HLEN + ETH_FCS_LEN;
-+
-+	if (max_frame != 16383)
-+		printk(KERN_WARNING "WARNING! Changing of MTU on this NIC"
-+			"May lead to frame reception errors!\n");
- 
- 	tp->rx_buf_sz = (max_frame > RX_BUF_SIZE) ? max_frame : RX_BUF_SIZE;
- }
-@@ -3259,7 +3268,17 @@ static int rtl8169_open(struct net_devic
- 	int retval = -ENOMEM;
- 
- 
--	rtl8169_set_rxbufsize(tp, dev);
-+	/*
-+	 * Note that we use a magic value here, its wierd I know
-+	 * its done because, some subset of rtl8169 hardware suffers from
-+	 * a problem in which frames received that are longer than
-+	 * the size set in RxMaxSize register return garbage sizes
-+	 * when received.  To avoid this we need to turn off filtering,
-+	 * which is done by setting a value of 16383 in the RxMaxSize register
-+	 * and allocating 16k frames to handle the largest possible rx value
-+	 * thats what the magic math below does.
-+	 */
-+	rtl8169_set_rxbufsize(tp, 16383 - VLAN_ETH_HLEN - ETH_FCS_LEN);
- 
- 	/*
- 	 * Rx and Tx desscriptors needs 256 bytes alignment.
-@@ -3912,7 +3931,7 @@ static int rtl8169_change_mtu(struct net
- 
- 	rtl8169_down(dev);
- 
--	rtl8169_set_rxbufsize(tp, dev);
-+	rtl8169_set_rxbufsize(tp, dev->mtu);
- 
- 	ret = rtl8169_init_ring(dev);
- 	if (ret < 0)
 
 
