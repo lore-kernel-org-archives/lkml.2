@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab0DVFp1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 01:45:27 -0400
-Received: from host2.200-71-230.telecom.net.ar ([200.71.230.2]:47611 "EHLO
-	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752250Ab0DVFpZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 01:45:25 -0400
-Message-ID: <19749.41.220.68.1.1271909116.squirrel@41.220.68.1>
-Date: Thu, 22 Apr 2010 02:05:16 -0200 (FNT)
-Subject: Congratulations - You Have Won (Winning Numbers)
-From: "MICROSOFT EMAIL PROMOTION" <info.winners@microsoft.com>
-Reply-To: mrivannickerson4@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
+	id S1752755Ab0DVFsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 01:48:24 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59974 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751580Ab0DVFsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 01:48:23 -0400
+Date: Wed, 21 Apr 2010 22:49:02 -0700
+From: Greg KH <gregkh@suse.de>
+To: Joe Perches <joe@perches.com>
+Cc: devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: What's the staging review and acceptance process?
+Message-ID: <20100422054902.GA28037@suse.de>
+References: <1271881967.1730.482.camel@Joe-Laptop.home> <20100422034532.GA25177@suse.de> <1271910357.1730.627.camel@Joe-Laptop.home>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271910357.1730.627.camel@Joe-Laptop.home>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Congratulations - You Have Won (Winning Numbers)
+On Wed, Apr 21, 2010 at 09:25:57PM -0700, Joe Perches wrote:
+> On Wed, 2010-04-21 at 20:45 -0700, Greg KH wrote:
+> > That caused the huge backlog staring at
+> > me right now.
+> 
+> Which likely discouraged the new contributors who
+> submitted stuff still in that backlog.
 
-The MICROSOFT EMAIL PROMO TEAM is glad to announce that
-after a successful completion of the PROMO DRAWS held on the
-21st April March 2010,your e-mail address,attached to winning
-numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
-lottery category.
+While a series of unfortunate events did happen to cause this, do you
+have any evidence of this causing people to go away?  I have had a
+number of queries about pending patches, all of which I quickly
+responded to (travel being easy to write emails, just not do "real"
+work).
 
-You have therefore been approved to claim a total sum of
-£250,000,00 Pounds Sterling in cash credited to REF
-NO:MICRO-L/2009-END10.
+> > I just went through 100 patches, and only 40 of them
+> > were "valid" and able to be applied, so it is a high rejection rate
+> > which requires a lot of attention to be paid to them.
+> > 
+> > > What is your current review/notify/accept/reject workflow?
+> > 
+> > Like it's always been:
+> >   - patch comes in
+> >   - I get around to reviewing it
+> >   - if valid, I apply and you get an email
+> >   - if invalid, I reject and say why in email
+> 
+> Unfortunately, your process has been opaque until you
+> personally handle it.
 
-All participants were selected through our Microsoft computer
-ballot system drawn from 167,000 Names,as part of our
-International  "E-MAIL" Promotion Program for our prominent
-MS-WORD users all over the world and for the continuous use
-of the internet. You are advised to contact the claims
-processor with the details below via his e-mail address :
+Yes, like all subsystem maintainers, right?
 
-NAME:  Ivan Nickerson
-EMAIL: mrivan_nickerson04@yahoo.com.hk
+> Does the driverdev list or any list always receive a copy
+> or the feedback?
 
-PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO
+If it was copied, yes, it does.  I can't control who the original
+submitters copy on their emails, but they usually do hit the driverdev
+mailing list for the most part.
 
-CLAIM YOUR PRIZE:
-1.Full Name:... 2.Address:... 3.Phone:... 4.Country:...
+> > > Perhaps a patchwork queue for staging might help track these
+> > > patches and with more feedback or reviewers, get them in
+> > > shape to be applied.
+> 
+> > patchwork doesn't work well for my patch flow, but maybe that is because
+> > I haven't spent enough time with it.  Right now I have all the patches,
+> > it's just a matter of getting through them.
+> 
+> Maybe you should get some advice on using patchwork use
+> from somebody like David Miller, who gets rather more
+> patches for networking than staging gets.  The patchwork
+> queue for networking always seems managed and it can use
+> delegation, which your process doesn't seem capable of
+> doing.  You're a voluntary bottleneck for staging, I
+> think you either need to find personal cycles or find
+> some other suckers willing to volunteer who'd make up
+> more overall cycles.
 
-5.Sex/Gender:...
+Are you volunteering?
 
+thanks,
 
-YOURS SINCERELY,
-ANASTACIA SHEFFIELD.
-
+greg k-h
