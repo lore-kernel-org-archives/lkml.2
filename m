@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab0DVHHO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 03:07:14 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35061 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab0DVHHL (ORCPT
+	id S1752134Ab0DVHNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 03:13:53 -0400
+Received: from host2.200-71-230.telecom.net.ar ([200.71.230.2]:54795 "EHLO
+	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751746Ab0DVHNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 03:07:11 -0400
-Date: Thu, 22 Apr 2010 15:06:25 +0800
-From: Yong Zhang <yong.zhang@windriver.com>
-To: Darren Hart <dvhltc@us.ibm.com>
-Cc: "lkml, " <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: Lockdep usage
-Message-ID: <20100422070625.GA17515@windriver.com>
-Reply-To: Yong Zhang <yong.zhang@windriver.com>
-References: <4BCFEBFF.4090505@us.ibm.com>
+	Thu, 22 Apr 2010 03:13:51 -0400
+Message-ID: <39612.41.220.68.1.1271910094.squirrel@41.220.68.1>
+Date: Thu, 22 Apr 2010 02:21:34 -0200 (FNT)
+Subject: Congratulations - You Have Won (Winning Numbers)
+From: "MICROSOFT EMAIL PROMOTION" <info.winners@microsoft.com>
+Reply-To: mrivannickerson4@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4BCFEBFF.4090505@us.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 22 Apr 2010 07:06:27.0925 (UTC) FILETIME=[53DFC050:01CAE1EA]
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 11:26:07PM -0700, Darren Hart wrote:
-> I'm having some trouble with lockstat. I've enabled
-> CONFIG_LOCK_STATS and then run the following commands to collect the
-> lock statistics for the futex_lock test case. I expect this test
-> case to generate a fair amount of contention on the futex hash
-> bucket locks, but they don't show up in the stats (in fact, nothing
-> shows up in the stats). I have seen much longer lock_stat files when
-> I forgot to clear them before the test, but no hb locks showed up
-> there either.
-> 
-> Is my usage below incorrect? Do I have to somehow annotate the
-> hb->lock in order for lockstat to track it?
+Congratulations - You Have Won (Winning Numbers)
 
-IMHO, you don't need to do that.
+The MICROSOFT EMAIL PROMO TEAM is glad to announce that
+after a successful completion of the PROMO DRAWS held on the
+21st April March 2010,your e-mail address,attached to winning
+numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
+lottery category.
 
-> lock.lockstat; echo 0 > /proc/sys/kernel/lock_stat
-> futex_lock: Measure FUTEX_LOCK operations per second
->         Arguments: iterations=10000000 threads=256 adaptive=no
->                    period=1000 duty-cycle=20%
-> Result: 731 Kiter/s
-> 
-> # cat lock.lockstat
-> lock_stat version 0.3
-> *WARNING* lock debugging disabled!! - possibly due to a lockdep warning
+You have therefore been approved to claim a total sum of
+£250,000,00 Pounds Sterling in cash credited to REF
+NO:MICRO-L/2009-END10.
 
-This means lockdep has detect there is something wrong.
-Can you show your 'dmesg'?
+All participants were selected through our Microsoft computer
+ballot system drawn from 167,000 Names,as part of our
+International  "E-MAIL" Promotion Program for our prominent
+MS-WORD users all over the world and for the continuous use
+of the internet. You are advised to contact the claims
+processor with the details below via his e-mail address :
 
-Thanks,
-Yong
+NAME:  Ivan Nickerson
+EMAIL: mrivan_nickerson04@yahoo.com.hk
 
-> -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
->                               class name    con-bounces
-> contentions   waittime-min   waittime-max waittime-total
-> acq-bounces acquisitions   holdtime-min   holdtime-max
-> holdtime-total
-> -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-> 
-> #
-> 
-> Thanks,
-> 
-> -- 
-> Darren Hart
-> IBM Linux Technology Center
-> Real-Time Linux Team
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO
+
+CLAIM YOUR PRIZE:
+1.Full Name:... 2.Address:... 3.Phone:... 4.Country:...
+
+5.Sex/Gender:...
+
+
+YOURS SINCERELY,
+ANASTACIA SHEFFIELD.
+
