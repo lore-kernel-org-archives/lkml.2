@@ -1,57 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab0DVMIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 08:08:40 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:56866 "EHLO kernel.dk"
+	id S1753667Ab0DVMLQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 08:11:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37241 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752319Ab0DVMIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 08:08:39 -0400
-Date: Thu, 22 Apr 2010 14:08:37 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] [MTD] Fix JFFS2 sync silent failure
-Message-ID: <20100422120837.GE27497@kernel.dk>
-References: <20100417184016.GA17345@logfs.org> <20100419073843.GN27497@kernel.dk> <20100419101559.GA4145@logfs.org> <20100419102056.GS27497@kernel.dk> <20100422055448.GA27309@logfs.org> <20100422090303.GA27497@kernel.dk> <20100422103953.GB27497@kernel.dk> <20100422115539.GE27309@logfs.org>
+	id S1752558Ab0DVMLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 08:11:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,256,1270450800"; 
+   d="scan'208";a="791756401"
+Date: Thu, 22 Apr 2010 05:11:12 -0700 (Pacific Daylight Time)
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH linux-next 1/2] irq: Add CPU mask affinity hint callback
+ framework
+In-Reply-To: <1271854785.2101.17.camel@achroite.uk.solarflarecom.com>
+Message-ID: <Pine.WNT.4.64.1004220459110.3324@PPWASKIE-MOBL2.amr.corp.intel.com>
+References: <20100420180112.1276.11906.stgit@ppwaskie-hc2.jf.intel.com>
+ <1271854785.2101.17.camel@achroite.uk.solarflarecom.com>
+X-X-Sender: ppwaskie@imapmail.glb.intel.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100422115539.GE27309@logfs.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22 2010, Jörn Engel wrote:
-> On Thu, 22 April 2010 12:39:53 +0200, Jens Axboe wrote:
-> > 
-> > Here's a series for fixing these. At this point they are totally
-> > untested except that I did compile them. Note that your analysis
-> > appeared correct for all cases but ocfs2, which does use get_sb_bdev()
-> > and hence gets ->s_bdi assigned.
-> > 
-> > You can see them here, I'll post the series soon:
-> > 
-> > http://git.kernel.dk/?p=linux-2.6-block.git;a=shortlog;h=refs/heads/for-linus
-> > 
-> > The first patch is a helper addition, the rest are per-fs fixups.
-> 
-> Looks good at a cursory glance.  What's still missing is some sort of
-> assertion.  You are a smart person and missed this problem, twice even.
-> Even if you hadn't, a not so smart person can add a new filesystem and
-> miss s_bdi, like I did.  We want some automatism to catch this.
+On Wed, 21 Apr 2010, Ben Hutchings wrote:
 
-I totally agree, we want some way to catch this problem in the future.
-Really the check needs to be something ala:
+> On Tue, 2010-04-20 at 11:01 -0700, Peter P Waskiewicz Jr wrote:
+>> This patch adds a callback function pointer to the irq_desc
+>> structure, along with a registration function and a read-only
+>> proc entry for each interrupt.
+>>
+>> This affinity_hint handle for each interrupt can be used by
+>> underlying drivers that need a better mechanism to control
+>> interrupt affinity.  The underlying driver can register a
+>> callback for the interrupt, which will allow the driver to
+>> provide the CPU mask for the interrupt to anything that
+>> requests it.  The intent is to extend the userspace daemon,
+>> irqbalance, to help hint to it a preferred CPU mask to balance
+>> the interrupt into.
+>
+> Doesn't it make more sense to have the driver follow affinity decisions
+> made from user-space?  I realise that reallocating queues is disruptive
+> and we probably don't want irqbalance to trigger that, but there should
+> be a mechanism for the administrator to trigger it.
 
-        if (!sb->s_bdi && mnt_has_storage_backing() && rw_mount)
-                yell_and_fail;
+The driver here would be assisting userspace (irqbalance) to provide 
+better details how the HW is laid out with respect to flows.  As it stands 
+today, irqbalance is almost guaranteed to move interrups to CPUs that are 
+not aligned with where applications are running for network adapters. 
+This is very apparent when running at speeds in the 10 Gigabit range, or 
+even multiple 1 Gigabit ports running at the same time.
 
-but I'm not sure how best to accomplish that. We can check for ->s_bdev
-and mtd like you did, but that does not catch network file systems for
-instance.
+>
+> Looking at your patch for ixgbe:
+>
+> [...]
+>> diff --git a/drivers/net/ixgbe/ixgbe_main.c
+>> b/drivers/net/ixgbe/ixgbe_main.c
+>> index 1b1419c..3e00d41 100644
+>> --- a/drivers/net/ixgbe/ixgbe_main.c
+>> +++ b/drivers/net/ixgbe/ixgbe_main.c
+> [...]
+>> @@ -1083,6 +1113,16 @@ static void ixgbe_configure_msix(struct ixgbe_adapter *adapter)
+>>                         q_vector->eitr = adapter->rx_eitr_param;
+>>
+>>                 ixgbe_write_eitr(q_vector);
+>> +
+>> +               /*
+>> +                * Allocate the affinity_hint cpumask, assign the mask for
+>> +                * this vector, and register our affinity_hint callback.
+>> +                */
+>> +               alloc_cpumask_var(&q_vector->affinity_mask, GFP_KERNEL);
+>> +               cpumask_set_cpu(v_idx, q_vector->affinity_mask);
+>> +               irq_register_affinity_hint(adapter->msix_entries[v_idx].vector,
+>> +                                          adapter,
+>> +                                          &ixgbe_irq_affinity_callback);
+>>         }
+>>
+>>         if (adapter->hw.mac.type == ixgbe_mac_82598EB)
+> [...]
+>
+> This just assigns IRQs to the first n CPU threads.  Depending on the
+> enumeration order, this might result in assigning an IRQ to each of 2
+> threads on a core while leaving other cores unused!
 
--- 
-Jens Axboe
+This ixgbe patch is only meant to be an example of how you could use it. 
+I didn't hammer out all the corner cases of interrupt alignment in it yet. 
+However, ixgbe is already aligning Tx flows onto the CPU/queue pair the Tx 
+occurred (i.e. Tx session from CPU 4 will be queued on Tx queue 4), and 
+then uses our Flow Director HW offload to steer Rx to Rx queue 4, assuming 
+that the interrupt for Rx queue 4 is affinitized to CPU 4.  The flow 
+alignment breaks when the IRQ affinity has no knowledge what the 
+underlying set of vectors are bound to, and what mode the HW is running 
+in.
 
+FCoE offloads that spread multiple SCSI exchange IDs across CPU cores also 
+needs this to properly align things.  John Fastabend is going to provide 
+some examples where this is very useful in the FCoE case.
+
+> irqbalance can already find the various IRQs associated with a single
+> net device by looking at the handler names.  So it can do at least as
+> well as this without such a hint.  Unless drivers have *useful* hints to
+> give, I don't see the point in adding this mechanism.
+
+irqbalance identifies which interrupts go with which network device.  But 
+it has no clue about flow management, and often will make a decision that 
+hurts performance scaling.  I have data showing when scaling multiple 10 
+Gigabit ports (4 in the current test), I can gain an extra 10 Gigabits of 
+throughput just by aligning the interrupts properly (go from ~58 Gbps to 
+~68 Gbps in bi-directional tests).
+
+I do have the patches for irqbalance that uses this new handle to make 
+better decisions for devices implementing the mask.  I can send those to 
+help show the whole picture of what's happening.
+
+Appreciate the feedback though Ben.
+
+Cheers,
+-PJ
