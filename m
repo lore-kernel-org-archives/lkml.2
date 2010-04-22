@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758484Ab0DVU3k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:29:40 -0400
-Received: from kroah.org ([198.145.64.141]:59487 "EHLO coco.kroah.org"
+	id S1758512Ab0DVU3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:29:52 -0400
+Received: from kroah.org ([198.145.64.141]:59478 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757925Ab0DVT7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:59:50 -0400
+	id S1756335Ab0DVT7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:59:49 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:06 2010
-Message-Id: <20100422195406.904768657@kvm.kroah.org>
+Message-Id: <20100422195406.803312363@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:53:19 -0700
+Date: Thu, 22 Apr 2010 12:53:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Johannes Berg <johannes.berg@intel.com>,
+       Marco Porsch <marco.porsch@siemens.com>,
+       Javier Cardona <javier@cozybit.com>,
        "John W. Linville" <linville@tuxdriver.com>
-Subject: [022/139] mac80211: move netdev queue enabling to correct spot
+Subject: [021/139] mac80211: fix PREQ processing and one small bug
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,76 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Porsch, Marco <marco.porsch@siemens.com>
 
-commit 7236fe29fd72d17074574ba312e7f1bb9d10abaa upstream.
+commit 533866b12cce484994163b1e201778cbac4c04c5 upstream.
 
-"mac80211: fix skb buffering issue" still left a race
-between enabling the hardware queues and the virtual
-interface queues. In hindsight it's totally obvious
-that enabling the netdev queues for a hardware queue
-when the hardware queue is enabled is wrong, because
-it could well possible that we can fill the hw queue
-with packets we already have pending. Thus, we must
-only enable the netdev queues once all the pending
-packets have been processed and sent off to the device.
+1st) a PREQ should only be processed, if it has the same SN and better
+metric (instead of better or equal).
+2nd) next_hop[ETH_ALEN] now actually used to buffer
+mpath->next_hop->sta.addr for use out of lock.
 
-In testing, I haven't been able to trigger this race
-condition, but it's clearly there, possibly only when
-aggregation is being enabled.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Marco Porsch <marco.porsch@siemens.com>
+Acked-by: Javier Cardona <javier@cozybit.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/tx.c   |    6 ++++++
- net/mac80211/util.c |   12 ++++++------
- 2 files changed, 12 insertions(+), 6 deletions(-)
+ net/mac80211/mesh_hwmp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -1945,6 +1945,7 @@ static bool ieee80211_tx_pending_skb(str
- void ieee80211_tx_pending(unsigned long data)
- {
- 	struct ieee80211_local *local = (struct ieee80211_local *)data;
-+	struct ieee80211_sub_if_data *sdata;
- 	unsigned long flags;
- 	int i;
- 	bool txok;
-@@ -1983,6 +1984,11 @@ void ieee80211_tx_pending(unsigned long
- 			if (!txok)
- 				break;
- 		}
-+
-+		if (skb_queue_empty(&local->pending[i]))
-+			list_for_each_entry_rcu(sdata, &local->interfaces, list)
-+				netif_tx_wake_queue(
-+					netdev_get_tx_queue(sdata->dev, i));
- 	}
- 	spin_unlock_irqrestore(&local->queue_stop_reason_lock, flags);
+--- a/net/mac80211/mesh_hwmp.c
++++ b/net/mac80211/mesh_hwmp.c
+@@ -391,7 +391,7 @@ static u32 hwmp_route_info_get(struct ie
+ 				if (SN_GT(mpath->sn, orig_sn) ||
+ 				    (mpath->sn == orig_sn &&
+ 				     action == MPATH_PREQ &&
+-				     new_metric > mpath->metric)) {
++				     new_metric >= mpath->metric)) {
+ 					process = false;
+ 					fresh_info = false;
+ 				}
+@@ -611,7 +611,7 @@ static void hwmp_prep_frame_process(stru
  
---- a/net/mac80211/util.c
-+++ b/net/mac80211/util.c
-@@ -280,13 +280,13 @@ static void __ieee80211_wake_queue(struc
- 		/* someone still has this queue stopped */
- 		return;
- 
--	if (!skb_queue_empty(&local->pending[queue]))
-+	if (skb_queue_empty(&local->pending[queue])) {
-+		rcu_read_lock();
-+		list_for_each_entry_rcu(sdata, &local->interfaces, list)
-+			netif_tx_wake_queue(netdev_get_tx_queue(sdata->dev, queue));
-+		rcu_read_unlock();
-+	} else
- 		tasklet_schedule(&local->tx_pending_tasklet);
--
--	rcu_read_lock();
--	list_for_each_entry_rcu(sdata, &local->interfaces, list)
--		netif_tx_wake_queue(netdev_get_tx_queue(sdata->dev, queue));
--	rcu_read_unlock();
- }
- 
- void ieee80211_wake_queue_by_reason(struct ieee80211_hw *hw, int queue,
+ 	mesh_path_sel_frame_tx(MPATH_PREP, flags, orig_addr,
+ 		cpu_to_le32(orig_sn), 0, target_addr,
+-		cpu_to_le32(target_sn), mpath->next_hop->sta.addr, hopcount,
++		cpu_to_le32(target_sn), next_hop, hopcount,
+ 		ttl, cpu_to_le32(lifetime), cpu_to_le32(metric),
+ 		0, sdata);
+ 	rcu_read_unlock();
 
 
