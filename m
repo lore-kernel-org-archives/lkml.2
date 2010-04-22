@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab0DVT3V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 15:29:21 -0400
-Received: from kroah.org ([198.145.64.141]:41102 "EHLO coco.kroah.org"
+	id S1757237Ab0DVTpi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 15:45:38 -0400
+Received: from kroah.org ([198.145.64.141]:41166 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756638Ab0DVT3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:29:02 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:17 2010
-Message-Id: <20100422190917.737130461@kvm.kroah.org>
+	id S1756673Ab0DVT3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:29:10 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:18 2010
+Message-Id: <20100422190918.619621191@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:09:27 -0700
+Date: Thu, 22 Apr 2010 12:09:37 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Eugene Teo <eugeneteo@kernel.sg>
-Subject: [116/197] vgaarb: fix "target=default" passing
+       Leann Ogasawara <leann.ogasawara@canonical.com>
+Subject: [126/197] Staging: comedi: fix usbdux timeout bug
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,29 +25,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Bernd Porr <BerndPorr@f2s.com>
 
-Commit 77c1ff3982c6b36961725dd19e872a1c07df7f3b fixed the userspace
-pointer dereference, but introduced another bug pointed out by Eugene Teo
-in RH bug #564264. Instead of comparing the point we were at in the string,
-we instead compared the beginning of the string to "default".
+commit ea25371a78c33e276527361d3ab19393d558b2fd upstream.
 
-Signed-off-by: Eugene Teo <eugeneteo@kernel.sg>
+I've fixed a bug in the USBDUX driver which caused timeouts while
+sending commands to the boards. This was mainly because of one bulk
+transfer which had a timeout of 1ms (!). I've now set all timeouts to
+1000ms.
+
+From: Bernd Porr <BerndPorr@f2s.com>
+Signed-off-by: Leann Ogasawara <leann.ogasawara@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/vga/vgaarb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/usbdux.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/vga/vgaarb.c
-+++ b/drivers/gpu/vga/vgaarb.c
-@@ -961,7 +961,7 @@ static ssize_t vga_arb_write(struct file
- 		remaining -= 7;
- 		pr_devel("client 0x%p called 'target'\n", priv);
- 		/* if target is default */
--		if (!strncmp(buf, "default", 7))
-+		if (!strncmp(curr_pos, "default", 7))
- 			pdev = pci_dev_get(vga_default_device());
- 		else {
- 			if (!vga_pci_str_to_vars(curr_pos, remaining,
+--- a/drivers/staging/comedi/drivers/usbdux.c
++++ b/drivers/staging/comedi/drivers/usbdux.c
+@@ -1,4 +1,4 @@
+-#define DRIVER_VERSION "v2.2"
++#define DRIVER_VERSION "v2.3"
+ #define DRIVER_AUTHOR "Bernd Porr, BerndPorr@f2s.com"
+ #define DRIVER_DESC "Stirling/ITL USB-DUX -- Bernd.Porr@f2s.com"
+ /*
+@@ -80,6 +80,7 @@ sampling rate. If you sample two channel
+  * 2.0:  PWM seems to be stable and is not interfering with the other functions
+  * 2.1:  changed PWM API
+  * 2.2:  added firmware kernel request to fix an udev problem
++ * 2.3:  corrected a bug in bulk timeouts which were far too short
+  *
+  */
+ 
+@@ -101,8 +102,8 @@ sampling rate. If you sample two channel
+ 
+ #define BOARDNAME "usbdux"
+ 
+-/* timeout for the USB-transfer */
+-#define EZTIMEOUT 30
++/* timeout for the USB-transfer in ms*/
++#define BULK_TIMEOUT 1000
+ 
+ /* constants for "firmware" upload and download */
+ #define USBDUXSUB_FIRMWARE 0xA0
+@@ -750,7 +751,7 @@ static int usbduxsub_start(struct usbdux
+ 				  /* Length */
+ 				  1,
+ 				  /* Timeout */
+-				  EZTIMEOUT);
++				  BULK_TIMEOUT);
+ 	if (errcode < 0) {
+ 		dev_err(&usbduxsub->interface->dev,
+ 			"comedi_: control msg failed (start)\n");
+@@ -780,7 +781,7 @@ static int usbduxsub_stop(struct usbduxs
+ 				  /* Length */
+ 				  1,
+ 				  /* Timeout */
+-				  EZTIMEOUT);
++				  BULK_TIMEOUT);
+ 	if (errcode < 0) {
+ 		dev_err(&usbduxsub->interface->dev,
+ 			"comedi_: control msg failed (stop)\n");
+@@ -810,7 +811,7 @@ static int usbduxsub_upload(struct usbdu
+ 				  /* length */
+ 				  len,
+ 				  /* timeout */
+-				  EZTIMEOUT);
++				  BULK_TIMEOUT);
+ 	dev_dbg(&usbduxsub->interface->dev, "comedi_: result=%d\n", errcode);
+ 	if (errcode < 0) {
+ 		dev_err(&usbduxsub->interface->dev, "comedi_: upload failed\n");
+@@ -1110,7 +1111,7 @@ static int send_dux_commands(struct usbd
+ 			      usb_sndbulkpipe(this_usbduxsub->usbdev,
+ 					      COMMAND_OUT_EP),
+ 			      this_usbduxsub->dux_commands, SIZEOFDUXBUFFER,
+-			      &nsent, 10);
++			      &nsent, BULK_TIMEOUT);
+ 	if (result < 0)
+ 		dev_err(&this_usbduxsub->interface->dev, "comedi%d: "
+ 			"could not transmit dux_command to the usb-device, "
+@@ -1130,7 +1131,7 @@ static int receive_dux_commands(struct u
+ 				      usb_rcvbulkpipe(this_usbduxsub->usbdev,
+ 						      COMMAND_IN_EP),
+ 				      this_usbduxsub->insnBuffer, SIZEINSNBUF,
+-				      &nrec, 1);
++				      &nrec, BULK_TIMEOUT);
+ 		if (result < 0) {
+ 			dev_err(&this_usbduxsub->interface->dev, "comedi%d: "
+ 				"insn: USB error %d while receiving DUX command"
 
 
