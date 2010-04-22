@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327Ab0DVUOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:14:42 -0400
-Received: from kroah.org ([198.145.64.141]:59881 "EHLO coco.kroah.org"
+	id S1758160Ab0DVUJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:09:53 -0400
+Received: from kroah.org ([198.145.64.141]:60046 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932086Ab0DVUBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:01:07 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:14 2010
-Message-Id: <20100422195414.284203075@kvm.kroah.org>
+	id S1758140Ab0DVUBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:01:50 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:17 2010
+Message-Id: <20100422195417.436604458@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:28 -0700
+Date: Thu, 22 Apr 2010 12:54:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andrew Perepechko <andrew.perepechko@sun.com>, Jan Kara <jack@suse.cz>
-Subject: [091/139] quota: Fix possible dq_flags corruption
+       NeilBrown <neilb@suse.de>
+Subject: [120/139] md/raid5: allow for more than 2^31 chunks.
 In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +25,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Perepechko <andrew.perepechko@sun.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 08261673cb6dc638c39f44d69b76fffb57b92a8b upstream.
+commit 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d upstream.
 
-dq_flags are modified non-atomically in do_set_dqblk via __set_bit calls and
-atomically for example in mark_dquot_dirty or clear_dquot_dirty.  Hence a
-change done by an atomic operation can be overwritten by a change done by a
-non-atomic one. Fix the problem by using atomic bitops even in do_set_dqblk.
+With many large drives and small chunk sizes it is possible
+to create a RAID5 with more than 2^31 chunks.  Make sure this
+works.
 
-Signed-off-by: Andrew Perepechko <andrew.perepechko@sun.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Reported-by: Brett King <king.br@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/quota/dquot.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/md/raid5.c |   19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
 
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -2321,34 +2321,34 @@ static int do_set_dqblk(struct dquot *dq
- 	if (di->dqb_valid & QIF_SPACE) {
- 		dm->dqb_curspace = di->dqb_curspace - dm->dqb_rsvspace;
- 		check_blim = 1;
--		__set_bit(DQ_LASTSET_B + QIF_SPACE_B, &dquot->dq_flags);
-+		set_bit(DQ_LASTSET_B + QIF_SPACE_B, &dquot->dq_flags);
- 	}
- 	if (di->dqb_valid & QIF_BLIMITS) {
- 		dm->dqb_bsoftlimit = qbtos(di->dqb_bsoftlimit);
- 		dm->dqb_bhardlimit = qbtos(di->dqb_bhardlimit);
- 		check_blim = 1;
--		__set_bit(DQ_LASTSET_B + QIF_BLIMITS_B, &dquot->dq_flags);
-+		set_bit(DQ_LASTSET_B + QIF_BLIMITS_B, &dquot->dq_flags);
- 	}
- 	if (di->dqb_valid & QIF_INODES) {
- 		dm->dqb_curinodes = di->dqb_curinodes;
- 		check_ilim = 1;
--		__set_bit(DQ_LASTSET_B + QIF_INODES_B, &dquot->dq_flags);
-+		set_bit(DQ_LASTSET_B + QIF_INODES_B, &dquot->dq_flags);
- 	}
- 	if (di->dqb_valid & QIF_ILIMITS) {
- 		dm->dqb_isoftlimit = di->dqb_isoftlimit;
- 		dm->dqb_ihardlimit = di->dqb_ihardlimit;
- 		check_ilim = 1;
--		__set_bit(DQ_LASTSET_B + QIF_ILIMITS_B, &dquot->dq_flags);
-+		set_bit(DQ_LASTSET_B + QIF_ILIMITS_B, &dquot->dq_flags);
- 	}
- 	if (di->dqb_valid & QIF_BTIME) {
- 		dm->dqb_btime = di->dqb_btime;
- 		check_blim = 1;
--		__set_bit(DQ_LASTSET_B + QIF_BTIME_B, &dquot->dq_flags);
-+		set_bit(DQ_LASTSET_B + QIF_BTIME_B, &dquot->dq_flags);
- 	}
- 	if (di->dqb_valid & QIF_ITIME) {
- 		dm->dqb_itime = di->dqb_itime;
- 		check_ilim = 1;
--		__set_bit(DQ_LASTSET_B + QIF_ITIME_B, &dquot->dq_flags);
-+		set_bit(DQ_LASTSET_B + QIF_ITIME_B, &dquot->dq_flags);
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -1649,8 +1649,8 @@ static sector_t raid5_compute_sector(rai
+ 				     int previous, int *dd_idx,
+ 				     struct stripe_head *sh)
+ {
+-	long stripe;
+-	unsigned long chunk_number;
++	sector_t stripe;
++	sector_t chunk_number;
+ 	unsigned int chunk_offset;
+ 	int pd_idx, qd_idx;
+ 	int ddf_layout = 0;
+@@ -1670,17 +1670,12 @@ static sector_t raid5_compute_sector(rai
+ 	 */
+ 	chunk_offset = sector_div(r_sector, sectors_per_chunk);
+ 	chunk_number = r_sector;
+-	BUG_ON(r_sector != chunk_number);
+ 
+ 	/*
+ 	 * Compute the stripe number
+ 	 */
+-	stripe = chunk_number / data_disks;
+-
+-	/*
+-	 * Compute the data disk and parity disk indexes inside the stripe
+-	 */
+-	*dd_idx = chunk_number % data_disks;
++	stripe = chunk_number;
++	*dd_idx = sector_div(stripe, data_disks);
+ 
+ 	/*
+ 	 * Select the parity disk based on the user selected algorithm.
+@@ -1869,14 +1864,14 @@ static sector_t compute_blocknr(struct s
+ 				 : conf->algorithm;
+ 	sector_t stripe;
+ 	int chunk_offset;
+-	int chunk_number, dummy1, dd_idx = i;
++	sector_t chunk_number;
++	int dummy1, dd_idx = i;
+ 	sector_t r_sector;
+ 	struct stripe_head sh2;
+ 
+ 
+ 	chunk_offset = sector_div(new_sector, sectors_per_chunk);
+ 	stripe = new_sector;
+-	BUG_ON(new_sector != stripe);
+ 
+ 	if (i == sh->pd_idx)
+ 		return 0;
+@@ -1969,7 +1964,7 @@ static sector_t compute_blocknr(struct s
  	}
  
- 	if (check_blim) {
+ 	chunk_number = stripe * data_disks + i;
+-	r_sector = (sector_t)chunk_number * sectors_per_chunk + chunk_offset;
++	r_sector = chunk_number * sectors_per_chunk + chunk_offset;
+ 
+ 	check = raid5_compute_sector(conf, r_sector,
+ 				     previous, &dummy1, &sh2);
 
 
