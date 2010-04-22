@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245Ab0DVUS1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:18:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49043 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758058Ab0DVUSW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:18:22 -0400
-MIME-Version: 1.0
-Message-ID: <b1036777-129b-4531-a730-1e9e5a87cea9@default>
-Date: Thu, 22 Apr 2010 13:15:50 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <20100422134249.GA2963@ca-server1.us.oracle.com>
- <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default
- 4BD07594.9080905@redhat.com>
-In-Reply-To: <4BD07594.9080905@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090205.4BD0AEF0.006E:SCFMA922111,ss=1,fgs=0
+	id S1758236Ab0DVUVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:21:42 -0400
+Received: from kroah.org ([198.145.64.141]:59733 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757996Ab0DVUA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:00:26 -0400
+X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:10 2010
+Message-Id: <20100422195410.725321096@kvm.kroah.org>
+User-Agent: quilt/0.48-4.4
+Date: Thu, 22 Apr 2010 12:53:56 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [059/139] NFSv4: fix delegated locking
+In-Reply-To: <20100422195715.GA25490@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Synchronous is required, but likely could be simulated by ensuring
-> all
-> > coherency (and concurrency) requirements are met by some intermediate
-> > "buffering driver" -- at the cost of an extra page copy into a buffer
-> > and overhead of tracking the handles (poolid/inode/index) of pages in
-> > the buffer that are "in flight".  This is an approach we are
-> considering
-> > to implement an SSD backend, but hasn't been tested yet so, ahem, the
-> > proof will be in the put'ing. ;-)
-> 
-> Much easier to simulate an asynchronous API with a synchronous backend.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-Indeed.  But an asynchronous API is not appropriate for frontswap
-(or cleancache).  The reason the hooks are so simple is because they
-are assumed to be synchronous so that the page can be immediately
-freed/reused.
+------------------
+
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 0df5dd4aae211edeeeb84f7f84f6d093406d7c22 upstream.
+
+Arnaud Giersch reports that NFSv4 locking is broken when we hold a
+delegation since commit 8e469ebd6dc32cbaf620e134d79f740bf0ebab79 (NFSv4:
+Don't allow posix locking against servers that don't support it).
+
+According to Arnaud, the lock succeeds the first time he opens the file
+(since we cannot do a delegated open) but then fails after we start using
+delegated opens.
+
+The following patch fixes it by ensuring that locking behaviour is
+governed by a per-filesystem capability flag that is initially set, but
+gets cleared if the server ever returns an OPEN without the
+NFS4_OPEN_RESULT_LOCKTYPE_POSIX flag being set.
+
+Reported-by: Arnaud Giersch <arnaud.giersch@iut-bm.univ-fcomte.fr>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/nfs/client.c           |    3 ++-
+ fs/nfs/nfs4proc.c         |    4 +++-
+ include/linux/nfs_fs_sb.h |    1 +
+ 3 files changed, 6 insertions(+), 2 deletions(-)
+
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -1293,7 +1293,8 @@ static int nfs4_init_server(struct nfs_s
  
-> Well, copying memory so you can use a zero-copy dma engine is
-> counterproductive.
+ 	/* Initialise the client representation from the mount data */
+ 	server->flags = data->flags;
+-	server->caps |= NFS_CAP_ATOMIC_OPEN|NFS_CAP_CHANGE_ATTR;
++	server->caps |= NFS_CAP_ATOMIC_OPEN|NFS_CAP_CHANGE_ATTR|
++		NFS_CAP_POSIX_LOCK;
+ 	server->options = data->options;
+ 
+ 	/* Get a client record */
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1520,6 +1520,8 @@ static int _nfs4_proc_open(struct nfs4_o
+ 		nfs_post_op_update_inode(dir, o_res->dir_attr);
+ 	} else
+ 		nfs_refresh_inode(dir, o_res->dir_attr);
++	if ((o_res->rflags & NFS4_OPEN_RESULT_LOCKTYPE_POSIX) == 0)
++		server->caps &= ~NFS_CAP_POSIX_LOCK;
+ 	if(o_res->rflags & NFS4_OPEN_RESULT_CONFIRM) {
+ 		status = _nfs4_proc_open_confirm(data);
+ 		if (status != 0)
+@@ -1660,7 +1662,7 @@ static int _nfs4_do_open(struct inode *d
+ 	status = PTR_ERR(state);
+ 	if (IS_ERR(state))
+ 		goto err_opendata_put;
+-	if ((opendata->o_res.rflags & NFS4_OPEN_RESULT_LOCKTYPE_POSIX) != 0)
++	if (server->caps & NFS_CAP_POSIX_LOCK)
+ 		set_bit(NFS_STATE_POSIX_LOCKS, &state->flags);
+ 	nfs4_opendata_put(opendata);
+ 	nfs4_put_state_owner(sp);
+--- a/include/linux/nfs_fs_sb.h
++++ b/include/linux/nfs_fs_sb.h
+@@ -176,6 +176,7 @@ struct nfs_server {
+ #define NFS_CAP_ATIME		(1U << 11)
+ #define NFS_CAP_CTIME		(1U << 12)
+ #define NFS_CAP_MTIME		(1U << 13)
++#define NFS_CAP_POSIX_LOCK	(1U << 14)
+ 
+ 
+ /* maximum number of slots to use */
 
-Yes, but for something like an SSD where copying can be used to
-build up a full 64K write, the cost of copying memory may not be
-counterproductive.
+
