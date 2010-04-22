@@ -1,82 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332Ab0DVURr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:17:47 -0400
-Received: from kroah.org ([198.145.64.141]:59805 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758035Ab0DVUAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 16:00:47 -0400
-X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:54:12 2010
-Message-Id: <20100422195412.305733741@kvm.kroah.org>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:54:11 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Neil Horman <nhorman@tuxdriver.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Chris Wright <chrisw@sous-sol.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [074/139] x86/amd-iommu: enable iommu before attaching devices
-In-Reply-To: <20100422195715.GA25490@kroah.com>
+	id S1758527Ab0DVUau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:30:50 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:62560 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757927Ab0DVUa1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 16:30:27 -0400
+From: Amit Kucheria <amit.kucheria@verdurent.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Amit Kucheria <amit.kucheria@canonical.com>,
+       Russell King <linux@arm.linux.org.uk>,
+       =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] arm: mxc: utilise usecount field in clock operations
+Date: Thu, 22 Apr 2010 23:30:20 +0300
+Message-Id: <d501dcf8dbe98ed7f5aa9e7b34e68f0e1076ac84.1271968118.git.amit.kucheria@verdurent.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+From: Amit Kucheria <amit.kucheria@canonical.com>
 
-------------------
+This patch fixes the clock refcounting when reparenting is used.
 
-From: Chris Wright <chrisw@sous-sol.org>
+Sascha just pointed out a good explanation of refcounting here:
+http://www.spinics.net/lists/arm-kernel/msg85879.html
 
-commit 75f66533bc883f761a7adcab3281fe3323efbc90 upstream.
-
-Hit another kdump problem as reported by Neil Horman.  When initializaing
-the IOMMU, we attach devices to their domains before the IOMMU is
-fully (re)initialized.  Attaching a device will issue some important
-invalidations.  In the context of the newly kexec'd kdump kernel, the
-IOMMU may have stale cached data from the original kernel.  Because we
-do the attach too early, the invalidation commands are placed in the new
-command buffer before the IOMMU is updated w/ that buffer.  This leaves
-the stale entries in the kdump context and can renders device unusable.
-Simply enable the IOMMU before we do the attach.
-
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Amit Kucheria <amit.kucheria@canonical.com>
 ---
- arch/x86/kernel/amd_iommu_init.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/plat-mxc/clock.c |   34 ++++++++++++++++++++++------------
+ 1 files changed, 22 insertions(+), 12 deletions(-)
 
---- a/arch/x86/kernel/amd_iommu_init.c
-+++ b/arch/x86/kernel/amd_iommu_init.c
-@@ -1288,6 +1288,8 @@ static int __init amd_iommu_init(void)
- 	if (ret)
- 		goto free;
+diff --git a/arch/arm/plat-mxc/clock.c b/arch/arm/plat-mxc/clock.c
+index 323ff8c..14781cc 100644
+--- a/arch/arm/plat-mxc/clock.c
++++ b/arch/arm/plat-mxc/clock.c
+@@ -50,15 +50,16 @@ static DEFINE_MUTEX(clocks_mutex);
  
-+	enable_iommus();
-+
- 	if (iommu_pass_through)
- 		ret = amd_iommu_init_passthrough();
- 	else
-@@ -1300,8 +1302,6 @@ static int __init amd_iommu_init(void)
+ static void __clk_disable(struct clk *clk)
+ {
+-	if (clk == NULL || IS_ERR(clk))
++	WARN_ON(!clk->usecount);
++	if (clk == NULL || IS_ERR(clk) || !clk->usecount)
+ 		return;
  
- 	amd_iommu_init_notifier();
- 
--	enable_iommus();
+-	__clk_disable(clk->parent);
+-	__clk_disable(clk->secondary);
 -
- 	if (iommu_pass_through)
- 		goto out;
+-	WARN_ON(!clk->usecount);
+-	if (!(--clk->usecount) && clk->disable)
+-		clk->disable(clk);
++	if (!(--clk->usecount)) {
++		if (clk->disable)
++			clk->disable(clk);
++		__clk_disable(clk->parent);
++		__clk_disable(clk->secondary);
++	}
+ }
  
-@@ -1315,6 +1315,7 @@ out:
+ static int __clk_enable(struct clk *clk)
+@@ -66,12 +67,13 @@ static int __clk_enable(struct clk *clk)
+ 	if (clk == NULL || IS_ERR(clk))
+ 		return -EINVAL;
+ 
+-	__clk_enable(clk->parent);
+-	__clk_enable(clk->secondary);
+-
+-	if (clk->usecount++ == 0 && clk->enable)
+-		clk->enable(clk);
++	if (clk->usecount++ == 0) {
++		__clk_enable(clk->parent);
++		__clk_enable(clk->secondary);
+ 
++		if (clk->enable)
++			clk->enable(clk);
++	}
+ 	return 0;
+ }
+ 
+@@ -160,17 +162,25 @@ EXPORT_SYMBOL(clk_set_rate);
+ int clk_set_parent(struct clk *clk, struct clk *parent)
+ {
+ 	int ret = -EINVAL;
++	struct clk *prev_parent = clk->parent;
+ 
+ 	if (clk == NULL || IS_ERR(clk) || parent == NULL ||
+ 	    IS_ERR(parent) || clk->set_parent == NULL)
+ 		return ret;
+ 
++	if (clk->usecount != 0)
++		clk_enable(parent);
++
+ 	mutex_lock(&clocks_mutex);
+ 	ret = clk->set_parent(clk, parent);
+ 	if (ret == 0)
+ 		clk->parent = parent;
++
+ 	mutex_unlock(&clocks_mutex);
+ 
++	if (clk->usecount != 0)
++		clk_disable(prev_parent);
++
  	return ret;
- 
- free:
-+	disable_iommus();
- 
- 	amd_iommu_uninit_devices();
- 
-
+ }
+ EXPORT_SYMBOL(clk_set_parent);
+-- 
+1.7.0.4
 
