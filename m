@@ -1,104 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab0DVPlr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 11:41:47 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:10511 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755697Ab0DVPlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 11:41:45 -0400
-Subject: Re: [PATCH linux-next 1/2] irq: Add CPU mask affinity hint
- callback framework
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-       "davem@davemloft.net" <davem@davemloft.net>,
-       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <Pine.WNT.4.64.1004220459110.3324@PPWASKIE-MOBL2.amr.corp.intel.com>
-References: <20100420180112.1276.11906.stgit@ppwaskie-hc2.jf.intel.com>
-	 <1271854785.2101.17.camel@achroite.uk.solarflarecom.com>
-	 <Pine.WNT.4.64.1004220459110.3324@PPWASKIE-MOBL2.amr.corp.intel.com>
-Content-Type: text/plain
-Organization: Solarflare Communications
-Date: Thu, 22 Apr 2010 16:41:40 +0100
-Message-Id: <1271950900.2095.25.camel@achroite.uk.solarflarecom.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 (2.26.1-2.fc11) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Apr 2010 15:42:25.0231 (UTC) FILETIME=[67DDC5F0:01CAE232]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17334.004
-X-TM-AS-Result: No--42.903900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	id S1755811Ab0DVPoS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 11:44:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52707 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755729Ab0DVPoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 11:44:16 -0400
+Date: Thu, 22 Apr 2010 17:40:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
+       Mel Gorman <mel@csn.ul.ie>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 7/11] Uprobes Implementation
+Message-ID: <20100422154059.GA5916@redhat.com>
+References: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6> <20100331155228.4181.61294.sendpatchset@localhost6.localdomain6> <20100413183537.GA17538@redhat.com> <20100415093506.GA2064@linux.vnet.ibm.com> <20100419193139.GA24080@redhat.com> <20100420124358.GA20675@linux.vnet.ibm.com> <20100420153023.GA9351@redhat.com> <20100421065948.GA5440@linux.vnet.ibm.com> <20100421160515.GA11321@redhat.com> <20100422133154.GA10776@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100422133154.GA10776@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-22 at 05:11 -0700, Peter P Waskiewicz Jr wrote:
-> On Wed, 21 Apr 2010, Ben Hutchings wrote:
-> 
-> > On Tue, 2010-04-20 at 11:01 -0700, Peter P Waskiewicz Jr wrote:
-> >> This patch adds a callback function pointer to the irq_desc
-> >> structure, along with a registration function and a read-only
-> >> proc entry for each interrupt.
-> >>
-> >> This affinity_hint handle for each interrupt can be used by
-> >> underlying drivers that need a better mechanism to control
-> >> interrupt affinity.  The underlying driver can register a
-> >> callback for the interrupt, which will allow the driver to
-> >> provide the CPU mask for the interrupt to anything that
-> >> requests it.  The intent is to extend the userspace daemon,
-> >> irqbalance, to help hint to it a preferred CPU mask to balance
-> >> the interrupt into.
+On 04/22, Srikar Dronamraju wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> [2010-04-21 18:05:15]:
+>
+> > 3. mprotect(). write_opcode() checks !VM_WRITE. This is correct,
+> >    otherwise we can race with the user-space writing to the same
+> >    page.
 > >
-> > Doesn't it make more sense to have the driver follow affinity decisions
-> > made from user-space?  I realise that reallocating queues is disruptive
-> > and we probably don't want irqbalance to trigger that, but there should
-> > be a mechanism for the administrator to trigger it.
-> 
-> The driver here would be assisting userspace (irqbalance) to provide 
-> better details how the HW is laid out with respect to flows.  As it stands 
-> today, irqbalance is almost guaranteed to move interrups to CPUs that are 
-> not aligned with where applications are running for network adapters. 
-> This is very apparent when running at speeds in the 10 Gigabit range, or 
-> even multiple 1 Gigabit ports running at the same time.
+> >    But suppose that the application does mprotect(PROT_WRITE) after
+> >    register_uprobe() installs the bp, now unregister_uprobe/etc can't
+> >    restore the original insn?
+> >
+>
+> I still need to verify this. I shall get back to you on this.
+> However are there applications that mprotect(PROT_WRITE) text pages?
 
-I'm well aware that irqbalance isn't making good decisions at the
-moment.  The question is whether this will really help irqbalance to do
-better.
+Well, I think the kernel should assume that the user-space can do
+anything.
 
-[...]
-> > This just assigns IRQs to the first n CPU threads.  Depending on the
-> > enumeration order, this might result in assigning an IRQ to each of 2
-> > threads on a core while leaving other cores unused!
-> 
-> This ixgbe patch is only meant to be an example of how you could use it. 
-> I didn't hammer out all the corner cases of interrupt alignment in it yet. 
-> However, ixgbe is already aligning Tx flows onto the CPU/queue pair the Tx 
-> occurred (i.e. Tx session from CPU 4 will be queued on Tx queue 4),
-[...]
+Hmm. And if this vma is VM_SHARED, then this bp could be actually
+written to vm_file after mprotect().
 
-OK, now I remember ixgbe has this odd select_queue() implementation.
-But this behaviour can result in reordering whenever a user thread
-migrates, and in any case Dave discourages people from setting
-select_queue().  So I see that these changes would be useful for ixgbe
-(together with an update to irqbalance), but they don't seem to fit the
-general direction of multiqueue networking on Linux.
+But I think this doesn't really matter. When I actually look at
+patches 3 and 4, I am starting to think this all is very wrong.
 
-(Actually, the hints seem to be incomplete.  If there are more than 16
-CPU threads then multiple CPU threads can map to the same queues, but it
-looks like you only include the first in the queue's hint.)
+> I am copying Mel Gorman and Andrea Arcangeli so that they can provide
+> their inputs on VM and KSM related issues.
 
-An alternate approach is to use the RX queue index to drive TX queue
-selection.  I posted a patch to do that earlier this week.  However I
-haven't yet had a chance to try that on a suitably large system.
+Yes. We need vm experts here, I am not. Still, I'd like to share my
+concerns. I also added Rik and Hugh.
 
-Ben.
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+So, 3/11 does
+
+	@@ -2617,7 +2617,10 @@ int replace_page(struct vm_area_struct *vma, struct page *page,
+		}
+	 
+		get_page(kpage);
+	-	page_add_anon_rmap(kpage, vma, addr);
+	+	if (PageAnon(kpage))
+	+		page_add_anon_rmap(kpage, vma, addr);
+	+	else
+	+		page_add_file_rmap(kpage);
+	 
+		flush_cache_page(vma, addr, pte_pfn(*ptep));
+		ptep_clear_flush(vma, addr, ptep);
+
+I see no point in this patch, please see below.
+
+The next 4/11 patch introduces write_opcode() which roughly does:
+
+	int write_opcode(unsigned long vaddr, user_bkpt_opcode_t opcode)
+	{
+		get_user_pages(write => false, &old_page);
+
+		new_page = alloc_page_vma(...);
+
+		... insert the bp into the new_page ...
+
+		new_page->mapping = old_page->mapping;
+		new_page->index = old_page->index;
+
+		replace_page(old_page, new_page);
+	}
+
+This doesn't look right at all to me.
+
+	IF PageAnon(old_page):
+
+		in this case replace_page() calls page_add_anon_rmap() which
+		needs the locked page.
+
+	ELSE:
+
+		I don't think the new page should evere preserve the mapping,
+		this looks just wrong. It should be always anonymous.
+
+
+And in fact, I do not understand why write_opcode() needs replace_page().
+It could just use get_user_pages(FOLL_WRITE | FOLL_FORCE), no? It should
+create the anonymous page correctly.
+
+Either way, I think register_uprobe() should disallow the probes in
+VM_SHARED/VM_MAYWRITE vmas.
+
+Oleg.
 
