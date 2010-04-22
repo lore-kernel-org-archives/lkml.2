@@ -1,75 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab0DVOhq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 10:37:46 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40986 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755288Ab0DVOhp (ORCPT
+	id S1755403Ab0DVOkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 10:40:22 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:52513 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754964Ab0DVOkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 10:37:45 -0400
-Date: Thu, 22 Apr 2010 16:37:44 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Amit Kucheria <amit.kucheria@canonical.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-       Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: mxc: utilise usecount field in clock operations
-Message-ID: <20100422143744.GC32348@pengutronix.de>
-References: <b9f250fee8e5300e859b2afc234868ba7632f619.1271864861.git.amit.kucheria@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b9f250fee8e5300e859b2afc234868ba7632f619.1271864861.git.amit.kucheria@canonical.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 22 Apr 2010 10:40:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=RS98Y6Z85fCv7+sulvHEgq+0mlVfLRd+2w47uEf6mXURBTo0M/3+qJNXgV7VYHrk7/
+         gtg1mCxPqxeQXMxCG2Y2hLtPf8vX8dnlTRU5nrBzldAbyYCG9BOvsbx11JTgRhS/JPGr
+         NfkQUztKN14cNy6EZ9nMD9lP3fPGu4vHMowNg=
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
+ PageSwapCache  pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+In-Reply-To: <1271946226.2100.211.camel@barrios-desktop>
+References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
+	 <alpine.DEB.2.00.1004210927550.4959@router.home>
+	 <20100421150037.GJ30306@csn.ul.ie>
+	 <alpine.DEB.2.00.1004211004360.4959@router.home>
+	 <20100421151417.GK30306@csn.ul.ie>
+	 <alpine.DEB.2.00.1004211027120.4959@router.home>
+	 <20100421153421.GM30306@csn.ul.ie>
+	 <alpine.DEB.2.00.1004211038020.4959@router.home>
+	 <20100422092819.GR30306@csn.ul.ie>
+	 <20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com>
+	 <x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com>
+	 <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com>
+	 <1271946226.2100.211.camel@barrios-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Apr 2010 23:40:06 +0900
+Message-ID: <1271947206.2100.216.camel@barrios-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 09:37:31PM +0300, Amit Kucheria wrote:
-> clk->usecount can be used by platform code to check if a clock is active or
-> not.
+On Thu, 2010-04-22 at 23:23 +0900, Minchan Kim wrote:
+> On Thu, 2010-04-22 at 19:51 +0900, KAMEZAWA Hiroyuki wrote:
+> > On Thu, 22 Apr 2010 19:31:06 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > 
+> > > On Thu, 22 Apr 2010 19:13:12 +0900
+> > > Minchan Kim <minchan.kim@gmail.com> wrote:
+> > > 
+> > > > On Thu, Apr 22, 2010 at 6:46 PM, KAMEZAWA Hiroyuki
+> > > > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > 
+> > > > > Hmm..in my test, the case was.
+> > > > >
+> > > > > Before try_to_unmap:
+> > > > >        mapcount=1, SwapCache, remap_swapcache=1
+> > > > > After remap
+> > > > >        mapcount=0, SwapCache, rc=0.
+> > > > >
+> > > > > So, I think there may be some race in rmap_walk() and vma handling or
+> > > > > anon_vma handling. migration_entry isn't found by rmap_walk.
+> > > > >
+> > > > > Hmm..it seems this kind patch will be required for debug.
+> > > > 
+> > 
+> > Ok, here is my patch for _fix_. But still testing...
+> > Running well at least for 30 minutes, where I can see bug in 10minutes.
+> > But this patch is too naive. please think about something better fix.
+> > 
+> > ==
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > At adjust_vma(), vma's start address and pgoff is updated under
+> > write lock of mmap_sem. This means the vma's rmap information
+> > update is atoimic only under read lock of mmap_sem.
+> > 
+> > 
+> > Even if it's not atomic, in usual case, try_to_ummap() etc...
+> > just fails to decrease mapcount to be 0. no problem.
+> > 
+> > But at page migration's rmap_walk(), it requires to know all
+> > migration_entry in page tables and recover mapcount.
+> > 
+> > So, this race in vma's address is critical. When rmap_walk meet
+> > the race, rmap_walk will mistakenly get -EFAULT and don't call
+> > rmap_one(). This patch adds a lock for vma's rmap information. 
+> > But, this is _very slow_.
+> > We need something sophisitcated, light-weight update for this..
+> > 
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> >  include/linux/mm_types.h |    1 +
+> >  kernel/fork.c            |    1 +
+> >  mm/mmap.c                |   11 ++++++++++-
+> >  mm/rmap.c                |    3 +++
+> >  4 files changed, 15 insertions(+), 1 deletion(-)
+> > 
+> > Index: linux-2.6.34-rc4-mm1/include/linux/mm_types.h
+> > ===================================================================
+> > --- linux-2.6.34-rc4-mm1.orig/include/linux/mm_types.h
+> > +++ linux-2.6.34-rc4-mm1/include/linux/mm_types.h
+> > @@ -183,6 +183,7 @@ struct vm_area_struct {
+> >  #ifdef CONFIG_NUMA
+> >  	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
+> >  #endif
+> > +	spinlock_t adjust_lock;
+> >  };
+> >  
+> >  struct core_thread {
+> > Index: linux-2.6.34-rc4-mm1/mm/mmap.c
+> > ===================================================================
+> > --- linux-2.6.34-rc4-mm1.orig/mm/mmap.c
+> > +++ linux-2.6.34-rc4-mm1/mm/mmap.c
+> > @@ -584,13 +584,20 @@ again:			remove_next = 1 + (end > next->
+> >  		if (adjust_next)
+> >  			vma_prio_tree_remove(next, root);
+> >  	}
+> > -
+> > +	/*
+> > +	 * changing all params in atomic. If not, vma_address in rmap.c
+> > + 	 * can see wrong result.
+> > + 	 */
+> > +	spin_lock(&vma->adjust_lock);
+> >  	vma->vm_start = start;
+> >  	vma->vm_end = end;
+> >  	vma->vm_pgoff = pgoff;
+> > +	spin_unlock(&vma->adjust_lock);
+> >  	if (adjust_next) {
+> > +		spin_lock(&next->adjust_lock);
+> >  		next->vm_start += adjust_next << PAGE_SHIFT;
+> >  		next->vm_pgoff += adjust_next;
+> > +		spin_unlock(&next->adjust_lock);
+> >  	}
+> >  
+> >  	if (root) {
+> > @@ -1939,6 +1946,7 @@ static int __split_vma(struct mm_struct 
+> >  	*new = *vma;
+> >  
+> >  	INIT_LIST_HEAD(&new->anon_vma_chain);
+> > +	spin_lock_init(&new->adjust_lock);
+> >  
+> >  	if (new_below)
+> >  		new->vm_end = addr;
+> > @@ -2338,6 +2346,7 @@ struct vm_area_struct *copy_vma(struct v
+> >  			if (IS_ERR(pol))
+> >  				goto out_free_vma;
+> >  			INIT_LIST_HEAD(&new_vma->anon_vma_chain);
+> > +			spin_lock_init(&new_vma->adjust_lock);
+> >  			if (anon_vma_clone(new_vma, vma))
+> >  				goto out_free_mempol;
+> >  			vma_set_policy(new_vma, pol);
+> > Index: linux-2.6.34-rc4-mm1/kernel/fork.c
+> > ===================================================================
+> > --- linux-2.6.34-rc4-mm1.orig/kernel/fork.c
+> > +++ linux-2.6.34-rc4-mm1/kernel/fork.c
+> > @@ -350,6 +350,7 @@ static int dup_mmap(struct mm_struct *mm
+> >  			goto fail_nomem;
+> >  		*tmp = *mpnt;
+> >  		INIT_LIST_HEAD(&tmp->anon_vma_chain);
+> > +		spin_lock_init(&tmp->adjust_lock);
+> >  		pol = mpol_dup(vma_policy(mpnt));
+> >  		retval = PTR_ERR(pol);
+> >  		if (IS_ERR(pol))
+> > Index: linux-2.6.34-rc4-mm1/mm/rmap.c
+> > ===================================================================
+> > --- linux-2.6.34-rc4-mm1.orig/mm/rmap.c
+> > +++ linux-2.6.34-rc4-mm1/mm/rmap.c
+> > @@ -332,11 +332,14 @@ vma_address(struct page *page, struct vm
+> >  	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+> >  	unsigned long address;
+> >  
+> > +	spin_lock(&vma->adjust_lock);
+> >  	address = vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
+> >  	if (unlikely(address < vma->vm_start || address >= vma->vm_end)) {
+> > +		spin_unlock(&vma->adjust_lock);
+> >  		/* page should be within @vma mapping range */
+> >  		return -EFAULT;
+> >  	}
+> > +	spin_unlock(&vma->adjust_lock);
+> >  	return address;
+> >  }
+> >  
 > 
-> Signed-off-by: Amit Kucheria <amit.kucheria@canonical.com>
-> ---
->  arch/arm/plat-mxc/clock.c |   37 ++++++++++++++++++++++++-------------
->  1 files changed, 24 insertions(+), 13 deletions(-)
+> Nice Catch, Kame. :)
 > 
-> diff --git a/arch/arm/plat-mxc/clock.c b/arch/arm/plat-mxc/clock.c
-> index 323ff8c..c791f38 100644
-> --- a/arch/arm/plat-mxc/clock.c
-> +++ b/arch/arm/plat-mxc/clock.c
-> @@ -50,15 +50,15 @@ static DEFINE_MUTEX(clocks_mutex);
->  
->  static void __clk_disable(struct clk *clk)
->  {
-> -	if (clk == NULL || IS_ERR(clk))
-> +	if (clk == NULL || IS_ERR(clk) || !clk->usecount)
->  		return;
->  
-> -	__clk_disable(clk->parent);
-> -	__clk_disable(clk->secondary);
-> -
-> -	WARN_ON(!clk->usecount);
-> -	if (!(--clk->usecount) && clk->disable)
-> -		clk->disable(clk);
-> +	if (!(--clk->usecount)) {
-> +		if (clk->disable)
-> +			clk->disable(clk);
-> +		__clk_disable(clk->parent);
-> +		__clk_disable(clk->secondary);
-> +	}
->  }
-This removes the WARN_ON if the clock is already off.  Is this intended?
+> For further optimization, we can hold vma->adjust_lock if vma_address
+> returns -EFAULT. But I hope we redesigns it without new locking. 
+> But I don't have good idea, now. :(
 
-Best regards
-Uwe
+How about this?
+I just merged ideas of Mel and Kame.:)
+
+It just shows the concept, not formal patch. 
+
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f90ea92..61ea742 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -578,6 +578,8 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		}
+ 	}
+ 
++	if (vma->anon_vma)
++		spin_lock(&vma->anon_vma->lock);
+ 	if (root) {
+ 		flush_dcache_mmap_lock(mapping);
+ 		vma_prio_tree_remove(vma, root);
+@@ -619,7 +621,8 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 
+ 	if (mapping)
+ 		spin_unlock(&mapping->i_mmap_lock);
+-
++	if (vma->anon_vma) 
++		spin_unlock(&vma->anon_vma->lock);
+ 	if (remove_next) {
+ 		if (file) {
+ 			fput(file);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 3a53d9f..8075057 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1359,9 +1359,22 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+ 	spin_lock(&anon_vma->lock);
+ 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
+ 		struct vm_area_struct *vma = avc->vma;
+-		unsigned long address = vma_address(page, vma);
+-		if (address == -EFAULT)
++		struct anon_vma *tmp_anon_vma = vma->anon_vma;
++		unsigned long address;
++		int tmp_vma_lock = 0;
++		
++		if (tmp_anon_vma != anon_vma) {
++			spin_lock(&tmp_anon_vma->lock);	
++			tmp_vma_lock = 1;
++		}
++		address = vma_address(page, vma);
++		if (address == -EFAULT) {
++			if (tmp_vma_lock)
++				spin_unlock(&tmp_anon_vma->lock);
+ 			continue;
++		}
++		if (tmp_vma_lock)
++			spin_unlock(&tmp_anon_vma->lock);
+ 		ret = rmap_one(page, vma, address, arg);
+ 		if (ret != SWAP_AGAIN)
+ 			break;
+-- 
+1.7.0.5
+
+
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Kind regards,
+Minchan Kim
+
+
