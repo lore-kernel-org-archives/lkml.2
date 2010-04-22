@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab0DVFdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 01:33:25 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:50508 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab0DVFdX (ORCPT
+	id S1752570Ab0DVFgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 01:36:17 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56599
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750720Ab0DVFgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 01:33:23 -0400
-Message-ID: <4BCFDF99.7090204@monstr.eu>
-Date: Thu, 22 Apr 2010 07:33:13 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: lkml <linux-kernel@vger.kernel.org>, microblaze-uclinux@itee.uq.edu.au,
-       akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH] microblaze: fix divide by zero exception message
-References: <20100421141134.56eff2f5.randy.dunlap@oracle.com>
-In-Reply-To: <20100421141134.56eff2f5.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 22 Apr 2010 01:36:16 -0400
+Date: Wed, 21 Apr 2010 22:36:20 -0700 (PDT)
+Message-Id: <20100421.223620.257172362.davem@davemloft.net>
+To: tklein@de.ibm.com
+Cc: netdev@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       linux-kernel@vger.kernel.org, themann@de.ibm.com
+Subject: Re: [PATCH 1/2][RESEND] ehea: error handling improvement
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201004211110.55986.tklein@de.ibm.com>
+References: <201004211110.55986.tklein@de.ibm.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+From: Thomas Klein <tklein@de.ibm.com>
+Date: Wed, 21 Apr 2010 11:10:55 +0200
+
+> Reset a port's resources only if they're actually in an error state
 > 
-> Fix divide exception message to say "divide by zero".
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc:	Michal Simek <monstr@monstr.eu>
-> Cc:	microblaze-uclinux@itee.uq.edu.au
+> Signed-off-by: Thomas Klein <tklein@de.ibm.com>
 > ---
->  arch/microblaze/kernel/exceptions.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Patch created against net-2.6
 
-Applied.
+I thought you were sorry for wasting my time and that you were going
+to follow the directions I gave you last time, and I quote:
 
-Thanks,
-Michal
+--------------------
+3) These are not appropriate for net-2.6 as we are deep in
+   the -rcX series at this point and only the most diabolical
+   bug fixes are appropriate.  Therefore, please generate these
+   against net-next-2.6, thanks.
+--------------------
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+And here you are generating your patches against net-2.6.  Heck, you
+even feel it's worth mentioning explicitly.
+
+Lucky for you the patches happen to apply cleanly to net-next-2.6 so
+I've put them there.
