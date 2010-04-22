@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab0DVUrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 16:47:41 -0400
-Received: from kroah.org ([198.145.64.141]:37160 "EHLO coco.kroah.org"
+	id S1758704Ab0DVUr5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 16:47:57 -0400
+Received: from kroah.org ([198.145.64.141]:37156 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755475Ab0DVT1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 15:27:35 -0400
+	id S1755745Ab0DVT1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 15:27:34 -0400
 X-Mailbox-Line: From gregkh@kvm.kroah.org Thu Apr 22 12:09:08 2010
-Message-Id: <20100422190908.483003466@kvm.kroah.org>
+Message-Id: <20100422190908.397864177@kvm.kroah.org>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 22 Apr 2010 12:07:43 -0700
+Date: Thu, 22 Apr 2010 12:07:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, xfs@oss.sgi.com,
-       Andy Poling <andy@realbig.com>, Alex Elder <aelder@sgi.com>
-Subject: [012/197] xfs: Wrapped journal record corruption on read at recovery
+       Christoph Hellwig <hch@lst.de>, Alex Elder <aelder@sgi.com>
+Subject: [011/197] xfs: I/O completion handlers must use NOFS allocations
 In-Reply-To: <20100422191857.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,126 +26,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Andy Poling <andy@realbig.com>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit fc5bc4c85c45f0bf854404e5736aa8b65720a18d upstream
+commit 80641dc66a2d6dfb22af4413227a92b8ab84c7bb upstream
 
-Summary of problem:
+When completing I/O requests we must not allow the memory allocator to
+recurse into the filesystem, as we might deadlock on waiting for the
+I/O completion otherwise.  The only thing currently allocating normal
+GFP_KERNEL memory is the allocation of the transaction structure for
+the unwritten extent conversion.  Add a memflags argument to
+_xfs_trans_alloc to allow controlling the allocator behaviour.
 
-If a journal record wraps at the physical end of the journal, it has to be
-read in two parts in xlog_do_recovery_pass(): a read at the physical end and a
-read at the physical beginning.  If xlog_bread() has to re-align the first
-read, the second read request does not take that re-alignment into account.
-If the first read was re-aligned, the second read over-writes the end of the
-data from the first read, effectively corrupting it.  This can happen either
-when reading the record header or reading the record data.
-
-The first sanity check in xlog_recover_process_data() is to check for a valid
-clientid, so that is the error reported.
-
-Summary of fix:
-
-If there was a first read at the physical end, XFS_BUF_PTR() returns where the
-data was requested to begin.  Conversely, because it is the result of
-xlog_align(), offset indicates where the requested data for the first read
-actually begins - whether or not xlog_bread() has re-aligned it.
-
-Using offset as the base for the calculation of where to place the second read
-data ensures that it will be correctly placed immediately following the data
-from the first read instead of sometimes over-writing the end of it.
-
-The attached patch has resolved the reported problem of occasional inability
-to recover the journal (reporting "bad clientid").
-
-Signed-off-by: Andy Poling <andy@realbig.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Thomas Neumann <tneumann@users.sourceforge.net>
+Tested-by: Thomas Neumann <tneumann@users.sourceforge.net>
 Reviewed-by: Alex Elder <aelder@sgi.com>
 Signed-off-by: Alex Elder <aelder@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/xfs/xfs_log_recover.c |   24 +++++++-----------------
- 1 file changed, 7 insertions(+), 17 deletions(-)
+ fs/xfs/xfs_fsops.c |    2 +-
+ fs/xfs/xfs_iomap.c |    9 ++++++++-
+ fs/xfs/xfs_mount.c |    2 +-
+ fs/xfs/xfs_trans.c |    7 ++++---
+ fs/xfs/xfs_trans.h |    2 +-
+ 5 files changed, 15 insertions(+), 7 deletions(-)
 
---- a/fs/xfs/xfs_log_recover.c
-+++ b/fs/xfs/xfs_log_recover.c
-@@ -3517,7 +3517,7 @@ xlog_do_recovery_pass(
+--- a/fs/xfs/xfs_fsops.c
++++ b/fs/xfs/xfs_fsops.c
+@@ -611,7 +611,7 @@ xfs_fs_log_dummy(
+ 	xfs_inode_t	*ip;
+ 	int		error;
+ 
+-	tp = _xfs_trans_alloc(mp, XFS_TRANS_DUMMY1);
++	tp = _xfs_trans_alloc(mp, XFS_TRANS_DUMMY1, KM_SLEEP);
+ 	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
+ 	if (error) {
+ 		xfs_trans_cancel(tp, 0);
+--- a/fs/xfs/xfs_iomap.c
++++ b/fs/xfs/xfs_iomap.c
+@@ -860,8 +860,15 @@ xfs_iomap_write_unwritten(
+ 		 * set up a transaction to convert the range of extents
+ 		 * from unwritten to real. Do allocations in a loop until
+ 		 * we have covered the range passed in.
++		 *
++		 * Note that we open code the transaction allocation here
++		 * to pass KM_NOFS--we can't risk to recursing back into
++		 * the filesystem here as we might be asked to write out
++		 * the same inode that we complete here and might deadlock
++		 * on the iolock.
+ 		 */
+-		tp = xfs_trans_alloc(mp, XFS_TRANS_STRAT_WRITE);
++		xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
++		tp = _xfs_trans_alloc(mp, XFS_TRANS_STRAT_WRITE, KM_NOFS);
+ 		tp->t_flags |= XFS_TRANS_RESERVE;
+ 		error = xfs_trans_reserve(tp, resblks,
+ 				XFS_WRITE_LOG_RES(mp), 0,
+--- a/fs/xfs/xfs_mount.c
++++ b/fs/xfs/xfs_mount.c
+@@ -1471,7 +1471,7 @@ xfs_log_sbcount(
+ 	if (!xfs_sb_version_haslazysbcount(&mp->m_sb))
+ 		return 0;
+ 
+-	tp = _xfs_trans_alloc(mp, XFS_TRANS_SB_COUNT);
++	tp = _xfs_trans_alloc(mp, XFS_TRANS_SB_COUNT, KM_SLEEP);
+ 	error = xfs_trans_reserve(tp, 0, mp->m_sb.sb_sectsize + 128, 0, 0,
+ 					XFS_DEFAULT_LOG_COUNT);
+ 	if (error) {
+--- a/fs/xfs/xfs_trans.c
++++ b/fs/xfs/xfs_trans.c
+@@ -236,19 +236,20 @@ xfs_trans_alloc(
+ 	uint		type)
  {
- 	xlog_rec_header_t	*rhead;
- 	xfs_daddr_t		blk_no;
--	xfs_caddr_t		bufaddr, offset;
-+	xfs_caddr_t		offset;
- 	xfs_buf_t		*hbp, *dbp;
- 	int			error = 0, h_size;
- 	int			bblks, split_bblks;
-@@ -3610,7 +3610,7 @@ xlog_do_recovery_pass(
- 			/*
- 			 * Check for header wrapping around physical end-of-log
- 			 */
--			offset = NULL;
-+			offset = XFS_BUF_PTR(hbp);
- 			split_hblks = 0;
- 			wrapped_hblks = 0;
- 			if (blk_no + hblks <= log->l_logBBsize) {
-@@ -3646,9 +3646,8 @@ xlog_do_recovery_pass(
- 				 *   - order is important.
- 				 */
- 				wrapped_hblks = hblks - split_hblks;
--				bufaddr = XFS_BUF_PTR(hbp);
- 				error = XFS_BUF_SET_PTR(hbp,
--						bufaddr + BBTOB(split_hblks),
-+						offset + BBTOB(split_hblks),
- 						BBTOB(hblks - split_hblks));
- 				if (error)
- 					goto bread_err2;
-@@ -3658,14 +3657,10 @@ xlog_do_recovery_pass(
- 				if (error)
- 					goto bread_err2;
+ 	xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
+-	return _xfs_trans_alloc(mp, type);
++	return _xfs_trans_alloc(mp, type, KM_SLEEP);
+ }
  
--				error = XFS_BUF_SET_PTR(hbp, bufaddr,
-+				error = XFS_BUF_SET_PTR(hbp, offset,
- 							BBTOB(hblks));
- 				if (error)
- 					goto bread_err2;
--
--				if (!offset)
--					offset = xlog_align(log, 0,
--							wrapped_hblks, hbp);
- 			}
- 			rhead = (xlog_rec_header_t *)offset;
- 			error = xlog_valid_rec_header(log, rhead,
-@@ -3685,7 +3680,7 @@ xlog_do_recovery_pass(
- 			} else {
- 				/* This log record is split across the
- 				 * physical end of log */
--				offset = NULL;
-+				offset = XFS_BUF_PTR(dbp);
- 				split_bblks = 0;
- 				if (blk_no != log->l_logBBsize) {
- 					/* some data is before the physical
-@@ -3714,9 +3709,8 @@ xlog_do_recovery_pass(
- 				 *   _first_, then the log start (LR header end)
- 				 *   - order is important.
- 				 */
--				bufaddr = XFS_BUF_PTR(dbp);
- 				error = XFS_BUF_SET_PTR(dbp,
--						bufaddr + BBTOB(split_bblks),
-+						offset + BBTOB(split_bblks),
- 						BBTOB(bblks - split_bblks));
- 				if (error)
- 					goto bread_err2;
-@@ -3727,13 +3721,9 @@ xlog_do_recovery_pass(
- 				if (error)
- 					goto bread_err2;
+ xfs_trans_t *
+ _xfs_trans_alloc(
+ 	xfs_mount_t	*mp,
+-	uint		type)
++	uint		type,
++	uint		memflags)
+ {
+ 	xfs_trans_t	*tp;
  
--				error = XFS_BUF_SET_PTR(dbp, bufaddr, h_size);
-+				error = XFS_BUF_SET_PTR(dbp, offset, h_size);
- 				if (error)
- 					goto bread_err2;
--
--				if (!offset)
--					offset = xlog_align(log, wrapped_hblks,
--						bblks - split_bblks, dbp);
- 			}
- 			xlog_unpack_data(rhead, offset, log);
- 			if ((error = xlog_recover_process_data(log, rhash,
+ 	atomic_inc(&mp->m_active_trans);
+ 
+-	tp = kmem_zone_zalloc(xfs_trans_zone, KM_SLEEP);
++	tp = kmem_zone_zalloc(xfs_trans_zone, memflags);
+ 	tp->t_magic = XFS_TRANS_MAGIC;
+ 	tp->t_type = type;
+ 	tp->t_mountp = mp;
+--- a/fs/xfs/xfs_trans.h
++++ b/fs/xfs/xfs_trans.h
+@@ -924,7 +924,7 @@ typedef struct xfs_trans {
+  * XFS transaction mechanism exported interfaces.
+  */
+ xfs_trans_t	*xfs_trans_alloc(struct xfs_mount *, uint);
+-xfs_trans_t	*_xfs_trans_alloc(struct xfs_mount *, uint);
++xfs_trans_t	*_xfs_trans_alloc(struct xfs_mount *, uint, uint);
+ xfs_trans_t	*xfs_trans_dup(xfs_trans_t *);
+ int		xfs_trans_reserve(xfs_trans_t *, uint, uint, uint,
+ 				  uint, uint);
 
 
