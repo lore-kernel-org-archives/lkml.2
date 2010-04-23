@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab0DWN7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 09:59:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52048 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757414Ab0DWN7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 09:59:32 -0400
-Message-ID: <4BD1A7BB.20206@redhat.com>
-Date: Fri, 23 Apr 2010 16:59:23 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1757566Ab0DWOAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 10:00:21 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:53276 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757414Ab0DWOAS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 10:00:18 -0400
+Date: Fri, 23 Apr 2010 09:48:23 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Pedro Francisco <pedrogfrancisco@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+       me@bobcopeland.com, mickflemm@gmail.com
+Subject: Re: ath5k misbehaving affecting other kernel parts unrelated?
+Message-ID: <20100423134823.GB5004@tuxdriver.com>
+References: <201004230806.13628.pedrogfrancisco@gmail.com>
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Joerg Roedel <joerg.roedel@amd.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH 5/8] KVM: X86: Add callback to let modules decide over
- some supported cpuid bits
-References: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com> <1271932394-13968-6-git-send-email-joerg.roedel@amd.com> <8750FE80-57D8-4D59-AC4A-D04B04E8707B@suse.de>
-In-Reply-To: <8750FE80-57D8-4D59-AC4A-D04B04E8707B@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004230806.13628.pedrogfrancisco@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2010 04:52 PM, Alexander Graf wrote:
-> On 22.04.2010, at 12:33, Joerg Roedel wrote:
->
->    
->> This patch adds the get_supported_cpuid callback to
->> kvm_x86_ops. It will be used in do_cpuid_ent to delegate the
->> decission about some supported cpuid bits to the
->> architecture modules.
->>
->> Cc: stable@kernel.org
->>      
-> Please don't CC stable. There is a KVM stable tag now, so every stable submission goes through Avi/Marcelo.
->
->
->    
+On Fri, Apr 23, 2010 at 08:06:13AM +0100, Pedro Francisco wrote:
+> Greetings!
+> 
+> Is it possible a faulty ath5k module to affect diverse parts of kernel causing 
+> different oopses to happen referencing things as different as cdrom_ioctl, 
+> find_vma, i915_gem_object_get_pages, get_vfs_caps_from_disk, 
+> warn_slowpath_common (ath5k_tasklet_rx), proc_lookup_de and 
+> _spin_lock(ext4_getattr) [soft lookup]?
+> 
+> The task in which such errors happen is capturing packets with kismet during 
+> the night. The errors aren't easy to create, sometimes they've already 
+> happened when I check the computer in the morning and sometimes they require 
+> stirring up the computer a bit such as starting X.
+> 
+> I memtested the machine during 7h and no error was detected.
+> 
+> I've been trying different kernels but main one is 2.6.32-21-generic, Ubuntu 
+> flavour, with linux-backports-modules-wireless-lucid-generic installed. I would 
+> use 2.6.34-rc5 vanilla if shutdown and suspend worked ;)
+> 
+> As such:
+> a) is it "normal"? I thought modules were somewhat isolated these days.
+> b) any advices for debugging? I've yet to have two oopses that are similar....
 
-It's not a problem.  stable@ will ignore kvm patches not coming from the 
-maintainers, and we will recognize cc: stable as a stable request.
+It is certainly possible -- improper setup of DMA could be scribbling
+over memory that doesn't belong to ath5k.  That sort of thing can be
+ugly to track-down...
 
-(the new approach is to collect the patches in kvm-updates/2.6.x, 
-autotest, and forward to stable@).
+You mentioned Kismet.  Do you experience this sort of problem when
+using ath5k for "normal" purposes (e.g. browsing the web)?  Or only
+when using it to monitor the network?
 
+John
 -- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
-
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
