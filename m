@@ -1,35 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757788Ab0DWPw2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 11:52:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23065 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757750Ab0DWPwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 11:52:25 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com>
-References: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com> <20100423195127.48095127.toshi.okajima@jp.fujitsu.com> <20100422163755.355794e3.toshi.okajima@jp.fujitsu.com> <7894.1271931370@redhat.com> <20100423194547.3135efb8.toshi.okajima@jp.fujitsu.com> <10934.1272022437@redhat.com>
-To: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org, security@kernel.org,
+	id S1757819Ab0DWPwf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 11:52:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23464 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757800Ab0DWPwb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 11:52:31 -0400
+Date: Fri, 23 Apr 2010 08:50:21 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Chihau Chau <chihau@gmail.com>
+Cc: jmorris@namei.org, eparis@redhat.com, viro@zeniv.linux.org.uk,
        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1][BUG][TAKE2] KEYRINGS: find_keyring_by_name() can gain the freed keyring
-Date: Fri, 23 Apr 2010 16:52:16 +0100
-Message-ID: <1790.1272037936@redhat.com>
+Subject: Re: [PATCH] Security: inode: Fix code style issues
+Message-Id: <20100423085021.b54f98c5.randy.dunlap@oracle.com>
+In-Reply-To: <1271983035-26401-1-git-send-email-chihau@gmail.com>
+References: <1271983035-26401-1-git-send-email-chihau@gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090201.4BD1C22F.0211:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com> wrote:
+On Thu, 22 Apr 2010 20:37:15 -0400 Chihau Chau wrote:
 
-> > Better still, atomic_inc_not_zero().  How about the attached patch?
-> Your fix looks good to me. But, if usage count of the keyring is 0,
-> I think it better to return -ENOKEY immediately. 
+> From: Chihau Chau <chihau@gmail.com>
+> 
+> This fixes two code style issues:
+> 
+> - A space required after that close brace '}'
 
-The problem with that is that someone else may have created a keyring with the
-same name that you can't then reach until the dead keyring is deleted.
+Why?  do we say that somewhere?
 
-David
+
+> 
+> - A space required after that ','
+> 
+> Signed-off-by: Chihau Chau <chihau@gmail.com>
+> ---
+>  security/inode.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/security/inode.c b/security/inode.c
+> index c3a7938..f875f47 100644
+> --- a/security/inode.c
+> +++ b/security/inode.c
+> @@ -124,7 +124,7 @@ static inline int positive(struct dentry *dentry)
+>  
+>  static int fill_super(struct super_block *sb, void *data, int silent)
+>  {
+> -	static struct tree_descr files[] = {{""}};
+> +	static struct tree_descr files[] = { {""} };
+>  
+>  	return simple_fill_super(sb, SECURITYFS_MAGIC, files);
+>  }
+> @@ -208,7 +208,7 @@ struct dentry *securityfs_create_file(const char *name, mode_t mode,
+>  	struct dentry *dentry = NULL;
+>  	int error;
+>  
+> -	pr_debug("securityfs: creating file '%s'\n",name);
+> +	pr_debug("securityfs: creating file '%s'\n", name);
+>  
+>  	error = simple_pin_fs(&fs_type, &mount, &mount_count);
+>  	if (error) {
+> -- 
+> 1.5.6.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
