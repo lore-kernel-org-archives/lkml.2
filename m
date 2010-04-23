@@ -1,71 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab0DWFAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 01:00:00 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:57605 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755438Ab0DWE76 (ORCPT
+	id S1754741Ab0DWBKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 21:10:16 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:50164 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709Ab0DWBKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 00:59:58 -0400
-From: Dinh.Nguyen@freescale.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-       grant.likely@secretlab.ca, bryan.wu@canonical.com,
-       amit.kucheria@canonical.com, Jun.Li@freescale.com,
-       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv8 2.6.34-rc5 5/5] mx5: Add USB to Freescale MX51 defconfig
-Date: Thu, 22 Apr 2010 23:51:17 -0500
-Message-Id: <1271998277-3949-5-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1271998277-3949-4-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1271998277-3949-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271998277-3949-2-git-send-email-Dinh.Nguyen@freescale.com>
- <1271998277-3949-3-git-send-email-Dinh.Nguyen@freescale.com>
- <1271998277-3949-4-git-send-email-Dinh.Nguyen@freescale.com>
+	Thu, 22 Apr 2010 21:10:10 -0400
+From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Len Brown <len.brown@intel.com>
+Subject: [PATCH 5/9] PM: suspend_block: Add debugfs file
+Date: Thu, 22 Apr 2010 18:08:54 -0700
+Message-Id: <1271984938-13920-6-git-send-email-arve@android.com>
+X-Mailer: git-send-email 1.6.5.1
+In-Reply-To: <1271984938-13920-5-git-send-email-arve@android.com>
+References: <1271984938-13920-1-git-send-email-arve@android.com>
+ <1271984938-13920-2-git-send-email-arve@android.com>
+ <1271984938-13920-3-git-send-email-arve@android.com>
+ <1271984938-13920-4-git-send-email-arve@android.com>
+ <1271984938-13920-5-git-send-email-arve@android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Report active and inactive suspend blockers in
+/sys/kernel/debug/suspend_blockers.
 
-Update mx51_defconfig to include USB EHCI by default.
-
-This patch applies to 2.6.34-rc4.
-
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
 ---
- arch/arm/configs/mx51_defconfig |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
+ kernel/power/suspend_blocker.c |   44 ++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 42 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/configs/mx51_defconfig b/arch/arm/configs/mx51_defconfig
-index c88e952..a708fd6 100644
---- a/arch/arm/configs/mx51_defconfig
-+++ b/arch/arm/configs/mx51_defconfig
-@@ -809,7 +809,22 @@ CONFIG_SSB_POSSIBLE=y
- CONFIG_DUMMY_CONSOLE=y
- # CONFIG_SOUND is not set
- # CONFIG_HID_SUPPORT is not set
--# CONFIG_USB_SUPPORT is not set
-+CONFIG_USB_SUPPORT=y
-+CONFIG_USB_ARCH_HAS_HCD=y
-+# CONFIG_USB_ARCH_HAS_OHCI is not set
-+CONFIG_USB_ARCH_HAS_EHCI=y
-+CONFIG_USB=y
+diff --git a/kernel/power/suspend_blocker.c b/kernel/power/suspend_blocker.c
+index 868e8f1..047e910 100644
+--- a/kernel/power/suspend_blocker.c
++++ b/kernel/power/suspend_blocker.c
+@@ -17,6 +17,7 @@
+ #include <linux/rtc.h>
+ #include <linux/suspend.h>
+ #include <linux/suspend_blocker.h>
++#include <linux/debugfs.h>
+ #include "power.h"
+ 
+ enum {
+@@ -41,6 +42,7 @@ struct workqueue_struct *suspend_work_queue;
+ struct suspend_blocker main_suspend_blocker;
+ static suspend_state_t requested_suspend_state = PM_SUSPEND_MEM;
+ static bool enable_suspend_blockers;
++static struct dentry *suspend_blocker_stats_dentry;
+ 
+ #define pr_info_time(fmt, args...) \
+ 	do { \
+@@ -54,6 +56,21 @@ static bool enable_suspend_blockers;
+ 			tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec); \
+ 	} while (0);
+ 
++static int suspend_blocker_stats_show(struct seq_file *m, void *unused)
++{
++	unsigned long irqflags;
++	struct suspend_blocker *blocker;
 +
-+#
-+# USB Host Controller Drivers
-+#
-+# CONFIG_USB_C67X00_HCD is not set
-+CONFIG_USB_EHCI_HCD=y
-+CONFIG_USB_EHCI_ROOT_HUB_TT=y
-+# CONFIG_USB_EHCI_TT_NEWSCHED is not set
-+CONFIG_USB_EHCI_MXC=y
++	seq_puts(m, "name\tactive\n");
++	spin_lock_irqsave(&list_lock, irqflags);
++	list_for_each_entry(blocker, &inactive_blockers, link)
++		seq_printf(m, "\"%s\"\t0\n", blocker->name);
++	list_for_each_entry(blocker, &active_blockers, link)
++		seq_printf(m, "\"%s\"\t1\n", blocker->name);
++	spin_unlock_irqrestore(&list_lock, irqflags);
++	return 0;
++}
 +
+ static void print_active_blockers_locked(void)
+ {
+ 	struct suspend_blocker *blocker;
+@@ -101,8 +118,8 @@ static DECLARE_WORK(suspend_work, suspend_worker);
+ /**
+  * suspend_blocker_init() - Initialize a suspend blocker
+  * @blocker:	The suspend blocker to initialize.
+- * @name:	The name of the suspend blocker to show in debug messages.
+- *
++ * @name:	The name of the suspend blocker to show in debug messages and
++ *		/sys/kernel/debug/suspend_blockers.
+  * The suspend blocker struct and name must not be freed before calling
+  * suspend_blocker_destroy.
+  */
+@@ -240,6 +257,19 @@ int request_suspend_state(suspend_state_t state)
+ 	return 0;
+ }
+ 
++static int suspend_blocker_stats_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, suspend_blocker_stats_show, NULL);
++}
 +
- CONFIG_MMC=y
- # CONFIG_MMC_DEBUG is not set
- # CONFIG_MMC_UNSAFE_RESUME is not set
++static const struct file_operations suspend_blocker_stats_fops = {
++	.owner = THIS_MODULE,
++	.open = suspend_blocker_stats_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
+ static int __init suspend_block_init(void)
+ {
+ 	suspend_work_queue = create_singlethread_workqueue("suspend");
+@@ -251,4 +281,14 @@ static int __init suspend_block_init(void)
+ 	return 0;
+ }
+ 
++static int __init suspend_block_postcore_init(void)
++{
++	if (!suspend_work_queue)
++		return 0;
++	suspend_blocker_stats_dentry = debugfs_create_file("suspend_blockers",
++			S_IRUGO, NULL, NULL, &suspend_blocker_stats_fops);
++	return 0;
++}
++
+ core_initcall(suspend_block_init);
++postcore_initcall(suspend_block_postcore_init);
 -- 
-1.6.0.4
+1.6.5.1
 
