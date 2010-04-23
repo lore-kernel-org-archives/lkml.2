@@ -1,69 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab0DWVFL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 17:05:11 -0400
-Received: from 5-161-237-24-mvl.swc.gci.net ([24.237.161.5]:38073 "EHLO
-	mail.adialaska.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757387Ab0DWVFI (ORCPT
+	id S1757501Ab0DWVIY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 17:08:24 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33350 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757384Ab0DWVIV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 17:05:08 -0400
-Message-ID: <4BD20B7E.2070201@gmail.com>
-Date: Fri, 23 Apr 2010 13:05:02 -0800
-From: Kent Overstreet <kent.overstreet@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10pre) Gecko/20100421 Shredder/3.0.5pre
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
+	Fri, 23 Apr 2010 17:08:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=MWwTyztZigOCaRHbG3ZgrZ17IGbQTw1pMnm+ZnwL5QKjxCt3hI4LhUoRAxl3GGKG/C
+         v1caSbDkGiJstViMXNGGOg9XFG7ERGJmGL669R4xMNZgAXWQxtTHNCxwS6pi6toVPBHU
+         DoCqjHtZpoqt2GWTxn1H+G5ACSVcnpv9FVYYQ=
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] bcache: ver 3
-References: <20100423194107.GA20322@moria> <20100423133910.d36e2b22.randy.dunlap@oracle.com>
-In-Reply-To: <20100423133910.d36e2b22.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 8/9] Input: Block suspend while event queue is not empty.
+Date: Fri, 23 Apr 2010 14:08:14 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.34-rc5; KDE/4.4.2; x86_64; ; )
+Cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+       =?iso-8859-1?q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
+       Sven Neumann <s.neumann@raumfeld.com>,
+       Tero Saarni <tero.saarni@gmail.com>,
+       Henrik Rydberg <rydberg@euromail.se>, Matthew Garrett <mjg@redhat.com>,
+       Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org
+References: <1271984938-13920-1-git-send-email-arve@android.com> <1271984938-13920-9-git-send-email-arve@android.com> <20100423135625.1e12d005.randy.dunlap@oracle.com>
+In-Reply-To: <20100423135625.1e12d005.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004231408.15885.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2010 12:39 PM, Randy Dunlap wrote:
+On Friday 23 April 2010 01:56:25 pm Randy Dunlap wrote:
+> On Thu, 22 Apr 2010 18:08:57 -0700 Arve Hjønnevåg wrote:
+> > Add an ioctl, EVIOCSSUSPENDBLOCK, to enable a suspend_blocker that will
+> > block suspend while the event queue is not empty. This allows userspace
+> > code to process input events while the device appears to be asleep.
+> 
+> All new ioctls need to be added to Documentation/ioctl/ioctl-number.txt,
+> please.
 
->> +#define label(l, foo)	if (0) { l: foo; }
->
-> I'd prefer that macro to go away.
+I do not see the reason for it to be in the kernel still. Have a process
+that listens to all input devices (or subset of them), once events stop
+coming initiate suspend.
 
-I kind of like it, the way I use it it's shorthand for "return with x status"; 
-it just makes return codes and exiting cleaner. But if you still hate it after 
-you've read the functions where it's used, I can take it out.
+> 
+> > Signed-off-by: Arve Hjønnevåg <arve@android.com>
+> > ---
+> > 
+> >  drivers/input/evdev.c |   22 ++++++++++++++++++++++
+> >  include/linux/input.h |    3 +++
+> >  2 files changed, 25 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> > index 2ee6c7a..66e0d16 100644
+> > --- a/drivers/input/evdev.c
+> > +++ b/drivers/input/evdev.c
+> > @@ -585,6 +594,19 @@ static long evdev_do_ioctl(struct file *file,
+> > unsigned int cmd,
+> > 
+> >  		else
+> >  		
+> >  			return evdev_ungrab(evdev, client);
+> > 
+> > +	case EVIOCGSUSPENDBLOCK:
+> > +		return put_user(client->use_suspend_blocker, ip);
+> > +
+> > +	case EVIOCSSUSPENDBLOCK:
+> > +		spin_lock_irq(&client->buffer_lock);
+> > +		if (!client->use_suspend_blocker && p)
+> > +			suspend_blocker_init(&client->suspend_blocker, "evdev");
+> > +		else if (client->use_suspend_blocker && !p)
+> > +			suspend_blocker_destroy(&client->suspend_blocker);
+> > +		client->use_suspend_blocker = !!p;
+> > +		spin_unlock_irq(&client->buffer_lock);
+> > +		return 0;
+> > +
+> > 
+> >  	default:
+> >  		if (_IOC_TYPE(cmd) != 'E')
+> > 
+> > diff --git a/include/linux/input.h b/include/linux/input.h
+> > index 7ed2251..b2d93b4 100644
+> > --- a/include/linux/input.h
+> > +++ b/include/linux/input.h
+> > @@ -82,6 +82,9 @@ struct input_absinfo {
+> > 
+> >  #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release 
+device */
+> > 
+> > +#define EVIOCGSUSPENDBLOCK	_IOR('E', 0x91, int)			/* get 
+suspend block
+> > enable */ +#define EVIOCSSUSPENDBLOCK	_IOW('E', 0x91, int)			/* 
+set
+> > suspend block enable */ +
+> > 
+> >  /*
+> >  
+> >   * Event types
+> >   */
+> 
+> thanks,
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code
+> *** --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
->> +	return d[i / keys_per_page] + (i % keys_per_page);
->
-> That builds OK on i386?  or does it need udivdi3() and/or umoddi3()?
-
-If my understanding is correct, those are only needed for 64 bits, i indexes 
-into a single node so 32 bits is plenty.
-
->
->> +}
->
->> +static int lookup_dev(struct cache_device *c, struct bio *bio)
->> +{
->> +	int dev;
->> +	for (dev = 0; dev<  256; dev++)
->
-> Use a macro for 256.. in lots of places.
-
-Yes, definitely.
-
-> 		bcache: cannot allocate memory
-> "kmalloc error" sounds like kmalloc() had an internal error.
-
-Agreed.
-
-> Need to document the sysfs interfaces:
-
-Ok, I'll start on that.
-
->> +	err = "vmalloc error";
->
-> 		"cannot vmalloc memory";
-
-Done.
+-- 
+Dmitry
