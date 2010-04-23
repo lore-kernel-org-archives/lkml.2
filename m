@@ -1,106 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab0DWBGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 21:06:38 -0400
-Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:41125 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754539Ab0DWBGg (ORCPT
+	id S1754890Ab0DWEpn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 00:45:43 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:65251 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab0DWEpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 21:06:36 -0400
-Date: Fri, 23 Apr 2010 11:06:32 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100423010632.GA10390@dastard>
-References: <20100413202021.GZ13327@think>
- <20100414014041.GD2493@dastard>
- <20100414155233.D153.A69D9226@jp.fujitsu.com>
- <20100414072830.GK2493@dastard>
- <20100414085132.GJ25756@csn.ul.ie>
- <20100415013436.GO2493@dastard>
- <20100415102837.GB10966@csn.ul.ie>
- <20100416041412.GY2493@dastard>
- <20100416151403.GM19264@csn.ul.ie>
- <20100419152034.GW19264@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100419152034.GW19264@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 23 Apr 2010 00:45:41 -0400
+Date: Fri, 23 Apr 2010 13:41:41 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [BUGFIX][PATCH] memcg rcu lock fix v3
+Message-Id: <20100423134141.56f69074.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100423130349.f320d0be.kamezawa.hiroyu@jp.fujitsu.com>
+References: <4BD10D59.9090504@cn.fujitsu.com>
+	<20100423121424.ae47efcb.kamezawa.hiroyu@jp.fujitsu.com>
+	<4BD118E2.7080307@cn.fujitsu.com>
+	<4BD11A24.2070500@cn.fujitsu.com>
+	<20100423125814.01e95bce.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100423130349.f320d0be.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 19, 2010 at 04:20:34PM +0100, Mel Gorman wrote:
-> On Fri, Apr 16, 2010 at 04:14:03PM +0100, Mel Gorman wrote:
-> > > > Your patch fixes 2, avoids 1, breaks 3 and haven't thought about 4 but I
-> > > > guess dirty pages can cycle around more so it'd need to be cared for.
+On Fri, 23 Apr 2010 13:03:49 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Fri, 23 Apr 2010 12:58:14 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > On Fri, 23 Apr 2010 11:55:16 +0800
+> > Li Zefan <lizf@cn.fujitsu.com> wrote:
+> > 
+> > > Li Zefan wrote:
+> > > > KAMEZAWA Hiroyuki wrote:
+> > > >> On Fri, 23 Apr 2010 11:00:41 +0800
+> > > >> Li Zefan <lizf@cn.fujitsu.com> wrote:
+> > > >>
+> > > >>> with CONFIG_PROVE_RCU=y, I saw this warning, it's because
+> > > >>> css_id() is not under rcu_read_lock().
+> > > >>>
+> > > >> Ok. Thank you for reporting.
+> > > >> This is ok ? 
+> > > > 
+> > > > Yes, and I did some more simple tests on memcg, no more warning
+> > > > showed up.
+> > > > 
 > > > 
-> > > Well, you keep saying that they break #3, but I haven't seen any
-> > > test cases or results showing that. I've been unable to confirm that
-> > > lumpy reclaim is broken by disallowing writeback in my testing, so
-> > > I'm interested to know what tests you are running that show it is
-> > > broken...
+> > > oops, after trigging oom, I saw 2 more warnings:
 > > > 
 > > 
-> > Ok, I haven't actually tested this. The machines I use are tied up
-> > retesting the compaction patches at the moment. The reason why I reckon
-> > it'll be a problem is that when these sync-writeback changes were
-> > introduced, it significantly helped lumpy reclaim for huge pages. I am
-> > making an assumption that backing out those changes will hurt it.
-> > 
-> > I'll test for real on Monday and see what falls out.
-> > 
+> > Thank you for good testing.
+> v3 here...sorry too rapid posting...
 > 
-> One machine has completed the test and the results are as expected. When
-> allocating huge pages under stress, your patch drops the success rates
-> significantly. On X86-64, it showed
+Thank you for your report & patch.
+(and I'm sorry that I've not been active these days ;( )
+
+This patch looks good to me and, IIUC, would be enough to fix this bug.
+
+	Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+
+BTW, it wouldn't cause any problem, I think former rcu_read_lock()/unlock()
+in task_in_mem_cgroup() is unnecessary, because try_get_mem_cgroup_from_mm()
+calls them for itself.
+
+
+Thanks,
+Daisuke Nishimura.
+
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> STRESS-HIGHALLOC
->               stress-highalloc   stress-highalloc
->             enable-directreclaim disable-directreclaim
-> Under Load 1    89.00 ( 0.00)    73.00 (-16.00)
-> Under Load 2    90.00 ( 0.00)    85.00 (-5.00)
-> At Rest         90.00 ( 0.00)    90.00 ( 0.00)
+> css_id() should be called under rcu_read_lock().
+> Following is a report from Li Zefan.
+> ==
+> ===================================================
+> [ INFO: suspicious rcu_dereference_check() usage. ]
+> ---------------------------------------------------
+> kernel/cgroup.c:4438 invoked rcu_dereference_check() without protection!
 > 
-> So with direct reclaim, it gets 89% of memory as huge pages at the first
-> attempt but 73% with your patch applied. The "Under Load 2" test happens
-> immediately after. With the start kernel, the first and second attempts
-> are usually the same or very close together. With your patch applied,
-> there are big differences as it was no longer trying to clean pages.
-
-What was the machine config you were testing on (RAM, CPUs, etc)?
-And what are these loads? Do you have a script that generates
-them? If so, can you share them, please?
-
-OOC, what was the effect on the background load - did it go faster
-or slower when writeback was disabled? i.e. did we trade of more
-large pages for better overall throughput?
-
-Also, I'm curious as to the repeatability of the tests you are
-doing. I found that from run to run I could see a *massive*
-variance in the results. e.g. one run might only get ~80 huge
-pages at the first attempt, the test run from the same initial
-conditions next might get 440 huge pages at the first attempt. I saw
-the same variance with or without writeback from direct reclaim
-enabled. Hence only after averaging over tens of runs could I see
-any sort of trend emerge, and it makes me wonder if your testing is
-also seeing this sort of variance....
-
-FWIW, if we look results of the test I did, it showed a 20%
-improvement in large page allocation with a 15% increase in load
-throughput, while you're showing a 16% degradation in large page
-allocation.  Effectively we've got two workloads that show results
-at either end of the spectrum (perhaps they are best case vs worst
-case) but there's no real in-between. What other tests can we run to
-get a better picture of the effect?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> other info that might help us debug this:
+> 
+> 
+> rcu_scheduler_active = 1, debug_locks = 1
+> 1 lock held by kswapd0/31:
+>  #0:  (swap_lock){+.+.-.}, at: [<c05058bb>] swap_info_get+0x4b/0xd0
+> 
+> stack backtrace:
+> Pid: 31, comm: kswapd0 Not tainted 2.6.34-rc5-tip+ #13
+> Call Trace:
+>  [<c083c5d6>] ? printk+0x1d/0x1f
+>  [<c0480744>] lockdep_rcu_dereference+0x94/0xb0
+>  [<c049d6ed>] css_id+0x5d/0x60
+>  [<c05165a5>] mem_cgroup_uncharge_swapcache+0x45/0xa0
+>  [<c0505e4f>] swapcache_free+0x3f/0x60
+>  [<c04e79e2>] __remove_mapping+0xb2/0xf0
+>  [<c04e7cbb>] shrink_page_list+0x26b/0x490
+>  [<c047f85d>] ? put_lock_stats+0xd/0x30
+>  [<c083fd67>] ? _raw_spin_unlock_irq+0x27/0x50
+>  [<c0482566>] ? trace_hardirqs_on_caller+0xb6/0x220
+>  [<c04e8158>] shrink_inactive_list+0x278/0x620
+>  [<c04729e1>] ? sched_clock_cpu+0x121/0x180
+>  [<c047e9b8>] ? trace_hardirqs_off_caller+0x18/0x130
+>  [<c047eadb>] ? trace_hardirqs_off+0xb/0x10
+>  [<c0843438>] ? sub_preempt_count+0x8/0x90
+>  [<c047f85d>] ? put_lock_stats+0xd/0x30
+>  [<c04e8704>] shrink_zone+0x204/0x3c0
+>  [<c083fcac>] ? _raw_spin_unlock+0x2c/0x50
+>  [<c04e951e>] kswapd+0x61e/0x7c0
+>  [<c04e6ed0>] ? isolate_pages_global+0x0/0x1f0
+>  [<c046bae0>] ? autoremove_wake_function+0x0/0x50
+>  [<c04e8f00>] ? kswapd+0x0/0x7c0
+>  [<c046b5e4>] kthread+0x74/0x80
+>  [<c046b570>] ? kthread+0x0/0x80
+>  [<c04035ba>] kernel_thread_helper+0x6/0x10
+> 
+> And css_is_ancestor() should be called under rcu_read_lock().
+> 
+> 
+> Reported-by: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |   18 ++++++++++++++++--
+>  1 file changed, 16 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6.34-rc5-mm1/mm/memcontrol.c
+> ===================================================================
+> --- linux-2.6.34-rc5-mm1.orig/mm/memcontrol.c
+> +++ linux-2.6.34-rc5-mm1/mm/memcontrol.c
+> @@ -838,10 +838,12 @@ int task_in_mem_cgroup(struct task_struc
+>  	 * enabled in "curr" and "curr" is a child of "mem" in *cgroup*
+>  	 * hierarchy(even if use_hierarchy is disabled in "mem").
+>  	 */
+> +	rcu_read_lock();
+>  	if (mem->use_hierarchy)
+>  		ret = css_is_ancestor(&curr->css, &mem->css);
+>  	else
+>  		ret = (curr == mem);
+> +	rcu_read_unlock();
+>  	css_put(&curr->css);
+>  	return ret;
+>  }
+> @@ -1360,9 +1362,13 @@ static int memcg_oom_wake_function(wait_
+>  	 * Both of oom_wait_info->mem and wake_mem are stable under us.
+>  	 * Then we can use css_is_ancestor without taking care of RCU.
+>  	 */
+> +	rcu_read_lock();
+>  	if (!css_is_ancestor(&oom_wait_info->mem->css, &wake_mem->css) &&
+> -	    !css_is_ancestor(&wake_mem->css, &oom_wait_info->mem->css))
+> +	    !css_is_ancestor(&wake_mem->css, &oom_wait_info->mem->css)) {
+> +		rcu_read_unlock();
+>  		return 0;
+> +	}
+> +	rcu_read_unlock();
+>  
+>  wakeup:
+>  	return autoremove_wake_function(wait, mode, sync, arg);
+> @@ -2401,7 +2407,9 @@ mem_cgroup_uncharge_swapcache(struct pag
+>  
+>  	/* record memcg information */
+>  	if (do_swap_account && swapout && memcg) {
+> +		rcu_read_lock();
+>  		swap_cgroup_record(ent, css_id(&memcg->css));
+> +		rcu_read_unlock();
+>  		mem_cgroup_get(memcg);
+>  	}
+>  	if (swapout && memcg)
+> @@ -2458,8 +2466,10 @@ static int mem_cgroup_move_swap_account(
+>  {
+>  	unsigned short old_id, new_id;
+>  
+> +	rcu_read_lock();
+>  	old_id = css_id(&from->css);
+>  	new_id = css_id(&to->css);
+> +	rcu_read_unlock();
+>  
+>  	if (swap_cgroup_cmpxchg(entry, old_id, new_id) == old_id) {
+>  		mem_cgroup_swap_statistics(from, false);
+> @@ -4303,7 +4313,11 @@ static int is_target_pte_for_mc(struct v
+>  	}
+>  	/* Threre is a swap entry and a page doesn't exist or isn't charged */
+>  	if (ent.val && !ret) {
+> -		if (css_id(&mc.from->css) == lookup_swap_cgroup(ent)) {
+> +		unsigned short id;
+> +		rcu_read_lock();
+> +		id = css_id(&mc.from->css);
+> +		rcu_read_unlock();
+> +		if (id == lookup_swap_cgroup(ent)) {
+>  			ret = MC_TARGET_SWAP;
+>  			if (target)
+>  				target->ent = ent;
+> 
+> 
