@@ -1,151 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab0DWTtB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 15:49:01 -0400
-Received: from mail.gmx.net ([213.165.64.20]:56781 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752663Ab0DWTs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 15:48:58 -0400
-X-Authenticated: #181789
-X-Provags-ID: V01U2FsdGVkX19bXCsK8k5b3EbTKkf6bejA9Hpj8L79niwOiiIsic
-	5D9QLLuCxER6hm
-From: Christian Eggers <ceggers@gmx.de>
-To: linux-cifs-client@lists.samba.org
-Subject: cifs: Filesystem unmounts automatically after some time
-Date: Fri, 23 Apr 2010 21:48:51 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.25.20-0.7-xen; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
+	id S1756397Ab0DWTwF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 15:52:05 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:42033 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752663Ab0DWTwB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 15:52:01 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -22.589
+Message-ID: <4BD1FA5A.6060406@tremplin-utc.net>
+Date: Fri, 23 Apr 2010 21:51:54 +0200
+From: =?ISO-8859-1?Q?=C9ric_Piel?= <Eric.Piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090319 Mandriva/2.0.0.21-1mdv2009.1 (2009.1) Thunderbird/2.0.0.21 Mnenhy/0.7.6.666
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004232148.52739.ceggers@gmx.de>
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.53000000000000003
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+       platform-driver-x86@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
+       "Brown, Len" <len.brown@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] Make WMI be selected automatically when needed
+References: <4BC8FF9D.7050500@tremplin-utc.net> <20100416173127.6b968fd4.randy.dunlap@oracle.com> <4BC907B5.2050104@tremplin-utc.net> <20100423192059.GA32705@srcf.ucam.org>
+In-Reply-To: <20100423192059.GA32705@srcf.ucam.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-# uname -r
-2.6.34-rc5-desktop
+Op 23-04-10 21:20, Matthew Garrett schreef:
+> On Sat, Apr 17, 2010 at 02:58:29AM +0200, Éric Piel wrote:
+> 
+>>  config LEDS_DELL_NETBOOKS
+>>  	tristate "External LED on Dell Business Netbooks"
+>> -	depends on X86 && ACPI_WMI
+>> +	depends on X86
+>> +	depends on ACPI
+>> +	select ACPI_WMI
+> 
+> I dislike this. The originally stated dependencies are correct and more 
+> accurately represent what the code requires, and changing that for the 
+> sake of making it easier for people to find the driver sounds like it's 
+> trying to cover up shortcomings in our configuration system more than 
+> anything else.
+> 
+Currently there are 2 modules which select ACPI_WMI and 4 which depend
+on it. There are 7 modules which select BACKLIGHT_CLASS_DEVICE and as
+many which depend on it. Making usage of the select functionality all
+the time would avoid these inconsistencies.
 
-Samba server: Debian with Samba-3.2.5 (also other OS seem to be affected)
-
-# modprobe cifs
-# mount -t cifs //server/privat /mnt -o username=christian
-
-When I mount a remote Samba share with the previous commands, the share gets successfully mounted and is shown in the output of the "mount" command. After some minutes the share is automatically unmounted without any user intervention. Is this a wanted feature 
-or a bug?
-
-I saw this behaviour first on openSUSE 11.2 (shipped with kernel-2.6.31.5) but never on openSUSE 11.1 (kernel-2.6.27.7).
-
-regards
-Christian
-
-
-# echo 1 > /proc/fs/cifs/cifsFY1
-[   98.055249]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifsfs.c: Devname: //server/privat flags: 64 
-[   98.055254]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: CIFS VFS: in cifs_mount as Xid: 0 with uid: 0
-[   98.055262]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: Username: christian
-[   98.065893]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: UNC: \\server\privat ip: 192.168.0.2
-[   98.065898]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/netmisc.c: address conversion returned 1 for 192.168.0.2
-[   98.065907]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: Socket created
-[   98.066298]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: sndbuf 16384 rcvbuf 87380 rcvtimeo 0x1b58
-[   98.066460]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: Existing smb sess not found
-[   98.066470]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: secFlags 0x7
-[   98.066475]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 114
-[   98.066478]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 60
-[   98.066498]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: Demultiplex PID: 4241
-[   98.224210]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0x5f
-[   98.224218]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/misc.c: Calculated size 81 vs length 95 mismatch for mid 1
-[   98.224233]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: Dialect: 0
-[   98.224236]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: Max buf = 16472
-[   98.224240]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: negprot rc 0
-[   98.224243]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: Security Mode: 0x3 Capabilities: 0x80f3fd TimeAdjust: -7200
-[   98.224247]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/sess.c: sess setup type 2
-[   98.224323]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 115
-[   98.224326]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 254
-[   98.301773]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0x5e
-[   98.301785]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/misc.c: Null buffer passed to cifs_small_buf_release
-[   98.301790]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/sess.c: ssetup rc from sendrecv2 is 0
-[   98.301792]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/sess.c: UID = 100 
-[   98.301795]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/sess.c: bleft 48
-[   98.301799]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/sess.c: serverOS=Unix
-[   98.301802]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/sess.c: serverNOS=Samba 3.2.5
-[   98.301805]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/sess.c: serverDomain=WGNETZ
-[   98.301808]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/sess.c: ssetup freeing small buf ffff88007a2bcdc0
-[   98.301811]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: CIFS Session Established successfully
-[   98.301815]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: file mode: 0x1ed  dir mode: 0x1ed
-[   98.301821]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 117
-[   98.301824]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 86
-[   98.304537]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0x42
-[   98.304547]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: disk share connection
-[   98.304551]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: nativeFileSystem=NTFS
-[   98.304553]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: Tcon flags: 0x1 
-[   98.304556]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: CIFS Tcon rc = 0
-[   98.304559]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: In QFSDeviceInfo
-[   98.304562]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 50
-[   98.304565]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 72
-[   98.305453]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0x44
-[   98.305462]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: In QFSAttributeInfo
-[   98.305465]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 50
-[   98.305468]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 72
-[   98.306033]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0x50
-[   98.306041]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: In QFSUnixInfo
-[   98.306045]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 50
-[   98.306048]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 72
-[   98.306562]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0x48
-[   98.306570]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: negotiated posix acl support
-[   98.306573]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: negotiate posix pathnames
-[   98.306575]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: Negotiate caps 0x5b
-[   98.306578]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: FCNTL cap
-[   98.306580]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: EXTATTR cap
-[   98.306582]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: POSIX path cap
-[   98.306584]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: POSIX ACL cap
-[   98.306587]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: very large read cap
-[   98.306589]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: In SETFSUnixInfo
-[   98.306593]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 50
-[   98.306595]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 86
-[   98.307122]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0x3b
-[   98.307138]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: CIFS VFS: leaving cifs_mount (xid = 0) rc = 0
-[   98.307145]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: CIFS VFS: in cifs_root_iget as Xid: 1 with uid: 0
-[   98.307151]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: Getting info on 
-[   98.307156]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: In QPathInfo (Unix) the path 
-[   98.307162]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 50
-[   98.307167]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 78
-[   98.307965]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0xa4
-[   98.307975]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: looking for uniqueid=1081824
-[   98.307987]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: cifs_revalidate_cache: revalidating inode 1081824
-[   98.307990]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: cifs_revalidate_cache: inode 1081824 is new
-[   98.307993]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: inode 0xffff88007df83d10 old_time=0 new_time=4294765603
-[  320.464094]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: CIFS VFS: in cifs_revalidate_dentry as Xid: 2 with uid: 0
-[  320.464102]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: Revalidate:  inode 0xffff88007df83d10 count 1 dentry: 0xffff88007195fcc0 d_time -8028920569317556072 jiffies 4294987760
-[  320.464106]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: Getting info on 
-[  320.464109]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: In QPathInfo (Unix) the path 
-[  320.464119]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 50
-[  320.464122]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 78
-[  320.464867]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0xa4
-[  320.464883]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: cifs_revalidate_cache: revalidating inode 1081824
-[  320.464886]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: cifs_revalidate_cache: inode 1081824 is unchanged
-[  320.464890]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: inode 0xffff88007df83d10 old_time=4294765603 new_time=4294987760
-[  320.464894]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/inode.c: CIFS VFS: leaving cifs_revalidate_dentry (xid = 2) rc = 0
-[  320.464912]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifsfs.c: CIFS VFS: in cifs_statfs as Xid: 3 with uid: 0
-[  320.464916]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: In QFSPosixInfo
-[  320.464919]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 50
-[  320.464922]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 72
-[  320.466338]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0x74
-[  320.466350]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifsfs.c: CIFS VFS: leaving cifs_statfs (xid = 3) rc = 0
-[  320.466675]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifsfs.c: In cifs_put_super
-[  320.466680]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: CIFS VFS: in cifs_put_tcon as Xid: 4 with uid: 0
-[  320.466683]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: In tree disconnect
-[  320.466687]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 113
-[  320.466690]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 39
-[  320.467832]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0x27
-[  320.467843]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: SendRcvNoRsp flags 64 rc 0
-[  320.467848]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: CIFS VFS: in cifs_put_smb_ses as Xid: 5 with uid: 0
-[  320.467851]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/cifssmb.c: In SMBLogoff for session disconnect
-[  320.467855]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: For smb_command 116
-[  320.467858]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: Sending smb:  total_len 43
-[  320.479204]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/connect.c: rfc1002 length 0x2b
-[  320.479221]  /home/christian/intel/linux-2.6.34-rc/fs/cifs/transport.c: SendRcvNoRsp flags 64 rc 0
-
+Eric
