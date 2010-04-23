@@ -1,33 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab0DWC64 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 22:58:56 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59861 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755271Ab0DWC6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 22:58:54 -0400
-Message-ID: <4BD10D59.9090504@cn.fujitsu.com>
-Date: Fri, 23 Apr 2010 11:00:41 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
+	id S1751085Ab0DWECN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 00:02:13 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36059 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722Ab0DWECL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 00:02:11 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 23 Apr 2010 12:58:14 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [BUG] an RCU warning in memcg
-Content-Type: text/plain; charset=UTF-8
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: [BUGFIX][PATCH] memcg rcu lock fix v2
+Message-Id: <20100423125814.01e95bce.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4BD11A24.2070500@cn.fujitsu.com>
+References: <4BD10D59.9090504@cn.fujitsu.com>
+	<20100423121424.ae47efcb.kamezawa.hiroyu@jp.fujitsu.com>
+	<4BD118E2.7080307@cn.fujitsu.com>
+	<4BD11A24.2070500@cn.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-with CONFIG_PROVE_RCU=y, I saw this warning, it's because
-css_id() is not under rcu_read_lock().
+On Fri, 23 Apr 2010 11:55:16 +0800
+Li Zefan <lizf@cn.fujitsu.com> wrote:
 
+> Li Zefan wrote:
+> > KAMEZAWA Hiroyuki wrote:
+> >> On Fri, 23 Apr 2010 11:00:41 +0800
+> >> Li Zefan <lizf@cn.fujitsu.com> wrote:
+> >>
+> >>> with CONFIG_PROVE_RCU=y, I saw this warning, it's because
+> >>> css_id() is not under rcu_read_lock().
+> >>>
+> >> Ok. Thank you for reporting.
+> >> This is ok ? 
+> > 
+> > Yes, and I did some more simple tests on memcg, no more warning
+> > showed up.
+> > 
+> 
+> oops, after trigging oom, I saw 2 more warnings:
+> 
 
+Thank you for good testing.
+=
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+css_id() should be called under rcu_read_lock().
+And css_is_ancestor() should be called under rcu_read_lock().
+
+Following is a report from Li Zefan.
+==
 ===================================================
 [ INFO: suspicious rcu_dereference_check() usage. ]
 ---------------------------------------------------
@@ -68,3 +103,57 @@ Call Trace:
  [<c046b5e4>] kthread+0x74/0x80
  [<c046b570>] ? kthread+0x0/0x80
  [<c04035ba>] kernel_thread_helper+0x6/0x10
+
+
+
+Reported-by: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.34-rc5-mm1/mm/memcontrol.c
+===================================================================
+--- linux-2.6.34-rc5-mm1.orig/mm/memcontrol.c
++++ linux-2.6.34-rc5-mm1/mm/memcontrol.c
+@@ -838,10 +838,12 @@ int task_in_mem_cgroup(struct task_struc
+ 	 * enabled in "curr" and "curr" is a child of "mem" in *cgroup*
+ 	 * hierarchy(even if use_hierarchy is disabled in "mem").
+ 	 */
++	rcu_read_lock();
+ 	if (mem->use_hierarchy)
+ 		ret = css_is_ancestor(&curr->css, &mem->css);
+ 	else
+ 		ret = (curr == mem);
++	rcu_read_unlock();
+ 	css_put(&curr->css);
+ 	return ret;
+ }
+@@ -1360,9 +1362,13 @@ static int memcg_oom_wake_function(wait_
+ 	 * Both of oom_wait_info->mem and wake_mem are stable under us.
+ 	 * Then we can use css_is_ancestor without taking care of RCU.
+ 	 */
++	rcu_read_lock();
+ 	if (!css_is_ancestor(&oom_wait_info->mem->css, &wake_mem->css) &&
+-	    !css_is_ancestor(&wake_mem->css, &oom_wait_info->mem->css))
++	    !css_is_ancestor(&wake_mem->css, &oom_wait_info->mem->css)) {
++		rcu_read_unlock();
+ 		return 0;
++	}
++	rcu_read_unlock();
+ 
+ wakeup:
+ 	return autoremove_wake_function(wait, mode, sync, arg);
+@@ -2401,7 +2407,9 @@ mem_cgroup_uncharge_swapcache(struct pag
+ 
+ 	/* record memcg information */
+ 	if (do_swap_account && swapout && memcg) {
++		rcu_read_lock();
+ 		swap_cgroup_record(ent, css_id(&memcg->css));
++		rcu_read_unlock();
+ 		mem_cgroup_get(memcg);
+ 	}
+ 	if (swapout && memcg)
+
