@@ -1,129 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab0DWSbw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 14:31:52 -0400
-Received: from mail-iw0-f182.google.com ([209.85.223.182]:40326 "EHLO
-	mail-iw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab0DWSbu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 14:31:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PVu136YtEt1h0BeK3dWR5WHoOx2s8eq23QqQEsJmzU2dZT6sg3lhHUvd+1ktKttlbZ
-         Bmwpj/lRTKeJB5SOENue0lzMQ9wOIPYynTi+3k0xC8wBbYOkk+uQU71sB2VMl7rmN0Fd
-         8l1IyhBwDmBMp9Pw2Euo5c/Wmekw0/yTl3zUw=
+	id S1753621Ab0DWScu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 14:32:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752005Ab0DWScs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 14:32:48 -0400
+Date: Fri, 23 Apr 2010 20:31:35 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
+ PageSwapCache  pages
+Message-ID: <20100423183135.GT32034@random.random>
+References: <20100421153421.GM30306@csn.ul.ie>
+ <alpine.DEB.2.00.1004211038020.4959@router.home>
+ <20100422092819.GR30306@csn.ul.ie>
+ <20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com>
+ <x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com>
+ <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com>
+ <1271946226.2100.211.camel@barrios-desktop>
+ <1271947206.2100.216.camel@barrios-desktop>
+ <20100422154443.GD30306@csn.ul.ie>
 MIME-Version: 1.0
-In-Reply-To: <4BD1CC5C.7000702@oracle.com>
-References: <1271983035-26401-1-git-send-email-chihau@gmail.com>
-	 <20100423085021.b54f98c5.randy.dunlap@oracle.com>
-	 <s2jf5ca57691004230910nfac5a247ta691c07b71b4d7e1@mail.gmail.com>
-	 <4BD1CC5C.7000702@oracle.com>
-Date: Fri, 23 Apr 2010 14:31:49 -0400
-Message-ID: <i2jf5ca57691004231131xa8388895taf8188fddc94c013@mail.gmail.com>
-Subject: Re: [PATCH] Security: inode: Fix code style issues
-From: Chihau Chau <chihau@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: jmorris@namei.org, eparis@redhat.com, viro@zeniv.linux.org.uk,
-       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100422154443.GD30306@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok
+Hi Mel,
 
-2010/4/23 Randy Dunlap <randy.dunlap@oracle.com>:
-> On 04/23/10 09:10, Chihau Chau wrote:
->> Hi Randy,
->>
->> 2010/4/23 Randy Dunlap <randy.dunlap@oracle.com>:
->>> On Thu, 22 Apr 2010 20:37:15 -0400 Chihau Chau wrote:
->>>
->>>> From: Chihau Chau <chihau@gmail.com>
->>>>
->>>> This fixes two code style issues:
->>>>
->>>> - A space required after that close brace '}'
->>>
->>> Why?  do we say that somewhere?
->>>
->>
->> I was used the checkpatch.pl script written by Dave Jones, Joel Schopp
->> and Andy Whitcroft.
->
-> OK, thanks for the explanation.
-> That would be correct for something like:
->
->        if (foo_bar) {
->                do_this();
->                do_that();
->        } else {
->                pr_err("fatal error");
->                panic("help");
->        }
->
-> but I don't think that it's needed for nested data structures.
->
->
->>>
->>>>
->>>> - A space required after that ','
->>>>
->>>> Signed-off-by: Chihau Chau <chihau@gmail.com>
->>>> ---
->>>>  security/inode.c |    4 ++--
->>>>  1 files changed, 2 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/security/inode.c b/security/inode.c
->>>> index c3a7938..f875f47 100644
->>>> --- a/security/inode.c
->>>> +++ b/security/inode.c
->>>> @@ -124,7 +124,7 @@ static inline int positive(struct dentry *dentry)
->>>>
->>>>  static int fill_super(struct super_block *sb, void *data, int silent)
->>>>  {
->>>> -     static struct tree_descr files[] = {{""}};
->>>> +     static struct tree_descr files[] = { {""} };
->>>>
->>>>       return simple_fill_super(sb, SECURITYFS_MAGIC, files);
->>>>  }
->>>> @@ -208,7 +208,7 @@ struct dentry *securityfs_create_file(const char *name, mode_t mode,
->>>>       struct dentry *dentry = NULL;
->>>>       int error;
->>>>
->>>> -     pr_debug("securityfs: creating file '%s'\n",name);
->>>> +     pr_debug("securityfs: creating file '%s'\n", name);
->>>>
->>>>       error = simple_pin_fs(&fs_type, &mount, &mount_count);
->>>>       if (error) {
->>>> --
->>>> 1.5.6.3
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>>
->>> ---
->>> ~Randy
->>> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->>>
->>
->>
->>
->
->
-> --
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
+On Thu, Apr 22, 2010 at 04:44:43PM +0100, Mel Gorman wrote:
+> heh, I thought of a similar approach at the same time as you but missed
+> this mail until later. However, with this approach I suspect there is a
+> possibility that two walkers of the same anon_vma list could livelock if
+> two locks on the list are held at the same time. Am still thinking of
+> how it could be resolved without introducing new locking.
 
+Trying to understand this issue and I've some questions. This
+vma_adjust and lock inversion troubles with the anon-vma lock in
+rmap_walk are a new issue introduced by the recent anon-vma changes,
+right?
 
+About swapcache, try_to_unmap just nuke the mappings, establish the
+swap entry in the pte (not migration entry), and then there's no need
+to call remove_migration_ptes. So it just need to skip it for
+swapcache. page_mapped must return zero after try_to_unmap returns
+before we're allowed to migrate (plus the page count must be just 1
+and not 2 or more for gup users!).
 
--- 
-Chihau Chau
+I don't get what's the problem about swapcache and the races connected
+to it, the moment I hear migration PTE in context of swapcache
+migration I'm confused because there's no migration PTE for swapcache.
+
+The new page will have no mappings either, it just needs to be part of
+the swapcache with the same page->index = swapentry, indexed in the
+radix tree with that page->index, and paga->mapping pointing to
+swapcache. Then new page faults will bring it in the pageatables. The
+lookup_swap_cache has to be serialized against some lock, it should be
+the radix tree lock? So the migration has to happen with that lock
+hold no? We can't just migrate swapcache without stopping swapcache
+radix tree lookups no? I didn't digest the full migrate.c yet and I
+don't see where it happens. Freeing the swapcache while simpler and
+safer, would be quite bad as it'd create I/O for potentially hot-ram.
+
+About the refcounting of anon-vma in migrate.c I think it'd be much
+simpler if zap_page_range and folks would just wait (like they do if
+they find a pmd_trans_huge && pmd_trans_splitting pmd), there would be
+no need of refcounting the anon-vma that way.
+
+I assume whatever is added to rmap_walk I also have to add to
+split_huge_page later when switching to mainline anon-vma code (for
+now I stick to 2.6.32 anon-vma code to avoid debugging anon-vma-chain,
+memory compaction, swapcache migration and transparent hugepage at the
+same time, which becomes a little beyond feasibility).
