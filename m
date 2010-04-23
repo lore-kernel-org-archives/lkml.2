@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179Ab0DWKvH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 06:51:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54756 "EHLO mx1.redhat.com"
+	id S1757193Ab0DWKvW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 06:51:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40724 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757038Ab0DWKvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 06:51:03 -0400
-Message-ID: <4BD17B78.5080305@redhat.com>
-Date: Fri, 23 Apr 2010 13:50:32 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1757171Ab0DWKvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 06:51:16 -0400
+Date: Fri, 23 Apr 2010 10:49:40 GMT
+From: tip-bot for Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       benh@kernel.crashing.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       benh@kernel.crashing.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <1271212509.13059.135.camel@pasglop>
+References: <1271212509.13059.135.camel@pasglop>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] mutex: Don't spin when the owner CPU is offline or other weird cases
+Message-ID: <tip-4b402210486c6414fe5fbfd85934a0a22da56b04@git.kernel.org>
+Git-Commit-ID: 4b402210486c6414fe5fbfd85934a0a22da56b04
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Liu Yu-B13201 <B13201@freescale.com>
-CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       zhiteng.huang@intel.com, tim.c.chen@intel.com,
-       Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH V5 1/3] perf & kvm: Enhance perf to collect KVM guest
- os statistics from host side
-References: <1271655161.2078.603.camel@ymzhang.sh.intel.com> <0A1FE637C2C7E148B9573BB60CC630E5905A23@zch01exm26.fsl.freescale.net>
-In-Reply-To: <0A1FE637C2C7E148B9573BB60CC630E5905A23@zch01exm26.fsl.freescale.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Apr 2010 10:49:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2010 01:27 PM, Liu Yu-B13201 wrote:
->
-> I met this error when built kernel. Anything wrong?
->
->    CC      init/main.o
-> In file included from include/linux/ftrace_event.h:8,
->                   from include/trace/syscall.h:6,
->                   from include/linux/syscalls.h:75,
->                   from init/main.c:16:
-> include/linux/perf_event.h: In function 'perf_register_guest_info_callbacks':
-> include/linux/perf_event.h:1019: error: parameter name omitted
-> include/linux/perf_event.h: In function 'perf_unregister_guest_info_callbacks':
-> include/linux/perf_event.h:1021: error: parameter name omitted
-> make[1]: *** [init/main.o] Error 1
-> make: *** [init] Error 2
->    
+Commit-ID:  4b402210486c6414fe5fbfd85934a0a22da56b04
+Gitweb:     http://git.kernel.org/tip/4b402210486c6414fe5fbfd85934a0a22da56b04
+Author:     Benjamin Herrenschmidt <benh@kernel.crashing.org>
+AuthorDate: Fri, 16 Apr 2010 23:20:00 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 23 Apr 2010 11:00:28 +0200
 
-I merged tip/perf/code which may fix this.  Find it in kvm.git next branch.
+mutex: Don't spin when the owner CPU is offline or other weird cases
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+Due to recent load-balancer changes that delay the task migration to
+the next wakeup, the adaptive mutex spinning ends up in a live lock
+when the owner's CPU gets offlined because the cpu_online() check
+lives before the owner running check.
 
+This patch changes mutex_spin_on_owner() to return 0 (don't spin) in
+any case where we aren't sure about the owner struct validity or CPU
+number, and if the said CPU is offline. There is no point going back &
+re-evaluate spinning in corner cases like that, let's just go to
+sleep.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1271212509.13059.135.camel@pasglop>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 6af210a..de0bd26 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3780,7 +3780,7 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
+ 	 * the mutex owner just released it and exited.
+ 	 */
+ 	if (probe_kernel_address(&owner->cpu, cpu))
+-		goto out;
++		return 0;
+ #else
+ 	cpu = owner->cpu;
+ #endif
+@@ -3790,14 +3790,14 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
+ 	 * the cpu field may no longer be valid.
+ 	 */
+ 	if (cpu >= nr_cpumask_bits)
+-		goto out;
++		return 0;
+ 
+ 	/*
+ 	 * We need to validate that we can do a
+ 	 * get_cpu() and that we have the percpu area.
+ 	 */
+ 	if (!cpu_online(cpu))
+-		goto out;
++		return 0;
+ 
+ 	rq = cpu_rq(cpu);
+ 
+@@ -3816,7 +3816,7 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
+ 
+ 		cpu_relax();
+ 	}
+-out:
++
+ 	return 1;
+ }
+ #endif
