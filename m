@@ -1,67 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab0DWFor (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 01:44:47 -0400
-Received: from mail-gx0-f227.google.com ([209.85.217.227]:62457 "EHLO
-	mail-gx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751891Ab0DWFop (ORCPT
+	id S1755898Ab0DWFpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 01:45:55 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53080 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609Ab0DWFpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 01:44:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kFIuKFWNjhtkYFtF4ra/d0S11hE3LhEmFSJMMJaTruVYviX8pN8kY1ZYY/UFAmTmui
-         6U8xo0RsVtC7x1KD0QvZ3qS2hHwxzh/RLlNe1w2cPuY/St4tY94FC22yUOaZOkB4ShxM
-         cNMSBh60lYSCdxxy8jRIVjNY+nS1n6sKzIfLk=
-Date: Fri, 23 Apr 2010 13:48:32 +0800
-From: Amerigo Wang <xiyou.wangcong@gmail.com>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: defconfig strangeness
-Message-ID: <20100423054832.GE3995@cr0.nay.redhat.com>
-References: <20100422160723.GA13848@opentech.at>
+	Fri, 23 Apr 2010 01:45:53 -0400
+Message-ID: <4BD13409.5040003@jp.fujitsu.com>
+Date: Fri, 23 Apr 2010 14:45:45 +0900
+From: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100422160723.GA13848@opentech.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-usb@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] add usb_add_bus() function for usb bus list
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 06:07:23PM +0200, Nicholas Mc Guire wrote:
->
->HI !
->
-> doing a series of static code analysis on 2.6.34-rcX each of them with 
-> defconfig (x86 32bit) - the strangeness is that even though the config
-> file is the same for rc3...5 the number of files actually compiled 
-> is very different. (linux-2.6 git tree)
->
-> 2.6.34-rc5 1695
-> 2.6.34-rc4 3404
-> 2.6.34-rc3 5109
->
-> I diffed the .configs - rc4/rc5 only shows
->
->3,4c3,4
->< # Linux kernel version: 2.6.34-rc4
->< # Thu Apr 22 11:37:43 2010
->---
->> # Linux kernel version: 2.6.34-rc5
->> # Thu Apr 22 10:44:02 2010
->
-> why then this large difference in files being compiled ? 
->
-> any hint apprecieated.
->
+Hi,
 
-Hmm, interesting.
+This patch makes usbcore driver sort usb bus on the usb_bus_list by busnum when
+registering a new bus instance.
 
-I guess it would be due to some dependences.
+In current implementation a new bus instance is simply added in front of existing busses.
+Although there is nothing wrong with it in kernel code, reloading HCD may break bus order
+of /proc/bus/usb/devices as it makes usbcore re-register the bus to the list as shown in
+the example below. and it doesn't look good or it may confuse some users.
 
-Use the way that you used to find the number of compiled files to
-find which files are compiled, make a sorted list and do a diff.
+# lsmod | grep hcd
+uhci_hcd               19324  0 
+ehci_hcd               39109  0 
+# grep "Bus=" /proc/bus/usb/devices
+T:  Bus=05 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=04 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=03 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=02 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=02 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=1.5 MxCh= 0
+T:  Bus=02 Lev=01 Prnt=01 Port=01 Cnt=02 Dev#=  3 Spd=12  MxCh= 0
+T:  Bus=01 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=480 MxCh= 8
+T:  Bus=01 Lev=01 Prnt=01 Port=02 Cnt=01 Dev#=  4 Spd=480 MxCh= 4
+# rmmod ehci-hcd; modprobe ehci-hcd
+# grep "Bus=" /proc/bus/usb/devices
+T:  Bus=01 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=480 MxCh= 8
+T:  Bus=01 Lev=01 Prnt=01 Port=02 Cnt=01 Dev#=  4 Spd=480 MxCh= 4
+T:  Bus=05 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=04 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=03 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=02 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=02 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  4 Spd=1.5 MxCh= 0
+T:  Bus=02 Lev=01 Prnt=01 Port=01 Cnt=02 Dev#=  5 Spd=12  MxCh= 0
 
-Thanks.
+With this patch, bus instances on the usb_bus_list is kept in busnum order (from large to
+small busnum). As a result /proc/bus/usb/devices prints devices in busnum order regardless
+of HCD reloading. Although a few applications (eg.lsusb) use /proc/bus/usb/devices, this
+patch has no effect to them.
+
+# lsmod | grep hcd
+uhci_hcd               19324  0 
+ehci_hcd               39109  0 
+# grep "Bus=" /proc/bus/usb/devices
+T:  Bus=05 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=04 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=03 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=02 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=02 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=1.5 MxCh= 0
+T:  Bus=02 Lev=01 Prnt=01 Port=01 Cnt=02 Dev#=  3 Spd=12  MxCh= 0
+T:  Bus=01 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=480 MxCh= 8
+T:  Bus=01 Lev=01 Prnt=01 Port=02 Cnt=01 Dev#=  4 Spd=480 MxCh= 4
+# rmmod ehci-hcd; modprobe ehci-hcd
+# grep "Bus=" /proc/bus/usb/devices
+T:  Bus=05 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=04 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=03 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=02 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+T:  Bus=02 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  4 Spd=1.5 MxCh= 0
+T:  Bus=02 Lev=01 Prnt=01 Port=01 Cnt=02 Dev#=  5 Spd=12  MxCh= 0
+T:  Bus=01 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=480 MxCh= 8
+T:  Bus=01 Lev=01 Prnt=01 Port=02 Cnt=01 Dev#=  4 Spd=480 MxCh= 4
+
+Thanks,
+Tomohiro Kusumi
+
+
+
+
+Signed-off-by: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+---
+
+diff -aNur linux-2.6.34-rc5.org/drivers/usb/core/hcd.c linux-2.6.34-rc5/drivers/usb/core/hcd.c
+--- linux-2.6.34-rc5.org/drivers/usb/core/hcd.c	2010-04-20 08:29:56.000000000 +0900
++++ linux-2.6.34-rc5/drivers/usb/core/hcd.c	2010-04-23 14:19:50.000000000 +0900
+@@ -877,6 +877,23 @@
+ /*-------------------------------------------------------------------------*/
+ 
+ /**
++ * usb_add_bus - register the bus to the usb_bus_list,
++ * caller need to hold usb_bus_list_lock
++ * @bus: pointer to the bus to register
++ */
++static void usb_add_bus(struct usb_bus *bus)
++{
++	struct usb_bus *b;
++	list_for_each_entry(b, &usb_bus_list, bus_list) {
++		if (bus->busnum > b->busnum) {
++			list_add_tail(&bus->bus_list, &b->bus_list);
++			return;
++		}
++	}
++	list_add_tail(&bus->bus_list, &usb_bus_list);
++}
++
++/**
+  * usb_register_bus - registers the USB host controller with the usb core
+  * @bus: pointer to the bus to register
+  * Context: !in_interrupt()
+@@ -899,7 +916,7 @@
+ 	bus->busnum = busnum;
+ 
+ 	/* Add it to the local list of buses */
+-	list_add (&bus->bus_list, &usb_bus_list);
++	usb_add_bus(bus);
+ 	mutex_unlock(&usb_bus_list_lock);
+ 
+ 	usb_notify_add_bus(bus);
+
