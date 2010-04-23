@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757056Ab0DWKsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 06:48:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36166 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756696Ab0DWKsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 06:48:17 -0400
-Subject: Re: CFQ read performance regression
-From: Miklos Szeredi <mszeredi@suse.cz>
+	id S1757104Ab0DWKuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 06:50:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54808 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756998Ab0DWKuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 06:50:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=CisdBKRoRVANY0nQ/Z3pc/+SD/Xu4swspaqFsR8Nz9xSWU2P51cdlF8aL/EttnomaP
+         cZnXbSaAqtV3F/jx4H1oxJhCNVXgPCqf8V7LYxWzlzWaR4ZVErNzM4exCSMc5A8wNKdt
+         nPQg+XXMxULxT2K/NfrfQ/eeQkJ5+dNgwJ0Fw=
+Date: Fri, 23 Apr 2010 13:51:28 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 To: Jan Kara <jack@suse.cz>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>, Jens Axboe <jens.axboe@oracle.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Suresh Jayaraman <sjayaraman@suse.de>
-In-Reply-To: <20100422155358.GE5805@quack.suse.cz>
-References: <1271420878.24780.145.camel@tucsk.pomaz.szeredi.hu>
-	 <h2m4e5e476b1004170546z8997cd90h98ecfb9cc5aad8cf@mail.gmail.com>
-	 <1271677562.24780.184.camel@tucsk.pomaz.szeredi.hu>
-	 <j2t4e5e476b1004201350xbd08a002l3329fbdd4fb1b8db@mail.gmail.com>
-	 <1271856324.24780.285.camel@tucsk.pomaz.szeredi.hu>
-	 <1271865911.24780.292.camel@tucsk.pomaz.szeredi.hu>
-	 <p2t4e5e476b1004220059u2263832atf36ee33ae83463fa@mail.gmail.com>
-	 <1271931809.24780.387.camel@tucsk.pomaz.szeredi.hu>
-	 <20100422155358.GE5805@quack.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Apr 2010 12:48:17 +0200
-Message-ID: <1272019697.24780.455.camel@tucsk.pomaz.szeredi.hu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+Cc: Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org
+Subject: Re: suppress warning: =?utf-8?B?4oCYcXVv?=
+	=?utf-8?Q?tatypes=E2=80=99?= defined but not used
+Message-ID: <20100423105128.GC3293@swordfish.minsk.epam.com>
+References: <20100422080540.GA3286@swordfish.minsk.epam.com>
+ <20100422193148.GG5805@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DSayHWYpDlRfCAAQ"
+Content-Disposition: inline
+In-Reply-To: <20100422193148.GG5805@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-22 at 17:53 +0200, Jan Kara wrote:
-> On Thu 22-04-10 12:23:29, Miklos Szeredi wrote:
-> > I have very little understanding of I/O scheduling but my idea of what's
-> > really needed here is to realize that one queue is not able to saturate
-> > the device and there's a large backlog of requests on other queues that
-> > are waiting to be served.  Is something like that implementable?
->   I see a problem with defining "saturate the device" - but maybe we could
-> measure something like "completed requests / sec" and try autotuning
-> slice_idle to maximize this value (hopefully the utility function should
-> be concave so we can just use "local optimization").
 
-Yeah, detecting saturation may be difficult.
+--DSayHWYpDlRfCAAQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I guess that function depends on a lot of other things as well,
-including seek times, etc.  Not easy to optimize.
+Hello,
+On (04/22/10 21:31), Jan Kara wrote:
+> The patch is fine. Could you please add your Signed-off-by to the patch
+> (see Documentation/SubmittingPatches in case you don't know what it is).
+> Thanks.
+>=20
+> 								Honza
+My editor truncated /* List of registered formats */ line in the patch. So
+I resent it (titled as (resent)). Sorry for inattention.
 
-I'm still wondering what makes such a difference between CFQ on 2.6.16
-and CFQ on 2.6.27-34, why is the one in older kernels performing so much
-better in this situation?
 
-What should we tell our customers?  The default settings should at least
-handle these systems a bit better.
+	Sergey
 
-Thanks,
-Miklos
+--DSayHWYpDlRfCAAQ
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iJwEAQECAAYFAkvRe7AACgkQfKHnntdSXjRdvAP/QuhxxnIPL7bqZ+TKstzjZoDw
+aHRHe4BO48nGhH6kJB4Lery4iZUTEb2llMf5iMluV7yKl6V2PHPuBUchOxCLQxXt
+QmARVohaZ/t7x+AuASVskzYlzMotOcHUY9C0eMjjd65n3q3X5JGuB1pQ3J4A0P04
+/hCDJ2JA50olP26+JGg=
+=a2XX
+-----END PGP SIGNATURE-----
+
+--DSayHWYpDlRfCAAQ--
