@@ -1,40 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab0DWINI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 04:13:08 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:56680 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab0DWINA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 04:13:00 -0400
-Date: Fri, 23 Apr 2010 17:08:46 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC][BUGFIX][PATCH 2/2] memcg: fix file mapped underflow at
- migration (v3)
-Message-Id: <20100423170846.d18c88bd.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100420181925.ed881e7a.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
-	<20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100415120652.c577846f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100416193143.5807d114.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100419124225.91f3110b.nishimura@mxp.nes.nec.co.jp>
-	<20100419131817.f263d93c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100419170701.3864992e.nishimura@mxp.nes.nec.co.jp>
-	<20100419172629.dbf65e18.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100420132050.3477a717.nishimura@mxp.nes.nec.co.jp>
-	<20100420181925.ed881e7a.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1756718Ab0DWIOH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 04:14:07 -0400
+Received: from bamako.nerim.net ([62.4.17.28]:60502 "EHLO bamako.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750876Ab0DWIOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 04:14:01 -0400
+Date: Fri, 23 Apr 2010 10:13:56 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Farid Hammane <farid.hammane@gmail.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, ben-linux@fluff.org,
+       Enrik.Berkhan@ge.com, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-algo-pca: fix all coding style issues in
+ i2c-algo-pca.c
+Message-ID: <20100423101356.454abdd6@hyperion.delvare>
+In-Reply-To: <201004222330.34660.farid.hammane@gmail.com>
+References: <1271877097-10939-1-git-send-email-farid.hammane@gmail.com>
+	<20100422092524.77b7aa84@hyperion.delvare>
+	<20100422075937.GN24384@pengutronix.de>
+	<201004222330.34660.farid.hammane@gmail.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -42,87 +28,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm sorry for my late reply.
+Hi Farid,
 
-On Tue, 20 Apr 2010 18:19:25 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Tue, 20 Apr 2010 13:20:50 +0900
-> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+On Thu, 22 Apr 2010 23:30:34 +0200, Farid Hammane wrote:
+> Hi Jean and Wolfram,
 > 
-> > > It will have no meanings for migrating
-> > > file caches, but it may have some meanings for easy debugging. 
-> > > I think "mark it always but it's used only for anonymous page" is reasonable
-> > > (if it causes no bug.)
-> > > 
-> > Anyway, I don't have any strong objection.
-> > It's all right for me as long as it is well documented or commented.
-> > 
-> Okay, before posting as v4, here is draft version.
+> On Thursday 22 April 2010 09:59:37 you wrote:
+> > On Thu, Apr 22, 2010 at 09:25:24AM +0200, Jean Delvare wrote:
+> > > On Thu, 22 Apr 2010 01:57:38 +0200, Wolfram Sang wrote:
+> > > > Hi Farid,
+> > > >
+> > > > thanks for this approach. Have you checked that the binary is the same
+> > > > before/after your patch? If so, please mention in your patch
+> > > > description.
 > 
-Thank you for adding good comments about what it does and why we need it.
-I like the direction that we set MIGRATION flags only on the old page.
-And this patch looks good to me, except that checkpatch warns some problems
-about indent :)
+> Ok, I think that nothing can be broken with this kind of patch. I just built 
+> i2c-algo-pca.c and everything was ok.
+> 
+> For further patchs I will mention that it has been tested. Thanks for the 
+> advice !
 
-I have one question.
+It's not just a matter of building it. When you only fix coding style
+issue, the binary object before and after your patch should be exactly
+the same. It's a good idea to verify this, especially for drivers you
+aren't using yourself.
 
->  /* remove redundant charge if migration failed*/
->  void mem_cgroup_end_migration(struct mem_cgroup *mem,
-> -		struct page *oldpage, struct page *newpage)
-> +	struct page *oldpage, struct page *newpage)
->  {
-> -	struct page *target, *unused;
-> +	struct page *used, *unused;
->  	struct page_cgroup *pc;
-> -	enum charge_type ctype;
->  
->  	if (!mem)
->  		return;
-> +	/* blocks rmdir() */
->  	cgroup_exclude_rmdir(&mem->css);
->  	/* at migration success, oldpage->mapping is NULL. */
->  	if (oldpage->mapping) {
-> -		target = oldpage;
-> -		unused = NULL;
-> +		used = oldpage;
-> +		unused = newpage;
->  	} else {
-> -		target = newpage;
-> +		used = newpage;
->  		unused = oldpage;
->  	}
-> -
-> -	if (PageAnon(target))
-> -		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
-> -	else if (page_is_file_cache(target))
-> -		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
-> -	else
-> -		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> -
-> -	/* unused page is not on radix-tree now. */
-> -	if (unused)
-> -		__mem_cgroup_uncharge_common(unused, ctype);
-> -
-> -	pc = lookup_page_cgroup(target);
->  	/*
-> -	 * __mem_cgroup_commit_charge() check PCG_USED bit of page_cgroup.
-> -	 * So, double-counting is effectively avoided.
-> +	 * We disallowed uncharge of pages under migration because mapcount
-> +	 * of the page goes down to zero, temporarly.
-> +	 * Clear the flag and check the page should be charged.
->  	 */
-> -	__mem_cgroup_commit_charge(mem, pc, ctype);
-> -
-> +	pc = lookup_page_cgroup(unused);
-> +	/* This flag itself is not racy, so, check it before lock */
-> +	if (PageCgroupMigration(pc)) {
-> +		lock_page_cgroup(pc);
-> +		ClearPageCgroupMigration(pc);
-> +		unlock_page_cgroup(pc);
-> +	}
-The reason why "This flag itself is not racy" is that we update the flag only
-while the page is isolated ?
-Then, we doesn't need page_cgroup lock, do we ? PCG_USED bit will avoid
-double-uncharge.
-
-Thanks,
-Daisuke Nishimura.
+-- 
+Jean Delvare
