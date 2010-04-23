@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab0DWTpx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 15:45:53 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:40558 "EHLO e7.ny.us.ibm.com"
+	id S1756564Ab0DWTp4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 15:45:56 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:54549 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755968Ab0DWTnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756000Ab0DWTnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Apr 2010 15:43:35 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,11 +13,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Trond Myklebust <Trond.Myklebust@netapp.com>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v2.6.34-rc5 04/12] NFSv4: Fix the locking in nfs_inode_reclaim_delegation()
-Date: Fri, 23 Apr 2010 12:43:22 -0700
-Message-Id: <1272051810-11249-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v2.6.34-rc5 06/12] KEYS: Fix an RCU warning
+Date: Fri, 23 Apr 2010 12:43:24 -0700
+Message-Id: <1272051810-11249-6-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100423194255.GE2589@linux.vnet.ibm.com>
 References: <20100423194255.GE2589@linux.vnet.ibm.com>
@@ -25,72 +24,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David Howells <dhowells@redhat.com>
 
-Ensure that we correctly rcu-dereference the delegation itself, and that we
-protect against removal while we're changing the contents.
+Fix the following RCU warning:
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+===================================================
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+security/keys/request_key.c:116 invoked rcu_dereference_check() without protection!
+
+other info that might help us debug this:
+
+rcu_scheduler_active = 1, debug_locks = 0
+1 lock held by keyctl/5372:
+ #0:  (key_types_sem){.+.+.+}, at: [<ffffffff811a4e3d>] key_type_lookup+0x1c/0x70
+
+stack backtrace:
+Pid: 5372, comm: keyctl Not tainted 2.6.34-rc3-cachefs #150
+Call Trace:
+ [<ffffffff810515f8>] lockdep_rcu_dereference+0xaa/0xb2
+ [<ffffffff811a9220>] call_sbin_request_key+0x156/0x2b6
+ [<ffffffff811a4c66>] ? __key_instantiate_and_link+0xb1/0xdc
+ [<ffffffff811a4cd3>] ? key_instantiate_and_link+0x42/0x5f
+ [<ffffffff811a96b8>] ? request_key_auth_new+0x17b/0x1f3
+ [<ffffffff811a8e00>] ? request_key_and_link+0x271/0x400
+ [<ffffffff810aba6f>] ? kmem_cache_alloc+0xe1/0x118
+ [<ffffffff811a8f1a>] request_key_and_link+0x38b/0x400
+ [<ffffffff811a7b72>] sys_request_key+0xf7/0x14a
+ [<ffffffff81052227>] ? trace_hardirqs_on_caller+0x10c/0x130
+ [<ffffffff81393f5c>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
+
+This was caused by doing:
+
+	[root@andromeda ~]# keyctl newring fred @s
+	539196288
+	[root@andromeda ~]# keyctl request2 user a a 539196288
+	request_key: Required key not available
+
 Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- fs/nfs/delegation.c |   42 ++++++++++++++++++++++++++++--------------
- 1 files changed, 28 insertions(+), 14 deletions(-)
+ security/keys/request_key.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-index 1567124..8d9ec49 100644
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -129,21 +129,35 @@ again:
-  */
- void nfs_inode_reclaim_delegation(struct inode *inode, struct rpc_cred *cred, struct nfs_openres *res)
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 03fe63e..ea97c31 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -68,7 +68,8 @@ static int call_sbin_request_key(struct key_construction *cons,
  {
--	struct nfs_delegation *delegation = NFS_I(inode)->delegation;
--	struct rpc_cred *oldcred;
-+	struct nfs_delegation *delegation;
-+	struct rpc_cred *oldcred = NULL;
+ 	const struct cred *cred = current_cred();
+ 	key_serial_t prkey, sskey;
+-	struct key *key = cons->key, *authkey = cons->authkey, *keyring;
++	struct key *key = cons->key, *authkey = cons->authkey, *keyring,
++		*session;
+ 	char *argv[9], *envp[3], uid_str[12], gid_str[12];
+ 	char key_str[12], keyring_str[3][12];
+ 	char desc[20];
+@@ -112,10 +113,12 @@ static int call_sbin_request_key(struct key_construction *cons,
+ 	if (cred->tgcred->process_keyring)
+ 		prkey = cred->tgcred->process_keyring->serial;
  
--	if (delegation == NULL)
--		return;
--	memcpy(delegation->stateid.data, res->delegation.data,
--			sizeof(delegation->stateid.data));
--	delegation->type = res->delegation_type;
--	delegation->maxsize = res->maxsize;
--	oldcred = delegation->cred;
--	delegation->cred = get_rpccred(cred);
--	clear_bit(NFS_DELEGATION_NEED_RECLAIM, &delegation->flags);
--	NFS_I(inode)->delegation_state = delegation->type;
--	smp_wmb();
--	put_rpccred(oldcred);
+-	if (cred->tgcred->session_keyring)
+-		sskey = rcu_dereference(cred->tgcred->session_keyring)->serial;
+-	else
+-		sskey = cred->user->session_keyring->serial;
 +	rcu_read_lock();
-+	delegation = rcu_dereference(NFS_I(inode)->delegation);
-+	if (delegation != NULL) {
-+		spin_lock(&delegation->lock);
-+		if (delegation->inode != NULL) {
-+			memcpy(delegation->stateid.data, res->delegation.data,
-+			       sizeof(delegation->stateid.data));
-+			delegation->type = res->delegation_type;
-+			delegation->maxsize = res->maxsize;
-+			oldcred = delegation->cred;
-+			delegation->cred = get_rpccred(cred);
-+			clear_bit(NFS_DELEGATION_NEED_RECLAIM,
-+				  &delegation->flags);
-+			NFS_I(inode)->delegation_state = delegation->type;
-+			spin_unlock(&delegation->lock);
-+			put_rpccred(oldcred);
-+			rcu_read_unlock();
-+		} else {
-+			/* We appear to have raced with a delegation return. */
-+			spin_unlock(&delegation->lock);
-+			rcu_read_unlock();
-+			nfs_inode_set_delegation(inode, cred, res);
-+		}
-+	} else {
-+		rcu_read_unlock();
-+	}
- }
++	session = rcu_dereference(cred->tgcred->session_keyring);
++	if (!session)
++		session = cred->user->session_keyring;
++	sskey = session->serial;
++	rcu_read_unlock();
  
- static int nfs_do_return_delegation(struct inode *inode, struct nfs_delegation *delegation, int issync)
+ 	sprintf(keyring_str[2], "%d", sskey);
+ 
 -- 
 1.7.0
 
