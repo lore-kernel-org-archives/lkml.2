@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab0DWOTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 10:19:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43078 "EHLO mx2.suse.de"
+	id S1752741Ab0DWOUd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 10:20:33 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59595 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314Ab0DWOTp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 10:19:45 -0400
-Subject: Re: [PATCH 1/8] KVM: SVM: Fix nested nmi handling
+	id S1752090Ab0DWOUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 10:20:30 -0400
+Subject: Re: [PATCH 3/8] KVM: SVM: Sync cr0 and cr3 to kvm state before nested handling
 Mime-Version: 1.0 (Apple Message framework v1078)
 Content-Type: text/plain; charset=us-ascii
 From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20100423141355.GD31537@amd.com>
-Date: Fri, 23 Apr 2010 16:19:40 +0200
+In-Reply-To: <20100423141706.GE31537@amd.com>
+Date: Fri, 23 Apr 2010 16:20:28 +0200
 Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <85D89C34-806C-4376-89BA-5BFD413F5396@suse.de>
-References: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com> <1271932394-13968-2-git-send-email-joerg.roedel@amd.com> <622FCBB5-826D-4392-A521-7E395507398B@suse.de> <20100423141355.GD31537@amd.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <4257BA6E-7B67-4CD9-8384-E4097B86F83B@suse.de>
+References: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com> <1271932394-13968-4-git-send-email-joerg.roedel@amd.com> <894CCCC7-6E35-499D-9EF6-57A9123B969C@suse.de> <20100423141706.GE31537@amd.com>
 To: Joerg Roedel <joerg.roedel@amd.com>
 X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,60 +24,43 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 23.04.2010, at 16:13, Joerg Roedel wrote:
+On 23.04.2010, at 16:17, Joerg Roedel wrote:
 
-> On Fri, Apr 23, 2010 at 03:46:07PM +0200, Alexander Graf wrote:
+> On Fri, Apr 23, 2010 at 03:50:20PM +0200, Alexander Graf wrote:
 >> 
 >> On 22.04.2010, at 12:33, Joerg Roedel wrote:
 >> 
->>> The patch introducing nested nmi handling had a bug. The
->>> check does not belong to enable_nmi_window but must be in
->>> nmi_allowed. This patch fixes this.
+>>> This patch syncs cr0 and cr3 from the vmcb to the kvm state
+>>> before nested intercept handling is done. This allows to
+>>> simplify the vmexit path.
 >>> 
 >>> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 >>> ---
->>> arch/x86/kvm/svm.c |   16 +++++++++-------
->>> 1 files changed, 9 insertions(+), 7 deletions(-)
+>>> arch/x86/kvm/svm.c |   15 ++++++---------
+>>> 1 files changed, 6 insertions(+), 9 deletions(-)
 >>> 
 >>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
->>> index ab78eb8..ec20584 100644
+>>> index c480d7f..5ad9d80 100644
 >>> --- a/arch/x86/kvm/svm.c
 >>> +++ b/arch/x86/kvm/svm.c
->>> @@ -2771,8 +2771,12 @@ static int svm_nmi_allowed(struct kvm_vcpu *vcpu)
->>> {
->>> 	struct vcpu_svm *svm = to_svm(vcpu);
->>> 	struct vmcb *vmcb = svm->vmcb;
->>> -	return !(vmcb->control.int_state & SVM_INTERRUPT_SHADOW_MASK) &&
->>> -		!(svm->vcpu.arch.hflags & HF_NMI_MASK);
->>> +	int ret;
->>> +	ret = !(vmcb->control.int_state & SVM_INTERRUPT_SHADOW_MASK) &&
->>> +	      !(svm->vcpu.arch.hflags & HF_NMI_MASK);
->>> +	ret = ret && gif_set(svm) && nested_svm_nmi(svm);
->>> +
->>> +	return ret;
->>> }
->>> 
->>> static bool svm_get_nmi_mask(struct kvm_vcpu *vcpu)
->>> @@ -2841,11 +2845,9 @@ static void enable_nmi_window(struct kvm_vcpu *vcpu)
->>> 	 * Something prevents NMI from been injected. Single step over possible
->>> 	 * problem (IRET or exception injection or interrupt shadow)
->>> 	 */
->>> -	if (gif_set(svm) && nested_svm_nmi(svm)) {
->>> -		svm->nmi_singlestep = true;
->>> -		svm->vmcb->save.rflags |= (X86_EFLAGS_TF | X86_EFLAGS_RF);
->>> -		update_db_intercept(vcpu);
->>> -	}
->>> +	svm->nmi_singlestep = true;
->>> +	svm->vmcb->save.rflags |= (X86_EFLAGS_TF | X86_EFLAGS_RF);
->>> +	update_db_intercept(vcpu);
+>>> @@ -1799,10 +1799,7 @@ static int nested_svm_vmexit(struct vcpu_svm *svm)
+>>> 	nested_vmcb->save.gdtr   = vmcb->save.gdtr;
+>>> 	nested_vmcb->save.idtr   = vmcb->save.idtr;
+>>> 	nested_vmcb->save.cr0    = kvm_read_cr0(&svm->vcpu);
+>>> -	if (npt_enabled)
+>>> -		nested_vmcb->save.cr3    = vmcb->save.cr3;
+>>> -	else
+>>> -		nested_vmcb->save.cr3    = svm->vcpu.arch.cr3;
+>>> +	nested_vmcb->save.cr3    = svm->vcpu.arch.cr3;
 >> 
->> So we're always messing with the nested guest state when the host
->> wants to inject an nmi into the l1 guest? Is that safe?
+>> 
+>> Why don't we need this anymore again?
 > 
-> Why not? We can't inject an NMI directly into L2 if the nested
-> hypervisor intercepts it.
+> Because arch.cr3 contains always the current l2-cr3. This wasn't the
+> case before because the sync was done after the nested handling. But now
+> we do it before a vmexit can happen and are safe to just use arch.cr3.
 
-So where did the code go that does the #vmexit in case the nested hypervisor does intercept it? It used to be nested_svm_nmi(), right?
+I see.
 
 
 Alex
