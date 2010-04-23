@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819Ab0DWPwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 11:52:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23464 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757800Ab0DWPwb (ORCPT
+	id S1757860Ab0DWPws (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 11:52:48 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54809 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757773Ab0DWPw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 11:52:31 -0400
-Date: Fri, 23 Apr 2010 08:50:21 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Chihau Chau <chihau@gmail.com>
-Cc: jmorris@namei.org, eparis@redhat.com, viro@zeniv.linux.org.uk,
-       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Security: inode: Fix code style issues
-Message-Id: <20100423085021.b54f98c5.randy.dunlap@oracle.com>
-In-Reply-To: <1271983035-26401-1-git-send-email-chihau@gmail.com>
-References: <1271983035-26401-1-git-send-email-chihau@gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090201.4BD1C22F.0211:SCFMA4539811,ss=1,fgs=0
+	Fri, 23 Apr 2010 11:52:27 -0400
+Date: Fri, 23 Apr 2010 11:52:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Greg KH <greg@kroah.com>
+cc: Eric Lescouet <Eric.Lescouet@VirtualLogix.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       <linux-usb@vger.kernel.org>
+Subject: Re: USBIP (staging) driver's dependency on drivers/usb/core internal
+ headers
+In-Reply-To: <20100423150734.GA7778@kroah.com>
+Message-ID: <Pine.LNX.4.44L0.1004231140190.1777-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Apr 2010 20:37:15 -0400 Chihau Chau wrote:
+On Fri, 23 Apr 2010, Greg KH wrote:
 
-> From: Chihau Chau <chihau@gmail.com>
+> On Fri, Apr 23, 2010 at 12:44:11PM +0200, Eric Lescouet wrote:
+> > Hi,
+> >
+> > The USBIP modules (and some others) have a direct dependency on the following headers:
+> > - drivers/usb/core/hdc.h (struct usb_hcd and various routines)
+> > - drivers/usb/core/hub.h (couple of constants)
+> > Because those headers are not part of include/, it makes it quite difficult
+> > to compile them as standalone modules (e.g.: against pre-compiled kernel).
 > 
-> This fixes two code style issues:
+> Then don't do that :)
 > 
-> - A space required after that close brace '}'
+> > hdc.c and hub.c are relatively self-contained and could be moved to e.g.: include/linux/usb/.
+> >
+> > What do you think?
+> 
+> I think the code needs to be cleaned up and merged to the main part of
+> the kernel tree, then this wouldn't be an issue, right?
 
-Why?  do we say that somewhere?
+I think moving hub.h into include/linux/usb would be a good thing.  
+However, if this is done then the file contents should be rearranged 
+slightly:
 
+	Everything from the "Hub request types" comment through the
+	various HUB_TTTT_* definitions (except the line declaring
+	struct usb_device) should be extracted into a separate file.
+	This new file could be called ch11.h (because it contains 
+	constants and structures from Chapter 11 of the USB 2.0 spec, 
+	just as ch9.h contains information from Chapter 9) or it
+	could keep the name hub.h.  It could even be exported as
+	a userspace header file.
 
-> 
-> - A space required after that ','
-> 
-> Signed-off-by: Chihau Chau <chihau@gmail.com>
-> ---
->  security/inode.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/security/inode.c b/security/inode.c
-> index c3a7938..f875f47 100644
-> --- a/security/inode.c
-> +++ b/security/inode.c
-> @@ -124,7 +124,7 @@ static inline int positive(struct dentry *dentry)
->  
->  static int fill_super(struct super_block *sb, void *data, int silent)
->  {
-> -	static struct tree_descr files[] = {{""}};
-> +	static struct tree_descr files[] = { {""} };
->  
->  	return simple_fill_super(sb, SECURITYFS_MAGIC, files);
->  }
-> @@ -208,7 +208,7 @@ struct dentry *securityfs_create_file(const char *name, mode_t mode,
->  	struct dentry *dentry = NULL;
->  	int error;
->  
-> -	pr_debug("securityfs: creating file '%s'\n",name);
-> +	pr_debug("securityfs: creating file '%s'\n", name);
->  
->  	error = simple_pin_fs(&fs_type, &mount, &mount_count);
->  	if (error) {
-> -- 
-> 1.5.6.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	The remainder (not very much) should be merged into hcd.h.
 
+Once that's done, moving hcd.h into include/linux/usb would be a 
+reasonable thing to do as well.  It is shared between usbcore and the 
+HCDs, so it really does belong in a more public location.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Alan Stern
+
