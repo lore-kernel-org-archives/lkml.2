@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758574Ab0DWSBw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 14:01:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54549 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758540Ab0DWSBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 14:01:39 -0400
-Message-ID: <4BD1E061.8030605@zytor.com>
-Date: Fri, 23 Apr 2010 11:01:05 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Samuel Thibault <samuel.thibault@labri.fr>, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       x86@kernel.org, olivier.aumage@inria.fr, yannick.martin@inria.fr
-Subject: Re: X86_64 BUG: missing FS/GS LDT reload on fork()
-References: <20100423170449.GV4997@const.bordeaux.inria.fr>
-In-Reply-To: <20100423170449.GV4997@const.bordeaux.inria.fr>
-Content-Type: multipart/mixed;
- boundary="------------010300080205060909080902"
+	id S1758563Ab0DWSCs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 14:02:48 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:40731 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758466Ab0DWSCp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 14:02:45 -0400
+From: Chase Douglas <chase.douglas@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH] ftrace: add documentation for trace commands mod, traceon/traceoff
+Date: Fri, 23 Apr 2010 14:02:39 -0400
+Message-Id: <1272045759-32018-1-git-send-email-chase.douglas@canonical.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010300080205060909080902
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+The mod command went in as commit
+64e7c440618998fd69eee6ab490b042d12248021
 
-On 04/23/2010 10:04 AM, Samuel Thibault wrote:
-> Hello,
-> 
-> I have an issue with FS/GS LDT reload in the child of fork(). The
-> attached testcase fails quite often.  It sets an LDT entry up, uses
-> prctl to set gs's base to a 64bit value, then loads gs with the LDT
-> entry. The LDT entry is now in effect. After a fork call, the LDT entry
-> is not in effect any more, the 64bit base is back!
-> 
+The traceon/traceoff commands went in as commit
+23b4ff3aa479c9e3bb23cb6b2d0a97878399784a
 
-Okay... I have to say that I'm more than a bit confused why you're doing
-this, but the __switch_no code in process_64.c has the following:
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+---
+ Documentation/trace/ftrace.txt |   44 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
 
-                /*
-                 * Check if the user used a selector != 0; if yes
-                 *  clear 64bit base, since overloaded base is always
-                 *  mapped to the Null selector
-                 */
-                if (fsindex)
-                        prev->fs = 0;
-
-[and the same for gs]
-
-However, copy_thread() doesn't have the equivalent code, and __switch_to
-clearly expects that to be maintained as an invariant -- it doesn't
-check on entry, only on exit.
-
-The following patch looks like it should address that.
-
-	-hpa
-
---------------010300080205060909080902
-Content-Type: text/plain;
- name="diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="diff"
-
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index dc9690b..17cb329 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -276,12 +276,12 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+index 03485bf..8105e16 100644
+--- a/Documentation/trace/ftrace.txt
++++ b/Documentation/trace/ftrace.txt
+@@ -155,6 +155,9 @@ of ftrace. Here is a list of some of the key files:
+ 	to be traced. Echoing names of functions into this file
+ 	will limit the trace to only those functions.
  
- 	set_tsk_thread_flag(p, TIF_FORK);
++	This interface also allows for commands to be used. See the
++	"Filter commands" section for more details.
++
+   set_ftrace_notrace:
  
--	p->thread.fs = me->thread.fs;
--	p->thread.gs = me->thread.gs;
- 	p->thread.io_bitmap_ptr = NULL;
+ 	This has an effect opposite to that of
+@@ -1822,6 +1825,47 @@ this special filter via:
+  echo > set_graph_function
  
- 	savesegment(gs, p->thread.gsindex);
-+	p->thread.gs = p->thread.gsindex ? 0 : me->thread.gs;
- 	savesegment(fs, p->thread.fsindex);
-+	p->thread.fs = p->thread.fsindex ? 0 : me->thread.fs;
- 	savesegment(es, p->thread.es);
- 	savesegment(ds, p->thread.ds);
  
++Filter commands
++---------------
++
++A few commands are supported by the set_ftrace_filter interface.
++Trace commands have the following format:
++
++<function>:<command>:<parameter>
++
++The following commands are supported:
++
++- mod
++  This command enables function filtering per module. The
++  parameter defines the module. For example, if only the write*
++  functions in the ext3 module are desired, run:
++
++   echo 'write*:mod:ext3' > set_ftrace_filter
++
++  This command interacts with the filter in the same way as
++  filtering based on function names. Thus, adding more functions
++  in a different module is accomplished by appending (>>) to the
++  filter file. Remove specific module functions by prepending
++  '!':
++
++   echo '!writeback*:mod:ext3' >> set_ftrace_filter
++
++- traceon/traceoff
++  These commands turn tracing on and off when the specified
++  functions are hit. The parameter determines how many times the
++  tracing system is turned on and off. If unspecified, there is
++  no limit. For example, to disable tracing when a schedule bug
++  is hit the first 5 times, run:
++
++   echo '__schedule_bug:traceoff:5' > set_ftrace_filter
++
++  These commands are cumulative whether or not they are appended
++  to set_ftrace_filter. To remove a command, prepend it by '!'
++  and drop the parameter:
++
++   echo '!__schedule_bug:traceoff' > set_ftrace_filter
++
++
+ trace_pipe
+ ----------
+ 
+-- 
+1.7.0
 
---------------010300080205060909080902--
