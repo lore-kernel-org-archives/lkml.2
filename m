@@ -1,108 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab0DWE7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 00:59:45 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:57583 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420Ab0DWE7l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 00:59:41 -0400
-From: Dinh.Nguyen@freescale.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-       grant.likely@secretlab.ca, bryan.wu@canonical.com,
-       amit.kucheria@canonical.com, Jun.Li@freescale.com,
-       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv8 2.6.34-rc5 1/5] mxc: Update GPIO for USB support on Freescale MX51 Babbage HW
-Date: Thu, 22 Apr 2010 23:51:13 -0500
-Message-Id: <1271998277-3949-1-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
+	id S1755366Ab0DWC3q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 22:29:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755221Ab0DWC3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 22:29:44 -0400
+Message-ID: <4BD10603.7060404@redhat.com>
+Date: Fri, 23 Apr 2010 10:29:23 +0800
+From: Xiaotian Feng <dfeng@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Chuck Lever <chuck.lever@oracle.com>
+CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Trond Myklebust <Trond.Myklebust@netapp.com>,
+       Benny Halevy <bhalevy@panasas.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+       Andy Adamson <andros@netapp.com>
+Subject: Re: [PATCH] nfs: fix memory leak in nfs_get_sb with CONFIG_NFS_V4
+References: <1271933777-26244-1-git-send-email-dfeng@redhat.com> <4BD074D2.8070300@oracle.com>
+In-Reply-To: <4BD074D2.8070300@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+On 04/23/2010 12:09 AM, Chuck Lever wrote:
+> On 04/22/2010 06:56 AM, Xiaotian Feng wrote:
+>> With CONFIG_NFS_V4 and data version 4, nfs_get_sb will allocate 
+>> memory for
+>> export_path in nfs4_validate_text_mount_data, so we need to free it 
+>> then.
+>> This is addressed in following kmemleak report:
+>>
+>> unreferenced object 0xffff88016bf48a50 (size 16):
+>>    comm "mount.nfs", pid 22567, jiffies 4651574704 (age 175471.200s)
+>>    hex dump (first 16 bytes):
+>>      2f 6f 70 74 2f 77 6f 72 6b 00 6b 6b 6b 6b 6b a5  /opt/work.kkkkk.
+>>    backtrace:
+>>      [<ffffffff814b34f9>] kmemleak_alloc+0x60/0xa7
+>>      [<ffffffff81102c76>] kmemleak_alloc_recursive.clone.5+0x1b/0x1d
+>>      [<ffffffff811046b3>] __kmalloc_track_caller+0x18f/0x1b7
+>>      [<ffffffff810e1b08>] kstrndup+0x37/0x54
+>>      [<ffffffffa0336971>] nfs_parse_devname+0x152/0x204 [nfs]
+>>      [<ffffffffa0336af3>] nfs4_validate_text_mount_data+0xd0/0xdc [nfs]
+>>      [<ffffffffa0338deb>] nfs_get_sb+0x325/0x736 [nfs]
+>>      [<ffffffff81113671>] vfs_kern_mount+0xbd/0x17c
+>>      [<ffffffff81113798>] do_kern_mount+0x4d/0xed
+>>      [<ffffffff81129a87>] do_mount+0x787/0x7fe
+>>      [<ffffffff81129b86>] sys_mount+0x88/0xc2
+>>      [<ffffffff81009b42>] system_call_fastpath+0x16/0x1b
+>>
+>> Signed-off-by: Xiaotian Feng<dfeng@redhat.com>
+>> Cc: Trond Myklebust<Trond.Myklebust@netapp.com>
+>> Cc: Chuck Lever<chuck.lever@oracle.com>
+>> Cc: Benny Halevy<bhalevy@panasas.com>
+>> Cc: Al Viro<viro@ZenIV.linux.org.uk>
+>> Cc: Andy Adamson<andros@netapp.com>
+>> ---
+>>   fs/nfs/super.c |    1 +
+>>   1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+>> index e016372..44e6567 100644
+>> --- a/fs/nfs/super.c
+>> +++ b/fs/nfs/super.c
+>> @@ -2187,6 +2187,7 @@ static int nfs_get_sb(struct file_system_type 
+>> *fs_type,
+>>       if (data->version == 4) {
+>>           error = nfs4_try_mount(flags, dev_name, data, mnt);
+>>           kfree(data->client_address);
+>> +        kfree(data->nfs_server.export_path);
+>
+> nfs4_try_mount's other call site in fs/nfs/super.c also frees 
+> data->nfs_server.hostname and data->fscache_uniq.  Does that need to 
+> happen here too?
 
-This patch is part of enabling USB for Freescale MX51 Babbage HW. This
-patch updates the iomux pins for USB, and gpio line for reset the
-USB hub on the MX51 Babbage HW.
+I don't think we need to free data->nfs_server.hostname and 
+data->fscache_uniq, they were freed in the out label ;-)
+>
+>>           goto out;
+>>       }
 
-NOTE: This 5-patch series for enabling USB is functionally dependent
-on this patch:
-"mx5: Add registration of GPIOs for MX51 Babbage board"
-
-This patch applies to 2.6.34-rc5.
-
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/plat-mxc/include/mach/iomux-mx51.h |   33 ++++++++++++++++----------
- 1 files changed, 20 insertions(+), 13 deletions(-)
-
-diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-index b4f975e..80528cc 100644
---- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-+++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-@@ -1,5 +1,6 @@
- /*
-  * Copyright (C) 2009-2010 Amit Kucheria <amit.kucheria@canonical.com>
-+ * Copyright (C) 2010 Freescale Semiconductor, Inc.
-  *
-  * The code contained herein is licensed under the GNU General Public
-  * License. You may obtain a copy of the GNU General Public License
-@@ -37,6 +38,11 @@ typedef enum iomux_config {
- 				PAD_CTL_SRE_FAST)
- #define MX51_UART3_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_DSE_HIGH | \
- 				PAD_CTL_SRE_FAST)
-+#define MX51_USBH1_PAD_CTRL	(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH | \
-+				PAD_CTL_PUS_100K_UP | PAD_CTL_PUE | \
-+				PAD_CTL_PKE | PAD_CTL_HYS)
-+#define MX51_GPIO_PAD_CTRL		(PAD_CTL_DSE_HIGH | PAD_CTL_PKE | \
-+				PAD_CTL_SRE_FAST)
- 
- /*
-  * The naming convention for the pad modes is MX51_PAD_<padname>__<padmode>
-@@ -208,18 +214,19 @@ typedef enum iomux_config {
- #define MX51_PAD_KEY_COL3__KEY_COL3	IOMUX_PAD(0x658, 0x268, 0, 0x0, 0, NO_PAD_CTRL)
- #define MX51_PAD_KEY_COL4__KEY_COL4	IOMUX_PAD(0x65C, 0x26C, 0, 0x0, 0, NO_PAD_CTRL)
- #define MX51_PAD_KEY_COL5__KEY_COL5	IOMUX_PAD(0x660, 0x270, 0, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_25__USBH1_CLK	IOMUX_PAD(0x678, 0x278, 2, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_26__USBH1_DIR	IOMUX_PAD(0x67C, 0x27C, 2, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_27__USBH1_STP	IOMUX_PAD(0x680, 0x280, 2, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_28__USBH1_NXT	IOMUX_PAD(0x684, 0x284, 2, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_11__USBH1_DATA0	IOMUX_PAD(0x688, 0x288, 2, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_12__USBH1_DATA1	IOMUX_PAD(0x68C, 0x28C, 2, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_13__USBH1_DATA2	IOMUX_PAD(0x690, 0x290, 2, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_14__USBH1_DATA3	IOMUX_PAD(0x694, 0x294, 2, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_15__USBH1_DATA4	IOMUX_PAD(0x698, 0x298, 2, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_16__USBH1_DATA5	IOMUX_PAD(0x69C, 0x29C, 2, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_17__USBH1_DATA6	IOMUX_PAD(0x6A0, 0x2A0, 2, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_18__USBH1_DATA7	IOMUX_PAD(0x6A4, 0x2A4, 2, 0x0, 0, NO_PAD_CTRL)
-+#define MX51_PAD_USBH1_CLK__USBH1_CLK	IOMUX_PAD(0x678, 0x278, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_DIR__USBH1_DIR	IOMUX_PAD(0x67C, 0x27C, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_STP__USBH1_STP	IOMUX_PAD(0x680, 0x280, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_STP__GPIO_1_27	IOMUX_PAD(0x680, 0x280, IOMUX_CONFIG_GPIO, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_NXT__USBH1_NXT	IOMUX_PAD(0x684, 0x284, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_DATA0__USBH1_DATA0	IOMUX_PAD(0x688, 0x288, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_DATA1__USBH1_DATA1	IOMUX_PAD(0x68C, 0x28C, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_DATA2__USBH1_DATA2	IOMUX_PAD(0x690, 0x290, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_DATA3__USBH1_DATA3	IOMUX_PAD(0x694, 0x294, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_DATA4__USBH1_DATA4	IOMUX_PAD(0x698, 0x298, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_DATA5__USBH1_DATA5	IOMUX_PAD(0x69C, 0x29C, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_DATA6__USBH1_DATA6	IOMUX_PAD(0x6A0, 0x2A0, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
-+#define MX51_PAD_USBH1_DATA7__USBH1_DATA7	IOMUX_PAD(0x6A4, 0x2A4, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
- #define MX51_PAD_GPIO_3_0__DI1_PIN11	IOMUX_PAD(0x6A8, 0x2A8, 4, 0x0, 0, NO_PAD_CTRL)
- #define MX51_PAD_GPIO_3_1__DI1_PIN12	IOMUX_PAD(0x6AC, 0x2AC, 4, 0x0, 0, NO_PAD_CTRL)
- #define MX51_PAD_GPIO_3_2__DI1_PIN13	IOMUX_PAD(0x6B0, 0x2B0, 4, 0x0, 0, NO_PAD_CTRL)
-@@ -299,7 +306,7 @@ typedef enum iomux_config {
- #define MX51_PAD_GPIO_1_4__GPIO1_4	IOMUX_PAD(0x804, 0x3D8, 0, 0x0, 0, NO_PAD_CTRL)
- #define MX51_PAD_GPIO_1_5__GPIO1_5	IOMUX_PAD(0x808, 0x3DC, 0, 0x0, 0, NO_PAD_CTRL)
- #define MX51_PAD_GPIO_1_6__GPIO1_6	IOMUX_PAD(0x80C, 0x3E0, 0, 0x0, 0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_7__GPIO1_7	IOMUX_PAD(0x810, 0x3E4, 0, 0x0, 0, NO_PAD_CTRL)
-+#define MX51_PAD_GPIO_1_7__GPIO1_7	IOMUX_PAD(0x810, 0x3E4, 0, 0x0, 0, MX51_GPIO_PAD_CTRL)
- #define MX51_PAD_GPIO_1_8__GPIO1_8	IOMUX_PAD(0x814, 0x3E8, 0, 0x0, 1, \
- 						(PAD_CTL_SRE_SLOW | PAD_CTL_DSE_MED | PAD_CTL_PUS_100K_UP |  PAD_CTL_HYS))
- #define MX51_PAD_GPIO_1_9__GPIO1_9	IOMUX_PAD(0x818, 0x3EC, 0, 0x0, 0, NO_PAD_CTRL)
--- 
-1.6.0.4
+out:
+         kfree(data->nfs_server.hostname);
+         kfree(data->mount_server.hostname);
+         kfree(data->fscache_uniq);
+         security_free_mnt_opts(&data->lsm_opts);
+>>   #endif    /* CONFIG_NFS_V4 */
+>
+>
 
