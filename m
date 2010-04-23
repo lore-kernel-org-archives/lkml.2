@@ -1,97 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab0DWBo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 21:44:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31270 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753875Ab0DWBo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 21:44:57 -0400
-Message-ID: <4BD0FB92.4060301@redhat.com>
-Date: Thu, 22 Apr 2010 15:44:50 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271675100.1674.818.camel@laptop> <4BCC3A3E.9070909@redhat.com> <20100419142158.GD14158@mothafucka.localdomain> <4BCC69D5.3050209@redhat.com> <1271688411.1488.248.camel@laptop> <4BCC8246.9040202@goop.org> <4BCD748E.7080007@redhat.com> <4BCDF12C.1020702@goop.org> <4BCDF85C.3000004@redhat.com> <4BCE0399.2010708@goop.org> <20100422131113.GA3364@mothafucka.localdomain>
-In-Reply-To: <20100422131113.GA3364@mothafucka.localdomain>
-Content-Type: multipart/mixed;
- boundary="------------080605020202000901040902"
+	id S1755559Ab0DWFAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 01:00:10 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:57609 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755531Ab0DWFAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 01:00:00 -0400
+From: Dinh.Nguyen@freescale.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, Jun.Li@freescale.com,
+       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv8 2.6.34-rc5 3/5] mx5: Enable board specific functions for enabling USB host on Babbage
+Date: Thu, 22 Apr 2010 23:51:15 -0500
+Message-Id: <1271998277-3949-3-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1271998277-3949-2-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1271998277-3949-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271998277-3949-2-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080605020202000901040902
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-On 04/22/2010 03:11 AM, Glauber Costa wrote:
-> On Tue, Apr 20, 2010 at 12:42:17PM -0700, Jeremy Fitzhardinge wrote:
->    
->> On 04/20/2010 11:54 AM, Avi Kivity wrote:
->>      
->>> On 04/20/2010 09:23 PM, Jeremy Fitzhardinge wrote:
->>>        
->>>> On 04/20/2010 02:31 AM, Avi Kivity wrote:
->>>>
->>>>          
->>>>> btw, do you want this code in pvclock.c, or shall we keep it kvmclock
->>>>> specific?
->>>>>
->>>>>            
->>>> I think its a pvclock-level fix.  I'd been hoping to avoid having
->>>> something like this, but I think its ultimately necessary.
->>>>
->>>>          
->>> Did you observe drift on Xen, or is this "ultimately" pointing at the
->>> future?
->>>        
->> People are reporting weirdnesses that "clocksource=jiffies" apparently
->> resolves.  Xen and KVM are faced with the same hardware constraints, and
->> it wouldn't surprise me if there were small measurable
->> non-monotonicities in the PV clock under Xen.  May as well be safe.
->>
->> Of course, it kills any possibility of being able to usefully export
->> this interface down to usermode.
->>
->> My main concern about this kind of simple fix is that if there's a long
->> term systematic drift between different CPU's tscs, then this will
->> somewhat mask the problem while giving really awful time measurement on
->> the "slow" CPU(s).  In that case it really needs to adjust the scaling
->> factor to correct for the drift (*not* update the offset).  But if we're
->> definitely only talking about fixed, relatively small time offsets then
->> it is fine.
->>      
-> Can you by any chance run ingo's time warp test on those machines?
->
-> You need to define TOD to 1, and leave out the TSC test.
->
-> For me, warps exists on every machine out there, but the nehalems, so far
->    
-Or apply this patch.
+This patch enables USB host functionality for Host1 and OTG port on
+Freescale MX51 Babbage HW. This patch contains the board specific
+HW initialization of the USB HW.
 
---------------080605020202000901040902
-Content-Type: text/plain;
- name="time-warp.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="time-warp.patch"
+This patch applies to 2.6.34-rc5.
 
-diff -rup a/time-warp-test.c b/time-warp-test.c
---- a/time-warp-test.c	2010-04-15 16:30:13.955981607 -1000
-+++ b/time-warp-test.c	2010-04-15 16:35:37.777982377 -1000
-@@ -91,7 +91,7 @@ static inline unsigned long long __rdtsc
- {
- 	DECLARE_ARGS(val, low, high);
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Reviewed-by: Daniel Mack <daniel@caiaq.de>
+---
+ arch/arm/mach-mx5/board-mx51_babbage.c |  129 ++++++++++++++++++++++++++++++++
+ 1 files changed, 129 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
+index ee67a71..99f7ea9 100644
+--- a/arch/arm/mach-mx5/board-mx51_babbage.c
++++ b/arch/arm/mach-mx5/board-mx51_babbage.c
+@@ -12,11 +12,15 @@
  
--	asm volatile("cpuid; rdtsc" : EAX_EDX_RET(val, low, high));
-+	asm volatile("cpuid; rdtsc" : EAX_EDX_RET(val, low, high) :: "ebx", "ecx");
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/delay.h>
++#include <linux/io.h>
  
- 	return EAX_EDX_VAL(val, low, high);
+ #include <mach/common.h>
+ #include <mach/hardware.h>
+ #include <mach/imx-uart.h>
+ #include <mach/iomux-mx51.h>
++#include <mach/mxc_ehci.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/setup.h>
+@@ -26,6 +30,17 @@
+ 
+ #include "devices.h"
+ 
++#define BABBAGE_USB_HUB_RESET	(0*32 + 7)	/* GPIO_1_7 */
++#define BABBAGE_USBH1_STP	(0*32 + 27)	/* GPIO_1_27 */
++
++/* USB_CTRL_1 */
++#define MX51_USB_CTRL_1_OFFSET			0x10
++#define MX51_USB_CTRL_UH1_EXT_CLK_EN		(1 << 25)
++
++#define	MX51_USB_PLLDIV_12_MHZ		0x00
++#define	MX51_USB_PLL_DIV_19_2_MHZ	0x01
++#define	MX51_USB_PLL_DIV_24_MHZ	0x02
++
+ static struct platform_device *devices[] __initdata = {
+ 	&mxc_fec_device,
+ };
+@@ -46,6 +61,22 @@ static struct pad_desc mx51babbage_pads[] = {
+ 	MX51_PAD_EIM_D26__UART3_TXD,
+ 	MX51_PAD_EIM_D27__UART3_RTS,
+ 	MX51_PAD_EIM_D24__UART3_CTS,
++
++	/* USB HOST1 */
++	MX51_PAD_USBH1_CLK__USBH1_CLK,
++	MX51_PAD_USBH1_DIR__USBH1_DIR,
++	MX51_PAD_USBH1_NXT__USBH1_NXT,
++	MX51_PAD_USBH1_DATA0__USBH1_DATA0,
++	MX51_PAD_USBH1_DATA1__USBH1_DATA1,
++	MX51_PAD_USBH1_DATA2__USBH1_DATA2,
++	MX51_PAD_USBH1_DATA3__USBH1_DATA3,
++	MX51_PAD_USBH1_DATA4__USBH1_DATA4,
++	MX51_PAD_USBH1_DATA5__USBH1_DATA5,
++	MX51_PAD_USBH1_DATA6__USBH1_DATA6,
++	MX51_PAD_USBH1_DATA7__USBH1_DATA7,
++
++	/* USB HUB reset line*/
++	MX51_PAD_GPIO_1_7__GPIO1_7,
+ };
+ 
+ /* Serial ports */
+@@ -66,15 +97,113 @@ static inline void mxc_init_imx_uart(void)
  }
+ #endif /* SERIAL_IMX */
+ 
++static int gpio_usbh1_active(void)
++{
++	struct pad_desc usbh1stp_gpio = MX51_PAD_USBH1_STP__GPIO_1_27;
++	int ret;
++
++	/* Set USBH1_STP to GPIO and toggle it */
++	mxc_iomux_v3_setup_pad(&usbh1stp_gpio);
++	ret = gpio_request(BABBAGE_USBH1_STP, "usbh1_stp");
++
++	if (ret) {
++		pr_debug("failed to get MX51_PAD_USBH1_STP__GPIO_1_27: %d\n", ret);
++		return ret;
++	}
++	gpio_direction_output(BABBAGE_USBH1_STP, 0);
++	gpio_set_value(BABBAGE_USBH1_STP, 1);
++	msleep(100);
++	gpio_free(BABBAGE_USBH1_STP);
++	return 0;
++}
++
++static inline void babbage_usbhub_reset(void)
++{
++	int ret;
++
++	/* Bring USB hub out of reset */
++	ret = gpio_request(BABBAGE_USB_HUB_RESET, "GPIO1_7");
++	if (ret) {
++		printk(KERN_ERR"failed to get GPIO_USB_HUB_RESET: %d\n", ret);
++		return;
++	}
++	gpio_direction_output(BABBAGE_USB_HUB_RESET, 0);
++
++	/* USB HUB RESET - De-assert USB HUB RESET_N */
++	msleep(1);
++	gpio_set_value(BABBAGE_USB_HUB_RESET, 0);
++	msleep(1);
++	gpio_set_value(BABBAGE_USB_HUB_RESET, 1);
++}
++
++/* This function is board specific as the bit mask for the plldiv will also
++be different for other Freescale SoCs, thus a common bitmask is not
++possible and cannot get place in /plat-mxc/ehci.c.*/
++static int initialize_otg_port(struct platform_device *pdev)
++{
++	u32 v;
++	void __iomem *usb_base;
++	u32 usbother_base;
++
++	usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
++	usbother_base = usb_base + MX5_USBOTHER_REGS_OFFSET;
++
++	/* Set the PHY clock to 19.2MHz */
++	v = __raw_readl(usbother_base + MXC_USB_PHY_CTR_FUNC2_OFFSET);
++	v &= ~MX5_USB_UTMI_PHYCTRL1_PLLDIV_MASK;
++	v |= MX51_USB_PLL_DIV_19_2_MHZ;
++	__raw_writel(v, usbother_base + MXC_USB_PHY_CTR_FUNC2_OFFSET);
++	iounmap(usb_base);
++	return 0;
++}
++
++static int initialize_usbh1_port(struct platform_device *pdev)
++{
++	u32 v;
++	void __iomem *usb_base;
++	u32 usbother_base;
++
++	usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
++	usbother_base = usb_base + MX5_USBOTHER_REGS_OFFSET;
++
++	/* The clock for the USBH1 ULPI port will come externally from the PHY. */
++	v = __raw_readl(usbother_base + MX51_USB_CTRL_1_OFFSET);
++	__raw_writel(v | MX51_USB_CTRL_UH1_EXT_CLK_EN, usbother_base + MX51_USB_CTRL_1_OFFSET);
++	iounmap(usb_base);
++	return 0;
++}
++
++static struct mxc_usbh_platform_data dr_utmi_config = {
++	.init		= initialize_otg_port,
++	.portsc	= MXC_EHCI_UTMI_16BIT,
++	.flags	= MXC_EHCI_INTERNAL_PHY,
++};
++
++static struct mxc_usbh_platform_data usbh1_config = {
++	.init		= initialize_usbh1_port,
++	.portsc	= MXC_EHCI_MODE_ULPI,
++	.flags	= (MXC_EHCI_POWER_PINS_ENABLED | MXC_EHCI_ITC_NO_THRESHOLD),
++};
++
+ /*
+  * Board specific initialization.
+  */
+ static void __init mxc_board_init(void)
+ {
++	struct pad_desc usbh1stp = MX51_PAD_USBH1_STP__USBH1_STP;
++
+ 	mxc_iomux_v3_setup_multiple_pads(mx51babbage_pads,
+ 					ARRAY_SIZE(mx51babbage_pads));
+ 	mxc_init_imx_uart();
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
++
++	mxc_register_device(&mxc_usbdr_host_device, &dr_utmi_config);
++
++	gpio_usbh1_active();
++	mxc_register_device(&mxc_usbh1_device, &usbh1_config);
++	/* setback USBH1_STP to be function */
++	mxc_iomux_v3_setup_pad(&usbh1stp);
++	babbage_usbhub_reset();
+ }
+ 
+ static void __init mx51_babbage_timer_init(void)
+-- 
+1.6.0.4
 
---------------080605020202000901040902--
