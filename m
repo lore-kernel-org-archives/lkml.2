@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab0DWPgY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 11:36:24 -0400
-Received: from 1wt.eu ([62.212.114.60]:63511 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754299Ab0DWPgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 11:36:22 -0400
-Date: Fri, 23 Apr 2010 17:35:03 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, mingo@elte.hu, peterz@infradead.org,
-       tglx@linutronix.de, davej@redhat.com, cpufreq@vger.kernel.org
-Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with ondemand during disk IO
-Message-ID: <20100423153503.GA14832@1wt.eu>
-References: <20100418115949.7b743898@infradead.org> <20100418120346.1b478410@infradead.org> <20100423052439.GB4829@ucw.cz> <20100423053858.GE7798@1wt.eu> <20100423071050.715b3b33@infradead.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100423071050.715b3b33@infradead.org>
-User-Agent: Mutt/1.5.11
+	id S1757612Ab0DWPgw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 11:36:52 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58971 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755598Ab0DWPgu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 11:36:50 -0400
+Date: Fri, 23 Apr 2010 11:36:46 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Chouteau Fabien <fabien.chouteau@gmail.com>
+cc: linux-usb@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Michal Nazarewicz <m.nazarewicz@samsung.com>,
+       Peter Korsgaard <jacmet@sunsite.dk>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND 2/2] Mass storage gadget: Handle eject request
+In-Reply-To: <g2lfb5cec441004230805m8fc1251ekeb936837349b6e16@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1004231129530.1777-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 07:10:50AM -0700, Arjan van de Ven wrote:
-> On Fri, 23 Apr 2010 07:38:58 +0200
-> Willy Tarreau <w@1wt.eu> wrote:
+On Fri, 23 Apr 2010, Chouteau Fabien wrote:
+
+> > > + * When a LUN receive an "eject" SCSI request (Start/Stop Unit),
+> > > + * if the LUN is removable, the backing file is released to simulate
+> > > + * ejection.
+> > > + * The "eject" state of a LUN is available in the "ejected" file of the
+> > > + * LUN's sysfs directory (see above). The "eject" state is only updated
+> > > + * by SCSI request, not by user ejection.
+> >
+> > What's the reason for that?  With a real removable device, like a CD
+> > player, it doesn't make any difference whether the medium was ejected
+> > because of a SCSI command or because I pressed the "eject" button.
+> >
+> > I just don't see any point in keeping track of the two actions
+> > separately, since they end up having the same final result.
+> >
 > 
-> > On Fri, Apr 23, 2010 at 07:24:39AM +0200, Pavel Machek wrote:
-> > > Hi!
-> > > 
-> > > > The ondemand cpufreq governor uses CPU busy time (e.g. not-idle
-> > > > time) as a measure for scaling the CPU frequency up or down.
-> > > > If the CPU is busy, the CPU frequency scales up, if it's idle,
-> > > > the CPU frequency scales down. Effectively, it uses the CPU busy
-> > > > time as proxy variable for the more nebulous "how critical is
-> > > > performance right now" question.
-> > > > 
-> > > > This algorithm falls flat on its face in the light of workloads
-> > > > where you're alternatingly disk and CPU bound, such as the ever
-> > > > popular "git grep", but also things like startup of programs and
-> > > > maildir using email clients... much to the chagarin of Andrew
-> > > > Morton.
-> > > > 
-> > > > This patch changes the ondemand algorithm to count iowait time as
-> > > > busy, not idle, time. As shown in the breakdown cases above,
-> > > > iowait is performance critical often, and by counting iowait, the
-> > > > proxy variable becomes a more accurate representation of the "how
-> > > > critical is performance" question.
-> > > 
-> > > Well, and now, if you do something like cat /dev/<your usb1.1 hdd> >
-> > > /dev/null, you'll keep cpu on max frequency. Not a problem for new
-> > > core i7, but probably big deal for athlon 64.
-> > 
-> > So that also means that my notebook's CPU fan will spin like mad as
-> > soon as I access a USB key ? 
+> By user ejection, I mean send an empty line in the "file" sysfs entry.
+> The Start/Stop request is an action from the USB host side, user
+> ejection is from the USB device side, for me it's two different
+> events.
+> Maybe my comment is not clear about this point.
+
+No; it's clear enough and I understood what you meant.  It's true that 
+they are two different events, but they have the same end result.
+
+> I use a FAT disk image as LUN file, users can put some files in the
+> "fake" disk and then eject it. When I get the ejected signal, I mount
+> the disk image on loop device and perform operations on the user's
+> files.
+> So I want to know when users eject the disk and only when users do.
 > 
-> unlikely. your notebook CPU will stop its clocks, if not drop its
-> voltage, during idle. So during that time the frequency is 0; the only
-> difference is in how much leakage you get from a higher voltage
-> for those CPUs that do not powergate or drop their cpu in idle.
-> Most CPUs that I know of do either or both of that.
+> I still can use the LUN ejection from device side to disable the mass
+> storage device, and in this case I don't want to mount the disk and
+> search for user's files.
 
-OK, I will have to give that a run on my Atom and Pentium-M, both of
-which provide me with a very long run on battery precisely because
-they almost always run at the lowest possible frequency and voltage.
+Why not?  Isn't it possible that the user put some files there before 
+the device-side eject happened?
 
-On the pentium-M, I already know there is a difference between full
-voltage and low voltage even when idle. Its lowest frequency is 600
-MHz, and my kernel still has the old phc patch to lower clock and
-voltage. When idle on this kernel, the fan is completely stopped
-and never wakes up. When idle on a 2.6.32 (which does not have the
-patch), its voltage doesn't drop though the frequency does, and the
-fan runs at 1/4. It also lasts shorter (about 30 min less). So that
-means that even when idle there's a noticeable difference.
+What happens if the user and the device both try to eject the medium at
+approximately the same time?  Which event occurs first will be purely
+random chance.  That means there's a 50% probability you will end up
+doing the wrong thing.
 
-As was suggested, if the difference appears to be significant, maybe
-a /sys tunable would allow all users to select their preferred mode.
-Alternatively, we could have two distinct ondemand settings, one for
-pure CPU and another one for CPU+I/O.
+No, I think you need to do the same thing whenever an eject occurs, or
+else find a better criterion for deciding what to do.
 
-Regards,
-Willy
+Alan Stern
 
