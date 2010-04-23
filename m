@@ -1,109 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab0DWUW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 16:22:27 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:53225 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517Ab0DWUWX convert rfc822-to-8bit (ORCPT
+	id S1756927Ab0DWU06 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 16:26:58 -0400
+Received: from 5-161-237-24-mvl.swc.gci.net ([24.237.161.5]:35218 "EHLO
+	mail.adialaska.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754517Ab0DWU05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 16:22:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=rNifZ8+lSQGsNElLFFzbxS4h4hDdD1Fa4mBCuMHrXQedQvMnRCBFgDJqKBp6MLo4q5
-         QnoMpVFRtsR4MHgk1kkfT1p1kJtM2tEU196kiZZ9tD5LqWQvfgD7wxKaD1LuLzcVRvxI
-         LqDHsrPLtAwAuezu/5ZUWhAbL9BRchQUfFEL8=
+	Fri, 23 Apr 2010 16:26:57 -0400
+X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Apr 2010 16:26:57 EDT
+Message-ID: <4BD20074.6020101@gmail.com>
+Date: Fri, 23 Apr 2010 12:17:56 -0800
+From: Kent Overstreet <kent.overstreet@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10pre) Gecko/20100421 Shredder/3.0.5pre
 MIME-Version: 1.0
-In-Reply-To: <l2nb43bf5491004231314i13503c67yeccfc54bc1cae850@mail.gmail.com>
-References: <l2nb43bf5491004231314i13503c67yeccfc54bc1cae850@mail.gmail.com>
-Date: Fri, 23 Apr 2010 13:22:22 -0700
-X-Google-Sender-Auth: f21202d73d52f75b
-Message-ID: <h2p9929d2391004231322r23528f32z8447a711a29e28ea@mail.gmail.com>
-Subject: Re: [PATCH] e100: expose broadcast_disabled as a module option
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Erwan Velu <erwanaliasr1@gmail.com>, netdev <netdev@vger.kernel.org>,
-       David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, jesse.brandeburg@intel.com,
-       bruce.w.allan@intel.com, alexander.h.duyck@intel.com,
-       peter.p.waskiewicz.jr@intel.com, john.ronciak@intel.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] bcache: ver 3
+References: <20100423194107.GA20322@moria> <20100423130736.79db708a.randy.dunlap@oracle.com>
+In-Reply-To: <20100423130736.79db708a.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 13:14, Erwan Velu <erwanaliasr1@gmail.com> wrote:
-> Hi folks,
->
-> I've been facing a very noisy network where hundreds broadcast packets
-> were generated every second.
-> When this traffic can't be controlled at the source, there is a side
-> effect on some systems.
-> I was having some idle systems that will never be targeted by this
-> broadcast traffic that got loaded just by receiving that "flood".
-> I mean by loaded that this light hardware was generating 300
-> context/switches per second.
->
-> I was looking for many options to avoid this traffic to disturb this
-> hosts and I discovered that the e100 driver was featuring a
-> "broadcast_disabled" configure option.
-> I realize that this option is not controllable, so I wrote this simple
-> patch that expose this option as a module option.
-> This allow me to tell this hosts not to listen anymore this traffic.
->
-> The result is clearly good as my systems are now running at 21
-> context/switches while being idle.
-> Hope this patch isn't too bad and could help others that faces the same problem.
->
-> Patch can be downloaded here :
-> http://konilope.linuxeries.org/e100_broadcast_disabled.patch
->
-> Even if gmail is eating the inlined, patch, at least that make it
-> easier to read it for humans.
-> If the patch is acked, the downloaded one will be more clean ;)
->
-> This patch was generated on top of the latest 2.6 torvald's git.
-> Cheers,
-> Erwan
->
-> Signed-off-by: Erwan Velu <erwanaliasr1@gmail.com>
->
-> diff --git a/drivers/net/e100.c b/drivers/net/e100.c
-> index b997e57..2ba582f 100644
-> --- a/drivers/net/e100.c
-> +++ b/drivers/net/e100.c
-> @@ -194,12 +194,15 @@ MODULE_FIRMWARE(FIRMWARE_D102E);
->  static int debug = 3;
->  static int eeprom_bad_csum_allow = 0;
->  static int use_io = 0;
-> +static int broadcast_disabled = 0;
->  module_param(debug, int, 0);
->  module_param(eeprom_bad_csum_allow, int, 0);
->  module_param(use_io, int, 0);
-> +module_param(broadcast_disabled, int, 0);
->  MODULE_PARM_DESC(debug, "Debug level (0=none,...,16=all)");
->  MODULE_PARM_DESC(eeprom_bad_csum_allow, "Allow bad eeprom checksums");
->  MODULE_PARM_DESC(use_io, "Force use of i/o access mode");
-> +MODULE_PARM_DESC(broadcast_disabled, "Filter broadcast packets
-> (0=disabled (default), 1=enabled)");
->  #define DPRINTK(nlevel, klevel, fmt, args...) \
->        (void)((NETIF_MSG_##nlevel & nic->msg_enable) && \
->        printk(KERN_##klevel PFX "%s: %s: " fmt, nic->netdev->name, \
-> @@ -1131,6 +1134,8 @@ static void e100_configure(struct nic *nic,
-> struct cb *cb, struct sk_buff *skb)
->                config->promiscuous_mode = 0x1;         /* 1=on, 0=off */
->        }
->
-> +       config->broadcast_disabled = broadcast_disabled; /* Broadcast filtering */
-> +
->        if (nic->flags & multicast_all)
->                config->multicast_all = 0x1;            /* 1=accept, 0=no */
-> --
+On 04/23/2010 12:07 PM, Randy Dunlap wrote:
+> 	help
+> 	<some explanatory help text>
+> please.  The tristate prompt didn't do anything for me.
 
-Adding Netdev...
-
--- 
-Cheers,
-Jeff
+Did the prompt not show up at all? That's odd, I wouldn't have thought help 
+text would have anything to do with that - I just added help to the kconfig, 
+though. I'll have it up in a git repository soon, I don't suppose I should be 
+posting a 2.4k line patch multiple times per day...
