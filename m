@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab0DWCrs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 22:47:48 -0400
-Received: from cluster-g.mailcontrol.com ([208.87.233.190]:36379 "EHLO
-	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab0DWCrq convert rfc822-to-8bit (ORCPT
+	id S1755532Ab0DWFAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 01:00:00 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:57605 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755438Ab0DWE76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 22:47:46 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: core: workque: workqueue recursion when unplugging usb WCDMA modem on 2.6.32 kernel
-Date: Thu, 22 Apr 2010 19:46:18 -0700
-Message-ID: <ED2979D1CA1B3E4BB166ED9990088522765FF0@SJOAMSEXB01.AMERICAS.ROOT.PRI>
-In-Reply-To: <s2qd6200be21004221628nd2a93a29x7eab5841bba1c673@mail.gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: core: workque: workqueue recursion when unplugging usb WCDMA modem on 2.6.32 kernel
-Thread-Index: Acric3vBvS4UsErLShmZae81Y0C/ggAFfu4g
-References: <ED2979D1CA1B3E4BB166ED9990088522765C8C@SJOAMSEXB01.AMERICAS.ROOT.PRI> <20100421182747.GB7876@kroah.com> <ED2979D1CA1B3E4BB166ED9990088522765E30@SJOAMSEXB01.AMERICAS.ROOT.PRI> <s2qd6200be21004221628nd2a93a29x7eab5841bba1c673@mail.gmail.com>
-From: "YuPing Luo" <YuPing.Luo@csr.com>
-To: =?iso-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-Cc: "Greg KH" <greg@kroah.com>, <linux-kernel@vger.kernel.org>,
-       <linux-usb@vger.kernel.org>
-X-OriginalArrivalTime: 23 Apr 2010 02:47:01.0313 (UTC) FILETIME=[3FDD0310:01CAE28F]
+	Fri, 23 Apr 2010 00:59:58 -0400
+From: Dinh.Nguyen@freescale.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, Jun.Li@freescale.com,
+       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv8 2.6.34-rc5 5/5] mx5: Add USB to Freescale MX51 defconfig
+Date: Thu, 22 Apr 2010 23:51:17 -0500
+Message-Id: <1271998277-3949-5-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1271998277-3949-4-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1271998277-3949-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271998277-3949-2-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271998277-3949-3-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271998277-3949-4-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- From: Arve Hjønnevåg [mailto:arve@android.com] Sent: Friday, April 23, 2010 7:28 AM
-> I don't think this is related to your console. I could easily
-> reproduce your problem by killing rild (which uses both the binder and
-> ttys). You may also what to find out why your rild is exiting.
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-I make the rild service stopped while vold daemon detect usb-modem unplugged.
+Update mx51_defconfig to include USB EHCI by default.
 
->>  The recursion can be avoided if introducing one dedicated work queue
->> thread for binder 
-> I just pushed a fix that does exactly that.
-Good news, and just confused while the workqueue introduced in binder, why the tty_release() triggered by its work handler, the normal case looks like following:
+This patch applies to 2.6.34-rc4.
 
-(tty_release+0x1c/0x28)
-[   68.068397] [<c021f16c>] (tty_release+0x0/0x28) from [<c01318f8>] (__fput+0xe0/0x210)
-[   68.076177]  r5:00000008 r4:c69009c0
-......
-[   68.102362]  r7:00000006 r6:c69009c0 r5:c78a60c0 r4:c281e000
-[   68.108026] [<c012f748>] (sys_close+0x0/0x110) from [<c0089f40>] (ret_fast_syscall+0x0/0x2c)
-[   68.116453]  r7:00000006 r6:0002ac60 r5:00000010 r4:0002ef08
-[   68.122068] ---[ end trace 6c2209be9c1c296c ]---
-[   68.234009] option_release
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/configs/mx51_defconfig |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
-Thanks
-Yuping
+diff --git a/arch/arm/configs/mx51_defconfig b/arch/arm/configs/mx51_defconfig
+index c88e952..a708fd6 100644
+--- a/arch/arm/configs/mx51_defconfig
++++ b/arch/arm/configs/mx51_defconfig
+@@ -809,7 +809,22 @@ CONFIG_SSB_POSSIBLE=y
+ CONFIG_DUMMY_CONSOLE=y
+ # CONFIG_SOUND is not set
+ # CONFIG_HID_SUPPORT is not set
+-# CONFIG_USB_SUPPORT is not set
++CONFIG_USB_SUPPORT=y
++CONFIG_USB_ARCH_HAS_HCD=y
++# CONFIG_USB_ARCH_HAS_OHCI is not set
++CONFIG_USB_ARCH_HAS_EHCI=y
++CONFIG_USB=y
++
++#
++# USB Host Controller Drivers
++#
++# CONFIG_USB_C67X00_HCD is not set
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_ROOT_HUB_TT=y
++# CONFIG_USB_EHCI_TT_NEWSCHED is not set
++CONFIG_USB_EHCI_MXC=y
++
++
+ CONFIG_MMC=y
+ # CONFIG_MMC_DEBUG is not set
+ # CONFIG_MMC_UNSAFE_RESUME is not set
+-- 
+1.6.0.4
 
-
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
