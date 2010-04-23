@@ -1,98 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab0DWKvW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 06:51:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40724 "EHLO hera.kernel.org"
+	id S1757205Ab0DWKv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 06:51:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40726 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757171Ab0DWKvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 06:51:16 -0400
-Date: Fri, 23 Apr 2010 10:49:40 GMT
-From: tip-bot for Benjamin Herrenschmidt <benh@kernel.crashing.org>
+	id S1757092Ab0DWKvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 06:51:25 -0400
+Date: Fri, 23 Apr 2010 10:50:33 GMT
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       benh@kernel.crashing.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+       a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
        mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       benh@kernel.crashing.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+       a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
        mingo@elte.hu
-In-Reply-To: <1271212509.13059.135.camel@pasglop>
-References: <1271212509.13059.135.camel@pasglop>
+In-Reply-To: <1270079265.7835.8.camel@sbs-t61.sc.intel.com>
+References: <1270079265.7835.8.camel@sbs-t61.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] mutex: Don't spin when the owner CPU is offline or other weird cases
-Message-ID: <tip-4b402210486c6414fe5fbfd85934a0a22da56b04@git.kernel.org>
-Git-Commit-ID: 4b402210486c6414fe5fbfd85934a0a22da56b04
+Subject: [tip:sched/core] sched: Fix select_idle_sibling() logic in select_task_rq_fair()
+Message-ID: <tip-99bd5e2f245d8cd17d040c82d40becdb3efd9b69@git.kernel.org>
+Git-Commit-ID: 99bd5e2f245d8cd17d040c82d40becdb3efd9b69
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Apr 2010 10:49:42 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Apr 2010 10:50:34 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4b402210486c6414fe5fbfd85934a0a22da56b04
-Gitweb:     http://git.kernel.org/tip/4b402210486c6414fe5fbfd85934a0a22da56b04
-Author:     Benjamin Herrenschmidt <benh@kernel.crashing.org>
-AuthorDate: Fri, 16 Apr 2010 23:20:00 +0200
+Commit-ID:  99bd5e2f245d8cd17d040c82d40becdb3efd9b69
+Gitweb:     http://git.kernel.org/tip/99bd5e2f245d8cd17d040c82d40becdb3efd9b69
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Wed, 31 Mar 2010 16:47:45 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 23 Apr 2010 11:00:28 +0200
+CommitDate: Fri, 23 Apr 2010 11:02:02 +0200
 
-mutex: Don't spin when the owner CPU is offline or other weird cases
+sched: Fix select_idle_sibling() logic in select_task_rq_fair()
 
-Due to recent load-balancer changes that delay the task migration to
-the next wakeup, the adaptive mutex spinning ends up in a live lock
-when the owner's CPU gets offlined because the cpu_online() check
-lives before the owner running check.
+Issues in the current select_idle_sibling() logic in select_task_rq_fair()
+in the context of a task wake-up:
 
-This patch changes mutex_spin_on_owner() to return 0 (don't spin) in
-any case where we aren't sure about the owner struct validity or CPU
-number, and if the said CPU is offline. There is no point going back &
-re-evaluate spinning in corner cases like that, let's just go to
-sleep.
+a) Once we select the idle sibling, we use that domain (spanning the cpu that
+   the task is currently woken-up and the idle sibling that we found) in our
+   wake_affine() decisions. This domain is completely different from the
+   domain(we are supposed to use) that spans the cpu that the task currently
+   woken-up and the cpu where the task previously ran.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+b) We do select_idle_sibling() check only for the cpu that the task is
+   currently woken-up on. If select_task_rq_fair() selects the previously run
+   cpu for waking the task, doing a select_idle_sibling() check
+   for that cpu also helps and we don't do this currently.
+
+c) In the scenarios where the cpu that the task is woken-up is busy but
+   with its HT siblings are idle, we are selecting the task be woken-up
+   on the idle HT sibling instead of a core that it previously ran
+   and currently completely idle. i.e., we are not taking decisions based on
+   wake_affine() but directly selecting an idle sibling that can cause
+   an imbalance at the SMT/MC level which will be later corrected by the
+   periodic load balancer.
+
+Fix this by first going through the load imbalance calculations using
+wake_affine() and once we make a decision of woken-up cpu vs previously-ran cpu,
+then choose a possible idle sibling for waking up the task on.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1271212509.13059.135.camel@pasglop>
+LKML-Reference: <1270079265.7835.8.camel@sbs-t61.sc.intel.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched_fair.c |   82 +++++++++++++++++++++++++--------------------------
+ 1 files changed, 40 insertions(+), 42 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 6af210a..de0bd26 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3780,7 +3780,7 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
- 	 * the mutex owner just released it and exited.
- 	 */
- 	if (probe_kernel_address(&owner->cpu, cpu))
--		goto out;
-+		return 0;
- #else
- 	cpu = owner->cpu;
- #endif
-@@ -3790,14 +3790,14 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
- 	 * the cpu field may no longer be valid.
- 	 */
- 	if (cpu >= nr_cpumask_bits)
--		goto out;
-+		return 0;
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 0a413c7..cbd8b8a 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1375,29 +1375,48 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+ /*
+  * Try and locate an idle CPU in the sched_domain.
+  */
+-static int
+-select_idle_sibling(struct task_struct *p, struct sched_domain *sd, int target)
++static int select_idle_sibling(struct task_struct *p, int target)
+ {
+ 	int cpu = smp_processor_id();
+ 	int prev_cpu = task_cpu(p);
++	struct sched_domain *sd;
+ 	int i;
  
  	/*
- 	 * We need to validate that we can do a
- 	 * get_cpu() and that we have the percpu area.
- 	 */
- 	if (!cpu_online(cpu))
--		goto out;
-+		return 0;
- 
- 	rq = cpu_rq(cpu);
- 
-@@ -3816,7 +3816,7 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
- 
- 		cpu_relax();
- 	}
--out:
+-	 * If this domain spans both cpu and prev_cpu (see the SD_WAKE_AFFINE
+-	 * test in select_task_rq_fair) and the prev_cpu is idle then that's
+-	 * always a better target than the current cpu.
++	 * If the task is going to be woken-up on this cpu and if it is
++	 * already idle, then it is the right target.
++	 */
++	if (target == cpu && idle_cpu(cpu))
++		return cpu;
 +
- 	return 1;
- }
++	/*
++	 * If the task is going to be woken-up on the cpu where it previously
++	 * ran and if it is currently idle, then it the right target.
+ 	 */
+-	if (target == cpu && !cpu_rq(prev_cpu)->cfs.nr_running)
++	if (target == prev_cpu && idle_cpu(prev_cpu))
+ 		return prev_cpu;
+ 
+ 	/*
+-	 * Otherwise, iterate the domain and find an elegible idle cpu.
++	 * Otherwise, iterate the domains and find an elegible idle cpu.
+ 	 */
+-	for_each_cpu_and(i, sched_domain_span(sd), &p->cpus_allowed) {
+-		if (!cpu_rq(i)->cfs.nr_running) {
+-			target = i;
++	for_each_domain(target, sd) {
++		if (!(sd->flags & SD_SHARE_PKG_RESOURCES))
+ 			break;
++
++		for_each_cpu_and(i, sched_domain_span(sd), &p->cpus_allowed) {
++			if (idle_cpu(i)) {
++				target = i;
++				break;
++			}
+ 		}
++
++		/*
++		 * Lets stop looking for an idle sibling when we reached
++		 * the domain that spans the current cpu and prev_cpu.
++		 */
++		if (cpumask_test_cpu(cpu, sched_domain_span(sd)) &&
++		    cpumask_test_cpu(prev_cpu, sched_domain_span(sd)))
++			break;
+ 	}
+ 
+ 	return target;
+@@ -1421,7 +1440,7 @@ select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_
+ 	int cpu = smp_processor_id();
+ 	int prev_cpu = task_cpu(p);
+ 	int new_cpu = cpu;
+-	int want_affine = 0, cpu_idle = !current->pid;
++	int want_affine = 0;
+ 	int want_sd = 1;
+ 	int sync = wake_flags & WF_SYNC;
+ 
+@@ -1460,36 +1479,13 @@ select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_
+ 		}
+ 
+ 		/*
+-		 * While iterating the domains looking for a spanning
+-		 * WAKE_AFFINE domain, adjust the affine target to any idle cpu
+-		 * in cache sharing domains along the way.
++		 * If both cpu and prev_cpu are part of this domain,
++		 * cpu is a valid SD_WAKE_AFFINE target.
+ 		 */
+-		if (want_affine) {
+-			int target = -1;
+-
+-			/*
+-			 * If both cpu and prev_cpu are part of this domain,
+-			 * cpu is a valid SD_WAKE_AFFINE target.
+-			 */
+-			if (cpumask_test_cpu(prev_cpu, sched_domain_span(tmp)))
+-				target = cpu;
+-
+-			/*
+-			 * If there's an idle sibling in this domain, make that
+-			 * the wake_affine target instead of the current cpu.
+-			 */
+-			if (!cpu_idle && tmp->flags & SD_SHARE_PKG_RESOURCES)
+-				target = select_idle_sibling(p, tmp, target);
+-
+-			if (target >= 0) {
+-				if (tmp->flags & SD_WAKE_AFFINE) {
+-					affine_sd = tmp;
+-					want_affine = 0;
+-					if (target != cpu)
+-						cpu_idle = 1;
+-				}
+-				cpu = target;
+-			}
++		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
++		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
++			affine_sd = tmp;
++			want_affine = 0;
+ 		}
+ 
+ 		if (!want_sd && !want_affine)
+@@ -1520,8 +1516,10 @@ select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_
  #endif
+ 
+ 	if (affine_sd) {
+-		if (cpu_idle || cpu == prev_cpu || wake_affine(affine_sd, p, sync))
+-			return cpu;
++		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
++			return select_idle_sibling(p, cpu);
++		else
++			return select_idle_sibling(p, prev_cpu);
+ 	}
+ 
+ 	while (sd) {
