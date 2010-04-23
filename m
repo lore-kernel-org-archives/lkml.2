@@ -1,229 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab0DWLeM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 07:34:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22451 "EHLO mx1.redhat.com"
+	id S1757149Ab0DWLft (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 07:35:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25936 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753710Ab0DWLeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 07:34:07 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100423195127.48095127.toshi.okajima@jp.fujitsu.com>
-References: <20100423195127.48095127.toshi.okajima@jp.fujitsu.com> <20100422163755.355794e3.toshi.okajima@jp.fujitsu.com> <7894.1271931370@redhat.com> <20100423194547.3135efb8.toshi.okajima@jp.fujitsu.com>
-To: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org, security@kernel.org,
-       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1][BUG][TAKE2] KEYRINGS: find_keyring_by_name() can gain the freed keyring
-Date: Fri, 23 Apr 2010 12:33:57 +0100
-Message-ID: <10934.1272022437@redhat.com>
+	id S1753710Ab0DWLfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 07:35:47 -0400
+Message-ID: <4BD1860E.7000103@redhat.com>
+Date: Fri, 23 Apr 2010 14:35:42 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/10] KVM MMU: don't write-protect if have new mapping
+ to unsync page
+References: <4BCFE581.8050305@cn.fujitsu.com> <4BCFE8F0.7010509@cn.fujitsu.com>
+In-Reply-To: <4BCFE8F0.7010509@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com> wrote:
+On 04/22/2010 09:13 AM, Xiao Guangrong wrote:
+> If have new mapping to the unsync page(i.e, add a new parent), just
+> update the page from sp->gfn but not write-protect gfn, and if need
+> create new shadow page form sp->gfn, we should sync it
+>    
 
-> -			/* we've got a match */
-> -			atomic_inc(&keyring->usage);
-> +			/* we've got a match but must confirm this key 
-> +			 * is still valid */
-> +			if (atomic_inc_return(&keyring->usage) == 1) {
-> +				spin_lock(&key_serial_lock);
-> +				/* If this keyring is not still started freeing,
-> +				 * we must let key_cleanup() release this */
-> +				atomic_set(&keyring->usage, 0);
-> +				spin_unlock(&key_serial_lock);
-> +				goto not_found;
-> +			}
+Sorry, I don't understand this patch.  Can you clarify?  for example, 
+the situation before adding the new parent, what the guest action was, 
+and the new situation.
 
-Better still, atomic_inc_not_zero().  How about the attached patch?
-
-David
----
-From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Subject: [PATCH] KEYS: find_keyring_by_name() can gain access to a freed keyring
-
-find_keyring_by_name() can gain access to a keyring that has had its reference
-count reduced to zero, and is thus ready to be freed.  This then allows the
-dead keyring to be brought back into use whilst it is being destroyed.
-
-The following timeline illustrates the process:
-
-|
-|(cleaner)				(user)
-| free_user(user)			sys_keyctl()
-|  |                                     |
-|  key_put(user->session_keyring)        keyctl_get_keyring_ID()
-|  ||	//=> keyring->usage = 0           |
-|  |schedule_work(&key_cleanup_task)      lookup_user_key()
-|  ||                                      |
-|  kmem_cache_free(,user)                  |
-|  .                                       |[KEY_SPEC_USER_KEYRING]
-|  .                                       install_user_keyrings()
-|  .                                       ||
-| key_cleanup() [<= worker_thread()]       ||
-|  |                                       ||
-|  [spin_lock(&key_serial_lock)]           |[mutex_lock(&key_user_keyr..mutex)]
-|  |                                       ||
-|  rb_ease(&key->serial_node,)             ||
-|  |                                       ||
-|  [spin_unlock(&key_serial_lock)]         |find_keyring_by_name()
-|  |                                       |||
-|  keyring_destroy(keyring)                ||[read_lock(&keyring_name_lock)]
-|  ||                                      |||
-|  |[write_lock(&keyring_name_lock)]       ||*** GET freeing keyring ***
-|  |.                                      ||[read_unlock(&keyring_name_lock)]
-|  ||                                      |||
-|  |list_del()                             |||
-|  ||                                      |||
-|  |[write_unlock(&keyring_name_lock)]     |||
-|  |                                       |||
-|  kmem_cache_free(,keyring)               |||
-|                                          ||atomic_inc(&keyring->usage)
-|                                          || ***DESTROYED***
-|                                          |[mutex_unlock(&key_user_k..mutex)]
-v                                          |
-TIME                                       ** INVALID keyring is returned **
-
-
-If CONFIG_SLUB_DEBUG=y then we may see the following message generated:
-
-	=============================================================================
-	BUG key_jar: Poison overwritten
-	-----------------------------------------------------------------------------
-
-	INFO: 0xffff880197a7e200-0xffff880197a7e200. First byte 0x6a instead of 0x6b
-	INFO: Allocated in key_alloc+0x10b/0x35f age=25 cpu=1 pid=5086
-	INFO: Freed in key_cleanup+0xd0/0xd5 age=12 cpu=1 pid=10
-	INFO: Slab 0xffffea000592cb90 objects=16 used=2 fp=0xffff880197a7e200 flags=0x200000000000c3
-	INFO: Object 0xffff880197a7e200 @offset=512 fp=0xffff880197a7e300
-
-	Bytes b4 0xffff880197a7e1f0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-	  Object 0xffff880197a7e200:  6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b jkkkkkkkkkkkkkkk
-
-
-Alternatively, we may see a system panic happen, such as:
-
-	BUG: unable to handle kernel NULL pointer dereference at 0000000000000001
-	IP: [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
-	PGD 6b2b4067 PUD 6a80d067 PMD 0
-	Oops: 0000 [#1] SMP
-	last sysfs file: /sys/kernel/kexec_crash_loaded
-	CPU 1
-	...
-	Pid: 31245, comm: su Not tainted 2.6.34-rc5-nofixed-nodebug #2 D2089/PRIMERGY
-	RIP: 0010:[<ffffffff810e61a3>]  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
-	RSP: 0018:ffff88006af3bd98  EFLAGS: 00010002
-	RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88007d19900b
-	RDX: 0000000100000000 RSI: 00000000000080d0 RDI: ffffffff81828430
-	RBP: ffffffff81828430 R08: ffff88000a293750 R09: 0000000000000000
-	R10: 0000000000000001 R11: 0000000000100000 R12: 00000000000080d0
-	R13: 00000000000080d0 R14: 0000000000000296 R15: ffffffff810f20ce
-	FS:  00007f97116bc700(0000) GS:ffff88000a280000(0000) knlGS:0000000000000000
-	CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-	CR2: 0000000000000001 CR3: 000000006a91c000 CR4: 00000000000006e0
-	DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-	DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-	Process su (pid: 31245, threadinfo ffff88006af3a000, task ffff8800374414c0)
-	Stack:
-	 0000000512e0958e 0000000000008000 ffff880037f8d180 0000000000000001
-	 0000000000000000 0000000000008001 ffff88007d199000 ffffffff810f20ce
-	 0000000000008000 ffff88006af3be48 0000000000000024 ffffffff810face3
-	Call Trace:
-	 [<ffffffff810f20ce>] ? get_empty_filp+0x70/0x12f
-	 [<ffffffff810face3>] ? do_filp_open+0x145/0x590
-	 [<ffffffff810ce208>] ? tlb_finish_mmu+0x2a/0x33
-	 [<ffffffff810ce43c>] ? unmap_region+0xd3/0xe2
-	 [<ffffffff810e4393>] ? virt_to_head_page+0x9/0x2d
-	 [<ffffffff81103916>] ? alloc_fd+0x69/0x10e
-	 [<ffffffff810ef4ed>] ? do_sys_open+0x56/0xfc
-	 [<ffffffff81008a02>] ? system_call_fastpath+0x16/0x1b
-	Code: 0f 1f 44 00 00 49 89 c6 fa 66 0f 1f 44 00 00 65 4c 8b 04 25 60 e8 00 00 48 8b 45 00 49 01 c0 49 8b 18 48 85 db 74 0d 48 63 45 18 <48> 8b 04 03 49 89 00 eb 14 4c 89 f9 83 ca ff 44 89 e6 48 89 ef
-	RIP  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
-
-
-This problem is that find_keyring_by_name does not confirm that the keyring is
-valid before accepting it.
-
-Skipping keyrings that have been reduced to a zero count seems the way to go.
-To this end, use atomic_inc_not_zero() to increment the usage count and skip
-the candidate keyring if that returns false.
-
-The following script _may_ cause the bug to happen, but there's no guarantee
-as the window of opportunity is small:
-
-	#!/bin/sh
-	LOOP=100000
-	USER=dummy_user
-	/bin/su -c "exit;" $USER || { /usr/sbin/adduser -m $USER; add=1; }
-	for ((i=0; i<LOOP; i++))
-	do
-		/bin/su -c "echo '$i' > /dev/null" $USER
-	done
-	(( add == 1 )) && /usr/sbin/userdel -r $USER
-	exit
-
-Note that the nominated user must not be in use.
-
-An alternative way of testing this may be:
-
-	for ((i=0; i<100000; i++))
-	do
-		keyctl session foo /bin/true || break
-	done >&/dev/null
-
-as that uses a keyring named "foo" rather than relying on the user and
-user-session named keyrings.
-
-Reported-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- security/keys/keyring.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
-
-
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 8fa2df0..d570824 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -526,9 +526,8 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
- 	struct key *keyring;
- 	int bucket;
- 
--	keyring = ERR_PTR(-EINVAL);
- 	if (!name)
--		goto error;
-+		return ERR_PTR(-EINVAL);
- 
- 	bucket = keyring_hash(name);
- 
-@@ -555,17 +554,18 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
- 					   KEY_SEARCH) < 0)
- 				continue;
- 
--			/* we've got a match */
--			atomic_inc(&keyring->usage);
--			read_unlock(&keyring_name_lock);
--			goto error;
-+			/* we've got a match but we might end up racing with
-+			 * key_cleanup() if the keyring is currently 'dead'
-+			 * (ie. it has a zero usage count) */
-+			if (!atomic_inc_not_zero(&keyring->usage))
-+				continue;
-+			goto out;
- 		}
- 	}
- 
--	read_unlock(&keyring_name_lock);
- 	keyring = ERR_PTR(-ENOKEY);
--
-- error:
-+out:
-+	read_unlock(&keyring_name_lock);
- 	return keyring;
- 
- } /* end find_keyring_by_name() */
+-- 
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
 
