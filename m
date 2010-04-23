@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab0DWPFx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 11:05:53 -0400
-Received: from mail-bw0-f225.google.com ([209.85.218.225]:36446 "EHLO
-	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755450Ab0DWPFv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 11:05:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=hepbVxpeBMCW6HSvt2f5dd47DnHCOYuhe7qwaMVWhbymOWrnICbokmoFMy9rut6yHO
-         AMBKfV+i8I/gSAzv89iKv41HW86fcWRdV44RNjAgUgiq3RsAdfo6V7GIajWSsNKAP3vo
-         JYN9dkJW9+MEkb/u/84bRSDhpeG5D9fCwJL+8=
+	id S1755539Ab0DWPJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 11:09:29 -0400
+Received: from bar.sig21.net ([80.81.252.164]:49831 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752886Ab0DWPJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 11:09:26 -0400
+Date: Fri, 23 Apr 2010 17:09:17 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       John Stultz <johnstul@us.ibm.com>, Magnus Damm <damm@opensource.se>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Q: sched_clock() vs. clocksource, how to implement correctly
+Message-ID: <20100423150917.GA25714@sig21.net>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1004231020300.1777-100000@iolanthe.rowland.org>
-References: <1272025288-32555-2-git-send-email-fabien.chouteau@gmail.com>
-	 <Pine.LNX.4.44L0.1004231020300.1777-100000@iolanthe.rowland.org>
-Date: Fri, 23 Apr 2010 17:05:49 +0200
-Message-ID: <g2lfb5cec441004230805m8fc1251ekeb936837349b6e16@mail.gmail.com>
-Subject: Re: [PATCH RESEND 2/2] Mass storage gadget: Handle eject request
-From: Chouteau Fabien <fabien.chouteau@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Michal Nazarewicz <m.nazarewicz@samsung.com>,
-       Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.6 (---)
+X-Spam-21-Report: No, score=-3.6 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.777,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 4:23 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->
-> On Fri, 23 Apr 2010 fabien.chouteau@gmail.com wrote:
->
-> > From: Fabien Chouteau <fabien.chouteau@barco.com>
-> >
-> > This patch adds handling of the "Start/Stop Unit" SCSI request to simulate media
-> > ejection. A sysfs entry to get the "eject" state of a LUN is also added.
->
-> Sorry I didn't notice this earlier...
->
-> > --- a/drivers/usb/gadget/f_mass_storage.c
-> > +++ b/drivers/usb/gadget/f_mass_storage.c
-> > @@ -163,6 +163,13 @@
-> >   * ro setting are not allowed when the medium is loaded or if CD-ROM
-> >   * emulation is being used.
-> >   *
-> > + * When a LUN receive an "eject" SCSI request (Start/Stop Unit),
-> > + * if the LUN is removable, the backing file is released to simulate
-> > + * ejection.
-> > + * The "eject" state of a LUN is available in the "ejected" file of the
-> > + * LUN's sysfs directory (see above). The "eject" state is only updated
-> > + * by SCSI request, not by user ejection.
->
-> What's the reason for that?  With a real removable device, like a CD
-> player, it doesn't make any difference whether the medium was ejected
-> because of a SCSI command or because I pressed the "eject" button.
->
-> I just don't see any point in keeping track of the two actions
-> separately, since they end up having the same final result.
->
+Hi,
 
-By user ejection, I mean send an empty line in the "file" sysfs entry.
-The Start/Stop request is an action from the USB host side, user
-ejection is from the USB device side, for me it's two different
-events.
-Maybe my comment is not clear about this point.
+I'm trying to figure out how to correctly implement sched_clock()
+for an ARM board.  However, looking at existing implementations
+leaves me rather confused.
 
-I use a FAT disk image as LUN file, users can put some files in the
-"fake" disk and then eject it. When I get the ejected signal, I mount
-the disk image on loop device and perform operations on the user's
-files.
-So I want to know when users eject the disk and only when users do.
+E.g. arch/arm/mach-u300/timer.c has
 
-I still can use the LUN ejection from device side to disable the mass
-storage device, and in this case I don't want to mount the disk and
-search for user's files.
+static cycle_t u300_get_cycles(struct clocksource *cs)
+{
+	return (cycles_t) readl(U300_TIMER_APP_VBASE + U300_TIMER_APP_GPT2CC);
+}
 
---
-Fabien Chouteau
-EPITA GISTR 2010
+static struct clocksource clocksource_u300_1mhz = {
+	.name           = "GPT2",
+	.rating         = 300, /* Reasonably fast and accurate clock source */
+	.read           = u300_get_cycles,
+	.mask           = CLOCKSOURCE_MASK(32), /* 32 bits */
+	/* 22 calculated using the algorithm in arch/mips/kernel/time.c */
+	.shift          = 22,
+	.flags          = CLOCK_SOURCE_IS_CONTINUOUS,
+};
+
+unsigned long long notrace sched_clock(void)
+{
+	return clocksource_cyc2ns(clocksource_u300_1mhz.read(
+				  &clocksource_u300_1mhz),
+				  clocksource_u300_1mhz.mult,
+				  clocksource_u300_1mhz.shift);
+}
+
+Thus, sched_clock() is based on a 1MHz 32bit counter which wraps
+after about 71 minutes.  There are a few similar sched_clock()
+implementations in the tree.
+
+Questions:
+
+- Isn't sched_clock() supposed to be extended to 64bit so
+  that it practically never wraps?
+  (old implementations use cnt32_to_63())
+
+- What would be the effect on scheduling when sched_clock() wraps?
+
+- What is the effect of the sched_clock() frequency on scheduling?
+  Is there a benefit from setting the freq as high as possible?
+
+- Is struct timecounter + struct cyclecounter + timecounter_read()
+  designated way to implement sched_clock() with a 32bit hw counter?
+
+  arch/microblaze/kernel/timer.c seems to be the only user
+  of timecounter/cyclecounter in arch/, but I don't get what it does.
+
+  Or is it better to stick with cnt32_to_63()?
+
+- Also regarding the clocksource.shift value, I found
+  http://lkml.org/lkml/2008/5/8/270 and it seems to suggest
+  to use a low shift value, whereas arch/mips/kernel/time.c
+  seems to result in a large one. Is the posting correct?
+
+
+Thanks,
+Johannes
