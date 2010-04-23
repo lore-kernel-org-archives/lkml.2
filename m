@@ -1,159 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751085Ab0DWECN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 00:02:13 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36059 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722Ab0DWECL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 00:02:11 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 23 Apr 2010 12:58:14 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: [BUGFIX][PATCH] memcg rcu lock fix v2
-Message-Id: <20100423125814.01e95bce.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4BD11A24.2070500@cn.fujitsu.com>
-References: <4BD10D59.9090504@cn.fujitsu.com>
-	<20100423121424.ae47efcb.kamezawa.hiroyu@jp.fujitsu.com>
-	<4BD118E2.7080307@cn.fujitsu.com>
-	<4BD11A24.2070500@cn.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754839Ab0DWBo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 21:44:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31270 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753875Ab0DWBo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 21:44:57 -0400
+Message-ID: <4BD0FB92.4060301@redhat.com>
+Date: Thu, 22 Apr 2010 15:44:50 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Glauber Costa <glommer@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
+References: <1271675100.1674.818.camel@laptop> <4BCC3A3E.9070909@redhat.com> <20100419142158.GD14158@mothafucka.localdomain> <4BCC69D5.3050209@redhat.com> <1271688411.1488.248.camel@laptop> <4BCC8246.9040202@goop.org> <4BCD748E.7080007@redhat.com> <4BCDF12C.1020702@goop.org> <4BCDF85C.3000004@redhat.com> <4BCE0399.2010708@goop.org> <20100422131113.GA3364@mothafucka.localdomain>
+In-Reply-To: <20100422131113.GA3364@mothafucka.localdomain>
+Content-Type: multipart/mixed;
+ boundary="------------080605020202000901040902"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Apr 2010 11:55:16 +0800
-Li Zefan <lizf@cn.fujitsu.com> wrote:
+This is a multi-part message in MIME format.
+--------------080605020202000901040902
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-> Li Zefan wrote:
-> > KAMEZAWA Hiroyuki wrote:
-> >> On Fri, 23 Apr 2010 11:00:41 +0800
-> >> Li Zefan <lizf@cn.fujitsu.com> wrote:
-> >>
-> >>> with CONFIG_PROVE_RCU=y, I saw this warning, it's because
-> >>> css_id() is not under rcu_read_lock().
-> >>>
-> >> Ok. Thank you for reporting.
-> >> This is ok ? 
-> > 
-> > Yes, and I did some more simple tests on memcg, no more warning
-> > showed up.
-> > 
-> 
-> oops, after trigging oom, I saw 2 more warnings:
-> 
+On 04/22/2010 03:11 AM, Glauber Costa wrote:
+> On Tue, Apr 20, 2010 at 12:42:17PM -0700, Jeremy Fitzhardinge wrote:
+>    
+>> On 04/20/2010 11:54 AM, Avi Kivity wrote:
+>>      
+>>> On 04/20/2010 09:23 PM, Jeremy Fitzhardinge wrote:
+>>>        
+>>>> On 04/20/2010 02:31 AM, Avi Kivity wrote:
+>>>>
+>>>>          
+>>>>> btw, do you want this code in pvclock.c, or shall we keep it kvmclock
+>>>>> specific?
+>>>>>
+>>>>>            
+>>>> I think its a pvclock-level fix.  I'd been hoping to avoid having
+>>>> something like this, but I think its ultimately necessary.
+>>>>
+>>>>          
+>>> Did you observe drift on Xen, or is this "ultimately" pointing at the
+>>> future?
+>>>        
+>> People are reporting weirdnesses that "clocksource=jiffies" apparently
+>> resolves.  Xen and KVM are faced with the same hardware constraints, and
+>> it wouldn't surprise me if there were small measurable
+>> non-monotonicities in the PV clock under Xen.  May as well be safe.
+>>
+>> Of course, it kills any possibility of being able to usefully export
+>> this interface down to usermode.
+>>
+>> My main concern about this kind of simple fix is that if there's a long
+>> term systematic drift between different CPU's tscs, then this will
+>> somewhat mask the problem while giving really awful time measurement on
+>> the "slow" CPU(s).  In that case it really needs to adjust the scaling
+>> factor to correct for the drift (*not* update the offset).  But if we're
+>> definitely only talking about fixed, relatively small time offsets then
+>> it is fine.
+>>      
+> Can you by any chance run ingo's time warp test on those machines?
+>
+> You need to define TOD to 1, and leave out the TSC test.
+>
+> For me, warps exists on every machine out there, but the nehalems, so far
+>    
+Or apply this patch.
 
-Thank you for good testing.
-=
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+--------------080605020202000901040902
+Content-Type: text/plain;
+ name="time-warp.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="time-warp.patch"
 
-css_id() should be called under rcu_read_lock().
-And css_is_ancestor() should be called under rcu_read_lock().
-
-Following is a report from Li Zefan.
-==
-===================================================
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-kernel/cgroup.c:4438 invoked rcu_dereference_check() without protection!
-
-other info that might help us debug this:
-
-
-rcu_scheduler_active = 1, debug_locks = 1
-1 lock held by kswapd0/31:
- #0:  (swap_lock){+.+.-.}, at: [<c05058bb>] swap_info_get+0x4b/0xd0
-
-stack backtrace:
-Pid: 31, comm: kswapd0 Not tainted 2.6.34-rc5-tip+ #13
-Call Trace:
- [<c083c5d6>] ? printk+0x1d/0x1f
- [<c0480744>] lockdep_rcu_dereference+0x94/0xb0
- [<c049d6ed>] css_id+0x5d/0x60
- [<c05165a5>] mem_cgroup_uncharge_swapcache+0x45/0xa0
- [<c0505e4f>] swapcache_free+0x3f/0x60
- [<c04e79e2>] __remove_mapping+0xb2/0xf0
- [<c04e7cbb>] shrink_page_list+0x26b/0x490
- [<c047f85d>] ? put_lock_stats+0xd/0x30
- [<c083fd67>] ? _raw_spin_unlock_irq+0x27/0x50
- [<c0482566>] ? trace_hardirqs_on_caller+0xb6/0x220
- [<c04e8158>] shrink_inactive_list+0x278/0x620
- [<c04729e1>] ? sched_clock_cpu+0x121/0x180
- [<c047e9b8>] ? trace_hardirqs_off_caller+0x18/0x130
- [<c047eadb>] ? trace_hardirqs_off+0xb/0x10
- [<c0843438>] ? sub_preempt_count+0x8/0x90
- [<c047f85d>] ? put_lock_stats+0xd/0x30
- [<c04e8704>] shrink_zone+0x204/0x3c0
- [<c083fcac>] ? _raw_spin_unlock+0x2c/0x50
- [<c04e951e>] kswapd+0x61e/0x7c0
- [<c04e6ed0>] ? isolate_pages_global+0x0/0x1f0
- [<c046bae0>] ? autoremove_wake_function+0x0/0x50
- [<c04e8f00>] ? kswapd+0x0/0x7c0
- [<c046b5e4>] kthread+0x74/0x80
- [<c046b570>] ? kthread+0x0/0x80
- [<c04035ba>] kernel_thread_helper+0x6/0x10
-
-
-
-Reported-by: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-Index: linux-2.6.34-rc5-mm1/mm/memcontrol.c
-===================================================================
---- linux-2.6.34-rc5-mm1.orig/mm/memcontrol.c
-+++ linux-2.6.34-rc5-mm1/mm/memcontrol.c
-@@ -838,10 +838,12 @@ int task_in_mem_cgroup(struct task_struc
- 	 * enabled in "curr" and "curr" is a child of "mem" in *cgroup*
- 	 * hierarchy(even if use_hierarchy is disabled in "mem").
- 	 */
-+	rcu_read_lock();
- 	if (mem->use_hierarchy)
- 		ret = css_is_ancestor(&curr->css, &mem->css);
- 	else
- 		ret = (curr == mem);
-+	rcu_read_unlock();
- 	css_put(&curr->css);
- 	return ret;
+diff -rup a/time-warp-test.c b/time-warp-test.c
+--- a/time-warp-test.c	2010-04-15 16:30:13.955981607 -1000
++++ b/time-warp-test.c	2010-04-15 16:35:37.777982377 -1000
+@@ -91,7 +91,7 @@ static inline unsigned long long __rdtsc
+ {
+ 	DECLARE_ARGS(val, low, high);
+ 
+-	asm volatile("cpuid; rdtsc" : EAX_EDX_RET(val, low, high));
++	asm volatile("cpuid; rdtsc" : EAX_EDX_RET(val, low, high) :: "ebx", "ecx");
+ 
+ 	return EAX_EDX_VAL(val, low, high);
  }
-@@ -1360,9 +1362,13 @@ static int memcg_oom_wake_function(wait_
- 	 * Both of oom_wait_info->mem and wake_mem are stable under us.
- 	 * Then we can use css_is_ancestor without taking care of RCU.
- 	 */
-+	rcu_read_lock();
- 	if (!css_is_ancestor(&oom_wait_info->mem->css, &wake_mem->css) &&
--	    !css_is_ancestor(&wake_mem->css, &oom_wait_info->mem->css))
-+	    !css_is_ancestor(&wake_mem->css, &oom_wait_info->mem->css)) {
-+		rcu_read_unlock();
- 		return 0;
-+	}
-+	rcu_read_unlock();
- 
- wakeup:
- 	return autoremove_wake_function(wait, mode, sync, arg);
-@@ -2401,7 +2407,9 @@ mem_cgroup_uncharge_swapcache(struct pag
- 
- 	/* record memcg information */
- 	if (do_swap_account && swapout && memcg) {
-+		rcu_read_lock();
- 		swap_cgroup_record(ent, css_id(&memcg->css));
-+		rcu_read_unlock();
- 		mem_cgroup_get(memcg);
- 	}
- 	if (swapout && memcg)
 
+--------------080605020202000901040902--
