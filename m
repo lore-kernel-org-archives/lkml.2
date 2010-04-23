@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab0DWQVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 12:21:16 -0400
-Received: from kroah.org ([198.145.64.141]:42839 "EHLO coco.kroah.org"
+	id S1757803Ab0DWQYb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 12:24:31 -0400
+Received: from kroah.org ([198.145.64.141]:48765 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750732Ab0DWQVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 12:21:13 -0400
-Date: Fri, 23 Apr 2010 09:20:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Greg KH <gregkh@suse.de>, Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-usb@vger.kernel.org
-Subject: Re: [GIT PATCH] USB fixes for 2.6.34-git
-Message-ID: <20100423162006.GB21129@kroah.com>
-References: <20100422222610.GA3187@kroah.com>
- <4BD18349.3020405@ru.mvista.com>
+	id S1752283Ab0DWQY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 12:24:29 -0400
+Date: Fri, 23 Apr 2010 09:23:09 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org, akpm@linux-foundation.org,
+       torvalds@linux-foundation.org, stable-review@kernel.org,
+       alan@lxorguk.ukuu.org.uk
+Subject: Re: [stable] [000/139] 2.6.33.3-stable review
+Message-ID: <20100423162309.GA4677@kroah.com>
+References: <20100422195715.GA25490@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BD18349.3020405@ru.mvista.com>
+In-Reply-To: <20100422195715.GA25490@kroah.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 03:23:53PM +0400, Sergei Shtylyov wrote:
-> Hello.
+On Thu, Apr 22, 2010 at 12:57:15PM -0700, Greg KH wrote:
+> This is the start of the stable review cycle for the 2.6.33.3 release.
+> There are 139 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> Greg KH wrote:
+> Responses should be made by Saturday, April 24, 15:00:00 UTC.
+> Anything received after that time might be too late.
 > 
-> >Here are a number of USB bugfixes and new device ids for your 2.6.34-git
-> >tree.
-> >
-> >Nothing really huge, just a bunch of needed fixes for reported problems.
-> >
-> >Please pull from:
-> >	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/
-> >
-> >All of these patches have been in the linux-next and mm trees.
-> >
-> >The full patches will be sent to the linux-usb mailing list, if anyone
-> >wants to see them.
-> 
->   How about this series [1] of 11 MUSB fixes?
-> 
-> [1] http://marc.info/?l=linux-usb&m=126951575000396
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.3-rc1.gz
+> and the diffstat can be found below.
 
-They are still in my to-apply queue, I will get to them.
+A -rc2 patch is now out at:
+ 	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.3-rc2.gz
+
+that fixes some build errors.
 
 thanks,
 
