@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab0DWFOk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 01:14:40 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:33876 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554Ab0DWFN5 (ORCPT
+	id S1755624Ab0DWFOL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 01:14:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34681 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755565Ab0DWFN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 01:13:57 -0400
+	Fri, 23 Apr 2010 01:13:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=XTXidzSCJQjE1wEMg50o7bSCSLDvoX8UOUa2HB01Dm9SNISyFv2vMaXv34cYPux02g
-         84FRDcayrnSsI+vvxf0Vbgq0mtKxYg9lBm6dCTMehh5jDK9+uRUwzjLbfqXYJVrB1/l7
-         ll2CnQKDM+EdkfYCq4oor2YwgpVJdFV1PCQ50=
+        b=WSxTb7SKEhWxNPdDlQlBeLE4Ll5NtWTyhTomySDrh1gyE/UPx+WdJROKPhHeqA7B3G
+         4IbBfUtIfMVgPS18P4PCWRLNBYPdjjEciAtJCW9gdt/7/OAFV0eNrmj+2DMePwZpMhtJ
+         9+Z2G9MVGvAbmWPyTZU+ahUlO3Dgj9hWU0x7U=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -25,9 +25,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Paul Mackerras <paulus@samba.org>,
        Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 3/6] hw-breakpoints: Change/Enforce some breakpoints policies
-Date: Fri, 23 Apr 2010 07:13:56 +0200
-Message-Id: <1271999639-23605-4-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH 5/6] hw-breakpoints: Handle breakpoint weight in allocation constraints
+Date: Fri, 23 Apr 2010 07:13:58 +0200
+Message-Id: <1271999639-23605-6-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1271999639-23605-1-git-send-regression-fweisbec@gmail.com>
@@ -36,35 +36,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current policies of breakpoints in x86 and SH are the following:
+Depending on their nature and on what an arch supports, breakpoints
+may consume more than one address register. For example a simple
+absolute address match usually only requires one address register.
+But an address range match may consume two registers.
 
-- task bound breakpoints can only break on userspace addresses
-- cpu wide breakpoints can only break on kernel addresses
+Currently our slot allocation constraints, that tend to reflect the
+limited arch's resources, always consider that a breakpoint consumes
+one slot.
 
-The former rule prevents ptrace breakpoints to be set to trigger on
-kernel addresses, which is good. But as a side effect, we can't
-breakpoint on kernel addresses for task bound breakpoints.
-
-The latter rule simply makes no sense, there is no reason why we
-can't set breakpoints on userspace while performing cpu bound
-profiles.
-
-We want the following new policies:
-
-- task bound breakpoint can set userspace address breakpoints, with
-no particular privilege required.
-- task bound breakpoints can set kernelspace address breakpoints but
-must be privileged to do that.
-- cpu bound breakpoints can do what they want as they are privileged
-already.
-
-To implement these new policies, this patch checks if we are dealing
-with a kernel address breakpoint, if so and if the exclude_kernel
-parameter is set, we tell the user that the breakpoint is invalid,
-which makes a good generic ptrace protection.
-If we don't have exclude_kernel, ensure the user has the right
-privileges as kernel breakpoints are quite sensitive (risk of
-trap recursion attacks and global performance impacts).
+Then provide a way for archs to tell us the weight of a breakpoint
+through a new hw_breakpoint_weight() helper. This weight will be
+computed against the generic allocation constraints instead of
+a constant value.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Will Deacon <will.deacon@arm.com>
@@ -73,251 +57,161 @@ Cc: K. Prasad <prasad@linux.vnet.ibm.com>
 Cc: Paul Mundt <lethal@linux-sh.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 ---
- arch/sh/include/asm/hw_breakpoint.h  |    3 +-
- arch/sh/kernel/hw_breakpoint.c       |   31 +++++--------------------
- arch/x86/include/asm/hw_breakpoint.h |    5 +--
- arch/x86/kernel/hw_breakpoint.c      |   41 +++++-----------------------------
- kernel/hw_breakpoint.c               |   26 +++++++++++++++++++-
- kernel/trace/trace_functions_graph.c |    2 +
- 6 files changed, 42 insertions(+), 66 deletions(-)
+ kernel/hw_breakpoint.c |   63 ++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 45 insertions(+), 18 deletions(-)
 
-diff --git a/arch/sh/include/asm/hw_breakpoint.h b/arch/sh/include/asm/hw_breakpoint.h
-index 965dd78..c575cf5 100644
---- a/arch/sh/include/asm/hw_breakpoint.h
-+++ b/arch/sh/include/asm/hw_breakpoint.h
-@@ -47,7 +47,8 @@ struct pmu;
- #define HBP_NUM		2
- 
- /* arch/sh/kernel/hw_breakpoint.c */
--extern int arch_check_va_in_userspace(unsigned long va, u16 hbp_len);
-+extern int arch_check_bp_in_kernelspace(struct perf_event *bp);
-+extern int arch_validate_hwbkpt_settings(struct perf_event *bp);
- extern int arch_validate_hwbkpt_settings(struct perf_event *bp,
- 					 struct task_struct *tsk);
- extern int hw_breakpoint_exceptions_notify(struct notifier_block *unused,
-diff --git a/arch/sh/kernel/hw_breakpoint.c b/arch/sh/kernel/hw_breakpoint.c
-index 675eea7..2d44a2d 100644
---- a/arch/sh/kernel/hw_breakpoint.c
-+++ b/arch/sh/kernel/hw_breakpoint.c
-@@ -120,25 +120,16 @@ static int get_hbp_len(u16 hbp_len)
- }
- 
- /*
-- * Check for virtual address in user space.
-- */
--int arch_check_va_in_userspace(unsigned long va, u16 hbp_len)
--{
--	unsigned int len;
--
--	len = get_hbp_len(hbp_len);
--
--	return (va <= TASK_SIZE - len);
--}
--
--/*
-  * Check for virtual address in kernel space.
-  */
--static int arch_check_va_in_kernelspace(unsigned long va, u8 hbp_len)
-+int arch_check_bp_in_kernelspace(struct perf_event *bp)
- {
- 	unsigned int len;
-+	unsigned long va;
-+	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
- 
--	len = get_hbp_len(hbp_len);
-+	va = info->address;
-+	len = get_hbp_len(info->len);
- 
- 	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
- }
-@@ -226,8 +217,7 @@ static int arch_build_bp_info(struct perf_event *bp)
- /*
-  * Validate the arch-specific HW Breakpoint register settings
-  */
--int arch_validate_hwbkpt_settings(struct perf_event *bp,
--				  struct task_struct *tsk)
-+int arch_validate_hwbkpt_settings(struct perf_event *bp)
- {
- 	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
- 	unsigned int align;
-@@ -270,15 +260,6 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp,
- 	if (info->address & align)
- 		return -EINVAL;
- 
--	/* Check that the virtual address is in the proper range */
--	if (tsk) {
--		if (!arch_check_va_in_userspace(info->address, info->len))
--			return -EFAULT;
--	} else {
--		if (!arch_check_va_in_kernelspace(info->address, info->len))
--			return -EFAULT;
--	}
--
- 	return 0;
- }
- 
-diff --git a/arch/x86/include/asm/hw_breakpoint.h b/arch/x86/include/asm/hw_breakpoint.h
-index 2a1bd8f..c77a5a6 100644
---- a/arch/x86/include/asm/hw_breakpoint.h
-+++ b/arch/x86/include/asm/hw_breakpoint.h
-@@ -44,9 +44,8 @@ struct arch_hw_breakpoint {
- struct perf_event;
- struct pmu;
- 
--extern int arch_check_va_in_userspace(unsigned long va, u8 hbp_len);
--extern int arch_validate_hwbkpt_settings(struct perf_event *bp,
--					 struct task_struct *tsk);
-+extern int arch_check_bp_in_kernelspace(struct perf_event *bp);
-+extern int arch_validate_hwbkpt_settings(struct perf_event *bp);
- extern int hw_breakpoint_exceptions_notify(struct notifier_block *unused,
- 					   unsigned long val, void *data);
- 
-diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-index d6cc065..a8f1b80 100644
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -189,25 +189,16 @@ static int get_hbp_len(u8 hbp_len)
- }
- 
- /*
-- * Check for virtual address in user space.
-- */
--int arch_check_va_in_userspace(unsigned long va, u8 hbp_len)
--{
--	unsigned int len;
--
--	len = get_hbp_len(hbp_len);
--
--	return (va <= TASK_SIZE - len);
--}
--
--/*
-  * Check for virtual address in kernel space.
-  */
--static int arch_check_va_in_kernelspace(unsigned long va, u8 hbp_len)
-+int arch_check_bp_in_kernelspace(struct perf_event *bp)
- {
- 	unsigned int len;
-+	unsigned long va;
-+	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
- 
--	len = get_hbp_len(hbp_len);
-+	va = info->address;
-+	len = get_hbp_len(info->len);
- 
- 	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
- }
-@@ -300,8 +291,7 @@ static int arch_build_bp_info(struct perf_event *bp)
- /*
-  * Validate the arch-specific HW Breakpoint register settings
-  */
--int arch_validate_hwbkpt_settings(struct perf_event *bp,
--				  struct task_struct *tsk)
-+int arch_validate_hwbkpt_settings(struct perf_event *bp)
- {
- 	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
- 	unsigned int align;
-@@ -314,16 +304,6 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp,
- 
- 	ret = -EINVAL;
- 
--	if (info->type == X86_BREAKPOINT_EXECUTE)
--		/*
--		 * Ptrace-refactoring code
--		 * For now, we'll allow instruction breakpoint only for user-space
--		 * addresses
--		 */
--		if ((!arch_check_va_in_userspace(info->address, info->len)) &&
--			info->len != X86_BREAKPOINT_EXECUTE)
--			return ret;
--
- 	switch (info->len) {
- 	case X86_BREAKPOINT_LEN_1:
- 		align = 0;
-@@ -350,15 +330,6 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp,
- 	if (info->address & align)
- 		return -EINVAL;
- 
--	/* Check that the virtual address is in the proper range */
--	if (tsk) {
--		if (!arch_check_va_in_userspace(info->address, info->len))
--			return -EFAULT;
--	} else {
--		if (!arch_check_va_in_kernelspace(info->address, info->len))
--			return -EFAULT;
--	}
--
- 	return 0;
- }
- 
 diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
-index 9ed9ae3..89e8a05 100644
+index 8ead134..974498b 100644
 --- a/kernel/hw_breakpoint.c
 +++ b/kernel/hw_breakpoint.c
-@@ -308,6 +308,28 @@ int dbg_release_bp_slot(struct perf_event *bp)
- 	return 0;
- }
+@@ -77,6 +77,11 @@ struct bp_busy_slots {
+ /* Serialize accesses to the above constraints */
+ static DEFINE_MUTEX(nr_bp_mutex);
  
-+static int validate_hw_breakpoint(struct perf_event *bp)
++__weak int hw_breakpoint_weight(struct perf_event *bp)
 +{
-+	int ret;
-+
-+	ret = arch_validate_hwbkpt_settings(bp);
-+	if (ret)
-+		return ret;
-+
-+	if (arch_check_bp_in_kernelspace(bp)) {
-+		if (bp->attr.exclude_kernel)
-+			return -EINVAL;
-+		/*
-+		 * Don't let unprivileged users set a breakpoint in the trap
-+		 * path to avoid trap recursion attacks.
-+		 */
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+	}
-+
-+	return 0;
++	return 1;
 +}
 +
- int register_perf_hw_breakpoint(struct perf_event *bp)
+ static inline enum bp_type_idx find_slot_idx(struct perf_event *bp)
  {
- 	int ret;
-@@ -316,7 +338,7 @@ int register_perf_hw_breakpoint(struct perf_event *bp)
- 	if (ret)
- 		return ret;
- 
--	ret = arch_validate_hwbkpt_settings(bp, bp->ctx->task);
-+	ret = validate_hw_breakpoint(bp);
- 
- 	/* if arch_validate_hwbkpt_settings() fails then release bp slot */
- 	if (ret)
-@@ -363,7 +385,7 @@ int modify_user_hw_breakpoint(struct perf_event *bp, struct perf_event_attr *att
- 	if (attr->disabled)
- 		goto end;
- 
--	err = arch_validate_hwbkpt_settings(bp, bp->ctx->task);
-+	err = validate_hw_breakpoint(bp);
- 	if (!err)
- 		perf_event_enable(bp);
- 
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 9aed1a5..cfcb863 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -287,7 +287,9 @@ void trace_graph_return(struct ftrace_graph_ret *trace)
- 		__trace_graph_return(tr, trace, flags, pc);
+ 	if (bp->attr.bp_type & HW_BREAKPOINT_RW)
+@@ -124,7 +129,7 @@ static int task_bp_pinned(struct task_struct *tsk, enum bp_type_idx type)
+ 	list_for_each_entry(bp, list, event_entry) {
+ 		if (bp->attr.type == PERF_TYPE_BREAKPOINT)
+ 			if (find_slot_idx(bp) == type)
+-				count++;
++				count += hw_breakpoint_weight(bp);
  	}
- 	atomic_dec(&data->disabled);
-+	pause_graph_tracing();
- 	local_irq_restore(flags);
-+	unpause_graph_tracing();
+ 
+ 	raw_spin_unlock_irqrestore(&ctx->lock, flags);
+@@ -174,25 +179,40 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
  }
  
- void set_graph_array(struct trace_array *tr)
+ /*
++ * For now, continue to consider flexible as pinned, until we can
++ * ensure no flexible event can ever be scheduled before a pinned event
++ * in a same cpu.
++ */
++static void
++fetch_this_slot(struct bp_busy_slots *slots, int weight)
++{
++	slots->pinned += weight;
++}
++
++/*
+  * Add a pinned breakpoint for the given task in our constraint table
+  */
+ static void toggle_bp_task_slot(struct task_struct *tsk, int cpu, bool enable,
+-				enum bp_type_idx type)
++				enum bp_type_idx type, int weight)
+ {
+ 	unsigned int *tsk_pinned;
+-	int count = 0;
++	int old_count = 0;
++	int old_idx = 0;
++	int idx = 0;
+ 
+-	count = task_bp_pinned(tsk, type);
++	old_count = task_bp_pinned(tsk, type);
++	old_idx = old_count - 1;
++	idx = old_idx + weight;
+ 
+ 	tsk_pinned = per_cpu(nr_task_bp_pinned[type], cpu);
+ 	if (enable) {
+-		tsk_pinned[count]++;
+-		if (count > 0)
+-			tsk_pinned[count-1]--;
++		tsk_pinned[idx]++;
++		if (old_count > 0)
++			tsk_pinned[old_idx]--;
+ 	} else {
+-		tsk_pinned[count]--;
+-		if (count > 0)
+-			tsk_pinned[count-1]++;
++		tsk_pinned[idx]--;
++		if (old_count > 0)
++			tsk_pinned[old_idx]++;
+ 	}
+ }
+ 
+@@ -200,7 +220,8 @@ static void toggle_bp_task_slot(struct task_struct *tsk, int cpu, bool enable,
+  * Add/remove the given breakpoint in our constraint table
+  */
+ static void
+-toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type)
++toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
++	       int weight)
+ {
+ 	int cpu = bp->cpu;
+ 	struct task_struct *tsk = bp->ctx->task;
+@@ -208,20 +229,20 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type)
+ 	/* Pinned counter task profiling */
+ 	if (tsk) {
+ 		if (cpu >= 0) {
+-			toggle_bp_task_slot(tsk, cpu, enable, type);
++			toggle_bp_task_slot(tsk, cpu, enable, type, weight);
+ 			return;
+ 		}
+ 
+ 		for_each_online_cpu(cpu)
+-			toggle_bp_task_slot(tsk, cpu, enable, type);
++			toggle_bp_task_slot(tsk, cpu, enable, type, weight);
+ 		return;
+ 	}
+ 
+ 	/* Pinned counter cpu profiling */
+ 	if (enable)
+-		per_cpu(nr_cpu_bp_pinned[type], bp->cpu)++;
++		per_cpu(nr_cpu_bp_pinned[type], bp->cpu) += weight;
+ 	else
+-		per_cpu(nr_cpu_bp_pinned[type], bp->cpu)--;
++		per_cpu(nr_cpu_bp_pinned[type], bp->cpu) -= weight;
+ }
+ 
+ /*
+@@ -269,6 +290,7 @@ static int __reserve_bp_slot(struct perf_event *bp)
+ {
+ 	struct bp_busy_slots slots = {0};
+ 	enum bp_type_idx type;
++	int weight;
+ 
+ 	/* Basic checks */
+ 	if (bp->attr.bp_type == HW_BREAKPOINT_EMPTY ||
+@@ -276,13 +298,16 @@ static int __reserve_bp_slot(struct perf_event *bp)
+ 		return -EINVAL;
+ 
+ 	type = find_slot_idx(bp);
++	weight = hw_breakpoint_weight(bp);
++
+ 	fetch_bp_busy_slots(&slots, bp, type);
++	fetch_this_slot(&slots, weight);
+ 
+ 	/* Flexible counters need to keep at least one slot */
+-	if (slots.pinned + (!!slots.flexible) == HBP_NUM)
++	if (slots.pinned + (!!slots.flexible) > HBP_NUM)
+ 		return -ENOSPC;
+ 
+-	toggle_bp_slot(bp, true, type);
++	toggle_bp_slot(bp, true, type, weight);
+ 
+ 	return 0;
+ }
+@@ -303,9 +328,11 @@ int reserve_bp_slot(struct perf_event *bp)
+ static void __release_bp_slot(struct perf_event *bp)
+ {
+ 	enum bp_type_idx type;
++	int weight;
+ 
+ 	type = find_slot_idx(bp);
+-	toggle_bp_slot(bp, false, type);
++	weight = hw_breakpoint_weight(bp);
++	toggle_bp_slot(bp, false, type, weight);
+ }
+ 
+ void release_bp_slot(struct perf_event *bp)
 -- 
 1.6.2.3
 
