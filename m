@@ -1,62 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab0DWJ0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 05:26:37 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47207 "EHLO mx2.mail.elte.hu"
+	id S1756822Ab0DWJ17 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 05:27:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6498 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306Ab0DWJ0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 05:26:36 -0400
-Date: Fri, 23 Apr 2010 11:26:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [GIT PULL] tracing update v2
-Message-ID: <20100423092603.GA20333@elte.hu>
-References: <20100421080544.GA13107@elte.hu>
- <1271894959-14131-1-git-send-regression-fweisbec@gmail.com>
+	id S1756388Ab0DWJ14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 05:27:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,261,1270450800"; 
+   d="scan'208";a="792072419"
+Message-ID: <4BD1681A.3010901@intel.com>
+Date: Fri, 23 Apr 2010 02:27:54 -0700
+From: John Fastabend <john.r.fastabend@intel.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271894959-14131-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH linux-next 1/2] irq: Add CPU mask affinity hint callback
+ framework
+References: <20100420180112.1276.11906.stgit@ppwaskie-hc2.jf.intel.com>	 <1271854785.2101.17.camel@achroite.uk.solarflarecom.com>	 <Pine.WNT.4.64.1004220459110.3324@PPWASKIE-MOBL2.amr.corp.intel.com> <1271950900.2095.25.camel@achroite.uk.solarflarecom.com>
+In-Reply-To: <1271950900.2095.25.camel@achroite.uk.solarflarecom.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ben Hutchings wrote:
+> On Thu, 2010-04-22 at 05:11 -0700, Peter P Waskiewicz Jr wrote:
+>> On Wed, 21 Apr 2010, Ben Hutchings wrote:
+>>
+>>> On Tue, 2010-04-20 at 11:01 -0700, Peter P Waskiewicz Jr wrote:
+>>>> This patch adds a callback function pointer to the irq_desc
+>>>> structure, along with a registration function and a read-only
+>>>> proc entry for each interrupt.
+>>>>
+>>>> This affinity_hint handle for each interrupt can be used by
+>>>> underlying drivers that need a better mechanism to control
+>>>> interrupt affinity.  The underlying driver can register a
+>>>> callback for the interrupt, which will allow the driver to
+>>>> provide the CPU mask for the interrupt to anything that
+>>>> requests it.  The intent is to extend the userspace daemon,
+>>>> irqbalance, to help hint to it a preferred CPU mask to balance
+>>>> the interrupt into.
+>>> Doesn't it make more sense to have the driver follow affinity decisions
+>>> made from user-space?  I realise that reallocating queues is disruptive
+>>> and we probably don't want irqbalance to trigger that, but there should
+>>> be a mechanism for the administrator to trigger it.
+>> The driver here would be assisting userspace (irqbalance) to provide 
+>> better details how the HW is laid out with respect to flows.  As it stands 
+>> today, irqbalance is almost guaranteed to move interrups to CPUs that are 
+>> not aligned with where applications are running for network adapters. 
+>> This is very apparent when running at speeds in the 10 Gigabit range, or 
+>> even multiple 1 Gigabit ports running at the same time.
+> 
+> I'm well aware that irqbalance isn't making good decisions at the
+> moment.  The question is whether this will really help irqbalance to do
+> better.
+> 
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+FCoE is one example where these hints can really help irqbalance make 
+good decisions.  By aligning the interrupt affinity with the FCoE 
+receive processing thread we can avoid context switching from the NET_RX
+softirq to the receive processing thread.
 
-> Ingo,
-> 
-> Please pull the tracing/core branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	tracing/core
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Frederic Weisbecker (1):
->       tracing: Dump either the oops's cpu source or all cpus buffers
-> 
-> 
->  Documentation/kernel-parameters.txt |    6 +++-
->  Documentation/trace/ftrace.txt      |    6 +++-
->  drivers/char/sysrq.c                |    2 +-
->  include/linux/ftrace.h              |    4 ++-
->  include/linux/kernel.h              |   11 ++++++-
->  kernel/trace/trace.c                |   51 ++++++++++++++++++++++++++--------
->  kernel/trace/trace_selftest.c       |    5 ++-
->  7 files changed, 64 insertions(+), 21 deletions(-)
+Because the base driver knows which rx rings are being used for FCoE in 
+a particular configuration and their corresponding vectors it seems to 
+be in the best position to provide good hints to irqbalance.  Also if 
+the mapping changes at some point the base driver will be aware of it.
 
-Pulled, thanks Frederic!
+> [...]
+>>> This just assigns IRQs to the first n CPU threads.  Depending on the
+>>> enumeration order, this might result in assigning an IRQ to each of 2
+>>> threads on a core while leaving other cores unused!
+>> This ixgbe patch is only meant to be an example of how you could use it. 
+>> I didn't hammer out all the corner cases of interrupt alignment in it yet. 
+>> However, ixgbe is already aligning Tx flows onto the CPU/queue pair the Tx 
+>> occurred (i.e. Tx session from CPU 4 will be queued on Tx queue 4),
+> [...]
+> 
+> OK, now I remember ixgbe has this odd select_queue() implementation.
+> But this behaviour can result in reordering whenever a user thread
+> migrates, and in any case Dave discourages people from setting
+> select_queue().  So I see that these changes would be useful for ixgbe
+> (together with an update to irqbalance), but they don't seem to fit the
+> general direction of multiqueue networking on Linux.
 
-	Ingo
+For DCB setting select_queue() is useful because we want to map traffic 
+types to specific tx queues not hash them across all queues.  In this 
+case where we are placing specific traffic on specific queues it also 
+makes sense to align the interrupts for some types such as FCoE.  There 
+shouldn't be any issues with user thread migration in this specific example.
+
+> 
+> (Actually, the hints seem to be incomplete.  If there are more than 16
+> CPU threads then multiple CPU threads can map to the same queues, but it
+> looks like you only include the first in the queue's hint.)
+> 
+> An alternate approach is to use the RX queue index to drive TX queue
+> selection.  I posted a patch to do that earlier this week.  However I
+> haven't yet had a chance to try that on a suitably large system.
+>
+
+I'll post an FCoE example patch soon and take a closer look at your 
+patch, but mapping TX/RX queues in sock's won't help for cases like FCoE.
+
+Thanks,
+John.
+
