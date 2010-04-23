@@ -1,94 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750930Ab0DWEAe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 00:00:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53447 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722Ab0DWEAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 00:00:33 -0400
-Message-ID: <4BD11BCD.4070409@cn.fujitsu.com>
-Date: Fri, 23 Apr 2010 12:02:21 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Balbir Singh <balbir@linux.vnet.ibm.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [BUGFIX][PATCH] memcg rcu lock fix in swap code (Was Re: [BUG]
- an RCU warning in memcg
-References: <4BD10D59.9090504@cn.fujitsu.com>	<20100423121424.ae47efcb.kamezawa.hiroyu@jp.fujitsu.com>	<4BD118E2.7080307@cn.fujitsu.com>	<4BD11A24.2070500@cn.fujitsu.com> <20100423125043.b3b964cd.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100423125043.b3b964cd.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755493Ab0DWE7k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 00:59:40 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:57580 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755420Ab0DWE7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 00:59:38 -0400
+From: Dinh.Nguyen@freescale.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, Jun.Li@freescale.com,
+       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv8 2.6.34-rc5 2/5] mx5: Add USB device definitions for Freescale MX51 Babbage HW
+Date: Thu, 22 Apr 2010 23:51:14 -0500
+Message-Id: <1271998277-3949-2-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1271998277-3949-1-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1271998277-3949-1-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote:
-> On Fri, 23 Apr 2010 11:55:16 +0800
-> Li Zefan <lizf@cn.fujitsu.com> wrote:
-> 
->> Li Zefan wrote:
->>> KAMEZAWA Hiroyuki wrote:
->>>> On Fri, 23 Apr 2010 11:00:41 +0800
->>>> Li Zefan <lizf@cn.fujitsu.com> wrote:
->>>>
->>>>> with CONFIG_PROVE_RCU=y, I saw this warning, it's because
->>>>> css_id() is not under rcu_read_lock().
->>>>>
->>>> Ok. Thank you for reporting.
->>>> This is ok ? 
->>> Yes, and I did some more simple tests on memcg, no more warning
->>> showed up.
->>>
->> oops, after trigging oom, I saw 2 more warnings:
->>
-> 
-> ok, I will update.  thank you.
-> 
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-one more:
+This patch is part of enabling USB for Freescale MX51 Babbage HW. This
+patch adds device structures for USB Host1 and OTG port, and adds
+clocking information for USB HW.
 
-===================================================
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-kernel/cgroup.c:4438 invoked rcu_dereference_check() without protection!
+This patch applies to 2.6.34-rc5.
 
-other info that might help us debug this:
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/clock-mx51.c |    8 ++++++
+ arch/arm/mach-mx5/devices.c    |   49 ++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-mx5/devices.h    |    2 +
+ 3 files changed, 59 insertions(+), 0 deletions(-)
 
+diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
+index 8f85f73..dcca330 100644
+--- a/arch/arm/mach-mx5/clock-mx51.c
++++ b/arch/arm/mach-mx5/clock-mx51.c
+@@ -761,6 +761,10 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG9_OFFSET,
+ DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
+ 	NULL,  NULL, &ipg_clk, NULL);
+ 
++/* USB */
++DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
++	NULL, NULL, &pll3_sw_clk, NULL);
++
+ /* FEC */
+ DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
+ 	NULL,  NULL, &ipg_clk, NULL);
+@@ -778,6 +782,10 @@ static struct clk_lookup lookups[] = {
+ 	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
+ 	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
+ 	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
++	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
++	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
++	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
++	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
+ };
+ 
+ static void clk_tree_init(void)
+diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
+index 5070ae1..e6262f3 100644
+--- a/arch/arm/mach-mx5/devices.c
++++ b/arch/arm/mach-mx5/devices.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/platform_device.h>
++#include <linux/dma-mapping.h>
+ #include <linux/gpio.h>
+ #include <mach/hardware.h>
+ #include <mach/imx-uart.h>
+@@ -92,6 +93,54 @@ struct platform_device mxc_fec_device = {
+ 	.resource = mxc_fec_resources,
+ };
+ 
++static u64 usb_dma_mask = DMA_BIT_MASK(32);
++
++static struct resource usbotg_resources[] = {
++	{
++		.start = MX51_OTG_BASE_ADDR,
++		.end = MX51_OTG_BASE_ADDR + 0x1ff,
++		.flags = IORESOURCE_MEM,
++	},
++	{
++		.start = MX51_MXC_INT_USB_OTG,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++struct platform_device mxc_usbdr_host_device = {
++	.name = "mxc-ehci",
++	.id = 0,
++	.num_resources = ARRAY_SIZE(usbotg_resources),
++	.resource = usbotg_resources,
++	.dev = {
++		.dma_mask = &usb_dma_mask,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
++	},
++};
++
++static struct resource usbh1_resources[] = {
++	{
++		.start = MX51_OTG_BASE_ADDR + 0x200,
++		.end = MX51_OTG_BASE_ADDR + 0x200 + 0x1ff,
++		.flags = IORESOURCE_MEM,
++	},
++	{
++		.start = MX51_MXC_INT_USB_H1,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++struct platform_device mxc_usbh1_device = {
++	.name = "mxc-ehci",
++	.id = 1,
++	.num_resources = ARRAY_SIZE(usbh1_resources),
++	.resource = usbh1_resources,
++	.dev = {
++		.dma_mask = &usb_dma_mask,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
++	},
++};
++
+ static struct mxc_gpio_port mxc_gpio_ports[] = {
+ 	{
+ 		.chip.label = "gpio-0",
+diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
+index f339ab8..95c45f9 100644
+--- a/arch/arm/mach-mx5/devices.h
++++ b/arch/arm/mach-mx5/devices.h
+@@ -2,3 +2,5 @@ extern struct platform_device mxc_uart_device0;
+ extern struct platform_device mxc_uart_device1;
+ extern struct platform_device mxc_uart_device2;
+ extern struct platform_device mxc_fec_device;
++extern struct platform_device mxc_usbdr_host_device;
++extern struct platform_device mxc_usbh1_device;
+-- 
+1.6.0.4
 
-rcu_scheduler_active = 1, debug_locks = 1
-3 locks held by bash/2270:
- #0:  (cgroup_mutex){+.+.+.}, at: [<c049ab37>] cgroup_lock_live_group+0x17/0x30
- #1:  (&mm->mmap_sem){++++++}, at: [<c0517302>] mem_cgroup_can_attach+0xb2/0x130
- #2:  (&(&mm->page_table_lock)->rlock){+.+.-.}, at: [<c0513c23>] mem_cgroup_count_precharge_pte_range+0x93/0x130
-
-stack backtrace:
-Pid: 2270, comm: bash Not tainted 2.6.34-rc5-tip+ #14
-Call Trace:
- [<c083c636>] ? printk+0x1d/0x1f
- [<c0480744>] lockdep_rcu_dereference+0x94/0xb0
- [<c049d6ed>] css_id+0x5d/0x60
- [<c051373f>] is_target_pte_for_mc+0x16f/0x1c0
- [<c083f46b>] ? _raw_spin_lock+0x6b/0x80
- [<c0513c4d>] mem_cgroup_count_precharge_pte_range+0xbd/0x130
- [<c0513b90>] ? mem_cgroup_count_precharge_pte_range+0x0/0x130
- [<c05030bd>] walk_page_range+0x25d/0x3f0
- [<c0517344>] mem_cgroup_can_attach+0xf4/0x130
- [<c0513b90>] ? mem_cgroup_count_precharge_pte_range+0x0/0x130
- [<c0517250>] ? mem_cgroup_can_attach+0x0/0x130
- [<c049e000>] cgroup_attach_task+0x70/0x280
- [<c049e633>] cgroup_tasks_write+0x63/0x1c0
- [<c049e660>] ? cgroup_tasks_write+0x90/0x1c0
- [<c049d515>] cgroup_file_write+0x1f5/0x230
- [<c0842f90>] ? do_page_fault+0x0/0x500
- [<c047107b>] ? up_read+0x1b/0x30
- [<c0843195>] ? do_page_fault+0x205/0x500
- [<c051a8c4>] vfs_write+0xa4/0x1a0
- [<c049d320>] ? cgroup_file_write+0x0/0x230
- [<c051b3f6>] sys_write+0x46/0x70
- [<c0403090>] sysenter_do_call+0x12/0x36
