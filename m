@@ -1,56 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab0DWU7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 16:59:55 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42212 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756835Ab0DWU7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 16:59:53 -0400
-Message-ID: <4BD20A4A.7040408@suse.cz>
-Date: Fri, 23 Apr 2010 22:59:54 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
-MIME-Version: 1.0
-To: Michael Roth <mroth@nessie.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       linux@arm.linux.org.uk
-Subject: Re: [PATCH] [ARM] .gitignore: Ignore piggy.lzo, lib1funcs.S and vmlinux
-References: <1272015498-10749-1-git-send-email-mroth@nessie.de>
-In-Reply-To: <1272015498-10749-1-git-send-email-mroth@nessie.de>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	id S1757273Ab0DWVA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 17:00:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35328 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab0DWVA4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 17:00:56 -0400
+Date: Fri, 23 Apr 2010 13:58:53 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 5/9] PM: suspend_block: Add debugfs file
+Message-Id: <20100423135853.478af057.randy.dunlap@oracle.com>
+In-Reply-To: <1271984938-13920-6-git-send-email-arve@android.com>
+References: <1271984938-13920-1-git-send-email-arve@android.com>
+	<1271984938-13920-2-git-send-email-arve@android.com>
+	<1271984938-13920-3-git-send-email-arve@android.com>
+	<1271984938-13920-4-git-send-email-arve@android.com>
+	<1271984938-13920-5-git-send-email-arve@android.com>
+	<1271984938-13920-6-git-send-email-arve@android.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4BD20A5C.0045:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.4.2010 11:38, Michael Roth wrote:
-> Commit e7db7b4270ed2a606b8c0b5f944a5f92ade0e84c added LZO compressed
-> kernels, lib1funcs.S is copied from the appropriate ARM sub-arch
-> and vmlinux is the obvious fruit of all efforts.
+On Thu, 22 Apr 2010 18:08:54 -0700 Arve Hjønnevåg wrote:
 
-vmlinux started to show up in 'git status' after 6db823c, which changed
-vmlinux to /vmlinux in the top-level .gitignore.
-
-BTW, there is already *.lzo in the top-level .gitignore in linux-next,
-so you could omit piggy.lzo, but anyway
-
-Acked-by: Michal Marek <mmarek@suse.cz>
+> Report active and inactive suspend blockers in
+> /sys/kernel/debug/suspend_blockers.
 
 
-> Signed-off-by: Michael Roth <mroth@nessie.de>
+This looks more like user interface information than it does debug information.
+If that's correct, it shouldn't be in debugfs.
+
+
+> Signed-off-by: Arve Hjønnevåg <arve@android.com>
 > ---
->  arch/arm/boot/compressed/.gitignore |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+>  kernel/power/suspend_blocker.c |   44 ++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 42 insertions(+), 2 deletions(-)
 > 
-> diff --git a/arch/arm/boot/compressed/.gitignore b/arch/arm/boot/compressed/.gitignore
-> index ab204db..6dac3d0 100644
-> --- a/arch/arm/boot/compressed/.gitignore
-> +++ b/arch/arm/boot/compressed/.gitignore
-> @@ -1,3 +1,6 @@
->  font.c
-> +lib1funcs.S
->  piggy.gz
-> +piggy.lzo
-> +vmlinux
->  vmlinux.lds
+> diff --git a/kernel/power/suspend_blocker.c b/kernel/power/suspend_blocker.c
+> index 868e8f1..047e910 100644
+> --- a/kernel/power/suspend_blocker.c
+> +++ b/kernel/power/suspend_blocker.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/rtc.h>
+>  #include <linux/suspend.h>
+>  #include <linux/suspend_blocker.h>
+> +#include <linux/debugfs.h>
+>  #include "power.h"
+>  
+>  enum {
+> @@ -41,6 +42,7 @@ struct workqueue_struct *suspend_work_queue;
+>  struct suspend_blocker main_suspend_blocker;
+>  static suspend_state_t requested_suspend_state = PM_SUSPEND_MEM;
+>  static bool enable_suspend_blockers;
+> +static struct dentry *suspend_blocker_stats_dentry;
+>  
+>  #define pr_info_time(fmt, args...) \
+>  	do { \
+> @@ -54,6 +56,21 @@ static bool enable_suspend_blockers;
+>  			tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec); \
+>  	} while (0);
+>  
+> +static int suspend_blocker_stats_show(struct seq_file *m, void *unused)
+> +{
+> +	unsigned long irqflags;
+> +	struct suspend_blocker *blocker;
+> +
+> +	seq_puts(m, "name\tactive\n");
+> +	spin_lock_irqsave(&list_lock, irqflags);
+> +	list_for_each_entry(blocker, &inactive_blockers, link)
+> +		seq_printf(m, "\"%s\"\t0\n", blocker->name);
+> +	list_for_each_entry(blocker, &active_blockers, link)
+> +		seq_printf(m, "\"%s\"\t1\n", blocker->name);
+> +	spin_unlock_irqrestore(&list_lock, irqflags);
+> +	return 0;
+> +}
+> +
+>  static void print_active_blockers_locked(void)
+>  {
+>  	struct suspend_blocker *blocker;
+> @@ -101,8 +118,8 @@ static DECLARE_WORK(suspend_work, suspend_worker);
+>  /**
+>   * suspend_blocker_init() - Initialize a suspend blocker
+>   * @blocker:	The suspend blocker to initialize.
+> - * @name:	The name of the suspend blocker to show in debug messages.
+> - *
+> + * @name:	The name of the suspend blocker to show in debug messages and
+> + *		/sys/kernel/debug/suspend_blockers.
+>   * The suspend blocker struct and name must not be freed before calling
+>   * suspend_blocker_destroy.
+>   */
+> @@ -240,6 +257,19 @@ int request_suspend_state(suspend_state_t state)
+>  	return 0;
+>  }
+>  
+> +static int suspend_blocker_stats_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, suspend_blocker_stats_show, NULL);
+> +}
+> +
+> +static const struct file_operations suspend_blocker_stats_fops = {
+> +	.owner = THIS_MODULE,
+> +	.open = suspend_blocker_stats_open,
+> +	.read = seq_read,
+> +	.llseek = seq_lseek,
+> +	.release = single_release,
+> +};
+> +
+>  static int __init suspend_block_init(void)
+>  {
+>  	suspend_work_queue = create_singlethread_workqueue("suspend");
+> @@ -251,4 +281,14 @@ static int __init suspend_block_init(void)
+>  	return 0;
+>  }
+>  
+> +static int __init suspend_block_postcore_init(void)
+> +{
+> +	if (!suspend_work_queue)
+> +		return 0;
+> +	suspend_blocker_stats_dentry = debugfs_create_file("suspend_blockers",
+> +			S_IRUGO, NULL, NULL, &suspend_blocker_stats_fops);
+> +	return 0;
+> +}
+> +
+>  core_initcall(suspend_block_init);
+> +postcore_initcall(suspend_block_postcore_init);
+> -- 
 
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
