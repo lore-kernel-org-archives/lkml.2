@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758174Ab0DWQlN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 12:41:13 -0400
-Received: from mail.deathmatch.net ([72.66.92.28]:1792 "EHLO
-	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758052Ab0DWQlL (ORCPT
+	id S1758190Ab0DWQnw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 12:43:52 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49950 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758052Ab0DWQns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 12:41:11 -0400
-Date: Fri, 23 Apr 2010 12:37:03 -0400
-From: me@bobcopeland.com
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Pedro Francisco <pedrogfrancisco@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-wireless@vger.kernel.org, mickflemm@gmail.com
-Subject: Re: ath5k misbehaving affecting other kernel parts unrelated?
-Message-ID: <20100423163703.GB11112@hash.localnet>
-References: <201004230806.13628.pedrogfrancisco@gmail.com> <20100423134823.GB5004@tuxdriver.com>
+	Fri, 23 Apr 2010 12:43:48 -0400
+Date: Fri, 23 Apr 2010 12:43:46 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Pavel Machek <pavel@ucw.cz>
+cc: Arve Hj??nnev??g <arve@android.com>, Len Brown <len.brown@intel.com>,
+       <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
+       <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 2/9] PM: suspend_block: Add driver to access
+ suspend blockers from user-space
+In-Reply-To: <20100423084349.GC1573@ucw.cz>
+Message-ID: <Pine.LNX.4.44L0.1004231242460.1777-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100423134823.GB5004@tuxdriver.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 09:48:23AM -0400, John W. Linville wrote:
-> > a) is it "normal"? I thought modules were somewhat isolated these days.
-> > b) any advices for debugging? I've yet to have two oopses that are similar....
+On Fri, 23 Apr 2010, Pavel Machek wrote:
 
-Advice for debugging: turn on slub/slab debug options, and possibly
-kmemcheck.  kmemcheck was very helpful for me last time I had such
-a corruption issue.
+> Hi!
+> 
+> > Add a misc device, "suspend_blocker", that allows user-space processes
+> > to block auto suspend. The device has ioctls to create a suspend_blocker,
+> > and to block and unblock suspend. To delete the suspend_blocker, close
+> > the device.
+> > 
+> > Signed-off-by: Arve Hj??nnev??g <arve@android.com>
+> 
+> > --- a/Documentation/power/suspend-blockers.txt
+> > +++ b/Documentation/power/suspend-blockers.txt
+> > @@ -95,3 +95,20 @@ if (list_empty(&state->pending_work))
+> >  else
+> >  	suspend_block(&state->suspend_blocker);
+> >  
+> > +User-space API
+> > +==============
+> > +
+> > +To create a suspend_blocker from user-space, open the suspend_blocker device:
+> > +    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
+> > +then call:
+> > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_INIT(strlen(name)), name);
+> 
+> 
+> This seems like very wrong idea -- it uses different ioctl number for
+> each length AFAICT.
 
--- 
-Bob Copeland %% www.bobcopeland.com
+How about specifying the name by an ordinary write() call instead of
+by an ioctl()?
+
+Alan Stern
 
