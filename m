@@ -1,142 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab0DWCLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 22:11:55 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:45273 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab0DWCLy (ORCPT
+	id S1754580Ab0DWAuW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 20:50:22 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55978 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501Ab0DWAuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 22:11:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LsyjlfTYsp/mdGylZipw+Efd+4B/YVk+rOUZLY3DKgNwmAz/qLug85OYMM6vV0uGBE
-         C4gi4h8jc5uz6ylAPWvgGyRG4NAsrqtjkfFk1H3tpqpMaYkUq8dTUWxpQyokIedBHY8H
-         hAcc2GNzhR2cex0JC8JMQm3IGoi3jHxPzQgXY=
-Date: Fri, 23 Apr 2010 04:12:01 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/4] perf: core, add group scheduling
-	transactional APIs
-Message-ID: <20100423021159.GF5600@nowhere>
-References: <1271922662.30535.107.camel@minggr.sh.intel.com> <20100422173152.GA5600@nowhere> <1271988505.3412.20.camel@minggr.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271988505.3412.20.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 22 Apr 2010 20:50:20 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 23 Apr 2010 09:46:25 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2010-04-22-16-38 uploaded
+Message-Id: <20100423094625.70beb17a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <201004230006.o3N06DNO019315@imap1.linux-foundation.org>
+References: <201004230006.o3N06DNO019315@imap1.linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 10:08:25AM +0800, Lin Ming wrote:
-> On Fri, 2010-04-23 at 01:31 +0800, Frederic Weisbecker wrote:
-> > On Thu, Apr 22, 2010 at 03:51:02PM +0800, Lin Ming wrote:
-> > > Add group scheduling transactional APIs to struct pmu.
-> > > These APIs will be implemented in arch code, based on Peter's idea as
-> > > below.
-> > > 
-> > > > the idea behind hw_perf_group_sched_in() is to not perform
-> > > > schedulability tests on each event in the group, but to add the group
-> > > as
-> > > > a whole and then perform one test.
-> > > >
-> > > > Of course, when that test fails, you'll have to roll-back the whole
-> > > > group again.
-> > > >
-> > > > So start_txn (or a better name) would simply toggle a flag in the pmu
-> > > > implementation that will make pmu::enable() not perform the
-> > > > schedulablilty test.
-> > > >
-> > > > Then commit_txn() will perform the schedulability test (so note the
-> > > > method has to have a !void return value, my mistake in the earlier
-> > > > email).
-> > > >
-> > > > This will allow us to use the regular
-> > > > kernel/perf_event.c::group_sched_in() and all the rollback code.
-> > > > Currently each hw_perf_group_sched_in() implementation duplicates all
-> > > > the rolllback code (with various bugs).
-> > > 
-> > > 
-> > > Reviewed-by: Stephane Eranian <eranian@google.com>
-> > > Reviewed-by: Peter Zijlstra <peterz@infradead.org>
-> > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > > ---
-> > >  include/linux/perf_event.h |    8 +++++---
-> > >  kernel/perf_event.c        |   29 ++++++++++++++++-------------
-> > >  2 files changed, 21 insertions(+), 16 deletions(-)
-> > > 
-> > > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> > > index ace31fb..b16cfba 100644
-> > > --- a/include/linux/perf_event.h
-> > > +++ b/include/linux/perf_event.h
-> > > @@ -532,6 +532,8 @@ struct hw_perf_event {
-> > >  
-> > >  struct perf_event;
-> > >  
-> > > +#define PERF_EVENT_TRAN_STARTED 1
-> > > +
-> > >  /**
-> > >   * struct pmu - generic performance monitoring unit
-> > >   */
-> > > @@ -542,6 +544,9 @@ struct pmu {
-> > >  	void (*stop)			(struct perf_event *event);
-> > >  	void (*read)			(struct perf_event *event);
-> > >  	void (*unthrottle)		(struct perf_event *event);
-> > > +	void (*start_txn)		(const struct pmu *pmu);
-> > > +	void (*stop_txn)		(const struct pmu *pmu);
-> > > +	int (*commit_txn)		(const struct pmu *pmu);
-> > 
-> > 
-> > Please add a few comments that briefly explain what these
-> > *_txn callbacks are supposed to mean.
-> > 
-> > Unless txn is an acronym that most kernel developers are used to.
-> 
-> How about below changes?
-> 
-> Thanks for review.
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index b16cfba..bba4c60 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -544,9 +544,21 @@ struct pmu {
->  	void (*stop)			(struct perf_event *event);
->  	void (*read)			(struct perf_event *event);
->  	void (*unthrottle)		(struct perf_event *event);
-> -	void (*start_txn)		(const struct pmu *pmu);
-> -	void (*stop_txn)		(const struct pmu *pmu);
-> -	int (*commit_txn)		(const struct pmu *pmu);
-> +
-> +	/*
-> +	 * group events scheduling is treated as a transaction,
-> +	 * add group events as a whole and perform one schedulability test.
-> +	 * If test fails, roll back the whole group
-> +	 */
-> +
-> +	/* start group events transaction  */
-> +	void (*start_group_trans)	(const struct pmu *pmu);
-> +
-> +	/* stop group events transaction  */
-> +	void (*stop_group_trans)	(const struct pmu *pmu);
-> +
-> +	/* commit group events transaction */
-> +	int (*commit_group_trans)	(const struct pmu *pmu);
->  };
+On Thu, 22 Apr 2010 16:38:55 -0700
+akpm@linux-foundation.org wrote:
 
+> The mm-of-the-moment snapshot 2010-04-22-16-38 has been uploaded to
+> 
+>    http://userweb.kernel.org/~akpm/mmotm/
+> 
+> and will soon be available at
+> 
+>    git://zen-kernel.org/kernel/mmotm.git
+> 
+> It contains the following patches against 2.6.34-rc5:
+> 
 
-Looks good!
+> drivers-usb-net-kawethc-add-device-allied-telesyn-at-usb10-usb-ethernet-adapter.patch
 
-Thanks.
+This patch can't be applied...
+maybe drivers/usb/net directory doesn't exist ??
+
+Now I just skip this one. 
+
+Thanks,
+-Kame
 
