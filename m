@@ -1,272 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab0DWBLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 21:11:49 -0400
-Received: from mail-yw0-f194.google.com ([209.85.211.194]:50164 "EHLO
-	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668Ab0DWBKD (ORCPT
+	id S1755408Ab0DWEzX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 00:55:23 -0400
+Received: from mail-iw0-f178.google.com ([209.85.223.178]:42973 "EHLO
+	mail-iw0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755259Ab0DWEzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 21:10:03 -0400
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Randy Dunlap <rdunlap@xenotime.net>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-doc@vger.kernel.org
-Subject: [PATCH 2/9] PM: suspend_block: Add driver to access suspend blockers from user-space
-Date: Thu, 22 Apr 2010 18:08:51 -0700
-Message-Id: <1271984938-13920-3-git-send-email-arve@android.com>
-X-Mailer: git-send-email 1.6.5.1
-In-Reply-To: <1271984938-13920-2-git-send-email-arve@android.com>
-References: <1271984938-13920-1-git-send-email-arve@android.com>
- <1271984938-13920-2-git-send-email-arve@android.com>
+	Fri, 23 Apr 2010 00:55:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=pgWFezxOxgPGbxhtuZC/0FoHDiGUoHb2JdYlFf0h7rMMBG9hqNlLQ3W/s06F8mL840
+         0crV7kgMe1nRqdXovyLeYSqybrN19lu+ofLmlF+9U/wy25eQs0M2cry3/5uGhL/iQu+2
+         ZxDLyz6nsbGHbBDJ1HUR9hfOsrUKcEaCdVmmI=
 MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1004221009150.32107@router.home>
+References: <1271797276-31358-1-git-send-email-mel@csn.ul.ie>
+	 <20100421153421.GM30306@csn.ul.ie>
+	 <alpine.DEB.2.00.1004211038020.4959@router.home>
+	 <20100422092819.GR30306@csn.ul.ie>
+	 <20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com>
+	 <x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com>
+	 <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com>
+	 <1271946226.2100.211.camel@barrios-desktop>
+	 <alpine.DEB.2.00.1004221009150.32107@router.home>
+Date: Fri, 23 Apr 2010 13:55:19 +0900
+Message-ID: <x2i28c262361004222155w354632eq636186639ac445b7@mail.gmail.com>
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of PageSwapCache 
+	pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a misc device, "suspend_blocker", that allows user-space processes
-to block auto suspend. The device has ioctls to create a suspend_blocker,
-and to block and unblock suspend. To delete the suspend_blocker, close
-the device.
+Hi, Christoph.
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
----
- Documentation/power/suspend-blockers.txt |   17 ++++
- include/linux/suspend_block_dev.h        |   25 ++++++
- kernel/power/Kconfig                     |    9 ++
- kernel/power/Makefile                    |    1 +
- kernel/power/user_suspend_blocker.c      |  128 ++++++++++++++++++++++++++++++
- 5 files changed, 180 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/suspend_block_dev.h
- create mode 100644 kernel/power/user_suspend_blocker.c
+On Fri, Apr 23, 2010 at 12:14 AM, Christoph Lameter <cl@linux.com> wrote:
+> On Thu, 22 Apr 2010, Minchan Kim wrote:
+>
+>> For further optimization, we can hold vma->adjust_lock if vma_address
+>> returns -EFAULT. But I hope we redesigns it without new locking.
+>> But I don't have good idea, now. :(
+>
+> You could make it atomic through the use of RCU.
+>
+> Create a new vma entry with the changed parameters and then atomically
+> switch to the new vma.
+> Problem is that you have some list_heads in there.
 
-diff --git a/Documentation/power/suspend-blockers.txt b/Documentation/power/suspend-blockers.txt
-index 1c48514..877bd8c 100644
---- a/Documentation/power/suspend-blockers.txt
-+++ b/Documentation/power/suspend-blockers.txt
-@@ -95,3 +95,20 @@ if (list_empty(&state->pending_work))
- else
- 	suspend_block(&state->suspend_blocker);
- 
-+User-space API
-+==============
-+
-+To create a suspend_blocker from user-space, open the suspend_blocker device:
-+    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
-+then call:
-+    ioctl(fd, SUSPEND_BLOCKER_IOCTL_INIT(strlen(name)), name);
-+
-+To activate a suspend_blocker call:
-+    ioctl(fd, SUSPEND_BLOCKER_IOCTL_BLOCK);
-+
-+To unblock call:
-+    ioctl(fd, SUSPEND_BLOCKER_IOCTL_UNBLOCK);
-+
-+To destroy the suspend_blocker, close the device:
-+    close(fd);
-+
-diff --git a/include/linux/suspend_block_dev.h b/include/linux/suspend_block_dev.h
-new file mode 100644
-index 0000000..24bc5c7
---- /dev/null
-+++ b/include/linux/suspend_block_dev.h
-@@ -0,0 +1,25 @@
-+/* include/linux/suspend_block_dev.h
-+ *
-+ * Copyright (C) 2009 Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef _LINUX_SUSPEND_BLOCK_DEV_H
-+#define _LINUX_SUSPEND_BLOCK_DEV_H
-+
-+#include <linux/ioctl.h>
-+
-+#define SUSPEND_BLOCKER_IOCTL_INIT(len)		_IOC(_IOC_WRITE, 's', 0, len)
-+#define SUSPEND_BLOCKER_IOCTL_BLOCK		_IO('s', 1)
-+#define SUSPEND_BLOCKER_IOCTL_UNBLOCK		_IO('s', 2)
-+
-+#endif
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index f8fa246..1ac50ee 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -141,6 +141,15 @@ config SUSPEND_BLOCKERS
- 	  state through /sys/power/state, the requested sleep state will be
- 	  entered when no suspend blockers are active.
- 
-+config USER_SUSPEND_BLOCKERS
-+	bool "Userspace suspend blockers"
-+	depends on SUSPEND_BLOCKERS
-+	default y
-+	---help---
-+	  User-space suspend block api. Creates a misc device with ioctls
-+	  to create, block and unblock a suspend_blocker. The suspend_blocker
-+	  will be deleted when the device is closed.
-+
- config HIBERNATION_NVS
- 	bool
- 
-diff --git a/kernel/power/Makefile b/kernel/power/Makefile
-index f570801..80086c6 100644
---- a/kernel/power/Makefile
-+++ b/kernel/power/Makefile
-@@ -8,6 +8,7 @@ obj-$(CONFIG_PM_SLEEP)		+= console.o
- obj-$(CONFIG_FREEZER)		+= process.o
- obj-$(CONFIG_SUSPEND)		+= suspend.o
- obj-$(CONFIG_SUSPEND_BLOCKERS)	+= suspend_blocker.o
-+obj-$(CONFIG_USER_SUSPEND_BLOCKERS)	+= user_suspend_blocker.o
- obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
- obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o
- obj-$(CONFIG_HIBERNATION_NVS)	+= hibernate_nvs.o
-diff --git a/kernel/power/user_suspend_blocker.c b/kernel/power/user_suspend_blocker.c
-new file mode 100644
-index 0000000..a9be6f4
---- /dev/null
-+++ b/kernel/power/user_suspend_blocker.c
-@@ -0,0 +1,128 @@
-+/* kernel/power/user_suspend_block.c
-+ *
-+ * Copyright (C) 2009-2010 Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/fs.h>
-+#include <linux/miscdevice.h>
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
-+#include <linux/slab.h>
-+#include <linux/suspend_blocker.h>
-+#include <linux/suspend_block_dev.h>
-+
-+enum {
-+	DEBUG_FAILURE	= BIT(0),
-+};
-+static int debug_mask = DEBUG_FAILURE;
-+module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
-+
-+static DEFINE_MUTEX(ioctl_lock);
-+
-+struct user_suspend_blocker {
-+	struct suspend_blocker	blocker;
-+	char			name[0];
-+};
-+
-+static int create_user_suspend_blocker(struct file *file, void __user *name,
-+				 size_t name_len)
-+{
-+	struct user_suspend_blocker *bl;
-+	if (file->private_data)
-+		return -EBUSY;
-+	if (name_len > NAME_MAX)
-+		return -ENAMETOOLONG;
-+	bl = kzalloc(sizeof(*bl) + name_len + 1, GFP_KERNEL);
-+	if (!bl)
-+		return -ENOMEM;
-+	if (copy_from_user(bl->name, name, name_len))
-+		goto err_fault;
-+	suspend_blocker_init(&bl->blocker, bl->name);
-+	file->private_data = bl;
-+	return 0;
-+
-+err_fault:
-+	kfree(bl);
-+	return -EFAULT;
-+}
-+
-+static long user_suspend_blocker_ioctl(struct file *file, unsigned int cmd,
-+				unsigned long _arg)
-+{
-+	void __user *arg = (void __user *)_arg;
-+	struct user_suspend_blocker *bl;
-+	long ret;
-+
-+	mutex_lock(&ioctl_lock);
-+	if ((cmd & ~IOCSIZE_MASK) == SUSPEND_BLOCKER_IOCTL_INIT(0)) {
-+		ret = create_user_suspend_blocker(file, arg, _IOC_SIZE(cmd));
-+		goto done;
-+	}
-+	bl = file->private_data;
-+	if (!bl) {
-+		ret = -ENOENT;
-+		goto done;
-+	}
-+	switch (cmd) {
-+	case SUSPEND_BLOCKER_IOCTL_BLOCK:
-+		suspend_block(&bl->blocker);
-+		ret = 0;
-+		break;
-+	case SUSPEND_BLOCKER_IOCTL_UNBLOCK:
-+		suspend_unblock(&bl->blocker);
-+		ret = 0;
-+		break;
-+	default:
-+		ret = -ENOTSUPP;
-+	}
-+done:
-+	if (ret && debug_mask & DEBUG_FAILURE)
-+		pr_err("user_suspend_blocker_ioctl: cmd %x failed, %ld\n",
-+			cmd, ret);
-+	mutex_unlock(&ioctl_lock);
-+	return ret;
-+}
-+
-+static int user_suspend_blocker_release(struct inode *inode, struct file *file)
-+{
-+	struct user_suspend_blocker *bl = file->private_data;
-+	if (!bl)
-+		return 0;
-+	suspend_blocker_destroy(&bl->blocker);
-+	kfree(bl);
-+	return 0;
-+}
-+
-+const struct file_operations user_suspend_blocker_fops = {
-+	.release = user_suspend_blocker_release,
-+	.unlocked_ioctl = user_suspend_blocker_ioctl,
-+};
-+
-+struct miscdevice user_suspend_blocker_device = {
-+	.minor = MISC_DYNAMIC_MINOR,
-+	.name = "suspend_blocker",
-+	.fops = &user_suspend_blocker_fops,
-+};
-+
-+static int __init user_suspend_blocker_init(void)
-+{
-+	return misc_register(&user_suspend_blocker_device);
-+}
-+
-+static void __exit user_suspend_blocker_exit(void)
-+{
-+	misc_deregister(&user_suspend_blocker_device);
-+}
-+
-+module_init(user_suspend_blocker_init);
-+module_exit(user_suspend_blocker_exit);
+That's a good idea if we can do _simply_.
+That's because there are many confusion anon_vma and vma handling nowadays.
+(http://thread.gmane.org/gmane.linux.kernel/969907)
+So I hope we solve the problem without rather complicated rcu locking
+if it isn't critical path.
+
 -- 
-1.6.5.1
-
+Kind regards,
+Minchan Kim
