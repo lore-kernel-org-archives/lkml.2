@@ -1,141 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab0DXIVh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 04:21:37 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53242 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab0DXIVd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 04:21:33 -0400
-Date: Sat, 24 Apr 2010 10:21:05 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, x86@kernel.org,
-       linux-kernel@vger.kernel.org, Frank Arnold <frank.arnold@amd.com>
-Subject: Re: [PATCH -v2 0/5] AMD L3 cache index disable fixes for .35
-Message-ID: <20100424082105.GA22632@aftab>
-References: <1271945222-5283-1-git-send-email-bp@amd64.org>
- <4BD0E869.10402@zytor.com>
- <20100423065016.GA11748@aftab>
- <20100423140927.GA13750@aftab>
- <4BD1E197.6000508@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4BD1E197.6000508@zytor.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752647Ab0DXIaY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 04:30:24 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54807 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752192Ab0DXIaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 04:30:21 -0400
+Subject: Re: [PATCH] procfs: fix tid fdinfo
+From: Miklos Szeredi <mszeredi@suse.cz>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Jerome Marchand <jmarchan@redhat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100424192735.GA5157@x200>
+References: <4BD1BF57.7070201@redhat.com>
+	 <20100423111620.100840fe.akpm@linux-foundation.org>
+	 <20100424192735.GA5157@x200>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Apr 2010 22:07:19 +0200
+Message-ID: <1272053239.4456.4.camel@tucsk.pomaz.szeredi.hu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, Apr 23, 2010 at 11:06:15AM -0700
-
-> On 04/23/2010 07:09 AM, Borislav Petkov wrote:
-> > 
-> > Ok, looking at the k8.o object it is 507 bytes so I don't think
-> > compiling it in would hurt embedded people too much:
-> > 
-> >    text    data     bss     dec     hex filename
-> >     379     104      24     507     1fb arch/x86/kernel/k8.o
-> > 
-> > So how about the following? It should apply cleanly on top and it
-> > survived a bunch of randconfigs here so far.
-> > 
+On Sat, 2010-04-24 at 22:27 +0300, Alexey Dobriyan wrote:
+> On Fri, Apr 23, 2010 at 11:16:20AM -0700, Andrew Morton wrote:
+> > On Fri, 23 Apr 2010 17:40:07 +0200
+> > > -	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fd_operations),
+> > > +	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
 > 
-> I have to say I think that's pretty ridiculous for someone who cares so
-> much about size that they have disabled CONFIG_PCI that they can just
-> add another half-kilobyte of code that is going to do absolutely
-> nothing.  Think about the kind of x86 CPUs that could even consider
-> disabling CONFIG_PCI -- we're talking pretty deep embedded by now.
+> > hm, the code's been like that for over a year.  What are the
+> > user-visible effects of the bug, and of this change?
+> 
+> /proc/*/task/*/fdinfo contains symlinks to opened files like /proc/*/fd/
+> which is cool bug :-)
 
-Yep, true story.
+Yeah, at least now we can see that someone has started using this
+interface ;)
 
-> So, no, I don't think this is an option.  Force-enabling CONFIG_PCI on
-> x86 would be a more realistic option, and I honestly don't know how many
-> people would object to that, but not right now.
+Jerome, thanks for spotting this!
 
-Well, after looking at 1ac97018169c5a13feaa90d9671f2d6ba2d9e86e,
-grepping for '!PCI' in arch/x86/ returns nothing now.
-
->From all the x86 flavors which didn't need PCI
-
-1) There used to be a X86_VOYAGER MCA-based 32-bit arch from NCR which
-seems to be gone now
-
-2) X86_VISWS "SGI 320/540 (Visual Workstation)" depended on !PCI but
-depends on PCI now, so which is it?
-
-3) X86_VSMP ("ScaleMP vSMP") used to depend on !PCI but depends on PCI
-now, [/me puzzled].
-
-all seem fine with PCI currently (especially the Voyager :)). So it
-really looks like we could enable it by default on x86. Maybe for the
-.35 merge window and see how much fallout we generate. Or at least put
-it up for a flamewar on lkml since we like those so much :).
-
-> The obvious answer instead is to augment the list of stubs in
-> <asm/k8.h>.  In particular, move num_k8_northbridges into the #ifdef and
-> just #define num_k8_northbridges 0 in the other clause.
-
-Right, it couldn't be simpler, see below. With it, the only warning I
-get doing randconfig builds is
-
-arch/x86/kernel/cpu/intel_cacheinfo.c:498: warning: ‘cache_disable_0’ defined but not used
-arch/x86/kernel/cpu/intel_cacheinfo.c:500: warning: ‘cache_disable_1’ defined but not used
-
-which is caused by !CONFIG_SYSFS but this is another senseless case.
-
----
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Sat, 24 Apr 2010 09:56:53 +0200
-Subject: [PATCH] x86, k8-nb: Fix build error when K8_NB is disabled
-
-K8_NB depends on PCI and when the last is disabled (allnoconfig) we fail
-at the final linking stage due to missing exported num_k8_northbridges.
-Add a header stub for that.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/include/asm/k8.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/k8.h b/arch/x86/include/asm/k8.h
-index f70e600..af00bd1 100644
---- a/arch/x86/include/asm/k8.h
-+++ b/arch/x86/include/asm/k8.h
-@@ -16,11 +16,16 @@ extern int k8_numa_init(unsigned long start_pfn, unsigned long end_pfn);
- extern int k8_scan_nodes(void);
- 
- #ifdef CONFIG_K8_NB
-+extern int num_k8_northbridges;
-+
- static inline struct pci_dev *node_to_k8_nb_misc(int node)
- {
- 	return (node < num_k8_northbridges) ? k8_northbridges[node] : NULL;
- }
-+
- #else
-+#define num_k8_northbridges 0
-+
- static inline struct pci_dev *node_to_k8_nb_misc(int node)
- {
- 	return NULL;
--- 
-1.6.4.4
+Miklos
 
 
--- 
-Regards/Gruss,
-Boris.
-
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
