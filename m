@@ -1,86 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab0DWScu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 14:32:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005Ab0DWScs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 14:32:48 -0400
-Date: Fri, 23 Apr 2010 20:31:35 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
- PageSwapCache  pages
-Message-ID: <20100423183135.GT32034@random.random>
-References: <20100421153421.GM30306@csn.ul.ie>
- <alpine.DEB.2.00.1004211038020.4959@router.home>
- <20100422092819.GR30306@csn.ul.ie>
- <20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com>
- <x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com>
- <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com>
- <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com>
- <1271946226.2100.211.camel@barrios-desktop>
- <1271947206.2100.216.camel@barrios-desktop>
- <20100422154443.GD30306@csn.ul.ie>
-MIME-Version: 1.0
+	id S1753485Ab0DWSkr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 14:40:47 -0400
+Received: from tomts20.bellnexxia.net ([209.226.175.74]:36937 "EHLO
+	tomts20-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751319Ab0DWSkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 14:40:45 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEANuC0UtGGNqG/2dsb2JhbACcK3K+YYJLgkAE
+Date: Fri, 23 Apr 2010 14:40:42 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: cpufreq <cpufreq@vger.kernel.org>,
+       linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+       Dave Jones <davej@redhat.com>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
+       Thomas Renninger <trenn@suse.de>,
+       Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: CPUfreq - udelay() interaction issues
+Message-ID: <20100423184042.GA16190@Krystal>
+References: <4BCFC3D0.5080904@codeaurora.org> <4BD0D9E5.3020606@codeaurora.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100422154443.GD30306@csn.ul.ie>
+In-Reply-To: <4BD0D9E5.3020606@codeaurora.org>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 14:17:55 up 16 days,  4:11,  3 users,  load average: 0.22, 0.24,
+	0.24
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+[CCing Arjan, who seems to have played a lot with ondemand lately]
 
-On Thu, Apr 22, 2010 at 04:44:43PM +0100, Mel Gorman wrote:
-> heh, I thought of a similar approach at the same time as you but missed
-> this mail until later. However, with this approach I suspect there is a
-> possibility that two walkers of the same anon_vma list could livelock if
-> two locks on the list are held at the same time. Am still thinking of
-> how it could be resolved without introducing new locking.
+* Saravana Kannan (skannan@codeaurora.org) wrote:
+> Resending email to "cc" the maintainers.
+>
+> Maintainers,
+>
+> Any comments?
+>
+> -Saravana
+>
+> Saravana Kannan wrote:
+>> Hi,
+>>
+>> I think there are a couple of issues with cpufreq and udelay  
+>> interaction. But that's based on my understanding of cpufreq. I have  
+>> worked with it for sometime now, so hopefully I not completely wrong.  
+>> So, I will list my assumptions and what I think is/are the issue(s) and 
+>> their solutions.
+>>
+>> Please correct me if I'm wrong and let me know what you think.
+>>
+>> Assumptions:
+>> ============
+>> * Let's assume ondemand governor is being used.
+>> * Ondemand uses one timer per core and they have CPU affinity set.
+>> * For SMP, CPUfreq core expects the CPUfreq driver to adjust the 
+>> per-CPU jiffies.
+>> * P1 indicates for lower CPU perfomance levels and P2 indicates a much  
+>> higher CPU pref level (say 10 times faster).
+>>
+>> Issue 1: UP (non-SMP) scenario
+>> ==============================
+>>
+>> This issue is also present for SMP case, but I don't want to complicate 
+>> this example with it. For future reference in this thread, let's call  
+>> this "Context switch issue".
+>>
+>> Steps:
+>> - CPU running at P1
+>> - Driver context calls udelay
+>> - udelay does loop calculation and starts looping
+>> - Context switches to ondemand gov timer function
+>> - Ondemand gov changes CPU to P2
+>> - Context switches back to Driver context
+>> - udelay does a delay that's 10 times shorter.
+>>
+>> The last point is obviously a bad thing. I'm more concerned about ARM  
+>> arch for the moment, but considering x86 takes a max of 20ms (20000us)  
+>> for udelay, the above scenario looks very possible.
 
-Trying to understand this issue and I've some questions. This
-vma_adjust and lock inversion troubles with the anon-vma lock in
-rmap_walk are a new issue introduced by the recent anon-vma changes,
-right?
+I think your point is valid: if the CPU suddenly goes faster, the udelay
+duration could be below the requested value.
 
-About swapcache, try_to_unmap just nuke the mappings, establish the
-swap entry in the pte (not migration entry), and then there's no need
-to call remove_migration_ptes. So it just need to skip it for
-swapcache. page_mapped must return zero after try_to_unmap returns
-before we're allowed to migrate (plus the page count must be just 1
-and not 2 or more for gup users!).
+I am not certain that there are any guarantee that udelay will sleep for
+the exact amount requested, but I suppose it's generally assumed that it
+will delay for _at least_ the amount requested. Then on top of that
+interrupts, scheduler activity, etc... may make the delay longer.
 
-I don't get what's the problem about swapcache and the races connected
-to it, the moment I hear migration PTE in context of swapcache
-migration I'm confused because there's no migration PTE for swapcache.
+Doing mutual exclusion between udelay and ondemand (as you propose
+below) seems to be a solution that will complexify kernel locking a lot
+for not much added value. spinlock is out of question because it would
+disable preemption for 20ms durations. Any mutex or semaphore-based
+solution will likely be a problem, because I suspect that udelay() is
+used with preemption off somewhere.
 
-The new page will have no mappings either, it just needs to be part of
-the swapcache with the same page->index = swapentry, indexed in the
-radix tree with that page->index, and paga->mapping pointing to
-swapcache. Then new page faults will bring it in the pageatables. The
-lookup_swap_cache has to be serialized against some lock, it should be
-the radix tree lock? So the migration has to happen with that lock
-hold no? We can't just migrate swapcache without stopping swapcache
-radix tree lookups no? I didn't digest the full migrate.c yet and I
-don't see where it happens. Freeing the swapcache while simpler and
-safer, would be quite bad as it'd create I/O for potentially hot-ram.
+One thing we could do, though, is to keep a per-cpu counter of the
+number of frequency changes performed by ondemand. We sample the local
+counter at the beginning of udelay, execute the correct number of loops,
+re-sample the same counter, and if the frequency has changed while we
+were executing the loops, we could go to a "slow-path" that would ensure
+that we execute at least the minimum amount of loops to fill requested
+time, possibly assuming the fastest frequency available on the system.
+This counter could also be incremented by the scheduler migration code
+so thread migrations between CPUs while udelay is running will also
+trigger the "slow-path". This counter approach would take care of A-B-A
+problems where frequency would go from A to B and the back to A while we
+execute udelay, and also for migration from CPU A to B and back to A.
 
-About the refcounting of anon-vma in migrate.c I think it'd be much
-simpler if zap_page_range and folks would just wait (like they do if
-they find a pmd_trans_huge && pmd_trans_splitting pmd), there would be
-no need of refcounting the anon-vma that way.
+How does that sound ?
 
-I assume whatever is added to rmap_walk I also have to add to
-split_huge_page later when switching to mainline anon-vma code (for
-now I stick to 2.6.32 anon-vma code to avoid debugging anon-vma-chain,
-memory compaction, swapcache migration and transparent hugepage at the
-same time, which becomes a little beyond feasibility).
+Thanks,
+
+Mathieu
+
+>>
+>> Is there anything I missed that prevents this from happening?
+>>
+>> If this really is an issue, then one solution is to make cpufreq defer  
+>> the freq change if some flag indicates that udelay is active. 
+>> Basically, some kind of r/w semaphore or spinlock.
+>>
+>> Does this sound like a reasonable solution?
+>>
+>> Issue 2: SMP scenario
+>> =====================
+>>
+>> For future reference in this thread, let's call this "CPU affinity issue".
+>>
+>> Steps:
+>> - CPU0 running at P1
+>> - CPU1 running at P2
+>> - Driver context calls udelay in CPU0
+>> - udelay does loop calculation and starts looping
+>> - Driver context/thread is moved from CPU0 to CPU1
+>> - udelay does a delay that's 10 times shorter.
+>>
+>> Again, the last point is obviously a bad thing. Am I missing anything  
+>> here too? Again, I care more about ARM, but x86 (which a lot more 
+>> people might care about) also seems to be broken if it doesn't use the 
+>> TSC method for the delay.
+>>
+>> Assuming we fix Issue 1 (or it's not present) I think an ideal solution 
+>> for this issue is to do something like:
+>>
+>> udelay(us)
+>> {
+>>    set cpu affinity to current CPU;
+>>    Do the usual udelay code;
+>>    restore cpu affinity status;
+>> }
+>>
+>> Does this sound like a reasonable solution?
+>>
+>> Thanks,
+>> Saravana
+>
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
