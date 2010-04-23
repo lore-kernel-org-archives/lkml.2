@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab0DWD3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 23:29:55 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40468 "EHLO mx1.suse.de"
+	id S1755311Ab0DWCWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 22:22:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19416 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753234Ab0DWD3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 23:29:47 -0400
-Date: Thu, 22 Apr 2010 20:11:28 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Chuck Ebbert <cebbert@redhat.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, NeilBrown <neilb@suse.de>, akpm@linux-foundation.org,
-       stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [Stable-review] [166/197] md/raid5: allow for more than 2^31
-	chunks.
-Message-ID: <20100423031128.GB1637@suse.de>
-References: <20100422191857.GA13268@kroah.com> <20100422190922.238365037@kvm.kroah.org> <20100422203338.617debf9@redhat.com> <alpine.LFD.2.00.1004221758270.26046@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004221758270.26046@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755058Ab0DWCWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 22:22:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,259,1270450800"; 
+   d="scan'208";a="269169800"
+Subject: Re: [RFC][PATCH 0/4] perf: remove __weak function
+ hw_perf_group_sched_in()
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1271924997.1776.319.camel@laptop>
+References: <1271922655.30535.106.camel@minggr.sh.intel.com>
+	 <1271924997.1776.319.camel@laptop>
+Content-Type: text/plain
+Date: Fri, 23 Apr 2010 10:23:04 +0800
+Message-Id: <1271989384.3412.22.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 05:58:47PM -0700, Linus Torvalds wrote:
+On Thu, 2010-04-22 at 16:29 +0800, Peter Zijlstra wrote:
+> On Thu, 2010-04-22 at 15:50 +0800, Lin Ming wrote:
 > 
-> 
-> On Thu, 22 Apr 2010, Chuck Ebbert wrote:
-> 
-> > On Thu, 22 Apr 2010 12:10:17 -0700
-> > Greg KH <gregkh@suse.de> wrote:
+> > This patch series is to remove hw_perf_group_sched_in() first.
 > > 
-> > > 2.6.32-stable review patch.  If anyone has any objections, please let
-> > > us know.
-> > > 
-> > > ------------------
-> > > 
-> > > From: NeilBrown <neilb@suse.de>
-> > > 
-> > > commit 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d upstream.
-> > > 
-> > > With many large drives and small chunk sizes it is possible
-> > > to create a RAID5 with more than 2^31 chunks.  Make sure this
-> > > works.
+> > patch 1: core, add group scheduling transactional APIs
+> > patch 2: x86, implement group scheduling transactional APIs
+> > patch 3: powerpc, implement group scheduling transactional APIs
+> > patch 4: sparc, implement group scheduling transactional APIs
 > > 
-> > Causes build failure on i686:
-> > ERROR: "__umoddi3" [drivers/md/raid456.ko] undefined!
-> > 
-> > http://lkml.org/lkml/2010/4/22/50
+> > Thanks for any comment.
 > 
-> Yeah, that one is definitely not stable material as-is.
+> Don't RISC architectures deal better with word sized variables than with
+> u8? I thought it curious you used u8 for the flags thing instead of int
+> or long, but I'm not quite sure it really matters one way or the other.
 
-Neil did post a patch to fix it, hopefully it gets into your tree soon.
+Will change it to "unsigned int".
 
-thanks,
+Thanks.
 
-greg k-h
