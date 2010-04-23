@@ -1,119 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab0DWDcc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 23:32:32 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:41991 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753482Ab0DWDca (ORCPT
+	id S1754852Ab0DWBwR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 21:52:17 -0400
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:39604 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596Ab0DWBwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 23:32:30 -0400
-Date: Fri, 23 Apr 2010 09:02:23 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [BUGFIX][PATCH] memcg rcu lock fix in swap code (Was Re: [BUG]
- an RCU warning in memcg
-Message-ID: <20100423033223.GR3994@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <4BD10D59.9090504@cn.fujitsu.com>
- <20100423121424.ae47efcb.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100423121424.ae47efcb.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 22 Apr 2010 21:52:15 -0400
+Date: Fri, 23 Apr 2010 10:55:57 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: arnd@arndb.de
+Cc: linux-arch@vger.kernel.org, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, fernando@oss.ntt.co.jp
+Subject: [RFC PATCH] asm-generic: bitops: introduce le bit offset macro
+Message-Id: <20100423105557.b6128879.yoshikawa.takuya@oss.ntt.co.jp>
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.16.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-04-23 12:14:24]:
+Although we can use *_le_bit() helpers to treat bitmaps le arranged,
+having le bit offset calculation as a seperate macro gives us more freedom.
 
-> On Fri, 23 Apr 2010 11:00:41 +0800
-> Li Zefan <lizf@cn.fujitsu.com> wrote:
-> 
-> > with CONFIG_PROVE_RCU=y, I saw this warning, it's because
-> > css_id() is not under rcu_read_lock().
-> > 
-> 
-> Ok. Thank you for reporting.
-> This is ok ? 
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> css_id() should be called under rcu_read_lock().
-> Following is a report from Li Zefan.
-> ==
-> ===================================================
-> [ INFO: suspicious rcu_dereference_check() usage. ]
-> ---------------------------------------------------
-> kernel/cgroup.c:4438 invoked rcu_dereference_check() without protection!
-> 
-> other info that might help us debug this:
-> 
-> 
-> rcu_scheduler_active = 1, debug_locks = 1
-> 1 lock held by kswapd0/31:
->  #0:  (swap_lock){+.+.-.}, at: [<c05058bb>] swap_info_get+0x4b/0xd0
-> 
-> stack backtrace:
-> Pid: 31, comm: kswapd0 Not tainted 2.6.34-rc5-tip+ #13
-> Call Trace:
->  [<c083c5d6>] ? printk+0x1d/0x1f
->  [<c0480744>] lockdep_rcu_dereference+0x94/0xb0
->  [<c049d6ed>] css_id+0x5d/0x60
->  [<c05165a5>] mem_cgroup_uncharge_swapcache+0x45/0xa0
->  [<c0505e4f>] swapcache_free+0x3f/0x60
->  [<c04e79e2>] __remove_mapping+0xb2/0xf0
->  [<c04e7cbb>] shrink_page_list+0x26b/0x490
->  [<c047f85d>] ? put_lock_stats+0xd/0x30
->  [<c083fd67>] ? _raw_spin_unlock_irq+0x27/0x50
->  [<c0482566>] ? trace_hardirqs_on_caller+0xb6/0x220
->  [<c04e8158>] shrink_inactive_list+0x278/0x620
->  [<c04729e1>] ? sched_clock_cpu+0x121/0x180
->  [<c047e9b8>] ? trace_hardirqs_off_caller+0x18/0x130
->  [<c047eadb>] ? trace_hardirqs_off+0xb/0x10
->  [<c0843438>] ? sub_preempt_count+0x8/0x90
->  [<c047f85d>] ? put_lock_stats+0xd/0x30
->  [<c04e8704>] shrink_zone+0x204/0x3c0
->  [<c083fcac>] ? _raw_spin_unlock+0x2c/0x50
->  [<c04e951e>] kswapd+0x61e/0x7c0
->  [<c04e6ed0>] ? isolate_pages_global+0x0/0x1f0
->  [<c046bae0>] ? autoremove_wake_function+0x0/0x50
->  [<c04e8f00>] ? kswapd+0x0/0x7c0
->  [<c046b5e4>] kthread+0x74/0x80
->  [<c046b570>] ? kthread+0x0/0x80
->  [<c04035ba>] kernel_thread_helper+0x6/0x10
-> 
-> Reported-by: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> Index: linux-2.6.34-rc5-mm1/mm/memcontrol.c
-> ===================================================================
-> --- linux-2.6.34-rc5-mm1.orig/mm/memcontrol.c
-> +++ linux-2.6.34-rc5-mm1/mm/memcontrol.c
-> @@ -2401,7 +2401,9 @@ mem_cgroup_uncharge_swapcache(struct pag
-> 
->  	/* record memcg information */
->  	if (do_swap_account && swapout && memcg) {
-> +		rcu_read_lock();
->  		swap_cgroup_record(ent, css_id(&memcg->css));
-> +		rcu_read_unlock();
->  		mem_cgroup_get(memcg);
+For example, KVM has le arranged dirty bitmaps for VGA, live-migration,
+etc. and we use them in user space too. To avoid bitmap copies between
+kernel and user space, we want to update the bitmaps in user space directly.
 
-Excellent Catch!
+To achive this, le bit offset with *_user() functions help us a lot.
 
-Reviewed-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+So let us use the le bit offset calculation part by defining it as a new
+macro: generic_le_bit_offset() .
 
+Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+---
+ include/asm-generic/bitops/le.h |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/include/asm-generic/bitops/le.h b/include/asm-generic/bitops/le.h
+index 80e3bf1..6af2e54 100644
+--- a/include/asm-generic/bitops/le.h
++++ b/include/asm-generic/bitops/le.h
+@@ -9,6 +9,8 @@
+ 
+ #if defined(__LITTLE_ENDIAN)
+ 
++#define generic_le_bit_offset(nr)	(nr)
++
+ #define generic_test_le_bit(nr, addr) test_bit(nr, addr)
+ #define generic___set_le_bit(nr, addr) __set_bit(nr, addr)
+ #define generic___clear_le_bit(nr, addr) __clear_bit(nr, addr)
+@@ -25,22 +27,24 @@
+ 
+ #elif defined(__BIG_ENDIAN)
+ 
++#define generic_le_bit_offset(nr)	((nr) ^ BITOP_LE_SWIZZLE)
++
+ #define generic_test_le_bit(nr, addr) \
+-	test_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
++	test_bit(generic_le_bit_offset(nr), (addr))
+ #define generic___set_le_bit(nr, addr) \
+-	__set_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
++	__set_bit(generic_le_bit_offset(nr), (addr))
+ #define generic___clear_le_bit(nr, addr) \
+-	__clear_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
++	__clear_bit(generic_le_bit_offset(nr), (addr))
+ 
+ #define generic_test_and_set_le_bit(nr, addr) \
+-	test_and_set_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
++	test_and_set_bit(generic_le_bit_offset(nr), (addr))
+ #define generic_test_and_clear_le_bit(nr, addr) \
+-	test_and_clear_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
++	test_and_clear_bit(generic_le_bit_offset(nr), (addr))
+ 
+ #define generic___test_and_set_le_bit(nr, addr) \
+-	__test_and_set_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
++	__test_and_set_bit(generic_le_bit_offset(nr), (addr))
+ #define generic___test_and_clear_le_bit(nr, addr) \
+-	__test_and_clear_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
++	__test_and_clear_bit(generic_le_bit_offset(nr), (addr))
+ 
+ extern unsigned long generic_find_next_zero_le_bit(const unsigned long *addr,
+ 		unsigned long size, unsigned long offset);
 -- 
-	Three Cheers,
-	Balbir
+1.6.3.3
+
