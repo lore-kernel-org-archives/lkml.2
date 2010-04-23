@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab0DWTpJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 15:45:09 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:41516 "EHLO e3.ny.us.ibm.com"
+	id S1756367Ab0DWTps (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 15:45:48 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:54116 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756016Ab0DWTng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 15:43:36 -0400
+	id S1756010Ab0DWTnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 15:43:35 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,11 +13,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Li Zefan <lizf@cn.fujitsu.com>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v2.6.34-rc5 01/12] rcu: Fix RCU lockdep splat in set_task_cpu on fork path
-Date: Fri, 23 Apr 2010 12:43:19 -0700
-Message-Id: <1272051810-11249-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v2.6.34-rc5 10/12] sched: Fix an RCU warning in print_task()
+Date: Fri, 23 Apr 2010 12:43:28 -0700
+Message-Id: <1272051810-11249-10-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <20100423194255.GE2589@linux.vnet.ibm.com>
 References: <20100423194255.GE2589@linux.vnet.ibm.com>
@@ -25,45 +25,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Li Zefan <lizf@cn.fujitsu.com>
 
-Add an RCU read-side critical section to suppress this false positive.
+With CONFIG_PROVE_RCU=y, a warning can be triggered:
 
-Located-by: Eric Paris <eparis@parisplace.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+  $ cat /proc/sched_debug
+
+...
+kernel/cgroup.c:1649 invoked rcu_dereference_check() without protection!
+...
+
+Both cgroup_path() and task_group() should be called with either
+rcu_read_lock or cgroup_mutex held.
+
+The rcu_dereference_check() does include cgroup_lock_is_held(), so we
+know that this lock is not held.  Therefore, in a CONFIG_PREEMPT kernel,
+to say nothing of a CONFIG_PREEMPT_RT kernel, the original code could
+have ended up copying a string out of the freelist.
+
+This patch inserts RCU read-side primitives needed to prevent this
+scenario.
+
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/sched.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ kernel/sched_debug.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index de0bd26..3c2a54f 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -323,6 +323,15 @@ static inline struct task_group *task_group(struct task_struct *p)
- /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
- static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
- {
-+	/*
-+	 * Strictly speaking this rcu_read_lock() is not needed since the
-+	 * task_group is tied to the cgroup, which in turn can never go away
-+	 * as long as there are tasks attached to it.
-+	 *
-+	 * However since task_group() uses task_subsys_state() which is an
-+	 * rcu_dereference() user, this quiets CONFIG_PROVE_RCU.
-+	 */
-+	rcu_read_lock();
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
- 	p->se.parent = task_group(p)->se[cpu];
-@@ -332,6 +341,7 @@ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
- 	p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
- 	p->rt.parent = task_group(p)->rt_se[cpu];
- #endif
-+	rcu_read_unlock();
- }
+diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
+index 9b49db1..19be00b 100644
+--- a/kernel/sched_debug.c
++++ b/kernel/sched_debug.c
+@@ -114,7 +114,9 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
+ 	{
+ 		char path[64];
  
- #else
++		rcu_read_lock();
+ 		cgroup_path(task_group(p)->css.cgroup, path, sizeof(path));
++		rcu_read_unlock();
+ 		SEQ_printf(m, " %s", path);
+ 	}
+ #endif
 -- 
 1.7.0
 
