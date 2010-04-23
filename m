@@ -1,144 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab0DWI1o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 04:27:44 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50166 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab0DWI1l (ORCPT
+	id S1752553Ab0DWI3N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 04:29:13 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52107 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab0DWI3J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 04:27:41 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 23 Apr 2010 17:23:41 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][BUGFIX][PATCH 2/2] memcg: fix file mapped underflow at
- migration (v3)
-Message-Id: <20100423172341.802c2213.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100423170846.d18c88bd.nishimura@mxp.nes.nec.co.jp>
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
-	<20100415120516.3891ce46.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100415120652.c577846f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100416193143.5807d114.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100419124225.91f3110b.nishimura@mxp.nes.nec.co.jp>
-	<20100419131817.f263d93c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100419170701.3864992e.nishimura@mxp.nes.nec.co.jp>
-	<20100419172629.dbf65e18.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100420132050.3477a717.nishimura@mxp.nes.nec.co.jp>
-	<20100420181925.ed881e7a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100423170846.d18c88bd.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Apr 2010 04:29:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ELgFh0WuQfJhK6ix+yaFlIkg9jQggm6xDDOxK/6HKduNAb7N5APm0WlBv2lxhRQlag
+         TkXRNVGog4QYvGIw0o8w1Y0DRdAJAPgXXnPXtp/xDkb13I2EJ5tjxz9yhG2TNJeGAjUf
+         z6ZSpuiYd517krEp9PJgSQIfyJYL/bKPb26L8=
+MIME-Version: 1.0
+In-Reply-To: <1270511567-18567-7-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+References: <1270511567-18567-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+	 <1270511567-18567-7-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+Date: Fri, 23 Apr 2010 10:29:04 +0200
+X-Google-Sender-Auth: 123159403f7fae93
+Message-ID: <p2q10f740e81004230129rd5b07889m5ec7f453efd46403@mail.gmail.com>
+Subject: Re: [PATCH -mm 06/12] m68k: use asm-generic/scatterlist.h
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       Roman Zippel <zippel@linux-m68k.org>,
+       "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Apr 2010 17:08:46 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+On Tue, Apr 6, 2010 at 01:52, FUJITA Tomonori
+<fujita.tomonori@lab.ntt.co.jp> wrote:
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Roman Zippel <zippel@linux-m68k.org>
+> ---
+>  arch/m68k/include/asm/scatterlist.h |   16 +---------------
+>  1 files changed, 1 insertions(+), 15 deletions(-)
+>
+> diff --git a/arch/m68k/include/asm/scatterlist.h b/arch/m68k/include/asm/scatterlist.h
+> index e27ad90..175da06 100644
+> --- a/arch/m68k/include/asm/scatterlist.h
+> +++ b/arch/m68k/include/asm/scatterlist.h
+> @@ -1,23 +1,9 @@
+>  #ifndef _M68K_SCATTERLIST_H
+>  #define _M68K_SCATTERLIST_H
+>
+> -#include <linux/types.h>
+> -
+> -struct scatterlist {
+> -#ifdef CONFIG_DEBUG_SG
+> -       unsigned long sg_magic;
+> -#endif
+> -       unsigned long page_link;
+> -       unsigned int offset;
+> -       unsigned int length;
+> -
+> -       dma_addr_t dma_address; /* A place to hang host-specific addresses at. */
+> -};
+> +#include <asm-generic/scatterlist.h>
 
-> I'm sorry for my late reply.
-> 
-> On Tue, 20 Apr 2010 18:19:25 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Tue, 20 Apr 2010 13:20:50 +0900
-> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> > 
-> > > > It will have no meanings for migrating
-> > > > file caches, but it may have some meanings for easy debugging. 
-> > > > I think "mark it always but it's used only for anonymous page" is reasonable
-> > > > (if it causes no bug.)
-> > > > 
-> > > Anyway, I don't have any strong objection.
-> > > It's all right for me as long as it is well documented or commented.
-> > > 
-> > Okay, before posting as v4, here is draft version.
-> > 
-> Thank you for adding good comments about what it does and why we need it.
-> I like the direction that we set MIGRATION flags only on the old page.
-> And this patch looks good to me, except that checkpatch warns some problems
-> about indent :)
-> 
-(--;
+This include should be ...
 
-I'm sorry that this patch is delayed. I have to fix migration itself
-for testing this. I'd like to post this before long holidayes in the next week.
+>  /* This is bogus and should go away. */
+>  #define ISA_DMA_THRESHOLD (0x00ffffff)
 
-> I have one question.
-> 
-> >  /* remove redundant charge if migration failed*/
-> >  void mem_cgroup_end_migration(struct mem_cgroup *mem,
-> > -		struct page *oldpage, struct page *newpage)
-> > +	struct page *oldpage, struct page *newpage)
-> >  {
-> > -	struct page *target, *unused;
-> > +	struct page *used, *unused;
-> >  	struct page_cgroup *pc;
-> > -	enum charge_type ctype;
-> >  
-> >  	if (!mem)
-> >  		return;
-> > +	/* blocks rmdir() */
-> >  	cgroup_exclude_rmdir(&mem->css);
-> >  	/* at migration success, oldpage->mapping is NULL. */
-> >  	if (oldpage->mapping) {
-> > -		target = oldpage;
-> > -		unused = NULL;
-> > +		used = oldpage;
-> > +		unused = newpage;
-> >  	} else {
-> > -		target = newpage;
-> > +		used = newpage;
-> >  		unused = oldpage;
-> >  	}
-> > -
-> > -	if (PageAnon(target))
-> > -		ctype = MEM_CGROUP_CHARGE_TYPE_MAPPED;
-> > -	else if (page_is_file_cache(target))
-> > -		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
-> > -	else
-> > -		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> > -
-> > -	/* unused page is not on radix-tree now. */
-> > -	if (unused)
-> > -		__mem_cgroup_uncharge_common(unused, ctype);
-> > -
-> > -	pc = lookup_page_cgroup(target);
-> >  	/*
-> > -	 * __mem_cgroup_commit_charge() check PCG_USED bit of page_cgroup.
-> > -	 * So, double-counting is effectively avoided.
-> > +	 * We disallowed uncharge of pages under migration because mapcount
-> > +	 * of the page goes down to zero, temporarly.
-> > +	 * Clear the flag and check the page should be charged.
-> >  	 */
-> > -	__mem_cgroup_commit_charge(mem, pc, ctype);
-> > -
-> > +	pc = lookup_page_cgroup(unused);
-> > +	/* This flag itself is not racy, so, check it before lock */
-> > +	if (PageCgroupMigration(pc)) {
-> > +		lock_page_cgroup(pc);
-> > +		ClearPageCgroupMigration(pc);
-> > +		unlock_page_cgroup(pc);
-> > +	}
-> The reason why "This flag itself is not racy" is that we update the flag only
-> while the page is isolated ?
-yes and no.
-It's not racy because a page is only under a migration thread, not under a few of
-migration threads. And only the migration thread mark this MIGRATION.
+... below this definition, else you get duplicate definition errors
+(and the wrong definition).
 
-> Then, we doesn't need page_cgroup lock, do we ? PCG_USED bit will avoid
-> double-uncharge.
-> 
-no. there is a chance to update FILE_MAPPED etc..and any other races. I guess.
+> -#define sg_dma_address(sg)     ((sg)->dma_address)
+> -#define sg_dma_len(sg)         ((sg)->length)
+> -
+>  #endif /* !(_M68K_SCATTERLIST_H) */
+> --
+> 1.7.0
 
-Thanks,
--Kame
+Will apply (incl. the fix).
 
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
