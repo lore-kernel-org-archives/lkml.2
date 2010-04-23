@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab0DWNFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 09:05:09 -0400
-Received: from host1.efn.uncor.edu ([200.16.19.1]:59554 "EHLO
-	gtwing.efn.uncor.edu" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab0DWNFF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 09:05:05 -0400
-Message-ID: <20100423092222.35453a064tyrczcw@gtwing.efn.uncor.edu>
-Date: Fri, 23 Apr 2010 09:22:22 -0300
-From: western union department <mmartini@efn.uncor.edu>
-Reply-to: western.uniondepartment@iwrahost.com
-To: undisclosed-recipients:;
-Subject: CALL   +(44) 702 401 0722
+	id S1756064Ab0DWNZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 09:25:01 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55739 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755777Ab0DWNY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 09:24:57 -0400
+Message-ID: <4BD19EEC.1030205@cn.fujitsu.com>
+Date: Fri, 23 Apr 2010 21:21:48 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/10] KVM MMU: Move invlpg code out of paging_tmpl.h
+References: <4BCFE3D5.5070105@cn.fujitsu.com> <4BCFE8E2.8080302@cn.fujitsu.com> <4BD18410.6030509@redhat.com> <4BD187CB.5090701@redhat.com>
+In-Reply-To: <4BD187CB.5090701@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-My associate has helped me to send your first payment of US$7,500 to you
-as instructed by Mr.James Gordon Brown the United Kingdom prime minister
-after the last G20 meeting that was held on April 2nd in United Kingdom,
-making you one of the beneficiaries. Here is the information below.
+Avi Kivity wrote:
+> On 04/23/2010 02:27 PM, Avi Kivity wrote:
+>> On 04/22/2010 09:12 AM, Xiao Guangrong wrote:
+>>> Using '!sp->role.cr4_pae' replaces 'PTTYPE == 32' and using
+>>> 'pte_size = sp->role.cr4_pae ? 8 : 4' replaces sizeof(pt_element_t)
+>>>
+>>> Then no need compile twice for this code
+>>>
+>> I think we should keep it in - kvm_mmu_pte_write() calls back to
+>> FNAME(update_pte), we could make the call directly from here speed
+>> things up, since we already have the spte and don't need to look it up.
+>>
+> 
+> I see you do this in patches 9, 10 - but is it possible to use
+> update_pte directly?  I think we'll need to make
+> guess_page_from_pte_write() part of paging_tmpl.h (in general anything
+> that depends on pte size is better off in paging_tmpl.h).
+> 
 
-MONEY TRANSFER CONTROL NUMBER: 8309124803
-SENDER NAME: Mr.Solomon Daniel.Q
-AMOUNT: US$7,500
+OK, i'll keep invlpg code in paging_tmpl.h and directly call FNAME(update_pte).
 
-I told him to keep sending you US$7,500 twice a week until the FULL
-payment of (US $560,000.00 Dollars) is completed.
+But, i don't see mmu_guess_page_from_pte_write() code depends on pte size. :-(
 
-A certificate will be made to change the Receiver Name as stated by the
-British prime minister, send your Full Names and address via Email to:
-Mr Garry Moore
-
-The money will not reflect until the clearance certificate is issue to
-you by the G20 committee.
-
-E-mail: western.uniondepartment@iwrahost.com
-Tel: +(44) 702 401 0722
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
-
+Xiao
