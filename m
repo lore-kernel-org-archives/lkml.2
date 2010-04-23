@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab0DWATi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 20:19:38 -0400
-Received: from tundra.namei.org ([65.99.196.166]:44288 "EHLO tundra.namei.org"
+	id S1754381Ab0DWAYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 20:24:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47845 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753192Ab0DWATg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 20:19:36 -0400
-Date: Fri, 23 Apr 2010 10:17:10 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Whitespace Coding style fixes.
-In-Reply-To: <1271833331-26973-1-git-send-email-justinmattock@gmail.com>
-Message-ID: <alpine.LRH.2.00.1004231016160.18603@tundra.namei.org>
-References: <1271833331-26973-1-git-send-email-justinmattock@gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1754293Ab0DWAYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 20:24:06 -0400
+Message-ID: <4BD0E869.10402@zytor.com>
+Date: Thu, 22 Apr 2010 17:23:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Borislav Petkov <bp@amd64.org>
+CC: mingo@elte.hu, tglx@linutronix.de, x86@kernel.org,
+       linux-kernel@vger.kernel.org, Frank Arnold <frank.arnold@amd.com>,
+       Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH -v2 0/5] AMD L3 cache index disable fixes for .35
+References: <1271945222-5283-1-git-send-email-bp@amd64.org>
+In-Reply-To: <1271945222-5283-1-git-send-email-bp@amd64.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Apr 2010, Justin P. Mattock wrote:
+Hi Borislav,
 
-> Whitespace Coding style fixes. 
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+I get compilation failures on tip:x86/cpu with this patchset:
 
+arch/x86/built-in.o: In function `amd_check_l3_disable':
+intel_cacheinfo.c:(.cpuinit.text+0x412): undefined reference to
+`num_k8_northbridges'
 
-Applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
+Both i386 and x86-64 "make allnoconfig".
 
-with fixes to the Subject: line (needed a subsystem field and fixed 
-capitalization).
-
--- 
-James Morris
-<jmorris@namei.org>
+	-hpa
