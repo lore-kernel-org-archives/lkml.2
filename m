@@ -1,175 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab0DWIBV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 04:01:21 -0400
-Received: from brigitte.telenet-ops.be ([195.130.137.66]:40822 "EHLO
-	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab0DWIAo (ORCPT
+	id S1756393Ab0DWIB0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 04:01:26 -0400
+Received: from mail.windriver.com ([147.11.1.11]:47645 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756504Ab0DWIBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 04:00:44 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 04/14] m68k: amiga - Frame buffer platform device conversion
-Date: Fri, 23 Apr 2010 10:00:25 +0200
-Message-Id: <1272009635-6504-5-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1272009635-6504-4-git-send-email-geert@linux-m68k.org>
-References: <1272009635-6504-1-git-send-email-geert@linux-m68k.org>
- <1272009635-6504-2-git-send-email-geert@linux-m68k.org>
- <1272009635-6504-3-git-send-email-geert@linux-m68k.org>
- <1272009635-6504-4-git-send-email-geert@linux-m68k.org>
+	Fri, 23 Apr 2010 04:01:16 -0400
+Date: Fri, 23 Apr 2010 16:00:14 +0800
+From: Yong Zhang <yong.zhang@windriver.com>
+To: John Kacur <jkacur@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+       linux-rt-users <linux-rt-users@vger.kernel.org>,
+       Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+       Clark Williams <williams@redhat.com>,
+       "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [PATCH] lockdep: Add nr_save_trace_invocations counter
+Message-ID: <20100423080014.GB21328@windriver.com>
+Reply-To: Yong Zhang <yong.zhang@windriver.com>
+References: <alpine.LFD.2.00.1004222208310.3155@localhost>
+ <20100423025850.GA21328@windriver.com>
+ <alpine.LFD.2.00.1004230907050.4151@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004230907050.4151@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 23 Apr 2010 08:00:16.0766 (UTC) FILETIME=[02D389E0:01CAE2BB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/amiga/platform.c |   15 +++++++++++++
- drivers/video/amifb.c      |   49 +++++++++++++++++++++++++++----------------
- 2 files changed, 46 insertions(+), 18 deletions(-)
+On Fri, Apr 23, 2010 at 09:24:55AM +0200, John Kacur wrote:
+> Some context here - Peter asked me to see if we could get some more 
+> detailed stats on why some configurations reach the 
+> MAX_STACK_TRACE_ENTRIES limit - whether the limit was really too low for 
+> some circumstances, or whether we were counting somethings unnecessarily.
+> 
+> In any case, I stamped a big NOT FOR INCLUSION on my mail, because I 
+> noticed that somethings were redundant - albeit, obtained in a slightly 
+> different manner, however, not everything is redundant.
+> 
+> In particular, nr_save_trace_invocations is NOT equal to nr_list_entries.
+> You will see that reported in /proc/lockdep_stats as
+> direct dependencies:                  8752 [max: 16384]
+> I have
+> stack-trace invocations: 10888
+> from the same run.
 
-diff --git a/arch/m68k/amiga/platform.c b/arch/m68k/amiga/platform.c
-index 33a7669..7fa929c 100644
---- a/arch/m68k/amiga/platform.c
-+++ b/arch/m68k/amiga/platform.c
-@@ -56,3 +56,18 @@ static int __init amiga_init_bus(void)
- subsys_initcall(amiga_init_bus);
- 
- #endif /* CONFIG_ZORRO */
-+
-+
-+static int __init amiga_init_devices(void)
-+{
-+	if (!MACH_IS_AMIGA)
-+		return -ENODEV;
-+
-+	/* video hardware */
-+	if (AMIGAHW_PRESENT(AMI_VIDEO))
-+		platform_device_register_simple("amiga-video", -1, NULL, 0);
-+
-+	return 0;
-+}
-+
-+device_initcall(amiga_init_devices);
-diff --git a/drivers/video/amifb.c b/drivers/video/amifb.c
-index dca48df..e5d6b56 100644
---- a/drivers/video/amifb.c
-+++ b/drivers/video/amifb.c
-@@ -50,8 +50,9 @@
- #include <linux/fb.h>
- #include <linux/init.h>
- #include <linux/ioport.h>
--
-+#include <linux/platform_device.h>
- #include <linux/uaccess.h>
-+
- #include <asm/system.h>
- #include <asm/irq.h>
- #include <asm/amigahw.h>
-@@ -1135,7 +1136,7 @@ static int amifb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
- 	 * Interface to the low level console driver
- 	 */
- 
--static void amifb_deinit(void);
-+static void amifb_deinit(struct platform_device *pdev);
- 
- 	/*
- 	 * Internal routines
-@@ -2246,7 +2247,7 @@ static inline void chipfree(void)
- 	 * Initialisation
- 	 */
- 
--static int __init amifb_init(void)
-+static int __init amifb_probe(struct platform_device *pdev)
- {
- 	int tag, i, err = 0;
- 	u_long chipptr;
-@@ -2261,16 +2262,6 @@ static int __init amifb_init(void)
- 	}
- 	amifb_setup(option);
- #endif
--	if (!MACH_IS_AMIGA || !AMIGAHW_PRESENT(AMI_VIDEO))
--		return -ENODEV;
--
--	/*
--	 * We request all registers starting from bplpt[0]
--	 */
--	if (!request_mem_region(CUSTOM_PHYSADDR+0xe0, 0x120,
--				"amifb [Denise/Lisa]"))
--		return -EBUSY;
--
- 	custom.dmacon = DMAF_ALL | DMAF_MASTER;
- 
- 	switch (amiga_chipset) {
-@@ -2377,6 +2368,7 @@ default_chipset:
- 	fb_info.fbops = &amifb_ops;
- 	fb_info.par = &currentpar;
- 	fb_info.flags = FBINFO_DEFAULT;
-+	fb_info.device = &pdev->dev;
- 
- 	if (!fb_find_mode(&fb_info.var, &fb_info, mode_option, ami_modedb,
- 			  NUM_TOTAL_MODES, &ami_modedb[defmode], 4)) {
-@@ -2451,18 +2443,18 @@ default_chipset:
- 	return 0;
- 
- amifb_error:
--	amifb_deinit();
-+	amifb_deinit(pdev);
- 	return err;
- }
- 
--static void amifb_deinit(void)
-+static void amifb_deinit(struct platform_device *pdev)
- {
- 	if (fb_info.cmap.len)
- 		fb_dealloc_cmap(&fb_info.cmap);
-+	fb_dealloc_cmap(&fb_info.cmap);
- 	chipfree();
- 	if (videomemory)
- 		iounmap((void*)videomemory);
--	release_mem_region(CUSTOM_PHYSADDR+0xe0, 0x120);
- 	custom.dmacon = DMAF_ALL | DMAF_MASTER;
- }
- 
-@@ -3794,14 +3786,35 @@ static void ami_rebuild_copper(void)
- 	}
- }
- 
--static void __exit amifb_exit(void)
-+static int __exit amifb_remove(struct platform_device *pdev)
- {
- 	unregister_framebuffer(&fb_info);
--	amifb_deinit();
-+	amifb_deinit(pdev);
- 	amifb_video_off();
-+	return 0;
-+}
-+
-+static struct platform_driver amifb_driver = {
-+	.remove = __exit_p(amifb_remove),
-+	.driver   = {
-+		.name	= "amiga-video",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+static int __init amifb_init(void)
-+{
-+	return platform_driver_probe(&amifb_driver, amifb_probe);
- }
- 
- module_init(amifb_init);
-+
-+static void __exit amifb_exit(void)
-+{
-+	platform_driver_unregister(&amifb_driver);
-+}
-+
- module_exit(amifb_exit);
- 
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:amiga-video");
--- 
-1.6.0.4
+I missed that nr_save_trace_invocations is also increased in
+inc_save_trace_invocations().
+So nr_save_trace_invocations = nr_list_entries + sum of
+nr_save_trace_invocations_type[].
 
+> 
+> Still trying to figure out what the meaning is of that though to be 
+> honest.
+> 
+> Here is a portion of the lockdep_stats, with all of the new fields and the 
+> redundant ones.
+> 
+> stack-trace invocations: 10888
+> 	LOCK_USED_IN_HARDIRQ: 15
+> 	LOCK_USED_IN_HARDIRQ_READ: 0
+> 	LOCK_ENABLED_HARDIRQ: 543
+> 	LOCK_ENABLED_HARDIRQ_READ: 28
+> 	LOCK_USED_IN_SOFTIRQ: 0
+> 	LOCK_USED_IN_SOFTIRQ_READ: 0
+> 	LOCK_ENABLED_SOFTIRQ: 543
+> 	LOCK_ENABLED_SOFTIRQ_READ: 28
+> 	LOCK_USED_IN_RECLAIM_FS: 5
+> 	LOCK_USED_IN_RECLAIM_FS_READ: 0
+> 	LOCK_ENABLED_RECLAIM_FS: 95
+> 	LOCK_ENABLED_RECLAIM_FS_READ: 8
+> 	LOCK_USED: 871
+>  combined max dependencies:          139841
+>  hardirq-safe locks:                     15
+>  hardirq-unsafe locks:                  543
+>  softirq-safe locks:                      0
+>  softirq-unsafe locks:                  543
+>  irq-safe locks:                         15
+>  irq-unsafe locks:                      543
+>  hardirq-read-safe locks:                 0
+>  hardirq-read-unsafe locks:              28
+>  softirq-read-safe locks:                 0
+>  softirq-read-unsafe locks:              28
+>  irq-read-safe locks:                     0
+>  irq-read-unsafe locks:                  28
+> 
+> So, you see that all of the reclaim fields are new,
+>         LOCK_USED_IN_RECLAIM_FS: 5
+>         LOCK_USED_IN_RECLAIM_FS_READ: 0
+>         LOCK_ENABLED_RECLAIM_FS: 95
+>         LOCK_ENABLED_RECLAIM_FS_READ: 8
+
+Yes, indeed, data in lockdep_stats_show() is out of time.
+So as Peter has said in another thread, we should add sample for RECLAIM_FS.
+
+> 
+> I can create a patch for inclusion that adds the reclaim fields, the 
+> question is, is the nr_save_trace_invocations a useful stat for us or not?
+
+Actually it's just a summation of the samples.
+I don't think it's necessary.
+
+Thanks,
+Yong
