@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab0DWGue (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 02:50:34 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53545 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756021Ab0DWGud (ORCPT
+	id S1756102Ab0DWGwL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 02:52:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60757 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756049Ab0DWGwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 02:50:33 -0400
-Date: Fri, 23 Apr 2010 08:50:16 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, x86@kernel.org,
-       linux-kernel@vger.kernel.org, Frank Arnold <frank.arnold@amd.com>
-Subject: Re: [PATCH -v2 0/5] AMD L3 cache index disable fixes for .35
-Message-ID: <20100423065016.GA11748@aftab>
-References: <1271945222-5283-1-git-send-email-bp@amd64.org>
- <4BD0E869.10402@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BD0E869.10402@zytor.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 23 Apr 2010 02:52:09 -0400
+Subject: Re: [PATCH] lockdep: Add nr_save_trace_invocations counter
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yong Zhang <yong.zhang@windriver.com>
+Cc: John Kacur <jkacur@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       linux-rt-users <linux-rt-users@vger.kernel.org>,
+       Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+       Clark Williams <williams@redhat.com>,
+       "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Gregory Haskins <ghaskins@novell.com>
+In-Reply-To: <20100423025850.GA21328@windriver.com>
+References: <alpine.LFD.2.00.1004222208310.3155@localhost>
+	 <20100423025850.GA21328@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Apr 2010 08:52:05 +0200
+Message-ID: <1272005525.1646.23.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, Apr 22, 2010 at 05:23:05PM -0700
-
-> Hi Borislav,
+On Fri, 2010-04-23 at 10:58 +0800, Yong Zhang wrote:
 > 
-> I get compilation failures on tip:x86/cpu with this patchset:
+> > +unsigned long nr_save_trace_invocations_type[LOCK_USAGE_STATES];
 > 
-> arch/x86/built-in.o: In function `amd_check_l3_disable':
-> intel_cacheinfo.c:(.cpuinit.text+0x412): undefined reference to
-> `num_k8_northbridges'
-> 
-> Both i386 and x86-64 "make allnoconfig".
+> And each item in this array will equal to nr_hardirq_[un]safe,
+> nr_softirq_[un]safe and such things under lockdep_stats_show(). Right?
 
-Yeah, this has bitten us already several times in the past. allnoconfig
-deselects CONFIG_PCI and num_k8_northbridges is under CONFIG_K8_NB which
-depends on CONFIG_PCI so there you go.
+Well, the stats for RECLAIM_FS as missing, so at the very least we need
+to re-write lockdep_stats_show() to use the lockdep_states.h magic.
 
-I'm thinking the k8.c facility is needed more and more for all the
-processor functionality control over the PCI config space so how about
-compile it in unconditionally on AMD? All the k8's and F10h's need
-it and the older ones will have it there but it won't hurt since the
-pci_get_device() won't match any on those.
 
-allnoconfig build failure is fixed this way, albeit non-functional since
-CONFIG_PCI is off and pci_get_device() returns NULL but in that case
-almost all of the functionality (I guess raw PCI access would still
-work) depending on AMD northbridge PCI devices won't work anyway.
 
-I'll prep something in a while.
-
--- 
-Regards/Gruss,
-Boris.
-
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
