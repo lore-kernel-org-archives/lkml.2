@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab0DWJcx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 05:32:53 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:46839 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756812Ab0DWJcv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 05:32:51 -0400
-Date: Fri, 23 Apr 2010 18:32:35 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Will Deacon <will.deacon@arm.com>,
-       Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-       "K . Prasad" <prasad@linux.vnet.ibm.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>,
-       Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 3/6] hw-breakpoints: Change/Enforce some breakpoints policies
-Message-ID: <20100423093234.GC11770@linux-sh.org>
-References: <1271999639-23605-1-git-send-regression-fweisbec@gmail.com> <1271999639-23605-4-git-send-regression-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271999639-23605-4-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	id S1756855Ab0DWJde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 05:33:34 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:49425 "EHLO poutre.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756812Ab0DWJdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 05:33:32 -0400
+Date: Fri, 23 Apr 2010 11:33:26 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Farid Hammane <farid.hammane@gmail.com>
+Cc: w.sang@pengutronix.de, ben-linux@fluff.org, Enrik.Berkhan@ge.com,
+       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] i2c-algo-pca: fix coding style issues in
+ i2c-algo-pca.c
+Message-ID: <20100423113326.3691bdd6@hyperion.delvare>
+In-Reply-To: <1271973715-18331-1-git-send-email-farid.hammane@gmail.com>
+References: <1271973715-18331-1-git-send-email-farid.hammane@gmail.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 07:13:56AM +0200, Frederic Weisbecker wrote:
-> diff --git a/arch/sh/kernel/hw_breakpoint.c b/arch/sh/kernel/hw_breakpoint.c
-> index 675eea7..2d44a2d 100644
-> --- a/arch/sh/kernel/hw_breakpoint.c
-> +++ b/arch/sh/kernel/hw_breakpoint.c
-> @@ -120,25 +120,16 @@ static int get_hbp_len(u16 hbp_len)
->  }
+Hi Farid, Wolfram,
+
+On Fri, 23 Apr 2010 00:01:55 +0200, Farid Hammane wrote:
+> This patch fixes coding style issues found by checkpatch.pl.
+> i2c-algo-pca.c has been built successfully after applying this patch.
+> 
+> Signed-off-by: Farid Hammane <farid.hammane@gmail.com>
+> ---
+>  drivers/i2c/algos/i2c-algo-pca.c |   36 ++++++++++++++++++------------------
+>  1 files changed, 18 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/i2c/algos/i2c-algo-pca.c b/drivers/i2c/algos/i2c-algo-pca.c
+> index dcdaf8e..ca817f8 100644
+> --- a/drivers/i2c/algos/i2c-algo-pca.c
+> +++ b/drivers/i2c/algos/i2c-algo-pca.c
+> @@ -37,15 +37,15 @@
 >  
->  /*
-> - * Check for virtual address in user space.
-> - */
-> -int arch_check_va_in_userspace(unsigned long va, u16 hbp_len)
-> -{
-> -	unsigned int len;
-> -
-> -	len = get_hbp_len(hbp_len);
-> -
-> -	return (va <= TASK_SIZE - len);
-> -}
-> -
-> -/*
->   * Check for virtual address in kernel space.
->   */
+>  static int i2c_debug;
+>  
+> -#define pca_outw(adap, reg, val) adap->write_byte(adap->data, reg, val)
+> -#define pca_inw(adap, reg) adap->read_byte(adap->data, reg)
+> +#define pca_outw(adap, reg, val) (adap->write_byte(adap->data, reg, val))
+> +#define pca_inw(adap, reg) (adap->read_byte(adap->data, reg))
 
-We were also using the va_in_userspace check for the case of signal
-delivery, so I've just inverted the test for that. Perhaps there's a
-cleaner way to handle it, though.
+I'm confused by these changes. For one thing, macros which are
+shortcuts for function calls normally don't need surrounding
+parentheses. If checkpatch.pl complains about that, I would call it a
+false positive, unless someone can prove me wrong with a real-world
+case where these surrounding parentheses help.
 
-Other than that, everything seems to work ok. The ksym tracer and ptrace
-tests still pass at least. Feel free to add my Tested/Acked-by on the
-rest if you're respinning it at some point.
+For another, macro _parameters_ normally need parentheses for each
+non-trivial use. I would thus expect the following to be correct:
 
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+#define pca_outw(adap, reg, val) (adap)->write_byte((adap)->data, reg, val)
+#define pca_inw(adap, reg) (adap)->read_byte((adap)->data, reg)
 
----
+Or is it just me?
 
-diff --git a/arch/sh/include/asm/hw_breakpoint.h b/arch/sh/include/asm/hw_breakpoint.h
-index 4d5e514..89890f6 100644
---- a/arch/sh/include/asm/hw_breakpoint.h
-+++ b/arch/sh/include/asm/hw_breakpoint.h
-@@ -54,8 +54,6 @@ static inline int hw_breakpoint_slots(int type)
- /* arch/sh/kernel/hw_breakpoint.c */
- extern int arch_check_bp_in_kernelspace(struct perf_event *bp);
- extern int arch_validate_hwbkpt_settings(struct perf_event *bp);
--extern int arch_validate_hwbkpt_settings(struct perf_event *bp,
--					 struct task_struct *tsk);
- extern int hw_breakpoint_exceptions_notify(struct notifier_block *unused,
- 					   unsigned long val, void *data);
- 
-diff --git a/arch/sh/kernel/hw_breakpoint.c b/arch/sh/kernel/hw_breakpoint.c
-index 67564e3..efae6ab 100644
---- a/arch/sh/kernel/hw_breakpoint.c
-+++ b/arch/sh/kernel/hw_breakpoint.c
-@@ -344,8 +344,7 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
- 		perf_bp_event(bp, args->regs);
- 
- 		/* Deliver the signal to userspace */
--		if (arch_check_va_in_userspace(bp->attr.bp_addr,
--					       bp->attr.bp_len)) {
-+		if (!arch_check_bp_in_kernelspace(bp)) {
- 			siginfo_t info;
- 
- 			info.si_signo = args->signr;
+>  
+>  #define pca_status(adap) pca_inw(adap, I2C_PCA_STA)
+> -#define pca_clock(adap) adap->i2c_clock
+> +#define pca_clock(adap) (adap->i2c_clock)
+>  #define pca_set_con(adap, val) pca_outw(adap, I2C_PCA_CON, val)
+>  #define pca_get_con(adap) pca_inw(adap, I2C_PCA_CON)
+> -#define pca_wait(adap) adap->wait_for_completion(adap->data)
+> -#define pca_reset(adap) adap->reset_chip(adap->data)
+> +#define pca_wait(adap) (adap->wait_for_completion(adap->data))
+> +#define pca_reset(adap) (adap->reset_chip(adap->data))
+
+Same here...
+
+I'm fine with all other changes. But checkpatch.pl spouts 2 more errors
+to me, which we've discussed before. I'm curious why you didn't fix
+them? Just replace each block of 8 spaces with one tab.
+
+ERROR: code indent should use tabs where possible
+#181: FILE: i2c/algos/i2c-algo-pca.c:181:
++                    struct i2c_msg *msgs,$
+
+ERROR: code indent should use tabs where possible
+#182: FILE: i2c/algos/i2c-algo-pca.c:182:
++                    int num)$
+
+-- 
+Jean Delvare
