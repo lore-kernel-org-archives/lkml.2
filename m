@@ -1,145 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab0DWVA7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 17:00:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:35328 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831Ab0DWVA4 convert rfc822-to-8bit (ORCPT
+	id S1757445Ab0DWVEH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 17:04:07 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:41178 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab0DWVEC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 17:00:56 -0400
-Date: Fri, 23 Apr 2010 13:58:53 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 5/9] PM: suspend_block: Add debugfs file
-Message-Id: <20100423135853.478af057.randy.dunlap@oracle.com>
-In-Reply-To: <1271984938-13920-6-git-send-email-arve@android.com>
-References: <1271984938-13920-1-git-send-email-arve@android.com>
-	<1271984938-13920-2-git-send-email-arve@android.com>
-	<1271984938-13920-3-git-send-email-arve@android.com>
-	<1271984938-13920-4-git-send-email-arve@android.com>
-	<1271984938-13920-5-git-send-email-arve@android.com>
-	<1271984938-13920-6-git-send-email-arve@android.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
+	Fri, 23 Apr 2010 17:04:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=oOTlVfCrGmQ70h9knBf4Ufaa+X/n0R8QAwDvs28AzGhsfTu7zaeVHNuRIAGyYsfhwf
+         1TsBN7NL01PX7FDROvLl7pyAL24p21DPh9xhvr5P6cXM3eem44b2tRR4w9JOrxwggX4u
+         N3TNKilLnSd8DYa41qJqPS2u6TpSOHGpjrapg=
+MIME-Version: 1.0
+In-Reply-To: <20100423135816.23f5861f@nehalam>
+References: <l2nb43bf5491004231314i13503c67yeccfc54bc1cae850@mail.gmail.com>
+	 <h2p9929d2391004231322r23528f32z8447a711a29e28ea@mail.gmail.com>
+	 <20100423135816.23f5861f@nehalam>
+Date: Fri, 23 Apr 2010 23:03:59 +0200
+Message-ID: <r2ob43bf5491004231403o64f8b88bsa9543d9910648d97@mail.gmail.com>
+Subject: Re: [PATCH] e100: expose broadcast_disabled as a module option
+From: Erwan Velu <erwanaliasr1@gmail.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+       netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
+       linux-kernel@vger.kernel.org, jesse.brandeburg@intel.com,
+       bruce.w.allan@intel.com, alexander.h.duyck@intel.com,
+       peter.p.waskiewicz.jr@intel.com, john.ronciak@intel.com
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090205.4BD20A5C.0045:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Apr 2010 18:08:54 -0700 Arve Hjønnevåg wrote:
+I first tried "ifconfig -broadcast" without any success, so I forced
+the driver to unset IFF_BROADCAST, the interface didn't showed anymore
+the BROADCAST option with ifconfig. But I didn't noticed any reduction
+in the amount of context/switches on my host.
 
-> Report active and inactive suspend blockers in
-> /sys/kernel/debug/suspend_blockers.
-
-
-This looks more like user interface information than it does debug information.
-If that's correct, it shouldn't be in debugfs.
-
-
-> Signed-off-by: Arve Hjønnevåg <arve@android.com>
-> ---
->  kernel/power/suspend_blocker.c |   44 ++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 42 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/power/suspend_blocker.c b/kernel/power/suspend_blocker.c
-> index 868e8f1..047e910 100644
-> --- a/kernel/power/suspend_blocker.c
-> +++ b/kernel/power/suspend_blocker.c
-> @@ -17,6 +17,7 @@
->  #include <linux/rtc.h>
->  #include <linux/suspend.h>
->  #include <linux/suspend_blocker.h>
-> +#include <linux/debugfs.h>
->  #include "power.h"
->  
->  enum {
-> @@ -41,6 +42,7 @@ struct workqueue_struct *suspend_work_queue;
->  struct suspend_blocker main_suspend_blocker;
->  static suspend_state_t requested_suspend_state = PM_SUSPEND_MEM;
->  static bool enable_suspend_blockers;
-> +static struct dentry *suspend_blocker_stats_dentry;
->  
->  #define pr_info_time(fmt, args...) \
->  	do { \
-> @@ -54,6 +56,21 @@ static bool enable_suspend_blockers;
->  			tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec); \
->  	} while (0);
->  
-> +static int suspend_blocker_stats_show(struct seq_file *m, void *unused)
-> +{
-> +	unsigned long irqflags;
-> +	struct suspend_blocker *blocker;
-> +
-> +	seq_puts(m, "name\tactive\n");
-> +	spin_lock_irqsave(&list_lock, irqflags);
-> +	list_for_each_entry(blocker, &inactive_blockers, link)
-> +		seq_printf(m, "\"%s\"\t0\n", blocker->name);
-> +	list_for_each_entry(blocker, &active_blockers, link)
-> +		seq_printf(m, "\"%s\"\t1\n", blocker->name);
-> +	spin_unlock_irqrestore(&list_lock, irqflags);
-> +	return 0;
-> +}
-> +
->  static void print_active_blockers_locked(void)
->  {
->  	struct suspend_blocker *blocker;
-> @@ -101,8 +118,8 @@ static DECLARE_WORK(suspend_work, suspend_worker);
->  /**
->   * suspend_blocker_init() - Initialize a suspend blocker
->   * @blocker:	The suspend blocker to initialize.
-> - * @name:	The name of the suspend blocker to show in debug messages.
-> - *
-> + * @name:	The name of the suspend blocker to show in debug messages and
-> + *		/sys/kernel/debug/suspend_blockers.
->   * The suspend blocker struct and name must not be freed before calling
->   * suspend_blocker_destroy.
->   */
-> @@ -240,6 +257,19 @@ int request_suspend_state(suspend_state_t state)
->  	return 0;
->  }
->  
-> +static int suspend_blocker_stats_open(struct inode *inode, struct file *file)
-> +{
-> +	return single_open(file, suspend_blocker_stats_show, NULL);
-> +}
-> +
-> +static const struct file_operations suspend_blocker_stats_fops = {
-> +	.owner = THIS_MODULE,
-> +	.open = suspend_blocker_stats_open,
-> +	.read = seq_read,
-> +	.llseek = seq_lseek,
-> +	.release = single_release,
-> +};
-> +
->  static int __init suspend_block_init(void)
->  {
->  	suspend_work_queue = create_singlethread_workqueue("suspend");
-> @@ -251,4 +281,14 @@ static int __init suspend_block_init(void)
->  	return 0;
->  }
->  
-> +static int __init suspend_block_postcore_init(void)
-> +{
-> +	if (!suspend_work_queue)
-> +		return 0;
-> +	suspend_blocker_stats_dentry = debugfs_create_file("suspend_blockers",
-> +			S_IRUGO, NULL, NULL, &suspend_blocker_stats_fops);
-> +	return 0;
-> +}
-> +
->  core_initcall(suspend_block_init);
-> +postcore_initcall(suspend_block_postcore_init);
-> -- 
+I found the broadcast_disabled far more efficient when considering the
+cpu impact.
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+2010/4/23 Stephen Hemminger <shemminger@vyatta.com>:
+> On Fri, 23 Apr 2010 13:22:22 -0700
+> Jeff Kirsher <jeffrey.t.kirsher@intel.com> wrote:
+>
+>> On Fri, Apr 23, 2010 at 13:14, Erwan Velu <erwanaliasr1@gmail.com> wrote:
+>> > Hi folks,
+>> >
+>> > I've been facing a very noisy network where hundreds broadcast packets
+>> > were generated every second.
+>> > When this traffic can't be controlled at the source, there is a side
+>> > effect on some systems.
+>> > I was having some idle systems that will never be targeted by this
+>> > broadcast traffic that got loaded just by receiving that "flood".
+>> > I mean by loaded that this light hardware was generating 300
+>> > context/switches per second.
+>> >
+>> > I was looking for many options to avoid this traffic to disturb this
+>> > hosts and I discovered that the e100 driver was featuring a
+>> > "broadcast_disabled" configure option.
+>> > I realize that this option is not controllable, so I wrote this simple
+>> > patch that expose this option as a module option.
+>> > This allow me to tell this hosts not to listen anymore this traffic.
+>> >
+>> > The result is clearly good as my systems are now running at 21
+>> > context/switches while being idle.
+>> > Hope this patch isn't too bad and could help others that faces the same problem.
+>> >
+>> > Patch can be downloaded here :
+>> > http://konilope.linuxeries.org/e100_broadcast_disabled.patch
+>> >
+>> > Even if gmail is eating the inlined, patch, at least that make it
+>> > easier to read it for humans.
+>> > If the patch is acked, the downloaded one will be more clean ;)
+>> >
+>> > This patch was generated on top of the latest 2.6 torvald's git.
+>> > Cheers,
+>> > Erwan
+>> >
+>> > Signed-off-by: Erwan Velu <erwanaliasr1@gmail.com>
+>> >
+>> > diff --git a/drivers/net/e100.c b/drivers/net/e100.c
+>> > index b997e57..2ba582f 100644
+>> > --- a/drivers/net/e100.c
+>> > +++ b/drivers/net/e100.c
+>> > @@ -194,12 +194,15 @@ MODULE_FIRMWARE(FIRMWARE_D102E);
+>> >  static int debug = 3;
+>> >  static int eeprom_bad_csum_allow = 0;
+>> >  static int use_io = 0;
+>> > +static int broadcast_disabled = 0;
+>> >  module_param(debug, int, 0);
+>> >  module_param(eeprom_bad_csum_allow, int, 0);
+>> >  module_param(use_io, int, 0);
+>> > +module_param(broadcast_disabled, int, 0);
+>> >  MODULE_PARM_DESC(debug, "Debug level (0=none,...,16=all)");
+>> >  MODULE_PARM_DESC(eeprom_bad_csum_allow, "Allow bad eeprom checksums");
+>> >  MODULE_PARM_DESC(use_io, "Force use of i/o access mode");
+>> > +MODULE_PARM_DESC(broadcast_disabled, "Filter broadcast packets
+>> > (0=disabled (default), 1=enabled)");
+>> >  #define DPRINTK(nlevel, klevel, fmt, args...) \
+>> >        (void)((NETIF_MSG_##nlevel & nic->msg_enable) && \
+>> >        printk(KERN_##klevel PFX "%s: %s: " fmt, nic->netdev->name, \
+>> > @@ -1131,6 +1134,8 @@ static void e100_configure(struct nic *nic,
+>> > struct cb *cb, struct sk_buff *skb)
+>> >                config->promiscuous_mode = 0x1;         /* 1=on, 0=off */
+>> >        }
+>> >
+>> > +       config->broadcast_disabled = broadcast_disabled; /* Broadcast filtering */
+>> > +
+>> >        if (nic->flags & multicast_all)
+>> >                config->multicast_all = 0x1;            /* 1=accept, 0=no */
+>> > --
+>>
+>> Adding Netdev...
+>>
+>
+> What is wrong with using existing IFF_BROADCAST flag?
+>
+>
+> --
+>
