@@ -1,91 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab0DWOyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 10:54:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6405 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754781Ab0DWOyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 10:54:14 -0400
-Message-ID: <4BD1B427.9010905@redhat.com>
-Date: Fri, 23 Apr 2010 17:52:23 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1754409Ab0DWO6W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 10:58:22 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:52285 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485Ab0DWO6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 10:58:19 -0400
+Date: Fri, 23 Apr 2010 20:28:13 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
+       Mel Gorman <mel@csn.ul.ie>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 7/11] Uprobes Implementation
+Message-ID: <20100423145813.GA5503@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100331155228.4181.61294.sendpatchset@localhost6.localdomain6>
+ <20100413183537.GA17538@redhat.com>
+ <20100415093506.GA2064@linux.vnet.ibm.com>
+ <20100419193139.GA24080@redhat.com>
+ <20100420124358.GA20675@linux.vnet.ibm.com>
+ <20100420153023.GA9351@redhat.com>
+ <20100421065948.GA5440@linux.vnet.ibm.com>
+ <20100421160515.GA11321@redhat.com>
+ <20100422133154.GA10776@linux.vnet.ibm.com>
+ <20100422154059.GA5916@redhat.com>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <20100422134249.GA2963@ca-server1.us.oracle.com> <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default> <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default> <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default 4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
-In-Reply-To: <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100422154059.GA5916@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2010 05:43 PM, Dan Magenheimer wrote:
->>
->> Perhaps I misunderstood.  Isn't frontswap in front of the normal swap
->> device?  So we do have double swapping, first to frontswap (which is in
->> memory, yes, but still a nonzero cost), then the normal swap device.
->> The io subsystem is loaded with writes; you only save the reads.
->> Better to swap to the hypervisor, and make it responsible for
->> committing
->> to disk on overcommit or keeping in RAM when memory is available.  This
->> way we avoid the write to disk if memory is in fact available (or at
->> least defer it until later).  This way you avoid both reads and writes
->> if memory is available.
->>      
-> Each page is either in frontswap OR on the normal swap device,
-> never both.  So, yes, both reads and writes are avoided if memory
-> is available and there is no write issued to the io subsystem if
-> memory is available.  The is_memory_available decision is determined
-> by the hypervisor dynamically for each page when the guest attempts
-> a "frontswap_put".  So, yes, you are indeed "swapping to the
-> hypervisor" but, at least in the case of Xen, the hypervisor
-> never swaps any memory to disk so there is never double swapping.
->    
+* Oleg Nesterov <oleg@redhat.com> [2010-04-22 17:40:59]:
 
-I see.  So why not implement this as an ordinary swap device, with a 
-higher priority than the disk device?  this way we reuse an API and keep 
-things asynchronous, instead of introducing a special purpose API.
+> On 04/22, Srikar Dronamraju wrote:
+> >
+> > * Oleg Nesterov <oleg@redhat.com> [2010-04-21 18:05:15]:
+> >
+> > > 3. mprotect(). write_opcode() checks !VM_WRITE. This is correct,
+> > >    otherwise we can race with the user-space writing to the same
+> > >    page.
+> > >
+> > >    But suppose that the application does mprotect(PROT_WRITE) after
+> > >    register_uprobe() installs the bp, now unregister_uprobe/etc can't
+> > >    restore the original insn?
+> > >
+> >
+> > I still need to verify this. I shall get back to you on this.
+> > However are there applications that mprotect(PROT_WRITE) text pages?
+> 
+> Well, I think the kernel should assume that the user-space can do
+> anything.
+> 
+> Hmm. And if this vma is VM_SHARED, then this bp could be actually
+> written to vm_file after mprotect().
 
-Doesn't this commit the hypervisor to retain this memory?  If so, isn't 
-it simpler to give the page to the guest (so now it doesn't need to swap 
-at all)?
+When I look through the load_.*_binary and load_.*_library functions,
+they seem to map the text regions MAP_PRIVATE|MAP_DENY_WRITE. (Few
+exceptions like load_som_binary that seem to map text regions with
+MAP_PRIVATE only).
 
-What about live migration?  do you live migrate frontswap pages?
+Also if vma are marked VM_SHARED and bp are inserted through ptrace,
+i.e(access_process_vm/get_user_pages), then we would still be writing to
+vm_file after mprotect?
 
->>> If I understand correctly, SSDs work much more efficiently when
->>> writing 64KB blocks.  So much more efficiently in fact that waiting
->>> to collect 16 4KB pages (by first copying them to fill a 64KB buffer)
->>> will be faster than page-at-a-time DMA'ing them.  If so, the
->>> frontswap interface, backed by an asynchronous "buffering layer"
->>> which collects 16 pages before writing to the SSD, may work
->>> very nicely.  Again this is still just speculation... I was
->>> only pointing out that zero-copy DMA may not always be the best
->>> solution.
->>>        
->> The guest can easily (and should) issue 64k dmas using scatter/gather.
->> No need for copying.
->>      
-> In many cases, this is true.  For the swap subsystem, it may not always
-> be true, though I see recent signs that it may be headed in that
-> direction.
+Again, I am not sure if executable pages should be marked VM_SHARED.
 
-I think it will be true in an overwhelming number of cases.  Flash is 
-new enough that most devices support scatter/gather.
+> 
+> But I think this doesn't really matter. When I actually look at
+> patches 3 and 4, I am starting to think this all is very wrong.
+> 
+> > I am copying Mel Gorman and Andrea Arcangeli so that they can provide
+> > their inputs on VM and KSM related issues.
+> 
+> Yes. We need vm experts here, I am not. Still, I'd like to share my
+> concerns. I also added Rik and Hugh.
+> 
+> 
+> So, 3/11 does
+> 
+> 	@@ -2617,7 +2617,10 @@ int replace_page(struct vm_area_struct *vma, struct page *page,
+> 		}
+> 	 
+> 		get_page(kpage);
+> 	-	page_add_anon_rmap(kpage, vma, addr);
+> 	+	if (PageAnon(kpage))
+> 	+		page_add_anon_rmap(kpage, vma, addr);
+> 	+	else
+> 	+		page_add_file_rmap(kpage);
+> 	 
+> 		flush_cache_page(vma, addr, pte_pfn(*ptep));
+> 		ptep_clear_flush(vma, addr, ptep);
+> 
+> I see no point in this patch, please see below.
+> 
+> The next 4/11 patch introduces write_opcode() which roughly does:
+> 
+> 	int write_opcode(unsigned long vaddr, user_bkpt_opcode_t opcode)
+> 	{
+> 		get_user_pages(write => false, &old_page);
+> 
+> 		new_page = alloc_page_vma(...);
+> 
+> 		... insert the bp into the new_page ...
+> 
+> 		new_page->mapping = old_page->mapping;
+> 		new_page->index = old_page->index;
+> 
+> 		replace_page(old_page, new_page);
+> 	}
+> 
+> This doesn't look right at all to me.
+> 
+> 	IF PageAnon(old_page):
+		   ^^^ newpage
 
-> In any case, unless you see this SSD discussion as
-> critical to the proposed acceptance of the frontswap patchset,
-> let's table it until there's some prototyping done.
->    
+> 
+> 		in this case replace_page() calls page_add_anon_rmap() which
+> 		needs the locked page.
+> 
+> 	ELSE:
+> 
+> 		I don't think the new page should evere preserve the mapping,
+> 		this looks just wrong. It should be always anonymous.
 
-It isn't particularly related.
+I did verify that page_add_file_rmap gets called from replace_page when 
+we insert or remove a probe.
+This should be because uprobes doesnt do a anon_vma_prepare() before the
+alloc_page_vma(). 
+I would leave it for vm experts to decide what the right thing to do.
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+> 
+> 
+> And in fact, I do not understand why write_opcode() needs replace_page().
+> It could just use get_user_pages(FOLL_WRITE | FOLL_FORCE), no? It should
+> create the anonymous page correctly.
 
+We were earlier doing access_process_vm that would inturn call
+get_user_pages to COW the page. However that needed that the threads of
+the target process be stopped.
+
+In the access_process_vm method,
+1. we get a copy of page, 
+2. flush the tlbs.
+3. modify the page. 
+
+The concern was if the threads were executing in the vicinity.
+Hence we were stopping all threads while inserting/deleting breakpoints.
+
+
+Background page replacement was suggested by Linus and Peter. 
+In this method.
+1. we get a copy of the page.
+2. modify the page 
+3. flush the tlbs.
+
+This method is suppose to be atomic enuf that we dont need to stop the
+threads.
+
+> 
+> Either way, I think register_uprobe() should disallow the probes in
+> VM_SHARED/VM_MAYWRITE vmas.
+
+Yes, we certainly could add that check. 
+
+--
+Thanks and Regards
+Srikar
