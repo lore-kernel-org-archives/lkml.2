@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab0DWGDU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 02:03:20 -0400
-Received: from www84.your-server.de ([213.133.104.84]:45814 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885Ab0DWGDT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 02:03:19 -0400
-Subject: Re: [PATCH] Fix a huge latency problem in the MTD CFI and LPDDR
- flash drivers.
-From: Stefani Seibold <stefani@seibold.net>
-To: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       David Woodhouse <dwmw2@infradead.org>
-In-Reply-To: <1271787391.16051.4.camel@wall-e.seibold.net>
-References: <1271623604.7050.0.camel@wall-e.seibold.net>
-	 <1271787391.16051.4.camel@wall-e.seibold.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 23 Apr 2010 08:03:04 +0200
-Message-ID: <1272002584.5347.2.camel@wall-e.seibold.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3.1 
+	id S1756011Ab0DWGIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 02:08:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57291 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755977Ab0DWGIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 02:08:49 -0400
+Message-ID: <4BD139D8.80309@cn.fujitsu.com>
+Date: Fri, 23 Apr 2010 14:10:32 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [BUGFIX][PATCH] memcg rcu lock fix v3
+References: <4BD10D59.9090504@cn.fujitsu.com>	<20100423121424.ae47efcb.kamezawa.hiroyu@jp.fujitsu.com>	<4BD118E2.7080307@cn.fujitsu.com>	<4BD11A24.2070500@cn.fujitsu.com>	<20100423125814.01e95bce.kamezawa.hiroyu@jp.fujitsu.com> <20100423130349.f320d0be.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100423130349.f320d0be.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> css_id() should be called under rcu_read_lock().
+> Following is a report from Li Zefan.
+> ==
+> ===================================================
+> [ INFO: suspicious rcu_dereference_check() usage. ]
+> ---------------------------------------------------
+> kernel/cgroup.c:4438 invoked rcu_dereference_check() without protection!
+> 
+> other info that might help us debug this:
+> 
+> 
+> rcu_scheduler_active = 1, debug_locks = 1
+> 1 lock held by kswapd0/31:
+>  #0:  (swap_lock){+.+.-.}, at: [<c05058bb>] swap_info_get+0x4b/0xd0
+> 
+> stack backtrace:
+...
+> 
+> And css_is_ancestor() should be called under rcu_read_lock().
+> 
+> 
+> Reported-by: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-David did not respond to my request since more than a month. Can u apply
-the patch to linux next?
+With this patch applied, I did some more test, and no warning was triggered.
 
-Thanks,
-Stefani
-
-Am Dienstag, den 20.04.2010, 20:16 +0200 schrieb Stefani Seibold:
-> Is the MTD mailing list routed to /dev/null? 
-> 
-> It is very sad that nobody gives my a reply. 
-> 
-> I ask for a merge for the patch, and if there any reason why not, it
-> would be great to know. Otherwise i can't fix it.
-> 
-> So again, please merge the path for the huge latency problem.
-> 
-> Am Sonntag, den 18.04.2010, 22:46 +0200 schrieb Stefani Seibold:
-> > From: Stefani Seibold <stefani@seibold.net>
-> > 
-> > The use of a memcpy() during a spinlock operation will cause very long
-> > thread context switch delays if the flash chip bandwidth is low and the
-> > data to be copied large, because a spinlock will disable preemption.
-> > 
-> > For example: A flash with 6,5 MB/s bandwidth will cause under ubifs,
-> > which request sometimes 128 KB (the flash erase size), a preemption delay of
-> > 20 milliseconds. High priority threads will not be served during this
-> > time, regardless whether this threads access the flash or not. This behavior
-> > breaks real time.
-> > 
-> > The patch changes all the use of spin_lock operations for xxxx->mutex
-> > into mutex operations, which is exact what the name says and means.
-> > 
-> > I have checked the code of the drivers and there is no use of atomic
-> > pathes like interrupt or timers. The mtdoops facility will also not be used
-> > by this drivers. So it is dave to replace the spin_lock against mutex.
-> > 
-> > There is no performance regression since the mutex is normally not
-> > acquired.
-> > 
-> > Changelog:
-> >  06.03.2010 First release
-> >  26.03.2010 Fix mutex[1] issue and tested it for compile failure
-> > 
-> > Signed-off-by: Stefani Seibold <stefani@seibold.net>
-> > ---
-> >  drivers/mtd/chips/cfi_cmdset_0001.c |  131 +++++++++++++++++-----------------
-> >  drivers/mtd/chips/cfi_cmdset_0002.c |  122 ++++++++++++++++----------------
-> >  drivers/mtd/chips/cfi_cmdset_0020.c |  136 +++++++++++++++++-----------------
-> >  drivers/mtd/chips/fwh_lock.h        |    6 +-
-> >  drivers/mtd/chips/gen_probe.c       |    3 +-
-> >  drivers/mtd/lpddr/lpddr_cmds.c      |   79 ++++++++++----------
-> >  include/linux/mtd/flashchip.h       |    4 +-
-> >  7 files changed, 239 insertions(+), 242 deletions(-)
-> 
-
+Tested-by: Li Zefan <lizf@cn.fujitsu.com>
 
