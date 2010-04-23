@@ -1,104 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab0DWXwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 19:52:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43365 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755889Ab0DWXwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 19:52:22 -0400
-Date: Fri, 23 Apr 2010 23:52:00 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       stable@kernel.org, colin.king@canonical.com, tglx@linutronix.de,
-       hpa@linux.intel.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       stable@kernel.org, colin.king@canonical.com, tglx@linutronix.de,
-       hpa@linux.intel.com, mingo@elte.hu
-In-Reply-To: <1269271251-19775-1-git-send-email-colin.king@canonical.com>
-References: <1269271251-19775-1-git-send-email-colin.king@canonical.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Disable large pages on CPUs with Atom erratum AAE44
-Message-ID: <tip-7a0fc404ae663776e96db43879a0fa24fec1fa3a@git.kernel.org>
-Git-Commit-ID: 7a0fc404ae663776e96db43879a0fa24fec1fa3a
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Apr 2010 23:52:01 +0000 (UTC)
+	id S1756211Ab0DWXwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 19:52:51 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46460
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755430Ab0DWXws (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 19:52:48 -0400
+Date: Fri, 23 Apr 2010 16:52:51 -0700 (PDT)
+Message-Id: <20100423.165251.75236604.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7a0fc404ae663776e96db43879a0fa24fec1fa3a
-Gitweb:     http://git.kernel.org/tip/7a0fc404ae663776e96db43879a0fa24fec1fa3a
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Tue, 13 Apr 2010 14:40:54 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 23 Apr 2010 16:49:51 -0700
 
-x86: Disable large pages on CPUs with Atom erratum AAE44
+1) Incorrect ERR_PTR handling in rtnetlink and rdma, from
+   Dan Carpenter.
 
-Atom erratum AAE44/AAF40/AAG38/AAH41:
+2) New IPHONE ipheth driver from Diego Giagio.
 
-"If software clears the PS (page size) bit in a present PDE (page
-directory entry), that will cause linear addresses mapped through this
-PDE to use 4-KByte pages instead of using a large page after old TLB
-entries are invalidated. Due to this erratum, if a code fetch uses
-this PDE before the TLB entry for the large page is invalidated then
-it may fetch from a different physical address than specified by
-either the old large page translation or the new 4-KByte page
-translation. This erratum may also cause speculative code fetches from
-incorrect addresses."
+3) ipv6 ipsec grabs wrong device when bundling.  Fix from Nicolas Dichtel.
 
-[http://download.intel.com/design/processor/specupdt/319536.pdf]
+4) ipv6 TCP code fixes transport header of wrong SKB, from Herbert Xu.
 
-Where as commit 211b3d03c7400f48a781977a50104c9d12f4e229 seems to
-workaround errata AAH41 (mixed 4K TLBs) it reduces the window of
-opportunity for the bug to occur and does not totally remove it.  This
-patch disables mixed 4K/4MB page tables totally avoiding the page
-splitting and not tripping this processor issue.
+5) Bridge igmp snooping code missing ntohs(), from Eric Dumazet.
 
-This is based on an original patch by Colin King.
+6) TCP bind can croak when many ports are bound, effects are exasperated
+   when there are several local IP addresses.  Also from Eric Dumazet.
 
-Originally-by: Colin Ian King <colin.king@canonical.com>
-Cc: Colin Ian King <colin.king@canonical.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-LKML-Reference: <1269271251-19775-1-git-send-email-colin.king@canonical.com>
-Cc: <stable@kernel.org>
----
- arch/x86/kernel/cpu/intel.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+7) Fix cxgb3 link-up regression with certain chips, from Hiroshi Shimamoto.
 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 7e1cca1..1366c7c 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -47,6 +47,27 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
- 		(c->x86 == 0x6 && c->x86_model >= 0x0e))
- 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
- 
-+	/*
-+	 * Atom erratum AAE44/AAF40/AAG38/AAH41:
-+	 *
-+	 * A race condition between speculative fetches and invalidating
-+	 * a large page.  This is worked around in microcode, but we
-+	 * need the microcode to have already been loaded... so if it is
-+	 * not, recommend a BIOS update and disable large pages.
-+	 */
-+	if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2) {
-+		u32 ucode, junk;
-+
-+		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
-+		sync_core();
-+		rdmsr(MSR_IA32_UCODE_REV, junk, ucode);
-+
-+		if (ucode < 0x20e) {
-+			printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
-+			clear_cpu_cap(c, X86_FEATURE_PSE);
-+		}
-+	}
-+
- #ifdef CONFIG_X86_64
- 	set_cpu_cap(c, X86_FEATURE_SYSENTER32);
- #else
+8) ipv6 doesn't respect bind-to-device settings properly, fix from Jiri Olsa.
+
+9) Races in KS8851 TX handling can result in an OOPS, from Abraham Arce.
+
+10) Debugging build breaks due to typo in hex dump function name,
+    fix from Alexander Kuznetsov.
+
+11) gianfar/fsl_pq_mdio can OOPS due to buggy device trees which do
+    exist in the real world, fix from Anton Vorontsov.
+
+12) Fix RCU warning in dev_pick_tx(), from David Howells.
+
+13) A few small wireless fixes (iwlwifi scanning races, bad
+    aggregation handling, wrong regulatory bits checked in iwlwifi
+    EEPROM) from Reinette Chatre, Johannes Berg, and Shanyu Zhao.
+
+14) Fix mishandling of dead unaccepted sockets in x25, from Andrew
+    Hendry.
+
+Please pull, thanks a lot!
+
+The following changes since commit 33eaf788345c0311ab48ae62673c05f59fb09bb3:
+  Linus Torvalds (1):
+        Merge branch 'for-linus' of git://git.kernel.org/.../tiwai/sound-2.6
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Abraham Arce (1):
+      KS8851: NULL pointer dereference if list is empty
+
+Alexander Kurz (1):
+      net: 3c574_cs fix stats.tx_bytes counter
+
+Alexander Kuznetsov (1):
+      8139too: Fix a typo in the function name.
+
+Anton Vorontsov (2):
+      fsl_pq_mdio: Fix kernel oops during OF address translation
+      gianfar: Fix potential oops during OF address translation
+
+Dan Carpenter (2):
+      rtnetlink: potential ERR_PTR dereference
+      rdma: potential ERR_PTR dereference
+
+David Howells (1):
+      net: Fix an RCU warning in dev_pick_tx()
+
+David S. Miller (2):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
+      Merge branch 'master' of /home/davem/src/GIT/linux-2.6/
+
+Diego Giagio (1):
+      drivers/net/usb: Add new driver ipheth
+
+Eric Dumazet (2):
+      bridge: add a missing ntohs()
+      tcp: bind() fix when many ports are bound
+
+Hans J. Koch (1):
+      can: Fix possible NULL pointer dereference in ems_usb.c
+
+Herbert Xu (1):
+      ipv6: Fix tcp_v6_send_response transport header setting.
+
+Hiroshi Shimamoto (1):
+      cxgb3: fix linkup issue
+
+Jiri Olsa (1):
+      net: ipv6 bind to device issue
+
+Johannes Berg (2):
+      iwlwifi: fix scan races
+      mac80211: remove bogus TX agg state assignment
+
+Nicolas Dichtel (1):
+      xfrm6: ensure to use the same dev when building a bundle
+
+Reinette Chatre (1):
+      mac80211: pass HT changes to driver when off channel
+
+Shan Wei (1):
+      ipv6: allow to send packet after receiving ICMPv6 Too Big message with MTU field less than IPV6_MIN_MTU
+
+Shanyu Zhao (1):
+      iwlwifi: correct 6000 EEPROM regulatory address
+
+andrew hendry (1):
+      X25 fix dead unaccepted sockets
+
+ drivers/net/8139too.c                     |    2 +-
+ drivers/net/Makefile                      |    1 +
+ drivers/net/can/usb/ems_usb.c             |    8 +-
+ drivers/net/cxgb3/ael1002.c               |    2 +-
+ drivers/net/fsl_pq_mdio.c                 |   20 +-
+ drivers/net/gianfar.c                     |    6 +-
+ drivers/net/ks8851.c                      |   12 +-
+ drivers/net/pcmcia/3c574_cs.c             |    7 +-
+ drivers/net/usb/Kconfig                   |   12 +
+ drivers/net/usb/Makefile                  |    1 +
+ drivers/net/usb/ipheth.c                  |  568 +++++++++++++++++++++++++++++
+ drivers/net/wireless/iwlwifi/iwl-6000.c   |    4 +-
+ drivers/net/wireless/iwlwifi/iwl-agn.c    |    1 +
+ drivers/net/wireless/iwlwifi/iwl-core.c   |    1 -
+ drivers/net/wireless/iwlwifi/iwl-core.h   |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-dev.h    |    1 +
+ drivers/net/wireless/iwlwifi/iwl-eeprom.h |    4 +
+ drivers/net/wireless/iwlwifi/iwl-scan.c   |   31 +-
+ net/bridge/br_multicast.c                 |    2 +-
+ net/core/dev.c                            |    2 +-
+ net/core/rtnetlink.c                      |    5 +-
+ net/ipv4/inet_connection_sock.c           |   16 +-
+ net/ipv6/inet6_connection_sock.c          |   15 +-
+ net/ipv6/ip6_output.c                     |    2 +-
+ net/ipv6/route.c                          |    2 +-
+ net/ipv6/tcp_ipv6.c                       |    2 +-
+ net/ipv6/xfrm6_policy.c                   |    2 +-
+ net/mac80211/agg-tx.c                     |    1 -
+ net/mac80211/mlme.c                       |    2 +
+ net/rds/rdma_transport.c                  |    2 +-
+ net/x25/af_x25.c                          |    1 +
+ 31 files changed, 678 insertions(+), 59 deletions(-)
+ create mode 100644 drivers/net/usb/ipheth.c
