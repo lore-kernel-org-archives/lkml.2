@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758489Ab0DWRuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 13:50:17 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:31263 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755081Ab0DWRuO (ORCPT
+	id S1758504Ab0DWRwK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 13:52:10 -0400
+Received: from relay.ihostexchange.net ([66.46.182.52]:17672 "EHLO
+	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756388Ab0DWRwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 13:50:14 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Fri, 23 Apr 2010 13:50:10 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Paulius Zaleckas <paulius.zaleckas@gmail.com>, dwmw2@infradead.org,
-       jamie@shareable.org, linux-kernel@vger.kernel.org,
-       linux-mtd@lists.infradead.org, u.kleine-koenig@pengutronix.de,
-       simon.kagstrom@netinsight.net, akpm@linux-foundation.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] MTD: Fix Orion NAND driver compilation with ARM OABI
-In-reply-to: <1272035596.11751.1437.camel@localhost.localdomain>
-Message-id: <alpine.LFD.2.00.1004231308300.7232@xanadu.home>
-References: <20100325152505.17612.40158.stgit@pauliusz>
- <alpine.LFD.2.00.1003251225500.694@xanadu.home> <4BB33988.9070608@gmail.com>
- <1272023778.6917.6.camel@localhost>
- <alpine.LFD.2.00.1004230853230.7232@xanadu.home>
- <1272035596.11751.1437.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-Content-id: <alpine.LFD.2.00.1004231344241.7232@xanadu.home>
+	Fri, 23 Apr 2010 13:52:08 -0400
+Message-ID: <4BD1DE30.5030405@VirtualLogix.com>
+Date: Fri, 23 Apr 2010 19:51:44 +0200
+From: Eric Lescouet <Eric.Lescouet@VirtualLogix.com>
+User-Agent: Thunderbird 2.0.0.19 (X11/20090105)
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Greg KH <greg@kroah.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: USBIP (staging) driver's dependency on drivers/usb/core internal
+ headers
+References: <Pine.LNX.4.44L0.1004231246440.1777-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1004231246440.1777-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Apr 2010, Artem Bityutskiy wrote:
-
-> On Fri, 2010-04-23 at 08:54 -0400, Nicolas Pitre wrote:
-> > On Fri, 23 Apr 2010, Artem Bityutskiy wrote:
-> > 
-> > > On Wed, 2010-03-31 at 15:01 +0300, Paulius Zaleckas wrote:
-> > > > On 03/25/2010 06:26 PM, Nicolas Pitre wrote:
-> > > > > On Thu, 25 Mar 2010, Paulius Zaleckas wrote:
-> > > > >
-> > > > >> We must tell GCC to use even register for variable passed
-> > > > >> to ldrd instruction. Without this patch GCC 4.2.1 puts this
-> > > > >> variable to r2/r3 on EABI and r3/r4 on OABI, so force it to
-> > > > >> r2/r3. This does not change anything when EABI and OABI
-> > > > >> compilation works OK.
-> > > > >>
-> > > > >> Without this patch and with OABI I get:
-> > > > >>    CC      drivers/mtd/nand/orion_nand.o
-> > > > >> /tmp/ccMkwOCs.s: Assembler messages:
-> > > > >> /tmp/ccMkwOCs.s:63: Error: first destination register must be even -- `ldrd r3,[ip]'
-> > > > >> make[5]: *** [drivers/mtd/nand/orion_nand.o] Error 1
-> > > > >>
-> > > > >> Signed-off-by: Paulius Zaleckas<paulius.zaleckas@gmail.com>
-> > > > >
-> > > > > Acked-by: Nicolas Pitre<nico@fluxnic.net>
-> > > > 
-> > > > David,
-> > > > 
-> > > > Will you take this patch?
-> > > > Or you are waiting till I will add all Cc as Jamie suggested?
-> > > 
-> > > Meanwhile, I've pushed your patch to my l2-mtd-2.6.git / dunno.
-> > 
-> > I think it should go to mainline.  It is not perfect, but still better 
-> > than the current situation.
+Alan Stern wrote:
+> On Fri, 23 Apr 2010, Eric Lescouet wrote:
 > 
-> Fine with me, but not up to me. But I guess Andrew could merge it.
+>> If I understand correctly, splitting hub.h into hub.h + ch11.h is 
+>> independent of the move. At the end the 2 (or 3 files) would end up
+>> into include/linux/usb/.
+>> correct?
+> 
+> Two files.  The first would be ch11.h (or maybe keep the name hub.h; 
+> I'm not sure which is best), and the second would be hcd.h (including 
+> the leftover parts from the original hub.h).
+> 
 
-The patch is providing a fix to my own code, and I acked it already. The 
-root of the problem is a defficiency in gcc, and dwmw2 asked that a PR 
-be filled for that and a reference to it added to the patch.  This has 
-been done.
+OK. understood now ;-)
 
+>> I've tried to move hub.h and hcd.h and to compile the kernel, already.
+>> Changing the path of the #include directives in ~40 files did the trick.
+>>
+>> Would you like 2 patches (move and then split) or only 1?
+> 
+> If it weren't for the rename, I'd say do it in two patches.  But if the 
+> name is changed to ch11.h then those 40 files would have to be altered 
+> twice.
+> 
+> Alan Stern
+> 
 
-Nicolas
+Well, most of the files include hcd.h (which includes hub.h),
+only ~4 of them directly use hub.h.
+So what's your vote? rename hub.h into ch11.h?
+
+	Eric.
+
