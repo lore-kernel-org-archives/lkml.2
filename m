@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab0DWLX4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 07:23:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61516 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753318Ab0DWLXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 07:23:54 -0400
-Message-ID: <4BD18343.3050407@redhat.com>
-Date: Fri, 23 Apr 2010 14:23:47 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1755347Ab0DWLYh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 07:24:37 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:48500 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab0DWLYf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 07:24:35 -0400
+Message-ID: <4BD18349.3020405@ru.mvista.com>
+Date: Fri, 23 Apr 2010 15:23:53 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/10] KVM MMU: fix for calculating gpa in invlpg code
-References: <4BCFE3D5.5070105@cn.fujitsu.com> <4BCFE8C2.9080102@cn.fujitsu.com>
-In-Reply-To: <4BCFE8C2.9080102@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Greg KH <gregkh@suse.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-usb@vger.kernel.org
+Subject: Re: [GIT PATCH] USB fixes for 2.6.34-git
+References: <20100422222610.GA3187@kroah.com>
+In-Reply-To: <20100422222610.GA3187@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2010 09:12 AM, Xiao Guangrong wrote:
-> If the guest is 32-bit, we should use 'quadrant' to adjust gpa
-> offset
+Hello.
+
+Greg KH wrote:
+
+> Here are a number of USB bugfixes and new device ids for your 2.6.34-git
+> tree.
 >
->    
+> Nothing really huge, just a bunch of needed fixes for reported problems.
+>
+> Please pull from:
+> 	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/
+>
+> All of these patches have been in the linux-next and mm trees.
+>
+> The full patches will be sent to the linux-usb mailing list, if anyone
+> wants to see them.
+>   
 
-Good catch.  Only affects kvm_mmu_pte_write(), so I don't think this had 
-ill effects other than not prefetching the correct address?
+   How about this series [1] of 11 MUSB fixes?
 
-> @@ -478,9 +478,14 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
->   		    ((level == PT_DIRECTORY_LEVEL&&  is_large_pte(*sptep))) ||
->   		    ((level == PT_PDPE_LEVEL&&  is_large_pte(*sptep)))) {
->   			struct kvm_mmu_page *sp = page_header(__pa(sptep));
-> +			int offset = 0;
-> +
-> +			if (PTTYPE == 32)
-> +				offset = sp->role.quadrant<<  PT64_LEVEL_BITS;;
->    
+[1] http://marc.info/?l=linux-usb&m=126951575000396
 
-Wrong for PT_DIRECTORY_LEVEL (should be q << 8).  Also, too many 
-semicolons.
-
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+WBR, Sergei
 
