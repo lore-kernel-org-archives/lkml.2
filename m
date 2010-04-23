@@ -1,121 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab0DWVIY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 17:08:24 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33350 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757384Ab0DWVIV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 17:08:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=MWwTyztZigOCaRHbG3ZgrZ17IGbQTw1pMnm+ZnwL5QKjxCt3hI4LhUoRAxl3GGKG/C
-         v1caSbDkGiJstViMXNGGOg9XFG7ERGJmGL669R4xMNZgAXWQxtTHNCxwS6pi6toVPBHU
-         DoCqjHtZpoqt2GWTxn1H+G5ACSVcnpv9FVYYQ=
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH 8/9] Input: Block suspend while event queue is not empty.
-Date: Fri, 23 Apr 2010 14:08:14 -0700
-User-Agent: KMail/1.13.2 (Linux/2.6.34-rc5; KDE/4.4.2; x86_64; ; )
-Cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
-       =?iso-8859-1?q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
-       Sven Neumann <s.neumann@raumfeld.com>,
-       Tero Saarni <tero.saarni@gmail.com>,
-       Henrik Rydberg <rydberg@euromail.se>, Matthew Garrett <mjg@redhat.com>,
-       Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org
-References: <1271984938-13920-1-git-send-email-arve@android.com> <1271984938-13920-9-git-send-email-arve@android.com> <20100423135625.1e12d005.randy.dunlap@oracle.com>
-In-Reply-To: <20100423135625.1e12d005.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201004231408.15885.dmitry.torokhov@gmail.com>
+	id S1757564Ab0DWVJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 17:09:54 -0400
+Received: from tex.lwn.net ([70.33.254.29]:35506 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754609Ab0DWVJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 17:09:49 -0400
+Date: Fri, 23 Apr 2010 15:09:46 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
+       Deepak Saxena <dsaxena@laptop.org>, linux-fbdev@vger.kernel.org,
+       JosephChan@via.com.tw, ScottFang@viatech.com.cn
+Subject: Re: [PATCH 09/11] viafb: Do not probe for LVDS/TMDS on OLPC XO-1.5
+Message-ID: <20100423150946.3c3046b2@bike.lwn.net>
+In-Reply-To: <4BD2098E.70601@gmx.de>
+References: <1271614873-5952-1-git-send-email-corbet@lwn.net>
+	<1271614873-5952-10-git-send-email-corbet@lwn.net>
+	<4BD2098E.70601@gmx.de>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 April 2010 01:56:25 pm Randy Dunlap wrote:
-> On Thu, 22 Apr 2010 18:08:57 -0700 Arve Hjønnevåg wrote:
-> > Add an ioctl, EVIOCSSUSPENDBLOCK, to enable a suspend_blocker that will
-> > block suspend while the event queue is not empty. This allows userspace
-> > code to process input events while the device appears to be asleep.
-> 
-> All new ioctls need to be added to Documentation/ioctl/ioctl-number.txt,
-> please.
+On Fri, 23 Apr 2010 22:56:46 +0200
+Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
 
-I do not see the reason for it to be in the kernel still. Have a process
-that listens to all input devices (or subset of them), once events stop
-coming initiate suspend.
-
+> I fear your analysis that the #ifdef's are not needed is wrong. At least 
+> with this patch applied I get:
 > 
-> > Signed-off-by: Arve Hjønnevåg <arve@android.com>
-> > ---
-> > 
-> >  drivers/input/evdev.c |   22 ++++++++++++++++++++++
-> >  include/linux/input.h |    3 +++
-> >  2 files changed, 25 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> > index 2ee6c7a..66e0d16 100644
-> > --- a/drivers/input/evdev.c
-> > +++ b/drivers/input/evdev.c
-> > @@ -585,6 +594,19 @@ static long evdev_do_ioctl(struct file *file,
-> > unsigned int cmd,
-> > 
-> >  		else
-> >  		
-> >  			return evdev_ungrab(evdev, client);
-> > 
-> > +	case EVIOCGSUSPENDBLOCK:
-> > +		return put_user(client->use_suspend_blocker, ip);
-> > +
-> > +	case EVIOCSSUSPENDBLOCK:
-> > +		spin_lock_irq(&client->buffer_lock);
-> > +		if (!client->use_suspend_blocker && p)
-> > +			suspend_blocker_init(&client->suspend_blocker, "evdev");
-> > +		else if (client->use_suspend_blocker && !p)
-> > +			suspend_blocker_destroy(&client->suspend_blocker);
-> > +		client->use_suspend_blocker = !!p;
-> > +		spin_unlock_irq(&client->buffer_lock);
-> > +		return 0;
-> > +
-> > 
-> >  	default:
-> >  		if (_IOC_TYPE(cmd) != 'E')
-> > 
-> > diff --git a/include/linux/input.h b/include/linux/input.h
-> > index 7ed2251..b2d93b4 100644
-> > --- a/include/linux/input.h
-> > +++ b/include/linux/input.h
-> > @@ -82,6 +82,9 @@ struct input_absinfo {
-> > 
-> >  #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release 
-device */
-> > 
-> > +#define EVIOCGSUSPENDBLOCK	_IOR('E', 0x91, int)			/* get 
-suspend block
-> > enable */ +#define EVIOCSSUSPENDBLOCK	_IOW('E', 0x91, int)			/* 
-set
-> > suspend block enable */ +
-> > 
-> >  /*
-> >  
-> >   * Event types
-> >   */
-> 
-> thanks,
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code
-> *** --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> drivers/video/via/hw.c: In function 'init_tmds_chip_info':
+> drivers/video/via/hw.c:2043: error: implicit declaration of function 
+> 'machine_is_olpc'
 
--- 
-Dmitry
+No, the problem is the "embarrassing compilation error" I mentioned in
+my other mail; it needs "#include <asm/olpc.h>" at the top of the file.
+
+Sorry,
+
+jon
