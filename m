@@ -1,108 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab0DWT4B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 15:56:01 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:37162 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756050Ab0DWTz7 (ORCPT
+	id S1756651Ab0DWUEf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 16:04:35 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:38672 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755309Ab0DWUEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 15:55:59 -0400
-Date: Fri, 23 Apr 2010 15:55:56 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-       cpufreq <cpufreq@vger.kernel.org>,
-       linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-       Dave Jones <davej@redhat.com>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-       Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: CPUfreq - udelay() interaction issues
-Message-ID: <20100423195556.GD21997@Krystal>
-References: <4BCFC3D0.5080904@codeaurora.org> <4BD0D9E5.3020606@codeaurora.org> <20100423184042.GA16190@Krystal> <20100423122259.49e0416a@infradead.org>
+	Fri, 23 Apr 2010 16:04:32 -0400
+Date: Fri, 23 Apr 2010 21:04:15 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: =?iso-8859-1?Q?=C9ric?= Piel <Eric.Piel@tremplin-utc.net>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+       platform-driver-x86@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
+       "Brown, Len" <len.brown@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] Make WMI be selected automatically when needed
+Message-ID: <20100423200415.GA1009@srcf.ucam.org>
+References: <4BC8FF9D.7050500@tremplin-utc.net> <20100416173127.6b968fd4.randy.dunlap@oracle.com> <4BC907B5.2050104@tremplin-utc.net> <20100423192059.GA32705@srcf.ucam.org> <4BD1FA5A.6060406@tremplin-utc.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100423122259.49e0416a@infradead.org>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 15:41:18 up 90 days, 22:18,  5 users,  load average: 0.00, 0.09,
-	0.10
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4BD1FA5A.6060406@tremplin-utc.net>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arjan van de Ven (arjan@infradead.org) wrote:
-> On Fri, 23 Apr 2010 14:40:42 -0400
-> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> 
-> > [CCing Arjan, who seems to have played a lot with ondemand lately]
-> > 
-> > * Saravana Kannan (skannan@codeaurora.org) wrote:
-> > > Resending email to "cc" the maintainers.
-> > >
-> > > Maintainers,
-> > >
-> > > Any comments?
-> > >
-> > > -Saravana
-> > >
-> > > Saravana Kannan wrote:
-> > >> Hi,
-> > >>
-> > >> I think there are a couple of issues with cpufreq and udelay  
-> > >> interaction. But that's based on my understanding of cpufreq. I
-> > >> have worked with it for sometime now, so hopefully I not
-> > >> completely wrong. So, I will list my assumptions and what I think
-> > >> is/are the issue(s) and their solutions.
-> > >>
-> > >> Please correct me if I'm wrong and let me know what you think.
-> > >>
-> > >> Assumptions:
-> > >> ============
-> > >> * Let's assume ondemand governor is being used.
-> > >> * Ondemand uses one timer per core and they have CPU affinity set.
-> > >> * For SMP, CPUfreq core expects the CPUfreq driver to adjust the 
-> > >> per-CPU jiffies.
-> > >> * P1 indicates for lower CPU perfomance levels and P2 indicates a
-> > >> much higher CPU pref level (say 10 times faster).
-> > >>
-> 
-> 
-> so in reality, all hardware that does coordination between cores/etc
-> like this also has a tsc that is invariant of the actual P state.
-> If there are exceptions, those have a problem, but I can't think of any
-> right now.
-> Once the TSC is invariant of P state, udelay() is fine, since that goes
-> of the tsc, not of some delay loop kind of thing....
+On Fri, Apr 23, 2010 at 09:51:54PM +0200, Éric Piel wrote:
 
-I did an overview, back in 2007, of AMD and Intel processors that had either tsc
-rate depending on P state and/or tsc rate changed by idle and/or tsc values
-influenced by STPCLK-Throttling. Here are some notes, along with pointers to the
-reference documents (please excuse the ad-hoc style of these notes):
+> Currently there are 2 modules which select ACPI_WMI and 4 which depend
+> on it. There are 7 modules which select BACKLIGHT_CLASS_DEVICE and as
+> many which depend on it. Making usage of the select functionality all
+> the time would avoid these inconsistencies.
 
-http://git.dorsal.polymtl.ca/?p=lttv.git;a=blob_plain;f=doc/developer/tsc.txt
-
-So I might be missing something about your statement "all hardware that does
-coordination between cores/etc like this also has a tsc that is invariant of the
-actual P state.". Do you mean that all udelay callers do not rely on it to
-provide a guaranteed lower-bound, except for some sub-architectures ?
-
-ARM currently does not rely on the c0_count register for udelay, but it could do
-it in a near future on the omap3 at least. This register follows the CPU
-frequency. I suspect that the current udelay loop implementation in
-arch/arm/lib/delay.S, being calibrated on loops_per_jiffy, does not work that
-well with ondemand cpufreq right now.
-
-Thanks,
-
-Mathieu
-
+Using select for ACPI_WMI is pretty clearly wrong since it fails in 
+cases where ACPI isn't enabled. But I don't think the appropriate way to 
+handle that is to encode the dependency between ACPI_WMI and ACPI 
+multiple times - they should just be switched to depend on it instead.
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Matthew Garrett | mjg59@srcf.ucam.org
