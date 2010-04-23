@@ -1,156 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab0DWMvF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 08:51:05 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:50766 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab0DWMvA (ORCPT
+	id S1754786Ab0DWMyS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 08:54:18 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:35620 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab0DWMyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 08:51:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=vRKARjktg+cwhDdhfdWyY9Sq4Ih+i91RUT6D0MkYrmxdG6fYoHMPkKopACERijrr3w
-         AG+GaxjalyiYKlQQXY+81WHle2pBttg6W6bN4Llh4VXEJPXaNNdui6vaPh7mGZIC2Bh+
-         6wNDzQCjvsI2ivUx8Nf73q5LspQFRs2iz+pdI=
-MIME-Version: 1.0
-In-Reply-To: <20100422160144.GC2524@linux.vnet.ibm.com>
-References: <20100419230136.GA16856@linux.vnet.ibm.com>
-	 <20100420030452.GB2905@linux.vnet.ibm.com>
-	 <4BCD646B.1080206@cn.fujitsu.com>
-	 <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com>
-	 <j2ya44ae5cd1004200545q6be4ec82o18ae99d93e8c29c7@mail.gmail.com>
-	 <20100420135227.GC2628@linux.vnet.ibm.com>
-	 <t2la44ae5cd1004200838w87256e80v9dcde91342b321db@mail.gmail.com>
-	 <20100421213543.GO2563@linux.vnet.ibm.com>
-	 <20100422145640.GB3228@redhat.com>
-	 <20100422160144.GC2524@linux.vnet.ibm.com>
-Date: Fri, 23 Apr 2010 08:50:59 -0400
-Message-ID: <h2xa44ae5cd1004230550uf734c89eo2b1d1945d446068c@mail.gmail.com>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious 
-	rcu_dereference_check() usage
-From: Miles Lane <miles.lane@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 23 Apr 2010 08:54:17 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Fri, 23 Apr 2010 08:54:16 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Paulius Zaleckas <paulius.zaleckas@gmail.com>, dwmw2@infradead.org,
+       jamie@shareable.org, linux-kernel@vger.kernel.org,
+       linux-mtd@lists.infradead.org, u.kleine-koenig@pengutronix.de,
+       simon.kagstrom@netinsight.net, akpm@linux-foundation.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] MTD: Fix Orion NAND driver compilation with ARM OABI
+In-reply-to: <1272023778.6917.6.camel@localhost>
+Message-id: <alpine.LFD.2.00.1004230853230.7232@xanadu.home>
+References: <20100325152505.17612.40158.stgit@pauliusz>
+ <alpine.LFD.2.00.1003251225500.694@xanadu.home> <4BB33988.9070608@gmail.com>
+ <1272023778.6917.6.camel@localhost>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-There has been a bit of back and forth, and I am not sure what patches
-I should test now.
-Could you send me a bundle of whatever needs testing now?
+On Fri, 23 Apr 2010, Artem Bityutskiy wrote:
 
-I currently have a build of 2.6.34-rc5-git3 with the same patch I
-tested before applied.
-I notice a few minor differences in the warnings given.  I suspect
-these do not indicate
-new issues, since the trace from <IRQ> through <EOI> is the same as before.
+> On Wed, 2010-03-31 at 15:01 +0300, Paulius Zaleckas wrote:
+> > On 03/25/2010 06:26 PM, Nicolas Pitre wrote:
+> > > On Thu, 25 Mar 2010, Paulius Zaleckas wrote:
+> > >
+> > >> We must tell GCC to use even register for variable passed
+> > >> to ldrd instruction. Without this patch GCC 4.2.1 puts this
+> > >> variable to r2/r3 on EABI and r3/r4 on OABI, so force it to
+> > >> r2/r3. This does not change anything when EABI and OABI
+> > >> compilation works OK.
+> > >>
+> > >> Without this patch and with OABI I get:
+> > >>    CC      drivers/mtd/nand/orion_nand.o
+> > >> /tmp/ccMkwOCs.s: Assembler messages:
+> > >> /tmp/ccMkwOCs.s:63: Error: first destination register must be even -- `ldrd r3,[ip]'
+> > >> make[5]: *** [drivers/mtd/nand/orion_nand.o] Error 1
+> > >>
+> > >> Signed-off-by: Paulius Zaleckas<paulius.zaleckas@gmail.com>
+> > >
+> > > Acked-by: Nicolas Pitre<nico@fluxnic.net>
+> > 
+> > David,
+> > 
+> > Will you take this patch?
+> > Or you are waiting till I will add all Cc as Jamie suggested?
+> 
+> Meanwhile, I've pushed your patch to my l2-mtd-2.6.git / dunno.
 
-[   60.174809] [ INFO: suspicious rcu_dereference_check() usage. ]
-[   60.174812] ---------------------------------------------------
-[   60.174816] net/mac80211/sta_info.c:886 invoked
-rcu_dereference_check() without protection!
-[   60.174820]
-[   60.174821] other info that might help us debug this:
-[   60.174822]
-[   60.174825]
-[   60.174826] rcu_scheduler_active = 1, debug_locks = 1
-[   60.174829] no locks held by wpa_supplicant/3973.
-[   60.174832]
-[   60.174833] stack backtrace:
-[   60.174838] Pid: 3973, comm: wpa_supplicant Not tainted 2.6.34-rc5-git3 #19
-[   60.174841] Call Trace:
-[   60.174844]  <IRQ>  [<ffffffff81067faa>] lockdep_rcu_dereference+0x9d/0xa5
-[   60.174873]  [<ffffffffa014e9ae>]
-ieee80211_find_sta_by_hw+0x46/0x10f [mac80211]
-[   60.174886]  [<ffffffffa014ea8e>] ieee80211_find_sta+0x17/0x19 [mac80211]
-[   60.174902]  [<ffffffffa01a60f2>] iwl_tx_queue_reclaim+0xdb/0x1b1 [iwlcore]
-[   60.174909]  [<ffffffff81068417>] ? mark_lock+0x2d/0x235
-[   60.174920]  [<ffffffffa01d5f1c>] iwl5000_rx_reply_tx+0x4a9/0x556 [iwlagn]
-[   60.174927]  [<ffffffff8120a2d3>] ? is_swiotlb_buffer+0x2e/0x3b
-[   60.174936]  [<ffffffffa01cebf4>] iwl_rx_handle+0x163/0x2b5 [iwlagn]
-[   60.174943]  [<ffffffff810688f0>] ? trace_hardirqs_on_caller+0xfa/0x13f
-[   60.174952]  [<ffffffffa01cf3ac>] iwl_irq_tasklet+0x2bb/0x3c0 [iwlagn]
-[   60.174959]  [<ffffffff810411df>] tasklet_action+0xa7/0x10f
-[   60.174965]  [<ffffffff810421f1>] __do_softirq+0x144/0x252
-[   60.174972]  [<ffffffff81003a8c>] call_softirq+0x1c/0x34
-[   60.174977]  [<ffffffff810050e4>] do_softirq+0x38/0x80
-[   60.174982]  [<ffffffff81041cbe>] irq_exit+0x45/0x94
-[   60.174987]  [<ffffffff81004829>] do_IRQ+0xad/0xc4
-[   60.174994]  [<ffffffff813cfb13>] ret_from_intr+0x0/0xf
-[   60.174997]  <EOI>  [<ffffffff810e5114>] ? kmem_cache_alloc+0xa9/0x15f
-[   60.175010]  [<ffffffff81342182>] ? __alloc_skb+0x3d/0x155
-[   60.175016]  [<ffffffff81342182>] __alloc_skb+0x3d/0x155
-[   60.175023]  [<ffffffff8133d237>] sock_alloc_send_pskb+0xc0/0x2e5
-[   60.175030]  [<ffffffff8133d46c>] sock_alloc_send_skb+0x10/0x12
-[   60.175036]  [<ffffffff813b1ab5>] unix_stream_sendmsg+0x117/0x2e2
-[   60.175044]  [<ffffffff811bdca8>] ? avc_has_perm+0x57/0x69
-[   60.175050]  [<ffffffff8133b892>] ? sock_aio_write+0x0/0xcf
-[   60.175056]  [<ffffffff813392c2>] __sock_sendmsg+0x59/0x64
-[   60.175062]  [<ffffffff8133b94d>] sock_aio_write+0xbb/0xcf
-[   60.175069]  [<ffffffff810e98b1>] do_sync_readv_writev+0xbc/0xfb
-[   60.175077]  [<ffffffff811c1726>] ? selinux_file_permission+0xa2/0xaf
-[   60.175082]  [<ffffffff810e9638>] ? copy_from_user+0x2a/0x2c
-[   60.175089]  [<ffffffff811baf85>] ? security_file_permission+0x11/0x13
-[   60.175095]  [<ffffffff810ea64e>] do_readv_writev+0xa2/0x122
-[   60.175101]  [<ffffffff810ead3b>] ? fcheck_files+0x8f/0xc9
-[   60.175107]  [<ffffffff810ea70c>] vfs_writev+0x3e/0x49
-[   60.175113]  [<ffffffff810ea7f2>] sys_writev+0x45/0x8e
-[   60.175119]  [<ffffffff81002b6b>] system_call_fastpath+0x16/0x1b
+I think it should go to mainline.  It is not perfect, but still better 
+than the current situation.
 
-[   60.223213] [ INFO: suspicious rcu_dereference_check() usage. ]
-[   60.223216] ---------------------------------------------------
-[   60.223221] net/mac80211/sta_info.c:886 invoked
-rcu_dereference_check() without protection!
-[   60.223224]
-[   60.223225] other info that might help us debug this:
-[   60.223227]
-[   60.223230]
-[   60.223230] rcu_scheduler_active = 1, debug_locks = 1
-[   60.223234] no locks held by udisks-daemon/4398.
-[   60.223236]
-[   60.223237] stack backtrace:
-[   60.223242] Pid: 4398, comm: udisks-daemon Not tainted 2.6.34-rc5-git3 #19
-[   60.223245] Call Trace:
-[   60.223249]  <IRQ>  [<ffffffff81067faa>] lockdep_rcu_dereference+0x9d/0xa5
-[   60.223275]  [<ffffffffa014e9fe>]
-ieee80211_find_sta_by_hw+0x96/0x10f [mac80211]
-[   60.223288]  [<ffffffffa014ea8e>] ieee80211_find_sta+0x17/0x19 [mac80211]
-[   60.223304]  [<ffffffffa01a60f2>] iwl_tx_queue_reclaim+0xdb/0x1b1 [iwlcore]
-[   60.223310]  [<ffffffff81068417>] ? mark_lock+0x2d/0x235
-[   60.223321]  [<ffffffffa01d5f1c>] iwl5000_rx_reply_tx+0x4a9/0x556 [iwlagn]
-[   60.223329]  [<ffffffff8120a2d3>] ? is_swiotlb_buffer+0x2e/0x3b
-[   60.223338]  [<ffffffffa01cebf4>] iwl_rx_handle+0x163/0x2b5 [iwlagn]
-[   60.223344]  [<ffffffff810688f0>] ? trace_hardirqs_on_caller+0xfa/0x13f
-[   60.223353]  [<ffffffffa01cf3ac>] iwl_irq_tasklet+0x2bb/0x3c0 [iwlagn]
-[   60.223360]  [<ffffffff810411df>] tasklet_action+0xa7/0x10f
-[   60.223367]  [<ffffffff810421f1>] __do_softirq+0x144/0x252
-[   60.223374]  [<ffffffff81003a8c>] call_softirq+0x1c/0x34
-[   60.223379]  [<ffffffff810050e4>] do_softirq+0x38/0x80
-[   60.223384]  [<ffffffff81041cbe>] irq_exit+0x45/0x94
-[   60.223389]  [<ffffffff81004829>] do_IRQ+0xad/0xc4
-[   60.223396]  [<ffffffff813cfb13>] ret_from_intr+0x0/0xf
-[   60.223399]  <EOI>  [<ffffffff810e34f1>] ? kmem_cache_free+0xb0/0x134
-[   60.223412]  [<ffffffff810f391a>] ? putname+0x2d/0x36
-[   60.223417]  [<ffffffff810f391a>] putname+0x2d/0x36
-[   60.223423]  [<ffffffff810f5536>] user_path_at+0x5f/0x8e
-[   60.223429]  [<ffffffff81068671>] ? mark_held_locks+0x52/0x70
-[   60.223435]  [<ffffffff810e34ee>] ? kmem_cache_free+0xad/0x134
-[   60.223441]  [<ffffffff8106890a>] ? trace_hardirqs_on_caller+0x114/0x13f
-[   60.223447]  [<ffffffff81068942>] ? trace_hardirqs_on+0xd/0xf
-[   60.223454]  [<ffffffff810ed93f>] vfs_fstatat+0x32/0x5d
-[   60.223460]  [<ffffffff810ed9bb>] vfs_lstat+0x19/0x1b
-[   60.223465]  [<ffffffff810ed9d7>] sys_newlstat+0x1a/0x38
-[   60.223471]  [<ffffffff8106890a>] ? trace_hardirqs_on_caller+0x114/0x13f
-[   60.223477]  [<ffffffff813cec00>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[   60.223485]  [<ffffffff81002b6b>] system_call_fastpath+0x16/0x1b
+
+Nicolas
