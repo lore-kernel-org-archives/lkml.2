@@ -1,73 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab0DWQTI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 12:19:08 -0400
-Received: from kroah.org ([198.145.64.141]:42824 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753525Ab0DWQS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 12:18:59 -0400
-Date: Fri, 23 Apr 2010 09:14:55 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Eric Lescouet <Eric.Lescouet@VirtualLogix.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       linux-usb@vger.kernel.org
-Subject: Re: USBIP (staging) driver's dependency on drivers/usb/core
- internal headers
-Message-ID: <20100423161455.GA21129@kroah.com>
-References: <20100423150734.GA7778@kroah.com>
- <Pine.LNX.4.44L0.1004231140190.1777-100000@iolanthe.rowland.org>
+	id S1757146Ab0DWQU2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 12:20:28 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:57184 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab0DWQUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 12:20:21 -0400
+Date: Fri, 23 Apr 2010 10:20:15 -0600
+From: Alex Chiang <achiang@canonical.com>
+To: lenb@kernel.org, colin.king@canonical.com, linux-acpi@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org
+Subject: [PATCH v2] ACPI: DMI init_set_sci_en_on_resume for multiple Lenovo
+ ThinkPads
+Message-ID: <20100423162015.GA27760@canonical.com>
+Mail-Followup-To: Alex Chiang <achiang@canonical.com>, lenb@kernel.org,
+	colin.king@canonical.com, linux-acpi@vger.kernel.org,
+	linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1004231140190.1777-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 11:52:26AM -0400, Alan Stern wrote:
-> On Fri, 23 Apr 2010, Greg KH wrote:
-> 
-> > On Fri, Apr 23, 2010 at 12:44:11PM +0200, Eric Lescouet wrote:
-> > > Hi,
-> > >
-> > > The USBIP modules (and some others) have a direct dependency on the following headers:
-> > > - drivers/usb/core/hdc.h (struct usb_hcd and various routines)
-> > > - drivers/usb/core/hub.h (couple of constants)
-> > > Because those headers are not part of include/, it makes it quite difficult
-> > > to compile them as standalone modules (e.g.: against pre-compiled kernel).
-> > 
-> > Then don't do that :)
-> > 
-> > > hdc.c and hub.c are relatively self-contained and could be moved to e.g.: include/linux/usb/.
-> > >
-> > > What do you think?
-> > 
-> > I think the code needs to be cleaned up and merged to the main part of
-> > the kernel tree, then this wouldn't be an issue, right?
-> 
-> I think moving hub.h into include/linux/usb would be a good thing.  
-> However, if this is done then the file contents should be rearranged 
-> slightly:
-> 
-> 	Everything from the "Hub request types" comment through the
-> 	various HUB_TTTT_* definitions (except the line declaring
-> 	struct usb_device) should be extracted into a separate file.
-> 	This new file could be called ch11.h (because it contains 
-> 	constants and structures from Chapter 11 of the USB 2.0 spec, 
-> 	just as ch9.h contains information from Chapter 9) or it
-> 	could keep the name hub.h.  It could even be exported as
-> 	a userspace header file.
-> 
-> 	The remainder (not very much) should be merged into hcd.h.
-> 
-> Once that's done, moving hcd.h into include/linux/usb would be a 
-> reasonable thing to do as well.  It is shared between usbcore and the 
-> HCDs, so it really does belong in a more public location.
+Multiple Lenovo ThinkPad models with Intel Core i5/i7 CPUs can
+successfully suspend/resume once, and then hang on the second s/r
+cycle.
 
-Ok, fair enough.  Patches are always welcome :)
+We got confirmation that this was due to a BIOS defect. The BIOS
+did not properly set SCI_EN coming out of S3. The BIOS guys
+hinted that The Other Leading OS ignores the fact that hardware
+owns the bit and sets it manually.
 
-thanks,
+In any case, an existing DMI table exists for machines where this
+defect is a known problem. Lenovo promise to fix their BIOS, but
+for folks who either won't or can't upgrade their BIOS, allow
+Linux to workaround the issue.
 
-greg k-h
+Confirmed by numerous testers in the launchpad bug that using
+acpi_sleep=sci_force_enable fixes the issue. We add the machines
+to acpisleep_dmi_table[] to automatically enable this workaround.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=15407
+BugLink: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/532374
+
+Cc: stable@kernel.org
+Signed-off-by: Alex Chiang <achiang@canonical.com>
+---
+We want to get this patch upstream so that we can get it into
+-stable. Matthew Garrett's patch titled "Fall back to manually
+changing SCI_EN" is the plan for dealing with future platforms
+that will likely have this same BIOS bug.
+
+v1 -> v2:
+	- remove separate X201s entry, as the X201 entry will match it too
+---
+ sleep.c |   32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+---
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index f74834a..317794f 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -450,6 +450,38 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
+ 		},
+ 	},
+ 	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad T410",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad T510",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad W510",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
++		},
++	},
++	{
++	.callback = init_set_sci_en_on_resume,
++	.ident = "Lenovo ThinkPad X201[s]",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
++		},
++	},
++	{
+ 	.callback = init_old_suspend_ordering,
+ 	.ident = "Panasonic CF51-2L",
+ 	.matches = {
