@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab0DWFOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 01:14:11 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34681 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755565Ab0DWFN7 (ORCPT
+	id S1755604Ab0DWFOI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 01:14:08 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:33876 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067Ab0DWFOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 01:13:59 -0400
+	Fri, 23 Apr 2010 01:14:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=WSxTb7SKEhWxNPdDlQlBeLE4Ll5NtWTyhTomySDrh1gyE/UPx+WdJROKPhHeqA7B3G
-         4IbBfUtIfMVgPS18P4PCWRLNBYPdjjEciAtJCW9gdt/7/OAFV0eNrmj+2DMePwZpMhtJ
-         9+Z2G9MVGvAbmWPyTZU+ahUlO3Dgj9hWU0x7U=
+        b=st21WE6ykwz46mux/9cHLd8NHMVFYnKEgnZL6C+stfYHDE4CfV4RvNnkQ6OX1lQCir
+         FQxfidWd7d6Hem6qmSPiGIqmWbVnYKI6M4uqdTIXVQXpjKjtsJtoLKCiH+KgeCXbgXrD
+         IaIEx/0CAnVvZLwLZxLa+gvK6jZWEr/imURRI=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -25,9 +25,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Paul Mackerras <paulus@samba.org>,
        Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 5/6] hw-breakpoints: Handle breakpoint weight in allocation constraints
-Date: Fri, 23 Apr 2010 07:13:58 +0200
-Message-Id: <1271999639-23605-6-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH 6/6] hw-breakpoints: Get the number of available registers on boot dynamically
+Date: Fri, 23 Apr 2010 07:13:59 +0200
+Message-Id: <1271999639-23605-7-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1271999639-23605-1-git-send-regression-fweisbec@gmail.com>
@@ -36,182 +36,280 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on their nature and on what an arch supports, breakpoints
-may consume more than one address register. For example a simple
-absolute address match usually only requires one address register.
-But an address range match may consume two registers.
+The breakpoint generic layer assumes that archs always know in advance
+the static number of address registers available to host breakpoints
+through the HBP_NUM macro.
 
-Currently our slot allocation constraints, that tend to reflect the
-limited arch's resources, always consider that a breakpoint consumes
-one slot.
+However this is not true for every archs. For example Arm needs to get
+this information dynamically to handle the compatiblity between
+different versions.
 
-Then provide a way for archs to tell us the weight of a breakpoint
-through a new hw_breakpoint_weight() helper. This weight will be
-computed against the generic allocation constraints instead of
-a constant value.
+To solve this, this patch proposes to drop the static HBP_NUM macro
+and let the arch provide the number of available slots through a
+new hw_breakpoint_slots() function. For archs that have
+CONFIG_HAVE_MIXED_BREAKPOINTS_REGS selected, it will be called once
+as the number of registers fits for instruction and data breakpoints
+together.
+For the others it will be called first to get the number of
+instruction breakpoint registers and another time to get the
+data breakpoint registers, the targeted type is given as a
+parameter of hw_breakpoint_slots().
 
+Reported-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>
 Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 Cc: K. Prasad <prasad@linux.vnet.ibm.com>
 Cc: Paul Mundt <lethal@linux-sh.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Paul Mackerras <paulus@samba.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/hw_breakpoint.c |   63 ++++++++++++++++++++++++++++++++++-------------
- 1 files changed, 45 insertions(+), 18 deletions(-)
+ arch/sh/include/asm/hw_breakpoint.h  |    5 +++
+ arch/x86/include/asm/hw_breakpoint.h |    5 +++
+ include/linux/hw_breakpoint.h        |   10 ++++++
+ kernel/hw_breakpoint.c               |   53 ++++++++++++++++++++++++++-------
+ kernel/trace/trace_ksym.c            |   26 ++++------------
+ 5 files changed, 68 insertions(+), 31 deletions(-)
 
+diff --git a/arch/sh/include/asm/hw_breakpoint.h b/arch/sh/include/asm/hw_breakpoint.h
+index c575cf5..8e5e433 100644
+--- a/arch/sh/include/asm/hw_breakpoint.h
++++ b/arch/sh/include/asm/hw_breakpoint.h
+@@ -46,6 +46,11 @@ struct pmu;
+ /* Maximum number of UBC channels */
+ #define HBP_NUM		2
+ 
++static inline int hw_breakpoint_slots(int type)
++{
++	return HBP_NUM;
++}
++
+ /* arch/sh/kernel/hw_breakpoint.c */
+ extern int arch_check_bp_in_kernelspace(struct perf_event *bp);
+ extern int arch_validate_hwbkpt_settings(struct perf_event *bp);
+diff --git a/arch/x86/include/asm/hw_breakpoint.h b/arch/x86/include/asm/hw_breakpoint.h
+index c77a5a6..9422553 100644
+--- a/arch/x86/include/asm/hw_breakpoint.h
++++ b/arch/x86/include/asm/hw_breakpoint.h
+@@ -41,6 +41,11 @@ struct arch_hw_breakpoint {
+ /* Total number of available HW breakpoint registers */
+ #define HBP_NUM 4
+ 
++static inline int hw_breakpoint_slots(int type)
++{
++	return HBP_NUM;
++}
++
+ struct perf_event;
+ struct pmu;
+ 
+diff --git a/include/linux/hw_breakpoint.h b/include/linux/hw_breakpoint.h
+index 7e88990..a2d6ea4 100644
+--- a/include/linux/hw_breakpoint.h
++++ b/include/linux/hw_breakpoint.h
+@@ -17,6 +17,16 @@ enum {
+ 	HW_BREAKPOINT_INVALID   = HW_BREAKPOINT_RW | HW_BREAKPOINT_X,
+ };
+ 
++enum bp_type_idx {
++	TYPE_INST 	= 0,
++#ifdef CONFIG_HAVE_MIXED_BREAKPOINTS_REGS
++	TYPE_DATA	= 0,
++#else
++	TYPE_DATA	= 1,
++#endif
++	TYPE_MAX
++};
++
+ #ifdef __KERNEL__
+ 
+ #include <linux/perf_event.h>
 diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
-index 8ead134..974498b 100644
+index 974498b..684b710 100644
 --- a/kernel/hw_breakpoint.c
 +++ b/kernel/hw_breakpoint.c
-@@ -77,6 +77,11 @@ struct bp_busy_slots {
- /* Serialize accesses to the above constraints */
- static DEFINE_MUTEX(nr_bp_mutex);
+@@ -40,20 +40,12 @@
+ #include <linux/percpu.h>
+ #include <linux/sched.h>
+ #include <linux/init.h>
++#include <linux/slab.h>
+ #include <linux/cpu.h>
+ #include <linux/smp.h>
  
-+__weak int hw_breakpoint_weight(struct perf_event *bp)
-+{
-+	return 1;
-+}
-+
- static inline enum bp_type_idx find_slot_idx(struct perf_event *bp)
- {
- 	if (bp->attr.bp_type & HW_BREAKPOINT_RW)
-@@ -124,7 +129,7 @@ static int task_bp_pinned(struct task_struct *tsk, enum bp_type_idx type)
- 	list_for_each_entry(bp, list, event_entry) {
- 		if (bp->attr.type == PERF_TYPE_BREAKPOINT)
- 			if (find_slot_idx(bp) == type)
--				count++;
-+				count += hw_breakpoint_weight(bp);
- 	}
+ #include <linux/hw_breakpoint.h>
  
- 	raw_spin_unlock_irqrestore(&ctx->lock, flags);
-@@ -174,25 +179,40 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
- }
+-enum bp_type_idx {
+-	TYPE_INST 	= 0,
+-#ifdef CONFIG_HAVE_MIXED_BREAKPOINTS_REGS
+-	TYPE_DATA	= 0,
+-#else
+-	TYPE_DATA	= 1,
+-#endif
+-	TYPE_MAX
+-};
  
  /*
-+ * For now, continue to consider flexible as pinned, until we can
-+ * ensure no flexible event can ever be scheduled before a pinned event
-+ * in a same cpu.
-+ */
-+static void
-+fetch_this_slot(struct bp_busy_slots *slots, int weight)
-+{
-+	slots->pinned += weight;
-+}
+  * Constraints data
+@@ -63,11 +55,15 @@ enum bp_type_idx {
+ static DEFINE_PER_CPU(unsigned int, nr_cpu_bp_pinned[TYPE_MAX]);
+ 
+ /* Number of pinned task breakpoints in a cpu */
+-static DEFINE_PER_CPU(unsigned int, nr_task_bp_pinned[TYPE_MAX][HBP_NUM]);
++static DEFINE_PER_CPU(unsigned int, *nr_task_bp_pinned[TYPE_MAX]);
+ 
+ /* Number of non-pinned cpu/task breakpoints in a cpu */
+ static DEFINE_PER_CPU(unsigned int, nr_bp_flexible[TYPE_MAX]);
+ 
++static int nr_slots[TYPE_MAX];
 +
-+/*
-  * Add a pinned breakpoint for the given task in our constraint table
-  */
- static void toggle_bp_task_slot(struct task_struct *tsk, int cpu, bool enable,
--				enum bp_type_idx type)
-+				enum bp_type_idx type, int weight)
- {
- 	unsigned int *tsk_pinned;
--	int count = 0;
-+	int old_count = 0;
-+	int old_idx = 0;
-+	int idx = 0;
++static int constraints_initialized;
++
+ /* Gather the number of total pinned and un-pinned bp in a cpuset */
+ struct bp_busy_slots {
+ 	unsigned int pinned;
+@@ -99,7 +95,7 @@ static unsigned int max_task_bp_pinned(int cpu, enum bp_type_idx type)
+ 	int i;
+ 	unsigned int *tsk_pinned = per_cpu(nr_task_bp_pinned[type], cpu);
  
--	count = task_bp_pinned(tsk, type);
-+	old_count = task_bp_pinned(tsk, type);
-+	old_idx = old_count - 1;
-+	idx = old_idx + weight;
- 
- 	tsk_pinned = per_cpu(nr_task_bp_pinned[type], cpu);
- 	if (enable) {
--		tsk_pinned[count]++;
--		if (count > 0)
--			tsk_pinned[count-1]--;
-+		tsk_pinned[idx]++;
-+		if (old_count > 0)
-+			tsk_pinned[old_idx]--;
- 	} else {
--		tsk_pinned[count]--;
--		if (count > 0)
--			tsk_pinned[count-1]++;
-+		tsk_pinned[idx]--;
-+		if (old_count > 0)
-+			tsk_pinned[old_idx]++;
+-	for (i = HBP_NUM -1; i >= 0; i--) {
++	for (i = nr_slots[type] - 1; i >= 0; i--) {
+ 		if (tsk_pinned[i] > 0)
+ 			return i + 1;
  	}
- }
- 
-@@ -200,7 +220,8 @@ static void toggle_bp_task_slot(struct task_struct *tsk, int cpu, bool enable,
-  * Add/remove the given breakpoint in our constraint table
-  */
- static void
--toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type)
-+toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
-+	       int weight)
- {
- 	int cpu = bp->cpu;
- 	struct task_struct *tsk = bp->ctx->task;
-@@ -208,20 +229,20 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type)
- 	/* Pinned counter task profiling */
- 	if (tsk) {
- 		if (cpu >= 0) {
--			toggle_bp_task_slot(tsk, cpu, enable, type);
-+			toggle_bp_task_slot(tsk, cpu, enable, type, weight);
- 			return;
- 		}
- 
- 		for_each_online_cpu(cpu)
--			toggle_bp_task_slot(tsk, cpu, enable, type);
-+			toggle_bp_task_slot(tsk, cpu, enable, type, weight);
- 		return;
- 	}
- 
- 	/* Pinned counter cpu profiling */
- 	if (enable)
--		per_cpu(nr_cpu_bp_pinned[type], bp->cpu)++;
-+		per_cpu(nr_cpu_bp_pinned[type], bp->cpu) += weight;
- 	else
--		per_cpu(nr_cpu_bp_pinned[type], bp->cpu)--;
-+		per_cpu(nr_cpu_bp_pinned[type], bp->cpu) -= weight;
- }
- 
- /*
-@@ -269,6 +290,7 @@ static int __reserve_bp_slot(struct perf_event *bp)
- {
- 	struct bp_busy_slots slots = {0};
+@@ -292,6 +288,10 @@ static int __reserve_bp_slot(struct perf_event *bp)
  	enum bp_type_idx type;
-+	int weight;
+ 	int weight;
  
++	/* We couldn't initialize breakpoint constraints on boot */
++	if (!constraints_initialized)
++		return -ENOMEM;
++
  	/* Basic checks */
  	if (bp->attr.bp_type == HW_BREAKPOINT_EMPTY ||
-@@ -276,13 +298,16 @@ static int __reserve_bp_slot(struct perf_event *bp)
- 		return -EINVAL;
- 
- 	type = find_slot_idx(bp);
-+	weight = hw_breakpoint_weight(bp);
-+
- 	fetch_bp_busy_slots(&slots, bp, type);
-+	fetch_this_slot(&slots, weight);
+ 	    bp->attr.bp_type == HW_BREAKPOINT_INVALID)
+@@ -304,7 +304,7 @@ static int __reserve_bp_slot(struct perf_event *bp)
+ 	fetch_this_slot(&slots, weight);
  
  	/* Flexible counters need to keep at least one slot */
--	if (slots.pinned + (!!slots.flexible) == HBP_NUM)
-+	if (slots.pinned + (!!slots.flexible) > HBP_NUM)
+-	if (slots.pinned + (!!slots.flexible) > HBP_NUM)
++	if (slots.pinned + (!!slots.flexible) > nr_slots[type])
  		return -ENOSPC;
  
--	toggle_bp_slot(bp, true, type);
-+	toggle_bp_slot(bp, true, type, weight);
+ 	toggle_bp_slot(bp, true, type, weight);
+@@ -551,7 +551,36 @@ static struct notifier_block hw_breakpoint_exceptions_nb = {
+ 
+ static int __init init_hw_breakpoint(void)
+ {
++	unsigned int **task_bp_pinned;
++	int cpu, err_cpu;
++	int i;
++
++	for (i = 0; i < TYPE_MAX; i++)
++		nr_slots[i] = hw_breakpoint_slots(i);
++
++	for_each_possible_cpu(cpu) {
++		for (i = 0; i < TYPE_MAX; i++) {
++			task_bp_pinned = &per_cpu(nr_task_bp_pinned[i], cpu);
++			*task_bp_pinned = kzalloc(sizeof(int) * nr_slots[i],
++						  GFP_KERNEL);
++			if (!*task_bp_pinned)
++				goto err_alloc;
++		}
++	}
++
++	constraints_initialized = 1;
++
+ 	return register_die_notifier(&hw_breakpoint_exceptions_nb);
++
++ err_alloc:
++	for_each_possible_cpu(err_cpu) {
++		if (err_cpu == cpu)
++			break;
++		for (i = 0; i < TYPE_MAX; i++)
++			kfree(per_cpu(nr_task_bp_pinned[i], cpu));
++	}
++
++	return -ENOMEM;
+ }
+ core_initcall(init_hw_breakpoint);
+ 
+diff --git a/kernel/trace/trace_ksym.c b/kernel/trace/trace_ksym.c
+index d59cd68..8eaf007 100644
+--- a/kernel/trace/trace_ksym.c
++++ b/kernel/trace/trace_ksym.c
+@@ -34,12 +34,6 @@
+ 
+ #include <asm/atomic.h>
+ 
+-/*
+- * For now, let us restrict the no. of symbols traced simultaneously to number
+- * of available hardware breakpoint registers.
+- */
+-#define KSYM_TRACER_MAX HBP_NUM
+-
+ #define KSYM_TRACER_OP_LEN 3 /* rw- */
+ 
+ struct trace_ksym {
+@@ -53,7 +47,6 @@ struct trace_ksym {
+ 
+ static struct trace_array *ksym_trace_array;
+ 
+-static unsigned int ksym_filter_entry_count;
+ static unsigned int ksym_tracing_enabled;
+ 
+ static HLIST_HEAD(ksym_filter_head);
+@@ -181,13 +174,6 @@ int process_new_ksym_entry(char *ksymname, int op, unsigned long addr)
+ 	struct trace_ksym *entry;
+ 	int ret = -ENOMEM;
+ 
+-	if (ksym_filter_entry_count >= KSYM_TRACER_MAX) {
+-		printk(KERN_ERR "ksym_tracer: Maximum limit:(%d) reached. No"
+-		" new requests for tracing can be accepted now.\n",
+-			KSYM_TRACER_MAX);
+-		return -ENOSPC;
+-	}
+-
+ 	entry = kzalloc(sizeof(struct trace_ksym), GFP_KERNEL);
+ 	if (!entry)
+ 		return -ENOMEM;
+@@ -203,13 +189,17 @@ int process_new_ksym_entry(char *ksymname, int op, unsigned long addr)
+ 
+ 	if (IS_ERR(entry->ksym_hbp)) {
+ 		ret = PTR_ERR(entry->ksym_hbp);
+-		printk(KERN_INFO "ksym_tracer request failed. Try again"
+-					" later!!\n");
++		if (ret == -ENOSPC) {
++			printk(KERN_ERR "ksym_tracer: Maximum limit reached."
++			" No new requests for tracing can be accepted now.\n");
++		} else {
++			printk(KERN_INFO "ksym_tracer request failed. Try again"
++					 " later!!\n");
++		}
+ 		goto err;
+ 	}
+ 
+ 	hlist_add_head_rcu(&(entry->ksym_hlist), &ksym_filter_head);
+-	ksym_filter_entry_count++;
  
  	return 0;
- }
-@@ -303,9 +328,11 @@ int reserve_bp_slot(struct perf_event *bp)
- static void __release_bp_slot(struct perf_event *bp)
- {
- 	enum bp_type_idx type;
-+	int weight;
  
- 	type = find_slot_idx(bp);
--	toggle_bp_slot(bp, false, type);
-+	weight = hw_breakpoint_weight(bp);
-+	toggle_bp_slot(bp, false, type, weight);
- }
- 
- void release_bp_slot(struct perf_event *bp)
+@@ -265,7 +255,6 @@ static void __ksym_trace_reset(void)
+ 	hlist_for_each_entry_safe(entry, node, node1, &ksym_filter_head,
+ 								ksym_hlist) {
+ 		unregister_wide_hw_breakpoint(entry->ksym_hbp);
+-		ksym_filter_entry_count--;
+ 		hlist_del_rcu(&(entry->ksym_hlist));
+ 		synchronize_rcu();
+ 		kfree(entry);
+@@ -338,7 +327,6 @@ static ssize_t ksym_trace_filter_write(struct file *file,
+ 				goto out_unlock;
+ 		}
+ 		/* Error or "symbol:---" case: drop it */
+-		ksym_filter_entry_count--;
+ 		hlist_del_rcu(&(entry->ksym_hlist));
+ 		synchronize_rcu();
+ 		kfree(entry);
 -- 
 1.6.2.3
 
