@@ -1,161 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab0DWDxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 23:53:31 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60051 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754285Ab0DWDx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 23:53:29 -0400
-Message-ID: <4BD11A24.2070500@cn.fujitsu.com>
-Date: Fri, 23 Apr 2010 11:55:16 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1754879Ab0DWBwu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 21:52:50 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:56250 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab0DWBwq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 21:52:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=GMOKL3TNZpRnLMrii0iU4gOtjUsoNlhL1db7yQezcbfYqasbYVow0yYeJO1WQmSCNa
+         3gzLdx4x6BcQ2DmhO89UQfDGnKjpzPSH3gRDRs/sxEoqcHsx418W2eqmr9EOiCgjVtQ/
+         tqJUOMU4kDdnxdHyjzkxIoY3+A9B7eUYqQSoU=
+Message-ID: <4BD0FD68.90408@garzik.org>
+Date: Thu, 22 Apr 2010 21:52:40 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Balbir Singh <balbir@linux.vnet.ibm.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [BUGFIX][PATCH] memcg rcu lock fix in swap code (Was Re: [BUG]
- an RCU warning in memcg
-References: <4BD10D59.9090504@cn.fujitsu.com> <20100423121424.ae47efcb.kamezawa.hiroyu@jp.fujitsu.com> <4BD118E2.7080307@cn.fujitsu.com>
-In-Reply-To: <4BD118E2.7080307@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+CC: linux@dominikbrodowski.net,
+       "linux-pcmcia@lists.infradead.org" <linux-pcmcia@lists.infradead.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: PATCH - update pata_pcmcia/ide-cs with transcend and kingston
+ cards
+References: <20100419195411.f16d8f68.kristoffer.ericson@gmail.com>
+In-Reply-To: <20100419195411.f16d8f68.kristoffer.ericson@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Li Zefan wrote:
-> KAMEZAWA Hiroyuki wrote:
->> On Fri, 23 Apr 2010 11:00:41 +0800
->> Li Zefan <lizf@cn.fujitsu.com> wrote:
->>
->>> with CONFIG_PROVE_RCU=y, I saw this warning, it's because
->>> css_id() is not under rcu_read_lock().
->>>
->> Ok. Thank you for reporting.
->> This is ok ? 
-> 
-> Yes, and I did some more simple tests on memcg, no more warning
-> showed up.
-> 
+On 04/19/2010 01:54 PM, Kristoffer Ericson wrote:
+> This patch adds idstrings for Kingston 1GB/4GB and Transcend 4GB/8GB.
+>
+> Signed-off-by: Kristoffer Ericson<kristoffer.ericson@gmail.com>
+>
+> diff --git a/drivers/ide/ide-cs.c b/drivers/ide/ide-cs.c
+> index ab87e4f..defce28 100644
+> --- a/drivers/ide/ide-cs.c
+> +++ b/drivers/ide/ide-cs.c
+> @@ -409,6 +409,8 @@ static struct pcmcia_device_id ide_ids[] = {
+>   	PCMCIA_DEVICE_PROD_ID12("Hyperstone", "Model1", 0x3d5b9ef5, 0xca6ab420),
+>   	PCMCIA_DEVICE_PROD_ID12("IBM", "microdrive", 0xb569a6e5, 0xa6d76178),
+>   	PCMCIA_DEVICE_PROD_ID12("IBM", "IBM17JSSFP20", 0xb569a6e5, 0xf2508753),
+> +	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 1GB", 0x2e6d1829, 0x3e520e17),
+> +	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 4GB", 0x2e6d1829, 0x531e7d10),
+>   	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF8GB", 0x2e6d1829, 0xacbe682e),
+>   	PCMCIA_DEVICE_PROD_ID12("IO DATA", "CBIDE2      ", 0x547e66dc, 0x8671043b),
+>   	PCMCIA_DEVICE_PROD_ID12("IO DATA", "PCIDE", 0x547e66dc, 0x5c5ab149),
+> @@ -429,6 +431,8 @@ static struct pcmcia_device_id ide_ids[] = {
+>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS1GCF80", 0x709b1bf1, 0x2a54d4b1),
+>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS2GCF120", 0x709b1bf1, 0x969aa4f2),
+>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF120", 0x709b1bf1, 0xf54a91c8),
+> +	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF133", 0x709b1bf1, 0x9351e59d),
+> +	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS8GCF133", 0x709b1bf1, 0xb2f89b47),
+>   	PCMCIA_DEVICE_PROD_ID12("WIT", "IDE16", 0x244e5994, 0x3e232852),
+>   	PCMCIA_DEVICE_PROD_ID12("WEIDA", "TWTTI", 0xcc7cf69c, 0x212bb918),
+>   	PCMCIA_DEVICE_PROD_ID1("STI Flash", 0xe4a13209),
+> diff --git a/drivers/ata/pata_pcmcia.c b/drivers/ata/pata_pcmcia.c
+> index 3c3172d..4164dd2 100644
+> --- a/drivers/ata/pata_pcmcia.c
+> +++ b/drivers/ata/pata_pcmcia.c
+> @@ -424,6 +424,8 @@ static struct pcmcia_device_id pcmcia_devices[] = {
+>   	PCMCIA_DEVICE_PROD_ID12("Hyperstone", "Model1", 0x3d5b9ef5, 0xca6ab420),
+>   	PCMCIA_DEVICE_PROD_ID12("IBM", "microdrive", 0xb569a6e5, 0xa6d76178),
+>   	PCMCIA_DEVICE_PROD_ID12("IBM", "IBM17JSSFP20", 0xb569a6e5, 0xf2508753),
+> +	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 1GB", 0x2e6d1829, 0x3e520e17),
+> +	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF CARD 4GB", 0x2e6d1829, 0x531e7d10),
+>   	PCMCIA_DEVICE_PROD_ID12("KINGSTON", "CF8GB", 0x2e6d1829, 0xacbe682e),
+>   	PCMCIA_DEVICE_PROD_ID12("IO DATA", "CBIDE2      ", 0x547e66dc, 0x8671043b),
+>   	PCMCIA_DEVICE_PROD_ID12("IO DATA", "PCIDE", 0x547e66dc, 0x5c5ab149),
+> @@ -444,6 +446,8 @@ static struct pcmcia_device_id pcmcia_devices[] = {
+>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS1GCF80", 0x709b1bf1, 0x2a54d4b1),
+>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS2GCF120", 0x709b1bf1, 0x969aa4f2),
+>   	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF120", 0x709b1bf1, 0xf54a91c8),
+> +	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS4GCF133", 0x709b1bf1, 0x9351e59d),
+> +	PCMCIA_DEVICE_PROD_ID12("TRANSCEND", "TS8GCF133", 0x709b1bf1, 0xb2f89b47),
+>   	PCMCIA_DEVICE_PROD_ID12("WIT", "IDE16", 0x244e5994, 0x3e232852),
+>   	PCMCIA_DEVICE_PROD_ID12("WEIDA", "TWTTI", 0xcc7cf69c, 0x212bb918),
+>   	PCMCIA_DEVICE_PROD_ID1("STI Flash", 0xe4a13209),
+>
+>
 
-oops, after trigging oom, I saw 2 more warnings:
-
-===================================================
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-kernel/cgroup.c:4459 invoked rcu_dereference_check() without protection!
-
-other info that might help us debug this:
-
-
-rcu_scheduler_active = 1, debug_locks = 1
-2 locks held by firefox/2258:            
- #0:  (&mm->mmap_sem){++++++}, at: [<c0843090>] do_page_fault+0x100/0x500
- #1:  (tasklist_lock){.?.?.-}, at: [<c04df1ac>] mem_cgroup_out_of_memory+0x2c/0x90
-
-stack backtrace:
-Pid: 2258, comm: firefox Not tainted 2.6.34-rc5-tip+ #14
-Call Trace:                                             
- [<c083c636>] ? printk+0x1d/0x1f                        
- [<c0480744>] lockdep_rcu_dereference+0x94/0xb0         
- [<c049d61e>] css_is_ancestor+0xce/0xe0                 
- [<c0517c41>] task_in_mem_cgroup+0xd1/0xf0              
- [<c0517b70>] ? task_in_mem_cgroup+0x0/0xf0             
- [<c04def10>] select_bad_process+0x70/0xe0              
- [<c04df1c1>] mem_cgroup_out_of_memory+0x41/0x90        
- [<c04826db>] ? trace_hardirqs_on+0xb/0x10              
- [<c05159e3>] mem_cgroup_handle_oom+0xf3/0x130          
- [<c046bae0>] ? autoremove_wake_function+0x0/0x50       
- [<c0516e01>] __mem_cgroup_try_charge+0x391/0x3d0       
- [<c047eadb>] ? trace_hardirqs_off+0xb/0x10             
- [<c05174c0>] mem_cgroup_charge_common+0x40/0x70        
- [<c0517620>] mem_cgroup_cache_charge+0x130/0x150       
- [<c04db6e7>] add_to_page_cache_locked+0x37/0x130       
- [<c04e5719>] ? __lru_cache_add+0x69/0xb0               
- [<c04db811>] add_to_page_cache_lru+0x31/0x80           
- [<c0549084>] mpage_readpages+0x84/0xf0                 
- [<c057e4d0>] ? ext3_get_block+0x0/0x110                
- [<c057c760>] ? ext3_readpages+0x0/0x20                 
- [<c057c77e>] ext3_readpages+0x1e/0x20                  
- [<c057e4d0>] ? ext3_get_block+0x0/0x110                
- [<c04e4889>] __do_page_cache_readahead+0x219/0x2b0     
- [<c04e4748>] ? __do_page_cache_readahead+0xd8/0x2b0    
- [<c04e4946>] ra_submit+0x26/0x30                       
- [<c04dcf86>] filemap_fault+0x436/0x470                 
- [<c04f6a95>] __do_fault+0x55/0x550                     
- [<c04f7afb>] handle_mm_fault+0x17b/0xad0               
- [<c0843090>] ? do_page_fault+0x100/0x500               
- [<c0842f90>] ? do_page_fault+0x0/0x500                 
- [<c0843109>] do_page_fault+0x179/0x500                 
- [<c04532b1>] ? __do_softirq+0x111/0x260                
- [<c045344f>] ? do_softirq+0x4f/0x70                    
- [<c047ea65>] ? trace_hardirqs_off_caller+0xc5/0x130    
- [<c0840b0f>] ? error_code+0x67/0x70                    
- [<c047ea14>] ? trace_hardirqs_off_caller+0x74/0x130    
- [<c0842f90>] ? do_page_fault+0x0/0x500                 
- [<c0840b13>] error_code+0x6b/0x70                      
- [<c0840000>] ? _raw_read_trylock+0x40/0x90             
- [<c0842f90>] ? do_page_fault+0x0/0x500                 
-
-===================================================
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-kernel/cgroup.c:4460 invoked rcu_dereference_check() without protection!
-
-other info that might help us debug this:
-
-
-rcu_scheduler_active = 1, debug_locks = 1
-2 locks held by firefox/2258:            
- #0:  (&mm->mmap_sem){++++++}, at: [<c0843090>] do_page_fault+0x100/0x500
- #1:  (tasklist_lock){.?.?.-}, at: [<c04df1ac>] mem_cgroup_out_of_memory+0x2c/0x90
-
-stack backtrace:
-Pid: 2258, comm: firefox Not tainted 2.6.34-rc5-tip+ #14
-Call Trace:                                             
- [<c083c636>] ? printk+0x1d/0x1f                        
- [<c0480744>] lockdep_rcu_dereference+0x94/0xb0         
- [<c049d5e6>] css_is_ancestor+0x96/0xe0                 
- [<c0517c41>] task_in_mem_cgroup+0xd1/0xf0              
- [<c0517b70>] ? task_in_mem_cgroup+0x0/0xf0             
- [<c04def10>] select_bad_process+0x70/0xe0              
- [<c04df1c1>] mem_cgroup_out_of_memory+0x41/0x90        
- [<c04826db>] ? trace_hardirqs_on+0xb/0x10              
- [<c05159e3>] mem_cgroup_handle_oom+0xf3/0x130          
- [<c046bae0>] ? autoremove_wake_function+0x0/0x50       
- [<c0516e01>] __mem_cgroup_try_charge+0x391/0x3d0       
- [<c047eadb>] ? trace_hardirqs_off+0xb/0x10             
- [<c05174c0>] mem_cgroup_charge_common+0x40/0x70        
- [<c0517620>] mem_cgroup_cache_charge+0x130/0x150       
- [<c04db6e7>] add_to_page_cache_locked+0x37/0x130       
- [<c04e5719>] ? __lru_cache_add+0x69/0xb0               
- [<c04db811>] add_to_page_cache_lru+0x31/0x80           
- [<c0549084>] mpage_readpages+0x84/0xf0                 
- [<c057e4d0>] ? ext3_get_block+0x0/0x110                
- [<c057c760>] ? ext3_readpages+0x0/0x20                 
- [<c057c77e>] ext3_readpages+0x1e/0x20                  
- [<c057e4d0>] ? ext3_get_block+0x0/0x110                
- [<c04e4889>] __do_page_cache_readahead+0x219/0x2b0     
- [<c04e4748>] ? __do_page_cache_readahead+0xd8/0x2b0    
- [<c04e4946>] ra_submit+0x26/0x30                       
- [<c04dcf86>] filemap_fault+0x436/0x470                 
- [<c04f6a95>] __do_fault+0x55/0x550                     
- [<c04f7afb>] handle_mm_fault+0x17b/0xad0               
- [<c0843090>] ? do_page_fault+0x100/0x500               
- [<c0842f90>] ? do_page_fault+0x0/0x500                 
- [<c0843109>] do_page_fault+0x179/0x500                 
- [<c04532b1>] ? __do_softirq+0x111/0x260                
- [<c045344f>] ? do_softirq+0x4f/0x70                    
- [<c047ea65>] ? trace_hardirqs_off_caller+0xc5/0x130    
- [<c0840b0f>] ? error_code+0x67/0x70                    
- [<c047ea14>] ? trace_hardirqs_off_caller+0x74/0x130    
- [<c0842f90>] ? do_page_fault+0x0/0x500                 
- [<c0840b13>] error_code+0x6b/0x70                      
- [<c0840000>] ? _raw_read_trylock+0x40/0x90             
- [<c0842f90>] ? do_page_fault+0x0/0x500                 
+applied
 
