@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab0DWV2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 17:28:50 -0400
-Received: from tex.lwn.net ([70.33.254.29]:50546 "EHLO vena.lwn.net"
+	id S1754107Ab0DWV25 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 17:28:57 -0400
+Received: from tex.lwn.net ([70.33.254.29]:50565 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753163Ab0DWV2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 17:28:36 -0400
+	id S1753455Ab0DWV2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 17:28:38 -0400
 From: Jonathan Corbet <corbet@lwn.net>
 To: linux-kernel@vger.kernel.org
 Cc: Harald Welte <laforge@gnumonks.org>, Deepak Saxena <dsaxena@laptop.org>,
        linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
        ScottFang@viatech.com.cn,
        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 03/13] viafb: add a driver for GPIO lines
-Date: Fri, 23 Apr 2010 15:28:03 -0600
-Message-Id: <1272058093-20914-4-git-send-email-corbet@lwn.net>
+Subject: [PATCH 06/13] viafb: Turn GPIO and i2c into proper platform devices
+Date: Fri, 23 Apr 2010 15:28:06 -0600
+Message-Id: <1272058093-20914-7-git-send-email-corbet@lwn.net>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1272058093-20914-1-git-send-email-corbet@lwn.net>
 References: <1272058093-20914-1-git-send-email-corbet@lwn.net>
@@ -22,359 +22,321 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a simple gpiolib driver giving access to the GPIO lines in the
-VIA framebuffer system.  A simple mechanism exists for switching lines
-between GPIO and I2C, but it's only compile-time for now.
+Another step toward making this thing a real multifunction device driver.
 
 Signed-off-by: Jonathan Corbet <corbet@lwn.net>
 ---
- drivers/video/via/Makefile   |    4 +-
- drivers/video/via/via-core.c |    7 +
- drivers/video/via/via-gpio.c |  268 ++++++++++++++++++++++++++++++++++++++++++
- drivers/video/via/via-gpio.h |   15 +++
- 4 files changed, 293 insertions(+), 1 deletions(-)
- create mode 100644 drivers/video/via/via-gpio.c
- create mode 100644 drivers/video/via/via-gpio.h
+ drivers/video/via/via-core.c |   80 ++++++++++++++++++++++++++++++++++-------
+ drivers/video/via/via-core.h |    1 +
+ drivers/video/via/via-gpio.c |   51 +++++++++++++++++++--------
+ drivers/video/via/via-gpio.h |    3 --
+ drivers/video/via/via_i2c.c  |   31 +++++++++++++++--
+ drivers/video/via/via_i2c.h  |    2 -
+ 6 files changed, 131 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/video/via/Makefile b/drivers/video/via/Makefile
-index e6d2a2b..a4db686 100644
---- a/drivers/video/via/Makefile
-+++ b/drivers/video/via/Makefile
-@@ -4,4 +4,6 @@
- 
- obj-$(CONFIG_FB_VIA) += viafb.o via-core.o
- 
--viafb-y	:=viafbdev.o hw.o via_i2c.o dvi.o lcd.o ioctl.o accel.o via_utility.o vt1636.o global.o tblDPASetting.o viamode.o tbl1636.o
-+viafb-y	:=viafbdev.o hw.o via_i2c.o dvi.o lcd.o ioctl.o accel.o \
-+	via_utility.o vt1636.o global.o tblDPASetting.o viamode.o tbl1636.o \
-+	via-gpio.o
 diff --git a/drivers/video/via/via-core.c b/drivers/video/via/via-core.c
-index 1e6789d..00b9021 100644
+index 68f5756..ca27daa 100644
 --- a/drivers/video/via/via-core.c
 +++ b/drivers/video/via/via-core.c
-@@ -9,6 +9,7 @@
-  */
- #include "via-core.h"
- #include "via_i2c.h"
-+#include "via-gpio.h"
- #include "global.h"
+@@ -190,6 +190,68 @@ static void __devexit via_pci_teardown_mmio(struct viafb_dev *vdev)
+ 	iounmap(vdev->engine_mmio);
+ }
  
- #include <linux/module.h>
-@@ -223,6 +224,11 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
- 		via_fb_pci_remove(pdev);
- 		return ret;
- 	}
++/*
++ * Create our subsidiary devices.
++ */
++static struct viafb_subdev_info {
++	char *name;
++	struct platform_device *platdev;
++} viafb_subdevs[] = {
++	{
++		.name = "viafb-gpio",
++	},
++	{
++		.name = "viafb-i2c",
++	}
++};
++#define N_SUBDEVS ARRAY_SIZE(viafb_subdevs)
++
++static int __devinit via_create_subdev(struct viafb_dev *vdev,
++		struct viafb_subdev_info *info)
++{
++	int ret;
++
++	info->platdev = platform_device_alloc(info->name, -1);
++	if (!info->platdev) {
++		dev_err(&vdev->pdev->dev, "Unable to allocate pdev %s\n",
++			info->name);
++		return -ENOMEM;
++	}
++	info->platdev->dev.parent = &vdev->pdev->dev;
++	info->platdev->dev.platform_data = vdev;
++	ret = platform_device_add(info->platdev);
++	if (ret) {
++		dev_err(&vdev->pdev->dev, "Unable to add pdev %s\n",
++				info->name);
++		platform_device_put(info->platdev);
++		info->platdev = NULL;
++	}
++	return ret;
++}
++
++static int __devinit via_setup_subdevs(struct viafb_dev *vdev)
++{
++	int i;
++
 +	/*
-+	 * Create the GPIOs.  We continue whether or not this succeeds;
-+	 * the framebuffer might be useful even without GPIO ports.
++	 * Ignore return values.  Even if some of the devices
++	 * fail to be created, we'll still be able to use some
++	 * of the rest.
 +	 */
-+	ret = viafb_create_gpios(&global_dev, adap_configs);
++	for (i = 0; i < N_SUBDEVS; i++)
++		via_create_subdev(vdev, viafb_subdevs + i);
++	return 0;
++}
++
++static void __devexit via_teardown_subdevs(void)
++{
++	int i;
++
++	for (i = 0; i < N_SUBDEVS; i++)
++		if (viafb_subdevs[i].platdev)
++			platform_device_unregister(viafb_subdevs[i].platdev);
++}
++
+ 
+ static int __devinit via_pci_probe(struct pci_dev *pdev,
+ 		const struct pci_device_id *ent)
+@@ -205,6 +267,7 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
+ 	memset(&global_dev, 0, sizeof(global_dev));
+ 	global_dev.pdev = pdev;
+ 	global_dev.chip_type = ent->driver_data;
++	global_dev.port_cfg = adap_configs;
+ 	spin_lock_init(&global_dev.reg_lock);
+ 	ret = via_pci_setup_mmio(&global_dev);
+ 	if (ret)
+@@ -216,19 +279,9 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
+ 	if (ret)
+ 		return ret;
+ 	/*
+-	 * Create the I2C busses.  Bailing out on failure seems extreme,
+-	 * but that's what the code did before.
+-	 */
+-	ret = viafb_create_i2c_busses(&global_dev, adap_configs);
+-	if (ret) {
+-		via_fb_pci_remove(pdev);
+-		return ret;
+-	}
+-	/*
+-	 * Create the GPIOs.  We continue whether or not this succeeds;
+-	 * the framebuffer might be useful even without GPIO ports.
++	 * Create our subdevices.
+ 	 */
+-	ret = viafb_create_gpios(&global_dev, adap_configs);
++	via_setup_subdevs(&global_dev);
  	return 0;
  
  out_teardown:
-@@ -232,6 +238,7 @@ out_teardown:
+@@ -238,8 +291,7 @@ out_teardown:
  
  static void __devexit via_pci_remove(struct pci_dev *pdev)
  {
-+	viafb_destroy_gpios();
- 	viafb_delete_i2c_busses();
+-	viafb_destroy_gpios();
+-	viafb_delete_i2c_busses();
++	via_teardown_subdevs();
  	via_fb_pci_remove(pdev);
  	via_pci_teardown_mmio(&global_dev);
+ 	pci_disable_device(pdev);
+diff --git a/drivers/video/via/via-core.h b/drivers/video/via/via-core.h
+index d004290..ac89c2a 100644
+--- a/drivers/video/via/via-core.h
++++ b/drivers/video/via/via-core.h
+@@ -63,6 +63,7 @@ struct via_port_cfg {
+ struct viafb_dev {
+ 	struct pci_dev *pdev;
+ 	int chip_type;
++	struct via_port_cfg *port_cfg;
+ 	/*
+ 	 * Spinlock for access to device registers.  Not yet
+ 	 * globally used.
 diff --git a/drivers/video/via/via-gpio.c b/drivers/video/via/via-gpio.c
-new file mode 100644
-index 0000000..e119d21
---- /dev/null
+index 6b36117..dbb44ac 100644
+--- a/drivers/video/via/via-gpio.c
 +++ b/drivers/video/via/via-gpio.c
-@@ -0,0 +1,268 @@
-+/*
-+ * Support for viafb GPIO ports.
-+ *
-+ * Copyright 2009 Jonathan Corbet <corbet@lwn.net>
-+ * Distributable under version 2 of the GNU General Public License.
-+ */
-+
-+#include <linux/spinlock.h>
-+#include <linux/gpio.h>
-+#include "via-core.h"
-+#include "via-gpio.h"
-+#include "global.h"
-+
-+/*
-+ * The ports we know about.  Note that the port-25 gpios are not
-+ * mentioned in the datasheet.
-+ */
-+
-+struct viafb_gpio {
-+	char *vg_name;	/* Data sheet name */
-+	u16 vg_io_port;
-+	u8  vg_port_index;
-+	int  vg_mask_shift;
-+};
-+
-+static struct viafb_gpio viafb_all_gpios[] = {
-+	{
-+		.vg_name = "VGPIO0",  /* Guess - not in datasheet */
-+		.vg_io_port = VIASR,
-+		.vg_port_index = 0x25,
-+		.vg_mask_shift = 1
-+	},
-+	{
-+		.vg_name = "VGPIO1",
-+		.vg_io_port = VIASR,
-+		.vg_port_index = 0x25,
-+		.vg_mask_shift = 0
-+	},
-+	{
-+		.vg_name = "VGPIO2",  /* aka DISPCLKI0 */
-+		.vg_io_port = VIASR,
-+		.vg_port_index = 0x2c,
-+		.vg_mask_shift = 1
-+	},
-+	{
-+		.vg_name = "VGPIO3",  /* aka DISPCLKO0 */
-+		.vg_io_port = VIASR,
-+		.vg_port_index = 0x2c,
-+		.vg_mask_shift = 0
-+	},
-+	{
-+		.vg_name = "VGPIO4",  /* DISPCLKI1 */
-+		.vg_io_port = VIASR,
-+		.vg_port_index = 0x3d,
-+		.vg_mask_shift = 1
-+	},
-+	{
-+		.vg_name = "VGPIO5",  /* DISPCLKO1 */
-+		.vg_io_port = VIASR,
-+		.vg_port_index = 0x3d,
-+		.vg_mask_shift = 0
-+	},
-+};
-+
-+#define VIAFB_NUM_GPIOS ARRAY_SIZE(viafb_all_gpios)
-+
-+/*
-+ * This structure controls the active GPIOs, which may be a subset
-+ * of those which are known.
-+ */
-+
-+struct viafb_gpio_cfg {
-+	struct gpio_chip gpio_chip;
-+	struct viafb_dev *vdev;
-+	struct viafb_gpio *active_gpios[VIAFB_NUM_GPIOS];
-+	char *gpio_names[VIAFB_NUM_GPIOS];
-+};
-+
-+/*
-+ * GPIO access functions
-+ */
-+static void via_gpio_set(struct gpio_chip *chip, unsigned int nr,
-+			 int value)
-+{
-+	struct viafb_gpio_cfg *cfg = container_of(chip,
-+						  struct viafb_gpio_cfg,
-+						  gpio_chip);
-+	u8 reg;
-+	struct viafb_gpio *gpio;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cfg->vdev->reg_lock, flags);
-+	gpio = cfg->active_gpios[nr];
-+	reg = viafb_read_reg(VIASR, gpio->vg_port_index);
-+	reg |= 0x40 << gpio->vg_mask_shift;  /* output enable */
-+	if (value)
-+		reg |= 0x10 << gpio->vg_mask_shift;
-+	else
-+		reg &= ~(0x10 << gpio->vg_mask_shift);
-+	viafb_write_reg(gpio->vg_port_index, VIASR, reg);
-+	spin_unlock_irqrestore(&cfg->vdev->reg_lock, flags);
-+}
-+
-+static int via_gpio_dir_out(struct gpio_chip *chip, unsigned int nr,
-+			    int value)
-+{
-+	via_gpio_set(chip, nr, value);
-+	return 0;
-+}
-+
-+/*
-+ * Set the input direction.  I'm not sure this is right; we should
-+ * be able to do input without disabling output.
-+ */
-+static int via_gpio_dir_input(struct gpio_chip *chip, unsigned int nr)
-+{
-+	struct viafb_gpio_cfg *cfg = container_of(chip,
-+						  struct viafb_gpio_cfg,
-+						  gpio_chip);
-+	struct viafb_gpio *gpio;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cfg->vdev->reg_lock, flags);
-+	gpio = cfg->active_gpios[nr];
-+	viafb_write_reg_mask(gpio->vg_port_index, VIASR, 0,
-+			     0x40 << gpio->vg_mask_shift);
-+	spin_unlock_irqrestore(&cfg->vdev->reg_lock, flags);
-+	return 0;
-+}
-+
-+static int via_gpio_get(struct gpio_chip *chip, unsigned int nr)
-+{
-+	struct viafb_gpio_cfg *cfg = container_of(chip,
-+						  struct viafb_gpio_cfg,
-+						  gpio_chip);
-+	u8 reg;
-+	struct viafb_gpio *gpio;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cfg->vdev->reg_lock, flags);
-+	gpio = cfg->active_gpios[nr];
-+	reg = viafb_read_reg(VIASR, gpio->vg_port_index);
-+	spin_unlock_irqrestore(&cfg->vdev->reg_lock, flags);
-+	return reg & (0x04 << gpio->vg_mask_shift);
-+}
-+
-+
-+static struct viafb_gpio_cfg gpio_config = {
-+	.gpio_chip = {
-+		.label = "VIAFB onboard GPIO",
-+		.owner = THIS_MODULE,
-+		.direction_output = via_gpio_dir_out,
-+		.set = via_gpio_set,
-+		.direction_input = via_gpio_dir_input,
-+		.get = via_gpio_get,
-+		.base = -1,
-+		.ngpio = 0,
-+		.can_sleep = 0
-+	}
-+};
-+
-+/*
-+ * Manage the software enable bit.
-+ */
-+static void viafb_gpio_enable(struct viafb_gpio *gpio)
-+{
-+	viafb_write_reg_mask(gpio->vg_port_index, VIASR, 0x02, 0x02);
-+}
-+
-+static void viafb_gpio_disable(struct viafb_gpio *gpio)
-+{
-+	viafb_write_reg_mask(gpio->vg_port_index, VIASR, 0, 0x02);
-+}
-+
-+
-+
-+
-+int viafb_create_gpios(struct viafb_dev *vdev,
-+		const struct via_port_cfg *port_cfg)
-+{
-+	int i, ngpio = 0, ret;
-+	struct viafb_gpio *gpio;
-+	unsigned long flags;
-+
-+	/*
-+	 * Set up entries for all GPIOs which have been configured to
-+	 * operate as such (as opposed to as i2c ports).
-+	 */
-+	for (i = 0; i < VIAFB_NUM_PORTS; i++) {
-+		if (port_cfg[i].mode != VIA_MODE_GPIO)
-+			continue;
-+		for (gpio = viafb_all_gpios;
-+		     gpio < viafb_all_gpios + VIAFB_NUM_GPIOS; gpio++)
-+			if (gpio->vg_port_index == port_cfg[i].ioport_index) {
-+				gpio_config.active_gpios[ngpio] = gpio;
-+				gpio_config.gpio_names[ngpio] = gpio->vg_name;
-+				ngpio++;
-+			}
-+	}
-+	gpio_config.gpio_chip.ngpio = ngpio;
-+	gpio_config.gpio_chip.names = gpio_config.gpio_names;
-+	gpio_config.vdev = vdev;
-+	if (ngpio == 0) {
-+		printk(KERN_INFO "viafb: no GPIOs configured\n");
-+		return 0;
-+	}
-+	/*
-+	 * Enable the ports.  They come in pairs, with a single
-+	 * enable bit for both.
-+	 */
-+	spin_lock_irqsave(&gpio_config.vdev->reg_lock, flags);
-+	for (i = 0; i < ngpio; i += 2)
-+		viafb_gpio_enable(gpio_config.active_gpios[i]);
-+	spin_unlock_irqrestore(&gpio_config.vdev->reg_lock, flags);
-+	/*
-+	 * Get registered.
-+	 */
-+	gpio_config.gpio_chip.base = -1;  /* Dynamic */
-+	ret = gpiochip_add(&gpio_config.gpio_chip);
-+	if (ret) {
-+		printk(KERN_ERR "viafb: failed to add gpios (%d)\n", ret);
-+		gpio_config.gpio_chip.ngpio = 0;
-+	}
-+	return ret;
-+/* Port enable ? */
-+}
-+
-+
-+int viafb_destroy_gpios(void)
-+{
-+	unsigned long flags;
-+	int ret = 0, i;
-+
-+	spin_lock_irqsave(&gpio_config.vdev->reg_lock, flags);
-+	/*
-+	 * Get unregistered.
-+	 */
-+	if (gpio_config.gpio_chip.ngpio > 0) {
-+		ret = gpiochip_remove(&gpio_config.gpio_chip);
-+		if (ret) { /* Somebody still using it? */
-+			printk(KERN_ERR "Viafb: GPIO remove failed\n");
-+			goto out;
-+		}
-+	}
-+	/*
-+	 * Disable the ports.
-+	 */
-+	for (i = 0; i < gpio_config.gpio_chip.ngpio; i += 2)
-+		viafb_gpio_disable(gpio_config.active_gpios[i]);
-+	gpio_config.gpio_chip.ngpio = 0;
-+out:
-+	spin_unlock_irqrestore(&gpio_config.vdev->reg_lock, flags);
-+	return ret;
-+}
-+
+@@ -7,6 +7,7 @@
+ 
+ #include <linux/spinlock.h>
+ #include <linux/gpio.h>
++#include <linux/platform_device.h>
+ #include "via-core.h"
+ #include "via-gpio.h"
+ #include "global.h"
+@@ -172,12 +173,27 @@ static void viafb_gpio_disable(struct viafb_gpio *gpio)
+ 	via_write_reg_mask(VIASR, gpio->vg_port_index, 0, 0x02);
+ }
+ 
 +/*
 + * Look up a specific gpio and return the number it was assigned.
 + */
 +int viafb_gpio_lookup(const char *name)
 +{
 +	int i;
-+
+ 
 +	for (i = 0; i < gpio_config.gpio_chip.ngpio; i++)
 +		if (!strcmp(name, gpio_config.active_gpios[i]->vg_name))
 +			return gpio_config.gpio_chip.base + i;
 +	return -1;
 +}
 +EXPORT_SYMBOL_GPL(viafb_gpio_lookup);
-diff --git a/drivers/video/via/via-gpio.h b/drivers/video/via/via-gpio.h
-new file mode 100644
-index 0000000..7b53f96
---- /dev/null
-+++ b/drivers/video/via/via-gpio.h
-@@ -0,0 +1,15 @@
+ 
+-
+-int viafb_create_gpios(struct viafb_dev *vdev,
+-		const struct via_port_cfg *port_cfg)
 +/*
-+ * Support for viafb GPIO ports.
-+ *
-+ * Copyright 2009 Jonathan Corbet <corbet@lwn.net>
-+ * Distributable under version 2 of the GNU General Public License.
++ * Platform device stuff.
 + */
++static __devinit int viafb_gpio_probe(struct platform_device *platdev)
+ {
++	struct viafb_dev *vdev = platdev->dev.platform_data;
++	struct via_port_cfg *port_cfg = vdev->port_cfg;
+ 	int i, ngpio = 0, ret;
+ 	struct viafb_gpio *gpio;
+ 	unsigned long flags;
+@@ -222,11 +238,10 @@ int viafb_create_gpios(struct viafb_dev *vdev,
+ 		gpio_config.gpio_chip.ngpio = 0;
+ 	}
+ 	return ret;
+-/* Port enable ? */
+ }
+ 
+ 
+-int viafb_destroy_gpios(void)
++static int viafb_gpio_remove(struct platform_device *platdev)
+ {
+ 	unsigned long flags;
+ 	int ret = 0, i;
+@@ -253,16 +268,22 @@ out:
+ 	return ret;
+ }
+ 
+-/*
+- * Look up a specific gpio and return the number it was assigned.
+- */
+-int viafb_gpio_lookup(const char *name)
++static struct platform_driver via_gpio_driver = {
++	.driver = {
++		.name = "viafb-gpio",
++	},
++	.probe = viafb_gpio_probe,
++	.remove = viafb_gpio_remove,
++};
 +
-+#ifndef __VIA_GPIO_H__
-+#define __VIA_GPIO_H__
++static int viafb_gpio_init(void)
+ {
+-	int i;
++	return platform_driver_register(&via_gpio_driver);
++}
++module_init(viafb_gpio_init);
+ 
+-	for (i = 0; i < gpio_config.gpio_chip.ngpio; i++)
+-		if (!strcmp(name, gpio_config.active_gpios[i]->vg_name))
+-			return gpio_config.gpio_chip.base + i;
+-	return -1;
++static void viafb_gpio_exit(void)
++{
++	platform_driver_unregister(&via_gpio_driver);
+ }
+-EXPORT_SYMBOL_GPL(viafb_gpio_lookup);
++module_exit(viafb_gpio_exit);
+diff --git a/drivers/video/via/via-gpio.h b/drivers/video/via/via-gpio.h
+index 7b53f96..c902b31 100644
+--- a/drivers/video/via/via-gpio.h
++++ b/drivers/video/via/via-gpio.h
+@@ -8,8 +8,5 @@
+ #ifndef __VIA_GPIO_H__
+ #define __VIA_GPIO_H__
+ 
+-extern int viafb_create_gpios(struct viafb_dev *vdev,
+-		const struct via_port_cfg *port_cfg);
+-extern int viafb_destroy_gpios(void);
+ extern int viafb_gpio_lookup(const char *name);
+ #endif
+diff --git a/drivers/video/via/via_i2c.c b/drivers/video/via/via_i2c.c
+index 195110a..cabf574 100644
+--- a/drivers/video/via/via_i2c.c
++++ b/drivers/video/via/via_i2c.c
+@@ -19,6 +19,7 @@
+  * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+  */
+ 
++#include <linux/platform_device.h>
+ #include "via-core.h"
+ #include "via_i2c.h"
+ #include "global.h"
+@@ -187,11 +188,14 @@ static int create_i2c_bus(struct i2c_adapter *adapter,
+ 	return i2c_bit_add_bus(adapter);
+ }
+ 
+-int viafb_create_i2c_busses(struct viafb_dev *dev, struct via_port_cfg *configs)
++static int viafb_i2c_probe(struct platform_device *platdev)
+ {
+ 	int i, ret;
++	struct via_port_cfg *configs;
 +
-+extern int viafb_create_gpios(struct viafb_dev *vdev,
-+		const struct via_port_cfg *port_cfg);
-+extern int viafb_destroy_gpios(void);
-+extern int viafb_gpio_lookup(const char *name);
-+#endif
++	i2c_vdev = platdev->dev.platform_data;
++	configs = i2c_vdev->port_cfg;
+ 
+-	i2c_vdev = dev;
+ 	for (i = 0; i < VIAFB_NUM_PORTS; i++) {
+ 		struct via_port_cfg *adap_cfg = configs++;
+ 		struct via_i2c_stuff *i2c_stuff = &via_i2c_par[i];
+@@ -213,7 +217,7 @@ int viafb_create_i2c_busses(struct viafb_dev *dev, struct via_port_cfg *configs)
+ 	return 0;
+ }
+ 
+-void viafb_delete_i2c_busses(void)
++static int viafb_i2c_remove(struct platform_device *platdev)
+ {
+ 	int i;
+ 
+@@ -226,4 +230,25 @@ void viafb_delete_i2c_busses(void)
+ 		if (i2c_stuff->adapter.algo_data == &i2c_stuff->algo)
+ 			i2c_del_adapter(&i2c_stuff->adapter);
+ 	}
++	return 0;
++}
++
++static struct platform_driver via_i2c_driver = {
++	.driver = {
++		.name = "viafb-i2c",
++	},
++	.probe = viafb_i2c_probe,
++	.remove = viafb_i2c_remove,
++};
++
++static int viafb_i2c_init(void)
++{
++	return platform_driver_register(&via_i2c_driver);
++}
++module_init(viafb_i2c_init);
++
++static void viafb_i2c_exit(void)
++{
++	platform_driver_unregister(&via_i2c_driver);
+ }
++module_exit(viafb_i2c_exit);
+diff --git a/drivers/video/via/via_i2c.h b/drivers/video/via/via_i2c.h
+index 0685de9..5f9db66 100644
+--- a/drivers/video/via/via_i2c.h
++++ b/drivers/video/via/via_i2c.h
+@@ -36,7 +36,5 @@ int viafb_i2c_writebyte(u8 adap, u8 slave_addr, u8 index, u8 data);
+ int viafb_i2c_readbytes(u8 adap, u8 slave_addr, u8 index, u8 *buff, int buff_len);
+ 
+ struct viafb_par;
+-int viafb_create_i2c_busses(struct viafb_dev *vdev, struct via_port_cfg *cfg);
+-void viafb_delete_i2c_busses(void);
+ struct i2c_adapter *viafb_find_adapter(enum viafb_i2c_adap which);
+ #endif /* __VIA_I2C_H__ */
 -- 
 1.7.0.1
 
