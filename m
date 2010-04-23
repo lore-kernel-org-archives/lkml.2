@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab0DWNaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 09:30:21 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47198 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754209Ab0DWNaQ (ORCPT
+	id S1757399Ab0DWNeL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 09:34:11 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:52252 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756000Ab0DWNeF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 09:30:16 -0400
-Date: Fri, 23 Apr 2010 14:30:12 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Will Newton <will.newton@gmail.com>
-Cc: Yong Zhang <yong.zhang@windriver.com>,
-       Linux Kernel list <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Threaded irq handler question
-Message-ID: <20100423133012.GC28132@sirena.org.uk>
-References: <l2u87a5b0801004210935wf6ca2991ua777c39c737391f8@mail.gmail.com> <20100422013721.GC8938@windriver.com> <r2l87a5b0801004220351h4ba2d1ect49c33893a30806e9@mail.gmail.com>
+	Fri, 23 Apr 2010 09:34:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=dssna7HVf2rfZICgWDjQZBrkwlm59r5cS/35BuiIXhAM2yCzwKpjX/qfrtkMh04qHT
+         6VRW7bpb39xzIAf2O1Q3vq0E743VV9JzSYJGaJMuq5xNqfInMdq8oUdb1gLUV2tIvNnJ
+         YVuHjqUjRP2HyPbBe5uP3SrK5fXorU+TD/sDc=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: Another BUG_ON() in blkio controller
+Date: Fri, 23 Apr 2010 15:33:50 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4; KDE/4.3.4; i686; ; )
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
+References: <20100421201201.GF3275@redhat.com>
+In-Reply-To: <20100421201201.GF3275@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <r2l87a5b0801004220351h4ba2d1ect49c33893a30806e9@mail.gmail.com>
-X-Cookie: Reapply as necessary.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004231533.51014.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 11:51:06AM +0100, Will Newton wrote:
-> On Thu, Apr 22, 2010 at 2:37 AM, Yong Zhang <yong.zhang@windriver.com> wrote:
+On środa, 21 kwietnia 2010 o 22:12:01 Vivek Goyal wrote:
+> Hi Nauman,
+> 
+> There is another BUG_ON() hitting in my testing.
 
-> > Does IRQF_ONESHOT meet your need?
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=15842
+for your bug report, please add your address to the CC list in there, thanks!
 
-> Almost I think, but I believe if my check handler does not wake the
-> thread then I don't get another interrupt ever. I can fix this by
-> making my check handler always return WAKE_THREAD, which is slightly
-> sub-optimal, but not a big problem.
-
-You shouldn't have a primary IRQ handler at all for I2C type devices
-where there's no ability to interact with the chip.
-
-[Sorry, hadn't noticed this subthread.]
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
