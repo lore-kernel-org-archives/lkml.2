@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab0DWD3o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 23:29:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52776 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753234Ab0DWD3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 23:29:43 -0400
-Date: Thu, 22 Apr 2010 20:11:00 -0700
-From: Greg KH <gregkh@suse.de>
-To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
-Cc: Neil Brown <neilb@suse.de>, linux-kernel@vger.kernel.org,
-       king.br@gmail.com, stable@kernel.org
-Subject: Re: patch md-raid5-allow-for-more-than-2-31-chunks.patch added to
-	2.6.33-stable tree
-Message-ID: <20100423031100.GA1637@suse.de>
-References: <12718801381479@kroah.org> <201004220408.33822.s.L-H@gmx.de> <20100422124022.1320e49c@notabene.brown> <201004221336.28530.s.L-H@gmx.de>
+	id S1755248Ab0DWCRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 22:17:08 -0400
+Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:33083 "EHLO
+	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755058Ab0DWCRF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 22:17:05 -0400
+Message-ID: <4BD102E0.5070503@lougher.demon.co.uk>
+Date: Fri, 23 Apr 2010 03:16:00 +0100
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004221336.28530.s.L-H@gmx.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+CC: linux-fsdevel@vger.kernel.org
+Subject: [PATCH 1/4] squashfs: fix locking bug in zlib wrapper
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 01:36:26PM +0200, Stefan Lippers-Hollmann wrote:
-> Hi
-> 
-> On Thursday 22 April 2010, Neil Brown wrote:
-> > On Thu, 22 Apr 2010 04:08:30 +0200
-> > "Stefan Lippers-Hollmann" <s.L-H@gmx.de> wrote:
-> > > On Thursday 22 April 2010, gregkh@suse.de wrote:
-> [...]
-> > > > From 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d Mon Sep 17 00:00:00 2001
-> > > > From: NeilBrown <neilb@suse.de>
-> > > > Date: Tue, 20 Apr 2010 14:13:34 +1000
-> > > > Subject: md/raid5: allow for more than 2^31 chunks.
-> > > > 
-> > > > From: NeilBrown <neilb@suse.de>
-> > > > 
-> > > > commit 35f2a591192d0a5d9f7fc696869c76f0b8e49c3d upstream.
-> > > > 
-> > > > With many large drives and small chunk sizes it is possible
-> > > > to create a RAID5 with more than 2^31 chunks.  Make sure this
-> > > > works.
-> > > > 
-> > > > Reported-by: Brett King <king.br@gmail.com>
-> > > > Signed-off-by: NeilBrown <neilb@suse.de>
-> > > > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> > > 
-> > > This patch, as part of the current 2.6.33 stable queue, breaks compiling
-> > > on i386 (CONFIG_LBDAF=y) for me (amd64 builds fine):
-> > > 
-> > > [...]
-> > >   BUILD   arch/x86/boot/bzImage
-> > > Root device is (254, 6)
-> > > Setup is 12700 bytes (padded to 12800 bytes).
-> > > System is 2415 kB
-> > > CRC db6fa5fa
-> > > Kernel: arch/x86/boot/bzImage is ready  (#1)
-> > > ERROR: "__umoddi3" [drivers/md/raid456.ko] undefined!
-> > > 
-> > > reverting just this patch fixes the problem for me.
-> > 
-> > Thanks for testing and reporting.
-> > 
-> > If you could verify that this additional patch fixes the compile error I
-> > would really appreciate it.
-> 
-> I can confirm that this patch on top of the original 
-> md-raid5-allow-for-more-than-2-31-chunks.patch fixes the build problem on 
-> i386 for me (amd64 continues to build fine as well).
-> 
-> Tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
 
-Neil, care to push this to Linus?
+Fix locking bug in zlib wrapper introduced by recent decompressor changes.
 
-thanks,
+Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
+---
+  fs/squashfs/zlib_wrapper.c |    3 ++-
+  1 files changed, 2 insertions(+), 1 deletions(-)
 
-greg k-h
+diff --git a/fs/squashfs/zlib_wrapper.c b/fs/squashfs/zlib_wrapper.c
+index 15a03d0..7a60387 100644
+--- a/fs/squashfs/zlib_wrapper.c
++++ b/fs/squashfs/zlib_wrapper.c
+@@ -128,8 +128,9 @@ static int zlib_uncompress(struct squashfs_sb_info *msblk, void **buffer,
+  		goto release_mutex;
+  	}
+
++	length = stream->total_out;
+  	mutex_unlock(&msblk->read_data_mutex);
+-	return stream->total_out;
++	return length;
+
+  release_mutex:
+  	mutex_unlock(&msblk->read_data_mutex);
+-- 
+1.6.3.3
+
