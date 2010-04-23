@@ -1,38 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab0DWAPN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 20:15:13 -0400
-Received: from kroah.org ([198.145.64.141]:41026 "EHLO coco.kroah.org"
+	id S1754324Ab0DWAPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 20:15:34 -0400
+Received: from kroah.org ([198.145.64.141]:41149 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754171Ab0DWAOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 20:14:45 -0400
-Date: Thu, 22 Apr 2010 17:01:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] firmware loader: embed device into firmware_priv
- structure
-Message-ID: <20100423000106.GC4414@kroah.com>
-References: <20100314074330.27035.38765.stgit@localhost.localdomain>
- <20100314074929.27035.80425.stgit@localhost.localdomain>
+	id S1754226Ab0DWAPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 20:15:08 -0400
+Subject: patch staging-iio-function-iio_get_new_idr_val-return-negative-value-if-fails.patch added to gregkh-2.6 tree
+To: sonic.adi@gmail.com, gregkh@suse.de, greg@kroah.com, jic23@cam.ac.uk,
+       linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+From: <gregkh@suse.de>
+Date: Thu, 22 Apr 2010 17:13:20 -0700
+In-Reply-To: <4BA76219.4030606@cam.ac.uk>
+Message-ID: <12719816003115@kroah.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100314074929.27035.80425.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=ANSI_X3.4-1968
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 13, 2010 at 11:49:29PM -0800, Dmitry Torokhov wrote:
-> Both these structures have the same lifetime rules so instead of allocating
-> and managing them separately embed struct device into struct firmware_priv.
-> Also make sure to delete sysfs attributes ourselves instead of expecting
-> sysfs to clean up our mess.
 
-This one didn't apply due to other changes that have happened to the
-file since you sent this out.  Care to respin it?
+This is a note to let you know that I've just added the patch titled
 
-thanks,
+    Subject: staging: iio: Function iio_get_new_idr_val() return negative value if fails.
 
-greg k-h
+to my gregkh-2.6 tree.  Its filename is
+
+    staging-iio-function-iio_get_new_idr_val-return-negative-value-if-fails.patch
+
+This tree can be found at 
+    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
+
+
+>From jic23@cam.ac.uk  Thu Apr 22 16:40:17 2010
+From: Sonic Zhang <sonic.adi@gmail.com>
+Date: Mon, 22 Mar 2010 12:27:05 +0000
+Subject: staging: iio: Function iio_get_new_idr_val() return negative value if fails.
+To: sonic zhang <sonic.adi@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,  linux-iio <linux-iio@vger.kernel.org>, Greg KH <greg@kroah.com>
+Message-ID: <4BA76219.4030606@cam.ac.uk>
+
+
+Function iio_get_new_idr_val() return negative value if fails.
+So, only error when ret < 0 in iio_device_register_eventset().
+
+Signed-off-by: Sonic Zhang <sonic.adi@gmail.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/staging/iio/industrialio-core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/staging/iio/industrialio-core.c
++++ b/drivers/staging/iio/industrialio-core.c
+@@ -537,6 +537,7 @@ static void iio_device_unregister_sysfs(
+ 	sysfs_remove_group(&dev_info->dev.kobj, dev_info->attrs);
+ }
+ 
++/* This function return negative value if fails. */
+ int iio_get_new_idr_val(struct idr *this_idr)
+ {
+ 	int ret;
+@@ -660,7 +661,7 @@ static int iio_device_register_eventset(
+ 	for (i = 0; i < dev_info->num_interrupt_lines; i++) {
+ 		dev_info->event_interfaces[i].owner = dev_info->driver_module;
+ 		ret = iio_get_new_idr_val(&iio_event_idr);
+-		if (ret)
++		if (ret < 0)
+ 			goto error_free_setup_ev_ints;
+ 		else
+ 			dev_info->event_interfaces[i].id = ret;
+
