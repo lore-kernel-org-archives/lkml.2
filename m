@@ -1,52 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab0DWCKd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 22:10:33 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:49491 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755101Ab0DWCK0 (ORCPT
+	id S1754825Ab0DWBKz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 21:10:55 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:46142 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774Ab0DWBKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 22:10:26 -0400
-Date: Fri, 23 Apr 2010 11:06:32 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <andi@firstfloor.org>
-Subject: Re: [BUG] rmap: fix page_address_in_vma() to walk through
- anon_vma_chain
-Message-ID: <20100423020632.GA7383@spritzerA.linux.bs1.fc.nec.co.jp>
-References: <20100422054241.GB10957@spritzerA.linux.bs1.fc.nec.co.jp>
- <4BD0688A.7050806@redhat.com>
+	Thu, 22 Apr 2010 21:10:20 -0400
+From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+       =?UTF-8?q?M=C3=A1rton=20N=C3=A9meth?= <nm127@freemail.hu>,
+       Sven Neumann <s.neumann@raumfeld.com>,
+       Tero Saarni <tero.saarni@gmail.com>,
+       Henrik Rydberg <rydberg@euromail.se>, Matthew Garrett <mjg@redhat.com>,
+       Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org
+Subject: [PATCH 8/9] Input: Block suspend while event queue is not empty.
+Date: Thu, 22 Apr 2010 18:08:57 -0700
+Message-Id: <1271984938-13920-9-git-send-email-arve@android.com>
+X-Mailer: git-send-email 1.6.5.1
+In-Reply-To: <1271984938-13920-8-git-send-email-arve@android.com>
+References: <1271984938-13920-1-git-send-email-arve@android.com>
+ <1271984938-13920-2-git-send-email-arve@android.com>
+ <1271984938-13920-3-git-send-email-arve@android.com>
+ <1271984938-13920-4-git-send-email-arve@android.com>
+ <1271984938-13920-5-git-send-email-arve@android.com>
+ <1271984938-13920-6-git-send-email-arve@android.com>
+ <1271984938-13920-7-git-send-email-arve@android.com>
+ <1271984938-13920-8-git-send-email-arve@android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Disposition: inline
-In-Reply-To: <4BD0688A.7050806@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> However, for anonymous pages, page_address_in_vma only
-> ever determined whether the page _could_ be part of the
-> VMA, never whether it actually was.
->
-> The function page_address_in_vma has always given
-> false positives, which means all of the callers already
-> check that the page is actually part of the process.
+Add an ioctl, EVIOCSSUSPENDBLOCK, to enable a suspend_blocker that will block
+suspend while the event queue is not empty. This allows userspace code to
+process input events while the device appears to be asleep.
 
-I see.
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+---
+ drivers/input/evdev.c |   22 ++++++++++++++++++++++
+ include/linux/input.h |    3 +++
+ 2 files changed, 25 insertions(+), 0 deletions(-)
 
-> This means we may be able to get away with not verifying
-> the anon_vma at all.  After all, verifying that the VMA
-> has the anon_vma mapped does not mean the VMA has this
-> page...
-> 
-> Doing away with that check gets rid of your locking
-> conundrum :)
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index 2ee6c7a..66e0d16 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -20,6 +20,7 @@
+ #include <linux/input.h>
+ #include <linux/major.h>
+ #include <linux/device.h>
++#include <linux/suspend_blocker.h>
+ #include "input-compat.h"
+ 
+ struct evdev {
+@@ -43,6 +44,8 @@ struct evdev_client {
+ 	struct fasync_struct *fasync;
+ 	struct evdev *evdev;
+ 	struct list_head node;
++	struct suspend_blocker suspend_blocker;
++	bool use_suspend_blocker;
+ };
+ 
+ static struct evdev *evdev_table[EVDEV_MINORS];
+@@ -55,6 +58,8 @@ static void evdev_pass_event(struct evdev_client *client,
+ 	 * Interrupts are disabled, just acquire the lock
+ 	 */
+ 	spin_lock(&client->buffer_lock);
++	if (client->use_suspend_blocker)
++		suspend_block(&client->suspend_blocker);
+ 	client->buffer[client->head++] = *event;
+ 	client->head &= EVDEV_BUFFER_SIZE - 1;
+ 	spin_unlock(&client->buffer_lock);
+@@ -234,6 +239,8 @@ static int evdev_release(struct inode *inode, struct file *file)
+ 	mutex_unlock(&evdev->mutex);
+ 
+ 	evdev_detach_client(evdev, client);
++	if (client->use_suspend_blocker)
++		suspend_blocker_destroy(&client->suspend_blocker);
+ 	kfree(client);
+ 
+ 	evdev_close_device(evdev);
+@@ -335,6 +342,8 @@ static int evdev_fetch_next_event(struct evdev_client *client,
+ 	if (have_event) {
+ 		*event = client->buffer[client->tail++];
+ 		client->tail &= EVDEV_BUFFER_SIZE - 1;
++		if (client->use_suspend_blocker && client->head == client->tail)
++			suspend_unblock(&client->suspend_blocker);
+ 	}
+ 
+ 	spin_unlock_irq(&client->buffer_lock);
+@@ -585,6 +594,19 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+ 		else
+ 			return evdev_ungrab(evdev, client);
+ 
++	case EVIOCGSUSPENDBLOCK:
++		return put_user(client->use_suspend_blocker, ip);
++
++	case EVIOCSSUSPENDBLOCK:
++		spin_lock_irq(&client->buffer_lock);
++		if (!client->use_suspend_blocker && p)
++			suspend_blocker_init(&client->suspend_blocker, "evdev");
++		else if (client->use_suspend_blocker && !p)
++			suspend_blocker_destroy(&client->suspend_blocker);
++		client->use_suspend_blocker = !!p;
++		spin_unlock_irq(&client->buffer_lock);
++		return 0;
++
+ 	default:
+ 
+ 		if (_IOC_TYPE(cmd) != 'E')
+diff --git a/include/linux/input.h b/include/linux/input.h
+index 7ed2251..b2d93b4 100644
+--- a/include/linux/input.h
++++ b/include/linux/input.h
+@@ -82,6 +82,9 @@ struct input_absinfo {
+ 
+ #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
+ 
++#define EVIOCGSUSPENDBLOCK	_IOR('E', 0x91, int)			/* get suspend block enable */
++#define EVIOCSSUSPENDBLOCK	_IOW('E', 0x91, int)			/* set suspend block enable */
++
+ /*
+  * Event types
+  */
+-- 
+1.6.5.1
 
-I get it, thank you :)
-I'll rewrite fix patch based on your comments.
-
-Thanks,
-Naoya Horiguchi
