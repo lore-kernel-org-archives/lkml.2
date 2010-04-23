@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab0DWUqN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 16:46:13 -0400
-Received: from 5-161-237-24-mvl.swc.gci.net ([24.237.161.5]:39078 "EHLO
-	mail.adialaska.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752159Ab0DWUqJ (ORCPT
+	id S1756173Ab0DWUys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 16:54:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59438 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab0DWUyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 16:46:09 -0400
-Message-ID: <4BD2070E.5060103@gmail.com>
-Date: Fri, 23 Apr 2010 12:46:06 -0800
-From: Kent Overstreet <kent.overstreet@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10pre) Gecko/20100421 Shredder/3.0.5pre
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] bcache: ver 3
-References: <20100423194107.GA20322@moria> <20100423130736.79db708a.randy.dunlap@oracle.com> <4BD20074.6020101@gmail.com> <4BD200BB.1070709@oracle.com>
-In-Reply-To: <4BD200BB.1070709@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 23 Apr 2010 16:54:45 -0400
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Vivek Goyal <vgoyal@redhat.com>, balbir@linux.vnet.ibm.com,
+       Andrea Righi <arighi@develer.com>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+In-Reply-To: <xr93k4rxx6sd.fsf@ninji.mtv.corp.google.com>
+References: <1268609202-15581-2-git-send-email-arighi@develer.com>
+	 <20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100318162855.GG18054@balbir.in.ibm.com>
+	 <20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100319024039.GH18054@balbir.in.ibm.com>
+	 <20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com>
+	 <xr931veiplpr.fsf@ninji.mtv.corp.google.com>
+	 <20100414140523.GC13535@redhat.com>
+	 <xr9339yxyepc.fsf@ninji.mtv.corp.google.com>
+	 <20100415114022.ef01b704.nishimura@mxp.nes.nec.co.jp>
+	 <g2u49b004811004142148i3db9fefaje1f20760426e0c7e@mail.gmail.com>
+	 <20100415152104.62593f37.nishimura@mxp.nes.nec.co.jp>
+	 <20100415155432.cf1861d9.kamezawa.hiroyu@jp.fujitsu.com>
+	 <xr93k4rxx6sd.fsf@ninji.mtv.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Apr 2010 22:54:34 +0200
+Message-ID: <1272056074.1821.40.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2010 12:19 PM, Randy Dunlap wrote:
-> On 04/23/10 13:17, Kent Overstreet wrote:
->> On 04/23/2010 12:07 PM, Randy Dunlap wrote:
->>>      help
->>>      <some explanatory help text>
->>> please.  The tristate prompt didn't do anything for me.
->>
->> Did the prompt not show up at all? That's odd, I wouldn't have thought
->> help text would have anything to do with that - I just added help to the
->> kconfig, though. I'll have it up in a git repository soon, I don't
->> suppose I should be posting a 2.4k line patch multiple times per day...
->
-> I'm just saying that it needs help text -- the prompt doesn't say enough.
->
+On Fri, 2010-04-23 at 13:17 -0700, Greg Thelen wrote:
+> -       lock_page_cgroup(pc);
+> +       /*
+> +        * Unless a page's cgroup reassignment is possible, then avoid grabbing
+> +        * the lock used to protect the cgroup assignment.
+> +        */
+> +       rcu_read_lock();
 
-Ah, right. It still needs real documentation in general, that should probably 
-be a higher priority.
+Where is the matching barrier?
 
-(Somewhat messy, will be rewritten) repo is up at
-http://modzer0.cs.uaf.edu/~kent/linux-bcache.git, kconfig help is in. If 
-there's something in particular you think ought to be documented for 
-understanding the code, I'll do that now. End user documentation I was 
-planning on waiting a bit on as I'm sure stuff is going to have to change.
+> +       smp_rmb();
+> +       if (unlikely(mem_cgroup_account_move_ongoing)) {
+> +               local_irq_save(flags);
+
+So the added irq-disable is a bug-fix?
+
+> +               lock_page_cgroup(pc);
+> +               locked = true;
+> +       }
+> +
+>         mem = pc->mem_cgroup;
+>         if (!mem || !PageCgroupUsed(pc))
+>                 goto done;
+> @@ -1449,6 +1468,7 @@ void mem_cgroup_update_file_mapped(struct page *page, int val)
+>         /*
+>          * Preemption is already disabled. We can use __this_cpu_xxx
+>          */
+> +       VM_BUG_ON(preemptible());
+
+Insta-bug here, there is nothing guaranteeing we're not preemptible
+here.
+
+>         if (val > 0) {
+>                 __this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+>                 SetPageCgroupFileMapped(pc);
+> @@ -1458,7 +1478,11 @@ void mem_cgroup_update_file_mapped(struct page *page, int val)
+>         }
+>  
+>  done:
+> -       unlock_page_cgroup(pc);
+> +       if (unlikely(locked)) {
+> +               unlock_page_cgroup(pc);
+> +               local_irq_restore(flags);
+> +       }
+> +       rcu_read_unlock();
+>  } 
+
