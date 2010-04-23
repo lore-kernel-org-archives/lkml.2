@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab0DWD35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 23:29:57 -0400
-Received: from kroah.org ([198.145.64.141]:42031 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753892Ab0DWD3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 23:29:49 -0400
-Date: Thu, 22 Apr 2010 20:16:49 -0700
-From: Greg KH <greg@kroah.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] firmware loader: embed device into firmware_priv
-	structure
-Message-ID: <20100423031649.GB1661@kroah.com>
-References: <20100314074330.27035.38765.stgit@localhost.localdomain> <20100314074929.27035.80425.stgit@localhost.localdomain> <20100423000106.GC4414@kroah.com> <20100423001903.GC28213@core.coreip.homeip.net>
+	id S1753235Ab0DWHPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 03:15:22 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:33458 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab0DWHPU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 03:15:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=HZVvs9xtC7SBDCNwkQLP0zTB2fsNn3cTzJEBgCNgy+M2SvwaO85qxyfZCtSDQlbZM5
+         Wd5lazslOF9NYX4Oi28tdKDTF8vH1xGKiSGbNChbpcapHhkk7J9fbKJx+D6GN+BLtpVp
+         khOC5HvoCCGuTHaJfdQye7HAAtwQYLsKFaHFg=
+Message-ID: <4BD14904.3050508@gmail.com>
+Date: Fri, 23 Apr 2010 09:15:16 +0200
+From: Roel Van Nyen <roel.vannyen@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100423001903.GC28213@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Greg KH <gregkh@suse.de>
+CC: "Bartlomiej Zolnierkiewicz devel@driverdev.osuosl.org" 
+	<bzolnier@gmail.com>,
+       Larry Finger <Larry.Finger@lwfinger.net>,
+       Bernhard Schiffner <bernhard@schiffner-limbach.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8187se: fix coding style errors of r8180_rtl8225z2.c
+References: <4BD0C19F.3030809@gmail.com> <20100422220726.GA23095@suse.de>
+In-Reply-To: <20100422220726.GA23095@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 05:19:03PM -0700, Dmitry Torokhov wrote:
-> On Thu, Apr 22, 2010 at 05:01:06PM -0700, Greg KH wrote:
-> > On Sat, Mar 13, 2010 at 11:49:29PM -0800, Dmitry Torokhov wrote:
-> > > Both these structures have the same lifetime rules so instead of allocating
-> > > and managing them separately embed struct device into struct firmware_priv.
-> > > Also make sure to delete sysfs attributes ourselves instead of expecting
-> > > sysfs to clean up our mess.
-> > 
-> > This one didn't apply due to other changes that have happened to the
-> > file since you sent this out.  Care to respin it?
-> > 
-> 
-> I'll wait till next next release, see what's there and resping what's
-> missing.
+Greg KH wrote:
 
-Sounds great.
+> On Thu, Apr 22, 2010 at 11:37:35PM +0200, Roel Van Nyen wrote:
+>   
+>> Fix coding style errors
+>>
+>> Signed-off-by: Roel Van Nyen <roel.vannyen@gmail.com>
+>>
+>> ---
+>>
+>>  drivers/staging/rtl8187se/r8180_rtl8225z2.c |   58 ++++++++++++++-------------
+>>
+>>  1 files changed, 30 insertions(+), 28 deletions(-)
+>>
+>> diff --git a/drivers/staging/rtl8187se/r8180_rtl8225z2.c b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
+>>
+>> index 6edf5a4..9c38b3a 100644
+>>
+>> --- a/drivers/staging/rtl8187se/r8180_rtl8225z2.c
+>>
+>> +++ b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
+>>     
+>
+> Very wierd, your email client doubled all of the lines.
+>
+> Did you use git send-email to send this patch, or did you cut-and-paste
+> into gmail?  If the latter, please don't :)
+>
+> thanks,
+>
+> greg k-h
+>   
+
+Hi
+I used thunderbird with the instructions provided by Documentation/email-clients.txt but I probably have missed something, I will try resending with git send-email.
 
 thanks,
+Roel
 
-greg k-h
