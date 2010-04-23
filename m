@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab0DWFKb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 01:10:31 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62376 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755438Ab0DWFK3 (ORCPT
+	id S1752969Ab0DWENT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 00:13:19 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.121]:40132 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab0DWENS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 01:10:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=v9O9N6TDTB3QnYmIR/PVuX9+e6AT9sBWeVeATmqMr/8eZVqg6z5vFGqeZYEIDi9pl3
-         4B4YG0oA/vdWwmCR5raQFaEmpyQB9kPDEM+enuVZ5yq5O8zsaz20SqO0d2S5M0HuajU2
-         yjSFfxNU9FuR+FsXUsGfTev0m4xNI73K9PMCs=
-Message-ID: <4BD12BD3.9080708@gmail.com>
-Date: Thu, 22 Apr 2010 22:10:43 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Whitespace Coding style fixes.
-References: <1271833331-26973-1-git-send-email-justinmattock@gmail.com> <alpine.LRH.2.00.1004231016160.18603@tundra.namei.org>
-In-Reply-To: <alpine.LRH.2.00.1004231016160.18603@tundra.namei.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 23 Apr 2010 00:13:18 -0400
+X-Authority-Analysis: v=1.1 cv=mJ2XtCV6gem0td6545d6o4z3SC3BoM2bxxOQ2/EEFjA= c=1 sm=0 a=IkcTkHD0fZMA:10 a=Ojb4KS2nAQbJgCTPCAnicg==:17 a=QqsSVKQqVVKoaNuzjYEA:9 a=ER_NAlhsyLYnRcv1awmPt5tMimsA:4 a=QEXdDO2ut3YA:10 a=Ojb4KS2nAQbJgCTPCAnicg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.121.210.183
+Subject: Re: readahead on directories
+From: Phillip Susi <psusi@cfl.rr.com>
+To: Jamie Lokier <jamie@shareable.org>
+Cc: linux-fsdevel@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100422224327.GE13951@shareable.org>
+References: <20100421161211.GC27575@shareable.org>
+	 <4BCF3FAE.7090206@cfl.rr.com> <20100421202209.GV27575@shareable.org>
+	 <4BCF6731.1070404@cfl.rr.com> <20100421220612.GD27575@shareable.org>
+	 <4BD05C9C.9020101@cfl.rr.com> <20100422175322.GE6265@shareable.org>
+	 <4BD0A24B.4060209@cfl.rr.com> <20100422203555.GA13951@shareable.org>
+	 <4BD0BE20.4030908@cfl.rr.com>  <20100422224327.GE13951@shareable.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Apr 2010 00:13:15 -0400
+Message-ID: <1271995995.2855.48.camel@faldara>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2010 05:17 PM, James Morris wrote:
-> On Wed, 21 Apr 2010, Justin P. Mattock wrote:
->
->> Whitespace Coding style fixes.
->>
->> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->
->
-> Applied to
-> git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
->
-> with fixes to the Subject: line (needed a subsystem field and fixed
-> capitalization).
->
+On Thu, 2010-04-22 at 23:43 +0100, Jamie Lokier wrote:
+> No, that is not the reason.  pwrite needs the mutex too.
 
-Cool thank you vary much..
+Which mutex and what for?
 
-side note: what/where is the git web interface So I can
-see how you changed the patch(so I know the next).
-I'm looking here:
-http://git.kernel.org/?p=linux/kernel/git/jmorris/security-testing-2.6.git;a=summary
+> Now you are describing using threads in the blocking cases.  (Work
+> queues, thread pools, same thing.)  Earlier you were saying threads
+> are the wrong approach....  Good, good :-)
 
-is this correct?
+Sure, in some cases, just not ALL.  If you can't control whether or not
+the call blocks then you HAVE to use threads.  If you can be sure it
+won't block most of the time, then most of the time you don't need any
+other threads, and when you finally do, you need very few.
 
-Justin P. Mattock
+> A big problem with it, apart from having to change lots of places in
+> all the filesystems, is that the work-queues run with the wrong
+> security and I/O context.  Network filesystems break permissions, quotas
+> break, ionice doesn't work, etc.  It's obviously fixable but more
+> involved than just putting a read request on a work queue.
+
+Hrm... good point.
+
+> Fine-grained locking isn't the same thing as using non-sleepable locks.
+
+Yes, it is not the same, but non-sleepable locks can ONLY be used with
+fine grained locks.  The two reasons to use a mutex instead of a spin
+lock are that you can sleep while holding it, and so it isn't a problem
+to hold it for an extended period of time.
+
+> So is read().  And then the calling application usually exits, because
+> there's nothing else it can do usefully.  Same if aio_read() ever returns ENOMEM.
+> 
+> That way lies an application getting ENOMEM often and having to retry
+> aio_read in a loop, probably a busy one, which isn't how the interface
+> is supposed to work, and is not efficient either.
+
+Simply retrying in a loop would be very stupid.  The programs using aio
+are not simple stupid, so they would take more appropriate action.  For
+example a server might decide it already has enough data in the pipe and
+forget about asking for more until the queues empty, or it might decide
+to drop that client, which would free up some more memory, or it might
+decide it has some cache it can free up.  Something like readahead could
+decide that if there isn't enough memory left then it has no business
+trying to read any more, and exit.  Both of these are preferable to
+waiting for something else to free up enough memory to continue.
+
+
