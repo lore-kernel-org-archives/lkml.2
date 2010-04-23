@@ -1,202 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab0DWKv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 06:51:29 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40726 "EHLO hera.kernel.org"
+	id S1757227Ab0DWKvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 06:51:46 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:36230 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757092Ab0DWKvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 06:51:25 -0400
-Date: Fri, 23 Apr 2010 10:50:33 GMT
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
-       mingo@elte.hu
-In-Reply-To: <1270079265.7835.8.camel@sbs-t61.sc.intel.com>
-References: <1270079265.7835.8.camel@sbs-t61.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix select_idle_sibling() logic in select_task_rq_fair()
-Message-ID: <tip-99bd5e2f245d8cd17d040c82d40becdb3efd9b69@git.kernel.org>
-Git-Commit-ID: 99bd5e2f245d8cd17d040c82d40becdb3efd9b69
-X-Mailer: tip-git-log-daemon
+	id S1757072Ab0DWKvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 06:51:05 -0400
+Date: Fri, 23 Apr 2010 11:50:45 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Dave Chinner <david@fromorbit.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Message-ID: <20100423105044.GK30306@csn.ul.ie>
+References: <20100414014041.GD2493@dastard> <20100414155233.D153.A69D9226@jp.fujitsu.com> <20100414072830.GK2493@dastard> <20100414085132.GJ25756@csn.ul.ie> <20100415013436.GO2493@dastard> <20100415102837.GB10966@csn.ul.ie> <20100416041412.GY2493@dastard> <20100416151403.GM19264@csn.ul.ie> <20100419152034.GW19264@csn.ul.ie> <20100423010632.GA10390@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Apr 2010 10:50:34 +0000 (UTC)
+In-Reply-To: <20100423010632.GA10390@dastard>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  99bd5e2f245d8cd17d040c82d40becdb3efd9b69
-Gitweb:     http://git.kernel.org/tip/99bd5e2f245d8cd17d040c82d40becdb3efd9b69
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Wed, 31 Mar 2010 16:47:45 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 23 Apr 2010 11:02:02 +0200
+On Fri, Apr 23, 2010 at 11:06:32AM +1000, Dave Chinner wrote:
+> On Mon, Apr 19, 2010 at 04:20:34PM +0100, Mel Gorman wrote:
+> > On Fri, Apr 16, 2010 at 04:14:03PM +0100, Mel Gorman wrote:
+> > > > > Your patch fixes 2, avoids 1, breaks 3 and haven't thought about 4 but I
+> > > > > guess dirty pages can cycle around more so it'd need to be cared for.
+> > > > 
+> > > > Well, you keep saying that they break #3, but I haven't seen any
+> > > > test cases or results showing that. I've been unable to confirm that
+> > > > lumpy reclaim is broken by disallowing writeback in my testing, so
+> > > > I'm interested to know what tests you are running that show it is
+> > > > broken...
+> > > > 
+> > > 
+> > > Ok, I haven't actually tested this. The machines I use are tied up
+> > > retesting the compaction patches at the moment. The reason why I reckon
+> > > it'll be a problem is that when these sync-writeback changes were
+> > > introduced, it significantly helped lumpy reclaim for huge pages. I am
+> > > making an assumption that backing out those changes will hurt it.
+> > > 
+> > > I'll test for real on Monday and see what falls out.
+> > > 
+> > 
+> > One machine has completed the test and the results are as expected. When
+> > allocating huge pages under stress, your patch drops the success rates
+> > significantly. On X86-64, it showed
+> > 
+> > STRESS-HIGHALLOC
+> >               stress-highalloc   stress-highalloc
+> >             enable-directreclaim disable-directreclaim
+> > Under Load 1    89.00 ( 0.00)    73.00 (-16.00)
+> > Under Load 2    90.00 ( 0.00)    85.00 (-5.00)
+> > At Rest         90.00 ( 0.00)    90.00 ( 0.00)
+> > 
+> > So with direct reclaim, it gets 89% of memory as huge pages at the first
+> > attempt but 73% with your patch applied. The "Under Load 2" test happens
+> > immediately after. With the start kernel, the first and second attempts
+> > are usually the same or very close together. With your patch applied,
+> > there are big differences as it was no longer trying to clean pages.
+> 
+> What was the machine config you were testing on (RAM, CPUs, etc)?
 
-sched: Fix select_idle_sibling() logic in select_task_rq_fair()
+2G RAM, AMD Phenom with 4 cores.
 
-Issues in the current select_idle_sibling() logic in select_task_rq_fair()
-in the context of a task wake-up:
+> And what are these loads?
 
-a) Once we select the idle sibling, we use that domain (spanning the cpu that
-   the task is currently woken-up and the idle sibling that we found) in our
-   wake_affine() decisions. This domain is completely different from the
-   domain(we are supposed to use) that spans the cpu that the task currently
-   woken-up and the cpu where the task previously ran.
+Compile-based loads that fill up memory and put it under heavy memory
+pressure that also dirties memory. While they are running, a kernel module
+is loaded that starts allocating huge pages one at a time so that accurate
+timing and the state of the system can be gathered at allocation time. The
+number of allocation attempts is 90% of the number of huge pages that exist
+in the system.
 
-b) We do select_idle_sibling() check only for the cpu that the task is
-   currently woken-up on. If select_task_rq_fair() selects the previously run
-   cpu for waking the task, doing a select_idle_sibling() check
-   for that cpu also helps and we don't do this currently.
+> Do you have a script that generates
+> them? If so, can you share them, please?
+> 
 
-c) In the scenarios where the cpu that the task is woken-up is busy but
-   with its HT siblings are idle, we are selecting the task be woken-up
-   on the idle HT sibling instead of a core that it previously ran
-   and currently completely idle. i.e., we are not taking decisions based on
-   wake_affine() but directly selecting an idle sibling that can cause
-   an imbalance at the SMT/MC level which will be later corrected by the
-   periodic load balancer.
+Yes, but unfortunately they are not in a publishable state. Parts of
+them depend on an automation harness that I don't hold the copyright to.
 
-Fix this by first going through the load imbalance calculations using
-wake_affine() and once we make a decision of woken-up cpu vs previously-ran cpu,
-then choose a possible idle sibling for waking up the task on.
+> OOC, what was the effect on the background load - did it go faster
+> or slower when writeback was disabled?
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1270079265.7835.8.camel@sbs-t61.sc.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched_fair.c |   82 +++++++++++++++++++++++++--------------------------
- 1 files changed, 40 insertions(+), 42 deletions(-)
+Unfortunately, I don't know what the effect on the underlying load is
+as it takes longer than the huge page allocation attempts do. The tests
+objective is to check how well lumpy reclaim works undedmemory pressure.
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 0a413c7..cbd8b8a 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1375,29 +1375,48 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
- /*
-  * Try and locate an idle CPU in the sched_domain.
-  */
--static int
--select_idle_sibling(struct task_struct *p, struct sched_domain *sd, int target)
-+static int select_idle_sibling(struct task_struct *p, int target)
- {
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
-+	struct sched_domain *sd;
- 	int i;
- 
- 	/*
--	 * If this domain spans both cpu and prev_cpu (see the SD_WAKE_AFFINE
--	 * test in select_task_rq_fair) and the prev_cpu is idle then that's
--	 * always a better target than the current cpu.
-+	 * If the task is going to be woken-up on this cpu and if it is
-+	 * already idle, then it is the right target.
-+	 */
-+	if (target == cpu && idle_cpu(cpu))
-+		return cpu;
-+
-+	/*
-+	 * If the task is going to be woken-up on the cpu where it previously
-+	 * ran and if it is currently idle, then it the right target.
- 	 */
--	if (target == cpu && !cpu_rq(prev_cpu)->cfs.nr_running)
-+	if (target == prev_cpu && idle_cpu(prev_cpu))
- 		return prev_cpu;
- 
- 	/*
--	 * Otherwise, iterate the domain and find an elegible idle cpu.
-+	 * Otherwise, iterate the domains and find an elegible idle cpu.
- 	 */
--	for_each_cpu_and(i, sched_domain_span(sd), &p->cpus_allowed) {
--		if (!cpu_rq(i)->cfs.nr_running) {
--			target = i;
-+	for_each_domain(target, sd) {
-+		if (!(sd->flags & SD_SHARE_PKG_RESOURCES))
- 			break;
-+
-+		for_each_cpu_and(i, sched_domain_span(sd), &p->cpus_allowed) {
-+			if (idle_cpu(i)) {
-+				target = i;
-+				break;
-+			}
- 		}
-+
-+		/*
-+		 * Lets stop looking for an idle sibling when we reached
-+		 * the domain that spans the current cpu and prev_cpu.
-+		 */
-+		if (cpumask_test_cpu(cpu, sched_domain_span(sd)) &&
-+		    cpumask_test_cpu(prev_cpu, sched_domain_span(sd)))
-+			break;
- 	}
- 
- 	return target;
-@@ -1421,7 +1440,7 @@ select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
- 	int new_cpu = cpu;
--	int want_affine = 0, cpu_idle = !current->pid;
-+	int want_affine = 0;
- 	int want_sd = 1;
- 	int sync = wake_flags & WF_SYNC;
- 
-@@ -1460,36 +1479,13 @@ select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_
- 		}
- 
- 		/*
--		 * While iterating the domains looking for a spanning
--		 * WAKE_AFFINE domain, adjust the affine target to any idle cpu
--		 * in cache sharing domains along the way.
-+		 * If both cpu and prev_cpu are part of this domain,
-+		 * cpu is a valid SD_WAKE_AFFINE target.
- 		 */
--		if (want_affine) {
--			int target = -1;
--
--			/*
--			 * If both cpu and prev_cpu are part of this domain,
--			 * cpu is a valid SD_WAKE_AFFINE target.
--			 */
--			if (cpumask_test_cpu(prev_cpu, sched_domain_span(tmp)))
--				target = cpu;
--
--			/*
--			 * If there's an idle sibling in this domain, make that
--			 * the wake_affine target instead of the current cpu.
--			 */
--			if (!cpu_idle && tmp->flags & SD_SHARE_PKG_RESOURCES)
--				target = select_idle_sibling(p, tmp, target);
--
--			if (target >= 0) {
--				if (tmp->flags & SD_WAKE_AFFINE) {
--					affine_sd = tmp;
--					want_affine = 0;
--					if (target != cpu)
--						cpu_idle = 1;
--				}
--				cpu = target;
--			}
-+		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
-+		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
-+			affine_sd = tmp;
-+			want_affine = 0;
- 		}
- 
- 		if (!want_sd && !want_affine)
-@@ -1520,8 +1516,10 @@ select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_
- #endif
- 
- 	if (affine_sd) {
--		if (cpu_idle || cpu == prev_cpu || wake_affine(affine_sd, p, sync))
--			return cpu;
-+		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
-+			return select_idle_sibling(p, cpu);
-+		else
-+			return select_idle_sibling(p, prev_cpu);
- 	}
- 
- 	while (sd) {
+However, the time it takes to allocate a huge page increases with direct
+reclaim disabled (i.e. your patch) early in the test up until about 40%
+of memory was allocated as huge pages. After that, the latencies with
+disable-directreclaim are lower until the gives up while the latencies with
+enable-directreclaim increase.
+
+In other words, with direct reclaim writing back pages, lumpy reclaim is a
+lot more determined to get the pages cleaned and wait on them if necessary. A
+compromise patch might be to have a wait_on_page_dirty to be cleared instead
+of queueing the IO and wait_on_page_writeback? How long it stalled would
+depend heavily on what rate pages were getting cleaned in the background.
+
+> i.e. did we trade of more
+> large pages for better overall throughput?
+> 
+> Also, I'm curious as to the repeatability of the tests you are
+> doing. I found that from run to run I could see a *massive*
+> variance in the results. e.g. one run might only get ~80 huge
+> pages at the first attempt, the test run from the same initial
+> conditions next might get 440 huge pages at the first attempt.
+
+You are using the nr_hugepages interface and writing a large number to it
+so you are also triggering the hugetlbfs retry-logic and have little control
+over how many times the allocator gets called on each attempt. How many huge
+pages it allocates depends on how much progress it is able to make during
+lumpy reclaim.
+
+It's why the tests I run allocate huge pages one at a time and measure
+the latencies as it goes. The results tend to be quite reproducible.
+Success figures would be the same between runs and the rate of
+allocation success would generally be comparable as well.
+
+Your test could do something similar by only ever requesting one additional
+page. It will be good enough to measure allocation latency.  The gathering
+of other system state at the time of failure is not very important here
+(where as it was important during anti-frag development hence the use of a
+kernel module).
+
+> I saw
+> the same variance with or without writeback from direct reclaim
+> enabled. Hence only after averaging over tens of runs could I see
+> any sort of trend emerge, and it makes me wonder if your testing is
+> also seeing this sort of variance....
+> 
+
+Typically, there is not much variance between tests. Maybe 1-2% in allocation
+success rates.
+
+> FWIW, if we look results of the test I did, it showed a 20%
+> improvement in large page allocation with a 15% increase in load
+> throughput, while you're showing a 16% degradation in large page
+> allocation.
+
+With writeback, lumpy reclaim takes a range of pages, cleans them, waits for
+the IO before moving on. This causes a seeky IO pattern and takes time. Also
+causes a nice amount of trashing.
+
+With your patch, lumpy reclaim would just skip over ranges with dirty pages
+until it found clean pages in a suitable range. When there is plenty of
+usable memore early in the test, it probably scans more but causes less
+IO so would appear faster. Later in the test, it scans more but eventually
+encounters too many dirty pages and gives up. Hence, its success rates will
+be more random because it depends on where exactly the dirty pages were.
+
+If this is accurate, it will always be the case that your patch causes less
+disruption in the system and will appear faster due to the lack of IO but
+will be less predictable and give up easier so will have lower success
+rates when there are dirty pages in the system.
+
+> Effectively we've got two workloads that show results
+> at either end of the spectrum (perhaps they are best case vs worst
+> case) but there's no real in-between. What other tests can we run to
+> get a better picture of the effect?
+> 
+
+The underlying workload is only important in how many pages it is
+dirtying at any given time. Heck, at one point my test workload was a
+single process that created a mapping the size of physical memory and in
+test a) would constantly read it and in test b) would constantly write
+it. Lumpy reclaim with dirty-page-writeback was always more predictable
+and had higher success rates.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
