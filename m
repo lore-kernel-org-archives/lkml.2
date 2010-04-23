@@ -1,85 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab0DWAtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 20:49:08 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:58761 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511Ab0DWAtF (ORCPT
+	id S1755517Ab0DWFLk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 01:11:40 -0400
+Received: from mail-iw0-f178.google.com ([209.85.223.178]:35596 "EHLO
+	mail-iw0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab0DWFLi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 20:49:05 -0400
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Vitaly Mayatskikh <v.mayatskih@gmail.com>, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Haren Myneni <hbabu@us.ibm.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Cong Wang <amwang@redhat.com>,
-       kexec@lists.infradead.org
-Subject: Re: [PATCH 0/5] Add second memory region for crash kernel
-References: <1271953392-6324-1-git-send-email-v.mayatskih@gmail.com>
-	<m1aasvkupc.fsf@fess.ebiederm.org> <20100422224525.GJ3228@redhat.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Thu, 22 Apr 2010 17:48:53 -0700
-In-Reply-To: <20100422224525.GJ3228@redhat.com> (Vivek Goyal's message of "Thu\, 22 Apr 2010 18\:45\:25 -0400")
-Message-ID: <m1eii7j8ne.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Fri, 23 Apr 2010 01:11:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UIUZMWQQcqNN7Emo/3pY9K5G10C3Xci8owV+hs9At0POZrOLcWS+qp1tKBLqQDOAOG
+         OJ3ebBVMf2CEKTIGjfNQCxutfmu7SCDP+rOpUEcsmhhK2VKi9YPu6Wp3/edpF2c9i5RS
+         QY0u3atpR3Sb0tTeAbs/ecaBQybpoOXkedtE0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: vgoyal@redhat.com, kexec@lists.infradead.org, amwang@redhat.com, nhorman@tuxdriver.com, hbabu@us.ibm.com, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, linux-kernel@vger.kernel.org, v.mayatskih@gmail.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <20100423120148.9ffa5881.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100423120148.9ffa5881.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Fri, 23 Apr 2010 14:11:37 +0900
+Message-ID: <m2l28c262361004222211j602f224bv60ffd381f524e78a@mail.gmail.com>
+Subject: Re: [BUGFIX][mm][PATCH] fix migration race in rmap_walk
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, Mel Gorman <mel@csn.ul.ie>,
+       Christoph Lameter <cl@linux.com>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
-
-> On Thu, Apr 22, 2010 at 03:07:11PM -0700, Eric W. Biederman wrote:
->> Vitaly Mayatskikh <v.mayatskih@gmail.com> writes:
->> >
->> > This serie of patches realizes this approach. It requires also changes
->> > in kexec utility to make this feature work, but is
->> > backward-compatible: old versions of kexec will work with new
->> > kernel. I will post patch to kexec-tools upstream separately.
->> 
->> Have you tried loading a 64bit vmlinux directly into a higher address
->> range?  There may be a bit or two missing but you should be able to
->> load a linux kernel above 4GB.  I tested the basics of that mechanism
->> when I made the 64bit relocatable kernel.
+On Fri, Apr 23, 2010 at 12:01 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
 >
-> I guess even if it works, for distributions it will become additional
-> liability to carry vmlinux (instead of relocatable bzImage). So we shall
-> have to find a way to make bzImage work.
-
-As Peter pointed out we actually have everything thing we need except
-a bit of documentation and the flag that says this is a 64bit kernel.
-
->From a testing perspective a 64bit vmlinux should work today without
-changes.  Once it is confirmed there is a solution with the 64bit
-kernel we just need a small patch to boot.txt and a few tweaks to 
-/sbin/kexec to handle a 64bit bzImage.
-
->> I don't buy the argument that there is a direct connection between
->> the amount of memory you have and how much memory it takes to dump it.
->> Even an indirect connections seems suspicious.
+> This patch itself is for -mm ..but may need to go -stable tree for memory
+> hotplug. (but we've got no report to hit this race...)
 >
-> Memory requirement by user space might be of interest though like dump
-> filtering tools. I vaguely remember that it used to first traverse all
-> the memory pages, create some internal data structures and then start
-> dumping.
+> This one is the simplest, I think and works well on my test set.
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 >
-> So memory required by filtering tool might be directly proportional to
-> amount of memory present in the system.
+> In rmap.c, at checking rmap in vma chain in page->mapping, anon_vma->lock
+> or mapping->i_mmap_lock is held and enter following loop.
+>
+>        for_each_vma_in_this_rmap_link(list from page->mapping) {
+>                unsigned long address = vma_address(page, vma);
+>                if (address == -EFAULT)
+>                        continue;
+>                ....
+>        }
+>
+> vma_address is checking [start, end, pgoff] v.s. page->index.
+>
+> But vma's [start, end, pgoff] is updated without locks. vma_address()
+> can hit a race and may return wrong result.
+>
+> This bahavior is no problem in usual routine as try_to_unmap() etc...
+> But for page migration, rmap_walk() has to find all migration_ptes
+> which migration code overwritten valid ptes. This race is critical and cause
+> BUG that a migration_pte is sometimes not removed.
+>
+> pr 21 17:27:47 localhost kernel: ------------[ cut here ]------------
+> Apr 21 17:27:47 localhost kernel: kernel BUG at include/linux/swapops.h:105!
+> Apr 21 17:27:47 localhost kernel: invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
+> Apr 21 17:27:47 localhost kernel: last sysfs file: /sys/devices/virtual/net/br0/statistics/collisions
+> Apr 21 17:27:47 localhost kernel: CPU 3
+> Apr 21 17:27:47 localhost kernel: Modules linked in: fuse sit tunnel4 ipt_MASQUERADE iptable_nat nf_nat bridge stp llc sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf xt_physdev ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables ipv6 dm_multipath uinput ioatdma ppdev parport_pc i5000_edac bnx2 iTCO_wdt edac_core iTCO_vendor_support shpchp parport e1000e kvm_intel dca kvm i2c_i801 i2c_core i5k_amb pcspkr megaraid_sas [last unloaded: microcode]
+> Apr 21 17:27:47 localhost kernel:
+> Apr 21 17:27:47 localhost kernel: Pid: 27892, comm: cc1 Tainted: G        W   2.6.34-rc4-mm1+ #4 D2519/PRIMERGY
+> Apr 21 17:27:47 localhost kernel: RIP: 0010:[<ffffffff8114e9cf>]  [<ffffffff8114e9cf>] migration_entry_wait+0x16f/0x180
+> Apr 21 17:27:47 localhost kernel: RSP: 0000:ffff88008d9efe08  EFLAGS: 00010246
+> Apr 21 17:27:47 localhost kernel: RAX: ffffea0000000000 RBX: ffffea0000241100 RCX: 0000000000000001
+> Apr 21 17:27:47 localhost kernel: RDX: 000000000000a4e0 RSI: ffff880621a4ab00 RDI: 000000000149c03e
+> Apr 21 17:27:47 localhost kernel: RBP: ffff88008d9efe38 R08: 0000000000000000 R09: 0000000000000000
+> Apr 21 17:27:47 localhost kernel: R10: 0000000000000000 R11: 0000000000000001 R12: ffff880621a4aae8
+> Apr 21 17:27:47 localhost kernel: R13: 00000000bf811000 R14: 000000000149c03e R15: 0000000000000000
+> Apr 21 17:27:47 localhost kernel: FS:  00007fe6abc90700(0000) GS:ffff880005a00000(0000) knlGS:0000000000000000
+> Apr 21 17:27:47 localhost kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> Apr 21 17:27:47 localhost kernel: CR2: 00007fe6a37279a0 CR3: 000000008d942000 CR4: 00000000000006e0
+> Apr 21 17:27:47 localhost kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> Apr 21 17:27:47 localhost kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Apr 21 17:27:47 localhost kernel: Process cc1 (pid: 27892, threadinfo ffff88008d9ee000, task ffff8800b23ec820)
+> Apr 21 17:27:47 localhost kernel: Stack:
+> Apr 21 17:27:47 localhost kernel: ffffea000101aee8 ffff880621a4aae8 ffff88008d9efe38 00007fe6a37279a0
+> Apr 21 17:27:47 localhost kernel: <0> ffff8805d9706d90 ffff880621a4aa00 ffff88008d9efef8 ffffffff81126d05
+> Apr 21 17:27:47 localhost kernel: <0> ffff88008d9efec8 0000000000000246 0000000000000000 ffffffff81586533
+> Apr 21 17:27:47 localhost kernel: Call Trace:
+> Apr 21 17:27:47 localhost kernel: [<ffffffff81126d05>] handle_mm_fault+0x995/0x9b0
+> Apr 21 17:27:47 localhost kernel: [<ffffffff81586533>] ? do_page_fault+0x103/0x330
+> Apr 21 17:27:47 localhost kernel: [<ffffffff8104bf40>] ? finish_task_switch+0x0/0xf0
+> Apr 21 17:27:47 localhost kernel: [<ffffffff8158659e>] do_page_fault+0x16e/0x330
+> Apr 21 17:27:47 localhost kernel: [<ffffffff81582f35>] page_fault+0x25/0x30
+> Apr 21 17:27:47 localhost kernel: Code: 53 08 85 c9 0f 84 32 ff ff ff 8d 41 01 89 4d d8 89 45 d4 8b 75 d4 8b 45 d8 f0 0f b1 32 89 45 dc 8b 45 dc 39 c8 74 aa 89 c1 eb d7 <0f> 0b eb fe 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5
+> Apr 21 17:27:47 localhost kernel: RIP  [<ffffffff8114e9cf>] migration_entry_wait+0x16f/0x180
+> Apr 21 17:27:47 localhost kernel: RSP <ffff88008d9efe08>
+> Apr 21 17:27:47 localhost kernel: ---[ end trace 4860ab585c1fcddb ]---
+>
+>
+>
+> This patch adds vma_address_safe(). And update [start, end, pgoff]
+> under seq counter.
+>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Assuming your dump filtering tool creates a bitmap of pages to be dumped
-you get a ration of 32K to 1.  Or 3MB for 100GB and 32MB for 1TB.
-Which is noticeable in the worst case but definitely not enough to push
-us past 2GB.
-
-> Vitaly, have you really run into cases where 2G upper limit is a concern.
-> What is the configuration you have, how much memory it has and how much
-> memory are you planning to reserve for kdump kernel?
-
-A good question.
-
-Eric
+That's exactly same what I have in mind. :)
+But I am hesitating. That's because AFAIR, we try to remove seqlock. Right?
+But in this case, seqlock is good, I think. :)
+-- 
+Kind regards,
+Minchan Kim
