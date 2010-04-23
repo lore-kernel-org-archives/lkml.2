@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab0DWOgM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 10:36:12 -0400
-Received: from pmx3.lnl.infn.it ([192.135.30.243]:36150 "EHLO pmx3.lnl.infn.it"
+	id S1754718Ab0DWOgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 10:36:13 -0400
+Received: from pmx3.lnl.infn.it ([192.135.30.243]:36149 "EHLO pmx3.lnl.infn.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753848Ab0DWOgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754320Ab0DWOgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Apr 2010 10:36:08 -0400
-Message-ID: <4828242.1272033302517.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-Date: Fri, 23 Apr 2010 16:35:02 +0200 (CEST)
+Message-ID: <484607.1272033291418.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+Date: Fri, 23 Apr 2010 16:34:51 +0200 (CEST)
 From: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>
 To: Amir Vadai <amirv@mellanox.co.il>
 Subject: SDP bugs 2027 and 2028
@@ -38,7 +38,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Amir, 
 
-have you any news about bugs 2027 and 2028 (SDP)?
+have you any news about bug 2027 and 2028 (SDP)?
 
 Take care and keep in touch.
 Thamk you very much,
