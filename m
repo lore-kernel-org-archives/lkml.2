@@ -1,97 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757870Ab0DWQAq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 12:00:46 -0400
-Received: from mail.perches.com ([173.55.12.10]:1717 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757783Ab0DWQAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 12:00:42 -0400
-Subject: Re: [PATCH] Staging: wlan-ng: fix many style issues in
- hfa384x_usb.c
-From: Joe Perches <joe@perches.com>
-To: Alessandro Ghedini <al3xbio@gmail.com>
-Cc: gregkh@suse.de, Andrew.Elwell@gmail.com, mithlesh@linsyssoft.com,
-       svenne@krap.dk, jkosina@suse.cz, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <1272035706-12212-1-git-send-email-al3xbio@gmail.com>
-References: <1272035706-12212-1-git-send-email-al3xbio@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Apr 2010 09:00:40 -0700
-Message-ID: <1272038440.1730.817.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757751Ab0DWQDA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 12:03:00 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:57072 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757754Ab0DWQC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 12:02:58 -0400
+Date: Fri, 23 Apr 2010 10:02:57 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Carlos Chinea <carlos.chinea@nokia.com>
+cc: linux-kernel@vger.kernel.org, s-jan@ti.com, linux-omap@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] HSI framework and drivers
+In-Reply-To: <1272035728-6933-1-git-send-email-carlos.chinea@nokia.com>
+Message-ID: <alpine.DEB.2.00.1004231001190.29720@utopia.booyaka.com>
+References: <1272035728-6933-1-git-send-email-carlos.chinea@nokia.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="155748971-7893282-1272038577=:29720"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-23 at 17:15 +0200, Alessandro Ghedini wrote:
-> This patch fixes all the errors and most of the checkpatch.pl warnings
-> and other style issues in the hfa384x_usb.c file
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Hi Alessandro.
+--155748971-7893282-1272038577=:29720
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Almost there...  One more pass and it should be good to go.
+(cc S=E9bastien JAN)
 
-> @@ -351,7 +351,8 @@ static int submit_rx_urb(hfa384x_t *hw, gfp_t memflags)
->  	hw->rx_urb_skb = skb;
->  
->  	result = -ENOLINK;
-> -	if (!hw->wlandev->hwremoved && !test_bit(WORK_RX_HALT, &hw->usb_flags)) {
-> +	if (!hw->wlandev->hwremoved &&
-> +				!test_bit(WORK_RX_HALT, &hw->usb_flags)) {
+Hello Carlos,
 
-This is more difficult to read and less standard than
+On Fri, 23 Apr 2010, Carlos Chinea wrote:
 
-	if (!hw->wlandev->hwremoved &&
-	    !test_bit(WORK_RX_HALT, &hw->usb_flags)) {
+> I have been working on a new proposal to support HSI/SSI drivers
+> in the kernel. I would be very glad to get your feedback about
+> this proposal.
+>=20
+> This patch series introduces the HSI framework, an SSI driver
+> for OMAP and a generic character device for HSI/SSI devices.
+>=20
+> SSI, which is a legacy version of HSI, is used to connect the application
+> engine with the cellular modem on the Nokia N900.
+>=20
+> This patch set is based on 2.6.34-rc3
 
-Please change it.
+Have you looked at S=E9bastien's HSI driver code:
 
-> @@ -2451,7 +2452,11 @@ int hfa384x_drvr_readpda(hfa384x_t *hw, void *buf, unsigned int len)
->  		currpage = HFA384x_ADDR_CMD_MKPAGE(pdaloc[i].cardaddr);
->  		curroffset = HFA384x_ADDR_CMD_MKOFF(pdaloc[i].cardaddr);
->  
-> -		result = hfa384x_dormem_wait(hw, currpage, curroffset, buf, len);	/* units of bytes */
-> +		result = hfa384x_dormem_wait(hw,
-> +					     currpage,
-> +					     curroffset,
-> +					     buf,
-> +					     len); /* units of bytes */
+http://www.mail-archive.com/linux-omap@vger.kernel.org/msg18506.html
 
-Try not to make function calls use separate lines for each argument
-unless you've got a specific reason like a comment for each arg or
-something.
+Is there some way that you can combine efforts with him?
 
-> @@ -2610,20 +2617,21 @@ int hfa384x_drvr_start(hfa384x_t *hw)
->  	result = result2 = hfa384x_cmd_initialize(hw);
->  	if (result1 != 0) {
->  		if (result2 != 0) {
-> -			printk(KERN_ERR
-> -			       "cmd_initialize() failed on two attempts, results %d and %d\n",
-> -			       result1, result2);
-> +			printk
-> +			   (KERN_ERR "cmd_initialize() failed on two attempts,"
-> +			    " results %d and %d\n",
-> +			    result1, result2);
 
-Please don't split the format strings.
-As Richard Kennedy said, it makes grep less convenient.
-
-Put the format on the same line as the printk and
-use a newer checkpatch.pl.
-
-I think all these should become single line
-
-	pr_<level>(fmt, args that fit before col 80);
-
-or multiple lines like:
-
-	pr_<level>(fmt,
-		   args until col 80,
-		   more args if necessary);
-
-That may be a personal nit though.
-
-cheers, Joe
-
+- Paul
+--155748971-7893282-1272038577=:29720--
