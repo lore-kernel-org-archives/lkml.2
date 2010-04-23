@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab0DWSWJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 14:22:09 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:22598 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab0DWSWC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 14:22:02 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Fri, 23 Apr 2010 14:22:01 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-       Paulius Zaleckas <paulius.zaleckas@gmail.com>, dwmw2@infradead.org,
-       jamie@shareable.org, linux-kernel@vger.kernel.org,
-       linux-mtd@lists.infradead.org, u.kleine-koenig@pengutronix.de,
-       simon.kagstrom@netinsight.net, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] MTD: Fix Orion NAND driver compilation with ARM OABI
-In-reply-to: <20100423110037.f8790476.akpm@linux-foundation.org>
-Message-id: <alpine.LFD.2.00.1004231421130.7232@xanadu.home>
-References: <20100325152505.17612.40158.stgit@pauliusz>
- <alpine.LFD.2.00.1003251225500.694@xanadu.home> <4BB33988.9070608@gmail.com>
- <1272023778.6917.6.camel@localhost>
- <alpine.LFD.2.00.1004230853230.7232@xanadu.home>
- <1272035596.11751.1437.camel@localhost.localdomain>
- <alpine.LFD.2.00.1004231308300.7232@xanadu.home>
- <20100423110037.f8790476.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754257Ab0DWS0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 14:26:25 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37496 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752301Ab0DWS0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 14:26:24 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: platform_bus: Allow runtime PM by default
+Date: Fri, 23 Apr 2010 20:26:37 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Greg KH <gregkh@suse.de>, Greg KH <greg@kroah.com>,
+       linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
+References: <1269625370-17754-1-git-send-email-broonie@opensource.wolfsonmicro.com> <20100423162811.GA31231@rakim.wolfsonmicro.main> <201004231840.20041.rjw@sisk.pl>
+In-Reply-To: <201004231840.20041.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004232026.37114.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Apr 2010, Andrew Morton wrote:
-
-> On Fri, 23 Apr 2010 13:50:10 -0400 (EDT)
-> Nicolas Pitre <nico@fluxnic.net> wrote:
-> 
-> > > Fine with me, but not up to me. But I guess Andrew could merge it.
+On Friday 23 April 2010, Rafael J. Wysocki wrote:
+> On Friday 23 April 2010, Mark Brown wrote:
+> > On Fri, Apr 23, 2010 at 09:11:57AM -0700, Greg KH wrote:
+> > > On Fri, Apr 23, 2010 at 04:57:21PM +0100, Mark Brown wrote:
 > > 
-> > The patch is providing a fix to my own code, and I acked it already. The 
-> > root of the problem is a defficiency in gcc, and dwmw2 asked that a PR 
-> > be filled for that and a reference to it added to the patch.  This has 
-> > been done.
+> > > > Turns out it's commit ad53012 "i2c: Fix bus-level power management
+> > > > callbacks" in the PM tree that it depends on.  Does it make sense to
+> > > > merge this via there rather than via your tree?
+> > 
+> > > Why would an i2c specific patch be needed here?  Do you have a pointer
+> > > to that patch?
+> > 
+> > Despite the patch title being I2C specific it actually includes exposing
+> > some of the runtime PM implementation to external users - I2C being the
+> > first user of the generic PM runtime callbacks that I'm trying to use in
+> > the platform device implementation.
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/sfr/linux-next.git;a=commitdiff;h=ad530128cd302e5df930b6eb4d4c7e162c40fcb2;hp=b938b00444e900f1c86e754539e3d00f172c184e
+> > http://git.kernel.org/?p=linux/kernel/git/sfr/linux-next.git;a=commitdiff;h=d690b2cd222afc75320b9b8e9da7df02e9e630ca
+> > 
+> > > And yes, if it depends on something else in the PM tree, feel free to
+> > > send this patch also through it, I have no objection to that.  Rafael,
+> > > care to pick it up?  Mark, you might have to resend it to him.
+> > 
+> > OK, Raphael please let me know if you need a resend.
 > 
-> Well, I merged it and can send it upstream.  But Jamie's observations
-> give me pause?
+> No, thanks, I have your original post.
 
-What observation?  Let me find that.
+Now applied to suspend-2.6/linux-next .
 
-
-Nicolas
+Thanks,
+Rafael
