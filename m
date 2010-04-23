@@ -1,147 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab0DWE7k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 00:59:40 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:57580 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420Ab0DWE7i (ORCPT
+	id S1754584Ab0DWAwq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 20:52:46 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47843 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629Ab0DWAwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 00:59:38 -0400
-From: Dinh.Nguyen@freescale.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-       grant.likely@secretlab.ca, bryan.wu@canonical.com,
-       amit.kucheria@canonical.com, Jun.Li@freescale.com,
-       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv8 2.6.34-rc5 2/5] mx5: Add USB device definitions for Freescale MX51 Babbage HW
-Date: Thu, 22 Apr 2010 23:51:14 -0500
-Message-Id: <1271998277-3949-2-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1271998277-3949-1-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1271998277-3949-1-git-send-email-Dinh.Nguyen@freescale.com>
+	Thu, 22 Apr 2010 20:52:44 -0400
+Date: Fri, 23 Apr 2010 02:52:28 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Farid Hammane <farid.hammane@gmail.com>
+Cc: khali@linux-fr.org, ben-linux@fluff.org, Enrik.Berkhan@ge.com,
+       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] i2c-algo-pca: fix coding style issues in
+	i2c-algo-pca.c
+Message-ID: <20100423005228.GB30452@pengutronix.de>
+References: <1271973715-18331-1-git-send-email-farid.hammane@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jq0ap7NbKX2Kqbes"
+Content-Disposition: inline
+In-Reply-To: <1271973715-18331-1-git-send-email-farid.hammane@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-This patch is part of enabling USB for Freescale MX51 Babbage HW. This
-patch adds device structures for USB Host1 and OTG port, and adds
-clocking information for USB HW.
+--jq0ap7NbKX2Kqbes
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch applies to 2.6.34-rc5.
+On Fri, Apr 23, 2010 at 12:01:55AM +0200, Farid Hammane wrote:
+> This patch fixes coding style issues found by checkpatch.pl.
+> i2c-algo-pca.c has been built successfully after applying this patch.
+>=20
+> Signed-off-by: Farid Hammane <farid.hammane@gmail.com>
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/mach-mx5/clock-mx51.c |    8 ++++++
- arch/arm/mach-mx5/devices.c    |   49 ++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-mx5/devices.h    |    2 +
- 3 files changed, 59 insertions(+), 0 deletions(-)
+Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
 
-diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
-index 8f85f73..dcca330 100644
---- a/arch/arm/mach-mx5/clock-mx51.c
-+++ b/arch/arm/mach-mx5/clock-mx51.c
-@@ -761,6 +761,10 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG9_OFFSET,
- DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
- 	NULL,  NULL, &ipg_clk, NULL);
- 
-+/* USB */
-+DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
-+	NULL, NULL, &pll3_sw_clk, NULL);
-+
- /* FEC */
- DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
- 	NULL,  NULL, &ipg_clk, NULL);
-@@ -778,6 +782,10 @@ static struct clk_lookup lookups[] = {
- 	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
- 	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
- 	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
-+	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
-+	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
-+	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
-+	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
- };
- 
- static void clk_tree_init(void)
-diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
-index 5070ae1..e6262f3 100644
---- a/arch/arm/mach-mx5/devices.c
-+++ b/arch/arm/mach-mx5/devices.c
-@@ -11,6 +11,7 @@
-  */
- 
- #include <linux/platform_device.h>
-+#include <linux/dma-mapping.h>
- #include <linux/gpio.h>
- #include <mach/hardware.h>
- #include <mach/imx-uart.h>
-@@ -92,6 +93,54 @@ struct platform_device mxc_fec_device = {
- 	.resource = mxc_fec_resources,
- };
- 
-+static u64 usb_dma_mask = DMA_BIT_MASK(32);
-+
-+static struct resource usbotg_resources[] = {
-+	{
-+		.start = MX51_OTG_BASE_ADDR,
-+		.end = MX51_OTG_BASE_ADDR + 0x1ff,
-+		.flags = IORESOURCE_MEM,
-+	},
-+	{
-+		.start = MX51_MXC_INT_USB_OTG,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+struct platform_device mxc_usbdr_host_device = {
-+	.name = "mxc-ehci",
-+	.id = 0,
-+	.num_resources = ARRAY_SIZE(usbotg_resources),
-+	.resource = usbotg_resources,
-+	.dev = {
-+		.dma_mask = &usb_dma_mask,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
-+	},
-+};
-+
-+static struct resource usbh1_resources[] = {
-+	{
-+		.start = MX51_OTG_BASE_ADDR + 0x200,
-+		.end = MX51_OTG_BASE_ADDR + 0x200 + 0x1ff,
-+		.flags = IORESOURCE_MEM,
-+	},
-+	{
-+		.start = MX51_MXC_INT_USB_H1,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+struct platform_device mxc_usbh1_device = {
-+	.name = "mxc-ehci",
-+	.id = 1,
-+	.num_resources = ARRAY_SIZE(usbh1_resources),
-+	.resource = usbh1_resources,
-+	.dev = {
-+		.dma_mask = &usb_dma_mask,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
-+	},
-+};
-+
- static struct mxc_gpio_port mxc_gpio_ports[] = {
- 	{
- 		.chip.label = "gpio-0",
-diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
-index f339ab8..95c45f9 100644
---- a/arch/arm/mach-mx5/devices.h
-+++ b/arch/arm/mach-mx5/devices.h
-@@ -2,3 +2,5 @@ extern struct platform_device mxc_uart_device0;
- extern struct platform_device mxc_uart_device1;
- extern struct platform_device mxc_uart_device2;
- extern struct platform_device mxc_fec_device;
-+extern struct platform_device mxc_usbdr_host_device;
-+extern struct platform_device mxc_usbh1_device;
--- 
-1.6.0.4
+Thanks!
 
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--jq0ap7NbKX2Kqbes
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkvQ70wACgkQD27XaX1/VRu3hQCglwx5DdkiNg2ut1tTNDZ9d0+H
+yskAoMhXruMfBo4Mr0uJdVwa6q2731xC
+=QoTD
+-----END PGP SIGNATURE-----
+
+--jq0ap7NbKX2Kqbes--
