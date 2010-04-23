@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757134Ab0DWP3x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 11:29:53 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:45182 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756259Ab0DWP3s (ORCPT
+	id S1756945Ab0DWPbz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 11:31:55 -0400
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:40257 "EHLO
+	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752283Ab0DWPbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 11:29:48 -0400
-Date: Fri, 23 Apr 2010 10:43:49 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Arve Hj??nnev??g <arve@android.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 2/9] PM: suspend_block: Add driver to access suspend
- blockers from user-space
-Message-ID: <20100423084349.GC1573@ucw.cz>
-References: <1271984938-13920-1-git-send-email-arve@android.com>
- <1271984938-13920-2-git-send-email-arve@android.com>
- <1271984938-13920-3-git-send-email-arve@android.com>
+	Fri, 23 Apr 2010 11:31:53 -0400
+Date: Fri, 23 Apr 2010 11:31:45 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Jerome Glisse <glisse@freedesktop.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, DRI <dri-devel@lists.freedesktop.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: 2.6.34-rc5: Reported regressions from 2.6.33
+Message-ID: <20100423153145.GA6072@elliptictech.com>
+Mail-Followup-To: Jerome Glisse <glisse@freedesktop.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	DRI <dri-devel@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Linux ACPI <linux-acpi@vger.kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Kernel Testers List <kernel-testers@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux PM List <linux-pm@lists.linux-foundation.org>,
+	Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh>
+ <20100420135636.GA10674@elliptictech.com>
+ <201004210715.38621.rjw@sisk.pl>
+ <20100421085739.GA2576@barney.localdomain>
+ <20100421165758.GA23565@elliptictech.com>
+ <20100423102338.GA3151@barney.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1271984938-13920-3-git-send-email-arve@android.com>
+In-Reply-To: <20100423102338.GA3151@barney.localdomain>
+Organization: Elliptic Technologies Inc.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> Add a misc device, "suspend_blocker", that allows user-space processes
-> to block auto suspend. The device has ioctls to create a suspend_blocker,
-> and to block and unblock suspend. To delete the suspend_blocker, close
-> the device.
+On 12:23 Fri 23 Apr     , Jerome Glisse wrote:
+> On Wed, Apr 21, 2010 at 12:57:58PM -0400, Nick Bowler wrote:
+> > OK, if the failure is due to userspace is doing Very Bad Things(tm),
+> > catching that seems reasonable.
+> > 
+> > Nevertheless, even if it happened by luck, the result was (ostensibly)
+> > working programs that suddenly break once one "upgrades" to the latest
+> > kernel.  If userspace can't be fixed before 2.6.34 is released, perhaps
+> > a less cryptic log message would be appropriate?
 > 
-> Signed-off-by: Arve Hj??nnev??g <arve@android.com>
+> I pushed fix into mesa for the depth issue i will look into the other
+> one today and likely push kernel fix.
 
-> --- a/Documentation/power/suspend-blockers.txt
-> +++ b/Documentation/power/suspend-blockers.txt
-> @@ -95,3 +95,20 @@ if (list_empty(&state->pending_work))
->  else
->  	suspend_block(&state->suspend_blocker);
->  
-> +User-space API
-> +==============
-> +
-> +To create a suspend_blocker from user-space, open the suspend_blocker device:
-> +    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
-> +then call:
-> +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_INIT(strlen(name)), name);
-
-
-This seems like very wrong idea -- it uses different ioctl number for
-each length AFAICT.
+Great, thanks.  I'll try out the depth fix tonight.
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
