@@ -1,115 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab0DWJ17 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 05:27:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6498 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756388Ab0DWJ14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 05:27:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,261,1270450800"; 
-   d="scan'208";a="792072419"
-Message-ID: <4BD1681A.3010901@intel.com>
-Date: Fri, 23 Apr 2010 02:27:54 -0700
-From: John Fastabend <john.r.fastabend@intel.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1756846Ab0DWJcx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 05:32:53 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:46839 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756812Ab0DWJcv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 05:32:51 -0400
+Date: Fri, 23 Apr 2010 18:32:35 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Will Deacon <will.deacon@arm.com>,
+       Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+       "K . Prasad" <prasad@linux.vnet.ibm.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 3/6] hw-breakpoints: Change/Enforce some breakpoints policies
+Message-ID: <20100423093234.GC11770@linux-sh.org>
+References: <1271999639-23605-1-git-send-regression-fweisbec@gmail.com> <1271999639-23605-4-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-       "tglx@linutronix.de" <tglx@linutronix.de>,
-       "davem@davemloft.net" <davem@davemloft.net>,
-       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH linux-next 1/2] irq: Add CPU mask affinity hint callback
- framework
-References: <20100420180112.1276.11906.stgit@ppwaskie-hc2.jf.intel.com>	 <1271854785.2101.17.camel@achroite.uk.solarflarecom.com>	 <Pine.WNT.4.64.1004220459110.3324@PPWASKIE-MOBL2.amr.corp.intel.com> <1271950900.2095.25.camel@achroite.uk.solarflarecom.com>
-In-Reply-To: <1271950900.2095.25.camel@achroite.uk.solarflarecom.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271999639-23605-4-git-send-regression-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Hutchings wrote:
-> On Thu, 2010-04-22 at 05:11 -0700, Peter P Waskiewicz Jr wrote:
->> On Wed, 21 Apr 2010, Ben Hutchings wrote:
->>
->>> On Tue, 2010-04-20 at 11:01 -0700, Peter P Waskiewicz Jr wrote:
->>>> This patch adds a callback function pointer to the irq_desc
->>>> structure, along with a registration function and a read-only
->>>> proc entry for each interrupt.
->>>>
->>>> This affinity_hint handle for each interrupt can be used by
->>>> underlying drivers that need a better mechanism to control
->>>> interrupt affinity.  The underlying driver can register a
->>>> callback for the interrupt, which will allow the driver to
->>>> provide the CPU mask for the interrupt to anything that
->>>> requests it.  The intent is to extend the userspace daemon,
->>>> irqbalance, to help hint to it a preferred CPU mask to balance
->>>> the interrupt into.
->>> Doesn't it make more sense to have the driver follow affinity decisions
->>> made from user-space?  I realise that reallocating queues is disruptive
->>> and we probably don't want irqbalance to trigger that, but there should
->>> be a mechanism for the administrator to trigger it.
->> The driver here would be assisting userspace (irqbalance) to provide 
->> better details how the HW is laid out with respect to flows.  As it stands 
->> today, irqbalance is almost guaranteed to move interrups to CPUs that are 
->> not aligned with where applications are running for network adapters. 
->> This is very apparent when running at speeds in the 10 Gigabit range, or 
->> even multiple 1 Gigabit ports running at the same time.
-> 
-> I'm well aware that irqbalance isn't making good decisions at the
-> moment.  The question is whether this will really help irqbalance to do
-> better.
-> 
+On Fri, Apr 23, 2010 at 07:13:56AM +0200, Frederic Weisbecker wrote:
+> diff --git a/arch/sh/kernel/hw_breakpoint.c b/arch/sh/kernel/hw_breakpoint.c
+> index 675eea7..2d44a2d 100644
+> --- a/arch/sh/kernel/hw_breakpoint.c
+> +++ b/arch/sh/kernel/hw_breakpoint.c
+> @@ -120,25 +120,16 @@ static int get_hbp_len(u16 hbp_len)
+>  }
+>  
+>  /*
+> - * Check for virtual address in user space.
+> - */
+> -int arch_check_va_in_userspace(unsigned long va, u16 hbp_len)
+> -{
+> -	unsigned int len;
+> -
+> -	len = get_hbp_len(hbp_len);
+> -
+> -	return (va <= TASK_SIZE - len);
+> -}
+> -
+> -/*
+>   * Check for virtual address in kernel space.
+>   */
 
-FCoE is one example where these hints can really help irqbalance make 
-good decisions.  By aligning the interrupt affinity with the FCoE 
-receive processing thread we can avoid context switching from the NET_RX
-softirq to the receive processing thread.
+We were also using the va_in_userspace check for the case of signal
+delivery, so I've just inverted the test for that. Perhaps there's a
+cleaner way to handle it, though.
 
-Because the base driver knows which rx rings are being used for FCoE in 
-a particular configuration and their corresponding vectors it seems to 
-be in the best position to provide good hints to irqbalance.  Also if 
-the mapping changes at some point the base driver will be aware of it.
+Other than that, everything seems to work ok. The ksym tracer and ptrace
+tests still pass at least. Feel free to add my Tested/Acked-by on the
+rest if you're respinning it at some point.
 
-> [...]
->>> This just assigns IRQs to the first n CPU threads.  Depending on the
->>> enumeration order, this might result in assigning an IRQ to each of 2
->>> threads on a core while leaving other cores unused!
->> This ixgbe patch is only meant to be an example of how you could use it. 
->> I didn't hammer out all the corner cases of interrupt alignment in it yet. 
->> However, ixgbe is already aligning Tx flows onto the CPU/queue pair the Tx 
->> occurred (i.e. Tx session from CPU 4 will be queued on Tx queue 4),
-> [...]
-> 
-> OK, now I remember ixgbe has this odd select_queue() implementation.
-> But this behaviour can result in reordering whenever a user thread
-> migrates, and in any case Dave discourages people from setting
-> select_queue().  So I see that these changes would be useful for ixgbe
-> (together with an update to irqbalance), but they don't seem to fit the
-> general direction of multiqueue networking on Linux.
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 
-For DCB setting select_queue() is useful because we want to map traffic 
-types to specific tx queues not hash them across all queues.  In this 
-case where we are placing specific traffic on specific queues it also 
-makes sense to align the interrupts for some types such as FCoE.  There 
-shouldn't be any issues with user thread migration in this specific example.
+---
 
-> 
-> (Actually, the hints seem to be incomplete.  If there are more than 16
-> CPU threads then multiple CPU threads can map to the same queues, but it
-> looks like you only include the first in the queue's hint.)
-> 
-> An alternate approach is to use the RX queue index to drive TX queue
-> selection.  I posted a patch to do that earlier this week.  However I
-> haven't yet had a chance to try that on a suitably large system.
->
-
-I'll post an FCoE example patch soon and take a closer look at your 
-patch, but mapping TX/RX queues in sock's won't help for cases like FCoE.
-
-Thanks,
-John.
-
+diff --git a/arch/sh/include/asm/hw_breakpoint.h b/arch/sh/include/asm/hw_breakpoint.h
+index 4d5e514..89890f6 100644
+--- a/arch/sh/include/asm/hw_breakpoint.h
++++ b/arch/sh/include/asm/hw_breakpoint.h
+@@ -54,8 +54,6 @@ static inline int hw_breakpoint_slots(int type)
+ /* arch/sh/kernel/hw_breakpoint.c */
+ extern int arch_check_bp_in_kernelspace(struct perf_event *bp);
+ extern int arch_validate_hwbkpt_settings(struct perf_event *bp);
+-extern int arch_validate_hwbkpt_settings(struct perf_event *bp,
+-					 struct task_struct *tsk);
+ extern int hw_breakpoint_exceptions_notify(struct notifier_block *unused,
+ 					   unsigned long val, void *data);
+ 
+diff --git a/arch/sh/kernel/hw_breakpoint.c b/arch/sh/kernel/hw_breakpoint.c
+index 67564e3..efae6ab 100644
+--- a/arch/sh/kernel/hw_breakpoint.c
++++ b/arch/sh/kernel/hw_breakpoint.c
+@@ -344,8 +344,7 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
+ 		perf_bp_event(bp, args->regs);
+ 
+ 		/* Deliver the signal to userspace */
+-		if (arch_check_va_in_userspace(bp->attr.bp_addr,
+-					       bp->attr.bp_len)) {
++		if (!arch_check_bp_in_kernelspace(bp)) {
+ 			siginfo_t info;
+ 
+ 			info.si_signo = args->signr;
