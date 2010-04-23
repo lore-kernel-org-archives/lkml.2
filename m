@@ -1,286 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756472Ab0DWIAr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 04:00:47 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:41841 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385Ab0DWIAk (ORCPT
+	id S1756541Ab0DWIBT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 04:01:19 -0400
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:40828 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756426Ab0DWIAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 04:00:40 -0400
+	Fri, 23 Apr 2010 04:00:44 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 02/14] m68k: amiga - Zorro bus modalias support
-Date: Fri, 23 Apr 2010 10:00:23 +0200
-Message-Id: <1272009635-6504-3-git-send-email-geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+       linux-ide@vger.kernel.org
+Subject: [PATCH 09/14] m68k: amiga - Amiga Gayle IDE platform device conversion
+Date: Fri, 23 Apr 2010 10:00:30 +0200
+Message-Id: <1272009635-6504-10-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1272009635-6504-2-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1272009635-6504-9-git-send-email-geert@linux-m68k.org>
 References: <1272009635-6504-1-git-send-email-geert@linux-m68k.org>
  <1272009635-6504-2-git-send-email-geert@linux-m68k.org>
+ <1272009635-6504-3-git-send-email-geert@linux-m68k.org>
+ <1272009635-6504-4-git-send-email-geert@linux-m68k.org>
+ <1272009635-6504-5-git-send-email-geert@linux-m68k.org>
+ <1272009635-6504-6-git-send-email-geert@linux-m68k.org>
+ <1272009635-6504-7-git-send-email-geert@linux-m68k.org>
+ <1272009635-6504-8-git-send-email-geert@linux-m68k.org>
+ <1272009635-6504-9-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Amiga Zorro bus modalias and uevent support
-
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-ide@vger.kernel.org
 ---
- drivers/net/a2065.c             |    1 +
- drivers/net/ariadne.c           |    1 +
- drivers/net/hydra.c             |    1 +
- drivers/net/zorro8390.c         |    1 +
- drivers/scsi/zorro7xx.c         |    1 +
- drivers/video/cirrusfb.c        |    1 +
- drivers/video/fm2fb.c           |    1 +
- drivers/zorro/zorro-driver.c    |   24 ++++++++++++++++++++++++
- drivers/zorro/zorro-sysfs.c     |   11 +++++++++++
- include/linux/mod_devicetable.h |   10 ++++++++++
- include/linux/zorro.h           |   13 +------------
- scripts/mod/file2alias.c        |   15 +++++++++++++++
- 12 files changed, 68 insertions(+), 12 deletions(-)
+ arch/m68k/amiga/platform.c       |   63 ++++++++++++++++-
+ arch/m68k/include/asm/amigayle.h |    6 ++
+ drivers/ide/gayle.c              |  150 +++++++++++++++++++++----------------
+ 3 files changed, 153 insertions(+), 66 deletions(-)
 
-diff --git a/drivers/net/a2065.c b/drivers/net/a2065.c
-index 9c08374..099f4fd 100644
---- a/drivers/net/a2065.c
-+++ b/drivers/net/a2065.c
-@@ -694,6 +694,7 @@ static struct zorro_device_id a2065_zorro_tbl[] __devinitdata = {
- 	{ ZORRO_PROD_AMERISTAR_A2065 },
- 	{ 0 }
- };
-+MODULE_DEVICE_TABLE(zorro, a2065_zorro_tbl);
+diff --git a/arch/m68k/amiga/platform.c b/arch/m68k/amiga/platform.c
+index 027e4ca..907f6f5 100644
+--- a/arch/m68k/amiga/platform.c
++++ b/arch/m68k/amiga/platform.c
+@@ -11,6 +11,7 @@
+ #include <linux/zorro.h>
  
- static struct zorro_driver a2065_driver = {
- 	.name		= "a2065",
-diff --git a/drivers/net/ariadne.c b/drivers/net/ariadne.c
-index 29e53eb..47bfa37 100644
---- a/drivers/net/ariadne.c
-+++ b/drivers/net/ariadne.c
-@@ -147,6 +147,7 @@ static struct zorro_device_id ariadne_zorro_tbl[] __devinitdata = {
-     { ZORRO_PROD_VILLAGE_TRONIC_ARIADNE },
-     { 0 }
- };
-+MODULE_DEVICE_TABLE(zorro, ariadne_zorro_tbl);
+ #include <asm/amigahw.h>
++#include <asm/amigayle.h>
  
- static struct zorro_driver ariadne_driver = {
-     .name	= "ariadne",
-diff --git a/drivers/net/hydra.c b/drivers/net/hydra.c
-index b96cf2d..dd3de56 100644
---- a/drivers/net/hydra.c
-+++ b/drivers/net/hydra.c
-@@ -72,6 +72,7 @@ static struct zorro_device_id hydra_zorro_tbl[] __devinitdata = {
-     { ZORRO_PROD_HYDRA_SYSTEMS_AMIGANET },
-     { 0 }
- };
-+MODULE_DEVICE_TABLE(zorro, hydra_zorro_tbl);
  
- static struct zorro_driver hydra_driver = {
-     .name	= "hydra",
-diff --git a/drivers/net/zorro8390.c b/drivers/net/zorro8390.c
-index 3926b2a..de28bfc 100644
---- a/drivers/net/zorro8390.c
-+++ b/drivers/net/zorro8390.c
-@@ -102,6 +102,7 @@ static struct zorro_device_id zorro8390_zorro_tbl[] __devinitdata = {
-     { ZORRO_PROD_INDIVIDUAL_COMPUTERS_X_SURF, },
-     { 0 }
- };
-+MODULE_DEVICE_TABLE(zorro, zorro8390_zorro_tbl);
+ #ifdef CONFIG_ZORRO
+@@ -55,7 +56,24 @@ static int __init amiga_init_bus(void)
  
- static struct zorro_driver zorro8390_driver = {
-     .name	= "zorro8390",
-diff --git a/drivers/scsi/zorro7xx.c b/drivers/scsi/zorro7xx.c
-index 64d40a2..b416fa4 100644
---- a/drivers/scsi/zorro7xx.c
-+++ b/drivers/scsi/zorro7xx.c
-@@ -68,6 +68,7 @@ static struct zorro_device_id zorro7xx_zorro_tbl[] __devinitdata = {
- 	},
- 	{ 0 }
- };
-+MODULE_DEVICE_TABLE(zorro, zorro7xx_zorro_tbl);
+ subsys_initcall(amiga_init_bus);
  
- static int __devinit zorro7xx_init_one(struct zorro_dev *z,
- 				       const struct zorro_device_id *ent)
-diff --git a/drivers/video/cirrusfb.c b/drivers/video/cirrusfb.c
-index 8a87602..bf19143 100644
---- a/drivers/video/cirrusfb.c
-+++ b/drivers/video/cirrusfb.c
-@@ -298,6 +298,7 @@ static const struct zorro_device_id cirrusfb_zorro_table[] = {
- 	},
- 	{ 0 }
- };
-+MODULE_DEVICE_TABLE(zorro, cirrusfb_zorro_table);
+-#endif /* CONFIG_ZORRO */
++
++static int z_dev_present(zorro_id id)
++{
++	unsigned int i;
++
++	for (i = 0; i < zorro_num_autocon; i++)
++		if (zorro_autocon[i].rom.er_Manufacturer == ZORRO_MANUF(id) &&
++		    zorro_autocon[i].rom.er_Product == ZORRO_PROD(id))
++			return 1;
++
++	return 0;
++}
++
++#else /* !CONFIG_ZORRO */
++
++static inline int z_dev_present(zorro_id id) { return 0; }
++
++#endif /* !CONFIG_ZORRO */
  
- static const struct {
- 	zorro_id id2;
-diff --git a/drivers/video/fm2fb.c b/drivers/video/fm2fb.c
-index 6c91c61..1b0feb8 100644
---- a/drivers/video/fm2fb.c
-+++ b/drivers/video/fm2fb.c
-@@ -219,6 +219,7 @@ static struct zorro_device_id fm2fb_devices[] __devinitdata = {
- 	{ ZORRO_PROD_HELFRICH_RAINBOW_II },
- 	{ 0 }
- };
-+MODULE_DEVICE_TABLE(zorro, fm2fb_devices);
  
- static struct zorro_driver fm2fb_driver = {
- 	.name		= "fm2fb",
-diff --git a/drivers/zorro/zorro-driver.c b/drivers/zorro/zorro-driver.c
-index e6c4390..aeb0615 100644
---- a/drivers/zorro/zorro-driver.c
-+++ b/drivers/zorro/zorro-driver.c
-@@ -137,10 +137,34 @@ static int zorro_bus_match(struct device *dev, struct device_driver *drv)
+ static const struct resource a3000_scsi_resource __initconst = {
+@@ -72,8 +90,36 @@ static const struct resource a4000t_scsi_resource __initconst = {
+ };
+ 
+ 
++static const struct resource a1200_ide_resource __initconst = {
++	.start	= 0xda0000,
++	.end	= 0xda1fff,
++	.flags	= IORESOURCE_MEM,
++};
++
++static const struct gayle_ide_platform_data a1200_ide_pdata __initconst = {
++	.base		= 0xda0000,
++	.irqport	= 0xda9000,
++	.explicit_ack	= 1,
++};
++
++
++static const struct resource a4000_ide_resource __initconst = {
++	.start	= 0xdd2000,
++	.end	= 0xdd3fff,
++	.flags	= IORESOURCE_MEM,
++};
++
++static const struct gayle_ide_platform_data a4000_ide_pdata __initconst = {
++	.base		= 0xdd2020,
++	.irqport	= 0xdd3020,
++	.explicit_ack	= 0,
++};
++
++
+ static int __init amiga_init_devices(void)
+ {
++	struct platform_device *pdev;
++
+ 	if (!MACH_IS_AMIGA)
+ 		return -ENODEV;
+ 
+@@ -99,6 +145,21 @@ static int __init amiga_init_devices(void)
+ 		platform_device_register_simple("amiga-a4000t-scsi", -1,
+ 						&a4000t_scsi_resource, 1);
+ 
++	if (AMIGAHW_PRESENT(A1200_IDE) ||
++	    z_dev_present(ZORRO_PROD_MTEC_VIPER_MK_V_E_MATRIX_530_SCSI_IDE)) {
++		pdev = platform_device_register_simple("amiga-gayle-ide", -1,
++						       &a1200_ide_resource, 1);
++		platform_device_add_data(pdev, &a1200_ide_pdata,
++					 sizeof(a1200_ide_pdata));
++	}
++
++	if (AMIGAHW_PRESENT(A4000_IDE)) {
++		pdev = platform_device_register_simple("amiga-gayle-ide", -1,
++						       &a4000_ide_resource, 1);
++		platform_device_add_data(pdev, &a4000_ide_pdata,
++					 sizeof(a4000_ide_pdata));
++	}
++
  	return 0;
  }
  
-+static int zorro_uevent(struct device *dev, struct kobj_uevent_env *env)
-+{
-+#ifdef CONFIG_HOTPLUG
-+	struct zorro_dev *z;
-+
-+	if (!dev)
-+		return -ENODEV;
-+
-+	z = to_zorro_dev(dev);
-+	if (!z)
-+		return -ENODEV;
-+
-+	if (add_uevent_var(env, "ZORRO_ID=%08X", z->id) ||
-+	    add_uevent_var(env, "ZORRO_SLOT_NAME=%s", z->dev.bus_id) ||
-+	    add_uevent_var(env, "ZORRO_SLOT_ADDR=%04X", z->slotaddr) ||
-+	    add_uevent_var(env, "MODALIAS=" ZORRO_DEVICE_MODALIAS_FMT, z->id))
-+		return -ENOMEM;
-+
-+	return 0;
-+#else /* !CONFIG_HOTPLUG */
-+	return -ENODEV;
-+#endif /* !CONFIG_HOTPLUG */
-+}
+diff --git a/arch/m68k/include/asm/amigayle.h b/arch/m68k/include/asm/amigayle.h
+index bb5a6aa..a01453d 100644
+--- a/arch/m68k/include/asm/amigayle.h
++++ b/arch/m68k/include/asm/amigayle.h
+@@ -104,4 +104,10 @@ struct GAYLE {
+ #define GAYLE_CFG_250NS		0x00
+ #define GAYLE_CFG_720NS		0x0c
  
- struct bus_type zorro_bus_type = {
- 	.name	= "zorro",
- 	.match	= zorro_bus_match,
-+	.uevent	= zorro_uevent,
- 	.probe	= zorro_device_probe,
- 	.remove	= zorro_device_remove,
- };
-diff --git a/drivers/zorro/zorro-sysfs.c b/drivers/zorro/zorro-sysfs.c
-index 5290552..7139ec2 100644
---- a/drivers/zorro/zorro-sysfs.c
-+++ b/drivers/zorro/zorro-sysfs.c
-@@ -77,6 +77,16 @@ static struct bin_attribute zorro_config_attr = {
- 	.read = zorro_read_config,
- };
- 
-+static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
-+{
-+	struct zorro_dev *z = to_zorro_dev(dev);
-+
-+	return sprintf(buf, ZORRO_DEVICE_MODALIAS_FMT "\n", z->id);
-+}
-+
-+static DEVICE_ATTR(modalias, S_IRUGO, modalias_show, NULL);
-+
- void zorro_create_sysfs_dev_files(struct zorro_dev *z)
- {
- 	struct device *dev = &z->dev;
-@@ -88,6 +98,7 @@ void zorro_create_sysfs_dev_files(struct zorro_dev *z)
- 	device_create_file(dev, &dev_attr_slotaddr);
- 	device_create_file(dev, &dev_attr_slotsize);
- 	device_create_file(dev, &dev_attr_resource);
-+	device_create_file(dev, &dev_attr_modalias);
- 	sysfs_create_bin_file(&dev->kobj, &zorro_config_attr);
- }
- 
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index 97b91d1..45026a0 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -447,4 +447,14 @@ struct dmi_system_id {
- 
- #define DMI_MATCH(a, b)	{ a, b }
- 
-+struct zorro_device_id {
-+	__u32 id;			/* Device ID or ZORRO_WILDCARD */
-+	kernel_ulong_t driver_data;	/* Data private to the driver */
++struct gayle_ide_platform_data {
++	unsigned long base;
++	unsigned long irqport;
++	int explicit_ack;	/* A1200 IDE needs explicit ack */
 +};
 +
-+#define ZORRO_WILDCARD			(0xffffffff)	/* not official */
-+
-+#define ZORRO_DEVICE_MODALIAS_FMT	"zorro:i%08X"
-+
-+
- #endif /* LINUX_MOD_DEVICETABLE_H */
-diff --git a/include/linux/zorro.h b/include/linux/zorro.h
-index 913bfc2..908db1b 100644
---- a/include/linux/zorro.h
-+++ b/include/linux/zorro.h
-@@ -38,8 +38,6 @@
- typedef __u32 zorro_id;
- 
- 
--#define ZORRO_WILDCARD		(0xffffffff)	/* not official */
--
- /* Include the ID list */
- #include <linux/zorro_ids.h>
- 
-@@ -116,6 +114,7 @@ struct ConfigDev {
- 
+ #endif /* asm-m68k/amigayle.h */
+diff --git a/drivers/ide/gayle.c b/drivers/ide/gayle.c
+index b9e517d..1d4c18e 100644
+--- a/drivers/ide/gayle.c
++++ b/drivers/ide/gayle.c
+@@ -16,6 +16,7 @@
  #include <linux/init.h>
- #include <linux/ioport.h>
-+#include <linux/mod_devicetable.h>
+ #include <linux/zorro.h>
+ #include <linux/module.h>
++#include <linux/platform_device.h>
  
- #include <asm/zorro.h>
- 
-@@ -155,16 +154,6 @@ extern struct bus_type zorro_bus_type;
+ #include <asm/setup.h>
+ #include <asm/amigahw.h>
+@@ -24,15 +25,6 @@
  
  
      /*
--     *  Zorro device IDs
+-     *  Bases of the IDE interfaces
 -     */
 -
--struct zorro_device_id {
--	zorro_id id;			/* Device ID or ZORRO_WILDCARD */
--	unsigned long driver_data;	/* Data private to the driver */
--};
+-#define GAYLE_BASE_4000	0xdd2020	/* A4000/A4000T */
+-#define GAYLE_BASE_1200	0xda0000	/* A1200/A600 and E-Matrix 530 */
 -
+-#define GAYLE_IDEREG_SIZE	0x2000
 -
 -    /*
-      *  Zorro device drivers
+      *  Offsets from one of the above bases
       */
  
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index d4dc222..d8cbbf2 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -696,6 +696,17 @@ static int do_dmi_entry(const char *filename, struct dmi_system_id *id,
- 	strcat(alias, ":");
- 	return 1;
- }
-+
-+/* Looks like: zorro:iN. */
-+static int do_zorro_entry(const char *filename, struct zorro_device_id *id,
-+			  char *alias)
-+{
-+	id->id = TO_NATIVE(id->id);
-+	strcpy(alias, "zorro:");
-+	ADD(alias, "i", id->id != ZORRO_WILDCARD, id->id);
-+	return 1;
-+}
-+
- /* Ignore any prefix, eg. some architectures prepend _ */
- static inline int sym_is(const char *symbol, const char *name)
+@@ -68,20 +60,20 @@ MODULE_PARM_DESC(doubler, "enable support for IDE doublers");
+ 
+ static int gayle_test_irq(ide_hwif_t *hwif)
  {
-@@ -835,6 +846,10 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
- 		do_table(symval, sym->st_size,
- 			 sizeof(struct dmi_system_id), "dmi",
- 			 do_dmi_entry, mod);
-+	else if (sym_is(symname, "__mod_zorro_device_table"))
-+		do_table(symval, sym->st_size,
-+			 sizeof(struct zorro_device_id), "zorro",
-+			 do_zorro_entry, mod);
- 	free(zeros);
+-    unsigned char ch;
++	unsigned char ch;
+ 
+-    ch = z_readb(hwif->io_ports.irq_addr);
+-    if (!(ch & GAYLE_IRQ_IDE))
+-	return 0;
+-    return 1;
++	ch = z_readb(hwif->io_ports.irq_addr);
++	if (!(ch & GAYLE_IRQ_IDE))
++		return 0;
++	return 1;
  }
  
+ static void gayle_a1200_clear_irq(ide_drive_t *drive)
+ {
+-    ide_hwif_t *hwif = drive->hwif;
++	ide_hwif_t *hwif = drive->hwif;
+ 
+-    (void)z_readb(hwif->io_ports.status_addr);
+-    z_writeb(0x7c, hwif->io_ports.irq_addr);
++	(void)z_readb(hwif->io_ports.status_addr);
++	z_writeb(0x7c, hwif->io_ports.irq_addr);
+ }
+ 
+ static void __init gayle_setup_ports(struct ide_hw *hw, unsigned long base,
+@@ -122,64 +114,92 @@ static const struct ide_port_info gayle_port_info = {
+      *  Probe for a Gayle IDE interface (and optionally for an IDE doubler)
+      */
+ 
+-static int __init gayle_init(void)
++static int __init amiga_gayle_ide_probe(struct platform_device *pdev)
+ {
+-    unsigned long phys_base, res_start, res_n;
+-    unsigned long base, ctrlport, irqport;
+-    int a4000, i, rc;
+-    struct ide_hw hw[GAYLE_NUM_HWIFS], *hws[GAYLE_NUM_HWIFS];
+-    struct ide_port_info d = gayle_port_info;
+-
+-    if (!MACH_IS_AMIGA)
+-	return -ENODEV;
+-
+-    if ((a4000 = AMIGAHW_PRESENT(A4000_IDE)) || AMIGAHW_PRESENT(A1200_IDE))
+-	goto found;
+-
+-#ifdef CONFIG_ZORRO
+-    if (zorro_find_device(ZORRO_PROD_MTEC_VIPER_MK_V_E_MATRIX_530_SCSI_IDE,
+-			  NULL))
+-	goto found;
+-#endif
+-    return -ENODEV;
+-
+-found:
+-	printk(KERN_INFO "ide: Gayle IDE controller (A%d style%s)\n",
+-			 a4000 ? 4000 : 1200,
+-			 ide_doubler ? ", IDE doubler" : "");
+-
+-	if (a4000) {
+-	    phys_base = GAYLE_BASE_4000;
+-	    irqport = (unsigned long)ZTWO_VADDR(GAYLE_IRQ_4000);
+-	    d.port_ops = &gayle_a4000_port_ops;
+-	} else {
+-	    phys_base = GAYLE_BASE_1200;
+-	    irqport = (unsigned long)ZTWO_VADDR(GAYLE_IRQ_1200);
+-	    d.port_ops = &gayle_a1200_port_ops;
++	struct resource *res;
++	struct gayle_ide_platform_data *pdata;
++	unsigned long base, ctrlport, irqport;
++	unsigned int i;
++	int error;
++	struct ide_hw hw[GAYLE_NUM_HWIFS], *hws[GAYLE_NUM_HWIFS];
++	struct ide_port_info d = gayle_port_info;
++	struct ide_host *host;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		return -ENODEV;
++
++	if (!request_mem_region(res->start, resource_size(res), "IDE"))
++		return -EBUSY;
++
++	pdata = pdev->dev.platform_data;
++	pr_info("ide: Gayle IDE controller (A%u style%s)\n",
++		pdata->explicit_ack ? 1200 : 4000,
++		ide_doubler ? ", IDE doubler" : "");
++
++	base = (unsigned long)ZTWO_VADDR(pdata->base);
++	ctrlport = 0;
++	irqport = (unsigned long)ZTWO_VADDR(pdata->irqport);
++{
++	// FIXME
++	if (pdata->explicit_ack)
++		d.port_ops = &gayle_a1200_port_ops;
++	else
++		d.port_ops = &gayle_a4000_port_ops;
++}
++
++	for (i = 0; i < GAYLE_NUM_PROBE_HWIFS; i++, base += GAYLE_NEXT_PORT) {
++		if (GAYLE_HAS_CONTROL_REG)
++			ctrlport = base + GAYLE_CONTROL;
++
++		gayle_setup_ports(&hw[i], base, ctrlport, irqport);
++		hws[i] = &hw[i];
+ 	}
+ 
+-	res_start = ((unsigned long)phys_base) & ~(GAYLE_NEXT_PORT-1);
+-	res_n = GAYLE_IDEREG_SIZE;
++	error = ide_host_add(&d, hws, i, &host);
++	if (error)
++		goto out;
+ 
+-	if (!request_mem_region(res_start, res_n, "IDE"))
+-		return -EBUSY;
++	platform_set_drvdata(pdev, host);
++	return 0;
++
++out:
++	release_mem_region(res->start, resource_size(res));
++	return error;
++}
++
++static int __exit amiga_gayle_ide_remove(struct platform_device *pdev)
++{
++	struct ide_host *host = platform_get_drvdata(pdev);
++	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 
+-    for (i = 0; i < GAYLE_NUM_PROBE_HWIFS; i++) {
+-	base = (unsigned long)ZTWO_VADDR(phys_base + i * GAYLE_NEXT_PORT);
+-	ctrlport = GAYLE_HAS_CONTROL_REG ? (base + GAYLE_CONTROL) : 0;
++	ide_host_remove(host);
++	release_mem_region(res->start, resource_size(res));
++	return 0;
++}
+ 
+-	gayle_setup_ports(&hw[i], base, ctrlport, irqport);
++static struct platform_driver amiga_gayle_ide_driver = {
++	.remove = __exit_p(amiga_gayle_ide_remove),
++	.driver   = {
++		.name	= "amiga-gayle-ide",
++		.owner	= THIS_MODULE,
++	},
++};
+ 
+-	hws[i] = &hw[i];
+-    }
++static int __init amiga_gayle_ide_init(void)
++{
++	return platform_driver_probe(&amiga_gayle_ide_driver,
++				     amiga_gayle_ide_probe);
++}
+ 
+-    rc = ide_host_add(&d, hws, i, NULL);
+-    if (rc)
+-	release_mem_region(res_start, res_n);
++module_init(amiga_gayle_ide_init);
+ 
+-    return rc;
++static void __exit amiga_gayle_ide_exit(void)
++{
++	platform_driver_unregister(&amiga_gayle_ide_driver);
+ }
+ 
+-module_init(gayle_init);
++module_exit(amiga_gayle_ide_exit);
+ 
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:amiga-gayle-ide");
 -- 
 1.6.0.4
 
