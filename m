@@ -1,118 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082Ab0DWQ3j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 12:29:39 -0400
-Received: from mtagate1.de.ibm.com ([195.212.17.161]:47507 "EHLO
-	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab0DWQ3h (ORCPT
+	id S1758086Ab0DWQb6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 12:31:58 -0400
+Received: from relay.ihostexchange.net ([66.46.182.52]:1314 "EHLO
+	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab0DWQb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 12:29:37 -0400
-Date: Fri, 23 Apr 2010 18:29:33 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Johannes Stezenbach <js@sig21.net>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
-       Magnus Damm <damm@opensource.se>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Q: sched_clock() vs. clocksource, how to implement correctly
-Message-ID: <20100423182933.0df45b53@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <20100423150917.GA25714@sig21.net>
-References: <20100423150917.GA25714@sig21.net>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 23 Apr 2010 12:31:57 -0400
+Message-ID: <4BD1CB60.20209@VirtualLogix.com>
+Date: Fri, 23 Apr 2010 18:31:28 +0200
+From: Eric Lescouet <Eric.Lescouet@VirtualLogix.com>
+User-Agent: Thunderbird 2.0.0.19 (X11/20090105)
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: USBIP (staging) driver's dependency on drivers/usb/core internal
+ headers
+References: <20100423150734.GA7778@kroah.com> <Pine.LNX.4.44L0.1004231140190.1777-100000@iolanthe.rowland.org> <20100423161455.GA21129@kroah.com>
+In-Reply-To: <20100423161455.GA21129@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Apr 2010 17:09:17 +0200
-Johannes Stezenbach <js@sig21.net> wrote:
-
-> I'm trying to figure out how to correctly implement sched_clock()
-> for an ARM board.  However, looking at existing implementations
-> leaves me rather confused.
+Greg KH wrote:
+> On Fri, Apr 23, 2010 at 11:52:26AM -0400, Alan Stern wrote:
+>> On Fri, 23 Apr 2010, Greg KH wrote:
+>>
+>>> On Fri, Apr 23, 2010 at 12:44:11PM +0200, Eric Lescouet wrote:
+>>>> Hi,
+>>>>
+>>>> The USBIP modules (and some others) have a direct dependency on the following headers:
+>>>> - drivers/usb/core/hdc.h (struct usb_hcd and various routines)
+>>>> - drivers/usb/core/hub.h (couple of constants)
+>>>> Because those headers are not part of include/, it makes it quite difficult
+>>>> to compile them as standalone modules (e.g.: against pre-compiled kernel).
+>>> Then don't do that :)
+>>>
+>>>> hdc.c and hub.c are relatively self-contained and could be moved to e.g.: include/linux/usb/.
+>>>>
+>>>> What do you think?
+>>> I think the code needs to be cleaned up and merged to the main part of
+>>> the kernel tree, then this wouldn't be an issue, right?
+>> I think moving hub.h into include/linux/usb would be a good thing.  
+>> However, if this is done then the file contents should be rearranged 
+>> slightly:
+>>
+>> 	Everything from the "Hub request types" comment through the
+>> 	various HUB_TTTT_* definitions (except the line declaring
+>> 	struct usb_device) should be extracted into a separate file.
+>> 	This new file could be called ch11.h (because it contains 
+>> 	constants and structures from Chapter 11 of the USB 2.0 spec, 
+>> 	just as ch9.h contains information from Chapter 9) or it
+>> 	could keep the name hub.h.  It could even be exported as
+>> 	a userspace header file.
+>>
+>> 	The remainder (not very much) should be merged into hcd.h.
+>>
+>> Once that's done, moving hcd.h into include/linux/usb would be a 
+>> reasonable thing to do as well.  It is shared between usbcore and the 
+>> HCDs, so it really does belong in a more public location.
 > 
-> E.g. arch/arm/mach-u300/timer.c has
+> Ok, fair enough.  Patches are always welcome :)
 > 
-> static cycle_t u300_get_cycles(struct clocksource *cs)
-> {
-> 	return (cycles_t) readl(U300_TIMER_APP_VBASE + U300_TIMER_APP_GPT2CC);
-> }
+> thanks,
 > 
-> static struct clocksource clocksource_u300_1mhz = {
-> 	.name           = "GPT2",
-> 	.rating         = 300, /* Reasonably fast and accurate clock source */
-> 	.read           = u300_get_cycles,
-> 	.mask           = CLOCKSOURCE_MASK(32), /* 32 bits */
-> 	/* 22 calculated using the algorithm in arch/mips/kernel/time.c */
-> 	.shift          = 22,
-> 	.flags          = CLOCK_SOURCE_IS_CONTINUOUS,
-> };
-> 
-> unsigned long long notrace sched_clock(void)
-> {
-> 	return clocksource_cyc2ns(clocksource_u300_1mhz.read(
-> 				  &clocksource_u300_1mhz),
-> 				  clocksource_u300_1mhz.mult,
-> 				  clocksource_u300_1mhz.shift);
-> }
-> 
-> Thus, sched_clock() is based on a 1MHz 32bit counter which wraps
-> after about 71 minutes.  There are a few similar sched_clock()
-> implementations in the tree.
+> greg k-h
 
-Not good.
- 
-> Questions:
-> 
-> - Isn't sched_clock() supposed to be extended to 64bit so
->   that it practically never wraps?
->   (old implementations use cnt32_to_63())
+If I understand correctly, splitting hub.h into hub.h + ch11.h is 
+independent of the move. At the end the 2 (or 3 files) would end up
+into include/linux/usb/.
+correct?
 
-Yes, sched_clock() is supposed to return a monotonic timestamp.
- 
-> - What would be the effect on scheduling when sched_clock() wraps?
+I've tried to move hub.h and hcd.h and to compile the kernel, already.
+Changing the path of the #include directives in ~40 files did the trick.
 
-It would confuse the process accounting and the scheduling I guess.
+Would you like 2 patches (move and then split) or only 1?
 
-> - What is the effect of the sched_clock() frequency on scheduling?
->   Is there a benefit from setting the freq as high as possible?
-
-With a higher frequency the precision of the accounting increases and
-the scheduling fairness increases.
-
-> - Is struct timecounter + struct cyclecounter + timecounter_read()
->   designated way to implement sched_clock() with a 32bit hw counter?
-> 
->   arch/microblaze/kernel/timer.c seems to be the only user
->   of timecounter/cyclecounter in arch/, but I don't get what it does.
-> 
->   Or is it better to stick with cnt32_to_63()?
-
-cnt32_to_63() is a way to extend the 32 bit clocksource to a useable
-sched_clock() provider. One way or the other you have to extend the 32
-bits of the 1MHz counter to something bigger. The obvious way is to
-count the number of wraps and use this number as the upper 32 bits
-just like cnt32_to_63() does. You just have to make sure that the
-clocksource is read frequently enough to get all the wraps. A non-idle
-cpu will tick with HZ frequency and the clock will be read often
-enough, for an idle cpu the maximum sleep time needs to be limited.
-
-> - Also regarding the clocksource.shift value, I found
->   http://lkml.org/lkml/2008/5/8/270 and it seems to suggest
->   to use a low shift value, whereas arch/mips/kernel/time.c
->   seems to result in a large one. Is the posting correct?
-
-Low shift values have the advantage that the 64-bit calculations do not
-overflow so easily. But there are fairly large shift values in use
-(20, 24, even 32 bit) in the current kernel tree, so I wouldn't worry
-about bigger shift values.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Thanks,
+	Eric.
