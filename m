@@ -1,69 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104Ab0DWKuU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 06:50:20 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54808 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756998Ab0DWKuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 06:50:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CisdBKRoRVANY0nQ/Z3pc/+SD/Xu4swspaqFsR8Nz9xSWU2P51cdlF8aL/EttnomaP
-         cZnXbSaAqtV3F/jx4H1oxJhCNVXgPCqf8V7LYxWzlzWaR4ZVErNzM4exCSMc5A8wNKdt
-         nPQg+XXMxULxT2K/NfrfQ/eeQkJ5+dNgwJ0Fw=
-Date: Fri, 23 Apr 2010 13:51:28 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org
-Subject: Re: suppress warning: =?utf-8?B?4oCYcXVv?=
-	=?utf-8?Q?tatypes=E2=80=99?= defined but not used
-Message-ID: <20100423105128.GC3293@swordfish.minsk.epam.com>
-References: <20100422080540.GA3286@swordfish.minsk.epam.com>
- <20100422193148.GG5805@quack.suse.cz>
+	id S1757139Ab0DWKu3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 06:50:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40692 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757112Ab0DWKuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 06:50:25 -0400
+Date: Fri, 23 Apr 2010 10:49:58 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       a.p.zijlstra@chello.nl, chase.douglas@canonical.com, tglx@linutronix.de,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       a.p.zijlstra@chello.nl, tglx@linutronix.de, chase.douglas@canonical.com,
+       mingo@elte.hu
+In-Reply-To: <1271934490.1776.343.camel@laptop>
+References: <1271934490.1776.343.camel@laptop>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Cure load average vs NO_HZ woes
+Message-ID: <tip-74f5187ac873042f502227701ed1727e7c5fbfa9@git.kernel.org>
+Git-Commit-ID: 74f5187ac873042f502227701ed1727e7c5fbfa9
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DSayHWYpDlRfCAAQ"
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100422193148.GG5805@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Apr 2010 10:49:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  74f5187ac873042f502227701ed1727e7c5fbfa9
+Gitweb:     http://git.kernel.org/tip/74f5187ac873042f502227701ed1727e7c5fbfa9
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Thu, 22 Apr 2010 21:50:19 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 23 Apr 2010 11:02:02 +0200
 
---DSayHWYpDlRfCAAQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+sched: Cure load average vs NO_HZ woes
 
-Hello,
-On (04/22/10 21:31), Jan Kara wrote:
-> The patch is fine. Could you please add your Signed-off-by to the patch
-> (see Documentation/SubmittingPatches in case you don't know what it is).
-> Thanks.
->=20
-> 								Honza
-My editor truncated /* List of registered formats */ line in the patch. So
-I resent it (titled as (resent)). Sorry for inattention.
+Chase reported that due to us decrementing calc_load_task prematurely
+(before the next LOAD_FREQ sample), the load average could be scewed
+by as much as the number of CPUs in the machine.
 
+This patch, based on Chase's patch, cures the problem by keeping the
+delta of the CPU going into NO_HZ idle separately and folding that in
+on the next LOAD_FREQ update.
 
-	Sergey
+This restores the balance and we get strict LOAD_FREQ period samples.
 
---DSayHWYpDlRfCAAQ
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
+LKML-Reference: <1271934490.1776.343.camel@laptop>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched.c          |   80 +++++++++++++++++++++++++++++++++++++++-------
+ kernel/sched_idletask.c |    3 +-
+ 2 files changed, 68 insertions(+), 15 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkvRe7AACgkQfKHnntdSXjRdvAP/QuhxxnIPL7bqZ+TKstzjZoDw
-aHRHe4BO48nGhH6kJB4Lery4iZUTEb2llMf5iMluV7yKl6V2PHPuBUchOxCLQxXt
-QmARVohaZ/t7x+AuASVskzYlzMotOcHUY9C0eMjjd65n3q3X5JGuB1pQ3J4A0P04
-/hCDJ2JA50olP26+JGg=
-=a2XX
------END PGP SIGNATURE-----
-
---DSayHWYpDlRfCAAQ--
+diff --git a/kernel/sched.c b/kernel/sched.c
+index de0da71..0cc913a 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1815,7 +1815,7 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
+ }
+ #endif
+ 
+-static void calc_load_account_active(struct rq *this_rq);
++static void calc_load_account_idle(struct rq *this_rq);
+ static void update_sysctl(void);
+ static int get_update_sysctl_factor(void);
+ 
+@@ -2950,6 +2950,61 @@ static unsigned long calc_load_update;
+ unsigned long avenrun[3];
+ EXPORT_SYMBOL(avenrun);
+ 
++static long calc_load_fold_active(struct rq *this_rq)
++{
++	long nr_active, delta = 0;
++
++	nr_active = this_rq->nr_running;
++	nr_active += (long) this_rq->nr_uninterruptible;
++
++	if (nr_active != this_rq->calc_load_active) {
++		delta = nr_active - this_rq->calc_load_active;
++		this_rq->calc_load_active = nr_active;
++	}
++
++	return delta;
++}
++
++#ifdef CONFIG_NO_HZ
++/*
++ * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
++ *
++ * When making the ILB scale, we should try to pull this in as well.
++ */
++static atomic_long_t calc_load_tasks_idle;
++
++static void calc_load_account_idle(struct rq *this_rq)
++{
++	long delta;
++
++	delta = calc_load_fold_active(this_rq);
++	if (delta)
++		atomic_long_add(delta, &calc_load_tasks_idle);
++}
++
++static long calc_load_fold_idle(void)
++{
++	long delta = 0;
++
++	/*
++	 * Its got a race, we don't care...
++	 */
++	if (atomic_long_read(&calc_load_tasks_idle))
++		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
++
++	return delta;
++}
++#else
++static void calc_load_account_idle(struct rq *this_rq)
++{
++}
++
++static inline long calc_load_fold_idle(void)
++{
++	return 0;
++}
++#endif
++
+ /**
+  * get_avenrun - get the load average array
+  * @loads:	pointer to dest load array
+@@ -2996,20 +3051,22 @@ void calc_global_load(void)
+ }
+ 
+ /*
+- * Either called from update_cpu_load() or from a cpu going idle
++ * Called from update_cpu_load() to periodically update this CPU's
++ * active count.
+  */
+ static void calc_load_account_active(struct rq *this_rq)
+ {
+-	long nr_active, delta;
++	long delta;
+ 
+-	nr_active = this_rq->nr_running;
+-	nr_active += (long) this_rq->nr_uninterruptible;
++	if (time_before(jiffies, this_rq->calc_load_update))
++		return;
+ 
+-	if (nr_active != this_rq->calc_load_active) {
+-		delta = nr_active - this_rq->calc_load_active;
+-		this_rq->calc_load_active = nr_active;
++	delta  = calc_load_fold_active(this_rq);
++	delta += calc_load_fold_idle();
++	if (delta)
+ 		atomic_long_add(delta, &calc_load_tasks);
+-	}
++
++	this_rq->calc_load_update += LOAD_FREQ;
+ }
+ 
+ /*
+@@ -3041,10 +3098,7 @@ static void update_cpu_load(struct rq *this_rq)
+ 		this_rq->cpu_load[i] = (old_load*(scale-1) + new_load) >> i;
+ 	}
+ 
+-	if (time_after_eq(jiffies, this_rq->calc_load_update)) {
+-		this_rq->calc_load_update += LOAD_FREQ;
+-		calc_load_account_active(this_rq);
+-	}
++	calc_load_account_active(this_rq);
+ }
+ 
+ #ifdef CONFIG_SMP
+diff --git a/kernel/sched_idletask.c b/kernel/sched_idletask.c
+index bea2b8f..9fa0f40 100644
+--- a/kernel/sched_idletask.c
++++ b/kernel/sched_idletask.c
+@@ -23,8 +23,7 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
+ static struct task_struct *pick_next_task_idle(struct rq *rq)
+ {
+ 	schedstat_inc(rq, sched_goidle);
+-	/* adjust the active tasks as we might go into a long sleep */
+-	calc_load_account_active(rq);
++	calc_load_account_idle(rq);
+ 	return rq->idle;
+ }
+ 
