@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab0DWOKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 10:10:22 -0400
-Received: from mail-out1.informatik.tu-muenchen.de ([131.159.0.8]:51593 "EHLO
-	mail-out1.informatik.tu-muenchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753203Ab0DWOKT (ORCPT
+	id S1752176Ab0DWOOf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 10:14:35 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:49667
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750839Ab0DWOOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 10:10:19 -0400
-Message-ID: <4BD1AA46.2050007@mathtm.de>
-Date: Fri, 23 Apr 2010 16:10:14 +0200
-From: =?UTF-8?B?VGhvbWFzIE3DvGxsZXI=?= <thomas@mathtm.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; de; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
+	Fri, 23 Apr 2010 10:14:33 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432P98dN936eMab9bhzz1202hzz6ff19hz32i2a8h87h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L1C279-02-85S-02
+X-M-MSG: 
+Date: Fri, 23 Apr 2010 16:13:56 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Alexander Graf <agraf@suse.de>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] KVM: SVM: Fix nested nmi handling
+Message-ID: <20100423141355.GD31537@amd.com>
+References: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com>
+ <1271932394-13968-2-git-send-email-joerg.roedel@amd.com>
+ <622FCBB5-826D-4392-A521-7E395507398B@suse.de>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Rusty Russell <rusty@rustcorp.com.au>, Shirley Ma <mashirle@us.ibm.com>,
-       Shirley Ma <xma@us.ibm.com>
-Subject: Re: [Bug #15719] virtio_net causing kernel BUG when running under
- VirtualBox
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.sRH.jRSzLB@tosh>
-In-Reply-To: <YeFfFNFyTSF.A.sRH.jRSzLB@tosh>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <622FCBB5-826D-4392-A521-7E395507398B@suse.de>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 23 Apr 2010 14:13:56.0317 (UTC) FILETIME=[35EB88D0:01CAE2EF]
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed by commit 0e413f22e4c1cbfe12907e462a7d739a2e316f2b.
+On Fri, Apr 23, 2010 at 03:46:07PM +0200, Alexander Graf wrote:
+> 
+> On 22.04.2010, at 12:33, Joerg Roedel wrote:
+> 
+> > The patch introducing nested nmi handling had a bug. The
+> > check does not belong to enable_nmi_window but must be in
+> > nmi_allowed. This patch fixes this.
+> > 
+> > Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> > ---
+> > arch/x86/kvm/svm.c |   16 +++++++++-------
+> > 1 files changed, 9 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> > index ab78eb8..ec20584 100644
+> > --- a/arch/x86/kvm/svm.c
+> > +++ b/arch/x86/kvm/svm.c
+> > @@ -2771,8 +2771,12 @@ static int svm_nmi_allowed(struct kvm_vcpu *vcpu)
+> > {
+> > 	struct vcpu_svm *svm = to_svm(vcpu);
+> > 	struct vmcb *vmcb = svm->vmcb;
+> > -	return !(vmcb->control.int_state & SVM_INTERRUPT_SHADOW_MASK) &&
+> > -		!(svm->vcpu.arch.hflags & HF_NMI_MASK);
+> > +	int ret;
+> > +	ret = !(vmcb->control.int_state & SVM_INTERRUPT_SHADOW_MASK) &&
+> > +	      !(svm->vcpu.arch.hflags & HF_NMI_MASK);
+> > +	ret = ret && gif_set(svm) && nested_svm_nmi(svm);
+> > +
+> > +	return ret;
+> > }
+> > 
+> > static bool svm_get_nmi_mask(struct kvm_vcpu *vcpu)
+> > @@ -2841,11 +2845,9 @@ static void enable_nmi_window(struct kvm_vcpu *vcpu)
+> > 	 * Something prevents NMI from been injected. Single step over possible
+> > 	 * problem (IRET or exception injection or interrupt shadow)
+> > 	 */
+> > -	if (gif_set(svm) && nested_svm_nmi(svm)) {
+> > -		svm->nmi_singlestep = true;
+> > -		svm->vmcb->save.rflags |= (X86_EFLAGS_TF | X86_EFLAGS_RF);
+> > -		update_db_intercept(vcpu);
+> > -	}
+> > +	svm->nmi_singlestep = true;
+> > +	svm->vmcb->save.rflags |= (X86_EFLAGS_TF | X86_EFLAGS_RF);
+> > +	update_db_intercept(vcpu);
+> 
+> So we're always messing with the nested guest state when the host
+> wants to inject an nmi into the l1 guest? Is that safe?
 
-Regards
-Thomas
+Why not? We can't inject an NMI directly into L2 if the nested
+hypervisor intercepts it.
 
-On 20.04.2010 05:19, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.33.  Please verify if it still should be listed and let the tracking team
-> know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15719
-> Subject		: virtio_net causing kernel BUG when running under VirtualBox
-> Submitter	: Thomas Müller <thomas@mathtm.de>
-> Date		: 2010-03-27 14:32 (24 days old)
-> First-Bad-Commit: http://kernel.org/git/linus/9ab86bbcf8be755256f0a5e994e0b38af6b4d399
-> Message-ID	: <4BAE1707.2050803@mathtm.de>
-> References	: http://marc.info/?l=linux-kernel&m=126970039227740&w=4
-> Handled-By	: Shirley Ma <mashirle@us.ibm.com>
-> 
-> 
+	Joerg
+
 
