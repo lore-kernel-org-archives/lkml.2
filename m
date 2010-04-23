@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab0DWXnJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 19:43:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58305 "EHLO hera.kernel.org"
+	id S1755628Ab0DWXoy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 19:44:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48747 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab0DWXnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 19:43:04 -0400
-Date: Fri, 23 Apr 2010 23:42:42 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       samuel.thibault@inria.fr, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       samuel.thibault@inria.fr, tglx@linutronix.de
-In-Reply-To: <4BD1E061.8030605@zytor.com>
-References: <4BD1E061.8030605@zytor.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-64: Clear a 64-bit FS/GS base on fork if selector is nonzero
-Message-ID: <tip-3e72c448927da6117007d402637b4dbd6b55998d@git.kernel.org>
-Git-Commit-ID: 3e72c448927da6117007d402637b4dbd6b55998d
-X-Mailer: tip-git-log-daemon
+	id S1750910Ab0DWXov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 19:44:51 -0400
+Message-ID: <4BD230C9.3090309@zytor.com>
+Date: Fri, 23 Apr 2010 16:44:09 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Apr 2010 23:42:43 +0000 (UTC)
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: Andy Isaacson <adi@hexapodia.org>, "R. Andrew Bailey" <bailey@akamai.com>,
+       Yinghai <yinghai.lu@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
+Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below BIOS_END
+References: <4BC4E55B.7000103@oracle.com> <4BCE8E3E.4030809@oracle.com> <20100421193120.GD11130@hexapodia.org> <201004231705.25659.bjorn.helgaas@hp.com>
+In-Reply-To: <201004231705.25659.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3e72c448927da6117007d402637b4dbd6b55998d
-Gitweb:     http://git.kernel.org/tip/3e72c448927da6117007d402637b4dbd6b55998d
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Fri, 23 Apr 2010 16:17:40 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 23 Apr 2010 16:36:09 -0700
+On 04/23/2010 04:05 PM, Bjorn Helgaas wrote:
+> On Wednesday 21 April 2010 01:31:20 pm Andy Isaacson wrote:
+>> On Tue, Apr 20, 2010 at 10:33:50PM -0700, Yinghai wrote:
+>>> Update e820 at first, and later put them resource tree.
+>>> Reserved that early, will not be allocated to unassigned PCI BAR
+>>>
+>>> v3: remove probe_roms() that is not needed, because whole range is reserved
+>>> 	 already
+>>
+>> Test booted this patch series on the problematic t3400, seems to work
+>> fine.  dmesg attached to bug 15744.
+> 
+> Thanks for testing (again).  I'm not confident that this series is
+> going to be successful, so I started looking for other approaches.
+> 
+> I can't reproduce the exact problem you're seeing, but in my
+> kludged-up attempt, the patch below is enough to keep us from
+> assigning the space below 1MB to a device.
+> 
+> Would you guys (Andy & Andy, what a coincidence :-)) mind giving
+> it a try?  This is intended to work on top of current upstream,
+> with no other patches required.
+> 
 
-x86-64: Clear a 64-bit FS/GS base on fork if selector is nonzero
+This certainly wins from a simplicity standpoint!
 
-When we do a thread switch, we clear the outgoing FS/GS base if the
-corresponding selector is nonzero.  This is taken by __switch_to() as
-an entry invariant; it does not verify that it is true on entry.
-However, copy_thread() doesn't enforce this constraint, which can
-result in inconsistent results after fork().
-
-Make copy_thread() match the behavior of __switch_to().
-
-Reported-and-tested-by: Samuel Thibault <samuel.thibault@inria.fr>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-LKML-Reference: <4BD1E061.8030605@zytor.com>
----
- arch/x86/kernel/process_64.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index dc9690b..17cb329 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -276,12 +276,12 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
- 
- 	set_tsk_thread_flag(p, TIF_FORK);
- 
--	p->thread.fs = me->thread.fs;
--	p->thread.gs = me->thread.gs;
- 	p->thread.io_bitmap_ptr = NULL;
- 
- 	savesegment(gs, p->thread.gsindex);
-+	p->thread.gs = p->thread.gsindex ? 0 : me->thread.gs;
- 	savesegment(fs, p->thread.fsindex);
-+	p->thread.fs = p->thread.fsindex ? 0 : me->thread.fs;
- 	savesegment(es, p->thread.es);
- 	savesegment(ds, p->thread.ds);
- 
+	-hpa
