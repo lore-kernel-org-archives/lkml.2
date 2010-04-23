@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab0DWVad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 17:30:33 -0400
-Received: from tex.lwn.net ([70.33.254.29]:50584 "EHLO vena.lwn.net"
+	id S1754511Ab0DWVa1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 17:30:27 -0400
+Received: from tex.lwn.net ([70.33.254.29]:50590 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753192Ab0DWV2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753591Ab0DWV2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Apr 2010 17:28:42 -0400
 From: Jonathan Corbet <corbet@lwn.net>
 To: linux-kernel@vger.kernel.org
@@ -12,9 +12,9 @@ Cc: Harald Welte <laforge@gnumonks.org>, Deepak Saxena <dsaxena@laptop.org>,
        linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
        ScottFang@viatech.com.cn,
        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 10/13] viafb: Add a simple interrupt management infrastructure
-Date: Fri, 23 Apr 2010 15:28:10 -0600
-Message-Id: <1272058093-20914-11-git-send-email-corbet@lwn.net>
+Subject: [PATCH 11/13] viafb: Add a simple VX855 DMA engine driver
+Date: Fri, 23 Apr 2010 15:28:11 -0600
+Message-Id: <1272058093-20914-12-git-send-email-corbet@lwn.net>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1272058093-20914-1-git-send-email-corbet@lwn.net>
 References: <1272058093-20914-1-git-send-email-corbet@lwn.net>
@@ -22,154 +22,303 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The viafb device shares a single interrupt control register among several
-distinct subunits.  This adds a simple layer for management of that
-register.
+This code provides a minimal amount of access to the DMA engine as
+needed by the camera driver.  VX855 only; it's guaranteed not to work
+on other chipsets, so it won't try.
 
 Signed-off-by: Jonathan Corbet <corbet@lwn.net>
 ---
- drivers/video/via/via-core.c |   62 +++++++++++++++++++++++++++++++++++++++++-
- drivers/video/via/via-core.h |   44 +++++++++++++++++++++++++++++
- 2 files changed, 105 insertions(+), 1 deletions(-)
+ drivers/video/via/via-core.c |  232 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/video/via/via-core.h |   29 +++++
+ 2 files changed, 261 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/video/via/via-core.c b/drivers/video/via/via-core.c
-index ca27daa..d368f4f 100644
+index d368f4f..957af6b 100644
 --- a/drivers/video/via/via-core.c
 +++ b/drivers/video/via/via-core.c
-@@ -35,6 +35,65 @@ static struct viafb_dev global_dev;
+@@ -13,6 +13,7 @@
+ #include "global.h"
  
+ #include <linux/module.h>
++#include <linux/interrupt.h>
+ #include <linux/platform_device.h>
  
  /*
-+ * Basic register access; spinlock required.
-+ */
-+static inline void viafb_mmio_write(int reg, u32 v)
-+{
-+	iowrite32(v, global_dev.engine_mmio + reg);
-+}
-+
-+static inline int viafb_mmio_read(int reg)
-+{
-+	return ioread32(global_dev.engine_mmio + reg);
-+}
-+
+@@ -92,7 +93,238 @@ void viafb_irq_disable(u32 mask)
+ }
+ EXPORT_SYMBOL_GPL(viafb_irq_disable);
+ 
 +/* ---------------------------------------------------------------------- */
 +/*
-+ * Interrupt management.  We have a single IRQ line for a lot of
-+ * different functions, so we need to share it.  The design here
-+ * is that we don't want to reimplement the shared IRQ code here;
-+ * we also want to avoid having contention for a single handler thread.
-+ * So each subdev driver which needs interrupts just requests
-+ * them directly from the kernel.  We just have what's needed for
-+ * overall access to the interrupt control register.
++ * Access to the DMA engine.  This currently provides what the camera
++ * driver needs (i.e. outgoing only) but is easily expandable if need
++ * be.
 + */
 +
 +/*
-+ * Which interrupts are enabled now?
++ * There are four DMA channels in the vx855.  For now, we only
++ * use one of them, though.  Most of the time, the DMA channel
++ * will be idle, so we keep the IRQ handler unregistered except
++ * when some subsystem has indicated an interest.
 + */
-+static u32 viafb_enabled_ints;
++static int viafb_dma_users;
++static DECLARE_COMPLETION(viafb_dma_completion);
++/*
++ * This mutex protects viafb_dma_users and our global interrupt
++ * registration state; it also serializes access to the DMA
++ * engine.
++ */
++static DEFINE_MUTEX(viafb_dma_lock);
 +
-+static void viafb_int_init(void)
++/*
++ * The VX855 DMA descriptor (used for s/g transfers) looks
++ * like this.
++ */
++struct viafb_vx855_dma_descr {
++	u32	addr_low;	/* Low part of phys addr */
++	u32	addr_high;	/* High 12 bits of addr */
++	u32	fb_offset;	/* Offset into FB memory */
++	u32	seg_size;	/* Size, 16-byte units */
++	u32	tile_mode;	/* "tile mode" setting */
++	u32	next_desc_low;	/* Next descriptor addr */
++	u32	next_desc_high;
++	u32	pad;		/* Fill out to 64 bytes */
++};
++
++/*
++ * Flags added to the "next descriptor low" pointers
++ */
++#define VIAFB_DMA_MAGIC		0x01  /* ??? Just has to be there */
++#define VIAFB_DMA_FINAL_SEGMENT 0x02  /* Final segment */
++
++/*
++ * The completion IRQ handler.
++ */
++static irqreturn_t viafb_dma_irq(int irq, void *data)
 +{
-+	viafb_enabled_ints = 0;
++	int csr;
++	irqreturn_t ret = IRQ_NONE;
 +
-+	viafb_mmio_write(VDE_INTERRUPT, 0);
++	spin_lock(&global_dev.reg_lock);
++	csr = viafb_mmio_read(VDMA_CSR0);
++	if (csr & VDMA_C_DONE) {
++		viafb_mmio_write(VDMA_CSR0, VDMA_C_DONE);
++		complete(&viafb_dma_completion);
++		ret = IRQ_HANDLED;
++	}
++	spin_unlock(&global_dev.reg_lock);
++	return ret;
 +}
 +
 +/*
-+ * Allow subdevs to ask for specific interrupts to be enabled.  These
-+ * functions must be called with reg_lock held
++ * Indicate a need for DMA functionality.
 + */
-+void viafb_irq_enable(u32 mask)
++int viafb_request_dma(void)
 +{
-+	viafb_enabled_ints |= mask;
-+	viafb_mmio_write(VDE_INTERRUPT, viafb_enabled_ints | VDE_I_ENABLE);
-+}
-+EXPORT_SYMBOL_GPL(viafb_irq_enable);
++	int ret = 0;
 +
-+void viafb_irq_disable(u32 mask)
++	/*
++	 * Only VX855 is supported currently.
++	 */
++	if (global_dev.chip_type != UNICHROME_VX855)
++		return -ENODEV;
++	/*
++	 * Note the new user and set up our interrupt handler
++	 * if need be.
++	 */
++	mutex_lock(&viafb_dma_lock);
++	viafb_dma_users++;
++	if (viafb_dma_users == 1) {
++		ret = request_irq(global_dev.pdev->irq, viafb_dma_irq,
++				IRQF_SHARED, "via-dma", &viafb_dma_users);
++		if (ret)
++			viafb_dma_users--;
++		else
++			viafb_irq_enable(VDE_I_DMA0TDEN);
++	}
++	mutex_unlock(&viafb_dma_lock);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(viafb_request_dma);
++
++void viafb_release_dma(void)
 +{
-+	viafb_enabled_ints &= ~mask;
-+	if (viafb_enabled_ints == 0)
-+		viafb_mmio_write(VDE_INTERRUPT, 0);  /* Disable entirely */
-+	else
-+		viafb_mmio_write(VDE_INTERRUPT,
-+				viafb_enabled_ints | VDE_I_ENABLE);
++	mutex_lock(&viafb_dma_lock);
++	viafb_dma_users--;
++	if (viafb_dma_users == 0) {
++		viafb_irq_disable(VDE_I_DMA0TDEN);
++		free_irq(global_dev.pdev->irq, &viafb_dma_users);
++	}
++	mutex_unlock(&viafb_dma_lock);
 +}
-+EXPORT_SYMBOL_GPL(viafb_irq_disable);
++EXPORT_SYMBOL_GPL(viafb_release_dma);
 +
++
++#if 0
++/*
++ * Copy a single buffer from FB memory, synchronously.  This code works
++ * but is not currently used.
++ */
++void viafb_dma_copy_out(unsigned int offset, dma_addr_t paddr, int len)
++{
++	unsigned long flags;
++	int csr;
++
++	mutex_lock(&viafb_dma_lock);
++	init_completion(&viafb_dma_completion);
++	/*
++	 * Program the controller.
++	 */
++	spin_lock_irqsave(&global_dev.reg_lock, flags);
++	viafb_mmio_write(VDMA_CSR0, VDMA_C_ENABLE|VDMA_C_DONE);
++	/* Enable ints; must happen after CSR0 write! */
++	viafb_mmio_write(VDMA_MR0, VDMA_MR_TDIE);
++	viafb_mmio_write(VDMA_MARL0, (int) (paddr & 0xfffffff0));
++	viafb_mmio_write(VDMA_MARH0, (int) ((paddr >> 28) & 0xfff));
++	/* Data sheet suggests DAR0 should be <<4, but it lies */
++	viafb_mmio_write(VDMA_DAR0, offset);
++	viafb_mmio_write(VDMA_DQWCR0, len >> 4);
++	viafb_mmio_write(VDMA_TMR0, 0);
++	viafb_mmio_write(VDMA_DPRL0, 0);
++	viafb_mmio_write(VDMA_DPRH0, 0);
++	viafb_mmio_write(VDMA_PMR0, 0);
++	csr = viafb_mmio_read(VDMA_CSR0);
++	viafb_mmio_write(VDMA_CSR0, VDMA_C_ENABLE|VDMA_C_START);
++	spin_unlock_irqrestore(&global_dev.reg_lock, flags);
++	/*
++	 * Now we just wait until the interrupt handler says
++	 * we're done.
++	 */
++	wait_for_completion_interruptible(&viafb_dma_completion);
++	viafb_mmio_write(VDMA_MR0, 0); /* Reset int enable */
++	mutex_unlock(&viafb_dma_lock);
++}
++EXPORT_SYMBOL_GPL(viafb_dma_copy_out);
++#endif
 +
 +/*
++ * Do a scatter/gather DMA copy from FB memory.  You must have done
++ * a successful call to viafb_request_dma() first.
++ */
++int viafb_dma_copy_out_sg(unsigned int offset, struct scatterlist *sg, int nsg)
++{
++	struct viafb_vx855_dma_descr *descr;
++	void *descrpages;
++	dma_addr_t descr_handle;
++	unsigned long flags;
++	int i;
++	struct scatterlist *sgentry;
++	dma_addr_t nextdesc;
+ 
++	/*
++	 * Get a place to put the descriptors.
++	 */
++	descrpages = dma_alloc_coherent(&global_dev.pdev->dev,
++			nsg*sizeof(struct viafb_vx855_dma_descr),
++			&descr_handle, GFP_KERNEL);
++	if (descrpages == NULL) {
++		dev_err(&global_dev.pdev->dev, "Unable to get descr page.\n");
++		return -ENOMEM;
++	}
++	mutex_lock(&viafb_dma_lock);
++	/*
++	 * Fill them in.
++	 */
++	descr = descrpages;
++	nextdesc = descr_handle + sizeof(struct viafb_vx855_dma_descr);
++	for_each_sg(sg, sgentry, nsg, i) {
++		dma_addr_t paddr = sg_dma_address(sgentry);
++		descr->addr_low = paddr & 0xfffffff0;
++		descr->addr_high = ((u64) paddr >> 32) & 0x0fff;
++		descr->fb_offset = offset;
++		descr->seg_size = sg_dma_len(sgentry) >> 4;
++		descr->tile_mode = 0;
++		descr->next_desc_low = (nextdesc&0xfffffff0) | VIAFB_DMA_MAGIC;
++		descr->next_desc_high = ((u64) nextdesc >> 32) & 0x0fff;
++		descr->pad = 0xffffffff;  /* VIA driver does this */
++		offset += sg_dma_len(sgentry);
++		nextdesc += sizeof(struct viafb_vx855_dma_descr);
++		descr++;
++	}
++	descr[-1].next_desc_low = VIAFB_DMA_FINAL_SEGMENT|VIAFB_DMA_MAGIC;
++	/*
++	 * Program the engine.
++	 */
++	spin_lock_irqsave(&global_dev.reg_lock, flags);
++	init_completion(&viafb_dma_completion);
++	viafb_mmio_write(VDMA_DQWCR0, 0);
++	viafb_mmio_write(VDMA_CSR0, VDMA_C_ENABLE|VDMA_C_DONE);
++	viafb_mmio_write(VDMA_MR0, VDMA_MR_TDIE | VDMA_MR_CHAIN);
++	viafb_mmio_write(VDMA_DPRL0, descr_handle | VIAFB_DMA_MAGIC);
++	viafb_mmio_write(VDMA_DPRH0,
++			(((u64)descr_handle >> 32) & 0x0fff) | 0xf0000);
++	(void) viafb_mmio_read(VDMA_CSR0);
++	viafb_mmio_write(VDMA_CSR0, VDMA_C_ENABLE|VDMA_C_START);
++	spin_unlock_irqrestore(&global_dev.reg_lock, flags);
++	/*
++	 * Now we just wait until the interrupt handler says
++	 * we're done.  Except that, actually, we need to wait a little
++	 * longer: the interrupts seem to jump the gun a little and we
++	 * get corrupted frames sometimes.
++	 */
++	wait_for_completion_timeout(&viafb_dma_completion, 1);
++	msleep(1);
++	if ((viafb_mmio_read(VDMA_CSR0)&VDMA_C_DONE) == 0)
++		printk(KERN_ERR "VIA DMA timeout!\n");
++	/*
++	 * Clean up and we're done.
++	 */
++	viafb_mmio_write(VDMA_CSR0, VDMA_C_DONE);
++	viafb_mmio_write(VDMA_MR0, 0); /* Reset int enable */
++	mutex_unlock(&viafb_dma_lock);
++	dma_free_coherent(&global_dev.pdev->dev,
++			nsg*sizeof(struct viafb_vx855_dma_descr), descrpages,
++			descr_handle);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(viafb_dma_copy_out_sg);
++
++
++/* ---------------------------------------------------------------------- */
+ /*
   * Figure out how big our framebuffer memory is.  Kind of ugly,
   * but evidently we can't trust the information found in the
-  * fbdev configuration area.
-@@ -273,7 +332,7 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
- 	if (ret)
- 		goto out_teardown;
- 	/*
--	 * Set up subsidiary devices
-+	 * Set up the framebuffer device
- 	 */
- 	ret = via_fb_pci_probe(&global_dev);
- 	if (ret)
-@@ -281,6 +340,7 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
- 	/*
- 	 * Create our subdevices.
- 	 */
-+	viafb_int_init();
- 	via_setup_subdevs(&global_dev);
- 	return 0;
- 
 diff --git a/drivers/video/via/via-core.h b/drivers/video/via/via-core.h
-index ac89c2a..ba64b36 100644
+index ba64b36..3d03141 100644
 --- a/drivers/video/via/via-core.h
 +++ b/drivers/video/via/via-core.h
-@@ -87,4 +87,48 @@ struct viafb_dev {
- 
- };
+@@ -131,4 +131,33 @@ void viafb_irq_disable(u32 mask);
+ #define   VDE_I_LVDSSIEN  0x40000000  /* LVDS Sense enable */
+ #define   VDE_I_ENABLE	  0x80000000  /* Global interrupt enable */
  
 +/*
-+ * Interrupt management.
++ * DMA management.
 + */
-+
-+void viafb_irq_enable(u32 mask);
-+void viafb_irq_disable(u32 mask);
++int viafb_request_dma(void);
++void viafb_release_dma(void);
++/* void viafb_dma_copy_out(unsigned int offset, dma_addr_t paddr, int len); */
++int viafb_dma_copy_out_sg(unsigned int offset, struct scatterlist *sg, int nsg);
 +
 +/*
-+ * The global interrupt control register and its bits.
++ * DMA Controller registers.
 + */
-+#define VDE_INTERRUPT	0x200	/* Video interrupt flags/masks */
-+#define   VDE_I_DVISENSE  0x00000001  /* DVI sense int status */
-+#define   VDE_I_VBLANK    0x00000002  /* Vertical blank status */
-+#define   VDE_I_MCCFI	  0x00000004  /* MCE compl. frame int status */
-+#define   VDE_I_VSYNC	  0x00000008  /* VGA VSYNC int status */
-+#define   VDE_I_DMA0DDONE 0x00000010  /* DMA 0 descr done */
-+#define   VDE_I_DMA0TDONE 0x00000020  /* DMA 0 transfer done */
-+#define   VDE_I_DMA1DDONE 0x00000040  /* DMA 1 descr done */
-+#define   VDE_I_DMA1TDONE 0x00000080  /* DMA 1 transfer done */
-+#define   VDE_I_C1AV      0x00000100  /* Cap Eng 1 act vid end */
-+#define   VDE_I_HQV0	  0x00000200  /* First HQV engine */
-+#define   VDE_I_HQV1      0x00000400  /* Second HQV engine */
-+#define   VDE_I_HQV1EN	  0x00000800  /* Second HQV engine enable */
-+#define   VDE_I_C0AV      0x00001000  /* Cap Eng 0 act vid end */
-+#define   VDE_I_C0VBI     0x00002000  /* Cap Eng 0 VBI end */
-+#define   VDE_I_C1VBI     0x00004000  /* Cap Eng 1 VBI end */
-+#define   VDE_I_VSYNC2    0x00008000  /* Sec. Disp. VSYNC */
-+#define   VDE_I_DVISNSEN  0x00010000  /* DVI sense enable */
-+#define   VDE_I_VSYNC2EN  0x00020000  /* Sec Disp VSYNC enable */
-+#define   VDE_I_MCCFIEN	  0x00040000  /* MC comp frame int mask enable */
-+#define   VDE_I_VSYNCEN   0x00080000  /* VSYNC enable */
-+#define   VDE_I_DMA0DDEN  0x00100000  /* DMA 0 descr done enable */
-+#define   VDE_I_DMA0TDEN  0x00200000  /* DMA 0 trans done enable */
-+#define   VDE_I_DMA1DDEN  0x00400000  /* DMA 1 descr done enable */
-+#define   VDE_I_DMA1TDEN  0x00800000  /* DMA 1 trans done enable */
-+#define   VDE_I_C1AVEN    0x01000000  /* cap 1 act vid end enable */
-+#define   VDE_I_HQV0EN	  0x02000000  /* First hqv engine enable */
-+#define   VDE_I_C1VBIEN	  0x04000000  /* Cap 1 VBI end enable */
-+#define   VDE_I_LVDSSI    0x08000000  /* LVDS sense interrupt */
-+#define   VDE_I_C0AVEN    0x10000000  /* Cap 0 act vid end enable */
-+#define   VDE_I_C0VBIEN   0x20000000  /* Cap 0 VBI end enable */
-+#define   VDE_I_LVDSSIEN  0x40000000  /* LVDS Sense enable */
-+#define   VDE_I_ENABLE	  0x80000000  /* Global interrupt enable */
++#define VDMA_MR0	0xe00		/* Mod reg 0 */
++#define   VDMA_MR_CHAIN   0x01		/* Chaining mode */
++#define   VDMA_MR_TDIE    0x02		/* Transfer done int enable */
++#define VDMA_CSR0	0xe04		/* Control/status */
++#define	  VDMA_C_ENABLE	  0x01		  /* DMA Enable */
++#define	  VDMA_C_START	  0x02		  /* Start a transfer */
++#define	  VDMA_C_ABORT	  0x04		  /* Abort a transfer */
++#define	  VDMA_C_DONE	  0x08		  /* Transfer is done */
++#define VDMA_MARL0	0xe20		/* Mem addr low */
++#define VDMA_MARH0	0xe24		/* Mem addr high */
++#define VDMA_DAR0	0xe28		/* Device address */
++#define VDMA_DQWCR0	0xe2c		/* Count (16-byte) */
++#define VDMA_TMR0	0xe30		/* Tile mode reg */
++#define VDMA_DPRL0	0xe34		/* Not sure */
++#define	  VDMA_DPR_IN	  0x08		/* Inbound transfer to FB */
++#define VDMA_DPRH0	0xe38
++#define VDMA_PMR0	(0xe00 + 0x134) /* Pitch mode */
 +
  #endif /* __VIA_CORE_H__ */
 -- 
