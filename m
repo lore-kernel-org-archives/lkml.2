@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab0DWPJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 11:09:29 -0400
-Received: from bar.sig21.net ([80.81.252.164]:49831 "EHLO bar.sig21.net"
+	id S1756574Ab0DWPLM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 11:11:12 -0400
+Received: from kroah.org ([198.145.64.141]:50724 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752886Ab0DWPJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 11:09:26 -0400
-Date: Fri, 23 Apr 2010 17:09:17 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       John Stultz <johnstul@us.ibm.com>, Magnus Damm <damm@opensource.se>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Q: sched_clock() vs. clocksource, how to implement correctly
-Message-ID: <20100423150917.GA25714@sig21.net>
+	id S1755158Ab0DWPLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 11:11:10 -0400
+Date: Fri, 23 Apr 2010 08:07:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Eric Lescouet <Eric.Lescouet@VirtualLogix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       linux-usb@vger.kernel.org
+Subject: Re: USBIP (staging) driver's dependency on drivers/usb/core
+	internal headers
+Message-ID: <20100423150734.GA7778@kroah.com>
+References: <4BD179FB.3010309@VirtualLogix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-21-Score: -3.6 (---)
-X-Spam-21-Report: No, score=-3.6 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.777,BAYES_00=-2.599 autolearn=no
+In-Reply-To: <4BD179FB.3010309@VirtualLogix.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Apr 23, 2010 at 12:44:11PM +0200, Eric Lescouet wrote:
+> Hi,
+>
+> The USBIP modules (and some others) have a direct dependency on the following headers:
+> - drivers/usb/core/hdc.h (struct usb_hcd and various routines)
+> - drivers/usb/core/hub.h (couple of constants)
+> Because those headers are not part of include/, it makes it quite difficult
+> to compile them as standalone modules (e.g.: against pre-compiled kernel).
 
-I'm trying to figure out how to correctly implement sched_clock()
-for an ARM board.  However, looking at existing implementations
-leaves me rather confused.
+Then don't do that :)
 
-E.g. arch/arm/mach-u300/timer.c has
+> hdc.c and hub.c are relatively self-contained and could be moved to e.g.: include/linux/usb/.
+>
+> What do you think?
 
-static cycle_t u300_get_cycles(struct clocksource *cs)
-{
-	return (cycles_t) readl(U300_TIMER_APP_VBASE + U300_TIMER_APP_GPT2CC);
-}
+I think the code needs to be cleaned up and merged to the main part of
+the kernel tree, then this wouldn't be an issue, right?
 
-static struct clocksource clocksource_u300_1mhz = {
-	.name           = "GPT2",
-	.rating         = 300, /* Reasonably fast and accurate clock source */
-	.read           = u300_get_cycles,
-	.mask           = CLOCKSOURCE_MASK(32), /* 32 bits */
-	/* 22 calculated using the algorithm in arch/mips/kernel/time.c */
-	.shift          = 22,
-	.flags          = CLOCK_SOURCE_IS_CONTINUOUS,
-};
+Also, please cc: the linux-usb@vger.kernel.org list for USB related
+things in the future.
 
-unsigned long long notrace sched_clock(void)
-{
-	return clocksource_cyc2ns(clocksource_u300_1mhz.read(
-				  &clocksource_u300_1mhz),
-				  clocksource_u300_1mhz.mult,
-				  clocksource_u300_1mhz.shift);
-}
+thanks,
 
-Thus, sched_clock() is based on a 1MHz 32bit counter which wraps
-after about 71 minutes.  There are a few similar sched_clock()
-implementations in the tree.
-
-Questions:
-
-- Isn't sched_clock() supposed to be extended to 64bit so
-  that it practically never wraps?
-  (old implementations use cnt32_to_63())
-
-- What would be the effect on scheduling when sched_clock() wraps?
-
-- What is the effect of the sched_clock() frequency on scheduling?
-  Is there a benefit from setting the freq as high as possible?
-
-- Is struct timecounter + struct cyclecounter + timecounter_read()
-  designated way to implement sched_clock() with a 32bit hw counter?
-
-  arch/microblaze/kernel/timer.c seems to be the only user
-  of timecounter/cyclecounter in arch/, but I don't get what it does.
-
-  Or is it better to stick with cnt32_to_63()?
-
-- Also regarding the clocksource.shift value, I found
-  http://lkml.org/lkml/2008/5/8/270 and it seems to suggest
-  to use a low shift value, whereas arch/mips/kernel/time.c
-  seems to result in a large one. Is the posting correct?
-
-
-Thanks,
-Johannes
+greg k-h
