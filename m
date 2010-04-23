@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab0DWCWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 22:22:42 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19416 "EHLO mga03.intel.com"
+	id S1754842Ab0DWEiR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 00:38:17 -0400
+Received: from kroah.org ([198.145.64.141]:55229 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755058Ab0DWCWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 22:22:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,259,1270450800"; 
-   d="scan'208";a="269169800"
-Subject: Re: [RFC][PATCH 0/4] perf: remove __weak function
- hw_perf_group_sched_in()
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1271924997.1776.319.camel@laptop>
-References: <1271922655.30535.106.camel@minggr.sh.intel.com>
-	 <1271924997.1776.319.camel@laptop>
-Content-Type: text/plain
-Date: Fri, 23 Apr 2010 10:23:04 +0800
-Message-Id: <1271989384.3412.22.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
-Content-Transfer-Encoding: 7bit
+	id S1754465Ab0DWEiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 00:38:14 -0400
+Date: Thu, 22 Apr 2010 21:38:14 -0700
+From: Greg KH <greg@kroah.com>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+       linux-doc@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Magnus Damm <damm@igel.co.jp>
+Subject: Re: [linux-pm] [PATCH 2/9] PM: suspend_block: Add driver to access
+	suspend blockers from user-space
+Message-ID: <20100423043814.GA4198@kroah.com>
+References: <1271984938-13920-1-git-send-email-arve@android.com> <1271984938-13920-2-git-send-email-arve@android.com> <1271984938-13920-3-git-send-email-arve@android.com> <20100423022522.GB32490@count0.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100423022522.GB32490@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-22 at 16:29 +0800, Peter Zijlstra wrote:
-> On Thu, 2010-04-22 at 15:50 +0800, Lin Ming wrote:
-> 
-> > This patch series is to remove hw_perf_group_sched_in() first.
-> > 
-> > patch 1: core, add group scheduling transactional APIs
-> > patch 2: x86, implement group scheduling transactional APIs
-> > patch 3: powerpc, implement group scheduling transactional APIs
-> > patch 4: sparc, implement group scheduling transactional APIs
-> > 
-> > Thanks for any comment.
-> 
-> Don't RISC architectures deal better with word sized variables than with
-> u8? I thought it curious you used u8 for the flags thing instead of int
-> or long, but I'm not quite sure it really matters one way or the other.
+On Thu, Apr 22, 2010 at 07:25:22PM -0700, Matt Helsley wrote:
+> Should the kernel reject empty strings or strings composed only of
+> "non-printing" characters?
 
-Will change it to "unsigned int".
+The kernel doesn't care, if you want to use non-printing characters, who
+is it to complain?  :)
 
-Thanks.
+thanks,
 
+greg k-h
