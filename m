@@ -1,154 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab0DWMVf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 08:21:35 -0400
+	id S1756223Ab0DWMVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 08:21:46 -0400
 Received: from mail-bw0-f219.google.com ([209.85.218.219]:38274 "EHLO
 	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab0DWMVb (ORCPT
+	with ESMTP id S1754841Ab0DWMVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 08:21:31 -0400
+	Fri, 23 Apr 2010 08:21:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=v7S4g9s1OkFWQgLFa7kjl8W1PrZbMsl8mnlRvL5FqeK1N5kWBqDTODx9+CHok5U1MV
-         8AR3Z8ZsEZ5S5I7Ortj9Y31y56giuY/KwvQ84nYuWN8Lg1pw7ZAxP971Cfc1I2WEXLm1
-         K645rt+CZ5ZHU4eh5pJBrQf7YpK+Ft8FOXtaY=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=wzL2TaLekEzWlav2PE6+hWaxxZSfk9AfEYcWRIb+9aKAP/dOjNTJpxqx2d/jsBx/GF
+         FtyvEIxGmUvOn2oEiyUTYIT1rdoX2tv0rInjkjoPjyLM8XYQnoIwoc9LJqnJ/onbicio
+         ZoRI6EJG0KJjNL+HeQEMkmkwYqLl3sxtAND9c=
 From: fabien.chouteau@gmail.com
 To: linux-usb@vger.kernel.org
 Cc: Fabien Chouteau <fabien.chouteau@barco.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
        David Brownell <dbrownell@users.sourceforge.net>,
        Greg Kroah-Hartman <gregkh@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
        Michal Nazarewicz <m.nazarewicz@samsung.com>,
-       Roel Kluin <roel.kluin@gmail.com>, Tejun Heo <tj@kernel.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [PATCH RESEND 1/2] Composite framework: Add suspended sysfs entry
-Date: Fri, 23 Apr 2010 14:21:26 +0200
-Message-Id: <1272025288-32555-1-git-send-email-fabien.chouteau@gmail.com>
+       Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND 2/2] Mass storage gadget: Handle eject request
+Date: Fri, 23 Apr 2010 14:21:27 +0200
+Message-Id: <1272025288-32555-2-git-send-email-fabien.chouteau@gmail.com>
 X-Mailer: git-send-email 1.7.0.5
+In-Reply-To: <1272025288-32555-1-git-send-email-fabien.chouteau@gmail.com>
+References: <1272025288-32555-1-git-send-email-fabien.chouteau@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fabien Chouteau <fabien.chouteau@barco.com>
 
-This patch adds a sysfs entry (/sys/devices/platform/_UDC_/gadget/suspended) to
-show the suspend state of an USB composite gadget.
+This patch adds handling of the "Start/Stop Unit" SCSI request to simulate media
+ejection. A sysfs entry to get the "eject" state of a LUN is also added.
 
 Signed-off-by: Fabien Chouteau <fabien.chouteau@barco.com>
 ---
- .../testing/sysfs-devices-platform-_UDC_-gadget    |    9 ++++++++
- drivers/usb/gadget/composite.c                     |   21 ++++++++++++++++++++
- include/linux/usb/composite.h                      |    1 +
- include/linux/usb/gadget.h                         |    4 +++
- 4 files changed, 35 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-devices-platform-_UDC_-gadget
+ drivers/usb/gadget/f_mass_storage.c |   57 +++++++++++++++++++++++++++++++++--
+ drivers/usb/gadget/storage_common.c |   11 +++++++
+ 2 files changed, 65 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-devices-platform-_UDC_-gadget b/Documentation/ABI/testing/sysfs-devices-platform-_UDC_-gadget
-new file mode 100644
-index 0000000..3403402
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-devices-platform-_UDC_-gadget
-@@ -0,0 +1,9 @@
-+What:		/sys/devices/platform/_UDC_/gadget/suspended
-+Date:		April 2010
-+Contact:	Fabien Chouteau <fabien.chouteau@barco.com>
-+Description:
-+		Show the suspend state of an USB composite gadget.
-+		1 -> suspended
-+		0 -> resumed
-+
-+		(_UDC_ is the name of the USB Device Controller driver)
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index 09289bb..a5352f3 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -898,6 +898,18 @@ static void composite_disconnect(struct usb_gadget *gadget)
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index f4911c0..7b55435 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -163,6 +163,13 @@
+  * ro setting are not allowed when the medium is loaded or if CD-ROM
+  * emulation is being used.
+  *
++ * When a LUN receive an "eject" SCSI request (Start/Stop Unit),
++ * if the LUN is removable, the backing file is released to simulate
++ * ejection.
++ * The "eject" state of a LUN is available in the "ejected" file of the
++ * LUN's sysfs directory (see above). The "eject" state is only updated
++ * by SCSI request, not by user ejection.
++ *
+  *
+  * This function is heavily based on "File-backed Storage Gadget" by
+  * Alan Stern which in turn is heavily based on "Gadget Zero" by David
+@@ -1385,12 +1392,51 @@ static int do_mode_sense(struct fsg_common *common, struct fsg_buffhd *bh)
  
- /*-------------------------------------------------------------------------*/
- 
-+static ssize_t composite_show_suspended(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct usb_gadget *gadget = dev_to_usb_gadget(dev);
-+	struct usb_composite_dev *cdev = get_gadget_data(gadget);
-+
-+	return sprintf(buf, "%d\n", cdev->suspended);
-+}
-+
-+static DEVICE_ATTR(suspended, 0444, composite_show_suspended, NULL);
-+
- static void /* __init_or_exit */
- composite_unbind(struct usb_gadget *gadget)
+ static int do_start_stop(struct fsg_common *common)
  {
-@@ -944,6 +956,7 @@ composite_unbind(struct usb_gadget *gadget)
- 	}
- 	kfree(cdev);
- 	set_gadget_data(gadget, NULL);
-+	device_remove_file(&gadget->dev, &dev_attr_suspended);
- 	composite = NULL;
- }
- 
-@@ -1036,6 +1049,10 @@ static int __init composite_bind(struct usb_gadget *gadget)
- 		string_override(composite->strings,
- 			cdev->desc.iSerialNumber, iSerialNumber);
- 
-+	status = device_create_file(&gadget->dev, &dev_attr_suspended);
-+	if (status)
-+		goto fail;
+-	if (!common->curlun) {
++	struct fsg_lun	*curlun = common->curlun;
++	int		loej, start;
 +
- 	INFO(cdev, "%s ready\n", composite->name);
++	if (!curlun) {
+ 		return -EINVAL;
+-	} else if (!common->curlun->removable) {
+-		common->curlun->sense_data = SS_INVALID_COMMAND;
++	} else if (!curlun->removable) {
++		curlun->sense_data = SS_INVALID_COMMAND;
++		return -EINVAL;
++	}
++
++	loej = common->cmnd[4] & 0x02;
++	start = common->cmnd[4] & 0x01;
++
++	/* eject code from file_storage.c:do_start_stop() */
++
++	if ((common->cmnd[1] & ~0x01) != 0 ||	  /* Mask away Immed */
++		(common->cmnd[4] & ~0x03) != 0) { /* Mask LoEj, Start */
++		curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
+ 		return -EINVAL;
+ 	}
++
++	if (!start) {
++		/* Are we allowed to unload the media? */
++		if (curlun->prevent_medium_removal) {
++			LDBG(curlun, "unload attempt prevented\n");
++			curlun->sense_data = SS_MEDIUM_REMOVAL_PREVENTED;
++			return -EINVAL;
++		}
++		if (loej) {	/* Simulate an unload/eject */
++			up_read(&common->filesem);
++			down_write(&common->filesem);
++			fsg_lun_close(curlun);
++			curlun->ejected = 1;
++			up_write(&common->filesem);
++			down_read(&common->filesem);
++		}
++	} else {
++
++		/* Our emulation doesn't support mounting; the medium is
++		 * available for use as soon as it is loaded. */
++		if (!fsg_lun_is_open(curlun)) {
++			curlun->sense_data = SS_MEDIUM_NOT_PRESENT;
++			return -EINVAL;
++		}
++	}
  	return 0;
- 
-@@ -1064,6 +1081,8 @@ composite_suspend(struct usb_gadget *gadget)
- 	}
- 	if (composite->suspend)
- 		composite->suspend(cdev);
-+
-+	cdev->suspended = 1;
  }
  
- static void
-@@ -1084,6 +1103,8 @@ composite_resume(struct usb_gadget *gadget)
- 				f->resume(f);
- 		}
+@@ -2641,6 +2687,7 @@ static int fsg_main_thread(void *common_)
+ /* Write permission is checked per LUN in store_*() functions. */
+ static DEVICE_ATTR(ro, 0644, fsg_show_ro, fsg_store_ro);
+ static DEVICE_ATTR(file, 0644, fsg_show_file, fsg_store_file);
++static DEVICE_ATTR(ejected, 0444, fsg_show_ejected, NULL);
+ 
+ 
+ /****************************** FSG COMMON ******************************/
+@@ -2747,6 +2794,9 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+ 		rc = device_create_file(&curlun->dev, &dev_attr_file);
+ 		if (rc)
+ 			goto error_luns;
++		rc = device_create_file(&curlun->dev, &dev_attr_ejected);
++		if (rc)
++			goto error_luns;
+ 
+ 		if (lcfg->filename) {
+ 			rc = fsg_lun_open(curlun, lcfg->filename);
+@@ -2887,6 +2937,7 @@ static void fsg_common_release(struct kref *ref)
+ 	for (; i; --i, ++lun) {
+ 		device_remove_file(&lun->dev, &dev_attr_ro);
+ 		device_remove_file(&lun->dev, &dev_attr_file);
++		device_remove_file(&lun->dev, &dev_attr_ejected);
+ 		fsg_lun_close(lun);
+ 		device_unregister(&lun->dev);
  	}
-+
-+	cdev->suspended = 0;
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index 868d8ee..16ccebd 100644
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -267,6 +267,7 @@ struct fsg_lun {
+ 	unsigned int	removable:1;
+ 	unsigned int	cdrom:1;
+ 	unsigned int	prevent_medium_removal:1;
++	unsigned int	ejected:1;
+ 	unsigned int	registered:1;
+ 	unsigned int	info_valid:1;
+ 
+@@ -625,6 +626,7 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
+ 	curlun->filp = filp;
+ 	curlun->file_length = size;
+ 	curlun->num_sectors = num_sectors;
++	curlun->ejected = 0;
+ 	LDBG(curlun, "open backing file: %s\n", filename);
+ 	rc = 0;
+ 
+@@ -776,3 +778,12 @@ static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
+ 	up_write(filesem);
+ 	return (rc < 0 ? rc : count);
  }
- 
- /*-------------------------------------------------------------------------*/
-diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
-index 738ea1a..139353e 100644
---- a/include/linux/usb/composite.h
-+++ b/include/linux/usb/composite.h
-@@ -326,6 +326,7 @@ struct usb_composite_dev {
- 
- 	/* private: */
- 	/* internals */
-+	unsigned int			suspended:1;
- 	struct usb_device_descriptor	desc;
- 	struct list_head		configs;
- 	struct usb_composite_driver	*driver;
-diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index f4b7ca5..db6141c 100644
---- a/include/linux/usb/gadget.h
-+++ b/include/linux/usb/gadget.h
-@@ -494,6 +494,10 @@ static inline void set_gadget_data(struct usb_gadget *gadget, void *data)
- 	{ dev_set_drvdata(&gadget->dev, data); }
- static inline void *get_gadget_data(struct usb_gadget *gadget)
- 	{ return dev_get_drvdata(&gadget->dev); }
-+static inline struct usb_gadget *dev_to_usb_gadget(struct device *dev)
++
++static ssize_t fsg_show_ejected(struct device *dev,
++				struct device_attribute *attr, char *buf)
 +{
-+	return container_of(dev, struct usb_gadget, dev);
++	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
++
++	return sprintf(buf, "%d\n", curlun->ejected);
 +}
- 
- /* iterates the non-control endpoints; 'tmp' is a struct usb_ep pointer */
- #define gadget_for_each_ep(tmp,gadget) \
++
 -- 
 1.7.0.5
 
