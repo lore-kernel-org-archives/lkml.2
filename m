@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758504Ab0DWRwK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 13:52:10 -0400
-Received: from relay.ihostexchange.net ([66.46.182.52]:17672 "EHLO
-	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756388Ab0DWRwI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 13:52:08 -0400
-Message-ID: <4BD1DE30.5030405@VirtualLogix.com>
-Date: Fri, 23 Apr 2010 19:51:44 +0200
-From: Eric Lescouet <Eric.Lescouet@VirtualLogix.com>
-User-Agent: Thunderbird 2.0.0.19 (X11/20090105)
+	id S1758547Ab0DWRxM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 13:53:12 -0400
+Received: from 69-64-69-152.dedicated.abac.net ([69.64.69.152]:52554 "EHLO
+	imedia.com.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758475Ab0DWRxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 13:53:10 -0400
+X-Antivirus-MYDOMAIN-Mail-From: drfungch@yahoo.com.hk via imedia.com.my
+X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:1(127.0.0.1):. Processed in 0.045478 secs Process 10763)
+Message-ID: <4932c43ecdedb18e524e05398b53fd58.squirrel@mail.pemuda.com.my>
+Date: Sat, 24 Apr 2010 00:50:23 +0800 (MYT)
+Subject: RESPONSE NEEDED !
+From: "Dr Raymond Kuo Fung Chien" <drfungch@yahoo.com.hk>
+Reply-To: drraymond@9.cn
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Greg KH <greg@kroah.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: USBIP (staging) driver's dependency on drivers/usb/core internal
- headers
-References: <Pine.LNX.4.44L0.1004231246440.1777-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1004231246440.1777-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Stern wrote:
-> On Fri, 23 Apr 2010, Eric Lescouet wrote:
-> 
->> If I understand correctly, splitting hub.h into hub.h + ch11.h is 
->> independent of the move. At the end the 2 (or 3 files) would end up
->> into include/linux/usb/.
->> correct?
-> 
-> Two files.  The first would be ch11.h (or maybe keep the name hub.h; 
-> I'm not sure which is best), and the second would be hcd.h (including 
-> the leftover parts from the original hub.h).
-> 
 
-OK. understood now ;-)
 
->> I've tried to move hub.h and hcd.h and to compile the kernel, already.
->> Changing the path of the #include directives in ~40 files did the trick.
->>
->> Would you like 2 patches (move and then split) or only 1?
-> 
-> If it weren't for the rename, I'd say do it in two patches.  But if the 
-> name is changed to ch11.h then those 40 files would have to be altered 
-> twice.
-> 
-> Alan Stern
-> 
 
-Well, most of the files include hcd.h (which includes hub.h),
-only ~4 of them directly use hub.h.
-So what's your vote? rename hub.h into ch11.h?
+Dear Friend,
 
-	Eric.
+I am Dr Raymond Kuo Fung CHIEN Executive Director and Chief Financial
+Officer of the operations of the Hang Seng Bank Ltd.
+Befor the U.S and Iraqi war our client Mr.Fayez A Mohammed a business
+merchant made a fixed deposit of USD30 Million for 2Yrs where i was the
+only one that knew about his deposits.
+
+Upon maturity during the war in 2003,Fayez,his wife and only daugther died
+in a bomb blast that hits His Resident.
+Investigations showed that he didnt declear any next of kin.As a
+foreigner,I want you to stand as the next of kin to claim the fund because
+soon the fund will be claimed by my government if no one comes for it.
+
+I have an attorney that will prepare all the documents to back you up as
+the next of kin to Mr.Fayez A.Mohammed.Plz let me know your willingness so
+that i can provide you with more details of this transaction.
+
+contact me on email: drfungch111@yahoo.com.hk
+
+
+1. Full name and Age
+
+2. Occupation
+
+3. Private/office phone number
+
+4. Current residential address
+
+Kind Regards,
+Dr Raymond Kuo Fung CHIEN.
 
