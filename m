@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab0DWPTN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 11:19:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3268 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab0DWPTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 11:19:11 -0400
-Date: Fri, 23 Apr 2010 11:18:58 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Josef Bacik <josef@redhat.com>, akpm@linux-foundation.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       randy.dunlap@oracle.com
-Subject: Re: [PATCH] cleanup block based fiemap
-Message-ID: <20100423151857.GD2351@localhost.localdomain>
-References: <20100423144420.GC2351@localhost.localdomain> <alpine.LFD.2.00.1004230753480.3739@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004230753480.3739@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1755111Ab0DWPYZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 11:24:25 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42587 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754228Ab0DWPYX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 11:24:23 -0400
+Date: Sat, 24 Apr 2010 00:23:19 +0900
+From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@linux-nfs.org, security@kernel.org,
+       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1][BUG][TAKE2] KEYRINGS: find_keyring_by_name() can
+ gain the freed keyring
+Message-Id: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com>
+In-Reply-To: <10934.1272022437@redhat.com>
+References: <20100423195127.48095127.toshi.okajima@jp.fujitsu.com>
+	<20100422163755.355794e3.toshi.okajima@jp.fujitsu.com>
+	<7894.1271931370@redhat.com>
+	<20100423194547.3135efb8.toshi.okajima@jp.fujitsu.com>
+	<10934.1272022437@redhat.com>
+Organization: Fujitsu co.,ltd.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.12.8; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 08:00:35AM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Fri, 23 Apr 2010, Josef Bacik wrote:
-> > 
-> > I'm resending this patch again since it doesn't seem to have made it in yet.
-> > The generic block fiemap stuff doesn't use the right typing and has a problem
-> > with not setting the last extent flag properly.  Also there is an issue with
-> > GFS2 where it doesn't like non-block aligned requests, so this fixes all these
-> > issues.  Thanks,
-> 
-> I'd really like the patch to clean up the crazy stuff too.
-> 
-> As-is, there's at least two remaining issues I see from just reading the 
-> patch:
-> 
-> > +	if (len >= i_size_read(inode)) {
-> > +		whole_file = true;
-> > +		len = i_size_read(inode);
-> > +	}
-> ...
-> >  			if (!past_eof &&
-> >  			    blk_to_logical(inode, start_blk) >=
-> > -			    blk_to_logical(inode, 0)+i_size_read(inode))
-> > +			    blk_to_logical(inode, 0) + i_size_read(inode))
-> >  				past_eof = 1;
-> 
-> Issue #1: it does that i_size_read() several times. What happens if the 
-> file grows? Maybe we hold the i_mutex already, although I don't see it. 
-> Regardless, it seems bogus to read the size several times.
-> 
+On Fri, 23 Apr 2010 12:33:57 +0100
+David Howells <dhowells@redhat.com> wrote:
 
-__generic_block_fiemap is called by generic_block_fiemap which takes the
-i_mutex.  The only reason we have __generic_block_fiemap is because gfs2 needs
-to do its own locking magic before we go calling get_block.  The idea is that
-the file size doesn't change while we're doing this.
+> Better still, atomic_inc_not_zero().  How about the attached patch?
+Your fix looks good to me. But, if usage count of the keyring is 0,
+I think it better to return -ENOKEY immediately. 
 
-As for reading the size several times, I can read it once and store it in a
-local variable if you prefer, but theres no way to know if len is smaller than
-the size or not, which is why I'm constantly doing i_size_read().  If thats what
-you would prefer I can do that, just let me know.
+Like this.
+> +			/* we've got a match but we might end up racing with
+> +			 * key_cleanup() if the keyring is currently 'dead'
+> +			 * (ie. it has a zero usage count) */
+> +			if (!atomic_inc_not_zero(&keyring->usage))
 
-> Issue #2: "blk_to_logical(inode, 0)"? WTF? Since when has shifting zero 
-> ever resulted in anything interesting or relevant? There's at least two of 
-> those things.
-> 
+> +				continue;
+			=>	break;
 
-Umm, yeah I'm sorry?  I have no idea why I did that.  I think its because I was
-getting the logical offset of the first block + size, which is just stupid
-because the logical offset is 0, so all I can say is I'm sorry that me a year
-ago was alot dumber than me now :).  Thanks,
 
-Josef
+And my previous figure description(in first patch) was a bit wrong. 
+Please replace it with my new one:
+
+[Figure Description](Example)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+|(cleaner)				(user)
+| free_user(user)			sys_keyctl()
+|  |                                      |
+|  key_put(user->session_keyring)    keyctl_get_keyring_ID()
+|  ||	//=> keyring->usage = 0        |
+|  |schedule_work(&key_cleanup_task)  lookup_user_key()
+|  ||                                      |
+|  kmem_cache_free(,user)             |
+|  .                                  |[KEY_SPEC_USER_KEYRING]
+|  .                                  install_user_keyrings()
+|  .                                       ||
+| key_cleanup() [<= worker_thread()]  ||
+|  |                                       ||
+|  [spin_lock(&key_serial_lock)]      |[mutex_lock(&key_user_keyr..mutex)]
+|  |                                       ||
+|  atomic_read() == 0                 ||
+|  |{ rb_ease(&key->serial_node,) }   ||
+|  |                                       ||
+|  [spin_unlock(&key_serial_lock)]    |find_keyring_by_name()
+|  |                                       |||
+|  keyring_destroy(keyring)           ||[read_lock(&keyring_name_lock)]
+|  ||                                      |||
+|  |[write_lock(&keyring_name_lock)]  ||atomic_inc(&keyring->usage)
+|  |.                                 ||| *** GET freeing keyring ***
+|  |.                                 ||[read_unlock(&keyring_name_lock)]
+|  ||                                      ||
+|  |list_del()                        |[mutex_unlock(&key_user_k..mutex)]
+|  ||                                      |
+|  |[write_unlock(&keyring_name_lock)] ** INVALID keyring is returned **
+|  |                                        .
+|  kmem_cache_free(,keyring)           .
+|                                           . 
+|                                      atomic_dec(&keyring->usage)
+v                                         *** DESTROYED ***
+TIME 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+Best Regards, 
+Toshiyuki Okajima
