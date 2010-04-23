@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757665Ab0DWPix (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 11:38:53 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:58864
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757642Ab0DWPiu (ORCPT
+	id S1757697Ab0DWPjJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 11:39:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37522 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757682Ab0DWPjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 11:38:50 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz1432P98dN936eM62a3Lzz1202hzz6ff19hz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L1C64G-01-D98-02
-X-M-MSG: 
-Date: Fri, 23 Apr 2010 17:38:39 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: John Villalovos <sodarock@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-       oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
-       rostedt@goodmis.org, stable@kernel.org
-Subject: Re: [PATCH] oprofile: remove double ring buffering
-Message-ID: <20100423153839.GM6450@erda.amd.com>
-References: <20100401011725.GA27567@basil.fritz.box>
- <20100401190205.GD6027@erda.amd.com>
- <m2h5e61b72f1004220733n65451418p7c321f07eb5d6b58@mail.gmail.com>
- <20100422160411.cfcae4e1.akpm@linux-foundation.org>
- <20100423090045.GI6450@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100423090045.GI6450@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 23 Apr 2010 15:38:39.0366 (UTC) FILETIME=[0BA74260:01CAE2FB]
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Fri, 23 Apr 2010 11:39:05 -0400
+Subject: Re: [PATCH 06/10] ARM: ftrace: add Thumb-2 support
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: linux-kernel@vger.kernel.org, Abhishek Sagar <sagar.abhishek@gmail.com>,
+       Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20100331182518.GA30522@debian>
+References: <20100331182518.GA30522@debian>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Fri, 23 Apr 2010 16:37:46 +0100
+Message-ID: <1272037066.15107.58.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Apr 2010 15:37:46.0897 (UTC) FILETIME=[EC612010:01CAE2FA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.04.10 11:00:45, Robert Richter wrote:
-> I just make my tree ready for v2.6.35 and will put it in there.
+On Wed, 2010-03-31 at 19:25 +0100, Rabin Vincent wrote:
+> From bf828a0c069b1bb3f6bf4e68f1dceecab396c286 Mon Sep 17 00:00:00 2001
+> From: Rabin Vincent <rabin@rab.in>
+> Date: Sun, 14 Feb 2010 01:18:34 +0530
+> Subject: [PATCH 06/10] ARM: ftrace: add Thumb-2 support
 > 
-> The patch looks good, will run some tests.
+> Fix the mcount routines to build and run on a kernel built with the
+> Thumb-2 instruction set by correcting the following errors using the
+> fixes suggested by Catalin Marinas:
+> 
+>  - Problem: The following assembler errors appear at the "adr r0,
+>    ftrace_stub" instruction:
+> 
+>    entry-common.S: Assembler messages:
+>    entry-common.S:179: Error: invalid immediate for address calculation (value = 0x00000004)
+> 
+>    Fix: The errors don't occur with a non-global symbol, so use one.
+> 
+>  - Problem: The "mov lr, pc" does not set the lsb when storing the pc in
+>    lr.  The called function returns with "bx lr", and the mode changes
+>    to ARM.
+> 
+>    Fix: Add a label on the return address and use "adr lr, BSYM(label)".
+> 
+> We don't modify the old mcount because it won't be built when using
+> Thumb-2.
+> 
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
 
-The patch is now in the oprofile tree. Sorry for this late response.
-
--Robert
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
+Catalin
 
