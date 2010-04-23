@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab0DWSmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 14:42:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37554 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752308Ab0DWSmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 14:42:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Jean Delvare <khali@linux-fr.org>
-Subject: Re: platform_bus: Allow runtime PM by default
-Date: Fri, 23 Apr 2010 20:41:41 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, Greg KH <greg@kroah.com>,
-       linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-References: <1269625370-17754-1-git-send-email-broonie@opensource.wolfsonmicro.com> <201004231840.20041.rjw@sisk.pl> <201004232026.37114.rjw@sisk.pl>
-In-Reply-To: <201004232026.37114.rjw@sisk.pl>
+	id S1753245Ab0DWSvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 14:51:19 -0400
+Received: from imap.ru.mvista.com ([213.79.90.228]:54380 "EHLO
+	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751236Ab0DWSvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 14:51:18 -0400
+X-Greylist: delayed 1523 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Apr 2010 14:51:17 EDT
+Date: Fri, 23 Apr 2010 22:26:19 +0400
+From: Anton Vorontsov <avorontsov@mvista.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Richard =?utf-8?Q?R=C3=B6jfors?= <richard.rojfors@pelagicore.com>
+Cc: David Vrabel <david.vrabel@csr.com>, Pierre Ossman <pierre@ossman.eu>,
+       Ben Dooks <ben@simtec.co.uk>, linux-mmc@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] sdhci-pltfm: Add kernel-doc for struct sdhci_pltfm_data
+Message-ID: <20100423182619.GA8743@oksana.dev.rtsoft.ru>
+References: <20100316183400.GA24191@oksana.dev.rtsoft.ru>
+ <20100316183429.GB25670@oksana.dev.rtsoft.ru>
+ <4BA0732B.7040007@pelagicore.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004232041.42064.rjw@sisk.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4BA0732B.7040007@pelagicore.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 April 2010, Rafael J. Wysocki wrote:
-> On Friday 23 April 2010, Rafael J. Wysocki wrote:
-> > On Friday 23 April 2010, Mark Brown wrote:
-> > > On Fri, Apr 23, 2010 at 09:11:57AM -0700, Greg KH wrote:
-> > > > On Fri, Apr 23, 2010 at 04:57:21PM +0100, Mark Brown wrote:
-> > > 
-> > > > > Turns out it's commit ad53012 "i2c: Fix bus-level power management
-> > > > > callbacks" in the PM tree that it depends on.  Does it make sense to
-> > > > > merge this via there rather than via your tree?
-> > > 
-> > > > Why would an i2c specific patch be needed here?  Do you have a pointer
-> > > > to that patch?
-> > > 
-> > > Despite the patch title being I2C specific it actually includes exposing
-> > > some of the runtime PM implementation to external users - I2C being the
-> > > first user of the generic PM runtime callbacks that I'm trying to use in
-> > > the platform device implementation.
-> > > 
-> > > http://git.kernel.org/?p=linux/kernel/git/sfr/linux-next.git;a=commitdiff;h=ad530128cd302e5df930b6eb4d4c7e162c40fcb2;hp=b938b00444e900f1c86e754539e3d00f172c184e
-> > > http://git.kernel.org/?p=linux/kernel/git/sfr/linux-next.git;a=commitdiff;h=d690b2cd222afc75320b9b8e9da7df02e9e630ca
-> > > 
-> > > > And yes, if it depends on something else in the PM tree, feel free to
-> > > > send this patch also through it, I have no objection to that.  Rafael,
-> > > > care to pick it up?  Mark, you might have to resend it to him.
-> > > 
-> > > OK, Raphael please let me know if you need a resend.
-> > 
-> > No, thanks, I have your original post.
+
+Suggested-by: Richard Röjfors <richard.rojfors@pelagicore.com>
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+---
+
+On Wed, Mar 17, 2010 at 07:14:03AM +0100, Richard Röjfors wrote:
+> On 3/16/10 7:34 PM, Anton Vorontsov wrote:
+> > This includes platform ops, quirks and (de)initialization callbacks.
 > 
-> Now applied to suspend-2.6/linux-next .
+> Good idea, just a doc comment below.
+[....]
+> > +struct sdhci_pltfm_data {
+> > +	struct sdhci_ops *ops;
+> > +	unsigned int quirks;
+> > +	int (*init)(struct sdhci_host *host);
+> > +	void (*exit)(struct sdhci_host *host);
+> > +};
+> 
+> I would like to see this struct kernel-doc:ed.
 
-Reverted, sorry.
+Done, thanks!
 
-The i2c patch is not in my tree, it's in the i2c tree.
-Perhaps I can handle the both of them.
+Andrew,
 
-Jean, the patch we're discussing depends on the
-"i2c: Fix bus-level power management callbacks" patch that's in your tree right
-now.  Would it be possible to move the i2c patch to my tree, or alternatively
-would it be acceptable for you to merge a core PM patch through your tree?
+Please fold this patch into
+sdhci-pltfm-implement-platform-data-passing.patch
 
-Rafael
+Thanks,
+
+ include/linux/sdhci-pltfm.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/sdhci-pltfm.h b/include/linux/sdhci-pltfm.h
+index 0aaa334..0239bd7 100644
+--- a/include/linux/sdhci-pltfm.h
++++ b/include/linux/sdhci-pltfm.h
+@@ -17,6 +17,14 @@
+ struct sdhci_ops;
+ struct sdhci_host;
+ 
++/**
++ * struct sdhci_pltfm_data - SDHCI platform-specific information & hooks
++ * @ops: optional pointer to the platform-provided SDHCI ops
++ * @quirks: optional SDHCI quirks
++ * @init: optional hook that is called during device probe, before the
++ *        driver tries to access any SDHCI registers
++ * @exit: optional hook that is called during device removal
++ */
+ struct sdhci_pltfm_data {
+ 	struct sdhci_ops *ops;
+ 	unsigned int quirks;
+-- 
+1.7.0.5
+
