@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757697Ab0DWPjJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 11:39:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37522 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757682Ab0DWPjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 11:39:05 -0400
-Subject: Re: [PATCH 06/10] ARM: ftrace: add Thumb-2 support
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: linux-kernel@vger.kernel.org, Abhishek Sagar <sagar.abhishek@gmail.com>,
-       Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20100331182518.GA30522@debian>
-References: <20100331182518.GA30522@debian>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Fri, 23 Apr 2010 16:37:46 +0100
-Message-ID: <1272037066.15107.58.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1757667Ab0DWPkT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 11:40:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19427 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755844Ab0DWPkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 11:40:12 -0400
+Message-ID: <4BD1BF57.7070201@redhat.com>
+Date: Fri, 23 Apr 2010 17:40:07 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
+MIME-Version: 1.0
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+CC: Miklos Szeredi <mszeredi@suse.cz>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] procfs: fix tid fdinfo
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Apr 2010 15:37:46.0897 (UTC) FILETIME=[EC612010:01CAE2FA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-31 at 19:25 +0100, Rabin Vincent wrote:
-> From bf828a0c069b1bb3f6bf4e68f1dceecab396c286 Mon Sep 17 00:00:00 2001
-> From: Rabin Vincent <rabin@rab.in>
-> Date: Sun, 14 Feb 2010 01:18:34 +0530
-> Subject: [PATCH 06/10] ARM: ftrace: add Thumb-2 support
-> 
-> Fix the mcount routines to build and run on a kernel built with the
-> Thumb-2 instruction set by correcting the following errors using the
-> fixes suggested by Catalin Marinas:
-> 
->  - Problem: The following assembler errors appear at the "adr r0,
->    ftrace_stub" instruction:
-> 
->    entry-common.S: Assembler messages:
->    entry-common.S:179: Error: invalid immediate for address calculation (value = 0x00000004)
-> 
->    Fix: The errors don't occur with a non-global symbol, so use one.
-> 
->  - Problem: The "mov lr, pc" does not set the lsb when storing the pc in
->    lr.  The called function returns with "bx lr", and the mode changes
->    to ARM.
-> 
->    Fix: Add a label on the return address and use "adr lr, BSYM(label)".
-> 
-> We don't modify the old mcount because it won't be built when using
-> Thumb-2.
-> 
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
+Correct the file_operations struct in fdinfo entry of tid_base_stuff[].
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ base.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--- 
-Catalin
-
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 7621db8..8418fcc 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2909,7 +2909,7 @@ out_no_task:
+  */
+ static const struct pid_entry tid_base_stuff[] = {
+ 	DIR("fd",        S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
+-	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fd_operations),
++	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
+ 	REG("environ",   S_IRUSR, proc_environ_operations),
+ 	INF("auxv",      S_IRUSR, proc_pid_auxv),
+ 	ONE("status",    S_IRUGO, proc_pid_status),
