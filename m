@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab0DWUIE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 16:08:04 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43148 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756053Ab0DWUH7 (ORCPT
+	id S1756811Ab0DWUPC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 16:15:02 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:34881 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756711Ab0DWUO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 16:07:59 -0400
-Date: Fri, 23 Apr 2010 13:07:36 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] bcache: ver 3
-Message-Id: <20100423130736.79db708a.randy.dunlap@oracle.com>
-In-Reply-To: <20100423194107.GA20322@moria>
-References: <20100423194107.GA20322@moria>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090207.4BD1FE1C.0082:SCFMA4539811,ss=1,fgs=0
+	Fri, 23 Apr 2010 16:14:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Mk2CvArqM/aUw1fLYjZgeSz6u93O5Rp1PJzV7ZEAZokKNU2XSOXyM0U0feT+SqfmXC
+         MaHKgHLU4J3u7yvljJ3+OiTjB5iKBGlSjJCeqeL2Lc3DctMaqLbW3q0XtsmXwsYmqgDd
+         ZLT0di9eJd8Z8byKvuS05aLWDBBksZTmRdFp8=
+MIME-Version: 1.0
+Date: Fri, 23 Apr 2010 22:14:55 +0200
+Message-ID: <l2nb43bf5491004231314i13503c67yeccfc54bc1cae850@mail.gmail.com>
+Subject: [PATCH] e100: expose broadcast_disabled as a module option
+From: Erwan Velu <erwanaliasr1@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
+       bruce.w.allan@intel.com, alexander.h.duyck@intel.com,
+       peter.p.waskiewicz.jr@intel.com, john.ronciak@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Apr 2010 11:41:07 -0800 Kent Overstreet wrote:
+Hi folks,
 
-> diff --git a/block/Kconfig b/block/Kconfig
-> index f9e89f4..85adf8d 100644
-> --- a/block/Kconfig
-> +++ b/block/Kconfig
-> @@ -100,6 +100,11 @@ config DEBUG_BLK_CGROUP
->  	in the blk group which can be used by cfq for tracing various
->  	group related activity.
->  
-> +config BLK_CACHE
-> +	tristate "Block device as cache"
-> +	select SLOW_WORK
-> +	default m
+I've been facing a very noisy network where hundreds broadcast packets
+were generated every second.
+When this traffic can't be controlled at the source, there is a side
+effect on some systems.
+I was having some idle systems that will never be targeted by this
+broadcast traffic that got loaded just by receiving that "flood".
+I mean by loaded that this light hardware was generating 300
+context/switches per second.
 
-	help
-	  <some explanatory help text>
-please.  The tristate prompt didn't do anything for me.
+I was looking for many options to avoid this traffic to disturb this
+hosts and I discovered that the e100 driver was featuring a
+"broadcast_disabled" configure option.
+I realize that this option is not controllable, so I wrote this simple
+patch that expose this option as a module option.
+This allow me to tell this hosts not to listen anymore this traffic.
 
-> +
->  endif # BLOCK
+The result is clearly good as my systems are now running at 21
+context/switches while being idle.
+Hope this patch isn't too bad and could help others that faces the same problem.
 
+Patch can be downloaded here :
+http://konilope.linuxeries.org/e100_broadcast_disabled.patch
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Even if gmail is eating the inlined, patch, at least that make it
+easier to read it for humans.
+If the patch is acked, the downloaded one will be more clean ;)
+
+This patch was generated on top of the latest 2.6 torvald's git.
+Cheers,
+Erwan
+
+Signed-off-by: Erwan Velu <erwanaliasr1@gmail.com>
+
+diff --git a/drivers/net/e100.c b/drivers/net/e100.c
+index b997e57..2ba582f 100644
+--- a/drivers/net/e100.c
++++ b/drivers/net/e100.c
+@@ -194,12 +194,15 @@ MODULE_FIRMWARE(FIRMWARE_D102E);
+ static int debug = 3;
+ static int eeprom_bad_csum_allow = 0;
+ static int use_io = 0;
++static int broadcast_disabled = 0;
+ module_param(debug, int, 0);
+ module_param(eeprom_bad_csum_allow, int, 0);
+ module_param(use_io, int, 0);
++module_param(broadcast_disabled, int, 0);
+ MODULE_PARM_DESC(debug, "Debug level (0=none,...,16=all)");
+ MODULE_PARM_DESC(eeprom_bad_csum_allow, "Allow bad eeprom checksums");
+ MODULE_PARM_DESC(use_io, "Force use of i/o access mode");
++MODULE_PARM_DESC(broadcast_disabled, "Filter broadcast packets
+(0=disabled (default), 1=enabled)");
+ #define DPRINTK(nlevel, klevel, fmt, args...) \
+ 	(void)((NETIF_MSG_##nlevel & nic->msg_enable) && \
+ 	printk(KERN_##klevel PFX "%s: %s: " fmt, nic->netdev->name, \
+@@ -1131,6 +1134,8 @@ static void e100_configure(struct nic *nic,
+struct cb *cb, struct sk_buff *skb)
+ 		config->promiscuous_mode = 0x1;		/* 1=on, 0=off */
+ 	}
+
++	config->broadcast_disabled = broadcast_disabled; /* Broadcast filtering */
++
+ 	if (nic->flags & multicast_all)
+ 		config->multicast_all = 0x1;		/* 1=accept, 0=no */
