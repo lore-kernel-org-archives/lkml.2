@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab0DWNwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 09:52:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34616 "EHLO mx1.redhat.com"
+	id S1757525Ab0DWNzV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 09:55:21 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58842 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756419Ab0DWNwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 09:52:34 -0400
-Message-ID: <4BD1A609.4040401@redhat.com>
-Date: Fri, 23 Apr 2010 09:52:09 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] [BUGFIX] rmap: remove anon_vma check in page_address_in_vma()
-References: <20100422054241.GB10957@spritzerA.linux.bs1.fc.nec.co.jp> <4BD0688A.7050806@redhat.com> <20100423020827.GB7383@spritzerA.linux.bs1.fc.nec.co.jp>
-In-Reply-To: <20100423020827.GB7383@spritzerA.linux.bs1.fc.nec.co.jp>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757416Ab0DWNzS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 09:55:18 -0400
+Subject: Re: [PATCH 6/8] KVM: SVM: Report emulated SVM features to userspace
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1271932394-13968-7-git-send-email-joerg.roedel@amd.com>
+Date: Fri, 23 Apr 2010 15:55:15 +0200
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+       kvm@vger.kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <60EF3E44-A41C-418E-9B03-8C245CA50699@suse.de>
+References: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com> <1271932394-13968-7-git-send-email-joerg.roedel@amd.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2010 10:08 PM, Naoya Horiguchi wrote:
-> Currently page_address_in_vma() compares vma->anon_vma and page_anon_vma(page)
-> for parameter check, but in 2.6.34 a vma can have multiple anon_vmas with
-> anon_vma_chain, so current check does not work. (For anonymous page shared by
-> multiple processes, some verified (page,vma) pairs return -EFAULT wrongly.)
->
-> We can go to checking all anon_vmas in the "same_vma" chain, but it needs
-> to meet lock requirement. Instead, we can remove anon_vma check safely
-> because page_address_in_vma() assumes that page and vma are already checked
-> to belong to the identical process.
->
-> Signed-off-by: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
-> Cc: Andrew Morton<akpm@linux-foundation.org>
-> Cc: Rik van Riel<riel@redhat.com>
-> Cc: Andi Kleen<andi@firstfloor.org>
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+On 22.04.2010, at 12:33, Joerg Roedel wrote:
+
+> This patch implements the reporting of the emulated SVM
+> features to userspace instead of the real hardware
+> capabilities. Every real hardware capability needs emulation
+> in nested svm so the old behavior was broken.
+> 
+> Cc: stable@kernel.org
+
+Again, please don't CC stable directly.
+
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> ---
+> arch/x86/kvm/svm.c |   10 ++++++++++
+> 1 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index 0fa2035..65fc114 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -3154,6 +3154,16 @@ static void svm_cpuid_update(struct kvm_vcpu *vcpu)
+> 
+> static void svm_set_supported_cpuid(u32 func, struct kvm_cpuid_entry2 *entry)
+> {
+> +	switch (func) {
+> +	case 0x8000000A:
+> +		entry->eax = 1; /* SVM revision 1 */
+> +		entry->ebx = 8; /* Lets support 8 ASIDs in case we add proper
+> +				   ASID emulation to nested SVM */
+
+I completely forgot what we do now. What do we do? It shouldn't be too hard to keep a table around and just assign 8 host ASIDs to the guest. If possible lazily, so we can just flush the whole thing when we run out of entries.
+
+It's basically the same as my VSID mapping on ppc64 actually. See arch/powerpc/kvm/book3s_64_mmu_host.c and search for "slb".
+
+> +		entry->ecx = 0; /* Reserved */
+> +		entry->edx = 0; /* Do not support any additional features */
+
+What about nnpt? Hasn't that been accepted yet?
+
+
+Alex
+
