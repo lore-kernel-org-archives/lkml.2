@@ -1,112 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758281Ab0DWQ4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 12:56:25 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23293 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754687Ab0DWQ4X (ORCPT
+	id S1758315Ab0DWREx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 13:04:53 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:36360
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758230Ab0DWREw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 12:56:23 -0400
-Date: Fri, 23 Apr 2010 09:55:28 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] Add documentation for trace commands mod,
- traceon/traceoff
-Message-Id: <20100423095528.668decf8.randy.dunlap@oracle.com>
-In-Reply-To: <1272039467-27413-1-git-send-email-chase.douglas@canonical.com>
-References: <1272039467-27413-1-git-send-email-chase.douglas@canonical.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4BD1D127.00C3:SCFMA922111,ss=1,fgs=0
+	Fri, 23 Apr 2010 13:04:52 -0400
+X-IronPort-AV: E=Sophos;i="4.52,262,1270418400"; 
+   d="c'?scan'208";a="61202962"
+Date: Fri, 23 Apr 2010 19:04:49 +0200
+From: Samuel Thibault <samuel.thibault@labri.fr>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       olivier.aumage@inria.fr, yannick.martin@inria.fr
+Subject: X86_64 BUG: missing FS/GS LDT reload on fork()
+Message-ID: <20100423170449.GV4997@const.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@labri.fr>,
+	linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, olivier.aumage@inria.fr, yannick.martin@inria.fr
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mP3DRpeJDSE+ciuQ"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Apr 2010 12:17:47 -0400 Chase Douglas wrote:
 
-> The mod command went in as commit
-> 64e7c440618998fd69eee6ab490b042d12248021
-> 
-> The traceon/traceoff commands when in as commit
-> 23b4ff3aa479c9e3bb23cb6b2d0a97878399784a
-> 
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> ---
->  Documentation/trace/ftrace.txt |   35 +++++++++++++++++++++++++++++++++++
->  1 files changed, 35 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-> index 03485bf..64e08d5 100644
-> --- a/Documentation/trace/ftrace.txt
-> +++ b/Documentation/trace/ftrace.txt
-> @@ -155,6 +155,9 @@ of ftrace. Here is a list of some of the key files:
->  	to be traced. Echoing names of functions into this file
->  	will limit the trace to only those functions.
->  
-> +	This interface also allows for commands to be used. See the
-> +	"Filter commands" section for more details.
-> +
->    set_ftrace_notrace:
->  
->  	This has an effect opposite to that of
-> @@ -1822,6 +1825,38 @@ this special filter via:
->   echo > set_graph_function
->  
->  
-> +Filter commands
-> +---------------
-> +
-> +A few commands are supported by the set_ftrace_filter interface.
-> +Trace commands have the following format:
-> +
-> +<function>:<command>:<parameter>
-> +
-> +The following commands are supported:
-> +
-> +- mod
-> +  This command enables function filtering per module. The
-> +  parameter defines the module. For example, if only the write*
-> +  functions in the ext3 module are useful in a trace, echo
-> +  'write*:mod:ext3' > set_ftrace_filter. This command interacts
+--mP3DRpeJDSE+ciuQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Can we have the echo command all on one line, please?  E.g.:
+Hello,
 
-+  parameter defines the module. For example, if only the write*
-+  functions in the ext3 module are useful in a trace, use:
-+	echo 'write*:mod:ext3' > set_ftrace_filter
-+  This command interacts
+I have an issue with FS/GS LDT reload in the child of fork(). The
+attached testcase fails quite often.  It sets an LDT entry up, uses
+prctl to set gs's base to a 64bit value, then loads gs with the LDT
+entry. The LDT entry is now in effect. After a fork call, the LDT entry
+is not in effect any more, the 64bit base is back!
 
+It can be noticed that setting a 32bit base doesn't hurt, and enabling a
+small nanosleep makes it work (I guess due to the induced save/restore
+cycle).
 
+I guess there's something bogus in the context save/load cycle across
+fork().
 
-> +  with the filter in the same way as filtering based on function
-> +  names. Thus, adding more functions in a different module is
-> +  accomplished by appending (>>) to the filter file. Remove
-> +  specific module functions by prepending '!'
-> +  (!writeback*:mod:ext3).
-> +
-> +- traceon/traceoff
-> +  These commands turn tracing on and off when the specified
-> +  functions are hit. The parameter determines how many times the
-> +  tracing system is turned on and off. If unspecified, there is
-> +  no limit. For example, to disable tracing when a schedule bug
-> +  is hit the first 5 times, use '__schedule_bug:traceoff:5'.
-> +  These commands are cumulative whether or not they are appended
-> +  to set_ftrace_filter. To remove a command, prepend it by '!'
-> +  and drop the parameter (!__schedule_bug:traceoff).
-> +
-> +
->  trace_pipe
->  ----------
+This is vanilla 2.6.33 with the cpu below, but it also fails with a
+2.6.32, 2.6.30, 2.6.27, and a 2.6.18 on various 64bit CPUs.
+
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 15
+model name	: Intel(R) Core(TM)2 Duo CPU     U7700  @ 1.33GHz
+stepping	: 13
+cpu MHz		: 800.000
+cache size	: 2048 KB
+physical id	: 0
+siblings	: 2
+core id		: 0
+cpu cores	: 2
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 10
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm lahf_lm tpr_shadow vnmi flexpriority
+bogomips	: 2660.22
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
+
+processor	: 1
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 15
+model name	: Intel(R) Core(TM)2 Duo CPU     U7700  @ 1.33GHz
+stepping	: 13
+cpu MHz		: 800.000
+cache size	: 2048 KB
+physical id	: 0
+siblings	: 2
+core id		: 1
+cpu cores	: 2
+apicid		: 1
+initial apicid	: 1
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 10
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm lahf_lm tpr_shadow vnmi flexpriority
+bogomips	: 2660.03
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Samuel
+
+--mP3DRpeJDSE+ciuQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="test.c"
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <sys/syscall.h>
+#include <asm/prctl.h>
+#include <asm/ldt.h>
+#include <sys/types.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+int var = 9;
+int status = 0;
+
+void print_base(char *who) {
+	unsigned long base;
+	int val;
+	syscall(SYS_arch_prctl, ARCH_GET_GS, &base);
+	asm("movl %%gs:0,%0":"=r"(val));
+	printf("%s:\tbase %16lx val %d var %p\n", who, base, val, &var);
+	if (val != var)
+		status = 1;
+}
+
+int main(int argc, char *argv[]) {
+	unsigned short entry = 1;
+	unsigned short selector = (entry*8) | 0x4;
+	struct user_desc desc = {
+		.entry_number = entry,
+		.base_addr = (unsigned) (uintptr_t) &var,
+		.limit = 0xfffffffful,
+		.contents = MODIFY_LDT_CONTENTS_DATA,
+		.read_exec_only = 0,
+		.limit_in_pages = 1,
+		.seg_not_present = 0,
+		.useable = 1,
+	};
+	pid_t pid;
+	int i;
+
+	if (syscall(SYS_modify_ldt, 0x11, &desc, sizeof(desc)))
+		perror("modify_ldt");
+
+#if 1
+	syscall(SYS_arch_prctl, ARCH_SET_GS, &argc);
+#else
+	syscall(SYS_arch_prctl, ARCH_SET_GS, &status);
+#endif
+	asm volatile("movw %w0,%%gs"::"q"(selector));
+	print_base("parent");
+
+#if 0
+	{
+		struct timespec ts = {0, 1000000};
+		nanosleep(&ts, NULL);
+	}
+#endif
+	pid = syscall(SYS_fork);
+	print_base(pid ? "parent" : "child");
+	asm volatile("movw %w0,%%gs"::"q"(selector));
+	print_base(pid ? "parent" : "child");
+	if (pid)
+		waitpid(pid, &status, 0);
+	return status != 0;
+}
+
+--mP3DRpeJDSE+ciuQ--
