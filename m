@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699Ab0DWPlM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 11:41:12 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:45576 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757626Ab0DWPlI (ORCPT
+	id S1757739Ab0DWPlb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 11:41:31 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:1411 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757711Ab0DWPl1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 11:41:08 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz14e0M62a3Lzz1202hzz6ff19hz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L1C684-01-DEK-02
-X-M-MSG: 
-Date: Fri, 23 Apr 2010 17:40:51 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: LKML <linux-kernel@vger.kernel.org>,
-       oprofile-list <oprofile-list@lists.sourceforge.net>
-Subject: [GIT PULL] updates for oprofile
-Message-ID: <20100423154050.GN6450@erda.amd.com>
+	Fri, 23 Apr 2010 11:41:27 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=QFKO+4pyrFqUk31XooPopAT1s8BA3xA5y8MnP3cPJpd0RYpaa707CFrWkscRxSXYh
+	Nnfrpy0/Wfgwiior2darg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 23 Apr 2010 15:40:51.0430 (UTC) FILETIME=[5A5EA060:01CAE2FB]
-X-Reverse-DNS: ausb3extmailp02.amd.com
+In-Reply-To: <4BD102E5.7080006@pobox.com>
+References: <g2ida824cf31004141843p41f7b21fz25927e3c6faeeed7@mail.gmail.com>
+	 <l2jda824cf31004201352y5fcdfa40g2ecb5dbb1706bf88@mail.gmail.com>
+	 <4BD102E5.7080006@pobox.com>
+Date: Fri, 23 Apr 2010 08:41:24 -0700
+Message-ID: <w2qda824cf31004230841t4fabd0a4l11b54668b642b0c6@mail.gmail.com>
+Subject: Re: [PATCH] 2.6.34-rc3 v2 Disable R_OK (Early ACK) on SII 3726 PMP
+From: Grant Grundler <grundler@google.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: Linux IDE mailing list <linux-ide@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+On Thu, Apr 22, 2010 at 7:16 PM, Jeff Garzik <jgarzik@pobox.com> wrote:
+> On 04/20/2010 04:52 PM, Grant Grundler wrote:
+>>
+>> ping? Can this patch please be applied?
+>
+> Apologies for the delay, I had been pulled away from libata this week by
+> baby stuff :/
 
-please pull oprofile updates from:
+No problem.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
+>
+>
+>> I was assuming this will show up here:
+>>
+>>  http://git.kernel.org/?p=linux/kernel/git/jgarzik/libata-dev.git;a=shortlog;h=refs/heads/upstream-linus
+>
+> Nope, upstream-linus is always a temporary branch.
+>
+> #upstream-fixes is where 2.6.X-rcY changes are found (though typically these
+> are pushed upstream ASAP)
+>
+> #upstream is the development branch for 2.6.(X+1), where this change can
+> [now] be found.
 
-You might want to pull from 'for-next' instead that includes an
-additional merge with tip/tracing/core to resolve conflicts with that
-branch.
+Ok! Thanks for pulling in the patch (manually) and explaining the branches.
 
-Thanks.
+cheers,
+grant
 
--Robert
-
---
-
-commit b971f06187d83b5c03d2b597cccdfef421c0ca91
-Merge: cb6e943 c1ab9ca
-Author: Robert Richter <robert.richter@amd.com>
-Date:   Fri Apr 23 16:47:51 2010 +0200
-
-    Merge commit 'tip/tracing/core' into oprofile/core
-    
-    Conflicts:
-        drivers/oprofile/cpu_buffer.c
-    
-    Signed-off-by: Robert Richter <robert.richter@amd.com>
-
-commit cb6e943ccf19ab6d3189147e9d625a992e016084
-Author: Andi Kleen <andi@firstfloor.org>
-Date:   Thu Apr 1 03:17:25 2010 +0200
-
-    oprofile: remove double ring buffering
-    
-    oprofile used a double buffer scheme for its cpu event buffer
-    to avoid races on reading with the old locked ring buffer.
-    
-    But that is obsolete now with the new ring buffer, so simply
-    use a single buffer. This greatly simplifies the code and avoids
-    a lot of sample drops on large runs, especially with call graph.
-    
-    Based on suggestions from Steven Rostedt
-    
-    For stable kernels from v2.6.32, but not earlier.
-    
-    Signed-off-by: Andi Kleen <ak@linux.intel.com>
-    Cc: Steven Rostedt <rostedt@goodmis.org>
-    Cc: stable <stable@kernel.org>
-    Signed-off-by: Robert Richter <robert.richter@amd.com>
-
-commit a36bf32e9e8a86f291f746b7f8292e042ee04a46
-Merge: bc078e4 01bf0b6
-Author: Robert Richter <robert.richter@amd.com>
-Date:   Fri Apr 23 14:30:22 2010 +0200
-
-    Merge commit 'v2.6.34-rc5' into oprofile/core
-
-commit bc078e4eab65f11bbaeed380593ab8151b30d703
-Author: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Date:   Tue Mar 2 16:01:10 2010 +0100
-
-    oprofile: convert oprofile from timer_hook to hrtimer
-    
-    Oprofile is currently broken on systems running with NOHZ enabled.
-    A maximum of 1 tick is accounted via the timer_hook if a cpu sleeps
-    for a longer period of time. This does bad things to the percentages
-    in the profiler output. To solve this problem convert oprofile to
-    use a restarting hrtimer instead of the timer_hook.
-    
-    Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-    Signed-off-by: Robert Richter <robert.richter@amd.com>
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
-
+>
+>        Jeff
+>
+>
+>
+>
