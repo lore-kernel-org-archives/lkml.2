@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597Ab0DWTSV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 15:18:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50830 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993Ab0DWTSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 15:18:18 -0400
-Subject: Re: [PATCH 1/8] KVM: SVM: Fix nested nmi handling
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20100423145120.GL31537@amd.com>
-Date: Fri, 23 Apr 2010 21:18:15 +0200
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1752690Ab0DWTSo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 15:18:44 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:41120 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab0DWTSk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 15:18:40 -0400
+Date: Fri, 23 Apr 2010 22:18:38 +0300 (EEST)
+From: Pekka J Enberg <penberg@cs.helsinki.fi>
+To: Christoph Lameter <cl@linux.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Alex Shi <alex.shi@intel.com>, yanmin_zhang@linux.intel.com,
+       tj@kernel.org
+Subject: Re: [Bug #15713] hackbench regression due to commit 9dfc6e68bfe6e
+In-Reply-To: <4BD086D0.9090309@cs.helsinki.fi>
+Message-ID: <alpine.DEB.2.00.1004232214520.29018@melkki.cs.helsinki.fi>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.vjH.sRSzLB@tosh> <alpine.DEB.2.00.1004221045270.1204@router.home> <4BD086D0.9090309@cs.helsinki.fi>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <CEE68C62-43B0-406C-9426-6201901022AF@suse.de>
-References: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com> <1271932394-13968-2-git-send-email-joerg.roedel@amd.com> <622FCBB5-826D-4392-A521-7E395507398B@suse.de> <20100423141355.GD31537@amd.com> <85D89C34-806C-4376-89BA-5BFD413F5396@suse.de> <20100423142258.GG31537@amd.com> <013159C3-277C-447C-B64B-D2196AF851F9@suse.de> <20100423143159.GJ31537@amd.com> <768234E2-FF02-42AC-B04C-00D98B19B1C0@suse.de> <20100423145120.GL31537@amd.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 23.04.2010, at 16:51, Joerg Roedel wrote:
-
-> On Fri, Apr 23, 2010 at 04:42:52PM +0200, Alexander Graf wrote:
+On Thu, 22 Apr 2010, Pekka Enberg wrote:
+>>> The following bug entry is on the current list of known regressions
+>>> from 2.6.33.  Please verify if it still should be listed and let the 
+>>> tracking team
+>>> know (either way).
 >> 
->> On 23.04.2010, at 16:31, Joerg Roedel wrote:
->> 
->>> On Fri, Apr 23, 2010 at 04:24:54PM +0200, Alexander Graf wrote:
->>>> 
->>>> On 23.04.2010, at 16:22, Joerg Roedel wrote:
->>> 
->>>>> No, nested_svm_nmi runs in atomic context where we can't emulate a
->>>>> vmexit. We set exit_required and emulate the vmexit later.
->>>> 
->>>> So we modify the L2 rflags and then trigger a #vmexit, leaving the l2
->>>> state broken?
->>> 
->>> No, the rflags are changed in enable_nmi_window which isn't called when
->>> we run nested and the nested hypervisor intercepts nmi. So it only runs
->>> in the !nested case where it can't corrupt L2 state.
->> 
->> Last time I checked the code enable_nmi_window was the function
->> triggering the #vmexit,
-> 
-> Yes, thats the bug which this patch fixes :-)
-> 
->> so it should run in that exact scenario. If what you say is true, where
->> do we #vmexit instead then?
-> 
-> After setting exit_required we run into svm.c:svm_vcpu_run. There the
-> exit_required flag is checked and if set, the function immediatly
-> returns without doing a vmrun. A few cycles later we run into
-> svm.c:handle_exit() where at the beginning exit_required is checked, and
-> if set the vmexit is emulated.
+>> I have not been able to reproduce it so far.
+>
+> So what are our options? We can revert the SLUB conversion patch for now but 
+> I still can't see what's wrong with it...
 
-Oh well, I guess I have to trust you on this one :)
+I haven't been able to reproduce this either on my Core 2 machine.
 
+Yanmin, does something like this help on your machines? I'm thinking false 
+sharing with some other per-CPU data structure that happens to be put in 
+same percpu slot as struct kmem_cache_cpu...
 
-Alex
+ 			Pekka
 
+diff --git a/mm/slub.c b/mm/slub.c
+index 7d6c8b1..d8159d6 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2066,7 +2066,7 @@ init_kmem_cache_node(struct kmem_cache_node *n, struct kmem_cache *s)
+  #endif
+  }
+
+-static DEFINE_PER_CPU(struct kmem_cache_cpu, kmalloc_percpu[KMALLOC_CACHES]);
++static DEFINE_PER_CPU_ALIGNED(struct kmem_cache_cpu, kmalloc_percpu[KMALLOC_CACHES]);
+
+  static inline int alloc_kmem_cache_cpus(struct kmem_cache *s, gfp_t flags)
+  {
+@@ -2077,7 +2077,7 @@ static inline int alloc_kmem_cache_cpus(struct kmem_cache *s, gfp_t flags)
+  		 */
+  		s->cpu_slab = kmalloc_percpu + (s - kmalloc_caches);
+  	else
+-		s->cpu_slab =  alloc_percpu(struct kmem_cache_cpu);
++		s->cpu_slab = __alloc_percpu(sizeof(struct kmem_cache_cpu), cache_line_size());
+
+  	if (!s->cpu_slab)
+  		return 0;
