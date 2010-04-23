@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab0DWIOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 04:14:07 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:60502 "EHLO bamako.nerim.net"
+	id S1756733Ab0DWISP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 04:18:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54122 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876Ab0DWIOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 04:14:01 -0400
-Date: Fri, 23 Apr 2010 10:13:56 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Farid Hammane <farid.hammane@gmail.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, ben-linux@fluff.org,
-       Enrik.Berkhan@ge.com, linux-i2c@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-algo-pca: fix all coding style issues in
- i2c-algo-pca.c
-Message-ID: <20100423101356.454abdd6@hyperion.delvare>
-In-Reply-To: <201004222330.34660.farid.hammane@gmail.com>
-References: <1271877097-10939-1-git-send-email-farid.hammane@gmail.com>
-	<20100422092524.77b7aa84@hyperion.delvare>
-	<20100422075937.GN24384@pengutronix.de>
-	<201004222330.34660.farid.hammane@gmail.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753986Ab0DWISM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 04:18:12 -0400
+Message-ID: <4BD1576E.5070401@kernel.org>
+Date: Fri, 23 Apr 2010 10:16:46 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
+CC: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 7/9] PM: Add suspend blocking work.
+References: <1271984938-13920-1-git-send-email-arve@android.com> <1271984938-13920-2-git-send-email-arve@android.com> <1271984938-13920-3-git-send-email-arve@android.com> <1271984938-13920-4-git-send-email-arve@android.com> <1271984938-13920-5-git-send-email-arve@android.com> <1271984938-13920-6-git-send-email-arve@android.com> <1271984938-13920-7-git-send-email-arve@android.com> <1271984938-13920-8-git-send-email-arve@android.com>
+In-Reply-To: <1271984938-13920-8-git-send-email-arve@android.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Apr 2010 08:16:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Farid,
+Hello,
 
-On Thu, 22 Apr 2010 23:30:34 +0200, Farid Hammane wrote:
-> Hi Jean and Wolfram,
-> 
-> On Thursday 22 April 2010 09:59:37 you wrote:
-> > On Thu, Apr 22, 2010 at 09:25:24AM +0200, Jean Delvare wrote:
-> > > On Thu, 22 Apr 2010 01:57:38 +0200, Wolfram Sang wrote:
-> > > > Hi Farid,
-> > > >
-> > > > thanks for this approach. Have you checked that the binary is the same
-> > > > before/after your patch? If so, please mention in your patch
-> > > > description.
-> 
-> Ok, I think that nothing can be broken with this kind of patch. I just built 
-> i2c-algo-pca.c and everything was ok.
-> 
-> For further patchs I will mention that it has been tested. Thanks for the 
-> advice !
+On 04/23/2010 03:08 AM, Arve Hjønnevåg wrote:
+> Allow work to be queued that will block suspend while it is pending
+> or executing. To get the same functionality in the calling code often
+> requires a separate suspend_blocker for pending and executing work, or
+> additional state and locking.
 
-It's not just a matter of building it. When you only fix coding style
-issue, the binary object before and after your patch should be exactly
-the same. It's a good idea to verify this, especially for drivers you
-aren't using yourself.
+Hmm... I think this can be implemented as pure wrapper around
+workqueue instead of injecting a flag and code into workqueue core.
+Adding @fn field to suspend_blocking_work struct and using a custom
+work function to call it and then invoke suspend_unblock() should be
+enough, right?  Oh, dedicated queue functions will be needed too.  I
+don't think it's wise to meddle with workqueue core code for this.
+
+Thanks.
 
 -- 
-Jean Delvare
+tejun
