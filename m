@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566Ab0DWOAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 10:00:21 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:53276 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757414Ab0DWOAS (ORCPT
+	id S1757570Ab0DWOJB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 10:09:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36181 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753203Ab0DWOI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 10:00:18 -0400
-Date: Fri, 23 Apr 2010 09:48:23 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Pedro Francisco <pedrogfrancisco@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-       me@bobcopeland.com, mickflemm@gmail.com
-Subject: Re: ath5k misbehaving affecting other kernel parts unrelated?
-Message-ID: <20100423134823.GB5004@tuxdriver.com>
-References: <201004230806.13628.pedrogfrancisco@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004230806.13628.pedrogfrancisco@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Fri, 23 Apr 2010 10:08:58 -0400
+Date: Fri, 23 Apr 2010 07:10:50 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, mingo@elte.hu, peterz@infradead.org,
+       tglx@linutronix.de, davej@redhat.com, cpufreq@vger.kernel.org
+Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with
+ ondemand during disk IO
+Message-ID: <20100423071050.715b3b33@infradead.org>
+In-Reply-To: <20100423053858.GE7798@1wt.eu>
+References: <20100418115949.7b743898@infradead.org>
+	<20100418120346.1b478410@infradead.org>
+	<20100423052439.GB4829@ucw.cz>
+	<20100423053858.GE7798@1wt.eu>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 08:06:13AM +0100, Pedro Francisco wrote:
-> Greetings!
-> 
-> Is it possible a faulty ath5k module to affect diverse parts of kernel causing 
-> different oopses to happen referencing things as different as cdrom_ioctl, 
-> find_vma, i915_gem_object_get_pages, get_vfs_caps_from_disk, 
-> warn_slowpath_common (ath5k_tasklet_rx), proc_lookup_de and 
-> _spin_lock(ext4_getattr) [soft lookup]?
-> 
-> The task in which such errors happen is capturing packets with kismet during 
-> the night. The errors aren't easy to create, sometimes they've already 
-> happened when I check the computer in the morning and sometimes they require 
-> stirring up the computer a bit such as starting X.
-> 
-> I memtested the machine during 7h and no error was detected.
-> 
-> I've been trying different kernels but main one is 2.6.32-21-generic, Ubuntu 
-> flavour, with linux-backports-modules-wireless-lucid-generic installed. I would 
-> use 2.6.34-rc5 vanilla if shutdown and suspend worked ;)
-> 
-> As such:
-> a) is it "normal"? I thought modules were somewhat isolated these days.
-> b) any advices for debugging? I've yet to have two oopses that are similar....
+On Fri, 23 Apr 2010 07:38:58 +0200
+Willy Tarreau <w@1wt.eu> wrote:
 
-It is certainly possible -- improper setup of DMA could be scribbling
-over memory that doesn't belong to ath5k.  That sort of thing can be
-ugly to track-down...
+> On Fri, Apr 23, 2010 at 07:24:39AM +0200, Pavel Machek wrote:
+> > Hi!
+> > 
+> > > The ondemand cpufreq governor uses CPU busy time (e.g. not-idle
+> > > time) as a measure for scaling the CPU frequency up or down.
+> > > If the CPU is busy, the CPU frequency scales up, if it's idle,
+> > > the CPU frequency scales down. Effectively, it uses the CPU busy
+> > > time as proxy variable for the more nebulous "how critical is
+> > > performance right now" question.
+> > > 
+> > > This algorithm falls flat on its face in the light of workloads
+> > > where you're alternatingly disk and CPU bound, such as the ever
+> > > popular "git grep", but also things like startup of programs and
+> > > maildir using email clients... much to the chagarin of Andrew
+> > > Morton.
+> > > 
+> > > This patch changes the ondemand algorithm to count iowait time as
+> > > busy, not idle, time. As shown in the breakdown cases above,
+> > > iowait is performance critical often, and by counting iowait, the
+> > > proxy variable becomes a more accurate representation of the "how
+> > > critical is performance" question.
+> > 
+> > Well, and now, if you do something like cat /dev/<your usb1.1 hdd> >
+> > /dev/null, you'll keep cpu on max frequency. Not a problem for new
+> > core i7, but probably big deal for athlon 64.
+> 
+> So that also means that my notebook's CPU fan will spin like mad as
+> soon as I access a USB key ? 
 
-You mentioned Kismet.  Do you experience this sort of problem when
-using ath5k for "normal" purposes (e.g. browsing the web)?  Or only
-when using it to monitor the network?
+unlikely. your notebook CPU will stop its clocks, if not drop its
+voltage, during idle. So during that time the frequency is 0; the only
+difference is in how much leakage you get from a higher voltage
+for those CPUs that do not powergate or drop their cpu in idle.
+Most CPUs that I know of do either or both of that.
 
-John
+
+
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
