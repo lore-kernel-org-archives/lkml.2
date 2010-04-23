@@ -1,88 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab0DWNhs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 09:37:48 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:45734 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756000Ab0DWNhq (ORCPT
+	id S1755278Ab0DWNk6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 09:40:58 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36593 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754867Ab0DWNkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 09:37:46 -0400
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] gpio: max732x: fix input configuration for open-drain pins
+	Fri, 23 Apr 2010 09:40:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=MXaAfqvFml1VxFeKTFeuTiar9YBGsFLq869ls8CGVkXAXItBRywQzTyKeb//H7dG7E
+         gfTz9D0MCRL7ubQ7J7lA8UlQZNufCQxU/U1aiy4S+ijfpzLcD/SCVZ7fONBwztsaxtvY
+         x+FMjrzKnZOMBcU5AqeXPcKWdSWVCqTtk3/eE=
+Date: Fri, 23 Apr 2010 21:40:44 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: John Kacur <jkacur@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Yong Zhang <yong.zhang@windriver.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       linux-rt-users <linux-rt-users@vger.kernel.org>,
+       Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+       Clark Williams <williams@redhat.com>,
+       "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Gregory Haskins <ghaskins@novell.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH] lockdep: reduce stack_trace usage
+Message-ID: <20100423134044.GA2777@zhy-desktop>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <alpine.LFD.2.00.1004222208310.3155@localhost>
+ <20100423025850.GA21328@windriver.com>
+ <alpine.LFD.2.00.1004230907050.4151@localhost>
+ <1272009915.1646.25.camel@laptop>
+ <w2v520f0cf11004230131i743c596emfd0e5b8870330a8b@mail.gmail.com>
 MIME-Version: 1.0
-Date: Fri, 23 Apr 2010 15:37:43 +0200
-From: Marc Zyngier <maz@misterjones.org>
-Cc: Eric Miao <eric.y.miao@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Organization: Metropolis
-In-Reply-To: <20100420165148.49711c3c.akpm@linux-foundation.org>
-References: <c2d04a7116b74b3717366148db5f7e54@localhost> <20100420165148.49711c3c.akpm@linux-foundation.org>
-Message-ID: <53798eb0b7ee483000fcd94fb76af377@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Type: multipart/mixed;
-	boundary="=_2eb6a3c5ffc6f7120dcf6d25712b2b64"
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: akpm@linux-foundation.org, eric.y.miao@gmail.com, linux-kernel@vger.kernel.org
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <w2v520f0cf11004230131i743c596emfd0e5b8870330a8b@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=_2eb6a3c5ffc6f7120dcf6d25712b2b64
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
-
-On Tue, 20 Apr 2010 16:51:48 -0700, Andrew Morton
-<akpm@linux-foundation.org> wrote:
->> On Tue, 16 Mar 2010 10:19:00 +0100
+On Fri, Apr 23, 2010 at 10:31:16AM +0200, John Kacur wrote:
+> > Non of these numbers look strange..
+> >
 > 
-> I bet you thought I'd forgotten.
+> As I told Peter privately the laptop that triggered the
+> MAX_STACK_TRACE_ENTRIES every time, has met an
+> unfortunate early demise. However, I think it was the config - not the
+> hardware. On this machine where the above
+> numbers come from, I believe I have less debug options configured -
+> but it is running the exact same kernel as
+> the laptop was. (2.6.33.2-rt13)
 
-Naaaah... I trust your memory more than mine... ;-)
+Hi John,
 
-> You really did mean `&' here, but one very much expects a variable
-> called is_foo to be a boolean, and booleans want `&&'.
+(checking mail at home).
+I find some place which can be hacked. Below is the patch.
+But I don't even compile it. Can you test it to see if it can smooth
+your problem.
 
-Actually, the attached patch is a much simpler solution to this particular
-one. We already checked that the pin is input-capable. Use the same mask to
-check that the pin is also output-capable, and thus open-drain. No need for
-an additional variable.
+---cut here ---
+>From 6b9d513b7c417c0805ef0acc1cb3227bddba0889 Mon Sep 17 00:00:00 2001
+From: Yong Zhang <yong.zhang0@gmail.com>
+Date: Fri, 23 Apr 2010 21:13:54 +0800
+Subject: [PATCH] lockdep: reduce stack_trace usage
 
-Thanks,
+When calling check_prevs_add(), if all validations passed
+add_lock_to_list() will add new lock to dependency tree and
+alloc stack_trace for each list_entry. But at this time,
+we are always on the same stack, so stack_trace for each
+list_entry has the same value. This is redundant and eats up
+lots of memory which could lead to warning on low
+MAX_STACK_TRACE_ENTRIES.
+Using one copy of stack_trace instead.
 
-        M.
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: David S. Miller <davem@davemloft.net>
+---
+ kernel/lockdep.c |   20 ++++++++++++--------
+ 1 files changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 2594e1c..097d5fb 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -818,7 +818,8 @@ static struct lock_list *alloc_list_entry(void)
+  * Add a new dependency to the head of the list:
+  */
+ static int add_lock_to_list(struct lock_class *class, struct lock_class *this,
+-			    struct list_head *head, unsigned long ip, int distance)
++			    struct list_head *head, unsigned long ip,
++			    int distance, struct stack_trace *trace)
+ {
+ 	struct lock_list *entry;
+ 	/*
+@@ -829,11 +830,9 @@ static int add_lock_to_list(struct lock_class *class, struct lock_class *this,
+ 	if (!entry)
+ 		return 0;
+ 
+-	if (!save_trace(&entry->trace))
+-		return 0;
+-
+ 	entry->class = this;
+ 	entry->distance = distance;
++	entry->trace = *trace;
+ 	/*
+ 	 * Since we never remove from the dependency list, the list can
+ 	 * be walked lockless by other CPUs, it's only allocation
+@@ -1635,7 +1634,7 @@ check_deadlock(struct task_struct *curr, struct held_lock *next,
+  */
+ static int
+ check_prev_add(struct task_struct *curr, struct held_lock *prev,
+-	       struct held_lock *next, int distance)
++	       struct held_lock *next, int distance, struct stack_trace *trace)
+ {
+ 	struct lock_list *entry;
+ 	int ret;
+@@ -1694,14 +1693,14 @@ check_prev_add(struct task_struct *curr, struct held_lock *prev,
+ 	 */
+ 	ret = add_lock_to_list(hlock_class(prev), hlock_class(next),
+ 			       &hlock_class(prev)->locks_after,
+-			       next->acquire_ip, distance);
++			       next->acquire_ip, distance, trace);
+ 
+ 	if (!ret)
+ 		return 0;
+ 
+ 	ret = add_lock_to_list(hlock_class(next), hlock_class(prev),
+ 			       &hlock_class(next)->locks_before,
+-			       next->acquire_ip, distance);
++			       next->acquire_ip, distance, trace);
+ 	if (!ret)
+ 		return 0;
+ 
+@@ -1732,6 +1731,7 @@ check_prevs_add(struct task_struct *curr, struct held_lock *next)
+ {
+ 	int depth = curr->lockdep_depth;
+ 	struct held_lock *hlock;
++	struct stack_trace trace;
+ 
+ 	/*
+ 	 * Debugging checks.
+@@ -1748,6 +1748,9 @@ check_prevs_add(struct task_struct *curr, struct held_lock *next)
+ 			curr->held_locks[depth-1].irq_context)
+ 		goto out_bug;
+ 
++	if (!save_trace(&trace))
++		return 0;
++
+ 	for (;;) {
+ 		int distance = curr->lockdep_depth - depth + 1;
+ 		hlock = curr->held_locks + depth-1;
+@@ -1756,7 +1759,8 @@ check_prevs_add(struct task_struct *curr, struct held_lock *next)
+ 		 * added:
+ 		 */
+ 		if (hlock->read != 2) {
+-			if (!check_prev_add(curr, hlock, next, distance))
++			if (!check_prev_add(curr, hlock, next,
++						distance, &trace))
+ 				return 0;
+ 			/*
+ 			 * Stop after the first non-trylock entry,
 -- 
-Who you jivin' with that Cosmik Debris?
---=_2eb6a3c5ffc6f7120dcf6d25712b2b64
-Content-Transfer-Encoding: base64
-Content-Type: text/plain;
- name*0*="UTF-8''0001-gpio-max732x-fix-input-configuration-for-open-drain"
- name*1*="-.patch";
-Content-Disposition: attachment;
- filename*0*="UTF-8''0001-gpio-max732x-fix-input-configuration-for-open-d"
- filename*1*="rain-.patch";
-
-RnJvbSAzZmY3ZmY3ZjEzMTQ1YTZhNDZmZmEyZTBjYzM1MGJlZTFmMTIwNTc3IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBNYXJjIFp5bmdpZXIgPG1hekBtaXN0ZXJqb25lcy5vcmc+CkRh
-dGU6IEZyaSwgMjMgQXByIDIwMTAgMTI6MjU6NTMgKzAxMDAKU3ViamVjdDogW1BBVENIXSBncGlv
-OiBtYXg3MzJ4OiBmaXggaW5wdXQgY29uZmlndXJhdGlvbiBmb3Igb3Blbi1kcmFpbiBwaW5zCgpG
-aXggYSBidWcgSSBub3RpY2VkIHdoaWxlIGhhY2tpbmcgb24gdGhlIG1heDczMnggZHJpdmVyIGZv
-ciBpbnRlcnJ1cHQKc3VwcG9ydC4gIEFjY29yZGluZyB0byB0aGUgZGF0YXNoZWV0cywgb3Blbi1k
-cmFpbiBwaW5zIGhhdmUgdG8gYmUKY29uZmlndXJlZCBhcyBvdXRwdXQtaGlnaCAod2hpY2ggaW4g
-dGhhdCBjYXNlIGlzIGFjdHVhbGx5IGhpZ2ggaW1wZWRhbmNlKQp0byBiZSB1c2VkIGFzIGlucHV0
-LgoKU2lnbmVkLW9mZi1ieTogTWFyYyBaeW5naWVyIDxtYXpAbWlzdGVyam9uZXMub3JnPgpBY2tl
-ZC1ieTogRXJpYyBNaWFvIDxlcmljLnkubWlhb0BnbWFpbC5jb20+Ci0tLQogZHJpdmVycy9ncGlv
-L21heDczMnguYyB8ICAgIDcgKysrKysrKwogMSBmaWxlcyBjaGFuZ2VkLCA3IGluc2VydGlvbnMo
-KyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9ncGlvL21heDczMnguYyBi
-L2RyaXZlcnMvZ3Bpby9tYXg3MzJ4LmMKaW5kZXggZjc4NjgyNC4uYWQ2YTgwYiAxMDA2NDQKLS0t
-IGEvZHJpdmVycy9ncGlvL21heDczMnguYworKysgYi9kcml2ZXJzL2dwaW8vbWF4NzMyeC5jCkBA
-IC0xODgsNiArMTg4LDEzIEBAIHN0YXRpYyBpbnQgbWF4NzMyeF9ncGlvX2RpcmVjdGlvbl9pbnB1
-dChzdHJ1Y3QgZ3Bpb19jaGlwICpnYywgdW5zaWduZWQgb2ZmKQogCQlyZXR1cm4gLUVBQ0NFUzsK
-IAl9CiAKKwkvKgorCSAqIE9wZW4tZHJhaW4gcGlucyBtdXN0IGJlIHNldCB0byBoaWdoIGltcGVk
-YW5jZSAod2hpY2ggaXMKKwkgKiBlcXVpdmFsZW50IHRvIG91dHB1dC1oaWdoKSB0byBiZSB0dXJu
-ZWQgaW50byBhbiBpbnB1dC4KKwkgKi8KKwlpZiAoKG1hc2sgJiBjaGlwLT5kaXJfb3V0cHV0KSkK
-KwkJbWF4NzMyeF9ncGlvX3NldF92YWx1ZShnYywgb2ZmLCAxKTsKKwogCXJldHVybiAwOwogfQog
-Ci0tIAoxLjcuMC40Cgo=
---=_2eb6a3c5ffc6f7120dcf6d25712b2b64--
-
+1.6.3.3
