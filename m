@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab0DWMyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 08:54:18 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:35620 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab0DWMyR (ORCPT
+	id S1757356Ab0DWNFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 09:05:09 -0400
+Received: from host1.efn.uncor.edu ([200.16.19.1]:59554 "EHLO
+	gtwing.efn.uncor.edu" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab0DWNFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 08:54:17 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Fri, 23 Apr 2010 08:54:16 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Paulius Zaleckas <paulius.zaleckas@gmail.com>, dwmw2@infradead.org,
-       jamie@shareable.org, linux-kernel@vger.kernel.org,
-       linux-mtd@lists.infradead.org, u.kleine-koenig@pengutronix.de,
-       simon.kagstrom@netinsight.net, akpm@linux-foundation.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] MTD: Fix Orion NAND driver compilation with ARM OABI
-In-reply-to: <1272023778.6917.6.camel@localhost>
-Message-id: <alpine.LFD.2.00.1004230853230.7232@xanadu.home>
-References: <20100325152505.17612.40158.stgit@pauliusz>
- <alpine.LFD.2.00.1003251225500.694@xanadu.home> <4BB33988.9070608@gmail.com>
- <1272023778.6917.6.camel@localhost>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 23 Apr 2010 09:05:05 -0400
+Message-ID: <20100423092222.35453a064tyrczcw@gtwing.efn.uncor.edu>
+Date: Fri, 23 Apr 2010 09:22:22 -0300
+From: western union department <mmartini@efn.uncor.edu>
+Reply-to: western.uniondepartment@iwrahost.com
+To: undisclosed-recipients:;
+Subject: CALL   +(44) 702 401 0722
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Apr 2010, Artem Bityutskiy wrote:
-
-> On Wed, 2010-03-31 at 15:01 +0300, Paulius Zaleckas wrote:
-> > On 03/25/2010 06:26 PM, Nicolas Pitre wrote:
-> > > On Thu, 25 Mar 2010, Paulius Zaleckas wrote:
-> > >
-> > >> We must tell GCC to use even register for variable passed
-> > >> to ldrd instruction. Without this patch GCC 4.2.1 puts this
-> > >> variable to r2/r3 on EABI and r3/r4 on OABI, so force it to
-> > >> r2/r3. This does not change anything when EABI and OABI
-> > >> compilation works OK.
-> > >>
-> > >> Without this patch and with OABI I get:
-> > >>    CC      drivers/mtd/nand/orion_nand.o
-> > >> /tmp/ccMkwOCs.s: Assembler messages:
-> > >> /tmp/ccMkwOCs.s:63: Error: first destination register must be even -- `ldrd r3,[ip]'
-> > >> make[5]: *** [drivers/mtd/nand/orion_nand.o] Error 1
-> > >>
-> > >> Signed-off-by: Paulius Zaleckas<paulius.zaleckas@gmail.com>
-> > >
-> > > Acked-by: Nicolas Pitre<nico@fluxnic.net>
-> > 
-> > David,
-> > 
-> > Will you take this patch?
-> > Or you are waiting till I will add all Cc as Jamie suggested?
-> 
-> Meanwhile, I've pushed your patch to my l2-mtd-2.6.git / dunno.
-
-I think it should go to mainline.  It is not perfect, but still better 
-than the current situation.
 
 
-Nicolas
+My associate has helped me to send your first payment of US$7,500 to you
+as instructed by Mr.James Gordon Brown the United Kingdom prime minister
+after the last G20 meeting that was held on April 2nd in United Kingdom,
+making you one of the beneficiaries. Here is the information below.
+
+MONEY TRANSFER CONTROL NUMBER: 8309124803
+SENDER NAME: Mr.Solomon Daniel.Q
+AMOUNT: US$7,500
+
+I told him to keep sending you US$7,500 twice a week until the FULL
+payment of (US $560,000.00 Dollars) is completed.
+
+A certificate will be made to change the Receiver Name as stated by the
+British prime minister, send your Full Names and address via Email to:
+Mr Garry Moore
+
+The money will not reflect until the clearance certificate is issue to
+you by the G20 committee.
+
+E-mail: western.uniondepartment@iwrahost.com
+Tel: +(44) 702 401 0722
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
+
