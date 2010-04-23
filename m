@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab0DWGsA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 02:48:00 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59039 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab0DWGr7 (ORCPT
+	id S1756086Ab0DWGue (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 02:50:34 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53545 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756021Ab0DWGud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 02:47:59 -0400
-Subject: Re: [PATCH 4/5] freezer cgroup: Fix an RCU warning in
- cgroup_freezing_or_frozen()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: paulmck@linux.vnet.ibm.com, LKML <linux-kernel@vger.kernel.org>,
-       "containers@lists.osdl.org" <containers@lists.osdl.org>,
-       Paul Menage <menage@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Matt Helsley <matthltc@us.ibm.com>, Cedric Le Goater <clg@vnet.ibm.com>
-In-Reply-To: <4BD0F261.6080302@cn.fujitsu.com>
-References: <4BD016F4.8060108@cn.fujitsu.com>
-	 <4BD01768.2020606@cn.fujitsu.com> <1271939275.1776.345.camel@laptop>
-	 <20100422195911.GN2524@linux.vnet.ibm.com> <1271966935.1646.4.camel@laptop>
-	  <4BD0F261.6080302@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Apr 2010 08:47:52 +0200
-Message-ID: <1272005272.1646.20.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Apr 2010 02:50:33 -0400
+Date: Fri, 23 Apr 2010 08:50:16 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, x86@kernel.org,
+       linux-kernel@vger.kernel.org, Frank Arnold <frank.arnold@amd.com>
+Subject: Re: [PATCH -v2 0/5] AMD L3 cache index disable fixes for .35
+Message-ID: <20100423065016.GA11748@aftab>
+References: <1271945222-5283-1-git-send-email-bp@amd64.org>
+ <4BD0E869.10402@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BD0E869.10402@zytor.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-23 at 09:05 +0800, Li Zefan wrote:
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, Apr 22, 2010 at 05:23:05PM -0700
+
+> Hi Borislav,
 > 
+> I get compilation failures on tip:x86/cpu with this patchset:
 > 
-> You are right in that taking task_lock() is sufficient (I forgot
-> this lock rule), but it's not true that whatever locks are held
-> in the ->attach method can pin a task's cgroup. 
+> arch/x86/built-in.o: In function `amd_check_l3_disable':
+> intel_cacheinfo.c:(.cpuinit.text+0x412): undefined reference to
+> `num_k8_northbridges'
+> 
+> Both i386 and x86-64 "make allnoconfig".
 
-Ah, can you be more specific about the ->attach() case?
+Yeah, this has bitten us already several times in the past. allnoconfig
+deselects CONFIG_PCI and num_k8_northbridges is under CONFIG_K8_NB which
+depends on CONFIG_PCI so there you go.
 
-The way I read it, cgroup_attach_task():
+I'm thinking the k8.c facility is needed more and more for all the
+processor functionality control over the PCI config space so how about
+compile it in unconditionally on AMD? All the k8's and F10h's need
+it and the older ones will have it there but it won't hurt since the
+pci_get_device() won't match any on those.
 
-        for_each_subsys(root, ss) {
-                if (ss->attach)
-                        ss->attach(ss, cgrp, oldcgrp, tsk, false);
-        }
-        set_bit(CGRP_RELEASABLE, &oldcgrp->flags);
-        synchronize_rcu();
-        put_css_set(cg);
+allnoconfig build failure is fixed this way, albeit non-functional since
+CONFIG_PCI is off and pci_get_device() returns NULL but in that case
+almost all of the functionality (I guess raw PCI access would still
+work) depending on AMD northbridge PCI devices won't work anyway.
 
-So if you hold a lock that any of those ->attach() methods will use, it
-will in fact delay the put_css_set().
+I'll prep something in a while.
 
-Ah, indeed I see your point, it doesn't indeed pin the task to the
-cgroup, but does avoid the cgroup from being freed.
+-- 
+Regards/Gruss,
+Boris.
 
-Hrmm,.. so anything wanting to really pin a task to its cgroup will have
-to use task_lock()? I'll have to see if that works for
-sched_setscheduler().
-
+--
+Advanced Micro Devices, Inc.
+Operating Systems Research Center
