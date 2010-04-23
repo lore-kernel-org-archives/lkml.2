@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab0DWFmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 01:42:37 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:48071 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755799Ab0DWFmf (ORCPT
+	id S1755876Ab0DWFor (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 01:44:47 -0400
+Received: from mail-gx0-f227.google.com ([209.85.217.227]:62457 "EHLO
+	mail-gx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891Ab0DWFop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 01:42:35 -0400
-To: Cong Wang <amwang@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Vitaly Mayatskikh <v.mayatskih@gmail.com>,
-       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Haren Myneni <hbabu@us.ibm.com>, Neil Horman <nhorman@tuxdriver.com>,
-       kexec@lists.infradead.org
-Subject: Re: [PATCH 0/5] Add second memory region for crash kernel
-References: <1271953392-6324-1-git-send-email-v.mayatskih@gmail.com>
-	<m1aasvkupc.fsf@fess.ebiederm.org> <20100422224525.GJ3228@redhat.com>
-	<m1eii7j8ne.fsf@fess.ebiederm.org> <4BD12E48.3080400@redhat.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Thu, 22 Apr 2010 22:42:25 -0700
-In-Reply-To: <4BD12E48.3080400@redhat.com> (Cong Wang's message of "Fri\, 23 Apr 2010 13\:21\:12 +0800")
-Message-ID: <m1zl0uiv26.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Fri, 23 Apr 2010 01:44:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=kFIuKFWNjhtkYFtF4ra/d0S11hE3LhEmFSJMMJaTruVYviX8pN8kY1ZYY/UFAmTmui
+         6U8xo0RsVtC7x1KD0QvZ3qS2hHwxzh/RLlNe1w2cPuY/St4tY94FC22yUOaZOkB4ShxM
+         cNMSBh60lYSCdxxy8jRIVjNY+nS1n6sKzIfLk=
+Date: Fri, 23 Apr 2010 13:48:32 +0800
+From: Amerigo Wang <xiyou.wangcong@gmail.com>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: defconfig strangeness
+Message-ID: <20100423054832.GE3995@cr0.nay.redhat.com>
+References: <20100422160723.GA13848@opentech.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: amwang@redhat.com, kexec@lists.infradead.org, nhorman@tuxdriver.com, hbabu@us.ibm.com, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, linux-kernel@vger.kernel.org, v.mayatskih@gmail.com, vgoyal@redhat.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Disposition: inline
+In-Reply-To: <20100422160723.GA13848@opentech.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cong Wang <amwang@redhat.com> writes:
-
-> Eric W. Biederman wrote:
->> Vivek Goyal <vgoyal@redhat.com> writes:
->>
->>> Vitaly, have you really run into cases where 2G upper limit is a concern.
->>> What is the configuration you have, how much memory it has and how much
->>> memory are you planning to reserve for kdump kernel?
->>
->> A good question.
->>
+On Thu, Apr 22, 2010 at 06:07:23PM +0200, Nicholas Mc Guire wrote:
 >
-> We have observed that on a machine which has 66G memory, when we do
-> crashkernel=1G@4G, kexec failed to load the crash kernel, but the memory
-> reservation _did_ succeed.
+>HI !
+>
+> doing a series of static code analysis on 2.6.34-rcX each of them with 
+> defconfig (x86 32bit) - the strangeness is that even though the config
+> file is the same for rc3...5 the number of files actually compiled 
+> is very different. (linux-2.6 git tree)
+>
+> 2.6.34-rc5 1695
+> 2.6.34-rc4 3404
+> 2.6.34-rc3 5109
+>
+> I diffed the .configs - rc4/rc5 only shows
+>
+>3,4c3,4
+>< # Linux kernel version: 2.6.34-rc4
+>< # Thu Apr 22 11:37:43 2010
+>---
+>> # Linux kernel version: 2.6.34-rc5
+>> # Thu Apr 22 10:44:02 2010
+>
+> why then this large difference in files being compiled ? 
+>
+> any hint apprecieated.
+>
 
-Did you try loading vmlinux?   If not this sounds like the fact that
-/sbin/kexec doesn't realize it can boot a 64bit bzImage in 64bit
-mode.
+Hmm, interesting.
 
-Eric
+I guess it would be due to some dependences.
 
+Use the way that you used to find the number of compiled files to
+find which files are compiled, make a sorted list and do a diff.
+
+Thanks.
