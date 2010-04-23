@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab0DWFzj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 01:55:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11011 "EHLO mga03.intel.com"
+	id S1755959Ab0DWFz4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 01:55:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42739 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755884Ab0DWFzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 01:55:36 -0400
+	id S1755859Ab0DWFzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 01:55:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,260,1270450800"; 
-   d="scan'208";a="269211820"
-Subject: [RFC][PATCH v2 1/4] perf: core, add group scheduling transactional
- APIs
+   d="scan'208";a="560786522"
+Subject: [RFC][PATCH v2 2/4] perf: x86, implement group scheduling
+ transactional APIs
 From: Lin Ming <ming.m.lin@intel.com>
 To: Peter Zijlstra <peterz@infradead.org>,
        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
@@ -23,8 +23,8 @@ To: Peter Zijlstra <peterz@infradead.org>,
        "David S. Miller" <davem@davemloft.net>
 Cc: lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain
-Date: Fri, 23 Apr 2010 13:56:00 +0800
-Message-Id: <1272002160.5707.60.camel@minggr.sh.intel.com>
+Date: Fri, 23 Apr 2010 13:56:12 +0800
+Message-Id: <1272002172.5707.61.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
 Content-Transfer-Encoding: 7bit
@@ -32,166 +32,246 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add group scheduling transactional APIs to struct pmu.
-These APIs will be implemented in arch code, based on Peter's idea as
-below.
-
-> the idea behind hw_perf_group_sched_in() is to not perform
-> schedulability tests on each event in the group, but to add the group
-as
-> a whole and then perform one test.
->
-> Of course, when that test fails, you'll have to roll-back the whole
-> group again.
->
-> So start_txn (or a better name) would simply toggle a flag in the pmu
-> implementation that will make pmu::enable() not perform the
-> schedulablilty test.
->
-> Then commit_txn() will perform the schedulability test (so note the
-> method has to have a !void return value, my mistake in the earlier
-> email).
->
-> This will allow us to use the regular
-> kernel/perf_event.c::group_sched_in() and all the rollback code.
-> Currently each hw_perf_group_sched_in() implementation duplicates all
-> the rolllback code (with various bugs).
-
-*_txn was renamed to *_group_trans for better readability.
-
-->start_group_trans:
-Start group events scheduling transaction, set a flag to make
-pmu::enable() not perform the schedulability test, it will be performed
-at commit time.
-
-->commit_group_trans:
-Commit group events scheduling transaction, perform the group
-schedulability as a whole
-
-->stop_group_trans:
-Stop group events scheduling transaction, clear the flag so
-pmu::enable() will perform the schedulability test.
+perf: x86, implement group scheduling transactional APIs
 
 Reviewed-by: Stephane Eranian <eranian@google.com>
 Reviewed-by: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-
 ---
- include/linux/perf_event.h |   20 +++++++++++++++++---
- kernel/perf_event.c        |   33 ++++++++++++++++++++-------------
- 2 files changed, 37 insertions(+), 16 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |  192 ++++++++++++++-----------------------
+ 1 files changed, 73 insertions(+), 119 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index ace31fb..f514825 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -532,6 +532,8 @@ struct hw_perf_event {
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 7de7061..d46e797 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -110,6 +110,8 @@ struct cpu_hw_events {
+ 	u64			tags[X86_PMC_IDX_MAX];
+ 	struct perf_event	*event_list[X86_PMC_IDX_MAX]; /* in enabled order */
  
- struct perf_event;
++	unsigned int		group_flag;
++
+ 	/*
+ 	 * Intel DebugStore bits
+ 	 */
+@@ -944,6 +946,14 @@ static int x86_pmu_enable(struct perf_event *event)
+ 	if (n < 0)
+ 		return n;
  
-+#define PERF_EVENT_TRAN_STARTED 1
-+
- /**
-  * struct pmu - generic performance monitoring unit
-  */
-@@ -542,6 +544,21 @@ struct pmu {
- 	void (*stop)			(struct perf_event *event);
- 	void (*read)			(struct perf_event *event);
- 	void (*unthrottle)		(struct perf_event *event);
-+
 +	/*
-+	 * group events scheduling is treated as a transaction,
-+	 * add group events as a whole and perform one schedulability test.
-+	 * If test fails, roll back the whole group
++	 * If group events scheduling transaction was started,
++	 * skip the schedulability test here, it will be peformed
++	 * at commit time(->commit_group_trans) as a whole
 +	 */
++	if (cpuc->group_flag & PERF_EVENT_TRAN_STARTED)
++		goto out;
 +
-+	/* start group events transaction  */
-+	void (*start_group_trans)	(const struct pmu *pmu);
-+
-+	/* stop group events transaction  */
-+	void (*stop_group_trans)	(const struct pmu *pmu);
-+
-+	/* commit group events transaction */
-+	int (*commit_group_trans)	(const struct pmu *pmu);
- };
+ 	ret = x86_pmu.schedule_events(cpuc, n, assign);
+ 	if (ret)
+ 		return ret;
+@@ -953,6 +963,7 @@ static int x86_pmu_enable(struct perf_event *event)
+ 	 */
+ 	memcpy(cpuc->assign, assign, n*sizeof(int));
  
- /**
-@@ -807,9 +824,6 @@ extern void perf_disable(void);
- extern void perf_enable(void);
- extern int perf_event_task_disable(void);
- extern int perf_event_task_enable(void);
--extern int hw_perf_group_sched_in(struct perf_event *group_leader,
--	       struct perf_cpu_context *cpuctx,
--	       struct perf_event_context *ctx);
- extern void perf_event_update_userpage(struct perf_event *event);
- extern int perf_event_release_kernel(struct perf_event *event);
- extern struct perf_event *
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 9dbe8cd..eac6fe7 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -83,14 +83,6 @@ extern __weak const struct pmu *hw_perf_event_init(struct perf_event *event)
- void __weak hw_perf_disable(void)		{ barrier(); }
- void __weak hw_perf_enable(void)		{ barrier(); }
++out:
+ 	cpuc->n_events = n;
+ 	cpuc->n_added += n - n0;
  
--int __weak
--hw_perf_group_sched_in(struct perf_event *group_leader,
+@@ -1210,119 +1221,6 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ 	return &unconstrained;
+ }
+ 
+-static int x86_event_sched_in(struct perf_event *event,
+-			  struct perf_cpu_context *cpuctx)
+-{
+-	int ret = 0;
+-
+-	event->state = PERF_EVENT_STATE_ACTIVE;
+-	event->oncpu = smp_processor_id();
+-	event->tstamp_running += event->ctx->time - event->tstamp_stopped;
+-
+-	if (!is_x86_event(event))
+-		ret = event->pmu->enable(event);
+-
+-	if (!ret && !is_software_event(event))
+-		cpuctx->active_oncpu++;
+-
+-	if (!ret && event->attr.exclusive)
+-		cpuctx->exclusive = 1;
+-
+-	return ret;
+-}
+-
+-static void x86_event_sched_out(struct perf_event *event,
+-			    struct perf_cpu_context *cpuctx)
+-{
+-	event->state = PERF_EVENT_STATE_INACTIVE;
+-	event->oncpu = -1;
+-
+-	if (!is_x86_event(event))
+-		event->pmu->disable(event);
+-
+-	event->tstamp_running -= event->ctx->time - event->tstamp_stopped;
+-
+-	if (!is_software_event(event))
+-		cpuctx->active_oncpu--;
+-
+-	if (event->attr.exclusive || !cpuctx->active_oncpu)
+-		cpuctx->exclusive = 0;
+-}
+-
+-/*
+- * Called to enable a whole group of events.
+- * Returns 1 if the group was enabled, or -EAGAIN if it could not be.
+- * Assumes the caller has disabled interrupts and has
+- * frozen the PMU with hw_perf_save_disable.
+- *
+- * called with PMU disabled. If successful and return value 1,
+- * then guaranteed to call perf_enable() and hw_perf_enable()
+- */
+-int hw_perf_group_sched_in(struct perf_event *leader,
 -	       struct perf_cpu_context *cpuctx,
 -	       struct perf_event_context *ctx)
 -{
--	return 0;
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-	struct perf_event *sub;
+-	int assign[X86_PMC_IDX_MAX];
+-	int n0, n1, ret;
+-
+-	if (!x86_pmu_initialized())
+-		return 0;
+-
+-	/* n0 = total number of events */
+-	n0 = collect_events(cpuc, leader, true);
+-	if (n0 < 0)
+-		return n0;
+-
+-	ret = x86_pmu.schedule_events(cpuc, n0, assign);
+-	if (ret)
+-		return ret;
+-
+-	ret = x86_event_sched_in(leader, cpuctx);
+-	if (ret)
+-		return ret;
+-
+-	n1 = 1;
+-	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
+-		if (sub->state > PERF_EVENT_STATE_OFF) {
+-			ret = x86_event_sched_in(sub, cpuctx);
+-			if (ret)
+-				goto undo;
+-			++n1;
+-		}
+-	}
+-	/*
+-	 * copy new assignment, now we know it is possible
+-	 * will be used by hw_perf_enable()
+-	 */
+-	memcpy(cpuc->assign, assign, n0*sizeof(int));
+-
+-	cpuc->n_events  = n0;
+-	cpuc->n_added  += n1;
+-	ctx->nr_active += n1;
+-
+-	/*
+-	 * 1 means successful and events are active
+-	 * This is not quite true because we defer
+-	 * actual activation until hw_perf_enable() but
+-	 * this way we* ensure caller won't try to enable
+-	 * individual events
+-	 */
+-	return 1;
+-undo:
+-	x86_event_sched_out(leader, cpuctx);
+-	n0  = 1;
+-	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
+-		if (sub->state == PERF_EVENT_STATE_ACTIVE) {
+-			x86_event_sched_out(sub, cpuctx);
+-			if (++n0 == n1)
+-				break;
+-		}
+-	}
+-	return ret;
 -}
 -
- void __weak perf_event_print_debug(void)	{ }
+ #include "perf_event_amd.c"
+ #include "perf_event_p6.c"
+ #include "perf_event_p4.c"
+@@ -1454,13 +1352,69 @@ static inline void x86_pmu_read(struct perf_event *event)
+ 	x86_perf_event_update(event);
+ }
  
- static DEFINE_PER_CPU(int, perf_disable_count);
-@@ -641,15 +633,20 @@ group_sched_in(struct perf_event *group_event,
- 	       struct perf_cpu_context *cpuctx,
- 	       struct perf_event_context *ctx)
- {
--	struct perf_event *event, *partial_group;
-+	struct perf_event *event, *partial_group = NULL;
-+	const struct pmu *pmu = group_event->pmu;
-+	bool trans = false;
- 	int ret;
- 
- 	if (group_event->state == PERF_EVENT_STATE_OFF)
- 		return 0;
- 
--	ret = hw_perf_group_sched_in(group_event, cpuctx, ctx);
--	if (ret)
--		return ret < 0 ? ret : 0;
-+	/* Check if group transaction availabe */
-+	if (pmu->start_group_trans)
-+		trans = true;
++/*
++ * Start group events scheduling transaction
++ * Set the flag to make pmu::enable() not perform the
++ * schedulability test, it will be performed at commit time
++ */
++static void x86_pmu_start_group_trans(const struct pmu *pmu)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
 +
-+	if (trans)
-+		pmu->start_group_trans(pmu);
- 
- 	if (event_sched_in(group_event, cpuctx, ctx))
- 		return -EAGAIN;
-@@ -664,9 +661,19 @@ group_sched_in(struct perf_event *group_event,
- 		}
- 	}
- 
--	return 0;
-+	if (trans) {
-+		ret = pmu->commit_group_trans(pmu);
-+		if (!ret) {
-+			pmu->stop_group_trans(pmu);
++	cpuc->group_flag |= PERF_EVENT_TRAN_STARTED;
++}
 +
-+			return 0;
-+		}
-+	}
- 
- group_error:
-+	if (trans)
-+		pmu->stop_group_trans(pmu);
++/*
++ * Stop group events scheduling transaction
++ * Clear the flag and pmu::enable() will perform the
++ * schedulability test.
++ */
++static void x86_pmu_stop_group_trans(const struct pmu *pmu)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
 +
- 	/*
- 	 * Groups can be scheduled in as one unit only, so undo any
- 	 * partial group before returning:
-
++	cpuc->group_flag &= ~PERF_EVENT_TRAN_STARTED;
++}
++
++/*
++ * Commit group events scheduling transaction
++ * Perform the group schedulability test as a whole
++ * Return 0 if success
++ */
++static int x86_pmu_commit_group_trans(const struct pmu *pmu)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	int assign[X86_PMC_IDX_MAX];
++	int n, ret;
++
++	n = cpuc->n_events;
++
++	if (!x86_pmu_initialized())
++		return -EAGAIN;
++
++	ret = x86_pmu.schedule_events(cpuc, n, assign);
++	if (ret)
++		return ret;
++
++	/*
++	 * copy new assignment, now we know it is possible
++	 * will be used by hw_perf_enable()
++	 */
++	memcpy(cpuc->assign, assign, n*sizeof(int));
++
++	return 0;
++}
++
+ static const struct pmu pmu = {
+-	.enable		= x86_pmu_enable,
+-	.disable	= x86_pmu_disable,
+-	.start		= x86_pmu_start,
+-	.stop		= x86_pmu_stop,
+-	.read		= x86_pmu_read,
+-	.unthrottle	= x86_pmu_unthrottle,
++	.enable			= x86_pmu_enable,
++	.disable		= x86_pmu_disable,
++	.start			= x86_pmu_start,
++	.stop			= x86_pmu_stop,
++	.read			= x86_pmu_read,
++	.unthrottle		= x86_pmu_unthrottle,
++	.start_group_trans	= x86_pmu_start_group_trans,
++	.stop_group_trans	= x86_pmu_stop_group_trans,
++	.commit_group_trans	= x86_pmu_commit_group_trans,
+ };
+ 
+ /*
 
 
