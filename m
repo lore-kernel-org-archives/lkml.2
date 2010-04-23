@@ -1,113 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758044Ab0DWQOl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 12:14:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39027 "EHLO mx1.redhat.com"
+	id S1758059Ab0DWQOr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 12:14:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3325 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757939Ab0DWQOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758028Ab0DWQOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Apr 2010 12:14:34 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: mingo@elte.hu, fweisbec@gmail.com
 Cc: peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
        linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
        dzickus@redhat.com
-Subject: [PATCH 6/8] [x86] watchdog: cleanup hw_nmi.c cruft
-Date: Fri, 23 Apr 2010 12:13:34 -0400
-Message-Id: <1272039216-8890-7-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 8/8] [watchdog] separate touch_nmi_watchdog code path from touch_watchdog
+Date: Fri, 23 Apr 2010 12:13:36 -0400
+Message-Id: <1272039216-8890-9-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1272039216-8890-1-git-send-email-dzickus@redhat.com>
 References: <1272039216-8890-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The design of the hardlockup watchdog has changed and cruft was left
-behind in the hw_nmi.c file.  Just remove the code that isn't used
-anymore.
+When I combined the nmi_watchdog (hardlockup) and softlockup code, I
+also combined the paths the touch_watchdog and touch_nmi_watchdog took.
+This may not be the best idea as pointed out by Frederic W., that the
+touch_watchdog case probably should not reset the hardlockup count.
+
+Therefore the patch belows falls back to the previous idea of keeping
+the touch_nmi_watchdog a superset of the touch_watchdog case.
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- arch/x86/kernel/apic/hw_nmi.c |   58 -----------------------------------------
- 1 files changed, 0 insertions(+), 58 deletions(-)
+ kernel/watchdog.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index 8c3edfb..3b40082 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -9,74 +9,16 @@
-  *
-  */
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 463976a..9c6a344 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -31,6 +31,7 @@ int watchdog_enabled;
+ int __read_mostly softlockup_thresh = 60;
  
--#include <asm/apic.h>
--#include <linux/smp.h>
- #include <linux/cpumask.h>
--#include <linux/sched.h>
--#include <linux/percpu.h>
--#include <linux/cpumask.h>
--#include <linux/kernel_stat.h>
--#include <asm/mce.h>
- #include <linux/kdebug.h>
- #include <linux/notifier.h>
- #include <linux/kprobes.h>
--
--
- #include <linux/nmi.h>
- #include <linux/module.h>
+ static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
++static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
+ static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
+ static DEFINE_PER_CPU(struct hrtimer, watchdog_hrtimer);
+ static DEFINE_PER_CPU(bool, watchdog_touch_sync);
+@@ -147,6 +148,7 @@ void touch_watchdog_sync(void)
  
- /* For reliability, we're prepared to waste bits here. */
- static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
- 
--static DEFINE_PER_CPU(unsigned, last_irq_sum);
--
--/*
-- * Take the local apic timer and PIT/HPET into account. We don't
-- * know which one is active, when we have highres/dyntick on
-- */
--static inline unsigned int get_timer_irqs(int cpu)
--{
--	unsigned int irqs = per_cpu(irq_stat, cpu).irq0_irqs;
--
--#if defined(CONFIG_X86_LOCAL_APIC)
--	irqs += per_cpu(irq_stat, cpu).apic_timer_irqs;
--#endif
--
--	return irqs;
--}
--
--static inline int mce_in_progress(void)
--{
--#if defined(CONFIG_X86_MCE)
--	return atomic_read(&mce_entry) > 0;
--#endif
--	return 0;
--}
--
--int hw_nmi_is_cpu_stuck(struct pt_regs *regs)
--{
--	unsigned int sum;
--	int cpu = smp_processor_id();
--
--	/* if we are doing an mce, just assume the cpu is not stuck */
--	/* Could check oops_in_progress here too, but it's safer not to */
--	if (mce_in_progress())
--		return 0;
--
--	/* We determine if the cpu is stuck by checking whether any
--	 * interrupts have happened since we last checked.  Of course
--	 * an nmi storm could create false positives, but the higher
--	 * level logic should account for that
--	 */
--	sum = get_timer_irqs(cpu);
--	if (__get_cpu_var(last_irq_sum) == sum) {
--		return 1;
--	} else {
--		__get_cpu_var(last_irq_sum) = sum;
--		return 0;
--	}
--}
--
- u64 hw_nmi_get_sample_period(void)
+ void touch_nmi_watchdog(void)
  {
- 	return (u64)(cpu_khz) * 1000 * 60;
++	__get_cpu_var(watchdog_nmi_touch) = true;
+ 	touch_watchdog();
+ }
+ EXPORT_SYMBOL(touch_nmi_watchdog);
+@@ -203,11 +205,10 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+ 		 struct pt_regs *regs)
+ {
+ 	int this_cpu = smp_processor_id();
+-	unsigned long touch_ts = per_cpu(watchdog_touch_ts, this_cpu);
+ 	char warn = __get_cpu_var(watchdog_warn);
+ 
+-	if (touch_ts == 0) {
+-		__touch_watchdog();
++	if (__get_cpu_var(watchdog_nmi_touch) == true) {
++		__get_cpu_var(watchdog_nmi_touch) = false;
+ 		return;
+ 	}
+ 
 -- 
 1.7.0.1
 
