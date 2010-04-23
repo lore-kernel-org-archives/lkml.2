@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090Ab0DWQ2a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 12:28:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42870 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757514Ab0DWQ21 convert rfc822-to-8bit (ORCPT
+	id S1758101Ab0DWQ2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 12:28:51 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37236 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750732Ab0DWQ2t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 12:28:27 -0400
+	Fri, 23 Apr 2010 12:28:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Thomas =?utf-8?q?M=C3=BCller?= <thomas@mathtm.de>
+Subject: Re: [Bug #15719] virtio_net causing kernel BUG when running under VirtualBox
+Date: Fri, 23 Apr 2010 18:29:03 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Rusty Russell <rusty@rustcorp.com.au>, Shirley Ma <mashirle@us.ibm.com>,
+       Shirley Ma <xma@us.ibm.com>
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.sRH.jRSzLB@tosh> <4BD1AA46.2050007@mathtm.de>
+In-Reply-To: <4BD1AA46.2050007@mathtm.de>
 MIME-Version: 1.0
-Message-ID: <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default>
-Date: Fri, 23 Apr 2010 09:26:33 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <20100422134249.GA2963@ca-server1.us.oracle.com>
- <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default>
- <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default>
- <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>
- <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
- <4BD1B427.9010905@redhat.com 4BD1B626.7020702@redhat.com>
-In-Reply-To: <4BD1B626.7020702@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=utf-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090203.4BD1CA8F.003A:SCFMA4539811,ss=1,fgs=0
+Message-Id: <201004231829.04045.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > If a put returns zero, pseudo-RAM has rejected the data, and the page
-> can
-> > be written to swap as usual.
-> >
-> > Note that if a page is put and the page already exists in pseudo-RAM
-> > (a "duplicate" put), either the put succeeds and the data is
-> overwritten,
-> > or the put fails AND the page is flushed.  This ensures stale data
-> may
-> > never be obtained from pseudo-RAM.
+On Friday 23 April 2010, Thomas Müller wrote:
+> Fixed by commit 0e413f22e4c1cbfe12907e462a7d739a2e316f2b.
+
+Thanks, closing.
+
+Rafael
+
+
+> On 20.04.2010 05:19, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15719
+> > Subject		: virtio_net causing kernel BUG when running under VirtualBox
+> > Submitter	: Thomas Müller <thomas@mathtm.de>
+> > Date		: 2010-03-27 14:32 (24 days old)
+> > First-Bad-Commit: http://kernel.org/git/linus/9ab86bbcf8be755256f0a5e994e0b38af6b4d399
+> > Message-ID	: <4BAE1707.2050803@mathtm.de>
+> > References	: http://marc.info/?l=linux-kernel&m=126970039227740&w=4
+> > Handled-By	: Shirley Ma <mashirle@us.ibm.com>
+> > 
+> > 
 > 
-> Looks like "init" == open, "put_page" == write, "get_page" == read,
-> "flush_page|flush_area" == trim.  The only difference seems to be that
-> an overwriting put_page may fail.  Doesn't seem to be much of a win,
+> 
+> 
 
-No, ANY put_page can fail, and this is a critical part of the API
-that provides all of the flexibility for the hypervisor and all
-the guests. (See previous reply.)
-
-The "duplicate put" semantics are carefully specified as there
-are some coherency corner cases that are very difficult to handle
-in the "backend" but very easy to handle in the kernel.  So the
-specification explicitly punts these to the kernel.
