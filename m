@@ -1,212 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab0DWFfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 01:35:36 -0400
-Received: from tauceti.net ([62.245.250.166]:47578 "EHLO www.tauceti.net"
+	id S1755855Ab0DWFkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 01:40:16 -0400
+Received: from 1wt.eu ([62.212.114.60]:63503 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755610Ab0DWFfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 01:35:34 -0400
-X-Greylist: delayed 519 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Apr 2010 01:35:33 EDT
-Message-ID: <4BD12F9C.30802@tauceti.net>
-Date: Fri, 23 Apr 2010 07:26:52 +0200
-From: Robert Wimmer <kernel@tauceti.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100310 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-mm@kvack.org, bugzilla-daemon@bugzilla.kernel.org,
-       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-       Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
-References: <4BC2E706.7010108@tauceti.net> <20100412112330.GA16908@redhat.com> <4BC32527.9090301@tauceti.net> <20100412135223.GA17887@redhat.com> <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com>
-In-Reply-To: <20100422100304.GC30532@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755799Ab0DWFkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 01:40:14 -0400
+Date: Fri, 23 Apr 2010 07:38:58 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, mingo@elte.hu, peterz@infradead.org,
+       tglx@linutronix.de, davej@redhat.com, cpufreq@vger.kernel.org
+Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with ondemand during disk IO
+Message-ID: <20100423053858.GE7798@1wt.eu>
+References: <20100418115949.7b743898@infradead.org> <20100418120346.1b478410@infradead.org> <20100423052439.GB4829@ucw.cz>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100423052439.GB4829@ucw.cz>
+User-Agent: Mutt/1.5.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'm not sure why the lockup backtrace does not show function names -
-> is the kernel stripped?
+On Fri, Apr 23, 2010 at 07:24:39AM +0200, Pavel Machek wrote:
+> Hi!
+> 
+> > The ondemand cpufreq governor uses CPU busy time (e.g. not-idle time) as
+> > a measure for scaling the CPU frequency up or down.
+> > If the CPU is busy, the CPU frequency scales up, if it's idle, the CPU
+> > frequency scales down. Effectively, it uses the CPU busy time as proxy
+> > variable for the more nebulous "how critical is performance right now"
+> > question.
+> > 
+> > This algorithm falls flat on its face in the light of workloads where
+> > you're alternatingly disk and CPU bound, such as the ever popular
+> > "git grep", but also things like startup of programs and maildir using
+> > email clients... much to the chagarin of Andrew Morton.
+> > 
+> > This patch changes the ondemand algorithm to count iowait time as busy,
+> > not idle, time. As shown in the breakdown cases above, iowait is performance
+> > critical often, and by counting iowait, the proxy variable becomes a more
+> > accurate representation of the "how critical is performance"
+> > question.
+> 
+> Well, and now, if you do something like cat /dev/<your usb1.1 hdd> >
+> /dev/null, you'll keep cpu on max frequency. Not a problem for new
+> core i7, but probably big deal for athlon 64.
 
-I'm building the kernels always with "genkernel" a Gentoo
-helper programm for kernel building. But I've looked into
-the log file of genkernel and there is nothing mentioned about
-striping the kernel. There will be a future release of genkernel
-which supports this but this is currently not the case. Since
-I haven't stripped the kernel I would answer no. Maybe a
-kernel option which should be enabled?
+So that also means that my notebook's CPU fan will spin like mad as soon
+as I access a USB key ? It will not help the key go faster...
 
-Thanks!
-Robert
+Probably that iowait should only change the time required to go back to
+low frequency. That way, if there is no CPU nor I/O activity, we can
+switch back to a low frequency quickly, but if we see I/O activity, we
+could decide to wait for 1 second (for instance) for CPU idle before
+switching back to low frequency.
 
+> Maybe modern cpus can and should simply react faster?
 
+It's above all that we should not try to switch too fast if we know the
+CPU can't follow.
 
-
-On 04/22/10 12:03, Michael S. Tsirkin wrote:
-> On Thu, Apr 22, 2010 at 01:31:06PM +0200, kernel wrote:
->   
->> Maybe some comments to my former mail about what I've done:
->> I started with a fresh clone (deleted the old /usr/src/linux
->> of course). 
->>
->> git clone
->> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git linux
->>
->> Then I started bisect
->>
->> git bisect start 'v2.6.31' 'v2.6.30'
->>
->> and build the first kernel and then marked kernels which
->> "crashed" with "soft lockup" or "swapper page allocation failure"
->> as bad and the other ones as good. Before I've compiled
->> a new kernel I've always done a "make mrproper". I don't know
->> if this is needed but thought it wouldn't hurt.
->>
->> For me it was not clear that maybe I should have had stopped
->> testing after the first commit that came up with a "swapper
->> page allocation failure". It was only one commit which cased
->> the allocation failure. All the other commits marked as bad
->> came up with a soft lockup. But I thought it is important to
->> find the earliest commit which crashes. So should I find out
->> the commit with the allocation failure?
->>     
-> I think you did the right thing. We'll have to
-> figure out soft lockup thing, then if page allocation failure
-> turns out to be a different issue, look at it.
->
->   
->> As you requested I've now done now a
->>
->> git checkout c02d7adf8c5429727a98bad1d039bccad4c61c50
->>
->> which ended with a soft lockup within 3 min. after starting
->> the VM (see
->> https://bugzilla.kernel.org/attachment.cgi?id=26089&action=edit)
->> with this kernel.
->>     
-> I'm not sure why the lockup backtrace does not show function names -
-> is the kernel stripped?
->
->   
->> Then I've done a
->>
->> git checkout cf8d2c11cb77f129675478792122f50827e5b0ae
->>
->> compiled and restarted the VM with this kernel version
->> (BTW: Of course I've always used the same .config for 
->> all kernels I've build.). cf8d2c11cb77f129675478792122f50827e5b0ae
->> is running fine.
->>
->> Thanks!
->> Robert
->>     
-> Well, so the soft lockup issue seems NFS-related?
-> Trond, commit cf8d2c11cb77f129675478792122f50827e5b0ae seems to
-> be causing problems on some old kernels (See bisect below). Any idea why?
->
->
->   
->> On Wed, 21 Apr 2010 12:42:49 +0300, "Michael S. Tsirkin" <mst@redhat.com>
->> wrote:
->>     
->>> On Wed, Apr 21, 2010 at 01:23:12PM +0200, kernel wrote:
->>>       
->>>> So after the compiler was running hot I've now the following result:
->>>>
->>>> server10:/usr/src/linux # git bisect log 
->>>> # bad: [74fca6a42863ffacaf7ba6f1936a9f228950f657] Linux 2.6.31
->>>> # good: [07a2039b8eb0af4ff464efd3dfd95de5c02648c6] Linux 2.6.30
->>>> git bisect start 'v2.6.31' 'v2.6.30'
->>>> # good: [925d74ae717c9a12d3618eb4b36b9fb632e2cef3] V4L/DVB (11736):
->>>> videobuf: modify return value of VIDIOC_REQBUFS ioctl
->>>> git bisect good 925d74ae717c9a12d3618eb4b36b9fb632e2cef3
->>>> # bad: [a380137900fca5c79e6daa9500bdb6ea5649188e] ixgbe: Fix device
->>>> capabilities of 82599 single speed fiber NICs.
->>>> git bisect bad a380137900fca5c79e6daa9500bdb6ea5649188e
->>>> # good: [1dbb5765acc7a6fe4bc1957c001037cc9d02ae03] Staging: android:
->>>> lowmemorykiller: fix up remaining checkpatch warnings
->>>> git bisect good 1dbb5765acc7a6fe4bc1957c001037cc9d02ae03
->>>> # good: [df36b439c5fedefe013d4449cb6a50d15e2f4d70] Merge branch
->>>> 'for-2.6.31' of git://git.linux-nfs.org/projects/trondmy/nfs-2.6
->>>> git bisect good df36b439c5fedefe013d4449cb6a50d15e2f4d70
->>>> # bad: [a800faec1b21d7133b5f0c8c6dac593b7c4e118d] Merge branch
->>>> 'for-linus'
->>>> of git://www.jni.nu/cris
->>>> git bisect bad a800faec1b21d7133b5f0c8c6dac593b7c4e118d
->>>> # good: [ac1b7c378ef26fba6694d5f118fe7fc16fee2fe2] Merge
->>>> git://git.infradead.org/mtd-2.6
->>>> git bisect good ac1b7c378ef26fba6694d5f118fe7fc16fee2fe2
->>>> # bad: [37c6dbe290c05023b47f52528e30ce51336b93eb] V4L/DVB (12091):
->>>> gspca_sonixj: Add light frequency control
->>>> git bisect bad 37c6dbe290c05023b47f52528e30ce51336b93eb
->>>> # bad: [687d680985b1438360a9ba470ece8b57cd205c3b] Merge
->>>> git://git.infradead.org/~dwmw2/iommu-2.6.31
->>>> git bisect bad 687d680985b1438360a9ba470ece8b57cd205c3b
->>>> # bad: [1053414068bad659479e6efa62a67403b8b1ec0a] Merge branch
->>>> 'for-linus'
->>>> of git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6
->>>> git bisect bad 1053414068bad659479e6efa62a67403b8b1ec0a
->>>> # good: [b01b4babbf204443b5a846a7494546501614cefc] firewire: net: fix
->>>> card
->>>> driver reloading
->>>> git bisect good b01b4babbf204443b5a846a7494546501614cefc
->>>> # bad: [c02d7adf8c5429727a98bad1d039bccad4c61c50] NFSv4: Replace
->>>> nfs4_path_walk() with VFS path lookup in a private namespace
->>>> git bisect bad c02d7adf8c5429727a98bad1d039bccad4c61c50
->>>> # good: [616511d039af402670de8500d0e24495113a9cab] VFS: Uninline the
->>>> function put_mnt_ns()
->>>> git bisect good 616511d039af402670de8500d0e24495113a9cab
->>>> # good: [cf8d2c11cb77f129675478792122f50827e5b0ae] VFS: Add VFS helper
->>>> functions for setting up private namespaces
->>>> git bisect good cf8d2c11cb77f129675478792122f50827e5b0ae
->>>>
->>>>
->>>> The last "git bisect good" prints out:
->>>>
->>>> server10:/usr/src/linux # git bisect good
->>>> c02d7adf8c5429727a98bad1d039bccad4c61c50 is the first bad commit
->>>> commit c02d7adf8c5429727a98bad1d039bccad4c61c50
->>>> Author: Trond Myklebust <Trond.Myklebust@netapp.com>
->>>> Date:   Mon Jun 22 15:09:14 2009 -0400
->>>>
->>>>     NFSv4: Replace nfs4_path_walk() with VFS path lookup in a private
->>>> namespace
->>>>     
->>>>     As noted in the previous patch, the NFSv4 client mount code
->>>>         
->> currently
->>     
->>>>     has several limitations. If the mount path contains symlinks, or
->>>>     referrals, or even if it just contains a '..', then the client code
->>>>     in
->>>>     nfs4_path_walk() will fail with an error.
->>>>     
->>>>     This patch replaces the nfs4_path_walk()-based lookup with a helper
->>>>     function that sets up a private namespace to represent the
->>>>         
->> namespace
->>     
->>>> on the
->>>>     server, then uses the ordinary VFS and NFS path lookup code to walk
->>>> down the
->>>>     mount path in that namespace.
->>>>     
->>>>     Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
->>>>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->>>>
->>>> :040000 040000 97a18818f26ab9a0987f157257eb6f399c3cc1cc
->>>> 9ab6c712bb64f1349b5ac9f2020191abb5780ca0 M      fs
->>>>
->>>> Does this help you any further?
->>>>
->>>> Thanks!
->>>> Robert
->>>>         
->>> Looks suspiciously like some error in testing.
->>> Could you pls retest and verify again that
->>> cf8d2c11cb77f129675478792122f50827e5b0ae
->>> is good and c02d7adf8c5429727a98bad1d039bccad4c61c50 is bad?
->>>       
+Willy
 
