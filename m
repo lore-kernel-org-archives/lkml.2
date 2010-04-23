@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab0DWJDw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 05:03:52 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:53528 "EHLO gir.skynet.ie"
+	id S1756771Ab0DWJMc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 05:12:32 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48267 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753593Ab0DWJDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 05:03:49 -0400
-Date: Fri, 23 Apr 2010 10:03:29 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
-	PageSwapCache pages
-Message-ID: <20100423090329.GI30306@csn.ul.ie>
-References: <20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com> <x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com> <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com> <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com> <20100422141404.GA30306@csn.ul.ie> <p2y28c262361004220718m3a5e3e2ekee1fef7ebdae8e73@mail.gmail.com> <20100422154003.GC30306@csn.ul.ie> <20100422192923.GH30306@csn.ul.ie> <alpine.DEB.2.00.1004221439040.5023@router.home> <20100423085203.b43d1cb3.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754445Ab0DWJM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 05:12:29 -0400
+Date: Fri, 23 Apr 2010 11:11:58 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] Perf probe support for PowerPC, from Ian Munsie
+Message-ID: <20100423091158.GA6078@elte.hu>
+References: <20100423003251.GA2420@brick.ozlabs.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100423085203.b43d1cb3.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100423003251.GA2420@brick.ozlabs.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 08:52:03AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 22 Apr 2010 14:40:46 -0500 (CDT)
-> Christoph Lameter <cl@linux.com> wrote:
+
+* Paul Mackerras <paulus@samba.org> wrote:
+
+> Ingo,
 > 
-> > On Thu, 22 Apr 2010, Mel Gorman wrote:
-> > 
-> > > vma_adjust() is updating anon VMA information without any locks taken.
-> > > In constract, file-backed mappings use the i_mmap_lock. This lack of
-> > > locking can result in races with page migration. During rmap_walk(),
-> > > vma_address() can return -EFAULT for an address that will soon be valid.
-> > > This leaves a dangling migration PTE behind which can later cause a
-> > > BUG_ON to trigger when the page is faulted in.
-> > 
-> > Isnt this also a race with reclaim /  swap?
-> > 
-> Yes, it's also race in reclaim/swap ...
->   page_referenced()
->   try_to_unmap().
->   rmap_walk()  <==== we hit this case.
+> Please pull my perf.git master branch:
 > 
-> But above 2 are not considered to be critical.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulus/perf.git master
 > 
-> I'm not sure how this race affect KSM.
+> It has two commits from Ian Munsie that allow us to access local
+> variables with perf probe on PowerPC.  We also need a commit in Ben's
+> powerpc-next branch for it to function, but it compiles without that.
 > 
+> Thanks,
+> Paul.
+> 
+> ---
+> 
+> The following changes since commit 6eca8cc35b50af1037bc919106dd6dd332c959c2:
+>   Frederic Weisbecker (1):
+>         perf: Fix perf probe build error
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulus/perf.git master
+> 
+> Ian Munsie (2):
+>       perf: Move arch specific code into separate arch directory
+>       perf probe: Add PowerPC DWARF register number mappings
+> 
+>  tools/perf/Makefile                       |   36 ++++++++++--
+>  tools/perf/arch/powerpc/Makefile          |    4 +
+>  tools/perf/arch/powerpc/util/dwarf-regs.c |   88 +++++++++++++++++++++++++++++
+>  tools/perf/arch/x86/Makefile              |    4 +
+>  tools/perf/arch/x86/util/dwarf-regs.c     |   75 ++++++++++++++++++++++++
+>  tools/perf/util/include/dwarf-regs.h      |    8 +++
+>  tools/perf/util/probe-finder.c            |   55 +-----------------
+>  7 files changed, 211 insertions(+), 59 deletions(-)
+>  create mode 100644 tools/perf/arch/powerpc/Makefile
+>  create mode 100644 tools/perf/arch/powerpc/util/dwarf-regs.c
+>  create mode 100644 tools/perf/arch/x86/Makefile
+>  create mode 100644 tools/perf/arch/x86/util/dwarf-regs.c
+>  create mode 100644 tools/perf/util/include/dwarf-regs.h
 
-I'm not that familiar with KSM but took a look through. Mostly,
-accessing the VMA is protected by the mmap_sem with the exception of
-rmap_walk_ksm. It needs similar protection for accessing the VMA than
-rmap_walk_anon does.
+Pulled, thanks a lot Paul!
 
-Specifically, this part
-
-                list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
-                        vma = vmac->vma;
-                        if (rmap_item->address < vma->vm_start ||
-                            rmap_item->address >= vma->vm_end)
-                                continue;
-
-needs to acquire the vma->anon_vma lock if it differs or in your case
-call something similar to vma_address_safe.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+	Ingo
