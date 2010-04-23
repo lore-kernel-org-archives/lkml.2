@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab0DWOgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 10:36:13 -0400
-Received: from pmx3.lnl.infn.it ([192.135.30.243]:36149 "EHLO pmx3.lnl.infn.it"
+	id S1754886Ab0DWOge (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 10:36:34 -0400
+Received: from pmx3.lnl.infn.it ([192.135.30.243]:36158 "EHLO pmx3.lnl.infn.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754320Ab0DWOgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 10:36:08 -0400
-Message-ID: <484607.1272033291418.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-Date: Fri, 23 Apr 2010 16:34:51 +0200 (CEST)
+	id S1754384Ab0DWOgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 10:36:10 -0400
+Message-ID: <8083815.1272033342438.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+Date: Fri, 23 Apr 2010 16:35:42 +0200 (CEST)
 From: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>
 To: Amir Vadai <amirv@mellanox.co.il>
-Subject: SDP bugs 2027 and 2028
+Subject: Re: Socket Direct Protocol: help (2)
 Cc: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
        "Tung, Chien Tin" <chien.tin.tung@intel.com>,
        Steve Wise <swise@opengridcomputing.com>,
@@ -38,11 +38,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Amir, 
 
-have you any news about bug 2027 and 2028 (SDP)?
+have you any news about bugs 2027 and 2028 (SDP)?
 
 Take care and keep in touch.
 Thamk you very much,
 Andrea
+
 
 
 On Apr 21, 2010 02:01 PM, Amir Vadai <amirv@mellanox.co.il> wrote:
@@ -176,4 +177,12 @@ On Apr 21, 2010 02:01 PM, Amir Vadai <amirv@mellanox.co.il> wrote:
 > 
 
 
+Andrea Gozzelino
+
+INFN - Laboratori Nazionali di Legnaro	(LNL)
+Viale dell'Universita' 2
+I-35020 - Legnaro (PD)- ITALIA
+Tel: +39 049 8068346
+Fax: +39 049 641925
+Mail: andrea.gozzelino@lnl.infn.it			
 
