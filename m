@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab0DWIuG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 04:50:06 -0400
-Received: from mail.windriver.com ([147.11.1.11]:56118 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755915Ab0DWIuB (ORCPT
+	id S1756750Ab0DWJBG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 05:01:06 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:48965
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756467Ab0DWJBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 04:50:01 -0400
-Date: Fri, 23 Apr 2010 16:49:26 +0800
-From: Yong Zhang <yong.zhang@windriver.com>
-To: John Kacur <jkacur@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-       linux-rt-users <linux-rt-users@vger.kernel.org>,
-       Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-       Clark Williams <williams@redhat.com>,
-       "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [PATCH] lockdep: Add nr_save_trace_invocations counter
-Message-ID: <20100423084926.GE21328@windriver.com>
-Reply-To: Yong Zhang <yong.zhang@windriver.com>
-References: <alpine.LFD.2.00.1004222208310.3155@localhost>
- <20100423025850.GA21328@windriver.com>
- <alpine.LFD.2.00.1004230907050.4151@localhost>
- <1272009915.1646.25.camel@laptop>
- <w2v520f0cf11004230131i743c596emfd0e5b8870330a8b@mail.gmail.com>
+	Fri, 23 Apr 2010 05:01:03 -0400
+X-SpamScore: -22
+X-BigFish: VPS-22(zz1432P98dN936eM62a3Lzz1202hzz6ff19hz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L1BNPB-02-8Z1-02
+X-M-MSG: 
+Date: Fri, 23 Apr 2010 11:00:45 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: John Villalovos <sodarock@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+       oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
+       rostedt@goodmis.org, stable@kernel.org
+Subject: Re: [PATCH] oprofile: remove double ring buffering
+Message-ID: <20100423090045.GI6450@erda.amd.com>
+References: <20100401011725.GA27567@basil.fritz.box>
+ <20100401190205.GD6027@erda.amd.com>
+ <m2h5e61b72f1004220733n65451418p7c321f07eb5d6b58@mail.gmail.com>
+ <20100422160411.cfcae4e1.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <w2v520f0cf11004230131i743c596emfd0e5b8870330a8b@mail.gmail.com>
+In-Reply-To: <20100422160411.cfcae4e1.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 23 Apr 2010 08:49:28.0790 (UTC) FILETIME=[E25EA760:01CAE2C1]
+X-OriginalArrivalTime: 23 Apr 2010 09:00:46.0271 (UTC) FILETIME=[762E0CF0:01CAE2C3]
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 10:31:16AM +0200, John Kacur wrote:
-> > 8752+871+8+95+5+28+543+28+543+15=10888
-> >
-> > So you get a stack-trace for each direct-dependency, and you get a
-> > stack-trace for each LOCK_state, the sum seems to match the total
-> > invocations.
-> >
-> > Non of these numbers look strange..
-> >
+On 22.04.10 16:04:11, Andrew Morton wrote:
+> > I was wondering what the state of this patch is.  I don't see it in
+> > linux-2.6 or linux-next. or in
+> > git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git
+> > 
 > 
-> As I told Peter privately the laptop that triggered the
-> MAX_STACK_TRACE_ENTRIES every time, has met an
-> unfortunate early demise. However, I think it was the config - not the
-> hardware. On this machine where the above
-> numbers come from, I believe I have less debug options configured -
-> but it is running the exact same kernel as
-> the laptop was. (2.6.33.2-rt13)
+> I queued it in my for-2.6.34-via-subsystem-maintainer pile.  I'll start
+> sending those things out for everyone to ignore early next week I guess.
 
-Through a rough computation:
-MAX_STACK_TRACE_ENTRIES/10888 = 24
-That means the average stack deepth is about 24.
-So I'm thinking if we can take a check on the biggest deepth?
-Could this make sense?
+I just make my tree ready for v2.6.35 and will put it in there.
 
-Thanks,
-Yong
+The patch looks good, will run some tests.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
 
