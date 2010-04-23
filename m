@@ -1,215 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456Ab0DWIAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 04:00:45 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:41838 "EHLO
+	id S1756472Ab0DWIAr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 04:00:47 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:41841 "EHLO
 	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756366Ab0DWIAk (ORCPT
+	with ESMTP id S1756385Ab0DWIAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Apr 2010 04:00:40 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-m68k@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 10/14] m68k: amiga - Keyboard platform device conversion
-Date: Fri, 23 Apr 2010 10:00:31 +0200
-Message-Id: <1272009635-6504-11-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 02/14] m68k: amiga - Zorro bus modalias support
+Date: Fri, 23 Apr 2010 10:00:23 +0200
+Message-Id: <1272009635-6504-3-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1272009635-6504-10-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1272009635-6504-2-git-send-email-geert@linux-m68k.org>
 References: <1272009635-6504-1-git-send-email-geert@linux-m68k.org>
  <1272009635-6504-2-git-send-email-geert@linux-m68k.org>
- <1272009635-6504-3-git-send-email-geert@linux-m68k.org>
- <1272009635-6504-4-git-send-email-geert@linux-m68k.org>
- <1272009635-6504-5-git-send-email-geert@linux-m68k.org>
- <1272009635-6504-6-git-send-email-geert@linux-m68k.org>
- <1272009635-6504-7-git-send-email-geert@linux-m68k.org>
- <1272009635-6504-8-git-send-email-geert@linux-m68k.org>
- <1272009635-6504-9-git-send-email-geert@linux-m68k.org>
- <1272009635-6504-10-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add Amiga Zorro bus modalias and uevent support
+
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/m68k/amiga/platform.c      |    5 ++
- drivers/input/keyboard/amikbd.c |   97 +++++++++++++++++++++++----------------
- 2 files changed, 63 insertions(+), 39 deletions(-)
+ drivers/net/a2065.c             |    1 +
+ drivers/net/ariadne.c           |    1 +
+ drivers/net/hydra.c             |    1 +
+ drivers/net/zorro8390.c         |    1 +
+ drivers/scsi/zorro7xx.c         |    1 +
+ drivers/video/cirrusfb.c        |    1 +
+ drivers/video/fm2fb.c           |    1 +
+ drivers/zorro/zorro-driver.c    |   24 ++++++++++++++++++++++++
+ drivers/zorro/zorro-sysfs.c     |   11 +++++++++++
+ include/linux/mod_devicetable.h |   10 ++++++++++
+ include/linux/zorro.h           |   13 +------------
+ scripts/mod/file2alias.c        |   15 +++++++++++++++
+ 12 files changed, 68 insertions(+), 12 deletions(-)
 
-diff --git a/arch/m68k/amiga/platform.c b/arch/m68k/amiga/platform.c
-index 907f6f5..d427de2 100644
---- a/arch/m68k/amiga/platform.c
-+++ b/arch/m68k/amiga/platform.c
-@@ -160,6 +160,11 @@ static int __init amiga_init_devices(void)
- 					 sizeof(a4000_ide_pdata));
- 	}
+diff --git a/drivers/net/a2065.c b/drivers/net/a2065.c
+index 9c08374..099f4fd 100644
+--- a/drivers/net/a2065.c
++++ b/drivers/net/a2065.c
+@@ -694,6 +694,7 @@ static struct zorro_device_id a2065_zorro_tbl[] __devinitdata = {
+ 	{ ZORRO_PROD_AMERISTAR_A2065 },
+ 	{ 0 }
+ };
++MODULE_DEVICE_TABLE(zorro, a2065_zorro_tbl);
  
-+
-+	/* other I/O hardware */
-+	if (AMIGAHW_PRESENT(AMI_KEYBOARD))
-+		platform_device_register_simple("amiga-keyboard", -1, NULL, 0);
-+
+ static struct zorro_driver a2065_driver = {
+ 	.name		= "a2065",
+diff --git a/drivers/net/ariadne.c b/drivers/net/ariadne.c
+index 29e53eb..47bfa37 100644
+--- a/drivers/net/ariadne.c
++++ b/drivers/net/ariadne.c
+@@ -147,6 +147,7 @@ static struct zorro_device_id ariadne_zorro_tbl[] __devinitdata = {
+     { ZORRO_PROD_VILLAGE_TRONIC_ARIADNE },
+     { 0 }
+ };
++MODULE_DEVICE_TABLE(zorro, ariadne_zorro_tbl);
+ 
+ static struct zorro_driver ariadne_driver = {
+     .name	= "ariadne",
+diff --git a/drivers/net/hydra.c b/drivers/net/hydra.c
+index b96cf2d..dd3de56 100644
+--- a/drivers/net/hydra.c
++++ b/drivers/net/hydra.c
+@@ -72,6 +72,7 @@ static struct zorro_device_id hydra_zorro_tbl[] __devinitdata = {
+     { ZORRO_PROD_HYDRA_SYSTEMS_AMIGANET },
+     { 0 }
+ };
++MODULE_DEVICE_TABLE(zorro, hydra_zorro_tbl);
+ 
+ static struct zorro_driver hydra_driver = {
+     .name	= "hydra",
+diff --git a/drivers/net/zorro8390.c b/drivers/net/zorro8390.c
+index 3926b2a..de28bfc 100644
+--- a/drivers/net/zorro8390.c
++++ b/drivers/net/zorro8390.c
+@@ -102,6 +102,7 @@ static struct zorro_device_id zorro8390_zorro_tbl[] __devinitdata = {
+     { ZORRO_PROD_INDIVIDUAL_COMPUTERS_X_SURF, },
+     { 0 }
+ };
++MODULE_DEVICE_TABLE(zorro, zorro8390_zorro_tbl);
+ 
+ static struct zorro_driver zorro8390_driver = {
+     .name	= "zorro8390",
+diff --git a/drivers/scsi/zorro7xx.c b/drivers/scsi/zorro7xx.c
+index 64d40a2..b416fa4 100644
+--- a/drivers/scsi/zorro7xx.c
++++ b/drivers/scsi/zorro7xx.c
+@@ -68,6 +68,7 @@ static struct zorro_device_id zorro7xx_zorro_tbl[] __devinitdata = {
+ 	},
+ 	{ 0 }
+ };
++MODULE_DEVICE_TABLE(zorro, zorro7xx_zorro_tbl);
+ 
+ static int __devinit zorro7xx_init_one(struct zorro_dev *z,
+ 				       const struct zorro_device_id *ent)
+diff --git a/drivers/video/cirrusfb.c b/drivers/video/cirrusfb.c
+index 8a87602..bf19143 100644
+--- a/drivers/video/cirrusfb.c
++++ b/drivers/video/cirrusfb.c
+@@ -298,6 +298,7 @@ static const struct zorro_device_id cirrusfb_zorro_table[] = {
+ 	},
+ 	{ 0 }
+ };
++MODULE_DEVICE_TABLE(zorro, cirrusfb_zorro_table);
+ 
+ static const struct {
+ 	zorro_id id2;
+diff --git a/drivers/video/fm2fb.c b/drivers/video/fm2fb.c
+index 6c91c61..1b0feb8 100644
+--- a/drivers/video/fm2fb.c
++++ b/drivers/video/fm2fb.c
+@@ -219,6 +219,7 @@ static struct zorro_device_id fm2fb_devices[] __devinitdata = {
+ 	{ ZORRO_PROD_HELFRICH_RAINBOW_II },
+ 	{ 0 }
+ };
++MODULE_DEVICE_TABLE(zorro, fm2fb_devices);
+ 
+ static struct zorro_driver fm2fb_driver = {
+ 	.name		= "fm2fb",
+diff --git a/drivers/zorro/zorro-driver.c b/drivers/zorro/zorro-driver.c
+index e6c4390..aeb0615 100644
+--- a/drivers/zorro/zorro-driver.c
++++ b/drivers/zorro/zorro-driver.c
+@@ -137,10 +137,34 @@ static int zorro_bus_match(struct device *dev, struct device_driver *drv)
  	return 0;
  }
  
-diff --git a/drivers/input/keyboard/amikbd.c b/drivers/input/keyboard/amikbd.c
-index 35149ec..79172af 100644
---- a/drivers/input/keyboard/amikbd.c
-+++ b/drivers/input/keyboard/amikbd.c
-@@ -35,6 +35,7 @@
- #include <linux/delay.h>
- #include <linux/interrupt.h>
- #include <linux/keyboard.h>
-+#include <linux/platform_device.h>
++static int zorro_uevent(struct device *dev, struct kobj_uevent_env *env)
++{
++#ifdef CONFIG_HOTPLUG
++	struct zorro_dev *z;
++
++	if (!dev)
++		return -ENODEV;
++
++	z = to_zorro_dev(dev);
++	if (!z)
++		return -ENODEV;
++
++	if (add_uevent_var(env, "ZORRO_ID=%08X", z->id) ||
++	    add_uevent_var(env, "ZORRO_SLOT_NAME=%s", z->dev.bus_id) ||
++	    add_uevent_var(env, "ZORRO_SLOT_ADDR=%04X", z->slotaddr) ||
++	    add_uevent_var(env, "MODALIAS=" ZORRO_DEVICE_MODALIAS_FMT, z->id))
++		return -ENOMEM;
++
++	return 0;
++#else /* !CONFIG_HOTPLUG */
++	return -ENODEV;
++#endif /* !CONFIG_HOTPLUG */
++}
  
- #include <asm/amigaints.h>
- #include <asm/amigahw.h>
-@@ -154,10 +155,9 @@ static const char *amikbd_messages[8] = {
- 	[7] = KERN_WARNING "amikbd: keyboard interrupt\n"
+ struct bus_type zorro_bus_type = {
+ 	.name	= "zorro",
+ 	.match	= zorro_bus_match,
++	.uevent	= zorro_uevent,
+ 	.probe	= zorro_device_probe,
+ 	.remove	= zorro_device_remove,
+ };
+diff --git a/drivers/zorro/zorro-sysfs.c b/drivers/zorro/zorro-sysfs.c
+index 5290552..7139ec2 100644
+--- a/drivers/zorro/zorro-sysfs.c
++++ b/drivers/zorro/zorro-sysfs.c
+@@ -77,6 +77,16 @@ static struct bin_attribute zorro_config_attr = {
+ 	.read = zorro_read_config,
  };
  
--static struct input_dev *amikbd_dev;
--
--static irqreturn_t amikbd_interrupt(int irq, void *dummy)
-+static irqreturn_t amikbd_interrupt(int irq, void *data)
- {
-+	struct input_dev *dev = data;
- 	unsigned char scancode, down;
- 
- 	scancode = ~ciaa.sdr;		/* get and invert scancode (keyboard is active low) */
-@@ -170,47 +170,42 @@ static irqreturn_t amikbd_interrupt(int irq, void *dummy)
- 
- 	if (scancode < 0x78) {		/* scancodes < 0x78 are keys */
- 		if (scancode == 98) {	/* CapsLock is a toggle switch key on Amiga */
--			input_report_key(amikbd_dev, scancode, 1);
--			input_report_key(amikbd_dev, scancode, 0);
-+			input_report_key(dev, scancode, 1);
-+			input_report_key(dev, scancode, 0);
- 		} else {
--			input_report_key(amikbd_dev, scancode, down);
-+			input_report_key(dev, scancode, down);
- 		}
- 
--		input_sync(amikbd_dev);
-+		input_sync(dev);
- 	} else				/* scancodes >= 0x78 are error codes */
- 		printk(amikbd_messages[scancode - 0x78]);
- 
- 	return IRQ_HANDLED;
- }
- 
--static int __init amikbd_init(void)
-+static int __init amikbd_probe(struct platform_device *pdev)
- {
-+	struct input_dev *dev;
- 	int i, j, err;
- 
--	if (!AMIGAHW_PRESENT(AMI_KEYBOARD))
--		return -ENODEV;
--
--	if (!request_mem_region(CIAA_PHYSADDR-1+0xb00, 0x100, "amikeyb"))
--		return -EBUSY;
--
--	amikbd_dev = input_allocate_device();
--	if (!amikbd_dev) {
--		printk(KERN_ERR "amikbd: not enough memory for input device\n");
--		err = -ENOMEM;
--		goto fail1;
-+	dev = input_allocate_device();
-+	if (!dev) {
-+		dev_err(&pdev->dev, "Not enough memory for input device\n");
-+		return -ENOMEM;
- 	}
- 
--	amikbd_dev->name = "Amiga Keyboard";
--	amikbd_dev->phys = "amikbd/input0";
--	amikbd_dev->id.bustype = BUS_AMIGA;
--	amikbd_dev->id.vendor = 0x0001;
--	amikbd_dev->id.product = 0x0001;
--	amikbd_dev->id.version = 0x0100;
-+	dev->name = pdev->name;
-+	dev->phys = "amikbd/input0";
-+	dev->id.bustype = BUS_AMIGA;
-+	dev->id.vendor = 0x0001;
-+	dev->id.product = 0x0001;
-+	dev->id.version = 0x0100;
-+	dev->dev.parent = &pdev->dev;
- 
--	amikbd_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP);
-+	dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP);
- 
- 	for (i = 0; i < 0x78; i++)
--		set_bit(i, amikbd_dev->keybit);
-+		set_bit(i, dev->keybit);
- 
- 	for (i = 0; i < MAX_NR_KEYMAPS; i++) {
- 		static u_short temp_map[NR_KEYS] __initdata;
-@@ -229,30 +224,54 @@ static int __init amikbd_init(void)
- 		memcpy(key_maps[i], temp_map, sizeof(temp_map));
- 	}
- 	ciaa.cra &= ~0x41;	 /* serial data in, turn off TA */
--	if (request_irq(IRQ_AMIGA_CIAA_SP, amikbd_interrupt, 0, "amikbd",
--			amikbd_interrupt)) {
--		err = -EBUSY;
-+	err = request_irq(IRQ_AMIGA_CIAA_SP, amikbd_interrupt, 0, "amikbd",
-+			  dev);
-+	if (err)
- 		goto fail2;
--	}
- 
--	err = input_register_device(amikbd_dev);
-+	err = input_register_device(dev);
- 	if (err)
- 		goto fail3;
- 
-+	platform_set_drvdata(pdev, dev);
-+
- 	return 0;
- 
-- fail3:	free_irq(IRQ_AMIGA_CIAA_SP, amikbd_interrupt);
-- fail2:	input_free_device(amikbd_dev);
-- fail1:	release_mem_region(CIAA_PHYSADDR - 1 + 0xb00, 0x100);
-+ fail3:	free_irq(IRQ_AMIGA_CIAA_SP, dev);
-+ fail2:	input_free_device(dev);
- 	return err;
- }
- 
--static void __exit amikbd_exit(void)
-+static int __exit amikbd_remove(struct platform_device *pdev)
++static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
++			     char *buf)
 +{
-+	struct input_dev *dev = platform_get_drvdata(pdev);
++	struct zorro_dev *z = to_zorro_dev(dev);
 +
-+	platform_set_drvdata(pdev, NULL);
-+	free_irq(IRQ_AMIGA_CIAA_SP, dev);
-+	input_unregister_device(dev);
-+	return 0;
++	return sprintf(buf, ZORRO_DEVICE_MODALIAS_FMT "\n", z->id);
 +}
 +
-+static struct platform_driver amikbd_driver = {
-+	.remove = __exit_p(amikbd_remove),
-+	.driver   = {
-+		.name	= "amiga-keyboard",
-+		.owner	= THIS_MODULE,
-+	},
++static DEVICE_ATTR(modalias, S_IRUGO, modalias_show, NULL);
++
+ void zorro_create_sysfs_dev_files(struct zorro_dev *z)
+ {
+ 	struct device *dev = &z->dev;
+@@ -88,6 +98,7 @@ void zorro_create_sysfs_dev_files(struct zorro_dev *z)
+ 	device_create_file(dev, &dev_attr_slotaddr);
+ 	device_create_file(dev, &dev_attr_slotsize);
+ 	device_create_file(dev, &dev_attr_resource);
++	device_create_file(dev, &dev_attr_modalias);
+ 	sysfs_create_bin_file(&dev->kobj, &zorro_config_attr);
+ }
+ 
+diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
+index 97b91d1..45026a0 100644
+--- a/include/linux/mod_devicetable.h
++++ b/include/linux/mod_devicetable.h
+@@ -447,4 +447,14 @@ struct dmi_system_id {
+ 
+ #define DMI_MATCH(a, b)	{ a, b }
+ 
++struct zorro_device_id {
++	__u32 id;			/* Device ID or ZORRO_WILDCARD */
++	kernel_ulong_t driver_data;	/* Data private to the driver */
 +};
 +
-+static int __init amikbd_init(void)
- {
--	free_irq(IRQ_AMIGA_CIAA_SP, amikbd_interrupt);
--	input_unregister_device(amikbd_dev);
--	release_mem_region(CIAA_PHYSADDR - 1 + 0xb00, 0x100);
-+	return platform_driver_probe(&amikbd_driver, amikbd_probe);
- }
- 
- module_init(amikbd_init);
++#define ZORRO_WILDCARD			(0xffffffff)	/* not official */
 +
-+static void __exit amikbd_exit(void)
++#define ZORRO_DEVICE_MODALIAS_FMT	"zorro:i%08X"
++
++
+ #endif /* LINUX_MOD_DEVICETABLE_H */
+diff --git a/include/linux/zorro.h b/include/linux/zorro.h
+index 913bfc2..908db1b 100644
+--- a/include/linux/zorro.h
++++ b/include/linux/zorro.h
+@@ -38,8 +38,6 @@
+ typedef __u32 zorro_id;
+ 
+ 
+-#define ZORRO_WILDCARD		(0xffffffff)	/* not official */
+-
+ /* Include the ID list */
+ #include <linux/zorro_ids.h>
+ 
+@@ -116,6 +114,7 @@ struct ConfigDev {
+ 
+ #include <linux/init.h>
+ #include <linux/ioport.h>
++#include <linux/mod_devicetable.h>
+ 
+ #include <asm/zorro.h>
+ 
+@@ -155,16 +154,6 @@ extern struct bus_type zorro_bus_type;
+ 
+ 
+     /*
+-     *  Zorro device IDs
+-     */
+-
+-struct zorro_device_id {
+-	zorro_id id;			/* Device ID or ZORRO_WILDCARD */
+-	unsigned long driver_data;	/* Data private to the driver */
+-};
+-
+-
+-    /*
+      *  Zorro device drivers
+      */
+ 
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index d4dc222..d8cbbf2 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -696,6 +696,17 @@ static int do_dmi_entry(const char *filename, struct dmi_system_id *id,
+ 	strcat(alias, ":");
+ 	return 1;
+ }
++
++/* Looks like: zorro:iN. */
++static int do_zorro_entry(const char *filename, struct zorro_device_id *id,
++			  char *alias)
 +{
-+	platform_driver_unregister(&amikbd_driver);
++	id->id = TO_NATIVE(id->id);
++	strcpy(alias, "zorro:");
++	ADD(alias, "i", id->id != ZORRO_WILDCARD, id->id);
++	return 1;
 +}
 +
- module_exit(amikbd_exit);
-+
-+MODULE_ALIAS("platform:amiga-keyboard");
+ /* Ignore any prefix, eg. some architectures prepend _ */
+ static inline int sym_is(const char *symbol, const char *name)
+ {
+@@ -835,6 +846,10 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
+ 		do_table(symval, sym->st_size,
+ 			 sizeof(struct dmi_system_id), "dmi",
+ 			 do_dmi_entry, mod);
++	else if (sym_is(symname, "__mod_zorro_device_table"))
++		do_table(symval, sym->st_size,
++			 sizeof(struct zorro_device_id), "zorro",
++			 do_zorro_entry, mod);
+ 	free(zeros);
+ }
+ 
 -- 
 1.6.0.4
 
