@@ -1,317 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab0DWFAH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 01:00:07 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:57610 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755537Ab0DWFAB (ORCPT
+	id S1754770Ab0DWBKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 21:10:19 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:46142 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754629Ab0DWBKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 01:00:01 -0400
-From: Dinh.Nguyen@freescale.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-       grant.likely@secretlab.ca, bryan.wu@canonical.com,
-       amit.kucheria@canonical.com, Jun.Li@freescale.com,
-       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv8 2.6.34-rc5 4/5] mxc: Add generic USB HW initialization for MX51
-Date: Thu, 22 Apr 2010 23:51:16 -0500
-Message-Id: <1271998277-3949-4-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1271998277-3949-3-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1271998277-3949-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271998277-3949-2-git-send-email-Dinh.Nguyen@freescale.com>
- <1271998277-3949-3-git-send-email-Dinh.Nguyen@freescale.com>
+	Thu, 22 Apr 2010 21:10:08 -0400
+From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Len Brown <len.brown@intel.com>
+Subject: [PATCH 4/9] PM: suspend_block: Switch to list of active and inactive suspend blockers
+Date: Thu, 22 Apr 2010 18:08:53 -0700
+Message-Id: <1271984938-13920-5-git-send-email-arve@android.com>
+X-Mailer: git-send-email 1.6.5.1
+In-Reply-To: <1271984938-13920-4-git-send-email-arve@android.com>
+References: <1271984938-13920-1-git-send-email-arve@android.com>
+ <1271984938-13920-2-git-send-email-arve@android.com>
+ <1271984938-13920-3-git-send-email-arve@android.com>
+ <1271984938-13920-4-git-send-email-arve@android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+This allows active suspend blockers to be listed
 
-This patch adds USB HW initializiation code to /plat-mxc/ehci.c.
-	-Stops and resets USB HW
-	-Sets some specific PHY settings
-	-Stop and restart the USB HW.
-Renames mxc_set_usbcontrol to mxc_initialize_usb_hw.
-The placing of the mxc_initialize_usb_hw needs to be before setting
-the USBMODE register to host, since a reset and restart is done in
-mxc_initialize_usb_hw.
-Adds new register bit defines for the USB HW on Freescale
-SoCs.
-
-This patch applies to 2.6.34-rc5.
-
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Reviewed-by: Daniel Mack <daniel@caiaq.de>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
 ---
- arch/arm/plat-mxc/ehci.c                  |  170 ++++++++++++++++++++++++++++-
- arch/arm/plat-mxc/include/mach/mxc_ehci.h |   14 ++-
- drivers/usb/host/ehci-mxc.c               |   10 +-
- 3 files changed, 186 insertions(+), 8 deletions(-)
+ include/linux/suspend_blocker.h |    6 ++-
+ kernel/power/suspend_blocker.c  |   85 +++++++++++++++++++++++++++-----------
+ 2 files changed, 65 insertions(+), 26 deletions(-)
 
-diff --git a/arch/arm/plat-mxc/ehci.c b/arch/arm/plat-mxc/ehci.c
-index cb0b638..6b02c45 100644
---- a/arch/arm/plat-mxc/ehci.c
-+++ b/arch/arm/plat-mxc/ehci.c
-@@ -1,5 +1,6 @@
- /*
-  * Copyright (c) 2009 Daniel Mack <daniel@caiaq.de>
-+ * Copyright (C) 2010 Freescale Semiconductor, Inc.
+diff --git a/include/linux/suspend_blocker.h b/include/linux/suspend_blocker.h
+index 21689cd..1faa433 100755
+--- a/include/linux/suspend_blocker.h
++++ b/include/linux/suspend_blocker.h
+@@ -16,8 +16,11 @@
+ #ifndef _LINUX_SUSPEND_BLOCKER_H
+ #define _LINUX_SUSPEND_BLOCKER_H
+ 
++#include <linux/list.h>
++
+ /**
+  * struct suspend_blocker - the basic suspend_blocker structure
++ * @link:	List entry for active or inactive list.
+  * @flags:	Tracks initialized and active state.
+  * @name:	Name used for debugging.
   *
-  * This program is free software; you can redistribute it and/or modify it
-  * under the terms of the GNU General Public License as published by the
-@@ -18,6 +19,7 @@
+@@ -29,7 +32,8 @@
  
- #include <linux/platform_device.h>
- #include <linux/io.h>
-+#include <linux/delay.h>
+ struct suspend_blocker {
+ #ifdef CONFIG_SUSPEND_BLOCKERS
+-	atomic_t            flags;
++	struct list_head    link;
++	int                 flags;
+ 	const char         *name;
+ #endif
+ };
+diff --git a/kernel/power/suspend_blocker.c b/kernel/power/suspend_blocker.c
+index 1b345d1..868e8f1 100644
+--- a/kernel/power/suspend_blocker.c
++++ b/kernel/power/suspend_blocker.c
+@@ -32,9 +32,11 @@ module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
+ #define SB_INITIALIZED            (1U << 8)
+ #define SB_ACTIVE                 (1U << 9)
  
- #include <mach/hardware.h>
- #include <mach/mxc_ehci.h>
-@@ -50,7 +52,50 @@
- #define MX35_H1_TLL_BIT		(1 << 5)
- #define MX35_H1_USBTE_BIT	(1 << 4)
++static DEFINE_SPINLOCK(list_lock);
+ static DEFINE_SPINLOCK(state_lock);
+-static atomic_t suspend_block_count;
+-static atomic_t current_event_num;
++static LIST_HEAD(inactive_blockers);
++static LIST_HEAD(active_blockers);
++static int current_event_num;
+ struct workqueue_struct *suspend_work_queue;
+ struct suspend_blocker main_suspend_blocker;
+ static suspend_state_t requested_suspend_state = PM_SUSPEND_MEM;
+@@ -52,6 +54,14 @@ static bool enable_suspend_blockers;
+ 			tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec); \
+ 	} while (0);
  
--int mxc_set_usbcontrol(int port, unsigned int flags)
-+#define MXC_OTG_OFFSET		0
-+#define MXC_H1_OFFSET		0x200
-+
-+/* USB_CTRL */
-+#define MXC_OTG_UCTRL_OWIE_BIT		(1 << 27)	/* OTG wakeup intr enable */
-+#define MXC_OTG_UCTRL_OPM_BIT		(1 << 24)	/* OTG power mask */
-+#define MXC_H1_UCTRL_H1UIE_BIT		(1 << 12)	/* Host1 ULPI interrupt enable */
-+#define MXC_H1_UCTRL_H1WIE_BIT		(1 << 11)	/* HOST1 wakeup intr enable */
-+#define MXC_H1_UCTRL_H1PM_BIT		(1 <<  8)		/* HOST1 power mask */
-+
-+/* USB_PHY_CTRL_FUNC */
-+#define MXC_OTG_PHYCTRL_OC_DIS_BIT	(1 << 8)	/* OTG Disable Overcurrent Event */
-+#define MXC_H1_OC_DIS_BIT			(1 << 5)	/* UH1 Disable Overcurrent Event */
-+
-+#define MXC_USBCMD_OFFSET			0x140
-+
-+/* USBCMD */
-+#define MXC_UCMD_RUN_BIT		(1 << 0)	/* controller run/stop */
-+#define MXC_UCMD_RESET_BIT		(1 << 1)	/* controller reset */
-+#define MXC_UCMD_ITC_NO_THRESHOLD_MASK	(~(0xff << 16))	/* Interrupt Threshold Control */
-+
-+/* This function is a version of David Brownell's handshake function in
-+ * ehci-hcd.c. This function uses cpu_relax instead of udelay().
-+ *
-+ * @addr: Address of register
-+ * @mask: bits to look at in result of read
-+ * @done: value of those bits when handshake succeeds
-+ * @timeout: timeout in count
-+ *
-+ * This function waits for certain bits in the HW to stick before moving
-+ * on and provides a timeout in the case where those bits do not stick.
-+ */
-+static inline int hw_handshake(u32 addr, u32 mask, int done, int timeout)
++static void print_active_blockers_locked(void)
 +{
-+	while (--timeout && ((__raw_readl(addr) & mask) != done))
-+			cpu_relax();
++	struct suspend_blocker *blocker;
 +
-+	if (timeout)
-+		return 0;
-+	else
-+		return -ETIMEDOUT;
++	list_for_each_entry(blocker, &active_blockers, link)
++		pr_info("active suspend blocker %s\n", blocker->name);
 +}
 +
-+int mxc_initialize_usb_hw(int port, unsigned int flags)
+ /**
+  * suspend_is_blocked() - Check if suspend should be blocked
+  *
+@@ -65,7 +75,7 @@ bool suspend_is_blocked(void)
  {
- 	unsigned int v;
- #ifdef CONFIG_ARCH_MX3
-@@ -186,9 +231,130 @@ int mxc_set_usbcontrol(int port, unsigned int flags)
+ 	if (!enable_suspend_blockers)
  		return 0;
- 	}
- #endif /* CONFIG_MACH_MX27 */
-+#ifdef CONFIG_ARCH_MX51
-+	if (cpu_is_mx51()) {
-+		void __iomem *usb_base;
-+		u32 usbotg_base;
-+		u32 usbother_base;
-+		int ret = 0;
-+
-+		usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
-+
-+		switch (port) {
-+		case 0:	/* OTG port */
-+			usbotg_base = usb_base + MXC_OTG_OFFSET;
-+			break;
-+		case 1:	/* Host 1 port */
-+			usbotg_base = usb_base + MXC_H1_OFFSET;
-+			break;
-+		default:
-+			printk(KERN_ERR"%s no such port %d\n", __func__, port);
-+			ret = -ENOENT;
-+			goto error;
-+		}
-+		usbother_base = usb_base + MX5_USBOTHER_REGS_OFFSET;
-+
-+		/* Stop then Reset */
-+		v = __raw_readl(usbotg_base + MXC_USBCMD_OFFSET);
-+		v &= ~MXC_UCMD_RUN_BIT;
-+		__raw_writel(v, usbotg_base + MXC_USBCMD_OFFSET);
-+		ret = hw_handshake(usbotg_base + MXC_USBCMD_OFFSET, MXC_UCMD_RUN_BIT, 0, 500);
-+		if (ret) {
-+			printk(KERN_ERR "%s could not stop usb hardware\n", __func__);
-+			goto error;
-+		}
-+
-+		v = __raw_readl(usbotg_base + MXC_USBCMD_OFFSET);
-+		v |= MXC_UCMD_RESET_BIT;
-+		__raw_writel(v, usbotg_base + MXC_USBCMD_OFFSET);
-+		ret = hw_handshake(usbotg_base + MXC_USBCMD_OFFSET, MXC_UCMD_RESET_BIT, 0, 500);
-+		if (ret) {
-+			printk(KERN_ERR "%s could not reset usb hardware\n", __func__);
-+			goto error;
-+		}
-+
-+		switch (port) {
-+		case 0:	/*OTG port */
-+			if (flags & MXC_EHCI_INTERNAL_PHY) {
-+				v = __raw_readl(usbother_base + MXC_USB_PHY_CTR_FUNC_OFFSET);
-+
-+				if (flags & MXC_EHCI_POWER_PINS_ENABLED)
-+					v |= (MXC_OTG_PHYCTRL_OC_DIS_BIT | MXC_OTG_UCTRL_OPM_BIT); /* OC/USBPWR is not used */
-+				else
-+					v &= ~(MXC_OTG_PHYCTRL_OC_DIS_BIT | MXC_OTG_UCTRL_OPM_BIT); /* OC/USBPWR is used */
-+				__raw_writel(v, usbother_base + MXC_USB_PHY_CTR_FUNC_OFFSET);
-+
-+				v = __raw_readl(usbother_base + MXC_USBCTRL_OFFSET);
-+				if (flags & MXC_EHCI_WAKEUP_ENABLED)
-+					v |= MXC_OTG_UCTRL_OWIE_BIT;/* OTG wakeup enable */
-+				else
-+					v &= ~MXC_OTG_UCTRL_OWIE_BIT;/* OTG wakeup disable */
-+				__raw_writel(v, usbother_base + MXC_USBCTRL_OFFSET);
-+			}
-+			break;
-+		case 1:	/* Host 1 */
-+			/*Host ULPI */
-+			v = __raw_readl(usbother_base + MXC_USBCTRL_OFFSET);
-+			if (flags & MXC_EHCI_WAKEUP_ENABLED)
-+				v &= ~(MXC_H1_UCTRL_H1WIE_BIT | MXC_H1_UCTRL_H1UIE_BIT);/* HOST1 wakeup/ULPI intr disable */
-+			else
-+				v &= ~(MXC_H1_UCTRL_H1WIE_BIT | MXC_H1_UCTRL_H1UIE_BIT);/* HOST1 wakeup/ULPI intr disable */
-+
-+			if (flags & MXC_EHCI_POWER_PINS_ENABLED)
-+				v &= ~MXC_H1_UCTRL_H1PM_BIT; /* HOST1 power mask used*/
-+			else
-+				v |= MXC_H1_UCTRL_H1PM_BIT; /* HOST1 power mask used*/
-+			__raw_writel(v, usbother_base + MXC_USBCTRL_OFFSET);
-+
-+			v = __raw_readl(usbother_base + MXC_USB_PHY_CTR_FUNC_OFFSET);
-+			if (flags & MXC_EHCI_POWER_PINS_ENABLED)
-+				v &= ~MXC_H1_OC_DIS_BIT; /* OC is used */
-+			else
-+				v |= MXC_H1_OC_DIS_BIT; /* OC is not used */
-+			__raw_writel(v, usbother_base + MXC_USB_PHY_CTR_FUNC_OFFSET);
-+
-+			v = __raw_readl(usbotg_base + MXC_USBCMD_OFFSET);
-+			if (flags & MXC_EHCI_ITC_NO_THRESHOLD)
-+				/* Interrupt Threshold Control:Immediate (no threshold) */
-+				v &= MXC_UCMD_ITC_NO_THRESHOLD_MASK;
-+			__raw_writel(v, usbotg_base + MXC_USBCMD_OFFSET);
-+			break;
-+		}
-+
-+		/* need to reset the controller here so that the ID pin
-+		 * is correctly detected.
-+		 */
-+		/* Stop then Reset */
-+		v = __raw_readl(usbotg_base + MXC_USBCMD_OFFSET);
-+		v &= ~MXC_UCMD_RUN_BIT;
-+		__raw_writel(v, usbotg_base + MXC_USBCMD_OFFSET);
-+		ret = hw_handshake(usbotg_base + MXC_USBCMD_OFFSET, MXC_UCMD_RUN_BIT, 0, 500);
-+		if (ret) {
-+			printk(KERN_ERR "%s could not stop usb hardware\n", __func__);
-+			goto error;
-+		}
-+
-+		v = __raw_readl(usbotg_base + MXC_USBCMD_OFFSET);
-+		v |= MXC_UCMD_RESET_BIT;
-+		__raw_writel(v, usbotg_base + MXC_USBCMD_OFFSET);
-+		ret = hw_handshake(usbotg_base + MXC_USBCMD_OFFSET, MXC_UCMD_RESET_BIT, 0, 500);
-+		if (ret) {
-+			printk(KERN_ERR "%s could not reset usb hardware\n", __func__);
-+			goto error;
-+		}
-+
-+		/* allow controller to reset, and leave time for
-+		 * the ULPI transceiver to reset too.
-+		 */
-+		msleep(100);
-+error:
-+		iounmap(usb_base);
-+		return ret;
-+	}
-+#endif
- 	printk(KERN_WARNING
- 		"%s() unable to setup USBCONTROL for this CPU\n", __func__);
- 	return -EINVAL;
+-	return !!atomic_read(&suspend_block_count);
++	return !list_empty(&active_blockers);
  }
--EXPORT_SYMBOL(mxc_set_usbcontrol);
-+EXPORT_SYMBOL(mxc_initialize_usb_hw);
  
-diff --git a/arch/arm/plat-mxc/include/mach/mxc_ehci.h b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-index 4b9b836..7fc5f99 100644
---- a/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-+++ b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-@@ -25,6 +25,18 @@
- #define MXC_EHCI_INTERNAL_PHY		(1 << 7)
- #define MXC_EHCI_IPPUE_DOWN		(1 << 8)
- #define MXC_EHCI_IPPUE_UP		(1 << 9)
-+#define MXC_EHCI_WAKEUP_ENABLED	(1 << 10)
-+#define MXC_EHCI_ITC_NO_THRESHOLD	(1 << 11)
-+
-+#define MXC_USBCTRL_OFFSET		0
-+#define MXC_USB_PHY_CTR_FUNC_OFFSET	0x8
-+#define MXC_USB_PHY_CTR_FUNC2_OFFSET	0xc
-+
-+#define MX5_USBOTHER_REGS_OFFSET	0x800
-+
-+/* USB_PHY_CTRL_FUNC2*/
-+#define MX5_USB_UTMI_PHYCTRL1_PLLDIV_MASK		0x3
-+#define MX5_USB_UTMI_PHYCTRL1_PLLDIV_SHIFT		0
+ static void suspend_worker(struct work_struct *work)
+@@ -75,13 +85,13 @@ static void suspend_worker(struct work_struct *work)
  
- struct mxc_usbh_platform_data {
- 	int (*init)(struct platform_device *pdev);
-@@ -35,7 +47,7 @@ struct mxc_usbh_platform_data {
- 	struct otg_transceiver	*otg;
- };
- 
--int mxc_set_usbcontrol(int port, unsigned int flags);
-+int mxc_initialize_usb_hw(int port, unsigned int flags);
- 
- #endif /* __INCLUDE_ASM_ARCH_MXC_EHCI_H */
- 
-diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
-index ead59f4..bb8d092 100644
---- a/drivers/usb/host/ehci-mxc.c
-+++ b/drivers/usb/host/ehci-mxc.c
-@@ -191,6 +191,11 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
- 		clk_enable(priv->ahbclk);
+ 	enable_suspend_blockers = true;
+ 	while (!suspend_is_blocked()) {
+-		entry_event_num = atomic_read(&current_event_num);
++		entry_event_num = current_event_num;
+ 		if (debug_mask & DEBUG_SUSPEND)
+ 			pr_info("suspend: enter suspend\n");
+ 		ret = pm_suspend(requested_suspend_state);
+ 		if (debug_mask & DEBUG_EXIT_SUSPEND)
+ 			pr_info_time("suspend: exit suspend, ret = %d ", ret);
+-		if (atomic_read(&current_event_num) == entry_event_num)
++		if (current_event_num == entry_event_num)
+ 			pr_info("suspend: pm_suspend returned with no event\n");
  	}
- 
-+	/* setup specific usb hw */
-+	ret = mxc_initialize_usb_hw(pdev->id, pdata->flags);
-+	if (ret < 0)
-+		goto err_init;
+ 	enable_suspend_blockers = false;
+@@ -98,13 +108,20 @@ static DECLARE_WORK(suspend_work, suspend_worker);
+  */
+ void suspend_blocker_init(struct suspend_blocker *blocker, const char *name)
+ {
++	unsigned long irqflags = 0;
 +
- 	/* set USBMODE to host mode */
- 	temp = readl(hcd->regs + USBMODE_OFFSET);
- 	writel(temp | USBMODE_CM_HOST, hcd->regs + USBMODE_OFFSET);
-@@ -199,11 +204,6 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
- 	writel(pdata->portsc, hcd->regs + PORTSC_OFFSET);
- 	mdelay(10);
+ 	WARN_ON(!name);
  
--	/* setup USBCONTROL. */
--	ret = mxc_set_usbcontrol(pdev->id, pdata->flags);
--	if (ret < 0)
--		goto err_init;
--
- 	/* Initialize the transceiver */
- 	if (pdata->otg) {
- 		pdata->otg->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
+ 	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
+ 		pr_info("suspend_blocker_init name=%s\n", name);
+ 
+ 	blocker->name = name;
+-	atomic_set(&blocker->flags, SB_INITIALIZED);
++	blocker->flags = SB_INITIALIZED;
++	INIT_LIST_HEAD(&blocker->link);
++
++	spin_lock_irqsave(&list_lock, irqflags);
++	list_add(&blocker->link, &inactive_blockers);
++	spin_unlock_irqrestore(&list_lock, irqflags);
+ }
+ EXPORT_SYMBOL(suspend_blocker_init);
+ 
+@@ -114,15 +131,17 @@ EXPORT_SYMBOL(suspend_blocker_init);
+  */
+ void suspend_blocker_destroy(struct suspend_blocker *blocker)
+ {
+-	int flags;
++	unsigned long irqflags;
++	if (WARN_ON(!(blocker->flags & SB_INITIALIZED)))
++		return;
+ 	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
+ 		pr_info("suspend_blocker_destroy name=%s\n", blocker->name);
+-	flags = atomic_xchg(&blocker->flags, 0);
+-	WARN(!(flags & SB_INITIALIZED), "suspend_blocker_destroy called on "
+-					"uninitialized suspend_blocker\n");
+-	if (flags == (SB_INITIALIZED | SB_ACTIVE))
+-		if (atomic_dec_and_test(&suspend_block_count))
+-			queue_work(suspend_work_queue, &suspend_work);
++	spin_lock_irqsave(&list_lock, irqflags);
++	blocker->flags &= ~SB_INITIALIZED;
++	list_del(&blocker->link);
++	if ((blocker->flags & SB_ACTIVE) && list_empty(&active_blockers))
++		queue_work(suspend_work_queue, &suspend_work);
++	spin_unlock_irqrestore(&list_lock, irqflags);
+ }
+ EXPORT_SYMBOL(suspend_blocker_destroy);
+ 
+@@ -132,15 +151,20 @@ EXPORT_SYMBOL(suspend_blocker_destroy);
+  */
+ void suspend_block(struct suspend_blocker *blocker)
+ {
+-	WARN_ON(!(atomic_read(&blocker->flags) & SB_INITIALIZED));
++	unsigned long irqflags;
++
++	if (WARN_ON(!(blocker->flags & SB_INITIALIZED)))
++		return;
+ 
++	spin_lock_irqsave(&list_lock, irqflags);
++	blocker->flags |= SB_ACTIVE;
++	list_del(&blocker->link);
+ 	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
+ 		pr_info("suspend_block: %s\n", blocker->name);
+-	if (atomic_cmpxchg(&blocker->flags, SB_INITIALIZED,
+-	    SB_INITIALIZED | SB_ACTIVE) == SB_INITIALIZED)
+-		atomic_inc(&suspend_block_count);
++	list_add(&blocker->link, &active_blockers);
+ 
+-	atomic_inc(&current_event_num);
++	current_event_num++;
++	spin_unlock_irqrestore(&list_lock, irqflags);
+ }
+ EXPORT_SYMBOL(suspend_block);
+ 
+@@ -152,15 +176,26 @@ EXPORT_SYMBOL(suspend_block);
+  */
+ void suspend_unblock(struct suspend_blocker *blocker)
+ {
+-	WARN_ON(!(atomic_read(&blocker->flags) & SB_INITIALIZED));
++	unsigned long irqflags;
++
++	if (WARN_ON(!(blocker->flags & SB_INITIALIZED)))
++		return;
++
++	spin_lock_irqsave(&list_lock, irqflags);
+ 
+ 	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
+ 		pr_info("suspend_unblock: %s\n", blocker->name);
++	list_del(&blocker->link);
++	list_add(&blocker->link, &inactive_blockers);
+ 
+-	if (atomic_cmpxchg(&blocker->flags, SB_INITIALIZED | SB_ACTIVE,
+-	    SB_INITIALIZED) == (SB_INITIALIZED | SB_ACTIVE))
+-		if (atomic_dec_and_test(&suspend_block_count))
+-			queue_work(suspend_work_queue, &suspend_work);
++	if ((blocker->flags & SB_ACTIVE) && list_empty(&active_blockers))
++		queue_work(suspend_work_queue, &suspend_work);
++	blocker->flags &= ~(SB_ACTIVE);
++	if (blocker == &main_suspend_blocker) {
++		if (debug_mask & DEBUG_SUSPEND)
++			print_active_blockers_locked();
++	}
++	spin_unlock_irqrestore(&list_lock, irqflags);
+ }
+ EXPORT_SYMBOL(suspend_unblock);
+ 
+@@ -172,9 +207,9 @@ EXPORT_SYMBOL(suspend_unblock);
+  */
+ bool suspend_blocker_is_active(struct suspend_blocker *blocker)
+ {
+-	WARN_ON(!(atomic_read(&blocker->flags) & SB_INITIALIZED));
++	WARN_ON(!(blocker->flags & SB_INITIALIZED));
+ 
+-	return !!(atomic_read(&blocker->flags) & SB_ACTIVE);
++	return !!(blocker->flags & SB_ACTIVE);
+ }
+ EXPORT_SYMBOL(suspend_blocker_is_active);
+ 
 -- 
-1.6.0.4
+1.6.5.1
 
