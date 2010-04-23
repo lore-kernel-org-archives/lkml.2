@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab0DWTSr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 15:18:47 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39641 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751493Ab0DWTSm convert rfc822-to-8bit (ORCPT
+	id S1754430Ab0DWTVL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 15:21:11 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:49778 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab0DWTVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 15:18:42 -0400
-Subject: Re: [PATCH 0/8] More fixes for nested svm
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <4BD02D45.4030905@redhat.com>
-Date: Fri, 23 Apr 2010 21:18:39 +0200
-Cc: Joerg Roedel <joerg.roedel@amd.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8A94B9D4-7DF2-4D54-AB27-9E1946958089@suse.de>
-References: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com> <4BD02D45.4030905@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-X-Mailer: Apple Mail (2.1078)
+	Fri, 23 Apr 2010 15:21:08 -0400
+Date: Fri, 23 Apr 2010 20:20:59 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: =?iso-8859-1?Q?=C9ric?= Piel <Eric.Piel@tremplin-utc.net>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+       platform-driver-x86@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
+       "Brown, Len" <len.brown@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] Make WMI be selected automatically when needed
+Message-ID: <20100423192059.GA32705@srcf.ucam.org>
+References: <4BC8FF9D.7050500@tremplin-utc.net> <20100416173127.6b968fd4.randy.dunlap@oracle.com> <4BC907B5.2050104@tremplin-utc.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4BC907B5.2050104@tremplin-utc.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Apr 17, 2010 at 02:58:29AM +0200, Éric Piel wrote:
 
-On 22.04.2010, at 13:04, Avi Kivity wrote:
+>  config LEDS_DELL_NETBOOKS
+>  	tristate "External LED on Dell Business Netbooks"
+> -	depends on X86 && ACPI_WMI
+> +	depends on X86
+> +	depends on ACPI
+> +	select ACPI_WMI
 
-> On 04/22/2010 01:33 PM, Joerg Roedel wrote:
->> Hi Avi, Marcelo,
->> 
->> here is another set of nested svm fixes. They fix NMI code to make UP Hyper-V
->> root domain booting. The patches also add better handling for nested entry
->> failures and mce intercepts.
->> Also in this patchset are the fixes for the supported cpuid reporting for svm
->> features. These patches were taken from the nested-npt patchset and slightly
->> modified. These patches are also marked for -stable backporting.
->> The probably most important fix is about exception reinjection. This didn't
->> work reliably before and is fixed with the patch in this series now. This fix
->> also touches common x86 code but that should be ok because it could be reused
->> by nested-vmx later.
->> Please review and give comments (or apply ;-).
->>   
-> 
-> Looks good.  I'll wait a day or two for more reviews (esp. Alex).
+I dislike this. The originally stated dependencies are correct and more 
+accurately represent what the code requires, and changing that for the 
+sake of making it easier for people to find the driver sounds like it's 
+trying to cover up shortcomings in our configuration system more than 
+anything else.
 
-No complaints from me.
-
-
-Alex
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
