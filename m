@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393Ab0DWCeW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Apr 2010 22:34:22 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58653 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755150Ab0DWCeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Apr 2010 22:34:21 -0400
-Message-ID: <4BD10788.8060006@cn.fujitsu.com>
-Date: Fri, 23 Apr 2010 10:35:52 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1755162Ab0DWCKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Apr 2010 22:10:22 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:61033 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755101Ab0DWCKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Apr 2010 22:10:19 -0400
+Date: Fri, 23 Apr 2010 11:08:27 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH] [BUGFIX] rmap: remove anon_vma check in
+ page_address_in_vma()
+Message-ID: <20100423020827.GB7383@spritzerA.linux.bs1.fc.nec.co.jp>
+References: <20100422054241.GB10957@spritzerA.linux.bs1.fc.nec.co.jp>
+ <4BD0688A.7050806@redhat.com>
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-       Lai JIangshan <laijs@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-       Matt Helsley <matthltc@us.ibm.com>, Cedric Le Goater <clg@fr.ibm.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "containers@lists.osdl.org" <containers@lists.osdl.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] cgroup: Check task_lock in task_subsys_state()
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <4BD0688A.7050806@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_subsys_state() is safe under task_lock(). See
-Documentation/cgroups/cgroups.txt for locking rule.
+Currently page_address_in_vma() compares vma->anon_vma and page_anon_vma(page)
+for parameter check, but in 2.6.34 a vma can have multiple anon_vmas with
+anon_vma_chain, so current check does not work. (For anonymous page shared by
+multiple processes, some verified (page,vma) pairs return -EFAULT wrongly.)
 
-This fixes an RCU warning when resume from suspend. The
-warning comes from freezer cgroup in cgroup_freezing_or_frozen().
+We can go to checking all anon_vmas in the "same_vma" chain, but it needs
+to meet lock requirement. Instead, we can remove anon_vma check safely
+because page_address_in_vma() assumes that page and vma are already checked
+to belong to the identical process.
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 ---
+ mm/rmap.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-I'm not sure which is preferable - access ->alloc_lock directly
-like this patch or add task_lock_is_held() in sched.h
-
----
- include/linux/cgroup.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index b8ad1ea..8f78073 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -530,6 +530,7 @@ static inline struct cgroup_subsys_state *task_subsys_state(
- {
- 	return rcu_dereference_check(task->cgroups->subsys[subsys_id],
- 				     rcu_read_lock_held() ||
-+				     lockdep_is_held(&task->alloc_lock) ||
- 				     cgroup_lock_is_held());
- }
+diff --git v2.6.34-rc5:mm/rmap.c v2.6.34-rc5:mm/rmap.c
+index 526704e..486fd0a 100644
+--- v2.6.34-rc5:mm/rmap.c
++++ v2.6.34-rc5:mm/rmap.c
+@@ -335,14 +335,13 @@ vma_address(struct page *page, struct vm_area_struct *vma)
  
+ /*
+  * At what user virtual address is page expected in vma?
+- * checking that the page matches the vma.
++ * Caller should check the page is actually part of the vma.
+  */
+ unsigned long page_address_in_vma(struct page *page, struct vm_area_struct *vma)
+ {
+-	if (PageAnon(page)) {
+-		if (vma->anon_vma != page_anon_vma(page))
+-			return -EFAULT;
+-	} else if (page->mapping && !(vma->vm_flags & VM_NONLINEAR)) {
++	if (PageAnon(page))
++		;
++	else if (page->mapping && !(vma->vm_flags & VM_NONLINEAR)) {
+ 		if (!vma->vm_file ||
+ 		    vma->vm_file->f_mapping != page->mapping)
+ 			return -EFAULT;
 -- 
-1.6.3
+1.7.0
