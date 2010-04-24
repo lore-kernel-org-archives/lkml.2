@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758610Ab0DXBU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 21:20:59 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:33630 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757475Ab0DXBU6 (ORCPT
+	id S1755828Ab0DXBY0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 21:24:26 -0400
+Received: from relay.ihostexchange.net ([66.46.182.52]:26926 "EHLO
+	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab0DXBYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 21:20:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=k0/ol+VsjbFt/L/Ja9xQ31cjCoytIN7t4rblLUr4imONL+7sxIzbJfgEwDsY+e6+wi
-         DE6uwPs7BS5f9oXcct4OFpeygl584qkBlmdN+x1lA4vnltHaq/jDA4CT29WAOx82b+0F
-         8WFSW3wBDTeBLM0t0b4OMx1MtyMpExIlPMw5M=
-Date: Sat, 24 Apr 2010 03:21:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: William Cohen <wcohen@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf-kvm.txt edits
-Message-ID: <20100424012100.GA31069@nowhere>
-References: <4BD204C5.9000504@redhat.com>
+	Fri, 23 Apr 2010 21:24:24 -0400
+Message-ID: <4BD24841.1010206@VirtualLogix.com>
+Date: Sat, 24 Apr 2010 03:24:17 +0200
+From: Eric Lescouet <Eric.Lescouet@VirtualLogix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc11 Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BD204C5.9000504@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg KH <greg@kroah.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: USBIP (staging) driver's dependency on drivers/usb/core internal
+ headers
+References: <Pine.LNX.4.44L0.1004231402180.1777-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1004231402180.1777-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 04:36:21PM -0400, William Cohen wrote:
-> asciidoc does not allow the "===" to be longer than the line above it.
-> Also corrected a couple types and formatting errors.
-> Signed-off-by: William Cohen <wcohen@redhat.com>
+On 04/23/2010 08:04 PM, Alan Stern wrote:
+> On Fri, 23 Apr 2010, Eric Lescouet wrote:
+> 
+>> Well, most of the files include hcd.h (which includes hub.h),
+>> only ~4 of them directly use hub.h.
+> 
+> Oh.  Okay, that makes life easier.  Probably some of the files which 
+> include hub.h directly also include hcd.h.
+> 
+>> So what's your vote? rename hub.h into ch11.h?
+> 
+> Yeah, go ahead.  I like the idea of the kernel containing information 
+> about Chapter 11.  (Although I haven't heard of anyone yet going 
+> bankrupt as a result of using Linux...)
+> 
+> Alan Stern
+> 
 
+It looks like couple of files in drivers/usb/core and usb/host have been
+modified already in latest snapshot (2.6.34-rc5-git5).
+Is it still ok to provide the patches against the mainline (2.6.34-rc5)
+or should I do it against the snapshot (2.6.34-rc5-git5)?
 
-Queued, thanks!
-
+Thanks,
+	Eric.
