@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985Ab0DXAc7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 20:32:59 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47790 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752901Ab0DXAc5 (ORCPT
+	id S1757203Ab0DXAe0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 20:34:26 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61686 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab0DXAeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 20:32:57 -0400
-Message-ID: <50d28d42d9f97dd6444c54265de9cd4b.squirrel@webmail-b.css.fujitsu.com>
-In-Reply-To: <1790.1272037936@redhat.com>
-References: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com>
-    <20100423195127.48095127.toshi.okajima@jp.fujitsu.com>
-    <20100422163755.355794e3.toshi.okajima@jp.fujitsu.com>
-    <7894.1271931370@redhat.com>
-    <20100423194547.3135efb8.toshi.okajima@jp.fujitsu.com>
-    <10934.1272022437@redhat.com> <1790.1272037936@redhat.com>
-Date: Sat, 24 Apr 2010 09:32:54 +0900 (JST)
-Subject: Re: [PATCH 1/1][BUG][TAKE2] KEYRINGS: find_keyring_by_name() can
- gain the freed keyring
-From: =?ISO-2022-JP?B?GyRCMixFaCEhPHc5VBsoQg==?= 
-	<toshi.okajima@jp.fujitsu.com>
-To: "David Howells" <dhowells@redhat.com>
-Cc: "Toshiyuki Okajima" <toshi.okajima@jp.fujitsu.com>, dhowells@redhat.com,
-       keyrings@linux-nfs.org, security@kernel.org,
-       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.16
+	Fri, 23 Apr 2010 20:34:24 -0400
+Message-ID: <4BD23D01.2080303@oracle.com>
+Date: Fri, 23 Apr 2010 17:36:17 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-2022-jp
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Andy Isaacson <adi@hexapodia.org>,
+       "R. Andrew Bailey" <bailey@akamai.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
+Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below BIOS_END
+References: <4BC4E55B.7000103@oracle.com> <4BCE8E3E.4030809@oracle.com> <20100421193120.GD11130@hexapodia.org> <201004231705.25659.bjorn.helgaas@hp.com> <4BD230C9.3090309@zytor.com>
+In-Reply-To: <4BD230C9.3090309@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090207.4BD23C69.0003:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com> wrote:
+On 04/23/2010 04:44 PM, H. Peter Anvin wrote:
+> On 04/23/2010 04:05 PM, Bjorn Helgaas wrote:
+>   
+>> On Wednesday 21 April 2010 01:31:20 pm Andy Isaacson wrote:
+>>     
+>>> On Tue, Apr 20, 2010 at 10:33:50PM -0700, Yinghai wrote:
+>>>       
+>>>> Update e820 at first, and later put them resource tree.
+>>>> Reserved that early, will not be allocated to unassigned PCI BAR
+>>>>
+>>>> v3: remove probe_roms() that is not needed, because whole range is reserved
+>>>> 	 already
+>>>>         
+>>> Test booted this patch series on the problematic t3400, seems to work
+>>> fine.  dmesg attached to bug 15744.
+>>>       
+>> Thanks for testing (again).  I'm not confident that this series is
+>> going to be successful, so I started looking for other approaches.
+>>
+>> I can't reproduce the exact problem you're seeing, but in my
+>> kludged-up attempt, the patch below is enough to keep us from
+>> assigning the space below 1MB to a device.
+>>
+>> Would you guys (Andy & Andy, what a coincidence :-)) mind giving
+>> it a try?  This is intended to work on top of current upstream,
+>> with no other patches required.
+>>
+>>     
+> This certainly wins from a simplicity standpoint!
 >
->> > Better still, atomic_inc_not_zero().  How about the attached patch?
->> Your fix looks good to me. But, if usage count of the keyring is 0,
->> I think it better to return -ENOKEY immediately.
->
+>   
+indeed.
 
-> The problem with that is that someone else may have created a keyring with
-> the
-> same name that you can't then reach until the dead keyring is deleted.
-
-OK. I understand.
----
-Once find_keyring_by_name() returns -ENOKEY, the new user creates a
-new key. So, both the deleting key and the new key may exist.
-Therefore at next find_keyring_by_name() call, we should find the new
-key and ignore the deleting key.
----
-
-Toshiyuki Okajima
 
