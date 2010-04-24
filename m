@@ -1,98 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab0DXUlX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 16:41:23 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62072 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359Ab0DXUlV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 16:41:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL v2] Preparation for BKL'ed ioctl removal
-Date: Sat, 24 Apr 2010 22:40:50 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Al Viro <viro@zeniv.linux.org.uk>,
-       Jan Blunck <jblunck@suse.de>, Ingo Molnar <mingo@elte.hu>,
-       John Kacur <jkacur@redhat.com>
-References: <1271390201-20431-1-git-send-regression-fweisbec@gmail.com> <201004242154.02421.arnd@arndb.de> <alpine.LFD.2.00.1004241258140.3739@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1004241258140.3739@i5.linux-foundation.org>
+	id S1754043Ab0DXUuX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 16:50:23 -0400
+Received: from bar.sig21.net ([80.81.252.164]:36928 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752628Ab0DXUuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 16:50:20 -0400
+Date: Sat, 24 Apr 2010 22:50:11 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
+       Magnus Damm <damm@opensource.se>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Q: sched_clock() vs. clocksource, how to implement correctly
+Message-ID: <20100424205011.GA21632@sig21.net>
+References: <20100423150917.GA25714@sig21.net>
+ <20100423182933.0df45b53@mschwide.boeblingen.de.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004242240.51176.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/Eb9pmp4pOOKjbzvjXvem/4+ype2J2X/C/DLd
- fcT9gD6PhQBrdVHxwCIFIMUwIkDx7OkwaFkyR8x+vbaBQr09N3
- 71MvUwAdU2o+qigiqvwaA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100423182933.0df45b53@mschwide.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.6 (---)
+X-Spam-21-Report: No, score=-3.6 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.783,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 24 April 2010 22:01:18 Linus Torvalds wrote:
-> On Sat, 24 Apr 2010, Arnd Bergmann wrote:
+On Fri, Apr 23, 2010 at 06:29:33PM +0200, Martin Schwidefsky wrote:
+> On Fri, 23 Apr 2010 17:09:17 +0200 > Johannes Stezenbach <js@sig21.net> wrote:
 > > 
-> > The CONFIG_BKL stuff is not a requirement for doing this, but something
-> > we also want to do in the next merge window, i.e. mark all BKL users
-> > as CONFIG_BKL, not just the ones that use the locked_ioctl (or bkl_ioctl).
+> > - Isn't sched_clock() supposed to be extended to 64bit so
+> >   that it practically never wraps?
+> >   (old implementations use cnt32_to_63())
 > 
-> .. and I think that's simply fundamentally wrong. What does it buy us, 
-> except for another really annoying config option? It sure as hell doesn't 
-> buy us any code-size (what, a couple of bytes).
+> Yes, sched_clock() is supposed to return a monotonic timestamp.
 
-With CONFIG_BKL disabled, we gain a few cyles in the scheduler,
-since we no longer need to check if the BKL was held and needs to
-be released. Not much, but better than just a few bytes of object size.
+OK, searching LXR for sched_clock, I think serveral
+sched_clock() implementations across architectures
+have the wrapping issue.
 
-With CONFIG_BKL=m, what we gain is visibility: Doing an lsmod will
-show you if bkl.ko is loaded and what other modules are using it.
-My hope is that this will motivate people to remove it from the
-remaining modules.
-One of the crazier ideas was to automatically taint the kernel when
-bkl.ko gets loaded. This does not gain us anything besides making a
-statement.
+BTW, wrapping sched_clock() also causes printk() timestamps to
+wrap, so the problem should be easy to spot.
 
-> Quite frankly, if you want to just prepare to rename things one by one, 
-> then you might as well just have a single line
+> > - What would be the effect on scheduling when sched_clock() wraps?
 > 
->         #define bkl_ioctl ioctl
+> It would confuse the process accounting and the scheduling I guess.
+
+That's a bit vague ;-/
+Let's try that: Could it cause processes calling e.g. nanosleep()
+to sleep much longer than intended (e.g. until sched_clock() wraps
+again)?   Or can it only cause a momentary scheduler hickup,
+i.e. the scheduler might make one wrong scheduling decision
+per sched_clock() wrap?  Given that there are serveral platforms
+with wrapping sched_clock() I guess the latter.
+
+> > - Is struct timecounter + struct cyclecounter + timecounter_read()
+> >   designated way to implement sched_clock() with a 32bit hw counter?
+> > 
+> >   arch/microblaze/kernel/timer.c seems to be the only user
+> >   of timecounter/cyclecounter in arch/, but I don't get what it does.
+> > 
+> >   Or is it better to stick with cnt32_to_63()?
 > 
-> and then you can do
-> 
->         .bkl_ioctl = driver_ioctl
-> 
-> but the thing is - what does that buy us without the ability to grep for 
-> and cause compile errors for drivers that haven't done this? Nothing.
+> cnt32_to_63() is a way to extend the 32 bit clocksource to a useable
+> sched_clock() provider. One way or the other you have to extend the 32
+> bits of the 1MHz counter to something bigger. The obvious way is to
+> count the number of wraps and use this number as the upper 32 bits
+> just like cnt32_to_63() does. You just have to make sure that the
+> clocksource is read frequently enough to get all the wraps. A non-idle
+> cpu will tick with HZ frequency and the clock will be read often
+> enough, for an idle cpu the maximum sleep time needs to be limited.
 
-Being able to grep is not the reason for this patch. The reason is that
-we're trying to eliminate the BKL from all non-obscure code in the kernel
-and one of the nasty ones is fs/ioctl.c, which always gets compiled in.
-The trick with bkl.ko requires that any code calling lock_kernel() needs
-to be a module, so the deprecated_ioctl() helper will have to be part
-of bkl.ko as well.
+Somehow I got the impression that cnt32_to_63() is old-style,
+and using clocksource_cyc2ns() is new-style.  Essentially I wanted to
+avoid the do_div() in sched_clock() (like e.g. in
+arm/mach-versatile/core.c), and just using clocksource_cyc2ns()
+looked simple and elegant.  Bummer that it's wrong.
 
-> So seriously - I'd much rather just get one single large patch that just 
-> renames everything. None of this crap that makes no sense.
+It seems that arch/arm/plat-orion/time.c is about the only
+one which gets it completely right according to your description.
+I'll quote it here for discussion:
 
-Ok. We'll go back to my intial approach for ioctl then, doing it all at
-once. The reason for the staged approach was to avoid bisect breakage
-and conflicts with maintainer updates, but since most of the remaining
-users at this point are really unmaintained (or staging drivers), there's
-probably not much to worry about here.
+/*
+ * Orion's sched_clock implementation. It has a resolution of
+ * at least 7.5ns (133MHz TCLK) and a maximum value of 834 days.
+ *
+ * Because the hardware timer period is quite short (21 secs if
+ * 200MHz TCLK) and because cnt32_to_63() needs to be called at
+ * least once per half period to work properly, a kernel timer is
+ * set up to ensure this requirement is always met.
+ */
+#define TCLK2NS_SCALE_FACTOR 8
 
-There will be one patch that does three things:
-- add a deprecated_ioctl() function
-- rename fops->ioctl to fops->bkl_ioctl
-- set fops->unlocked_ioctl=deprecated_ioctl for any file_operations instance
-  that uses bkl_ioctl
-Is this ok for you?
+static unsigned long tclk2ns_scale;
 
-Regarding the CONFIG_BKL option, should that also be done as another patch
-changing all the Kconfig files? My preference would be to have one patch
-adding the Kconfig option first, giving the maintainers the choice to either
-mark their code 'depends on BKL' or to remove the dependency by changing
-their code.
+unsigned long long sched_clock(void)
+{
+	unsigned long long v = cnt32_to_63(0xffffffff - readl(TIMER0_VAL));
+	return (v * tclk2ns_scale) >> TCLK2NS_SCALE_FACTOR;
+}
 
-	Arnd
+static struct timer_list cnt32_to_63_keepwarm_timer;
+
+static void cnt32_to_63_keepwarm(unsigned long data)
+{
+	mod_timer(&cnt32_to_63_keepwarm_timer, round_jiffies(jiffies + data));
+	(void) sched_clock();
+}
+
+static void __init setup_sched_clock(unsigned long tclk)
+{
+	unsigned long long v;
+	unsigned long data;
+
+	v = NSEC_PER_SEC;
+	v <<= TCLK2NS_SCALE_FACTOR;
+	v += tclk/2;
+	do_div(v, tclk);
+	/*
+	 * We want an even value to automatically clear the top bit
+	 * returned by cnt32_to_63() without an additional run time
+	 * instruction. So if the LSB is 1 then round it up.
+	 */
+	if (v & 1)
+		v++;
+	tclk2ns_scale = v;
+
+	data = (0xffffffffUL / tclk / 2 - 2) * HZ;
+	setup_timer(&cnt32_to_63_keepwarm_timer, cnt32_to_63_keepwarm, data);
+	mod_timer(&cnt32_to_63_keepwarm_timer, round_jiffies(jiffies + data));
+}
+
+
+BTW, even though this uses TCLK2NS_SCALE_FACTOR of 8, the same file
+uses a shift vaue of 20 for the orion_clksrc...
+
+
+Thanks,
+Johannes
