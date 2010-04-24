@@ -1,80 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab0DXWld (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 18:41:33 -0400
-Received: from mail-pz0-f196.google.com ([209.85.222.196]:34080 "EHLO
-	mail-pz0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817Ab0DXWlc (ORCPT
+	id S1754114Ab0DXXCd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 19:02:33 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:60759 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab0DXXCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 18:41:32 -0400
+	Sat, 24 Apr 2010 19:02:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=jC/tqFt17Ef2AQcB02m/6gdehw+9kVt9/NjJ1VcM6zVBDP0VKYTW8boC9HN9Ipui7+
-         zpqbizKgdG5+eGeEau4wyMuYWcoN4daskx+R42p2N11HeuE1jSA4Z/CP+YESEQsldrlP
-         GxvpdORFCKQl7noo8qIjDCurzC1ZPY1kt3Ghk=
-Message-ID: <4BD373AE.3000703@gmail.com>
-Date: Sat, 24 Apr 2010 15:41:50 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type;
+        b=cYXpj9PyRU2i9dv6uQargG1ES+8hYMT4MCyqUUmoAgIlHReDNnPJt2y8cfBh7W6ZBR
+         dTmwYNUrPZsOXc91skyf2Btbr6IPSJ0YhojUQWqTITwP0FsUoeFGtcqLa0/owrkxDMoF
+         mycFtCwIO25CnrakgO1biQrRCbrHKn/jUUpqU=
 MIME-Version: 1.0
-To: Hans-Peter Jansen <hpj@urpla.net>
-CC: Emmanuel Florac <eflorac@intellique.com>, xfs@oss.sgi.com,
-       Nick Piggin <npiggin@suse.de>, opensuse-kernel@opensuse.org,
-       Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [opensuse-kernel] Re: 2.6.34-rc3: simple du (on a big xfs tree)
- triggers oom killer [bisected: 57817c68229984818fea9e614d6f95249c3fb098]
-References: <201004050049.17952.hpj@urpla.net> <201004241844.23482.hpj@urpla.net> <20100424232320.71f764eb@galadriel.home> <201004250030.40867.hpj@urpla.net>
-In-Reply-To: <201004250030.40867.hpj@urpla.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Date: Sun, 25 Apr 2010 02:02:29 +0300
+X-Google-Sender-Auth: 1e24d2eccd95cf40
+Message-ID: <t2w8aa6b0651004241602i50449643lc05dcf834a80b344@mail.gmail.com>
+Subject: Need advice on updating the Linux kernel map
+From: Constantine Shulyupin <const@linuxdriver.co.il>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2010 03:30 PM, Hans-Peter Jansen wrote:
-> On Saturday 24 April 2010, 23:23:20 Emmanuel Florac wrote:
->> Le Sat, 24 Apr 2010 18:44:22 +0200 vous écriviez:
->>> Greg, you might search for a server using xfs filesystems and and a
->>> i586 kernel>= 2.6.33, (2.6.32.11 of SLE11-SP1 will serve as well),
->>> log in as an ordinary user, do a "du" on /usr, and wait for the other
->>> users screaming...
->>
->> I did precisely that, and didn't notice anything special (du on kernel
->> source tree) kernel 2.6.32.11, deadline scheduler, 7 drives RAID-6
->> array, 8GB RAM.
->
-> I guess, you're not on this specific openSUSE git version of 2.6.32.11 (e.g.
-> the preparation for SP1 of SLE11), which, as usual, carries a lot of stuff
-> from later kernels. The offending patch was included in linux-2.6.33
-> between -rc4 and -rc5:
->
-> Committer
-> Alex Elder<aelder@sgi.com>
-> Author
-> Dave Chinner<david@fromorbit.com>
-> Author date
-> 11.01.10 00:51
-> Parent
-> xfs: Avoid inodes in reclaim when flushing from inode cache
-> Child
-> xfs: Remove inode iolock held check during allocation
-> Branch
-> master origin (Merge branch 'for-linus' of git://git.kernel.org/pub/scm/...)
-> Branch
-> 2.6.33.1 (Linux 2.6.33)
-> Follows
-> v2.6.33-rc4 (Linux 2.6.33-rc4)
-> Precedes
-> v2.6.33-rc5 (Linux 2.6.33-rc5)
->
-> Cheers,
-> Pete
+I was wondering if you could help me. I've recently resumed work on
+the map of the Linux kernel - http://www.makelinux.net/kernel_map in
+order to make it more up-to-date and to improve it. Please let me know
+how I can update the map, as it would help me a lot.
 
-sh*t.. my bad just replied to the wrong
-thread..
-
-I'm tired.. please ignore this.
-
-Justin P. Mattock
+Thank you in advance.
+Constantine
