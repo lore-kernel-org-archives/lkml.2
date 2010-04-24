@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab0DXDEQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 23:04:16 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:56094 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755646Ab0DXDEO (ORCPT
+	id S1756785Ab0DXDOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 23:14:22 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:57856 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628Ab0DXDOU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 23:04:14 -0400
-Date: Sat, 24 Apr 2010 04:04:11 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Paulius Zaleckas <paulius.zaleckas@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-       u.kleine-koenig@pengutronix.de, simon.kagstrom@netinsight.net,
-       akpm@linux-foundation.org, dwmw2@infradead.org,
-       linux-arm-kernel@lists.infradead.org, rth@twiddle.net
-Subject: Re: [PATCH v2] MTD: Fix Orion NAND driver compilation with ARM OABI
-Message-ID: <20100424030411.GK15349@shareable.org>
-References: <20100325152505.17612.40158.stgit@pauliusz> <20100325204619.GC19308@shareable.org> <alpine.LFD.2.00.1004231443340.7232@xanadu.home> <20100424025858.GJ15349@shareable.org>
+	Fri, 23 Apr 2010 23:14:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100424025858.GJ15349@shareable.org>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <Pine.LNX.4.44L0.1004232224380.30686-100000@netrider.rowland.org>
+References: <p2vd6200be21004231915o5b2d4ed1zbabd3e51e6213f45@mail.gmail.com>
+	 <Pine.LNX.4.44L0.1004232224380.30686-100000@netrider.rowland.org>
+Date: Fri, 23 Apr 2010 20:14:19 -0700
+Message-ID: <l2sd6200be21004232014r806b0c67ucf5508ac7ff50a44@mail.gmail.com>
+Subject: Re: [PATCH 1/9] PM: Add suspend block api.
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Randy Dunlap <rdunlap@xenotime.net>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jamie Lokier wrote:
-> Nicolas Pitre wrote:
-> > On Thu, 25 Mar 2010, Jamie Lokier wrote:
-> > > Any one of these should fix it:
-> > > 
-> > >    - Make io_base a pointer-to-volatile-u64 or cast it in the asm, and
-> > >      make sure to dereference it and use an "m" constraint (or
-> > >      tighter, such as "Q", if ldrd needs it).  It must be u64, not
-> > >      pointer-to-void, to tell GCC the size.  That tells GCC which memory
-> > >      the asm accesses, and the volatile dereference should tell GCC
-> > >      not to reorder them in principle (but the GCC manual doesn't
-> > >      make a specific promise about this for asms).
-> > 
-> > The LDRD has special range constraints on its addressing mode which is 
-> > not expressable with any of the available gcc memory constraints.
-> 
->     'Q'
->           A memory reference where the exact address is in a single
->           register (''m'' is preferable for 'asm' statements)
-> 
-> If 'r' is good enough for io_base, 'Q' should be good enough for *io_base.
+2010/4/23 Alan Stern <stern@rowland.harvard.edu>:
+> On Fri, 23 Apr 2010, Arve Hjønnevåg wrote:
+>
+>> 2010/4/23 Alan Stern <stern@rowland.harvard.edu>:
+>> > On Thu, 22 Apr 2010, [UTF-8] Arve Hjønnevåg wrote:
+>> ...
+>> >> +Calling suspend_block when the suspend blocker is active or suspend_unblock when
+>> >> +it is not active has no effect. This allows drivers to update their state and
+>> >> +call suspend suspend_block or suspend_unblock based on the result.
+>> >
+>> > But suspend_block() and suspend_unblock() don't nest.  You should
+>> > mention this.
+>> >
+>>
+>> I'm not sure what you mean by this? I think the first sentence
+>> dictates nesting is not supported.
+>
+> That fact is implicit from the first sentence.  Mentioning it
+> _explicitly_ will help people to understand more easily.  You don't
+> have to add much; a parenthetical remark would be enough:
+>
+>        Calling suspend_block when the suspend blocker is active or
+>        suspend_unblock when it is not active has no effect (i.e.,
+>        these functions don't nest).  This allows drivers to ...
+>
 
-And if that doesn't work, it's possible to pass both the pointer, and
-the dereference, as separate input operands, and only use the pointer
-in the asm template.  GCC will still treat the dereference input as a
-dependency.
+OK.
 
--- Jamie
+-- 
+Arve Hjønnevåg
