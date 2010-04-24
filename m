@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab0DXNeG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 09:34:06 -0400
-Received: from tex.lwn.net ([70.33.254.29]:54608 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752664Ab0DXNeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 09:34:03 -0400
-Date: Sat, 24 Apr 2010 07:33:59 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       Deepak Saxena <dsaxena@laptop.org>, linux-fbdev@vger.kernel.org,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn
-Subject: Re: [PATCH 10/11] viafb: rework the I2C support in the VIA
- framebuffer driver
-Message-ID: <20100424073359.349b4397@bike.lwn.net>
-In-Reply-To: <4BD2CC46.4060908@gmx.de>
-References: <1271614873-5952-1-git-send-email-corbet@lwn.net>
-	<1271614873-5952-11-git-send-email-corbet@lwn.net>
-	<4BD20D56.7080402@gmx.de>
-	<20100423155725.7d3b2d2d@bike.lwn.net>
-	<4BD221E7.7060705@gmx.de>
-	<20100423165256.654ca5eb@bike.lwn.net>
-	<4BD22B96.5020102@gmx.de>
-	<4BD2CC46.4060908@gmx.de>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1753637Ab0DXNli (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 09:41:38 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35738 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583Ab0DXNlh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 09:41:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vBwonveWqzogc05b9GOB8niTgv26GCocw8Jb/LqSbEi+oNvE+wCf9Dtdg8LNSC73ow
+         0Wx6FS/eISpodaUFqsbAn0+Ee8OikxzDEM06UdBarc3eao5/edjV9f+htTn8gxhRu6g4
+         XL9JxH0WIAIKI9oFpzJkuxWXu0TMd0+cyTF3E=
+Date: Sat, 24 Apr 2010 15:41:45 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Subject: Re: [PATCH v2] perf lock: add "info" subcommand for dumping misc
+	information
+Message-ID: <20100424134143.GB5545@nowhere>
+References: <1272074742-3654-2-git-send-regression-fweisbec@gmail.com> <1272106001-10519-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272106001-10519-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Apr 2010 12:47:34 +0200
-Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+On Sat, Apr 24, 2010 at 07:46:41PM +0900, Hitoshi Mitake wrote:
+> Hi Frederic,
+> 
+> I added "info" subcommand to perf lock,
+> this can be used as dumping metadata like thread or address of lock instances.
+> "map" was removed because info should do the work of it.
+> 
+> This will be useful not only for debugging but also for ordinary analyzing.
+> 
+> I made this patch on perf/core of your tree, could you queue this?
+> 
+> v2: adding example of usage
+> % sudo ./perf lock info -t
+>  | Thread ID: comm
+>  | 	 0: swapper
+>  |         1: init
+>  |        18: migration/5
+>  |        29: events/2
+>  |        32: events/5
+>  |        33: events/6
+> ...
+> 
+> % sudo ./perf lock info -m
+> | Address of instance: name of class
+> |  0xffff8800b95adae0: &(&sighand->siglock)->rlock
+> |  0xffff8800bbb41ae0: &(&sighand->siglock)->rlock
+> |  0xffff8800bf165ae0: &(&sighand->siglock)->rlock
+> |  0xffff8800b9576a98: &p->cred_guard_mutex
+> |  0xffff8800bb890a08: &(&p->alloc_lock)->rlock
+> |  0xffff8800b9522a08: &(&p->alloc_lock)->rlock
+> |  0xffff8800bb8aaa08: &(&p->alloc_lock)->rlock
+> |  0xffff8800bba72a08: &(&p->alloc_lock)->rlock
+> |  0xffff8800bf18ea08: &(&p->alloc_lock)->rlock
+> |  0xffff8800b8a0d8a0: &(&ip->i_lock)->mr_lock
+> |  0xffff88009bf818a0: &(&ip->i_lock)->mr_lock
+> |  0xffff88004c66b8a0: &(&ip->i_lock)->mr_lock
+> |  0xffff8800bb6478a0: &(shost->host_lock)->rlock
 
-> I was able to narrow this issue down to the fourth bus. So with
-> if (i == 4)
-> 	continue;
-> in the bus creation loop I'm able to get a working framebuffer which 
-> does not have the issues mentioned. Any ideas what should be done now?
 
-That is useful information indeed, thanks.
 
-This patch creates an i2c bus on every port which could conceivably
-have one.  That's rather different from the original code, which
-created a single bus (in the kernel) then swapped it between ports 31
-and 2c in weird ways.  In particular, it takes over ports which,
-conceivably, somebody else could be using for GPIO.  So, perhaps, there
-is some contention going on there.
+Thanks, I queue it for the next pass.
 
-If my hypothesis is correct, this problem will go away with the
-application of the second series, which doesn't create i2c buses on
-ports used for GPIO.  But the problem should be fixed here so we don't
-have things broken in the middle.
-
-Harald, does this reasoning make sense to you?  If so, what I should do
-is bring forward just enough of the via-core code to be able to
-configure which ports actually get i2c buses created on them.  Easily
-done.
-
-Thanks,
-
-jon
