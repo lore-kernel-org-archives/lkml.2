@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab0DXCGY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 22:06:24 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62883 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965Ab0DXCFo (ORCPT
+	id S1756123Ab0DXCHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 22:07:53 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48546 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757072Ab0DXCGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 22:05:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=mGz01HhSVDIaF8qGqK6zlnxJLjsYaZg27kFmhXhW67llzx0cG35j1zor6ZalzpBFQ7
-         NqtgbI6kswcEfy6CbDh5unGw4AnZ0s0CfFOjcy1gUtr2fVlhcGbjdwaIA4Br76dbMF+o
-         iRLtL2qakUAPXgnLfe1a1MsVyAdOlRBS6AzOc=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       Li Zefan <lizf@cn.fujitsu.com>
-Subject: [PATCH 5/9] perf: Use generic sample reordering in perf kmem
-Date: Sat, 24 Apr 2010 04:05:38 +0200
-Message-Id: <1272074742-3654-6-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com>
-References: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com>
+	Fri, 23 Apr 2010 22:06:09 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Sat, 24 Apr 2010 11:02:00 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+       Christoph Lameter <cl@linux.com>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX][mm][PATCH] fix migration race in rmap_walk
+Message-Id: <20100424110200.b491ec5f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100423155801.GA14351@csn.ul.ie>
+References: <20100423120148.9ffa5881.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100423095922.GJ30306@csn.ul.ie>
+	<20100423155801.GA14351@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new generic sample events reordering from perf kmem,
-this drops the need of multiplexing the buffers on record time,
-improving the scalability of perf kmem.
+On Fri, 23 Apr 2010 16:58:01 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
----
- tools/perf/builtin-kmem.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> > I had considered this idea as well as it is vaguely similar to how zones get
+> > resized with a seqlock. I was hoping that the existing locking on anon_vma
+> > would be usable by backing off until uncontended but maybe not so lets
+> > check out this approach.
+> > 
+> 
+> A possible combination of the two approaches is as follows. It uses the
+> anon_vma lock mostly except where the anon_vma differs between the page
+> and the VMAs being walked in which case it uses the seq counter. I've
+> had it running a few hours now without problems but I'll leave it
+> running at least 24 hours.
+> 
+ok, I'll try this, too.
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index db474bb..ab906cb 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -335,8 +335,9 @@ static int process_sample_event(event_t *event, struct perf_session *session)
- }
- 
- static struct perf_event_ops event_ops = {
--	.sample	= process_sample_event,
--	.comm	= event__process_comm,
-+	.sample			= process_sample_event,
-+	.comm			= event__process_comm,
-+	.ordered_samples	= true,
- };
- 
- static double fragmentation(unsigned long n_req, unsigned long n_alloc)
-@@ -730,7 +731,6 @@ static const char *record_args[] = {
- 	"record",
- 	"-a",
- 	"-R",
--	"-M",
- 	"-f",
- 	"-c", "1",
- 	"-e", "kmem:kmalloc",
--- 
-1.6.2.3
+
+> ==== CUT HERE ====
+>  mm,migration: Prevent rmap_walk_[anon|ksm] seeing the wrong VMA information by protecting against vma_adjust with a combination of locks and seq counter
+> 
+> vma_adjust() is updating anon VMA information without any locks taken.
+> In constract, file-backed mappings use the i_mmap_lock. This lack of
+> locking can result in races with page migration. During rmap_walk(),
+> vma_address() can return -EFAULT for an address that will soon be valid.
+> This leaves a dangling migration PTE behind which can later cause a
+> BUG_ON to trigger when the page is faulted in.
+> 
+> With the recent anon_vma changes, there is no single anon_vma->lock that
+> can be taken that is safe for rmap_walk() to guard against changes by
+> vma_adjust(). Instead, a lock can be taken on one VMA while changes
+> happen to another.
+> 
+> What this patch does is protect against updates with a combination of
+> locks and seq counters. First, the vma->anon_vma lock is taken by
+> vma_adjust() and the sequence counter starts. The lock is released and
+> the sequence ended when the VMA updates are complete.
+> 
+> The lock serialses rmap_walk_anon when the page and VMA share the same
+> anon_vma. Where the anon_vmas do not match, the seq counter is checked.
+> If a change is noticed, rmap_walk_anon drops its locks and starts again
+> from scratch as the VMA list may have changed. The dangling migration
+> PTE bug was not triggered after several hours of stress testing with
+> this patch applied.
+> 
+> [kamezawa.hiroyu@jp.fujitsu.com: Use of a seq counter]
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+
+I think this patch is nice!
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+
 
