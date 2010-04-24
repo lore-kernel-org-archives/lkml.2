@@ -1,130 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab0DXPy1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 11:54:27 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:47697 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab0DXPyZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 11:54:25 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:message-id:user-agent:
-	mime-version:content-type;
-	b=dIYsEBvG2BMS13S2ddwwOdpSfl5kWhB3ovQKanTisTUMlzbhf5woL4DmPZiySZIwA
-	rH35NmN+b3zuoGYKblfkA==
-From: Greg Thelen <gthelen@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Vivek Goyal <vgoyal@redhat.com>, balbir@linux.vnet.ibm.com,
-       Andrea Righi <arighi@develer.com>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
-References: <1268609202-15581-2-git-send-email-arighi@develer.com>
-	<20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100318162855.GG18054@balbir.in.ibm.com>
-	<20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100319024039.GH18054@balbir.in.ibm.com>
-	<20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr931veiplpr.fsf@ninji.mtv.corp.google.com>
-	<20100414140523.GC13535@redhat.com>
-	<xr9339yxyepc.fsf@ninji.mtv.corp.google.com>
-	<20100415114022.ef01b704.nishimura@mxp.nes.nec.co.jp>
-	<g2u49b004811004142148i3db9fefaje1f20760426e0c7e@mail.gmail.com>
-	<20100415152104.62593f37.nishimura@mxp.nes.nec.co.jp>
-	<20100415155432.cf1861d9.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr93k4rxx6sd.fsf@ninji.mtv.corp.google.com>
-	<1272056074.1821.40.camel@laptop>
-Date: Sat, 24 Apr 2010 08:53:27 -0700
-Message-ID: <xr93aassvoco.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
+	id S1753840Ab0DXQOD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 12:14:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753764Ab0DXQOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 12:14:00 -0400
+Message-ID: <4BD31891.6080508@redhat.com>
+Date: Sat, 24 Apr 2010 12:13:05 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCH 8/9] perf: Add a perf trace option to check samples ordering
+ reliability
+References: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com> <1272074742-3654-9-git-send-regression-fweisbec@gmail.com>
+In-Reply-To: <1272074742-3654-9-git-send-regression-fweisbec@gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+Hi Frederic,
 
-> On Fri, 2010-04-23 at 13:17 -0700, Greg Thelen wrote:
->> -       lock_page_cgroup(pc);
->> +       /*
->> +        * Unless a page's cgroup reassignment is possible, then avoid grabbing
->> +        * the lock used to protect the cgroup assignment.
->> +        */
->> +       rcu_read_lock();
->
-> Where is the matching barrier?
+Frederic Weisbecker wrote:
+> To ensure sample events time reordering is reliable, add a -d option
+> to perf trace to check that automatically.
 
-Good catch.  A call to smp_wmb() belongs in
-mem_cgroup_begin_page_cgroup_reassignment() like so:
+Just out of curiosity, is there any possibility to add 
+other debugging options to perf-trace?
+If so, I think we can pass some arguments for
+this -d option, e.g. "-d ordering,events" and so on.
+Just an idea.
 
-static void mem_cgroup_begin_page_cgroup_reassignment(void)
-{
-	VM_BUG_ON(mem_cgroup_account_move_ongoing);
-	mem_cgroup_account_move_ongoing = true;
-	smp_wmb();
-	synchronize_rcu();
-}
+Thank you,
 
-I'll add this to the patch.
 
->> +       smp_rmb();
->> +       if (unlikely(mem_cgroup_account_move_ongoing)) {
->> +               local_irq_save(flags);
->
-> So the added irq-disable is a bug-fix?
 
-The irq-disable is not needed for current code, only for upcoming
-per-memcg dirty page accounting which will be refactoring
-mem_cgroup_update_file_mapped() into a generic memcg stat update
-routine.  I assume these locking changes should be bundled with the
-dependant memcg dirty page accounting changes which need the ability to
-update counters from irq routines.  I'm sorry I didn't make that more
-clear.
-
->> +               lock_page_cgroup(pc);
->> +               locked = true;
->> +       }
->> +
->>         mem = pc->mem_cgroup;
->>         if (!mem || !PageCgroupUsed(pc))
->>                 goto done;
->> @@ -1449,6 +1468,7 @@ void mem_cgroup_update_file_mapped(struct page *page, int val)
->>         /*
->>          * Preemption is already disabled. We can use __this_cpu_xxx
->>          */
->> +       VM_BUG_ON(preemptible());
->
-> Insta-bug here, there is nothing guaranteeing we're not preemptible
-> here.
-
-My addition of VM_BUG_ON() was to programmatic assert what the comment
-was asserting.  All callers of mem_cgroup_update_file_mapped() hold the
-pte spinlock, which disables preemption.  So I don't think this
-VM_BUG_ON() will cause panic.  A function level comment for
-mem_cgroup_update_file_mapped() declaring that "callers must have
-preemption disabled" will be added to make this more clear.
-
->>         if (val > 0) {
->>                 __this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
->>                 SetPageCgroupFileMapped(pc);
->> @@ -1458,7 +1478,11 @@ void mem_cgroup_update_file_mapped(struct page *page, int val)
->>         }
->>  
->>  done:
->> -       unlock_page_cgroup(pc);
->> +       if (unlikely(locked)) {
->> +               unlock_page_cgroup(pc);
->> +               local_irq_restore(flags);
->> +       }
->> +       rcu_read_unlock();
->>  } 
-
---
-Greg
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
