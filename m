@@ -1,47 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab0DXDXY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 23:23:24 -0400
-Received: from mail-iw0-f197.google.com ([209.85.223.197]:37304 "EHLO
-	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341Ab0DXDXX convert rfc822-to-8bit (ORCPT
+	id S1752160Ab0DXDgW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 23:36:22 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:55143 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab0DXDgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 23:23:23 -0400
+	Fri, 23 Apr 2010 23:36:17 -0400
+Date: Fri, 23 Apr 2010 22:36:14 -0500
+From: "Serge E. Hallyn" <serue@us.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg KH <greg@kroah.com>, lkml <linux-kernel@vger.kernel.org>,
+       David Howells <dhowells@redhat.com>,
+       Ashwin Ganti <ashwin.ganti@gmail.com>, rsc@swtch.com, ericvh@gmail.com,
+       linux-security-module@vger.kernel.org, Ron Minnich <rminnich@gmail.com>,
+       jt.beard@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
+       Eric Paris <eparis@redhat.com>, linux-api@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
+Message-ID: <20100424033614.GA4180@us.ibm.com>
+References: <20100421012749.GA21338@us.ibm.com>
+ <20100421012908.GB24251@us.ibm.com>
+ <20100421030406.GB10258@kroah.com>
+ <20100421034532.GA9254@us.ibm.com>
+ <m1zl0xo1m9.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-In-Reply-To: <20100423135853.478af057.randy.dunlap@oracle.com>
-References: <1271984938-13920-1-git-send-email-arve@android.com>
-	 <1271984938-13920-2-git-send-email-arve@android.com>
-	 <1271984938-13920-3-git-send-email-arve@android.com>
-	 <1271984938-13920-4-git-send-email-arve@android.com>
-	 <1271984938-13920-5-git-send-email-arve@android.com>
-	 <1271984938-13920-6-git-send-email-arve@android.com>
-	 <20100423135853.478af057.randy.dunlap@oracle.com>
-Date: Fri, 23 Apr 2010 20:23:22 -0700
-Message-ID: <n2rd6200be21004232023hf138c65dia5b378825124933d@mail.gmail.com>
-Subject: Re: [PATCH 5/9] PM: suspend_block: Add debugfs file
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Len Brown <len.brown@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1zl0xo1m9.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/23 Randy Dunlap <randy.dunlap@oracle.com>:
-> On Thu, 22 Apr 2010 18:08:54 -0700 Arve Hjønnevåg wrote:
->
->> Report active and inactive suspend blockers in
->> /sys/kernel/debug/suspend_blockers.
->
->
-> This looks more like user interface information than it does debug information.
-> If that's correct, it shouldn't be in debugfs.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> "Serge E. Hallyn" <serue@us.ibm.com> writes:
+> 
+> > Quoting Greg KH (greg@kroah.com):
+> >> On Tue, Apr 20, 2010 at 08:29:08PM -0500, Serge E. Hallyn wrote:
+> >> > This is a driver that adds Plan 9 style capability device
+> >> > implementation.  See Documentation/p9auth.txt for a description
+> >> > of how to use this.
+> >> 
+> >> Hm, you didn't originally write this driver, so it would be good to get
+> >> some original authorship information in here to keep everything correct,
+> >> right?
+> >
+> > That's why I left the MODULE_AUTHOR line in there - not sure what
+> > else to do for that.  I'll add a comment in p9auth.txt, especially
+> > pointing back to Ashwin's original paper.
+> >
+> >> >  Documentation/p9auth.txt     |   47 ++++
+> >> >  drivers/char/Kconfig         |    2 +
+> >> >  drivers/char/Makefile        |    2 +
+> >> >  drivers/char/p9auth/Kconfig  |    9 +
+> >> >  drivers/char/p9auth/Makefile |    1 +
+> >> >  drivers/char/p9auth/p9auth.c |  517 ++++++++++++++++++++++++++++++++++++++++++
+> >> 
+> >> Is this code really ready for drivers/char/?  What has changed in it
+> >> that makes it ok to move out of the staging tree?
+> >
+> > It was dropped from staging :)  I don't particularly care to see it
+> > go back into staging, as opposed to working out issues out of tree
+> > (assuming they are solvable).  For one thing, as you note below,
+> > there is the question of whether it should be a device driver at
+> > all.
+> >
+> >> And who is going to maintain it?  You?  Or someone else?
+> >
+> > If Ashwin doesn't want to maintain it, I'll do it.  Either way.
+> >
+> >> >  6 files changed, 578 insertions(+), 0 deletions(-)
+> >> >  create mode 100644 Documentation/p9auth.txt
+> >> >  create mode 100644 drivers/char/p9auth/Kconfig
+> >> >  create mode 100644 drivers/char/p9auth/Makefile
+> >> >  create mode 100644 drivers/char/p9auth/p9auth.c
+> >> > 
+> >> > diff --git a/Documentation/p9auth.txt b/Documentation/p9auth.txt
+> >> > new file mode 100644
+> >> > index 0000000..14a69d8
+> >> > --- /dev/null
+> >> > +++ b/Documentation/p9auth.txt
+> >> > @@ -0,0 +1,47 @@
+> >> > +The p9auth device driver implements a plan-9 factotum-like
+> >> > +capability API.  Tasks which are privileged (authorized by
+> >> > +possession of the CAP_GRANT_ID privilege (POSIX capability))
+> >> > +can write new capabilities to /dev/caphash.  The kernel then
+> >> > +stores these until a task uses them by writing to the
+> >> > +/dev/capuse device.  Each capability represents the ability
+> >> > +for a task running as userid X to switch to userid Y and
+> >> > +some set of groups.  Each capability may be used only once,
+> >> > +and unused capabilities are cleared after two minutes.
+> >> > +
+> >> > +The following examples shows how to use the API.  Shell 1
+> >> > +contains a privileged root shell.  Shell 2 contains an
+> >> > +unprivileged shell as user 501 in the same user namespace.  If
+> >> > +not already done, the privileged shell should create the p9auth
+> >> > +devices:
+> >> > +
+> >> > +	majfile=/sys/module/p9auth/parameters/cap_major
+> >> > +	minfile=/sys/module/p9auth/parameters/cap_minor
+> >> > +	maj=`cat $majfile`
+> >> > +	mknod /dev/caphash c $maj 0
+> >> > +	min=`cat $minfile`
+> >> > +	mknod /dev/capuse c $maj 1
+> >> > +	chmod ugo+w /dev/capuse
+> >> 
+> >> That is incorrect, you don't need the cap_major/minor files at all, the
+> >> device node should be automatically created for you, right?
+> >
+> > Hmm, where?  Not in /dev on my SLES11 partition...
+> >
+> >> And do you really want to do all of this control through a device node?
+> >> Why?
+> >
+> > Well...
+> >
+> > At first I was thinking same as you were.  So I was going to switch
+> > to a pure syscall-based approach.  But it just turned out more
+> > complicated.  The factotum server would call sys_grantid(), and
+> > the target task would end up doing some huge sys_setresugid() or
+> > else multiple syscalls using the granted id.  It just was uglier.
+> > I think there's an experimental patchset sitting somewhere I could
+> > point to (if I weren't embarassed :).
+> >
+> > Another possibility would be to use netlink, but that doesn't
+> > appear as amenable to segragation by user namespaces.  The pid
+> > (presumably/hopefully global pid, as __u32) is available, so it
+> > shouldn't be impossible, but a simple device with simple synchronous
+> > read/write certainly has its appeal.  Firing off a message hoping
+> > that at some point our credentials will be changes, less so.
+> 
+> pid in the netlink context is the netlink port-id.  It is a very
+> different concept from struct pid.  These days netlink calls to
+> the kernel are synchronous, not that I would encourage netlink
+> for anything except networking code.
+> 
+> Can we make this a trivial filesystem?  I expect that would match
+> up better with whatever plan9 userspace apps already exist,
+> remove the inode double translation, and would make it much more
+> reasonable to do a user namespace aware version  if and when
 
-Where should it be? It is not allowed in sysfs, and procfs does not
-appear to be open to new files.
+BTW, this current version is user namespace aware.
 
--- 
-Arve Hjønnevåg
+> that becomes necessary.
+
+An fs actually seems overkill for two write-only files for
+process-related information.  Would these actually be candidates
+for new /proc files?
+
+	/proc/grantcred - replaces /dev/caphash, for privileged
+		tasks to tell the kernel about new setuid
+		capabilities
+	/proc/self/usecred - replaces /dev/capuse for unprivileged
+		tasks to make use of a setuid capability
+
+-serge
