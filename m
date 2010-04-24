@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677Ab0DXEyb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 00:54:31 -0400
-Received: from mail-iw0-f197.google.com ([209.85.223.197]:39281 "EHLO
-	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab0DXEya convert rfc822-to-8bit (ORCPT
+	id S1752166Ab0DXE4c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 00:56:32 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:57341 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751048Ab0DXE4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 00:54:30 -0400
+	Sat, 24 Apr 2010 00:56:30 -0400
+Date: Sat, 24 Apr 2010 06:56:26 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
+       cpufreq@vger.kernel.org
+Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with
+ ondemand during disk IO
+Message-ID: <20100424045626.GA7561@elf.ucw.cz>
+References: <20100418115949.7b743898@infradead.org>
+ <20100418120346.1b478410@infradead.org>
+ <20100423052439.GB4829@ucw.cz>
+ <20100423065248.3b0a98ab@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <4BD27266.8070900@oracle.com>
-References: <1271984938-13920-1-git-send-email-arve@android.com>
-	 <1271984938-13920-2-git-send-email-arve@android.com>
-	 <1271984938-13920-3-git-send-email-arve@android.com>
-	 <1271984938-13920-4-git-send-email-arve@android.com>
-	 <1271984938-13920-5-git-send-email-arve@android.com>
-	 <1271984938-13920-6-git-send-email-arve@android.com>
-	 <20100423135853.478af057.randy.dunlap@oracle.com>
-	 <n2rd6200be21004232023hf138c65dia5b378825124933d@mail.gmail.com>
-	 <4BD27266.8070900@oracle.com>
-Date: Fri, 23 Apr 2010 21:54:29 -0700
-Message-ID: <x2sd6200be21004232154i4738d938vf57ade1b702cf404@mail.gmail.com>
-Subject: Re: [PATCH 5/9] PM: suspend_block: Add debugfs file
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Len Brown <len.brown@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100423065248.3b0a98ab@infradead.org>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/23 Randy Dunlap <randy.dunlap@oracle.com>:
-> On 04/23/10 20:23, Arve Hjønnevåg wrote:
->> 2010/4/23 Randy Dunlap <randy.dunlap@oracle.com>:
->>> On Thu, 22 Apr 2010 18:08:54 -0700 Arve Hjønnevåg wrote:
->>>
->>>> Report active and inactive suspend blockers in
->>>> /sys/kernel/debug/suspend_blockers.
->>>
->>>
->>> This looks more like user interface information than it does debug information.
->>> If that's correct, it shouldn't be in debugfs.
->>
->> Where should it be? It is not allowed in sysfs, and procfs does not
->> appear to be open to new files.
->
-> Why is it not allowed in sysfs?  due to more than one value per file
+Hi!
 
-Yes.
+> > Well, and now, if you do something like cat /dev/<your usb1.1 hdd> >
+> > /dev/null, you'll keep cpu on max frequency. Not a problem for new
+> > core i7, but probably big deal for athlon 64.
+> 
+> do you have facts not speculation for this? Does the athlon 64 really
+> keep its voltage high during idle? That would surprise me greatly...
 
-> or something else?
->
-> I don't think that procfs is closed to new files, but you may have to
-> justify why it should be used.
->
+So... some old data. It is not exactly athlon 64 -- I don't have that
+particular number for it -- but: (from my old notes):
 
-I used procfs in the original version and there were a lot of
-objections to this, so I moved it to debugfs.
+evo n620c [63.3 Wh]
+~~~~~~~~~~~~~~~~~
+idle machine at 1.7GHz, min bl: 13.0 W
+idle machine at 600MHz, min bl: 12.0 W
 
+thinkpad x32 [52Wh]
+~~~~~~~~~~~~
+idle machine at 600MHz, min bl:         10 W
+             at 1.8GHz:                 +6.6 W
+
+hp nx5k [56.8Wh]
+~~~~~~~
+idle, min bl:                   19 W
+      min bl, 1.4GHz:           22 W
+
+...so yes, I kind of see a pattern there. And you should be able to
+easily see the difference, too, if you took something from that era...
+
+									Pavel
 -- 
-Arve Hjønnevåg
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
