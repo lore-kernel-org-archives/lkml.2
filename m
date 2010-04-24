@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab0DXFz3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 01:55:29 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:52306 "EHLO
+	id S1751619Ab0DXF5J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 01:57:09 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:52464 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750940Ab0DXFz1 (ORCPT
+	by vger.kernel.org with ESMTP id S1750862Ab0DXF5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 01:55:27 -0400
-Date: Sat, 24 Apr 2010 07:55:23 +0200
+	Sat, 24 Apr 2010 01:57:05 -0400
+Date: Sat, 24 Apr 2010 07:56:52 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Arve Hj?nnev?g <arve@android.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Len Brown <len.brown@intel.com>,
-       linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: [linux-pm] [PATCH 2/9] PM: suspend_block: Add driver to access
- suspend blockers from user-space
-Message-ID: <20100424055523.GC2290@elf.ucw.cz>
-References: <20100423084349.GC1573@ucw.cz>
- <Pine.LNX.4.44L0.1004231242460.1777-100000@iolanthe.rowland.org>
- <i2zd6200be21004232020t46f4de0ct93b94e2bd67a6e76@mail.gmail.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       cpufreq <cpufreq@vger.kernel.org>,
+       linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+       Dave Jones <davej@redhat.com>, Thomas Renninger <trenn@suse.de>,
+       Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: CPUfreq - udelay() interaction issues
+Message-ID: <20100424055652.GD2290@elf.ucw.cz>
+References: <4BCFC3D0.5080904@codeaurora.org>
+ <4BD0D9E5.3020606@codeaurora.org>
+ <20100423184042.GA16190@Krystal>
+ <4BD25C37.4070005@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <i2zd6200be21004232020t46f4de0ct93b94e2bd67a6e76@mail.gmail.com>
+In-Reply-To: <4BD25C37.4070005@codeaurora.org>
 X-Warning: Reading this can be dangerous to your mental health.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2010-04-23 20:20:47, Arve Hj?nnev?g wrote:
-> On Fri, Apr 23, 2010 at 9:43 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Fri, 23 Apr 2010, Pavel Machek wrote:
-> >
-> >> Hi!
-> >>
-> >> > Add a misc device, "suspend_blocker", that allows user-space processes
-> >> > to block auto suspend. The device has ioctls to create a suspend_blocker,
-> >> > and to block and unblock suspend. To delete the suspend_blocker, close
-> >> > the device.
-> >> >
-> >> > Signed-off-by: Arve Hj??nnev??g <arve@android.com>
-> >>
-> >> > --- a/Documentation/power/suspend-blockers.txt
-> >> > +++ b/Documentation/power/suspend-blockers.txt
-> >> > @@ -95,3 +95,20 @@ if (list_empty(&state->pending_work))
-> >> >  else
-> >> >     suspend_block(&state->suspend_blocker);
-> >> >
-> >> > +User-space API
-> >> > +==============
-> >> > +
-> >> > +To create a suspend_blocker from user-space, open the suspend_blocker device:
-> >> > +    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
-> >> > +then call:
-> >> > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_INIT(strlen(name)), name);
-> >>
-> >>
-> >> This seems like very wrong idea -- it uses different ioctl number for
-> >> each length AFAICT.
-> >
-> > How about specifying the name by an ordinary write() call instead of
-> > by an ioctl()?
-> >
+Hi!
+
+> Seems a bit more complicated than what I had in mind. This is
+> touching the scheduler I think we can get away without having to.
+> Also, there is no simple implementation for the "slowpath" that can
+> guarantee the delay without starting over the loop and hoping not to
+> get interrupted or just giving up and doing a massively inaccurate
+> delay (like msleep, etc).
 > 
-> I prefer using ioctls. We have three operations at the moment. Init,
-> block and unblock. If we do init with write but block and unblock
-> using ioctls, it would be pretty strange. Specifying a command and
+> I was thinking of something along the lines of this:
+> 
+> udelay()
+> {
+>   if (!is_atomic())
+> 	down_read(&freq_sem);
+>   /* else
+> 	do nothing since cpufreq can't interrupt you.
+>   */
+> 
+>   call usual code since cpufreq is not going to preempt you.
+> 
+>   if (!is_atomic())
+> 	up_read(&freq_sem);
+> }
 
-Why would it be "strange"?
+Well, most delays are very short, so...
 
-> argument in a string to write is more complicated to parse than using
-> ioctls.
-
-More complicated to parse?
+What about... we decide that cpufreq interruption or switch to
+different cpu takes 100usec minimum, and only try to do complex magic
+for delays >100usec? Hopefully there's minimum of those :-).
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
