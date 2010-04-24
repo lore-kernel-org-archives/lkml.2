@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab0DXAWx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 20:22:53 -0400
-Received: from mga14.intel.com ([143.182.124.37]:59814 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045Ab0DXAWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 20:22:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,264,1270450800"; 
-   d="scan'208";a="269535758"
-From: John Fastabend <john.r.fastabend@intel.com>
-Subject: [RFC net-next-2.6 PATCH] ixgbe: Example usage of new IRQ
-	affinity_hints for FCoE
-To: bhutchings@solarflare.com, peter.p.waskiewicz.jr@intel.com,
-       netdev@vger.kernel.org, arjan@linux.jf.intel.com, davem@davemloft.net,
-       tglx@linutronix.de
-Cc: john.r.fastabend@intel.com, linux-kernel@vger.kernel.org
-Date: Fri, 23 Apr 2010 17:21:32 -0700
-Message-ID: <20100424002132.16709.43724.stgit@jf-dev1-dcblab>
-User-Agent: StGIT/0.14.3
+	id S1756985Ab0DXAc7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 20:32:59 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47790 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab0DXAc5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 20:32:57 -0400
+Message-ID: <50d28d42d9f97dd6444c54265de9cd4b.squirrel@webmail-b.css.fujitsu.com>
+In-Reply-To: <1790.1272037936@redhat.com>
+References: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com>
+    <20100423195127.48095127.toshi.okajima@jp.fujitsu.com>
+    <20100422163755.355794e3.toshi.okajima@jp.fujitsu.com>
+    <7894.1271931370@redhat.com>
+    <20100423194547.3135efb8.toshi.okajima@jp.fujitsu.com>
+    <10934.1272022437@redhat.com> <1790.1272037936@redhat.com>
+Date: Sat, 24 Apr 2010 09:32:54 +0900 (JST)
+Subject: Re: [PATCH 1/1][BUG][TAKE2] KEYRINGS: find_keyring_by_name() can
+ gain the freed keyring
+From: =?ISO-2022-JP?B?GyRCMixFaCEhPHc5VBsoQg==?= 
+	<toshi.okajima@jp.fujitsu.com>
+To: "David Howells" <dhowells@redhat.com>
+Cc: "Toshiyuki Okajima" <toshi.okajima@jp.fujitsu.com>, dhowells@redhat.com,
+       keyrings@linux-nfs.org, security@kernel.org,
+       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=iso-2022-jp
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the fcoe protocol handler fcoe_rcv() is already executing
-on the correct CPU, SCSI-FCP frames can avoid context switching
-from the NET_RX softirq to the receive processing thread.
+> Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com> wrote:
+>
+>> > Better still, atomic_inc_not_zero().  How about the attached patch?
+>> Your fix looks good to me. But, if usage count of the keyring is 0,
+>> I think it better to return -ENOKEY immediately.
+>
 
-To avoid this context switch this patch uses the affinity_hint
-callback to align the interrupt with the FCoE receive processing
-threads.
+> The problem with that is that someone else may have created a keyring with
+> the
+> same name that you can't then reach until the dead keyring is deleted.
 
-To properly align interrupts for FCoE knowledge of how the
-FCoE receive processing threads are setup as well as which
-rx rings are dedicated to FCoE and their associated vectors
-is needed.  Additionally if the FCoE application TLV moves
-the FCoE priority this alignment will also need to change.
-Handling this in irqbalance alone would required irqbalance
-to be aware of DCB, the tx/rx ring mapping for FCoE in
-ixgbe and FCoE recv thread CPU mappings. For these reasons
-allowing irqbalance to accept hints from ixgbe is ideal for
-this case.
-
-Some quick investigative performance numbers show that by
-aligning the interrupt correctly an increase in ~50k IOPS
-and a decrease in ~10-15% CPU usage can be seen from a
-standard default configuration setup by todays irqbalance.
-
-This is a test patch to illustrate how using irq
-affininty_hints in ixgbe can benifit FCoE.  This patch does
-not consider the case where multiple CPU threads can map
-to the same queue this case would need further work.
-However, I think it does show the benefit of having
-an interface to provide affinity_hints.
-
-This patch applies on top of Peter P Waskiewicz Jr previous
-series of two patches to implement the affinity hint callback
-framework and sample implementation in ixgbe.
-
-Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
+OK. I understand.
+---
+Once find_keyring_by_name() returns -ENOKEY, the new user creates a
+new key. So, both the deleting key and the new key may exist.
+Therefore at next find_keyring_by_name() call, we should find the new
+key and ignore the deleting key.
 ---
 
- drivers/net/ixgbe/ixgbe_main.c |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
-index e4cff48..a680424 100644
---- a/drivers/net/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ixgbe/ixgbe_main.c
-@@ -1420,6 +1420,7 @@ static void ixgbe_configure_msix(struct ixgbe_adapter *adapter)
- 	struct ixgbe_q_vector *q_vector;
- 	int i, j, q_vectors, v_idx, r_idx;
- 	u32 mask;
-+	struct ixgbe_ring_feature *f = &adapter->ring_feature[RING_F_FCOE];
- 
- 	q_vectors = adapter->num_msix_vectors - NON_Q_VECTORS;
- 
-@@ -1463,9 +1464,22 @@ static void ixgbe_configure_msix(struct ixgbe_adapter *adapter)
- 		/*
- 		 * Allocate the affinity_hint cpumask, assign the mask for
- 		 * this vector, and register our affinity_hint callback.
-+		 *
-+		 * JF: Add a check for FCoE enabled adapter to catch rings
-+		 * that are enabled for FCoE and align them to their
-+		 * corresponding FCoE recv processing thread.
- 		 */
- 		alloc_cpumask_var(&q_vector->affinity_mask, GFP_KERNEL);
--		cpumask_set_cpu(v_idx, q_vector->affinity_mask);
-+
-+		r_idx = find_first_bit(q_vector->rxr_idx,
-+		                       adapter->num_rx_queues);
-+		if (adapter->flags & IXGBE_FLAG_FCOE_ENABLED &&
-+		    (r_idx >= f->mask) && (r_idx < f->mask + f->indices))
-+			cpumask_set_cpu(r_idx - f->mask,
-+					q_vector->affinity_mask);
-+		else
-+			cpumask_set_cpu(v_idx, q_vector->affinity_mask);
-+
- 		irq_register_affinity_hint(adapter->msix_entries[v_idx].vector,
- 		                           adapter,
- 		                           &ixgbe_irq_affinity_callback);
+Toshiyuki Okajima
 
