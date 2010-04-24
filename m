@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab0DXC1Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 22:27:25 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:64979 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754129Ab0DXC1X (ORCPT
+	id S1754195Ab0DXCaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 22:30:52 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:51929 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752562Ab0DXCau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 22:27:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nL7Mme1DHEDk0XoW47NGsIY0wjW70YodRekH+WI3geJtOxE4dys83GL+14u9LWpnDy
-         eH2Efjnl6YJfjiWB4zQ9n3CBvOcPEThEGfDWM9qaT4YDbHt9N8/4VswdDBdFGvtuWk47
-         4bM/ivKHJgE0ReaSZOuW7VYdnYv/hpMprvhn0=
-Date: Sat, 24 Apr 2010 04:27:30 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, William Cohen <wcohen@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Li Zefan <lizf@cn.fujitsu.com>,
-       Stephane Eranian <eranian@google.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: Re: [GIT PULL] perf tools updates
-Message-ID: <20100424022729.GB31069@nowhere>
-References: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com>
+	Fri, 23 Apr 2010 22:30:50 -0400
+Date: Fri, 23 Apr 2010 22:30:49 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Randy Dunlap <rdunlap@xenotime.net>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 1/9] PM: Add suspend block api.
+In-Reply-To: <p2vd6200be21004231915o5b2d4ed1zbabd3e51e6213f45@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1004232224380.30686-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 04:05:33AM +0200, Frederic Weisbecker wrote:
-> Ingo,
+On Fri, 23 Apr 2010, Arve Hjønnevåg wrote:
+
+> 2010/4/23 Alan Stern <stern@rowland.harvard.edu>:
+> > On Thu, 22 Apr 2010, [UTF-8] Arve Hjønnevåg wrote:
+> ...
+> >> +Calling suspend_block when the suspend blocker is active or suspend_unblock when
+> >> +it is not active has no effect. This allows drivers to update their state and
+> >> +call suspend suspend_block or suspend_unblock based on the result.
+> >
+> > But suspend_block() and suspend_unblock() don't nest.  You should
+> > mention this.
+> >
 > 
-> Please pull the perf/core branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	perf/core
-> 
-> Thanks,
-> 	Frederic
+> I'm not sure what you mean by this? I think the first sentence
+> dictates nesting is not supported.
 
+That fact is implicit from the first sentence.  Mentioning it 
+_explicitly_ will help people to understand more easily.  You don't 
+have to add much; a parenthetical remark would be enough:
 
+	Calling suspend_block when the suspend blocker is active or
+	suspend_unblock when it is not active has no effect (i.e.,
+	these functions don't nest).  This allows drivers to ...
 
-I forgot to highlight some things here.
-
-- The -M option is not used anymore. Well actually I just checked and it's
-  used by the record perl/python scripts. But it's not needed there anymore, so
-  I'll drop it in another pass. But globally it's over with the buffers
-  multiplexing needs.
-
-- But I haven't plugged the reordering thing to the live mode, because I'm
-  not sure exactly if that would be welcome. With live mode we want the
-  events as they arrive, using the reordering there would make it get the
-  events per bunches of 2 seconds slices. I guess we'll figure out a solution
-  for that.
-
-- Perf lock gets into a better shape. There is still some work to make
-  it truly usable though. I need to unearth the event injection thing
-  to lower the size of the events, profile by lock classes, etc...
-
-- Various important fixes
-
-Thanks.
+Alan Stern
 
