@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab0DXMOJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 08:14:09 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:61426 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab0DXMOH (ORCPT
+	id S1753511Ab0DXNCH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 09:02:07 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:29322 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455Ab0DXNCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 08:14:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=UtcbogTgGKnlaIRSd9K6lkNxcUSoJX1qnYrUlx6yUTXhNEpgTP6CFthNZ+3o193td6
-         ZjrRhENjoOlp/hwAr+exyg5WdLprlkd+jAbMA78tmM+EX8vghE8LjeB6gEN7lzu29O6Y
-         0/HncV5+YD3remkRGFryBjL2G82RyNFfCmyMk=
-Date: Sat, 24 Apr 2010 14:13:47 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Pedro Francisco <pedrogfrancisco@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ath5k misbehaving affecting other kernel parts unrelated?
-Message-ID: <20100424121347.GN29093@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Pedro Francisco <pedrogfrancisco@gmail.com>,
-	linux-kernel@vger.kernel.org
-References: <201004230806.13628.pedrogfrancisco@gmail.com> <20100423191342.GI29093@bicker> <201004241027.01241.pedrogfrancisco@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004241027.01241.pedrogfrancisco@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 24 Apr 2010 09:02:06 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Sat, 24 Apr 2010 09:02:04 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Paulius Zaleckas <paulius.zaleckas@gmail.com>, dwmw2@infradead.org,
+       linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+       u.kleine-koenig@pengutronix.de, simon.kagstrom@netinsight.net,
+       akpm@linux-foundation.org, linux-arm-kernel@lists.infradead.org,
+       rth@twiddle.net
+Subject: Re: [PATCH v2] MTD: Fix Orion NAND driver compilation with ARM OABI
+In-reply-to: <20100424025858.GJ15349@shareable.org>
+Message-id: <alpine.LFD.2.00.1004240855570.7232@xanadu.home>
+References: <20100325152505.17612.40158.stgit@pauliusz>
+ <20100325204619.GC19308@shareable.org>
+ <alpine.LFD.2.00.1004231443340.7232@xanadu.home>
+ <20100424025858.GJ15349@shareable.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 10:27:00AM +0100, Pedro Francisco wrote:
-> A Sexta, 23 de Abril de 2010 20:13:42 Dan Carpenter escreveu:
-> > On Fri, Apr 23, 2010 at 08:06:13AM +0100, Pedro Francisco wrote:
-> -snip
+On Sat, 24 Apr 2010, Jamie Lokier wrote:
+
+> Nicolas Pitre wrote:
+> > On Thu, 25 Mar 2010, Jamie Lokier wrote:
+> > > >  		asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
+> > > >  		buf64[i++] = x;
 > > > 
-> > > Is it possible a faulty ath5k module to affect diverse parts of kernel
-> > > causing different oopses to happen referencing things as different as
-> > > cdrom_ioctl, find_vma, i915_gem_object_get_pages,
-> > > get_vfs_caps_from_disk,
-> > > warn_slowpath_common (ath5k_tasklet_rx), proc_lookup_de and
-> > > _spin_lock(ext4_getattr) [soft lookup]?
+> > > The "register...asm" looks fine, but it occurs to me the constraints
+> > > are too weak (and they were before), so GCC could optimise that to the
+> > > wrong behaviour.
+> > > 
+> > > The "volatile" prevents GCC deleting the asm if it's output isn't
+> > > used, but it doesn't stop GCC from reordering the asms, for example if
+> > > it decides to unroll the loop.  It probably won't reorder in that
+> > > case, but it could.  The result would be out of order values stored
+> > > into buf[].  It could even move the ldrd earlier than the prior byte
+> > > accesses, or after the later byte accesses.
 > > 
-> -snip
-> > 
-> > If you know a working version of the kernel try a git bisect otherwise
-> > just post your dmesg with the crash etc.
-> > 
+> > I don't see how that could happen.  The store into buf[] puts a 
+> > dependency on the output constraint of the inline asm statement.  And by 
+> > vertue of being volatile, gcc cannot cache the result of the output from 
+> > the asm as if it was a pure function.
 > 
-> I don't. I doubt the dmesg will be of significance, as I said they're never the 
-> same.
-> However I've posted the dmesgs here [ 
-> http://ubuntuforums.org/showthread.php?t=1457568 ] prior to asking for help in 
-> LKML. Kernel version is Ubuntu's 2.6.32, not Vanilla.
+> The store into buf[] dependency doesn't stop this, after unrolling:
 > 
-> I believe nothing significant can be extracted from them. Am I correct?
+>     asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
+>     buf64[i++] = x;
+>     asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
+>     buf64[i++] = x;
 > 
+> from being reordered as this
+> 
+>     asm volatile ("ldrd\t%0, [%1]" : "=&r" (x2) : "r" (io_base));
+>     asm volatile ("ldrd\t%0, [%1]" : "=&r" (x1) : "r" (io_base));
+>     buf64[i++] = x1;
+>     buf64[i++] = x2;
+> 
+> because the asm doesn't depend on memory, just register inputs and
+> outputs;
 
-Well they have the 'M' taint for "Machine Check Exception" so that
-probably means the hardware is failing.
+I disagree.  The volatile tells gcc that the asm has side effects, and 
+therefore 1) they can't be optimized away, and 2) can't be swapped with 
+regards to each other like you do in your example.
 
-regards,
-dan carpenter
+>     'Q'
+>           A memory reference where the exact address is in a single
+>           register (''m'' is preferable for 'asm' statements)
 
-> -- 
-> Pedro
+Hmmm... Is this something new?  I must have missed it before.
+
+
+Nicolas
