@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab0DXCG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 22:06:29 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34101 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755975Ab0DXCFo (ORCPT
+	id S1757924Ab0DXCGd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 22:06:33 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:43965 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756096Ab0DXCFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 22:05:44 -0400
+	Fri, 23 Apr 2010 22:05:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=uoY7gr48S1nYZdQB9UlyWgMTEeCgP+CpJu685a2SUy5tFvOhpNShK7EAfW0hiXFS3z
-         R00SLAN4TZubt3LjCN6iN+5IAg7jHfaLm8gRS4slFxHXAyi/kwvYwvdFv8hj8JQRpjAt
-         3wZaYwFibaDy22JA65ISBReRHWcv8E5jRW5Lw=
+        b=UrZV2Fxj8AMl8CxunogheVdc6TfCsA9pQ/VCWVu3EUPRtkPNdQ2geFaf6MFxwheCkP
+         TbckNPkXBvzdV0l5ZsPoz3SZHIFKNk8y/S2ou+r3p/QiWOqrnAiUs2as4ibVdIpxNo9E
+         MNzhJmPyOYLk6exIOd+4geRuFTE8t13w84Mlk=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -23,10 +23,11 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        Paul Mackerras <paulus@samba.org>,
        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
        Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 6/9] perf: Use generic sample reordering in perf trace
-Date: Sat, 24 Apr 2010 04:05:39 +0200
-Message-Id: <1272074742-3654-7-git-send-regression-fweisbec@gmail.com>
+       Tom Zanussi <tzanussi@gmail.com>,
+       Arjan van de Ven <arjan@linux.intel.com>
+Subject: [PATCH 7/9] perf: Use generic sample reordering in perf timechart
+Date: Sat, 24 Apr 2010 04:05:40 +0200
+Message-Id: <1272074742-3654-8-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com>
@@ -35,12 +36,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new generic sample events reordering from perf trace.
-Before that, the displayed traces were ordered as they were
-in the input as recorded by perf record (not time ordered).
-
-This makes eventually perf trace displaying the events as beeing
-time ordered.
+Use the new generic sample events reordering from perf timechart,
+this drops the ad hoc sample reordering it was using before.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -50,22 +47,163 @@ Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Masami Hiramatsu <mhiramat@redhat.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
 ---
- tools/perf/builtin-trace.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ tools/perf/builtin-timechart.c |  112 ++--------------------------------------
+ 1 files changed, 5 insertions(+), 107 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 2eefb33..1d034f6 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -108,6 +108,7 @@ static struct perf_event_ops event_ops = {
- 	.event_type = event__process_event_type,
- 	.tracing_data = event__process_tracing_data,
- 	.build_id = event__process_build_id,
-+	.ordered_samples = true,
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 96f4a09..c35aa44 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -143,9 +143,6 @@ struct wake_event {
+ static struct power_event    *power_events;
+ static struct wake_event     *wake_events;
+ 
+-struct sample_wrapper *all_samples;
+-
+-
+ struct process_filter;
+ struct process_filter {
+ 	char			*name;
+@@ -566,88 +563,6 @@ static void end_sample_processing(void)
+ 	}
+ }
+ 
+-static u64 sample_time(event_t *event, const struct perf_session *session)
+-{
+-	int cursor;
+-
+-	cursor = 0;
+-	if (session->sample_type & PERF_SAMPLE_IP)
+-		cursor++;
+-	if (session->sample_type & PERF_SAMPLE_TID)
+-		cursor++;
+-	if (session->sample_type & PERF_SAMPLE_TIME)
+-		return event->sample.array[cursor];
+-	return 0;
+-}
+-
+-
+-/*
+- * We first queue all events, sorted backwards by insertion.
+- * The order will get flipped later.
+- */
+-static int queue_sample_event(event_t *event, struct perf_session *session)
+-{
+-	struct sample_wrapper *copy, *prev;
+-	int size;
+-
+-	size = event->sample.header.size + sizeof(struct sample_wrapper) + 8;
+-
+-	copy = malloc(size);
+-	if (!copy)
+-		return 1;
+-
+-	memset(copy, 0, size);
+-
+-	copy->next = NULL;
+-	copy->timestamp = sample_time(event, session);
+-
+-	memcpy(&copy->data, event, event->sample.header.size);
+-
+-	/* insert in the right place in the list */
+-
+-	if (!all_samples) {
+-		/* first sample ever */
+-		all_samples = copy;
+-		return 0;
+-	}
+-
+-	if (all_samples->timestamp < copy->timestamp) {
+-		/* insert at the head of the list */
+-		copy->next = all_samples;
+-		all_samples = copy;
+-		return 0;
+-	}
+-
+-	prev = all_samples;
+-	while (prev->next) {
+-		if (prev->next->timestamp < copy->timestamp) {
+-			copy->next = prev->next;
+-			prev->next = copy;
+-			return 0;
+-		}
+-		prev = prev->next;
+-	}
+-	/* insert at the end of the list */
+-	prev->next = copy;
+-
+-	return 0;
+-}
+-
+-static void sort_queued_samples(void)
+-{
+-	struct sample_wrapper *cursor, *next;
+-
+-	cursor = all_samples;
+-	all_samples = NULL;
+-
+-	while (cursor) {
+-		next = cursor->next;
+-		cursor->next = all_samples;
+-		all_samples = cursor;
+-		cursor = next;
+-	}
+-}
+-
+ /*
+  * Sort the pid datastructure
+  */
+@@ -1011,26 +926,12 @@ static void write_svg_file(const char *filename)
+ 	svg_close();
+ }
+ 
+-static void process_samples(struct perf_session *session)
+-{
+-	struct sample_wrapper *cursor;
+-	event_t *event;
+-
+-	sort_queued_samples();
+-
+-	cursor = all_samples;
+-	while (cursor) {
+-		event = (void *)&cursor->data;
+-		cursor = cursor->next;
+-		process_sample_event(event, session);
+-	}
+-}
+-
+ static struct perf_event_ops event_ops = {
+-	.comm	= process_comm_event,
+-	.fork	= process_fork_event,
+-	.exit	= process_exit_event,
+-	.sample	= queue_sample_event,
++	.comm			= process_comm_event,
++	.fork			= process_fork_event,
++	.exit			= process_exit_event,
++	.sample			= process_sample_event,
++	.ordered_samples	= true,
  };
  
- extern volatile int session_done;
+ static int __cmd_timechart(void)
+@@ -1048,8 +949,6 @@ static int __cmd_timechart(void)
+ 	if (ret)
+ 		goto out_delete;
+ 
+-	process_samples(session);
+-
+ 	end_sample_processing();
+ 
+ 	sort_pids();
+@@ -1072,7 +971,6 @@ static const char *record_args[] = {
+ 	"record",
+ 	"-a",
+ 	"-R",
+-	"-M",
+ 	"-f",
+ 	"-c", "1",
+ 	"-e", "power:power_start",
 -- 
 1.6.2.3
 
