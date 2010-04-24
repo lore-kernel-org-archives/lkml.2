@@ -1,32 +1,34 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab0DPHP1 (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Fri, 16 Apr 2010 03:15:27 -0400
-Received: from comsmtp1.singnet.com.sg ([165.21.101.74]:40997 "EHLO
-	comsmtp1.singnet.com.sg" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab0DPHPZ (ORCPT
+	id S1754080Ab0DXVCN (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sat, 24 Apr 2010 17:02:13 -0400
+Received: from cmsrv1.catv-kabelmedien.at ([80.241.16.10]:33239 "EHLO
+	cmsrv1.catv-kabelmedien.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753278Ab0DXVCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Apr 2010 03:15:25 -0400
-To: info@info.com
+	Sat, 24 Apr 2010 17:02:11 -0400
+X-Greylist: delayed 702 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Apr 2010 17:02:11 EDT
+Message-ID: <0dc67d99788b3b2750437d15342f8529.squirrel@webmail.kabelkom.at>
+Date: Sat, 24 Apr 2010 22:49:16 +0200 (CEST)
 Subject: Hello
-Message-ID: <1271401895.4bc80da7a07f8@discus.singnet.com.sg>
-Date: Fri, 16 Apr 2010 15:11:35 +0800 (SGT)
-From: Johnson Ato <web302364@singnet.com.sg>
-Reply-To: johnsonato14@yahoo.se
+From: "Liu Tai Ling" <liu@live.co.uk>
+Reply-To: from_icbc_liuling@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
-User-Agent: SingNet WebMail
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
 
-I got your email address on the internet, I want you to assist 
-me by getting a nice property for purchase within your location
-as me and my family wants to relocate to a safe environment as
-soon as possible due to the war in my country.
 
-Your urgent response is highly appreciated.
 
-Johnson Ato 
+Good Day,
+I have a Business Proposal of $21,300,000.00 for you to handle with me
+from my bank.please contact me on {from_icbc_liuling@yahoo.com.hk} with
+your Full names,occupation,private phone number,current residential
+address.
+
