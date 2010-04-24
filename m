@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab0DXPQE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 11:16:04 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34361 "EHLO mx1.suse.de"
+	id S1753523Ab0DXPQq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 11:16:46 -0400
+Received: from kroah.org ([198.145.64.141]:57122 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753339Ab0DXPQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 11:16:03 -0400
-Date: Sat, 24 Apr 2010 08:02:31 -0700
-From: Greg KH <gregkh@suse.de>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: tytso@mit.edu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] Documentation: -stable rules: upstream commit ID
-	requirement reworded
-Message-ID: <20100424150231.GA9572@suse.de>
-References: <20100422222928.GA3268@kroah.com> <1271976016-3584-1-git-send-email-gregkh@suse.de> <20100424020253.GP14986@thunk.org> <4BD2B5EC.4020808@s5r6.in-berlin.de> <4BD2BA28.3000109@s5r6.in-berlin.de>
+	id S1753339Ab0DXPQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 11:16:45 -0400
+Date: Sat, 24 Apr 2010 08:17:16 -0700
+From: Greg KH <greg@kroah.com>
+To: Eric Lescouet <Eric.Lescouet@VirtualLogix.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: USBIP (staging) driver's dependency on drivers/usb/core
+	internal headers
+Message-ID: <20100424151716.GD10840@kroah.com>
+References: <Pine.LNX.4.44L0.1004231402180.1777-100000@iolanthe.rowland.org> <4BD24841.1010206@VirtualLogix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BD2BA28.3000109@s5r6.in-berlin.de>
+In-Reply-To: <4BD24841.1010206@VirtualLogix.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 11:30:16AM +0200, Stefan Richter wrote:
-> Stefan Richter wrote:
-> > tytso@mit.edu wrote:
-> >> I find the upstream commit ID to be highly useful when looking at
-> >> commits in the stable tree.  So it would be nice IMHO if we could
-> >> enforce this requirement regardless of whether the submission path is
-> >> via e-mail or git.
-> ...
-> > Apparently Greg's scripts modify the
-> > changelogs respectively when he cherry-picks from linux-2.6.git, so the
-> > requirement is also always fulfilled with this alternative submission path.
+On Sat, Apr 24, 2010 at 03:24:17AM +0200, Eric Lescouet wrote:
+> On 04/23/2010 08:04 PM, Alan Stern wrote:
+> > On Fri, 23 Apr 2010, Eric Lescouet wrote:
+> > 
+> >> Well, most of the files include hcd.h (which includes hub.h),
+> >> only ~4 of them directly use hub.h.
+> > 
+> > Oh.  Okay, that makes life easier.  Probably some of the files which 
+> > include hub.h directly also include hcd.h.
+> > 
+> >> So what's your vote? rename hub.h into ch11.h?
+> > 
+> > Yeah, go ahead.  I like the idea of the kernel containing information 
+> > about Chapter 11.  (Although I haven't heard of anyone yet going 
+> > bankrupt as a result of using Linux...)
+> > 
+> > Alan Stern
+> > 
 > 
-> Or do you mean submission directly from a developer's git tree to stable
-> via git pull by Greg?  Is this been done?  If yes, I suppose this comes
-> only from people who know very well how a stable patch is meant to look
-> like.  Nevertheless I could send another adjustment for
-> Documentation/stable_kernel_rules.txt if this is another actual
-> submission path.
+> It looks like couple of files in drivers/usb/core and usb/host have been
+> modified already in latest snapshot (2.6.34-rc5-git5).
+> Is it still ok to provide the patches against the mainline (2.6.34-rc5)
+> or should I do it against the snapshot (2.6.34-rc5-git5)?
 
-No, it's not a real submission patch, and yes, I always require a git
-commit id in the patch.  If I don't have it, it is explained in the
-patch why it is not in Linus's tree.
-
-Don't worry, I think the current wording is fine.
+The latest snapshot is best.
 
 thanks,
 
