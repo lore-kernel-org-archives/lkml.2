@@ -1,187 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241Ab0DXKqn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 06:46:43 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:50598 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729Ab0DXKql (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 06:46:41 -0400
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
-       h.mitake@gmail.com, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: [PATCH v2] perf lock: add "info" subcommand for dumping misc information
-Date: Sat, 24 Apr 2010 19:46:41 +0900
-Message-Id: <1272106001-10519-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <1272074742-3654-2-git-send-regression-fweisbec@gmail.com>
-References: <1272074742-3654-2-git-send-regression-fweisbec@gmail.com>
+	id S1752473Ab0DXKrn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 06:47:43 -0400
+Received: from mail.gmx.net ([213.165.64.20]:39891 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751131Ab0DXKrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 06:47:40 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX182KbxjMfA20cxFyGi/eDZQZ7PEZ0o5N6eHxnx+2x
+	jWkflVWWQy6X+6
+Message-ID: <4BD2CC46.4060908@gmx.de>
+Date: Sat, 24 Apr 2010 12:47:34 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+MIME-Version: 1.0
+To: Jonathan Corbet <corbet@lwn.net>
+CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
+       Deepak Saxena <dsaxena@laptop.org>, linux-fbdev@vger.kernel.org,
+       JosephChan@via.com.tw, ScottFang@viatech.com.cn
+Subject: Re: [PATCH 10/11] viafb: rework the I2C support in the VIA framebuffer
+ driver
+References: <1271614873-5952-1-git-send-email-corbet@lwn.net>	<1271614873-5952-11-git-send-email-corbet@lwn.net>	<4BD20D56.7080402@gmx.de>	<20100423155725.7d3b2d2d@bike.lwn.net>	<4BD221E7.7060705@gmx.de> <20100423165256.654ca5eb@bike.lwn.net> <4BD22B96.5020102@gmx.de>
+In-Reply-To: <4BD22B96.5020102@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.64000000000000001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+Florian Tobias Schandinat schrieb:
+> Jonathan Corbet schrieb:
+>> On Sat, 24 Apr 2010 00:40:39 +0200
+>> Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+>> Meanwhile, I'm a little unsure now...is there an action item for me
+>> with regard to the i2c code?  I've been staring at it since your last
+>> note, but I couldn't find any obvious problems.  I do have to say that
+>> Harald's rework is far cleaner than what came before...
+> 
+> Well the main question is probably:
+> How does it change the behaviour towards the hardware?
+> I tend to think that OLPC might not be the only ones who did something 
+> weird with it....and we already know that we shouldn't trust the 
+> documentation too much.
 
-I added "info" subcommand to perf lock,
-this can be used as dumping metadata like thread or address of lock instances.
-"map" was removed because info should do the work of it.
+I was able to narrow this issue down to the fourth bus. So with
+if (i == 4)
+	continue;
+in the bus creation loop I'm able to get a working framebuffer which 
+does not have the issues mentioned. Any ideas what should be done now?
 
-This will be useful not only for debugging but also for ordinary analyzing.
 
-I made this patch on perf/core of your tree, could you queue this?
+Thanks,
 
-v2: adding example of usage
-% sudo ./perf lock info -t
- | Thread ID: comm
- | 	 0: swapper
- |         1: init
- |        18: migration/5
- |        29: events/2
- |        32: events/5
- |        33: events/6
-...
-
-% sudo ./perf lock info -m
-| Address of instance: name of class
-|  0xffff8800b95adae0: &(&sighand->siglock)->rlock
-|  0xffff8800bbb41ae0: &(&sighand->siglock)->rlock
-|  0xffff8800bf165ae0: &(&sighand->siglock)->rlock
-|  0xffff8800b9576a98: &p->cred_guard_mutex
-|  0xffff8800bb890a08: &(&p->alloc_lock)->rlock
-|  0xffff8800b9522a08: &(&p->alloc_lock)->rlock
-|  0xffff8800bb8aaa08: &(&p->alloc_lock)->rlock
-|  0xffff8800bba72a08: &(&p->alloc_lock)->rlock
-|  0xffff8800bf18ea08: &(&p->alloc_lock)->rlock
-|  0xffff8800b8a0d8a0: &(&ip->i_lock)->mr_lock
-|  0xffff88009bf818a0: &(&ip->i_lock)->mr_lock
-|  0xffff88004c66b8a0: &(&ip->i_lock)->mr_lock
-|  0xffff8800bb6478a0: &(shost->host_lock)->rlock
-Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Jens Axboe <jens.axboe@oracle.com>
-Cc: Jason Baron <jbaron@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- tools/perf/builtin-lock.c |   68 +++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 65 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index ce27675..c54211e 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -778,18 +778,61 @@ static void print_result(void)
- 	}
- }
- 
-+static int			info_threads;
-+static int			info_map;
-+
-+static void rec_dump_threads(struct rb_node *node)
-+{
-+	struct thread_stat *st;
-+	struct thread *t;
-+
-+	if (!node)
-+		return;
-+
-+	if (node->rb_left)
-+		rec_dump_threads(node->rb_left);
-+
-+	st = container_of(node, struct thread_stat, rb);
-+	BUG_ON(!st);
-+	t = perf_session__findnew(session, st->tid);
-+	BUG_ON(!t);
-+
-+	printf("%10d: %s\n", st->tid, t->comm);
-+
-+	if (node->rb_right)
-+		rec_dump_threads(node->rb_right);
-+}
-+
-+static void dump_threads(void)
-+{
-+	printf("%10s: comm\n", "Thread ID");
-+	rec_dump_threads(thread_stats.rb_node);
-+}
-+
- static void dump_map(void)
- {
- 	unsigned int i;
- 	struct lock_stat *st;
- 
-+	printf("Address of instance: name of class\n");
- 	for (i = 0; i < LOCKHASH_SIZE; i++) {
- 		list_for_each_entry(st, &lockhash_table[i], hash_entry) {
--			printf("%p: %s\n", st->addr, st->name);
-+			printf(" %p: %s\n", st->addr, st->name);
- 		}
- 	}
- }
- 
-+static void dump_info(void)
-+{
-+	/* ugly... */
-+	if (info_threads)
-+		dump_threads();
-+	else if (info_map)
-+		dump_map();
-+	else
-+		die("Unknown type of information\n");
-+}
-+
- static int process_sample_event(event_t *self, struct perf_session *s)
- {
- 	struct sample_data data;
-@@ -858,6 +901,19 @@ static const struct option report_options[] = {
- 	OPT_END()
- };
- 
-+static const char * const info_usage[] = {
-+	"perf lock info [<options>]",
-+	NULL
-+};
-+
-+static const struct option info_options[] = {
-+	OPT_BOOLEAN('t', "threads", &info_threads,
-+		    "dump thread list in perf.data"),
-+	OPT_BOOLEAN('m', "map", &info_map,
-+		    "map of lock instances (name:address table)"),
-+	OPT_END()
-+};
-+
- static const char * const lock_usage[] = {
- 	"perf lock [<options>] {record|trace|report}",
- 	NULL
-@@ -929,12 +985,18 @@ int cmd_lock(int argc, const char **argv, const char *prefix __used)
- 	} else if (!strcmp(argv[0], "trace")) {
- 		/* Aliased to 'perf trace' */
- 		return cmd_trace(argc, argv, prefix);
--	} else if (!strcmp(argv[0], "map")) {
-+	} else if (!strcmp(argv[0], "info")) {
-+		if (argc) {
-+			argc = parse_options(argc, argv,
-+					     info_options, info_usage, 0);
-+			if (argc)
-+				usage_with_options(info_usage, info_options);
-+		}
- 		/* recycling report_lock_ops */
- 		trace_handler = &report_lock_ops;
- 		setup_pager();
- 		read_events();
--		dump_map();
-+		dump_info();
- 	} else {
- 		usage_with_options(lock_usage, lock_options);
- 	}
--- 
-1.6.5.2
+Florian Tobias Schandinat
 
