@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab0DXJ1J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 05:27:09 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:48648 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab0DXJ1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 05:27:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=mQKnAA4QMlAzJWV7my9mhIsE8DDXgaSnHc07sp+blz7xkktIAMvBYEzPWbXPFYGaTm
-         JhkSsjqGKhW/TS2TwPn56sHXk96RF8o8rFyMON+R8a95qeU8zTzJnvR3SpHdSSZ9yyfB
-         Agsz1jVLqLnsfJQLIWiFdGr16b28GH62xeqVw=
-From: Pedro Francisco <pedrogfrancisco@gmail.com>
-To: Dan Carpenter <error27@gmail.com>
-Subject: Re: ath5k misbehaving affecting other kernel parts unrelated?
-Date: Sat, 24 Apr 2010 10:27:00 +0100
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201004230806.13628.pedrogfrancisco@gmail.com> <20100423191342.GI29093@bicker>
-In-Reply-To: <20100423191342.GI29093@bicker>
+	id S1753216Ab0DXJ33 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 05:29:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53674 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752926Ab0DXJ30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 05:29:26 -0400
+Message-ID: <4BD2B9E9.5020607@redhat.com>
+Date: Sat, 24 Apr 2010 12:29:13 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Zachary Amsden <zamsden@redhat.com>
+CC: Glauber Costa <glommer@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+       Peter Zijlstra <peterz@infradead.org>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
+References: <1271675100.1674.818.camel@laptop> <4BCC3A3E.9070909@redhat.com> <20100419142158.GD14158@mothafucka.localdomain> <4BCC69D5.3050209@redhat.com> <1271688411.1488.248.camel@laptop> <4BCC8246.9040202@goop.org> <4BCD748E.7080007@redhat.com> <4BCDF12C.1020702@goop.org> <4BCDF85C.3000004@redhat.com> <4BCE0399.2010708@goop.org> <20100422131113.GA3364@mothafucka.localdomain> <4BD0FB92.4060301@redhat.com> <4BD169B5.4000409@redhat.com> <4BD211B9.5080707@redhat.com>
+In-Reply-To: <4BD211B9.5080707@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004241027.01241.pedrogfrancisco@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Sexta, 23 de Abril de 2010 20:13:42 Dan Carpenter escreveu:
-> On Fri, Apr 23, 2010 at 08:06:13AM +0100, Pedro Francisco wrote:
--snip
-> > 
-> > Is it possible a faulty ath5k module to affect diverse parts of kernel
-> > causing different oopses to happen referencing things as different as
-> > cdrom_ioctl, find_vma, i915_gem_object_get_pages,
-> > get_vfs_caps_from_disk,
-> > warn_slowpath_common (ath5k_tasklet_rx), proc_lookup_de and
-> > _spin_lock(ext4_getattr) [soft lookup]?
-> 
--snip
-> 
-> If you know a working version of the kernel try a git bisect otherwise
-> just post your dmesg with the crash etc.
-> 
+On 04/24/2010 12:31 AM, Zachary Amsden wrote:
+> On 04/22/2010 11:34 PM, Avi Kivity wrote:
+>> On 04/23/2010 04:44 AM, Zachary Amsden wrote:
+>>>    Or apply this patch.
+>>> time-warp.patch
+>>>
+>>>
+>>> diff -rup a/time-warp-test.c b/time-warp-test.c
+>>> --- a/time-warp-test.c    2010-04-15 16:30:13.955981607 -1000
+>>> +++ b/time-warp-test.c    2010-04-15 16:35:37.777982377 -1000
+>>> @@ -91,7 +91,7 @@ static inline unsigned long long __rdtsc
+>>>   {
+>>>       DECLARE_ARGS(val, low, high);
+>>>
+>>> -    asm volatile("cpuid; rdtsc" : EAX_EDX_RET(val, low, high));
+>>> +    asm volatile("cpuid; rdtsc" : EAX_EDX_RET(val, low, high) :: 
+>>> "ebx", "ecx");
+>>>
+>>
+>> Plus, replace cpuid by lfence/mfence.  cpuid will trap.
+>>
+>
+> Does lfence / mfence actually serialize?  I thought there was some 
+> great confusion about that not being the case on all AMD processors, 
+> and possibly not at all on Intel.
 
-I don't. I doubt the dmesg will be of significance, as I said they're never the 
-same.
-However I've posted the dmesgs here [ 
-http://ubuntuforums.org/showthread.php?t=1457568 ] prior to asking for help in 
-LKML. Kernel version is Ubuntu's 2.6.32, not Vanilla.
+They don't.
 
-I believe nothing significant can be extracted from them. Am I correct?
+>
+> A trap, however is a great way to serialize.
+>
+> I think, there is no serializing instruction which can be used from 
+> userspace which does not trap, at least, I don't know one off the top 
+> of my head.
+
+iret.
 
 -- 
-Pedro
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+
