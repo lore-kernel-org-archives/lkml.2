@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab0DXAjZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 20:39:25 -0400
-Received: from vps.273k.net ([78.153.208.64]:47979 "EHLO
-	vps-1000455-184.cp.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754846Ab0DXAjX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 20:39:23 -0400
-X-Greylist: delayed 1247 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Apr 2010 20:39:23 EDT
-Date: Sat, 24 Apr 2010 01:18:13 +0100
-From: Robert Fitzsimons <robfitz@273k.net>
-To: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] drm/radeon/kms/agp The wrong AGP chipset can cause a NULL
- pointer dereference
-Message-ID: <20100424001813.GA5641@localhost>
+	id S1757493Ab0DXAqF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 20:46:05 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:46702 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757363Ab0DXAp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 20:45:59 -0400
+Date: Fri, 23 Apr 2010 19:45:57 -0500
+From: "Serge E. Hallyn" <serue@us.ibm.com>
+To: David Howells <dhowells@redhat.com>,
+       "Paul E. McKenney" <paulmck@us.ibm.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Documentation/cred.txt: spinlock no longer implies
+ rcu_read_lock
+Message-ID: <20100424004557.GA21297@us.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,39 +22,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Selecting the wrong or no CONFIG_AGP_* chipset can cause a NULL pointer
-dereference when combined with CONFIG_DRM_RADEON_KMS and an old system
-with a R100 AGP card (should effect other cards too).  The agp field
-will be set to NULL if no suitable AGP chipset driver is loaded,
-drm_agp_acquire already preforms a suitable NULL check so it can be used
-directly.
+So change the credentials documentation to make it clear that rcu
+read lock is required.
 
-Signed-off-by: Robert Fitzsimons <robfitz@273k.net>
+Signed-off-by: Serge Hallyn <serue@us.ibm.com>
 ---
- drivers/gpu/drm/radeon/radeon_agp.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+ Documentation/credentials.txt |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_agp.c b/drivers/gpu/drm/radeon/radeon_agp.c
-index c445779..28e473f 100644
---- a/drivers/gpu/drm/radeon/radeon_agp.c
-+++ b/drivers/gpu/drm/radeon/radeon_agp.c
-@@ -134,12 +134,10 @@ int radeon_agp_init(struct radeon_device *rdev)
- 	int ret;
- 
- 	/* Acquire AGP. */
--	if (!rdev->ddev->agp->acquired) {
--		ret = drm_agp_acquire(rdev->ddev);
--		if (ret) {
--			DRM_ERROR("Unable to acquire AGP: %d\n", ret);
--			return ret;
--		}
-+	ret = drm_agp_acquire(rdev->ddev);
-+	if (ret) {
-+		DRM_ERROR("Unable to acquire AGP: %d\n", ret);
-+		return ret;
+diff --git a/Documentation/credentials.txt b/Documentation/credentials.txt
+index df03169..98a1e9e 100644
+--- a/Documentation/credentials.txt
++++ b/Documentation/credentials.txt
+@@ -408,9 +408,6 @@ This should be used inside the RCU read lock, as in the following example:
+ 		...
  	}
  
- 	ret = drm_agp_info(rdev->ddev, &info);
+-A function need not get RCU read lock to use __task_cred() if it is holding a
+-spinlock at the time as this implicitly holds the RCU read lock.
+-
+ Should it be necessary to hold another task's credentials for a long period of
+ time, and possibly to sleep whilst doing so, then the caller should get a
+ reference on them using:
+@@ -426,14 +423,13 @@ credentials, hiding the RCU magic from the caller:
+ 	uid_t task_uid(task)		Task's real UID
+ 	uid_t task_euid(task)		Task's effective UID
+ 
+-If the caller is holding a spinlock or the RCU read lock at the time anyway,
+-then:
++If the caller is holding the RCU read lock at the time anyway, then:
+ 
+ 	__task_cred(task)->uid
+ 	__task_cred(task)->euid
+ 
+ should be used instead.  Similarly, if multiple aspects of a task's credentials
+-need to be accessed, RCU read lock or a spinlock should be used, __task_cred()
++need to be accessed, RCU read lock should be used, __task_cred()
+ called, the result stored in a temporary pointer and then the credential
+ aspects called from that before dropping the lock.  This prevents the
+ potentially expensive RCU magic from being invoked multiple times.
 -- 
-1.7.0
+1.6.3.3
 
