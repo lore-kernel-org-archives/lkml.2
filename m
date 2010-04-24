@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab0DXC0W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 22:26:22 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41362 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533Ab0DXC0T (ORCPT
+	id S1754584Ab0DXC1Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 22:27:25 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:64979 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129Ab0DXC1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 22:26:19 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Sat, 24 Apr 2010 11:22:17 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Greg Thelen <gthelen@google.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Vivek Goyal <vgoyal@redhat.com>, balbir@linux.vnet.ibm.com,
-       Andrea Righi <arighi@develer.com>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
-Message-Id: <20100424112217.e2efb61b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1272056226.1821.41.camel@laptop>
-References: <1268609202-15581-2-git-send-email-arighi@develer.com>
-	<20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100318162855.GG18054@balbir.in.ibm.com>
-	<20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100319024039.GH18054@balbir.in.ibm.com>
-	<20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr931veiplpr.fsf@ninji.mtv.corp.google.com>
-	<20100414140523.GC13535@redhat.com>
-	<xr9339yxyepc.fsf@ninji.mtv.corp.google.com>
-	<20100415114022.ef01b704.nishimura@mxp.nes.nec.co.jp>
-	<g2u49b004811004142148i3db9fefaje1f20760426e0c7e@mail.gmail.com>
-	<20100415152104.62593f37.nishimura@mxp.nes.nec.co.jp>
-	<20100415155432.cf1861d9.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr93k4rxx6sd.fsf@ninji.mtv.corp.google.com>
-	<1272056226.1821.41.camel@laptop>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Apr 2010 22:27:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=nL7Mme1DHEDk0XoW47NGsIY0wjW70YodRekH+WI3geJtOxE4dys83GL+14u9LWpnDy
+         eH2Efjnl6YJfjiWB4zQ9n3CBvOcPEThEGfDWM9qaT4YDbHt9N8/4VswdDBdFGvtuWk47
+         4bM/ivKHJgE0ReaSZOuW7VYdnYv/hpMprvhn0=
+Date: Sat, 24 Apr 2010 04:27:30 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, William Cohen <wcohen@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, Li Zefan <lizf@cn.fujitsu.com>,
+       Stephane Eranian <eranian@google.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Subject: Re: [GIT PULL] perf tools updates
+Message-ID: <20100424022729.GB31069@nowhere>
+References: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Apr 2010 22:57:06 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Fri, 2010-04-23 at 13:17 -0700, Greg Thelen wrote:
-> > +static void mem_cgroup_begin_page_cgroup_reassignment(void)
-> > +{
-> > +       VM_BUG_ON(mem_cgroup_account_move_ongoing);
-> > +       mem_cgroup_account_move_ongoing = true;
-> > +       synchronize_rcu();
-> > +} 
+On Sat, Apr 24, 2010 at 04:05:33AM +0200, Frederic Weisbecker wrote:
+> Ingo,
 > 
-> btw, you know synchronize_rcu() is _really_ slow?
+> Please pull the perf/core branch that can be found at:
 > 
-IIUC, this is called once per an event when task is moved and we have
-to move accouting information...and once per an event when we call
-rmdir() to destroy cgroup. 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	perf/core
+> 
+> Thanks,
+> 	Frederic
 
-So, this is not frequenctly called.
-(hooks to migration in this patch is removable.)
 
-Thanks,
--Kame
+
+I forgot to highlight some things here.
+
+- The -M option is not used anymore. Well actually I just checked and it's
+  used by the record perl/python scripts. But it's not needed there anymore, so
+  I'll drop it in another pass. But globally it's over with the buffers
+  multiplexing needs.
+
+- But I haven't plugged the reordering thing to the live mode, because I'm
+  not sure exactly if that would be welcome. With live mode we want the
+  events as they arrive, using the reordering there would make it get the
+  events per bunches of 2 seconds slices. I guess we'll figure out a solution
+  for that.
+
+- Perf lock gets into a better shape. There is still some work to make
+  it truly usable though. I need to unearth the event injection thing
+  to lower the size of the events, profile by lock classes, etc...
+
+- Various important fixes
+
+Thanks.
 
