@@ -1,142 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab0DXUuX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 16:50:23 -0400
-Received: from bar.sig21.net ([80.81.252.164]:36928 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752628Ab0DXUuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 16:50:20 -0400
-Date: Sat, 24 Apr 2010 22:50:11 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
-       Magnus Damm <damm@opensource.se>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Q: sched_clock() vs. clocksource, how to implement correctly
-Message-ID: <20100424205011.GA21632@sig21.net>
-References: <20100423150917.GA25714@sig21.net>
- <20100423182933.0df45b53@mschwide.boeblingen.de.ibm.com>
+	id S1754049Ab0DXVAq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 17:00:46 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:32801 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753278Ab0DXVAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 17:00:45 -0400
+Date: Sat, 24 Apr 2010 17:00:42 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+       cpufreq <cpufreq@vger.kernel.org>,
+       linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+       Dave Jones <davej@redhat.com>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
+       Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: CPUfreq - udelay() interaction issues
+Message-ID: <20100424210042.GA2371@Krystal>
+References: <4BCFC3D0.5080904@codeaurora.org> <4BD0D9E5.3020606@codeaurora.org> <20100423184042.GA16190@Krystal> <20100423122259.49e0416a@infradead.org> <20100423195556.GD21997@Krystal> <20100424115616.01aaa997@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100423182933.0df45b53@mschwide.boeblingen.de.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-21-Score: -3.6 (---)
-X-Spam-21-Report: No, score=-3.6 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.783,BAYES_00=-2.599 autolearn=no
+In-Reply-To: <20100424115616.01aaa997@infradead.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 16:55:56 up 91 days, 23:33,  9 users,  load average: 0.00, 0.05,
+	0.08
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 06:29:33PM +0200, Martin Schwidefsky wrote:
-> On Fri, 23 Apr 2010 17:09:17 +0200 > Johannes Stezenbach <js@sig21.net> wrote:
+* Arjan van de Ven (arjan@infradead.org) wrote:
 > > 
-> > - Isn't sched_clock() supposed to be extended to 64bit so
-> >   that it practically never wraps?
-> >   (old implementations use cnt32_to_63())
-> 
-> Yes, sched_clock() is supposed to return a monotonic timestamp.
-
-OK, searching LXR for sched_clock, I think serveral
-sched_clock() implementations across architectures
-have the wrapping issue.
-
-BTW, wrapping sched_clock() also causes printk() timestamps to
-wrap, so the problem should be easy to spot.
-
-> > - What would be the effect on scheduling when sched_clock() wraps?
-> 
-> It would confuse the process accounting and the scheduling I guess.
-
-That's a bit vague ;-/
-Let's try that: Could it cause processes calling e.g. nanosleep()
-to sleep much longer than intended (e.g. until sched_clock() wraps
-again)?   Or can it only cause a momentary scheduler hickup,
-i.e. the scheduler might make one wrong scheduling decision
-per sched_clock() wrap?  Given that there are serveral platforms
-with wrapping sched_clock() I guess the latter.
-
-> > - Is struct timecounter + struct cyclecounter + timecounter_read()
-> >   designated way to implement sched_clock() with a 32bit hw counter?
+> > I did an overview, back in 2007, of AMD and Intel processors that had
+> > either tsc rate depending on P state and/or tsc rate changed by idle
+> > and/or tsc values influenced by STPCLK-Throttling. Here are some
+> > notes, along with pointers to the reference documents (please excuse
+> > the ad-hoc style of these notes):
 > > 
-> >   arch/microblaze/kernel/timer.c seems to be the only user
-> >   of timecounter/cyclecounter in arch/, but I don't get what it does.
+> > http://git.dorsal.polymtl.ca/?p=lttv.git;a=blob_plain;f=doc/developer/tsc.txt
 > > 
-> >   Or is it better to stick with cnt32_to_63()?
+> > So I might be missing something about your statement "all hardware
+> > that does coordination between cores/etc like this also has a tsc
+> > that is invariant of the actual P state.". Do you mean that all
+> > udelay callers do not rely on it to provide a guaranteed lower-bound,
+> > except for some sub-architectures ?
 > 
-> cnt32_to_63() is a way to extend the 32 bit clocksource to a useable
-> sched_clock() provider. One way or the other you have to extend the 32
-> bits of the 1MHz counter to something bigger. The obvious way is to
-> count the number of wraps and use this number as the upper 32 bits
-> just like cnt32_to_63() does. You just have to make sure that the
-> clocksource is read frequently enough to get all the wraps. A non-idle
-> cpu will tick with HZ frequency and the clock will be read often
-> enough, for an idle cpu the maximum sleep time needs to be limited.
+> ok there's basically 3 cases
+> 
+> Case 1: single core, no hyperthreading. It does not matter what tsc
+> does, since the kernel knows what it does and will either scale it or
+> not for udelay depending on that.
+> (this case includes single core SMP configurations)
 
-Somehow I got the impression that cnt32_to_63() is old-style,
-and using clocksource_cyc2ns() is new-style.  Essentially I wanted to
-avoid the do_div() in sched_clock() (like e.g. in
-arm/mach-versatile/core.c), and just using clocksource_cyc2ns()
-looked simple and elegant.  Bummer that it's wrong.
+The kernel will scale things like gettimeofday and the monotonic clocks in these
+cases, but which piece of code takes care of arch/x86/lib/delay.c:delay_tsc()
+exactly ? AFAIK, it reads the cycle counter with rdtscl() directly.
 
-It seems that arch/arm/plat-orion/time.c is about the only
-one which gets it completely right according to your description.
-I'll quote it here for discussion:
+> 
+> Case 2: multi core or HT, TSC is variable with CPU frequency.
+> This is the really sucky case, since logical CPU 0's tsc frequency in
+> part depends on what logical CPU 1 will do etc. No good answer
+> for this other than assuming the worst. Based on your document these do
+> actually exist in early P4 cpus.
 
-/*
- * Orion's sched_clock implementation. It has a resolution of
- * at least 7.5ns (133MHz TCLK) and a maximum value of 834 days.
- *
- * Because the hardware timer period is quite short (21 secs if
- * 200MHz TCLK) and because cnt32_to_63() needs to be called at
- * least once per half period to work properly, a kernel timer is
- * set up to ensure this requirement is always met.
- */
-#define TCLK2NS_SCALE_FACTOR 8
+Keeping track of the cpu frequency changes can help here. Along with periodic
+resynchronization if cpu clocks drift too far apart. I've done that for the
+LTTng omap3 trace clock.
 
-static unsigned long tclk2ns_scale;
+> 
+> Case 3: multi core/HT but with fixed rate TSC; no problem whatsoever,
+> tsc is a good measure for udelay.
 
-unsigned long long sched_clock(void)
-{
-	unsigned long long v = cnt32_to_63(0xffffffff - readl(TIMER0_VAL));
-	return (v * tclk2ns_scale) >> TCLK2NS_SCALE_FACTOR;
-}
+Agreed for case 3.
 
-static struct timer_list cnt32_to_63_keepwarm_timer;
+> 
+> Only case 2 sucks :-(
 
-static void cnt32_to_63_keepwarm(unsigned long data)
-{
-	mod_timer(&cnt32_to_63_keepwarm_timer, round_jiffies(jiffies + data));
-	(void) sched_clock();
-}
-
-static void __init setup_sched_clock(unsigned long tclk)
-{
-	unsigned long long v;
-	unsigned long data;
-
-	v = NSEC_PER_SEC;
-	v <<= TCLK2NS_SCALE_FACTOR;
-	v += tclk/2;
-	do_div(v, tclk);
-	/*
-	 * We want an even value to automatically clear the top bit
-	 * returned by cnt32_to_63() without an additional run time
-	 * instruction. So if the LSB is 1 then round it up.
-	 */
-	if (v & 1)
-		v++;
-	tclk2ns_scale = v;
-
-	data = (0xffffffffUL / tclk / 2 - 2) * HZ;
-	setup_timer(&cnt32_to_63_keepwarm_timer, cnt32_to_63_keepwarm, data);
-	mod_timer(&cnt32_to_63_keepwarm_timer, round_jiffies(jiffies + data));
-}
-
-
-BTW, even though this uses TCLK2NS_SCALE_FACTOR of 8, the same file
-uses a shift vaue of 20 for the orion_clksrc...
-
+Not sure about case 1 specifically for udelay. I might have missed something
+though.
 
 Thanks,
-Johannes
+
+Mathieu
+
+> 
+> 
+> -- 
+> Arjan van de Ven 	Intel Open Source Technology Centre
+> For development, discussion and tips for power savings, 
+> visit http://www.lesswatts.org
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
