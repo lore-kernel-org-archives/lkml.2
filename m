@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab0DXE4c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 00:56:32 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57341 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751048Ab0DXE4a (ORCPT
+	id S1751941Ab0DXE7A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 00:59:00 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:61656 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048Ab0DXE66 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 00:56:30 -0400
-Date: Sat, 24 Apr 2010 06:56:26 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
-       cpufreq@vger.kernel.org
-Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with
- ondemand during disk IO
-Message-ID: <20100424045626.GA7561@elf.ucw.cz>
-References: <20100418115949.7b743898@infradead.org>
- <20100418120346.1b478410@infradead.org>
- <20100423052439.GB4829@ucw.cz>
- <20100423065248.3b0a98ab@infradead.org>
+	Sat, 24 Apr 2010 00:58:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100423065248.3b0a98ab@infradead.org>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100423135625.1e12d005.randy.dunlap@oracle.com>
+References: <1271984938-13920-1-git-send-email-arve@android.com>
+	 <1271984938-13920-2-git-send-email-arve@android.com>
+	 <1271984938-13920-3-git-send-email-arve@android.com>
+	 <1271984938-13920-4-git-send-email-arve@android.com>
+	 <1271984938-13920-5-git-send-email-arve@android.com>
+	 <1271984938-13920-6-git-send-email-arve@android.com>
+	 <1271984938-13920-7-git-send-email-arve@android.com>
+	 <1271984938-13920-8-git-send-email-arve@android.com>
+	 <1271984938-13920-9-git-send-email-arve@android.com>
+	 <20100423135625.1e12d005.randy.dunlap@oracle.com>
+Date: Fri, 23 Apr 2010 21:58:56 -0700
+Message-ID: <v2sd6200be21004232158m3a3eaebai1ca0e49ae79e97f@mail.gmail.com>
+Subject: Re: [PATCH 8/9] Input: Block suspend while event queue is not empty.
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+       =?ISO-8859-1?Q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
+       Sven Neumann <s.neumann@raumfeld.com>,
+       Tero Saarni <tero.saarni@gmail.com>,
+       Henrik Rydberg <rydberg@euromail.se>, Matthew Garrett <mjg@redhat.com>,
+       Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+2010/4/23 Randy Dunlap <randy.dunlap@oracle.com>:
+> On Thu, 22 Apr 2010 18:08:57 -0700 Arve Hjønnevåg wrote:
+>
+>> Add an ioctl, EVIOCSSUSPENDBLOCK, to enable a suspend_blocker that will block
+>> suspend while the event queue is not empty. This allows userspace code to
+>> process input events while the device appears to be asleep.
+>
+>
+> All new ioctls need to be added to Documentation/ioctl/ioctl-number.txt, please.
+>
 
-> > Well, and now, if you do something like cat /dev/<your usb1.1 hdd> >
-> > /dev/null, you'll keep cpu on max frequency. Not a problem for new
-> > core i7, but probably big deal for athlon 64.
-> 
-> do you have facts not speculation for this? Does the athlon 64 really
-> keep its voltage high during idle? That would surprise me greatly...
+These two appear to already be covered by "'E'     all
+linux/input.h           conflict!", but I will add a line the user
+space suspend blocker ioctls added earlier in this patch set.
 
-So... some old data. It is not exactly athlon 64 -- I don't have that
-particular number for it -- but: (from my old notes):
-
-evo n620c [63.3 Wh]
-~~~~~~~~~~~~~~~~~
-idle machine at 1.7GHz, min bl: 13.0 W
-idle machine at 600MHz, min bl: 12.0 W
-
-thinkpad x32 [52Wh]
-~~~~~~~~~~~~
-idle machine at 600MHz, min bl:         10 W
-             at 1.8GHz:                 +6.6 W
-
-hp nx5k [56.8Wh]
-~~~~~~~
-idle, min bl:                   19 W
-      min bl, 1.4GHz:           22 W
-
-...so yes, I kind of see a pattern there. And you should be able to
-easily see the difference, too, if you took something from that era...
-
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Arve Hjønnevåg
