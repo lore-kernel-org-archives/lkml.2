@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab0DXAOm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 20:14:42 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:33197 "EHLO e9.ny.us.ibm.com"
+	id S1756230Ab0DXAWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 20:22:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59814 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755843Ab0DXAOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 20:14:41 -0400
-Date: Fri, 23 Apr 2010 17:14:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-Cc: David Howells <dhowells@redhat.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Documentation/credentials.txt
-Message-ID: <20100424001437.GB2589@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100423235532.GA17804@us.ibm.com>
+	id S1752045Ab0DXAWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Apr 2010 20:22:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,264,1270450800"; 
+   d="scan'208";a="269535758"
+From: John Fastabend <john.r.fastabend@intel.com>
+Subject: [RFC net-next-2.6 PATCH] ixgbe: Example usage of new IRQ
+	affinity_hints for FCoE
+To: bhutchings@solarflare.com, peter.p.waskiewicz.jr@intel.com,
+       netdev@vger.kernel.org, arjan@linux.jf.intel.com, davem@davemloft.net,
+       tglx@linutronix.de
+Cc: john.r.fastabend@intel.com, linux-kernel@vger.kernel.org
+Date: Fri, 23 Apr 2010 17:21:32 -0700
+Message-ID: <20100424002132.16709.43724.stgit@jf-dev1-dcblab>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100423235532.GA17804@us.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23, 2010 at 06:55:33PM -0500, Serge E. Hallyn wrote:
-> Hi,
-> 
-> In the section 'ACCESSING ANOTHER TASK'S CREDENTIALS', the file
-> Documentation/credentials.txt says:
-> 
-> > A function need not get RCU read lock to use __task_cred() if it is holding a
-> > spinlock at the time as this implicitly holds the RCU read lock.
-> 
-> AIUI, that is not actually right any more, is it?  A spinlock does not
-> suffice as it does not necessarily imply an RCU read-side critical section
-> (anymore).  Of course the spinlock specifically protecting updates would
-> suffice, but that's not what this is saying.
-> 
-> Am I way off base?
+If the fcoe protocol handler fcoe_rcv() is already executing
+on the correct CPU, SCSI-FCP frames can avoid context switching
+from the NET_RX softirq to the receive processing thread.
 
-You are absolutely correct, good catch!!!
+To avoid this context switch this patch uses the affinity_hint
+callback to align the interrupt with the FCoE receive processing
+threads.
 
-Now, a spinlock still does imply an RCU read-side critical section given
-the following configuration options:
+To properly align interrupts for FCoE knowledge of how the
+FCoE receive processing threads are setup as well as which
+rx rings are dedicated to FCoE and their associated vectors
+is needed.  Additionally if the FCoE application TLV moves
+the FCoE priority this alignment will also need to change.
+Handling this in irqbalance alone would required irqbalance
+to be aware of DCB, the tx/rx ring mapping for FCoE in
+ixgbe and FCoE recv thread CPU mappings. For these reasons
+allowing irqbalance to accept hints from ixgbe is ideal for
+this case.
 
-o	!CONFIG_PREEMPT
+Some quick investigative performance numbers show that by
+aligning the interrupt correctly an increase in ~50k IOPS
+and a decrease in ~10-15% CPU usage can be seen from a
+standard default configuration setup by todays irqbalance.
 
-o	CONFIG_PREEMPT && CONFIG_TREE_RCU
+This is a test patch to illustrate how using irq
+affininty_hints in ixgbe can benifit FCoE.  This patch does
+not consider the case where multiple CPU threads can map
+to the same queue this case would need further work.
+However, I think it does show the benefit of having
+an interface to provide affinity_hints.
 
-o	CONFIG_PREEMPT && CONFIG_TINY_RCU
+This patch applies on top of Peter P Waskiewicz Jr previous
+series of two patches to implement the affinity hint callback
+framework and sample implementation in ixgbe.
 
-However, relying on this is usually bad practice, as such code is prone
-to failure given the following configuration options:
+Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
+---
 
-o	CONFIG_PREEMPT && CONFIG_TREE_PREEMPT_RCU
+ drivers/net/ixgbe/ixgbe_main.c |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
 
-o	CONFIG_PREEMPT_RT (given the -rt patchset)
+diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
+index e4cff48..a680424 100644
+--- a/drivers/net/ixgbe/ixgbe_main.c
++++ b/drivers/net/ixgbe/ixgbe_main.c
+@@ -1420,6 +1420,7 @@ static void ixgbe_configure_msix(struct ixgbe_adapter *adapter)
+ 	struct ixgbe_q_vector *q_vector;
+ 	int i, j, q_vectors, v_idx, r_idx;
+ 	u32 mask;
++	struct ixgbe_ring_feature *f = &adapter->ring_feature[RING_F_FCOE];
+ 
+ 	q_vectors = adapter->num_msix_vectors - NON_Q_VECTORS;
+ 
+@@ -1463,9 +1464,22 @@ static void ixgbe_configure_msix(struct ixgbe_adapter *adapter)
+ 		/*
+ 		 * Allocate the affinity_hint cpumask, assign the mask for
+ 		 * this vector, and register our affinity_hint callback.
++		 *
++		 * JF: Add a check for FCoE enabled adapter to catch rings
++		 * that are enabled for FCoE and align them to their
++		 * corresponding FCoE recv processing thread.
+ 		 */
+ 		alloc_cpumask_var(&q_vector->affinity_mask, GFP_KERNEL);
+-		cpumask_set_cpu(v_idx, q_vector->affinity_mask);
++
++		r_idx = find_first_bit(q_vector->rxr_idx,
++		                       adapter->num_rx_queues);
++		if (adapter->flags & IXGBE_FLAG_FCOE_ENABLED &&
++		    (r_idx >= f->mask) && (r_idx < f->mask + f->indices))
++			cpumask_set_cpu(r_idx - f->mask,
++					q_vector->affinity_mask);
++		else
++			cpumask_set_cpu(v_idx, q_vector->affinity_mask);
++
+ 		irq_register_affinity_hint(adapter->msix_entries[v_idx].vector,
+ 		                           adapter,
+ 		                           &ixgbe_irq_affinity_callback);
 
-And when I get my act together and complete CONFIG_TINY_PREEMPT_RCU,
-then CONFIG_PREEMPT && CONFIG_TINY_PREEMPT_RCU will also invalidate
-the assumption that holding a spinlock acts as an RCU read-side
-critical section.
-
-Did you want to submit a patch for this?
-
-							Thanx, Paul
