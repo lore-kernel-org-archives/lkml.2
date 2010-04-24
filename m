@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab0DXLO6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 07:14:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11390 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751070Ab0DXLO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 07:14:56 -0400
-Date: Sat, 24 Apr 2010 13:13:40 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
- PageSwapCache  pages
-Message-ID: <20100424111340.GB32034@random.random>
-References: <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com>
- <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com>
- <1271946226.2100.211.camel@barrios-desktop>
- <1271947206.2100.216.camel@barrios-desktop>
- <20100422154443.GD30306@csn.ul.ie>
- <20100423183135.GT32034@random.random>
- <20100423192311.GC14351@csn.ul.ie>
- <20100423193948.GU32034@random.random>
- <20100423213549.GV32034@random.random>
- <20100424105226.GF14351@csn.ul.ie>
+	id S1752901Ab0DXL3o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 07:29:44 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:54172 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab0DXL3m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 07:29:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:subject:cc:date:message-id:user-agent:mime-version
+         :content-type;
+        b=cDDmz0h2lFsDTOI+PFOA5JQfbfZMw+w/0dFW2yeFb6lgeNeM24VsyvkwHYPQ8TCsCJ
+         6JlUZi1S1rSSaX7KSL7lzcauP1DQ3OnzkjM4eUPsfO43ORIw+mf1zuEFWOJjA1T6rrbJ
+         IJNlmGM19kT+egiSKMNiSnVhfRenNcDbXMXu4=
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Direct aio_write/truncate question
+CC: Andrew Morton <akpm@linux-foundation.org>, jens.axboe@oracle.com
+Date: Sat, 24 Apr 2010 15:29:36 +0400
+Message-ID: <87633hdr6n.fsf@openvz.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100424105226.GF14351@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 11:52:27AM +0100, Mel Gorman wrote:
-> I think you're right. This is a new bug introduced by the anon_vma changes. On
-> the plus side, it means we don't have to worry about -stable.
+My be my question appeared to obvious for someone, but still
 
-Correct, no worry about -stable.
+fd = open("a", O_DIRECT, )
+fd2 = open("b", O_DIRECT, )
+write(fd, buf ,size) /* allocate blocks for a file */
+fsync(fd) /* Now, it is guaranteed that blocks are allocated.*/
+/* Submit async rewrite request */ 
+io_prep_pwrite(io, fd, io->u.c.buf, size, 0);
+io_submit(myctx, 1, io); /* Io is in flight after this */
+/* Ok, truncate the file */
+ftruncate(fd, 0)
+/* Reuse truncated block blocks for a new file */
+write(fd2,buf ,size)     /* old a's blocks belongs to b now. */
 
-> > vma_adjust already takes the anon_vma->lock and of course I also
-> > further verified that trying to apply your snippet to vma_adjust
-> > results in immediately deadlock as the very same lock is already taken
-> > in my tree as it's the same anon-vma (simpler).
-> 
-> Yes, I expected that. Previously, there was only one anon_vma so if you
-> double-take the lock, bad things happen.
-> 
-> > So aa.git will be
-> > immune from these bugs for now.
-> > 
-> 
-> It should be. I expect that's why you have never seen the bugon in
-> swapops.
-
-Correct, I never seen it, and I keep it under very great stress with
-swap storms of hugepages, lots of I/O and khugepaged at 100% cpu.
-
-Also keep in mind expand_downwards which also adjusts
-vm_start/vm_pgoff the same way (and without mmap_sem write mode).
+What protect us from aio request to rewrite content of new file?
+Or even corrupt fs because old blocks may be used as metadata now.
+Seems unmap_underlying_metadata() can not help us here because async
+io context does not dirty or locked any bh because they was already
+allocated. Fairly to say. I can not reproduce rewrite effect.
+I use ext4 with external journal, so where a io_barriers in fs_dev's
+blktrace log.
+Seems what rewrite effect no happens only because blklayer does not
+reorganized issued requests. But nothing is preventing this right?
