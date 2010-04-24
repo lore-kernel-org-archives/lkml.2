@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab0DXWkR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 18:40:17 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:43613 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817Ab0DXWkP (ORCPT
+	id S1753274Ab0DXWld (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 18:41:33 -0400
+Received: from mail-pz0-f196.google.com ([209.85.222.196]:34080 "EHLO
+	mail-pz0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817Ab0DXWlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 18:40:15 -0400
+	Sat, 24 Apr 2010 18:41:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=message-id:date:from:user-agent:mime-version:to:cc:subject
          :references:in-reply-to:content-type:content-transfer-encoding;
-        b=vU1EedeV7ujopUlEdOQa25l9swaCHNKMBKL56MG9a7JRIApmw4Vz3jnQNT3JB8j1px
-         4LF8m684y2pNhXHUbgrY6XHBMCMzXJYT2lDV8U/DsPvVufqjpz8jV5XAgcJZir6uSpig
-         malNlobSVWsvIclcvc4y2B2fo6hmdNkl8+jA8=
-Message-ID: <4BD37360.10804@gmail.com>
-Date: Sat, 24 Apr 2010 15:40:32 -0700
+        b=jC/tqFt17Ef2AQcB02m/6gdehw+9kVt9/NjJ1VcM6zVBDP0VKYTW8boC9HN9Ipui7+
+         zpqbizKgdG5+eGeEau4wyMuYWcoN4daskx+R42p2N11HeuE1jSA4Z/CP+YESEQsldrlP
+         GxvpdORFCKQl7noo8qIjDCurzC1ZPY1kt3Ghk=
+Message-ID: <4BD373AE.3000703@gmail.com>
+Date: Sat, 24 Apr 2010 15:41:50 -0700
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
@@ -72,20 +72,9 @@ On 04/24/2010 03:30 PM, Hans-Peter Jansen wrote:
 > Cheers,
 > Pete
 
+sh*t.. my bad just replied to the wrong
+thread..
 
-is this bisectable?
-from what I remember with 2.6.33
-looking at the bugreports I don't recall
-any issue in regards with firmware related stuff
-for radeon(but could be wrong).
-
-Keep in mind, I don't have your card, but I do have the X1600
-which had no issues so far(running the latest HEAD).
-does changing the .config work for you?
-(in regards to what the thread I posted
-had mentioned)
-
-as for the open suse SP1 of SLE11..glad there is
-an option to load the latest kernel.
+I'm tired.. please ignore this.
 
 Justin P. Mattock
