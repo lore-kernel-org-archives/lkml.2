@@ -1,80 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab0DXNli (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 09:41:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35738 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab0DXNlh (ORCPT
+	id S1752342Ab0DXN6X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 09:58:23 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:49419 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751034Ab0DXN6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 09:41:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vBwonveWqzogc05b9GOB8niTgv26GCocw8Jb/LqSbEi+oNvE+wCf9Dtdg8LNSC73ow
-         0Wx6FS/eISpodaUFqsbAn0+Ee8OikxzDEM06UdBarc3eao5/edjV9f+htTn8gxhRu6g4
-         XL9JxH0WIAIKI9oFpzJkuxWXu0TMd0+cyTF3E=
-Date: Sat, 24 Apr 2010 15:41:45 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: Re: [PATCH v2] perf lock: add "info" subcommand for dumping misc
-	information
-Message-ID: <20100424134143.GB5545@nowhere>
-References: <1272074742-3654-2-git-send-regression-fweisbec@gmail.com> <1272106001-10519-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+	Sat, 24 Apr 2010 09:58:20 -0400
+Date: Sat, 24 Apr 2010 09:58:18 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: cpufreq <cpufreq@vger.kernel.org>,
+       linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+       Dave Jones <davej@redhat.com>, Thomas Renninger <trenn@suse.de>,
+       Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: CPUfreq - udelay() interaction issues
+Message-ID: <20100424135817.GA27322@Krystal>
+References: <4BCFC3D0.5080904@codeaurora.org> <4BD0D9E5.3020606@codeaurora.org> <20100423184042.GA16190@Krystal> <4BD25C37.4070005@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1272106001-10519-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+In-Reply-To: <4BD25C37.4070005@codeaurora.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 09:30:52 up 91 days, 16:08,  5 users,  load average: 0.23, 0.25,
+	0.17
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 07:46:41PM +0900, Hitoshi Mitake wrote:
-> Hi Frederic,
-> 
-> I added "info" subcommand to perf lock,
-> this can be used as dumping metadata like thread or address of lock instances.
-> "map" was removed because info should do the work of it.
-> 
-> This will be useful not only for debugging but also for ordinary analyzing.
-> 
-> I made this patch on perf/core of your tree, could you queue this?
-> 
-> v2: adding example of usage
-> % sudo ./perf lock info -t
->  | Thread ID: comm
->  | 	 0: swapper
->  |         1: init
->  |        18: migration/5
->  |        29: events/2
->  |        32: events/5
->  |        33: events/6
-> ...
-> 
-> % sudo ./perf lock info -m
-> | Address of instance: name of class
-> |  0xffff8800b95adae0: &(&sighand->siglock)->rlock
-> |  0xffff8800bbb41ae0: &(&sighand->siglock)->rlock
-> |  0xffff8800bf165ae0: &(&sighand->siglock)->rlock
-> |  0xffff8800b9576a98: &p->cred_guard_mutex
-> |  0xffff8800bb890a08: &(&p->alloc_lock)->rlock
-> |  0xffff8800b9522a08: &(&p->alloc_lock)->rlock
-> |  0xffff8800bb8aaa08: &(&p->alloc_lock)->rlock
-> |  0xffff8800bba72a08: &(&p->alloc_lock)->rlock
-> |  0xffff8800bf18ea08: &(&p->alloc_lock)->rlock
-> |  0xffff8800b8a0d8a0: &(&ip->i_lock)->mr_lock
-> |  0xffff88009bf818a0: &(&ip->i_lock)->mr_lock
-> |  0xffff88004c66b8a0: &(&ip->i_lock)->mr_lock
-> |  0xffff8800bb6478a0: &(shost->host_lock)->rlock
+* Saravana Kannan (skannan@codeaurora.org) wrote:
+[...]
+>
+> Seems a bit more complicated than what I had in mind. This is touching  
+> the scheduler I think we can get away without having to. Also, there is  
+> no simple implementation for the "slowpath" that can guarantee the delay  
+> without starting over the loop and hoping not to get interrupted or just  
+> giving up and doing a massively inaccurate delay (like msleep, etc).
+
+Not necessarily. Another way to do it: we could keep the udelay loop counter in
+the task struct. When ondemand changes frequency, and upon migration, this
+counter would be adapted to the current cpu frequency.
+
+>
+> I was thinking of something along the lines of this:
+>
+> udelay()
+> {
+>   if (!is_atomic())
+
+see hardirq.h:
+
+/*
+ * Are we running in atomic context?  WARNING: this macro cannot
+ * always detect atomic context; in particular, it cannot know about
+ * held spinlocks in non-preemptible kernels.  Thus it should not be
+ * used in the general case to determine whether sleeping is possible.
+ * Do not use in_atomic() in driver code.
+ */
+#define in_atomic()     ((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_INATOMIC_BASE)
+
+Sorry, your scheme is broken on !PREEMPT kernels.
+
+> 	down_read(&freq_sem);
+>   /* else
+> 	do nothing since cpufreq can't interrupt you.
+>   */
+
+This comment seems broken. in_atomic() can return true because preemption is
+disabled, thus letting cpufreq interrupts coming in.
+
+>
+>   call usual code since cpufreq is not going to preempt you.
+>
+>   if (!is_atomic())
+> 	up_read(&freq_sem);
+> }
+>
+> __cpufreq_driver_target(...)
+> {
+>   down_write(&freq_sem);
+>   cpufreq_driver->target(...);
+>   up_write(&freq_sem);
+> }
+>
+> In the implementation of the cpufreq driver, they just need to make sure  
+> they always increase the LPJ _before_ increasing the freq and decrease  
+> the LPJ _after_ decreasing the freq. This is make sure that when an  
+> interrupt handler preempts the cpufreq driver code (since atomic  
+> contexts aren't looking at the r/w semaphore) the LPJ value will be good  
+> enough to satisfy the _at least_ guarantee of udelay().
+>
+> For the CPU switching issue, I think the solution I proposed is quite  
+> simple and should work.
+
+You mean this ?
+
+>>>> udelay(us)
+>>>> {
+>>>>    set cpu affinity to current CPU;
+>>>>    Do the usual udelay code;
+>>>>    restore cpu affinity status;
+>>>> }
+
+Things like lock scalability and performance degradations comes to my mind. We
+can expect some drivers to make very heavy use of udelay(). This should not
+bring a 4096-core box to its knees. sched_setaffinity() is very far from being
+lightweight, as it locks cpu hotplug (that's a global mutex protecting a
+refcount), allocates memory, manipulates cpumasks, etc...
+
+>
+> Does my better explained solution look palatable?
+
+Nope, not on a multiprocessor system.
+
+Thanks,
+
+Mathieu
 
 
 
-Thanks, I queue it for the next pass.
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
