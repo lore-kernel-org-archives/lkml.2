@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab0DXCGN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 22:06:13 -0400
+	id S1754832Ab0DXCFi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 22:05:38 -0400
 Received: from mail-ww0-f46.google.com ([74.125.82.46]:61498 "EHLO
 	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755774Ab0DXCFl (ORCPT
+	with ESMTP id S1751312Ab0DXCFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 22:05:41 -0400
+	Fri, 23 Apr 2010 22:05:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=DH8zWslPyKJpF7voCIJogRK9/ApxHXH3KHRcyHk2BJeDkU+oFKmeL2eaXZ0B/3qXCt
-         bVH2MkSIfhVqeVC0lhk0UrsX5B2FJAlYvhLBFJ3Rjlx8aBS395tKyI53SytCG77tFnKQ
-         WvXCK5OZh8qIBS9m7JxbQKMySQxto0vjkr2GU=
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=tGgYRxSMDFvU8EWEOZSrCIlvBDeTCSQhwvw2MqOOcU8GnvJSH4b57MtNMfuRlal9vS
+         HcMsQtrRucsH+S5UgT+TERZUdJy2C1tuEo3ucYMz4nqJPbFcmWKUJ0MoSe+qKqLB5B0A
+         N+pHF/1d5Rmgn6xeh26iAOSIM0HgvTbFLshgM=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
+       William Cohen <wcohen@redhat.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Paul Mackerras <paulus@samba.org>,
        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 4/9] perf: Use generic sample reordering in perf sched
-Date: Sat, 24 Apr 2010 04:05:37 +0200
-Message-Id: <1272074742-3654-5-git-send-regression-fweisbec@gmail.com>
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, Li Zefan <lizf@cn.fujitsu.com>,
+       Stephane Eranian <eranian@google.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Subject: [GIT PULL] perf tools updates
+Date: Sat, 24 Apr 2010 04:05:33 +0200
+Message-Id: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com>
-References: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new generic sample events reordering from perf sched,
-this drops the need of multiplexing the buffers on record time,
-improving the scalability of perf sched.
+Ingo,
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
+Please pull the perf/core branch that can be found at:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/core
+
+Thanks,
+	Frederic
 ---
- tools/perf/builtin-sched.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 09ddc8e..94453f1 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1651,9 +1651,10 @@ static int process_lost_event(event_t *event __used,
- }
- 
- static struct perf_event_ops event_ops = {
--	.sample	= process_sample_event,
--	.comm	= event__process_comm,
--	.lost	= process_lost_event,
-+	.sample			= process_sample_event,
-+	.comm			= event__process_comm,
-+	.lost			= process_lost_event,
-+	.ordered_samples	= true,
- };
- 
- static int read_events(void)
-@@ -1850,7 +1851,6 @@ static const char *record_args[] = {
- 	"record",
- 	"-a",
- 	"-R",
--	"-M",
- 	"-f",
- 	"-m", "1024",
- 	"-c", "1",
--- 
-1.6.2.3
+Frederic Weisbecker (6):
+      perf: Generalize perf lock's sample event reordering to the session layer
+      perf: Use generic sample reordering in perf sched
+      perf: Use generic sample reordering in perf kmem
+      perf: Use generic sample reordering in perf trace
+      perf: Use generic sample reordering in perf timechart
+      perf: Add a perf trace option to check samples ordering reliability
 
+Hitoshi Mitake (1):
+      perf lock: Fix state machine to recognize lock sequence
+
+Stephane Eranian (1):
+      perf: Fix initialization bug in parse_single_tracepoint_event()
+
+William Cohen (1):
+      perf: Some perf-kvm documentation edits
+
+
+ tools/perf/Documentation/perf-kvm.txt |    9 +-
+ tools/perf/builtin-kmem.c             |    6 +-
+ tools/perf/builtin-lock.c             |  595 ++++++++++++++++++++-------------
+ tools/perf/builtin-sched.c            |    8 +-
+ tools/perf/builtin-timechart.c        |  112 +------
+ tools/perf/builtin-trace.c            |   13 +
+ tools/perf/util/parse-events.c        |   13 +-
+ tools/perf/util/session.c             |  179 ++++++++++-
+ tools/perf/util/session.h             |   10 +
+ 9 files changed, 583 insertions(+), 362 deletions(-)
