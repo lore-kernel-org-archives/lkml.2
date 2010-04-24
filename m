@@ -1,58 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab0DXKrn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 06:47:43 -0400
-Received: from mail.gmx.net ([213.165.64.20]:39891 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751131Ab0DXKrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 06:47:40 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX182KbxjMfA20cxFyGi/eDZQZ7PEZ0o5N6eHxnx+2x
-	jWkflVWWQy6X+6
-Message-ID: <4BD2CC46.4060908@gmx.de>
-Date: Sat, 24 Apr 2010 12:47:34 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1752335Ab0DXKuz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 06:50:55 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:48528 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750729Ab0DXKux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 06:50:53 -0400
+Date: Sat, 24 Apr 2010 11:50:33 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
+	PageSwapCache  pages
+Message-ID: <20100424105033.GE14351@csn.ul.ie>
+References: <20100422184621.0aaaeb5f.kamezawa.hiroyu@jp.fujitsu.com> <x2l28c262361004220313q76752366l929a8959cd6d6862@mail.gmail.com> <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com> <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com> <1271946226.2100.211.camel@barrios-desktop> <1271947206.2100.216.camel@barrios-desktop> <20100422154443.GD30306@csn.ul.ie> <20100423183135.GT32034@random.random> <20100423192311.GC14351@csn.ul.ie> <20100423193948.GU32034@random.random>
 MIME-Version: 1.0
-To: Jonathan Corbet <corbet@lwn.net>
-CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       Deepak Saxena <dsaxena@laptop.org>, linux-fbdev@vger.kernel.org,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn
-Subject: Re: [PATCH 10/11] viafb: rework the I2C support in the VIA framebuffer
- driver
-References: <1271614873-5952-1-git-send-email-corbet@lwn.net>	<1271614873-5952-11-git-send-email-corbet@lwn.net>	<4BD20D56.7080402@gmx.de>	<20100423155725.7d3b2d2d@bike.lwn.net>	<4BD221E7.7060705@gmx.de> <20100423165256.654ca5eb@bike.lwn.net> <4BD22B96.5020102@gmx.de>
-In-Reply-To: <4BD22B96.5020102@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.64000000000000001
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100423193948.GU32034@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Florian Tobias Schandinat schrieb:
-> Jonathan Corbet schrieb:
->> On Sat, 24 Apr 2010 00:40:39 +0200
->> Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
->> Meanwhile, I'm a little unsure now...is there an action item for me
->> with regard to the i2c code?  I've been staring at it since your last
->> note, but I couldn't find any obvious problems.  I do have to say that
->> Harald's rework is far cleaner than what came before...
+On Fri, Apr 23, 2010 at 09:39:48PM +0200, Andrea Arcangeli wrote:
+> On Fri, Apr 23, 2010 at 08:23:12PM +0100, Mel Gorman wrote:
+> > On Fri, Apr 23, 2010 at 08:31:35PM +0200, Andrea Arcangeli wrote:
+> > > Hi Mel,
+> > > 
+> > > On Thu, Apr 22, 2010 at 04:44:43PM +0100, Mel Gorman wrote:
+> > > > heh, I thought of a similar approach at the same time as you but missed
+> > > > this mail until later. However, with this approach I suspect there is a
+> > > > possibility that two walkers of the same anon_vma list could livelock if
+> > > > two locks on the list are held at the same time. Am still thinking of
+> > > > how it could be resolved without introducing new locking.
+> > > 
+> > > Trying to understand this issue and I've some questions. This
+> > > vma_adjust and lock inversion troubles with the anon-vma lock in
+> > > rmap_walk are a new issue introduced by the recent anon-vma changes,
+> > > right?
+> > > 
+> > 
+> > In a manner of speaking. There was no locking going on but prior to the
+> > anon_vma changes, there would have been only one anon_vma lock and the
+> > fix would be easier - just take the lock on anon_vma->lock while the
+> > VMAs are being updated.
 > 
-> Well the main question is probably:
-> How does it change the behaviour towards the hardware?
-> I tend to think that OLPC might not be the only ones who did something 
-> weird with it....and we already know that we shouldn't trust the 
-> documentation too much.
+> So it was very much a bug before too and we could miss to find some
+> pte mapping the page if vm_start was adjusted?
+> 
 
-I was able to narrow this issue down to the fourth bus. So with
-if (i == 4)
-	continue;
-in the bus creation loop I'm able to get a working framebuffer which 
-does not have the issues mentioned. Any ideas what should be done now?
+I thought it was but I was looking at an rc kernel instead of 2.6.33.
+This looked as if it was safe but it's not any more with the new
+anon_vma scheme.
 
+> Also note, expand_downwards also moves vm_start with only the
+> anon_vma->lock as it has to serialize against other expand_downwards
+> and the rmap_walk. But expand_downwards takes the lock and it was safe
+> before.
+> 
+> Also for swapping even if things screwup it's no big deal, because it
+> will just skip, but migration has to find all ptes in
+> remove_migration_ptes and try_to_unmap also has to unmap everything.
+> 
 
-Thanks,
+It either has to find them all or it has to be capable of a
+lazy-cleanup. I had lazy cleanup patch but it was dropped because we
+felt it should have been possible to properly lock this. I'm beginning
+to think it can't because there appears to be a few cases where the VM
+doesn't care if it doesn't find all the mappings.
 
-Florian Tobias Schandinat
+> In the split_huge_page case even the ordering at which newly allocated
+> vmas for the child are queued is critical, they've to be put at the
+> end of the list to be safe (otherwise do_wp_huge_page may not wait and
+> we may fail to mark the huge_pmd in the child as pmd_splitting).
+> 
 
+There might also be a locking snarl there as well then. I confess that
+the details of transparent hugepage support have fallen back out of my
+head within the last two weeks.
+
+> > > About swapcache, try_to_unmap just nuke the mappings, establish the
+> > > swap entry in the pte (not migration entry), and then there's no need
+> > > to call remove_migration_ptes.
+> > 
+> > That would be an alternative for swapcache but it's not necessarily
+> > where the problem is.s
+> 
+> Hmm try_to_unmap already nukes all swap entries without creating any
+> migration pte for swapcache as far as I can tell.
+> 
+
+When a mapped swapcache is unmapped, a migration PTE is put in place. If
+that was not the case, we wouldn't be hitting the bug in the first
+place.
+
+> > > So it just need to skip it for
+> > > swapcache. page_mapped must return zero after try_to_unmap returns
+> > > before we're allowed to migrate (plus the page count must be just 1
+> > > and not 2 or more for gup users!).
+> > > 
+> > > I don't get what's the problem about swapcache and the races connected
+> > > to it, the moment I hear migration PTE in context of swapcache
+> > > migration I'm confused because there's no migration PTE for swapcache.
+> > > 
+> > 
+> > That was a mistake on my part. The race appears to be between vma_adjust
+> > changing the details of the VMA while rmap_walk is going on. It mistakenly
+> > believes the vma no longer spans the address, gets -EFAULT from vma_address
+> > and doesn't clean up the migration PTE. This is later encountered but the
+> > page lock is no longer held and it bugs. An alternative would be to clean
+> > up the migration PTE of unlocked pages on the assumption it was due to this
+> > race but it's a bit sloppier.
+> 
+> Agreed, it's sure better to close the race... the other may have even
+> more implications.
+
+True, which is why I'm not keen on lazy cleanup.
+
+> It's good to retain the invariant that when a
+> migration PTE exists the page also still exists and it's locked
+> (locked really mostly matters for pagecache I guess, but it's ok).
+> 
+> > > The new page will have no mappings either, it just needs to be part of
+> > > the swapcache with the same page->index = swapentry, indexed in the
+> > > radix tree with that page->index, and paga->mapping pointing to
+> > > swapcache. Then new page faults will bring it in the pageatables. The
+> > > lookup_swap_cache has to be serialized against some lock, it should be
+> > > the radix tree lock? So the migration has to happen with that lock
+> > > hold no?
+> > 
+> > Think migrate_page_move_mapping() is what you're looking for? It takes
+> > the mapping tree lock.
+> 
+> Yep exactly!
+> 
+> > >We can't just migrate swapcache without stopping swapcache
+> > > radix tree lookups no? I didn't digest the full migrate.c yet and I
+> > > don't see where it happens. Freeing the swapcache while simpler and
+> > > safer, would be quite bad as it'd create I/O for potentially hot-ram.
+> > > 
+> > > About the refcounting of anon-vma in migrate.c I think it'd be much
+> > > simpler if zap_page_range and folks would just wait (like they do if
+> > > they find a pmd_trans_huge && pmd_trans_splitting pmd), there would be
+> > > no need of refcounting the anon-vma that way.
+> > > 
+> > 
+> > I'm not getting what you're suggesting here. The refcount is to make
+> > sure the anon_vma doesn't go away after the page mapcount reaches zero.
+> > What are we waiting for?
+> 
+> Causing zap_page-range to Wait the end of migration when it encounters
+> migration ptes instead of skipping them all together by only releasing
+> the rss and doing nothing about them. If the pte can't go away, so the
+> mm so the vma and so the anon-vma. I'm not suggesting to change that,
+> but I guess that's the way I would have done if I would have
+> implemented it, it'd avoid refcounting.
+
+Maybe.
+
+> Just like I did in
+> split_huge_page I count the number of pmd marked splitting, and I
+> compare it to the number of pmds that are converted from huge to
+> not-huge and I compared that again with the page_mapcount. If the
+> three numbers aren't equal I bug. It simply can't go wrong unnoticed
+> that way. I only can do that because I stop the zapping.
+> 
+
+That would be another way of doing it all right. Count how many
+migration ptes we created, pass that to rmap_walk. If they don't match,
+assume a race and do it again before the page is unlocked.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
