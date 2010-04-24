@@ -1,159 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab0DXDgW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 23:36:22 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:55143 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab0DXDgR (ORCPT
+	id S1753158Ab0DXDrc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 23:47:32 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:47786 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab0DXDr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 23:36:17 -0400
-Date: Fri, 23 Apr 2010 22:36:14 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg KH <greg@kroah.com>, lkml <linux-kernel@vger.kernel.org>,
-       David Howells <dhowells@redhat.com>,
-       Ashwin Ganti <ashwin.ganti@gmail.com>, rsc@swtch.com, ericvh@gmail.com,
-       linux-security-module@vger.kernel.org, Ron Minnich <rminnich@gmail.com>,
-       jt.beard@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
-       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
-       Eric Paris <eparis@redhat.com>, linux-api@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
-Message-ID: <20100424033614.GA4180@us.ibm.com>
-References: <20100421012749.GA21338@us.ibm.com>
- <20100421012908.GB24251@us.ibm.com>
- <20100421030406.GB10258@kroah.com>
- <20100421034532.GA9254@us.ibm.com>
- <m1zl0xo1m9.fsf@fess.ebiederm.org>
+	Fri, 23 Apr 2010 23:47:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
+	:date:message-id:mime-version:content-type; q=dns; s=sasl; b=Jeu
+	/R0b1JidfbcdLzPTe7BMZgvcWNrbZHLU3GYstaAwxtbrnS/XCtfNvL2Sq5x27xUE
+	dMfTgndUmTtxLA4onFxxyw+ax9KeCZ4SQ3ocyOHfPZjh/Vh52/1L0SM49ZMpEOA1
+	JOtSfSI/YS0IlhJnQwHcjwQDCvySoL89urynxMGE=
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.1
+From: Junio C Hamano <gitster@pobox.com>
+Date: Fri, 23 Apr 2010 20:47:19 -0700
+Message-ID: <7vtyr1qzp4.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1zl0xo1m9.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Pobox-Relay-ID: 186AE586-4F54-11DF-942F-D033EE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> "Serge E. Hallyn" <serue@us.ibm.com> writes:
-> 
-> > Quoting Greg KH (greg@kroah.com):
-> >> On Tue, Apr 20, 2010 at 08:29:08PM -0500, Serge E. Hallyn wrote:
-> >> > This is a driver that adds Plan 9 style capability device
-> >> > implementation.  See Documentation/p9auth.txt for a description
-> >> > of how to use this.
-> >> 
-> >> Hm, you didn't originally write this driver, so it would be good to get
-> >> some original authorship information in here to keep everything correct,
-> >> right?
-> >
-> > That's why I left the MODULE_AUTHOR line in there - not sure what
-> > else to do for that.  I'll add a comment in p9auth.txt, especially
-> > pointing back to Ashwin's original paper.
-> >
-> >> >  Documentation/p9auth.txt     |   47 ++++
-> >> >  drivers/char/Kconfig         |    2 +
-> >> >  drivers/char/Makefile        |    2 +
-> >> >  drivers/char/p9auth/Kconfig  |    9 +
-> >> >  drivers/char/p9auth/Makefile |    1 +
-> >> >  drivers/char/p9auth/p9auth.c |  517 ++++++++++++++++++++++++++++++++++++++++++
-> >> 
-> >> Is this code really ready for drivers/char/?  What has changed in it
-> >> that makes it ok to move out of the staging tree?
-> >
-> > It was dropped from staging :)  I don't particularly care to see it
-> > go back into staging, as opposed to working out issues out of tree
-> > (assuming they are solvable).  For one thing, as you note below,
-> > there is the question of whether it should be a device driver at
-> > all.
-> >
-> >> And who is going to maintain it?  You?  Or someone else?
-> >
-> > If Ashwin doesn't want to maintain it, I'll do it.  Either way.
-> >
-> >> >  6 files changed, 578 insertions(+), 0 deletions(-)
-> >> >  create mode 100644 Documentation/p9auth.txt
-> >> >  create mode 100644 drivers/char/p9auth/Kconfig
-> >> >  create mode 100644 drivers/char/p9auth/Makefile
-> >> >  create mode 100644 drivers/char/p9auth/p9auth.c
-> >> > 
-> >> > diff --git a/Documentation/p9auth.txt b/Documentation/p9auth.txt
-> >> > new file mode 100644
-> >> > index 0000000..14a69d8
-> >> > --- /dev/null
-> >> > +++ b/Documentation/p9auth.txt
-> >> > @@ -0,0 +1,47 @@
-> >> > +The p9auth device driver implements a plan-9 factotum-like
-> >> > +capability API.  Tasks which are privileged (authorized by
-> >> > +possession of the CAP_GRANT_ID privilege (POSIX capability))
-> >> > +can write new capabilities to /dev/caphash.  The kernel then
-> >> > +stores these until a task uses them by writing to the
-> >> > +/dev/capuse device.  Each capability represents the ability
-> >> > +for a task running as userid X to switch to userid Y and
-> >> > +some set of groups.  Each capability may be used only once,
-> >> > +and unused capabilities are cleared after two minutes.
-> >> > +
-> >> > +The following examples shows how to use the API.  Shell 1
-> >> > +contains a privileged root shell.  Shell 2 contains an
-> >> > +unprivileged shell as user 501 in the same user namespace.  If
-> >> > +not already done, the privileged shell should create the p9auth
-> >> > +devices:
-> >> > +
-> >> > +	majfile=/sys/module/p9auth/parameters/cap_major
-> >> > +	minfile=/sys/module/p9auth/parameters/cap_minor
-> >> > +	maj=`cat $majfile`
-> >> > +	mknod /dev/caphash c $maj 0
-> >> > +	min=`cat $minfile`
-> >> > +	mknod /dev/capuse c $maj 1
-> >> > +	chmod ugo+w /dev/capuse
-> >> 
-> >> That is incorrect, you don't need the cap_major/minor files at all, the
-> >> device node should be automatically created for you, right?
-> >
-> > Hmm, where?  Not in /dev on my SLES11 partition...
-> >
-> >> And do you really want to do all of this control through a device node?
-> >> Why?
-> >
-> > Well...
-> >
-> > At first I was thinking same as you were.  So I was going to switch
-> > to a pure syscall-based approach.  But it just turned out more
-> > complicated.  The factotum server would call sys_grantid(), and
-> > the target task would end up doing some huge sys_setresugid() or
-> > else multiple syscalls using the granted id.  It just was uglier.
-> > I think there's an experimental patchset sitting somewhere I could
-> > point to (if I weren't embarassed :).
-> >
-> > Another possibility would be to use netlink, but that doesn't
-> > appear as amenable to segragation by user namespaces.  The pid
-> > (presumably/hopefully global pid, as __u32) is available, so it
-> > shouldn't be impossible, but a simple device with simple synchronous
-> > read/write certainly has its appeal.  Firing off a message hoping
-> > that at some point our credentials will be changes, less so.
-> 
-> pid in the netlink context is the netlink port-id.  It is a very
-> different concept from struct pid.  These days netlink calls to
-> the kernel are synchronous, not that I would encourage netlink
-> for anything except networking code.
-> 
-> Can we make this a trivial filesystem?  I expect that would match
-> up better with whatever plan9 userspace apps already exist,
-> remove the inode double translation, and would make it much more
-> reasonable to do a user namespace aware version  if and when
+The latest feature release Git 1.7.1 is available at the usual
+places:
 
-BTW, this current version is user namespace aware.
+  http://www.kernel.org/pub/software/scm/git/
 
-> that becomes necessary.
+  git-1.7.1.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-1.7.1.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-1.7.1.tar.{gz,bz2}		(preformatted docs)
 
-An fs actually seems overkill for two write-only files for
-process-related information.  Would these actually be candidates
-for new /proc files?
+The RPM binary packages for a few architectures are found in:
 
-	/proc/grantcred - replaces /dev/caphash, for privileged
-		tasks to tell the kernel about new setuid
-		capabilities
-	/proc/self/usecred - replaces /dev/capuse for unprivileged
-		tasks to make use of a setuid capability
+  RPMS/$arch/git-*-1.7.1-1.fc11.$arch.rpm	(RPM)
 
--serge
+
+Git v1.7.1 Release Notes
+========================
+
+Updates since v1.7.0
+--------------------
+
+ * Eric Raymond is the maintainer of updated CIAbot scripts, in contrib/.
+
+ * gitk updates.
+
+ * Some commands (e.g. svn and http interfaces) that interactively ask
+   for a password can be told to use an external program given via
+   GIT_ASKPASS.
+
+ * Conflict markers that lead the common ancestor in diff3-style output
+   now have a label, which hopefully would help third-party tools that
+   expect one.
+
+ * Comes with an updated bash-completion script.
+
+ * "git am" learned "--keep-cr" option to handle inputs that are
+   a mixture of changes to files with and without CRLF line endings.
+
+ * "git cvsimport" learned -R option to leave revision mapping between
+   CVS revisions and resulting git commits.
+
+ * "git diff --submodule" notices and describes dirty submodules.
+
+ * "git for-each-ref" learned %(symref), %(symref:short) and %(flag)
+   tokens.
+
+ * "git hash-object --stdin-paths" can take "--no-filters" option now.
+
+ * "git init" can be told to look at init.templatedir configuration
+   variable (obviously that has to come from either /etc/gitconfig or
+   $HOME/.gitconfig).
+
+ * "git grep" learned "--no-index" option, to search inside contents that
+   are not managed by git.
+
+ * "git grep" learned --color=auto/always/never.
+
+ * "git grep" learned to paint filename and line-number in colors.
+
+ * "git log -p --first-parent -m" shows one-parent diff for merge
+   commits, instead of showing combined diff.
+
+ * "git merge-file" learned to use custom conflict marker size and also
+   to use the "union merge" behaviour.
+
+ * "git notes" command has been rewritten in C and learned many commands
+   and features to help you carry notes forward across rebases and amends.
+
+ * "git request-pull" identifies the commit the request is relative to in
+   a more readable way.
+
+ * "git reset" learned "--keep" option that lets you discard commits
+   near the tip while preserving your local changes in a way similar
+   to how "git checkout branch" does.
+
+ * "git status" notices and describes dirty submodules.
+
+ * "git svn" should work better when interacting with repositories
+   with CRLF line endings.
+
+ * "git imap-send" learned to support CRAM-MD5 authentication.
+
+ * "gitweb" installation procedure can use "minified" js/css files
+   better.
+
+ * Various documentation updates.
+
+Fixes since v1.7.0
+------------------
+
+All of the fixes in v1.7.0.X maintenance series are included in this
+release, unless otherwise noted.
+
+ * "git add frotz/nitfol" did not complain when the entire frotz/ directory
+   was ignored.
+
+ * "git diff --stat" used "int" to count the size of differences,
+   which could result in overflowing.
+
+ * "git rev-list --pretty=oneline" didn't terminate a record with LF for
+   commits without any message.
+
+ * "git rev-list --abbrev-commit" defaulted to 40-byte abbreviations, unlike
+   newer tools in the git toolset.
