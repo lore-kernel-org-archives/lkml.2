@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238Ab0DXCGT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Apr 2010 22:06:19 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:43965 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755277Ab0DXCFk (ORCPT
+	id S1757750Ab0DXCGY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Apr 2010 22:06:24 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62883 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755965Ab0DXCFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Apr 2010 22:05:40 -0400
+	Fri, 23 Apr 2010 22:05:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=fmAlvQj9qoIsvqbeznUIQjwf8JhiRWOKZLSUBfa/cQDDiipdfj9AnPvMROHvNtcvn5
-         pJCozZk+lvlgFeFJnViGtlXoXWYcwHAlWeFg9JG8BolwU3Y9m/nSgggSfYJvfheXH2bT
-         BsG1CD0/UeHtT2bKAzAGAcJtLoq6IHgfGR20M=
+        b=mGz01HhSVDIaF8qGqK6zlnxJLjsYaZg27kFmhXhW67llzx0cG35j1zor6ZalzpBFQ7
+         NqtgbI6kswcEfy6CbDh5unGw4AnZ0s0CfFOjcy1gUtr2fVlhcGbjdwaIA4Br76dbMF+o
+         iRLtL2qakUAPXgnLfe1a1MsVyAdOlRBS6AzOc=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -23,10 +23,11 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        Paul Mackerras <paulus@samba.org>,
        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
        Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 3/9] perf: Generalize perf lock's sample event reordering to the session layer
-Date: Sat, 24 Apr 2010 04:05:36 +0200
-Message-Id: <1272074742-3654-4-git-send-regression-fweisbec@gmail.com>
+       Tom Zanussi <tzanussi@gmail.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       Li Zefan <lizf@cn.fujitsu.com>
+Subject: [PATCH 5/9] perf: Use generic sample reordering in perf kmem
+Date: Sat, 24 Apr 2010 04:05:38 +0200
+Message-Id: <1272074742-3654-6-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com>
@@ -35,37 +36,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sample events recorded by perf record are not time ordered
-because we have one buffer per cpu for each event (even demultiplexed
-per task/per cpu for task bound events). But when we read trace events
-we want them to be ordered by time because many state machines are
-involved.
-
-There are currently two ways perf tools deal with that:
-
-- use -M to multiplex every buffers (perf sched, perf kmem)
-  But this creates a lot of contention in SMP machines on
-  record time.
-
-- use a post-processing time reordering (perf timechart, perf lock)
-  The reordering used by timechart is simple but doesn't scale well
-  with huge flow of events, in terms of performance and memory use
-  (unusable with perf lock for example).
-  Perf lock has its own samples reordering that flushes its memory
-  use in a regular basis and that uses a sorting based on the
-  previous event queued (a new event to be queued is close to the
-  previous one most of the time).
-
-This patch proposes to export perf lock's samples reordering facility
-to the session layer that reads the events. So if a tool wants to
-get ordered sample events, it needs to set its
-struct perf_event_ops::ordered_samples to true and that's it.
-
-This prepares tracing based perf tools to get rid of the need to
-use buffers multiplexing (-M) or to implement their own
-reordering.
-
-Also lower the flush period to 2 as it's sufficient already.
+Use the new generic sample events reordering from perf kmem,
+this drops the need of multiplexing the buffers on record time,
+improving the scalability of perf kmem.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -75,500 +48,36 @@ Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Masami Hiramatsu <mhiramat@redhat.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
 ---
- tools/perf/builtin-lock.c |  197 +++++----------------------------------------
- tools/perf/util/session.c |  179 ++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/session.h |   10 +++
- 3 files changed, 210 insertions(+), 176 deletions(-)
+ tools/perf/builtin-kmem.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 716d8c5..ce27675 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -316,8 +316,6 @@ alloc_failed:
- 
- static char			const *input_name = "perf.data";
- 
--static int			profile_cpu = -1;
--
- struct raw_event_sample {
- 	u32			size;
- 	char			data[0];
-@@ -697,8 +695,7 @@ process_lock_release_event(void *data,
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index db474bb..ab906cb 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -335,8 +335,9 @@ static int process_sample_event(event_t *event, struct perf_session *session)
  }
  
- static void
--process_raw_event(void *data, int cpu __used,
--		  u64 timestamp __used, struct thread *thread __used)
-+process_raw_event(void *data, int cpu, u64 timestamp, struct thread *thread)
- {
- 	struct event *event;
- 	int type;
-@@ -716,176 +713,6 @@ process_raw_event(void *data, int cpu __used,
- 		process_lock_release_event(data, event, cpu, timestamp, thread);
- }
- 
--struct raw_event_queue {
--	u64			timestamp;
--	int			cpu;
--	void			*data;
--	struct thread		*thread;
--	struct list_head	list;
--};
--
--static LIST_HEAD(raw_event_head);
--
--#define FLUSH_PERIOD	(5 * NSEC_PER_SEC)
--
--static u64 flush_limit = ULLONG_MAX;
--static u64 last_flush = 0;
--struct raw_event_queue *last_inserted;
--
--static void flush_raw_event_queue(u64 limit)
--{
--	struct raw_event_queue *tmp, *iter;
--
--	list_for_each_entry_safe(iter, tmp, &raw_event_head, list) {
--		if (iter->timestamp > limit)
--			return;
--
--		if (iter == last_inserted)
--			last_inserted = NULL;
--
--		process_raw_event(iter->data, iter->cpu, iter->timestamp,
--				  iter->thread);
--
--		last_flush = iter->timestamp;
--		list_del(&iter->list);
--		free(iter->data);
--		free(iter);
--	}
--}
--
--static void __queue_raw_event_end(struct raw_event_queue *new)
--{
--	struct raw_event_queue *iter;
--
--	list_for_each_entry_reverse(iter, &raw_event_head, list) {
--		if (iter->timestamp < new->timestamp) {
--			list_add(&new->list, &iter->list);
--			return;
--		}
--	}
--
--	list_add(&new->list, &raw_event_head);
--}
--
--static void __queue_raw_event_before(struct raw_event_queue *new,
--				     struct raw_event_queue *iter)
--{
--	list_for_each_entry_continue_reverse(iter, &raw_event_head, list) {
--		if (iter->timestamp < new->timestamp) {
--			list_add(&new->list, &iter->list);
--			return;
--		}
--	}
--
--	list_add(&new->list, &raw_event_head);
--}
--
--static void __queue_raw_event_after(struct raw_event_queue *new,
--				     struct raw_event_queue *iter)
--{
--	list_for_each_entry_continue(iter, &raw_event_head, list) {
--		if (iter->timestamp > new->timestamp) {
--			list_add_tail(&new->list, &iter->list);
--			return;
--		}
--	}
--	list_add_tail(&new->list, &raw_event_head);
--}
--
--/* The queue is ordered by time */
--static void __queue_raw_event(struct raw_event_queue *new)
--{
--	if (!last_inserted) {
--		__queue_raw_event_end(new);
--		return;
--	}
--
--	/*
--	 * Most of the time the current event has a timestamp
--	 * very close to the last event inserted, unless we just switched
--	 * to another event buffer. Having a sorting based on a list and
--	 * on the last inserted event that is close to the current one is
--	 * probably more efficient than an rbtree based sorting.
--	 */
--	if (last_inserted->timestamp >= new->timestamp)
--		__queue_raw_event_before(new, last_inserted);
--	else
--		__queue_raw_event_after(new, last_inserted);
--}
--
--static void queue_raw_event(void *data, int raw_size, int cpu,
--			    u64 timestamp, struct thread *thread)
--{
--	struct raw_event_queue *new;
--
--	if (flush_limit == ULLONG_MAX)
--		flush_limit = timestamp + FLUSH_PERIOD;
--
--	if (timestamp < last_flush) {
--		printf("Warning: Timestamp below last timeslice flush\n");
--		return;
--	}
--
--	new = malloc(sizeof(*new));
--	if (!new)
--		die("Not enough memory\n");
--
--	new->timestamp = timestamp;
--	new->cpu = cpu;
--	new->thread = thread;
--
--	new->data = malloc(raw_size);
--	if (!new->data)
--		die("Not enough memory\n");
--
--	memcpy(new->data, data, raw_size);
--
--	__queue_raw_event(new);
--	last_inserted = new;
--
--	/*
--	 * We want to have a slice of events covering 2 * FLUSH_PERIOD
--	 * If FLUSH_PERIOD is big enough, it ensures every events that occured
--	 * in the first half of the timeslice have all been buffered and there
--	 * are none remaining (we need that because of the weakly ordered
--	 * event recording we have). Then once we reach the 2 * FLUSH_PERIOD
--	 * timeslice, we flush the first half to be gentle with the memory
--	 * (the second half can still get new events in the middle, so wait
--	 * another period to flush it)
--	 */
--	if (new->timestamp > flush_limit &&
--		new->timestamp - flush_limit > FLUSH_PERIOD) {
--		flush_limit += FLUSH_PERIOD;
--		flush_raw_event_queue(flush_limit);
--	}
--}
--
--static int process_sample_event(event_t *event, struct perf_session *s)
--{
--	struct thread *thread;
--	struct sample_data data;
--
--	bzero(&data, sizeof(struct sample_data));
--	event__parse_sample(event, s->sample_type, &data);
--	/* CAUTION: using tid as thread.pid */
--	thread = perf_session__findnew(s, data.tid);
--
--	if (thread == NULL) {
--		pr_debug("problem processing %d event, skipping it.\n",
--			 event->header.type);
--		return -1;
--	}
--
--	dump_printf(" ... thread: %s:%d\n", thread->comm, thread->pid);
--
--	if (profile_cpu != -1 && profile_cpu != (int) data.cpu)
--		return 0;
--
--	queue_raw_event(data.raw_data, data.raw_size, data.cpu, data.time, thread);
--
--	return 0;
--}
--
- /* TODO: various way to print, coloring, nano or milli sec */
- static void print_result(void)
- {
-@@ -963,9 +790,30 @@ static void dump_map(void)
- 	}
- }
- 
-+static int process_sample_event(event_t *self, struct perf_session *s)
-+{
-+	struct sample_data data;
-+	struct thread *thread;
-+
-+	bzero(&data, sizeof(data));
-+	event__parse_sample(self, s->sample_type, &data);
-+
-+	thread = perf_session__findnew(s, data.tid);
-+	if (thread == NULL) {
-+		pr_debug("problem processing %d event, skipping it.\n",
-+			self->header.type);
-+		return -1;
-+	}
-+
-+	process_raw_event(data.raw_data, data.cpu, data.time, thread);
-+
-+	return 0;
-+}
-+
- static struct perf_event_ops eops = {
- 	.sample			= process_sample_event,
- 	.comm			= event__process_comm,
+ static struct perf_event_ops event_ops = {
+-	.sample	= process_sample_event,
+-	.comm	= event__process_comm,
++	.sample			= process_sample_event,
++	.comm			= event__process_comm,
 +	.ordered_samples	= true,
  };
  
- static int read_events(void)
-@@ -994,7 +842,6 @@ static void __cmd_report(void)
- 	setup_pager();
- 	select_key();
- 	read_events();
--	flush_raw_event_queue(ULLONG_MAX);
- 	sort_result();
- 	print_result();
- }
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 7d88ae5..b7aade2 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -98,6 +98,8 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
- 	self->cwdlen = 0;
- 	self->unknown_events = 0;
- 	self->kerninfo_root = RB_ROOT;
-+	self->ordered_samples.flush_limit = ULLONG_MAX;
-+	INIT_LIST_HEAD(&self->ordered_samples.samples_head);
- 
- 	if (mode == O_RDONLY) {
- 		if (perf_session__open(self, force) < 0)
-@@ -351,6 +353,178 @@ static event__swap_op event__swap_ops[] = {
- 	[PERF_RECORD_HEADER_MAX]    = NULL,
- };
- 
-+struct sample_queue {
-+	u64			timestamp;
-+	struct sample_event	*event;
-+	struct list_head	list;
-+};
-+
-+#define FLUSH_PERIOD	(2 * NSEC_PER_SEC)
-+
-+static void flush_sample_queue(struct perf_session *s,
-+			       struct perf_event_ops *ops)
-+{
-+	struct list_head *head = &s->ordered_samples.samples_head;
-+	u64 limit = s->ordered_samples.flush_limit;
-+	struct sample_queue *tmp, *iter;
-+
-+	if (!ops->ordered_samples)
-+		return;
-+
-+	list_for_each_entry_safe(iter, tmp, head, list) {
-+		if (iter->timestamp > limit)
-+			return;
-+
-+		if (iter == s->ordered_samples.last_inserted)
-+			s->ordered_samples.last_inserted = NULL;
-+
-+		ops->sample((event_t *)iter->event, s);
-+
-+		s->ordered_samples.last_flush = iter->timestamp;
-+		list_del(&iter->list);
-+		free(iter->event);
-+		free(iter);
-+	}
-+}
-+
-+static void __queue_sample_end(struct sample_queue *new, struct list_head *head)
-+{
-+	struct sample_queue *iter;
-+
-+	list_for_each_entry_reverse(iter, head, list) {
-+		if (iter->timestamp < new->timestamp) {
-+			list_add(&new->list, &iter->list);
-+			return;
-+		}
-+	}
-+
-+	list_add(&new->list, head);
-+}
-+
-+static void __queue_sample_before(struct sample_queue *new,
-+				  struct sample_queue *iter,
-+				  struct list_head *head)
-+{
-+	list_for_each_entry_continue_reverse(iter, head, list) {
-+		if (iter->timestamp < new->timestamp) {
-+			list_add(&new->list, &iter->list);
-+			return;
-+		}
-+	}
-+
-+	list_add(&new->list, head);
-+}
-+
-+static void __queue_sample_after(struct sample_queue *new,
-+				 struct sample_queue *iter,
-+				 struct list_head *head)
-+{
-+	list_for_each_entry_continue(iter, head, list) {
-+		if (iter->timestamp > new->timestamp) {
-+			list_add_tail(&new->list, &iter->list);
-+			return;
-+		}
-+	}
-+	list_add_tail(&new->list, head);
-+}
-+
-+/* The queue is ordered by time */
-+static void __queue_sample_event(struct sample_queue *new,
-+				 struct perf_session *s)
-+{
-+	struct sample_queue *last_inserted = s->ordered_samples.last_inserted;
-+	struct list_head *head = &s->ordered_samples.samples_head;
-+
-+
-+	if (!last_inserted) {
-+		__queue_sample_end(new, head);
-+		return;
-+	}
-+
-+	/*
-+	 * Most of the time the current event has a timestamp
-+	 * very close to the last event inserted, unless we just switched
-+	 * to another event buffer. Having a sorting based on a list and
-+	 * on the last inserted event that is close to the current one is
-+	 * probably more efficient than an rbtree based sorting.
-+	 */
-+	if (last_inserted->timestamp >= new->timestamp)
-+		__queue_sample_before(new, last_inserted, head);
-+	else
-+		__queue_sample_after(new, last_inserted, head);
-+}
-+
-+static int queue_sample_event(event_t *event, struct sample_data *data,
-+			      struct perf_session *s,
-+			      struct perf_event_ops *ops)
-+{
-+	u64 timestamp = data->time;
-+	struct sample_queue *new;
-+	u64 flush_limit;
-+
-+
-+	if (s->ordered_samples.flush_limit == ULLONG_MAX)
-+		s->ordered_samples.flush_limit = timestamp + FLUSH_PERIOD;
-+
-+	if (timestamp < s->ordered_samples.last_flush) {
-+		printf("Warning: Timestamp below last timeslice flush\n");
-+		return -EINVAL;
-+	}
-+
-+	new = malloc(sizeof(*new));
-+	if (!new)
-+		return -ENOMEM;
-+
-+	new->timestamp = timestamp;
-+
-+	new->event = malloc(event->header.size);
-+	if (!new->event) {
-+		free(new);
-+		return -ENOMEM;
-+	}
-+
-+	memcpy(new->event, event, event->header.size);
-+
-+	__queue_sample_event(new, s);
-+	s->ordered_samples.last_inserted = new;
-+
-+	/*
-+	 * We want to have a slice of events covering 2 * FLUSH_PERIOD
-+	 * If FLUSH_PERIOD is big enough, it ensures every events that occured
-+	 * in the first half of the timeslice have all been buffered and there
-+	 * are none remaining (we need that because of the weakly ordered
-+	 * event recording we have). Then once we reach the 2 * FLUSH_PERIOD
-+	 * timeslice, we flush the first half to be gentle with the memory
-+	 * (the second half can still get new events in the middle, so wait
-+	 * another period to flush it)
-+	 */
-+	flush_limit = s->ordered_samples.flush_limit;
-+
-+	if (new->timestamp > flush_limit &&
-+		new->timestamp - flush_limit > FLUSH_PERIOD) {
-+		s->ordered_samples.flush_limit += FLUSH_PERIOD;
-+		flush_sample_queue(s, ops);
-+	}
-+
-+	return 0;
-+}
-+
-+static int perf_session__process_sample(event_t *event, struct perf_session *s,
-+					struct perf_event_ops *ops)
-+{
-+	struct sample_data data;
-+
-+	if (!ops->ordered_samples)
-+		return ops->sample(event, s);
-+
-+	bzero(&data, sizeof(struct sample_data));
-+	event__parse_sample(event, s->sample_type, &data);
-+
-+	queue_sample_event(event, &data, s, ops);
-+
-+	return 0;
-+}
-+
- static int perf_session__process_event(struct perf_session *self,
- 				       event_t *event,
- 				       struct perf_event_ops *ops,
-@@ -371,7 +545,7 @@ static int perf_session__process_event(struct perf_session *self,
- 
- 	switch (event->header.type) {
- 	case PERF_RECORD_SAMPLE:
--		return ops->sample(event, self);
-+		return perf_session__process_sample(event, self, ops);
- 	case PERF_RECORD_MMAP:
- 		return ops->mmap(event, self);
- 	case PERF_RECORD_COMM:
-@@ -611,6 +785,9 @@ more:
- 		goto more;
- done:
- 	err = 0;
-+	/* do the final flush for ordered samples */
-+	self->ordered_samples.flush_limit = ULLONG_MAX;
-+	flush_sample_queue(self, ops);
- out_err:
- 	ui_progress__delete(progress);
- 	return err;
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 5e47c87..796e229 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -8,9 +8,17 @@
- #include <linux/rbtree.h>
- #include "../../../include/linux/perf_event.h"
- 
-+struct sample_queue;
- struct ip_callchain;
- struct thread;
- 
-+struct ordered_samples {
-+	u64			last_flush;
-+	u64			flush_limit;
-+	struct list_head	samples_head;
-+	struct sample_queue	*last_inserted;
-+};
-+
- struct perf_session {
- 	struct perf_header	header;
- 	unsigned long		size;
-@@ -28,6 +36,7 @@ struct perf_session {
- 	bool			fd_pipe;
- 	int			cwdlen;
- 	char			*cwd;
-+	struct ordered_samples	ordered_samples;
- 	char filename[0];
- };
- 
-@@ -47,6 +56,7 @@ struct perf_event_ops {
- 		 event_type,
- 		 tracing_data,
- 		 build_id;
-+	bool	ordered_samples;
- };
- 
- struct perf_session *perf_session__new(const char *filename, int mode, bool force);
+ static double fragmentation(unsigned long n_req, unsigned long n_alloc)
+@@ -730,7 +731,6 @@ static const char *record_args[] = {
+ 	"record",
+ 	"-a",
+ 	"-R",
+-	"-M",
+ 	"-f",
+ 	"-c", "1",
+ 	"-e", "kmem:kmalloc",
 -- 
 1.6.2.3
 
