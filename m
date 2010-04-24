@@ -1,64 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab0DXObd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 10:31:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54098 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752592Ab0DXObb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 10:31:31 -0400
-Date: Sat, 24 Apr 2010 16:30:44 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
- PageSwapCache  pages
-Message-ID: <20100424143044.GD32034@random.random>
-References: <1271946226.2100.211.camel@barrios-desktop>
- <1271947206.2100.216.camel@barrios-desktop>
- <20100422154443.GD30306@csn.ul.ie>
- <20100423183135.GT32034@random.random>
- <20100423192311.GC14351@csn.ul.ie>
- <20100423193948.GU32034@random.random>
- <20100423213549.GV32034@random.random>
- <20100424105226.GF14351@csn.ul.ie>
- <20100424111340.GB32034@random.random>
- <20100424115936.GG14351@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100424115936.GG14351@csn.ul.ie>
+	id S1752891Ab0DXOfk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 10:35:40 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41834 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276Ab0DXOfi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 10:35:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=LBUGsUlR5Di7ALhJbNR4ATHuF7oxIBLf6bOU6sJCbRLlBm2ffMln6fAWZg4K55ocHv
+         OZ+dYfMQe4FT3Ho/xW4yZ3VVhb0v8HoDpGeVsLVVwFwEPEcWd9BdcQCP00TBjT7kvBdk
+         atAEygskV2T5QeJi7MHrxXQbhWCvRFmfnoBaY=
+From: Farid Hammane <farid.hammane@gmail.com>
+To: w.sang@pengutronix.de
+Cc: khali@linux-fr.org, ben-linux@fluff.org, Enrik.Berkhan@ge.com,
+       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Farid Hammane <farid.hammane@gmail.com>
+Subject: [PATCH V3] i2c-algo-pca: fix coding style issues in i2c-algo-pca.c
+Date: Sat, 24 Apr 2010 16:34:14 +0200
+Message-Id: <1272119654-8976-1-git-send-email-farid.hammane@gmail.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 12:59:37PM +0100, Mel Gorman wrote:
-> Well, to me this is also good because it shows it's not an existing bug in
-> migration or a new bug introduced by compaction either. Previously I hadn't
-> seen this bug either but until relatively recently, the bulk of the testing
-> was against 2.6.33.
+This patch fixes up some coding style issues. i2c-algo-pca.c has been
+build successfully after applying this patch and the binary object is
+still exactly the same.
+Other issues found by checkpatch.pl were voluntarily not fixed, either
+to keep readability, or because of false positive errors.
 
-I suggest to test again with aa.git as soon as I make a new release
-with your v8 code (probably today). I didn't merge the swapcache
-locked debug patch that tries to recover the thing after the fact. No
-problem here with swapcache apparently and your v8 and latest numa-aware
-khugepaged code is under stress for the last 12 hours.
+Signed-off-by: Farid Hammane <farid.hammane@gmail.com>
+---
+ drivers/i2c/algos/i2c-algo-pca.c |   36 ++++++++++++++++++------------------
+ 1 files changed, 18 insertions(+), 18 deletions(-)
 
-Other than full numa awareness in all hugepage allocations and your v8
-code, I added a generic document that needs review and I plan to add a
-config tweak to select the default to be madvise or always for
-transparent hugepage (never makes no sense, other than for debugging
-purposes, madvise already provides the guarantee of zero risk of
-unintentional and not guaranteed beneficial memory waste).
+diff --git a/drivers/i2c/algos/i2c-algo-pca.c b/drivers/i2c/algos/i2c-algo-pca.c
+index dcdaf8e..2b9a8f5 100644
+--- a/drivers/i2c/algos/i2c-algo-pca.c
++++ b/drivers/i2c/algos/i2c-algo-pca.c
+@@ -109,13 +109,13 @@ static void pca_stop(struct i2c_algo_pca_data *adap)
+  * returns after the address has been sent
+  */
+ static int pca_address(struct i2c_algo_pca_data *adap,
+-			struct i2c_msg *msg)
++		       struct i2c_msg *msg)
+ {
+ 	int sta = pca_get_con(adap);
+ 	int addr;
+ 
+-	addr = ( (0x7f & msg->addr) << 1 );
+-	if (msg->flags & I2C_M_RD )
++	addr = ((0x7f & msg->addr) << 1);
++	if (msg->flags & I2C_M_RD)
+ 		addr |= 1;
+ 	DEB2("=== SLAVE ADDRESS %#04x+%c=%#04x\n",
+ 	     msg->addr, msg->flags & I2C_M_RD ? 'R' : 'W', addr);
+@@ -134,7 +134,7 @@ static int pca_address(struct i2c_algo_pca_data *adap,
+  * Returns after the byte has been transmitted
+  */
+ static int pca_tx_byte(struct i2c_algo_pca_data *adap,
+-			__u8 b)
++		       __u8 b)
+ {
+ 	int sta = pca_get_con(adap);
+ 	DEB2("=== WRITE %#04x\n", b);
+@@ -164,13 +164,13 @@ static void pca_rx_byte(struct i2c_algo_pca_data *adap,
+  * Returns after next byte has arrived.
+  */
+ static int pca_rx_ack(struct i2c_algo_pca_data *adap,
+-		       int ack)
++		      int ack)
+ {
+ 	int sta = pca_get_con(adap);
+ 
+ 	sta &= ~(I2C_PCA_CON_STO|I2C_PCA_CON_STA|I2C_PCA_CON_SI|I2C_PCA_CON_AA);
+ 
+-	if ( ack )
++	if (ack)
+ 		sta |= I2C_PCA_CON_AA;
+ 
+ 	pca_set_con(adap, sta);
+@@ -178,12 +178,12 @@ static int pca_rx_ack(struct i2c_algo_pca_data *adap,
+ }
+ 
+ static int pca_xfer(struct i2c_adapter *i2c_adap,
+-                    struct i2c_msg *msgs,
+-                    int num)
++		    struct i2c_msg *msgs,
++		    int num)
+ {
+-        struct i2c_algo_pca_data *adap = i2c_adap->algo_data;
+-        struct i2c_msg *msg = NULL;
+-        int curmsg;
++	struct i2c_algo_pca_data *adap = i2c_adap->algo_data;
++	struct i2c_msg *msg = NULL;
++	int curmsg;
+ 	int numbytes = 0;
+ 	int state;
+ 	int ret;
+@@ -202,21 +202,21 @@ static int pca_xfer(struct i2c_adapter *i2c_adap,
+ 
+ 	DEB1("{{{ XFER %d messages\n", num);
+ 
+-	if (i2c_debug>=2) {
++	if (i2c_debug >= 2) {
+ 		for (curmsg = 0; curmsg < num; curmsg++) {
+ 			int addr, i;
+ 			msg = &msgs[curmsg];
+ 
+ 			addr = (0x7f & msg->addr) ;
+ 
+-			if (msg->flags & I2C_M_RD )
++			if (msg->flags & I2C_M_RD)
+ 				printk(KERN_INFO "    [%02d] RD %d bytes from %#02x [%#02x, ...]\n",
+-				       curmsg, msg->len, addr, (addr<<1) | 1);
++				       curmsg, msg->len, addr, (addr << 1) | 1);
+ 			else {
+ 				printk(KERN_INFO "    [%02d] WR %d bytes to %#02x [%#02x%s",
+-				       curmsg, msg->len, addr, addr<<1,
++				       curmsg, msg->len, addr, addr << 1,
+ 				       msg->len == 0 ? "" : ", ");
+-				for(i=0; i < msg->len; i++)
++				for (i = 0; i < msg->len; i++)
+ 					printk("%#04x%s", msg->buf[i], i == msg->len - 1 ? "" : ", ");
+ 				printk("]\n");
+ 			}
+@@ -305,7 +305,7 @@ static int pca_xfer(struct i2c_adapter *i2c_adap,
+ 			goto out;
+ 
+ 		case 0x58: /* Data byte has been received; NOT ACK has been returned */
+-			if ( numbytes == msg->len - 1 ) {
++			if (numbytes == msg->len - 1) {
+ 				pca_rx_byte(adap, &msg->buf[numbytes], 0);
+ 				curmsg++; numbytes = 0;
+ 				if (curmsg == num)
+@@ -352,7 +352,7 @@ static int pca_xfer(struct i2c_adapter *i2c_adap,
+ 
+ static u32 pca_func(struct i2c_adapter *adap)
+ {
+-        return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+ }
+ 
+ static const struct i2c_algorithm pca_algo = {
+-- 
+1.7.0
 
-> Will keep it in mind. It's taking the anon_vma lock but once again,
-> there might be more than one anon_vma to worry about and the proper
-> locking still isn't massively clear to me.
-
-Yes, that's my point, same issue there.
