@@ -1,93 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab0DXPH6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 11:07:58 -0400
-Received: from mail.gmx.net ([213.165.64.20]:39008 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753192Ab0DXPH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 11:07:56 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+wylxSfFSwRm2aSce7EP+PHR2OxugwZls4E/khnn
-	PkM1ctp7JCbpuE
-Message-ID: <4BD30944.6060302@gmx.de>
-Date: Sat, 24 Apr 2010 17:07:48 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
-MIME-Version: 1.0
+	id S1753411Ab0DXPJG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 11:09:06 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:50902 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab0DXPJE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 11:09:04 -0400
+Date: Sat, 24 Apr 2010 15:53:16 +0200
+From: Harald Welte <laforge@gnumonks.org>
 To: Jonathan Corbet <corbet@lwn.net>
-CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       Deepak Saxena <dsaxena@laptop.org>, linux-fbdev@vger.kernel.org,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn
-Subject: Re: [RFC] Second OLPC Viafb series
-References: <1272058093-20914-1-git-send-email-corbet@lwn.net>
-In-Reply-To: <1272058093-20914-1-git-send-email-corbet@lwn.net>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.57999999999999996
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+       linux-kernel@vger.kernel.org, Deepak Saxena <dsaxena@laptop.org>,
+       linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
+       ScottFang@viatech.com.cn
+Subject: Re: [PATCH 10/11] viafb: rework the I2C support in the VIA
+ framebuffer driver
+Message-ID: <20100424135316.GR24811@prithivi.gnumonks.org>
+References: <1271614873-5952-1-git-send-email-corbet@lwn.net>
+ <1271614873-5952-11-git-send-email-corbet@lwn.net>
+ <4BD20D56.7080402@gmx.de>
+ <20100423155725.7d3b2d2d@bike.lwn.net>
+ <4BD221E7.7060705@gmx.de>
+ <20100423165256.654ca5eb@bike.lwn.net>
+ <4BD22B96.5020102@gmx.de>
+ <4BD2CC46.4060908@gmx.de>
+ <20100424073359.349b4397@bike.lwn.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100424073359.349b4397@bike.lwn.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Jon,
 
-Jonathan Corbet schrieb:
-> So this is the second series of viafb patches - the stuff that I was really
-> working toward since the beginning.  They depend on the previously-posted
-> first series.  What's added here is a big refactoring of the driver to
-> split its functions apart and the addition of code for GPIO, interrupt,
-> DMA, and camera management.
+On Sat, Apr 24, 2010 at 07:33:59AM -0600, Jonathan Corbet wrote:
 
-this looks like a step in the right direction. But I have the feeling 
-that it needs a lot of work before I'd consider it useful for mainline.
-
-> Florian, I incorporated your indexed port I/O patch, since it was an
-> obvious improvement and I was reworking that stuff anyway.
-
-Thanks.
-Could you please also take the proc fix (6) in your upstream branch as 
-it is clearly a bugfix (and tainting the kernel is also something that 
-should be avoided)
-
-> The full series of patches can be pulled from:
+> This patch creates an i2c bus on every port which could conceivably
+> have one.  That's rather different from the original code, which
+> created a single bus (in the kernel) then swapped it between ports 31
+> and 2c in weird ways.  In particular, it takes over ports which,
+> conceivably, somebody else could be using for GPIO.  So, perhaps, there
+> is some contention going on there.
 > 
-> 	git://git.lwn.net/linux-2.6.git viafb-posted
+> If my hypothesis is correct, this problem will go away with the
+> application of the second series, which doesn't create i2c buses on
+> ports used for GPIO.  But the problem should be fixed here so we don't
+> have things broken in the middle.
+> 
+> Harald, does this reasoning make sense to you?  If so, what I should do
+> is bring forward just enough of the via-core code to be able to
+> configure which ports actually get i2c buses created on them.  Easily
+> done.
 
-Probably I should use this the next time as this series again did not 
-cleanly apply so I just fired patch on it (which worked as it was mostly 
-due to a slight difference in our compile fixes).
+It makes a lot of sense.  When I added all possible I2C busses, this was merely
+the result of "let's try to make sure every possible configuration is
+supported" rather than some kind of neccessity.
 
-So I wanted to runtime test it as you said that it might fix the 
-I2C/GPIO issue I debugged. I gave up for now after hitting the following 
-errors:
+Simply converting the original two busses to the new code is definitely
+the way to go.  Maybe we'll keep the code for the other two around, but
+somehow keep them inactive and don't advertise them unless somebody explicitly
+does so?
 
-drivers/video/via/via-gpio.c:74: error: field 'gpio_chip' has incomplete 
-type
-
-so we should either select GPIOLIB or add ifdef's to avoid the dependency?
-
-After that I hit
-
-drivers/video/via/via_i2c.o: In function `init_module':
-via_i2c.c:(.text+0x309): multiple definition of `init_module'
-drivers/video/via/viafbdev.o:viafbdev.c:(.init.text+0x0): first defined here
-drivers/video/via/via_i2c.o: In function `cleanup_module':
-via_i2c.c:(.text+0x10): multiple definition of `cleanup_module'
-drivers/video/via/viafbdev.o:viafbdev.c:(.exit.text+0x0): first defined here
-drivers/video/via/via-gpio.o: In function `init_module':
-via-gpio.c:(.text+0x1f6): multiple definition of `init_module'
-drivers/video/via/viafbdev.o:viafbdev.c:(.init.text+0x0): first defined here
-drivers/video/via/via-gpio.o: In function `cleanup_module':
-via-gpio.c:(.text+0x0): multiple definition of `cleanup_module'
-drivers/video/via/viafbdev.o:viafbdev.c:(.exit.text+0x0): first defined here
-
-Guess that means you should only have one module init/exit per module. 
-So either making via_i2c and via_gpio separate modules or calling these 
-functions directly from the init/exit functions.
-
-That's it for now as I'm really supposed to do some other stuff, too.
-
-
-Thanks,
-
-Florian Tobias Schandinat
+-- 
+- Harald Welte <laforge@gnumonks.org>           http://laforge.gnumonks.org/
+============================================================================
+"Privacy in residential applications is a desirable marketing option."
+                                                  (ETSI EN 300 175-7 Ch. A6)
