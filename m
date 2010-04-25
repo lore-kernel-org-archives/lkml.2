@@ -1,74 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab0DYNkL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 09:40:11 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54432 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab0DYNkJ convert rfc822-to-8bit (ORCPT
+	id S1753981Ab0DYNnm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 09:43:42 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39624 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753828Ab0DYNnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 09:40:09 -0400
-MIME-Version: 1.0
-Message-ID: <c5062f3a-3232-4b21-b032-2ee1f2485ff0@default>
-Date: Sun, 25 Apr 2010 06:37:30 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <20100422134249.GA2963@ca-server1.us.oracle.com>
- <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default>
- <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default>
- <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>
- <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
- <4BD1B427.9010905@redhat.com> <b559c57a-0acb-4338-af21-dbfc3b3c0de5@default>
- <4BD336CF.1000103@redhat.com> <d1bb78ca-5ef6-4a8d-af79-a265f2d4339c@default
- 4BD43182.1040508@redhat.com>
-In-Reply-To: <4BD43182.1040508@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4BD4461D.00F4:SCFMA922111,ss=1,fgs=0
+	Sun, 25 Apr 2010 09:43:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=te3dp5Vyyh/0qbBhW+AFjFMYwM75ld3MivmAt2+bDnDIZyiPB6opKgzSKN0q8Hbo09
+         QFXVk+PfBiKisk6EQDoruoxLYGjWtRX8Aq4i/zQ0psGp8uRls5o/TS1xGKh/xkrWEvwn
+         uZ4Gb2A73pYZEnxoLTHwisvE/M5groTDFvris=
+Date: Sun, 25 Apr 2010 22:18:51 +0900
+From: Yoichi Yuasa <yuasa@linux-mips.org>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: yuasa@linux-mips.org, Naren Sankar <nsankar@broadcom.com>,
+       Jarod Wilson <jarod@wilsonet.com>, Scott Davilla <davilla@4pi.com>,
+       Manu Abraham <abraham.manu@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/11] staging: crystalhd: remove unused bc_dts_types.h
+Message-Id: <20100425221851.223dc284.yuasa@linux-mips.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> My issue is with the API's synchronous nature.  Both RAM and more
-> exotic
-> memories can be used with DMA instead of copying.  A synchronous
-> interface gives this up.
->  :
-> Let's not allow the urge to merge prevent us from doing the right
-> thing.
->  :
-> I see.  Given that swap-to-flash will soon be way more common than
-> frontswap, it needs to be solved (either in flash or in the swap code).
+Signed-off-by: Yoichi Yuasa <yuasa@linux-mips.org>
+---
+ drivers/staging/crystalhd/bc_dts_defs.h  |    2 -
+ drivers/staging/crystalhd/bc_dts_types.h |  121 ------------------------------
+ 2 files changed, 0 insertions(+), 123 deletions(-)
+ delete mode 100644 drivers/staging/crystalhd/bc_dts_types.h
 
-While I admit that I started this whole discussion by implying
-that frontswap (and cleancache) might be useful for SSDs, I think
-we are going far astray here.  Frontswap is synchronous for a
-reason: It uses real RAM, but RAM that is not directly addressable
-by a (guest) kernel.  SSD's (at least today) are still I/O devices;
-even though they may be very fast, they still live on a PCI (or
-slower) bus and use DMA.  Frontswap is not intended for use with
-I/O devices.
+diff --git a/drivers/staging/crystalhd/bc_dts_defs.h b/drivers/staging/crystalhd/bc_dts_defs.h
+index c34cc07..cd12605 100644
+--- a/drivers/staging/crystalhd/bc_dts_defs.h
++++ b/drivers/staging/crystalhd/bc_dts_defs.h
+@@ -26,8 +26,6 @@
+ #ifndef _BC_DTS_DEFS_H_
+ #define _BC_DTS_DEFS_H_
+ 
+-#include "bc_dts_types.h"
+-
+ /* BIT Mask */
+ #define BC_BIT(_x)		(1 << (_x))
+ 
+diff --git a/drivers/staging/crystalhd/bc_dts_types.h b/drivers/staging/crystalhd/bc_dts_types.h
+deleted file mode 100644
+index ac0c817..0000000
+--- a/drivers/staging/crystalhd/bc_dts_types.h
++++ /dev/null
+@@ -1,121 +0,0 @@
+-/********************************************************************
+- * Copyright(c) 2006-2009 Broadcom Corporation.
+- *
+- *  Name: bc_dts_types.h
+- *
+- *  Description: Data types
+- *
+- *  AU
+- *
+- *  HISTORY:
+- *
+- ********************************************************************
+- * This header is free software: you can redistribute it and/or modify
+- * it under the terms of the GNU Lesser General Public License as published
+- * by the Free Software Foundation, either version 2.1 of the License.
+- *
+- * This header is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU Lesser General Public License for more details.
+- * You should have received a copy of the GNU Lesser General Public License
+- * along with this header.  If not, see <http://www.gnu.org/licenses/>.
+- *******************************************************************/
+-
+-#ifndef _BC_DTS_TYPES_H_
+-#define _BC_DTS_TYPES_H_
+-
+-#ifdef __LINUX_USER__  // Don't include these for KERNEL..
+-#include <stdint.h>
+-#endif
+-
+-#if defined(_WIN64) || defined(_WIN32)
+-typedef uint32_t		U32;
+-typedef int32_t			S32;
+-typedef uint16_t		U16;
+-typedef int16_t			S16;
+-typedef unsigned char		U8;
+-typedef char			S8;
+-#endif
+-
+-#ifndef PVOID
+-typedef void	*PVOID;
+-#endif
+-
+-#ifndef BOOL
+-typedef int	BOOL;
+-#endif
+-
+-#ifdef WIN32
+-    typedef unsigned __int64	U64;
+-#elif defined(_WIN64)
+-    typedef uint64_t U64;
+-#endif
+-
+-#ifdef _WIN64
+-#if !(defined(POINTER_32))
+-#define POINTER_32	__ptr32
+-#endif
+-#else	/* _WIN32 */
+-#define POINTER_32
+-#endif
+-
+-#if defined(__KERNEL__) || defined(__LINUX_USER__)
+-
+-#ifdef __LINUX_USER__	/* Don't include these for KERNEL */
+-typedef uint32_t	ULONG;
+-typedef int32_t		LONG;
+-typedef void		*HANDLE;
+-#ifndef VOID
+-typedef void		VOID;
+-#endif
+-typedef void		*LPVOID;
+-typedef uint32_t	DWORD;
+-typedef uint32_t	UINT32;
+-typedef uint32_t	*LPDWORD;
+-typedef unsigned char	*PUCHAR;
+-
+-#ifndef TRUE
+-	#define TRUE		1
+-#endif
+-
+-#ifndef FALSE
+-	#define FALSE		0
+-#endif
+-
+-#define TEXT
+-
+-#else
+-
+-/* For Kernel usage.. */
+-typedef bool	bc_bool_t;
+-#endif
+-
+-#else
+-
+-#ifndef uint64_t
+-typedef struct _uint64_t {
+-	uint32_t low_dw;
+-	uint32_t hi_dw;
+-} uint64_t;
+-#endif
+-
+-#ifndef int32_t
+-typedef signed long		int32_t;
+-#endif
+-
+-#ifndef uint32_t
+-typedef unsigned long	uint32_t;
+-#endif
+-
+-#ifndef uint16_t
+-typedef unsigned short	uint16_t;
+-#endif
+-
+-#ifndef uint8_t
+-typedef unsigned char	uint8_t;
+-#endif
+-#endif
+-
+-#endif
+-
+-- 
+1.7.1
 
-Today's memory technologies are either RAM that can be addressed
-by the kernel, or I/O devices that sit on an I/O bus.  The
-exotic memories that I am referring to may be a hybrid:
-memory that is fast enough to live on a QPI/hypertransport,
-but slow enough that you wouldn't want to randomly mix and
-hand out to userland apps some pages from "exotic RAM" and some
-pages from "normal RAM".  Such memory makes no sense today
-because OS's wouldn't know what to do with it.  But it MAY
-make sense with frontswap (and cleancache).
-
-Nevertheless, frontswap works great today with a bare-metal
-hypervisor.  I think it stands on its own merits, regardless
-of one's vision of future SSD/memory technologies.
