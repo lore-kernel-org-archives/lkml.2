@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab0DYOPl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 10:15:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27185 "EHLO mx1.redhat.com"
+	id S1752644Ab0DYOaK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 10:30:10 -0400
+Received: from lo.gmane.org ([80.91.229.12]:59414 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752413Ab0DYOPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 10:15:40 -0400
-Message-ID: <4BD44E74.2020506@redhat.com>
-Date: Sun, 25 Apr 2010 17:15:16 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <20100422134249.GA2963@ca-server1.us.oracle.com> <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default> <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default> <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <b559c57a-0acb-4338-af21-dbfc3b3c0de5@default> <4BD336CF.1000103@redhat.com> <d1bb78ca-5ef6-4a8d-af79-a265f2d4339c@default 4BD43182.1040508@redhat.com> <c5062f3a-3232-4b21-b032-2ee1f2485ff0@default>
-In-Reply-To: <c5062f3a-3232-4b21-b032-2ee1f2485ff0@default>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752217Ab0DYOaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 10:30:08 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+connect(): No such file or directory
+From: Jongman Heo <jongman.heo@gmail.com>
+Subject: Re: [2.6.34-rc5-git6] EIP: is at =?utf-8?b?aW5ldDZfY3NrX2JpbmRfY29uZmxpY3Q=?= + 06xe/0xb7 =?utf-8?b?CVtpcHY2XQ==?=
+Date: Sun, 25 Apr 2010 14:26:12 +0000 (UTC)
+Message-ID: <loom.20100425T162010-523@post.gmane.org>
+References: <m2z2d0a357f1004250613of5215185z1490aaae7363b161@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 121.140.230.128 (Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; OfficeLiveConnector.1.3; OfficeLivePatch.0.0))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2010 04:37 PM, Dan Magenheimer wrote:
->> My issue is with the API's synchronous nature.  Both RAM and more
->> exotic
->> memories can be used with DMA instead of copying.  A synchronous
->> interface gives this up.
->>   :
->> Let's not allow the urge to merge prevent us from doing the right
->> thing.
->>   :
->> I see.  Given that swap-to-flash will soon be way more common than
->> frontswap, it needs to be solved (either in flash or in the swap code).
->>      
-> While I admit that I started this whole discussion by implying
-> that frontswap (and cleancache) might be useful for SSDs, I think
-> we are going far astray here.  Frontswap is synchronous for a
-> reason: It uses real RAM, but RAM that is not directly addressable
-> by a (guest) kernel.  SSD's (at least today) are still I/O devices;
-> even though they may be very fast, they still live on a PCI (or
-> slower) bus and use DMA.  Frontswap is not intended for use with
-> I/O devices.
->
-> Today's memory technologies are either RAM that can be addressed
-> by the kernel, or I/O devices that sit on an I/O bus.  The
-> exotic memories that I am referring to may be a hybrid:
-> memory that is fast enough to live on a QPI/hypertransport,
-> but slow enough that you wouldn't want to randomly mix and
-> hand out to userland apps some pages from "exotic RAM" and some
-> pages from "normal RAM".  Such memory makes no sense today
-> because OS's wouldn't know what to do with it.  But it MAY
-> make sense with frontswap (and cleancache).
->
-> Nevertheless, frontswap works great today with a bare-metal
-> hypervisor.  I think it stands on its own merits, regardless
-> of one's vision of future SSD/memory technologies.
->    
 
-Even when frontswapping to RAM on a bare metal hypervisor it makes sense 
-to use an async API, in case you have a DMA engine on board.
+Sedat Dilek <sedat.dilek <at> googlemail.com> writes:
 
--- 
-error compiling committee.c: too many arguments to function
+> 
+> Hi,
+> 
+> I have built today 2.6.34-rc5-git6 Linux-kernel on a 32-bit Debian/sid 
+system.
+> 
+> Unfortunately, my machine hangs while startup at sshd-start (from
+> memory + written down):
+> 
+> [...]
+> EIP: is at inet6_csk_bind_conflict + 06xe/0xb7 [ipv6]
+> Pid: 2150, comm: sshd Not tainted $(uname -r) #1 30AC/HP Compaq nc6400
+> (RH72EA#ABD)
+> [...]
+> 
+> I suspect one of the latest IPv6 commits as culprit, especially:
+> 
+> commit f4f914b58019f0e50d521bbbadfaee260d766f95
+> net: ipv6 bind to device issue
+> 
+> ...or...
+> commit f2228f785a9d97307aa8ba709088cfda6c3df73f
+> ipv6: allow to send packet after receiving ICMPv6 Too Big message with
+> MTU field less than IPV6_MIN_MTU
+> 
+> Could not test yet by reverting.
+> 
+> Kind Regards,
+> - Sedat -
+> 
+
+I also hit this bug today.
+
+Doing git bisect, first bad commit was
+
+ commit fda48a0d7a8412cedacda46a9c0bf8ef9cd13559
+ tcp: bind() fix when many ports are bound
+
+Reverting above commit fixes the problem.
+
+Regards.
 
