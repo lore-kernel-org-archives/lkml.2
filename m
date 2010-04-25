@@ -1,367 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab0DYPtd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 11:49:33 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:40640 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab0DYPta convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 11:49:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=QI8n5IA0ZDbfWUFZOMIW2TKjNIbjacNzT6HeA8NJmFjYMdxEEF3jdUw4tNJ6B9GfZw
-         XOeIg4VNjO8rBiQ9AmqDLeSJCBo33+82MFyEsV/x61to1EFHLeVGnVrye8lzc/TwGYsD
-         1ykqKuyg4vd9vNkOJWbeI/pQMfBi2oXZmnvfc=
+	id S1753264Ab0DYP4T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 11:56:19 -0400
+Received: from mail.gmx.net ([213.165.64.20]:50370 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753194Ab0DYP4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 11:56:15 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/UkwkcFWPUG9xtIYvj8IgW2rGDqZDSsvk+lylPfT
+	DXWGTRz666txDw
+Message-ID: <4BD46619.5010701@gmx.de>
+Date: Sun, 25 Apr 2010 17:56:09 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
 MIME-Version: 1.0
-In-Reply-To: <20100425023455.GM2440@linux.vnet.ibm.com>
-References: <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com>
-	 <20100420135227.GC2628@linux.vnet.ibm.com>
-	 <t2la44ae5cd1004200838w87256e80v9dcde91342b321db@mail.gmail.com>
-	 <20100421213543.GO2563@linux.vnet.ibm.com>
-	 <20100422145640.GB3228@redhat.com>
-	 <20100422160144.GC2524@linux.vnet.ibm.com>
-	 <h2xa44ae5cd1004230550uf734c89eo2b1d1945d446068c@mail.gmail.com>
-	 <20100423194255.GE2589@linux.vnet.ibm.com>
-	 <m2xa44ae5cd1004231559hcf90671asf146a43b4748c2c3@mail.gmail.com>
-	 <20100425023455.GM2440@linux.vnet.ibm.com>
-Date: Sun, 25 Apr 2010 11:49:28 -0400
-Message-ID: <w2sa44ae5cd1004250849q73704370vc6af935c70db9b73@mail.gmail.com>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious 
-	rcu_dereference_check() usage
-From: Miles Lane <miles.lane@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jonathan Corbet <corbet@lwn.net>
+CC: Harald Welte <laforge@gnumonks.org>, linux-kernel@vger.kernel.org,
+       Deepak Saxena <dsaxena@laptop.org>, linux-fbdev@vger.kernel.org,
+       JosephChan@via.com.tw, ScottFang@viatech.com.cn
+Subject: Re: [PATCH 10/11] viafb: rework the I2C support in the VIA framebuffer
+ driver
+References: <1271614873-5952-1-git-send-email-corbet@lwn.net>	<1271614873-5952-11-git-send-email-corbet@lwn.net>	<4BD20D56.7080402@gmx.de>	<20100423155725.7d3b2d2d@bike.lwn.net>	<4BD221E7.7060705@gmx.de>	<20100423165256.654ca5eb@bike.lwn.net>	<4BD22B96.5020102@gmx.de>	<4BD2CC46.4060908@gmx.de>	<20100424073359.349b4397@bike.lwn.net>	<20100424135316.GR24811@prithivi.gnumonks.org> <20100425083858.269bf0d8@bike.lwn.net>
+In-Reply-To: <20100425083858.269bf0d8@bike.lwn.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 10:34 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Fri, Apr 23, 2010 at 06:59:12PM -0400, Miles Lane wrote:
->> On Fri, Apr 23, 2010 at 3:42 PM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> > On Fri, Apr 23, 2010 at 08:50:59AM -0400, Miles Lane wrote:
->> >> Hi Paul,
->> >> There has been a bit of back and forth, and I am not sure what patches
->> >> I should test now.
->> >> Could you send me a bundle of whatever needs testing now?
->> >
->> > Hello, Miles,
->> >
->> > I am posting my set as replies to this message.  There are a couple
->> > of KVM fixes that are going up via Avi's tree, and a number of networking
->> > fixes that are going up via Dave Miller's tree -- a number of these
->> > are against quickly changing code, so it didn't make sense for me to
->> > keep them separately.
->> >
->> > I believe that the two splats below are addressed by this patch set
->> > carried in the networking tree:
->> >
->> >        https://patchwork.kernel.org/patch/90754/
->>
->> With your twelve patches and the one linked to above applied to
->> 2.6.34-rc5-git3, here are the warnings I see:
->>
->> [    0.173969] [ INFO: suspicious rcu_dereference_check() usage. ]
->> [    0.174097] ---------------------------------------------------
->> [    0.174226] include/linux/cgroup.h:534 invoked
->> rcu_dereference_check() without protection!
->> [    0.174429]
->> [    0.174430] other info that might help us debug this:
->> [    0.174431]
->> [    0.174792]
->> [    0.174793] rcu_scheduler_active = 1, debug_locks = 1
->> [    0.175037] no locks held by watchdog/0/5.
->> [    0.175162]
->> [    0.175163] stack backtrace:
->> [    0.175405] Pid: 5, comm: watchdog/0 Not tainted 2.6.34-rc5-git3 #22
->> [    0.175534] Call Trace:
->> [    0.175666]  [<ffffffff81067fbe>] lockdep_rcu_dereference+0x9d/0xa5
->> [    0.175799]  [<ffffffff8102d678>] task_subsys_state+0x59/0x70
->> [    0.175931]  [<ffffffff810328fa>] __sched_setscheduler+0x19d/0x300
->> [    0.176064]  [<ffffffff8102b477>] ? need_resched+0x1e/0x28
->> [    0.176196]  [<ffffffff813cd401>] ? schedule+0x5c3/0x66e
->> [    0.176327]  [<ffffffff81091943>] ? watchdog+0x0/0x8c
->> [    0.176457]  [<ffffffff81032a78>] sched_setscheduler+0xe/0x10
->> [    0.176587]  [<ffffffff8109196d>] watchdog+0x2a/0x8c
->> [    0.176677]  [<ffffffff81091943>] ? watchdog+0x0/0x8c
->> [    0.176808]  [<ffffffff81057152>] kthread+0x89/0x91
->> [    0.176939]  [<ffffffff8106891e>] ? trace_hardirqs_on_caller+0x114/0x13f
->> [    0.177073]  [<ffffffff81003994>] kernel_thread_helper+0x4/0x10
->> [    0.177204]  [<ffffffff813cfc40>] ? restore_args+0x0/0x30
->> [    0.177334]  [<ffffffff810570c9>] ? kthread+0x0/0x91
->> [    0.177463]  [<ffffffff81003990>] ? kernel_thread_helper+0x0/0x10
->
-> According to Documentation/cgroups/cgroups.txt, we must hold cgroup_mutex,
-> the task's task_alloc lock, or be in an RCU read-side critical section.
-> We are in neither of these.
->
-> I would argue that sched_setscheduler() should take care of
-> synchronization, but am not sure which of these three are appropriate
-> for sched_setscheduler() to acquire.  Peter, thoughts?
->
->> [    3.173419] [ INFO: suspicious rcu_dereference_check() usage. ]
->> [    3.173419] ---------------------------------------------------
->> [    3.173419] kernel/cgroup.c:4438 invoked rcu_dereference_check()
->> without protection!
->> [    3.173419]
->> [    3.173419] other info that might help us debug this:
->> [    3.173419]
->> [    3.173419]
->> [    3.173419] rcu_scheduler_active = 1, debug_locks = 1
->> [    3.173419] 2 locks held by async/0/668:
->> [    3.173419]  #0:  (&shost->scan_mutex){+.+.+.}, at:
->> [<ffffffff812df020>] __scsi_add_device+0x83/0xe4
->> [    3.173419]  #1:  (&(&blkcg->lock)->rlock){......}, at:
->> [<ffffffff811f2df9>] blkiocg_add_blkio_group+0x29/0x7f
->> [    3.173419]
->> [    3.173419] stack backtrace:
->> [    3.173419] Pid: 668, comm: async/0 Not tainted 2.6.34-rc5-git3 #22
->> [    3.173419] Call Trace:
->> [    3.173419]  [<ffffffff81067fbe>] lockdep_rcu_dereference+0x9d/0xa5
->> [    3.173419]  [<ffffffff8107f9ad>] css_id+0x3f/0x51
->> [    3.173419]  [<ffffffff811f2e08>] blkiocg_add_blkio_group+0x38/0x7f
->> [    3.173419]  [<ffffffff811f4dd0>] cfq_init_queue+0xdf/0x2dc
->> [    3.173419]  [<ffffffff811e33b1>] elevator_init+0xba/0xf5
->> [    3.173419]  [<ffffffff812dbfaa>] ? scsi_request_fn+0x0/0x451
->> [    3.173419]  [<ffffffff811e68d7>] blk_init_queue_node+0x12f/0x135
->> [    3.173419]  [<ffffffff811e68e9>] blk_init_queue+0xc/0xe
->> [    3.173419]  [<ffffffff812dc41c>] __scsi_alloc_queue+0x21/0x111
->> [    3.173419]  [<ffffffff812dc524>] scsi_alloc_queue+0x18/0x64
->> [    3.173419]  [<ffffffff812de520>] scsi_alloc_sdev+0x19e/0x256
->> [    3.173419]  [<ffffffff812de6be>] scsi_probe_and_add_lun+0xe6/0x9c5
->> [    3.173419]  [<ffffffff8106891e>] ? trace_hardirqs_on_caller+0x114/0x13f
->> [    3.173419]  [<ffffffff813ce056>] ? __mutex_lock_common+0x3e4/0x43a
->> [    3.173419]  [<ffffffff812df020>] ? __scsi_add_device+0x83/0xe4
->> [    3.173419]  [<ffffffff812d09dc>] ? transport_setup_classdev+0x0/0x17
->> [    3.173419]  [<ffffffff812df020>] ? __scsi_add_device+0x83/0xe4
->> [    3.173419]  [<ffffffff812df055>] __scsi_add_device+0xb8/0xe4
->> [    3.173419]  [<ffffffff812ea945>] ata_scsi_scan_host+0x74/0x16e
->> [    3.173419]  [<ffffffff81057699>] ? autoremove_wake_function+0x0/0x34
->> [    3.173419]  [<ffffffff812e8de4>] async_port_probe+0xab/0xb7
->> [    3.173419]  [<ffffffff8105e1b1>] ? async_thread+0x0/0x1f4
->> [    3.173419]  [<ffffffff8105e2b6>] async_thread+0x105/0x1f4
->> [    3.173419]  [<ffffffff81033d8e>] ? default_wake_function+0x0/0xf
->> [    3.173419]  [<ffffffff8105e1b1>] ? async_thread+0x0/0x1f4
->> [    3.173419]  [<ffffffff81057152>] kthread+0x89/0x91
->> [    3.173419]  [<ffffffff8106891e>] ? trace_hardirqs_on_caller+0x114/0x13f
->> [    3.173419]  [<ffffffff81003994>] kernel_thread_helper+0x4/0x10
->> [    3.173419]  [<ffffffff813cfc40>] ? restore_args+0x0/0x30
->> [    3.173419]  [<ffffffff810570c9>] ? kthread+0x0/0x91
->> [    3.173419]  [<ffffffff81003990>] ? kernel_thread_helper+0x0/0x10
->
-> Please see below for a patch for this based on my earlier conversation
-> with Vivek Goyal.  (Vivek, if you are already pushing a fix elsewhere,
-> please let me know, and I will drop my patch in favor of yours.)
->
->> [   32.905446] [ INFO: suspicious rcu_dereference_check() usage. ]
->> [   32.905449] ---------------------------------------------------
->> [   32.905453] net/core/dev.c:1993 invoked rcu_dereference_check()
->> without protection!
->> [   32.905456]
->> [   32.905457] other info that might help us debug this:
->> [   32.905458]
->> [   32.905461]
->> [   32.905462] rcu_scheduler_active = 1, debug_locks = 1
->> [   32.905466] 2 locks held by canberra-gtk-pl/4182:
->> [   32.905469]  #0:  (sk_lock-AF_INET){+.+.+.}, at:
->> [<ffffffff81394f7d>] inet_stream_connect+0x3a/0x24d
->> [   32.905483]  #1:  (rcu_read_lock_bh){.+....}, at:
->> [<ffffffff8134a789>] dev_queue_xmit+0x14e/0x4b8
->> [   32.905495]
->> [   32.905496] stack backtrace:
->> [   32.905500] Pid: 4182, comm: canberra-gtk-pl Not tainted 2.6.34-rc5-git3 #22
->> [   32.905504] Call Trace:
->> [   32.905512]  [<ffffffff81067fbe>] lockdep_rcu_dereference+0x9d/0xa5
->> [   32.905518]  [<ffffffff8134a894>] dev_queue_xmit+0x259/0x4b8
->> [   32.905524]  [<ffffffff8134a789>] ? dev_queue_xmit+0x14e/0x4b8
->> [   32.905531]  [<ffffffff81041c66>] ? _local_bh_enable_ip+0xcd/0xda
->> [   32.905538]  [<ffffffff813536da>] neigh_resolve_output+0x234/0x285
->> [   32.905544]  [<ffffffff8136f69f>] ip_finish_output2+0x257/0x28c
->> [   32.905549]  [<ffffffff8136f73c>] ip_finish_output+0x68/0x6a
->> [   32.905554]  [<ffffffff81370433>] T.866+0x52/0x59
->> [   32.905559]  [<ffffffff8137067e>] ip_output+0xaa/0xb4
->> [   32.905565]  [<ffffffff8136eb38>] ip_local_out+0x20/0x24
->> [   32.905571]  [<ffffffff8136f184>] ip_queue_xmit+0x309/0x368
->> [   32.905578]  [<ffffffff810e4226>] ? __kmalloc_track_caller+0x111/0x155
->> [   32.905585]  [<ffffffff8138316f>] ? tcp_connect+0x223/0x3d3
->> [   32.905591]  [<ffffffff813818f1>] tcp_transmit_skb+0x707/0x745
->> [   32.905597]  [<ffffffff813832c2>] tcp_connect+0x376/0x3d3
->> [   32.905604]  [<ffffffff81268a43>] ? secure_tcp_sequence_number+0x55/0x6f
->> [   32.905610]  [<ffffffff81387270>] tcp_v4_connect+0x3df/0x455
->> [   32.905617]  [<ffffffff8133cb59>] ? lock_sock_nested+0xf3/0x102
->> [   32.905623]  [<ffffffff81394fe7>] inet_stream_connect+0xa4/0x24d
->> [   32.905629]  [<ffffffff8133b398>] sys_connect+0x90/0xd0
->> [   32.905636]  [<ffffffff81002b9c>] ? sysret_check+0x27/0x62
->> [   32.905642]  [<ffffffff8106891e>] ? trace_hardirqs_on_caller+0x114/0x13f
->> [   32.905649]  [<ffffffff813cec80>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->> [   32.905655]  [<ffffffff81002b6b>] system_call_fastpath+0x16/0x1b
->
-> A fix for the above is already in Dave Miller's tree.
->
->> [   51.912282] [ INFO: suspicious rcu_dereference_check() usage. ]
->> [   51.912285] ---------------------------------------------------
->> [   51.912289] net/mac80211/sta_info.c:886 invoked
->> rcu_dereference_check() without protection!
->> [   51.912293]
->> [   51.912293] other info that might help us debug this:
->> [   51.912295]
->> [   51.912298]
->> [   51.912298] rcu_scheduler_active = 1, debug_locks = 1
->> [   51.912302] no locks held by wpa_supplicant/3951.
->> [   51.912305]
->> [   51.912306] stack backtrace:
->> [   51.912310] Pid: 3951, comm: wpa_supplicant Not tainted 2.6.34-rc5-git3 #22
->> [   51.912314] Call Trace:
->> [   51.912317]  <IRQ>  [<ffffffff81067fbe>] lockdep_rcu_dereference+0x9d/0xa5
->> [   51.912345]  [<ffffffffa014f9ae>]
->> ieee80211_find_sta_by_hw+0x46/0x10f [mac80211]
->> [   51.912358]  [<ffffffffa014fa8e>] ieee80211_find_sta+0x17/0x19 [mac80211]
->> [   51.912373]  [<ffffffffa01e50f2>] iwl_tx_queue_reclaim+0xdb/0x1b1 [iwlcore]
->> [   51.912380]  [<ffffffff8106842b>] ? mark_lock+0x2d/0x235
->> [   51.912391]  [<ffffffffa0252f1c>] iwl5000_rx_reply_tx+0x4a9/0x556 [iwlagn]
->> [   51.912399]  [<ffffffff8120a353>] ? is_swiotlb_buffer+0x2e/0x3b
->> [   51.912407]  [<ffffffffa024bbf4>] iwl_rx_handle+0x163/0x2b5 [iwlagn]
->> [   51.912414]  [<ffffffff81068904>] ? trace_hardirqs_on_caller+0xfa/0x13f
->> [   51.912422]  [<ffffffffa024c3ac>] iwl_irq_tasklet+0x2bb/0x3c0 [iwlagn]
->> [   51.912429]  [<ffffffff810411f3>] tasklet_action+0xa7/0x10f
->> [   51.912435]  [<ffffffff81042205>] __do_softirq+0x144/0x252
->> [   51.912442]  [<ffffffff81003a8c>] call_softirq+0x1c/0x34
->> [   51.912447]  [<ffffffff810050e4>] do_softirq+0x38/0x80
->> [   51.912452]  [<ffffffff81041cd2>] irq_exit+0x45/0x94
->> [   51.912457]  [<ffffffff81004829>] do_IRQ+0xad/0xc4
->> [   51.912463]  [<ffffffff810cbbd3>] ? might_fault+0x63/0xb3
->> [   51.912470]  [<ffffffff813cfb93>] ret_from_intr+0x0/0xf
->> [   51.912474]  <EOI>  [<ffffffff810cbbd3>] ? might_fault+0x63/0xb3
->> [   51.912484]  [<ffffffff8106a75d>] ? lock_release+0x208/0x215
->> [   51.912490]  [<ffffffff810cbc1c>] might_fault+0xac/0xb3
->> [   51.912495]  [<ffffffff810cbbd3>] ? might_fault+0x63/0xb3
->> [   51.912501]  [<ffffffff812025e3>] __clear_user+0x15/0x59
->> [   51.912508]  [<ffffffff8100b2bc>] save_i387_xstate+0x9c/0x1bc
->> [   51.912515]  [<ffffffff81002276>] do_signal+0x240/0x686
->> [   51.912521]  [<ffffffff81002b9c>] ? sysret_check+0x27/0x62
->> [   51.912527]  [<ffffffff8106891e>] ? trace_hardirqs_on_caller+0x114/0x13f
->> [   51.912533]  [<ffffffff813cec80>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->> [   51.912539]  [<ffffffff810026e3>] do_notify_resume+0x27/0x5f
->> [   51.912545]  [<ffffffff813cec80>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->> [   51.912551]  [<ffffffff81002e86>] int_signal+0x12/0x17
->
-> This is a repeat from last time that confused me at the time.  I could
-> do a hacky "fix" by putting an RCU read-side critical section around
-> the for_each_sta_info() in ieee80211_find_sta_by_hw(), but I do not
-> understand this code well enough to feel comfortable doing so.
->
-> Johannes, any enlightenment?
->
->> [   51.929529] [ INFO: suspicious rcu_dereference_check() usage. ]
->> [   51.929532] ---------------------------------------------------
->> [   51.929536] net/mac80211/sta_info.c:886 invoked
->> rcu_dereference_check() without protection!
->> [   51.929540]
->> [   51.929541] other info that might help us debug this:
->> [   51.929542]
->> [   51.929545]
->> [   51.929546] rcu_scheduler_active = 1, debug_locks = 1
->> [   51.929550] 1 lock held by Xorg/4013:
->> [   51.929553]  #0:  (clock-AF_UNIX){++.+..}, at: [<ffffffff8133cebd>]
->> sock_def_readable+0x19/0x62
->> [   51.929567]
->> [   51.929568] stack backtrace:
->> [   51.929573] Pid: 4013, comm: Xorg Not tainted 2.6.34-rc5-git3 #22
->> [   51.929576] Call Trace:
->> [   51.929579]  <IRQ>  [<ffffffff81067fbe>] lockdep_rcu_dereference+0x9d/0xa5
->> [   51.929603]  [<ffffffffa014f9fe>]
->> ieee80211_find_sta_by_hw+0x96/0x10f [mac80211]
->> [   51.929615]  [<ffffffffa014fa8e>] ieee80211_find_sta+0x17/0x19 [mac80211]
->> [   51.929631]  [<ffffffffa01e50f2>] iwl_tx_queue_reclaim+0xdb/0x1b1 [iwlcore]
->> [   51.929642]  [<ffffffffa0252f1c>] iwl5000_rx_reply_tx+0x4a9/0x556 [iwlagn]
->> [   51.929649]  [<ffffffff81068685>] ? mark_held_locks+0x52/0x70
->> [   51.929656]  [<ffffffff813cf46c>] ? _raw_spin_unlock_irqrestore+0x3a/0x69
->> [   51.929662]  [<ffffffff8120a353>] ? is_swiotlb_buffer+0x2e/0x3b
->> [   51.929671]  [<ffffffffa024bbf4>] iwl_rx_handle+0x163/0x2b5 [iwlagn]
->> [   51.929680]  [<ffffffffa024c3ac>] iwl_irq_tasklet+0x2bb/0x3c0 [iwlagn]
->> [   51.929687]  [<ffffffff810411f3>] tasklet_action+0xa7/0x10f
->> [   51.929693]  [<ffffffff81042205>] __do_softirq+0x144/0x252
->> [   51.929700]  [<ffffffff81003a8c>] call_softirq+0x1c/0x34
->> [   51.929705]  [<ffffffff810050e4>] do_softirq+0x38/0x80
->> [   51.929711]  [<ffffffff81041cd2>] irq_exit+0x45/0x94
->> [   51.929717]  [<ffffffff81019b10>] smp_apic_timer_interrupt+0x87/0x95
->> [   51.929724]  [<ffffffff81003553>] apic_timer_interrupt+0x13/0x20
->> [   51.929727]  <EOI>  [<ffffffff813cf46e>] ?
->> _raw_spin_unlock_irqrestore+0x3c/0x69
->> [   51.929739]  [<ffffffff8102d3fb>] __wake_up_sync_key+0x49/0x52
->> [   51.929745]  [<ffffffff8133cee7>] sock_def_readable+0x43/0x62
->> [   51.929751]  [<ffffffff813b1c61>] unix_stream_sendmsg+0x243/0x2e2
->> [   51.929758]  [<ffffffff8133b912>] ? sock_aio_write+0x0/0xcf
->> [   51.929764]  [<ffffffff81339342>] __sock_sendmsg+0x59/0x64
->> [   51.929770]  [<ffffffff8133b9cd>] sock_aio_write+0xbb/0xcf
->> [   51.929777]  [<ffffffff810e9909>] do_sync_readv_writev+0xbc/0xfb
->> [   51.929785]  [<ffffffff811c1792>] ? selinux_file_permission+0xa2/0xaf
->> [   51.929790]  [<ffffffff810e9690>] ? copy_from_user+0x2a/0x2c
->> [   51.929797]  [<ffffffff811baff1>] ? security_file_permission+0x11/0x13
->> [   51.929804]  [<ffffffff810ea6a6>] do_readv_writev+0xa2/0x122
->> [   51.929810]  [<ffffffff810ead93>] ? fcheck_files+0x8f/0xc9
->> [   51.929816]  [<ffffffff810ea764>] vfs_writev+0x3e/0x49
->> [   51.929821]  [<ffffffff810ea84a>] sys_writev+0x45/0x8e
->> [   51.929828]  [<ffffffff81002b6b>] system_call_fastpath+0x16/0x1b
->
-> Ditto.
->
->                                                Thanx, Paul
->
-> ------------------------------------------------------------------------
->
-> commit 0868dd631def762ba00c2f0f397a53c5cdf24ae2
-> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Date:   Sat Apr 24 19:23:30 2010 -0700
->
->    block-cgroup: fix RCU-lockdep splat in blkiocg_add_blkio_group()
->
->    It is necessary to be in an RCU read-side critical section when invoking
->    css_id(), so this patch adds one to blkiocg_add_blkio_group().  This is
->    actually a false positive, because this is called at initialization time,
->    and hence always refers to the root cgroup, which cannot go away.
->
->    Located-by: Miles Lane <miles.lane@gmail.com>
->    Suggested-by: Vivek Goyal <vgoyal@redhat.com>
->    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 5fe03de..55c8c73 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -71,7 +71,9 @@ void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
->
->        spin_lock_irqsave(&blkcg->lock, flags);
->        rcu_assign_pointer(blkg->key, key);
-> +       rcu_read_lock();
->        blkg->blkcg_id = css_id(&blkcg->css);
-> +       rcu_read_unlock();
->        hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
->        spin_unlock_irqrestore(&blkcg->lock, flags);
->  #ifdef CONFIG_DEBUG_BLK_CGROUP
->
+Hi Jon,
 
-I am down to seeing three suspicious rcu_dereference_check traces when
-I apply this patch and all the previous patches to 2.6.34-rc5-git6.
+Jonathan Corbet schrieb:
+> On Sat, 24 Apr 2010 15:53:16 +0200
+> Harald Welte <laforge@gnumonks.org> wrote:
+> 
+>> Simply converting the original two busses to the new code is definitely
+>> the way to go.  Maybe we'll keep the code for the other two around, but
+>> somehow keep them inactive and don't advertise them unless somebody explicitly
+>> does so?
+> 
+> OK, my proposal would be to add the following patch into the early part
+> of the series; that will help to avoid the creation of confusion in the
+> middle until the full i2c/gpio configuration code is in.
+> 
+> Look good?
 
-1. The "__sched_setscheduler+0x19d/0x300" trace.
-2. The two "is_swiotlb_buffer+0x2e/0x3b" traces (waiting to see
-Johannes' patch show up in a Linux snapshot)
+Yes, it does. But it highlighted a bug in the original patch:
 
-Did I miss a patch for the setscheduler issue?
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<c11df2db>] i2c_transfer+0x19/0xb0
+*pdpt = 000000000af77001 *pde = 0000000000000000
+Oops: 0000 [#1] PREEMPT
+last sysfs file: /sys/devices/virtual/vtconsole/vtcon1/bind
+Modules linked in: viafb(+) fbcon font bitblit softcursor fb 
+i2c_algo_bit cfbcopyarea cfbimgblt cfbfillrect snd_hda_codec_realtek 
+snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_timer mmc_block 
+rtl8187 snd eeprom_93cx6 soundcore via_sdmmc snd_page_alloc i2c_viapro 
+ehci_hcd uhci_hcd mmc_core video output [last unloaded: viafb]
 
-Thanks!
-        Miles
+Pid: 3561, comm: insmod Tainted: G        W  2.6.34-rc5 #1 IL1/
+EIP: 0060:[<c11df2db>] EFLAGS: 00010296 CPU: 0
+EIP is at i2c_transfer+0x19/0xb0
+EAX: 00000000 EBX: ffffffa1 ECX: 00000002 EDX: c74f2d68
+ESI: db034294 EDI: c74f2d96 EBP: c74f2d60 ESP: c74f2d48
+  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+Process insmod (pid: 3561, ti=c74f2000 task=db022000 task.ti=c74f2000)
+Stack:
+  00000002 c74f2d68 c74f2d97 c74f2d96 c74f2d97 c74f2d96 c74f2d88 dc7308f0
+<0> 00000040 c74f0001 c74f2d83 00010040 c74f0001 c74f2d96 00000001 00000000
+<0> c74f2da4 dc733a7f c74f2d96 00002db0 dc738a28 db0349a8 c74f2e84 c74f2db0
+Call Trace:
+  [<dc7308f0>] ? viafb_i2c_readbyte+0x60/0x68 [viafb]
+  [<dc733a7f>] ? viafb_lvds_identify_vt1636+0x38/0xbc [viafb]
+  [<dc732a7f>] ? viafb_lvds_trasmitter_identify+0x2c/0x10d [viafb]
+  [<dc7304cc>] ? viafb_init_chip_info+0x15b/0x23f [viafb]
+  [<dc7340c3>] ? via_pci_probe+0x155/0x81c [viafb]
+  [<c111f1c0>] ? idr_get_empty_slot+0x152/0x226
+  [<c112e1ee>] ? pci_match_device+0xbf/0xca
+  [<c112e09c>] ? local_pci_probe+0xe/0x10
+  [<c112e71a>] ? pci_device_probe+0x43/0x66
+  [<c1186374>] ? driver_probe_device+0x78/0x103
+  [<c1186442>] ? __driver_attach+0x43/0x5f
+  [<c1185d79>] ? bus_for_each_dev+0x3d/0x67
+  [<c118624e>] ? driver_attach+0x14/0x16
+  [<c11863ff>] ? __driver_attach+0x0/0x5f
+  [<c11857f3>] ? bus_add_driver+0xa2/0x1d4
+  [<c1186687>] ? driver_register+0x8b/0xeb
+  [<c112e8fe>] ? __pci_register_driver+0x31/0x8a
+  [<dc6f7000>] ? viafb_init+0x0/0x297 [viafb]
+  [<dc6f7288>] ? viafb_init+0x288/0x297 [viafb]
+  [<c1001133>] ? do_one_initcall+0x4b/0x130
+  [<c1041ae9>] ? sys_init_module+0xa7/0x1de
+  [<c1002750>] ? sysenter_do_call+0x12/0x26
+Code: 8d 55 f8 89 4d fc b9 af f0 1d c1 e8 47 4c fa ff c9 c3 55 89 e5 57 
+56 89 c6 53 bb a1 ff ff ff 83 ec 0c 89 55 ec 89 4d e8 8b 40 0c <83> 38 
+00 0f 84 84 00 00 00 89 e0 25 00 f0 ff ff 8b 0d 68 5c 3a
+EIP: [<c11df2db>] i2c_transfer+0x19/0xb0 SS:ESP 0068:c74f2d48
+CR2: 0000000000000000
+
+as you can see it is caused in viafb_lvds_trasmitter_identify by
+-		viaparinfo->shared->i2c_stuff.i2c_port = GPIOPORTINDEX;
+-		if (viafb_lvds_identify_vt1636()) {
++		if (viafb_lvds_identify_vt1636(VIA_I2C_ADAP_26)) {
+which should rather be
+-		viaparinfo->shared->i2c_stuff.i2c_port = GPIOPORTINDEX;
+-		if (viafb_lvds_identify_vt1636()) {
++		if (viafb_lvds_identify_vt1636(VIA_I2C_ADAP_2C)) {
+after which your patches including this work fine (on VX800 and CLE266).
+
+
+Thanks,
+
+Florian Tobias Schandinat
+
+> viafb: Only establish i2c busses on ports that always had them
+> 
+> ...otherwise it seems we run into conflicts with shadowy other users which
+> don't expect to see i2c taking control of ports it never used to do
+> anything with.
+> 
+> Reported-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> Signed-off-by: Jonathan Corbet <corbet@lwn.net>
+> ---
+>  drivers/video/via/via_i2c.c |   19 +++++++++++++------
+>  drivers/video/via/via_i2c.h |    1 +
+>  2 files changed, 14 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/video/via/via_i2c.c b/drivers/video/via/via_i2c.c
+> index fe5535c..b5253e3 100644
+> --- a/drivers/video/via/via_i2c.c
+> +++ b/drivers/video/via/via_i2c.c
+> @@ -170,13 +170,18 @@ static int create_i2c_bus(struct i2c_adapter *adapter,
+>  	return i2c_bit_add_bus(adapter);
+>  }
+>  
+> +/*
+> + * By default, we only activate busses on ports 2c and 31 to avoid
+> + * conflicts with other possible users; that default can be changed
+> + * below.
+> + */
+>  static struct via_i2c_adap_cfg adap_configs[] = {
+> -	[VIA_I2C_ADAP_26]	= { VIA_I2C_I2C,  VIASR, 0x26 },
+> -	[VIA_I2C_ADAP_31]	= { VIA_I2C_I2C,  VIASR, 0x31 },
+> -	[VIA_I2C_ADAP_25]	= { VIA_I2C_GPIO, VIASR, 0x25 },
+> -	[VIA_I2C_ADAP_2C]	= { VIA_I2C_GPIO, VIASR, 0x2c },
+> -	[VIA_I2C_ADAP_3D]	= { VIA_I2C_GPIO, VIASR, 0x3d },
+> -	{ 0, 0, 0 }
+> +	[VIA_I2C_ADAP_26]	= { VIA_I2C_I2C,  VIASR, 0x26, 0 },
+> +	[VIA_I2C_ADAP_31]	= { VIA_I2C_I2C,  VIASR, 0x31, 1 },
+> +	[VIA_I2C_ADAP_25]	= { VIA_I2C_GPIO, VIASR, 0x25, 0 },
+> +	[VIA_I2C_ADAP_2C]	= { VIA_I2C_GPIO, VIASR, 0x2c, 1 },
+> +	[VIA_I2C_ADAP_3D]	= { VIA_I2C_GPIO, VIASR, 0x3d, 0 },
+> +	{ 0, 0, 0, 0 }
+>  };
+>  
+>  int viafb_create_i2c_busses(struct viafb_par *viapar)
+> @@ -189,6 +194,8 @@ int viafb_create_i2c_busses(struct viafb_par *viapar)
+>  
+>  		if (adap_cfg->type == 0)
+>  			break;
+> +		if (!adap_cfg->is_active)
+> +			continue;
+>  
+>  		ret = create_i2c_bus(&i2c_stuff->adapter,
+>  				     &i2c_stuff->algo, adap_cfg,
+> diff --git a/drivers/video/via/via_i2c.h b/drivers/video/via/via_i2c.h
+> index 00ed978..73d682f 100644
+> --- a/drivers/video/via/via_i2c.h
+> +++ b/drivers/video/via/via_i2c.h
+> @@ -35,6 +35,7 @@ struct via_i2c_adap_cfg {
+>  	enum via_i2c_type	type;
+>  	u_int16_t		io_port;
+>  	u_int8_t		ioport_index;
+> +	u8			is_active;
+>  };
+>  
+>  struct via_i2c_stuff {
+
