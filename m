@@ -1,221 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961Ab0DYHfZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 03:35:25 -0400
-Received: from mail.mellanox.co.il ([194.90.237.43]:53265 "EHLO mellanox.co.il"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751104Ab0DYHfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 03:35:22 -0400
-Message-ID: <4BD3F0A9.4080306@mellanox.co.il>
-Date: Sun, 25 Apr 2010 10:35:05 +0300
-From: Amir Vadai <amirv@mellanox.co.il>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre)
-	Gecko/20100217 Lightning/1.0b1 Shredder/3.0.3pre
-MIME-Version: 1.0
-To: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>
-CC: "Tung, Chien Tin" <chien.tin.tung@intel.com>,
-       Steve Wise <swise@opengridcomputing.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-       "rolandd@cisco.com" <rolandd@cisco.com>,
-       "peterz@infradead.org" <peterz@infradead.org>,
-       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
-       Eric B Munson <ebmunson@us.ibm.com>
-Subject: Re: SDP bugs 2027 and 2028
-References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-	<4BC49E2B.3000804@opengridcomputing.com>
-	<2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com>
-	<4BC4D22A.6020700@opengridcomputing.com>
-	<2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>
-	<7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-	<4BC5D1D3.3020004@mellanox.co.il> <4BC5D529.1060701@mellanox.co.il>
-	<2EFBCAEF10980645BBCFB605689E08E9047C79B918@azsmsx506.amr.corp.intel.com>
-	<4BC5D9D4.7020702@opengridcomputing.com>
-	<2EFBCAEF10980645BBCFB605689E08E9047C79BD12@azsmsx506.amr.corp.intel.com>
-	<4BC6B135.2060004@mellanox.co.il>
-	<1205877.1271315264088.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-	<4BC6D075.1070405@mellanox.co.il>
-	<6490876.1271771620997.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <4BCEE8FE.6!
-	050805@mellanox.co.il>
-	<484607.1272033291418.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-In-Reply-To: <484607.1272033291418.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751943Ab0DYHq1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 03:46:27 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:52776 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab0DYHqZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 03:46:25 -0400
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
+ rcu_dereference_check() usage
+From: Johannes Berg <johannes@sipsolutions.net>
+To: paulmck@linux.vnet.ibm.com
+Cc: Miles Lane <miles.lane@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
+       eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>
+In-Reply-To: <20100425023455.GM2440@linux.vnet.ibm.com>
+References: <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com>
+	 <j2ya44ae5cd1004200545q6be4ec82o18ae99d93e8c29c7@mail.gmail.com>
+	 <20100420135227.GC2628@linux.vnet.ibm.com>
+	 <t2la44ae5cd1004200838w87256e80v9dcde91342b321db@mail.gmail.com>
+	 <20100421213543.GO2563@linux.vnet.ibm.com>
+	 <20100422145640.GB3228@redhat.com>
+	 <20100422160144.GC2524@linux.vnet.ibm.com>
+	 <h2xa44ae5cd1004230550uf734c89eo2b1d1945d446068c@mail.gmail.com>
+	 <20100423194255.GE2589@linux.vnet.ibm.com>
+	 <m2xa44ae5cd1004231559hcf90671asf146a43b4748c2c3@mail.gmail.com>
+	 <20100425023455.GM2440@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 25 Apr 2010 09:45:34 +0200
+Message-ID: <1272181534.3614.1.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.29.92.1 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Apr 2010 07:35:18.0775 (UTC)
-	FILETIME=[DAC7C070:01CAE449]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17340.005
-X-TM-AS-Result: No--20.074500-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a fix for 2027 (number of SGE's issue) read.
-I'm busy with other things - but hopefully will succeed testing it and
-pushing it today.
+On Sat, 2010-04-24 at 19:34 -0700, Paul E. McKenney wrote:
 
-As to 2028 (No FMR support) - I need pushed a fix to only disable ZCopy
-when no FMR facility.
-I don't have time right now to add support for fast memory registeration
-when FMR is not available - but Steve said he'll help with implementing it.
+> > [   51.912282] [ INFO: suspicious rcu_dereference_check() usage. ]
+> > [   51.912285] ---------------------------------------------------
+> > [   51.912289] net/mac80211/sta_info.c:886 invoked
+> > rcu_dereference_check() without protection!
+> > [   51.912293]
+> > [   51.912293] other info that might help us debug this:
+> > [   51.912295]
+> > [   51.912298]
+> > [   51.912298] rcu_scheduler_active = 1, debug_locks = 1
+> > [   51.912302] no locks held by wpa_supplicant/3951.
+> > [   51.912305]
+> > [   51.912306] stack backtrace:
+> > [   51.912310] Pid: 3951, comm: wpa_supplicant Not tainted 2.6.34-rc5-git3 #22
+> > [   51.912314] Call Trace:
+> > [   51.912317]  <IRQ>  [<ffffffff81067fbe>] lockdep_rcu_dereference+0x9d/0xa5
+> > [   51.912345]  [<ffffffffa014f9ae>]
+> > ieee80211_find_sta_by_hw+0x46/0x10f [mac80211]
+> > [   51.912358]  [<ffffffffa014fa8e>] ieee80211_find_sta+0x17/0x19 [mac80211]
+> > [   51.912373]  [<ffffffffa01e50f2>] iwl_tx_queue_reclaim+0xdb/0x1b1 [iwlcore]
+> > [   51.912380]  [<ffffffff8106842b>] ? mark_lock+0x2d/0x235
+> > [   51.912391]  [<ffffffffa0252f1c>] iwl5000_rx_reply_tx+0x4a9/0x556 [iwlagn]
+> > [   51.912399]  [<ffffffff8120a353>] ? is_swiotlb_buffer+0x2e/0x3b
+> > [   51.912407]  [<ffffffffa024bbf4>] iwl_rx_handle+0x163/0x2b5 [iwlagn]
+> > [   51.912414]  [<ffffffff81068904>] ? trace_hardirqs_on_caller+0xfa/0x13f
+> > [   51.912422]  [<ffffffffa024c3ac>] iwl_irq_tasklet+0x2bb/0x3c0 [iwlagn]
+> > [   51.912429]  [<ffffffff810411f3>] tasklet_action+0xa7/0x10f
+> > [   51.912435]  [<ffffffff81042205>] __do_softirq+0x144/0x252
+> > [   51.912442]  [<ffffffff81003a8c>] call_softirq+0x1c/0x34
+> > [   51.912447]  [<ffffffff810050e4>] do_softirq+0x38/0x80
+> > [   51.912452]  [<ffffffff81041cd2>] irq_exit+0x45/0x94
+> > [   51.912457]  [<ffffffff81004829>] do_IRQ+0xad/0xc4
+> > [   51.912463]  [<ffffffff810cbbd3>] ? might_fault+0x63/0xb3
+> > [   51.912470]  [<ffffffff813cfb93>] ret_from_intr+0x0/0xf
+> > [   51.912474]  <EOI>  [<ffffffff810cbbd3>] ? might_fault+0x63/0xb3
+> > [   51.912484]  [<ffffffff8106a75d>] ? lock_release+0x208/0x215
+> > [   51.912490]  [<ffffffff810cbc1c>] might_fault+0xac/0xb3
+> > [   51.912495]  [<ffffffff810cbbd3>] ? might_fault+0x63/0xb3
+> > [   51.912501]  [<ffffffff812025e3>] __clear_user+0x15/0x59
+> > [   51.912508]  [<ffffffff8100b2bc>] save_i387_xstate+0x9c/0x1bc
+> > [   51.912515]  [<ffffffff81002276>] do_signal+0x240/0x686
+> > [   51.912521]  [<ffffffff81002b9c>] ? sysret_check+0x27/0x62
+> > [   51.912527]  [<ffffffff8106891e>] ? trace_hardirqs_on_caller+0x114/0x13f
+> > [   51.912533]  [<ffffffff813cec80>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> > [   51.912539]  [<ffffffff810026e3>] do_notify_resume+0x27/0x5f
+> > [   51.912545]  [<ffffffff813cec80>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> > [   51.912551]  [<ffffffff81002e86>] int_signal+0x12/0x17
+> 
+> This is a repeat from last time that confused me at the time.  I could
+> do a hacky "fix" by putting an RCU read-side critical section around
+> the for_each_sta_info() in ieee80211_find_sta_by_hw(), but I do not
+> understand this code well enough to feel comfortable doing so.
+> 
+> Johannes, any enlightenment?
 
-- Amir
+The station locking is a tad confusing, but I've added the right
+annotations already, should be coming to a kernel near you soon (i.e.
+are in net-2.6 right now).
 
-On 04/23/2010 05:34 PM, Andrea Gozzelino wrote:
-> Hi Amir, 
->
-> have you any news about bug 2027 and 2028 (SDP)?
->
-> Take care and keep in touch.
-> Thamk you very much,
-> Andrea
->
->
-> On Apr 21, 2010 02:01 PM, Amir Vadai <amirv@mellanox.co.il> wrote:
->
->   
->> Hi Andrea,
->>
->> I am preparing the fix right now.
->>
->> - Amir
->>
->> On 04/20/2010 04:53 PM, Andrea Gozzelino wrote:
->>     
->>> Hi Amir,
->>>
->>> have you any news about bugs 2027 "SDP not respecting # SGEs as
->>> reported
->>> from HW" and 2028 "SDP should support fastreg mrs"?
->>>
->>> When those bugs will be fixed, I will test the NE020 cards
->>> performance
->>> with SDP protocol and I will compare SDP and TCP.
->>>
->>> Keep in touch,
->>>
->>> Andrea Gozzelino
->>>
->>> INFN - Laboratori Nazionali di Legnaro	(LNL)
->>> Viale dell'Universita' 2
->>> I-35020 - Legnaro (PD)- ITALIA
->>> Tel: +39 049 8068346
->>> Fax: +39 049 641925
->>> Mail: andrea.gozzelino@lnl.infn.it
->>>
->>>
->>>
->>>
->>>
->>>
->>>
->>> On Apr 15, 2010 10:38 AM, Amir Vadai <amirv@mellanox.co.il> wrote:
->>>
->>>   
->>>       
->>>> It should be a simple fix and I plan to do soon - just add yourself
->>>> as
->>>> CC in bugzilla  - that way I won't forget to notify you.
->>>>
->>>> - amir
->>>>
->>>> On 04/15/2010 10:07 AM, Andrea Gozzelino wrote:
->>>>     
->>>>         
->>>>> On Apr 15, 2010 08:24 AM, Amir Vadai <amirv@mellanox.co.il> wrote:
->>>>>
->>>>>   
->>>>>       
->>>>>           
->>>>>> I hope to have a fix next week for the first one.
->>>>>>
->>>>>> Thanks,
->>>>>> Amir
->>>>>>
->>>>>> On 04/14/2010 09:48 PM, Tung, Chien Tin wrote:
->>>>>>     
->>>>>>         
->>>>>>             
->>>>>>>> Tung, Chien Tin wrote:
->>>>>>>>     
->>>>>>>>         
->>>>>>>>             
->>>>>>>>                 
->>>>>>>>>> One more thing - Please open a bug regarding the num_sge
->>>>>>>>>> limitation at:
->>>>>>>>>> https://bugs.openfabrics.org/
->>>>>>>>>>
->>>>>>>>>>         
->>>>>>>>>>             
->>>>>>>>>>                 
->>>>>>>>>>                     
->>>>>>>>> Done, Bug 2027.
->>>>>>>>>
->>>>>>>>> Chien
->>>>>>>>>
->>>>>>>>>       
->>>>>>>>>           
->>>>>>>>>               
->>>>>>>>>                   
->>>>>>>> And 2028 opened to request fastreg support.
->>>>>>>>
->>>>>>>>     
->>>>>>>>         
->>>>>>>>             
->>>>>>>>                 
->>>>>>> I am open to test fixes for these two bugs.
->>>>>>>
->>>>>>> Chien
->>>>>>>
->>>>>>>   
->>>>>>>       
->>>>>>>           
->>>>>>>               
->>>>>>     
->>>>>>         
->>>>>>             
->>>>> Hi Amir, 
->>>>> Hi Chien,
->>>>>
->>>>> I understand that the bug 2027 could be solved next week, so I
->>>>> will
->>>>> test
->>>>> SDP protocol performance on NE020 cards.
->>>>> Is it correct? 
->>>>> If yes, could you point out the code modifies?
->>>>>
->>>>> Keep in touch and take care.
->>>>> Regards,
->>>>> Andrea
->>>>>
->>>>>
->>>>> Andrea Gozzelino
->>>>>
->>>>> INFN - Laboratori Nazionali di Legnaro	(LNL)
->>>>> Viale dell'Universita' 2
->>>>> I-35020 - Legnaro (PD)- ITALIA
->>>>> Tel: +39 049 8068346
->>>>> Fax: +39 049 641925
->>>>> Mail: andrea.gozzelino@lnl.infn.it			
->>>>>
->>>>>
->>>>>   
->>>>>       
->>>>>           
->>>>     
->>>>         
->>> 		
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe
->>> linux-rdma" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>   
->>>       
->>     
->
->
->
->   
+johannes
+
