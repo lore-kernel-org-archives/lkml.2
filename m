@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab0DYJvv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 05:51:51 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42975
+	id S1754213Ab0DYJz0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 05:55:26 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51743
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754064Ab0DYJvt (ORCPT
+	by vger.kernel.org with ESMTP id S1753193Ab0DYJzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 05:51:49 -0400
-Date: Sun, 25 Apr 2010 02:51:54 -0700 (PDT)
-Message-Id: <20100425.025154.152946070.davem@davemloft.net>
-To: xiaosuo@gmail.com
-Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
-       jdike@linux.intel.com
-Subject: Re: [RFC][PATCH v4 05/18] Add a function to indicate if device use
- external buffer.
+	Sun, 25 Apr 2010 05:55:24 -0400
+Date: Sun, 25 Apr 2010 02:55:29 -0700 (PDT)
+Message-Id: <20100425.025529.123989625.davem@davemloft.net>
+To: xiaohui.xin@intel.com
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       mst@redhat.com, mingo@elte.hu, jdike@linux.intel.com
+Subject: Re: [RFC][PATCH v4 00/18] Provide a zero-copy method on KVM
+ virtio-net.
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <t2z412e6f7f1004250235ib1002b3doe604d786dadefaa5@mail.gmail.com>
-References: <1272187206-18534-4-git-send-email-xiaohui.xin@intel.com>
-	<1272187206-18534-5-git-send-email-xiaohui.xin@intel.com>
-	<t2z412e6f7f1004250235ib1002b3doe604d786dadefaa5@mail.gmail.com>
+In-Reply-To: <1272187206-18534-19-git-send-email-xiaohui.xin@intel.com>
+References: <1272187206-18534-17-git-send-email-xiaohui.xin@intel.com>
+	<1272187206-18534-18-git-send-email-xiaohui.xin@intel.com>
+	<1272187206-18534-19-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -28,12 +27,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Sun, 25 Apr 2010 17:35:01 +0800
+From: xiaohui.xin@intel.com
+Date: Sun, 25 Apr 2010 17:20:06 +0800
 
-> On Sun, Apr 25, 2010 at 5:19 PM,  <xiaohui.xin@intel.com> wrote:
->> +static int dev_is_mpassthru(struct net_device *dev)
-> 
-> bool return value should be better here.
+> The idea is simple, just to pin the guest VM user space and then let
+> host NIC driver has the chance to directly DMA to it.
 
-Right.
+Isn't it much easier to map the RX ring of the network device into the
+guest's address space, have DMA map calls translate guest addresses to
+physical/DMA addresses as well as do all of this crazy page pinning
+stuff, and provide the translations and protections via the IOMMU?
+
+What's being proposed here looks a bit over-engineered.
