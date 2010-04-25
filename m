@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab0DYQbf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 12:31:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48973 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab0DYQbd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 12:31:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=NLygHmMVR4DRvSy/NQEEWEFthTy90/aRVHpC2mol769k19Zhc9u/L5Nco0jZKFj9qo
-         JKcE88sx4czklqOC9N/IAb2MXFalwVfqMH5rCM+f+IlVbUrow7dC1h1FJDd5gQV7Y+1r
-         6koNXyDSXCdcrESzfTArOUnkzefnju1GHkoT4=
+	id S1753004Ab0DYQga (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 12:36:30 -0400
+Received: from kroah.org ([198.145.64.141]:42114 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751961Ab0DYQg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 12:36:29 -0400
+Date: Sun, 25 Apr 2010 09:37:11 -0700
+From: Greg KH <greg@kroah.com>
+To: Tomas Winkler <tomasw@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+       Kay Sievers <kay.sievers@vrfy.org>,
+       David Woodhouse <dwmw2@infradead.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: request_firmware API exhaust memory
+Message-ID: <20100425163711.GA20196@kroah.com>
+References: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com> <20100419145934.GA10893@kroah.com> <t2w1ba2fa241004211522le49fc938m341553b0f2b89031@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <4BD45E68.4080900@example.com>
-References: <l2z2d0a357f1004250811w6da355ebp95d1730473026c22@mail.gmail.com>
-	 <4BD45E68.4080900@example.com>
-Date: Sun, 25 Apr 2010 18:31:31 +0200
-Message-ID: <g2z2d0a357f1004250931pf5880c60l32fd0643e0f14bde@mail.gmail.com>
-Subject: Re: [2.6.34-rc5-git6] EIP: is at inet6_csk_bind_conflict + 06xe/0xb7 
-	[ipv6]
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: piotr@hosowicz.com
-Cc: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-       David Miller <davem@davemloft.net>, Jiri Olsa <jolsa@redhat.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Jongman Heo <jongman.heo@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <t2w1ba2fa241004211522le49fc938m341553b0f2b89031@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ CCing netdev ML ]
+On Thu, Apr 22, 2010 at 01:22:51AM +0300, Tomas Winkler wrote:
+> On Mon, Apr 19, 2010 at 5:59 PM, Greg KH <greg@kroah.com> wrote:
+> > On Mon, Apr 19, 2010 at 03:20:34PM +0300, Tomas Winkler wrote:
+> >> Lately we've been developing a device that rather more extensively
+> >> used request_firmware API in load and also using pm_notifiers to load
+> >> firmware.
+> >
+> > Do you have a pointer to your driver source anywhere that shows how you
+> > are trying to use the firmware api in this manner?
+> 
+> I've attached a very simple  test driver I'm using.  Just wanted to
+> eliminate anything else.
+> Bellow is a little script that loads and releases the firmware. My
+> previous observation was wrong.
+> The free memory gradually decreases regardless of number or dangling
+> udevd forks, which are eventually collected if the sleep period is
+> long enough ~10s.
 
-Confirmed: The revert-patch [1] fixes the problem here.
+That sounds normal for the free memory.  Kay, that's also to be expected
+for the udevd forks as well, right?
 
-See also "Bug 15847 -  crash in inet6_csk_bind_conflict" [2].
+thanks,
 
-Feel free to add a... Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-
-- Sedat -
-
-[1] https://patchwork.kernel.org/patch/94959/
-[2] https://bugzilla.kernel.org/show_bug.cgi?id=15847
-
-2010/4/25 Piotr Hosowicz <piotr@hosowicz.com>:
-> On 25.04.2010 17:11, Sedat Dilek wrote:
->>
->> [ Please CC - I am not subscribed to LKML ]
->>
->> [QUOTE]
->>
->> On 25.04.2010 16:26, Jongman Heo wrote:
->>
->>> I also hit this bug today.
->>
->> I also hit similar bug, maybe it is the same.
->>
->>> Doing git bisect, first bad commit was
->>>
->>>   commit fda48a0d7a8412cedacda46a9c0bf8ef9cd13559
->>>   tcp: bind() fix when many ports are bound
->>>
->>> Reverting above commit fixes the problem.
->>
->> How to do it? Would you please publish a reverting patch?
->>
->> Regards,
->>
->> Piotr Hosowicz
->>
->> [/QUOTE]
->>
->> Hi,
->>
->> did forget to mention 2.6.34-rc5-git5 was OK.
->>
->> Revering this commit did not help:
->>
->> commit f4f914b58019f0e50d521bbbadfaee260d766f95
->> net: ipv6 bind to device issue
->>
->> After looking into net-2.6 GIT repository, "tcp: bind() fix when many
->> ports are bound" could cause indeed the problems here, too.
->> Building now....
->>
->> Regards,
->> - Sedat -
->>
->> P.S.: Attached 0001-Revert-tcp-bind-fix-when-many-ports-are-bound.patch
->
-> Thanks a lot. Applied and building now.
->
-> Regards,
->
-> Piotr Hosowicz
->
-> --
-> Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
-> - W którym kraju znajduje się Mount Everest?
-> - Hm, to nie Szkocja, prawda?
-> NP: Mark Knopfler - Cleaning My Gun
-> NB: 2.6.34-rc5-git5
->
+greg k-h
