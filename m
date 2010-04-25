@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab0DYRjZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 13:39:25 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42298 "EHLO
+	id S1753555Ab0DYRp0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 13:45:26 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53319 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab0DYRjX (ORCPT
+	with ESMTP id S1753165Ab0DYRpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 13:39:23 -0400
+	Sun, 25 Apr 2010 13:45:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=YB5Z8LK228f28LdMxMXdDdvnjpaZsGfQynW9H7EX0c7xQtZK9sZXLzujbj+oG0pVLc
-         bTUyBVX7X9h4WEIJtQQFqgNU4sOVGiZ+hbjp85HkupBSV8k4oqQDE432SVIVZjgQdRbo
-         K6C+bQe3OI2n/m4odzak7FF8KEx3sgxjx6Y3s=
-Date: Sun, 25 Apr 2010 19:39:15 +0200
+        b=Fm22uHuEsLP7WAkmbu6DZ1JjWkEUUni/AFkEVZA6qdW2KrxZrE9L5cWS5Fvw0grDre
+         yT+DJ4RNjfXtKu6q+gaIONnK5qcAXoQZfnP+2jzL/QWaIehF3dC9R8kedS/WWMRyYg3W
+         Szu1uSG00vIF0+adjN55sZtrfuXaFVOuEoAPg=
+Date: Sun, 25 Apr 2010 19:45:17 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Al Viro <viro@zeniv.linux.org.uk>,
-       Jan Blunck <jblunck@suse.de>, Ingo Molnar <mingo@elte.hu>,
-       John Kacur <jkacur@redhat.com>
-Subject: Re: [GIT PULL v2] Preparation for BKL'ed ioctl removal
-Message-ID: <20100425173912.GA5375@nowhere>
-References: <1271390201-20431-1-git-send-regression-fweisbec@gmail.com> <201004242154.02421.arnd@arndb.de> <alpine.LFD.2.00.1004241258140.3739@i5.linux-foundation.org> <201004242240.51176.arnd@arndb.de> <alpine.LFD.2.00.1004241510530.3739@i5.linux-foundation.org>
+To: Alessio Igor Bogani <abogani@texware.it>
+Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ptrace: Cleanup useless header
+Message-ID: <20100425174513.GB5375@nowhere>
+References: <1272194328-7346-1-git-send-email-abogani@texware.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004241510530.3739@i5.linux-foundation.org>
+In-Reply-To: <1272194328-7346-1-git-send-email-abogani@texware.it>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 03:15:23PM -0700, Linus Torvalds wrote:
+On Sun, Apr 25, 2010 at 01:18:48PM +0200, Alessio Igor Bogani wrote:
+> BKL isn't anymore present into this file thus it is no necessary still include smp_lock.h.
 > 
-> 
-> On Sat, 24 Apr 2010, Arnd Bergmann wrote:
-> > 
-> > With CONFIG_BKL disabled, we gain a few cyles in the scheduler,
-> 
-> That has _nothing_ to do with the ioctl's though.
-> 
-> Stop mixing things up.
-> 
-> There are two totally independent issues:
-> 
->  - making the BKL ioctl's be explicit and findable
-> 
->  - eventually getting rid of the BKL entirely
-> 
-> and I think you guys are totally mixing things up, and making things WORSE 
-> in the process.
-> 
-> The notion of having _three_ different "ioctl()" function pointers just 
-> makes me want to gag. And there is absolutely _zero_ reason for it. Tjhere 
-> is no way in hell that we want to have every subsystem maintainer try to 
-> independently do their own ioctl's. Most of the drivers that have those 
-> things are basically unmaintained or on the back burner anyway.
-> 
-> So don't make the current ugly ioctl situation worse. Not even as a 
-> stop-gap, because there is absolutely _zero_ upside to making yet another 
-> new crazy temporary ioctl interface.
+> Signed-off-by: Alessio Igor Bogani <abogani@texware.it>
 
 
-Our final goal was not to have three different ioctl interfaces. This state was
-only deemed to be temporary. This was the only way to make the change
-smoother and don't conflict with other trees with a single monolithic patch.
+Please also Cc me and Arnd for bkl related things. We are trying to
+keep track of every work on the bkl removal (see http://kernelnewbies.org/BigKernelLock)
+so that nothing gets lost.
 
-But if you are ok with a single one, then we are going this way and we'll send it for
-the next merge window.
+Especially this patch applies to one of my branches:
 
- 
-> And don't try to conflate the issue of ioctl and BKL. There are still 
-> code-paths that do lock_kernel() without the ioctl's, so the whole ioctl 
-> renaming has _zero_ to do with CONFIG_BKL.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	bkl/core
 
 
-It's true, but once it gets pushed down/dropped from every core parts (which
-is what we are working on currently in parallel), lock_kernel() and .bkl_ioctl
-is only going to be used by unmaintained drivers. This is the time where having
-a CONFIG_BKL is going to make sense. And it won't be a question of saving some
-bytes but improve efficiency of schedule() for those who don't need such old or
-unmaintained drivers.
 
-May be we should only start to focus on this new config once this state is reached.
+> ---
+>  kernel/ptrace.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+> index 1d4883c..6af9cdd 100644
+> --- a/kernel/ptrace.c
+> +++ b/kernel/ptrace.c
+> @@ -14,7 +14,6 @@
+>  #include <linux/mm.h>
+>  #include <linux/highmem.h>
+>  #include <linux/pagemap.h>
+> -#include <linux/smp_lock.h>
 
-And to prepare for that, are you ok with this scheme of:
 
--	.ioctl = foo,
-+	.unlocked_ioctl = bkl_ioctl,
-+	.bkl_ioctl	= foo,
 
-...done at the same time as the big rename patch.
-This will prepare to remove the bkl from vfs and build it conditionally
-from the bkl lib, once the bkl is out the core?
+Queued, thanks!
+
+
+
+>  #include <linux/ptrace.h>
+>  #include <linux/security.h>
+>  #include <linux/signal.h>
+> -- 
+> 1.6.3.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
