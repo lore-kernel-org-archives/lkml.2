@@ -1,121 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab0DYDO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 23:14:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39777 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751150Ab0DYDOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 23:14:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Michal Hocko <mhocko@suse.cz>
-Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
-Date: Sun, 25 Apr 2010 05:15:08 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Tony Vroon <tony@linx.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>
-References: <20100401133923.GA4104@tiehlicka.suse.cz> <201004191719.53602.rjw@sisk.pl> <201004250435.42779.rjw@sisk.pl>
-In-Reply-To: <201004250435.42779.rjw@sisk.pl>
+	id S1752872Ab0DYD1O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 23:27:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:42459 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab0DYD1M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 23:27:12 -0400
+X-Authority-Analysis: v=1.1 cv=xRTZebBBDdo2we0brv+6LS4OnISiv5IIQ8N1gMmWij4= c=1 sm=0 a=sObsxtUuuKIA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=PtDNVHqPAAAA:8 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=QaRwUKqS882Pgo8FW0kA:9 a=kBQksYlBpE4ce3ECxWEA:7 a=opsBKajQrANuKr7JYpcdROTyooUA:4 a=CjuIK1q_8ugA:10 a=wYE_KDyynt4A:10 a=MSl-tDqOz04A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.120.198.24
+Date: Sat, 24 Apr 2010 22:24:47 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: ron minnich <rminnich@gmail.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
+       Greg KH <greg@kroah.com>, lkml <linux-kernel@vger.kernel.org>,
+       David Howells <dhowells@redhat.com>,
+       Ashwin Ganti <ashwin.ganti@gmail.com>, rsc@swtch.com, ericvh@gmail.com,
+       linux-security-module@vger.kernel.org, jt.beard@gmail.com,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrew Morgan <morgan@kernel.org>, oleg@us.ibm.com,
+       Eric Paris <eparis@redhat.com>, linux-api@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 3/3] p9auth: add p9auth driver
+Message-ID: <20100425032447.GA25044@hallyn.com>
+References: <20100421012749.GA21338@us.ibm.com>
+ <20100421012908.GB24251@us.ibm.com>
+ <20100421030406.GB10258@kroah.com>
+ <20100421034532.GA9254@us.ibm.com>
+ <m1zl0xo1m9.fsf@fess.ebiederm.org>
+ <20100424033614.GA4180@us.ibm.com>
+ <n2s13426df11004240925id540ed94mc2ebafada0099ec4@mail.gmail.com>
+ <m11ve4wwzk.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004250515.08671.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m11ve4wwzk.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 25 April 2010, Rafael J. Wysocki wrote:
-> On Monday 19 April 2010, Rafael J. Wysocki wrote:
-> > On Monday 19 April 2010, Michal Hocko wrote:
-> > > On Fri 16-04-10 20:00:29, Rafael J. Wysocki wrote:
-> > > > On Wednesday 14 April 2010, Michal Hocko wrote:
-> > > > > On Tue 13-04-10 22:53:37, Rafael J. Wysocki wrote:
-> > > > > > On Tuesday 13 April 2010, Michal Hocko wrote:
-> > > > > > > On Tue 13-04-10 01:01:54, Rafael J. Wysocki wrote:
-> > > > > > > > On Saturday 10 April 2010, Rafael J. Wysocki wrote:
-> > > > > > > > > On Friday 09 April 2010, Tony Vroon wrote:
-> > > > > > > > > > On Fri, 2010-04-09 at 22:42 +0200, Rafael J. Wysocki wrote:
-> > > > > > > > > > > Please check if the patch below changes anything.
-> > > > > > > > > > >  drivers/acpi/wakeup.c |    4 ++--
-> > > > > > > > > > >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > > > > > > > > > 
-> > > > > > > > > > That didn't change the behaviour for me, sorry.
-> > > > > > > > > 
-> > > > > > > > > Well, I would be sorry if it did, because the patch removed some useful code. :-)
-> > > > > > > > > 
-> > > > > > > > > > (I made sure to go through a full power down session before trying the
-> > > > > > > > > > patched kernel)
-> > > > > > > > > 
-> > > > > > > > > Thanks for testing.  So it looks like we don't disable the GPE during power off.
-> > > > > > > > > 
-> > > > > > > > > I'll try to figure out what's going on, please stay tuned.
-> > > > > > > > 
-> > > > > > > > Can you please check if the patch below changes the behavior?
-> > > > > > > 
-> > > > > > > Unfortunately, it didn't help either (I have tried on top of the fresh
-> > > > > > > rc4).
-> > > > > > 
-> > > > > > That gets really weird.
-> > > > > > 
-> > > > > > > > ---
-> > > > > > > >  drivers/acpi/wakeup.c |    6 +++---
-> > > > > > > >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > > > > > > > 
-> > > > > > > > Index: linux-2.6/drivers/acpi/wakeup.c
-> > > > > > > > ===================================================================
-> > > > > > > > --- linux-2.6.orig/drivers/acpi/wakeup.c
-> > > > > > > > +++ linux-2.6/drivers/acpi/wakeup.c
-> > > > > > > > @@ -63,17 +63,17 @@ void acpi_enable_wakeup_device(u8 sleep_
-> > > > > > > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
-> > > > > > > >  		struct acpi_device *dev =
-> > > > > > > >  			container_of(node, struct acpi_device, wakeup_list);
-> > > > > > > > +		u8 action = ACPI_GPE_ENABLE;
-> > > > > > 
-> > > > > > Can you try to change the above to ACPI_GPE_DISABLE and retest, please?
-> > > > > 
-> > > > > Unfortunately didn't help as well...
-> > > > > Just for reference:
-> > > > > 
-> > > > > diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
-> > > > > index 248b473..f23c08f 100644
-> > > > > --- a/drivers/acpi/wakeup.c
-> > > > > +++ b/drivers/acpi/wakeup.c
-> > > > > @@ -63,7 +63,7 @@ void acpi_enable_wakeup_device(u8 sleep_state)
-> > > > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
-> > > > >  		struct acpi_device *dev =
-> > > > >  			container_of(node, struct acpi_device, wakeup_list);
-> > > > > -		u8 action = ACPI_GPE_ENABLE;
-> > > > > +		u8 action = ACPI_GPE_DISABLE;
-> > > > 
-> > > > That probably means the chipset enables the GPEs by itself _after_ we've
-> > > > disabled them in acpi_enable_wakeup_device().
-> > > 
-> > > Is this something BIOS specific?
-> > > 
-> > > > 
-> > > > Unfortunately, I can't reproduce the issue on any of my test boxes and it's
-> > > > hard to find the source of the problem staring at the code.
-> > > 
-> > > Are there any debug options I can turn on to provide some information?
-> > 
-> > We can only check what the kernel tells us before power off, but all that seems
-> > correct.
-> > 
-> > > Btw. what exactly does this mean? In what state is the laptop while it
-> > > is turned off and GPE is enabled?
-> > 
-> > If a GPE is enabled, then some part of the chipset has power provided so that
-> > it can signal wakeup.
-> > 
-> > I'll look into it a bit more later today.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> ron minnich <rminnich@gmail.com> writes:
 > 
-> Please try the patch below.  It kind of restores the previous behavior,
-> let's see if it changes anything.
+> > On Fri, Apr 23, 2010 at 8:36 PM, Serge E. Hallyn <serue@us.ibm.com> wrote:
+> >
+> >> An fs actually seems overkill for two write-only files for
+> >> process-related information. ??Would these actually be candidates
+> >> for new /proc files?
+> >>
+> >> ?? ?? ?? ??/proc/grantcred - replaces /dev/caphash, for privileged
+> >> ?? ?? ?? ?? ?? ?? ?? ??tasks to tell the kernel about new setuid
+> >> ?? ?? ?? ?? ?? ?? ?? ??capabilities
+> >> ?? ?? ?? ??/proc/self/usecred - replaces /dev/capuse for unprivileged
+> >> ?? ?? ?? ?? ?? ?? ?? ??tasks to make use of a setuid capability
+> >
+> > An fs is fine.
+> >
+> > To relate this to Plan 9, where it all began, might be useful. There's
+> > no equivalent in Plan 9 to Linux/Unix devices of the major/minor
+> > number etc. variety. In-kernel drivers and out-of-kernel servers both
+> > end up providing the services (i.e. file name spaces) that we see in a
+> > Linux file system. So the Plan 9 driver for the capability device
+> > really does match closely in function and interface to a Linux
+> > kernel-based file system.
+> >
+> > Hence, making devcap a file system is entirely appropriate, because it
+> > best fits the way it works in Plan 9: a kernel driver that provides
+> > two files.
+> >
+> > It's pretty easy to write a Linux VFS anyway, so it makes sense from
+> > that point of view.
+> >
+> > Eric, that was a great suggestion.
+> 
+> A fs provides user space policy control of naming.  I.e. where the two files go.
+> That can also be a very big deal.  Especially when files are writable.
+> 
+> You have no idea how much I am frustrated by sysfs right now, because
+> it does not provide userspace policy control and instead mandates a
+> sometimes inappropriate naming convention.
+> 
+> Eric
 
-If it doesn't help, please try to comment out the acpi_enable_gpe() in
-drivers/acpi/wakeup.c:acpi_wakeup_device_init() and retest (if you haven't
-done that already).
+Well I'm not convinced that it's a worthwhile tradeoff for polluting
+/proc/filesystems and needing yet another fs mounted in each container,
+but a preliminary working version using an fs is at
+http://git.kernel.org/gitweb.cgi?p=linux/kernel/git/sergeh/linux-cr.git;a=shortlog;h=refs/heads/p9auth.apr24.2
 
-Rafael
+I'll do some cleanup before sending it out.
+
+Eric, I'd said that the device-based version was namespace-aware, but
+that meant that you could on grant and use capabilities in your own
+user namespace.  I suppose now that it's an fs we can do better
+semantics, where each user ns can mount its own p9auth, and anyone
+with CAP_GRANT_ID targeted at some user ns (i.e. root in a user_ns
+or the creator of a user_ns) can grant ids to that user ns.  Though
+I'm not sure that's a feature anyone would ever use, and I do like
+the simplicity of just having one sb.
+
+-serge
