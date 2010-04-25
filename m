@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab0DYSRz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 14:17:55 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35908 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753675Ab0DYSRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 14:17:54 -0400
-Date: Sun, 25 Apr 2010 11:18:35 -0700
-From: Greg KH <gregkh@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Hans-Peter Jansen <hpj@urpla.net>, Nick Piggin <npiggin@suse.de>,
-       opensuse-kernel@opensuse.org, linux-kernel@vger.kernel.org,
-       xfs@oss.sgi.com
-Subject: Re: 2.6.34-rc3: simple du (on a big xfs tree) triggers oom killer
-	[bisected: 57817c68229984818fea9e614d6f95249c3fb098]
-Message-ID: <20100425181835.GA22772@suse.de>
-References: <201004050049.17952.hpj@urpla.net> <20100413091823.GD7544@dastard> <201004131142.33518.hpj@urpla.net> <201004241844.23482.hpj@urpla.net> <20100425162740.GB19195@suse.de> <20100425165734.GA2887@infradead.org>
+	id S1753710Ab0DYSm5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 14:42:57 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:51379 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752833Ab0DYSm4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 14:42:56 -0400
+Date: Sun, 25 Apr 2010 13:48:26 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] bcache: ver 3
+Message-ID: <20100425114825.GA1865@ucw.cz>
+References: <20100423194107.GA20322@moria>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100425165734.GA2887@infradead.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100423194107.GA20322@moria>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 25, 2010 at 12:57:35PM -0400, Christoph Hellwig wrote:
-> On Sun, Apr 25, 2010 at 09:27:40AM -0700, Greg KH wrote:
-> > On Sat, Apr 24, 2010 at 06:44:22PM +0200, Hans-Peter Jansen wrote:
-> > > FYI, 2.6.33.2 is still affected from this issue. 
-> > 
-> > Is 2.6.33.3-rc2 affected?  A lot of xfs patches are in there (as are in
-> > 2.6.32.12-rc2.)
-> 
-> Yes.  It's not even in mainline yet as Nick doesn't like the trivial
-> core VM fix required to solve this in a clean way.
+Hi!
 
-Hm, Nick, why?  This seems like a real problem, easily reproduced.  Is
-it solved some other way in Linus's tree that we could backport to the
--stable series?
+> --- /dev/null
+> +++ b/block/bcache.c
+> @@ -0,0 +1,2337 @@
+> +#define pr_fmt(fmt) "bcache: %s() " fmt, __func__
+> +
+> +#include <linux/blkdev.h>
+> +#include <linux/buffer_head.h>
 
-thanks,
+Some copyright, gpl and short note what it is would be nice.
+								Pavel
 
-greg k-h
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
