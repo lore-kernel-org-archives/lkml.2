@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab0DYCgi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 22:36:38 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:41971 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599Ab0DYCgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 22:36:36 -0400
-Date: Sat, 24 Apr 2010 19:36:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
- rcu_dereference_check() usage
-Message-ID: <20100425023633.GN2440@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <j2ya44ae5cd1004200545q6be4ec82o18ae99d93e8c29c7@mail.gmail.com>
- <20100420135227.GC2628@linux.vnet.ibm.com>
- <t2la44ae5cd1004200838w87256e80v9dcde91342b321db@mail.gmail.com>
- <20100421213543.GO2563@linux.vnet.ibm.com>
- <20100422145640.GB3228@redhat.com>
- <20100422160144.GC2524@linux.vnet.ibm.com>
- <h2xa44ae5cd1004230550uf734c89eo2b1d1945d446068c@mail.gmail.com>
- <20100423194255.GE2589@linux.vnet.ibm.com>
- <m2xa44ae5cd1004231559hcf90671asf146a43b4748c2c3@mail.gmail.com>
- <u2qa44ae5cd1004232235i2e1cd2a0g634fc1d5d8c3f7c2@mail.gmail.com>
+	id S1752603Ab0DYDOQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 23:14:16 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39630 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab0DYDOP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 23:14:15 -0400
+Message-ID: <4BD3B2D1.8080203@vflare.org>
+Date: Sun, 25 Apr 2010 08:41:13 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <u2qa44ae5cd1004232235i2e1cd2a0g634fc1d5d8c3f7c2@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
+       JBeulich@novell.com, chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <20100422134249.GA2963@ca-server1.us.oracle.com> <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default> <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default> <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default 4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <4BD24E37.30204@vflare.org> <4BD33822.2000604@redhat.com>
+In-Reply-To: <4BD33822.2000604@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 01:35:01AM -0400, Miles Lane wrote:
-> 2.6.34-rc5-git5 with all of your patches applied.
+On 04/24/2010 11:57 PM, Avi Kivity wrote:
+> On 04/24/2010 04:49 AM, Nitin Gupta wrote:
+>>
+>>> I see.  So why not implement this as an ordinary swap device, with a
+>>> higher priority than the disk device?  this way we reuse an API and keep
+>>> things asynchronous, instead of introducing a special purpose API.
+>>>
+>>>      
+>> ramzswap is exactly this: an ordinary swap device which stores every page
+>> in (compressed) memory and its enabled as highest priority swap.
+>> Currently,
+>> it stores these compressed chunks in guest memory itself but it is not
+>> very
+>> difficult to send these chunks out to host/hypervisor using virtio.
+>>
+>> However, it suffers from unnecessary block I/O layer overhead and
+>> requires
+>> weird hooks in swap code, say to get notification when a swap slot is
+>> freed.
+>>    
 > 
-> I reconfigured my kernel build options and got the following new issue:
+> Isn't that TRIM?
+
+No: trim or discard is not useful. The problem is that we require a callback
+_as soon as_ a page (swap slot) is freed. Otherwise, stale data quickly accumulates
+in memory defeating the whole purpose of in-memory compressed swap devices (like ramzswap).
+
+Increasing the frequency of discards is also not an option:
+ - Creating discard bio requests themselves need memory and these swap devices
+come into picture only under low memory conditions.
+ - We need to regularly scan swap_map to issue these discards. Increasing discard
+frequency also means more frequent scanning (which will still not be fast enough
+for ramzswap needs).
+
 > 
-> [    2.686515] [ INFO: suspicious rcu_dereference_check() usage. ]
-> [    2.686519] ---------------------------------------------------
-> [    2.686523] kernel/cgroup.c:4438 invoked rcu_dereference_check()
-> without protection!
-> [    2.686526]
-> [    2.686527] other info that might help us debug this:
-> [    2.686529]
-> [    2.686532]
-> [    2.686533] rcu_scheduler_active = 1, debug_locks = 1
-> [    2.686537] 2 locks held by swapper/1:
-> [    2.686540]  #0:  (mtd_table_mutex){+.+.+.}, at:
-> [<ffffffff812d7714>] register_mtd_blktrans+0xa2/0x25e
-> [    2.686555]  #1:  (&(&blkcg->lock)->rlock){......}, at:
-> [<ffffffff811ca7bd>] blkiocg_add_blkio_group+0x29/0x7f
-> [    2.686566]
-> [    2.686567] stack backtrace:
-> [    2.686572] Pid: 1, comm: swapper Not tainted 2.6.34-rc5-git5 #25
-> [    2.686576] Call Trace:
-> [    2.686584]  [<ffffffff810642da>] lockdep_rcu_dereference+0x9d/0xa5
-> [    2.686591]  [<ffffffff8107af54>] css_id+0x3f/0x52
-> [    2.686597]  [<ffffffff811ca7cc>] blkiocg_add_blkio_group+0x38/0x7f
-> [    2.686603]  [<ffffffff811cc593>] cfq_init_queue+0xdf/0x2dc
-> [    2.686609]  [<ffffffff811bb858>] elevator_init+0xba/0xf5
-> [    2.686616]  [<ffffffff812d7046>] ? mtd_blktrans_request+0x0/0x1c
-> [    2.686623]  [<ffffffff811c0b62>] blk_init_queue_node+0x12f/0x135
-> [    2.686629]  [<ffffffff811c0b74>] blk_init_queue+0xc/0xe
-> [    2.686635]  [<ffffffff812d7777>] register_mtd_blktrans+0x105/0x25e
-> [    2.686642]  [<ffffffff818c0de9>] ? init_mtdblock+0x0/0x2c
-> [    2.686648]  [<ffffffff818c0e13>] init_mtdblock+0x2a/0x2c
-> [    2.686656]  [<ffffffff810001ef>] do_one_initcall+0x59/0x14e
-> [    2.686663]  [<ffffffff818986a6>] kernel_init+0x160/0x1ea
-> [    2.686669]  [<ffffffff81003814>] kernel_thread_helper+0x4/0x10
-> [    2.686677]  [<ffffffff8140d77c>] ? restore_args+0x0/0x30
-> [    2.686683]  [<ffffffff81898546>] ? kernel_init+0x0/0x1ea
-> [    2.686688]  [<ffffffff81003810>] ? kernel_thread_helper+0x0/0x10
-> [    2.687683] mtdoops: mtd device (mtddev=name/number) must be supplied
+>> OTOH frontswap approach gets rid of any such artifacts and overheads.
+>> (ramzswap: http://code.google.com/p/compcache/)
+>>    
+> 
+> Maybe we should optimize these overheads instead.  Swap used to always
+> be to slow devices, but swap-to-flash has the potential to make swap act
+> like an extension of RAM.
+> 
 
-This should be covered by the patch I sent with my previous email.
+Spending lot of effort optimizing an overhead which can be completely avoided
+is probably not worth it.
 
-And thank you again, Miles, for all the testing!!!
+Also, I think the choice of a synchronous style API for frontswap and cleancache
+is justified as they want to send pages to host *RAM*. If you want to use other
+devices like SSDs, then these should be just added as another swap device as
+we do currently -- these should not be used as frontswap storage directly.
 
-							Thanx, Paul
+Thanks,
+Nitin
