@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab0DYLTA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 07:19:00 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44347 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab0DYLS7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 07:18:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=dsuXng2UdBjtLNpTtsbb5cRutC5pJlGZwNj2DhaltY+ASmulnVmgvuRuJQ7OhZoLGe
-         1CESZKc1/uEQq2VQKVNGoUehUULBzXPES9+pme00qFyPBIRq5theC5eRF9euWHqsjZM2
-         WFnTSL6ZfAVUVNLqN1TGiJMGWQChb2tZL1yRQ=
-From: Alessio Igor Bogani <abogani@texware.it>
-To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Alessio Igor Bogani <abogani@texware.it>
-Subject: [PATCH] ptrace: Cleanup useless header
-Date: Sun, 25 Apr 2010 13:18:48 +0200
-Message-Id: <1272194328-7346-1-git-send-email-abogani@texware.it>
-X-Mailer: git-send-email 1.6.3.3
+	id S1753451Ab0DYMGh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 08:06:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53455 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753266Ab0DYMGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 08:06:35 -0400
+Message-ID: <4BD43033.7090706@redhat.com>
+Date: Sun, 25 Apr 2010 15:06:11 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <20100422134249.GA2963@ca-server1.us.oracle.com> <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default> <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default> <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <4BD1B626.7020702@redhat.com> <5fa93086-b0d7-4603-bdeb-1d6bfca0cd08@default 4BD3377E.6010303@redhat.com> <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default>
+In-Reply-To: <1c02a94a-a6aa-4cbb-a2e6-9d4647760e91@default>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BKL isn't anymore present into this file thus it is no necessary still include smp_lock.h.
+On 04/25/2010 03:41 AM, Dan Magenheimer wrote:
+>>> No, ANY put_page can fail, and this is a critical part of the API
+>>> that provides all of the flexibility for the hypervisor and all
+>>> the guests. (See previous reply.)
+>>>        
+>> The guest isn't required to do any put_page()s.  It can issue lots of
+>> them when memory is available, and keep them in the hypervisor forever.
+>> Failing new put_page()s isn't enough for a dynamic system, you need to
+>> be able to force the guest to give up some of its tmem.
+>>      
+> Yes, indeed, this is true.  That is why it is important for any
+> policy implemented behind frontswap to "bill" the guest if it
+> is attempting to keep frontswap pages in the hypervisor forever
+> and to prod the guest to reclaim them when it no longer needs
+> super-fast emergency swap space.  The frontswap patch already includes
+> the kernel mechanism to enable this and the prodding can be implemented
+> by a guest daemon (of which there already exists an existence proof).
+>    
 
-Signed-off-by: Alessio Igor Bogani <abogani@texware.it>
----
- kernel/ptrace.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+In this case you could use the same mechanism to stop new put_page()s?
 
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 1d4883c..6af9cdd 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -14,7 +14,6 @@
- #include <linux/mm.h>
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
--#include <linux/smp_lock.h>
- #include <linux/ptrace.h>
- #include <linux/security.h>
- #include <linux/signal.h>
+Seems frontswap is like a reverse balloon, where the balloon is in 
+hypervisor space instead of the guest space.
+
+> (While devil's advocacy is always welcome, frontswap is NOT a
+> cool academic science project where these issues have not been
+> considered or tested.)
+>    
+
+
+Good to know.
+
 -- 
-1.6.3.3
+error compiling committee.c: too many arguments to function
 
