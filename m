@@ -1,138 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab0DYQz5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 12:55:57 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44990 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab0DYQzz (ORCPT
+	id S1753332Ab0DYQ5i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 12:57:38 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53316 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342Ab0DYQ5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 12:55:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=soqS4OAghguc8y4iLWTpMriDGr7x6xJv7s/n2VOV69KTpQtJHIrqYucMHP89Hf9/t2
-         xcPgdWnwgZU+y1oK75MtcDAO7bmc6EX6kPYuTG0JWfw0hG+3Wa09kUDli5bMv7YPjCqD
-         PWRj56nQQekbrRjP/NAt8lJPRGA1BjZLjQmP0=
+	Sun, 25 Apr 2010 12:57:37 -0400
+Date: Sun, 25 Apr 2010 12:57:35 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Hans-Peter Jansen <hpj@urpla.net>, Nick Piggin <npiggin@suse.de>,
+       opensuse-kernel@opensuse.org, linux-kernel@vger.kernel.org,
+       xfs@oss.sgi.com
+Subject: Re: 2.6.34-rc3: simple du (on a big xfs tree) triggers oom killer
+	[bisected: 57817c68229984818fea9e614d6f95249c3fb098]
+Message-ID: <20100425165734.GA2887@infradead.org>
+References: <201004050049.17952.hpj@urpla.net> <20100413091823.GD7544@dastard> <201004131142.33518.hpj@urpla.net> <201004241844.23482.hpj@urpla.net> <20100425162740.GB19195@suse.de>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1272213597.2069.32.camel@edumazet-laptop>
-References: <l2z2d0a357f1004250811w6da355ebp95d1730473026c22@mail.gmail.com>
-	 <4BD45E68.4080900@example.com>
-	 <g2z2d0a357f1004250931pf5880c60l32fd0643e0f14bde@mail.gmail.com>
-	 <4BD46F9C.5060500@example.com>
-	 <1272213597.2069.32.camel@edumazet-laptop>
-Date: Sun, 25 Apr 2010 18:55:52 +0200
-Message-ID: <j2p2d0a357f1004250955i59969a2cp9fd9eb9f3ef22d4b@mail.gmail.com>
-Subject: Re: [2.6.34-rc5-git6] EIP: is at inet6_csk_bind_conflict + 06xe/0xb7 
-	[ipv6]
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: piotr@hosowicz.com, LKML <linux-kernel@vger.kernel.org>,
-       netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
-       Jiri Olsa <jolsa@redhat.com>, Jongman Heo <jongman.heo@gmail.com>
-Content-Type: multipart/mixed; boundary=0016e6d46d7d818aef0485128874
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100425162740.GB19195@suse.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6d46d7d818aef0485128874
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Sun, Apr 25, 2010 at 09:27:40AM -0700, Greg KH wrote:
+> On Sat, Apr 24, 2010 at 06:44:22PM +0200, Hans-Peter Jansen wrote:
+> > FYI, 2.6.33.2 is still affected from this issue. 
+> 
+> Is 2.6.33.3-rc2 affected?  A lot of xfs patches are in there (as are in
+> 2.6.32.12-rc2.)
 
-Rebuild ipv6 kernel-modules by:
-
-$ make M=3Dnet/ipv6
-
-...and copied net/ipv6/*.ko and net/ipv6/netfilter/*.ko files manually
-to the right place.
-
-Applied your patch (seen on netdev ML) already and booted into new kernel.
-Works, thanks.
-
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-
-- Sedat -
-
-On Sun, Apr 25, 2010 at 6:39 PM, Eric Dumazet <eric.dumazet@gmail.com> wrot=
-e:
-> Le dimanche 25 avril 2010 =C3=A0 18:36 +0200, Piotr Hosowicz a =C3=A9crit=
- :
->> On 25.04.2010 18:31, Sedat Dilek wrote:
->> > [ CCing netdev ML ]
->> >
->> > Confirmed: The revert-patch [1] fixes the problem here.
->>
->> I confirm, I've built a git6 kernel and it works fine.
->>
->> > See also "Bug 15847 - =C2=A0crash in inet6_csk_bind_conflict" [2].
->> >
->> > Feel free to add a... Tested-by: Sedat Dilek<sedat.dilek@gmail.com>
->>
->> I added created and tested phrase in my archive. ;-) Thank you a lot. I
->> hope there will be no this error in git7.
->>
->
-> Did you test the proposed fix ?
->
->
-> [PATCH] ipv6: Fix inet6_csk_bind_conflict()
->
-> Commit fda48a0d7a84 (tcp: bind() fix when many ports are bound)
-> introduced a bug on IPV6 part.
-> We should not call ipv6_addr_any(inet6_rcv_saddr(sk2)) but
-> ipv6_addr_any(inet6_rcv_saddr(sk)) because sk2 can be IPV4, while sk is
-> IPV6.
->
-> Reported-by: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
-> diff --git a/net/ipv6/inet6_connection_sock.c b/net/ipv6/inet6_connection=
-_sock.c
-> index b4b7d40..3a4d92b 100644
-> --- a/net/ipv6/inet6_connection_sock.c
-> +++ b/net/ipv6/inet6_connection_sock.c
-> @@ -48,7 +48,7 @@ int inet6_csk_bind_conflict(const struct sock *sk,
-> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 ipv6_rcv_saddr_equal(sk, sk2))
-> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0break;
-> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0else if (sk->sk_reuse && sk2->sk_reuse &&
-> - =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 !ipv6_addr_any(inet6_rcv_saddr(sk2)) &&
-> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 !ipv6_addr_any(inet6_rcv_saddr(sk)) &&
-> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0ipv6_rcv_saddr_equal(sk, sk2))
-> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0break;
-> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0}
->
->
->
-
---0016e6d46d7d818aef0485128874
-Content-Type: text/x-diff; charset=US-ASCII; name="ipv6-Fix-inet6_csk_bind_conflict.patch"
-Content-Disposition: attachment; 
-	filename="ipv6-Fix-inet6_csk_bind_conflict.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_g8g3l7r10
-
-W1BBVENIXSBpcHY2OiBGaXggaW5ldDZfY3NrX2JpbmRfY29uZmxpY3QoKQoKQ29tbWl0IGZkYTQ4
-YTBkN2E4NCAodGNwOiBiaW5kKCkgZml4IHdoZW4gbWFueSBwb3J0cyBhcmUgYm91bmQpCmludHJv
-ZHVjZWQgYSBidWcgb24gSVBWNiBwYXJ0LgpXZSBzaG91bGQgbm90IGNhbGwgaXB2Nl9hZGRyX2Fu
-eShpbmV0Nl9yY3Zfc2FkZHIoc2syKSkgYnV0CmlwdjZfYWRkcl9hbnkoaW5ldDZfcmN2X3NhZGRy
-KHNrKSkgYmVjYXVzZSBzazIgY2FuIGJlIElQVjQsIHdoaWxlIHNrIGlzCklQVjYuCgpSZXBvcnRl
-ZC1ieTogTWljaGFlbCBTLiBUc2lya2luIDxtc3RAcmVkaGF0LmNvbT4KU2lnbmVkLW9mZi1ieTog
-RXJpYyBEdW1hemV0IDxlcmljLmR1bWF6ZXRAZ21haWwuY29tPgotLS0KZGlmZiAtLWdpdCBhL25l
-dC9pcHY2L2luZXQ2X2Nvbm5lY3Rpb25fc29jay5jIGIvbmV0L2lwdjYvaW5ldDZfY29ubmVjdGlv
-bl9zb2NrLmMKaW5kZXggYjRiN2Q0MC4uM2E0ZDkyYiAxMDA2NDQKLS0tIGEvbmV0L2lwdjYvaW5l
-dDZfY29ubmVjdGlvbl9zb2NrLmMKKysrIGIvbmV0L2lwdjYvaW5ldDZfY29ubmVjdGlvbl9zb2Nr
-LmMKQEAgLTQ4LDcgKzQ4LDcgQEAgaW50IGluZXQ2X2Nza19iaW5kX2NvbmZsaWN0KGNvbnN0IHN0
-cnVjdCBzb2NrICpzaywKIAkJCSAgICAgaXB2Nl9yY3Zfc2FkZHJfZXF1YWwoc2ssIHNrMikpCiAJ
-CQkJYnJlYWs7CiAJCQllbHNlIGlmIChzay0+c2tfcmV1c2UgJiYgc2syLT5za19yZXVzZSAmJgot
-CQkJCSFpcHY2X2FkZHJfYW55KGluZXQ2X3Jjdl9zYWRkcihzazIpKSAmJgorCQkJCSFpcHY2X2Fk
-ZHJfYW55KGluZXQ2X3Jjdl9zYWRkcihzaykpICYmCiAJCQkJaXB2Nl9yY3Zfc2FkZHJfZXF1YWwo
-c2ssIHNrMikpCiAJCQkJYnJlYWs7CiAJCX0K
---0016e6d46d7d818aef0485128874--
+Yes.  It's not even in mainline yet as Nick doesn't like the trivial
+core VM fix required to solve this in a clean way.
