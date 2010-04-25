@@ -1,121 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab0DYVUP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 17:20:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36492 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab0DYVUM (ORCPT
+	id S1754095Ab0DYVYM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 17:24:12 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:33052 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752965Ab0DYVYK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 17:20:12 -0400
+	Sun, 25 Apr 2010 17:24:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=JatLGqgny0OuJ5pTwAoV0NnZRzmkJUZ4TryMrpVuTot5JgMfCsbK6ET7z+49hQOWRu
-         s/PiRyhCHqolQcNE59G6EW/2FPt435zGS6AsmR+2Zr1gsyr4l+Q1Y/XC4ely9SV/swC1
-         UG6PL+giiFqsTSuzk/y4uRJdcNPdbrK9Z9bGs=
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=lgN1j5lFzuU5mlM+sXFNfJyDZIwSjtTggjn/RcDCMBVJC8y16TnBReFYI9b3Zd5Npf
+         e9NlrLx6lIq2ieDyqmDEQK4qTcexOguM89C0F+r7V2RkXUWuWEUks9NXPJc6tbC01jpj
+         mnQA4Pz9HaLe4WN53p2xM9k+cWZ//rOUiIBGo=
+From: Pedro Francisco <pedrogfrancisco@gmail.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: ath5k misbehaving affecting other kernel parts unrelated?
+Date: Sun, 25 Apr 2010 22:24:04 +0100
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+Cc: me@bobcopeland.com, Vegard Nossum <vegard.nossum@gmail.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+       mickflemm@gmail.com
+References: <201004230806.13628.pedrogfrancisco@gmail.com> <20100425192242.GA27921@hash.localnet> <4BD4A639.8000703@gmail.com>
+In-Reply-To: <4BD4A639.8000703@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20100324203555.GA19046@salidar.me.mortis.eu>
-References: <1269385936-3440-1-git-send-email-me@mortis.eu>
-	 <1269385936-3440-3-git-send-email-me@mortis.eu>
-	 <1269385936-3440-4-git-send-email-me@mortis.eu>
-	 <4BA9CF57.4030504@redhat.com>
-	 <20100324093651.GG6368@salidar.me.mortis.eu>
-	 <4BA9EA5C.9060506@redhat.com>
-	 <20100324153550.GK6368@salidar.me.mortis.eu>
-	 <20100324155151.2482952f@lxorguk.ukuu.org.uk>
-	 <4BAA3BEB.6010902@redhat.com>
-	 <20100324203555.GA19046@salidar.me.mortis.eu>
-Date: Sun, 25 Apr 2010 17:20:09 -0400
-Message-ID: <y2ucfe85dfa1004251420ta003f216mb69a7ac8d2133eb7@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH 4/4] [RFC] hwmon: f71882fg: Add watchdog API 
-	for F71808E and F71889
-From: Jim Cromie <jim.cromie@gmail.com>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: Hans de Goede <hdegoede@redhat.com>, linux-kernel@vger.kernel.org,
-       lm-sensors@lm-sensors.org, Laurens Leemans <laurens@signips.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004252224.05509.pedrogfrancisco@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 4:35 PM, Giel van Schijndel <me@mortis.eu> wrote:
-> On Wed, Mar 24, 2010 at 05:20:59PM +0100, Hans de Goede wrote:
->> On 03/24/2010 04:51 PM, Alan Cox wrote:
->>>> hold on the SIO port range. This would thus interfere with the
->>>> operation of the f71882fg driver. I.e. it would prevent the device
->>>> probing stage from working, thus preventing it from loading *after*
->>>> my in-development watchdog driver.
->>>
->>> There are two ways to deal with that really
->>>
->>> 1. Add a multi-function driver - it finds the chip and claims the
->>> port regions and then provides methods for locked access to them as
->>> well as creating other device instances that the drivers map to
->>> (probably platform devices ?) which in turn trigger the
->>> loading/binding of the relevant low level devices.
->>>
->>> 2. Fix the kernel request_resource stuff to support a sleeping non
->>> exclusive resource so request/free of regions can be used as a
->>> resource semaphore by co-operative devices.
->>>
->>> #2 is actually not hard but when I did the patch originally it then
->>> wasn't needed by the driver I had in mind for other reasons.
->>>
->>> See http://groups.google.com/group/linux.kernel/msg/1425fc2aad32e6ea
->>>
->>> Maybe its worth resurrecting ?
->>
->> Or, a bit more specific solution would be to resurrect the superio
->> lock coordinator patches, which were written (but never merged) 2
->> years ago to solve exactly this problem:
->> http://lists.lm-sensors.org/pipermail/lm-sensors/2008-July/023743.html
->
-> When performing some searches I find messages going back to at least
-> september 2006 [1] [2]. With multiple occurences of these patches being
-> "dusted off". They never got applied though, and for that (*not*
-> applying them) I cannot find any reason. Is there any? Or did people
-> just become uninterested and let the patches "collect dust"?
->
+A Domingo, 25 de Abril de 2010 21:29:45 Jiri Slaby escreveu:
+> On 04/25/2010 09:22 PM, me@bobcopeland.com wrote:
+> > On Sat, Apr 24, 2010 at 06:28:36PM +0100, Pedro Francisco wrote:
+> >> ========================================================================
+> >> ===== [ 2658.663424] BUG kmalloc-4096: Poison overwritten
+> >> [ 2658.663483]
+> > 
+> > Ok there are 4 messages here, two of them are definitely 802.11 beacons,
+> > which would point the finger squarely at ath5k.  We had reports of this
+> > some time ago but a few things got rewritten around that time.  I'd guess
+> > the rx DMA code is still subtly broken.
+> > 
+> >> 6b 6b kkkkkkkkkkkkkkkk
+> >> [ 2658.664816]   Object 0xed3db0c0:  c4 00 84 00 00 22 43 89 42 69 4e 12
+> >> ca 6f 6f 6f �...."C.BiN.�ooo
+> >> [ 4689.945547]   Object 0xed3d9080:  c4 00 70 00 00 22 43 89 42 69 fe 08
+> >> eb 14 14 14 �.p.."C.Bi�.�...
+> > 
+> > Offhand, I'm not sure what pattern these are.
+> 
+> These are CTS frames. So I think ath5k is to blame too :/.
+> 
+> regards,
 
-For my part, I started seeing difficulties in the centralized probing,
-esp around the unlocking sequences; stuff thats device specific, but
-wanted to be hidden in the centralized probe.  When it was just byte-sequences,
-it was ok, but then too many variations presented.
+Do note that's on a 2.6.32 kernel. I've however a new dmesg/syslog which on a 
+2.6.34-rc5-daily has the same kind of issues. It's 400kB in size..... Do you 
+want me to send it to the mailing list?
 
-> Then regarding Alan's patch. The fact that it is a *lot* simpler than
-> Jim Cromie's SuperIO locks coordinator is IMHO a significant advantage
-> over the latter. Furthermore, "lock coordinator" seems like a bad name
-> to me, since those patches seem especially concerned with centralising
-> the way that SuperIO devices are probed for. Thus if the only thing
-> required is to serialize resource access I think plain-ol' locking
-> (with the ability to block on the lock, rather than polling for it).
->
+Or should I open a bug report on the kernel bugzilla and post them there? Or 
+do both?
 
-"coordinator" was meant to imply cooperative drivers,
-though thats *always* the case, in that drivers would at least
-have to check a mutex.
-
-
-> [1] http://lists.lm-sensors.org/pipermail/lm-sensors/2006-June/016476.html
-> [2] http://lkml.org/lkml/2006/9/14/20
->
-> --
-> Met vriendelijke groet,
-> With kind regards,
-> Giel van Schijndel
->
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.10 (GNU/Linux)
->
-> iEYEARECAAYFAkuqd6sACgkQZBYm/87l50K6KwCdEMTmQ2Y4k0yi8GcWOSHIeel8
-> g90An3Yso3XhFqwniMyIwEa/gOSQ9uPw
-> =NFuC
-> -----END PGP SIGNATURE-----
->
-> _______________________________________________
-> lm-sensors mailing list
-> lm-sensors@lm-sensors.org
-> http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
->
+-- 
+Pedro
