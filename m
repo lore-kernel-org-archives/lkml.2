@@ -1,36 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab0DYQ1G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 12:27:06 -0400
-Received: from cantor.suse.de ([195.135.220.2]:32895 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752258Ab0DYQ1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 12:27:04 -0400
-Date: Sun, 25 Apr 2010 09:27:40 -0700
-From: Greg KH <gregkh@suse.de>
-To: Hans-Peter Jansen <hpj@urpla.net>
-Cc: xfs@oss.sgi.com, Dave Chinner <david@fromorbit.com>,
-       opensuse-kernel@opensuse.org, linux-kernel@vger.kernel.org,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: 2.6.34-rc3: simple du (on a big xfs tree) triggers oom killer
-	[bisected: 57817c68229984818fea9e614d6f95249c3fb098]
-Message-ID: <20100425162740.GB19195@suse.de>
-References: <201004050049.17952.hpj@urpla.net> <20100413091823.GD7544@dastard> <201004131142.33518.hpj@urpla.net> <201004241844.23482.hpj@urpla.net>
+	id S1753510Ab0DYQbf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 12:31:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48973 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab0DYQbd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 12:31:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=NLygHmMVR4DRvSy/NQEEWEFthTy90/aRVHpC2mol769k19Zhc9u/L5Nco0jZKFj9qo
+         JKcE88sx4czklqOC9N/IAb2MXFalwVfqMH5rCM+f+IlVbUrow7dC1h1FJDd5gQV7Y+1r
+         6koNXyDSXCdcrESzfTArOUnkzefnju1GHkoT4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004241844.23482.hpj@urpla.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <4BD45E68.4080900@example.com>
+References: <l2z2d0a357f1004250811w6da355ebp95d1730473026c22@mail.gmail.com>
+	 <4BD45E68.4080900@example.com>
+Date: Sun, 25 Apr 2010 18:31:31 +0200
+Message-ID: <g2z2d0a357f1004250931pf5880c60l32fd0643e0f14bde@mail.gmail.com>
+Subject: Re: [2.6.34-rc5-git6] EIP: is at inet6_csk_bind_conflict + 06xe/0xb7 
+	[ipv6]
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: piotr@hosowicz.com
+Cc: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+       David Miller <davem@davemloft.net>, Jiri Olsa <jolsa@redhat.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Jongman Heo <jongman.heo@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 06:44:22PM +0200, Hans-Peter Jansen wrote:
-> FYI, 2.6.33.2 is still affected from this issue. 
+[ CCing netdev ML ]
 
-Is 2.6.33.3-rc2 affected?  A lot of xfs patches are in there (as are in
-2.6.32.12-rc2.)
+Confirmed: The revert-patch [1] fixes the problem here.
 
-thanks,
+See also "Bug 15847 -  crash in inet6_csk_bind_conflict" [2].
 
-greg k-h
+Feel free to add a... Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+
+- Sedat -
+
+[1] https://patchwork.kernel.org/patch/94959/
+[2] https://bugzilla.kernel.org/show_bug.cgi?id=15847
+
+2010/4/25 Piotr Hosowicz <piotr@hosowicz.com>:
+> On 25.04.2010 17:11, Sedat Dilek wrote:
+>>
+>> [ Please CC - I am not subscribed to LKML ]
+>>
+>> [QUOTE]
+>>
+>> On 25.04.2010 16:26, Jongman Heo wrote:
+>>
+>>> I also hit this bug today.
+>>
+>> I also hit similar bug, maybe it is the same.
+>>
+>>> Doing git bisect, first bad commit was
+>>>
+>>>   commit fda48a0d7a8412cedacda46a9c0bf8ef9cd13559
+>>>   tcp: bind() fix when many ports are bound
+>>>
+>>> Reverting above commit fixes the problem.
+>>
+>> How to do it? Would you please publish a reverting patch?
+>>
+>> Regards,
+>>
+>> Piotr Hosowicz
+>>
+>> [/QUOTE]
+>>
+>> Hi,
+>>
+>> did forget to mention 2.6.34-rc5-git5 was OK.
+>>
+>> Revering this commit did not help:
+>>
+>> commit f4f914b58019f0e50d521bbbadfaee260d766f95
+>> net: ipv6 bind to device issue
+>>
+>> After looking into net-2.6 GIT repository, "tcp: bind() fix when many
+>> ports are bound" could cause indeed the problems here, too.
+>> Building now....
+>>
+>> Regards,
+>> - Sedat -
+>>
+>> P.S.: Attached 0001-Revert-tcp-bind-fix-when-many-ports-are-bound.patch
+>
+> Thanks a lot. Applied and building now.
+>
+> Regards,
+>
+> Piotr Hosowicz
+>
+> --
+> Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
+> - W którym kraju znajduje się Mount Everest?
+> - Hm, to nie Szkocja, prawda?
+> NP: Mark Knopfler - Cleaning My Gun
+> NB: 2.6.34-rc5-git5
+>
