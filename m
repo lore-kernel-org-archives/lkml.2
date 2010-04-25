@@ -1,73 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab0DYHQO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 03:16:14 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:49834 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751038Ab0DYHQM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 03:16:12 -0400
-Date: Sun, 25 Apr 2010 09:16:06 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-       Rik van Riel <riel@redhat.com>, John Stoffel <john@stoffel.org>,
-       Hedi Berriche <hedi@sgi.com>, Mike Travis <travis@sgi.com>,
-       Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
- pid_max v2
-Message-ID: <20100425071606.GB1275@ucw.cz>
-References: <20100421165934.GN16427@zorg.emea.sgi.com>
- <4BCF336B.1050706@redhat.com>
- <19407.20109.308816.104856@stoffel.org>
- <20100421193350.GU16427@zorg.emea.sgi.com>
- <19407.23456.469074.256306@stoffel.org>
- <20100421222414.GA26241@suse.de>
- <4BCF80F2.2010906@redhat.com>
- <20100421232200.GA22877@suse.de>
- <20100422102852.72837494@lxorguk.ukuu.org.uk>
- <alpine.LFD.2.00.1004220743080.9086@i5.linux-foundation.org>
+	id S1751961Ab0DYHfZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 03:35:25 -0400
+Received: from mail.mellanox.co.il ([194.90.237.43]:53265 "EHLO mellanox.co.il"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751104Ab0DYHfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 03:35:22 -0400
+Message-ID: <4BD3F0A9.4080306@mellanox.co.il>
+Date: Sun, 25 Apr 2010 10:35:05 +0300
+From: Amir Vadai <amirv@mellanox.co.il>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre)
+	Gecko/20100217 Lightning/1.0b1 Shredder/3.0.3pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004220743080.9086@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>
+CC: "Tung, Chien Tin" <chien.tin.tung@intel.com>,
+       Steve Wise <swise@opengridcomputing.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+       "rolandd@cisco.com" <rolandd@cisco.com>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
+       Eric B Munson <ebmunson@us.ibm.com>
+Subject: Re: SDP bugs 2027 and 2028
+References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+	<4BC49E2B.3000804@opengridcomputing.com>
+	<2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com>
+	<4BC4D22A.6020700@opengridcomputing.com>
+	<2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>
+	<7037536.1271235105513.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+	<4BC5D1D3.3020004@mellanox.co.il> <4BC5D529.1060701@mellanox.co.il>
+	<2EFBCAEF10980645BBCFB605689E08E9047C79B918@azsmsx506.amr.corp.intel.com>
+	<4BC5D9D4.7020702@opengridcomputing.com>
+	<2EFBCAEF10980645BBCFB605689E08E9047C79BD12@azsmsx506.amr.corp.intel.com>
+	<4BC6B135.2060004@mellanox.co.il>
+	<1205877.1271315264088.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+	<4BC6D075.1070405@mellanox.co.il>
+	<6490876.1271771620997.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <4BCEE8FE.6!
+	050805@mellanox.co.il>
+	<484607.1272033291418.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+In-Reply-To: <484607.1272033291418.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Apr 2010 07:35:18.0775 (UTC)
+	FILETIME=[DAC7C070:01CAE449]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17340.005
+X-TM-AS-Result: No--20.074500-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+I have a fix for 2027 (number of SGE's issue) read.
+I'm busy with other things - but hopefully will succeed testing it and
+pushing it today.
 
-> > > Distros don't want to take a patch that adds a new boot param that is
-> > > not accepted upstream, otherwise they will be stuck forward porting it
-> > > from now until, well, forever :)
-> > 
-> > So for an obscure IA64 specific problem you want the upstream kernel to
-> > port it forward forever instead ?
-> 
-> Ehh. Nobody does ia64 any more. It's dead, Jim.
-> 
-> This is x86. SGI finally long ago gave up on the Intel/HP clusterf*ck.
-> 
-> Which I'm not entirely sure makes the case for the kernel parameter much 
-> stronger, though. I wonder if it's not more appropriate to just have a 
-> total hack saying
-> 
-> 	if (max_pids < N * max_cpus) {
-> 		printk("We have %d CPUs, increasing max_pids to %d\n");
-> 		max_pids = N*max_cpus;
-> 	}
-> 
-> where "N" is just some random fudge-factor. It's reasonable to expect a 
-> certain minimum number of processes per CPU, after all.
+As to 2028 (No FMR support) - I need pushed a fix to only disable ZCopy
+when no FMR facility.
+I don't have time right now to add support for fast memory registeration
+when FMR is not available - but Steve said he'll help with implementing it.
 
-Issue with max_pids is that it can break userspace, right?
+- Amir
 
-At that point it seems saner to require a parameter --- just adding
-cpus to the system should not do it... 
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+On 04/23/2010 05:34 PM, Andrea Gozzelino wrote:
+> Hi Amir, 
+>
+> have you any news about bug 2027 and 2028 (SDP)?
+>
+> Take care and keep in touch.
+> Thamk you very much,
+> Andrea
+>
+>
+> On Apr 21, 2010 02:01 PM, Amir Vadai <amirv@mellanox.co.il> wrote:
+>
+>   
+>> Hi Andrea,
+>>
+>> I am preparing the fix right now.
+>>
+>> - Amir
+>>
+>> On 04/20/2010 04:53 PM, Andrea Gozzelino wrote:
+>>     
+>>> Hi Amir,
+>>>
+>>> have you any news about bugs 2027 "SDP not respecting # SGEs as
+>>> reported
+>>> from HW" and 2028 "SDP should support fastreg mrs"?
+>>>
+>>> When those bugs will be fixed, I will test the NE020 cards
+>>> performance
+>>> with SDP protocol and I will compare SDP and TCP.
+>>>
+>>> Keep in touch,
+>>>
+>>> Andrea Gozzelino
+>>>
+>>> INFN - Laboratori Nazionali di Legnaro	(LNL)
+>>> Viale dell'Universita' 2
+>>> I-35020 - Legnaro (PD)- ITALIA
+>>> Tel: +39 049 8068346
+>>> Fax: +39 049 641925
+>>> Mail: andrea.gozzelino@lnl.infn.it
+>>>
+>>>
+>>>
+>>>
+>>>
+>>>
+>>>
+>>> On Apr 15, 2010 10:38 AM, Amir Vadai <amirv@mellanox.co.il> wrote:
+>>>
+>>>   
+>>>       
+>>>> It should be a simple fix and I plan to do soon - just add yourself
+>>>> as
+>>>> CC in bugzilla  - that way I won't forget to notify you.
+>>>>
+>>>> - amir
+>>>>
+>>>> On 04/15/2010 10:07 AM, Andrea Gozzelino wrote:
+>>>>     
+>>>>         
+>>>>> On Apr 15, 2010 08:24 AM, Amir Vadai <amirv@mellanox.co.il> wrote:
+>>>>>
+>>>>>   
+>>>>>       
+>>>>>           
+>>>>>> I hope to have a fix next week for the first one.
+>>>>>>
+>>>>>> Thanks,
+>>>>>> Amir
+>>>>>>
+>>>>>> On 04/14/2010 09:48 PM, Tung, Chien Tin wrote:
+>>>>>>     
+>>>>>>         
+>>>>>>             
+>>>>>>>> Tung, Chien Tin wrote:
+>>>>>>>>     
+>>>>>>>>         
+>>>>>>>>             
+>>>>>>>>                 
+>>>>>>>>>> One more thing - Please open a bug regarding the num_sge
+>>>>>>>>>> limitation at:
+>>>>>>>>>> https://bugs.openfabrics.org/
+>>>>>>>>>>
+>>>>>>>>>>         
+>>>>>>>>>>             
+>>>>>>>>>>                 
+>>>>>>>>>>                     
+>>>>>>>>> Done, Bug 2027.
+>>>>>>>>>
+>>>>>>>>> Chien
+>>>>>>>>>
+>>>>>>>>>       
+>>>>>>>>>           
+>>>>>>>>>               
+>>>>>>>>>                   
+>>>>>>>> And 2028 opened to request fastreg support.
+>>>>>>>>
+>>>>>>>>     
+>>>>>>>>         
+>>>>>>>>             
+>>>>>>>>                 
+>>>>>>> I am open to test fixes for these two bugs.
+>>>>>>>
+>>>>>>> Chien
+>>>>>>>
+>>>>>>>   
+>>>>>>>       
+>>>>>>>           
+>>>>>>>               
+>>>>>>     
+>>>>>>         
+>>>>>>             
+>>>>> Hi Amir, 
+>>>>> Hi Chien,
+>>>>>
+>>>>> I understand that the bug 2027 could be solved next week, so I
+>>>>> will
+>>>>> test
+>>>>> SDP protocol performance on NE020 cards.
+>>>>> Is it correct? 
+>>>>> If yes, could you point out the code modifies?
+>>>>>
+>>>>> Keep in touch and take care.
+>>>>> Regards,
+>>>>> Andrea
+>>>>>
+>>>>>
+>>>>> Andrea Gozzelino
+>>>>>
+>>>>> INFN - Laboratori Nazionali di Legnaro	(LNL)
+>>>>> Viale dell'Universita' 2
+>>>>> I-35020 - Legnaro (PD)- ITALIA
+>>>>> Tel: +39 049 8068346
+>>>>> Fax: +39 049 641925
+>>>>> Mail: andrea.gozzelino@lnl.infn.it			
+>>>>>
+>>>>>
+>>>>>   
+>>>>>       
+>>>>>           
+>>>>     
+>>>>         
+>>> 		
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe
+>>> linux-rdma" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>   
+>>>       
+>>     
+>
+>
+>
+>   
