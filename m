@@ -1,204 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab0DYNUu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 09:20:50 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:39329 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab0DYNUs (ORCPT
+	id S1753804Ab0DYNkL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 09:40:11 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54432 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258Ab0DYNkJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 09:20:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=D1k33LcgIEBq4oJ8OS2YzHpVCAfuPn3US51yTu/sNInx2nxMXtb2h4c3P10SfipPwK
-         0zseiBCw5VSKlJSxr8fs5PauZM7612YVLcmyl5GpFJV9E6vTsDpNQ2gsPc0swtnQd4du
-         2O/3n5IIE3r8fdwIYVTSJk5GzK4PhDQjggP/M=
-From: Roel Van Nyen <roel.vannyen@gmail.com>
-To: gregkh@suse.de
-Cc: bzolnier@gmail.com, Larry.Finger@lwfinger.net,
-       bernhard@schiffner-limbach.de, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org, Roel Van Nyen <roel.vannyen@gmail.com>
-Subject: [PATCH] Staging: rtl8187se: fix coding style errors of r8180_rtl8225z2.c
-Date: Sun, 25 Apr 2010 15:18:26 +0200
-Message-Id: <1272201506-3232-1-git-send-email-roel.vannyen@gmail.com>
-X-Mailer: git-send-email 1.6.3.3
+	Sun, 25 Apr 2010 09:40:09 -0400
+MIME-Version: 1.0
+Message-ID: <c5062f3a-3232-4b21-b032-2ee1f2485ff0@default>
+Date: Sun, 25 Apr 2010 06:37:30 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <20100422134249.GA2963@ca-server1.us.oracle.com>
+ <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default>
+ <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default>
+ <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>
+ <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
+ <4BD1B427.9010905@redhat.com> <b559c57a-0acb-4338-af21-dbfc3b3c0de5@default>
+ <4BD336CF.1000103@redhat.com> <d1bb78ca-5ef6-4a8d-af79-a265f2d4339c@default
+ 4BD43182.1040508@redhat.com>
+In-Reply-To: <4BD43182.1040508@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4BD4461D.00F4:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roel Van Nyen <roel@roel-laptop.(none)>
+> My issue is with the API's synchronous nature.  Both RAM and more
+> exotic
+> memories can be used with DMA instead of copying.  A synchronous
+> interface gives this up.
+>  :
+> Let's not allow the urge to merge prevent us from doing the right
+> thing.
+>  :
+> I see.  Given that swap-to-flash will soon be way more common than
+> frontswap, it needs to be solved (either in flash or in the swap code).
 
-Fix coding style errors
+While I admit that I started this whole discussion by implying
+that frontswap (and cleancache) might be useful for SSDs, I think
+we are going far astray here.  Frontswap is synchronous for a
+reason: It uses real RAM, but RAM that is not directly addressable
+by a (guest) kernel.  SSD's (at least today) are still I/O devices;
+even though they may be very fast, they still live on a PCI (or
+slower) bus and use DMA.  Frontswap is not intended for use with
+I/O devices.
 
-Signed-off-by: Roel Van Nyen <roel.vannyen@gmail.com>
----
- drivers/staging/rtl8187se/r8180_rtl8225z2.c |   58 ++++++++++++++-------------
- 1 files changed, 30 insertions(+), 28 deletions(-)
+Today's memory technologies are either RAM that can be addressed
+by the kernel, or I/O devices that sit on an I/O bus.  The
+exotic memories that I am referring to may be a hybrid:
+memory that is fast enough to live on a QPI/hypertransport,
+but slow enough that you wouldn't want to randomly mix and
+hand out to userland apps some pages from "exotic RAM" and some
+pages from "normal RAM".  Such memory makes no sense today
+because OS's wouldn't know what to do with it.  But it MAY
+make sense with frontswap (and cleancache).
 
-diff --git a/drivers/staging/rtl8187se/r8180_rtl8225z2.c b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
-index 6edf5a4..9c38b3a 100644
---- a/drivers/staging/rtl8187se/r8180_rtl8225z2.c
-+++ b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
-@@ -225,7 +225,7 @@ static void rtl8225_SetTXPowerLevel(struct net_device *dev, short ch)
- }
- 
- static const u8 rtl8225z2_threshold[] = {
--        0x8d, 0x8d, 0x8d, 0x8d, 0x9d, 0xad, 0xbd,
-+	0x8d, 0x8d, 0x8d, 0x8d, 0x9d, 0xad, 0xbd,
- };
- 
- static const u8 rtl8225z2_gain_bg[] = {
-@@ -307,7 +307,7 @@ static u32 read_rtl8225(struct net_device *dev, u8 adr)
- 	u32 data2Write = ((u32)(adr & 0x1f)) << 27;
- 	u32 dataRead;
- 	u32 mask;
--	u16 oval,oval2,oval3,tmp;
-+	u16 oval, oval2, oval3, tmp;
- 	int i;
- 	short bit, rw;
- 	u8 wLength = 6;
-@@ -325,9 +325,9 @@ static u32 read_rtl8225(struct net_device *dev, u8 adr)
- 
- 	oval &= ~0xf;
- 
--	write_nic_word(dev, RFPinsOutput, oval | BB_HOST_BANG_EN ); udelay(4);
-+	write_nic_word(dev, RFPinsOutput, oval | BB_HOST_BANG_EN); udelay(4);
- 
--	write_nic_word(dev, RFPinsOutput, oval ); udelay(5);
-+	write_nic_word(dev, RFPinsOutput, oval); udelay(5);
- 
- 	rw = 0;
- 
-@@ -340,7 +340,7 @@ static u32 read_rtl8225(struct net_device *dev, u8 adr)
- 		write_nic_word(dev, RFPinsOutput, bit|oval | BB_HOST_BANG_CLK | rw); udelay(2);
- 		write_nic_word(dev, RFPinsOutput, bit|oval | BB_HOST_BANG_CLK | rw); udelay(2);
- 
--		mask = (low2high) ? (mask<<1): (mask>>1);
-+		mask = (low2high) ? (mask<<1) : (mask>>1);
- 
- 		if (i == 2) {
- 			rw = BB_HOST_BANG_RW;
-@@ -349,12 +349,12 @@ static u32 read_rtl8225(struct net_device *dev, u8 adr)
- 			break;
- 		}
- 
--		bit = ((data2Write&mask) != 0) ? 1: 0;
-+		bit = ((data2Write&mask) != 0) ? 1 : 0;
- 
--		write_nic_word(dev, RFPinsOutput, oval|bit|rw| BB_HOST_BANG_CLK); udelay(2);
--		write_nic_word(dev, RFPinsOutput, oval|bit|rw| BB_HOST_BANG_CLK); udelay(2);
-+		write_nic_word(dev, RFPinsOutput, oval | bit | rw | BB_HOST_BANG_CLK); udelay(2);
-+		write_nic_word(dev, RFPinsOutput, oval | bit | rw | BB_HOST_BANG_CLK); udelay(2);
- 
--		write_nic_word(dev, RFPinsOutput, oval| bit |rw); udelay(1);
-+		write_nic_word(dev, RFPinsOutput, oval | bit | rw); udelay(1);
- 
- 		mask = (low2high) ? (mask<<1) : (mask>>1);
- 	}
-@@ -426,7 +426,7 @@ void rtl8225z2_rf_close(struct net_device *dev)
- s8 DbmToTxPwrIdx(struct r8180_priv *priv, WIRELESS_MODE WirelessMode,
- 		 s32 PowerInDbm)
- {
-- 	bool bUseDefault = true;
-+	bool bUseDefault = true;
- 	s8 TxPwrIdx = 0;
- 
- 	/*
-@@ -524,7 +524,7 @@ void rtl8225z2_SetTXPowerLevel(struct net_device *dev, short ch)
- 	if (ofdm_power_level <= 11) {
- 		write_phy_ofdm(dev, 0x07, 0x5c);
- 		write_phy_ofdm(dev, 0x09, 0x5c);
--        }
-+	}
- 
- 	if (ofdm_power_level <= 17) {
- 		write_phy_ofdm(dev, 0x07, 0x54);
-@@ -610,10 +610,10 @@ static void rtl8225_rf_set_chan(struct net_device *dev, short ch)
- void rtl8225z2_rf_init(struct net_device *dev)
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	int i;
--	short channel = 1;
-+	int	i;
-+	short	channel = 1;
- 	u16	brsr;
--	u32	data,addr;
-+	u32	data, addr;
- 
- 	priv->chan = channel;
- 
-@@ -740,7 +740,7 @@ void rtl8225z2_rf_init(struct net_device *dev)
- 	write_phy_ofdm(dev, 0x26, 0x90); mdelay(1);
- 	write_phy_ofdm(dev, 0x27, 0x88); mdelay(1);
- 
--	rtl8225z2_set_gain(dev,4);
-+	rtl8225z2_set_gain(dev, 4);
- 
- 	write_phy_cck(dev, 0x0, 0x98); mdelay(1);
- 	write_phy_cck(dev, 0x3, 0x20); mdelay(1);
-@@ -803,12 +803,12 @@ void rtl8225z2_rf_set_mode(struct net_device *dev)
- 		write_phy_ofdm(dev, 0xf, 0x20);
- 		write_phy_ofdm(dev, 0x11, 0x7);
- 
--		rtl8225z2_set_gain(dev,4);
-+		rtl8225z2_set_gain(dev, 4);
- 
--		write_phy_ofdm(dev,0x15, 0x40);
--		write_phy_ofdm(dev,0x17, 0x40);
-+		write_phy_ofdm(dev, 0x15, 0x40);
-+		write_phy_ofdm(dev, 0x17, 0x40);
- 
--		write_nic_dword(dev, 0x94,0x10000000);
-+		write_nic_dword(dev, 0x94, 0x10000000);
- 	} else {
- 		write_rtl8225(dev, 0x5, 0x1864);
- 		write_nic_dword(dev, RF_PARA, 0x10044);
-@@ -819,18 +819,18 @@ void rtl8225z2_rf_set_mode(struct net_device *dev)
- 		write_phy_ofdm(dev, 0xf, 0x20);
- 		write_phy_ofdm(dev, 0x11, 0x7);
- 
--		rtl8225z2_set_gain(dev,4);
-+		rtl8225z2_set_gain(dev, 4);
- 
--		write_phy_ofdm(dev,0x15, 0x40);
--		write_phy_ofdm(dev,0x17, 0x40);
-+		write_phy_ofdm(dev, 0x15, 0x40);
-+		write_phy_ofdm(dev, 0x17, 0x40);
- 
--		write_nic_dword(dev, 0x94,0x04000002);
-+		write_nic_dword(dev, 0x94, 0x04000002);
- 	}
- }
- 
--#define MAX_DOZE_WAITING_TIMES_85B 		20
--#define MAX_POLLING_24F_TIMES_87SE 		10
--#define LPS_MAX_SLEEP_WAITING_TIMES_87SE 	5
-+#define MAX_DOZE_WAITING_TIMES_85B		20
-+#define MAX_POLLING_24F_TIMES_87SE		10
-+#define LPS_MAX_SLEEP_WAITING_TIMES_87SE	5
- 
- bool SetZebraRFPowerState8185(struct net_device *dev,
- 			      RT_RF_POWER_STATE eRFPowerState)
-@@ -935,7 +935,8 @@ bool SetZebraRFPowerState8185(struct net_device *dev,
- 			if (bTurnOffBB) {
- 				/* turn off BB */
- 				u1bTmp = read_nic_byte(dev, 0x24E);
--				write_nic_byte(dev, 0x24E, (u1bTmp | BIT5 | BIT6));
-+				write_nic_byte(dev, 0x24E,
-+						(u1bTmp | BIT5 | BIT6));
- 
- 				/* turn off AFE PLL */
- 				write_nic_byte(dev, 0x54, 0xFC);
-@@ -945,7 +946,8 @@ bool SetZebraRFPowerState8185(struct net_device *dev,
- 		break;
- 	case eRfOff:
- 		for (QueueID = 0, i = 0; QueueID < 6;) {
--			if (get_curr_tx_free_desc(dev, QueueID) == priv->txringcount) {
-+			if (get_curr_tx_free_desc(dev, QueueID) ==
-+							priv->txringcount) {
- 				QueueID++;
- 				continue;
- 			} else {
--- 
-1.6.3.3
-
+Nevertheless, frontswap works great today with a bare-metal
+hypervisor.  I think it stands on its own merits, regardless
+of one's vision of future SSD/memory technologies.
