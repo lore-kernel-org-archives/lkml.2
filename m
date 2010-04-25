@@ -1,250 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab0DYUyo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 16:54:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51591 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751232Ab0DYUym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 16:54:42 -0400
-Date: Sun, 25 Apr 2010 23:49:17 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Robert Wimmer <kernel@tauceti.net>
-Cc: Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-mm@kvack.org, bugzilla-daemon@bugzilla.kernel.org,
-       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-       Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
-Message-ID: <20100425204916.GA12686@redhat.com>
-References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net>
+	id S1753872Ab0DYVOT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 17:14:19 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:60784 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232Ab0DYVOR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 17:14:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=YkYPVN7fTBVqie0unfWM4VKMsMHk/Y2kVts5HMw8uu2ZDQimbb1box6oC1TjZRUWYe
+         Vhg4nRwiJ2aHjf/PrGWimI3dAYVuEv/3RRkrLgCqxymR/PnozveTVfXLGntVaCpq+j95
+         DQDD/BNchumr2DyJS4lKwQp+ZpKIxy/1l45Uw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BD4A917.70702@tauceti.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Date: Sun, 25 Apr 2010 22:14:16 +0100
+Message-ID: <v2k6278d2221004251414kbbcc41baw78b86120d81dce7d@mail.gmail.com>
+Subject: [2.6.34-rc5] bad page state copying to/from HFS+ filesystem...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So, it's an NFS-related regression, which is consistent with the bisect
-results. I guess someone who knows about NFS will have to look at it...
-BTW, you probably want to label the bug as regression.
+When copying data from a HFS+ filesystem to a freshly-created one, I
+experienced page state corruption [1]. I don't have access to the
+filesystem anymore, but can run some other filesystem tests if anyone
+is interested.
 
-On Sun, Apr 25, 2010 at 10:41:59PM +0200, Robert Wimmer wrote:
-> I've added CONFIG_KALLSYMS and CONFIG_KALLSYMS_ALL
-> to my .config. I've uploaded the dmesg output. Maybe it
-> helps a little bit:
-> 
-> https://bugzilla.kernel.org/attachment.cgi?id=26138
-> 
-> - Robert
-> 
-> 
-> On 04/25/10 11:18, Michael S. Tsirkin wrote:
-> > On Fri, Apr 23, 2010 at 07:26:52AM +0200, Robert Wimmer wrote:
-> >   
-> >>> I'm not sure why the lockup backtrace does not show function names -
-> >>> is the kernel stripped?
-> >>>       
-> >> I'm building the kernels always with "genkernel" a Gentoo
-> >> helper programm for kernel building. But I've looked into
-> >> the log file of genkernel and there is nothing mentioned about
-> >> striping the kernel. There will be a future release of genkernel
-> >> which supports this but this is currently not the case. Since
-> >> I haven't stripped the kernel I would answer no. Maybe a
-> >> kernel option which should be enabled?
-> >>
-> >> Thanks!
-> >> Robert
-> >>
-> >>     
-> > Hmm. I have these
-> > CONFIG_KALLSYMS=y
-> > CONFIG_KALLSYMS_ALL=y
-> > CONFIG_KALLSYMS_EXTRA_PASS=y
-> > # CONFIG_STRIP_ASM_SYMS is not set
-> >
-> >
-> >   
-> >>
-> >> On 04/22/10 12:03, Michael S. Tsirkin wrote:
-> >>     
-> >>> On Thu, Apr 22, 2010 at 01:31:06PM +0200, kernel wrote:
-> >>>   
-> >>>       
-> >>>> Maybe some comments to my former mail about what I've done:
-> >>>> I started with a fresh clone (deleted the old /usr/src/linux
-> >>>> of course). 
-> >>>>
-> >>>> git clone
-> >>>> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git linux
-> >>>>
-> >>>> Then I started bisect
-> >>>>
-> >>>> git bisect start 'v2.6.31' 'v2.6.30'
-> >>>>
-> >>>> and build the first kernel and then marked kernels which
-> >>>> "crashed" with "soft lockup" or "swapper page allocation failure"
-> >>>> as bad and the other ones as good. Before I've compiled
-> >>>> a new kernel I've always done a "make mrproper". I don't know
-> >>>> if this is needed but thought it wouldn't hurt.
-> >>>>
-> >>>> For me it was not clear that maybe I should have had stopped
-> >>>> testing after the first commit that came up with a "swapper
-> >>>> page allocation failure". It was only one commit which cased
-> >>>> the allocation failure. All the other commits marked as bad
-> >>>> came up with a soft lockup. But I thought it is important to
-> >>>> find the earliest commit which crashes. So should I find out
-> >>>> the commit with the allocation failure?
-> >>>>     
-> >>>>         
-> >>> I think you did the right thing. We'll have to
-> >>> figure out soft lockup thing, then if page allocation failure
-> >>> turns out to be a different issue, look at it.
-> >>>
-> >>>   
-> >>>       
-> >>>> As you requested I've now done now a
-> >>>>
-> >>>> git checkout c02d7adf8c5429727a98bad1d039bccad4c61c50
-> >>>>
-> >>>> which ended with a soft lockup within 3 min. after starting
-> >>>> the VM (see
-> >>>> https://bugzilla.kernel.org/attachment.cgi?id=26089&action=edit)
-> >>>> with this kernel.
-> >>>>     
-> >>>>         
-> >>> I'm not sure why the lockup backtrace does not show function names -
-> >>> is the kernel stripped?
-> >>>
-> >>>   
-> >>>       
-> >>>> Then I've done a
-> >>>>
-> >>>> git checkout cf8d2c11cb77f129675478792122f50827e5b0ae
-> >>>>
-> >>>> compiled and restarted the VM with this kernel version
-> >>>> (BTW: Of course I've always used the same .config for 
-> >>>> all kernels I've build.). cf8d2c11cb77f129675478792122f50827e5b0ae
-> >>>> is running fine.
-> >>>>
-> >>>> Thanks!
-> >>>> Robert
-> >>>>     
-> >>>>         
-> >>> Well, so the soft lockup issue seems NFS-related?
-> >>> Trond, commit cf8d2c11cb77f129675478792122f50827e5b0ae seems to
-> >>> be causing problems on some old kernels (See bisect below). Any idea why?
-> >>>
-> >>>
-> >>>   
-> >>>       
-> >>>> On Wed, 21 Apr 2010 12:42:49 +0300, "Michael S. Tsirkin" <mst@redhat.com>
-> >>>> wrote:
-> >>>>     
-> >>>>         
-> >>>>> On Wed, Apr 21, 2010 at 01:23:12PM +0200, kernel wrote:
-> >>>>>       
-> >>>>>           
-> >>>>>> So after the compiler was running hot I've now the following result:
-> >>>>>>
-> >>>>>> server10:/usr/src/linux # git bisect log 
-> >>>>>> # bad: [74fca6a42863ffacaf7ba6f1936a9f228950f657] Linux 2.6.31
-> >>>>>> # good: [07a2039b8eb0af4ff464efd3dfd95de5c02648c6] Linux 2.6.30
-> >>>>>> git bisect start 'v2.6.31' 'v2.6.30'
-> >>>>>> # good: [925d74ae717c9a12d3618eb4b36b9fb632e2cef3] V4L/DVB (11736):
-> >>>>>> videobuf: modify return value of VIDIOC_REQBUFS ioctl
-> >>>>>> git bisect good 925d74ae717c9a12d3618eb4b36b9fb632e2cef3
-> >>>>>> # bad: [a380137900fca5c79e6daa9500bdb6ea5649188e] ixgbe: Fix device
-> >>>>>> capabilities of 82599 single speed fiber NICs.
-> >>>>>> git bisect bad a380137900fca5c79e6daa9500bdb6ea5649188e
-> >>>>>> # good: [1dbb5765acc7a6fe4bc1957c001037cc9d02ae03] Staging: android:
-> >>>>>> lowmemorykiller: fix up remaining checkpatch warnings
-> >>>>>> git bisect good 1dbb5765acc7a6fe4bc1957c001037cc9d02ae03
-> >>>>>> # good: [df36b439c5fedefe013d4449cb6a50d15e2f4d70] Merge branch
-> >>>>>> 'for-2.6.31' of git://git.linux-nfs.org/projects/trondmy/nfs-2.6
-> >>>>>> git bisect good df36b439c5fedefe013d4449cb6a50d15e2f4d70
-> >>>>>> # bad: [a800faec1b21d7133b5f0c8c6dac593b7c4e118d] Merge branch
-> >>>>>> 'for-linus'
-> >>>>>> of git://www.jni.nu/cris
-> >>>>>> git bisect bad a800faec1b21d7133b5f0c8c6dac593b7c4e118d
-> >>>>>> # good: [ac1b7c378ef26fba6694d5f118fe7fc16fee2fe2] Merge
-> >>>>>> git://git.infradead.org/mtd-2.6
-> >>>>>> git bisect good ac1b7c378ef26fba6694d5f118fe7fc16fee2fe2
-> >>>>>> # bad: [37c6dbe290c05023b47f52528e30ce51336b93eb] V4L/DVB (12091):
-> >>>>>> gspca_sonixj: Add light frequency control
-> >>>>>> git bisect bad 37c6dbe290c05023b47f52528e30ce51336b93eb
-> >>>>>> # bad: [687d680985b1438360a9ba470ece8b57cd205c3b] Merge
-> >>>>>> git://git.infradead.org/~dwmw2/iommu-2.6.31
-> >>>>>> git bisect bad 687d680985b1438360a9ba470ece8b57cd205c3b
-> >>>>>> # bad: [1053414068bad659479e6efa62a67403b8b1ec0a] Merge branch
-> >>>>>> 'for-linus'
-> >>>>>> of git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6
-> >>>>>> git bisect bad 1053414068bad659479e6efa62a67403b8b1ec0a
-> >>>>>> # good: [b01b4babbf204443b5a846a7494546501614cefc] firewire: net: fix
-> >>>>>> card
-> >>>>>> driver reloading
-> >>>>>> git bisect good b01b4babbf204443b5a846a7494546501614cefc
-> >>>>>> # bad: [c02d7adf8c5429727a98bad1d039bccad4c61c50] NFSv4: Replace
-> >>>>>> nfs4_path_walk() with VFS path lookup in a private namespace
-> >>>>>> git bisect bad c02d7adf8c5429727a98bad1d039bccad4c61c50
-> >>>>>> # good: [616511d039af402670de8500d0e24495113a9cab] VFS: Uninline the
-> >>>>>> function put_mnt_ns()
-> >>>>>> git bisect good 616511d039af402670de8500d0e24495113a9cab
-> >>>>>> # good: [cf8d2c11cb77f129675478792122f50827e5b0ae] VFS: Add VFS helper
-> >>>>>> functions for setting up private namespaces
-> >>>>>> git bisect good cf8d2c11cb77f129675478792122f50827e5b0ae
-> >>>>>>
-> >>>>>>
-> >>>>>> The last "git bisect good" prints out:
-> >>>>>>
-> >>>>>> server10:/usr/src/linux # git bisect good
-> >>>>>> c02d7adf8c5429727a98bad1d039bccad4c61c50 is the first bad commit
-> >>>>>> commit c02d7adf8c5429727a98bad1d039bccad4c61c50
-> >>>>>> Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-> >>>>>> Date:   Mon Jun 22 15:09:14 2009 -0400
-> >>>>>>
-> >>>>>>     NFSv4: Replace nfs4_path_walk() with VFS path lookup in a private
-> >>>>>> namespace
-> >>>>>>     
-> >>>>>>     As noted in the previous patch, the NFSv4 client mount code
-> >>>>>>         
-> >>>>>>             
-> >>>> currently
-> >>>>     
-> >>>>         
-> >>>>>>     has several limitations. If the mount path contains symlinks, or
-> >>>>>>     referrals, or even if it just contains a '..', then the client code
-> >>>>>>     in
-> >>>>>>     nfs4_path_walk() will fail with an error.
-> >>>>>>     
-> >>>>>>     This patch replaces the nfs4_path_walk()-based lookup with a helper
-> >>>>>>     function that sets up a private namespace to represent the
-> >>>>>>         
-> >>>>>>             
-> >>>> namespace
-> >>>>     
-> >>>>         
-> >>>>>> on the
-> >>>>>>     server, then uses the ordinary VFS and NFS path lookup code to walk
-> >>>>>> down the
-> >>>>>>     mount path in that namespace.
-> >>>>>>     
-> >>>>>>     Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> >>>>>>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> >>>>>>
-> >>>>>> :040000 040000 97a18818f26ab9a0987f157257eb6f399c3cc1cc
-> >>>>>> 9ab6c712bb64f1349b5ac9f2020191abb5780ca0 M      fs
-> >>>>>>
-> >>>>>> Does this help you any further?
-> >>>>>>
-> >>>>>> Thanks!
-> >>>>>> Robert
-> >>>>>>         
-> >>>>>>             
-> >>>>> Looks suspiciously like some error in testing.
-> >>>>> Could you pls retest and verify again that
-> >>>>> cf8d2c11cb77f129675478792122f50827e5b0ae
-> >>>>> is good and c02d7adf8c5429727a98bad1d039bccad4c61c50 is bad?
-> >>>>>       
-> >>>>>           
+Kernel is mainline 2.6.34-rc5 on x86-64.
+
+Thanks,
+  Daniel
+
+--- [1]
+
+hfs: backup: 0,1953523120,244190389,3072
+hfs: backup: 0,1953523120,244190389,3072
+hfs: backup: 0,1953523120,244190389,3072
+hfs: backup: 0,1953523120,244190389,3072
+hfs: backup: 0,1953523120,244190389,3072
+BUG: Bad page state in process cp  pfn:37654
+page:ffffea0000c1e260 count:0 mapcount:0 mapping:(null) index:0x0
+page flags: 0x100000000000004(referenced)
+Pid: 3163, comm: cp Not tainted 2.6.34-020634rc5-generic #020634rc5
+Call Trace:
+ [<ffffffff810f6654>] ? dump_page+0x44/0x60
+ [<ffffffff810f66ff>] bad_page+0x8f/0x110
+ [<ffffffff8113a074>] ? try_get_mem_cgroup_from_mm+0x24/0x80
+ [<ffffffff810f68b3>] prep_new_page+0x133/0x150
+ [<ffffffff810f81a5>] get_page_from_freelist+0x1d5/0x460
+ [<ffffffff810f8a4a>] __alloc_pages_nodemask+0xda/0x180
+ [<ffffffff81127a9c>] alloc_pages_current+0x8c/0xd0
+ [<ffffffff810f12bd>] __page_cache_alloc+0x6d/0x80
+ [<ffffffff810f2edc>] grab_cache_page_write_begin+0x7c/0xc0
+ [<ffffffff8116a61c>] block_write_begin+0x8c/0xf0
+ [<ffffffff8116b89c>] cont_write_begin+0x8c/0xd0
+ [<ffffffffa0398110>] ? hfsplus_get_block+0x0/0x1a0 [hfsplus]
+ [<ffffffffa03964f6>] hfsplus_write_begin+0x36/0x40 [hfsplus]
+ [<ffffffffa0398110>] ? hfsplus_get_block+0x0/0x1a0 [hfsplus]
+ [<ffffffff810f2191>] generic_perform_write+0xc1/0x1a0
+ [<ffffffff810f22d5>] generic_file_buffered_write+0x65/0xa0
+ [<ffffffff810f3441>] __generic_file_aio_write+0x251/0x3f0
+ [<ffffffff810f2ce9>] ? generic_file_aio_read+0xb9/0x1b0
+ [<ffffffff810f363c>] generic_file_aio_write+0x5c/0xb0
+ [<ffffffff81140a65>] do_sync_write+0xd5/0x120
+ [<ffffffff81248aa6>] ? security_file_permission+0x16/0x20
+ [<ffffffff81141c3c>] vfs_write+0xcc/0x1a0
+ [<ffffffff81141e05>] sys_write+0x55/0x90
+ [<ffffffff8100b072>] system_call_fastpath+0x16/0x1b
+Disabling lock debugging due to kernel taint
+-- 
+Daniel J Blueman
