@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab0DYTIG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 15:08:06 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:36284 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753727Ab0DYTIF (ORCPT
+	id S1753874Ab0DYTWz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 15:22:55 -0400
+Received: from keetweej.vanheusden.com ([83.163.219.98]:51832 "EHLO
+	keetweej.vanheusden.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810Ab0DYTWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 15:08:05 -0400
-Date: Sun, 25 Apr 2010 14:13:31 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-       Rik van Riel <riel@redhat.com>, John Stoffel <john@stoffel.org>,
-       Hedi Berriche <hedi@sgi.com>, Mike Travis <travis@sgi.com>,
-       Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
- pid_max v2
-Message-ID: <20100425121331.GA2009@ucw.cz>
-References: <20100421193350.GU16427@zorg.emea.sgi.com>
- <19407.23456.469074.256306@stoffel.org>
- <20100421222414.GA26241@suse.de>
- <4BCF80F2.2010906@redhat.com>
- <20100421232200.GA22877@suse.de>
- <20100422102852.72837494@lxorguk.ukuu.org.uk>
- <alpine.LFD.2.00.1004220743080.9086@i5.linux-foundation.org>
- <20100425071606.GB1275@ucw.cz>
- <alpine.LFD.2.00.1004251002480.3739@i5.linux-foundation.org>
- <alpine.LFD.2.00.1004251021520.3739@i5.linux-foundation.org>
+	Sun, 25 Apr 2010 15:22:53 -0400
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Apr 2010 15:22:53 EDT
+Date: Sun, 25 Apr 2010 21:16:43 +0200
+From: Folkert van Heusden <folkert@vanheusden.com>
+To: linux-kernel@vger.kernel.org
+Subject: disabling cache to be able to create a
+	http://en.wikipedia.org/wiki/Peer_to_Peer_Remote_Copy solution
+Message-ID: <20100425191643.GP4011@vanheusden.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004251021520.3739@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Organization: www.unixexpert.nl
+X-Chameleon-Return-To: folkert@vanheusden.com
+X-Xfmail-Return-To: folkert@vanheusden.com
+X-Phonenumber: +31-6-41278122
+X-URL: http://www.vanheusden.com/
+X-PGP-KeyID: 1F28D8AE
+X-GPG-fingerprint: AC89 09CE 41F2 00B4 FCF2  B174 3019 0E8C 1F28 D8AE
+X-Key: http://pgp.surfnet.nl:11371/pks/lookup?op=get&search=0x1F28D8AE
+Read-Receipt-To: <folkert@vanheusden.com>
+Reply-By: Fri Apr 23 20:24:44 CEST 2010
+X-Message-Flag: www.vanheusden.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi,
 
-> > Iirc, some _really_ old code used 'short' for pid_t, and we wanted to be 
-> > really safe when we raised the limits. 
-> 
-> .. I dug into the history, and this is from August 2002..
-> 
-> We used to limit it to sixteen bits, but that was too tight even then for 
-> some people, so first we did this:
-> 
->     Author: Linus Torvalds <torvalds@home.transmeta.com>
->     Date:   Thu Aug 8 03:57:42 2002 -0700
->     
->         Make pid allocation use 30 of the 32 bits, instead of 15.
-...
-> which just upped the limits.  That, in turn, _did_ end up breaking some
-> silly old binaries, so then a month later Ingo did a "pid-max" patch
-> that made the maximum dynamic, with a default of the old 15-bit limit,
-> and a sysctl to raise it. 
-> 
-> And then a couple of weeks later, Ingo did another patch to fix the
-> scalability problems we had with lots of pids (avoiding the whole
-> "for_each_task()" crud to figure out which pids were ok, and using a
-> 'struct pid' instead).
-> 
-> So the whole worry about > 15-bit pids goes back to 2002.  I think we're
-> pretty safe now. 
+I'm trying to achive the following
 
->From principle of least surprise PoV: breaking old userspace when you
-pass special config option is less surpising than breaking old
-userspace when you add more CPUs.
+   storage a                   storage b
+      |   |                     | |
+      |   +--+                  | |
+      | +----|------------------+ |    <- fibre
+      | |    |                    |
+      | |    +------------------+ |
+      | |                       | |
+    linux a                    linux b
+      |                           |
+      +-------------+  +----------+    <- iscsi
+                    |  |
+                   vmware
 
-Whether the breakage will be common enough that this matters is other
-question.
-								Pavel
+A trained eye will recognize this as a 'peer to peer remote
+copy'-implementation.
+
+So linux a (or b) receive storage requests from vmware and store those
+mirrored on storage a and b: both have an md1 on their paths to storage
+a and b.
+
+Now let's say vmware talks active/passive to those linux boxes. At some
+moment the left path is selected and vmware sends a block to linux a to
+store on disk. Linux a stores this block on both storage systems and
+_caches this block in memory_.
+Then at some time, vmware switches to the path via system b and also
+stores at the same block some data.
+Then, vmware switches back to path a and reads again this block from
+disk. Now here's where the problem comes up: linux a thinks it still has
+this block in the memory-cache and serves it from there while in fact,
+when the path went through system b, this block was already changed on
+the storage!
+So to be able to construct this mechanism, I somehow need to be able to
+disable the read-cache of linux a and b. I found that you can clear the
+cache by entering "echo 3 > /proc/sys/vm/drop_caches" but this can't be
+automatically invoked by the vmware system when it switches paths.
+
+Anyone got a suggestion?
+
+
+Folkert van Heusden
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+----------------------------------------------------------------------
+Phone: +31-6-41278122, PGP-key: 1F28D8AE, www.vanheusden.com
