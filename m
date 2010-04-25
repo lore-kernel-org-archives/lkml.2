@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab0DYR3m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 13:29:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50687 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753165Ab0DYR3l (ORCPT
+	id S1753537Ab0DYRjZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 13:39:25 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42298 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043Ab0DYRjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 13:29:41 -0400
-Date: Sun, 25 Apr 2010 10:27:35 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Pavel Machek <pavel@ucw.cz>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-       Rik van Riel <riel@redhat.com>, John Stoffel <john@stoffel.org>,
-       Hedi Berriche <hedi@sgi.com>, Mike Travis <travis@sgi.com>,
-       Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
- pid_max v2
-In-Reply-To: <alpine.LFD.2.00.1004251002480.3739@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1004251021520.3739@i5.linux-foundation.org>
-References: <20100421165934.GN16427@zorg.emea.sgi.com> <4BCF336B.1050706@redhat.com> <19407.20109.308816.104856@stoffel.org> <20100421193350.GU16427@zorg.emea.sgi.com> <19407.23456.469074.256306@stoffel.org> <20100421222414.GA26241@suse.de> <4BCF80F2.2010906@redhat.com>
- <20100421232200.GA22877@suse.de> <20100422102852.72837494@lxorguk.ukuu.org.uk> <alpine.LFD.2.00.1004220743080.9086@i5.linux-foundation.org> <20100425071606.GB1275@ucw.cz> <alpine.LFD.2.00.1004251002480.3739@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Sun, 25 Apr 2010 13:39:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YB5Z8LK228f28LdMxMXdDdvnjpaZsGfQynW9H7EX0c7xQtZK9sZXLzujbj+oG0pVLc
+         bTUyBVX7X9h4WEIJtQQFqgNU4sOVGiZ+hbjp85HkupBSV8k4oqQDE432SVIVZjgQdRbo
+         K6C+bQe3OI2n/m4odzak7FF8KEx3sgxjx6Y3s=
+Date: Sun, 25 Apr 2010 19:39:15 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Al Viro <viro@zeniv.linux.org.uk>,
+       Jan Blunck <jblunck@suse.de>, Ingo Molnar <mingo@elte.hu>,
+       John Kacur <jkacur@redhat.com>
+Subject: Re: [GIT PULL v2] Preparation for BKL'ed ioctl removal
+Message-ID: <20100425173912.GA5375@nowhere>
+References: <1271390201-20431-1-git-send-regression-fweisbec@gmail.com> <201004242154.02421.arnd@arndb.de> <alpine.LFD.2.00.1004241258140.3739@i5.linux-foundation.org> <201004242240.51176.arnd@arndb.de> <alpine.LFD.2.00.1004241510530.3739@i5.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004241510530.3739@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sun, 25 Apr 2010, Linus Torvalds wrote:
+On Sat, Apr 24, 2010 at 03:15:23PM -0700, Linus Torvalds wrote:
 > 
-> Iirc, some _really_ old code used 'short' for pid_t, and we wanted to be 
-> really safe when we raised the limits. 
+> 
+> On Sat, 24 Apr 2010, Arnd Bergmann wrote:
+> > 
+> > With CONFIG_BKL disabled, we gain a few cyles in the scheduler,
+> 
+> That has _nothing_ to do with the ioctl's though.
+> 
+> Stop mixing things up.
+> 
+> There are two totally independent issues:
+> 
+>  - making the BKL ioctl's be explicit and findable
+> 
+>  - eventually getting rid of the BKL entirely
+> 
+> and I think you guys are totally mixing things up, and making things WORSE 
+> in the process.
+> 
+> The notion of having _three_ different "ioctl()" function pointers just 
+> makes me want to gag. And there is absolutely _zero_ reason for it. Tjhere 
+> is no way in hell that we want to have every subsystem maintainer try to 
+> independently do their own ioctl's. Most of the drivers that have those 
+> things are basically unmaintained or on the back burner anyway.
+> 
+> So don't make the current ugly ioctl situation worse. Not even as a 
+> stop-gap, because there is absolutely _zero_ upside to making yet another 
+> new crazy temporary ioctl interface.
 
-.. I dug into the history, and this is from August 2002..
 
-We used to limit it to sixteen bits, but that was too tight even then for 
-some people, so first we did this:
+Our final goal was not to have three different ioctl interfaces. This state was
+only deemed to be temporary. This was the only way to make the change
+smoother and don't conflict with other trees with a single monolithic patch.
 
-    Author: Linus Torvalds <torvalds@home.transmeta.com>
-    Date:   Thu Aug 8 03:57:42 2002 -0700
-    
-        Make pid allocation use 30 of the 32 bits, instead of 15.
-    
-    diff --git a/include/linux/threads.h b/include/linux/threads.h
-    index 880b990..6804ee7 100644
-    --- a/include/linux/threads.h
-    +++ b/include/linux/threads.h
-    @@ -19,6 +19,7 @@
-     /*
-      * This controls the maximum pid allocated to a process
-      */
-    -#define PID_MAX 0x8000
-    +#define PID_MASK 0x3fffffff
-    +#define PID_MAX (PID_MASK+1)
-     
-     #endif
-    diff --git a/kernel/fork.c b/kernel/fork.c
-    index d40d246..017740d 100644
-    --- a/kernel/fork.c
-    +++ b/kernel/fork.c
-    @@ -142,7 +142,7 @@ static int get_pid(unsigned long flags)
-                    return 0;
-     
-            spin_lock(&lastpid_lock);
-    -       if((++last_pid) & 0xffff8000) {
-    +       if((++last_pid) & ~PID_MASK) {
-                    last_pid = 300;         /* Skip daemons etc. */
-                    goto inside;
-            }
-    @@ -157,7 +157,7 @@ inside:
-                               p->tgid == last_pid  ||
-                               p->session == last_pid) {
-                                    if(++last_pid >= next_safe) {
-    -                                       if(last_pid & 0xffff8000)
-    +                                       if(last_pid & ~PID_MASK)
-                                                    last_pid = 300;
-                                            next_safe = PID_MAX;
-                                    }
+But if you are ok with a single one, then we are going this way and we'll send it for
+the next merge window.
 
-which just upped the limits.  That, in turn, _did_ end up breaking some
-silly old binaries, so then a month later Ingo did a "pid-max" patch
-that made the maximum dynamic, with a default of the old 15-bit limit,
-and a sysctl to raise it. 
+ 
+> And don't try to conflate the issue of ioctl and BKL. There are still 
+> code-paths that do lock_kernel() without the ioctl's, so the whole ioctl 
+> renaming has _zero_ to do with CONFIG_BKL.
 
-And then a couple of weeks later, Ingo did another patch to fix the
-scalability problems we had with lots of pids (avoiding the whole
-"for_each_task()" crud to figure out which pids were ok, and using a
-'struct pid' instead).
 
-So the whole worry about > 15-bit pids goes back to 2002.  I think we're
-pretty safe now. 
+It's true, but once it gets pushed down/dropped from every core parts (which
+is what we are working on currently in parallel), lock_kernel() and .bkl_ioctl
+is only going to be used by unmaintained drivers. This is the time where having
+a CONFIG_BKL is going to make sense. And it won't be a question of saving some
+bytes but improve efficiency of schedule() for those who don't need such old or
+unmaintained drivers.
 
-			Linus
+May be we should only start to focus on this new config once this state is reached.
+
+And to prepare for that, are you ok with this scheme of:
+
+-	.ioctl = foo,
++	.unlocked_ioctl = bkl_ioctl,
++	.bkl_ioctl	= foo,
+
+...done at the same time as the big rename patch.
+This will prepare to remove the bkl from vfs and build it conditionally
+from the bkl lib, once the bkl is out the core?
 
