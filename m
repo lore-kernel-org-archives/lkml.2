@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617Ab0DYILe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 04:11:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41000 "EHLO hera.kernel.org"
+	id S1752621Ab0DYIjp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 04:39:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15223 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720Ab0DYILb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 04:11:31 -0400
-Message-ID: <4BD3F8B7.7080404@kernel.org>
-Date: Sun, 25 Apr 2010 10:09:27 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752366Ab0DYIjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 04:39:41 -0400
+Message-ID: <4BD3FFC5.5030107@redhat.com>
+Date: Sun, 25 Apr 2010 11:39:33 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: torvalds@linux-foundation.org, mingo@elte.hu, peterz@infradead.org,
-       awalls@radix.net, linux-kernel@vger.kernel.org, jeff@garzik.org,
-       akpm@linux-foundation.org, jens.axboe@oracle.com, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       avi@redhat.com, johannes@sipsolutions.net, andi@firstfloor.org,
-       oleg@redhat.com
-Subject: Re: [PATCHSET UPDATED] workqueue: concurrency managed workqueue,
- take#4
-References: <1267187000-18791-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1267187000-18791-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] More fixes for nested svm
+References: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 25 Apr 2010 08:09:32 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 04/22/2010 01:33 PM, Joerg Roedel wrote:
+> Hi Avi, Marcelo,
+>
+> here is another set of nested svm fixes. They fix NMI code to make UP Hyper-V
+> root domain booting. The patches also add better handling for nested entry
+> failures and mce intercepts.
+> Also in this patchset are the fixes for the supported cpuid reporting for svm
+> features. These patches were taken from the nested-npt patchset and slightly
+> modified. These patches are also marked for -stable backporting.
+> The probably most important fix is about exception reinjection. This didn't
+> work reliably before and is fixed with the patch in this series now. This fix
+> also touches common x86 code but that should be ok because it could be reused
+> by nested-vmx later.
+> Please review and give comments (or apply ;-).
+>
+>    
 
-I've just updated the git tree.
+All applied, thanks.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-cmwq
+Regarding stable, it should be easy to backport the patches to 
+2.6.34-rc6, but for 2.6.33 and earlier, it's murky.  And we certainly 
+don't have the means to test them.
 
-The original take#4 is now in branch review-cmwq-3.  This will
-probably become take#5 soonish but I don't have access to my test
-machines for some days, so this is sort of take#5 pre-release.
-Changes are...
+So please prepare _tested_ patchsets (git is fine) for 2.6.3[432].  I 
+suggest you hold off for 2.6.3[32] until their next release, since there 
+are a lot of kvm patches in review for them.  In general patches should 
+be prepared against kvm.git kvm-updates/2.6.foo; we'll keep them up to 
+date against stable.
 
-* The patchset is rebased on cpu_stop + sched/core.  cpu_stop already
-  reimplements stop_machine so that it doesn't use RT workqueue, so
-  this patchset simply drops RT wq support.
-
-* Oleg's clear work->data patch moved at the head of the queue and now
-  lives in the for-next branch which will be pushed to mainline on the
-  next merge window.
-
-* David reported a bug where fscache show_work function caused panic
-  by accessing already dead object.  This turned out to be race
-  condition between put() after execution and show().  If the put()
-  after work execution is the last put, the object gets destroyed;
-  however, show() could be called to describe the work is actually
-  finished ending up dereferencing already freed object.  Fixed by
-  deferring put() to another work if debugfs support is enabled so
-  that the object stays alive while the work is executing.  Due to
-  lack of test setup, I couldn't actually test this yet.  I'll verify
-  it works as soon as I have access to my stuff.
-
-* Applied Oleg's review.
-
-  * Comments updated as suggested.
-
-  * work_flags_to_color() replaced w/ get_work_color()
-
-  * nr_cwqs_to_flush bug which could cause premature flush completion
-    fixed.
-
-  * Replace rewind + list_for_each_entry_safe_continue() w/
-    list_for_each_entry_safe_from().
-
-  * Don't directly write to *work_data_bits() but use __set_bit()
-    instead.
-
-  * Fixed cpu hotplug exclusion bug.
-
-Thanks.
+Longer term, we need kvm-autotest support for nsvm, and unit tests in 
+qemu-kvm/kvm/user/test.
 
 -- 
-tejun
+error compiling committee.c: too many arguments to function
+
