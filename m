@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab0DYTgS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 15:36:18 -0400
-Received: from kroah.org ([198.145.64.141]:57386 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753724Ab0DYTgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 15:36:17 -0400
-Date: Sun, 25 Apr 2010 12:36:58 -0700
-From: Greg KH <greg@kroah.com>
-To: Tomas Winkler <tomasw@gmail.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-       Kay Sievers <kay.sievers@vrfy.org>,
-       David Woodhouse <dwmw2@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: request_firmware API exhaust memory
-Message-ID: <20100425193658.GA24039@kroah.com>
-References: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com> <20100419145934.GA10893@kroah.com> <t2w1ba2fa241004211522le49fc938m341553b0f2b89031@mail.gmail.com> <20100425163711.GA20196@kroah.com> <o2n1ba2fa241004251222x6ab49726p9757fd8be4952bee@mail.gmail.com>
+	id S1753991Ab0DYT4J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 15:56:09 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51233 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872Ab0DYT4G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 15:56:06 -0400
+Message-ID: <4BD49D9D.7020004@oracle.com>
+Date: Sun, 25 Apr 2010 12:53:01 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <o2n1ba2fa241004251222x6ab49726p9757fd8be4952bee@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Greg KH <greg@kroah.com>
+CC: Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 5/9] PM: suspend_block: Add debugfs file
+References: <1271984938-13920-1-git-send-email-arve@android.com> <1271984938-13920-2-git-send-email-arve@android.com> <1271984938-13920-3-git-send-email-arve@android.com> <1271984938-13920-4-git-send-email-arve@android.com> <1271984938-13920-5-git-send-email-arve@android.com> <1271984938-13920-6-git-send-email-arve@android.com> <20100423135853.478af057.randy.dunlap@oracle.com> <20100425181517.GA22676@kroah.com>
+In-Reply-To: <20100425181517.GA22676@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4BD49E13.0053:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 25, 2010 at 10:22:54PM +0300, Tomas Winkler wrote:
-> On Sun, Apr 25, 2010 at 7:37 PM, Greg KH <greg@kroah.com> wrote:
-> > On Thu, Apr 22, 2010 at 01:22:51AM +0300, Tomas Winkler wrote:
-> >> On Mon, Apr 19, 2010 at 5:59 PM, Greg KH <greg@kroah.com> wrote:
-> >> > On Mon, Apr 19, 2010 at 03:20:34PM +0300, Tomas Winkler wrote:
-> >> >> Lately we've been developing a device that rather more extensively
-> >> >> used request_firmware API in load and also using pm_notifiers to load
-> >> >> firmware.
-> >> >
-> >> > Do you have a pointer to your driver source anywhere that shows how you
-> >> > are trying to use the firmware api in this manner?
-> >>
-> >> I've attached a very simple ??test driver I'm using. ??Just wanted to
-> >> eliminate anything else.
-> >> Bellow is a little script that loads and releases the firmware. My
-> >> previous observation was wrong.
-> >> The free memory gradually decreases regardless of number or dangling
-> >> udevd forks, which are eventually collected if the sleep period is
-> >> long enough ~10s.
-> >
-> > That sounds normal for the free memory. ??Kay, that's also to be expected
-> > for the udevd forks as well, right?
+On 04/25/10 11:15, Greg KH wrote:
+> On Fri, Apr 23, 2010 at 01:58:53PM -0700, Randy Dunlap wrote:
+>> On Thu, 22 Apr 2010 18:08:54 -0700 Arve Hj?nnev?g wrote:
+>>
+>>> Report active and inactive suspend blockers in
+>>> /sys/kernel/debug/suspend_blockers.
+>>
+>>
+>> This looks more like user interface information than it does debug information.
+>> If that's correct, it shouldn't be in debugfs.
 > 
-> Sorry maybe I was not clear what I mean that the memory will be
-> eventually exhausted and system will crash
-> Is this normal?
+> It's debug-like information, and has more than one value per file, so
+> debugfs seems like the proper place for it.  I have no objection to it
+> going there.
 
-Ah, no, that's not normal.  Have you run kmemleak on your module (or
-test module) to verify that you are properly freeing up the memory?
+I have no objection if it really is debug info, but I'm not convinced
+of that yet.
 
-> Actually I less suspect now udevd as the same happens on android
-> platform where there is no udev
-
-Which is a sad thing for a whole other range of issues...
-
-thanks,
-
-greg k-h
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
