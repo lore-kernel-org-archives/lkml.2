@@ -1,384 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab0DYPe5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 11:34:57 -0400
-Received: from compulab.co.il ([67.18.134.219]:47925 "EHLO compulab.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753004Ab0DYPe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 11:34:56 -0400
-Message-ID: <4BD460D3.1020609@compulab.co.il>
-Date: Sun, 25 Apr 2010 18:33:39 +0300
-From: Mike Rapoport <mike@compulab.co.il>
-User-Agent: Thunderbird 2.0.0.23 (X11/20100106)
+	id S1753252Ab0DYPtd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 11:49:33 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40640 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab0DYPta convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 11:49:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QI8n5IA0ZDbfWUFZOMIW2TKjNIbjacNzT6HeA8NJmFjYMdxEEF3jdUw4tNJ6B9GfZw
+         XOeIg4VNjO8rBiQ9AmqDLeSJCBo33+82MFyEsV/x61to1EFHLeVGnVrye8lzc/TwGYsD
+         1ykqKuyg4vd9vNkOJWbeI/pQMfBi2oXZmnvfc=
 MIME-Version: 1.0
-To: Ryan Mallon <ryan@bluewatersys.com>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org,
-       Yulia Vilensky <vilensky@compulab.co.il>,
-       Mike Rapoport <mike@compulab.co.il>
-Subject: Re: [PATCH] ds2782_battery: add support for ds2786 battery gas gauge
-References: <20100422071437.GA32489@oksana.dev.rtsoft.ru> <1271921723-18289-1-git-send-email-mike@compulab.co.il> <4BD0BE97.6010007@bluewatersys.com>
-In-Reply-To: <4BD0BE97.6010007@bluewatersys.com>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <20100425023455.GM2440@linux.vnet.ibm.com>
+References: <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com>
+	 <20100420135227.GC2628@linux.vnet.ibm.com>
+	 <t2la44ae5cd1004200838w87256e80v9dcde91342b321db@mail.gmail.com>
+	 <20100421213543.GO2563@linux.vnet.ibm.com>
+	 <20100422145640.GB3228@redhat.com>
+	 <20100422160144.GC2524@linux.vnet.ibm.com>
+	 <h2xa44ae5cd1004230550uf734c89eo2b1d1945d446068c@mail.gmail.com>
+	 <20100423194255.GE2589@linux.vnet.ibm.com>
+	 <m2xa44ae5cd1004231559hcf90671asf146a43b4748c2c3@mail.gmail.com>
+	 <20100425023455.GM2440@linux.vnet.ibm.com>
+Date: Sun, 25 Apr 2010 11:49:28 -0400
+Message-ID: <w2sa44ae5cd1004250849q73704370vc6af935c70db9b73@mail.gmail.com>
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious 
+	rcu_dereference_check() usage
+From: Miles Lane <miles.lane@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
+       eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       Johannes Berg <johannes@sipsolutions.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ryan,
-
-Ryan Mallon wrote:
-> Mike Rapoport wrote:
->> From: Yulia Vilensky <vilensky@compulab.co.il>
-> 
-> Thanks for this, some comments below.
-> 
->> Signed-off-by: Yulia Vilensky <vilensky@compulab.co.il>
->> Signed-off-by: Mike Rapoport <mike@compulab.co.il>
->> ---
->>  drivers/power/Kconfig          |    4 +-
->>  drivers/power/ds2782_battery.c |  217 +++++++++++++++++++++++++++++++--------
->>  include/linux/ds2782_battery.h |    8 ++
->>  3 files changed, 182 insertions(+), 47 deletions(-)
->>  create mode 100644 include/linux/ds2782_battery.h
+On Sat, Apr 24, 2010 at 10:34 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Fri, Apr 23, 2010 at 06:59:12PM -0400, Miles Lane wrote:
+>> On Fri, Apr 23, 2010 at 3:42 PM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Fri, Apr 23, 2010 at 08:50:59AM -0400, Miles Lane wrote:
+>> >> Hi Paul,
+>> >> There has been a bit of back and forth, and I am not sure what patches
+>> >> I should test now.
+>> >> Could you send me a bundle of whatever needs testing now?
+>> >
+>> > Hello, Miles,
+>> >
+>> > I am posting my set as replies to this message.  There are a couple
+>> > of KVM fixes that are going up via Avi's tree, and a number of networking
+>> > fixes that are going up via Dave Miller's tree -- a number of these
+>> > are against quickly changing code, so it didn't make sense for me to
+>> > keep them separately.
+>> >
+>> > I believe that the two splats below are addressed by this patch set
+>> > carried in the networking tree:
+>> >
+>> >        https://patchwork.kernel.org/patch/90754/
 >>
->> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
->> index faaa9b4..d8b8a19 100644
->> --- a/drivers/power/Kconfig
->> +++ b/drivers/power/Kconfig
->> @@ -65,10 +65,10 @@ config BATTERY_DS2760
->>  	  Say Y here to enable support for batteries with ds2760 chip.
->>  
->>  config BATTERY_DS2782
->> -	tristate "DS2782 standalone gas-gauge"
->> +	tristate "DS2782/DS2786 standalone gas-gauge"
->>  	depends on I2C
->>  	help
->> -	  Say Y here to enable support for the DS2782 standalone battery
->> +	  Say Y here to enable support for the DS2782/DS2786 standalone battery
-> 
-> I have only used the DS2782 chip. Can we just change this to DS278x? May
-> as well change to CONFIG_BATTERY_DS278x while we are here.
-> 
+>> With your twelve patches and the one linked to above applied to
+>> 2.6.34-rc5-git3, here are the warnings I see:
+>>
+>> [    0.173969] [ INFO: suspicious rcu_dereference_check() usage. ]
+>> [    0.174097] ---------------------------------------------------
+>> [    0.174226] include/linux/cgroup.h:534 invoked
+>> rcu_dereference_check() without protection!
+>> [    0.174429]
+>> [    0.174430] other info that might help us debug this:
+>> [    0.174431]
+>> [    0.174792]
+>> [    0.174793] rcu_scheduler_active = 1, debug_locks = 1
+>> [    0.175037] no locks held by watchdog/0/5.
+>> [    0.175162]
+>> [    0.175163] stack backtrace:
+>> [    0.175405] Pid: 5, comm: watchdog/0 Not tainted 2.6.34-rc5-git3 #22
+>> [    0.175534] Call Trace:
+>> [    0.175666]  [<ffffffff81067fbe>] lockdep_rcu_dereference+0x9d/0xa5
+>> [    0.175799]  [<ffffffff8102d678>] task_subsys_state+0x59/0x70
+>> [    0.175931]  [<ffffffff810328fa>] __sched_setscheduler+0x19d/0x300
+>> [    0.176064]  [<ffffffff8102b477>] ? need_resched+0x1e/0x28
+>> [    0.176196]  [<ffffffff813cd401>] ? schedule+0x5c3/0x66e
+>> [    0.176327]  [<ffffffff81091943>] ? watchdog+0x0/0x8c
+>> [    0.176457]  [<ffffffff81032a78>] sched_setscheduler+0xe/0x10
+>> [    0.176587]  [<ffffffff8109196d>] watchdog+0x2a/0x8c
+>> [    0.176677]  [<ffffffff81091943>] ? watchdog+0x0/0x8c
+>> [    0.176808]  [<ffffffff81057152>] kthread+0x89/0x91
+>> [    0.176939]  [<ffffffff8106891e>] ? trace_hardirqs_on_caller+0x114/0x13f
+>> [    0.177073]  [<ffffffff81003994>] kernel_thread_helper+0x4/0x10
+>> [    0.177204]  [<ffffffff813cfc40>] ? restore_args+0x0/0x30
+>> [    0.177334]  [<ffffffff810570c9>] ? kthread+0x0/0x91
+>> [    0.177463]  [<ffffffff81003990>] ? kernel_thread_helper+0x0/0x10
+>
+> According to Documentation/cgroups/cgroups.txt, we must hold cgroup_mutex,
+> the task's task_alloc lock, or be in an RCU read-side critical section.
+> We are in neither of these.
+>
+> I would argue that sched_setscheduler() should take care of
+> synchronization, but am not sure which of these three are appropriate
+> for sched_setscheduler() to acquire.  Peter, thoughts?
+>
+>> [    3.173419] [ INFO: suspicious rcu_dereference_check() usage. ]
+>> [    3.173419] ---------------------------------------------------
+>> [    3.173419] kernel/cgroup.c:4438 invoked rcu_dereference_check()
+>> without protection!
+>> [    3.173419]
+>> [    3.173419] other info that might help us debug this:
+>> [    3.173419]
+>> [    3.173419]
+>> [    3.173419] rcu_scheduler_active = 1, debug_locks = 1
+>> [    3.173419] 2 locks held by async/0/668:
+>> [    3.173419]  #0:  (&shost->scan_mutex){+.+.+.}, at:
+>> [<ffffffff812df020>] __scsi_add_device+0x83/0xe4
+>> [    3.173419]  #1:  (&(&blkcg->lock)->rlock){......}, at:
+>> [<ffffffff811f2df9>] blkiocg_add_blkio_group+0x29/0x7f
+>> [    3.173419]
+>> [    3.173419] stack backtrace:
+>> [    3.173419] Pid: 668, comm: async/0 Not tainted 2.6.34-rc5-git3 #22
+>> [    3.173419] Call Trace:
+>> [    3.173419]  [<ffffffff81067fbe>] lockdep_rcu_dereference+0x9d/0xa5
+>> [    3.173419]  [<ffffffff8107f9ad>] css_id+0x3f/0x51
+>> [    3.173419]  [<ffffffff811f2e08>] blkiocg_add_blkio_group+0x38/0x7f
+>> [    3.173419]  [<ffffffff811f4dd0>] cfq_init_queue+0xdf/0x2dc
+>> [    3.173419]  [<ffffffff811e33b1>] elevator_init+0xba/0xf5
+>> [    3.173419]  [<ffffffff812dbfaa>] ? scsi_request_fn+0x0/0x451
+>> [    3.173419]  [<ffffffff811e68d7>] blk_init_queue_node+0x12f/0x135
+>> [    3.173419]  [<ffffffff811e68e9>] blk_init_queue+0xc/0xe
+>> [    3.173419]  [<ffffffff812dc41c>] __scsi_alloc_queue+0x21/0x111
+>> [    3.173419]  [<ffffffff812dc524>] scsi_alloc_queue+0x18/0x64
+>> [    3.173419]  [<ffffffff812de520>] scsi_alloc_sdev+0x19e/0x256
+>> [    3.173419]  [<ffffffff812de6be>] scsi_probe_and_add_lun+0xe6/0x9c5
+>> [    3.173419]  [<ffffffff8106891e>] ? trace_hardirqs_on_caller+0x114/0x13f
+>> [    3.173419]  [<ffffffff813ce056>] ? __mutex_lock_common+0x3e4/0x43a
+>> [    3.173419]  [<ffffffff812df020>] ? __scsi_add_device+0x83/0xe4
+>> [    3.173419]  [<ffffffff812d09dc>] ? transport_setup_classdev+0x0/0x17
+>> [    3.173419]  [<ffffffff812df020>] ? __scsi_add_device+0x83/0xe4
+>> [    3.173419]  [<ffffffff812df055>] __scsi_add_device+0xb8/0xe4
+>> [    3.173419]  [<ffffffff812ea945>] ata_scsi_scan_host+0x74/0x16e
+>> [    3.173419]  [<ffffffff81057699>] ? autoremove_wake_function+0x0/0x34
+>> [    3.173419]  [<ffffffff812e8de4>] async_port_probe+0xab/0xb7
+>> [    3.173419]  [<ffffffff8105e1b1>] ? async_thread+0x0/0x1f4
+>> [    3.173419]  [<ffffffff8105e2b6>] async_thread+0x105/0x1f4
+>> [    3.173419]  [<ffffffff81033d8e>] ? default_wake_function+0x0/0xf
+>> [    3.173419]  [<ffffffff8105e1b1>] ? async_thread+0x0/0x1f4
+>> [    3.173419]  [<ffffffff81057152>] kthread+0x89/0x91
+>> [    3.173419]  [<ffffffff8106891e>] ? trace_hardirqs_on_caller+0x114/0x13f
+>> [    3.173419]  [<ffffffff81003994>] kernel_thread_helper+0x4/0x10
+>> [    3.173419]  [<ffffffff813cfc40>] ? restore_args+0x0/0x30
+>> [    3.173419]  [<ffffffff810570c9>] ? kthread+0x0/0x91
+>> [    3.173419]  [<ffffffff81003990>] ? kernel_thread_helper+0x0/0x10
+>
+> Please see below for a patch for this based on my earlier conversation
+> with Vivek Goyal.  (Vivek, if you are already pushing a fix elsewhere,
+> please let me know, and I will drop my patch in favor of yours.)
+>
+>> [   32.905446] [ INFO: suspicious rcu_dereference_check() usage. ]
+>> [   32.905449] ---------------------------------------------------
+>> [   32.905453] net/core/dev.c:1993 invoked rcu_dereference_check()
+>> without protection!
+>> [   32.905456]
+>> [   32.905457] other info that might help us debug this:
+>> [   32.905458]
+>> [   32.905461]
+>> [   32.905462] rcu_scheduler_active = 1, debug_locks = 1
+>> [   32.905466] 2 locks held by canberra-gtk-pl/4182:
+>> [   32.905469]  #0:  (sk_lock-AF_INET){+.+.+.}, at:
+>> [<ffffffff81394f7d>] inet_stream_connect+0x3a/0x24d
+>> [   32.905483]  #1:  (rcu_read_lock_bh){.+....}, at:
+>> [<ffffffff8134a789>] dev_queue_xmit+0x14e/0x4b8
+>> [   32.905495]
+>> [   32.905496] stack backtrace:
+>> [   32.905500] Pid: 4182, comm: canberra-gtk-pl Not tainted 2.6.34-rc5-git3 #22
+>> [   32.905504] Call Trace:
+>> [   32.905512]  [<ffffffff81067fbe>] lockdep_rcu_dereference+0x9d/0xa5
+>> [   32.905518]  [<ffffffff8134a894>] dev_queue_xmit+0x259/0x4b8
+>> [   32.905524]  [<ffffffff8134a789>] ? dev_queue_xmit+0x14e/0x4b8
+>> [   32.905531]  [<ffffffff81041c66>] ? _local_bh_enable_ip+0xcd/0xda
+>> [   32.905538]  [<ffffffff813536da>] neigh_resolve_output+0x234/0x285
+>> [   32.905544]  [<ffffffff8136f69f>] ip_finish_output2+0x257/0x28c
+>> [   32.905549]  [<ffffffff8136f73c>] ip_finish_output+0x68/0x6a
+>> [   32.905554]  [<ffffffff81370433>] T.866+0x52/0x59
+>> [   32.905559]  [<ffffffff8137067e>] ip_output+0xaa/0xb4
+>> [   32.905565]  [<ffffffff8136eb38>] ip_local_out+0x20/0x24
+>> [   32.905571]  [<ffffffff8136f184>] ip_queue_xmit+0x309/0x368
+>> [   32.905578]  [<ffffffff810e4226>] ? __kmalloc_track_caller+0x111/0x155
+>> [   32.905585]  [<ffffffff8138316f>] ? tcp_connect+0x223/0x3d3
+>> [   32.905591]  [<ffffffff813818f1>] tcp_transmit_skb+0x707/0x745
+>> [   32.905597]  [<ffffffff813832c2>] tcp_connect+0x376/0x3d3
+>> [   32.905604]  [<ffffffff81268a43>] ? secure_tcp_sequence_number+0x55/0x6f
+>> [   32.905610]  [<ffffffff81387270>] tcp_v4_connect+0x3df/0x455
+>> [   32.905617]  [<ffffffff8133cb59>] ? lock_sock_nested+0xf3/0x102
+>> [   32.905623]  [<ffffffff81394fe7>] inet_stream_connect+0xa4/0x24d
+>> [   32.905629]  [<ffffffff8133b398>] sys_connect+0x90/0xd0
+>> [   32.905636]  [<ffffffff81002b9c>] ? sysret_check+0x27/0x62
+>> [   32.905642]  [<ffffffff8106891e>] ? trace_hardirqs_on_caller+0x114/0x13f
+>> [   32.905649]  [<ffffffff813cec80>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>> [   32.905655]  [<ffffffff81002b6b>] system_call_fastpath+0x16/0x1b
+>
+> A fix for the above is already in Dave Miller's tree.
+>
+>> [   51.912282] [ INFO: suspicious rcu_dereference_check() usage. ]
+>> [   51.912285] ---------------------------------------------------
+>> [   51.912289] net/mac80211/sta_info.c:886 invoked
+>> rcu_dereference_check() without protection!
+>> [   51.912293]
+>> [   51.912293] other info that might help us debug this:
+>> [   51.912295]
+>> [   51.912298]
+>> [   51.912298] rcu_scheduler_active = 1, debug_locks = 1
+>> [   51.912302] no locks held by wpa_supplicant/3951.
+>> [   51.912305]
+>> [   51.912306] stack backtrace:
+>> [   51.912310] Pid: 3951, comm: wpa_supplicant Not tainted 2.6.34-rc5-git3 #22
+>> [   51.912314] Call Trace:
+>> [   51.912317]  <IRQ>  [<ffffffff81067fbe>] lockdep_rcu_dereference+0x9d/0xa5
+>> [   51.912345]  [<ffffffffa014f9ae>]
+>> ieee80211_find_sta_by_hw+0x46/0x10f [mac80211]
+>> [   51.912358]  [<ffffffffa014fa8e>] ieee80211_find_sta+0x17/0x19 [mac80211]
+>> [   51.912373]  [<ffffffffa01e50f2>] iwl_tx_queue_reclaim+0xdb/0x1b1 [iwlcore]
+>> [   51.912380]  [<ffffffff8106842b>] ? mark_lock+0x2d/0x235
+>> [   51.912391]  [<ffffffffa0252f1c>] iwl5000_rx_reply_tx+0x4a9/0x556 [iwlagn]
+>> [   51.912399]  [<ffffffff8120a353>] ? is_swiotlb_buffer+0x2e/0x3b
+>> [   51.912407]  [<ffffffffa024bbf4>] iwl_rx_handle+0x163/0x2b5 [iwlagn]
+>> [   51.912414]  [<ffffffff81068904>] ? trace_hardirqs_on_caller+0xfa/0x13f
+>> [   51.912422]  [<ffffffffa024c3ac>] iwl_irq_tasklet+0x2bb/0x3c0 [iwlagn]
+>> [   51.912429]  [<ffffffff810411f3>] tasklet_action+0xa7/0x10f
+>> [   51.912435]  [<ffffffff81042205>] __do_softirq+0x144/0x252
+>> [   51.912442]  [<ffffffff81003a8c>] call_softirq+0x1c/0x34
+>> [   51.912447]  [<ffffffff810050e4>] do_softirq+0x38/0x80
+>> [   51.912452]  [<ffffffff81041cd2>] irq_exit+0x45/0x94
+>> [   51.912457]  [<ffffffff81004829>] do_IRQ+0xad/0xc4
+>> [   51.912463]  [<ffffffff810cbbd3>] ? might_fault+0x63/0xb3
+>> [   51.912470]  [<ffffffff813cfb93>] ret_from_intr+0x0/0xf
+>> [   51.912474]  <EOI>  [<ffffffff810cbbd3>] ? might_fault+0x63/0xb3
+>> [   51.912484]  [<ffffffff8106a75d>] ? lock_release+0x208/0x215
+>> [   51.912490]  [<ffffffff810cbc1c>] might_fault+0xac/0xb3
+>> [   51.912495]  [<ffffffff810cbbd3>] ? might_fault+0x63/0xb3
+>> [   51.912501]  [<ffffffff812025e3>] __clear_user+0x15/0x59
+>> [   51.912508]  [<ffffffff8100b2bc>] save_i387_xstate+0x9c/0x1bc
+>> [   51.912515]  [<ffffffff81002276>] do_signal+0x240/0x686
+>> [   51.912521]  [<ffffffff81002b9c>] ? sysret_check+0x27/0x62
+>> [   51.912527]  [<ffffffff8106891e>] ? trace_hardirqs_on_caller+0x114/0x13f
+>> [   51.912533]  [<ffffffff813cec80>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>> [   51.912539]  [<ffffffff810026e3>] do_notify_resume+0x27/0x5f
+>> [   51.912545]  [<ffffffff813cec80>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>> [   51.912551]  [<ffffffff81002e86>] int_signal+0x12/0x17
+>
+> This is a repeat from last time that confused me at the time.  I could
+> do a hacky "fix" by putting an RCU read-side critical section around
+> the for_each_sta_info() in ieee80211_find_sta_by_hw(), but I do not
+> understand this code well enough to feel comfortable doing so.
+>
+> Johannes, any enlightenment?
+>
+>> [   51.929529] [ INFO: suspicious rcu_dereference_check() usage. ]
+>> [   51.929532] ---------------------------------------------------
+>> [   51.929536] net/mac80211/sta_info.c:886 invoked
+>> rcu_dereference_check() without protection!
+>> [   51.929540]
+>> [   51.929541] other info that might help us debug this:
+>> [   51.929542]
+>> [   51.929545]
+>> [   51.929546] rcu_scheduler_active = 1, debug_locks = 1
+>> [   51.929550] 1 lock held by Xorg/4013:
+>> [   51.929553]  #0:  (clock-AF_UNIX){++.+..}, at: [<ffffffff8133cebd>]
+>> sock_def_readable+0x19/0x62
+>> [   51.929567]
+>> [   51.929568] stack backtrace:
+>> [   51.929573] Pid: 4013, comm: Xorg Not tainted 2.6.34-rc5-git3 #22
+>> [   51.929576] Call Trace:
+>> [   51.929579]  <IRQ>  [<ffffffff81067fbe>] lockdep_rcu_dereference+0x9d/0xa5
+>> [   51.929603]  [<ffffffffa014f9fe>]
+>> ieee80211_find_sta_by_hw+0x96/0x10f [mac80211]
+>> [   51.929615]  [<ffffffffa014fa8e>] ieee80211_find_sta+0x17/0x19 [mac80211]
+>> [   51.929631]  [<ffffffffa01e50f2>] iwl_tx_queue_reclaim+0xdb/0x1b1 [iwlcore]
+>> [   51.929642]  [<ffffffffa0252f1c>] iwl5000_rx_reply_tx+0x4a9/0x556 [iwlagn]
+>> [   51.929649]  [<ffffffff81068685>] ? mark_held_locks+0x52/0x70
+>> [   51.929656]  [<ffffffff813cf46c>] ? _raw_spin_unlock_irqrestore+0x3a/0x69
+>> [   51.929662]  [<ffffffff8120a353>] ? is_swiotlb_buffer+0x2e/0x3b
+>> [   51.929671]  [<ffffffffa024bbf4>] iwl_rx_handle+0x163/0x2b5 [iwlagn]
+>> [   51.929680]  [<ffffffffa024c3ac>] iwl_irq_tasklet+0x2bb/0x3c0 [iwlagn]
+>> [   51.929687]  [<ffffffff810411f3>] tasklet_action+0xa7/0x10f
+>> [   51.929693]  [<ffffffff81042205>] __do_softirq+0x144/0x252
+>> [   51.929700]  [<ffffffff81003a8c>] call_softirq+0x1c/0x34
+>> [   51.929705]  [<ffffffff810050e4>] do_softirq+0x38/0x80
+>> [   51.929711]  [<ffffffff81041cd2>] irq_exit+0x45/0x94
+>> [   51.929717]  [<ffffffff81019b10>] smp_apic_timer_interrupt+0x87/0x95
+>> [   51.929724]  [<ffffffff81003553>] apic_timer_interrupt+0x13/0x20
+>> [   51.929727]  <EOI>  [<ffffffff813cf46e>] ?
+>> _raw_spin_unlock_irqrestore+0x3c/0x69
+>> [   51.929739]  [<ffffffff8102d3fb>] __wake_up_sync_key+0x49/0x52
+>> [   51.929745]  [<ffffffff8133cee7>] sock_def_readable+0x43/0x62
+>> [   51.929751]  [<ffffffff813b1c61>] unix_stream_sendmsg+0x243/0x2e2
+>> [   51.929758]  [<ffffffff8133b912>] ? sock_aio_write+0x0/0xcf
+>> [   51.929764]  [<ffffffff81339342>] __sock_sendmsg+0x59/0x64
+>> [   51.929770]  [<ffffffff8133b9cd>] sock_aio_write+0xbb/0xcf
+>> [   51.929777]  [<ffffffff810e9909>] do_sync_readv_writev+0xbc/0xfb
+>> [   51.929785]  [<ffffffff811c1792>] ? selinux_file_permission+0xa2/0xaf
+>> [   51.929790]  [<ffffffff810e9690>] ? copy_from_user+0x2a/0x2c
+>> [   51.929797]  [<ffffffff811baff1>] ? security_file_permission+0x11/0x13
+>> [   51.929804]  [<ffffffff810ea6a6>] do_readv_writev+0xa2/0x122
+>> [   51.929810]  [<ffffffff810ead93>] ? fcheck_files+0x8f/0xc9
+>> [   51.929816]  [<ffffffff810ea764>] vfs_writev+0x3e/0x49
+>> [   51.929821]  [<ffffffff810ea84a>] sys_writev+0x45/0x8e
+>> [   51.929828]  [<ffffffff81002b6b>] system_call_fastpath+0x16/0x1b
+>
+> Ditto.
+>
+>                                                Thanx, Paul
+>
+> ------------------------------------------------------------------------
+>
+> commit 0868dd631def762ba00c2f0f397a53c5cdf24ae2
+> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Date:   Sat Apr 24 19:23:30 2010 -0700
+>
+>    block-cgroup: fix RCU-lockdep splat in blkiocg_add_blkio_group()
+>
+>    It is necessary to be in an RCU read-side critical section when invoking
+>    css_id(), so this patch adds one to blkiocg_add_blkio_group().  This is
+>    actually a false positive, because this is called at initialization time,
+>    and hence always refers to the root cgroup, which cannot go away.
+>
+>    Located-by: Miles Lane <miles.lane@gmail.com>
+>    Suggested-by: Vivek Goyal <vgoyal@redhat.com>
+>    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>
+> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> index 5fe03de..55c8c73 100644
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -71,7 +71,9 @@ void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+>
+>        spin_lock_irqsave(&blkcg->lock, flags);
+>        rcu_assign_pointer(blkg->key, key);
+> +       rcu_read_lock();
+>        blkg->blkcg_id = css_id(&blkcg->css);
+> +       rcu_read_unlock();
+>        hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
+>        spin_unlock_irqrestore(&blkcg->lock, flags);
+>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>
 
-Shall we move ds2782_battery.c to ds278x_battery.c at the same time? 
-Changing Kconfig invites the .c file move as well :)
+I am down to seeing three suspicious rcu_dereference_check traces when
+I apply this patch and all the previous patches to 2.6.34-rc5-git6.
 
->>  	  gas-gauge.
->>  
->>  config BATTERY_PMU
->> diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
->> index 99c8997..0df49b4 100644
->> --- a/drivers/power/ds2782_battery.c
->> +++ b/drivers/power/ds2782_battery.c
->> @@ -5,6 +5,8 @@
->>   *
->>   * Author: Ryan Mallon <ryan@bluewatersys.com>
->>   *
->> + * DS278 added by Yulia Vilensky <vilensky@compulab.co.il>
->> + *
->>   * This program is free software; you can redistribute it and/or modify
->>   * it under the terms of the GNU General Public License version 2 as
->>   * published by the Free Software Foundation.
->> @@ -20,6 +22,7 @@
->>  #include <linux/idr.h>
->>  #include <linux/power_supply.h>
->>  #include <linux/slab.h>
->> +#include <linux/ds2782_battery.h>
->>  
->>  #define DS2782_REG_RARC		0x06	/* Remaining active relative capacity */
->>  
->> @@ -33,18 +36,39 @@
->>  /* Current unit measurement in uA for a 1 milli-ohm sense resistor */
->>  #define DS2782_CURRENT_UNITS	1563
->>  
->> -#define to_ds2782_info(x) container_of(x, struct ds2782_info, battery)
->> +#define DS2786_REG_RARC		0x02	/* Remaining active relative capacity */
->> +
->> +#define DS2786_REG_VOLT_MSB	0x0c
->> +#define DS2786_REG_TEMP_MSB	0x0a
->> +#define DS2786_REG_CURRENT_MSB	0x0e
-> 
-> #define DS278x_REG_CURRENT_MSB		0x0e
-> 
-> Its the same register on both chips, no need for two #defines. Same of
-> the other registers, except for RARC.
+1. The "__sched_setscheduler+0x19d/0x300" trace.
+2. The two "is_swiotlb_buffer+0x2e/0x3b" traces (waiting to see
+Johannes' patch show up in a Linux snapshot)
 
-Ok.
+Did I miss a patch for the setscheduler issue?
 
->> +
->> +#define DS2786_CURRENT_UNITS	25
-> 
-> If we make this a member of the info structure, we can easily use it in
-> calculations for both chips, ie
-> 
->  	current_uA = raw * (info->current_units / sense_res);
-
-not quite, see comments below.
-  	
->> +#define DS278X_SIGN_BIT_MASK16  0x8000
->> +
->> +struct ds278x_info;
->>  
->> -struct ds2782_info {
->> +struct ds278x_battery_ops {
->> +	int	(*get_temp)(struct ds278x_info *info, int *temp);
->> +	int	(*get_current)(struct ds278x_info *info, int *current_uA);
->> +	int	(*get_voltage)(struct ds278x_info *info, int *voltage_uA);
->> +	int	(*get_capacity)(struct ds278x_info *info, int *capacity_uA);
->> +};
->> +
-
-[ snip ]
-
->>  
->> -static int ds2782_get_status(struct ds2782_info *info, int *status)
->> +static int ds2786_get_temp(struct ds278x_info *info, int *temp)
->> +{
->> +	s16 raw;
->> +	int err;
->> +
->> +	/*
->> +	 * Temperature is measured in units of 0.125 degrees celcius, the
->> +	 * power_supply class measures temperature in tenths of degrees
->> +	 * celsius. The temperature value is stored as a 10 bit number, plus
->> +	 * sign in the upper bits of a 16 bit register.
->> +	 */
->> +	err = ds278x_read_reg16(info, DS2786_REG_TEMP_MSB, &raw);
->> +	if (err)
->> +		return err;
->> +
->> +	if (raw &  DS278X_SIGN_BIT_MASK16)
->> +		*temp = -(((~raw >> 5)+1) * 125)/100;
->> +	else
->> +		*temp = ((raw >> 5) * 125)/100;
->> +
->> +	return 0;
->> +}
-> 
-> This is basically the same as the ds2782 version. See Jean's comments on
-> my original patch about the sign math:
-> http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg01220.html
-
-Ok, we'll fix the math
-
->> +static int ds2786_get_current(struct ds278x_info *info, int *current_uA)
->> +{
->> +	int err;
->> +	s16 raw;
->> +
->> +	err = ds278x_read_reg16(info, DS2786_REG_CURRENT_MSB, &raw);
->> +	if (err)
->> +		return err;
->> +
->> +	if (raw &  DS278X_SIGN_BIT_MASK16)
->> +		*current_uA = -(((~raw >> 4)+1) *
->> +			       (DS2786_CURRENT_UNITS / info->rsns));
->> +	else
->> +		*current_uA = (raw >> 4) *
->> +			      (DS2786_CURRENT_UNITS / info->rsns);
->> +	return 0;
-> 
-> Can we combine the implementations of the get_current function? Both
-> have get rsns (though in different ways) and eventually divide the
-> current register by the rsns value? Possibly move the get_rsns into
-> separate battery ops and attempt to coalesce these?
-
-It's possible to have get_rsns and coalesce _get_current for both chips. 
-However, ds2872 and ds2786 need slightly different formula for current 
-calculations. Part of these calculations can be wrapped into 
-ds2786_get_rsns, but it makes the later really not clear to follow.
-
->> +}
->> +
->> +static int ds2786_get_voltage(struct ds278x_info *info, int *voltage_uA)
->> +{
->> +	s16 raw;
->> +	int err;
->> +
->> +	/*
->> +	 * Voltage is measured in units of 1.22mV. The voltage is stored as
->> +	 * a 10-bit number plus sign, in the upper bits of a 16-bit register
->> +	 */
->> +	err = ds278x_read_reg16(info, DS2786_REG_VOLT_MSB, &raw);
->> +	if (err)
->> +		return err;
->> +
->> +	if (raw &  DS278X_SIGN_BIT_MASK16)
->> +		*voltage_uA = -(((~raw >> 3)+1) * 1220);
->> +	else
->> +		*voltage_uA = (raw >> 3) * 1220;
->> +	return 0;
->> +}
-> 
-> Again, if we move the multiplier value (1220 for ds2786 and 4800 for
-> ds2782) to the info structure then we can use the same code to get the
-> voltage for both chips.
-
-We need to the divider to the info structure as well.
-
->> +static int ds2786_get_capacity(struct ds278x_info *info, int *capacity)
->> +{
->> +	int err;
->> +	u8 raw;
->> +
->> +	err = ds278x_read_reg(info, DS2786_REG_RARC, &raw);
->> +	if (err)
->> +		return err;
->> +	/* Relative capacity is displayed with resolution 0.5 % */
->> +	*capacity = raw/2 ;
->> +	return 0;
->> +}
-> 
-> Same here, move the divider to the info structure (will be 1 for ds2782)
-> and combine the functions.
-
-Here again we need to add the divider and RARC register to the info 
-structure.
-
->> +
->> +static int ds278x_get_status(struct ds278x_info *info, int *status)
->>  {
-
-[ snip ]
-
->>  
->> -static int ds2782_battery_probe(struct i2c_client *client,
->> +static struct ds278x_battery_ops ds278x_ops[] = {
->> +	[0] = {
->> +		.get_temp     = ds2782_get_temp,
->> +		.get_current  = ds2782_get_current,
->> +		.get_voltage  = ds2782_get_voltage,
->> +		.get_capacity = ds2782_get_capacity,
->> +	},
->> +	[1] = {
->> +		.get_temp     = ds2786_get_temp,
->> +		.get_current  = ds2786_get_current,
->> +		.get_voltage  = ds2786_get_voltage,
->> +		.get_capacity = ds2786_get_capacity,
->> +	}
->> +};
->> +
->> +static int ds278x_battery_probe(struct i2c_client *client,
->>  				const struct i2c_device_id *id)
->>  {
->> -	struct ds2782_info *info;
->> +	struct ds278x_platform_data *pdata = client->dev.platform_data;
->> +	struct ds278x_info *info;
->>  	int ret;
->>  	int num;
->>  
->> +	/*
->> +	 * ds2786 should have the sense resistor value set
->> +	 * in the platform data .
->> +	 */
->> +	if (id->driver_data == 1 && pdata == 0) {
->> +		dev_err(&client->dev, "missing platform data for ds2786\n");
->> +		return -EINVAL;
->> +	}
->> +
->>  	/* Get an ID for this battery */
->>  	ret = idr_pre_get(&battery_id, GFP_KERNEL);
->>  	if (ret == 0) {
->> @@ -269,7 +392,7 @@ static int ds2782_battery_probe(struct i2c_client *client,
->>  		goto fail_info;
->>  	}
->>  
->> -	info->battery.name = kasprintf(GFP_KERNEL, "ds2782-%d", num);
->> +	info->battery.name = kasprintf(GFP_KERNEL, "%s-%d", client->name, num);
->>  	if (!info->battery.name) {
->>  		ret = -ENOMEM;
->>  		goto fail_name;
->> @@ -277,7 +400,10 @@ static int ds2782_battery_probe(struct i2c_client *client,
->>  
->>  	i2c_set_clientdata(client, info);
->>  	info->client = client;
->> -	ds2782_power_supply_init(&info->battery);
->> +	info->id = num;
->> +	info->ops  = &ds278x_ops[id->driver_data];
-
-Summarizing all the parameters that should be added to the info 
-structure we'd get here switch with lots of 'param = value' for each 
-case which seems to me less elegant and efficient than simple info->ops 
-assignment. I think keeping different functions for ds2782 and ds2786 
-keeps the code more readable and easier to follow.
-
->> +	info->rsns = pdata->rsns;
->> +	ds278x_power_supply_init(&info->battery);
->>  
->>  	ret = power_supply_register(&client->dev, &info->battery);
->>  	if (ret) {
->> @@ -300,31 +426,32 @@ fail_id:
->>  	return ret;
->>  }
->>  
->> -static const struct i2c_device_id ds2782_id[] = {
->> +static const struct i2c_device_id ds278x_id[] = {
->>  	{"ds2782", 0},
->> +	{"ds2786", 1},
->>  	{},
->>  };
->>  
->> -static struct i2c_driver ds2782_battery_driver = {
->> +static struct i2c_driver ds278x_battery_driver = {
->>  	.driver 	= {
->>  		.name	= "ds2782-battery",
->>  	},
->> -	.probe		= ds2782_battery_probe,
->> -	.remove		= ds2782_battery_remove,
->> -	.id_table	= ds2782_id,
->> +	.probe		= ds278x_battery_probe,
->> +	.remove		= ds278x_battery_remove,
->> +	.id_table	= ds278x_id,
->>  };
->>  
->> -static int __init ds2782_init(void)
->> +static int __init ds278x_init(void)
->>  {
->> -	return i2c_add_driver(&ds2782_battery_driver);
->> +	return i2c_add_driver(&ds278x_battery_driver);
->>  }
->> -module_init(ds2782_init);
->> +module_init(ds278x_init);
->>  
->> -static void __exit ds2782_exit(void)
->> +static void __exit ds278x_exit(void)
->>  {
->> -	i2c_del_driver(&ds2782_battery_driver);
->> +	i2c_del_driver(&ds278x_battery_driver);
->>  }
->> -module_exit(ds2782_exit);
->> +module_exit(ds278x_exit);
->>  
->>  MODULE_AUTHOR("Ryan Mallon <ryan@bluewatersys.com>");
->>  MODULE_DESCRIPTION("Maxim/Dallas DS2782 Stand-Alone Fuel Gauage IC driver");
->> diff --git a/include/linux/ds2782_battery.h b/include/linux/ds2782_battery.h
->> new file mode 100644
->> index 0000000..b4e281f
->> --- /dev/null
->> +++ b/include/linux/ds2782_battery.h
->> @@ -0,0 +1,8 @@
->> +#ifndef __LINUX_DS2782_BATTERY_H
->> +#define __LINUX_DS2782_BATTERY_H
->> +
->> +struct ds278x_platform_data {
->> +	int rsns;
->> +};
->> +
->> +#endif
-> 
-> 
-
-
--- 
-Sincerely yours,
-Mike.
+Thanks!
+        Miles
