@@ -1,173 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab0DYMSR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 08:18:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27242 "EHLO mx1.redhat.com"
+	id S1753391Ab0DYNFN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 09:05:13 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:55522 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753146Ab0DYMSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 08:18:15 -0400
-Date: Sun, 25 Apr 2010 15:14:21 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: xiaohui.xin@intel.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, davem@davemloft.net, jdike@linux.intel.com
-Subject: Re: [RFC][PATCH v4 00/18] Provide a zero-copy method on KVM
-	virtio-net.
-Message-ID: <20100425121420.GB10238@redhat.com>
-References: <1272187206-18534-10-git-send-email-xiaohui.xin@intel.com> <1272187206-18534-11-git-send-email-xiaohui.xin@intel.com> <1272187206-18534-12-git-send-email-xiaohui.xin@intel.com> <1272187206-18534-13-git-send-email-xiaohui.xin@intel.com> <1272187206-18534-14-git-send-email-xiaohui.xin@intel.com> <1272187206-18534-15-git-send-email-xiaohui.xin@intel.com> <1272187206-18534-16-git-send-email-xiaohui.xin@intel.com> <1272187206-18534-17-git-send-email-xiaohui.xin@intel.com> <1272187206-18534-18-git-send-email-xiaohui.xin@intel.com> <1272187206-18534-19-git-send-email-xiaohui.xin@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272187206-18534-19-git-send-email-xiaohui.xin@intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752790Ab0DYNFL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 09:05:11 -0400
+Date: Sun, 25 Apr 2010 15:04:54 +0200
+From: Emmanuel Florac <eflorac@intellique.com>
+To: "Hans-Peter Jansen" <hpj@urpla.net>
+Cc: xfs@oss.sgi.com, Nick Piggin <npiggin@suse.de>, Greg KH <gregkh@suse.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: 2.6.34-rc3: simple du (on a big xfs tree) triggers oom killer
+ [bisected: 57817c68229984818fea9e614d6f95249c3fb098]
+Message-ID: <20100425150454.29332472@galadriel.home>
+In-Reply-To: <201004250030.40867.hpj@urpla.net>
+References: <201004050049.17952.hpj@urpla.net>
+	<201004241844.23482.hpj@urpla.net>
+	<20100424232320.71f764eb@galadriel.home>
+	<201004250030.40867.hpj@urpla.net>
+Organization: Intellique
+X-Mailer: Claws Mail 3.0.2 (GTK+ 2.12.9; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 25, 2010 at 05:20:06PM +0800, xiaohui.xin@intel.com wrote:
-> We provide an zero-copy method which driver side may get external
-> buffers to DMA. Here external means driver don't use kernel space
-> to allocate skb buffers. Currently the external buffer can be from
-> guest virtio-net driver.
-> 
-> The idea is simple, just to pin the guest VM user space and then
-> let host NIC driver has the chance to directly DMA to it. 
-> The patches are based on vhost-net backend driver. We add a device
-> which provides proto_ops as sendmsg/recvmsg to vhost-net to
-> send/recv directly to/from the NIC driver. KVM guest who use the
-> vhost-net backend may bind any ethX interface in the host side to
-> get copyless data transfer thru guest virtio-net frontend.
-> 
-> patch 01-12:  	net core changes.
-> patch 13-17:  	new device as interface to mantpulate external buffers.
-> patch 18: 	for vhost-net.
-> 
-> The guest virtio-net driver submits multiple requests thru vhost-net
-> backend driver to the kernel. And the requests are queued and then
-> completed after corresponding actions in h/w are done.
-> 
-> For read, user space buffers are dispensed to NIC driver for rx when
-> a page constructor API is invoked. Means NICs can allocate user buffers
-> from a page constructor. We add a hook in netif_receive_skb() function
-> to intercept the incoming packets, and notify the zero-copy device.
-> 
-> For write, the zero-copy deivce may allocates a new host skb and puts
-> payload on the skb_shinfo(skb)->frags, and copied the header to skb->data.
-> The request remains pending until the skb is transmitted by h/w.
-> 
-> Here, we have ever considered 2 ways to utilize the page constructor
-> API to dispense the user buffers.
-> 
-> One:	Modify __alloc_skb() function a bit, it can only allocate a 
-> 	structure of sk_buff, and the data pointer is pointing to a 
-> 	user buffer which is coming from a page constructor API.
-> 	Then the shinfo of the skb is also from guest.
-> 	When packet is received from hardware, the skb->data is filled
-> 	directly by h/w. What we have done is in this way.
-> 
-> 	Pros:	We can avoid any copy here.
-> 	Cons:	Guest virtio-net driver needs to allocate skb as almost
-> 		the same method with the host NIC drivers, say the size
-> 		of netdev_alloc_skb() and the same reserved space in the
-> 		head of skb. Many NIC drivers are the same with guest and
-> 		ok for this. But some lastest NIC drivers reserves special
-> 		room in skb head. To deal with it, we suggest to provide
-> 		a method in guest virtio-net driver to ask for parameter
-> 		we interest from the NIC driver when we know which device 
-> 		we have bind to do zero-copy. Then we ask guest to do so.
-> 		Is that reasonable?
+Le Sun, 25 Apr 2010 00:30:40 +0200 vous écriviez:
 
-Do you still do this?
+> I guess, you're not on this specific openSUSE git version of
+> 2.6.32.11 (e.g. the preparation for SP1 of SLE11), which, as usual,
+> carries a lot of stuff from later kernels.
 
-> Two:	Modify driver to get user buffer allocated from a page constructor
-> 	API(to substitute alloc_page()), the user buffer are used as payload
-> 	buffers and filled by h/w directly when packet is received. Driver
-> 	should associate the pages with skb (skb_shinfo(skb)->frags). For 
-> 	the head buffer side, let host allocates skb, and h/w fills it. 
-> 	After that, the data filled in host skb header will be copied into
-> 	guest header buffer which is submitted together with the payload buffer.
-> 
-> 	Pros:	We could less care the way how guest or host allocates their
-> 		buffers.
-> 	Cons:	We still need a bit copy here for the skb header.
-> 
-> We are not sure which way is the better here. This is the first thing we want
-> to get comments from the community. We wish the modification to the network
-> part will be generic which not used by vhost-net backend only, but a user
-> application may use it as well when the zero-copy device may provides async
-> read/write operations later.
-
-I commented on this in the past. Do you still want comments?
-
-> Please give comments especially for the network part modifications.
-> 
-> 
-> We provide multiple submits and asynchronous notifiicaton to 
-> vhost-net too.
-> 
-> Our goal is to improve the bandwidth and reduce the CPU usage.
-> Exact performance data will be provided later. But for simple
-> test with netperf, we found bindwidth up and CPU % up too,
-> but the bindwidth up ratio is much more than CPU % up ratio.
-> 
-> What we have not done yet:
-> 	packet split support
-> 	To support GRO
-> 	Performance tuning
-> 
-> what we have done in v1:
-> 	polish the RCU usage
-> 	deal with write logging in asynchroush mode in vhost
-> 	add notifier block for mp device
-> 	rename page_ctor to mp_port in netdevice.h to make it looks generic
-> 	add mp_dev_change_flags() for mp device to change NIC state
-> 	add CONIFG_VHOST_MPASSTHRU to limit the usage when module is not load
-> 	a small fix for missing dev_put when fail
-> 	using dynamic minor instead of static minor number
-> 	a __KERNEL__ protect to mp_get_sock()
-> 
-> what we have done in v2:
-> 	
-> 	remove most of the RCU usage, since the ctor pointer is only
-> 	changed by BIND/UNBIND ioctl, and during that time, NIC will be
-> 	stopped to get good cleanup(all outstanding requests are finished),
-> 	so the ctor pointer cannot be raced into wrong situation.
-> 
-> 	Remove the struct vhost_notifier with struct kiocb.
-> 	Let vhost-net backend to alloc/free the kiocb and transfer them
-> 	via sendmsg/recvmsg.
-> 
-> 	use get_user_pages_fast() and set_page_dirty_lock() when read.
-> 
-> 	Add some comments for netdev_mp_port_prep() and handle_mpassthru().
-> 
-> what we have done in v3:
-> 	the async write logging is rewritten 
-> 	a drafted synchronous write function for qemu live migration
-> 	a limit for locked pages from get_user_pages_fast() to prevent Dos
-> 	by using RLIMIT_MEMLOCK
-> 	
-> 
-> what we have done in v4:
-> 	add iocb completion callback from vhost-net to queue iocb in mp device
-> 	replace vq->receiver by mp_sock_data_ready()
-> 	remove stuff in mp device which access structures from vhost-net
-> 	modify skb_reserve() to ignore host NIC driver reserved space
-> 	rebase to the latest vhost tree
-> 	split large patches into small pieces, especially for net core part.
-> 	
-> 		
-> performance:
-> 	using netperf with GSO/TSO disabled, 10G NIC, 
-> 	disabled packet split mode, with raw socket case compared to vhost.
-> 
-> 	bindwidth will be from 1.1Gbps to 1.7Gbps
-> 	CPU % from 120%-140% to 140%-160%
-
-That's nice. The thing to do is probably to enable GSO/TSO
-and see what we get this way. Also, mergeable buffer support
-was recently posted and I hope to merge it for 2.6.35.
-You might want to take a look.
+No, I always use pristine unpatched kernel.org releases, no SELinux, no
+nothing. Just another confirmation I should go on this way :)
 
 -- 
-MST
+------------------------------------------------------------------------
+Emmanuel Florac     |   Direction technique
+                    |   Intellique
+                    |	<eflorac@intellique.com>
+                    |   +33 1 78 94 84 02
+------------------------------------------------------------------------
