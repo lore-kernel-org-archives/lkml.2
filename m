@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab0DYRIi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 13:08:38 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:51653 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab0DYRIh (ORCPT
+	id S1753548Ab0DYRQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 13:16:57 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58679 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752830Ab0DYRQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 13:08:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=jIsKQ8LI++HfyNLMs5BznY+tWXC3SgmIXKy+gBmvQ8Fd4WiXm9lRNb6eKICuUQgln+
-         VTfaVc61Gh9vTEWFXkfqPR/9mWexElWGWTcjtdk2cy3pr+03Td36dBkTV1+wvehq6v80
-         YS4O287Iwfjw4hhxRxC4EsJ/nAvyxS1MkdyuQ=
-Subject: Re: [2.6.34-rc5-git6] EIP: is at inet6_csk_bind_conflict +
- 06xe/0xb7 [ipv6]
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: piotr@hosowicz.com
-Cc: sedat.dilek@gmail.com, Sedat Dilek <sedat.dilek@googlemail.com>,
-       LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-       David Miller <davem@davemloft.net>, Jiri Olsa <jolsa@redhat.com>,
-       Jongman Heo <jongman.heo@gmail.com>
-In-Reply-To: <4BD4757E.8020503@example.com>
-References: <l2z2d0a357f1004250811w6da355ebp95d1730473026c22@mail.gmail.com>
-	 <4BD45E68.4080900@example.com>
-	 <g2z2d0a357f1004250931pf5880c60l32fd0643e0f14bde@mail.gmail.com>
-	 <4BD46F9C.5060500@example.com>	 <1272213597.2069.32.camel@edumazet-laptop>
-	 <j2p2d0a357f1004250955i59969a2cp9fd9eb9f3ef22d4b@mail.gmail.com>
-	 <4BD4757E.8020503@example.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 25 Apr 2010 19:08:31 +0200
-Message-ID: <1272215311.2069.91.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Sun, 25 Apr 2010 13:16:56 -0400
+Date: Sun, 25 Apr 2010 10:15:07 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Pavel Machek <pavel@ucw.cz>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
+       Rik van Riel <riel@redhat.com>, John Stoffel <john@stoffel.org>,
+       Hedi Berriche <hedi@sgi.com>, Mike Travis <travis@sgi.com>,
+       Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
+ pid_max v2
+In-Reply-To: <20100425071606.GB1275@ucw.cz>
+Message-ID: <alpine.LFD.2.00.1004251002480.3739@i5.linux-foundation.org>
+References: <20100421165934.GN16427@zorg.emea.sgi.com> <4BCF336B.1050706@redhat.com> <19407.20109.308816.104856@stoffel.org> <20100421193350.GU16427@zorg.emea.sgi.com> <19407.23456.469074.256306@stoffel.org> <20100421222414.GA26241@suse.de> <4BCF80F2.2010906@redhat.com>
+ <20100421232200.GA22877@suse.de> <20100422102852.72837494@lxorguk.ukuu.org.uk> <alpine.LFD.2.00.1004220743080.9086@i5.linux-foundation.org> <20100425071606.GB1275@ucw.cz>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 25 avril 2010 à 19:01 +0200, Piotr Hosowicz a écrit :
-> On 25.04.2010 18:55, Sedat Dilek wrote:
-> > Rebuild ipv6 kernel-modules by:
-> >
-> > $ make M=net/ipv6
-> >
-> > ...and copied net/ipv6/*.ko and net/ipv6/netfilter/*.ko files manually
-> > to the right place.
-> >
-> > Applied your patch (seen on netdev ML) already and booted into new kernel.
-> > Works, thanks.
-> >
-> > Tested-by: Sedat Dilek<sedat.dilek@gmail.com>
-> >
-> > - Sedat -
-> >
-> > On Sun, Apr 25, 2010 at 6:39 PM, Eric Dumazet<eric.dumazet@gmail.com>  wrote:
-> >> Le dimanche 25 avril 2010 à 18:36 +0200, Piotr Hosowicz a écrit :
-> >>> On 25.04.2010 18:31, Sedat Dilek wrote:
-> >>>> [ CCing netdev ML ]
-> >>>>
-> >>>> Confirmed: The revert-patch [1] fixes the problem here.
-> >>>
-> >>> I confirm, I've built a git6 kernel and it works fine.
-> >>>
-> >>>> See also "Bug 15847 -  crash in inet6_csk_bind_conflict" [2].
-> >>>>
-> >>>> Feel free to add a... Tested-by: Sedat Dilek<sedat.dilek@gmail.com>
-> >>>
-> >>> I added created and tested phrase in my archive. ;-) Thank you a lot. I
-> >>> hope there will be no this error in git7.
-> >>>
-> >>
-> >> Did you test the proposed fix ?
+
+
+On Sun, 25 Apr 2010, Pavel Machek wrote:
 > 
-> Eric, but where to get the proposed fix as a patch? I looked at kernel's 
-> bugzilla and there is no such thing. As for now I applied Sedat's 
-> reverse patch and now I am booted fine in git6 kernel.
-> 
+> Issue with max_pids is that it can break userspace, right?
 
-I wont spend my Sunday time at filling bugzilla entries.
+Iirc, some _really_ old code used 'short' for pid_t, and we wanted to be 
+really safe when we raised the limits. 
 
-I sent a patch on netdev.
+I seriously doubt we need to worry about old binaries like that on any 16+ 
+CPU machines, though.
 
-I finaly could test it (I have a very slow machine while traveling, and
-compiling the thing took a *lot* of time)
+The other issue is just the size of the pidmap[] array. Instead of walking 
+all the processes to see "is this pid in use" (like I think the original 
+Linux kernel did), we have a bitmap of used pids. When you raise pid_max, 
+that bitmap obviously still needs to be big enough. Right now we allocate 
+that statically (rather than growing it dynamically), so we end up having 
+a _hard_ limit of PID_MAX_LIMIT too.
 
-Now back to family affairs ;)
+On 32-bit, I think that still maximum limit ends up being basically 32767. 
+So again, on a _legacy_ system, you end up being limited in the number of 
+pid_t entries.
 
-
-
+				Linus
