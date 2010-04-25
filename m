@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab0DYOpp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 10:45:45 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:11471 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617Ab0DYOpn (ORCPT
+	id S1752771Ab0DYOqK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 10:46:10 -0400
+Received: from 26.mail-out.ovh.net ([91.121.27.225]:41108 "HELO
+	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752384Ab0DYOqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 10:45:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=hsD+/4lLwpAd4Bog0qrl/MFQRlhymbelY1EIiaa3jorccXxojm5deiV5rfTJi9nsbD
-         BEwQIkjHc7IaoeP0YjBzxq/r4rhgMOu3MZ/8EC1aeeCpc0cXDK33FJ3KZ0PdBx1HdLKw
-         Jej7s1UfbR6T43cZXjuq5GKBdOuV4ZWO9SJWM=
+	Sun, 25 Apr 2010 10:46:07 -0400
+Message-ID: <4BD455A8.5000603@example.com>
+Date: Sun, 25 Apr 2010 16:46:00 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
 MIME-Version: 1.0
-Date: Sun, 25 Apr 2010 16:45:41 +0200
-Message-ID: <z2if861ec6f1004250745u94892bdbw9b17db4be57b131b@mail.gmail.com>
-Subject: 2.6.34-rc5+: oops in IPv6
-From: Manuel Lauss <manuel.lauss@googlemail.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jongman Heo <jongman.heo@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [2.6.34-rc5-git6] EIP: is at inet6_csk_bind_conflict + 06xe/0xb7
+  [ipv6]
+References: <m2z2d0a357f1004250613of5215185z1490aaae7363b161@mail.gmail.com> <loom.20100425T162010-523@post.gmane.org>
+In-Reply-To: <loom.20100425T162010-523@post.gmane.org>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 6172464765215535468
+X-Ovh-Remote: 83.6.189.87 (abaz87.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-rc5-00204-gddc9b34  dies when sshd (openssh 5.5) is started
-Last pull I made on April 23 was fine.
+On 25.04.2010 16:26, Jongman Heo wrote:
 
-(transcribed from a photo):
+> I also hit this bug today.
 
-BUG: unable to handle kernel NULL pointer dereference at 00000004
-IP: [<b1535b72>] inet6_csk_bind_conflict+0x6e/0xb0
+I also hit similar bug, maybe it is the same.
 
-EIP: 0060:[<b1535b72>] EFLAGS: 00010293 CPU: 0
-EAX: 0000 EBX: ed49c8c0 ECX: 00000000 EDX: 00000000
-ESI: ed49c8dc EDI: ee223040 EBP: ef940058 ESP: ed7e9e84
- DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+> Doing git bisect, first bad commit was
+>
+>   commit fda48a0d7a8412cedacda46a9c0bf8ef9cd13559
+>   tcp: bind() fix when many ports are bound
+>
+> Reverting above commit fixes the problem.
 
-Stack:
- ee223040 eebf12e0 b1927198 b14dee45 00000016 ffffffff 00000016 00000005
-<0> e8dd766c c8dd75d0 ed7e9ee0 ee223040 ed7e9f04 ee22346c b1517846
-<0> ed7e9ef4 00000000 00000016 0000001c 00000000 b166ae1c ef422800 affdb8ab
-Call Trace:
-b144dee45  inet_csk_get_port+0x1a5/0x27c
-b1517846 inet6_bind+0x1b5/0x293
-b14aec6c sys_bind+0x63
-b1524fdc ipv6_setsockopt+0x38/0x88
-b14e0cd7 tcp_setsockopt+0x1b/0x36
-b14afa68 sock_common_setsockopt+0x12
-b14ae653 sys_setsockopt+0x5e
-sys_socketcall
-...
+How to do it? Would you please publish a reverting patch?
 
-GDB says:
+Regards,
 
-0xb1535b72 is in inet6_csk_bind_conflict
-(/usr/src/linux-2.6.git/include/net/ipv6.h:376).
-371     void ip6_frag_init(struct inet_frag_queue *q, void *a);
-372     int ip6_frag_match(struct inet_frag_queue *q, void *a);
-373
-374     static inline int ipv6_addr_any(const struct in6_addr *a)
-375     {
-376             return ((a->s6_addr32[0] | a->s6_addr32[1] |
-377                      a->s6_addr32[2] | a->s6_addr32[3] ) == 0);
-378     }
-379
-380     static inline int ipv6_addr_loopback(const struct in6_addr *a)
+Piotr Hosowicz
 
-
-Thanks,
-      Manuel Lauss
+-- 
+Szef TVN24 do dziennikarzy: Kochani, przez dwa lata walili¶my w obóz
+rz±dz±cy. Tak dalej byc nie mo¿e. Jeste¶my telewizj± niezale¿n± i to
+zobowi±zuje. Teraz bêdziemy kopaæ w opozycjê.
+NP: Mark Knopfler - Remembrance Day
+NB: 2.6.34-rc5-git5
