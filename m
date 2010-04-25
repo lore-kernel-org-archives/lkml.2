@@ -1,211 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab0DYUQd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 16:16:33 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:59786 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974Ab0DYUPr convert rfc822-to-8bit (ORCPT
+	id S1754096Ab0DYUUW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 16:20:22 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:56363 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753982Ab0DYUUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 16:15:47 -0400
-Date: Sun, 25 Apr 2010 21:29:16 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Oliver Neukum <oliver@neukum.org>, Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-       linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
-       Nicu Pavel <npavel@ituner.com>, Jaya Kumar <jayakumar.lkml@gmail.com>
-Subject: [PATCH] hid: split picolcd's operation_mode sysfs attribute
-Message-ID: <20100425212916.2b9af33b@neptune.home>
-In-Reply-To: <201004011858.45859.oliver@neukum.org>
-References: <20100324233707.7243b04d@neptune.home>
-	<20100330223224.18fe4f3e@neptune.home>
-	<20100330223350.32044891@neptune.home>
-	<201004011858.45859.oliver@neukum.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 25 Apr 2010 16:20:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=xyXV+UcFGYPA2cllhz7W0Fj1ViibsEMfawbe6WhOREJIYgfSLQAJBbUIiqVM7GMVOM
+         T7eAYUonEB8WxPH90PgPg+vdi5gMHm6Y70b0sqbywrfMmo4OHA3VWSYqyonL0rwluDu8
+         IAySWhByD2y6V/9mk+bTVz/PoD15MpYWS0usw=
+MIME-Version: 1.0
+In-Reply-To: <w2sa44ae5cd1004250849q73704370vc6af935c70db9b73@mail.gmail.com>
+References: <1271766716.2972.16.camel@dhcp231-113.rdu.redhat.com>
+	 <t2la44ae5cd1004200838w87256e80v9dcde91342b321db@mail.gmail.com>
+	 <20100421213543.GO2563@linux.vnet.ibm.com>
+	 <20100422145640.GB3228@redhat.com>
+	 <20100422160144.GC2524@linux.vnet.ibm.com>
+	 <h2xa44ae5cd1004230550uf734c89eo2b1d1945d446068c@mail.gmail.com>
+	 <20100423194255.GE2589@linux.vnet.ibm.com>
+	 <m2xa44ae5cd1004231559hcf90671asf146a43b4748c2c3@mail.gmail.com>
+	 <20100425023455.GM2440@linux.vnet.ibm.com>
+	 <w2sa44ae5cd1004250849q73704370vc6af935c70db9b73@mail.gmail.com>
+Date: Sun, 25 Apr 2010 16:20:13 -0400
+Message-ID: <p2ga44ae5cd1004251320j55d23ba7ua0fa14497f623d76@mail.gmail.com>
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious 
+	rcu_dereference_check() usage
+From: Miles Lane <miles.lane@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
+       eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       Johannes Berg <johannes@sipsolutions.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Original operation_mode sysfs attribute accepts the operation mode
-as main value with an option delay as second value to change
-the start-up delay on mode change.
+> I am down to seeing three suspicious rcu_dereference_check traces when
+> I apply this patch and all the previous patches to 2.6.34-rc5-git6.
+>
+> 1. The "__sched_setscheduler+0x19d/0x300" trace.
+> 2. The two "is_swiotlb_buffer+0x2e/0x3b" traces (waiting to see
+> Johannes' patch show up in a Linux snapshot)
+>
+> Did I miss a patch for the setscheduler issue?
 
-As it is preferred to have exactly one value per sysfs attribute,
-extract this delay into a separate sysfs attribute called
-operation_mode_delay.
+Hmm.  I am still seeing these two messages as well.
 
-Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
----
- Documentation/ABI/testing/sysfs-driver-hid-picolcd |   17 ++++-
- drivers/hid/hid-picolcd.c                          |   62 ++++++++++++++-----
- 2 files changed, 58 insertions(+), 21 deletions(-)
+[   83.363146] [ INFO: suspicious rcu_dereference_check() usage. ]
+[   83.363148] ---------------------------------------------------
+[   83.363151] include/net/inet_timewait_sock.h:227 invoked
+rcu_dereference_check() without protection!
+[   83.363154]
+[   83.363155] other info that might help us debug this:
+[   83.363156]
+[   83.363158]
+[   83.363159] rcu_scheduler_active = 1, debug_locks = 1
+[   83.363162] 2 locks held by gwibber-service/5076:
+[   83.363164]  #0:  (&p->lock){+.+.+.}, at: [<ffffffff8110534a>]
+seq_read+0x37/0x381
+[   83.363176]  #1:  (&(&hashinfo->ehash_locks[i])->rlock){+.-...},
+at: [<ffffffff813ddcd5>] established_get_next+0xc4/0x132
+[   83.363186]
+[   83.363187] stack backtrace:
+[   83.363191] Pid: 5076, comm: gwibber-service Not tainted 2.6.34-rc5-git6 #27
+[   83.363194] Call Trace:
+[   83.363202]  [<ffffffff81068086>] lockdep_rcu_dereference+0x9d/0xa5
+[   83.363207]  [<ffffffff813dc998>] twsk_net+0x4f/0x57
+[   83.363212]  [<ffffffff813ddc65>] established_get_next+0x54/0x132
+[   83.363216]  [<ffffffff813dde47>] tcp_seq_next+0x5d/0x6a
+[   83.363221]  [<ffffffff81105599>] seq_read+0x286/0x381
+[   83.363226]  [<ffffffff81105313>] ? seq_read+0x0/0x381
+[   83.363231]  [<ffffffff8113503c>] proc_reg_read+0x8d/0xac
+[   83.363236]  [<ffffffff810ebf14>] vfs_read+0xa6/0x103
+[   83.363241]  [<ffffffff810ec027>] sys_read+0x45/0x69
+[   83.363246]  [<ffffffff81002b6b>] system_call_fastpath+0x16/0x1b
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-hid-picolcd b/Documentation/ABI/testing/sysfs-driver-hid-picolcd
-index 14f52d7..08579e7 100644
---- a/Documentation/ABI/testing/sysfs-driver-hid-picolcd
-+++ b/Documentation/ABI/testing/sysfs-driver-hid-picolcd
-@@ -8,12 +8,21 @@ Description:	Make it possible to switch the PicoLCD device between LCD
- 		enclosed in brackets ('[' and ']')
- 
- 		Writing: causes operation mode switch. Permitted values are
--		the non-active mode names listed when read, optionally followed
--		by a delay value expressed in ms.
-+		the non-active mode names listed when read.
- 
- 		Note: when switching mode the current PicoLCD HID device gets
--		disconnected and reconnects after above delay (default value
--		is 5 seconds though this default should not be relied on).
-+		disconnected and reconnects after above delay (see attribute
-+		operation_mode_delay for its value).
-+
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/operation_mode_delay
-+Date:		April 2010
-+Contact:	Bruno Prémont <bonbons@linux-vserver.org>
-+Description:	Delay PicoLCD waits before restarting in new mode when
-+		operation_mode has changed.
-+
-+		Reading/Writing: It is expressed in ms and permitted range is
-+		0..30000ms.
- 
- 
- What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/fb_update_rate
-diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-index 6f71c60..aa6f2e1 100644
---- a/drivers/hid/hid-picolcd.c
-+++ b/drivers/hid/hid-picolcd.c
-@@ -177,6 +177,7 @@ struct picolcd_data {
- 	int addr_sz;
- #endif
- 	u8 version[2];
-+	unsigned short opmode_delay;
- 	/* input stuff */
- 	u8 pressed_keys[2];
- 	struct input_dev *input_keys;
-@@ -1270,8 +1271,7 @@ static ssize_t picolcd_operation_mode_store(struct device *dev,
- 	struct picolcd_data *data = dev_get_drvdata(dev);
- 	struct hid_report *report = NULL;
- 	size_t cnt = count;
--	int timeout = 5000;
--	unsigned u;
-+	int timeout = data->opmode_delay;
- 	unsigned long flags;
- 
- 	if (cnt >= 3 && strncmp("lcd", buf, 3) == 0) {
-@@ -1288,20 +1288,10 @@ static ssize_t picolcd_operation_mode_store(struct device *dev,
- 	if (!report)
- 		return -EINVAL;
- 
--	while (cnt > 0 && (*buf == ' ' || *buf == '\t')) {
--		buf++;
--		cnt--;
--	}
- 	while (cnt > 0 && (buf[cnt-1] == '\n' || buf[cnt-1] == '\r'))
- 		cnt--;
--	if (cnt > 0) {
--		if (sscanf(buf, "%u", &u) != 1)
--			return -EINVAL;
--		if (u > 30000)
--			return -EINVAL;
--		else
--			timeout = u;
--	}
-+	if (cnt != 0)
-+		return -EINVAL;
- 
- 	spin_lock_irqsave(&data->lock, flags);
- 	hid_set_field(report->field[0], 0, timeout & 0xff);
-@@ -1314,6 +1304,34 @@ static ssize_t picolcd_operation_mode_store(struct device *dev,
- static DEVICE_ATTR(operation_mode, 0644, picolcd_operation_mode_show,
- 		picolcd_operation_mode_store);
- 
-+/*
-+ * The "operation_mode_delay" sysfs attribute
-+ */
-+static ssize_t picolcd_operation_mode_delay_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct picolcd_data *data = dev_get_drvdata(dev);
-+
-+	return snprintf(buf, PAGE_SIZE, "%hu\n", data->opmode_delay);
-+}
-+
-+static ssize_t picolcd_operation_mode_delay_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct picolcd_data *data = dev_get_drvdata(dev);
-+	unsigned u;
-+	if (sscanf(buf, "%u", &u) != 1)
-+		return -EINVAL;
-+	if (u > 30000)
-+		return -EINVAL;
-+	else
-+		data->opmode_delay = u;
-+	return count;
-+}
-+
-+static DEVICE_ATTR(operation_mode_delay, 0644, picolcd_operation_mode_delay_show,
-+		picolcd_operation_mode_delay_store);
-+
- 
- #ifdef CONFIG_DEBUG_FS
- /*
-@@ -2409,6 +2427,7 @@ static int picolcd_probe(struct hid_device *hdev,
- 	spin_lock_init(&data->lock);
- 	mutex_init(&data->mutex);
- 	data->hdev = hdev;
-+	data->opmode_delay = 5000;
- 	if (hdev->product == USB_DEVICE_ID_PICOLCD_BOOTLOADER)
- 		data->status |= PICOLCD_BOOTLOADER;
- 	hid_set_drvdata(hdev, data);
-@@ -2436,24 +2455,32 @@ static int picolcd_probe(struct hid_device *hdev,
- 		goto err_cleanup_hid_hw;
- 	}
- 
--	error = device_create_file(&hdev->dev, &dev_attr_operation_mode);
-+	error = device_create_file(&hdev->dev, &dev_attr_operation_mode_delay);
- 	if (error) {
- 		dev_err(&hdev->dev, "failed to create sysfs attributes\n");
- 		goto err_cleanup_hid_ll;
- 	}
- 
-+	error = device_create_file(&hdev->dev, &dev_attr_operation_mode);
-+	if (error) {
-+		dev_err(&hdev->dev, "failed to create sysfs attributes\n");
-+		goto err_cleanup_sysfs1;
-+	}
-+
- 	if (data->status & PICOLCD_BOOTLOADER)
- 		error = picolcd_probe_bootloader(hdev, data);
- 	else
- 		error = picolcd_probe_lcd(hdev, data);
- 	if (error)
--		goto err_cleanup_sysfs;
-+		goto err_cleanup_sysfs2;
- 
- 	dbg_hid(PICOLCD_NAME " activated and initialized\n");
- 	return 0;
- 
--err_cleanup_sysfs:
-+err_cleanup_sysfs2:
- 	device_remove_file(&hdev->dev, &dev_attr_operation_mode);
-+err_cleanup_sysfs1:
-+	device_remove_file(&hdev->dev, &dev_attr_operation_mode_delay);
- err_cleanup_hid_ll:
- 	hdev->ll_driver->close(hdev);
- err_cleanup_hid_hw:
-@@ -2478,6 +2505,7 @@ static void picolcd_remove(struct hid_device *hdev)
- 
- 	picolcd_exit_devfs(data);
- 	device_remove_file(&hdev->dev, &dev_attr_operation_mode);
-+	device_remove_file(&hdev->dev, &dev_attr_operation_mode_delay);
- 	hdev->ll_driver->close(hdev);
- 	hid_hw_stop(hdev);
- 	hid_set_drvdata(hdev, NULL);
--- 
-1.6.4.4
-
+[   84.660302] [ INFO: suspicious rcu_dereference_check() usage. ]
+[   84.660304] ---------------------------------------------------
+[   84.660308] include/net/inet_timewait_sock.h:227 invoked
+rcu_dereference_check() without protection!
+[   84.660311]
+[   84.660312] other info that might help us debug this:
+[   84.660313]
+[   84.660315]
+[   84.660316] rcu_scheduler_active = 1, debug_locks = 1
+[   84.660319] no locks held by gwibber-service/5081.
+[   84.660321]
+[   84.660322] stack backtrace:
+[   84.660325] Pid: 5081, comm: gwibber-service Not tainted 2.6.34-rc5-git6 #27
+[   84.660328] Call Trace:
+[   84.660339]  [<ffffffff81068086>] lockdep_rcu_dereference+0x9d/0xa5
+[   84.660345]  [<ffffffff813cad6f>] twsk_net+0x4f/0x57
+[   84.660350]  [<ffffffff813cb18f>] __inet_twsk_hashdance+0x50/0x158
+[   84.660355]  [<ffffffff813e0bb9>] tcp_time_wait+0x1c1/0x24b
+[   84.660360]  [<ffffffff813d3d97>] tcp_fin+0x83/0x162
+[   84.660364]  [<ffffffff813d4727>] tcp_data_queue+0x1ff/0xa1e
+[   84.660370]  [<ffffffff810496aa>] ? mod_timer+0x1e/0x20
+[   84.660375]  [<ffffffff813d8363>] tcp_rcv_state_process+0x89d/0x8f2
+[   84.660381]  [<ffffffff813943bb>] ? release_sock+0x30/0x10b
+[   84.660386]  [<ffffffff813de772>] tcp_v4_do_rcv+0x2de/0x33f
+[   84.660391]  [<ffffffff8139440d>] release_sock+0x82/0x10b
+[   84.660395]  [<ffffffff813ce875>] tcp_close+0x1b5/0x37e
+[   84.660401]  [<ffffffff813ecdb7>] inet_release+0x50/0x57
+[   84.660405]  [<ffffffff81391ae4>] sock_release+0x1a/0x66
+[   84.660410]  [<ffffffff81391b52>] sock_close+0x22/0x26
+[   84.660415]  [<ffffffff810ece07>] __fput+0x120/0x1cd
+[   84.660420]  [<ffffffff810ecec9>] fput+0x15/0x17
+[   84.660424]  [<ffffffff810e9d41>] filp_close+0x63/0x6d
+[   84.660428]  [<ffffffff810e9e22>] sys_close+0xd7/0x111
+[   84.660434]  [<ffffffff81002b6b>] system_call_fastpath+0x16/0x1b
