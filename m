@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab0DYSIX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 14:08:23 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:56353 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753759Ab0DYSIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 14:08:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kBxPhjHUHjbIPWK2wg8sI3wD/6ass5sfXqEm8aUdhvYuylp0Gv65T2DmK/QJZx4ar1
-         7qTv+plzsJdQE1mcVMzJnqJ2wPDf7CjzrQaYcOfyk3phaFOBq09xP7GrZgWPwSnXX7mP
-         qtKUoptWL7GRQp1LrZ4AvbSrhr6Rkvd+3PKj8=
-Date: Sun, 25 Apr 2010 20:08:15 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 8/9] perf: Add a perf trace option to check samples
-	ordering reliability
-Message-ID: <20100425180812.GE5375@nowhere>
-References: <1272074742-3654-1-git-send-regression-fweisbec@gmail.com> <1272074742-3654-9-git-send-regression-fweisbec@gmail.com> <4BD31891.6080508@redhat.com>
+	id S1753804Ab0DYSOj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 14:14:39 -0400
+Received: from kroah.org ([198.145.64.141]:51322 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753654Ab0DYSOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 14:14:38 -0400
+Date: Sun, 25 Apr 2010 11:15:17 -0700
+From: Greg KH <greg@kroah.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 5/9] PM: suspend_block: Add debugfs file
+Message-ID: <20100425181517.GA22676@kroah.com>
+References: <1271984938-13920-1-git-send-email-arve@android.com> <1271984938-13920-2-git-send-email-arve@android.com> <1271984938-13920-3-git-send-email-arve@android.com> <1271984938-13920-4-git-send-email-arve@android.com> <1271984938-13920-5-git-send-email-arve@android.com> <1271984938-13920-6-git-send-email-arve@android.com> <20100423135853.478af057.randy.dunlap@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BD31891.6080508@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100423135853.478af057.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 24, 2010 at 12:13:05PM -0400, Masami Hiramatsu wrote:
-> Hi Frederic,
+On Fri, Apr 23, 2010 at 01:58:53PM -0700, Randy Dunlap wrote:
+> On Thu, 22 Apr 2010 18:08:54 -0700 Arve Hj?nnev?g wrote:
 > 
-> Frederic Weisbecker wrote:
-> > To ensure sample events time reordering is reliable, add a -d option
-> > to perf trace to check that automatically.
+> > Report active and inactive suspend blockers in
+> > /sys/kernel/debug/suspend_blockers.
 > 
-> Just out of curiosity, is there any possibility to add 
-> other debugging options to perf-trace?
-> If so, I think we can pass some arguments for
-> this -d option, e.g. "-d ordering,events" and so on.
-> Just an idea.
 > 
-> Thank you,
+> This looks more like user interface information than it does debug information.
+> If that's correct, it shouldn't be in debugfs.
 
+It's debug-like information, and has more than one value per file, so
+debugfs seems like the proper place for it.  I have no objection to it
+going there.
 
+thanks,
 
-Sure, if somebody wants to come with another debugging option
-in perf trace, no problem.
-
+greg k-h
