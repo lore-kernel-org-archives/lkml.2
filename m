@@ -1,93 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab0DYUKD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 16:10:03 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:49400 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab0DYUKA convert rfc822-to-8bit (ORCPT
+	id S1754145Ab0DYUPv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 16:15:51 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:42848 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab0DYUPr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 16:10:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VtYA1zaljRV1xtyZF+SGfpO7fCnGwsON9H9pCNRjw3ySWxRGf/7w/ONwoJUiJXA0VR
-         qG649tdUBL+yKtmxvYsRO5jxG6uSD1iasNq6E13KwQ8l1r1JMkOtshrJ0tdeGz8Yt15t
-         GefKCOzdYnCdT0dRYRgKfvBak6Ss6+z0hrq7w=
-MIME-Version: 1.0
-In-Reply-To: <20100425193658.GA24039@kroah.com>
-References: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com>
-	 <20100419145934.GA10893@kroah.com>
-	 <t2w1ba2fa241004211522le49fc938m341553b0f2b89031@mail.gmail.com>
-	 <20100425163711.GA20196@kroah.com>
-	 <o2n1ba2fa241004251222x6ab49726p9757fd8be4952bee@mail.gmail.com>
-	 <20100425193658.GA24039@kroah.com>
-Date: Sun, 25 Apr 2010 23:09:58 +0300
-Message-ID: <m2g1ba2fa241004251309oa5592255lb4e4b96ea07dd12a@mail.gmail.com>
-Subject: Re: request_firmware API exhaust memory
-From: Tomas Winkler <tomasw@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-       Kay Sievers <kay.sievers@vrfy.org>,
-       David Woodhouse <dwmw2@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org
+	Sun, 25 Apr 2010 16:15:47 -0400
+Date: Sun, 25 Apr 2010 21:40:03 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Oliver Neukum <oliver@neukum.org>, Jiri Kosina <jkosina@suse.cz>,
+       Marcel Holtmann <marcel@holtmann.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Nicu Pavel <npavel@ituner.com>, Jaya Kumar <jayakumar.lkml@gmail.com>,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>
+Subject: [PATCH 1/2] hid: add suspend/resume hooks for hid drivers
+Message-ID: <20100425214003.7e87c6a3@neptune.home>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 25, 2010 at 10:36 PM, Greg KH <greg@kroah.com> wrote:
-> On Sun, Apr 25, 2010 at 10:22:54PM +0300, Tomas Winkler wrote:
->> On Sun, Apr 25, 2010 at 7:37 PM, Greg KH <greg@kroah.com> wrote:
->> > On Thu, Apr 22, 2010 at 01:22:51AM +0300, Tomas Winkler wrote:
->> >> On Mon, Apr 19, 2010 at 5:59 PM, Greg KH <greg@kroah.com> wrote:
->> >> > On Mon, Apr 19, 2010 at 03:20:34PM +0300, Tomas Winkler wrote:
->> >> >> Lately we've been developing a device that rather more extensively
->> >> >> used request_firmware API in load and also using pm_notifiers to load
->> >> >> firmware.
->> >> >
->> >> > Do you have a pointer to your driver source anywhere that shows how you
->> >> > are trying to use the firmware api in this manner?
->> >>
->> >> I've attached a very simple ??test driver I'm using. ??Just wanted to
->> >> eliminate anything else.
->> >> Bellow is a little script that loads and releases the firmware. My
->> >> previous observation was wrong.
->> >> The free memory gradually decreases regardless of number or dangling
->> >> udevd forks, which are eventually collected if the sleep period is
->> >> long enough ~10s.
->> >
->> > That sounds normal for the free memory. ??Kay, that's also to be expected
->> > for the udevd forks as well, right?
->>
->> Sorry maybe I was not clear what I mean that the memory will be
->> eventually exhausted and system will crash
->> Is this normal?
->
-> Ah, no, that's not normal.  Have you run kmemleak on your module (or
-> test module) to verify that you are properly freeing up the memory?
+Add suspend/resume hooks for HID drivers so these can do some
+additional state adjustment when device gets suspended/resumed.
 
-yes, one of my college has run the kmemleak but didn't bring much
-evidence.  I've also looked into slubinfo as suggested by Johannes
-but don't see anything suspicions either but this is expected as
-everything is allocated through kmalloc and alloc_pages.
-I may rerun the kmemleak by myself but this shows up on too many
-setups and kernels with also full driver and also my simple test
-driver.
+v3:
+  - Pass full message to hid driver's suspend hook
+v2:
+  - Adds auto_suspend parameter to suspend hook
+  - Only calls HID driver's resume hooks when previous code
+    did succeed
 
->
->> Actually I less suspect now udevd as the same happens on android
->> platform where there is no udev
->
-> Which is a sad thing for a whole other range of issues...
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+---
 
-Said thing is that I don't see where the memory goes.... Anyhow I will
-try to run valgrin on udev just to be sure.
+Note, I've not added PM parts to bluetooth as I'm not sure how/where
+to catch the PM events generated by bluetooth.
+It looks like PM on bluetooth side does just some bluetooth housekeeping
+and sends an event.
+Marcel, do you have some pointers for wiring up these HID suspend hooks
+in the bluetooth/hidp code?
 
-I'll be glad If someone can run my simple driver I posted and confirm
-that sees the same problem
+ drivers/hid/usbhid/hid-core.c |   24 +++++++++++++++++++++++-
+ include/linux/hid.h           |    8 ++++++++
+ 2 files changed, 31 insertions(+), 1 deletions(-)
 
-Thanks
-Tomas
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index 3e7909b..17eb3ec 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -1291,6 +1291,11 @@ static int hid_suspend(struct usb_interface *intf, pm_message_t message)
+ 		{
+ 			set_bit(HID_REPORTED_IDLE, &usbhid->iofl);
+ 			spin_unlock_irq(&usbhid->lock);
++			if (hid->driver && hid->driver->suspend) {
++				status = hid->driver->suspend(hid, message);
++				if (status < 0)
++					return status;
++			}
+ 		} else {
+ 			usbhid_mark_busy(usbhid);
+ 			spin_unlock_irq(&usbhid->lock);
+@@ -1298,6 +1303,11 @@ static int hid_suspend(struct usb_interface *intf, pm_message_t message)
+ 		}
+ 
+ 	} else {
++		if (hid->driver && hid->driver->suspend) {
++			status = hid->driver->suspend(hid, message);
++			if (status < 0)
++				return status;
++		}
+ 		spin_lock_irq(&usbhid->lock);
+ 		set_bit(HID_REPORTED_IDLE, &usbhid->iofl);
+ 		spin_unlock_irq(&usbhid->lock);
+@@ -1352,6 +1362,11 @@ static int hid_resume(struct usb_interface *intf)
+ 		hid_io_error(hid);
+ 	usbhid_restart_queues(usbhid);
+ 
++	if (status >= 0 && hid->driver && hid->driver->resume) {
++		int ret = hid->driver->resume(hid);
++		if (ret < 0)
++			status = ret;
++	}
+ 	dev_dbg(&intf->dev, "resume status %d\n", status);
+ 	return 0;
+ }
+@@ -1360,9 +1375,16 @@ static int hid_reset_resume(struct usb_interface *intf)
+ {
+ 	struct hid_device *hid = usb_get_intfdata(intf);
+ 	struct usbhid_device *usbhid = hid->driver_data;
++	int status;
+ 
+ 	clear_bit(HID_REPORTED_IDLE, &usbhid->iofl);
+-	return hid_post_reset(intf);
++	status = hid_post_reset(intf);
++	if (status >= 0 && hid->driver && hid->driver->reset_resume) {
++		int ret = hid->driver->reset_resume(hid);
++		if (ret < 0)
++			status = ret;
++	}
++	return status;
+ }
+ 
+ #endif /* CONFIG_PM */
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index b1344ec..069e587 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -589,6 +589,9 @@ struct hid_usage_id {
+  * @report_fixup: called before report descriptor parsing (NULL means nop)
+  * @input_mapping: invoked on input registering before mapping an usage
+  * @input_mapped: invoked on input registering after mapping an usage
++ * @suspend: invoked on suspend (NULL means nop)
++ * @resume: invoked on resume if device was not reset (NULL means nop)
++ * @reset_resume: invoked on resume if device was reset (NULL means nop)
+  *
+  * raw_event and event should return 0 on no action performed, 1 when no
+  * further processing should be done and negative on error
+@@ -629,6 +632,11 @@ struct hid_driver {
+ 	int (*input_mapped)(struct hid_device *hdev,
+ 			struct hid_input *hidinput, struct hid_field *field,
+ 			struct hid_usage *usage, unsigned long **bit, int *max);
++#ifdef CONFIG_PM
++	int (*suspend)(struct hid_device *hdev, pm_message_t message);
++	int (*resume)(struct hid_device *hdev);
++	int (*reset_resume)(struct hid_device *hdev);
++#endif
+ /* private: */
+ 	struct device_driver driver;
+ };
+-- 
+1.6.4.4
+
