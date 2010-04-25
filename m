@@ -1,84 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab0DYDOQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Apr 2010 23:14:16 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39630 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab0DYDOP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Apr 2010 23:14:15 -0400
-Message-ID: <4BD3B2D1.8080203@vflare.org>
-Date: Sun, 25 Apr 2010 08:41:13 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+	id S1752778Ab0DYDO5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Apr 2010 23:14:57 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39777 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150Ab0DYDOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Apr 2010 23:14:55 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Michal Hocko <mhocko@suse.cz>
+Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
+Date: Sun, 25 Apr 2010 05:15:08 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Tony Vroon <tony@linx.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       pm list <linux-pm@lists.linux-foundation.org>
+References: <20100401133923.GA4104@tiehlicka.suse.cz> <201004191719.53602.rjw@sisk.pl> <201004250435.42779.rjw@sisk.pl>
+In-Reply-To: <201004250435.42779.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
-       JBeulich@novell.com, chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <20100422134249.GA2963@ca-server1.us.oracle.com> <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default> <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default> <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default 4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <4BD24E37.30204@vflare.org> <4BD33822.2000604@redhat.com>
-In-Reply-To: <4BD33822.2000604@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004250515.08671.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2010 11:57 PM, Avi Kivity wrote:
-> On 04/24/2010 04:49 AM, Nitin Gupta wrote:
->>
->>> I see.  So why not implement this as an ordinary swap device, with a
->>> higher priority than the disk device?  this way we reuse an API and keep
->>> things asynchronous, instead of introducing a special purpose API.
->>>
->>>      
->> ramzswap is exactly this: an ordinary swap device which stores every page
->> in (compressed) memory and its enabled as highest priority swap.
->> Currently,
->> it stores these compressed chunks in guest memory itself but it is not
->> very
->> difficult to send these chunks out to host/hypervisor using virtio.
->>
->> However, it suffers from unnecessary block I/O layer overhead and
->> requires
->> weird hooks in swap code, say to get notification when a swap slot is
->> freed.
->>    
+On Sunday 25 April 2010, Rafael J. Wysocki wrote:
+> On Monday 19 April 2010, Rafael J. Wysocki wrote:
+> > On Monday 19 April 2010, Michal Hocko wrote:
+> > > On Fri 16-04-10 20:00:29, Rafael J. Wysocki wrote:
+> > > > On Wednesday 14 April 2010, Michal Hocko wrote:
+> > > > > On Tue 13-04-10 22:53:37, Rafael J. Wysocki wrote:
+> > > > > > On Tuesday 13 April 2010, Michal Hocko wrote:
+> > > > > > > On Tue 13-04-10 01:01:54, Rafael J. Wysocki wrote:
+> > > > > > > > On Saturday 10 April 2010, Rafael J. Wysocki wrote:
+> > > > > > > > > On Friday 09 April 2010, Tony Vroon wrote:
+> > > > > > > > > > On Fri, 2010-04-09 at 22:42 +0200, Rafael J. Wysocki wrote:
+> > > > > > > > > > > Please check if the patch below changes anything.
+> > > > > > > > > > >  drivers/acpi/wakeup.c |    4 ++--
+> > > > > > > > > > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > > > > > > > > > 
+> > > > > > > > > > That didn't change the behaviour for me, sorry.
+> > > > > > > > > 
+> > > > > > > > > Well, I would be sorry if it did, because the patch removed some useful code. :-)
+> > > > > > > > > 
+> > > > > > > > > > (I made sure to go through a full power down session before trying the
+> > > > > > > > > > patched kernel)
+> > > > > > > > > 
+> > > > > > > > > Thanks for testing.  So it looks like we don't disable the GPE during power off.
+> > > > > > > > > 
+> > > > > > > > > I'll try to figure out what's going on, please stay tuned.
+> > > > > > > > 
+> > > > > > > > Can you please check if the patch below changes the behavior?
+> > > > > > > 
+> > > > > > > Unfortunately, it didn't help either (I have tried on top of the fresh
+> > > > > > > rc4).
+> > > > > > 
+> > > > > > That gets really weird.
+> > > > > > 
+> > > > > > > > ---
+> > > > > > > >  drivers/acpi/wakeup.c |    6 +++---
+> > > > > > > >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > > > > > > > 
+> > > > > > > > Index: linux-2.6/drivers/acpi/wakeup.c
+> > > > > > > > ===================================================================
+> > > > > > > > --- linux-2.6.orig/drivers/acpi/wakeup.c
+> > > > > > > > +++ linux-2.6/drivers/acpi/wakeup.c
+> > > > > > > > @@ -63,17 +63,17 @@ void acpi_enable_wakeup_device(u8 sleep_
+> > > > > > > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
+> > > > > > > >  		struct acpi_device *dev =
+> > > > > > > >  			container_of(node, struct acpi_device, wakeup_list);
+> > > > > > > > +		u8 action = ACPI_GPE_ENABLE;
+> > > > > > 
+> > > > > > Can you try to change the above to ACPI_GPE_DISABLE and retest, please?
+> > > > > 
+> > > > > Unfortunately didn't help as well...
+> > > > > Just for reference:
+> > > > > 
+> > > > > diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
+> > > > > index 248b473..f23c08f 100644
+> > > > > --- a/drivers/acpi/wakeup.c
+> > > > > +++ b/drivers/acpi/wakeup.c
+> > > > > @@ -63,7 +63,7 @@ void acpi_enable_wakeup_device(u8 sleep_state)
+> > > > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
+> > > > >  		struct acpi_device *dev =
+> > > > >  			container_of(node, struct acpi_device, wakeup_list);
+> > > > > -		u8 action = ACPI_GPE_ENABLE;
+> > > > > +		u8 action = ACPI_GPE_DISABLE;
+> > > > 
+> > > > That probably means the chipset enables the GPEs by itself _after_ we've
+> > > > disabled them in acpi_enable_wakeup_device().
+> > > 
+> > > Is this something BIOS specific?
+> > > 
+> > > > 
+> > > > Unfortunately, I can't reproduce the issue on any of my test boxes and it's
+> > > > hard to find the source of the problem staring at the code.
+> > > 
+> > > Are there any debug options I can turn on to provide some information?
+> > 
+> > We can only check what the kernel tells us before power off, but all that seems
+> > correct.
+> > 
+> > > Btw. what exactly does this mean? In what state is the laptop while it
+> > > is turned off and GPE is enabled?
+> > 
+> > If a GPE is enabled, then some part of the chipset has power provided so that
+> > it can signal wakeup.
+> > 
+> > I'll look into it a bit more later today.
 > 
-> Isn't that TRIM?
+> Please try the patch below.  It kind of restores the previous behavior,
+> let's see if it changes anything.
 
-No: trim or discard is not useful. The problem is that we require a callback
-_as soon as_ a page (swap slot) is freed. Otherwise, stale data quickly accumulates
-in memory defeating the whole purpose of in-memory compressed swap devices (like ramzswap).
+If it doesn't help, please try to comment out the acpi_enable_gpe() in
+drivers/acpi/wakeup.c:acpi_wakeup_device_init() and retest (if you haven't
+done that already).
 
-Increasing the frequency of discards is also not an option:
- - Creating discard bio requests themselves need memory and these swap devices
-come into picture only under low memory conditions.
- - We need to regularly scan swap_map to issue these discards. Increasing discard
-frequency also means more frequent scanning (which will still not be fast enough
-for ramzswap needs).
-
-> 
->> OTOH frontswap approach gets rid of any such artifacts and overheads.
->> (ramzswap: http://code.google.com/p/compcache/)
->>    
-> 
-> Maybe we should optimize these overheads instead.  Swap used to always
-> be to slow devices, but swap-to-flash has the potential to make swap act
-> like an extension of RAM.
-> 
-
-Spending lot of effort optimizing an overhead which can be completely avoided
-is probably not worth it.
-
-Also, I think the choice of a synchronous style API for frontswap and cleancache
-is justified as they want to send pages to host *RAM*. If you want to use other
-devices like SSDs, then these should be just added as another swap device as
-we do currently -- these should not be used as frontswap storage directly.
-
-Thanks,
-Nitin
+Rafael
