@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab0DYWl0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 18:41:26 -0400
-Received: from mail-iw0-f178.google.com ([209.85.223.178]:36565 "EHLO
-	mail-iw0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab0DYWlY convert rfc822-to-8bit (ORCPT
+	id S1753068Ab0DYXxH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 19:53:07 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44026 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab0DYXxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 18:41:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1004251122230.25835-100000@netrider.rowland.org>
-References: <201004250430.31054.rjw@sisk.pl>
-	 <Pine.LNX.4.44L0.1004251122230.25835-100000@netrider.rowland.org>
-Date: Sun, 25 Apr 2010 15:41:23 -0700
-Message-ID: <j2id6200be21004251541z53ebce31rddb659680219c450@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 8/9] Input: Block suspend while event queue is 
-	not empty.
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       =?ISO-8859-1?Q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
-       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
-       linux-input@vger.kernel.org, Sven Neumann <s.neumann@raumfeld.com>,
-       linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>,
-       Jiri Kosina <jkosina@suse.cz>, linux-pm@lists.linux-foundation.org,
-       Tero Saarni <tero.saarni@gmail.com>, Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 25 Apr 2010 19:53:04 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 26 Apr 2010 08:49:01 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+       Christoph Lameter <cl@linux.com>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX][mm][PATCH] fix migration race in rmap_walk
+Message-Id: <20100426084901.15c09a29.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100424104324.GD14351@csn.ul.ie>
+References: <20100423120148.9ffa5881.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100423095922.GJ30306@csn.ul.ie>
+	<20100423155801.GA14351@csn.ul.ie>
+	<20100424110200.b491ec5f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100424104324.GD14351@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 25, 2010 at 8:29 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Sun, 25 Apr 2010, Rafael J. Wysocki wrote:
->
->> On Saturday 24 April 2010, Alan Stern wrote:
->> > On Fri, 23 Apr 2010, Arve Hjønnevåg wrote:
->> >
->> > > On Fri, Apr 23, 2010 at 2:08 PM, Dmitry Torokhov
->> > > <dmitry.torokhov@gmail.com> wrote:
->> > > > On Friday 23 April 2010 01:56:25 pm Randy Dunlap wrote:
->> > > >> On Thu, 22 Apr 2010 18:08:57 -0700 Arve Hjønnevåg wrote:
->> > > >> > Add an ioctl, EVIOCSSUSPENDBLOCK, to enable a suspend_blocker that will
->> > > >> > block suspend while the event queue is not empty. This allows userspace
->> > > >> > code to process input events while the device appears to be asleep.
->
->> > Is there some reason why this feature needs to be enabled by an
->> > ioctl?  Why not make this suspend blocker permanently enabled?
->>
->> The ioctl is there so that user space can use suspend blockers, which is
->> needed because only user space know that some activities are going to continue
->> and therefore the system should not be suspended (like playing music "in the
->> background").
->
-> No, you're thinking of a different ioctl: SUSPEND_BLOCKER_IOCTL_BLOCK.
-> This one (EVIOCSSUSPENDBLOCK) is present _only_ to enable one specific
-> suspend blocker, which is activated when the input event queue is
-> non-empty.  I don't see any reason why it shouldn't be enabled all the
-> time.
->
+On Sat, 24 Apr 2010 11:43:24 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-Some user space processes keep input devices open that they don't
-currently read from. The current android kernel use a wakelock with a
-timeout limit the damage caused by this code, but not blocking suspend
-at all by default will handle this case better. Also, not all input
-devices are used for wakeup events, so there is no need to block
-suspend when their event queue is not empty.
+> On Sat, Apr 24, 2010 at 11:02:00AM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Fri, 23 Apr 2010 16:58:01 +0100
+> > Mel Gorman <mel@csn.ul.ie> wrote:
+> > 
+> > > > I had considered this idea as well as it is vaguely similar to how zones get
+> > > > resized with a seqlock. I was hoping that the existing locking on anon_vma
+> > > > would be usable by backing off until uncontended but maybe not so lets
+> > > > check out this approach.
+> > > > 
+> > > 
+> > > A possible combination of the two approaches is as follows. It uses the
+> > > anon_vma lock mostly except where the anon_vma differs between the page
+> > > and the VMAs being walked in which case it uses the seq counter. I've
+> > > had it running a few hours now without problems but I'll leave it
+> > > running at least 24 hours.
+> > > 
+> > ok, I'll try this, too.
+> > 
+> > 
+> > > ==== CUT HERE ====
+> > >  mm,migration: Prevent rmap_walk_[anon|ksm] seeing the wrong VMA information by protecting against vma_adjust with a combination of locks and seq counter
+> > > 
+> > > vma_adjust() is updating anon VMA information without any locks taken.
+> > > In constract, file-backed mappings use the i_mmap_lock. This lack of
+> > > locking can result in races with page migration. During rmap_walk(),
+> > > vma_address() can return -EFAULT for an address that will soon be valid.
+> > > This leaves a dangling migration PTE behind which can later cause a
+> > > BUG_ON to trigger when the page is faulted in.
+> > > 
+> > > With the recent anon_vma changes, there is no single anon_vma->lock that
+> > > can be taken that is safe for rmap_walk() to guard against changes by
+> > > vma_adjust(). Instead, a lock can be taken on one VMA while changes
+> > > happen to another.
+> > > 
+> > > What this patch does is protect against updates with a combination of
+> > > locks and seq counters. First, the vma->anon_vma lock is taken by
+> > > vma_adjust() and the sequence counter starts. The lock is released and
+> > > the sequence ended when the VMA updates are complete.
+> > > 
+> > > The lock serialses rmap_walk_anon when the page and VMA share the same
+> > > anon_vma. Where the anon_vmas do not match, the seq counter is checked.
+> > > If a change is noticed, rmap_walk_anon drops its locks and starts again
+> > > from scratch as the VMA list may have changed. The dangling migration
+> > > PTE bug was not triggered after several hours of stress testing with
+> > > this patch applied.
+> > > 
+> > > [kamezawa.hiroyu@jp.fujitsu.com: Use of a seq counter]
+> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > 
+> > I think this patch is nice!
+> > 
+> 
+> It looks nice but it still broke after 28 hours of running. The
+> seq-counter is still insufficient to catch all changes that are made to
+> the list. I'm beginning to wonder if a) this really can be fully safely
+> locked with the anon_vma changes and b) if it has to be a spinlock to
+> catch the majority of cases but still a lazy cleanup if there happens to
+> be a race. It's unsatisfactory and I'm expecting I'll either have some
+> insight to the new anon_vma changes that allow it to be locked or Rik
+> knows how to restore the original behaviour which as Andrea pointed out
+> was safe.
+> 
+Ouch. Hmm, how about the race in fork() I pointed out ?
 
--- 
-Arve Hjønnevåg
+Thanks,
+-Kame
+
