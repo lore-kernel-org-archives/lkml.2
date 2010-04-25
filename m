@@ -1,215 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab0DYUpJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 16:45:09 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:53558 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754035Ab0DYUpH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 16:45:07 -0400
-Message-ID: <4BD4A9B4.1010200@bluewatersys.com>
-Date: Mon, 26 Apr 2010 08:44:36 +1200
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1752965Ab0DYUyo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 16:54:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51591 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232Ab0DYUym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 16:54:42 -0400
+Date: Sun, 25 Apr 2010 23:49:17 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Robert Wimmer <kernel@tauceti.net>
+Cc: Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-mm@kvack.org, bugzilla-daemon@bugzilla.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
+Message-ID: <20100425204916.GA12686@redhat.com>
+References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net>
 MIME-Version: 1.0
-To: Mike Rapoport <mike@compulab.co.il>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org,
-       Yulia Vilensky <vilensky@compulab.co.il>
-Subject: Re: [PATCH] ds2782_battery: add support for ds2786 battery gas gauge
-References: <20100422071437.GA32489@oksana.dev.rtsoft.ru> <1271921723-18289-1-git-send-email-mike@compulab.co.il> <4BD0BE97.6010007@bluewatersys.com> <4BD460D3.1020609@compulab.co.il>
-In-Reply-To: <4BD460D3.1020609@compulab.co.il>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BD4A917.70702@tauceti.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Rapoport wrote:
-> Hi Ryan,
-> 
-> Ryan Mallon wrote:
->> Mike Rapoport wrote:
->>> From: Yulia Vilensky <vilensky@compulab.co.il>
->>
->> Thanks for this, some comments below.
->>
->>> Signed-off-by: Yulia Vilensky <vilensky@compulab.co.il>
->>> Signed-off-by: Mike Rapoport <mike@compulab.co.il>
->>> ---
->>>  drivers/power/Kconfig          |    4 +-
->>>  drivers/power/ds2782_battery.c |  217
->>> +++++++++++++++++++++++++++++++--------
->>>  include/linux/ds2782_battery.h |    8 ++
->>>  3 files changed, 182 insertions(+), 47 deletions(-)
->>>  create mode 100644 include/linux/ds2782_battery.h
->>>
->>> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
->>> index faaa9b4..d8b8a19 100644
->>> --- a/drivers/power/Kconfig
->>> +++ b/drivers/power/Kconfig
->>> @@ -65,10 +65,10 @@ config BATTERY_DS2760
->>>        Say Y here to enable support for batteries with ds2760 chip.
->>>  
->>>  config BATTERY_DS2782
->>> -    tristate "DS2782 standalone gas-gauge"
->>> +    tristate "DS2782/DS2786 standalone gas-gauge"
->>>      depends on I2C
->>>      help
->>> -      Say Y here to enable support for the DS2782 standalone battery
->>> +      Say Y here to enable support for the DS2782/DS2786 standalone
->>> battery
->>
->> I have only used the DS2782 chip. Can we just change this to DS278x? May
->> as well change to CONFIG_BATTERY_DS278x while we are here.
->>
-> 
-> Shall we move ds2782_battery.c to ds278x_battery.c at the same time?
-> Changing Kconfig invites the .c file move as well :)
+So, it's an NFS-related regression, which is consistent with the bisect
+results. I guess someone who knows about NFS will have to look at it...
+BTW, you probably want to label the bug as regression.
 
-Yes. Are there other gas-gauges in the same family?
-
->>>        gas-gauge.
->>>  
->>>  config BATTERY_PMU
->>> diff --git a/drivers/power/ds2782_battery.c
->>> b/drivers/power/ds2782_battery.c
->>> index 99c8997..0df49b4 100644
->>> --- a/drivers/power/ds2782_battery.c
->>> +++ b/drivers/power/ds2782_battery.c
->>> @@ -5,6 +5,8 @@
->>>   *
->>>   * Author: Ryan Mallon <ryan@bluewatersys.com>
->>>   *
->>> + * DS278 added by Yulia Vilensky <vilensky@compulab.co.il>
->>> + *
->>>   * This program is free software; you can redistribute it and/or modify
->>>   * it under the terms of the GNU General Public License version 2 as
->>>   * published by the Free Software Foundation.
->>> @@ -20,6 +22,7 @@
->>>  #include <linux/idr.h>
->>>  #include <linux/power_supply.h>
->>>  #include <linux/slab.h>
->>> +#include <linux/ds2782_battery.h>
->>>  
->>>  #define DS2782_REG_RARC        0x06    /* Remaining active relative
->>> capacity */
->>>  
->>> @@ -33,18 +36,39 @@
->>>  /* Current unit measurement in uA for a 1 milli-ohm sense resistor */
->>>  #define DS2782_CURRENT_UNITS    1563
->>>  
->>> -#define to_ds2782_info(x) container_of(x, struct ds2782_info, battery)
->>> +#define DS2786_REG_RARC        0x02    /* Remaining active relative
->>> capacity */
->>> +
->>> +#define DS2786_REG_VOLT_MSB    0x0c
->>> +#define DS2786_REG_TEMP_MSB    0x0a
->>> +#define DS2786_REG_CURRENT_MSB    0x0e
->>
->> #define DS278x_REG_CURRENT_MSB        0x0e
->>
->> Its the same register on both chips, no need for two #defines. Same of
->> the other registers, except for RARC.
+On Sun, Apr 25, 2010 at 10:41:59PM +0200, Robert Wimmer wrote:
+> I've added CONFIG_KALLSYMS and CONFIG_KALLSYMS_ALL
+> to my .config. I've uploaded the dmesg output. Maybe it
+> helps a little bit:
 > 
-> Ok.
+> https://bugzilla.kernel.org/attachment.cgi?id=26138
 > 
->>> +
->>> +#define DS2786_CURRENT_UNITS    25
->>
->> If we make this a member of the info structure, we can easily use it in
->> calculations for both chips, ie
->>
->>      current_uA = raw * (info->current_units / sense_res);
+> - Robert
 > 
-> not quite, see comments below.
->     
->>> +#define DS278X_SIGN_BIT_MASK16  0x8000
->>> +
->>> +struct ds278x_info;
->>>  
->>> -struct ds2782_info {
->>> +struct ds278x_battery_ops {
->>> +    int    (*get_temp)(struct ds278x_info *info, int *temp);
->>> +    int    (*get_current)(struct ds278x_info *info, int *current_uA);
->>> +    int    (*get_voltage)(struct ds278x_info *info, int *voltage_uA);
->>> +    int    (*get_capacity)(struct ds278x_info *info, int *capacity_uA);
->>> +};
->>> +
 > 
-> [ snip ]
-> 
->>>  
->>> -static int ds2782_get_status(struct ds2782_info *info, int *status)
->>> +static int ds2786_get_temp(struct ds278x_info *info, int *temp)
->>> +{
->>> +    s16 raw;
->>> +    int err;
->>> +
->>> +    /*
->>> +     * Temperature is measured in units of 0.125 degrees celcius, the
->>> +     * power_supply class measures temperature in tenths of degrees
->>> +     * celsius. The temperature value is stored as a 10 bit number,
->>> plus
->>> +     * sign in the upper bits of a 16 bit register.
->>> +     */
->>> +    err = ds278x_read_reg16(info, DS2786_REG_TEMP_MSB, &raw);
->>> +    if (err)
->>> +        return err;
->>> +
->>> +    if (raw &  DS278X_SIGN_BIT_MASK16)
->>> +        *temp = -(((~raw >> 5)+1) * 125)/100;
->>> +    else
->>> +        *temp = ((raw >> 5) * 125)/100;
->>> +
->>> +    return 0;
->>> +}
->>
->> This is basically the same as the ds2782 version. See Jean's comments on
->> my original patch about the sign math:
->> http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg01220.html
-> 
-> Ok, we'll fix the math
-> 
->>> +static int ds2786_get_current(struct ds278x_info *info, int
->>> *current_uA)
->>> +{
->>> +    int err;
->>> +    s16 raw;
->>> +
->>> +    err = ds278x_read_reg16(info, DS2786_REG_CURRENT_MSB, &raw);
->>> +    if (err)
->>> +        return err;
->>> +
->>> +    if (raw &  DS278X_SIGN_BIT_MASK16)
->>> +        *current_uA = -(((~raw >> 4)+1) *
->>> +                   (DS2786_CURRENT_UNITS / info->rsns));
->>> +    else
->>> +        *current_uA = (raw >> 4) *
->>> +                  (DS2786_CURRENT_UNITS / info->rsns);
->>> +    return 0;
->>
->> Can we combine the implementations of the get_current function? Both
->> have get rsns (though in different ways) and eventually divide the
->> current register by the rsns value? Possibly move the get_rsns into
->> separate battery ops and attempt to coalesce these?
-> 
-> It's possible to have get_rsns and coalesce _get_current for both chips.
-> However, ds2872 and ds2786 need slightly different formula for current
-> calculations. Part of these calculations can be wrapped into
-> ds2786_get_rsns, but it makes the later really not clear to follow.
-
-Fair enough. I just didn't want to have two versions of each function,
-that were doing almost the same thing. If you think it is
-cleaner/clearer to have separate functions, then stick with that.
-
-~Ryan
-
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
-
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+> On 04/25/10 11:18, Michael S. Tsirkin wrote:
+> > On Fri, Apr 23, 2010 at 07:26:52AM +0200, Robert Wimmer wrote:
+> >   
+> >>> I'm not sure why the lockup backtrace does not show function names -
+> >>> is the kernel stripped?
+> >>>       
+> >> I'm building the kernels always with "genkernel" a Gentoo
+> >> helper programm for kernel building. But I've looked into
+> >> the log file of genkernel and there is nothing mentioned about
+> >> striping the kernel. There will be a future release of genkernel
+> >> which supports this but this is currently not the case. Since
+> >> I haven't stripped the kernel I would answer no. Maybe a
+> >> kernel option which should be enabled?
+> >>
+> >> Thanks!
+> >> Robert
+> >>
+> >>     
+> > Hmm. I have these
+> > CONFIG_KALLSYMS=y
+> > CONFIG_KALLSYMS_ALL=y
+> > CONFIG_KALLSYMS_EXTRA_PASS=y
+> > # CONFIG_STRIP_ASM_SYMS is not set
+> >
+> >
+> >   
+> >>
+> >> On 04/22/10 12:03, Michael S. Tsirkin wrote:
+> >>     
+> >>> On Thu, Apr 22, 2010 at 01:31:06PM +0200, kernel wrote:
+> >>>   
+> >>>       
+> >>>> Maybe some comments to my former mail about what I've done:
+> >>>> I started with a fresh clone (deleted the old /usr/src/linux
+> >>>> of course). 
+> >>>>
+> >>>> git clone
+> >>>> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git linux
+> >>>>
+> >>>> Then I started bisect
+> >>>>
+> >>>> git bisect start 'v2.6.31' 'v2.6.30'
+> >>>>
+> >>>> and build the first kernel and then marked kernels which
+> >>>> "crashed" with "soft lockup" or "swapper page allocation failure"
+> >>>> as bad and the other ones as good. Before I've compiled
+> >>>> a new kernel I've always done a "make mrproper". I don't know
+> >>>> if this is needed but thought it wouldn't hurt.
+> >>>>
+> >>>> For me it was not clear that maybe I should have had stopped
+> >>>> testing after the first commit that came up with a "swapper
+> >>>> page allocation failure". It was only one commit which cased
+> >>>> the allocation failure. All the other commits marked as bad
+> >>>> came up with a soft lockup. But I thought it is important to
+> >>>> find the earliest commit which crashes. So should I find out
+> >>>> the commit with the allocation failure?
+> >>>>     
+> >>>>         
+> >>> I think you did the right thing. We'll have to
+> >>> figure out soft lockup thing, then if page allocation failure
+> >>> turns out to be a different issue, look at it.
+> >>>
+> >>>   
+> >>>       
+> >>>> As you requested I've now done now a
+> >>>>
+> >>>> git checkout c02d7adf8c5429727a98bad1d039bccad4c61c50
+> >>>>
+> >>>> which ended with a soft lockup within 3 min. after starting
+> >>>> the VM (see
+> >>>> https://bugzilla.kernel.org/attachment.cgi?id=26089&action=edit)
+> >>>> with this kernel.
+> >>>>     
+> >>>>         
+> >>> I'm not sure why the lockup backtrace does not show function names -
+> >>> is the kernel stripped?
+> >>>
+> >>>   
+> >>>       
+> >>>> Then I've done a
+> >>>>
+> >>>> git checkout cf8d2c11cb77f129675478792122f50827e5b0ae
+> >>>>
+> >>>> compiled and restarted the VM with this kernel version
+> >>>> (BTW: Of course I've always used the same .config for 
+> >>>> all kernels I've build.). cf8d2c11cb77f129675478792122f50827e5b0ae
+> >>>> is running fine.
+> >>>>
+> >>>> Thanks!
+> >>>> Robert
+> >>>>     
+> >>>>         
+> >>> Well, so the soft lockup issue seems NFS-related?
+> >>> Trond, commit cf8d2c11cb77f129675478792122f50827e5b0ae seems to
+> >>> be causing problems on some old kernels (See bisect below). Any idea why?
+> >>>
+> >>>
+> >>>   
+> >>>       
+> >>>> On Wed, 21 Apr 2010 12:42:49 +0300, "Michael S. Tsirkin" <mst@redhat.com>
+> >>>> wrote:
+> >>>>     
+> >>>>         
+> >>>>> On Wed, Apr 21, 2010 at 01:23:12PM +0200, kernel wrote:
+> >>>>>       
+> >>>>>           
+> >>>>>> So after the compiler was running hot I've now the following result:
+> >>>>>>
+> >>>>>> server10:/usr/src/linux # git bisect log 
+> >>>>>> # bad: [74fca6a42863ffacaf7ba6f1936a9f228950f657] Linux 2.6.31
+> >>>>>> # good: [07a2039b8eb0af4ff464efd3dfd95de5c02648c6] Linux 2.6.30
+> >>>>>> git bisect start 'v2.6.31' 'v2.6.30'
+> >>>>>> # good: [925d74ae717c9a12d3618eb4b36b9fb632e2cef3] V4L/DVB (11736):
+> >>>>>> videobuf: modify return value of VIDIOC_REQBUFS ioctl
+> >>>>>> git bisect good 925d74ae717c9a12d3618eb4b36b9fb632e2cef3
+> >>>>>> # bad: [a380137900fca5c79e6daa9500bdb6ea5649188e] ixgbe: Fix device
+> >>>>>> capabilities of 82599 single speed fiber NICs.
+> >>>>>> git bisect bad a380137900fca5c79e6daa9500bdb6ea5649188e
+> >>>>>> # good: [1dbb5765acc7a6fe4bc1957c001037cc9d02ae03] Staging: android:
+> >>>>>> lowmemorykiller: fix up remaining checkpatch warnings
+> >>>>>> git bisect good 1dbb5765acc7a6fe4bc1957c001037cc9d02ae03
+> >>>>>> # good: [df36b439c5fedefe013d4449cb6a50d15e2f4d70] Merge branch
+> >>>>>> 'for-2.6.31' of git://git.linux-nfs.org/projects/trondmy/nfs-2.6
+> >>>>>> git bisect good df36b439c5fedefe013d4449cb6a50d15e2f4d70
+> >>>>>> # bad: [a800faec1b21d7133b5f0c8c6dac593b7c4e118d] Merge branch
+> >>>>>> 'for-linus'
+> >>>>>> of git://www.jni.nu/cris
+> >>>>>> git bisect bad a800faec1b21d7133b5f0c8c6dac593b7c4e118d
+> >>>>>> # good: [ac1b7c378ef26fba6694d5f118fe7fc16fee2fe2] Merge
+> >>>>>> git://git.infradead.org/mtd-2.6
+> >>>>>> git bisect good ac1b7c378ef26fba6694d5f118fe7fc16fee2fe2
+> >>>>>> # bad: [37c6dbe290c05023b47f52528e30ce51336b93eb] V4L/DVB (12091):
+> >>>>>> gspca_sonixj: Add light frequency control
+> >>>>>> git bisect bad 37c6dbe290c05023b47f52528e30ce51336b93eb
+> >>>>>> # bad: [687d680985b1438360a9ba470ece8b57cd205c3b] Merge
+> >>>>>> git://git.infradead.org/~dwmw2/iommu-2.6.31
+> >>>>>> git bisect bad 687d680985b1438360a9ba470ece8b57cd205c3b
+> >>>>>> # bad: [1053414068bad659479e6efa62a67403b8b1ec0a] Merge branch
+> >>>>>> 'for-linus'
+> >>>>>> of git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6
+> >>>>>> git bisect bad 1053414068bad659479e6efa62a67403b8b1ec0a
+> >>>>>> # good: [b01b4babbf204443b5a846a7494546501614cefc] firewire: net: fix
+> >>>>>> card
+> >>>>>> driver reloading
+> >>>>>> git bisect good b01b4babbf204443b5a846a7494546501614cefc
+> >>>>>> # bad: [c02d7adf8c5429727a98bad1d039bccad4c61c50] NFSv4: Replace
+> >>>>>> nfs4_path_walk() with VFS path lookup in a private namespace
+> >>>>>> git bisect bad c02d7adf8c5429727a98bad1d039bccad4c61c50
+> >>>>>> # good: [616511d039af402670de8500d0e24495113a9cab] VFS: Uninline the
+> >>>>>> function put_mnt_ns()
+> >>>>>> git bisect good 616511d039af402670de8500d0e24495113a9cab
+> >>>>>> # good: [cf8d2c11cb77f129675478792122f50827e5b0ae] VFS: Add VFS helper
+> >>>>>> functions for setting up private namespaces
+> >>>>>> git bisect good cf8d2c11cb77f129675478792122f50827e5b0ae
+> >>>>>>
+> >>>>>>
+> >>>>>> The last "git bisect good" prints out:
+> >>>>>>
+> >>>>>> server10:/usr/src/linux # git bisect good
+> >>>>>> c02d7adf8c5429727a98bad1d039bccad4c61c50 is the first bad commit
+> >>>>>> commit c02d7adf8c5429727a98bad1d039bccad4c61c50
+> >>>>>> Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+> >>>>>> Date:   Mon Jun 22 15:09:14 2009 -0400
+> >>>>>>
+> >>>>>>     NFSv4: Replace nfs4_path_walk() with VFS path lookup in a private
+> >>>>>> namespace
+> >>>>>>     
+> >>>>>>     As noted in the previous patch, the NFSv4 client mount code
+> >>>>>>         
+> >>>>>>             
+> >>>> currently
+> >>>>     
+> >>>>         
+> >>>>>>     has several limitations. If the mount path contains symlinks, or
+> >>>>>>     referrals, or even if it just contains a '..', then the client code
+> >>>>>>     in
+> >>>>>>     nfs4_path_walk() will fail with an error.
+> >>>>>>     
+> >>>>>>     This patch replaces the nfs4_path_walk()-based lookup with a helper
+> >>>>>>     function that sets up a private namespace to represent the
+> >>>>>>         
+> >>>>>>             
+> >>>> namespace
+> >>>>     
+> >>>>         
+> >>>>>> on the
+> >>>>>>     server, then uses the ordinary VFS and NFS path lookup code to walk
+> >>>>>> down the
+> >>>>>>     mount path in that namespace.
+> >>>>>>     
+> >>>>>>     Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> >>>>>>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> >>>>>>
+> >>>>>> :040000 040000 97a18818f26ab9a0987f157257eb6f399c3cc1cc
+> >>>>>> 9ab6c712bb64f1349b5ac9f2020191abb5780ca0 M      fs
+> >>>>>>
+> >>>>>> Does this help you any further?
+> >>>>>>
+> >>>>>> Thanks!
+> >>>>>> Robert
+> >>>>>>         
+> >>>>>>             
+> >>>>> Looks suspiciously like some error in testing.
+> >>>>> Could you pls retest and verify again that
+> >>>>> cf8d2c11cb77f129675478792122f50827e5b0ae
+> >>>>> is good and c02d7adf8c5429727a98bad1d039bccad4c61c50 is bad?
+> >>>>>       
+> >>>>>           
