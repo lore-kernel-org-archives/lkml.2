@@ -1,80 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab0DYJSK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 05:18:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:15637 "EHLO mga11.intel.com"
+	id S1753963Ab0DYJRt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 05:17:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:14281 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752853Ab0DYJRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 05:17:18 -0400
+	id S1752790Ab0DYJRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 05:17:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,269,1270450800"; 
-   d="scan'208";a="561295899"
+   d="scan'208";a="561295827"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
        jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC][PATCH v4 17/18] Add a kconfig entry and make entry for mp device.
-Date: Sun, 25 Apr 2010 17:20:04 +0800
-Message-Id: <1272187206-18534-17-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC][PATCH v4 07/18] Make __alloc_skb() to get external buffer.
+Date: Sun, 25 Apr 2010 17:19:54 +0800
+Message-Id: <1272187206-18534-7-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1272187206-18534-16-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1272187206-18534-6-git-send-email-xiaohui.xin@intel.com>
 References: <1272187206-18534-1-git-send-email-xiaohui.xin@intel.com>
  <1272187206-18534-2-git-send-email-xiaohui.xin@intel.com>
  <1272187206-18534-3-git-send-email-xiaohui.xin@intel.com>
  <1272187206-18534-4-git-send-email-xiaohui.xin@intel.com>
  <1272187206-18534-5-git-send-email-xiaohui.xin@intel.com>
  <1272187206-18534-6-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-7-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-8-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-9-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-10-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-11-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-12-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-13-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-14-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-15-git-send-email-xiaohui.xin@intel.com>
- <1272187206-18534-16-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
+Add a dev parameter to __alloc_skb(), skb->data
+points to external buffer, recompute skb->head,
+maintain shinfo of the external buffer, record
+external buffer info into destructor_arg field.
+
 Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+Signed-off-by: Zhao Yu <yzhao81@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- drivers/vhost/Kconfig  |   10 ++++++++++
- drivers/vhost/Makefile |    2 ++
- 2 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
-index e4e2fd1..a6b8cbf 100644
---- a/drivers/vhost/Kconfig
-+++ b/drivers/vhost/Kconfig
-@@ -9,3 +9,13 @@ config VHOST_NET
- 	  To compile this driver as a module, choose M here: the module will
- 	  be called vhost_net.
+	__alloc_skb() cleanup by
+
+	Jeff Dike <jdike@linux.intel.com>
+
+ include/linux/skbuff.h |    7 ++++---
+ net/core/skbuff.c      |   43 +++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 41 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 96799f5..8949b15 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -448,17 +448,18 @@ extern void kfree_skb(struct sk_buff *skb);
+ extern void consume_skb(struct sk_buff *skb);
+ extern void	       __kfree_skb(struct sk_buff *skb);
+ extern struct sk_buff *__alloc_skb(unsigned int size,
+-				   gfp_t priority, int fclone, int node);
++				   gfp_t priority, int fclone,
++				   int node, struct net_device *dev);
+ static inline struct sk_buff *alloc_skb(unsigned int size,
+ 					gfp_t priority)
+ {
+-	return __alloc_skb(size, priority, 0, -1);
++	return __alloc_skb(size, priority, 0, -1, NULL);
+ }
  
-+config MEDIATE_PASSTHRU
-+	tristate "mediate passthru network driver (EXPERIMENTAL)"
-+	depends on VHOST_NET
-+	---help---
-+	  zerocopy network I/O support, we call it as mediate passthru to
-+	  be distiguish with hardare passthru.
+ static inline struct sk_buff *alloc_skb_fclone(unsigned int size,
+ 					       gfp_t priority)
+ {
+-	return __alloc_skb(size, priority, 1, -1);
++	return __alloc_skb(size, priority, 1, -1, NULL);
+ }
+ 
+ extern int skb_recycle_check(struct sk_buff *skb, int skb_size);
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 6345acc..ae223d2 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -161,7 +161,8 @@ EXPORT_SYMBOL(skb_under_panic);
+  *	@fclone: allocate from fclone cache instead of head cache
+  *		and allocate a cloned (child) skb
+  *	@node: numa node to allocate memory on
+- *
++ *	@dev: a device owns the skb if the skb try to get external buffer.
++ *		otherwise is NULL.
+  *	Allocate a new &sk_buff. The returned buffer has no headroom and a
+  *	tail room of size bytes. The object has a reference count of one.
+  *	The return is the buffer. On a failure the return is %NULL.
+@@ -170,12 +171,13 @@ EXPORT_SYMBOL(skb_under_panic);
+  *	%GFP_ATOMIC.
+  */
+ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+-			    int fclone, int node)
++			    int fclone, int node, struct net_device *dev)
+ {
+ 	struct kmem_cache *cache;
+ 	struct skb_shared_info *shinfo;
+ 	struct sk_buff *skb;
+-	u8 *data;
++	u8 *data = NULL;
++	struct skb_external_page *ext_page = NULL;
+ 
+ 	cache = fclone ? skbuff_fclone_cache : skbuff_head_cache;
+ 
+@@ -185,8 +187,23 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+ 		goto out;
+ 
+ 	size = SKB_DATA_ALIGN(size);
+-	data = kmalloc_node_track_caller(size + sizeof(struct skb_shared_info),
+-			gfp_mask, node);
 +
-+	  To compile this driver as a module, choose M here: the module will
-+	  be called mpassthru.
++	/* If the device wants to do mediate passthru(zero-copy),
++	 * the skb may try to get external buffers from outside.
++	 * If fails, then fall back to alloc buffers from kernel.
++	 */
++	if (dev && dev->mp_port) {
++		ext_page = netdev_alloc_external_page(dev, skb, size);
++		if (ext_page) {
++			data = ext_page->start;
++			size = ext_page->size;
++		}
++	}
 +
-diff --git a/drivers/vhost/Makefile b/drivers/vhost/Makefile
-index 72dd020..c18b9fc 100644
---- a/drivers/vhost/Makefile
-+++ b/drivers/vhost/Makefile
-@@ -1,2 +1,4 @@
- obj-$(CONFIG_VHOST_NET) += vhost_net.o
- vhost_net-y := vhost.o net.o
++	if (!data)
++		data = kmalloc_node_track_caller(
++				size + sizeof(struct skb_shared_info),
++				gfp_mask, node);
+ 	if (!data)
+ 		goto nodata;
+ 
+@@ -208,6 +225,15 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+ 	skb->mac_header = ~0U;
+ #endif
+ 
++	/* If the skb get external buffers sucessfully, since the shinfo is
++	 * at the end of the buffer, we may retain the shinfo once we
++	 * need it sometime.
++	 */
++	if (ext_page) {
++		skb->head = skb->data - NET_IP_ALIGN - NET_SKB_PAD;
++		memcpy(ext_page->ushinfo, skb_shinfo(skb),
++		       sizeof(struct skb_shared_info));
++	}
+ 	/* make sure we initialize shinfo sequentially */
+ 	shinfo = skb_shinfo(skb);
+ 	atomic_set(&shinfo->dataref, 1);
+@@ -231,6 +257,11 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+ 
+ 		child->fclone = SKB_FCLONE_UNAVAILABLE;
+ 	}
++	/* Record the external buffer info in this field. It's not so good,
++	 * but we cannot find another place easily.
++	 */
++	shinfo->destructor_arg = ext_page;
 +
-+obj-$(CONFIG_MEDIATE_PASSTHRU) += mpassthru.o
+ out:
+ 	return skb;
+ nodata:
+@@ -259,7 +290,7 @@ struct sk_buff *__netdev_alloc_skb(struct net_device *dev,
+ 	int node = dev->dev.parent ? dev_to_node(dev->dev.parent) : -1;
+ 	struct sk_buff *skb;
+ 
+-	skb = __alloc_skb(length + NET_SKB_PAD, gfp_mask, 0, node);
++	skb = __alloc_skb(length + NET_SKB_PAD, gfp_mask, 0, node, dev);
+ 	if (likely(skb)) {
+ 		skb_reserve(skb, NET_SKB_PAD);
+ 		skb->dev = dev;
 -- 
 1.5.4.4
 
