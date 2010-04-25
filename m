@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab0DYIjp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 04:39:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15223 "EHLO mx1.redhat.com"
+	id S1752527Ab0DYJQx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 05:16:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24216 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752366Ab0DYIjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 04:39:41 -0400
-Message-ID: <4BD3FFC5.5030107@redhat.com>
-Date: Sun, 25 Apr 2010 11:39:33 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] More fixes for nested svm
-References: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1271932394-13968-1-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751344Ab0DYJQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 05:16:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,269,1270450800"; 
+   d="scan'208";a="561295794"
+From: xiaohui.xin@intel.com
+To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+       jdike@linux.intel.com
+Cc: Xin Xiaohui <xiaohui.xin@intel.com>
+Subject: [RFC][PATCH v4 01/18] Add a new struct for device to manipulate external buffer.
+Date: Sun, 25 Apr 2010 17:19:48 +0800
+Message-Id: <1272187206-18534-1-git-send-email-xiaohui.xin@intel.com>
+X-Mailer: git-send-email 1.5.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2010 01:33 PM, Joerg Roedel wrote:
-> Hi Avi, Marcelo,
->
-> here is another set of nested svm fixes. They fix NMI code to make UP Hyper-V
-> root domain booting. The patches also add better handling for nested entry
-> failures and mce intercepts.
-> Also in this patchset are the fixes for the supported cpuid reporting for svm
-> features. These patches were taken from the nested-npt patchset and slightly
-> modified. These patches are also marked for -stable backporting.
-> The probably most important fix is about exception reinjection. This didn't
-> work reliably before and is fixed with the patch in this series now. This fix
-> also touches common x86 code but that should be ok because it could be reused
-> by nested-vmx later.
-> Please review and give comments (or apply ;-).
->
->    
+From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-All applied, thanks.
+Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+Signed-off-by: Zhao Yu <yzhao81@gmail.com>
+Reviewed-by: Jeff Dike <jdike@linux.intel.com>
+---
+ include/linux/netdevice.h |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
 
-Regarding stable, it should be easy to backport the patches to 
-2.6.34-rc6, but for 2.6.33 and earlier, it's murky.  And we certainly 
-don't have the means to test them.
-
-So please prepare _tested_ patchsets (git is fine) for 2.6.3[432].  I 
-suggest you hold off for 2.6.3[32] until their next release, since there 
-are a lot of kvm patches in review for them.  In general patches should 
-be prepared against kvm.git kvm-updates/2.6.foo; we'll keep them up to 
-date against stable.
-
-Longer term, we need kvm-autotest support for nsvm, and unit tests in 
-qemu-kvm/kvm/user/test.
-
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index c79a88b..bf79756 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -530,6 +530,22 @@ struct netdev_queue {
+ 	unsigned long		tx_dropped;
+ } ____cacheline_aligned_in_smp;
+ 
++/* Add a structure in structure net_device, the new field is
++ * named as mp_port. It's for mediate passthru (zero-copy).
++ * It contains the capability for the net device driver,
++ * a socket, and an external buffer creator, external means
++ * skb buffer belongs to the device may not be allocated from
++ * kernel space.
++ */
++struct mpassthru_port	{
++	int		hdr_len;
++	int		data_len;
++	int		npages;
++	unsigned	flags;
++	struct socket	*sock;
++	struct skb_external_page *(*ctor)(struct mpassthru_port *,
++				struct sk_buff *, int);
++};
+ 
+ /*
+  * This structure defines the management hooks for network devices.
+@@ -952,7 +968,8 @@ struct net_device {
+ 	struct macvlan_port	*macvlan_port;
+ 	/* GARP */
+ 	struct garp_port	*garp_port;
+-
++	/* mpassthru */
++	struct mpassthru_port	*mp_port;
+ 	/* class/net/name entry */
+ 	struct device		dev;
+ 	/* space for optional device, statistics, and wireless sysfs groups */
 -- 
-error compiling committee.c: too many arguments to function
+1.5.4.4
 
