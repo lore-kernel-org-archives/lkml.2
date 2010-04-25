@@ -1,122 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab0DYOjI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 10:39:08 -0400
-Received: from tex.lwn.net ([70.33.254.29]:34664 "EHLO vena.lwn.net"
+	id S1752243Ab0DYOmA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 10:42:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1340 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751132Ab0DYOjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 10:39:05 -0400
-Date: Sun, 25 Apr 2010 08:38:58 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Harald Welte <laforge@gnumonks.org>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-       linux-kernel@vger.kernel.org, Deepak Saxena <dsaxena@laptop.org>,
-       linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
-       ScottFang@viatech.com.cn
-Subject: Re: [PATCH 10/11] viafb: rework the I2C support in the VIA
- framebuffer driver
-Message-ID: <20100425083858.269bf0d8@bike.lwn.net>
-In-Reply-To: <20100424135316.GR24811@prithivi.gnumonks.org>
-References: <1271614873-5952-1-git-send-email-corbet@lwn.net>
-	<1271614873-5952-11-git-send-email-corbet@lwn.net>
-	<4BD20D56.7080402@gmx.de>
-	<20100423155725.7d3b2d2d@bike.lwn.net>
-	<4BD221E7.7060705@gmx.de>
-	<20100423165256.654ca5eb@bike.lwn.net>
-	<4BD22B96.5020102@gmx.de>
-	<4BD2CC46.4060908@gmx.de>
-	<20100424073359.349b4397@bike.lwn.net>
-	<20100424135316.GR24811@prithivi.gnumonks.org>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1751612Ab0DYOl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 10:41:59 -0400
+Date: Sun, 25 Apr 2010 16:41:13 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
+ PageSwapCache  pages
+Message-ID: <20100425144113.GB5789@random.random>
+References: <20100422193106.9ffad4ec.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100422195153.d91c1c9e.kamezawa.hiroyu@jp.fujitsu.com>
+ <1271946226.2100.211.camel@barrios-desktop>
+ <1271947206.2100.216.camel@barrios-desktop>
+ <20100422154443.GD30306@csn.ul.ie>
+ <20100423183135.GT32034@random.random>
+ <20100423192311.GC14351@csn.ul.ie>
+ <20100423193948.GU32034@random.random>
+ <20100423213549.GV32034@random.random>
+ <20100424105226.GF14351@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100424105226.GF14351@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Apr 2010 15:53:16 +0200
-Harald Welte <laforge@gnumonks.org> wrote:
+On Sat, Apr 24, 2010 at 11:52:27AM +0100, Mel Gorman wrote:
+> It should be. I expect that's why you have never seen the bugon in
+> swapops.
 
-> Simply converting the original two busses to the new code is definitely
-> the way to go.  Maybe we'll keep the code for the other two around, but
-> somehow keep them inactive and don't advertise them unless somebody explicitly
-> does so?
+Oh I just got the very crash you're talking about with aa.git with
+your v8 code. Weird that I never reproduced it before! I think it's
+because I fixed gcc to be fully backed by hugepages always (without
+khugepaged) and I was rebuilding a couple of packages, and that now
+triggers memory compaction much more, but mixed with heavy
+fork/execve. This is the only instability I managed to reproduce over
+24 hours of stress testing and it's clearly not related to transparent
+hugepage support but it's either a bug in migrate.c (more likely) or
+memory compaction.
 
-OK, my proposal would be to add the following patch into the early part
-of the series; that will help to avoid the creation of confusion in the
-middle until the full i2c/gpio configuration code is in.
+Note that I'm running with the 2.6.33 anon-vma code, so it will
+relieve you to know it's not the anon-vma recent changes causing this
+(well I can't rule out anon-vma bugs, but if it's anon-vma, it's a
+longstanding one).
 
-Look good?
+kernel BUG at include/linux/swapops.h:105!
+invalid opcode: 0000 [#1] SMP 
+last sysfs file: /sys/devices/pci0000:00/0000:00:12.0/host0/target0:0:0/0:0:0:0/block/sr0/size
+CPU 0 
+Modules linked in: nls_iso8859_1 loop twofish twofish_common tun bridge stp llc bnep sco rfcomm l2cap bluetooth snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss usbhid gspca_pac207 gspca_main videodev v4l1_compat v4l2_compat_ioctl32 snd_hda_codec_realtek ohci_hcd snd_hda_intel ehci_hcd usbcore snd_hda_codec snd_pcm snd_timer snd snd_page_alloc sg psmouse sr_mod pcspkr
 
-Thanks,
+Pid: 13351, comm: basename Not tainted 2.6.34-rc5 #23 M2A-VM/System Product Name
+RIP: 0010:[<ffffffff810e66b0>]  [<ffffffff810e66b0>] migration_entry_wait+0x170/0x180
+RSP: 0000:ffff88009ab6fa58  EFLAGS: 00010246
+RAX: ffffea0000000000 RBX: ffffea000234eed8 RCX: ffff8800aaa95298
+RDX: 00000000000a168d RSI: ffff88000411ae28 RDI: ffffea00025550a8
+RBP: ffffea0002555098 R08: ffff88000411ae28 R09: 0000000000000000
+R10: 0000000000000008 R11: 0000000000000009 R12: 00000000aaa95298
+R13: 00007ffff8a53000 R14: ffff88000411ae28 R15: ffff88011108a7c0
+FS:  00002adf29469b90(0000) GS:ffff880001a00000(0000) knlGS:0000000055700d50
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007ffff8a53000 CR3: 0000000004f80000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process basename (pid: 13351, threadinfo ffff88009ab6e000, task ffff88009ab96c70)
+Stack:
+ffff8800aaa95280 ffffffff810ce472 ffff8801134a7ce8 0000000000000000
+<0> 00000000142d1a3e ffffffff810c2e35 79f085e9c08a4db7 62d38944fd014000
+<0> 76b07a274b0c057a ffffea00025649f8 f8000000000a168d d19934e84d2a74f3
+Call Trace:
+[<ffffffff810ce472>] ? page_add_new_anon_rmap+0x72/0xc0
+[<ffffffff810c2e35>] ? handle_pte_fault+0x7a5/0x7d0
+[<ffffffff8150506d>] ? do_page_fault+0x13d/0x420
+[<ffffffff8150215f>] ? page_fault+0x1f/0x30
+[<ffffffff81273bfb>] ? strnlen_user+0x4b/0x80
+[<ffffffff81131f4e>] ? load_elf_binary+0x12be/0x1c80
+[<ffffffff810f426d>] ? search_binary_handler+0xad/0x2c0
+[<ffffffff810f5ce7>] ? do_execve+0x247/0x320
+[<ffffffff8100ab16>] ? sys_execve+0x36/0x60
+[<ffffffff8100314a>] ? stub_execve+0x6a/0xc0
+Code: 5e ff ff ff 8d 41 01 89 4c 24 08 89 44 24 04 8b 74 24 04 8b 44 24 08 f0 0f b1 32 89 44 24 0c 8b 44 24 0c 39 c8 74 a4 89 c1 eb d1 <0f> 0b eb fe 66 66 66 2e 0f 1f 84 00 00 00 00 00 41 54 49 89 d4 
+RIP  [<ffffffff810e66b0>] migration_entry_wait+0x170/0x180
+RSP <ffff88009ab6fa58>
+---[ end trace 840ce8bc6f6dc402 ]---
 
-jon
 
-viafb: Only establish i2c busses on ports that always had them
-
-...otherwise it seems we run into conflicts with shadowy other users which
-don't expect to see i2c taking control of ports it never used to do
-anything with.
-
-Reported-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Signed-off-by: Jonathan Corbet <corbet@lwn.net>
----
- drivers/video/via/via_i2c.c |   19 +++++++++++++------
- drivers/video/via/via_i2c.h |    1 +
- 2 files changed, 14 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/video/via/via_i2c.c b/drivers/video/via/via_i2c.c
-index fe5535c..b5253e3 100644
---- a/drivers/video/via/via_i2c.c
-+++ b/drivers/video/via/via_i2c.c
-@@ -170,13 +170,18 @@ static int create_i2c_bus(struct i2c_adapter *adapter,
- 	return i2c_bit_add_bus(adapter);
- }
- 
-+/*
-+ * By default, we only activate busses on ports 2c and 31 to avoid
-+ * conflicts with other possible users; that default can be changed
-+ * below.
-+ */
- static struct via_i2c_adap_cfg adap_configs[] = {
--	[VIA_I2C_ADAP_26]	= { VIA_I2C_I2C,  VIASR, 0x26 },
--	[VIA_I2C_ADAP_31]	= { VIA_I2C_I2C,  VIASR, 0x31 },
--	[VIA_I2C_ADAP_25]	= { VIA_I2C_GPIO, VIASR, 0x25 },
--	[VIA_I2C_ADAP_2C]	= { VIA_I2C_GPIO, VIASR, 0x2c },
--	[VIA_I2C_ADAP_3D]	= { VIA_I2C_GPIO, VIASR, 0x3d },
--	{ 0, 0, 0 }
-+	[VIA_I2C_ADAP_26]	= { VIA_I2C_I2C,  VIASR, 0x26, 0 },
-+	[VIA_I2C_ADAP_31]	= { VIA_I2C_I2C,  VIASR, 0x31, 1 },
-+	[VIA_I2C_ADAP_25]	= { VIA_I2C_GPIO, VIASR, 0x25, 0 },
-+	[VIA_I2C_ADAP_2C]	= { VIA_I2C_GPIO, VIASR, 0x2c, 1 },
-+	[VIA_I2C_ADAP_3D]	= { VIA_I2C_GPIO, VIASR, 0x3d, 0 },
-+	{ 0, 0, 0, 0 }
- };
- 
- int viafb_create_i2c_busses(struct viafb_par *viapar)
-@@ -189,6 +194,8 @@ int viafb_create_i2c_busses(struct viafb_par *viapar)
- 
- 		if (adap_cfg->type == 0)
- 			break;
-+		if (!adap_cfg->is_active)
-+			continue;
- 
- 		ret = create_i2c_bus(&i2c_stuff->adapter,
- 				     &i2c_stuff->algo, adap_cfg,
-diff --git a/drivers/video/via/via_i2c.h b/drivers/video/via/via_i2c.h
-index 00ed978..73d682f 100644
---- a/drivers/video/via/via_i2c.h
-+++ b/drivers/video/via/via_i2c.h
-@@ -35,6 +35,7 @@ struct via_i2c_adap_cfg {
- 	enum via_i2c_type	type;
- 	u_int16_t		io_port;
- 	u_int8_t		ioport_index;
-+	u8			is_active;
- };
- 
- struct via_i2c_stuff {
--- 
-1.7.0.1
-
+It doesn't look like a coincidence the page that had the migration PTE
+set was the argv in the user stack during execve. The bug has to be
+there. Or maybe it's a coincidence and it will mislead us. If you've
+other stack traces please post them so I can have more info (I'll post
+more stack traces if I get them again, it doesn't look easy to
+reproduce, supposedly the bug has always been there since the first
+time I used memory compaction, and this is the first time I reproduce
+it).
