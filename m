@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab0DZUZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 16:25:44 -0400
-Received: from tauceti.net ([62.245.250.166]:57524 "EHLO www.tauceti.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754438Ab0DZUZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 16:25:42 -0400
-Message-ID: <4BD5F6C5.8080605@tauceti.net>
-Date: Mon, 26 Apr 2010 22:25:41 +0200
-From: Robert Wimmer <kernel@tauceti.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100312 Thunderbird/3.0.3 ThunderBrowse/3.2.8.1
+	id S1755229Ab0DZU2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 16:28:04 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:1370 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755206Ab0DZU2A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 16:28:00 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below BIOS_END
+Date: Mon, 26 Apr 2010 14:27:56 -0600
+User-Agent: KMail/1.9.10
+Cc: Andy Isaacson <adi@hexapodia.org>, "R. Andrew Bailey" <bailey@akamai.com>,
+       Yinghai <yinghai.lu@oracle.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
+References: <4BC4E55B.7000103@oracle.com> <20100426183436.GV11130@hexapodia.org> <20100426123135.5d095d2f@virtuousgeek.org>
+In-Reply-To: <20100426123135.5d095d2f@virtuousgeek.org>
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       bugzilla-daemon@bugzilla.kernel.org,
-       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
-References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain>
-In-Reply-To: <1272284154.4252.34.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201004261427.57229.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 26 April 2010 01:31:35 pm Jesse Barnes wrote:
+> On Mon, 26 Apr 2010 11:34:36 -0700
+> Andy Isaacson <adi@hexapodia.org> wrote:
+> > On Fri, Apr 23, 2010 at 05:05:24PM -0600, Bjorn Helgaas wrote:
 
->>> I've added CONFIG_KALLSYMS and CONFIG_KALLSYMS_ALL
->>> to my .config. I've uploaded the dmesg output. Maybe it
->>> helps a little bit:
->>>
->>> https://bugzilla.kernel.org/attachment.cgi?id=26138
->>>
->>> - Robert
->>>
->>>       
-> That last trace is just saying that the NFSv4 reboot recovery code is
-> crashing (which is hardly surprising if the memory management is hosed).
->
-> The initial bisection makes little sense to me: it is basically blaming
-> a page allocation problem on a change to the NFSv4 mount code. The only
-> way I can see that possibly happen is if you are hitting a stack
-> overflow.
-> So 2 questions:
->
->   - Are you able to reproduce the bug when using NFSv3 instead?
->   
-
-I've tried with NFSv3 now. With v4 the error normally occur
-within 5 minutes. The VM is now running for one hour and no
-soft lockup so far. So I would say it can't be reproduced with
-v3.
-
->   - Have you tried running with stack tracing enabled?
->   
-
-Can you explain this a little bit more please? CONFIG_STACKTRACE=y
-was already enabled. I've now enabled
-
-CONFIG_USER_STACKTRACE_SUPPORT=y
-CONFIG_NOP_TRACER=y
-CONFIG_HAVE_FTRACE_NMI_ENTER=y
-CONFIG_HAVE_FUNCTION_TRACER=y
-CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
-CONFIG_HAVE_DYNAMIC_FTRACE=y
-CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
-CONFIG_HAVE_FTRACE_SYSCALLS=y
-CONFIG_FTRACE_NMI_ENTER=y
-CONFIG_CONTEXT_SWITCH_TRACER=y
-CONFIG_GENERIC_TRACER=y
-CONFIG_FTRACE=y
-CONFIG_FUNCTION_TRACER=y
-CONFIG_FUNCTION_GRAPH_TRACER=y
-CONFIG_FTRACE_SYSCALLS=y
-CONFIG_STACK_TRACER=y
-CONFIG_KMEMTRACE=y
-CONFIG_DYNAMIC_FTRACE=y
-CONFIG_FTRACE_MCOUNT_RECORD=y
-CONFIG_HAVE_MMIOTRACE_SUPPORT=y
-
-and run
-
-echo 1 > /proc/sys/kernel/stack_tracer_enabled
-
-But the output is mostly the same in dmesg/
-var/log/messages. Can you please guide me how I can
-enable the stack tracing you need?
+> > > commit 7fb707eb97fdf6dc4fa4b127f127f8d00223afc7
+> > > Author: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> > > Date:   Fri Apr 23 15:22:10 2010 -0600
+> > > 
+> > > x86/PCI: never allocate PCI MMIO resources below BIOS_END
+> > >     
+> > > When we move a PCI device or assign resources to a device not configured
+> > > by the BIOS, we want to avoid the BIOS region below 1MB.  Note that if the
+> > > BIOS places devices below 1MB, we leave them there.
+> > 
+> > Works for me.  dmesg at
+> > https://bugzilla.kernel.org/attachment.cgi?id=26150
+> 
+> Great, thanks for testing.  Applied this one to my for-linus tree.  
 
 Thanks!
-Robert
 
+> I still think Yinghai's patches should go in as well (marking regions as
+> busy seems like good housekeeping), but with this fixed they're a better
+> fit for -next.
+
+I'm a little concerned that those patches are a sledgehammer approach.
+Previously, IORESOURCE_BUSY has basically been used for mutual exclusion
+between drivers that would otherwise claim the same resource.  It hasn't
+been used to guide resource assignment in the PCI/PNP/etc core.  Maybe
+it's a good idea to also use IORESOURCE_BUSY there, but I'm not sure.
+Right now it feels like undesirable overloading to me.
+
+I think it also leads to at least one problem: Guenter's machine has no
+VGA but has a PCI device that lives at 0xa0000.  The driver for that
+device won't be able to request that region if the arch code has marked
+it busy.
+
+Bjorn
