@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab0DZJ6h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 05:58:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7352 "EHLO mx1.redhat.com"
+	id S1753995Ab0DZKDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 06:03:40 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39079 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753214Ab0DZJ6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 05:58:35 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] From: Serge E. Hallyn <serue@us.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: dhowells@redhat.com, serue@us.ibm.com, paulmck@us.ibm.com,
-       linux-kernel@vger.kernel.org
-Date: Mon, 26 Apr 2010 10:58:30 +0100
-Message-ID: <20100426095830.25501.47002.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1753450Ab0DZKDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 06:03:38 -0400
+Message-ID: <4BD564BE.6020700@kernel.org>
+Date: Mon, 26 Apr 2010 12:02:38 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Christoph Lameter <cl@linux.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Alex Shi <alex.shi@intel.com>, tim.c.chen@intel.com
+Subject: Re: [Bug #15713] hackbench regression due to commit 9dfc6e68bfe6e
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.vjH.sRSzLB@tosh>	 <alpine.DEB.2.00.1004221045270.1204@router.home>	 <4BD086D0.9090309@cs.helsinki.fi>	 <alpine.DEB.2.00.1004232214520.29018@melkki.cs.helsinki.fi>	 <1272265147.2078.648.camel@ymzhang.sh.intel.com> <i2m84144f021004260022nb58e3e27vd351d6646b99f265@mail.gmail.com>
+In-Reply-To: <i2m84144f021004260022nb58e3e27vd351d6646b99f265@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 26 Apr 2010 10:02:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CRED: Holding a spinlock does not imply the holding of RCU read lock
+Hello,
 
-Change the credentials documentation to make it clear that the RCU read lock
-must be explicitly held when accessing credentials pointers in some other task
-than current.  Holding a spinlock does not implicitly hold the RCU read lock.
+On 04/26/2010 09:22 AM, Pekka Enberg wrote:
+> On Mon, Apr 26, 2010 at 9:59 AM, Zhang, Yanmin
+> <yanmin_zhang@linux.intel.com> wrote:
+>>> I haven't been able to reproduce this either on my Core 2 machine.
+>> Mostly, the regression exists on Nehalem machines. I suspect it's related to
+>> hyper-threading machine.
+> 
+> OK, so does anyone know why hyper-threading would change things for
+> the per-CPU allocator?
 
-Signed-off-by: Serge Hallyn <serue@us.ibm.com>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+My wild speculation is that previously the cpu_slub structures of two
+neighboring threads ended up on the same cacheline by accident thanks
+to the back to back allocation.  W/ the percpu allocator, this no
+longer would happen as the allocator groups percpu data together
+per-cpu.
 
- Documentation/credentials.txt |   14 +++++---------
- 1 files changed, 5 insertions(+), 9 deletions(-)
+Thanks.
 
-diff --git a/Documentation/credentials.txt b/Documentation/credentials.txt
-index df03169..a2db352 100644
---- a/Documentation/credentials.txt
-+++ b/Documentation/credentials.txt
-@@ -408,9 +408,6 @@ This should be used inside the RCU read lock, as in the following example:
- 		...
- 	}
- 
--A function need not get RCU read lock to use __task_cred() if it is holding a
--spinlock at the time as this implicitly holds the RCU read lock.
--
- Should it be necessary to hold another task's credentials for a long period of
- time, and possibly to sleep whilst doing so, then the caller should get a
- reference on them using:
-@@ -426,17 +423,16 @@ credentials, hiding the RCU magic from the caller:
- 	uid_t task_uid(task)		Task's real UID
- 	uid_t task_euid(task)		Task's effective UID
- 
--If the caller is holding a spinlock or the RCU read lock at the time anyway,
--then:
-+If the caller is holding the RCU read lock at the time anyway, then:
- 
- 	__task_cred(task)->uid
- 	__task_cred(task)->euid
- 
- should be used instead.  Similarly, if multiple aspects of a task's credentials
--need to be accessed, RCU read lock or a spinlock should be used, __task_cred()
--called, the result stored in a temporary pointer and then the credential
--aspects called from that before dropping the lock.  This prevents the
--potentially expensive RCU magic from being invoked multiple times.
-+need to be accessed, RCU read lock should be used, __task_cred() called, the
-+result stored in a temporary pointer and then the credential aspects called
-+from that before dropping the lock.  This prevents the potentially expensive
-+RCU magic from being invoked multiple times.
- 
- Should some other single aspect of another task's credentials need to be
- accessed, then this can be used:
-
+-- 
+tejun
