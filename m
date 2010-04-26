@@ -1,148 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab0DZT3y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 15:29:54 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:37475 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab0DZT3w (ORCPT
+	id S1755012Ab0DZTa3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 15:30:29 -0400
+Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:51623 "EHLO
+	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747Ab0DZT2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 15:29:52 -0400
-X-Greylist: delayed 2457 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Apr 2010 15:29:52 EDT
-Subject: hack for Lilliput 669GL-70NP/C/T 7" USB touchscreen
-From: Hollis Blanchard <hollis_blanchard@mentor.com>
-To: Daniel Ritz <daniel.ritz-ml@swissonline.ch>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Organization: Mentor Graphics, Embedded Systems Division
-Date: Mon, 26 Apr 2010 11:48:21 -0700
-Message-ID: <1272307701.19363.69.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Apr 2010 18:48:31.0459 (UTC) FILETIME=[111BF330:01CAE571]
+	Mon, 26 Apr 2010 15:28:33 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+From: Jonathan Cameron <jic23@cam.ac.uk>
+To: iio-linux@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de,
+       Jonathan Cameron <jic23@cam.ac.uk>
+Subject: [PATCH 10/19] staging:iio: ABI documentation (partial)
+Date: Mon, 26 Apr 2010 20:31:12 +0100
+Message-Id: <1272310281-7418-11-git-send-email-jic23@cam.ac.uk>
+X-Mailer: git-send-email 1.6.4.4
+In-Reply-To: <1272310281-7418-10-git-send-email-jic23@cam.ac.uk>
+References: <1272310281-7418-1-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-2-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-3-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-4-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-5-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-6-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-7-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-8-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-9-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-10-git-send-email-jic23@cam.ac.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been working with a Lilliput 7" USB touchscreen (model
-669GL-70NP/C/T), and discovered that while usbtouchscreen.c claims to
-support its USB ID, the driver didn't actually work.
+Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+ drivers/staging/iio/Documentation/sysfs-class-iio |  285 +++++++++++++++++++++
+ 1 files changed, 285 insertions(+), 0 deletions(-)
 
-Here is the lsusb output:
-
-Bus 001 Device 003: ID 0eef:0001 D-WAV Scientific Co., Ltd eGalax TouchScreen
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               1.10
-  bDeviceClass            0 (Defined at Interface level)
-  bDeviceSubClass         0 
-  bDeviceProtocol         0 
-  bMaxPacketSize0        64
-  idVendor           0x0eef D-WAV Scientific Co., Ltd
-  idProduct          0x0001 eGalax TouchScreen
-  bcdDevice            1.00
-  iManufacturer           1 eGalax Inc.
-  iProduct                2 USB TouchController
-  iSerial                 0 
-  bNumConfigurations      1
-  Configuration Descriptor:
-    bLength                 9
-    bDescriptorType         2
-    wTotalLength         8704
-    bNumInterfaces          1
-    bConfigurationValue     1
-    iConfiguration          1 eGalax Inc.
-    bmAttributes         0xa0
-      (Bus Powered)
-      Remote Wakeup
-    MaxPower              100mA
-    Interface Descriptor:
-      bLength                 9
-      bDescriptorType         4
-      bInterfaceNumber        0
-      bAlternateSetting       0
-      bNumEndpoints           1
-      bInterfaceClass         3 Human Interface Device
-      bInterfaceSubClass      0 No Subclass
-      bInterfaceProtocol      0 None
-      iInterface              0 
-      ** UNRECOGNIZED:  09 21 10 02 00 01 22 8d 00
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x81  EP 1 IN
-        bmAttributes            3
-          Transfer Type            Interrupt
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0800  2x 0 bytes
-        bInterval               3
-Device Status:     0x0000
-  (Bus Powered)
-
-After dumping the incoming bytestream, here is the hack I made to
-usbtouchscreen.c to actually register touches correctly. I haven't tried
-to clean it up because I'm not sure what the real problem is. It sounds
-like this device is not expected to work with the standard usbhid driver
-(and it doesn't), but neither does it work with usbtouchscreen.c. I
-really don't know anything about USB, but I could figure out how to
-interpret this 6-byte packet...
-
-diff --git a/drivers/input/touchscreen/usbtouchscreen.c b/drivers/input/touchscreen/usbtouchscreen.c
-index 68ece58..e9597fa 100644
---- a/drivers/input/touchscreen/usbtouchscreen.c
-+++ b/drivers/input/touchscreen/usbtouchscreen.c
-@@ -252,6 +252,7 @@ static int e2i_read_data(struct usbtouch_usb *dev, unsigned 
- #define EGALAX_PKT_TYPE_REPT           0x80
- #define EGALAX_PKT_TYPE_DIAG           0x0A
- 
-+#if 0
- static int egalax_read_data(struct usbtouch_usb *dev, unsigned char *pkt)
- {
-        if ((pkt[0] & EGALAX_PKT_TYPE_MASK) != EGALAX_PKT_TYPE_REPT)
-@@ -279,6 +280,34 @@ static int egalax_get_pkt_len(unsigned char *buf, int len)
- 
-        return 0;
- }
+diff --git a/drivers/staging/iio/Documentation/sysfs-class-iio b/drivers/staging/iio/Documentation/sysfs-class-iio
+new file mode 100644
+index 0000000..7238582
+--- /dev/null
++++ b/drivers/staging/iio/Documentation/sysfs-class-iio
+@@ -0,0 +1,285 @@
 +
-+#else
++What:		/sys/bus/iio/devices/device[n]
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Hardware chip or device accessed by on communication port.
++		Corresponds to a grouping of sensor channels.
 +
-+static int egalax_read_data(struct usbtouch_usb *dev, unsigned char *pkt)
-+{
-+       if ((pkt[0] & EGALAX_PKT_TYPE_MASK) != 2)
-+               return 0;
++What:		/sys/bus/iio/devices/trigger[n]
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		An event driven driver of data capture to an in kernel buffer.
++		May be provided by a device driver that also has an IIO device
++		based on hardware generated events (e.g. data ready) or
++		provided by a separate driver for other hardware (e.g.
++		periodic timer, gpio or high resolution timer).
++		Contains trigger type specific elements. These do not
++		generalize well and hence are not documented in this file.
 +
-+       dev->x = (pkt[5] << 8) | pkt[4];
-+       dev->y = (pkt[3] << 8) | pkt[2];
-+       dev->touch = pkt[1] & 0x01;
++What:		/sys/bus/iio/devices/device[n]:buffer
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++	        Link to /sys/class/iio/device[n]/device[n]:buffer. n indicates the
++		device with which this buffer buffer is associated.
 +
-+       return 1;
-+}
++What:		/sys/.../device[n]/name
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Description of the physical chip / device. Typically a part
++		number.
 +
-+static int egalax_get_pkt_len(unsigned char *buf, int len)
-+{
-+       switch (buf[0] & EGALAX_PKT_TYPE_MASK) {
-+       case 2:
-+               return 6;
-+       default:
-+               printk(KERN_WARNING "%s: unknown packet type 0x%x\n", __func__, buf[0]);
-+       }
++What:		/sys/.../device[n]/sampling_frequency
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Some devices have internal clocks.  This parameter sets the
++		resulting sampling frequency.  In many devices this
++		parameter has an effect on input filters etc rather than
++		simply controlling when the input is sampled.  As this
++		effects datardy triggers, hardware buffers and the sysfs
++		direct access interfaces, it may be found in any of the
++		relevant directories.  If it effects all of the above
++		then it is to be found in the base device directory as here.
 +
-+       return 0;
-+}
-+#endif
++What:		/sys/.../device[n]/sampling_frequency_available
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		When the internal sampling clock can only take a small
++		discrete set of values, this file lists those availale.
 +
- #endif
- 
- 
-Signed-off-by: Hollis Blanchard <hollis_blanchard@mentor.com>
-
-Comments?
-
++What:		/sys/.../device[n]/in[_name][m]_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Raw (unscaled no bias removal etc) voltage measurement from
++		channel m. name is used in special cases where this does
++		not correspond to externally available input (e.g. supply
++		voltage monitoring in which case the file is in_supply_raw).
++
++What:		/sys/.../device[n]/in[_name][m]_offset
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		If known for a device, offset to be added to in[m]_raw prior
++		to scaling by volt[m]_scale in order to obtain voltage in
++		millivolts.  Not present if the offset is always 0 or unknown.
++		If m is not present, then voltage offset applies to all in
++		channels. May be writable if a variable offset is controlled
++		by the device. Note that this is different to calibbias which
++		is for devices that apply offsets to compensate for variation
++		between different instances of the part, typically adjusted by
++		using some hardware supported calibration procedure.
++
++What:		/sys/.../device[n]/in[_name][m]_offset_available
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		If a small number of discrete offset values are available, this
++		will be a space separated list.  If these are independant (but
++		options the same) for individual offsets then m should not be
++		present.
++
++What:		/sys/.../device[n]/in[_name][m]_offset_[min|max]
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		If a more or less continuous range of voltage offsets are supported
++		then these specify the minimum and maximum.  If shared by all
++		in channels then m is not present.
++
++What:		/sys/.../device[n]/in[_name][m]_calibbias
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Hardware applied calibration offset. (assumed to fix production
++		inaccuracies)
++
++What		/sys/.../device[n]/in[_name][m]_calibscale
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Hardware applied calibration scale factor. (assumed to fix production
++		inaccuracies)
++
++What:		/sys/.../device[n]/in[_name][m]_scale
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		If known for a device, scale to be applied to volt[m]_raw post
++		addition of volt[m]_offset in order to obtain the measured voltage
++		in millivolts.  If shared across all in channels then m is not present.
++
++What:		/sys/.../device[n]/in[m]-in[o]_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Raw (unscaled) differential voltage measurement equivalent to
++		channel m - channel o where these channel numbers apply to the physically
++		equivalent inputs when non differential readings are separately available.
++		In differential only parts, then all that is required is a consistent
++		labelling.
++
++What:		/sys/.../device[n]/accel[_x|_y|_z][m]_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Acceleration in direction x, y or z (may be arbitrarily assigned
++		but should match other such assignments on device)
++		channel m (not present if only one accelerometer channel at
++		this orientation). Has all of the equivalent parameters as per in[m].
++		Units after application of scale and offset are m/s^2.
++
++What:		/sys/.../device[n]/gyro[_x|_y|_z][m]_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Angular velocity about axis x, y or z (may be arbitrarily assigned)
++		channel m (not present if only one gyroscope at this orientation).
++		Data converted by application of offset then scale to
++		radians per second. Has all the equivalent parameters as per in[m].
++
++What:		/sys/.../device[n]/mag[_x|_y|_z][m]_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Magnetic field along axis x, y or z (may be arbitrarily assigned)
++		channel m (not present if only one magnetometer at this orientation).
++		Data converted by application of offset then scale to Gauss
++		Has all the equivalent modifiers as per in[m].
++
++What:		/sys/.../device[n]/device[n]:event[m]
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Configuration of which hardware generated events are passed up to
++		userspace. Some of these are a bit complex to generalize so this
++		section is a work in progress.
++
++What:		/sys/.../device[n]:event[m]/dev
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		major:minor character device numbers for the event line.
++
++Taking accel_x0 as an example
++
++What:		/sys/.../device[n]:event[m]/accel_x0_thresh[_high|_low]_en
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Event generated when accel_x0 passes a threshold in correction direction
++		(or stays beyond one). If direction isn't specified, either triggers it.
++		Note driver will assume last p events requested are enabled where p is
++		however many it supports.  So if you want to be sure you have
++		set what you think you have, check the contents of these. Drivers
++		may have to buffer any parameters so that they are consistent when a
++		given event type is enabled a future point (and not those for whatever
++		alarm was previously enabled).
++
++What:		/sys/.../device[n]:event[m]/accel_x0_roc[_high|_low]_en
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Same as above but based on the first differential of the value.
++
++
++What:		/sys/.../device[n]:event[m]/accel_x0[_thresh|_roc][_high|_low]_period
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		A period of time (microsecs) for which the condition must be broken
++		before an interrupt is triggered. Applies to all alarms if type is not
++		specified.
++
++What:		/sys/.../device[n]:event[m]/accel_x0[_thresh|_roc][_high|_low]_value
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		The actual value of the threshold in raw device units obtained by
++		 reverse application of scale and offfset to the acceleration in m/s^2.
++
++What:		/sys/.../device[n]/scan_elements
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Directory containing interfaces for elements that will be captured
++		for a single triggered sample set in the buffer.
++
++What:		/sys/.../device[n]/scan_elements/[m]_accel_x0_en
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Scan element control for triggered data capture. m implies the
++		ordering within the buffer. Next the type is specified with
++		modifier and channel number as per the sysfs single channel
++		access above.
++
++What:		/sys/.../device[n]/scan_elements/accel[_x0]_precision
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Scan element precision within the buffer. Note that the
++		data alignment must restrictions must be read from within
++		buffer to work out full data alignment for data read
++		via buffer_access chrdev. _x0 dropped if shared across all
++		acceleration channels.
++
++What:		/sys/.../device[n]/scan_elements/accel[_x0]_shift
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		A bit shift (to right) that must be applied prior to
++		extracting the bits specified by accel[_x0]_precision.
++
++What:		/sys/.../device[n]/device[n]:buffer:event/dev
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Buffer for device n event character device major:minor numbers.
++
++What:		/sys/.../device[n]/device[n]:buffer:access/dev
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Buffer for device n access character device o major:minor numbers.
++
++What:		/sys/.../device[n]:buffer/trigger
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		The name of the trigger source being used, as per string given
++		in /sys/class/iio/trigger[n]/name.
++
++What:		/sys/.../device[n]:buffer/length
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Number of scans contained by the buffer.
++
++What:		/sys/.../device[n]:buffer/bps
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Bytes per scan.  Due to alignment fun, the scan may be larger
++		than implied directly by the scan_element parameters.
++
++What:		/sys/.../device[n]:buffer/enable
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Actually start the buffer capture up.  Will start trigger
++		if first device and appropriate.
++
++What:		/sys/.../device[n]:buffer/alignment
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Minimum data alignment.  Scan elements larger than this are aligned
++		to the nearest power of 2 times this.  (may not be true in weird
++		hardware buffers that pack data well)
++
 -- 
-Hollis Blanchard
-Mentor Graphics, Embedded Systems Division
-
-
+1.6.4.4
 
