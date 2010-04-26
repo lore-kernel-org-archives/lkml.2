@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab0DZRhO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 13:37:14 -0400
-Received: from 007.netroom.de ([194.0.247.207]:8745 "EHLO 007.netroom.de"
+	id S1752437Ab0DZRrZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 13:47:25 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:33444 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753397Ab0DZRhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 13:37:11 -0400
-Message-ID: <4BD5CF3C.9020406@draisberghof.de>
-Date: Mon, 26 Apr 2010 19:37:00 +0200
-From: Josua Dietze <digidietze@draisberghof.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1751210Ab0DZRrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 13:47:24 -0400
+Date: Mon, 26 Apr 2010 19:47:22 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       martin.petersen@oracle.com
+Subject: Re: [PATCH 0/4] blkdev: blkdev_issue_fn cleanups v2
+Message-ID: <20100426174722.GV27497@kernel.dk>
+References: <1271077437-7921-1-git-send-email-dmonakhov@openvz.org> <20100426150144.GB2937@infradead.org> <20100426172651.GT27497@kernel.dk> <87k4ruce6u.fsf@openvz.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-CC: Daniel Mack <daniel@caiaq.de>, Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-       Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: USB gadget with drivers "on board"
-References: <op.vbrfqdznfxrvh1@pikus> <20100426141605.GO30801@buzzloop.caiaq.de> <op.vbrxsrw07p4s8u@pikus> <20100426145700.GP30801@buzzloop.caiaq.de> <op.vbr0prfb7p4s8u@pikus>
-In-Reply-To: <op.vbr0prfb7p4s8u@pikus>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k4ruce6u.fsf@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michał Nazarewicz schrieb:
-
-> On Mon, 26 Apr 2010 16:16:05 +0200, Daniel Mack <daniel@caiaq.de> wrote:
->> Are you sure they don't do exactly that by running two interfaces in
->> the same configuration?
+On Mon, Apr 26 2010, Dmitry Monakhov wrote:
+> Jens Axboe <jens.axboe@oracle.com> writes:
 > 
-> Yes, I'm sure.  I've investigated an USB GSM modem which, when plugged
-> for the first time reports as mass storage (single configuration, single
-> interface) and when drivers are installed as a full blown composite
-> gadget.  I still haven't figured out how it does that.
+> > On Mon, Apr 26 2010, Christoph Hellwig wrote:
+> >> Jens, are you planning on picking up a version of this?
+> >
+> > Yes, I was waiting for a repost to address your review concerns.
+> Ok, will appear in several hours. I have to repeat full testing
+> cycle, I don't want to break lvm one more time :)
 
+Take your time, I would appreciate it if lvm didn't get broken again :-)
 
-These are the notorious mode switching devices. In Windows, they 
-obviously install a special storage driver doing one specific action 
-on each following plugging.
-This action - some storage or control command - will "flip" the 
-device, making it "disconnect" and returning as a completely different 
-composite device.
-
-Storage commands used for this procedure range from "SCSI rezero" over 
-"passthrough" to "SCSI eject", or involve vendor specific stuff.
-
-
-Josua Dietze
+-- 
+Jens Axboe
 
