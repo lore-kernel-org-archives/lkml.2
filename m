@@ -1,207 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab0DZPFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 11:05:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48854 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752160Ab0DZPFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 11:05:06 -0400
-Date: Mon, 26 Apr 2010 17:05:03 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Tony Vroon <tony@linx.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>
-Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
-Message-ID: <20100426150503.GA4005@tiehlicka.suse.cz>
-References: <20100401133923.GA4104@tiehlicka.suse.cz>
- <20100419115942.GC5160@tiehlicka.suse.cz>
- <201004191719.53602.rjw@sisk.pl>
- <201004250435.42779.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004250435.42779.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753030Ab0DZPUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 11:20:47 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:41934 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676Ab0DZPUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 11:20:46 -0400
+Subject: Re: request_firmware API exhaust memory
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: Tomas Winkler <tomasw@gmail.com>
+Cc: Greg KH <greg@kroah.com>, Johannes Berg <johannes@sipsolutions.net>,
+       David Woodhouse <dwmw2@infradead.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <o2qac3eb2511004260338xd8146a7dy415d3f0f4f1c8bbc@mail.gmail.com>
+References: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com>
+	 <20100419145934.GA10893@kroah.com>
+	 <t2w1ba2fa241004211522le49fc938m341553b0f2b89031@mail.gmail.com>
+	 <20100425163711.GA20196@kroah.com>
+	 <o2n1ba2fa241004251222x6ab49726p9757fd8be4952bee@mail.gmail.com>
+	 <20100425193658.GA24039@kroah.com>
+	 <m2g1ba2fa241004251309oa5592255lb4e4b96ea07dd12a@mail.gmail.com>
+	 <o2qac3eb2511004260338xd8146a7dy415d3f0f4f1c8bbc@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 26 Apr 2010 17:19:00 +0200
+Message-ID: <1272295140.2434.8.camel@yio.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.0.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 25-04-10 04:35:42, Rafael J. Wysocki wrote:
-> On Monday 19 April 2010, Rafael J. Wysocki wrote:
-> > On Monday 19 April 2010, Michal Hocko wrote:
-> > > On Fri 16-04-10 20:00:29, Rafael J. Wysocki wrote:
-> > > > On Wednesday 14 April 2010, Michal Hocko wrote:
-> > > > > On Tue 13-04-10 22:53:37, Rafael J. Wysocki wrote:
-> > > > > > On Tuesday 13 April 2010, Michal Hocko wrote:
-> > > > > > > On Tue 13-04-10 01:01:54, Rafael J. Wysocki wrote:
-> > > > > > > > On Saturday 10 April 2010, Rafael J. Wysocki wrote:
-> > > > > > > > > On Friday 09 April 2010, Tony Vroon wrote:
-> > > > > > > > > > On Fri, 2010-04-09 at 22:42 +0200, Rafael J. Wysocki wrote:
-> > > > > > > > > > > Please check if the patch below changes anything.
-> > > > > > > > > > >  drivers/acpi/wakeup.c |    4 ++--
-> > > > > > > > > > >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > > > > > > > > > 
-> > > > > > > > > > That didn't change the behaviour for me, sorry.
-> > > > > > > > > 
-> > > > > > > > > Well, I would be sorry if it did, because the patch removed some useful code. :-)
-> > > > > > > > > 
-> > > > > > > > > > (I made sure to go through a full power down session before trying the
-> > > > > > > > > > patched kernel)
-> > > > > > > > > 
-> > > > > > > > > Thanks for testing.  So it looks like we don't disable the GPE during power off.
-> > > > > > > > > 
-> > > > > > > > > I'll try to figure out what's going on, please stay tuned.
-> > > > > > > > 
-> > > > > > > > Can you please check if the patch below changes the behavior?
-> > > > > > > 
-> > > > > > > Unfortunately, it didn't help either (I have tried on top of the fresh
-> > > > > > > rc4).
-> > > > > > 
-> > > > > > That gets really weird.
-> > > > > > 
-> > > > > > > > ---
-> > > > > > > >  drivers/acpi/wakeup.c |    6 +++---
-> > > > > > > >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > > > > > > > 
-> > > > > > > > Index: linux-2.6/drivers/acpi/wakeup.c
-> > > > > > > > ===================================================================
-> > > > > > > > --- linux-2.6.orig/drivers/acpi/wakeup.c
-> > > > > > > > +++ linux-2.6/drivers/acpi/wakeup.c
-> > > > > > > > @@ -63,17 +63,17 @@ void acpi_enable_wakeup_device(u8 sleep_
-> > > > > > > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
-> > > > > > > >  		struct acpi_device *dev =
-> > > > > > > >  			container_of(node, struct acpi_device, wakeup_list);
-> > > > > > > > +		u8 action = ACPI_GPE_ENABLE;
-> > > > > > 
-> > > > > > Can you try to change the above to ACPI_GPE_DISABLE and retest, please?
-> > > > > 
-> > > > > Unfortunately didn't help as well...
-> > > > > Just for reference:
-> > > > > 
-> > > > > diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
-> > > > > index 248b473..f23c08f 100644
-> > > > > --- a/drivers/acpi/wakeup.c
-> > > > > +++ b/drivers/acpi/wakeup.c
-> > > > > @@ -63,7 +63,7 @@ void acpi_enable_wakeup_device(u8 sleep_state)
-> > > > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
-> > > > >  		struct acpi_device *dev =
-> > > > >  			container_of(node, struct acpi_device, wakeup_list);
-> > > > > -		u8 action = ACPI_GPE_ENABLE;
-> > > > > +		u8 action = ACPI_GPE_DISABLE;
-> > > > 
-> > > > That probably means the chipset enables the GPEs by itself _after_ we've
-> > > > disabled them in acpi_enable_wakeup_device().
-> > > 
-> > > Is this something BIOS specific?
-> > > 
-> > > > 
-> > > > Unfortunately, I can't reproduce the issue on any of my test boxes and it's
-> > > > hard to find the source of the problem staring at the code.
-> > > 
-> > > Are there any debug options I can turn on to provide some information?
-> > 
-> > We can only check what the kernel tells us before power off, but all that seems
-> > correct.
-> > 
-> > > Btw. what exactly does this mean? In what state is the laptop while it
-> > > is turned off and GPE is enabled?
-> > 
-> > If a GPE is enabled, then some part of the chipset has power provided so that
-> > it can signal wakeup.
-> > 
-> > I'll look into it a bit more later today.
+On Mon, 2010-04-26 at 12:38 +0200, Kay Sievers wrote:
+> On Sun, Apr 25, 2010 at 22:09, Tomas Winkler <tomasw@gmail.com> wrote:
+> > Said thing is that I don't see where the memory goes.... Anyhow I will
+> > try to run valgrin on udev just to be sure.
 > 
-> Please try the patch below.  It kind of restores the previous behavior,
-> let's see if it changes anything.
+> Nah, that memory would be freed, if you kill all udev processes, which
+> it doesn't.
+> 
+> The many udev worker processes you see for a few seconds was caused by
+> udevd handling events with TIMEOUT= set special. We need to make sure,
+> that firmware events run immediately and don't wait for other
+> processes to finish. The logic who does that was always creating a new
+> worker. I changed this now, but this will not affect the underlying
+> problem you are seeing, it will just make the udev workers not grow in
+> a timeframe of less than 10 seconds. The change is here:
+>   http://git.kernel.org/?p=linux/hotplug/udev.git;a=commit;h=665ee17def2caa6811ae032ae68ebf8239a18cf8
+> but as mentioned, this change is unrelated to the memory leak you are seeing.
+> 
+> > I'll be glad If someone can run my simple driver I posted and confirm
+> > that sees the same problem
+> 
+> I can confirm that memory gets lost. I suspect for some reason the
+> firmware does not get properly cleaned up. If you increase the size of
+> the firmware image, it will leak memory much faster.
 
-Again, no success. Just to make sure that I didn't screw anything. I
-have used just the following patch on top of the clean rc5 (your patch
-has failed with some rejects but I guess that the following should do
-the same):
+I guess, the assumption that vfree() will free pages which are allocated
+by custom code, and not by vmalloc(), is not true.
 
-commit 65eafe4a504e3bb2c13b4feb8590dc52e7439baa
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Sun Apr 25 04:35:42 2010 +0200
+The attached changes seem to fix the issue for me.
 
-diff --git a/drivers/acpi/acpica/evgpeblk.c b/drivers/acpi/acpica/evgpeblk.c
-index fef7219..b6e1e0c 100644
---- a/drivers/acpi/acpica/evgpeblk.c
-+++ b/drivers/acpi/acpica/evgpeblk.c
-@@ -367,7 +367,7 @@ acpi_ev_match_prw_and_gpe(acpi_handle obj_handle,
- 	union acpi_operand_object *pkg_desc;
- 	union acpi_operand_object *obj_desc;
- 	u32 gpe_number;
--	acpi_status status;
-+	acpi_status status = AE_OK;
- 
- 	ACPI_FUNCTION_TRACE(ev_match_prw_and_gpe);
- 
-@@ -447,12 +447,13 @@ acpi_ev_match_prw_and_gpe(acpi_handle obj_handle,
- 							gpe_block->
- 							block_base_number];
- 
-+		status = acpi_ev_disable_gpe(gpe_event_info);
- 		gpe_event_info->flags |= ACPI_GPE_CAN_WAKE;
+The custom page array mangling was introduced by David as an optimization
+with commit 6e03a201bbe8137487f340d26aa662110e324b20 and this should be
+checked, and if needed be fixed.
+
+Cheers,
+Kay
+
+
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 985da11..fe4e872 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -162,7 +162,7 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 			mutex_unlock(&fw_lock);
+ 			break;
+ 		}
+-		vfree(fw_priv->fw->data);
++		vunmap(fw_priv->fw->data);
+ 		fw_priv->fw->data = NULL;
+ 		for (i = 0; i < fw_priv->nr_pages; i++)
+ 			__free_page(fw_priv->pages[i]);
+@@ -176,7 +176,7 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 		break;
+ 	case 0:
+ 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
+-			vfree(fw_priv->fw->data);
++			vunmap(fw_priv->fw->data);
+ 			fw_priv->fw->data = vmap(fw_priv->pages,
+ 						 fw_priv->nr_pages,
+ 						 0, PAGE_KERNEL_RO);
+@@ -184,9 +184,6 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 				dev_err(dev, "%s: vmap() failed\n", __func__);
+ 				goto err;
+ 			}
+-			/* Pages will be freed by vfree() */
+-			fw_priv->page_array_size = 0;
+-			fw_priv->nr_pages = 0;
+ 			complete(&fw_priv->completion);
+ 			clear_bit(FW_STATUS_LOADING, &fw_priv->status);
+ 			break;
+@@ -578,7 +575,7 @@ release_firmware(const struct firmware *fw)
+ 			if (fw->data == builtin->data)
+ 				goto free_fw;
+ 		}
+-		vfree(fw->data);
++		vunmap(fw->data);
+ 	free_fw:
+ 		kfree(fw);
  	}
- 
-       cleanup:
- 	acpi_ut_remove_reference(pkg_desc);
--	return_ACPI_STATUS(AE_OK);
-+	return_ACPI_STATUS(status);
- }
- 
- /*******************************************************************************
 
-> 
-> Rafael
-> 
-> ---
->  drivers/acpi/acpica/evgpeblk.c |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
-> 
-> Index: linux-2.6/drivers/acpi/acpica/evgpeblk.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/acpica/evgpeblk.c
-> +++ linux-2.6/drivers/acpi/acpica/evgpeblk.c
-> @@ -364,7 +364,7 @@ acpi_ev_match_prw_and_gpe(acpi_handle ob
->  	union acpi_operand_object *pkg_desc;
->  	union acpi_operand_object *obj_desc;
->  	u32 gpe_number;
-> -	acpi_status status;
-> +	acpi_status status = AE_OK;
->  
->  	ACPI_FUNCTION_TRACE(ev_match_prw_and_gpe);
->  
-> @@ -439,13 +439,15 @@ acpi_ev_match_prw_and_gpe(acpi_handle ob
->  	if (gpe_device == target_gpe_device) {
->  		gpe_event_info = acpi_ev_gpeblk_event_info(gpe_block,
->  							   gpe_number);
-> -		if (gpe_event_info)
-> +		if (gpe_event_info) {
-> +			status = acpi_ev_disable_gpe(gpe_event_info);
->  			gpe_event_info->flags |= ACPI_GPE_CAN_WAKE;
-> +		}
->  	}
->  
->        cleanup:
->  	acpi_ut_remove_reference(pkg_desc);
-> -	return_ACPI_STATUS(AE_OK);
-> +	return_ACPI_STATUS(status);
->  }
->  
->  /*******************************************************************************
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
