@@ -1,211 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab0DZK6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 06:58:42 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45708 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab0DZK6k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 06:58:40 -0400
-Message-ID: <4BD571DC.9090103@jp.fujitsu.com>
-Date: Mon, 26 Apr 2010 19:58:36 +0900
-From: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1754585Ab0DZK65 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 06:58:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752931Ab0DZK6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 06:58:54 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] CRED: Holding a spinlock does not imply the holding of RCU
+	read lock
+To: linux-security-module@vger.kernel.org
+Cc: dhowells@redhat.com, serue@us.ibm.com, paulmck@us.ibm.com,
+       linux-kernel@vger.kernel.org
+Date: Mon, 26 Apr 2010 11:58:49 +0100
+Message-ID: <20100426105849.26489.72831.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-       linux-raid@vger.kernel.org
-CC: linux-kernel@vger.kernel.org,
-       "James.Bottomley@suse.de" <James.Bottomley@suse.de>, neilb@suse.de,
-       kusumi.tomohiro@jp.fujitsu.com
-Subject: [PATCH] raid/multipath error handling for faulty drives
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Serge E. Hallyn <serue@us.ibm.com>
 
-I've been looking for ways to minimize the impact of faulty drive in a multipath
-and raid array environment. Our major problem is that it takes long time before
-upper layer (dm-mpath, dm-raid or maybe other middleware kernel module by users)
-can handle timed out i/o because of huge recovery operation by scsi driver's error
-handler. Let me explain some details.
+Change the credentials documentation to make it clear that the RCU read lock
+must be explicitly held when accessing credentials pointers in some other task
+than current.  Holding a spinlock does not implicitly hold the RCU read lock.
 
-The scsi error recovery can be regarded as something that essentialy conflicts
-with multipath or raid array environment, because in such an environment where the
-system itself provides redundant path or disks, it is usually designed to use
-alternative path or disks right after detecting faulty drive.
-
-As far as I know there has been couples of approaches done in scsi or md layer
-(eg. http://www.mail-archive.com/linux-raid@vger.kernel.org/msg09024.html) to
-minimize recovery time although neither of them have been mereged for some reason.
-
-This patch is a simple aproach to omit error recovery phase. Each scsi device has
-no_recovery sysfs entry to select whether the device needs recovery (off course
-no_recovery is disabled on default). If it is enabled, then the scsi device that
-corresponds to the timed out command is rapidly offlined with DRIVER_TIMEOUT status.
-This enables upper layers have chance to take care of timed out commands without
-waiting for recovery to finish.
-
-This is how it shows on /var/log/messages when no_recovery option is enabled with
-all the verbose logs for scsi mldd and lldd set. If no_recovery is disabled, it takes
-as much as 30 minutes or so depending on implementation of lldd and number of timed
-out commands.
-
------
-Apr 21 19:50:47 localhost kernel: lpfc 0000:03:04.0: 0:(0):0309 Mailbox cmd x31 issue Data: x20 x700 x2
-Apr 21 19:50:47 localhost kernel: lpfc 0000:03:04.0: 0:(0):0307 Mailbox cmd x31 (x0) Cmpl xf85fa862 Data: x123100 x0 x0 x0 x0 x0 x0 x0 x0
-Apr 21 19:50:57 localhost kernel: lpfc 0000:03:04.0: 0:(0):0309 Mailbox cmd x31 issue Data: x20 x700 x2
-Apr 21 19:50:57 localhost kernel: lpfc 0000:03:04.0: 0:(0):0307 Mailbox cmd x31 (x0) Cmpl xf85fa862 Data: x123100 x0 x0 x0 x0 x0 x0 x0 x0
-Apr 21 19:51:02 localhost kernel: lpfc 0000:03:04.0: 0:(0):0309 Mailbox cmd x31 issue Data: x20 x700 x2
-Apr 21 19:51:02 localhost kernel: lpfc 0000:03:04.0: 0:(0):0307 Mailbox cmd x31 (x0) Cmpl xf85fa862 Data: x123100 x0 x0 x0 x0 x0 x0 x0 x0
-Apr 21 19:51:07 localhost kernel: lpfc 0000:03:04.0: 0:(0):0309 Mailbox cmd x31 issue Data: x20 x700 x2
-Apr 21 19:51:07 localhost kernel: lpfc 0000:03:04.0: 0:(0):0307 Mailbox cmd x31 (x0) Cmpl xf85fa862 Data: x123100 x0 x0 x0 x0 x0 x0 x0 x0
-Apr 21 19:51:10 localhost kernel: sd 3:0:0:0: Device offlined - no recovery
-Apr 21 19:51:10 localhost kernel: scsi_work_offline_sdev scmd: c5bb7e00 result: 6000000
-Apr 21 19:51:10 localhost kernel: sd 3:0:0:0: [sdc] Unhandled error code
-Apr 21 19:51:10 localhost kernel: sd 3:0:0:0: [sdc] Result: hostbyte=DID_OK driverbyte=DRIVER_TIMEOUT
-Apr 21 19:51:10 localhost kernel: sd 3:0:0:0: [sdc] CDB: Read(10): 28 00 00 02 16 e8 00 00 08 00
-Apr 21 19:51:10 localhost kernel: end_request: I/O error, dev sdc, sector 136936
-Apr 21 19:51:10 localhost kernel: device-mapper: multipath: Failing path 8:32.
-Apr 21 19:51:10 localhost multipathd: 8:32: mark as failed
-Apr 21 19:51:10 localhost multipathd: mpatha: remaining active paths: 1
-Apr 21 19:51:11 localhost multipathd: dm-4: add map (uevent)
-Apr 21 19:51:11 localhost multipathd: dm-4: devmap already registered
------
-
-If Linux's scsi driver provides lldd with eh_strategy_handler() interface to
-implement its own recovery code, then I think it is also natural to provide an
-interface to give up any recovery options for those who do not want it.
-Any comments would be helpful, thanks.
-
-By the way, this patch is based on the bug fix (http://lkml.org/lkml/2010/4/14/29)
-that I have submitted recently. This bug fix has been merged to -mm tree.
-
-Thanks,
-Tomohiro Kusumi
-
-
-
-Signed-off-by: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+Signed-off-by: Serge Hallyn <serue@us.ibm.com>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
-diff -aNur linux-2.6.34-rc5.org/drivers/scsi/scsi_error.c linux-2.6.34-rc5/drivers/scsi/scsi_error.c
---- linux-2.6.34-rc5.org/drivers/scsi/scsi_error.c	2010-04-20 08:29:56.000000000 +0900
-+++ linux-2.6.34-rc5/drivers/scsi/scsi_error.c	2010-04-23 20:34:08.492478179 +0900
-@@ -129,6 +129,11 @@
- 
- 	scsi_log_completion(scmd, TIMEOUT_ERROR);
- 
-+	if (scmd->device->no_recovery) {
-+		schedule_work(&scmd->tmo_work);
-+		return rtn;
-+	}
-+
- 	if (scmd->device->host->transportt->eh_timed_out)
- 		rtn = scmd->device->host->transportt->eh_timed_out(scmd);
- 	else if (scmd->device->host->hostt->eh_timed_out)
-@@ -2104,3 +2109,25 @@
- 	}
- }
- EXPORT_SYMBOL(scsi_build_sense_buffer);
-+
-+/**
-+ * scsi_work_offline_sdev - offline device and finish timed out command
-+ * @work:	work_struct for scsi command to get rid of
-+ **/
-+void scsi_work_offline_sdev(struct work_struct *work)
-+{
-+	struct scsi_cmnd *scmd = container_of(work, struct scsi_cmnd, tmo_work);
-+
-+	if (scmd->device->sdev_state == SDEV_RUNNING) {
-+		scsi_device_set_state(scmd->device, SDEV_OFFLINE);
-+		sdev_printk(KERN_INFO, scmd->device,
-+			    "Device offlined - no recovery\n");
-+	}
-+
-+	if (!scmd->result)
-+		scmd->result |= (DRIVER_TIMEOUT << 24);
-+
-+	SCSI_LOG_ERROR_RECOVERY(1, printk("%s scmd: %p result: %x\n",
-+				__func__, scmd, scmd->result));
-+	scsi_finish_command(scmd);
-+}
-diff -aNur linux-2.6.34-rc5.org/drivers/scsi/scsi_lib.c linux-2.6.34-rc5/drivers/scsi/scsi_lib.c
---- linux-2.6.34-rc5.org/drivers/scsi/scsi_lib.c	2010-04-20 08:29:56.000000000 +0900
-+++ linux-2.6.34-rc5/drivers/scsi/scsi_lib.c	2010-04-23 20:34:08.493478584 +0900
-@@ -1038,6 +1038,7 @@
- 	cmd->request = req;
- 
- 	cmd->cmnd = req->cmd;
-+	INIT_WORK(&cmd->tmo_work, scsi_work_offline_sdev);
- 
- 	return cmd;
- }
-diff -aNur linux-2.6.34-rc5.org/drivers/scsi/scsi_priv.h linux-2.6.34-rc5/drivers/scsi/scsi_priv.h
---- linux-2.6.34-rc5.org/drivers/scsi/scsi_priv.h	2010-04-20 08:29:56.000000000 +0900
-+++ linux-2.6.34-rc5/drivers/scsi/scsi_priv.h	2010-04-23 20:34:08.493478584 +0900
-@@ -73,6 +73,7 @@
- int scsi_eh_get_sense(struct list_head *work_q,
- 		      struct list_head *done_q);
- int scsi_noretry_cmd(struct scsi_cmnd *scmd);
-+void scsi_work_offline_sdev(struct work_struct*);
- 
- /* scsi_lib.c */
- extern int scsi_maybe_unblock_host(struct scsi_device *sdev);
-diff -aNur linux-2.6.34-rc5.org/drivers/scsi/scsi_scan.c linux-2.6.34-rc5/drivers/scsi/scsi_scan.c
---- linux-2.6.34-rc5.org/drivers/scsi/scsi_scan.c	2010-04-20 08:29:56.000000000 +0900
-+++ linux-2.6.34-rc5/drivers/scsi/scsi_scan.c	2010-04-23 20:34:08.494477948 +0900
-@@ -257,6 +257,7 @@
- 	sdev->lun = lun;
- 	sdev->channel = starget->channel;
- 	sdev->sdev_state = SDEV_CREATED;
-+	sdev->no_recovery = 0;
- 	INIT_LIST_HEAD(&sdev->siblings);
- 	INIT_LIST_HEAD(&sdev->same_target_siblings);
- 	INIT_LIST_HEAD(&sdev->cmd_list);
-diff -aNur linux-2.6.34-rc5.org/drivers/scsi/scsi_sysfs.c linux-2.6.34-rc5/drivers/scsi/scsi_sysfs.c
---- linux-2.6.34-rc5.org/drivers/scsi/scsi_sysfs.c	2010-04-23 19:59:21.896228214 +0900
-+++ linux-2.6.34-rc5/drivers/scsi/scsi_sysfs.c	2010-04-23 20:36:27.120227650 +0900
-@@ -544,6 +544,7 @@
- sdev_rd_attr (vendor, "%.8s\n");
- sdev_rd_attr (model, "%.16s\n");
- sdev_rd_attr (rev, "%.4s\n");
-+sdev_rw_attr (no_recovery, "%d\n");
- 
- /*
-  * TODO: can we make these symlinks to the block layer ones?
-@@ -738,6 +739,7 @@
- 	&dev_attr_iodone_cnt.attr,
- 	&dev_attr_ioerr_cnt.attr,
- 	&dev_attr_modalias.attr,
-+	&dev_attr_no_recovery.attr,
- 	REF_EVT(media_change),
- 	NULL
- };
-diff -aNur linux-2.6.34-rc5.org/include/scsi/scsi_cmnd.h linux-2.6.34-rc5/include/scsi/scsi_cmnd.h
---- linux-2.6.34-rc5.org/include/scsi/scsi_cmnd.h	2010-04-20 08:29:56.000000000 +0900
-+++ linux-2.6.34-rc5/include/scsi/scsi_cmnd.h	2010-04-23 20:34:08.495478045 +0900
-@@ -129,6 +129,8 @@
- 	int result;		/* Status code from lower level driver */
- 
- 	unsigned char tag;	/* SCSI-II queued command tag */
-+
-+	struct work_struct tmo_work;	/* work for no recovery on timeout */
- };
- 
- extern struct scsi_cmnd *scsi_get_command(struct scsi_device *, gfp_t);
-diff -aNur linux-2.6.34-rc5.org/include/scsi/scsi_device.h linux-2.6.34-rc5/include/scsi/scsi_device.h
---- linux-2.6.34-rc5.org/include/scsi/scsi_device.h	2010-04-20 08:29:56.000000000 +0900
-+++ linux-2.6.34-rc5/include/scsi/scsi_device.h	2010-04-23 20:35:29.255569542 +0900
-@@ -163,6 +163,8 @@
- 	atomic_t iodone_cnt;
- 	atomic_t ioerr_cnt;
- 
-+	int no_recovery; /* no error recovery on timeout if set */
-+
- 	struct device		sdev_gendev,
- 				sdev_dev;
+ Documentation/credentials.txt |   14 +++++---------
+ 1 files changed, 5 insertions(+), 9 deletions(-)
 
+diff --git a/Documentation/credentials.txt b/Documentation/credentials.txt
+index df03169..a2db352 100644
+--- a/Documentation/credentials.txt
++++ b/Documentation/credentials.txt
+@@ -408,9 +408,6 @@ This should be used inside the RCU read lock, as in the following example:
+ 		...
+ 	}
+ 
+-A function need not get RCU read lock to use __task_cred() if it is holding a
+-spinlock at the time as this implicitly holds the RCU read lock.
+-
+ Should it be necessary to hold another task's credentials for a long period of
+ time, and possibly to sleep whilst doing so, then the caller should get a
+ reference on them using:
+@@ -426,17 +423,16 @@ credentials, hiding the RCU magic from the caller:
+ 	uid_t task_uid(task)		Task's real UID
+ 	uid_t task_euid(task)		Task's effective UID
+ 
+-If the caller is holding a spinlock or the RCU read lock at the time anyway,
+-then:
++If the caller is holding the RCU read lock at the time anyway, then:
+ 
+ 	__task_cred(task)->uid
+ 	__task_cred(task)->euid
+ 
+ should be used instead.  Similarly, if multiple aspects of a task's credentials
+-need to be accessed, RCU read lock or a spinlock should be used, __task_cred()
+-called, the result stored in a temporary pointer and then the credential
+-aspects called from that before dropping the lock.  This prevents the
+-potentially expensive RCU magic from being invoked multiple times.
++need to be accessed, RCU read lock should be used, __task_cred() called, the
++result stored in a temporary pointer and then the credential aspects called
++from that before dropping the lock.  This prevents the potentially expensive
++RCU magic from being invoked multiple times.
+ 
+ Should some other single aspect of another task's credentials need to be
+ accessed, then this can be used:
 
