@@ -1,87 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab0DZWGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 18:06:48 -0400
-Received: from web94916.mail.in2.yahoo.com ([203.104.17.196]:29422 "HELO
-	web94916.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752894Ab0DZWGr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 18:06:47 -0400
-Message-ID: <867722.38404.qm@web94916.mail.in2.yahoo.com>
-X-YMail-OSG: LaorrgMVM1k2j8IpJ48Tj2qSF1tsvcxLupBFq3qZv7HybzE
- bVR8Eu_uQ0upCZBOV7FIG048Dh86uB8ESmdaF3pfd7ZrO7mQas.egSSVln9W
- BTQo3mzgiciFH9ui37HSArF5ole5pahkDPv3fBtm0BqK7ctkECHSFFciGXGs
- vAiA7S21UMZiVVkm5JukdeSZu54YA9CBY_0Pbsm6Gqu5LAG.XCWtxh1B3J5d
- s5n2c3L9myf_zCKVwmL.vqn20HliciYIDCviyknG9lPwksVUD4eurf7rOZE6
- hZMYYiAA0bJMjQdsw
-X-RocketYMMF: pavan_savoy
-X-Mailer: YahooMailClassic/10.1.9 YahooMailWebService/0.8.100.260964
-Date: Tue, 27 Apr 2010 03:36:43 +0530 (IST)
-From: Pavan Savoy <pavan_savoy@ti.com>
-Reply-To: pavan_savoy@ti.com
-Subject: Re: [PATCH] drivers:staging: sources for ST core
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, npelly@google.com
-In-Reply-To: <20100426230352.1564ef0f@lxorguk.ukuu.org.uk>
+	id S1754856Ab0DZWG6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 18:06:58 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63804 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754582Ab0DZWGy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 18:06:54 -0400
+Message-ID: <4BD60DF2.2070406@oracle.com>
+Date: Mon, 26 Apr 2010 15:04:34 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Andy Isaacson <adi@hexapodia.org>,
+       "R. Andrew Bailey" <bailey@akamai.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
+Subject: [PATCH -v5] reserve a0000 - 0x10000
+References: <4BC4E55B.7000103@oracle.com>	<20100426183436.GV11130@hexapodia.org>	<20100426123135.5d095d2f@virtuousgeek.org>	<201004261427.57229.bjorn.helgaas@hp.com>	<20100426133757.3e1d0a75@virtuousgeek.org>	<a65d005c2c7607d4d6dd6e280fdc6d66.squirrel@www.zytor.com> <20100426142546.2e77b1ba@virtuousgeek.org> <4BD60CD5.4060601@oracle.com>
+In-Reply-To: <4BD60CD5.4060601@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090204.4BD60E5A.0129:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan,
-
---- On Tue, 27/4/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-
-> From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> Subject: Re: [PATCH] drivers:staging: sources for ST core
-> To: pavan_savoy@ti.com
-> Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, npelly@google.com, pavan_savoy@yahoo.co.in
-> Date: Tuesday, 27 April, 2010, 3:33 AM
-> 
-> > +/* function pointer pointing to either,
-> > + * st_kim_recv during registration to receive fw
-> download responses
-> > + * st_int_recv after registration to receive proto
-> stack responses
-> > + */
-> > +void (*st_recv) (void*, const unsigned char*, long);
-> 
-> You still need a context of some kind as I said before to
-> avoid thse
-> globals and single device limits.
-
-The st_recv is a global pointer to a function, and changes only once in lifetime of the driver (after a function called download_firmware).
-This can be easily avoided by having a flag in my st_tty_recieve function, as in
-
-if (test_bit(FIRMWARE_DOWNLOADED, st_gdata->st_state)
-        /*
-         * if fw download is in progress then route incoming data
-         * to KIM for validation
-         */
-        st_int_recv(data, count);
-else
-        kim_recv(data, count);
-        ST_DRV_VER("done %s", __func__);
-
-However, the other global reference which was st_gdata, now is inside the tty->disc_data reference.
-
-Should I put in the above ?
-
-> And all the other issues - no explanation of the locking
-> etc don't seem
-> to have been touched either.
-
-I have removed most un-wanted locking stuff, I could find.
-What else is required ? please suggest.
-
-> I don't really see how I am supposed to review this stuff
-> when the
-> locking and flow control assumptions are completely opaque
-
-Didn't get what is that is required about flow-control ?
-> Alan
-> 
-
-Send free SMS to your Friends on Mobile from your Yahoo! Messenger. Download Now! http://messenger.yahoo.com/download.php
+for memo, sending out -v5 
