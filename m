@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab0DZG6w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 02:58:52 -0400
-Received: from mga05.intel.com ([192.55.52.89]:30731 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751586Ab0DZG6v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 02:58:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,272,1270450800"; 
-   d="scan'208";a="561459847"
-Subject: Re: [Bug #15713] hackbench regression due to commit 9dfc6e68bfe6e
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Pekka J Enberg <penberg@cs.helsinki.fi>
-Cc: Christoph Lameter <cl@linux.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Alex Shi <alex.shi@intel.com>, tj@kernel.org, tim.c.chen@intel.com
-In-Reply-To: <alpine.DEB.2.00.1004232214520.29018@melkki.cs.helsinki.fi>
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.vjH.sRSzLB@tosh>
-	 <alpine.DEB.2.00.1004221045270.1204@router.home>
-	 <4BD086D0.9090309@cs.helsinki.fi>
-	 <alpine.DEB.2.00.1004232214520.29018@melkki.cs.helsinki.fi>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 26 Apr 2010 14:59:07 +0800
-Message-Id: <1272265147.2078.648.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754395Ab0DZHEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 03:04:38 -0400
+Received: from n8-vm0.bullet.mail.in.yahoo.com ([202.86.4.189]:28254 "HELO
+	n8-vm0.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753717Ab0DZHEh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 03:04:37 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 123015.69176.bm@omp102.mail.in2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=ahYxE0EaEKX3FjMm6/6wA0APSAx9hWGK17p9yFRKi7AnUoPxTpf1i9g5r12pqe8jHfJnNhU1SpRRonefDaLoL5t7zppOlh4NhrW+uz9HGzGdnTTmY+8r9PxpYtUuNJyKLPrsSVgNjttMEf7zB2efVzfAA+D7ic6vV/16v2NqDms=;
+Message-ID: <994542.25479.qm@web95602.mail.in.yahoo.com>
+X-YMail-OSG: icmPmZcVM1lJPXNOxCle3uGbClsd6.mMCgcJgaDGFKgg1TB
+ NMdauXfBOHAxGAluOlglCpqTX0.E1TSPC1zUfF7Haj_rwCRRSfMUeIq8vUN.
+ tFHXUVgFf3X3OGQ3FMzHKtmQ6Wh3OR8RHzmqz2AWgFLobwrTeTGv1Vh8VdZt
+ GuaEABM9lt.Lq2AswhLYJdyC3Mfn3Y.6rWU7P
+X-Mailer: YahooMailRC/348.5 YahooMailWebService/0.8.102.267879
+Date: Mon, 26 Apr 2010 12:34:34 +0530 (IST)
+From: Oza Oza <ozaoza1982@yahoo.com>
+Subject: NMI callback & register handling infrastructure in linux kernel (arch - x86)
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-23 at 22:18 +0300, Pekka J Enberg wrote:
-> On Thu, 22 Apr 2010, Pekka Enberg wrote:
-> >>> The following bug entry is on the current list of known regressions
-> >>> from 2.6.33.  Please verify if it still should be listed and let the 
-> >>> tracking team
-> >>> know (either way).
-> >> 
-> >> I have not been able to reproduce it so far.
-> >
-> > So what are our options? We can revert the SLUB conversion patch for now but 
-> > I still can't see what's wrong with it...
-I also don't know why. The original patch looks good.
+Hi,
 
-> 
-> I haven't been able to reproduce this either on my Core 2 machine.
-Mostly, the regression exists on Nehalem machines. I suspect it's related to
-hyper-threading machine.
+This is my first post to the group, please excuse me, If I unknowingly miss to follow writing ethics.
 
-> 
-> Yanmin, does something like this help on your machines?
-A quick testing doesn't show any help.
+Proposal/Need: 
 
-I did a new testing. After the machine boots, I hot remove 8 hyper-threading cpu
-which means last 8 are just cores. The regression between 2.6.33 and 2.6.34-rc becomes
-small.
+I was working on providing accurate process usage support, and writing a kernel module, 
+I configured cpu-core-unhalted-event and configured LVT (local vector table) with NMI (non-maskable interrupt), and surprisingly Oprofile stopped working, 
+Then I realized, that set_nmi_call back just overwrites nmi_callback function pointer. 
 
-My opinion is we needn't revert the patch, but still keep an eye on it when testing other
-new RC kernel releases. One reason is volanoMark and netperf have no such regression.
-Is it ok?
+My proposal/idea/thinking is; 
+have a kernel module which accepts NMI registration from any kernel component, and providing support to the the any kernel service which basically need to service NMI.
+It may not only supports this, but also can provide central infrastructure which has capabilities such as granting MSR (model specific register) access to the the modules, which may avoid potential clash of MSRs (e.g. two modules are trying to configure same MSR), control NMI registration-unregisteration events etc..
 
-Yanmin
+I am not sure, whether this is a good idea or bad idea, but I thought it adds flexibility and some value addition in kernel, 
+and I find this place precisely right to post this idea. 
+
+Any feedback/suggestions/additions would be appreciated. 
+
+Regards,
+Oza.
+
 
 
