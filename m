@@ -1,40 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab0DZX25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 19:28:57 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49253 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab0DZX2z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 19:28:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VvtkjvjIBqv2YRvK45MWn1jYpv9UWElrUi3FDmvE0qfHrqsttBbaPHERXxeKAuj+CV
-         jusQAfZUFeEwvNDDIODfOOmp4CWDrKr3wRcy8HhZnG3vzMI0k6hSyhstAfXMYCHRQKT9
-         CcUQeH5c6Npm6bwfr4VMSqy0uSme3WYgs6peE=
-MIME-Version: 1.0
-In-Reply-To: <1272321478-28481-2-git-send-email-mel@csn.ul.ie>
-References: <1272321478-28481-1-git-send-email-mel@csn.ul.ie>
-	 <1272321478-28481-2-git-send-email-mel@csn.ul.ie>
-Date: Tue, 27 Apr 2010 08:28:52 +0900
-Message-ID: <n2t28c262361004261628y1d6e53fbw505a78818c0d5228@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mm,migration: During fork(), wait for migration to 
-	end if migration PTE is encountered
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753892Ab0DZX3I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 19:29:08 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:43275 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753431Ab0DZX3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 19:29:04 -0400
+X-IronPort-AV: E=Sophos;i="4.52,276,1270450800"; 
+   d="dif'?scan'208";a="350608385"
+Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Robert Wimmer <kernel@tauceti.net>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       bugzilla-daemon@bugzilla.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4BD61147.40709@tauceti.net>
+References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net>
+	 <20100419131718.GB16918@redhat.com>
+	 <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net>
+	 <20100421094249.GC30855@redhat.com>
+	 <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net>
+	 <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net>
+	 <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net>
+	 <20100425204916.GA12686@redhat.com>
+	 <1272284154.4252.34.camel@localhost.localdomain>
+	 <4BD5F6C5.8080605@tauceti.net>
+	 <1272315854.8984.125.camel@localhost.localdomain>
+	 <4BD61147.40709@tauceti.net>
+Content-Type: multipart/mixed; boundary="=-VJUQJgQ37UgEeLWr5kvS"
+Organization: NetApp
+Date: Mon, 26 Apr 2010 19:28:56 -0400
+Message-ID: <1272324536.16814.45.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-OriginalArrivalTime: 26 Apr 2010 23:28:58.0085 (UTC) FILETIME=[3E8F5150:01CAE598]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o3QNT8mE005246
 
-On Tue, Apr 27, 2010 at 7:37 AM, Mel Gorman <mel@csn.ul.ie> wrote:> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>>> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>>> At page migration, we replace pte with migration_entry, which has> similar format as swap_entry and replace it with real pfn at the> end of migration. But there is a race with fork()'s copy_page_range().>> Assume page migraion on CPU A and fork in CPU B. On CPU A, a page of> a process is under migration. On CPU B, a page's pte is under copy.>>        CPUA                    CPU B>                                do_fork()>                                copy_mm() (from process 1 to process2)>                                insert new vma to mmap_list (if inode/anon_vma)>        pte_lock(process1)>        unmap a page>        insert migration_entry>        pte_unlock(process1)>>        migrate page copy>                                copy_page_range>        remap new page by rmap_walk()>        pte_lock(process2)>        found no pte.>        pte_unlock(process2)>                                pte lock(process2)>                                pte lock(process1)>                                copy migration entry to process2>                                pte unlock(process1)>                                pte unlokc(process2)>        pte_lock(process1)>        replace migration entry>        to new page's pte.>        pte_unlock(process1)>> Then, some serialization is necessary. IIUC, this is very rare event but> it is reproducible if a lot of migration is happening a lot with the> following program running in parallel.>>    #include <stdio.h>>    #include <string.h>>    #include <stdlib.h>>    #include <sys/mman.h>>>    #define SIZE (24*1048576UL)>    #define CHILDREN 100>    int main()>    {>            int i = 0;>            pid_t pids[CHILDREN];>            char *buf = mmap(NULL, SIZE, PROT_READ|PROT_WRITE,>                            MAP_PRIVATE|MAP_ANONYMOUS,>                            0, 0);>            if (buf == MAP_FAILED) {>                    perror("mmap");>                    exit(-1);>            }>>            while (++i) {>                    int j = i % CHILDREN;>>                    if (j == 0) {>                            printf("Waiting on children\n");>                            for (j = 0; j < CHILDREN; j++) {>                                    memset(buf, i, SIZE);>                                    if (pids[j] != -1)>                                            waitpid(pids[j], NULL, 0);>                            }>                            j = 0;>                    }>>                    if ((pids[j] = fork()) == 0) {>                            memset(buf, i, SIZE);>                            exit(EXIT_SUCCESS);>                    }>            }>>            munmap(buf, SIZE);>    }>> copy_page_range() can wait for the end of migration.>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>> Signed-off-by: Mel Gorman <mel@csn.ul.ie>Reviewed-by : Minchan Kim <minchan.kim@gmail.com>
--- Kind regards,Minchan Kim���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+
+--=-VJUQJgQ37UgEeLWr5kvS
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, 2010-04-27 at 00:18 +0200, Robert Wimmer wrote:=20
+> > Sure. In addition to what you did above, please do
+> >
+> > mount -t debugfs none /sys/kernel/debug
+> >
+> > and then cat the contents of the pseudofile at
+> >
+> > /sys/kernel/debug/tracing/stack_trace
+> >
+> > Please do this more or less immediately after you've finished mounting
+> > the NFSv4 client.
+> >  =20
+>=20
+> I've uploaded the stack trace. It was generated
+> directly after mounting. Here are the stacks:
+>=20
+> After mounting:
+> https://bugzilla.kernel.org/attachment.cgi?id=3D26153
+> After the soft lockup:
+> https://bugzilla.kernel.org/attachment.cgi?id=3D26154
+> The dmesg output of the soft lockup:
+> https://bugzilla.kernel.org/attachment.cgi?id=3D26155
+>=20
+> > Does your server have the 'crossmnt' or 'nohide' flags set, or does it
+> > use the 'refer' export option anywhere? If so, then we might have to
+> > test further, since those may trigger the NFSv4 submount feature.
+> >  =20
+> The server has the following settings:
+> rw,nohide,insecure,async,no_subtree_check,no_root_squash
+>=20
+> Thanks!
+> Robert
+>=20
+>=20
+
+That second trace is more than 5.5K deep, more than half of which is
+socket overhead :-(((.
+
+The process stack does not appear to have overflowed, however that trace
+doesn't include any IRQ stack overhead.
+
+OK... So what happens if we get rid of half of that trace by forcing
+asynchronous tasks such as this to run entirely in rpciod instead of
+first trying to run in the process context?
+
+See the attachment...
+
+--=-VJUQJgQ37UgEeLWr5kvS
+Content-Disposition: attachment; filename="linux-2.6.34-000-reduce_async_rpc_stack_usage.dif"
+Content-Type: text/plain; name="linux-2.6.34-000-reduce_async_rpc_stack_usage.dif"; charset="UTF-8"
+Content-Transfer-Encoding: base64
+
+U1VOUlBDOiBSZWR1Y2UgYXN5bmNocm9ub3VzIFJQQyB0YXNrIHN0YWNrIHVzYWdlDQoNCkZyb206
+IFRyb25kIE15a2xlYnVzdCA8VHJvbmQuTXlrbGVidXN0QG5ldGFwcC5jb20+DQoNCldlIHNob3Vs
+ZCBqdXN0IGZhcm0gb3V0IGFzeW5jaHJvbm91cyBSUEMgdGFza3MgaW1tZWRpYXRlbHkgdG8gcnBj
+aW9kLi4uDQoNClNpZ25lZC1vZmYtYnk6IFRyb25kIE15a2xlYnVzdCA8VHJvbmQuTXlrbGVidXN0
+QG5ldGFwcC5jb20+DQotLS0NCg0KIG5ldC9zdW5ycGMvc2NoZWQuYyB8ICAgIDcgKysrKysrLQ0K
+IDEgZmlsZXMgY2hhbmdlZCwgNiBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9ucygtKQ0KDQoNCmRp
+ZmYgLS1naXQgYS9uZXQvc3VucnBjL3NjaGVkLmMgYi9uZXQvc3VucnBjL3NjaGVkLmMNCmluZGV4
+IGM4OTc5Y2UuLjIyYTA5N2YgMTAwNjQ0DQotLS0gYS9uZXQvc3VucnBjL3NjaGVkLmMNCisrKyBi
+L25ldC9zdW5ycGMvc2NoZWQuYw0KQEAgLTcyMCw3ICs3MjAsMTIgQEAgdm9pZCBycGNfZXhlY3V0
+ZShzdHJ1Y3QgcnBjX3Rhc2sgKnRhc2spDQogew0KIAlycGNfc2V0X2FjdGl2ZSh0YXNrKTsNCiAJ
+cnBjX3NldF9ydW5uaW5nKHRhc2spOw0KLQlfX3JwY19leGVjdXRlKHRhc2spOw0KKwlpZiAoUlBD
+X0lTX0FTWU5DKHRhc2spKSB7DQorCQlJTklUX1dPUksoJnRhc2stPnUudGtfd29yaywgcnBjX2Fz
+eW5jX3NjaGVkdWxlKTsNCisJCXF1ZXVlX3dvcmsocnBjaW9kX3dvcmtxdWV1ZSwgJnRhc2stPnUu
+dGtfd29yayk7DQorDQorCX0gZWxzZQ0KKwkJX19ycGNfZXhlY3V0ZSh0YXNrKTsNCiB9DQogDQog
+c3RhdGljIHZvaWQgcnBjX2FzeW5jX3NjaGVkdWxlKHN0cnVjdCB3b3JrX3N0cnVjdCAqd29yaykN
+Cg==
+
+
+--=-VJUQJgQ37UgEeLWr5kvS--
