@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab0DZOCt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 10:02:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56123 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab0DZOCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 10:02:48 -0400
-Date: Mon, 26 Apr 2010 11:01:57 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>
-Subject: Re: [PATCH -tip 1/4] [BUGFIX] perf tools: Initialize dso->node
-	member in dso__new
-Message-ID: <20100426140157.GE7460@ghostprotocols.net>
-References: <20100421195616.24664.89980.stgit@localhost6.localdomain6>
+	id S1752379Ab0DZOGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 10:06:20 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:39910 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751629Ab0DZOGT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 10:06:19 -0400
+Date: Mon, 26 Apr 2010 16:06:18 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+       Tim Abbott <tabbott@ksplice.com>, Sam Ravnborg <sam@ravnborg.org>,
+       linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: vamos@i4.informatik.uni-erlangen.de
+Subject: [PATCH] Doublecheck for CONFIG_64
+Message-ID: <20100426140618.GB2710@faui49.informatik.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100421195616.24664.89980.stgit@localhost6.localdomain6>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Apr 21, 2010 at 03:56:16PM -0400, Masami Hiramatsu escreveu:
-> If dso->node member is not initilized, it causes a segmentation
-> fault when adding to other lists. It should be initilized in
-> dso__new().
-> 
-> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> ---
-> 
->  tools/perf/util/symbol.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index e782e7d..e77c33a 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -189,6 +189,7 @@ struct dso *dso__new(const char *name)
->  		self->sorted_by_name = 0;
->  		self->has_build_id = 0;
->  		self->kernel = DSO_TYPE_USER;
-> +		INIT_LIST_HEAD(&self->node);
->  	}
->  
->  	return self;
+Hi all!
 
-Trying to understand how this would be a problem, as:
+	As part of the VAMOS[0] research project at the University of
+Erlangen we are looking at multiple integrity errors in linux'
+configuration system.
 
-static inline void __list_add(struct list_head *new,
-                              struct list_head *prev,
-                              struct list_head *next)
-{
-        next->prev = new;
-        new->next = next;
-        new->prev = prev;
-        prev->next = new;
-}
+	The following patch removes a unnecessary conditional. Inside
+a block making sure CONFIG_64 isn't set the option is checked again
+and based on that some parts are (not) included. As the outer check
+already makes sure CONFIG_64 isn't set here both checks are
+unnecessary so this patch removes them.
 
-This is not a list head, just a node.
+	Please keep me informed of this patch getting confirmed /
+merged so we can keep track of it.
 
-Looking at other messages where you described the problem to try to
-understand why this would help.
+Regards
 
-- Arnaldo
+	Christoph Egger
+
+[0] http://vamos1.informatik.uni-erlangen.de/
+
+----
+>From 32fe96794990e5e5a2cb3b2b7bcb0c49e61d4c9b Mon Sep 17 00:00:00 2001
+From: Christoph Egger <siccegge@cs.fau.de>
+Date: Mon, 26 Apr 2010 15:54:55 +0200
+Subject: [PATCH] Remove redundant check for CONFIG_64
+
+THis is a check for CONFIG_64 inside a block that is only active when
+CONFIG_64 is set. So the check is actually useless and potentially
+irritation.
+
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ arch/s390/kernel/vdso.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/arch/s390/kernel/vdso.c b/arch/s390/kernel/vdso.c
+index 6bc9c19..6b83870 100644
+--- a/arch/s390/kernel/vdso.c
++++ b/arch/s390/kernel/vdso.c
+@@ -102,11 +102,7 @@ static void vdso_init_per_cpu_data(int cpu, struct vdso_per_cpu_data *vpcd)
+ /*
+  * Allocate/free per cpu vdso data.
+  */
+-#ifdef CONFIG_64BIT
+ #define SEGMENT_ORDER	2
+-#else
+-#define SEGMENT_ORDER	1
+-#endif
+ 
+ int vdso_alloc_per_cpu(int cpu, struct _lowcore *lowcore)
+ {
+-- 
+1.6.3.3
+
+
+
+
+
+
+
+
+
