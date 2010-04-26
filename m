@@ -1,101 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab0DZPpG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 11:45:06 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:12626 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785Ab0DZPpD convert rfc822-to-8bit (ORCPT
+	id S1752818Ab0DZQGW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 12:06:22 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:52000 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751451Ab0DZQGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 11:45:03 -0400
-Date: Mon, 26 Apr 2010 17:45:17 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: USB gadget with drivers "on board"
-In-reply-to: <20100426145700.GP30801@buzzloop.caiaq.de>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-       linux-usb@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <op.vbr0prfb7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.10 (Linux)
-References: <op.vbrfqdznfxrvh1@pikus>
- <20100426141605.GO30801@buzzloop.caiaq.de> <op.vbrxsrw07p4s8u@pikus>
- <20100426145700.GP30801@buzzloop.caiaq.de>
+	Mon, 26 Apr 2010 12:06:20 -0400
+X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Apr 2010 12:06:20 EDT
+X-Sasl-enc: HiFDQIRm2hqBjGHPLGy7cawtu8Gf8E//Tq6gOAMAcOzA 1272297381
+Message-ID: <4BD5B7A4.1040209@ladisch.de>
+Date: Mon, 26 Apr 2010 17:56:20 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] firewire: ohci: add MSI support
+References: <4BD5667B.1030900@ladisch.de> <4BD5A6C0.3030704@s5r6.in-berlin.de>
+In-Reply-To: <4BD5A6C0.3030704@s5r6.in-berlin.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Apr 26, 2010 at 04:42:17PM +0200, Michał Nazarewicz wrote:
->> Ideally, I would like to use two configurations on its own just like
->> g_ether that is one configuration with RNDIS and some other functionality
->> and another with CDC ECM and some other functionality.
+Stefan Richter wrote:
+> Clemens Ladisch wrote:
+> > This patch adds support for message-signaled interrupts.
+> > 
+> > Any native PCI-Express OHCI controller should support MSI, but most are
+> > just PCI cores behind a PCI-E/PCI bridge.  The only chips that are known
+> > to claim to support MSI are the Lucent/Agere/LSI FW643 and the VIA
+> > VT6315, none of which I have been able to test.
+> 
+> I got a FW643 card a few days ago and can test that one.  Also, I have a
+> JMicron JMB381 native PCIe 1394a controller.  The latter is a less ideal
+> test specimen since it is buggy already without MSI (soon stops to
+> operate if one dares to mix isochronous and asynchronous I/O; sometimes
+> also if there is a bus reset at an inconvenient time).
 
-On Mon, 26 Apr 2010 16:16:05 +0200, Daniel Mack <daniel@caiaq.de> wrote:
-> If you do that, the configuration which is chosen eventually purely
-> relies on the driver stack and/or user setting.
+Problematic MSI implementations usually deliver no interrupt or forget
+to disable the INTx interrupt (so that the interrupt never gets
+deasserted); these bugs should be visible immediately.
 
-Granted, but since RDNIS needs an INF anyway there should be little or no
-problems in specifying which configuration we are interested in.  And Linux
-has a special case for RNDIS so there should be no problems here.
+> From lspci:
+> 
+> 04:00.0 FireWire (IEEE 1394): Agere Systems FW643 PCI Express1394b Controller (PHY/Link) (rev 07) (prog-if 10 [OHCI])
+>         Capabilities: [4c] MSI: Enable- Count=1/1 Maskable- 64bit+
+> 
+> 0a:00.0 FireWire (IEEE 1394): JMicron Technology Corp. IEEE 1394 Host Controller (prog-if 10 [OHCI])
+>         Capabilities: [94] MSI: Enable- Count=1/1 Maskable- 64bit-
+> 
+> Does "MSI 00", "MSI: Enable-" mean they do or don't support MSI?  Asks a
+> PCIe newbie.
 
->> It seems however that such gadgets are not properly detected by Windows
->> as composite devices and thus require a driver (I imagined a single INF
->> should be enough but now I'm not even sure of that) and so I tried adding
->> another configuration with just the mass storage function and this seems
->> to be handled correctly.
+The "MSI: Enable-" means that it's supported but not enabled at the
+moment.
 
-> Maybe Windows just selects the interface it has a driver for already?
+> OK, an online encyclopedia informs me that MSI or MSI-X is required by PCIe.
 
-No.  Windows has a driver for composite gadget which acts as a bus for
-other USB drivers connected to interfaces.  However, in order for Windows
-to treat a gadget as composite several rules need to be adhered to.  Those
-include specific class, subclass and protocol as well as requirement that
-the gadget can have only one configuration.  The rules are described at
-<URL:http://msdn.microsoft.com/en-us/library/ff537109.aspx>.
+That requirement doesn't help us if there is an old PCI chip behind a
+PCIe/PCI bridge (even if only virtually inside one chip, such as the TI
+XIO2xxx).
 
-> On the other hand, that would be giving a hint of some sort of
-> intelligence, which I can't believe either as their USB stack is totally
-> screwed. Not a single detail in its implementation seems to make any
-> sense.
+> The FW643 (actually two of them) sits behind a PCIe switch:
+> 
+> 03:04.0 PCI bridge: PLX Technology, Inc. PEX 8505 5-lane, 5-port PCI Express Switch (rev aa) (prog-if 00 [Normal decode])
+>         Capabilities: [48] MSI: Enable+ Count=1/2 Maskable+ 64bit+
+> 
+> I hope this switch does not make things any more interesting.
 
-Yes, I think we all agree on that. ;)
+Interrupt messages should be passed through like just any other messages
+(such as memory or I/O reads or writes), so it shouldn't be able to
+introduce MSI-related problems.
 
->> Now, even if I were to ignore the other RNDIS/ECM multiple personality
->> disorder and sticking to a single configuration with RNDIS there's still
->> an issue (or challenge if you will) of a "Found new driver" dialog
->> popping up like crazy when the device is inserted but the drivers from
->> mass storage didn't have time to install.
+(The PEX8505's MSI registers are for interrupts that come from the
+switch itself, probably for power management or error reporting; have
+a look into /proc/interrupts.)
 
-> Yeah, great technology. Even if you install the driver (which you have
-> to do even for USB sticks), you'll be prompted for the same action again
-> once you dare to plug in the device in some other port.
 
-Hopefully, then the drivers are installed Windows will be able to find them
-on its own, but this goes even beyond that.  When the device is connected
-for the first time there will be no drivers and the full blown "Found
-New Hardware" dialog will be shown.
-
-On the other hand, if I ware able to make Windows treat me as a mass
-storage gadget when drivers are not installed, this will solve (some of)
-my problems.
-
->> So in the end, I'm looking for a method to get a device that can be
->> plugged in and report as mass storage with drivers but when drivers
->> are installed report as something else.  I know it is possible since
->> I encountered several devices that do exactly that.
-
-> Are you sure they don't do exactly that by running two interfaces in
-> the same configuration?
-
-Yes, I'm sure.  I've investigated an USB GSM modem which, when plugged
-for the first time reports as mass storage (single configuration, single
-interface) and when drivers are installed as a full blown composite
-gadget.  I still haven't figured out how it does that.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Regards,
+Clemens
