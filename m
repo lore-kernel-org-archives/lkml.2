@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab0DZMvq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 08:51:46 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39134 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab0DZMvp convert rfc822-to-8bit (ORCPT
+	id S1753555Ab0DZNAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 09:00:05 -0400
+Received: from prod-mail-xrelay01.akamai.com ([72.246.2.12]:35067 "EHLO
+	prod-mail-xrelay01.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750991Ab0DZNAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 08:51:45 -0400
+	Mon, 26 Apr 2010 09:00:03 -0400
+X-Greylist: delayed 563 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Apr 2010 09:00:03 EDT
+Date: Mon, 26 Apr 2010 08:50:32 -0400
+From: "R. Andrew Bailey" <bailey@akamai.com>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Andy Isaacson <adi@hexapodia.org>, Yinghai <yinghai.lu@oracle.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
+Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below BIOS_END
+Message-ID: <20100426125032.GA1623@akamai.com>
+References: <4BC4E55B.7000103@oracle.com>
+ <4BCE8E3E.4030809@oracle.com>
+ <20100421193120.GD11130@hexapodia.org>
+ <201004231705.25659.bjorn.helgaas@hp.com>
 MIME-Version: 1.0
-Message-ID: <2634f2cb-3e7e-4c86-b7ef-cf4a3f1e0d8a@default>
-Date: Mon, 26 Apr 2010 05:50:26 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Avi Kivity <avi@redhat.com>, ngupta@vflare.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <20100422134249.GA2963@ca-server1.us.oracle.com>
- <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default>
- <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default>
- <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>
- <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
- <4BD1B427.9010905@redhat.com> <4BD24E37.30204@vflare.org>
- <4BD33822.2000604@redhat.com> <4BD3B2D1.8080203@vflare.org>
- <4BD4329A.9010509@redhat.com> <4BD4684E.9040802@vflare.org
- 4BD52D55.3070803@redhat.com>
-In-Reply-To: <4BD52D55.3070803@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090209.4BD58C44.00EC:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <201004231705.25659.bjorn.helgaas@hp.com>
+User-Agent: Mutt/1.5.21 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Maybe incremental development is better? Stabilize and refine
-> existing
-> > code and gradually move to async API, if required in future?
-> 
-> Incremental development is fine, especially for ramzswap where the APIs
-> are all internal.  I'm more worried about external interfaces, these
-> stick around a lot longer and if not done right they're a pain forever.
+On 23/04/10 17:05 -0600, Bjorn Helgaas wrote:
+>On Wednesday 21 April 2010 01:31:20 pm Andy Isaacson wrote:
+>> On Tue, Apr 20, 2010 at 10:33:50PM -0700, Yinghai wrote:
+>> > Update e820 at first, and later put them resource tree.
+>> > Reserved that early, will not be allocated to unassigned PCI BAR
+>> >
+>> > v3: remove probe_roms() that is not needed, because whole range is reserved
+>> > 	 already
+>>
+>> Test booted this patch series on the problematic t3400, seems to work
+>> fine.  dmesg attached to bug 15744.
+>
+>Thanks for testing (again).  I'm not confident that this series is
+>going to be successful, so I started looking for other approaches.
+>
+>I can't reproduce the exact problem you're seeing, but in my
+>kludged-up attempt, the patch below is enough to keep us from
+>assigning the space below 1MB to a device.
+>
+>Would you guys (Andy & Andy, what a coincidence :-)) mind giving
+>it a try?  This is intended to work on top of current upstream,
+>with no other patches required.
+>
+>Bjorn
+>
 
-Well if you are saying that your primary objection to the
-frontswap synchronous API is that it is exposed to modules via
-some EXPORT_SYMBOLs, we can certainly fix that, at least
-unless/until there are other pseudo-RAM devices that can use it.
+Good news- that solved it. I tried Yinghai's patches saturday to no
+avail (sorry it took me so long to get back to you, I was about 5 bios
+revisions behind on this machine and wanted to update it before I
+tried any more tests).
 
-Would that resolve your concerns?
+  .andy
