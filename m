@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417Ab0DZNuJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 09:50:09 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:59630 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab0DZNuH (ORCPT
+	id S1752661Ab0DZNvF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 09:51:05 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58183 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751789Ab0DZNvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 09:50:07 -0400
-Message-ID: <4BD59956.7050508@vflare.org>
-Date: Mon, 26 Apr 2010 19:17:02 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+	Mon, 26 Apr 2010 09:51:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alessio Igor Bogani <abogani@texware.it>
+Subject: Re: [PATCH] USB: sisusbvga: Remove the BKL from open
+Date: Mon, 26 Apr 2010 15:50:49 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Oliver Neukum <oneukum@suse.de>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+       Thomas Winischhofer <thomas@winischhofer.net>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Pete Zaitcev <zaitcev@redhat.com>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Fr??d??ric Weisbecker" <fweisbec@gmail.com>
+References: <1272191830-23675-1-git-send-email-abogani@texware.it> <201004261515.56750.arnd@arndb.de> <w2t63a49ef41004260630o31d81ff0qd98cfdace7e73ce0@mail.gmail.com>
+In-Reply-To: <w2t63a49ef41004260630o31d81ff0qd98cfdace7e73ce0@mail.gmail.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
-       JBeulich@novell.com, chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <20100422134249.GA2963@ca-server1.us.oracle.com> <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default> <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default> <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default 4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <4BD24E37.30204@vflare.org> <4BD33822.2000604@redhat.com> <4BD3B2D1.8080203@vflare.org> <4BD4329A.9010509@redhat.com> <4BD4684E.9040802@vflare.org> <4BD52D55.3070803@redhat.com>
-In-Reply-To: <4BD52D55.3070803@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004261550.49512.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19WlzcTG+IP7IGJhBQy4VS4IPQ5QARCuEEOMOq
+ 8dRGCSJTrbUrdhiqXbrQOVNmj7ibcjTxvSm9MQZHZxTwyzZ4TD
+ UyLUVceK7lt2sk0KO9U7A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2010 11:36 AM, Avi Kivity wrote:
-> On 04/25/2010 07:05 PM, Nitin Gupta wrote:
->>
->>>> Increasing the frequency of discards is also not an option:
->>>>    - Creating discard bio requests themselves need memory and these
->>>> swap devices
->>>> come into picture only under low memory conditions.
->>>>
->>>>        
->>> That's fine, swap works under low memory conditions by using reserves.
->>>
->>>      
->> Ok, but still all this bio allocation and block layer overhead seems
->> unnecessary and is easily avoidable. I think frontswap code needs
->> clean up but at least it avoids all this bio overhead.
->>    
+On Monday 26 April 2010, Alessio Igor Bogani wrote:
+> It is what effectively I'm trying to do!
 > 
-> Ok.  I agree it is silly to go through the block layer and end up
-> servicing it within the kernel.
-> 
->>>>    - We need to regularly scan swap_map to issue these discards.
->>>> Increasing discard
->>>> frequency also means more frequent scanning (which will still not be
->>>> fast enough
->>>> for ramzswap needs).
->>>>
->>>>        
->>> How does frontswap do this?  Does it maintain its own data structures?
->>>
->>>      
->> frontswap simply calls frontswap_flush_page() in swap_entry_free()
->> i.e. as
->> soon as a swap slot is freed. No bio allocation etc.
->>    
-> 
-> The same code could also issue the discard?
+> The first part of this work is already present in USB subsystem
+> maintainer tree (aka greg) at:
+> http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/usb/usb-sisusbvga-remove-the-bkl-from-ioctl.patch
 > 
 
+Ok, looks good then. I just wouldn't bother splitting the work into two patches if you
+want to do this for more drivers.
 
-No, we cannot issue discard bio at this place since swap_lock
-spinlock is held.
-
-
-Thanks,
-Nitin
+	Arnd
