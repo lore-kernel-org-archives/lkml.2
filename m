@@ -1,53 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629Ab0DZO0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 10:26:47 -0400
-Received: from mtagate6.uk.ibm.com ([194.196.100.166]:50695 "EHLO
-	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab0DZO0q (ORCPT
+	id S1751471Ab0DZOdS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 10:33:18 -0400
+Received: from lazybastard.de ([212.112.238.170]:47706 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981Ab0DZOdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 10:26:46 -0400
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tom Zanussi <tzanussi@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Subject: [PATCH] perf: Fix libdw-dev package name in error message
-Date: Mon, 26 Apr 2010 15:27:03 +0100
-Message-Id: <1272292023-9869-1-git-send-email-stefanha@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0
+	Mon, 26 Apr 2010 10:33:17 -0400
+Date: Mon, 26 Apr 2010 16:32:53 +0200
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+       Paolo Minazzi <paolo.minazzi@gmail.com>
+Subject: Re: [Patch] Catch filesystems lacking s_bdi
+Message-ID: <20100426143253.GB4364@logfs.org>
+References: <20100419102056.GS27497@kernel.dk> <20100422055448.GA27309@logfs.org> <20100422062631.GC27309@logfs.org> <alpine.LFD.2.00.1004220724170.9086@i5.linux-foundation.org> <alpine.LFD.2.00.1004220730280.9086@i5.linux-foundation.org> <20100422162709.GJ27497@kernel.dk> <20100422203358.GB30749@logfs.org> <20100423100532.GN27497@kernel.dk> <20100423205518.GB7008@logfs.org> <20100426094810.GE27497@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100426094810.GE27497@kernel.dk>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The headers required for DWARF support are provided by the libdw-dev
-package in Debian-based distros.  This patch corrects the elfutils-dev
-package name to libdw-dev in the Makefile error message when libdw.h is
-not found.
+On Mon, 26 April 2010 11:48:11 +0200, Jens Axboe wrote:
+> On Fri, Apr 23 2010, Jörn Engel wrote:
+> > On Fri, 23 April 2010 12:05:32 +0200, Jens Axboe wrote:
+> > > 
+> > > So it's probably safe and good enough as-is, I'll add it. Thanks!
+> > 
+> > I cannot see this patch in your tree yet.  Could be the weekend or a
+> > deliberate decision not to send this for 2.6.34-rc anymore.
+> 
+> It's there, I put it in yesterday. It's definitely 2.6.34-rc material, I
+> hope to submit it tonight.
 
-Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
----
-I don't think any distro has an elfutils-dev package but the name was chosen because of the usual RedHat/Debian -devel/-dev convention.
+Ok, thanks.
 
- tools/perf/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> > In case it was a deliberate decision, can we please make it explicit?  I
+> > don't like the idea of adding a BUG_ON() that potentially triggers for
+> > thousands of people this late in the stabilization process - but it is
+> > better than having people lose data.  Even if we already ran two stable
+> > kernels that way.
+> > 
+> > Damned if you do, damned if you don't. :(
+> 
+> Yeah, it's a bad situation to be in. I changed that BUG_ON() to a
+> WARN_ON(). I'm not too worried about that part, I'm more worried about
+> the file system changed. OTOH, they do lack proper flushing now, so it's
+> likely not a huge risk from that perspective.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index bc0f670..66c525b 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -505,7 +505,7 @@ else
- endif
- 
- ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
--	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/elfutils-dev);
-+	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/libdw-dev);
- 	BASIC_CFLAGS += -DNO_DWARF_SUPPORT
- else
- 	BASIC_CFLAGS += -I/usr/include/elfutils
+It is worse still.  Using mtd->backing_dev_info results in 
+kernel BUG at fs/fs-writeback.c:157
+
+which is BUG_ON(!work->seen); in bdi_queue_work().  Logfs is affected
+and I bet jffs2 is as well.  So much for dwmw2 or me actually testing
+the fix. :(
+
+I did a hexdump to see what sb->s_bdi actually contained and the result
+was this:
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+00 00 00 00 00 00 00 00                          ........
+
+Which should be mtd_bdi_unmappable.  And at this point I have to admit
+being clueless.  What exactly should a struct backing_dev_info contain
+and for what purposes?  And where is this documented?
+
+Jörn
+
 -- 
-1.7.0
-
+He who knows others is wise.
+He who knows himself is enlightened.
+-- Lao Tsu
