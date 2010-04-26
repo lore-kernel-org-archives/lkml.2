@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab0DZU4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 16:56:55 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34169 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab0DZU4x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 16:56:53 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Jason Wessel <jason.wessel@windriver.com>,
-       Michal Marek <mmarek@suse.cz>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kbuild@vger.kernel.org
-Subject: [PATCH] Correctly deal with make that has an argument which contains an "s"
-Date: Mon, 26 Apr 2010 15:56:14 -0500
-Message-Id: <1272315374-11951-1-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.6.4.rc1
-X-OriginalArrivalTime: 26 Apr 2010 20:56:38.0386 (UTC) FILETIME=[F6DFED20:01CAE582]
+	id S1752333Ab0DZU7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 16:59:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128Ab0DZU66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 16:58:58 -0400
+Message-ID: <4BD5FE5B.6030708@redhat.com>
+Date: Mon, 26 Apr 2010 16:58:03 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+MIME-Version: 1.0
+To: Arjan van de Ven <arjan@infradead.org>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
+       cpufreq@vger.kernel.org
+Subject: Re: [PATCH 4/7] sched: fold updating of the last update time into
+ update_ts_time_stats()
+References: <20100418115949.7b743898@infradead.org> <20100418120224.5447dec3@infradead.org>
+In-Reply-To: <20100418120224.5447dec3@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using remake, which is based on gnumake, if you invoke
-an example build as shown below, the build will become silent
-due to the top level make file incorrectly guessing that
-the end user wants a silent build because an argument that
-contained an "s" was used.
+On 04/18/2010 03:02 PM, Arjan van de Ven wrote:
+>  From e75d6cd203e43ea4c5e9919f19e2882c066491b8 Mon Sep 17 00:00:00 2001
+> From: Arjan van de Ven<arjan@linux.intel.com>
+> Date: Sun, 18 Apr 2010 10:47:02 -0700
+> Subject: [PATCH 4/7] sched: fold updating of the last update time into update_ts_time_stats()
+>
+> This patch folds the updating of the last_update_time into the
+> update_ts_time_stats() function, and updates the callers.
+>
+> This allows for further cleanups that are done in the next patch.
+>
+> Signed-off-by: Arjan van de Ven<arjan@linux.intel.com>
 
-remake --no-extended-errors
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Fix up the top level Makefile to use filter with a list of
-options that mean silent with the various revisions of gnumake,
-instead of findstring.
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-CC: Michal Marek <mmarek@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kbuild@vger.kernel.org
----
- Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index fa1db90..91ae299 100644
---- a/Makefile
-+++ b/Makefile
-@@ -294,7 +294,7 @@ endif
- # If the user is running make -s (silent mode), suppress echoing of
- # commands
- 
--ifneq ($(findstring s,$(MAKEFLAGS)),)
-+ifneq ($(filter s% -s% --silent --quiet,$(MAKEFLAGS)),)
-   quiet=silent_
- endif
- 
 -- 
-1.6.3.3
-
+All rights reversed
