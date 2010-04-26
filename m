@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab0DZVNz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 17:13:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58921 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302Ab0DZVNy (ORCPT
+	id S1754962Ab0DZVRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 17:17:13 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:49179 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753816Ab0DZVRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 17:13:54 -0400
-Message-ID: <a65d005c2c7607d4d6dd6e280fdc6d66.squirrel@www.zytor.com>
-In-Reply-To: <20100426133757.3e1d0a75@virtuousgeek.org>
-References: <4BC4E55B.7000103@oracle.com>
-    <20100426183436.GV11130@hexapodia.org>
-    <20100426123135.5d095d2f@virtuousgeek.org>
-    <201004261427.57229.bjorn.helgaas@hp.com>
-    <20100426133757.3e1d0a75@virtuousgeek.org>
-Date: Mon, 26 Apr 2010 14:12:35 -0700
-Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below 
- BIOS_END
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: "Jesse Barnes" <jbarnes@virtuousgeek.org>
-Cc: "Bjorn Helgaas" <bjorn.helgaas@hp.com>,
-       "Andy Isaacson" <adi@hexapodia.org>,
-       "R. Andrew Bailey" <bailey@akamai.com>,
-       "Yinghai" <yinghai.lu@oracle.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       "Thomas Gleixner" <tglx@linutronix.de>,
-       "Ingo Molnar" <mingo@redhat.com>, guenter.roeck@ericsson.com,
-       "Linus Torvalds" <torvalds@linux-foundation.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Thomas Renninger" <trenn@suse.de>, yaneti@declera.com
-User-Agent: SquirrelMail/1.4.20-1.fc11
+	Mon, 26 Apr 2010 17:17:12 -0400
+Content-Type: multipart/mixed;
+	boundary="_000_39702BAC9CF93E46BAAEC8A0F612973F01BB272F81EXCHMBX3vmwar_"
+From: Philip Langdale <plangdale@vmware.com>
+To: "aarcange@redhat.com" <aarcange@redhat.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 26 Apr 2010 14:17:10 -0700
+Subject: Positive results with Transparent Hugepages at VMware
+Thread-Topic: Positive results with Transparent Hugepages at VMware
+Thread-Index: AcrlhdUr7mr/b9mbRpSDKeriKacmQQ==
+Message-ID: <39702BAC9CF93E46BAAEC8A0F612973F01BB272F81@EXCH-MBX-3.vmware.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: <39702BAC9CF93E46BAAEC8A0F612973F01BB272F81@EXCH-MBX-3.vmware.com>
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.2 (terminus.zytor.com [127.0.0.1]); Mon, 26 Apr 2010 14:12:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 26 Apr 2010 14:27:56 -0600
-> Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
->> I'm a little concerned that those patches are a sledgehammer approach.
->> Previously, IORESOURCE_BUSY has basically been used for mutual exclusion
->> between drivers that would otherwise claim the same resource.  It hasn't
->> been used to guide resource assignment in the PCI/PNP/etc core.  Maybe
->> it's a good idea to also use IORESOURCE_BUSY there, but I'm not sure.
->> Right now it feels like undesirable overloading to me.
->
-> I guess that's true, removing those regions from the pool entirely
-> might be better?  Or some other, clear way of expressing that the
-> regions aren't available to drivers.  Maybe we need a new IO resource
-> type for platform ranges.
->
->> I think it also leads to at least one problem: Guenter's machine has no
->> VGA but has a PCI device that lives at 0xa0000.  The driver for that
->> device won't be able to request that region if the arch code has marked
->> it busy.
->
-> Ah good point, so we'll want another approach at any rate.  Yinghai?
+--_000_39702BAC9CF93E46BAAEC8A0F612973F01BB272F81EXCHMBX3vmwar_
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 
-What we need is to keep track of the areas available for address space
-allocation by dynamically addressed devices, as distinct from address
-space that is in use by a kernel-known device.  There is an in-between,
-which one can call "here there be dragons" space, which should never be
-used for dynamic device allocation, but if a platform device or
-pre-assigned device uses that space then it should be allowed to be
-allocated.
+SGksCgpJJ3ZlIGJlZW4gZm9sbG93aW5nIHRoZSBUcmFuc3BhcmVudCBIdWdlcGFnZSBwYXRjaCBz
+ZXQgb3ZlciB0aGUgbGFzdCBmZXcKd2Vla3MgYW5kIGhhdmUgYmVlbiBleHBlcmltZW50aW5nIHdp
+dGggbGV2ZXJhZ2luZyB0aGUgZnVuY3Rpb25hbGl0eSBpbgpWTXdhcmUncyBMaW51eCB2aXJ0dWFs
+aXphdGlvbiBzb2Z0d2FyZSAoZWc6IFdvcmtzdGF0aW9uLCBQbGF5ZXIpLiBUaGUgCmluaXRpYWwg
+cmVzdWx0cyBoYXZlIGJlZW4gZXh0cmVtZWx5IHBvc2l0aXZlLgoKV2UgaGF2ZSBhIHN0YW5kYXJk
+aXplZCBWTSB3b3JrbG9hZCB0aGF0IHdlIHVzZSB0byBkZW1vbnN0cmF0ZSB0aGUKZGlmZmVyZW5j
+ZSB0aGF0IGxhcmdlIHBhZ2Ugc3VwcG9ydCBtYWtlcyAtIGl0J3MgYSBMaW51eCBWTSBydW5uaW5n
+CnRoZSBTUEVDamJiIGJlbmNobWFyayBpbiBhIEpWTSB0aGF0IGhhcyBpdHNlbGYgYmVlbiBjb25m
+aWd1cmVkIHRvCnVzZSBsYXJnZSBwYWdlcyB0aHJvdWdoIGh1Z2V0bGJmcyAtIGFzIHN1Y2ggaXQn
+cyBkZXNpZ25lZCB0byBnaXZlCnByZXR0eSBtdWNoIGJlc3QgY2FzZXMgcGVyZm9ybWFuY2UgaW1w
+cm92ZW1lbnRzLgoKSW4gdGhpcyBiZW5jaG1hcmssIEkndmUgYmVlbiBzZWVpbmcgYSAyMiUgaW1w
+cm92ZW1lbnQgaW4gdGhlIG9wZXJhdGlvbnMKcGVyIHNlY29uZCByZXBvcnRlZCBieSBTUEVDamJi
+LgoKV2UndmUgZG9uZSBwcmV2aW91cyBleHBlcmltZW50cyB3aXRoIGh1Z2V0bGJmcyBidXQgaXQg
+cmVhbGx5IGlzbid0CnVzYWJsZSBmb3IgYmFja2luZyBWTXMsIHNvIGlmIHdlJ3JlIGV2ZXIgZ29p
+bmcgdG8gYmUgYWJsZSB0byBvZmZlciBsYXJnZQpwYWdlIHN1cHBvcnQgb24gTGludXgsIGl0IHdp
+bGwgcmVxdWlyZSBUSFAgb3Igc29tZXRoaW5nIHdpdGggY29tcGFyYWJsZQpmdW5jdGlvbmFsaXR5
+LgoKUGFydGljdWxhcmx5IHdlIGFwcHJlY2lhdGU6CiogTm90IGhhdmluZyB0byBhbGxvY2F0ZSBs
+YXJnZSBwYWdlcyB1cCBmcm9udAoqIEJlaW5nIGFibGUgdG8gYWxsb2NhdGUgc21hbGwgYW5kIGxh
+cmdlIHBhZ2VzIGZyb20gdGhlIHNhbWUgc291cmNlCiogQmVpbmcgYWJsZSB0byBwcm9tb3RlIGFu
+ZCBkZW1vdGUgcGFnZXMgYXMgbmVjZXNzYXJ5CgpTbywgRldJVywgVEhQIHJlYWxseSBkb2VzIGhl
+bHAgd2l0aCB2aXJ0dWFsaXphdGlvbiB3b3JrbG9hZHMhCgpUaGFua3MsCgotLXBoaWwK
 
-In the case of x86, anything that is E820_RESERVED, *or* in the legacy
-region (below 1 MB) and is not RAM, is "here there be dragons" space.
+--_000_39702BAC9CF93E46BAAEC8A0F612973F01BB272F81EXCHMBX3vmwar_
+Content-Disposition: attachment; filename="winmail.dat"
+Content-Transfer-Encoding: base64
+Content-Type: application/ms-tnef; name="winmail.dat"
 
-    -hpa
+eJ8+IloIAQaQCAAEAAAAAAABAAEAAQeQBgAIAAAA5AQAAAAAAADoAAEJgAEAIQAAADdDNTFFRDdG
+RUQwOUY3NEI5NkUzODJBRTJBOEI2RkNBAI8HAQ2ABAACAAAAAgACAAEFgAMADgAAANoHBAAaABUA
+EQAKAAEAMAEBIIADAA4AAADaBwQAGgAVABEACgABADABAQiABwAYAAAASVBNLk1pY3Jvc29mdCBN
+YWlsLk5vdGUAMQgBBIABADYAAABQb3NpdGl2ZSByZXN1bHRzIHdpdGggVHJhbnNwYXJlbnQgSHVn
+ZXBhZ2VzIGF0IFZNd2FyZQAzFAEDkAYAzAsAACsAAAACAX8AAQAAAEMAAAA8Mzk3MDJCQUM5Q0Y5
+M0U0NkJBQUVDOEEwRjYxMjk3M0YwMUJCMjcyRjgxQEVYQ0gtTUJYLTMudm13YXJlLmNvbT4AAAIB
+CRABAAAAdgQAAHIEAACvBgAATFpGdW3v0J5hAApmYmlkBAAAY2PAcGcxMjUyAP4DQ/B0ZXh0AfcC
+pAPjAgAEY2gKwHNldDAg7wdtAoMAUBFNMgqABrQCgJZ9CoAIyDsJYjE5DsC/CcMWcgoyFnECgBVi
+KgmwcwnwBJBhdAWyDlADYHOibwGAIEV4EcFuGDBdBlJ2BJAXtgIQcgDAdH0IUG4aMRAgBcAFoBtk
+ZJogA1IgECIXslx2CJDkd2sLgGQ1HVME8AdADRdwMApxF/Jia21rBnMBkAAgIEJNX0LgRUdJTn0K
++wvyATBAe0hpLFxsC4BlkwqBIdRJJxowIGIJ4b8ccAbwCQAD8BnAHMBoGeA+VBhwAIAKsQnwBUBI
+da8YMAqwGdEKsHQRwCASAfwgbxoxI9MLYB9gHHAH0O0hxXcJ4B9QIABwHGAR0PsixhAwcAZxB4AC
+MCOiA/A7I+AmkGUaMSUwI6ZmdTxuYylgAiAHQCnAeSCjC4Eh1FZNdySBJwQgYkwLgHV4IB1gACB1
+fStxehiAK0ElwBkxLIIgwChlZzogVwWwH1JRKzIsIFALYHkEkCl+LhJAI/EhxQuAKcAHMSBhCXBz
+dWx0BCAoOnTrCXAHgGwrsHAZEDFRGjDaLiHMVxngKDNhJcABkP8dwAsRLcAcUSxgKaAvMQkAvmEc
+YCPgGIApoBngdRIA+RzAbyABAARgAIAy8BiAfzexI/AhxQ3gASAEkAnwY3c4ojcxC2ByJUMZ0THQ
+cFczcB+RAMBrB5EtK8B07yzBNWAs9DZRcisAAwAZwAMhxSPiU1BFQ2pi9mIi4SsQaADAL0ArwTVR
+fko2UTcTEdAEICnAEgBsxmYi5BvhZmlnCHAcUf8YkCHFN5I6aAQgI+ADYCTwxSWwaCTxdGxiA9A7
+4b9AQTHQJaE8EwEAAJBnGFDdQcIgKmAaMCHFcAlwAkD9K7BtRPIi8CbBHlASAAQgfyjxGuM50gdw
+RvAmESkyc/0z/UkDoCPgBAA+qC/QIqiNEgBlI6I1YDIyJUka+z9CI+JvKPEt4w4ARpUbsb8SABvh
+HGAJcDtCHFFiK7D3PjUz/yKyZAIgJVEJcB1gPwhgBCAo2AQgKbND+GJ1P04RBUAJcAdAM0EEAG4n
+vnRCBwGgHnAjMQXAYgDQ9x2hI8AsYHMv0BkgK8BAwN0nkCcuoSoSRjBvI6M34P8i8CfgV0I30Rkw
+OZE6VEaG/zraLhEs8y/QVbED8CNgMaHMcXUtYCQBSFAmAE/R/wNwEhBLECmGBaBJMArAVzL3IcUq
++1GdUB+BDlAx4ArA2zNBN2FhOzAJcGMHMBAg6johxSoHsG9AEh1gWdT9VgFvHlA4kUK6OyAccgIw
+3WRXQkzEWnVlx3MAwF3B/yfyQrochCPxVyAHgC4xCHD/OeBnn1qESUEEYDiRJ/I4An84kUMUQEEY
+UDngBBAKwHkJIcxTby/QRldJV78v0F5yVeVS4AeRI/BsZyDnKbMtXTaGcyEhzDCAAHDjH1AhvS0t
+cEsQCVAh1AMVQnfgAAAfAEIAAQAAACAAAABQAGgAaQBsAGkAcAAgAEwAYQBuAGcAZABhAGwAZQAA
+AB8AZQABAAAAKgAAAHAAbABhAG4AZwBkAGEAbABlAEAAdgBtAHcAYQByAGUALgBjAG8AbQAAAAAA
+HwBkAAEAAAAKAAAAUwBNAFQAUAAAAAAAAgFBAAEAAABsAAAAAAAAAIErH6S+oxAZnW4A3QEPVAIA
+AACAUABoAGkAbABpAHAAIABMAGEAbgBnAGQAYQBsAGUAAABTAE0AVABQAAAAcABsAGEAbgBnAGQA
+YQBsAGUAQAB2AG0AdwBhAHIAZQAuAGMAbwBtAAAAHwAaDAEAAAAgAAAAUABoAGkAbABpAHAAIABM
+AGEAbgBnAGQAYQBsAGUAAAAfAB8MAQAAACoAAABwAGwAYQBuAGcAZABhAGwAZQBAAHYAbQB3AGEA
+cgBlAC4AYwBvAG0AAAAAAB8AHgwBAAAACgAAAFMATQBUAFAAAAAAAAIBGQwBAAAAbAAAAAAAAACB
+Kx+kvqMQGZ1uAN0BD1QCAAAAgFAAaABpAGwAaQBwACAATABhAG4AZwBkAGEAbABlAAAAUwBNAFQA
+UAAAAHAAbABhAG4AZwBkAGEAbABlAEAAdgBtAHcAYQByAGUALgBjAG8AbQAAAAsAQDoBAAAAHwAa
+AAEAAAASAAAASQBQAE0ALgBOAG8AdABlAAAAAAADAPE/CQQAAAsAQDoBAAAAAwD9P+QEAAACAQsw
+AQAAABAAAAB8Ue1/7Qn3S5bjgq4qi2/KAwAXAAEAAABAADkAAE/51IXlygFAAAgwmNQr1YXlygED
+ADYAAAAAAAIBRwABAAAAMwAAAGM9VVM7YT0gO3A9Vk13YXJlO2w9RVhDSC1NQlgtMy0xMDA0MjYy
+MTE3MTBaLTM2MjU4AAAfAHAAAQAAAGwAAABQAG8AcwBpAHQAaQB2AGUAIAByAGUAcwB1AGwAdABz
+ACAAdwBpAHQAaAAgAFQAcgBhAG4AcwBwAGEAcgBlAG4AdAAgAEgAdQBnAGUAcABhAGcAZQBzACAA
+YQB0ACAAVgBNAHcAYQByAGUAAAACAXEAAQAAABYAAAAByuWF1Svuav9v2ZtGlIMp6uIppyZBAAAf
+ADUQAQAAAIYAAAA8ADMAOQA3ADAAMgBCAEEAQwA5AEMARgA5ADMARQA0ADYAQgBBAEEARQBDADgA
+QQAwAEYANgAxADIAOQA3ADMARgAwADEAQgBCADIANwAyAEYAOAAxAEAARQBYAEMASAAtAE0AQgBY
+AC0AMwAuAHYAbQB3AGEAcgBlAC4AYwBvAG0APgAAAAAACwDyEAEAAAAfAPMQAQAAAHQAAABQAG8A
+cwBpAHQAaQB2AGUAIAByAGUAcwB1AGwAdABzACAAdwBpAHQAaAAgAFQAcgBhAG4AcwBwAGEAcgBl
+AG4AdAAgAEgAdQBnAGUAcABhAGcAZQBzACAAYQB0ACAAVgBNAHcAYQByAGUALgBFAE0ATAAAAAsA
+9BAAAAAACwD1EAAAAAALAPYQAAAAAEAABzD/IxvVheXKAQMA3j/p/QAAHwD4PwEAAAAgAAAAUABo
+AGkAbABpAHAAIABMAGEAbgBnAGQAYQBsAGUAAAACAfk/AQAAAE4AAAAAAAAA3KdAyMBCEBq0uQgA
+Ky/hggEAAAAAAAAAL089Vk1XQVJFL09VPVBBTE8gQUxUTy9DTj1SRUNJUElFTlRTL0NOPVBMQU5H
+REFMRQAAAB8A+j8BAAAAIAAAAFAAaABpAGwAaQBwACAATABhAG4AZwBkAGEAbABlAAAAAgH7PwEA
+AABOAAAAAAAAANynQMjAQhAatLkIACsv4YIBAAAAAAAAAC9PPVZNV0FSRS9PVT1QQUxPIEFMVE8v
+Q049UkVDSVBJRU5UUy9DTj1QTEFOR0RBTEUAAAADABlAAAAAAAMAGkAAAAAAAwANNPk/AAACARQ0
+AQAAABAAAABUlKHAKX8QG6WHCAArKiUXHwA9AAEAAAACAAAAAAAAAB8ANwABAAAAbAAAAFAAbwBz
+AGkAdABpAHYAZQAgAHIAZQBzAHUAbAB0AHMAIAB3AGkAdABoACAAVAByAGEAbgBzAHAAYQByAGUA
+bgB0ACAASAB1AGcAZQBwAGEAZwBlAHMAIABhAHQAIABWAE0AdwBhAHIAZQAAAB8AAICGAwIAAAAA
+AMAAAAAAAABGAQAAAB4AAABhAGMAYwBlAHAAdABsAGEAbgBnAHUAYQBnAGUAAAAAAAEAAAAMAAAA
+ZQBuAC0AVQBTAAAAHwAAgIYDAgAAAAAAwAAAAAAAAEYBAAAAIAAAAHgALQBtAHMALQBoAGEAcwAt
+AGEAdAB0AGEAYwBoAAAAAQAAAAIAAAAAAAAA9s0=
 
+--_000_39702BAC9CF93E46BAAEC8A0F612973F01BB272F81EXCHMBX3vmwar_--
