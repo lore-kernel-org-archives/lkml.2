@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab0DZVHO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 17:07:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45464 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752516Ab0DZVHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 17:07:12 -0400
-Message-ID: <4BD6001D.5090403@redhat.com>
-Date: Mon, 26 Apr 2010 17:05:33 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S1754188Ab0DZVLI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 17:11:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43132 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab0DZVLG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 17:11:06 -0400
+Message-ID: <4BD600A7.609@oracle.com>
+Date: Mon, 26 Apr 2010 14:07:51 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@infradead.org>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
-       cpufreq@vger.kernel.org
-Subject: Re: [PATCH 6/7] sched: introduce get_cpu_iowait_time_us()
-References: <20100418115949.7b743898@infradead.org> <20100418120321.11ad89a2@infradead.org>
-In-Reply-To: <20100418120321.11ad89a2@infradead.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Andy Isaacson <adi@hexapodia.org>,
+       "R. Andrew Bailey" <bailey@akamai.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, guenter.roeck@ericsson.com,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
+Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below BIOS_END
+References: <4BC4E55B.7000103@oracle.com>	<20100426183436.GV11130@hexapodia.org>	<20100426123135.5d095d2f@virtuousgeek.org>	<201004261427.57229.bjorn.helgaas@hp.com> <20100426133757.3e1d0a75@virtuousgeek.org>
+In-Reply-To: <20100426133757.3e1d0a75@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4BD60108.018B:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2010 03:03 PM, Arjan van de Ven wrote:
->  From c4dd11703034f2ecbc3180603663fab14c292d7c Mon Sep 17 00:00:00 2001
-> From: Arjan van de Ven<arjan@linux.intel.com>
-> Date: Sun, 18 Apr 2010 10:57:43 -0700
-> Subject: [PATCH 6/7] sched: introduce get_cpu_iowait_time_us()
->
-> For the ondemand cpufreq governor, it is desired that the iowait
-> time is microaccounted in a similar way as idle time is.
->
-> This patch introduces the infrastructure to account and expose
-> this information via the get_cpu_iowait_time_us() function.
->
-> Signed-off-by: Arjan van de Ven<arjan@linux.intel.com>
+On 04/26/2010 01:37 PM, Jesse Barnes wrote:
+> On Mon, 26 Apr 2010 14:27:56 -0600
+>> I think it also leads to at least one problem: Guenter's machine has no
+>> VGA but has a PCI device that lives at 0xa0000.  The driver for that
+>> device won't be able to request that region if the arch code has marked
+>> it busy.
+> 
+> Ah good point, so we'll want another approach at any rate.  Yinghai?
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+With current linus's tree, there is some difference between mmio > 1M and MMIO < 1M.
 
--- 
-All rights reversed
+Actually it does not care about E820_RESERVED for > 1M range, because it doesn't have _BUSY.
+
+For < 1M range, 
+a. MMIO is not with E820_RESERVED, the device driver will work.
+b. MMIO is with E820_RESERVED, the device driver can not reserve it's mmio later. because that MMIO could have parent resource with "reserved" name and _BUSY flag
+
+My patch -v3 will break a.
+but my patch -v4 patch will make it work.
+
+but looks -v4 is too tricky.
+
+maybe we just need remove change like following.
+
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 7bca3c6..9849824 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1094,7 +1094,7 @@ void __init e820_reserve_resources(void)
+ 		 * pci device BAR resource and insert them later in
+ 		 * pcibios_resource_survey()
+ 		 */
+-		if (e820.map[i].type != E820_RESERVED || res->start < (1ULL<<20)) {
++		if (e820.map[i].type != E820_RESERVED) {
+ 			res->flags |= IORESOURCE_BUSY;
+ 			insert_resource(&iomem_resource, res);
+ 		}
+
+May need Linus to ack it.
+
+Those strange devices could be some kind of virtual debug devices. and they like to use those low mmio range.
+
+YH
