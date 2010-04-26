@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab0DZXsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 19:48:20 -0400
-Received: from fifo99.com ([67.223.236.141]:56550 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab0DZXsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 19:48:19 -0400
-Subject: Re: Q: sched_clock() vs. clocksource, how to implement correctly
-From: Daniel Walker <dwalker@fifo99.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Johannes Stezenbach <js@sig21.net>, John Stultz <johnstul@us.ibm.com>,
-       linux-kernel@vger.kernel.org, Magnus Damm <damm@opensource.se>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20100423182933.0df45b53@mschwide.boeblingen.de.ibm.com>
-References: <20100423150917.GA25714@sig21.net>
-	 <20100423182933.0df45b53@mschwide.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Apr 2010 16:48:14 -0700
-Message-ID: <1272325694.32741.16.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1754658Ab0DZXts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 19:49:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58467 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391Ab0DZXtr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 19:49:47 -0400
+Message-ID: <84a3333c22124f0bb0dcd7c97cd3eed5.squirrel@www.zytor.com>
+In-Reply-To: <20100426162517.4ad308ff@virtuousgeek.org>
+References: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com>
+    <20100426162517.4ad308ff@virtuousgeek.org>
+Date: Mon, 26 Apr 2010 16:49:05 -0700
+Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below   
+ BIOS_END
+From: "H. Peter Anvin" <hpa@zytor.com>
+To: "Jesse Barnes" <jbarnes@virtuousgeek.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Bjorn Helgaas" <bjorn.helgaas@hp.com>,
+       "Andy Isaacson" <adi@hexapodia.org>,
+       "R. Andrew Bailey" <bailey@akamai.com>,
+       "Yinghai" <yinghai.lu@oracle.com>,
+       "Thomas Gleixner" <tglx@linutronix.de>,
+       "Ingo Molnar" <mingo@redhat.com>, guenter.roeck@ericsson.com,
+       "Linus Torvalds" <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Thomas Renninger" <trenn@suse.de>, yaneti@declera.com
+User-Agent: SquirrelMail/1.4.20-1.fc11
+MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.2 (terminus.zytor.com [127.0.0.1]); Mon, 26 Apr 2010 16:49:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-23 at 18:29 +0200, Martin Schwidefsky wrote:
-> > Questions:
-> > 
-> > - Isn't sched_clock() supposed to be extended to 64bit so
-> >   that it practically never wraps?
-> >   (old implementations use cnt32_to_63())
-> 
-> Yes, sched_clock() is supposed to return a monotonic timestamp.
->  
-> > - What would be the effect on scheduling when sched_clock() wraps?
-> 
-> It would confuse the process accounting and the scheduling I guess.
-> 
+> Sorry, sounds like we're talking about a few different things here:
+>   1) devices which sit in e820 reserved space (whether at < 1M or > 1M)
+>   2) devices which sit in e820 ram or other space below 1M
+>   3) how to hand out space from the 0-1M region
+>
+> Bjorn's patch fixes (3) so that regular PCI devices don't get space
+> there, which makes sense.
+>
+> Some devices may be in the special region, but were pointed there by
+> the BIOS.  Generally this should be ok, so drivers requesting this
+> space should be allowed to get at it, but we should avoid putting
+> anything else there.
+>
+> And below it sounds like you're talking about (1).  If so, then yes I
+> guess we need a solution there, which will allow drivers to bind to
+> these "reserved" devices, even though the BIOS has marked them as off
+> limits, at least as far as e820 goes.
+>
+> So perhaps both (1) and (2) could be put into a new, special IO
+> resource space, or could use a new flag, since "busy" doesn't really
+> reflect what's going on there very well, as Bjorn pointed out.
+>
+> Jesse
 
-Are you sure about this? I'm pretty sure I've seen Ingo say multiple
-times that sched_clock can wrap, and can be unstable. For instance
-sched_clock is (was?) directly connected to the TSC on x86 ..
+Properly done, these aren't separate cases at all.
 
-If it really can't wrap there must bunches of architectures that would
-need to be fixed up.
+The E820 interface as specified doesn't reserve the address space below 1
+MB, because it is legacy space -- which is another way of saying "everyone
+already knows to reserve it."  The Right Thing[TM] to do is simply to
+modify the data output by E820 to reserve all non-memory space below 1 MB;
+this can (and should) be done in platform-specific initialization code to
+allow overrides.
 
-Daniel
+Once that is done, both your (2) and (3) cases are nothing but special
+subcases of (1).  That's what I would like to see as the right solution,
+but it is clearly too late to do that in .34.
 
+Bjorn's solution is very attractive for .34 since it is so simple, but
+it's not a complete solution.
+
+        -hpa
