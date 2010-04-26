@@ -1,156 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab0DZOoe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 10:44:34 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:55811 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab0DZOod (ORCPT
+	id S1751393Ab0DZOpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 10:45:19 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51166 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981Ab0DZOpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 10:44:33 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4BD5A6C0.3030704@s5r6.in-berlin.de>
-Date: Mon, 26 Apr 2010 16:44:16 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100415 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] firewire: ohci: add MSI support
-References: <4BD5667B.1030900@ladisch.de>
-In-Reply-To: <4BD5667B.1030900@ladisch.de>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 26 Apr 2010 10:45:14 -0400
+Date: Mon, 26 Apr 2010 23:42:42 +0900
+From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@linux-nfs.org, security@kernel.org,
+       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1][BUG][TAKE2] KEYRINGS: find_keyring_by_name() can
+ gain the freed keyring
+Message-Id: <20100426234242.31099b1b.toshi.okajima@jp.fujitsu.com>
+In-Reply-To: <26383.1272279456@redhat.com>
+References: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com>
+	<20100423195127.48095127.toshi.okajima@jp.fujitsu.com>
+	<20100422163755.355794e3.toshi.okajima@jp.fujitsu.com>
+	<7894.1271931370@redhat.com>
+	<20100423194547.3135efb8.toshi.okajima@jp.fujitsu.com>
+	<10934.1272022437@redhat.com>
+	<26383.1272279456@redhat.com>
+Organization: Fujitsu co.,ltd.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.12.8; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(adding Cc: lkml, quoting in full)
+Hi, David.
 
-Clemens Ladisch wrote:
-> This patch adds support for message-signaled interrupts.
+Sorry, I missed your last mail.
+
+On Mon, 26 Apr 2010 11:57:36 +0100
+David Howells <dhowells@redhat.com> wrote:
+
+> Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com> wrote:
 > 
-> Any native PCI-Express OHCI controller should support MSI, but most are
-> just PCI cores behind a PCI-E/PCI bridge.  The only chips that are known
-> to claim to support MSI are the Lucent/Agere/LSI FW643 and the VIA
-> VT6315, none of which I have been able to test.
-
-I got a FW643 card a few days ago and can test that one.  Also, I have a
-JMicron JMB381 native PCIe 1394a controller.  The latter is a less ideal
-test specimen since it is buggy already without MSI (soon stops to
-operate if one dares to mix isochronous and asynchronous I/O; sometimes
-also if there is a bus reset at an inconvenient time).
-
->From lspci:
-
-04:00.0 FireWire (IEEE 1394): Agere Systems FW643 PCI Express1394b
-Controller (PHY/Link) (rev 07) (prog-if 10 [OHCI])
-
-        [...]
-        Capabilities: [4c] MSI: Enable- Count=1/1 Maskable- 64bit+
-
-                Address: 0000000000000000  Data: 0000
-
-        Capabilities: [60] Express (v1) Endpoint, MSI 00
-
-        [...]
-
-0a:00.0 FireWire (IEEE 1394): JMicron Technology Corp. IEEE 1394 Host
-Controller (prog-if 10 [OHCI])
-
-        [...]
-        Capabilities: [80] Express (v1) Endpoint, MSI 00
-
-        [...]
-        Capabilities: [94] MSI: Enable- Count=1/1 Maskable- 64bit-
-
-                Address: fffffffc  Data: 0000
-
-        [...]
-
-Does "MSI 00", "MSI: Enable-" mean they do or don't support MSI?  Asks a
-PCIe newbie.
-
-The FW643 (actually two of them) sits behind a PCIe switch:
-
-03:04.0 PCI bridge: PLX Technology, Inc. PEX 8505 5-lane, 5-port PCI
-Express Switch (rev aa) (prog-if 00 [Normal decode])
-
-        [...]
-        Capabilities: [48] MSI: Enable+ Count=1/2 Maskable+ 64bit+
-
-                Address: 00000000fee0f00c  Data: 41a1
-
-                Masking: 00000003  Pending: 00000000
-
-        Capabilities: [68] Express (v1) Downstream Port (Slot+), MSI 00
-
-        [...]
-
-I hope this switch does not make things any more interesting.
-
-> Due to the high level of trust I have in the competence of these and any
-> future chip makers, I thought it a good idea to add a disable-MSI quirk.
+> > And my previous figure description(in first patch) was a bit wrong. 
+> > Please replace it with my new one:
 > 
-> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-> ---
->  drivers/firewire/ohci.c |   13 ++++++++++---
->  1 file changed, 10 insertions(+), 3 deletions(-)
+> The spacing is all over the place, I'm afraid.  Can you send it again?
 > 
-> --- a/drivers/firewire/ohci.c
-> +++ b/drivers/firewire/ohci.c
-> @@ -237,6 +237,7 @@ static char ohci_driver_name[] = KBUILD_
->  #define QUIRK_RESET_PACKET		2
->  #define QUIRK_BE_HEADERS		4
->  #define QUIRK_NO_1394A			8
-> +#define QUIRK_NO_MSI			16
->  
->  /* In case of multiple matches in ohci_quirks[], only the first one is used. */
->  static const struct {
-> @@ -260,6 +261,7 @@ MODULE_PARM_DESC(quirks, "Chip quirks (d
->  	", reset packet generation = "	__stringify(QUIRK_RESET_PACKET)
->  	", AR/selfID endianess = "	__stringify(QUIRK_BE_HEADERS)
->  	", no 1394a enhancements = "	__stringify(QUIRK_NO_1394A)
-> +	", disable MSI = "		__stringify(QUIRK_NO_MSI)
->  	")");
->  
->  #define OHCI_PARAM_DEBUG_AT_AR		1
-> @@ -1718,10 +1720,13 @@ static int ohci_enable(struct fw_card *c
->  
->  	reg_write(ohci, OHCI1394_AsReqFilterHiSet, 0x80000000);
->  
-> +	if (!(ohci->quirks & QUIRK_NO_MSI))
-> +		pci_enable_msi(dev);
->  	if (request_irq(dev->irq, irq_handler,
-> -			IRQF_SHARED, ohci_driver_name, ohci)) {
-> +			pci_dev_msi_enabled(dev) ? 0 : IRQF_SHARED,
-> +			ohci_driver_name, ohci)) {
-> -		fw_error("Failed to allocate shared interrupt %d.\n",
-> -			 dev->irq);
-> +		fw_error("Failed to allocate interrupt %d.\n", dev->irq);
-> +		pci_disable_msi(dev);
->  		dma_free_coherent(ohci->card.device, CONFIG_ROM_SIZE,
->  				  ohci->config_rom, ohci->config_rom_bus);
->  		return -EIO;
-> @@ -2625,6 +2630,7 @@ static void pci_remove(struct pci_dev *d
->  	context_release(&ohci->at_response_ctx);
->  	kfree(ohci->it_context_list);
->  	kfree(ohci->ir_context_list);
-> +	pci_disable_msi(dev);
->  	pci_iounmap(dev, ohci->registers);
->  	pci_release_region(dev, 0);
->  	pci_disable_device(dev);
-> @@ -2642,6 +2648,7 @@ static int pci_suspend(struct pci_dev *d
->  
->  	software_reset(ohci);
->  	free_irq(dev->irq, ohci);
-> +	pci_disable_msi(dev);
->  	err = pci_save_state(dev);
->  	if (err) {
->  		fw_error("pci_save_state failed\n");
+> For example, the vertical bars in the right-hand column don't align:
+> 
+> |  [spin_lock(&key_serial_lock)]      |[mutex_lock(&key_user_keyr..mutex)]
+> |  |                                       ||
+> |  atomic_read() == 0                 ||
+> |  |{ rb_ease(&key->serial_node,) }   ||
+> |  |                                       ||
+> |  [spin_unlock(&key_serial_lock)]    |find_keyring_by_name()
+> |  |                                       |||
+> 
 
-Looks right, but what do I know?
--- 
-Stefan Richter
--=====-==-=- -=-- ==-=-
-http://arcgraph.de/sr/
+So, I applied your commets and rewrite your patch.
+Here you are:
+---
+From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Subject: [PATCH] KEYS: find_keyring_by_name() can gain access to a freed keyring
+
+find_keyring_by_name() can gain access to a keyring that has had its reference
+count reduced to zero, and is thus ready to be freed.  This then allows the
+dead keyring to be brought back into use whilst it is being destroyed.
+
+The following timeline illustrates the process:
+
+|(cleaner)                           (user)
+| free_user(user)                    sys_keyctl()
+|  |                                       |
+|  key_put(user->session_keyring)     keyctl_get_keyring_ID()
+|  ||	//=> keyring->usage = 0         |
+|  |schedule_work(&key_cleanup_task)   lookup_user_key()
+|  ||                                        |
+|  kmem_cache_free(,user)               |
+|  .                                    |[KEY_SPEC_USER_KEYRING]
+|  .                                    install_user_keyrings()
+|  .                                         ||
+| key_cleanup() [<= worker_thread()]    ||
+|  |                                         ||
+|  [spin_lock(&key_serial_lock)]        |[mutex_lock(&key_user_keyr..mutex)]
+|  |                                         ||
+|  atomic_read() == 0                   ||
+|  |{ rb_ease(&key->serial_node,) }     ||
+|  |                                         ||
+|  [spin_unlock(&key_serial_lock)]      |find_keyring_by_name()
+|  |                                         |||
+|  keyring_destroy(keyring)             ||[read_lock(&keyring_name_lock)]
+|  ||                                        |||
+|  |[write_lock(&keyring_name_lock)]    ||atomic_inc(&keyring->usage)
+|  |.                                   ||| *** GET freeing keyring ***
+|  |.                                   ||[read_unlock(&keyring_name_lock)]
+|  ||                                        ||
+|  |list_del()                          |[mutex_unlock(&key_user_k..mutex)]
+|  ||                                        |
+|  |[write_unlock(&keyring_name_lock)]  ** INVALID keyring is returned **
+|  |                                         .
+|  kmem_cache_free(,keyring)            .
+|                                            . 
+|                                       atomic_dec(&keyring->usage)
+v                                         *** DESTROYED ***
+TIME 
+
+If CONFIG_SLUB_DEBUG=y then we may see the following message generated:
+
+	=============================================================================
+	BUG key_jar: Poison overwritten
+	-----------------------------------------------------------------------------
+
+	INFO: 0xffff880197a7e200-0xffff880197a7e200. First byte 0x6a instead of 0x6b
+	INFO: Allocated in key_alloc+0x10b/0x35f age=25 cpu=1 pid=5086
+	INFO: Freed in key_cleanup+0xd0/0xd5 age=12 cpu=1 pid=10
+	INFO: Slab 0xffffea000592cb90 objects=16 used=2 fp=0xffff880197a7e200 flags=0x200000000000c3
+	INFO: Object 0xffff880197a7e200 @offset=512 fp=0xffff880197a7e300
+
+	Bytes b4 0xffff880197a7e1f0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+	  Object 0xffff880197a7e200:  6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b jkkkkkkkkkkkkkkk
+
+
+Alternatively, we may see a system panic happen, such as:
+
+	BUG: unable to handle kernel NULL pointer dereference at 0000000000000001
+	IP: [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+	PGD 6b2b4067 PUD 6a80d067 PMD 0
+	Oops: 0000 [#1] SMP
+	last sysfs file: /sys/kernel/kexec_crash_loaded
+	CPU 1
+	...
+	Pid: 31245, comm: su Not tainted 2.6.34-rc5-nofixed-nodebug #2 D2089/PRIMERGY
+	RIP: 0010:[<ffffffff810e61a3>]  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+	RSP: 0018:ffff88006af3bd98  EFLAGS: 00010002
+	RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88007d19900b
+	RDX: 0000000100000000 RSI: 00000000000080d0 RDI: ffffffff81828430
+	RBP: ffffffff81828430 R08: ffff88000a293750 R09: 0000000000000000
+	R10: 0000000000000001 R11: 0000000000100000 R12: 00000000000080d0
+	R13: 00000000000080d0 R14: 0000000000000296 R15: ffffffff810f20ce
+	FS:  00007f97116bc700(0000) GS:ffff88000a280000(0000) knlGS:0000000000000000
+	CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+	CR2: 0000000000000001 CR3: 000000006a91c000 CR4: 00000000000006e0
+	DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+	DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+	Process su (pid: 31245, threadinfo ffff88006af3a000, task ffff8800374414c0)
+	Stack:
+	 0000000512e0958e 0000000000008000 ffff880037f8d180 0000000000000001
+	 0000000000000000 0000000000008001 ffff88007d199000 ffffffff810f20ce
+	 0000000000008000 ffff88006af3be48 0000000000000024 ffffffff810face3
+	Call Trace:
+	 [<ffffffff810f20ce>] ? get_empty_filp+0x70/0x12f
+	 [<ffffffff810face3>] ? do_filp_open+0x145/0x590
+	 [<ffffffff810ce208>] ? tlb_finish_mmu+0x2a/0x33
+	 [<ffffffff810ce43c>] ? unmap_region+0xd3/0xe2
+	 [<ffffffff810e4393>] ? virt_to_head_page+0x9/0x2d
+	 [<ffffffff81103916>] ? alloc_fd+0x69/0x10e
+	 [<ffffffff810ef4ed>] ? do_sys_open+0x56/0xfc
+	 [<ffffffff81008a02>] ? system_call_fastpath+0x16/0x1b
+	Code: 0f 1f 44 00 00 49 89 c6 fa 66 0f 1f 44 00 00 65 4c 8b 04 25 60 e8 00 00 48 8b 45 00 49 01 c0 49 8b 18 48 85 db 74 0d 48 63 45 18 <48> 8b 04 03 49 89 00 eb 14 4c 89 f9 83 ca ff 44 89 e6 48 89 ef
+	RIP  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+
+
+This problem is that find_keyring_by_name does not confirm that the keyring is
+valid before accepting it.
+
+Skipping keyrings that have been reduced to a zero count seems the way to go.
+To this end, use atomic_inc_not_zero() to increment the usage count and skip
+the candidate keyring if that returns false.
+
+The following script _may_ cause the bug to happen, but there's no guarantee
+as the window of opportunity is small:
+
+	#!/bin/sh
+	LOOP=100000
+	USER=dummy_user
+	/bin/su -c "exit;" $USER || { /usr/sbin/adduser -m $USER; add=1; }
+	for ((i=0; i<LOOP; i++))
+	do
+		/bin/su -c "echo '$i' > /dev/null" $USER
+	done
+	(( add == 1 )) && /usr/sbin/userdel -r $USER
+	exit
+
+Note that the nominated user must not be in use.
+
+An alternative way of testing this may be:
+
+	for ((i=0; i<100000; i++))
+	do
+		keyctl session foo /bin/true || break
+	done >&/dev/null
+
+as that uses a keyring named "foo" rather than relying on the user and
+user-session named keyrings.
+
+Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Reported-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ security/keys/keyring.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
+
+
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 8fa2df0..d570824 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -526,9 +526,8 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
+ 	struct key *keyring;
+ 	int bucket;
+ 
+-	keyring = ERR_PTR(-EINVAL);
+ 	if (!name)
+-		goto error;
++		return ERR_PTR(-EINVAL);
+ 
+ 	bucket = keyring_hash(name);
+ 
+@@ -555,17 +554,18 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
+ 					   KEY_SEARCH) < 0)
+ 				continue;
+ 
+-			/* we've got a match */
+-			atomic_inc(&keyring->usage);
+-			read_unlock(&keyring_name_lock);
+-			goto error;
++			/* we've got a match but we might end up racing with
++			 * key_cleanup() if the keyring is currently 'dead'
++			 * (ie. it has a zero usage count) */
++			if (!atomic_inc_not_zero(&keyring->usage))
++				continue;
++			goto out;
+ 		}
+ 	}
+ 
+-	read_unlock(&keyring_name_lock);
+ 	keyring = ERR_PTR(-ENOKEY);
+-
+- error:
++out:
++	read_unlock(&keyring_name_lock);
+ 	return keyring;
+ 
+ } /* end find_keyring_by_name() */
+
+
+--
+Best Regards,
+Toshiyuki Okajima
