@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab0DZHWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 03:22:15 -0400
-Received: from fg-out-1718.google.com ([72.14.220.152]:53742 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717Ab0DZHWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 03:22:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Ti7fSJ3SiuJRFDn1ISJP8LYMx+OJJ7YxjS+CjecLwx8OJo0YgKN0hwzo0C9IbjfoiN
-         D89q32qONX8bO00cynbKqLcgj1iM1LsXOPEyNAT3gYflpPUiXEahgBQ5AV5i3bILlVMP
-         fPmb49vp+jAAZjcB7qef8Jprh1doomkwVfwgA=
+	id S1754596Ab0DZH03 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 03:26:29 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53363 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754533Ab0DZH02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 03:26:28 -0400
+Date: Mon, 26 Apr 2010 09:25:41 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Al Viro <viro@zeniv.linux.org.uk>,
+       Jan Blunck <jblunck@suse.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [GIT PULL v2] Preparation for BKL'ed ioctl removal
+Message-ID: <20100426072541.GA25961@elte.hu>
+References: <1271390201-20431-1-git-send-regression-fweisbec@gmail.com>
+ <201004242154.02421.arnd@arndb.de>
+ <alpine.LFD.2.00.1004241258140.3739@i5.linux-foundation.org>
+ <201004242240.51176.arnd@arndb.de>
+ <alpine.LFD.2.00.1004241510530.3739@i5.linux-foundation.org>
+ <20100425173912.GA5375@nowhere>
 MIME-Version: 1.0
-In-Reply-To: <1272265147.2078.648.camel@ymzhang.sh.intel.com>
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.vjH.sRSzLB@tosh>
-	 <alpine.DEB.2.00.1004221045270.1204@router.home>
-	 <4BD086D0.9090309@cs.helsinki.fi>
-	 <alpine.DEB.2.00.1004232214520.29018@melkki.cs.helsinki.fi>
-	 <1272265147.2078.648.camel@ymzhang.sh.intel.com>
-Date: Mon, 26 Apr 2010 10:22:05 +0300
-X-Google-Sender-Auth: 67e1f5b8c6359fa0
-Message-ID: <i2m84144f021004260022nb58e3e27vd351d6646b99f265@mail.gmail.com>
-Subject: Re: [Bug #15713] hackbench regression due to commit 9dfc6e68bfe6e
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Christoph Lameter <cl@linux.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Alex Shi <alex.shi@intel.com>, tj@kernel.org, tim.c.chen@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100425173912.GA5375@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yanmin,
 
-On Mon, Apr 26, 2010 at 9:59 AM, Zhang, Yanmin
-<yanmin_zhang@linux.intel.com> wrote:
->> I haven't been able to reproduce this either on my Core 2 machine.
-> Mostly, the regression exists on Nehalem machines. I suspect it's related to
-> hyper-threading machine.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-OK, so does anyone know why hyper-threading would change things for
-the per-CPU allocator?
+> > And don't try to conflate the issue of ioctl and BKL. There are still 
+> > code-paths that do lock_kernel() without the ioctl's, so the whole ioctl 
+> > renaming has _zero_ to do with CONFIG_BKL.
+> 
+> It's true, but once it gets pushed down/dropped from every core parts (which 
+> is what we are working on currently in parallel), lock_kernel() and 
+> .bkl_ioctl is only going to be used by unmaintained drivers. This is the 
+> time where having a CONFIG_BKL is going to make sense. And it won't be a 
+> question of saving some bytes but improve efficiency of schedule() for those 
+> who don't need such old or unmaintained drivers.
 
->> Yanmin, does something like this help on your machines?
-> A quick testing doesn't show any help.
+The scheduler will be helped most by getting rid of the BKL altogether. We are 
+in reaching distance of that now ...
 
-So it's unlikely to be false sharing, I suppose.
+CONFIG_BKL would really just elongate the migration period, unnecessarily so.
 
-> I did a new testing. After the machine boots, I hot remove 8 hyper-threading cpu
-> which means last 8 are just cores. The regression between 2.6.33 and 2.6.34-rc becomes
-> small.
->
-> My opinion is we needn't revert the patch, but still keep an eye on it when testing other
-> new RC kernel releases. One reason is volanoMark and netperf have no such regression.
-> Is it ok?
+> May be we should only start to focus on this new config once this state is 
+> reached.
 
-We need to get this fixed. In my experience, it's pretty common that
-slab regressions pop up only in one or few benchmarks. The problem is
-likely to pop up in some real-world workload where it's even more
-difficult to track down because basic CPU profiles don't pin-point the
-problem.
+Once that state is achived we can just get rid of the BKL and mass-push 
+per-driver mutexes into those remaining drivers - in a possibly scripted way. 
+Something like:
 
-Do we have some Intel CPU expert hanging around here that could
-enlighten me of the effects of hyper-threading on CPU caching? I also
-wonder why it's showing up with the new per-CPU allocator and not with
-the homebrewn one we had in SLUB previously.
+  foo-driver.c
 
-                        Pekka
+  DEFINE_MUTEX(foo_mutex);
+
+  foo_ioctl()
+  {
+	mutex_lock(&foo_mutex);
+	...
+	mutex_unlock(&foo_mutex);
+  }
+
+  foo_open()
+  {
+	mutex_lock(&foo_mutex);
+	...
+	mutex_unlock(&foo_mutex);
+  }
+
+This could be done all automated for a hundred old drivers if need to be. 
+There would be no bkl_ioctl's left.
+
+That, even if it looks somewhat coarse is still better than having _yet 
+another_ 'temporary transition'. The Big Kernel Lock was supposed to be 
+transitionary to begin with. It's been 10+ years and counting :-)
+
+	Ingo
