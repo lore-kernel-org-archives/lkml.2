@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab0DZQd3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 12:33:29 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:46132 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab0DZQd2 (ORCPT
+	id S1753952Ab0DZQ4R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 12:56:17 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:31561 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752251Ab0DZQ4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 12:33:28 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tzanussi@gmail.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Masami Hiramatsu <mhiramat@redhat.com>
-Subject: Re: [PATCH] perf: Fix libdw-dev package name in error message
-In-Reply-To: Your message of "Mon, 26 Apr 2010 15:27:03 BST."
-             <1272292023-9869-1-git-send-email-stefanha@linux.vnet.ibm.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1272292023-9869-1-git-send-email-stefanha@linux.vnet.ibm.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1272299568_4063P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 26 Apr 2010 12:32:48 -0400
-Message-ID: <10222.1272299568@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020201.4BD5C034.02BE,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	Mon, 26 Apr 2010 12:56:16 -0400
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAEJi1UurR7Hu/2dsb2JhbACcPHGoa5l7hQsEgzk
+X-IronPort-AV: E=Sophos;i="4.52,274,1270425600"; 
+   d="scan'208";a="120737758"
+From: Roland Dreier <rdreier@cisco.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+       Ravi Anand <ravi.anand@qlogic.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-scsi <linux-scsi@vger.kernel.org>, linux-kernel@vger.kernel.org,
+       David C Somayajulu <david.somayajulu@qlogic.com>,
+       Karen Higgins <karen.higgins@qlogic.com>,
+       Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+Subject: Re: [PATCH 3rd_time] scsi: fix operator precedence warning
+References: <1271945825.2889.138.camel@mulgrave.site>
+	<20100422110214.e7c62688.randy.dunlap@oracle.com>
+X-Message-Flag: Warning: May contain useful information
+Date: Mon, 26 Apr 2010 09:56:12 -0700
+In-Reply-To: <20100422110214.e7c62688.randy.dunlap@oracle.com> (Randy Dunlap's
+	message of "Thu, 22 Apr 2010 11:02:14 -0700")
+Message-ID: <adaaasqm9ub.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1272299568_4063P
-Content-Type: text/plain; charset=us-ascii
+ > -		*tcp_source_port_num = (uint16_t) mbox_sts[6] >> 16;
+ > +		*tcp_source_port_num = (uint16_t) (mbox_sts[6] >> 16);
 
-On Mon, 26 Apr 2010 15:27:03 BST, Stefan Hajnoczi said:
-> The headers required for DWARF support are provided by the libdw-dev
-> package in Debian-based distros.  This patch corrects the elfutils-dev
-> package name to libdw-dev in the Makefile error message when libdw.h is
-> not found.
-> 
-> Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-> ---
-> I don't think any distro has an elfutils-dev package but the name was chosen 
-> because of the usual RedHat/Debian -devel/-dev convention.
+I wonder why we need that cast at all?  The fact that
+tcp_source_port_num is a uint16_t* should cause the value to get
+truncated properly anyway.
 
-elfutils-dev is wrong, elfutils-devel is right, at least for Fedora.
-
-% repoquery -ql elfutils-devel.x86_64
-/usr/include/dwarf.h
-/usr/include/elfutils
-/usr/include/elfutils/elf-knowledge.h
-/usr/include/elfutils/libasm.h
-/usr/include/elfutils/libdw.h
-/usr/include/elfutils/libdwfl.h
-/usr/include/elfutils/libebl.h
-/usr/include/elfutils/version.h
-/usr/lib64/libasm.so
-/usr/lib64/libdw.so
-/usr/lib64/libebl.a
-
-
---==_Exmh_1272299568_4063P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFL1cAwcC3lWbTT17ARAlgsAKC73EkpiefrjCl2+JBpMODOi5KNmACg4MiO
-062h0fxe2UOXfJiaB1Z/2UI=
-=vBdQ
------END PGP SIGNATURE-----
-
---==_Exmh_1272299568_4063P--
-
+But I agree that this patch is a minimal fix for a real bug.
+-- 
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
