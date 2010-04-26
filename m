@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab0DZK4s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 06:56:48 -0400
-Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:33623 "EHLO
-	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab0DZK4q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 06:56:46 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4BD5721C.5050909@jic23.retrosnub.co.uk>
-Date: Mon, 26 Apr 2010 11:59:40 +0100
-From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20100109 Thunderbird/3.0
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Greg KH <greg@kroah.com>, Alan Cox <alan@linux.intel.com>,
-       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: isl29020: ALS driver as misc device
-References: <20100414124913.23181.75903.stgit@localhost.localdomain>	<20100414125136.23181.16788.stgit@localhost.localdomain>	<4BC5C7A8.1040807@cam.ac.uk>	<20100414153234.22765666@lxorguk.ukuu.org.uk>	<4BC5D681.20707@jic23.retrosnub.co.uk>	<20100414175602.44580f3c@lxorguk.ukuu.org.uk>	<20100414170153.GA7494@kroah.com>	<4BC6E5CF.9070302@jic23.retrosnub.co.uk> <20100415121726.1b2a5a87@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100415121726.1b2a5a87@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753623Ab0DZK5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 06:57:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57118 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750849Ab0DZK5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 06:57:46 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com>
+References: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com> <20100423195127.48095127.toshi.okajima@jp.fujitsu.com> <20100422163755.355794e3.toshi.okajima@jp.fujitsu.com> <7894.1271931370@redhat.com> <20100423194547.3135efb8.toshi.okajima@jp.fujitsu.com> <10934.1272022437@redhat.com>
+To: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org, security@kernel.org,
+       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1][BUG][TAKE2] KEYRINGS: find_keyring_by_name() can gain the freed keyring
+Date: Mon, 26 Apr 2010 11:57:36 +0100
+Message-ID: <26383.1272279456@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/10 12:17, Alan Cox wrote:
->> lux-> illuminance0_input  (or I guess lux0_input would also work, I can change
->> the iio abi to match this as well).
->>
->> It also occurs to me that we might want to associate the calibration with the
->> particular channel? There's sure to be a dual ALS chip along at some point.
->>
->> Obviously the isl29020 would need updating as well.  Everyone was happy to do
->> that when were writing the ALS subsystem, so I guess that won't have changed!
-> 
-> I'm happy to make the 29020 comply, and I guess it wouldn't take long for
-> someone to run over the others. Just let me know what the sysfs interface
-> should look like.
+Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com> wrote:
 
-Hi Alan,
+> And my previous figure description(in first patch) was a bit wrong. 
+> Please replace it with my new one:
 
-I was hoping some others would jump in here with suggestions. Failing that, I'd
-go with
+The spacing is all over the place, I'm afraid.  Can you send it again?
 
-illuminance0_input (in milli lux?)
-(if this requires a float calculation, could go with the iio approach of having 
-illuminance0_raw and illuminance0_scale, where gain can be a float as it's just
-a text string anyway).
+For example, the vertical bars in the right-hand column don't align:
 
-illuminance0_range 
-illuminance0_range_available
+|  [spin_lock(&key_serial_lock)]      |[mutex_lock(&key_user_keyr..mutex)]
+|  |                                       ||
+|  atomic_read() == 0                 ||
+|  |{ rb_ease(&key->serial_node,) }   ||
+|  |                                       ||
+|  [spin_unlock(&key_serial_lock)]    |find_keyring_by_name()
+|  |                                       |||
 
-For these range, I'd personally prefer to do it via scaling, but we can probably
-be flexible here.  Things will get complex if we start having ranges like 3...10 lux.
-
-So illuminance0_calibscale (hence internal scale - obviously this will also effect
-illuminance0_scale if you are going the 'raw' output and convert in userspace route).
-Clearly, you would also need an illuminance0_calibscale_available interface to tell
-you what discrete settings exist.
-
-Jonathan
+David
