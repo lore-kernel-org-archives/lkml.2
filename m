@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab0DZUrW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 16:47:22 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52191 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755198Ab0DZUrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 16:47:21 -0400
-Date: Mon, 26 Apr 2010 13:46:53 -0700
-From: Greg KH <gregkh@suse.de>
-To: Mike Travis <travis@sgi.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Pavel Machek <pavel@ucw.cz>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, Rik van Riel <riel@redhat.com>,
-       John Stoffel <john@stoffel.org>, Hedi Berriche <hedi@sgi.com>,
-       Jack Steiner <steiner@sgi.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
- pid_max v3
-Message-ID: <20100426204648.GC30736@suse.de>
-References: <20100421193350.GU16427@zorg.emea.sgi.com>
- <19407.23456.469074.256306@stoffel.org>
- <20100421222414.GA26241@suse.de>
- <4BCF80F2.2010906@redhat.com>
- <20100421232200.GA22877@suse.de>
- <20100422102852.72837494@lxorguk.ukuu.org.uk>
- <alpine.LFD.2.00.1004220743080.9086@i5.linux-foundation.org>
- <20100425071606.GB1275@ucw.cz>
- <alpine.LFD.2.00.1004251002480.3739@i5.linux-foundation.org>
- <4BD5EDF9.6030504@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BD5EDF9.6030504@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755282Ab0DZUvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 16:51:16 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:64717 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753606Ab0DZUvO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 16:51:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=ZvqY1v5AaTMlSyRes9a8mSCb04+JTm0VoS//npEL8I8wcvn2VxDyEJATYTag1kMUFk
+         sWY5NcgfdKP4uIB1hRNFF3WiSH5uGEgU7F7b9h/ffR8+SlwZuTzseHfo2qZJfiUTGV3U
+         I3nq9d/4RAbnPB6tPUabOqxn5uuCGPsiadnCA=
+Subject: [PATCH] backlight: l4f00242t03: Fix regulators handling code in
+ remove function
+From: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-next <linux-next@vger.kernel.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 26 Apr 2010 22:51:08 +0200
+Message-ID: <1272315068.3037.99.camel@realization>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 12:48:09PM -0700, Mike Travis wrote:
-> Subject: [Patch 1/1] init: Provide a kernel start parameter to increase pid_max v3
+Simple swap of regulator free
 
-Your subject is now incorrect, based on the patch.  You should also
-adjust the body of the changelog to reflect the code change.
+Signed-off-by: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+---
+ drivers/video/backlight/l4f00242t03.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-thanks,
+diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
+index 74abd69..9e64afa 100644
+--- a/drivers/video/backlight/l4f00242t03.c
++++ b/drivers/video/backlight/l4f00242t03.c
+@@ -221,9 +221,9 @@ static int __devexit l4f00242t03_remove(struct spi_device *spi)
+ 	gpio_free(pdata->reset_gpio);
+ 
+ 	if (priv->io_reg)
+-		regulator_put(priv->core_reg);
+-	if (priv->core_reg)
+ 		regulator_put(priv->io_reg);
++	if (priv->core_reg)
++		regulator_put(priv->core_reg);
+ 
+ 	kfree(priv);
+ 
+-- 
+1.6.3.3
 
-greg k-h
+
+
