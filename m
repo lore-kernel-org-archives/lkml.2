@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab0DZXts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 19:49:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58467 "EHLO
+	id S1754757Ab0DZXvW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 19:51:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52005 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab0DZXtr (ORCPT
+	with ESMTP id S1753391Ab0DZXvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 19:49:47 -0400
-Message-ID: <84a3333c22124f0bb0dcd7c97cd3eed5.squirrel@www.zytor.com>
+	Mon, 26 Apr 2010 19:51:20 -0400
+Message-ID: <a96459c7f3573eef81dd6d6c4e3dedd8.squirrel@www.zytor.com>
 In-Reply-To: <20100426162517.4ad308ff@virtuousgeek.org>
 References: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com>
     <20100426162517.4ad308ff@virtuousgeek.org>
-Date: Mon, 26 Apr 2010 16:49:05 -0700
+Date: Mon, 26 Apr 2010 16:49:55 -0700
 Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below   
  BIOS_END
 From: "H. Peter Anvin" <hpa@zytor.com>
@@ -33,7 +33,7 @@ Content-Type: text/plain;charset=utf-8
 Content-Transfer-Encoding: 8bit
 X-Priority: 3 (Normal)
 Importance: Normal
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.2 (terminus.zytor.com [127.0.0.1]); Mon, 26 Apr 2010 16:49:11 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.2 (terminus.zytor.com [127.0.0.1]); Mon, 26 Apr 2010 16:50:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
