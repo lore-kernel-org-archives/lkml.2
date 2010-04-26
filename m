@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682Ab0DZNjn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 09:39:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44722 "EHLO mx1.redhat.com"
+	id S1752125Ab0DZNnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 09:43:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28683 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790Ab0DZNjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 09:39:42 -0400
-Date: Mon, 26 Apr 2010 09:39:20 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Subject: Re: [PATCH] blk-cgroup: Fix RCU correctness warning in
-	cfq_init_queue()
-Message-ID: <20100426133920.GA1559@redhat.com>
-References: <20100422155452.GD3228@redhat.com> <20100422231556.GW2524@linux.vnet.ibm.com> <20100422235555.GA12004@redhat.com> <20100423001751.GX2524@linux.vnet.ibm.com> <20100423144138.GA5026@redhat.com> <20100423194649.GF2589@linux.vnet.ibm.com> <4BD4ED7A.5020205@cn.fujitsu.com> <20100426020631.GU2440@linux.vnet.ibm.com>
+	id S1750961Ab0DZNnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 09:43:45 -0400
+Message-ID: <4BD5987F.7080505@redhat.com>
+Date: Mon, 26 Apr 2010 16:43:27 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100426020631.GU2440@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: ngupta@vflare.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       jeremy@goop.org, hugh.dickins@tiscali.co.uk, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <20100422134249.GA2963@ca-server1.us.oracle.com> <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default> <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default> <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <4BD24E37.30204@vflare.org> <4BD33822.2000604@redhat.com> <4BD3B2D1.8080203@vflare.org> <4BD4329A.9010509@redhat.com> <4BD4684E.9040802@vflare.org 4BD52D55.3070803@redhat.com> <2634f2cb-3e7e-4c86-b7ef-cf4a3f1e0d8a@default>
+In-Reply-To: <2634f2cb-3e7e-4c86-b7ef-cf4a3f1e0d8a@default>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 25, 2010 at 07:06:31PM -0700, Paul E. McKenney wrote:
-> On Mon, Apr 26, 2010 at 09:33:46AM +0800, Li Zefan wrote:
-> > >>>>>> With RCU correctness on, We see following warning. This patch fixes it.
-> > >>>>> This is in initialization code, so that there cannot be any concurrent
-> > >>>>> updates, correct?  If so, looks good.
-> > >>>>>
-> > >>>> I think theoritically two instances of cfq_init_queue() can be running
-> > >>>> in parallel (for two different devices), and they both can call
-> > >>>> blkiocg_add_blkio_group(). But then we use a spin lock to protect
-> > >>>> blkio_cgroup.
-> > >>>>
-> > >>>> spin_lock_irqsave(&blkcg->lock, flags);
-> > >>>>
-> > >>>> So I guess two parallel updates should be fine.
-> > >>> OK, in that case, would it be possible add this spinlock to the condition
-> > >>> checked by css_id()'s rcu_dereference_check()?
-> > >> Hi Paul,
-> > >>
-> > >> I think adding these spinlock to condition checked might become little
-> > >> messy. And the reason being that this lock is subsystem (controller)
-> > >> specific and maintained by controller. Now if any controller implements
-> > >> a lock and we add that lock in css_id() rcu_dereference_check(), it will
-> > >> look ugly.
-> > >>
-> > >> So probably a better way is to make sure that css_id() is always called
-> > >> under rcu read lock so that we don't hit this warning?
-> > > 
-> > > As long as holding rcu_read_lock() prevents css_id() from the usual
-> > > problems such as access memory that was concurrently freed, yes.
-> > 
-> > blkiocg_add_blkio_group() also calls cgroup_path(), which also needs to
-> > be called within rcu_read_lock, so I think Vivek's patch is better than
-> > the one you posted in another mail thread.
-> 
-> My apologies, Vivek!  I lost track of your patch.  I have now replaced
-> my patch with yours.
+On 04/26/2010 03:50 PM, Dan Magenheimer wrote:
+>>> Maybe incremental development is better? Stabilize and refine
+>>>        
+>> existing
+>>      
+>>> code and gradually move to async API, if required in future?
+>>>        
+>> Incremental development is fine, especially for ramzswap where the APIs
+>> are all internal.  I'm more worried about external interfaces, these
+>> stick around a lot longer and if not done right they're a pain forever.
+>>      
+> Well if you are saying that your primary objection to the
+> frontswap synchronous API is that it is exposed to modules via
+> some EXPORT_SYMBOLs, we can certainly fix that, at least
+> unless/until there are other pseudo-RAM devices that can use it.
+>
+> Would that resolve your concerns?
+>    
 
-Thanks Paul.
+By external interfaces I mean the guest/hypervisor interface.  
+EXPORT_SYMBOL is an internal interface as far as I'm concerned.
 
-I sent this patch to Jens also, thinking he will apply to his tree. Looks
-like he has not applied it yet though.
+Now, the frontswap interface is also an internal interface, but it's 
+close to the external one.  I'd feel much better if it was asynchronous.
 
-Jens, is it ok if this patch gets merged through paul's tree or should it
-go through blk tree?
+-- 
+error compiling committee.c: too many arguments to function
 
-Thanks
-Vivek
