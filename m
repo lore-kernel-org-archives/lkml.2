@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab0DZXEP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 19:04:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40567 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751471Ab0DZXEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 19:04:13 -0400
-X-User-Agent: K-9 Mail for Android
-Content-Type: multipart/mixed; boundary="----XALGEAD1SY1OEWC5WDSMQV24L9TL1O"
+	id S1754870Ab0DZXEn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 19:04:43 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:47141 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab0DZXEl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 19:04:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Sy266KMRws8QbeTVqx0rlnvcxefHBL1pyzgXf6q9W5T1NOghO04/s/ywErlDfwgK1I
+         SqvNQammq/bf0LOJBAaMRyfXflSRgKmFQ1P5NA5tWre7mdL5kIP5gtt4RBf2LfsaOdku
+         qmmV8bdkn74R7Qnayn6GX+r1cwr6PI/KdsrRE=
+Date: Tue, 27 Apr 2010 01:04:37 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+       linux-kernel@vger.kernel.org, tglx@linutronix.de,
+       viro@zeniv.linux.org.uk, jblunck@suse.de, mingo@elte.hu,
+       jkacur@redhat.com
+Subject: Re: [GIT PULL v2] Preparation for BKL'ed ioctl removal
+Message-ID: <20100426230434.GC5695@nowhere>
+References: <alpine.LFD.2.00.1004251040340.3739@i5.linux-foundation.org> <201004261030.21751.arnd@arndb.de> <alpine.LFD.2.00.1004261104310.3739@i5.linux-foundation.org> <20100426.134207.229746269.davem@davemloft.net> <20100426220936.GB5695@nowhere> <alpine.LFD.2.00.1004261525410.3739@i5.linux-foundation.org>
 MIME-Version: 1.0
-Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below   BIOS_END
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 26 Apr 2010 16:02:57 -0700
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Andy Isaacson <adi@hexapodia.org>,
-       "R. Andrew Bailey" <bailey@akamai.com>, Yinghai <yinghai.lu@oracle.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       guenter.roeck@ericsson.com,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
-Message-ID: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004261525410.3739@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------XALGEAD1SY1OEWC5WDSMQV24L9TL1O
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: base64
+On Mon, Apr 26, 2010 at 03:32:51PM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Tue, 27 Apr 2010, Frederic Weisbecker wrote:
+> > 
+> > I've queued it for the next merge window in
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> > 	bkl/ioctl
+> 
+> Btw, I hope you took the second version, that had the two additional fixes 
+> from Arnd (and my expansion of his fix to au1550_ac97.c).
 
-SSBkb24ndCB0aGluayBpdCdzIHN1ZmZpY2llbnQsIGFjdHVhbGx5LiAgV2UgcmVndWxhcmx5IHNl
-ZSBtYWNoaW5lcyB3aGVyZSBkZXZpY2VzIHBvaW50IGludG8gZTgyMF9yZXNlcnZlZCBtZW1vcnkg
-YWJvdmUgMSBNQiAtIGJlY2F1c2UgaXQncyBhIHBsYXRmb3JtIGRldmljZSBvciBiZWNhdXNlIGZp
-cm13YXJlIChlLmcuIHNtbSkgaXMgdG91Y2hpbmcgdGhlIGRldmljZS4gIEkgdGhpbmsgQmpvcm4n
-cyBmaXggaXMgZ3JlYXQgZm9yIC4zNCwgYnV0IGxvbmdlciB0ZXJtIEkgdGhpbmsgd2UgbmVlZCB0
-byBzdHJ1Y3R1cmUgdGhlIGNvZGUgdG8gYWN0dWFsbHkgaGFuZGxlIHJlc2VydmVkIHJlZ2lvbnMg
-ZGlmZmVyZW50bHkgZnJvbSBvY2N1cGllZC9mb3JiaWRkZW4gcmVnaW9ucy4KCiJKZXNzZSBCYXJu
-ZXMiIDxqYmFybmVzQHZpcnR1b3VzZ2Vlay5vcmc+IHdyb3RlOgoKPk9uIE1vbiwgMjYgQXByIDIw
-MTAgMTQ6NDQ6NTAgLTA3MDAKPiJILiBQZXRlciBBbnZpbiIgPGhwYUB6eXRvci5jb20+IHdyb3Rl
-Ogo+Cj4+ID4KPj4gPiBBZ3JlZWQuICBUaGUgdHJpY2tpZXIgcGFydCBpcyBoYW5kbGluZyBhbnkg
-cGxhdGZvcm0gZGV2aWNlcyB0aGF0Cj4+ID4gcmVxdWVzdF9yZXNvdXJjZSBhZ2FpbnN0IHRoYXQg
-c3BhY2UuICBCdXQgbWF5YmUgd2UgZG9uJ3QgbmVlZCB0byBkbwo+PiA+IGFueXRoaW5nIHNwZWNp
-YWw7IGp1c3QgbWFraW5nIHN1cmUgd2UgYXZvaWQgaXQgaW4gdGhlIFBDSSAiQklPUyIgY29kZQo+
-PiA+IGFzIEJqb3JuIGRpZCBtYXkgYmUgc3VmZmljaWVudC4KPj4gPgo+PiAKPj4gV2h5IGlzIHRo
-YXQgaGFyZD8gIElmIGEgcGxhdGZvcm0gZGV2aWNlIGRvZXMgYSByZXF1ZXN0X3Jlc291cmNlIGFn
-YWluc3QKPj4gdGhhdCBzcGFjZSwgaXQncyBhIHJlcXVlc3QgZm9yIHNwZWNpZmljIGFkZHJlc3Mg
-c3BhY2UgYW5kIGl0IHNob3VsZCBiZQo+PiBncmFudGVkLgo+Cj5JIHdhcyB0aGlua2luZyBpZiB3
-ZSBtYWRlIGl0IGEgc3BlY2lhbCByZXNvdXJjZSB0eXBlIHdlJ2QgaGF2ZSB0bwo+Y2hhbmdlIGFu
-eSBwbGF0Zm9ybSBkcml2ZXJzIHRvIHVzZSBpdDsgaS5lLiBpdCB3b3VsZG4ndCBiZQo+SU9SRVNP
-VVJDRV9NRU0gb3IgSU9SRVNPVVJDRV9JTyBidXQgSU9SRVNPVVJDRV9EUkFHT05TLiAgVGhhdCB3
-YXkgaXQKPndvdWxkbid0IGJlIHBhcnQgb2YgdGhlIG5vcm1hbCByZXNvdXJjZSBzcGFjZS4KPgo+
-QnV0IHRoYXQncyBkZWZpbml0ZWx5IG92ZXJraWxsLiAgSSB0aGluayBCam9ybidzIGZpeCBpcyBz
-dWZmaWNpZW50Lgo+Cj4tLSAKPkplc3NlIEJhcm5lcywgSW50ZWwgT3BlbiBTb3VyY2UgVGVjaG5v
-bG9neSBDZW50ZXIKCi0tIApTZW50IGZyb20gbXkgQW5kcm9pZCBwaG9uZSB3aXRoIEstOSBNYWls
-LiBQbGVhc2UgZXhjdXNlIG15IGJyZXZpdHku
 
-------XALGEAD1SY1OEWC5WDSMQV24L9TL1O--
+Yeah.
+
+
+ 
+> Looking at the arch code, I doubt there are any big architecture-specific 
+> things. But there could easily be some other drivers like au1550_ac97.c 
+> that only get enabled on certain architectures and missed the grepping for 
+> some reason.
+> 
+> That said, because of Arnd's fix, I did end up grepping for 
+> 'file_operations' and old-style gcc initializers (ie "ioctl: xyz" rather 
+> than the proper ".ioctl = xyz"), and the grep came up empty.
+> 
+> But it's possible that there's something hiding: with all of serial, 
+> bluetooth, block drivers, sound, socket proto's and v4l2 each having their 
+> own 'ioctl' pointers, it's not entirely trivial to grep for it all and be 
+> sure..
+> 
+> So there might be one or two cases still hiding, but it looks unlikely. 
+> And I'm almost certain that it definitely isn't more than just one or two.
+
+
+Ok, thanks.
 
