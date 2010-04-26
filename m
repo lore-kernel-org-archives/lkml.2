@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab0DZOps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 10:45:48 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:36505 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981Ab0DZOpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 10:45:46 -0400
-Date: Mon, 26 Apr 2010 07:45:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Subject: Re: [PATCH] blk-cgroup: Fix RCU correctness warning in
- cfq_init_queue()
-Message-ID: <20100426144542.GA2529@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100422155452.GD3228@redhat.com>
- <20100422231556.GW2524@linux.vnet.ibm.com>
- <20100422235555.GA12004@redhat.com>
- <20100423001751.GX2524@linux.vnet.ibm.com>
- <20100423144138.GA5026@redhat.com>
- <20100423194649.GF2589@linux.vnet.ibm.com>
- <4BD4ED7A.5020205@cn.fujitsu.com>
- <20100426020631.GU2440@linux.vnet.ibm.com>
- <20100426133920.GA1559@redhat.com>
+	id S1753045Ab0DZOp6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 10:45:58 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:53303 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab0DZOp4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 10:45:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=jQg5oGKRdM82/cVqQMtUgLoON+wgyDpSddFuVHOOixHJD++7dOVWre8Ucur9CElKjA
+         ZxsfjE9iagX1ktOTqksV4U25YpS5bhMR+lQgNKPL7xm2x255Z5l1uwaZTmqeZZ7ds3Fc
+         Ue6FH0FEiQfvneUEdcoQVn4yKd/CB+YgEC9BQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100426133920.GA1559@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <y2lb43bf5491004260149x23beb95dqc9e177d9a6ecc679@mail.gmail.com>
+References: <l2nb43bf5491004231314i13503c67yeccfc54bc1cae850@mail.gmail.com>
+	 <h2p9929d2391004231322r23528f32z8447a711a29e28ea@mail.gmail.com>
+	 <20100423135816.23f5861f@nehalam>
+	 <r2ob43bf5491004231403o64f8b88bsa9543d9910648d97@mail.gmail.com>
+	 <20100423150207.7969c9f6@nehalam>
+	 <y2lb43bf5491004260149x23beb95dqc9e177d9a6ecc679@mail.gmail.com>
+Date: Mon, 26 Apr 2010 16:45:54 +0200
+Message-ID: <p2nb43bf5491004260745m58ed54b4ue50c2bd3431c9941@mail.gmail.com>
+Subject: Re: [PATCH] e100: expose broadcast_disabled as a module option
+From: Erwan Velu <erwanaliasr1@gmail.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+       netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
+       linux-kernel@vger.kernel.org, jesse.brandeburg@intel.com,
+       bruce.w.allan@intel.com, alexander.h.duyck@intel.com,
+       peter.p.waskiewicz.jr@intel.com, john.ronciak@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 09:39:20AM -0400, Vivek Goyal wrote:
-> On Sun, Apr 25, 2010 at 07:06:31PM -0700, Paul E. McKenney wrote:
-> > On Mon, Apr 26, 2010 at 09:33:46AM +0800, Li Zefan wrote:
-> > > >>>>>> With RCU correctness on, We see following warning. This patch fixes it.
-> > > >>>>> This is in initialization code, so that there cannot be any concurrent
-> > > >>>>> updates, correct?  If so, looks good.
-> > > >>>>>
-> > > >>>> I think theoritically two instances of cfq_init_queue() can be running
-> > > >>>> in parallel (for two different devices), and they both can call
-> > > >>>> blkiocg_add_blkio_group(). But then we use a spin lock to protect
-> > > >>>> blkio_cgroup.
-> > > >>>>
-> > > >>>> spin_lock_irqsave(&blkcg->lock, flags);
-> > > >>>>
-> > > >>>> So I guess two parallel updates should be fine.
-> > > >>> OK, in that case, would it be possible add this spinlock to the condition
-> > > >>> checked by css_id()'s rcu_dereference_check()?
-> > > >> Hi Paul,
-> > > >>
-> > > >> I think adding these spinlock to condition checked might become little
-> > > >> messy. And the reason being that this lock is subsystem (controller)
-> > > >> specific and maintained by controller. Now if any controller implements
-> > > >> a lock and we add that lock in css_id() rcu_dereference_check(), it will
-> > > >> look ugly.
-> > > >>
-> > > >> So probably a better way is to make sure that css_id() is always called
-> > > >> under rcu read lock so that we don't hit this warning?
-> > > > 
-> > > > As long as holding rcu_read_lock() prevents css_id() from the usual
-> > > > problems such as access memory that was concurrently freed, yes.
-> > > 
-> > > blkiocg_add_blkio_group() also calls cgroup_path(), which also needs to
-> > > be called within rcu_read_lock, so I think Vivek's patch is better than
-> > > the one you posted in another mail thread.
-> > 
-> > My apologies, Vivek!  I lost track of your patch.  I have now replaced
-> > my patch with yours.
-> 
-> Thanks Paul.
-> 
-> I sent this patch to Jens also, thinking he will apply to his tree. Looks
-> like he has not applied it yet though.
-> 
-> Jens, is it ok if this patch gets merged through paul's tree or should it
-> go through blk tree?
+2010/4/26 Erwan Velu <erwanaliasr1@gmail.com>:
 
-I am happy for it to go either way, so just let me know!
+After some research, here come my status :
 
-							Thanx, Paul
+> Does any one you could help me understanding what should be the good way to
+> 1- enabled/disabled IFF_BROADCAST for a given interface
+
+Looks like the current code isn't taking care of a possible changing
+of IFF_BROADCAST. I can find some code in net/core/dev.c to handle
+MULTICAST or PROMISC but nothing for BROADCAST.
+do I have to implement one ?
+
+
+> 2- populate this changes to the driver
+
+Looks like I need then to add a .ndo_change_rx_flags function to
+manage this changes.
+
+Does someone confirm this is the way to go ?
