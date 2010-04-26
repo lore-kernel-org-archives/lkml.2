@@ -1,62 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab0DZKZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 06:25:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37287 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753564Ab0DZKZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 06:25:43 -0400
-Subject: Re: [PATCH] procfs: fix tid fdinfo
-From: Miklos Szeredi <mszeredi@suse.cz>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Vic Abell <abe@purdue.edu>
-In-Reply-To: <4BD54573.3020801@redhat.com>
-References: <4BD1BF57.7070201@redhat.com>
-	 <20100423111620.100840fe.akpm@linux-foundation.org>
-	 <20100424192735.GA5157@x200>
-	 <1272053239.4456.4.camel@tucsk.pomaz.szeredi.hu>
-	 <4BD54573.3020801@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Apr 2010 12:26:03 +0200
-Message-ID: <1272277563.4456.24.camel@tucsk.pomaz.szeredi.hu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1754358Ab0DZKef (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 06:34:35 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:60484 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab0DZKed (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 06:34:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jK5ETSiTDNigdB+CkUuzyQTVcpbppLg3Is/6N0oAtZnn824yCj+4mzzTh1QnR8g3CV
+         NgWSUk7gztmk+k+yOiuwK/yqS4GgBhxk/dQV5MOZhYSOraQhOQyekKdfhioZtcAhTzIi
+         Nu901skRel9SZByl9XcEMff7c3Pu1+JYMatEE=
+From: fabien.chouteau@gmail.com
+To: linux-usb@vger.kernel.org
+Cc: Fabien Chouteau <fabien.chouteau@barco.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Michal Nazarewicz <m.nazarewicz@samsung.com>,
+       Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org
+Subject: [PATCH RE-RESEND] Mass storage gadget: Handle eject request
+Date: Mon, 26 Apr 2010 12:34:54 +0200
+Message-Id: <1272278094-25433-1-git-send-email-fabien.chouteau@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-26 at 09:49 +0200, Jerome Marchand wrote:
-> On 04/23/2010 10:07 PM, Miklos Szeredi wrote:
-> > On Sat, 2010-04-24 at 22:27 +0300, Alexey Dobriyan wrote:
-> >> On Fri, Apr 23, 2010 at 11:16:20AM -0700, Andrew Morton wrote:
-> >>> On Fri, 23 Apr 2010 17:40:07 +0200
-> >>>> -	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fd_operations),
-> >>>> +	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
-> >>
-> >>> hm, the code's been like that for over a year.  What are the
-> >>> user-visible effects of the bug, and of this change?
-> >>
-> >> /proc/*/task/*/fdinfo contains symlinks to opened files like /proc/*/fd/
-> >> which is cool bug :-)
-> > 
-> > Yeah, at least now we can see that someone has started using this
-> > interface ;)
-> 
-> AFAIK there is still nobody using it, but lsof should use it, and 
-> /proc/<pid>/task/<tid>/fd/ too. I haven't checked the code, but as it is
-> now, it doesn't spot files open by a thread which does share its father's
-> file descriptor table.
+From: Fabien Chouteau <fabien.chouteau@barco.com>
 
-Yes, apparently "lsof" doesn't care about contents of /proc/$PID/task.
-Well, tasks with separate file descriptor tables are rare, POSIX threads
-share their descriptor tables.  But it would be nice if this were fixed.
+This patch adds handling of the "Start/Stop Unit" SCSI request
+to simulate media ejection.
 
-Thanks,
-Miklos
+Signed-off-by: Fabien Chouteau <fabien.chouteau@barco.com>
+---
+ drivers/usb/gadget/f_mass_storage.c |   48 ++++++++++++++++++++++++++++++++--
+ 1 files changed, 45 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index f4911c0..c3e5dbb 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -163,6 +163,10 @@
+  * ro setting are not allowed when the medium is loaded or if CD-ROM
+  * emulation is being used.
+  *
++ * When a LUN receive an "eject" SCSI request (Start/Stop Unit),
++ * if the LUN is removable, the backing file is released to simulate
++ * ejection.
++ *
+  *
+  * This function is heavily based on "File-backed Storage Gadget" by
+  * Alan Stern which in turn is heavily based on "Gadget Zero" by David
+@@ -1385,12 +1389,50 @@ static int do_mode_sense(struct fsg_common *common, struct fsg_buffhd *bh)
+ 
+ static int do_start_stop(struct fsg_common *common)
+ {
+-	if (!common->curlun) {
++	struct fsg_lun	*curlun = common->curlun;
++	int		loej, start;
++
++	if (!curlun) {
+ 		return -EINVAL;
+-	} else if (!common->curlun->removable) {
+-		common->curlun->sense_data = SS_INVALID_COMMAND;
++	} else if (!curlun->removable) {
++		curlun->sense_data = SS_INVALID_COMMAND;
++		return -EINVAL;
++	}
++
++	loej = common->cmnd[4] & 0x02;
++	start = common->cmnd[4] & 0x01;
++
++	/* eject code from file_storage.c:do_start_stop() */
++
++	if ((common->cmnd[1] & ~0x01) != 0 ||	  /* Mask away Immed */
++		(common->cmnd[4] & ~0x03) != 0) { /* Mask LoEj, Start */
++		curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
+ 		return -EINVAL;
+ 	}
++
++	if (!start) {
++		/* Are we allowed to unload the media? */
++		if (curlun->prevent_medium_removal) {
++			LDBG(curlun, "unload attempt prevented\n");
++			curlun->sense_data = SS_MEDIUM_REMOVAL_PREVENTED;
++			return -EINVAL;
++		}
++		if (loej) {	/* Simulate an unload/eject */
++			up_read(&common->filesem);
++			down_write(&common->filesem);
++			fsg_lun_close(curlun);
++			up_write(&common->filesem);
++			down_read(&common->filesem);
++		}
++	} else {
++
++		/* Our emulation doesn't support mounting; the medium is
++		 * available for use as soon as it is loaded. */
++		if (!fsg_lun_is_open(curlun)) {
++			curlun->sense_data = SS_MEDIUM_NOT_PRESENT;
++			return -EINVAL;
++		}
++	}
+ 	return 0;
+ }
+ 
+-- 
+1.7.0.5
 
