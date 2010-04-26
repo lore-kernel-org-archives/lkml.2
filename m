@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab0DZKjH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 06:39:07 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:33644 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437Ab0DZKjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 06:39:05 -0400
+	id S1753673Ab0DZKuO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 06:50:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38566 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753490Ab0DZKuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 06:50:12 -0400
+Message-ID: <4BD56FD9.7010304@suse.de>
+Date: Mon, 26 Apr 2010 16:20:01 +0530
+From: Suresh Jayaraman <sjayaraman@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091130 SUSE/3.0.0-1.1.1 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <m2g1ba2fa241004251309oa5592255lb4e4b96ea07dd12a@mail.gmail.com>
-References: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com> 
-	<20100419145934.GA10893@kroah.com> <t2w1ba2fa241004211522le49fc938m341553b0f2b89031@mail.gmail.com> 
-	<20100425163711.GA20196@kroah.com> <o2n1ba2fa241004251222x6ab49726p9757fd8be4952bee@mail.gmail.com> 
-	<20100425193658.GA24039@kroah.com> <m2g1ba2fa241004251309oa5592255lb4e4b96ea07dd12a@mail.gmail.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Mon, 26 Apr 2010 12:38:47 +0200
-Message-ID: <o2qac3eb2511004260338xd8146a7dy415d3f0f4f1c8bbc@mail.gmail.com>
-Subject: Re: request_firmware API exhaust memory
-To: Tomas Winkler <tomasw@gmail.com>
-Cc: Greg KH <greg@kroah.com>, Johannes Berg <johannes@sipsolutions.net>,
-       David Woodhouse <dwmw2@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org
+To: Christian Eggers <ceggers@gmx.de>
+Cc: linux-cifs-client@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: cifs: Filesystem unmounts automatically after some time
+References: <201004232148.52739.ceggers@gmx.de>
+In-Reply-To: <201004232148.52739.ceggers@gmx.de>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 25, 2010 at 22:09, Tomas Winkler <tomasw@gmail.com> wrote:
-> Said thing is that I don't see where the memory goes.... Anyhow I will
-> try to run valgrin on udev just to be sure.
+On 04/24/2010 01:18 AM, Christian Eggers wrote:
+> # uname -r
+> 2.6.34-rc5-desktop
+> 
+> Samba server: Debian with Samba-3.2.5 (also other OS seem to be affected)
+> 
+> # modprobe cifs
+> # mount -t cifs //server/privat /mnt -o username=christian
+> 
+> When I mount a remote Samba share with the previous commands, the share gets successfully mounted and is shown in the output of the "mount" command. After some minutes the share is automatically unmounted without any user intervention. Is this a wanted feature 
+> or a bug?
+> 
 
-Nah, that memory would be freed, if you kill all udev processes, which
-it doesn't.
+I remember seeing a similar bug which was due to buggy version of dhcpcd
+and I could never manage to reproduce this with dhclient.
 
-The many udev worker processes you see for a few seconds was caused by
-udevd handling events with TIMEOUT= set special. We need to make sure,
-that firmware events run immediately and don't wait for other
-processes to finish. The logic who does that was always creating a new
-worker. I changed this now, but this will not affect the underlying
-problem you are seeing, it will just make the udev workers not grow in
-a timeframe of less than 10 seconds. The change is here:
-  http://git.kernel.org/?p=linux/hotplug/udev.git;a=commit;h=665ee17def2caa6811ae032ae68ebf8239a18cf8
-but as mentioned, this change is unrelated to the memory leak you are seeing.
+Could you try reproducing the problem with a static IP or using dhclient?
 
-> I'll be glad If someone can run my simple driver I posted and confirm
-> that sees the same problem
+Thanks,
 
-I can confirm that memory gets lost. I suspect for some reason the
-firmware does not get properly cleaned up. If you increase the size of
-the firmware image, it will leak memory much faster.
-
-Kay
+-- 
+Suresh Jayaraman
