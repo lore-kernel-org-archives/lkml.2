@@ -1,34 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891Ab0DZRSQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 13:18:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9119 "EHLO mx1.redhat.com"
+	id S1752198Ab0DZRSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 13:18:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12253 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849Ab0DZRSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 13:18:15 -0400
-Date: Mon, 26 Apr 2010 13:18:00 -0400
+	id S1750849Ab0DZRSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 13:18:43 -0400
+Date: Mon, 26 Apr 2010 13:18:30 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
        Jens Axboe <jens.axboe@oracle.com>
 Cc: Divyesh Shah <dpshah@google.com>, Nauman Rafique <nauman@google.com>,
        Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Subject: Re: [PATCH] blkio: Fix another BUG_ON() crash due to cfqq movement
-	across groups
-Message-ID: <20100426171800.GB3372@redhat.com>
-References: <20100421221906.GG3275@redhat.com>
+Subject: Re: [PATCH] blk-cgroup: config options re-arrangement
+Message-ID: <20100426171830.GC3372@redhat.com>
+References: <20100422223705.GI3228@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100421221906.GG3275@redhat.com>
+In-Reply-To: <20100422223705.GI3228@redhat.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 21, 2010 at 06:19:06PM -0400, Vivek Goyal wrote:
-> o Once in a while, I was hitting a BUG_ON() in blkio code. empty_time was
->   assuming that upon slice expiry, group can't be marked empty already (except
->   forced dispatch).
+On Thu, Apr 22, 2010 at 06:37:05PM -0400, Vivek Goyal wrote:
+> This patch fixes few usability and configurability issues.
+> 
+> o All the cgroup based controller options are configurable from
+>   "Genral Setup/Control Group Support/" menu. blkio is the only exception.
+>   Hence make this option visible in above menu and make it configurable from
+>   there to bring it inline with rest of the cgroup based controllers.
 > 
 
 Hi Jens,
@@ -39,285 +41,321 @@ it.
 Thanks
 Vivek
 
->   But this assumption is broken if cfqq can move (group_isolation=0) across
->   groups after receiving a request.
+> o Get rid of CONFIG_DEBUG_CFQ_IOSCHED.
 > 
->   I think most likely in this case we got a request in a cfqq and accounted
->   the rq in one group, later while adding the cfqq to tree, we moved the queue
->   to a different group which was already marked empty and after dispatch from
->   slice we found group already marked empty and raised alarm.
+>   This option currently does two things.
 > 
->   This patch does not error out if group is already marked empty. This can
->   introduce some empty_time stat error only in case of group_isolation=0. This
->   is better than crashing. In case of group_isolation=1 we should still get
->   same stats as before this patch.
+>   - Enable printing of cgroup paths in blktrace
+>   - Enables CONFIG_DEBUG_BLK_CGROUP, which in turn displays additional stat
+>     files in cgroup.
 > 
-> [  222.308546] ------------[ cut here ]------------
-> [  222.309311] kernel BUG at block/blk-cgroup.c:236!
-> [  222.309311] invalid opcode: 0000 [#1] SMP
-> [  222.309311] last sysfs file: /sys/devices/virtual/block/dm-3/queue/scheduler
-> [  222.309311] CPU 1
-> [  222.309311] Modules linked in: dm_round_robin dm_multipath qla2xxx scsi_transport_fc dm_zero dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
-> [  222.309311]
-> [  222.309311] Pid: 4780, comm: fio Not tainted 2.6.34-rc4-blkio-config #68 0A98h/HP xw8600 Workstation
-> [  222.309311] RIP: 0010:[<ffffffff8121ad88>]  [<ffffffff8121ad88>] blkiocg_set_start_empty_time+0x50/0x83
-> [  222.309311] RSP: 0018:ffff8800ba6e79f8  EFLAGS: 00010002
-> [  222.309311] RAX: 0000000000000082 RBX: ffff8800a13b7990 RCX: ffff8800a13b7808
-> [  222.309311] RDX: 0000000000002121 RSI: 0000000000000082 RDI: ffff8800a13b7a30
-> [  222.309311] RBP: ffff8800ba6e7a18 R08: 0000000000000000 R09: 0000000000000001
-> [  222.309311] R10: 000000000002f8c8 R11: ffff8800ba6e7ad8 R12: ffff8800a13b78ff
-> [  222.309311] R13: ffff8800a13b7990 R14: 0000000000000001 R15: ffff8800a13b7808
-> [  222.309311] FS:  00007f3beec476f0(0000) GS:ffff880001e40000(0000) knlGS:0000000000000000
-> [  222.309311] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  222.309311] CR2: 000000000040e7f0 CR3: 00000000a12d5000 CR4: 00000000000006e0
-> [  222.309311] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  222.309311] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  222.309311] Process fio (pid: 4780, threadinfo ffff8800ba6e6000, task ffff8800b3d6bf00)
-> [  222.309311] Stack:
-> [  222.309311]  0000000000000001 ffff8800bab17a48 ffff8800bab17a48 ffff8800a13b7800
-> [  222.309311] <0> ffff8800ba6e7a68 ffffffff8121da35 ffff880000000001 00ff8800ba5c5698
-> [  222.309311] <0> ffff8800ba6e7a68 ffff8800a13b7800 0000000000000000 ffff8800bab17a48
-> [  222.309311] Call Trace:
-> [  222.309311]  [<ffffffff8121da35>] __cfq_slice_expired+0x2af/0x3ec
-> [  222.309311]  [<ffffffff8121fd7b>] cfq_dispatch_requests+0x2c8/0x8e8
-> [  222.309311]  [<ffffffff8120f1cd>] ? spin_unlock_irqrestore+0xe/0x10
-> [  222.309311]  [<ffffffff8120fb1a>] ? blk_insert_cloned_request+0x70/0x7b
-> [  222.309311]  [<ffffffff81210461>] blk_peek_request+0x191/0x1a7
-> [  222.309311]  [<ffffffffa0002799>] dm_request_fn+0x38/0x14c [dm_mod]
-> [  222.309311]  [<ffffffff810ae61f>] ? sync_page_killable+0x0/0x35
-> [  222.309311]  [<ffffffff81210fd4>] __generic_unplug_device+0x32/0x37
-> [  222.309311]  [<ffffffff81211274>] generic_unplug_device+0x2e/0x3c
-> [  222.309311]  [<ffffffffa00011a6>] dm_unplug_all+0x42/0x5b [dm_mod]
-> [  222.309311]  [<ffffffff8120ca37>] blk_unplug+0x29/0x2d
-> [  222.309311]  [<ffffffff8120ca4d>] blk_backing_dev_unplug+0x12/0x14
-> [  222.309311]  [<ffffffff81109a7a>] block_sync_page+0x35/0x39
-> [  222.309311]  [<ffffffff810ae616>] sync_page+0x41/0x4a
-> [  222.309311]  [<ffffffff810ae62d>] sync_page_killable+0xe/0x35
-> [  222.309311]  [<ffffffff8158aa59>] __wait_on_bit_lock+0x46/0x8f
-> [  222.309311]  [<ffffffff810ae4f5>] __lock_page_killable+0x66/0x6d
-> [  222.309311]  [<ffffffff81056f9c>] ? wake_bit_function+0x0/0x33
-> [  222.309311]  [<ffffffff810ae528>] lock_page_killable+0x2c/0x2e
-> [  222.309311]  [<ffffffff810afbc5>] generic_file_aio_read+0x361/0x4f0
-> [  222.309311]  [<ffffffff810ea044>] do_sync_read+0xcb/0x108
-> [  222.309311]  [<ffffffff811e42f7>] ? security_file_permission+0x16/0x18
-> [  222.309311]  [<ffffffff810ea6ab>] vfs_read+0xab/0x108
-> [  222.309311]  [<ffffffff810ea7c8>] sys_read+0x4a/0x6e
-> [  222.309311]  [<ffffffff81002b5b>] system_call_fastpath+0x16/0x1b
-> [  222.309311] Code: 58 01 00 00 00 48 89 c6 75 0a 48 83 bb 60 01 00 00 00 74 09 48 8d bb a0 00 00 00 eb 35 41 fe cc 74 0d f6 83 c0 01 00 00 04 74 04 <0f> 0b eb fe 48 89 75 e8 e8 be e0 de ff 66 83 8b c0 01 00 00 04
-> [  222.309311] RIP  [<ffffffff8121ad88>] blkiocg_set_start_empty_time+0x50/0x83
-> [  222.309311]  RSP <ffff8800ba6e79f8>
-> [  222.309311] ---[ end trace 32b4f71dffc15712 ]---
+>   If we are using group scheduling, blktrace data is of not really much use
+>   if cgroup information is not present. To get this data, currently one has to
+>   also enable CONFIG_DEBUG_CFQ_IOSCHED, which in turn brings the overhead of
+>   all the additional debug stat files which is not desired.
+> 
+>   Hence, this patch moves printing of cgroup paths under
+>   CONFIG_CFQ_GROUP_IOSCHED.
+> 
+>   This allows us to get rid of CONFIG_DEBUG_CFQ_IOSCHED completely. Now all
+>   the debug stat files are controlled only by CONFIG_DEBUG_BLK_CGROUP which
+>   can be enabled through config menu.
 > 
 > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 > ---
->  block/blk-cgroup.c  |   15 +++++++++------
->  block/blk-cgroup.h  |    5 ++---
->  block/cfq-iosched.c |   33 ++++++++++++++++-----------------
->  3 files changed, 27 insertions(+), 26 deletions(-)
+>  Documentation/cgroups/blkio-controller.txt |   35 ++++++++++++----------------
+>  block/Kconfig                              |   23 ------------------
+>  block/Kconfig.iosched                      |   16 ++++--------
+>  block/blk-cgroup.c                         |    2 -
+>  block/blk-cgroup.h                         |   14 +++++-----
+>  block/cfq-iosched.c                        |    2 +-
+>  init/Kconfig                               |   27 +++++++++++++++++++++
+>  7 files changed, 55 insertions(+), 64 deletions(-)
 > 
+> diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
+> index d422b41..48e0b21 100644
+> --- a/Documentation/cgroups/blkio-controller.txt
+> +++ b/Documentation/cgroups/blkio-controller.txt
+> @@ -17,6 +17,9 @@ HOWTO
+>  You can do a very simple testing of running two dd threads in two different
+>  cgroups. Here is what you can do.
+>  
+> +- Enable Block IO controller
+> +	CONFIG_BLK_CGROUP=y
+> +
+>  - Enable group scheduling in CFQ
+>  	CONFIG_CFQ_GROUP_IOSCHED=y
+>  
+> @@ -54,24 +57,16 @@ cgroups. Here is what you can do.
+>  
+>  Various user visible config options
+>  ===================================
+> -CONFIG_CFQ_GROUP_IOSCHED
+> -	- Enables group scheduling in CFQ. Currently only 1 level of group
+> -	  creation is allowed.
+> -
+> -CONFIG_DEBUG_CFQ_IOSCHED
+> -	- Enables some debugging messages in blktrace. Also creates extra
+> -	  cgroup file blkio.dequeue.
+> -
+> -Config options selected automatically
+> -=====================================
+> -These config options are not user visible and are selected/deselected
+> -automatically based on IO scheduler configuration.
+> -
+>  CONFIG_BLK_CGROUP
+> -	- Block IO controller. Selected by CONFIG_CFQ_GROUP_IOSCHED.
+> +	- Block IO controller.
+>  
+>  CONFIG_DEBUG_BLK_CGROUP
+> -	- Debug help. Selected by CONFIG_DEBUG_CFQ_IOSCHED.
+> +	- Debug help. Right now some additional stats file show up in cgroup
+> +	  if this option is enabled.
+> +
+> +CONFIG_CFQ_GROUP_IOSCHED
+> +	- Enables group scheduling in CFQ. Currently only 1 level of group
+> +	  creation is allowed.
+>  
+>  Details of cgroup files
+>  =======================
+> @@ -174,13 +169,13 @@ Details of cgroup files
+>  	  write, sync or async.
+>  
+>  - blkio.avg_queue_size
+> -	- Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y.
+> +	- Debugging aid only enabled if CONFIG_DEBUG_BLK_CGROUP=y.
+>  	  The average queue size for this cgroup over the entire time of this
+>  	  cgroup's existence. Queue size samples are taken each time one of the
+>  	  queues of this cgroup gets a timeslice.
+>  
+>  - blkio.group_wait_time
+> -	- Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y.
+> +	- Debugging aid only enabled if CONFIG_DEBUG_BLK_CGROUP=y.
+>  	  This is the amount of time the cgroup had to wait since it became busy
+>  	  (i.e., went from 0 to 1 request queued) to get a timeslice for one of
+>  	  its queues. This is different from the io_wait_time which is the
+> @@ -191,7 +186,7 @@ Details of cgroup files
+>  	  got a timeslice and will not include the current delta.
+>  
+>  - blkio.empty_time
+> -	- Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y.
+> +	- Debugging aid only enabled if CONFIG_DEBUG_BLK_CGROUP=y.
+>  	  This is the amount of time a cgroup spends without any pending
+>  	  requests when not being served, i.e., it does not include any time
+>  	  spent idling for one of the queues of the cgroup. This is in
+> @@ -200,7 +195,7 @@ Details of cgroup files
+>  	  time it had a pending request and will not include the current delta.
+>  
+>  - blkio.idle_time
+> -	- Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y.
+> +	- Debugging aid only enabled if CONFIG_DEBUG_BLK_CGROUP=y.
+>  	  This is the amount of time spent by the IO scheduler idling for a
+>  	  given cgroup in anticipation of a better request than the exising ones
+>  	  from other queues/cgroups. This is in nanoseconds. If this is read
+> @@ -209,7 +204,7 @@ Details of cgroup files
+>  	  the current delta.
+>  
+>  - blkio.dequeue
+> -	- Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y. This
+> +	- Debugging aid only enabled if CONFIG_DEBUG_BLK_CGROUP=y. This
+>  	  gives the statistics about how many a times a group was dequeued
+>  	  from service tree of the device. First two fields specify the major
+>  	  and minor number of the device and third field specifies the number
+> diff --git a/block/Kconfig b/block/Kconfig
+> index f9e89f4..9be0b56 100644
+> --- a/block/Kconfig
+> +++ b/block/Kconfig
+> @@ -77,29 +77,6 @@ config BLK_DEV_INTEGRITY
+>  	T10/SCSI Data Integrity Field or the T13/ATA External Path
+>  	Protection.  If in doubt, say N.
+>  
+> -config BLK_CGROUP
+> -	tristate "Block cgroup support"
+> -	depends on CGROUPS
+> -	depends on CFQ_GROUP_IOSCHED
+> -	default n
+> -	---help---
+> -	Generic block IO controller cgroup interface. This is the common
+> -	cgroup interface which should be used by various IO controlling
+> -	policies.
+> -
+> -	Currently, CFQ IO scheduler uses it to recognize task groups and
+> -	control disk bandwidth allocation (proportional time slice allocation)
+> -	to such task groups.
+> -
+> -config DEBUG_BLK_CGROUP
+> -	bool
+> -	depends on BLK_CGROUP
+> -	default n
+> -	---help---
+> -	Enable some debugging help. Currently it stores the cgroup path
+> -	in the blk group which can be used by cfq for tracing various
+> -	group related activity.
+> -
+>  endif # BLOCK
+>  
+>  config BLOCK_COMPAT
+> diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
+> index fc71cf0..3199b76 100644
+> --- a/block/Kconfig.iosched
+> +++ b/block/Kconfig.iosched
+> @@ -23,7 +23,8 @@ config IOSCHED_DEADLINE
+>  
+>  config IOSCHED_CFQ
+>  	tristate "CFQ I/O scheduler"
+> -	select BLK_CGROUP if CFQ_GROUP_IOSCHED
+> +	# If BLK_CGROUP is a module, CFQ has to be built as module.
+> +	depends on (BLK_CGROUP=m && m) || !BLK_CGROUP || BLK_CGROUP=y
+>  	default y
+>  	---help---
+>  	  The CFQ I/O scheduler tries to distribute bandwidth equally
+> @@ -33,22 +34,15 @@ config IOSCHED_CFQ
+>  
+>  	  This is the default I/O scheduler.
+>  
+> +	  Note: If BLK_CGROUP=m, then CFQ can be built only as module.
+> +
+>  config CFQ_GROUP_IOSCHED
+>  	bool "CFQ Group Scheduling support"
+> -	depends on IOSCHED_CFQ && CGROUPS
+> +	depends on IOSCHED_CFQ && BLK_CGROUP
+>  	default n
+>  	---help---
+>  	  Enable group IO scheduling in CFQ.
+>  
+> -config DEBUG_CFQ_IOSCHED
+> -	bool "Debug CFQ Scheduling"
+> -	depends on CFQ_GROUP_IOSCHED
+> -	select DEBUG_BLK_CGROUP
+> -	default n
+> -	---help---
+> -	  Enable CFQ IO scheduling debugging in CFQ. Currently it makes
+> -	  blktrace output more verbose.
+> -
+>  choice
+>  	prompt "Default I/O scheduler"
+>  	default DEFAULT_CFQ
 > diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 83930f6..af42efb 100644
+> index 83930f6..92d3b74 100644
 > --- a/block/blk-cgroup.c
 > +++ b/block/blk-cgroup.c
-> @@ -213,7 +213,7 @@ void blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg)
+> @@ -348,10 +348,8 @@ void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+>  	blkg->blkcg_id = css_id(&blkcg->css);
+>  	hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
+>  	spin_unlock_irqrestore(&blkcg->lock, flags);
+> -#ifdef CONFIG_DEBUG_BLK_CGROUP
+>  	/* Need to take css reference ? */
+>  	cgroup_path(blkcg->css.cgroup, blkg->path, sizeof(blkg->path));
+> -#endif
+>  	blkg->dev = dev;
 >  }
->  EXPORT_SYMBOL_GPL(blkiocg_update_avg_queue_size_stats);
->  
-> -void blkiocg_set_start_empty_time(struct blkio_group *blkg, bool ignore)
-> +void blkiocg_set_start_empty_time(struct blkio_group *blkg)
->  {
->  	unsigned long flags;
->  	struct blkio_group_stats *stats;
-> @@ -228,12 +228,15 @@ void blkiocg_set_start_empty_time(struct blkio_group *blkg, bool ignore)
->  	}
->  
->  	/*
-> -	 * If ignore is set, we do not panic on the empty flag being set
-> -	 * already. This is to avoid cases where there are superfluous timeslice
-> -	 * complete events (for eg., forced_dispatch in CFQ) when no IOs are
-> -	 * served which could result in triggering the empty check incorrectly.
-> +	 * group is already marked empty. This can happen if cfqq got new
-> +	 * request in parent group and moved to this group while being added
-> +	 * to service tree. Just ignore the event and move on.
->  	 */
-> -	BUG_ON(!ignore && blkio_blkg_empty(stats));
-> +	if(blkio_blkg_empty(stats)) {
-> +		spin_unlock_irqrestore(&blkg->stats_lock, flags);
-> +		return;
-> +	}
-> +
->  	stats->start_empty_time = sched_clock();
->  	blkio_mark_blkg_empty(stats);
->  	spin_unlock_irqrestore(&blkg->stats_lock, flags);
+>  EXPORT_SYMBOL_GPL(blkiocg_add_blkio_group);
 > diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-> index 2c956a0..a491a6d 100644
+> index 2c956a0..8a357f1 100644
 > --- a/block/blk-cgroup.h
 > +++ b/block/blk-cgroup.h
-> @@ -174,7 +174,7 @@ void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
->  				unsigned long dequeue);
->  void blkiocg_update_set_idle_time_stats(struct blkio_group *blkg);
->  void blkiocg_update_idle_time_stats(struct blkio_group *blkg);
-> -void blkiocg_set_start_empty_time(struct blkio_group *blkg, bool ignore);
-> +void blkiocg_set_start_empty_time(struct blkio_group *blkg);
+> @@ -108,10 +108,8 @@ struct blkio_group {
+>  	void *key;
+>  	struct hlist_node blkcg_node;
+>  	unsigned short blkcg_id;
+> -#ifdef CONFIG_DEBUG_BLK_CGROUP
+>  	/* Store cgroup path */
+>  	char path[128];
+> -#endif
+>  	/* The device MKDEV(major, minor), this group has been created for */
+>  	dev_t dev;
 >  
->  #define BLKG_FLAG_FNS(name)						\
->  static inline void blkio_mark_blkg_##name(				\
-> @@ -205,8 +205,7 @@ static inline void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
->  static inline void blkiocg_update_set_idle_time_stats(struct blkio_group *blkg)
->  {}
->  static inline void blkiocg_update_idle_time_stats(struct blkio_group *blkg) {}
-> -static inline void blkiocg_set_start_empty_time(struct blkio_group *blkg,
-> -						bool ignore) {}
-> +static inline void blkiocg_set_start_empty_time(struct blkio_group *blkg) {}
+> @@ -147,6 +145,11 @@ struct blkio_policy_type {
+>  extern void blkio_policy_register(struct blkio_policy_type *);
+>  extern void blkio_policy_unregister(struct blkio_policy_type *);
+>  
+> +static inline char *blkg_path(struct blkio_group *blkg)
+> +{
+> +	return blkg->path;
+> +}
+> +
+>  #else
+>  
+>  struct blkio_group {
+> @@ -158,6 +161,8 @@ struct blkio_policy_type {
+>  static inline void blkio_policy_register(struct blkio_policy_type *blkiop) { }
+>  static inline void blkio_policy_unregister(struct blkio_policy_type *blkiop) { }
+>  
+> +static inline char *blkg_path(struct blkio_group *blkg) { return NULL; }
+> +
 >  #endif
 >  
->  #if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+>  #define BLKIO_WEIGHT_MIN	100
+> @@ -165,10 +170,6 @@ static inline void blkio_policy_unregister(struct blkio_policy_type *blkiop) { }
+>  #define BLKIO_WEIGHT_DEFAULT	500
+>  
+>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+> -static inline char *blkg_path(struct blkio_group *blkg)
+> -{
+> -	return blkg->path;
+> -}
+>  void blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg);
+>  void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+>  				unsigned long dequeue);
+> @@ -197,7 +198,6 @@ BLKG_FLAG_FNS(idling)
+>  BLKG_FLAG_FNS(empty)
+>  #undef BLKG_FLAG_FNS
+>  #else
+> -static inline char *blkg_path(struct blkio_group *blkg) { return NULL; }
+>  static inline void blkiocg_update_avg_queue_size_stats(
+>  						struct blkio_group *blkg) {}
+>  static inline void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
 > diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index d5927b5..002a5b6 100644
+> index d5927b5..5fa0e98 100644
 > --- a/block/cfq-iosched.c
 > +++ b/block/cfq-iosched.c
-> @@ -888,7 +888,7 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
->  }
+> @@ -345,7 +345,7 @@ CFQ_CFQQ_FNS(deep);
+>  CFQ_CFQQ_FNS(wait_busy);
+>  #undef CFQ_CFQQ_FNS
 >  
->  static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
-> -				struct cfq_queue *cfqq, bool forced)
-> +				struct cfq_queue *cfqq)
->  {
->  	struct cfq_rb_root *st = &cfqd->grp_service_tree;
->  	unsigned int used_sl, charge_sl;
-> @@ -918,7 +918,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
->  	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
->  					st->min_vdisktime);
->  	blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
-> -	blkiocg_set_start_empty_time(&cfqg->blkg, forced);
-> +	blkiocg_set_start_empty_time(&cfqg->blkg);
->  }
+> -#ifdef CONFIG_DEBUG_CFQ_IOSCHED
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  #define cfq_log_cfqq(cfqd, cfqq, fmt, args...)	\
+>  	blk_add_trace_msg((cfqd)->queue, "cfq%d%c %s " fmt, (cfqq)->pid, \
+>  			cfq_cfqq_sync((cfqq)) ? 'S' : 'A', \
+> diff --git a/init/Kconfig b/init/Kconfig
+> index eb77e8c..087c14f 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -612,6 +612,33 @@ config RT_GROUP_SCHED
 >  
->  #ifdef CONFIG_CFQ_GROUP_IOSCHED
-> @@ -1582,7 +1582,7 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
->   */
->  static void
->  __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
-> -		    bool timed_out, bool forced)
-> +		    bool timed_out)
->  {
->  	cfq_log_cfqq(cfqd, cfqq, "slice expired t=%d", timed_out);
+>  endif #CGROUP_SCHED
 >  
-> @@ -1609,7 +1609,7 @@ __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
->  		cfq_log_cfqq(cfqd, cfqq, "resid=%ld", cfqq->slice_resid);
->  	}
+> +config BLK_CGROUP
+> +	tristate "Block IO controller"
+> +	depends on CGROUPS && BLOCK
+> +	default n
+> +	---help---
+> +	Generic block IO controller cgroup interface. This is the common
+> +	cgroup interface which should be used by various IO controlling
+> +	policies.
+> +
+> +	Currently, CFQ IO scheduler uses it to recognize task groups and
+> +	control disk bandwidth allocation (proportional time slice allocation)
+> +	to such task groups.
+> +
+> +	This option only enables generic Block IO controller infrastructure.
+> +	One needs to also enable actual IO controlling logic in CFQ for it
+> +	to take effect. (CONFIG_CFQ_GROUP_IOSCHED=y).
+> +
+> +	See Documentation/cgroups/blkio-controller.txt for more information.
+> +
+> +config DEBUG_BLK_CGROUP
+> +	bool "Enable Block IO controller debugging"
+> +	depends on BLK_CGROUP
+> +	default n
+> +	---help---
+> +	Enable some debugging help. Currently it exports additional stat
+> +	files in a cgroup which can be useful for debugging.
+> +
+>  endif # CGROUPS
 >  
-> -	cfq_group_served(cfqd, cfqq->cfqg, cfqq, forced);
-> +	cfq_group_served(cfqd, cfqq->cfqg, cfqq);
->  
->  	if (cfq_cfqq_on_rr(cfqq) && RB_EMPTY_ROOT(&cfqq->sort_list))
->  		cfq_del_cfqq_rr(cfqd, cfqq);
-> @@ -1628,13 +1628,12 @@ __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
->  	}
->  }
->  
-> -static inline void cfq_slice_expired(struct cfq_data *cfqd, bool timed_out,
-> -					bool forced)
-> +static inline void cfq_slice_expired(struct cfq_data *cfqd, bool timed_out)
->  {
->  	struct cfq_queue *cfqq = cfqd->active_queue;
->  
->  	if (cfqq)
-> -		__cfq_slice_expired(cfqd, cfqq, timed_out, forced);
-> +		__cfq_slice_expired(cfqd, cfqq, timed_out);
->  }
->  
->  /*
-> @@ -2202,7 +2201,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
->  	}
->  
->  expire:
-> -	cfq_slice_expired(cfqd, 0, false);
-> +	cfq_slice_expired(cfqd, 0);
->  new_queue:
->  	/*
->  	 * Current queue expired. Check if we have to switch to a new
-> @@ -2228,7 +2227,7 @@ static int __cfq_forced_dispatch_cfqq(struct cfq_queue *cfqq)
->  	BUG_ON(!list_empty(&cfqq->fifo));
->  
->  	/* By default cfqq is not expired if it is empty. Do it explicitly */
-> -	__cfq_slice_expired(cfqq->cfqd, cfqq, 0, true);
-> +	__cfq_slice_expired(cfqq->cfqd, cfqq, 0);
->  	return dispatched;
->  }
->  
-> @@ -2242,7 +2241,7 @@ static int cfq_forced_dispatch(struct cfq_data *cfqd)
->  	int dispatched = 0;
->  
->  	/* Expire the timeslice of the current active queue first */
-> -	cfq_slice_expired(cfqd, 0, true);
-> +	cfq_slice_expired(cfqd, 0);
->  	while ((cfqq = cfq_get_next_queue_forced(cfqd)) != NULL) {
->  		__cfq_set_active_queue(cfqd, cfqq);
->  		dispatched += __cfq_forced_dispatch_cfqq(cfqq);
-> @@ -2411,7 +2410,7 @@ static int cfq_dispatch_requests(struct request_queue *q, int force)
->  	    cfqq->slice_dispatch >= cfq_prio_to_maxrq(cfqd, cfqq)) ||
->  	    cfq_class_idle(cfqq))) {
->  		cfqq->slice_end = jiffies + 1;
-> -		cfq_slice_expired(cfqd, 0, false);
-> +		cfq_slice_expired(cfqd, 0);
->  	}
->  
->  	cfq_log_cfqq(cfqd, cfqq, "dispatched a request");
-> @@ -2442,7 +2441,7 @@ static void cfq_put_queue(struct cfq_queue *cfqq)
->  	orig_cfqg = cfqq->orig_cfqg;
->  
->  	if (unlikely(cfqd->active_queue == cfqq)) {
-> -		__cfq_slice_expired(cfqd, cfqq, 0, false);
-> +		__cfq_slice_expired(cfqd, cfqq, 0);
->  		cfq_schedule_dispatch(cfqd);
->  	}
->  
-> @@ -2543,7 +2542,7 @@ static void cfq_exit_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  	struct cfq_queue *__cfqq, *next;
->  
->  	if (unlikely(cfqq == cfqd->active_queue)) {
-> -		__cfq_slice_expired(cfqd, cfqq, 0, false);
-> +		__cfq_slice_expired(cfqd, cfqq, 0);
->  		cfq_schedule_dispatch(cfqd);
->  	}
->  
-> @@ -3172,7 +3171,7 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue *new_cfqq,
->  static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  {
->  	cfq_log_cfqq(cfqd, cfqq, "preempt");
-> -	cfq_slice_expired(cfqd, 1, false);
-> +	cfq_slice_expired(cfqd, 1);
->  
->  	/*
->  	 * Put the new queue at the front of the of the current list,
-> @@ -3383,7 +3382,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
->  		 * - when there is a close cooperator
->  		 */
->  		if (cfq_slice_used(cfqq) || cfq_class_idle(cfqq))
-> -			cfq_slice_expired(cfqd, 1, false);
-> +			cfq_slice_expired(cfqd, 1);
->  		else if (sync && cfqq_empty &&
->  			 !cfq_close_cooperator(cfqd, cfqq)) {
->  			cfqd->noidle_tree_requires_idle |= !rq_noidle(rq);
-> @@ -3648,7 +3647,7 @@ static void cfq_idle_slice_timer(unsigned long data)
->  		cfq_clear_cfqq_deep(cfqq);
->  	}
->  expire:
-> -	cfq_slice_expired(cfqd, timed_out, false);
-> +	cfq_slice_expired(cfqd, timed_out);
->  out_kick:
->  	cfq_schedule_dispatch(cfqd);
->  out_cont:
-> @@ -3691,7 +3690,7 @@ static void cfq_exit_queue(struct elevator_queue *e)
->  	spin_lock_irq(q->queue_lock);
->  
->  	if (cfqd->active_queue)
-> -		__cfq_slice_expired(cfqd, cfqd->active_queue, 0, false);
-> +		__cfq_slice_expired(cfqd, cfqd->active_queue, 0);
->  
->  	while (!list_empty(&cfqd->cic_list)) {
->  		struct cfq_io_context *cic = list_entry(cfqd->cic_list.next,
+>  config MM_OWNER
 > -- 
 > 1.6.2.5
 > 
