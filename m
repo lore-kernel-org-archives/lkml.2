@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab0DZWM2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 18:12:28 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:42295 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753197Ab0DZWM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 18:12:26 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Apr 2010 18:12:25 EDT
-Date: Tue, 27 Apr 2010 00:05:43 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Rik van Riel <riel@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Arjan van de Ven <arjan@infradead.org>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-       peterz@infradead.org, tglx@linutronix.de, cpufreq@vger.kernel.org
-Subject: Re: [PATCH 0/7] Fix performance issue with ondemand governor
-Message-ID: <20100426220543.GA27341@isilmar-3.linta.de>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
-	Arjan van de Ven <arjan@infradead.org>,
-	linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-	mingo@elte.hu, peterz@infradead.org, tglx@linutronix.de,
-	cpufreq@vger.kernel.org
-References: <20100418115949.7b743898@infradead.org> <20100426214156.GA32326@redhat.com> <20100426214534.GA5346@comet.dominikbrodowski.net> <4BD60CCB.7040907@redhat.com>
+	id S1755094Ab0DZWSt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 18:18:49 -0400
+Received: from tauceti.net ([62.245.250.166]:55094 "EHLO www.tauceti.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751787Ab0DZWSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 18:18:48 -0400
+Message-ID: <4BD61147.40709@tauceti.net>
+Date: Tue, 27 Apr 2010 00:18:47 +0200
+From: Robert Wimmer <kernel@tauceti.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100312 Thunderbird/3.0.3 ThunderBrowse/3.2.8.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BD60CCB.7040907@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       bugzilla-daemon@bugzilla.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
+References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain> <4BD5F6C5.8080605@tauceti.net> <1272315854.8984.125.camel@localhost.localdomain>
+In-Reply-To: <1272315854.8984.125.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 05:59:39PM -0400, Rik van Riel wrote:
-> On 04/26/2010 05:45 PM, Dominik Brodowski wrote:
->
->>> given the scheduler changes, these probably make more sense to go
->>> via one of Ingo's trees ?
->>> If everyone agrees, feel free to add my Signed-off-by:
->>
->> What about the issue Pavel reported and Willy confirmed (regression
->> on older hardware)?
->
-> Having a /sys tunable makes sense, especially when running
-> on battery power.  I guess that can be introduced as a patch
-> 8/7 :)
 
-... only if combined with sane default values.
+> Sure. In addition to what you did above, please do
+>
+> mount -t debugfs none /sys/kernel/debug
+>
+> and then cat the contents of the pseudofile at
+>
+> /sys/kernel/debug/tracing/stack_trace
+>
+> Please do this more or less immediately after you've finished mounting
+> the NFSv4 client.
+>   
 
-Best,
-	Dominik
+I've uploaded the stack trace. It was generated
+directly after mounting. Here are the stacks:
+
+After mounting:
+https://bugzilla.kernel.org/attachment.cgi?id=26153
+After the soft lockup:
+https://bugzilla.kernel.org/attachment.cgi?id=26154
+The dmesg output of the soft lockup:
+https://bugzilla.kernel.org/attachment.cgi?id=26155
+
+> Does your server have the 'crossmnt' or 'nohide' flags set, or does it
+> use the 'refer' export option anywhere? If so, then we might have to
+> test further, since those may trigger the NFSv4 submount feature.
+>   
+The server has the following settings:
+rw,nohide,insecure,async,no_subtree_check,no_root_squash
+
+Thanks!
+Robert
+
+
