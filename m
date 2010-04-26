@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab0DZNw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 09:52:57 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:38263 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751822Ab0DZNw4 (ORCPT
+	id S1752516Ab0DZN5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 09:57:24 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:37370 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab0DZN5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 09:52:56 -0400
-X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Apr 2010 09:52:55 EDT
-Date: Mon, 26 Apr 2010 15:44:35 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
-       David Howells <dhowells@redhat.com>, Roland McGrath <roland@redhat.com>,
-       Mike Frysinger <vapier@gentoo.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Cc: vamos@i4.informatik.uni-erlangen.de
-Subject: [PATCH] Doublecheck for CONFIG_MMU
-Message-ID: <20100426134435.GA2710@faui49.informatik.uni-erlangen.de>
+	Mon, 26 Apr 2010 09:57:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=q8BMNBAqv6/t2fum1doKv6IClw7zb3pkr3g3w2bAcdaBCID2ZeYVhBS0F3e5Ij1y/q
+         zMTG7JRjIn8HChZPTAycij6cKG04wWXKclop7blKzuG9UNq1aHShoe8d3jPK+Pceqc81
+         FdiAwWziFGZczkw6inV85V+C1fhie4QvsdAEQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Mon, 26 Apr 2010 14:57:21 +0100
+Message-ID: <g2zbffbecbb1004260657j7aff37dy9d10ca5ed37337c0@mail.gmail.com>
+Subject: [GIT PULL] Squashfs bug fixes for 2.6.34-rc6
+From: Phillip Lougher <phillip.lougher@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
+Hi Linus,
 
-	As part of the VAMOS[0] research project at the University of
-Erlangen we are looking at multiple integrity errors in linux'
-configuration system.
+Please pull the following Squashfs bug fixes.  The locking bug was
+added in the 2.6.34 merge window and it is
+rather nasty as it breaks liveCDs.  The other bugs are much less
+important but have all come to light since the merge window.
 
-	The following patch removes a unnecessary conditional. Inside
-a block making sure CONFIG_MMU isn't set the option is checked again
-and based on that some parts are (not) included. As the outer check
-already makes sure CONFIG_MMU isn't set here both checks are
-unnecessary so this patch removes them.
+Thanks
 
-	Please keep me informed of this patch getting confirmed /
-merged so we can keep track of it.
+Phillip
 
-Regards
+ --------------------------------
+The following changes since commit 0d0fb0f9c5fddef4a10242fe3337f00f528a3099:
+  Linus Torvalds (1):
+        Linux 2.6.34-rc4
 
-	Christoph Egger
+are available in the git repository at:
 
-[0] http://vamos1.informatik.uni-erlangen.de/
+  git://git.kernel.org/pub/scm/linux/kernel/git/pkl/squashfs-linus.git master
 
-----
->From 641fdd413e19208abfd764e061c8bbddeb24d574 Mon Sep 17 00:00:00 2001
-From: Christoph Egger <siccegge@stud.informatik.uni-erlangen.de>
-Date: Mon, 26 Apr 2010 15:32:53 +0200
-Subject: [PATCH] Remove redundant check for CONFIG_MMU
+Phillip Lougher (4):
+      squashfs: fix locking bug in zlib wrapper
+      squashfs: fix warn_on when root inode is corrupted
+      squashfs: add missing buffer free
+      squashfs: fix potential buffer over-run on 4K block file systems
 
-The checks for CONFIG_MMU at this location is duplicated as all the
-code is located inside a #ifndef CONFIG_MMU block. So the first
-Conditional Block will always be included while the second will never.
-
-Signed-off-by: Christoph Egger <siccegge@stud.informatik.uni-erlangen.de>
----
- fs/binfmt_elf_fdpic.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
-
-diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index 7ab23e0..2c5f9a0 100644
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -1005,15 +1005,8 @@ static int elf_fdpic_map_file_constdisp_on_uclinux(
- 				}
- 			} else if (!mm->start_data) {
- 				mm->start_data = seg->addr;
--#ifndef CONFIG_MMU
- 				mm->end_data = seg->addr + phdr->p_memsz;
--#endif
- 			}
--
--#ifdef CONFIG_MMU
--			if (seg->addr + phdr->p_memsz > mm->end_data)
--				mm->end_data = seg->addr + phdr->p_memsz;
--#endif
- 		}
- 
- 		seg++;
--- 
-1.6.3.3
-
-
-
-
-
-
-
+ fs/squashfs/block.c        |    5 ++---
+ fs/squashfs/super.c        |    4 +++-
+ fs/squashfs/zlib_wrapper.c |    3 ++-
+ 3 files changed, 7 insertions(+), 5 deletions(-)
