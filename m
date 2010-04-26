@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab0DZTcF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 15:32:05 -0400
-Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:51607 "EHLO
+	id S1755186Ab0DZTcI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 15:32:08 -0400
+Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:51600 "EHLO
 	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732Ab0DZT2b (ORCPT
+	with ESMTP id S1754717Ab0DZT2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Apr 2010 15:28:31 -0400
 X-Cam-AntiVirus: no malware found
@@ -14,161 +14,976 @@ From: Jonathan Cameron <jic23@cam.ac.uk>
 To: iio-linux@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, gregkh@suse.de,
        Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 05/19] staging: iio: Move from class to bus
-Date: Mon, 26 Apr 2010 20:31:07 +0100
-Message-Id: <1272310281-7418-6-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 03/19] iio:staging:accelerometers move towards the new abi
+Date: Mon, 26 Apr 2010 20:31:05 +0100
+Message-Id: <1272310281-7418-4-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.6.4.4
-In-Reply-To: <1272310281-7418-5-git-send-email-jic23@cam.ac.uk>
+In-Reply-To: <1272310281-7418-3-git-send-email-jic23@cam.ac.uk>
 References: <1272310281-7418-1-git-send-email-jic23@cam.ac.uk>
  <1272310281-7418-2-git-send-email-jic23@cam.ac.uk>
  <1272310281-7418-3-git-send-email-jic23@cam.ac.uk>
- <1272310281-7418-4-git-send-email-jic23@cam.ac.uk>
- <1272310281-7418-5-git-send-email-jic23@cam.ac.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- drivers/staging/iio/iio.h                  |    2 +-
- drivers/staging/iio/industrialio-core.c    |   28 +++++++++++-----------------
- drivers/staging/iio/industrialio-ring.c    |    2 +-
- drivers/staging/iio/industrialio-trigger.c |    2 +-
- drivers/staging/iio/ring_sw.c              |    2 +-
- 5 files changed, 15 insertions(+), 21 deletions(-)
+ drivers/staging/iio/accel/accel.h          |    8 +-
+ drivers/staging/iio/accel/kxsd9.c          |   88 ++++++++------
+ drivers/staging/iio/accel/lis3l02dq.h      |    4 -
+ drivers/staging/iio/accel/lis3l02dq_core.c |  175 ++++++++++++++-------------
+ drivers/staging/iio/accel/lis3l02dq_ring.c |    8 +-
+ drivers/staging/iio/accel/sca3000.h        |    2 +
+ drivers/staging/iio/accel/sca3000_core.c   |  172 +++++++++++++--------------
+ drivers/staging/iio/accel/sca3000_ring.c   |   33 ++++--
+ drivers/staging/iio/ring_generic.h         |    4 +-
+ 9 files changed, 262 insertions(+), 232 deletions(-)
 
-diff --git a/drivers/staging/iio/iio.h b/drivers/staging/iio/iio.h
-index a12072a..fcee47c 100644
---- a/drivers/staging/iio/iio.h
-+++ b/drivers/staging/iio/iio.h
-@@ -377,7 +377,7 @@ void iio_deallocate_chrdev(struct iio_handler *handler);
- #define IIO_UNSIGNED(a) (a)
+diff --git a/drivers/staging/iio/accel/accel.h b/drivers/staging/iio/accel/accel.h
+index d7fc7f9..059209c 100644
+--- a/drivers/staging/iio/accel/accel.h
++++ b/drivers/staging/iio/accel/accel.h
+@@ -2,7 +2,6 @@
+ #include "../sysfs.h"
  
- extern dev_t iio_devt;
--extern struct class iio_class;
-+extern struct bus_type iio_bus_type;
- 
- /**
-  * iio_put_device() - reference counted deallocation of struct device
-diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
-index 37f58f6..c19a080 100644
---- a/drivers/staging/iio/industrialio-core.c
-+++ b/drivers/staging/iio/industrialio-core.c
-@@ -42,16 +42,10 @@ dev_t iio_devt;
- EXPORT_SYMBOL(iio_devt);
- 
- #define IIO_DEV_MAX 256
--static char *iio_devnode(struct device *dev, mode_t *mode)
--{
--	return kasprintf(GFP_KERNEL, "iio/%s", dev_name(dev));
--}
+ /* Accelerometer types of attribute */
 -
--struct class iio_class = {
-+struct bus_type iio_bus_type = {
- 	.name = "iio",
--	.devnode = iio_devnode,
+ #define IIO_DEV_ATTR_ACCEL_X_OFFSET(_mode, _show, _store, _addr)	\
+ 	IIO_DEVICE_ATTR(accel_x_offset, _mode, _show, _store, _addr)
+ 
+@@ -22,13 +21,13 @@
+ 	IIO_DEVICE_ATTR(accel_z_gain, _mode, _show, _store, _addr)
+ 
+ #define IIO_DEV_ATTR_ACCEL_X(_show, _addr)			\
+-	IIO_DEVICE_ATTR(accel_x, S_IRUGO, _show, NULL, _addr)
++	IIO_DEVICE_ATTR(accel_x_raw, S_IRUGO, _show, NULL, _addr)
+ 
+ #define IIO_DEV_ATTR_ACCEL_Y(_show, _addr)			\
+-	IIO_DEVICE_ATTR(accel_y, S_IRUGO, _show, NULL, _addr)
++	IIO_DEVICE_ATTR(accel_y_raw, S_IRUGO, _show, NULL, _addr)
+ 
+ #define IIO_DEV_ATTR_ACCEL_Z(_show, _addr)			\
+-	IIO_DEVICE_ATTR(accel_z, S_IRUGO, _show, NULL, _addr)
++	IIO_DEVICE_ATTR(accel_z_raw, S_IRUGO, _show, NULL, _addr)
+ 
+ /* Thresholds are somewhat chip dependent - may need quite a few defs here */
+ /* For unified thresholds (shared across all directions */
+@@ -61,7 +60,6 @@
+ #define IIO_DEV_ATTR_ACCEL_THRESH_Z(_mode, _show, _store, _addr)	\
+ 	IIO_DEVICE_ATTR(thresh_accel_z, _mode, _show, _store, _addr)
+ 
+-
+ /**
+  * IIO_EVENT_ATTR_ACCEL_X_HIGH: threshold event, x acceleration
+  * @_show: read x acceleration high threshold
+diff --git a/drivers/staging/iio/accel/kxsd9.c b/drivers/staging/iio/accel/kxsd9.c
+index db2dd53..ae7ffe1 100644
+--- a/drivers/staging/iio/accel/kxsd9.c
++++ b/drivers/staging/iio/accel/kxsd9.c
+@@ -26,6 +26,7 @@
+ #include <linux/rtc.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
++#include <linux/string.h>
+ 
+ #include "../iio.h"
+ #include "../sysfs.h"
+@@ -51,8 +52,10 @@
+ #define KXSD9_READ(a) (0x80 | (a))
+ #define KXSD9_WRITE(a) (a)
+ 
+-#define IIO_DEV_ATTR_ACCEL_SET_RANGE(_mode, _show, _store)	\
+-	IIO_DEVICE_ATTR(accel_range, _mode, _show, _store, 0)
++#define KXSD9_SCALE_2G "0.011978"
++#define KXSD9_SCALE_4G "0.023927"
++#define KXSD9_SCALE_6G "0.035934"
++#define KXSD9_SCALE_8G "0.047853"
+ 
+ #define KXSD9_STATE_RX_SIZE 2
+ #define KXSD9_STATE_TX_SIZE 4
+@@ -73,9 +76,9 @@ struct kxsd9_state {
  };
--EXPORT_SYMBOL(iio_class);
-+EXPORT_SYMBOL(iio_bus_type);
  
- void __iio_change_event(struct iio_detected_event_list *ev,
- 			int ev_code,
-@@ -405,7 +399,7 @@ int iio_setup_ev_int(struct iio_event_interface *ev_int,
- {
- 	int ret, minor;
- 
--	ev_int->dev.class = &iio_class;
-+	ev_int->dev.bus = &iio_bus_type;
- 	ev_int->dev.parent = dev;
- 	ev_int->dev.type = &iio_event_type;
- 	device_initialize(&ev_int->dev);
-@@ -478,23 +472,23 @@ static int __init iio_init(void)
+ /* This may want to move to mili g to allow for non integer ranges */
+-static ssize_t kxsd9_read_accel_range(struct device *dev,
+-				      struct device_attribute *attr,
+-				      char *buf)
++static ssize_t kxsd9_read_scale(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
  {
  	int ret;
+ 	ssize_t len = 0;
+@@ -101,16 +104,16 @@ static ssize_t kxsd9_read_accel_range(struct device *dev,
  
--	/* Create sysfs class */
--	ret  = class_register(&iio_class);
-+	/* Register sysfs bus */
-+	ret  = bus_register(&iio_bus_type);
- 	if (ret < 0) {
- 		printk(KERN_ERR
--		       "%s could not create sysfs class\n",
-+		       "%s could not register bus type\n",
- 			__FILE__);
- 		goto error_nothing;
+ 	switch (st->rx[1] & KXSD9_FS_MASK) {
+ 	case KXSD9_FS_8:
+-		len += sprintf(buf, "8\n");
++		len += sprintf(buf, "%s\n", KXSD9_SCALE_8G);
+ 		break;
+ 	case KXSD9_FS_6:
+-		len += sprintf(buf, "6\n");
++		len += sprintf(buf, "%s\n", KXSD9_SCALE_6G);
+ 		break;
+ 	case KXSD9_FS_4:
+-		len += sprintf(buf, "4\n");
++		len += sprintf(buf, "%s\n", KXSD9_SCALE_4G);
+ 		break;
+ 	case KXSD9_FS_2:
+-		len += sprintf(buf, "2\n");
++		len += sprintf(buf, "%s\n", KXSD9_SCALE_2G);
+ 		break;
  	}
  
- 	ret = iio_dev_init();
- 	if (ret < 0)
--		goto error_unregister_class;
-+		goto error_unregister_bus_type;
+@@ -119,12 +122,12 @@ error_ret:
+ 
+ 	return ret ? ret : len;
+ }
+-static ssize_t kxsd9_write_accel_range(struct device *dev,
+-				      struct device_attribute *attr,
+-				      const char *buf,
+-				      size_t len)
++static ssize_t kxsd9_write_scale(struct device *dev,
++				 struct device_attribute *attr,
++				 const char *buf,
++				 size_t len)
+ {
+-	long readin;
++
+ 	struct spi_message msg;
+ 	int ret;
+ 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+@@ -145,25 +148,25 @@ static ssize_t kxsd9_write_accel_range(struct device *dev,
+ 		},
+ 	};
+ 
+-	ret = strict_strtol(buf, 10, &readin);
+-	if (ret)
+-		return ret;
+-	switch (readin) {
+-	case 8:
++	if (!strncmp(buf, KXSD9_SCALE_8G,
++		     strlen(buf) < strlen(KXSD9_SCALE_8G)
++		     ? strlen(buf) : strlen(KXSD9_SCALE_8G)))
+ 		val = KXSD9_FS_8;
+-		break;
+-	case 6:
++	else if (!strncmp(buf, KXSD9_SCALE_6G,
++			  strlen(buf) < strlen(KXSD9_SCALE_6G)
++			  ? strlen(buf) : strlen(KXSD9_SCALE_6G)))
+ 		val = KXSD9_FS_6;
+-		break;
+-	case 4:
++	else if (!strncmp(buf, KXSD9_SCALE_4G,
++			  strlen(buf) < strlen(KXSD9_SCALE_4G)
++			  ? strlen(buf) : strlen(KXSD9_SCALE_4G)))
+ 		val = KXSD9_FS_4;
+-		break;
+-	case 2:
++	else if (!strncmp(buf, KXSD9_SCALE_2G,
++			  strlen(buf) < strlen(KXSD9_SCALE_2G)
++			  ? strlen(buf) : strlen(KXSD9_SCALE_2G)))
+ 		val = KXSD9_FS_2;
+-		break;
+-	default:
++	else
+ 		return -EINVAL;
+-	}
++
+ 	mutex_lock(&st->buf_lock);
+ 	st->tx[0] = KXSD9_READ(KXSD9_REG_CTRL_C);
+ 	st->tx[1] = 0;
+@@ -182,6 +185,7 @@ error_ret:
+ 	mutex_unlock(&st->buf_lock);
+ 	return ret ? ret : len;
+ }
++
+ static ssize_t kxsd9_read_accel(struct device *dev,
+ 				struct device_attribute *attr,
+ 				char *buf)
+@@ -227,17 +231,27 @@ error_ret:
+ static IIO_DEV_ATTR_ACCEL_X(kxsd9_read_accel, KXSD9_REG_X);
+ static IIO_DEV_ATTR_ACCEL_Y(kxsd9_read_accel, KXSD9_REG_Y);
+ static IIO_DEV_ATTR_ACCEL_Z(kxsd9_read_accel, KXSD9_REG_Z);
+-static IIO_DEV_ATTR_ADC(0, kxsd9_read_accel, KXSD9_REG_AUX);
+-static IIO_DEV_ATTR_ACCEL_SET_RANGE(S_IRUGO | S_IWUSR,
+-				    kxsd9_read_accel_range,
+-				    kxsd9_write_accel_range);
++static IIO_DEV_ATTR_IN_RAW(0, kxsd9_read_accel, KXSD9_REG_AUX);
++
++static IIO_DEVICE_ATTR(accel_scale,
++		S_IRUGO | S_IWUSR,
++		kxsd9_read_scale,
++		kxsd9_write_scale,
++		0);
++
++static IIO_CONST_ATTR(accel_scale_available,
++		KXSD9_SCALE_2G " "
++		KXSD9_SCALE_4G " "
++		KXSD9_SCALE_6G " "
++		KXSD9_SCALE_8G);
+ 
+ static struct attribute *kxsd9_attributes[] = {
+-	&iio_dev_attr_accel_x.dev_attr.attr,
+-	&iio_dev_attr_accel_y.dev_attr.attr,
+-	&iio_dev_attr_accel_z.dev_attr.attr,
+-	&iio_dev_attr_adc_0.dev_attr.attr,
+-	&iio_dev_attr_accel_range.dev_attr.attr,
++	&iio_dev_attr_accel_x_raw.dev_attr.attr,
++	&iio_dev_attr_accel_y_raw.dev_attr.attr,
++	&iio_dev_attr_accel_z_raw.dev_attr.attr,
++	&iio_dev_attr_in0_raw.dev_attr.attr,
++	&iio_dev_attr_accel_scale.dev_attr.attr,
++	&iio_const_attr_accel_scale_available.dev_attr.attr,
+ 	NULL,
+ };
+ 
+diff --git a/drivers/staging/iio/accel/lis3l02dq.h b/drivers/staging/iio/accel/lis3l02dq.h
+index 91a5375..e76a979 100644
+--- a/drivers/staging/iio/accel/lis3l02dq.h
++++ b/drivers/staging/iio/accel/lis3l02dq.h
+@@ -179,10 +179,6 @@ int lis3l02dq_spi_read_reg_8(struct device *dev,
+ int lis3l02dq_spi_write_reg_8(struct device *dev,
+ 			      u8 reg_address,
+ 			      u8 *val);
+-#define LIS3L02DQ_SCAN_ACC_X 0
+-#define LIS3L02DQ_SCAN_ACC_Y 1
+-#define LIS3L02DQ_SCAN_ACC_Z 2
+-
+ 
+ #ifdef CONFIG_IIO_RING_BUFFER
+ /* At the moment triggers are only used for ring buffer
+diff --git a/drivers/staging/iio/accel/lis3l02dq_core.c b/drivers/staging/iio/accel/lis3l02dq_core.c
+index ea76902..6b5577d 100644
+--- a/drivers/staging/iio/accel/lis3l02dq_core.c
++++ b/drivers/staging/iio/accel/lis3l02dq_core.c
+@@ -458,41 +458,39 @@ err_ret:
+ 	return ret;
+ }
+ 
+-static IIO_DEV_ATTR_ACCEL_X_OFFSET(S_IWUSR | S_IRUGO,
+-				   lis3l02dq_read_signed,
+-				   lis3l02dq_write_signed,
+-				   LIS3L02DQ_REG_OFFSET_X_ADDR);
+-
+-static IIO_DEV_ATTR_ACCEL_Y_OFFSET(S_IWUSR | S_IRUGO,
+-				   lis3l02dq_read_signed,
+-				   lis3l02dq_write_signed,
+-				   LIS3L02DQ_REG_OFFSET_Y_ADDR);
+-
+-static IIO_DEV_ATTR_ACCEL_Z_OFFSET(S_IWUSR | S_IRUGO,
+-				   lis3l02dq_read_signed,
+-				   lis3l02dq_write_signed,
+-				   LIS3L02DQ_REG_OFFSET_Z_ADDR);
+-
+-static IIO_DEV_ATTR_ACCEL_X_GAIN(S_IWUSR | S_IRUGO,
+-				 lis3l02dq_read_unsigned,
+-				 lis3l02dq_write_unsigned,
+-				 LIS3L02DQ_REG_GAIN_X_ADDR);
+-
+-static IIO_DEV_ATTR_ACCEL_Y_GAIN(S_IWUSR | S_IRUGO,
+-				 lis3l02dq_read_unsigned,
+-				 lis3l02dq_write_unsigned,
+-				 LIS3L02DQ_REG_GAIN_Y_ADDR);
+-
+-static IIO_DEV_ATTR_ACCEL_Z_GAIN(S_IWUSR | S_IRUGO,
+-				 lis3l02dq_read_unsigned,
+-				 lis3l02dq_write_unsigned,
+-				 LIS3L02DQ_REG_GAIN_Z_ADDR);
+-
+-static IIO_DEV_ATTR_ACCEL_THRESH(S_IWUSR | S_IRUGO,
+-				 lis3l02dq_read_16bit_signed,
+-				 lis3l02dq_write_16bit_signed,
+-				 LIS3L02DQ_REG_THS_L_ADDR);
+-
++#define LIS3L02DQ_SIGNED_ATTR(name, reg)	\
++	IIO_DEVICE_ATTR(name,			\
++			S_IWUSR | S_IRUGO,	\
++			lis3l02dq_read_signed,	\
++			lis3l02dq_write_signed, \
++			reg);
++
++#define LIS3L02DQ_UNSIGNED_ATTR(name, reg)		\
++	IIO_DEVICE_ATTR(name,				\
++			S_IWUSR | S_IRUGO,		\
++			lis3l02dq_read_unsigned,	\
++			lis3l02dq_write_unsigned,	\
++			reg);
++
++static LIS3L02DQ_SIGNED_ATTR(accel_x_calibbias,
++			     LIS3L02DQ_REG_OFFSET_X_ADDR);
++static LIS3L02DQ_SIGNED_ATTR(accel_y_calibbias,
++			     LIS3L02DQ_REG_OFFSET_Y_ADDR);
++static LIS3L02DQ_SIGNED_ATTR(accel_z_calibbias,
++			     LIS3L02DQ_REG_OFFSET_Z_ADDR);
++
++static LIS3L02DQ_UNSIGNED_ATTR(accel_x_calibscale,
++			       LIS3L02DQ_REG_GAIN_X_ADDR);
++static LIS3L02DQ_UNSIGNED_ATTR(accel_y_calibscale,
++			       LIS3L02DQ_REG_GAIN_Y_ADDR);
++static LIS3L02DQ_UNSIGNED_ATTR(accel_z_calibscale,
++			       LIS3L02DQ_REG_GAIN_Z_ADDR);
++
++static IIO_DEVICE_ATTR(accel_mag_either_rising_value,
++		       S_IWUSR | S_IRUGO,
++		       lis3l02dq_read_16bit_signed,
++		       lis3l02dq_write_16bit_signed,
++		       LIS3L02DQ_REG_THS_L_ADDR);
+ /* RFC The reading method for these will change depending on whether
+  * ring buffer capture is in use. Is it worth making these take two
+  * functions and let the core handle which to call, or leave as in this
+@@ -512,7 +510,7 @@ static IIO_DEV_ATTR_SAMP_FREQ(S_IWUSR | S_IRUGO,
+ 			      lis3l02dq_read_frequency,
+ 			      lis3l02dq_write_frequency);
+ 
+-static IIO_CONST_ATTR_AVAIL_SAMP_FREQ("280 560 1120 4480");
++static IIO_CONST_ATTR_SAMP_FREQ_AVAIL("280 560 1120 4480");
+ 
+ static ssize_t lis3l02dq_read_interrupt_config(struct device *dev,
+ 					       struct device_attribute *attr,
+@@ -522,7 +520,7 @@ static ssize_t lis3l02dq_read_interrupt_config(struct device *dev,
+ 	s8 val;
+ 	struct iio_event_attr *this_attr = to_iio_event_attr(attr);
+ 
+-	ret = lis3l02dq_spi_read_reg_8(dev,
++	ret = lis3l02dq_spi_read_reg_8(dev->parent,
+ 				       LIS3L02DQ_REG_WAKE_UP_CFG_ADDR,
+ 				       (u8 *)&val);
+ 
+@@ -545,7 +543,7 @@ static ssize_t lis3l02dq_write_interrupt_config(struct device *dev,
+ 
+ 	mutex_lock(&indio_dev->mlock);
+ 	/* read current value */
+-	ret = lis3l02dq_spi_read_reg_8(dev,
++	ret = lis3l02dq_spi_read_reg_8(dev->parent,
+ 				       LIS3L02DQ_REG_WAKE_UP_CFG_ADDR,
+ 				       &valold);
+ 	if (ret)
+@@ -618,7 +616,7 @@ static int lis3l02dq_thresh_handler_th(struct iio_dev *dev_info,
+ static void lis3l02dq_thresh_handler_bh_no_check(struct work_struct *work_s)
+ {
+ 	struct iio_work_cont *wc
+-		= container_of(work_s, struct iio_work_cont, ws_nocheck);
++		= container_of(work_s, struct iio_work_cont, ws);
+ 	struct lis3l02dq_state *st = wc->st;
+ 	u8 t;
+ 
+@@ -668,43 +666,51 @@ static void lis3l02dq_thresh_handler_bh_no_check(struct work_struct *work_s)
+ /* A shared handler for a number of threshold types */
+ IIO_EVENT_SH(threshold, &lis3l02dq_thresh_handler_th);
+ 
+-IIO_EVENT_ATTR_ACCEL_X_HIGH_SH(iio_event_threshold,
+-			       lis3l02dq_read_interrupt_config,
+-			       lis3l02dq_write_interrupt_config,
+-			       LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_X_HIGH);
+-
+-IIO_EVENT_ATTR_ACCEL_Y_HIGH_SH(iio_event_threshold,
+-			       lis3l02dq_read_interrupt_config,
+-			       lis3l02dq_write_interrupt_config,
+-			       LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_Y_HIGH);
+-
+-IIO_EVENT_ATTR_ACCEL_Z_HIGH_SH(iio_event_threshold,
+-			       lis3l02dq_read_interrupt_config,
+-			       lis3l02dq_write_interrupt_config,
+-			       LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_Z_HIGH);
+-
+-IIO_EVENT_ATTR_ACCEL_X_LOW_SH(iio_event_threshold,
+-			      lis3l02dq_read_interrupt_config,
+-			      lis3l02dq_write_interrupt_config,
+-			      LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_X_LOW);
+-
+-IIO_EVENT_ATTR_ACCEL_Y_LOW_SH(iio_event_threshold,
+-			      lis3l02dq_read_interrupt_config,
+-			      lis3l02dq_write_interrupt_config,
+-			      LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_Y_LOW);
++IIO_EVENT_ATTR_SH(accel_x_mag_pos_rising_en,
++		  iio_event_threshold,
++		  lis3l02dq_read_interrupt_config,
++		  lis3l02dq_write_interrupt_config,
++		  LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_X_HIGH);
++
++IIO_EVENT_ATTR_SH(accel_y_mag_pos_rising_en,
++		  iio_event_threshold,
++		  lis3l02dq_read_interrupt_config,
++		  lis3l02dq_write_interrupt_config,
++		  LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_Y_HIGH);
++
++IIO_EVENT_ATTR_SH(accel_z_mag_pos_rising_en,
++		  iio_event_threshold,
++		  lis3l02dq_read_interrupt_config,
++		  lis3l02dq_write_interrupt_config,
++		  LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_Z_HIGH);
++
++IIO_EVENT_ATTR_SH(accel_x_mag_neg_rising_en,
++		  iio_event_threshold,
++		  lis3l02dq_read_interrupt_config,
++		  lis3l02dq_write_interrupt_config,
++		  LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_X_LOW);
++
++IIO_EVENT_ATTR_SH(accel_y_mag_neg_rising_en,
++		  iio_event_threshold,
++		  lis3l02dq_read_interrupt_config,
++		  lis3l02dq_write_interrupt_config,
++		  LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_Y_LOW);
++
++IIO_EVENT_ATTR_SH(accel_z_mag_neg_rising_en,
++		  iio_event_threshold,
++		  lis3l02dq_read_interrupt_config,
++		  lis3l02dq_write_interrupt_config,
++		  LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_Z_LOW);
+ 
+-IIO_EVENT_ATTR_ACCEL_Z_LOW_SH(iio_event_threshold,
+-			      lis3l02dq_read_interrupt_config,
+-			      lis3l02dq_write_interrupt_config,
+-			      LIS3L02DQ_REG_WAKE_UP_CFG_INTERRUPT_Z_LOW);
+ 
+ static struct attribute *lis3l02dq_event_attributes[] = {
+-	&iio_event_attr_accel_x_high.dev_attr.attr,
+-	&iio_event_attr_accel_y_high.dev_attr.attr,
+-	&iio_event_attr_accel_z_high.dev_attr.attr,
+-	&iio_event_attr_accel_x_low.dev_attr.attr,
+-	&iio_event_attr_accel_y_low.dev_attr.attr,
+-	&iio_event_attr_accel_z_low.dev_attr.attr,
++	&iio_event_attr_accel_x_mag_pos_rising_en.dev_attr.attr,
++	&iio_event_attr_accel_y_mag_pos_rising_en.dev_attr.attr,
++	&iio_event_attr_accel_z_mag_pos_rising_en.dev_attr.attr,
++	&iio_event_attr_accel_x_mag_neg_rising_en.dev_attr.attr,
++	&iio_event_attr_accel_y_mag_neg_rising_en.dev_attr.attr,
++	&iio_event_attr_accel_z_mag_neg_rising_en.dev_attr.attr,
++	&iio_dev_attr_accel_mag_either_rising_value.dev_attr.attr,
+ 	NULL
+ };
+ 
+@@ -713,20 +719,21 @@ static struct attribute_group lis3l02dq_event_attribute_group = {
+ };
+ 
+ static IIO_CONST_ATTR(name, "lis3l02dq");
++static IIO_CONST_ATTR(accel_scale, "0.00958");
+ 
+ static struct attribute *lis3l02dq_attributes[] = {
+-	&iio_dev_attr_accel_x_offset.dev_attr.attr,
+-	&iio_dev_attr_accel_y_offset.dev_attr.attr,
+-	&iio_dev_attr_accel_z_offset.dev_attr.attr,
+-	&iio_dev_attr_accel_x_gain.dev_attr.attr,
+-	&iio_dev_attr_accel_y_gain.dev_attr.attr,
+-	&iio_dev_attr_accel_z_gain.dev_attr.attr,
+-	&iio_dev_attr_thresh.dev_attr.attr,
+-	&iio_dev_attr_accel_x.dev_attr.attr,
+-	&iio_dev_attr_accel_y.dev_attr.attr,
+-	&iio_dev_attr_accel_z.dev_attr.attr,
++	&iio_dev_attr_accel_x_calibbias.dev_attr.attr,
++	&iio_dev_attr_accel_y_calibbias.dev_attr.attr,
++	&iio_dev_attr_accel_z_calibbias.dev_attr.attr,
++	&iio_dev_attr_accel_x_calibscale.dev_attr.attr,
++	&iio_dev_attr_accel_y_calibscale.dev_attr.attr,
++	&iio_dev_attr_accel_z_calibscale.dev_attr.attr,
++	&iio_const_attr_accel_scale.dev_attr.attr,
++	&iio_dev_attr_accel_x_raw.dev_attr.attr,
++	&iio_dev_attr_accel_y_raw.dev_attr.attr,
++	&iio_dev_attr_accel_z_raw.dev_attr.attr,
+ 	&iio_dev_attr_sampling_frequency.dev_attr.attr,
+-	&iio_const_attr_available_sampling_frequency.dev_attr.attr,
++	&iio_const_attr_sampling_frequency_available.dev_attr.attr,
+ 	&iio_const_attr_name.dev_attr.attr,
+ 	NULL
+ };
+diff --git a/drivers/staging/iio/accel/lis3l02dq_ring.c b/drivers/staging/iio/accel/lis3l02dq_ring.c
+index 9371243..bba4b09 100644
+--- a/drivers/staging/iio/accel/lis3l02dq_ring.c
++++ b/drivers/staging/iio/accel/lis3l02dq_ring.c
+@@ -75,16 +75,16 @@ error_ret:
+ 	return ret;
+ 
+ }
+-static IIO_SCAN_EL_C(accel_x, LIS3L02DQ_SCAN_ACC_X, IIO_SIGNED(16),
++static IIO_SCAN_EL_C(accel_x, 0, IIO_SIGNED(16),
+ 		     LIS3L02DQ_REG_OUT_X_L_ADDR,
+ 		     &lis3l02dq_scan_el_set_state);
+-static IIO_SCAN_EL_C(accel_y, LIS3L02DQ_SCAN_ACC_Y, IIO_SIGNED(16),
++static IIO_SCAN_EL_C(accel_y, 1, IIO_SIGNED(16),
+ 		     LIS3L02DQ_REG_OUT_Y_L_ADDR,
+ 		     &lis3l02dq_scan_el_set_state);
+-static IIO_SCAN_EL_C(accel_z, LIS3L02DQ_SCAN_ACC_Z, IIO_SIGNED(16),
++static IIO_SCAN_EL_C(accel_z, 2, IIO_SIGNED(16),
+ 		     LIS3L02DQ_REG_OUT_Z_L_ADDR,
+ 		     &lis3l02dq_scan_el_set_state);
+-static IIO_SCAN_EL_TIMESTAMP;
++static IIO_SCAN_EL_TIMESTAMP(3);
+ 
+ static struct attribute *lis3l02dq_scan_el_attrs[] = {
+ 	&iio_scan_el_accel_x.dev_attr.attr,
+diff --git a/drivers/staging/iio/accel/sca3000.h b/drivers/staging/iio/accel/sca3000.h
+index da7d3cb..e532199 100644
+--- a/drivers/staging/iio/accel/sca3000.h
++++ b/drivers/staging/iio/accel/sca3000.h
+@@ -187,6 +187,7 @@ struct sca3000_state {
+ /**
+  * struct sca3000_chip_info - model dependant parameters
+  * @name: 			model identification
++ * @scale:			string containing floating point scale factor
+  * @temp_output:		some devices have temperature sensors.
+  * @measurement_mode_freq:	normal mode sampling frequency
+  * @option_mode_1:		first optional mode. Not all models have one
+@@ -199,6 +200,7 @@ struct sca3000_state {
+  **/
+ struct sca3000_chip_info {
+ 	const char		*name;
++	const char		*scale;
+ 	bool			temp_output;
+ 	int			measurement_mode_freq;
+ 	int			option_mode_1;
+diff --git a/drivers/staging/iio/accel/sca3000_core.c b/drivers/staging/iio/accel/sca3000_core.c
+index 1c22986..45e4777 100644
+--- a/drivers/staging/iio/accel/sca3000_core.c
++++ b/drivers/staging/iio/accel/sca3000_core.c
+@@ -27,11 +27,9 @@
+ 
+ enum sca3000_variant {
+ 	d01,
+-	d03,
+ 	e02,
+ 	e04,
+ 	e05,
+-	l01,
+ };
+ 
+ /* Note where option modes are not defined, the chip simply does not
+@@ -44,21 +42,20 @@ enum sca3000_variant {
+ static const struct sca3000_chip_info sca3000_spi_chip_info_tbl[] = {
+ 	{
+ 		.name = "sca3000-d01",
++		.scale = " 0.0073575",
+ 		.temp_output = true,
+ 		.measurement_mode_freq = 250,
+ 		.option_mode_1 = SCA3000_OP_MODE_BYPASS,
+ 		.option_mode_1_freq = 250,
+ 	}, {
+-		/* No data sheet available - may be the same as the 3100-d03?*/
+-		.name = "sca3000-d03",
+-		.temp_output = true,
+-	}, {
+ 		.name = "sca3000-e02",
++		.scale = "0.00981",
+ 		.measurement_mode_freq = 125,
+ 		.option_mode_1 = SCA3000_OP_MODE_NARROW,
+ 		.option_mode_1_freq = 63,
+ 	}, {
+ 		.name = "sca3000-e04",
++		.scale = "0.01962",
+ 		.measurement_mode_freq = 100,
+ 		.option_mode_1 = SCA3000_OP_MODE_NARROW,
+ 		.option_mode_1_freq = 50,
+@@ -66,18 +63,12 @@ static const struct sca3000_chip_info sca3000_spi_chip_info_tbl[] = {
+ 		.option_mode_2_freq = 400,
+ 	}, {
+ 		.name = "sca3000-e05",
++		.scale = "0.0613125",
+ 		.measurement_mode_freq = 200,
+ 		.option_mode_1 = SCA3000_OP_MODE_NARROW,
+ 		.option_mode_1_freq = 50,
+ 		.option_mode_2 = SCA3000_OP_MODE_WIDE,
+ 		.option_mode_2_freq = 400,
+-	}, {
+-		/* No data sheet available.
+-		 * Frequencies are unknown.
+-		 */
+-		.name = "sca3000-l01",
+-		.temp_output = true,
+-		.option_mode_1 = SCA3000_OP_MODE_BYPASS,
+ 	},
+ };
+ 
+@@ -327,6 +318,14 @@ error_ret:
+ 	return ret ? ret : len;
+ }
+ 
++static ssize_t sca3000_show_scale(struct device *dev,
++				  struct device_attribute *attr,
++				  char *buf)
++{
++	struct iio_dev *dev_info = dev_get_drvdata(dev);
++	struct sca3000_state *st = dev_info->dev_data;
++	return sprintf(buf, "%s\n", st->info->scale);
++}
+ 
+ static ssize_t sca3000_show_name(struct device *dev,
+ 				 struct device_attribute *attr,
+@@ -495,7 +494,7 @@ error_ret:
+ /* Not even vaguely standard attributes so defined here rather than
+  * in the relevant IIO core headers
+  */
+-static IIO_DEVICE_ATTR(available_measurement_modes, S_IRUGO,
++static IIO_DEVICE_ATTR(measurement_mode_available, S_IRUGO,
+ 		       sca3000_show_available_measurement_modes,
+ 		       NULL, 0);
+ 
+@@ -508,6 +507,8 @@ static IIO_DEVICE_ATTR(measurement_mode, S_IRUGO | S_IWUSR,
+ 
+ static IIO_DEV_ATTR_NAME(sca3000_show_name);
+ static IIO_DEV_ATTR_REV(sca3000_show_rev);
++static IIO_DEVICE_ATTR(accel_scale, S_IRUGO, sca3000_show_scale,
++		       NULL, 0);
+ 
+ static IIO_DEV_ATTR_ACCEL_X(sca3000_read_13bit_signed,
+ 			    SCA3000_REG_ADDR_X_MSB);
+@@ -683,7 +684,7 @@ error_free_lock:
+ /* Should only really be registered if ring buffer support is compiled in.
+  * Does no harm however and doing it right would add a fair bit of complexity
+  */
+-static IIO_DEV_ATTR_AVAIL_SAMP_FREQ(sca3000_read_av_freq);
++static IIO_DEV_ATTR_SAMP_FREQ_AVAIL(sca3000_read_av_freq);
+ 
+ static IIO_DEV_ATTR_SAMP_FREQ(S_IWUSR | S_IRUGO,
+ 			      sca3000_read_frequency,
+@@ -718,7 +719,10 @@ static ssize_t sca3000_read_temp(struct device *dev,
+ error_ret:
+ 	return ret;
+ }
+-static IIO_DEV_ATTR_TEMP(sca3000_read_temp);
++static IIO_DEV_ATTR_TEMP_RAW(sca3000_read_temp);
++
++static IIO_CONST_ATTR(temp_scale, "0.555556");
++static IIO_CONST_ATTR(temp_offset, "-214.6");
+ 
+ /**
+  * sca3000_show_thresh() sysfs query of a threshold
+@@ -770,31 +774,34 @@ static ssize_t sca3000_write_thresh(struct device *dev,
+ 	return ret ? ret : len;
+ }
+ 
+-static IIO_DEV_ATTR_ACCEL_THRESH_X(S_IRUGO | S_IWUSR,
+-				   sca3000_show_thresh,
+-				   sca3000_write_thresh,
+-				   SCA3000_REG_CTRL_SEL_MD_X_TH);
+-static IIO_DEV_ATTR_ACCEL_THRESH_Y(S_IRUGO | S_IWUSR,
+-				   sca3000_show_thresh,
+-				   sca3000_write_thresh,
+-				   SCA3000_REG_CTRL_SEL_MD_Y_TH);
+-static IIO_DEV_ATTR_ACCEL_THRESH_Z(S_IRUGO | S_IWUSR,
+-				   sca3000_show_thresh,
+-				   sca3000_write_thresh,
+-				   SCA3000_REG_CTRL_SEL_MD_Z_TH);
++static IIO_DEVICE_ATTR(accel_x_mag_either_rising_value,
++		S_IRUGO | S_IWUSR,
++		sca3000_show_thresh,
++		sca3000_write_thresh,
++		SCA3000_REG_CTRL_SEL_MD_X_TH);
++
++static IIO_DEVICE_ATTR(accel_y_mag_either_rising_value,
++		S_IRUGO | S_IWUSR,
++		sca3000_show_thresh,
++		sca3000_write_thresh,
++		SCA3000_REG_CTRL_SEL_MD_Y_TH);
++
++static IIO_DEVICE_ATTR(accel_z_mag_either_rising_value,
++		S_IRUGO | S_IWUSR,
++		sca3000_show_thresh,
++		sca3000_write_thresh,
++		SCA3000_REG_CTRL_SEL_MD_Z_TH);
+ 
+ static struct attribute *sca3000_attributes[] = {
+ 	&iio_dev_attr_name.dev_attr.attr,
+ 	&iio_dev_attr_revision.dev_attr.attr,
+-	&iio_dev_attr_accel_x.dev_attr.attr,
+-	&iio_dev_attr_accel_y.dev_attr.attr,
+-	&iio_dev_attr_accel_z.dev_attr.attr,
+-	&iio_dev_attr_thresh_accel_x.dev_attr.attr,
+-	&iio_dev_attr_thresh_accel_y.dev_attr.attr,
+-	&iio_dev_attr_thresh_accel_z.dev_attr.attr,
+-	&iio_dev_attr_available_measurement_modes.dev_attr.attr,
++	&iio_dev_attr_accel_scale.dev_attr.attr,
++	&iio_dev_attr_accel_x_raw.dev_attr.attr,
++	&iio_dev_attr_accel_y_raw.dev_attr.attr,
++	&iio_dev_attr_accel_z_raw.dev_attr.attr,
++	&iio_dev_attr_measurement_mode_available.dev_attr.attr,
+ 	&iio_dev_attr_measurement_mode.dev_attr.attr,
+-	&iio_dev_attr_available_sampling_frequency.dev_attr.attr,
++	&iio_dev_attr_sampling_frequency_available.dev_attr.attr,
+ 	&iio_dev_attr_sampling_frequency.dev_attr.attr,
+ 	NULL,
+ };
+@@ -802,18 +809,18 @@ static struct attribute *sca3000_attributes[] = {
+ static struct attribute *sca3000_attributes_with_temp[] = {
+ 	&iio_dev_attr_name.dev_attr.attr,
+ 	&iio_dev_attr_revision.dev_attr.attr,
+-	&iio_dev_attr_accel_x.dev_attr.attr,
+-	&iio_dev_attr_accel_y.dev_attr.attr,
+-	&iio_dev_attr_accel_z.dev_attr.attr,
+-	&iio_dev_attr_thresh_accel_x.dev_attr.attr,
+-	&iio_dev_attr_thresh_accel_y.dev_attr.attr,
+-	&iio_dev_attr_thresh_accel_z.dev_attr.attr,
+-	&iio_dev_attr_available_measurement_modes.dev_attr.attr,
++	&iio_dev_attr_accel_scale.dev_attr.attr,
++	&iio_dev_attr_accel_x_raw.dev_attr.attr,
++	&iio_dev_attr_accel_y_raw.dev_attr.attr,
++	&iio_dev_attr_accel_z_raw.dev_attr.attr,
++	&iio_dev_attr_measurement_mode_available.dev_attr.attr,
+ 	&iio_dev_attr_measurement_mode.dev_attr.attr,
+-	&iio_dev_attr_available_sampling_frequency.dev_attr.attr,
++	&iio_dev_attr_sampling_frequency_available.dev_attr.attr,
+ 	&iio_dev_attr_sampling_frequency.dev_attr.attr,
+ 	/* Only present if temp sensor is */
+-	&iio_dev_attr_temp.dev_attr.attr,
++	&iio_dev_attr_temp_raw.dev_attr.attr,
++	&iio_const_attr_temp_offset.dev_attr.attr,
++	&iio_const_attr_temp_scale.dev_attr.attr,
+ 	NULL,
+ };
+ 
+@@ -910,7 +917,7 @@ static ssize_t sca3000_query_mo_det(struct device *dev,
+ 				    struct device_attribute *attr,
+ 				    char *buf)
+ {
+-	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct iio_dev *indio_dev = dev_get_drvdata(dev->parent);
+ 	struct sca3000_state *st = indio_dev->dev_data;
+ 	struct iio_event_attr *this_attr = to_iio_event_attr(attr);
+ 	int ret, len = 0;
+@@ -975,7 +982,7 @@ static ssize_t sca3000_query_ring_int(struct device *dev,
+ 	struct iio_event_attr *this_attr = to_iio_event_attr(attr);
+ 	int ret, len;
+ 	u8 *rx;
+-	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct iio_dev *indio_dev = dev_get_drvdata(dev->parent);
+ 	struct sca3000_state *st = indio_dev->dev_data;
+ 	mutex_lock(&st->lock);
+ 	ret = sca3000_read_data(st, SCA3000_REG_ADDR_INT_MASK, &rx, 1);
+@@ -995,7 +1002,7 @@ static ssize_t sca3000_set_ring_int(struct device *dev,
+ 				      const char *buf,
+ 				      size_t len)
+ {
+-	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct iio_dev *indio_dev = dev_get_drvdata(dev->parent);
+ 	struct sca3000_state *st = indio_dev->dev_data;
+ 	struct iio_event_attr *this_attr = to_iio_event_attr(attr);
+ 
+@@ -1085,7 +1092,7 @@ static ssize_t sca3000_set_mo_det(struct device *dev,
+ 				  const char *buf,
+ 				  size_t len)
+ {
+-	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct iio_dev *indio_dev = dev_get_drvdata(dev->parent);
+ 	struct sca3000_state *st = indio_dev->dev_data;
+ 	struct iio_event_attr *this_attr = to_iio_event_attr(attr);
+ 	long val;
+@@ -1155,20 +1162,23 @@ IIO_EVENT_ATTR_FREE_FALL_DETECT_SH(iio_event_all,
+ 				   0)
+ 
+ /* Motion detector related event attributes */
+-IIO_EVENT_ATTR_ACCEL_X_HIGH_SH(iio_event_all,
+-			       sca3000_query_mo_det,
+-			       sca3000_set_mo_det,
+-			       SCA3000_MD_CTRL_OR_X);
+-
+-IIO_EVENT_ATTR_ACCEL_Y_HIGH_SH(iio_event_all,
+-			       sca3000_query_mo_det,
+-			       sca3000_set_mo_det,
+-			       SCA3000_MD_CTRL_OR_Y);
+-
+-IIO_EVENT_ATTR_ACCEL_Z_HIGH_SH(iio_event_all,
+-			       sca3000_query_mo_det,
+-			       sca3000_set_mo_det,
+-			       SCA3000_MD_CTRL_OR_Z);
++IIO_EVENT_ATTR_SH(accel_x_mag_either_rising_en,
++		  iio_event_all,
++		  sca3000_query_mo_det,
++		  sca3000_set_mo_det,
++		  SCA3000_MD_CTRL_OR_X);
++
++IIO_EVENT_ATTR_SH(accel_y_mag_either_rising_en,
++		  iio_event_all,
++		  sca3000_query_mo_det,
++		  sca3000_set_mo_det,
++		  SCA3000_MD_CTRL_OR_Y);
++
++IIO_EVENT_ATTR_SH(accel_z_mag_either_rising_en,
++		  iio_event_all,
++		  sca3000_query_mo_det,
++		  sca3000_set_mo_det,
++		  SCA3000_MD_CTRL_OR_Z);
+ 
+ /* Hardware ring buffer related event attributes */
+ IIO_EVENT_ATTR_RING_50_FULL_SH(iio_event_all,
+@@ -1183,11 +1193,14 @@ IIO_EVENT_ATTR_RING_75_FULL_SH(iio_event_all,
+ 
+ static struct attribute *sca3000_event_attributes[] = {
+ 	&iio_event_attr_free_fall.dev_attr.attr,
+-	&iio_event_attr_accel_x_high.dev_attr.attr,
+-	&iio_event_attr_accel_y_high.dev_attr.attr,
+-	&iio_event_attr_accel_z_high.dev_attr.attr,
++	&iio_event_attr_accel_x_mag_either_rising_en.dev_attr.attr,
++	&iio_event_attr_accel_y_mag_either_rising_en.dev_attr.attr,
++	&iio_event_attr_accel_z_mag_either_rising_en.dev_attr.attr,
+ 	&iio_event_attr_ring_50_full.dev_attr.attr,
+ 	&iio_event_attr_ring_75_full.dev_attr.attr,
++	&iio_dev_attr_accel_x_mag_either_rising_value.dev_attr.attr,
++	&iio_dev_attr_accel_y_mag_either_rising_value.dev_attr.attr,
++	&iio_dev_attr_accel_z_mag_either_rising_value.dev_attr.attr,
+ 	NULL,
+ };
+ 
+@@ -1344,9 +1357,10 @@ static int __devinit __sca3000_probe(struct spi_device *spi,
+ 		 * is overkill.  At very least a simpler registration method
+ 		 * might be worthwhile.
+ 		 */
+-		iio_add_event_to_list(iio_event_attr_accel_z_high.listel,
+-					    &st->indio_dev
+-					    ->interrupts[0]->ev_list);
++		iio_add_event_to_list(
++			iio_event_attr_accel_z_mag_either_rising_en.listel,
++			&st->indio_dev
++			->interrupts[0]->ev_list);
+ 	}
+ 	sca3000_register_ring_funcs(st->indio_dev);
+ 	ret = sca3000_clean_setup(st);
+@@ -1437,9 +1451,6 @@ static int sca3000_remove(struct spi_device *spi)
+ SCA3000_VARIANT_PROBE(d01);
+ static SCA3000_VARIANT_SPI_DRIVER(d01);
+ 
+-SCA3000_VARIANT_PROBE(d03);
+-static SCA3000_VARIANT_SPI_DRIVER(d03);
+-
+ SCA3000_VARIANT_PROBE(e02);
+ static SCA3000_VARIANT_SPI_DRIVER(e02);
+ 
+@@ -1449,9 +1460,6 @@ static SCA3000_VARIANT_SPI_DRIVER(e04);
+ SCA3000_VARIANT_PROBE(e05);
+ static SCA3000_VARIANT_SPI_DRIVER(e05);
+ 
+-SCA3000_VARIANT_PROBE(l01);
+-static SCA3000_VARIANT_SPI_DRIVER(l01);
+-
+ static __init int sca3000_init(void)
+ {
+ 	int ret;
+@@ -1459,32 +1467,22 @@ static __init int sca3000_init(void)
+ 	ret = spi_register_driver(&sca3000_d01_driver);
+ 	if (ret)
+ 		goto error_ret;
+-	ret = spi_register_driver(&sca3000_d03_driver);
+-	if (ret)
+-		goto error_unreg_d01;
+ 	ret = spi_register_driver(&sca3000_e02_driver);
+ 	if (ret)
+-		goto error_unreg_d03;
++		goto error_unreg_d01;
+ 	ret = spi_register_driver(&sca3000_e04_driver);
+ 	if (ret)
+ 		goto error_unreg_e02;
+ 	ret = spi_register_driver(&sca3000_e05_driver);
+ 	if (ret)
+ 		goto error_unreg_e04;
+-	ret = spi_register_driver(&sca3000_l01_driver);
+-	if (ret)
+-		goto error_unreg_e05;
  
  	return 0;
  
--error_unregister_class:
--	class_unregister(&iio_class);
-+error_unregister_bus_type:
-+	bus_unregister(&iio_bus_type);
- error_nothing:
- 	return ret;
- }
-@@ -502,7 +496,7 @@ error_nothing:
- static void __exit iio_exit(void)
+-error_unreg_e05:
+-	spi_unregister_driver(&sca3000_e05_driver);
+ error_unreg_e04:
+ 	spi_unregister_driver(&sca3000_e04_driver);
+ error_unreg_e02:
+ 	spi_unregister_driver(&sca3000_e02_driver);
+-error_unreg_d03:
+-	spi_unregister_driver(&sca3000_d03_driver);
+ error_unreg_d01:
+ 	spi_unregister_driver(&sca3000_d01_driver);
+ error_ret:
+@@ -1494,11 +1492,9 @@ error_ret:
+ 
+ static __exit void sca3000_exit(void)
  {
- 	iio_dev_exit();
--	class_unregister(&iio_class);
-+	bus_unregister(&iio_bus_type);
+-	spi_unregister_driver(&sca3000_l01_driver);
+ 	spi_unregister_driver(&sca3000_e05_driver);
+ 	spi_unregister_driver(&sca3000_e04_driver);
+ 	spi_unregister_driver(&sca3000_e02_driver);
+-	spi_unregister_driver(&sca3000_d03_driver);
+ 	spi_unregister_driver(&sca3000_d01_driver);
  }
  
- static int iio_device_register_sysfs(struct iio_dev *dev_info)
-@@ -768,7 +762,7 @@ struct iio_dev *iio_allocate_device(void)
+diff --git a/drivers/staging/iio/accel/sca3000_ring.c b/drivers/staging/iio/accel/sca3000_ring.c
+index 40cbab2..2b39e6f 100644
+--- a/drivers/staging/iio/accel/sca3000_ring.c
++++ b/drivers/staging/iio/accel/sca3000_ring.c
+@@ -186,11 +186,29 @@ static ssize_t sca3000_store_ring_bpse(struct device *dev,
+ 	return ret ? ret : len;
+ }
  
- 	if (dev) {
- 		dev->dev.type = &iio_dev_type;
--		dev->dev.class = &iio_class;
-+		dev->dev.bus = &iio_bus_type;
- 		device_initialize(&dev->dev);
- 		dev_set_drvdata(&dev->dev, (void *)dev);
- 		mutex_init(&dev->mlock);
-diff --git a/drivers/staging/iio/industrialio-ring.c b/drivers/staging/iio/industrialio-ring.c
-index e53e214..44d4894 100644
---- a/drivers/staging/iio/industrialio-ring.c
-+++ b/drivers/staging/iio/industrialio-ring.c
-@@ -210,7 +210,7 @@ __iio_request_ring_buffer_access_chrdev(struct iio_ring_buffer *buf,
- 	buf->access_handler.flags = 0;
+-static IIO_CONST_ATTR(bpse_available, "8 11");
++static IIO_SCAN_EL_C(accel_x, 0, 0, 0, 0);
++static IIO_SCAN_EL_C(accel_y, 1, 0, 0, 0);
++static IIO_SCAN_EL_C(accel_z, 2, 0, 0, 0);
++static IIO_CONST_ATTR(accel_precision_available, "8 11");
++static IIO_DEVICE_ATTR(accel_precision,
++		       S_IRUGO | S_IWUSR,
++		       sca3000_show_ring_bpse,
++		       sca3000_store_ring_bpse,
++		       0);
++
++static struct attribute *sca3000_scan_el_attrs[] = {
++	&iio_scan_el_accel_x.dev_attr.attr,
++	&iio_scan_el_accel_y.dev_attr.attr,
++	&iio_scan_el_accel_z.dev_attr.attr,
++	&iio_const_attr_accel_precision_available.dev_attr.attr,
++	&iio_dev_attr_accel_precision.dev_attr.attr,
++	NULL
++};
  
- 	buf->access_dev.parent = &buf->dev;
--	buf->access_dev.class = &iio_class;
-+	buf->access_dev.bus = &iio_bus_type;
- 	buf->access_dev.type = &iio_ring_access_type;
- 	device_initialize(&buf->access_dev);
+-static IIO_DEV_ATTR_BPSE(S_IRUGO | S_IWUSR,
+-			      sca3000_show_ring_bpse,
+-			      sca3000_store_ring_bpse);
++static struct attribute_group sca3000_scan_el_group = {
++	.attrs = sca3000_scan_el_attrs,
++	.name = "scan_elements",
++};
  
-diff --git a/drivers/staging/iio/industrialio-trigger.c b/drivers/staging/iio/industrialio-trigger.c
-index 35ec80b..8fb2f9d 100644
---- a/drivers/staging/iio/industrialio-trigger.c
-+++ b/drivers/staging/iio/industrialio-trigger.c
-@@ -362,7 +362,7 @@ struct iio_trigger *iio_allocate_trigger(void)
- 	trig = kzalloc(sizeof *trig, GFP_KERNEL);
- 	if (trig) {
- 		trig->dev.type = &iio_trig_type;
--		trig->dev.class = &iio_class;
-+		trig->dev.bus = &iio_bus_type;
- 		device_initialize(&trig->dev);
- 		dev_set_drvdata(&trig->dev, (void *)trig);
- 		spin_lock_init(&trig->pollfunc_list_lock);
-diff --git a/drivers/staging/iio/ring_sw.c b/drivers/staging/iio/ring_sw.c
-index b104c3d..3f82f2d 100644
---- a/drivers/staging/iio/ring_sw.c
-+++ b/drivers/staging/iio/ring_sw.c
-@@ -416,7 +416,7 @@ struct iio_ring_buffer *iio_sw_rb_allocate(struct iio_dev *indio_dev)
- 	buf->dev.type = &iio_sw_ring_type;
- 	device_initialize(&buf->dev);
- 	buf->dev.parent = &indio_dev->dev;
--	buf->dev.class = &iio_class;
-+	buf->dev.bus = &iio_bus_type;
- 	dev_set_drvdata(&buf->dev, (void *)buf);
+ /*
+  * Ring buffer attributes
+@@ -198,17 +216,15 @@ static IIO_DEV_ATTR_BPSE(S_IRUGO | S_IWUSR,
+  * only apply to the ring buffer.  At all times full rate and accuracy
+  * is available via direct reading from registers.
+  */
+-static struct attribute *iio_ring_attributes[] = {
++static struct attribute *sca3000_ring_attributes[] = {
+ 	&dev_attr_length.attr,
+ 	&dev_attr_bps.attr,
+ 	&dev_attr_ring_enable.attr,
+-	&iio_dev_attr_bpse.dev_attr.attr,
+-	&iio_const_attr_bpse_available.dev_attr.attr,
+ 	NULL,
+ };
  
- 	return buf;
+ static struct attribute_group sca3000_ring_attr = {
+-	.attrs = iio_ring_attributes,
++	.attrs = sca3000_ring_attributes,
+ };
+ 
+ static const struct attribute_group *sca3000_ring_attr_groups[] = {
+@@ -248,6 +264,7 @@ static inline void sca3000_rb_free(struct iio_ring_buffer *r)
+ 
+ int sca3000_configure_ring(struct iio_dev *indio_dev)
+ {
++	indio_dev->scan_el_attrs = &sca3000_scan_el_group;
+ 	indio_dev->ring = sca3000_rb_allocate(indio_dev);
+ 	if (indio_dev->ring == NULL)
+ 		return -ENOMEM;
+diff --git a/drivers/staging/iio/ring_generic.h b/drivers/staging/iio/ring_generic.h
+index 09044ad..efd385f 100644
+--- a/drivers/staging/iio/ring_generic.h
++++ b/drivers/staging/iio/ring_generic.h
+@@ -250,9 +250,9 @@ ssize_t iio_scan_el_ts_show(struct device *dev, struct device_attribute *attr,
+  *
+  * Odd one out. Handled slightly differently from other scan elements.
+  **/
+-#define IIO_SCAN_EL_TIMESTAMP					\
++#define IIO_SCAN_EL_TIMESTAMP(number)				\
+ 	struct iio_scan_el iio_scan_el_timestamp = {		\
+-		.dev_attr = __ATTR(scan_en_timestamp,		\
++		.dev_attr = __ATTR(number##_timestamp_en,	\
+ 				   S_IRUGO | S_IWUSR,		\
+ 				   iio_scan_el_ts_show,		\
+ 				   iio_scan_el_ts_store),	\
 -- 
 1.6.4.4
 
