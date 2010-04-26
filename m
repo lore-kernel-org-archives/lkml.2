@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab0DZMrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 08:47:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55001 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab0DZMrd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 08:47:33 -0400
+	id S1753240Ab0DZMtN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 08:49:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10962 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752621Ab0DZMtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 08:49:12 -0400
+Date: Mon, 26 Apr 2010 09:48:15 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>
+Subject: Re: [PATCH -tip 2/4] perf probe: Fix to use symtab only if no
+	debuginfo
+Message-ID: <20100426124815.GD7460@ghostprotocols.net>
+References: <20100421195616.24664.89980.stgit@localhost6.localdomain6> <20100421195624.24664.46214.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-Message-ID: <f038ee35-8b34-4305-b93a-49383c86f83e@default>
-Date: Mon, 26 Apr 2010 05:45:57 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-       riel@redhat.com
-Subject: RE: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-References: <20100422134249.GA2963@ca-server1.us.oracle.com>
- <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default>
- <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default>
- <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>
- <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
- <4BD1B427.9010905@redhat.com> <b559c57a-0acb-4338-af21-dbfc3b3c0de5@default>
- <4BD336CF.1000103@redhat.com> <d1bb78ca-5ef6-4a8d-af79-a265f2d4339c@default>
- <4BD43182.1040508@redhat.com> <c5062f3a-3232-4b21-b032-2ee1f2485ff0@default>
- <4BD44E74.2020506@redhat.com> <7264e3c0-15fe-4b70-a3d8-2c36a2b934df@default
- 4BD52C4F.40505@redhat.com>
-In-Reply-To: <4BD52C4F.40505@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4BD58B4A.00C0:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100421195624.24664.46214.stgit@localhost6.localdomain6>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> dma engines are present on commodity hardware now:
-> 
-> http://en.wikipedia.org/wiki/I/O_Acceleration_Technology
-> 
-> I don't know if consumer machines have them, but servers certainly do.
-> modprobe ioatdma.
+Em Wed, Apr 21, 2010 at 03:56:24PM -0400, Masami Hiramatsu escreveu:
+> Fix perf probe to use symtab only if there is no debuginfo,
+> because debuginfo has more precise information than symtab.
 
-They don't seem to have gained much ground in the FIVE YEARS
-since the patch was first posted to Linux, have they?
+"more precise"? Wouldn't it be "more expressive", i.e. with more
+information (parameter list with types, return type, location of
+parameters, etc), because what is common to both have the same value,
+i.e. the function address and size.
 
-Maybe it's because memory-to-memory copy using a CPU
-is so fast (especially for page-ish quantities of data)
-and is a small percentage of CPU utilization these days?
+> If we can't find a function in debuginfo, we never find it
+> in symtab.
+> 
+> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+> Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> ---
+> 
+>  tools/perf/util/probe-event.c |   17 +++++++++--------
+>  1 files changed, 9 insertions(+), 8 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index 4fb4803..5d3baec 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -180,15 +180,16 @@ static int try_to_find_kprobe_trace_events(struct perf_probe_event *pev,
+>  		return -ENOENT;
+>  	}
+>  	/* Error path : ntevs < 0 */
+> -	if (need_dwarf) {
+> -		if (ntevs == -EBADF)
+> -			pr_warning("No dwarf info found in the vmlinux - "
+> -				"please rebuild with CONFIG_DEBUG_INFO=y.\n");
+> -		return ntevs;
+> +	pr_debug("An error occurred in debuginfo analysis (%d).\n", ntevs);
+> +	if (ntevs == -EBADF) {
+> +		pr_warning("Warning: No dwarf info found in the vmlinux - "
+> +			"please rebuild kernel with CONFIG_DEBUG_INFO=y.\n");
+> +		if (!need_dwarf) {
+> +			pr_debug("Trying to use symbols.\nn");
+> +			return 0;
+> +		}
+>  	}
+> -	pr_debug("An error occurred in debuginfo analysis."
+> -		 " Try to use symbols.\n");
+> -	return 0;
+> +	return ntevs;
+>  }
+>  
+>  #define LINEBUF_SIZE 256
+> 
+> 
+> -- 
+> Masami Hiramatsu
+> e-mail: mhiramat@redhat.com
