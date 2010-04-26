@@ -1,117 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab0DZKH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 06:07:59 -0400
-Received: from mail-pz0-f196.google.com ([209.85.222.196]:62117 "EHLO
-	mail-pz0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab0DZKH6 convert rfc822-to-8bit (ORCPT
+	id S1754023Ab0DZKJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 06:09:08 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47012 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab0DZKJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 06:07:58 -0400
+	Mon, 26 Apr 2010 06:09:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=RYC+UBvTm53SRtuPbEAyMlGYmLPuzndRmgSqWutN/kUSw4OoR7zAkF6h6XJifG+omL
-         CEbzcGFjEj+4fLMArEurXTPpoyVxFRHAdjPdjDZznxXEUIFXqbV537dEDxOdGybzedW2
-         /LlQLDkyltF2YqLwD2JvmNqqkrow8vd8PHe2Y=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=wWutMYOKzb7grmjjlozYxC31OndwV+7FU18YKpHTkACjciORfLJzZyQJ1UqETX/I3m
+         7E8pcgnSDC/7CkPntEhU1Zr5oPGnX8WQDPSD+a5dTVnLx8ci7vLDbhg711jgZ7evL5El
+         9+bN0qyUj8yzqbovUmR1bO4Fjiz9xl28RCD6g=
+Date: Mon, 26 Apr 2010 14:09:01 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: Mike Rapoport <mike@compulab.co.il>, linux-kernel@vger.kernel.org,
+       Yulia Vilensky <vilensky@compulab.co.il>
+Subject: Re: [PATCH] ds2782_battery: add support for ds2786 battery gas
+ gauge
+Message-ID: <20100426100901.GA2092@oksana.dev.rtsoft.ru>
+References: <20100422071437.GA32489@oksana.dev.rtsoft.ru>
+ <1271921723-18289-1-git-send-email-mike@compulab.co.il>
+ <4BD0BE97.6010007@bluewatersys.com>
+ <4BD460D3.1020609@compulab.co.il>
+ <4BD4A9B4.1010200@bluewatersys.com>
 MIME-Version: 1.0
-In-Reply-To: <20100426184908.3c277568.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100423120148.9ffa5881.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100423095922.GJ30306@csn.ul.ie> <20100423155801.GA14351@csn.ul.ie>
-	 <20100424110200.b491ec5f.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100424104324.GD14351@csn.ul.ie>
-	 <20100426084901.15c09a29.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100426182838.2cab9844.kamezawa.hiroyu@jp.fujitsu.com>
-	 <r2o28c262361004260248s62729484g14a720d37d5916f7@mail.gmail.com>
-	 <20100426184908.3c277568.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 26 Apr 2010 19:07:56 +0900
-Message-ID: <z2y28c262361004260307m22f38d23y95c5615072b8f3a7@mail.gmail.com>
-Subject: Re: [BUGFIX][mm][PATCH] fix migration race in rmap_walk
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       Christoph Lameter <cl@linux.com>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4BD4A9B4.1010200@bluewatersys.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 6:49 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Mon, 26 Apr 2010 18:48:42 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> On Mon, Apr 26, 2010 at 6:28 PM, KAMEZAWA Hiroyuki
->> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> > On Mon, 26 Apr 2010 08:49:01 +0900
->> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> >
->> >> On Sat, 24 Apr 2010 11:43:24 +0100
->> >> Mel Gorman <mel@csn.ul.ie> wrote:
->> >
->> >> > It looks nice but it still broke after 28 hours of running. The
->> >> > seq-counter is still insufficient to catch all changes that are made to
->> >> > the list. I'm beginning to wonder if a) this really can be fully safely
->> >> > locked with the anon_vma changes and b) if it has to be a spinlock to
->> >> > catch the majority of cases but still a lazy cleanup if there happens to
->> >> > be a race. It's unsatisfactory and I'm expecting I'll either have some
->> >> > insight to the new anon_vma changes that allow it to be locked or Rik
->> >> > knows how to restore the original behaviour which as Andrea pointed out
->> >> > was safe.
->> >> >
->> >> Ouch.
->> >
->> > Ok, reproduced. Here is status in my test + printk().
->> >
->> >  * A race doesn't seem to happen if swap=off.
->> >    I need to swapon to cause the bug
->>
->> FYI,
->>
->> Do you have a swapon/off bomb test?
->
-> No. Just running test under swapoff, and running the same test after swapon.
->
->
->> When I saw your mail, I feel it might be culprit.
->>
->> http://lkml.org/lkml/2010/4/22/762.
->>
->> It is just guessing. I don't have a time to look into, now.
->>
-> Hmm. BTW.
->
-> ==
-> static int expand_downwards(struct vm_area_struct *vma,
->                                   unsigned long address)
-> {
->   ....
->       /* Somebody else might have raced and expanded it already */
->        if (address < vma->vm_start) {
->                unsigned long size, grow;
->
->                size = vma->vm_end - address;
->                grow = (vma->vm_start - address) >> PAGE_SHIFT;
->
->                error = acct_stack_growth(vma, size, grow);
->                if (!error) {
->                        vma->vm_start = address;
->                        vma->vm_pgoff -= grow;
->                }
->        }
-> ==
->
-> I feel this part needs care. No ?
+On Mon, Apr 26, 2010 at 08:44:36AM +1200, Ryan Mallon wrote:
+[...]
+> >>>  config BATTERY_DS2782
+> >>> -    tristate "DS2782 standalone gas-gauge"
+> >>> +    tristate "DS2782/DS2786 standalone gas-gauge"
+> >>>      depends on I2C
+> >>>      help
+> >>> -      Say Y here to enable support for the DS2782 standalone battery
+> >>> +      Say Y here to enable support for the DS2782/DS2786 standalone
+> >>> battery
+> >>
+> >> I have only used the DS2782 chip. Can we just change this to DS278x? May
+> >> as well change to CONFIG_BATTERY_DS278x while we are here.
+> >>
+> > 
+> > Shall we move ds2782_battery.c to ds278x_battery.c at the same time?
+> > Changing Kconfig invites the .c file move as well :)
+> 
+> Yes. Are there other gas-gauges in the same family?
 
-Yes. Andrea pointed it out.
-I didn't followed the thread whole yet but It seems Mel and Andrea
-want to restore anon_vma's atomicity like old than one by one healing.
+Please don't, this is an unneeded churn. I'd won't bother with
+renaming Kconfig symbol as well (and btw, that renaming will
+break oldconfig, so I strongly suggest not to do it).
 
+So, your current approch of changing the description and help
+text is OK.
 
+Thanks,
 
 -- 
-Kind regards,
-Minchan Kim
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
