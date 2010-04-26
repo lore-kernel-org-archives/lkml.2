@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab0DZOuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 10:50:24 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:53199 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab0DZOuW (ORCPT
+	id S1753398Ab0DZO4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 10:56:07 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:55868 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263Ab0DZO4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 10:50:22 -0400
-Subject: Re: [PATCH] regulator: Allow regulator-regulator supplies to be
- specified by name
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1272291494-31682-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1272291494-31682-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Apr 2010 15:50:16 +0100
-Message-ID: <1272293416.3208.75.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Mon, 26 Apr 2010 10:56:04 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4BD5A974.2080501@s5r6.in-berlin.de>
+Date: Mon, 26 Apr 2010 16:55:48 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100415 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: Clemens Ladisch <clemens@ladisch.de>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] firewire: ohci: add MSI support
+References: <4BD5667B.1030900@ladisch.de> <4BD5A6C0.3030704@s5r6.in-berlin.de>
+In-Reply-To: <4BD5A6C0.3030704@s5r6.in-berlin.de>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-26 at 15:18 +0100, Mark Brown wrote:
-> When one regulator supplies another allow the relationship to be specified
-> using names rather than struct regulators, in a similar manner to that
-> allowed for consumer supplies. This allows static configuration at compile
-> time, reducing the need for dynamic init code.
-> 
-> Also change the references to LINE supply to be system supply since line
-> is sometimes used for actual supplies and therefore potentially confusing.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Stefan Richter wrote:
+> Does "MSI 00", "MSI: Enable-" mean they do or don't support MSI?  Asks a
+> PCIe newbie.
 
-Applied.
-
-Thanks
-
-Liam
-
+OK, an online encyclopedia informs me that MSI or MSI-X is required by PCIe.
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+Stefan Richter
+-=====-==-=- -=-- ==-=-
+http://arcgraph.de/sr/
