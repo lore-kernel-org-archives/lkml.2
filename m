@@ -1,37 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab0DZMXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 08:23:23 -0400
-Received: from smtpout.cs.fsu.edu ([128.186.122.75]:58632 "EHLO
-	mail.cs.fsu.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752429Ab0DZMXW (ORCPT
+	id S1753108Ab0DZMax (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 08:30:53 -0400
+Received: from fg-out-1718.google.com ([72.14.220.154]:59790 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab0DZMaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 08:23:22 -0400
-X-Greylist: delayed 1581 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Apr 2010 08:23:22 EDT
-Date: Mon, 26 Apr 2010 07:56:58 -0400
-From: Ted Baker <baker@cs.fsu.edu>
-To: raj@ece.cmu.edu, jayhawk@soe.ucsc.edu, a.p.zijlstra@chello.nl,
-       raistlin@linux.it, niehaus@ittc.ku.edu, henrik@austad.us,
-       linux-kernel@vger.kernel.org, mingo@elte.hu, billh@gnuppy.monkey.org,
-       linux-rt-users@vger.kernel.org, fabio@gandalf.sssup.it,
-       anderson@cs.unc.edu, tglx@linutronix.de, dhaval.giani@gmail.com,
-       cucinotta@sssup.it, lipari@retis.sssup.it
-Cc: baker.tlh@comcast.net
-Subject: Re: [Fwd: Re: RFC for a new Scheduling policy/class in the Linux-kernel]
-Message-ID: <20100426115658.GA21346@cs.fsu.edu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.1i
+	Mon, 26 Apr 2010 08:30:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=K4HSiQoL5XobAXBRRG8CJoMg2K0C/+o46nydBsBbxucljrjZVJDtPFhKfEdlHFZ5ag
+         P7z03J2wU/GS8UG7QYxwgZqdWH+Ix1I26B69mjGXODvrDgLbhVLJzBgH7bnQ/vwb3axc
+         KnaJGElWZHIDRXddnJg9OcOH9Whn9DyK4Z4Wg=
+MIME-Version: 1.0
+In-Reply-To: <201004261406.50107.oneukum@suse.de>
+References: <1272191830-23675-1-git-send-email-abogani@texware.it>
+	 <201004261406.50107.oneukum@suse.de>
+Date: Mon, 26 Apr 2010 14:30:50 +0200
+X-Google-Sender-Auth: 3abba2643631480e
+Message-ID: <h2i63a49ef41004260530x49db3ddczf43423aa49f3b9e1@mail.gmail.com>
+Subject: Re: [PATCH] USB: sisusbvga: Remove the BKL from open
+From: Alessio Igor Bogani <abogani@texware.it>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+       Thomas Winischhofer <thomas@winischhofer.net>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Pete Zaitcev <zaitcev@redhat.com>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Fr??d??ric Weisbecker" <fweisbec@gmail.com>,
+       Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have not seen any more e-mail on this.  How is it going?  Is there any
-chance of rolling in some corrections for the SCHED_SPORADIC treatment?  In
-particular, could we have a DO_NOT_RUN priority, that is guaranteed to
-prevent a task from running at all?
+Dear Mr. Neukum,
 
-For more detail, see http://ww2.cs.fsu.edu/~stanovic/papers/rtas10.pdf .
+2010/4/26 Oliver Neukum <oneukum@suse.de>:
+> Am Sonntag, 25. April 2010 12:37:10 schrieb Alessio Igor Bogani:
+>> BKL is not needed here because necessary locking is already provided
+>> by mutex sisusb->lock.
+>
+> Have you checked the fb layer doesn't need it?
 
-Ted
+The _open and _release functions are already serialized with mutex in
+fb layer. So that mutex could be removed but in my opinion this job
+should be done in a separate patch (like I have done some time ago for
+nvidiafb driver). Now I would want suggest to remove BKL here only.
+
+Ciao,
+Alessio
