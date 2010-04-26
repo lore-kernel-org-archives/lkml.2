@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab0DZPmA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 11:42:00 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:44029 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab0DZPl6 (ORCPT
+	id S1753625Ab0DZPnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 11:43:49 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:48578 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab0DZPns convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 11:41:58 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: "R. Andrew Bailey" <bailey@akamai.com>
-Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below BIOS_END
-Date: Mon, 26 Apr 2010 09:40:48 -0600
-User-Agent: KMail/1.9.10
-Cc: Andy Isaacson <adi@hexapodia.org>, Yinghai <yinghai.lu@oracle.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, guenter.roeck@ericsson.com,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
-References: <4BC4E55B.7000103@oracle.com> <201004231705.25659.bjorn.helgaas@hp.com> <20100426125032.GA1623@akamai.com>
-In-Reply-To: <20100426125032.GA1623@akamai.com>
+	Mon, 26 Apr 2010 11:43:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TC8TMQhsAL+0y2AjheNMrF3hviz4N14aoVoMdXbsnu943eNzSDaxy4WMhizqDqdumV
+         CS1YSt5EBTrfSvC+Os8tsXScCFE9OIoHFMoOjMTQOWOnY6nhI4a64A1UbOu29SJsGYCC
+         Zo48tskr6n+eUqTxFQxDWibYphTQgPM//bQuY=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004260940.52478.bjorn.helgaas@hp.com>
+In-Reply-To: <1271780217-27472-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1271780217-27472-1-git-send-email-guenter.roeck@ericsson.com>
+Date: Mon, 26 Apr 2010 17:43:44 +0200
+Message-ID: <t2o195c7a901004260843k947fdf2cy3b137e3056db8b62@mail.gmail.com>
+Subject: Re: [PATCH v3] x86: Do not write into VGA memory space if there is no 
+	VGA device in the system
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: linux-kernel@vger.kernel.org, penberg@cs.helsinki.fi, mingo@redhat.com,
+       x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 26 April 2010 06:50:32 am R. Andrew Bailey wrote:
-> On 23/04/10 17:05 -0600, Bjorn Helgaas wrote:
-> >On Wednesday 21 April 2010 01:31:20 pm Andy Isaacson wrote:
-> >Would you guys (Andy & Andy, what a coincidence :-)) mind giving
-> >it a try?  This is intended to work on top of current upstream,
-> >with no other patches required.
-> >
-> Good news- that solved it. I tried Yinghai's patches saturday to no
-> avail (sorry it took me so long to get back to you, I was about 5 bios
-> revisions behind on this machine and wanted to update it before I
-> tried any more tests).
+On Tue, Apr 20, 2010 at 6:16 PM, Guenter Roeck
+<guenter.roeck@ericsson.com> wrote:
+> Ensure that early_printk() does not write into VGA memory space
+> if there is not VGA device in the system.
+>
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> ---
+> v3:
+> Changes are now limited to early_printk.c. Functionality is retained, meaning
+> there will still be output on the VGA console before setup_early_printk()
+> is called, but only if a VGA device is known to exist in the system.
+>
+>  arch/x86/kernel/early_printk.c |   17 +++++++++++++----
+>  1 files changed, 13 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
+> index b9c830c..783cb25 100644
+> --- a/arch/x86/kernel/early_printk.c
+> +++ b/arch/x86/kernel/early_printk.c
+> @@ -170,10 +170,13 @@ asmlinkage void early_printk(const char *fmt, ...)
+>        int n;
+>        va_list ap;
+>
+> -       va_start(ap, fmt);
+> -       n = vscnprintf(buf, sizeof(buf), fmt, ap);
+> -       early_console->write(early_console, buf, n);
+> -       va_end(ap);
+> +       if (early_console && (early_console_initialized ||
+> +                             boot_params.screen_info.orig_video_isVGA == 1)) {
+> +               va_start(ap, fmt);
+> +               n = vscnprintf(buf, sizeof(buf), fmt, ap);
+> +               early_console->write(early_console, buf, n);
+> +               va_end(ap);
+> +       }
+>  }
 
-Great, thanks for testing this!  The only problem here is that we
-changed two things at once -- the BIOS and the patch, and we need
-to figure out which change fixed the problem.
+Instead to this ugly if why not creating a null early_console (write
+will do nothing) ?
 
-I want Linux to work correctly even on the old BIOS, on the theory
-that "if Windows works, Linux should work, too."  Changing a BIOS
-is relatively risky, and it's not something I want users to have to
-diagnose and deal with.
+>  static inline void early_console_register(struct console *con, int keep_early)
+> @@ -233,6 +236,12 @@ static int __init setup_early_printk(char *buf)
+>  #endif
+>                buf++;
+>        }
+> +
+> +       /* If there is no VGA device, don't try to use it as early console. */
+> +       if (early_console == &early_vga_console &&
+> +           boot_params.screen_info.orig_video_isVGA != 1)
+> +               early_console = NULL;
+> +
+>        return 0;
+>  }
 
-If we're lucky, the kernel without the patch will still fail on the
-updated BIOS.  If the pre-patch kernel fails and the post-patch kernel
-works, and you can attach the entire dmesg log of the post-patch kernel
-to the bugzilla, we should be able to see Linux making more sensible
-BAR assignments when working around the BIOS bug.  Then we can be pretty
-confident that my patch fixed the problem.
+And assign null console as the last console as a fallback ?
 
-If the pre-patch kernel works on the updated BIOS, that means one of
-the BIOS updates fixed the BIOS bug, and we didn't actually exercise
-my patch at all.  If that's the case, we'll have to wait for a report
-from the other Andy.  (Or you could temporarily down-grade your BIOS
-to the original version you had.  But I don't know whether that's even
-possible...  it probably depends on the BIOS update tools.)
+Regards
 
-Thanks again for all your help.  All progress in Linux depends on early
-adopters like you who are willing to test kernels and help work through
-issues :-)
-
-Bjorn
+Bastien
