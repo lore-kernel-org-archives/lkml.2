@@ -1,97 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab0DZXZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 19:25:19 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:59676 "HELO
-	outbound-mail-313.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752746Ab0DZXZQ (ORCPT
+	id S1753397Ab0DZX25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 19:28:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49253 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452Ab0DZX2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 19:25:16 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=d/h4P+zbp/QGoaHy6GhWqPeFze82n3UvcTpUK+PsQ8bt/TGGSNEF0Qn9gKZqr2Dnb/GhQcYKxplDJk8Lj2Nt5jyUNeOc3su8OkjSDU4VIb9HuqQ6feH0xeR3y+DtTrqG;
-Date: Mon, 26 Apr 2010 16:25:17 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Andy Isaacson <adi@hexapodia.org>,
-       "R. Andrew Bailey" <bailey@akamai.com>, Yinghai <yinghai.lu@oracle.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       guenter.roeck@ericsson.com,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
-Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below  
- BIOS_END
-Message-ID: <20100426162517.4ad308ff@virtuousgeek.org>
-In-Reply-To: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com>
-References: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Mon, 26 Apr 2010 19:28:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=VvtkjvjIBqv2YRvK45MWn1jYpv9UWElrUi3FDmvE0qfHrqsttBbaPHERXxeKAuj+CV
+         jusQAfZUFeEwvNDDIODfOOmp4CWDrKr3wRcy8HhZnG3vzMI0k6hSyhstAfXMYCHRQKT9
+         CcUQeH5c6Npm6bwfr4VMSqy0uSme3WYgs6peE=
+MIME-Version: 1.0
+In-Reply-To: <1272321478-28481-2-git-send-email-mel@csn.ul.ie>
+References: <1272321478-28481-1-git-send-email-mel@csn.ul.ie>
+	 <1272321478-28481-2-git-send-email-mel@csn.ul.ie>
+Date: Tue, 27 Apr 2010 08:28:52 +0900
+Message-ID: <n2t28c262361004261628y1d6e53fbw505a78818c0d5228@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm,migration: During fork(), wait for migration to 
+	end if migration PTE is encountered
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o3QNT8mE005246
 
-Sorry, sounds like we're talking about a few different things here:
-  1) devices which sit in e820 reserved space (whether at < 1M or > 1M)
-  2) devices which sit in e820 ram or other space below 1M
-  3) how to hand out space from the 0-1M region
-
-Bjorn's patch fixes (3) so that regular PCI devices don't get space
-there, which makes sense.
-
-Some devices may be in the special region, but were pointed there by
-the BIOS.  Generally this should be ok, so drivers requesting this
-space should be allowed to get at it, but we should avoid putting
-anything else there.
-
-And below it sounds like you're talking about (1).  If so, then yes I
-guess we need a solution there, which will allow drivers to bind to
-these "reserved" devices, even though the BIOS has marked them as off
-limits, at least as far as e820 goes.
-
-So perhaps both (1) and (2) could be put into a new, special IO
-resource space, or could use a new flag, since "busy" doesn't really
-reflect what's going on there very well, as Bjorn pointed out.
-
-Jesse
-
-On Mon, 26 Apr 2010 16:02:57 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
-
-> I don't think it's sufficient, actually.  We regularly see machines where devices point into e820_reserved memory above 1 MB - because it's a platform device or because firmware (e.g. smm) is touching the device.  I think Bjorn's fix is great for .34, but longer term I think we need to structure the code to actually handle reserved regions differently from occupied/forbidden regions.
-> 
-> "Jesse Barnes" <jbarnes@virtuousgeek.org> wrote:
-> 
-> >On Mon, 26 Apr 2010 14:44:50 -0700
-> >"H. Peter Anvin" <hpa@zytor.com> wrote:
-> >
-> >> >
-> >> > Agreed.  The trickier part is handling any platform devices that
-> >> > request_resource against that space.  But maybe we don't need to do
-> >> > anything special; just making sure we avoid it in the PCI "BIOS" code
-> >> > as Bjorn did may be sufficient.
-> >> >
-> >> 
-> >> Why is that hard?  If a platform device does a request_resource against
-> >> that space, it's a request for specific address space and it should be
-> >> granted.
-> >
-> >I was thinking if we made it a special resource type we'd have to
-> >change any platform drivers to use it; i.e. it wouldn't be
-> >IORESOURCE_MEM or IORESOURCE_IO but IORESOURCE_DRAGONS.  That way it
-> >wouldn't be part of the normal resource space.
-> >
-> >But that's definitely overkill.  I think Bjorn's fix is sufficient.
-> >
-> >-- 
-> >Jesse Barnes, Intel Open Source Technology Center
-> 
-
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
+On Tue, Apr 27, 2010 at 7:37 AM, Mel Gorman <mel@csn.ul.ie> wrote:> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>>> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>>> At page migration, we replace pte with migration_entry, which has> similar format as swap_entry and replace it with real pfn at the> end of migration. But there is a race with fork()'s copy_page_range().>> Assume page migraion on CPU A and fork in CPU B. On CPU A, a page of> a process is under migration. On CPU B, a page's pte is under copy.>>        CPUA                    CPU B>                                do_fork()>                                copy_mm() (from process 1 to process2)>                                insert new vma to mmap_list (if inode/anon_vma)>        pte_lock(process1)>        unmap a page>        insert migration_entry>        pte_unlock(process1)>>        migrate page copy>                                copy_page_range>        remap new page by rmap_walk()>        pte_lock(process2)>        found no pte.>        pte_unlock(process2)>                                pte lock(process2)>                                pte lock(process1)>                                copy migration entry to process2>                                pte unlock(process1)>                                pte unlokc(process2)>        pte_lock(process1)>        replace migration entry>        to new page's pte.>        pte_unlock(process1)>> Then, some serialization is necessary. IIUC, this is very rare event but> it is reproducible if a lot of migration is happening a lot with the> following program running in parallel.>>    #include <stdio.h>>    #include <string.h>>    #include <stdlib.h>>    #include <sys/mman.h>>>    #define SIZE (24*1048576UL)>    #define CHILDREN 100>    int main()>    {>            int i = 0;>            pid_t pids[CHILDREN];>            char *buf = mmap(NULL, SIZE, PROT_READ|PROT_WRITE,>                            MAP_PRIVATE|MAP_ANONYMOUS,>                            0, 0);>            if (buf == MAP_FAILED) {>                    perror("mmap");>                    exit(-1);>            }>>            while (++i) {>                    int j = i % CHILDREN;>>                    if (j == 0) {>                            printf("Waiting on children\n");>                            for (j = 0; j < CHILDREN; j++) {>                                    memset(buf, i, SIZE);>                                    if (pids[j] != -1)>                                            waitpid(pids[j], NULL, 0);>                            }>                            j = 0;>                    }>>                    if ((pids[j] = fork()) == 0) {>                            memset(buf, i, SIZE);>                            exit(EXIT_SUCCESS);>                    }>            }>>            munmap(buf, SIZE);>    }>> copy_page_range() can wait for the end of migration.>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>> Signed-off-by: Mel Gorman <mel@csn.ul.ie>Reviewed-by : Minchan Kim <minchan.kim@gmail.com>
+-- Kind regards,Minchan Kim���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
