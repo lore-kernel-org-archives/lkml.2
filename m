@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab0DZOIi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 10:08:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20927 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104Ab0DZOIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 10:08:36 -0400
-Date: Mon, 26 Apr 2010 16:06:03 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 7/9] PM: Add suspend blocking work.
-Message-ID: <20100426140603.GA5702@redhat.com>
-References: <1271984938-13920-2-git-send-email-arve@android.com> <1271984938-13920-3-git-send-email-arve@android.com> <1271984938-13920-4-git-send-email-arve@android.com> <1271984938-13920-5-git-send-email-arve@android.com> <1271984938-13920-6-git-send-email-arve@android.com> <1271984938-13920-7-git-send-email-arve@android.com> <1271984938-13920-8-git-send-email-arve@android.com> <4BD1576E.5070401@kernel.org> <20100423122032.GA23544@redhat.com> <y2ud6200be21004231549q8e52c9c0z441d82b5a15e177d@mail.gmail.com>
+	id S1752746Ab0DZOJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 10:09:08 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:54298 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219Ab0DZOJG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 10:09:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=b4dqDBzoWXn3b28bLALe0Z7bfhsypvwguBrsHke1/EFmPClmHgpFBagcrBfRm8p1eJ
+         OG+HzhgFSyxdHs6n3djiP8781ZgBgrSGb63JJ8ZSYstm1lhxqkLLY7xCoP4JBzMut87U
+         /UamzE5uLss7r+cvJcqxJyC6voRPE8Wmp75NY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <y2ud6200be21004231549q8e52c9c0z441d82b5a15e177d@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201004261550.49512.arnd@arndb.de>
+References: <1272191830-23675-1-git-send-email-abogani@texware.it>
+	 <201004261515.56750.arnd@arndb.de>
+	 <w2t63a49ef41004260630o31d81ff0qd98cfdace7e73ce0@mail.gmail.com>
+	 <201004261550.49512.arnd@arndb.de>
+Date: Mon, 26 Apr 2010 16:09:03 +0200
+X-Google-Sender-Auth: 6886bd409263ec1a
+Message-ID: <p2m63a49ef41004260709o5d331376hd806b27e63bc9abc@mail.gmail.com>
+Subject: Re: [PATCH] USB: sisusbvga: Remove the BKL from open
+From: Alessio Igor Bogani <abogani@texware.it>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Oliver Neukum <oneukum@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Thomas Winischhofer <thomas@winischhofer.net>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Pete Zaitcev <zaitcev@redhat.com>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Fr??d??ric Weisbecker" <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23, Arve Hjønnevåg wrote:
+Dear Mr. Bergmann,
+
+2010/4/26 Arnd Bergmann <arnd@arndb.de>:
+> On Monday 26 April 2010, Alessio Igor Bogani wrote:
+>> It is what effectively I'm trying to do!
+>>
+>> The first part of this work is already present in USB subsystem
+>> maintainer tree (aka greg) at:
+>> http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/usb/usb-sisusbvga-remove-the-bkl-from-ioctl.patch
+>>
 >
-> On Fri, Apr 23, 2010 at 5:20 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > The unblock code in run_workqueue() is racy,
-> > it can unblock after the work was queued on another CPU, cwq->lock can't
-> > help.
->
-> If the work is both queued and starts running on another workqueue
-> between "get_wq_data(work) == cwq" and "!work_pending(work)", then
-> suspend_unblock will be called when it shouldn't. It should work fine
-> if I change to it check pending first though, since it cannot move
-> back to the current workqueue without locking cwq->lock first.
+> Ok, looks good then. I just wouldn't bother splitting the work into two patches if you
+> want to do this for more drivers.
 
-It can be queued on the same or different workqueue on another CPU,
-right before run_workqueue() does unblock.
+You are right. Simply I made the above-mentioned patch when BKL
+pushdown not yet reach _open function. :-)
 
-But I guess this doesn't matter. You already discussed this all with
-Tejun while I was sleeping ;) And I agree very much, the new plan looks
-much better imho.
-
-Oleg.
-
+Ciao,
+Alessio
