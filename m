@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623Ab0DZK5t (ORCPT <rfc822;w@1wt.eu>);
+	id S1754151Ab0DZK5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 06:57:52 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:37504 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab0DZK5t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Apr 2010 06:57:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57118 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849Ab0DZK5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 06:57:46 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com>
-References: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com> <20100423195127.48095127.toshi.okajima@jp.fujitsu.com> <20100422163755.355794e3.toshi.okajima@jp.fujitsu.com> <7894.1271931370@redhat.com> <20100423194547.3135efb8.toshi.okajima@jp.fujitsu.com> <10934.1272022437@redhat.com>
-To: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org, security@kernel.org,
-       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1][BUG][TAKE2] KEYRINGS: find_keyring_by_name() can gain the freed keyring
-Date: Mon, 26 Apr 2010 11:57:36 +0100
-Message-ID: <26383.1272279456@redhat.com>
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=aDB3BQjcOKGQeq0n23GKIbAkkG3cizNV/qO+RBtgFOYcgz/A6WqSmmChcCMO+8/Q3v
+         9kVVWUiMZUN3TeUnoFxsz7MKatDXbyOdxzhKtN6yeLmSfSb05KCXfKUoscoGz/3OKNVS
+         iFMKbUof+tsR4Crlv9+BBunt0mZL1I7tvtOsA=
+MIME-Version: 1.0
+Date: Mon, 26 Apr 2010 16:27:46 +0530
+Message-ID: <i2kf74c922b1004260357x6548f7ddz6e0a38fafa4f54ce@mail.gmail.com>
+Subject: zero copy in usbip send and recieve path
+From: "B.Vinai Kumar" <vinaibangala2001@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+       linux-usb <linux-usb@vger.kernel.org>,
+       usbip-devel@lists.sourceforge.net,
+       Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com> wrote:
+Hi All,
 
-> And my previous figure description(in first patch) was a bit wrong. 
-> Please replace it with my new one:
+I'am trying to implement zero copy in USBIP while sending / receiving
+usbip packets.
 
-The spacing is all over the place, I'm afraid.  Can you send it again?
+I started it with send path. The device which I used is mass storage.
+I'am using linux kernel 2.6.15.
 
-For example, the vertical bars in the right-hand column don't align:
+After virtualization, once the file copy starts from device to pc each
+usbip packet carries payload of 64K.
 
-|  [spin_lock(&key_serial_lock)]      |[mutex_lock(&key_user_keyr..mutex)]
-|  |                                       ||
-|  atomic_read() == 0                 ||
-|  |{ rb_ease(&key->serial_node,) }   ||
-|  |                                       ||
-|  [spin_unlock(&key_serial_lock)]    |find_keyring_by_name()
-|  |                                       |||
+I'am allocating this 64K buffer through __get_free_pages() (with order
+4) and assigning
+the buffer pointer to urb. After completion of URB i'am trying to send
+this buffer page by page
+by using tcp_sendpage instead of calling kernel_sendmsg(), this is to
+avoid copy which is
+done in the TCP send path.
 
-David
+By doing this way it is able to send the buffer successfully, but I'am
+not finding the way to free
+this buffer. This copy continues until the entire memory is consumed.
+
+who will free this buffer?
+
+1) If i call free_pages for entire 64K right after tcp_sendpage (i.e
+after sending all the pages, 64K). then observed
+the Kernel panic. It is obvious that the tcp core is not yet finished its job.
+
+2) TCP core is also not freeing these pages.
+
+This might be because, I allocated 64K buffer at once and trying to
+free it page by page.
+
+I need some help to resolve this issue.
+
+Performance wise there is a huge jump in throughput.
+
+Thanks,
+Vinai
