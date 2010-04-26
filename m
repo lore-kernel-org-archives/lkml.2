@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab0DZTZh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 15:25:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44553 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917Ab0DZTZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 15:25:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=Ethq5i5KcfE8Z5jPCTzcM/HRsonL2X+60mkYM5M0Lo4AvY8sikSNgU4Vkb1O0gRVfd
-         drK2sJEbAD6YQSJ92IuezpGrCh9/Q6AULco0T9oZ6jhjtQs8YHZqovqHXe29bT7mtzKr
-         JYC491EcLXvTw0IqxlaMX5TD5nrwEvQ7hNVjs=
-Date: Mon, 26 Apr 2010 21:25:20 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jani Nikula <ext-jani.1.nikula@nokia.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Daniel =?iso-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
-       Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [patch] gpio: potential null dereference
-Message-ID: <20100426192520.GU29093@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jani Nikula <ext-jani.1.nikula@nokia.com>,
-	David Brownell <dbrownell@users.sourceforge.net>,
-	Daniel =?iso-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
-	Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
+	id S1754771Ab0DZT0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 15:26:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753276Ab0DZT0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 15:26:24 -0400
+Message-ID: <4BD5E8C4.7040308@redhat.com>
+Date: Mon, 26 Apr 2010 15:25:56 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Arjan van de Ven <arjan@infradead.org>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
+       cpufreq@vger.kernel.org
+Subject: Re: [PATCH 1/7] sched: add a comment to get_cpu_idle_time_us()
+References: <20100418115949.7b743898@infradead.org> <20100418120050.562d63a6@infradead.org>
+In-Reply-To: <20100418120050.562d63a6@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Smatch found a potential null dereference in gpio_setup_irq().  The 
-"pdesc" variable is allocated with idr_find() that can return NULL.  If
-gpio_setup_irq() is called with 0 as gpio_flags and "pdesc" is null, it
-would OOPs here.
+On 04/18/2010 03:00 PM, Arjan van de Ven wrote:
+>  From 6f9df3bc6571d6545c552151f408d69265e15f92 Mon Sep 17 00:00:00 2001
+> From: Arjan van de Ven<arjan@linux.intel.com>
+> Date: Sun, 18 Apr 2010 10:25:19 -0700
+> Subject: [PATCH 1/7] sched: add a comment to get_cpu_idle_time_us()
+>
+> The exported function get_cpu_idle_time_us() has no comment
+> describing it; add a kerneldoc comment
+>
+> Signed-off-by: Arjan van de Ven<arjan@linux.intel.com>
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 76be229..eb0c3fe 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -416,7 +416,8 @@ static int gpio_setup_irq(struct gpio_desc *desc, struct device *dev,
- 	return 0;
- 
- free_sd:
--	sysfs_put(pdesc->value_sd);
-+	if (pdesc)
-+		sysfs_put(pdesc->value_sd);
- free_id:
- 	idr_remove(&pdesc_idr, id);
- 	desc->flags &= GPIO_FLAGS_MASK;
+-- 
+All rights reversed
