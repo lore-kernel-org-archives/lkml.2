@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab0DZRrZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 13:47:25 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:33444 "EHLO kernel.dk"
+	id S1753458Ab0DZRui (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 13:50:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27701 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751210Ab0DZRrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 13:47:24 -0400
-Date: Mon, 26 Apr 2010 19:47:22 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       martin.petersen@oracle.com
-Subject: Re: [PATCH 0/4] blkdev: blkdev_issue_fn cleanups v2
-Message-ID: <20100426174722.GV27497@kernel.dk>
-References: <1271077437-7921-1-git-send-email-dmonakhov@openvz.org> <20100426150144.GB2937@infradead.org> <20100426172651.GT27497@kernel.dk> <87k4ruce6u.fsf@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87k4ruce6u.fsf@openvz.org>
+	id S1752213Ab0DZRug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 13:50:36 -0400
+From: Glauber Costa <glommer@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com
+Subject: [PATCH 0/6] pvclock fixes
+Date: Mon, 26 Apr 2010 13:46:22 -0400
+Message-Id: <1272303988-21929-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26 2010, Dmitry Monakhov wrote:
-> Jens Axboe <jens.axboe@oracle.com> writes:
-> 
-> > On Mon, Apr 26 2010, Christoph Hellwig wrote:
-> >> Jens, are you planning on picking up a version of this?
-> >
-> > Yes, I was waiting for a repost to address your review concerns.
-> Ok, will appear in several hours. I have to repeat full testing
-> cycle, I don't want to break lvm one more time :)
+Hi,
 
-Take your time, I would appreciate it if lvm didn't get broken again :-)
+This is the last series I've sent, with comments from you merged.
+The first 5 patches are the same, only with the suggested fixes.
+I am leaving documentation out, since the basics won't change, and
+we're still discussing the details.
 
--- 
-Jens Axboe
+Patch 6 is new, and is the guest side of the skipping updates
+avi asked for. I haven't yet done any HV work on this
+(specially because I am not convinced exactly where it is safe to
+do).
+
+Let me know what you think.
+
+Thanks
+
+Glauber Costa (6):
+  Enable pvclock flags in vcpu_time_info structure
+  Add a global synchronization point for pvclock
+  change msr numbers for kvmclock
+  export new cpuid KVM_CAP
+  Try using new kvm clock msrs
+  don't compute pvclock adjustments if we trust the tsc
+
+ arch/x86/include/asm/kvm_para.h    |   13 ++++++++
+ arch/x86/include/asm/pvclock-abi.h |    4 ++-
+ arch/x86/include/asm/pvclock.h     |    1 +
+ arch/x86/kernel/kvmclock.c         |   59 +++++++++++++++++++++++-------------
+ arch/x86/kernel/pvclock.c          |   37 ++++++++++++++++++++++
+ arch/x86/kvm/x86.c                 |   13 +++++++-
+ include/linux/kvm.h                |    1 +
+ 7 files changed, 105 insertions(+), 23 deletions(-)
 
