@@ -1,107 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0DZJxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 05:53:09 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43344 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150Ab0DZJxH (ORCPT
+	id S1753475Ab0DZJzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 05:55:39 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56062
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752345Ab0DZJzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 05:53:07 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 26 Apr 2010 18:49:08 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       Christoph Lameter <cl@linux.com>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUGFIX][mm][PATCH] fix migration race in rmap_walk
-Message-Id: <20100426184908.3c277568.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <r2o28c262361004260248s62729484g14a720d37d5916f7@mail.gmail.com>
-References: <20100423120148.9ffa5881.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100423095922.GJ30306@csn.ul.ie>
-	<20100423155801.GA14351@csn.ul.ie>
-	<20100424110200.b491ec5f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100424104324.GD14351@csn.ul.ie>
-	<20100426084901.15c09a29.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100426182838.2cab9844.kamezawa.hiroyu@jp.fujitsu.com>
-	<r2o28c262361004260248s62729484g14a720d37d5916f7@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+	Mon, 26 Apr 2010 05:55:38 -0400
+Date: Mon, 26 Apr 2010 02:55:42 -0700 (PDT)
+Message-Id: <20100426.025542.193706542.davem@davemloft.net>
+To: airlied@redhat.com
+CC: suokkos@gmail.com, dri-devel@lists.freedesktop.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] drm/radeon: Fix sparc regression in r300_scratch()
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Apr 2010 18:48:42 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
 
-> On Mon, Apr 26, 2010 at 6:28 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Mon, 26 Apr 2010 08:49:01 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> >
-> >> On Sat, 24 Apr 2010 11:43:24 +0100
-> >> Mel Gorman <mel@csn.ul.ie> wrote:
-> >
-> >> > It looks nice but it still broke after 28 hours of running. The
-> >> > seq-counter is still insufficient to catch all changes that are made to
-> >> > the list. I'm beginning to wonder if a) this really can be fully safely
-> >> > locked with the anon_vma changes and b) if it has to be a spinlock to
-> >> > catch the majority of cases but still a lazy cleanup if there happens to
-> >> > be a race. It's unsatisfactory and I'm expecting I'll either have some
-> >> > insight to the new anon_vma changes that allow it to be locked or Rik
-> >> > knows how to restore the original behaviour which as Andrea pointed out
-> >> > was safe.
-> >> >
-> >> Ouch.
-> >
-> > Ok, reproduced. Here is status in my test + printk().
-> >
-> >  * A race doesn't seem to happen if swap=off.
-> >    I need to swapon to cause the bug
-> 
-> FYI,
-> 
-> Do you have a swapon/off bomb test?
+Commit b4fe945405e477cded91772b4fec854705443dd5 ("drm/radeon: Fix
+memory allocation failures in the preKMS command stream checking.")
+added a regression in that it completely tossed the get_unaligned()
+done by r300_scratch() which we added in commit
+958a6f8ccb1964adc3eec84cf401c5baeb4fbca0 ("drm: radeon: Fix unaligned
+access in r300_scratch().").
 
-No. Just running test under swapoff, and running the same test after swapon.
+Put it back.
 
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
-> When I saw your mail, I feel it might be culprit.
-> 
-> http://lkml.org/lkml/2010/4/22/762.
-> 
-> It is just guessing. I don't have a time to look into, now.
-> 
-Hmm. BTW.
-
-==
-static int expand_downwards(struct vm_area_struct *vma,
-                                   unsigned long address)
-{
-   ....
-       /* Somebody else might have raced and expanded it already */
-        if (address < vma->vm_start) {
-                unsigned long size, grow;
-
-                size = vma->vm_end - address;
-                grow = (vma->vm_start - address) >> PAGE_SHIFT;
-
-                error = acct_stack_growth(vma, size, grow);
-                if (!error) {
-                        vma->vm_start = address;
-                        vma->vm_pgoff -= grow;
-                }
-        }
-==	
-
-I feel this part needs care. No ?
-
-Thanks,
--Kmae
-
-
-
+diff --git a/drivers/gpu/drm/radeon/r300_cmdbuf.c b/drivers/gpu/drm/radeon/r300_cmdbuf.c
+index ea46d55..c5c2742 100644
+--- a/drivers/gpu/drm/radeon/r300_cmdbuf.c
++++ b/drivers/gpu/drm/radeon/r300_cmdbuf.c
+@@ -921,7 +921,7 @@ static int r300_scratch(drm_radeon_private_t *dev_priv,
+ 
+ 	ptr_addr = drm_buffer_read_object(cmdbuf->buffer,
+ 			sizeof(stack_ptr_addr), &stack_ptr_addr);
+-	ref_age_base = (u32 *)(unsigned long)*ptr_addr;
++	ref_age_base = (u32 *)(unsigned long)get_unaligned(ptr_addr);
+ 
+ 	for (i=0; i < header.scratch.n_bufs; i++) {
+ 		buf_idx = drm_buffer_pointer_to_dword(cmdbuf->buffer, 0);
