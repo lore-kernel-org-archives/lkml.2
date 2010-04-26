@@ -1,249 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab0DZOZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 10:25:07 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58491 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251Ab0DZOZD (ORCPT
+	id S1751629Ab0DZO0r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 10:26:47 -0400
+Received: from mtagate6.uk.ibm.com ([194.196.100.166]:50695 "EHLO
+	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab0DZO0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 10:25:03 -0400
-Date: Mon, 26 Apr 2010 23:22:34 +0900
-From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@linux-nfs.org, security@kernel.org,
-       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1][BUG][TAKE2] KEYRINGS: find_keyring_by_name() can
- gain the freed keyring
-Message-Id: <20100426232234.5c210566.toshi.okajima@jp.fujitsu.com>
-In-Reply-To: <1790.1272037936@redhat.com>
-References: <20100424002319.d68a3819.toshi.okajima@jp.fujitsu.com>
-	<20100423195127.48095127.toshi.okajima@jp.fujitsu.com>
-	<20100422163755.355794e3.toshi.okajima@jp.fujitsu.com>
-	<7894.1271931370@redhat.com>
-	<20100423194547.3135efb8.toshi.okajima@jp.fujitsu.com>
-	<10934.1272022437@redhat.com>
-	<1790.1272037936@redhat.com>
-Organization: Fujitsu co.,ltd.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.12.8; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Apr 2010 10:26:46 -0400
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tom Zanussi <tzanussi@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Subject: [PATCH] perf: Fix libdw-dev package name in error message
+Date: Mon, 26 Apr 2010 15:27:03 +0100
+Message-Id: <1272292023-9869-1-git-send-email-stefanha@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, David.
-# Sorry, I sent a mail which included local codes (Japanese) on Saturday.
-# So, I resend this mail.
+The headers required for DWARF support are provided by the libdw-dev
+package in Debian-based distros.  This patch corrects the elfutils-dev
+package name to libdw-dev in the Makefile error message when libdw.h is
+not found.
 
-> Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com> wrote:
->
->> > Better still, atomic_inc_not_zero().  How about the attached patch?
->> Your fix looks good to me. But, if usage count of the keyring is 0,
->> I think it better to return -ENOKEY immediately.
->
-
-> The problem with that is that someone else may have created a keyring with
-> the
-> same name that you can't then reach until the dead keyring is deleted.
-
-OK. I understand. So, your patch looks fine to me.
+Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
 ---
-Once find_keyring_by_name() returns -ENOKEY, the new user creates a
-new key. So, both the deleting key and the new key may exist.
-Therefore at next find_keyring_by_name() call, we should find the new
-key and ignore the deleting key.
----
+I don't think any distro has an elfutils-dev package but the name was chosen because of the usual RedHat/Debian -devel/-dev convention.
 
-Today, I tested your patch and any problem didn't happen.
-So, I rewrote your patch. Here you are:
----
-From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Subject: [PATCH] KEYS: find_keyring_by_name() can gain access to a freed keyring
+ tools/perf/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-find_keyring_by_name() can gain access to a keyring that has had its reference
-count reduced to zero, and is thus ready to be freed.  This then allows the
-dead keyring to be brought back into use whilst it is being destroyed.
-
-The following timeline illustrates the process:
-
-|(cleaner)				(user)
-| free_user(user)			sys_keyctl()
-|  |                                      |
-|  key_put(user->session_keyring)    keyctl_get_keyring_ID()
-|  ||	//=> keyring->usage = 0        |
-|  |schedule_work(&key_cleanup_task)  lookup_user_key()
-|  ||                                      |
-|  kmem_cache_free(,user)             |
-|  .                                  |[KEY_SPEC_USER_KEYRING]
-|  .                                  install_user_keyrings()
-|  .                                       ||
-| key_cleanup() [<= worker_thread()]  ||
-|  |                                       ||
-|  [spin_lock(&key_serial_lock)]      |[mutex_lock(&key_user_keyr..mutex)]
-|  |                                       ||
-|  atomic_read() == 0                 ||
-|  |{ rb_ease(&key->serial_node,) }   ||
-|  |                                       ||
-|  [spin_unlock(&key_serial_lock)]    |find_keyring_by_name()
-|  |                                       |||
-|  keyring_destroy(keyring)           ||[read_lock(&keyring_name_lock)]
-|  ||                                      |||
-|  |[write_lock(&keyring_name_lock)]  ||atomic_inc(&keyring->usage)
-|  |.                                 ||| *** GET freeing keyring ***
-|  |.                                 ||[read_unlock(&keyring_name_lock)]
-|  ||                                      ||
-|  |list_del()                        |[mutex_unlock(&key_user_k..mutex)]
-|  ||                                      |
-|  |[write_unlock(&keyring_name_lock)] ** INVALID keyring is returned **
-|  |                                        .
-|  kmem_cache_free(,keyring)           .
-|                                           . 
-|                                      atomic_dec(&keyring->usage)
-v                                         *** DESTROYED ***
-TIME 
-
-If CONFIG_SLUB_DEBUG=y then we may see the following message generated:
-
-	=============================================================================
-	BUG key_jar: Poison overwritten
-	-----------------------------------------------------------------------------
-
-	INFO: 0xffff880197a7e200-0xffff880197a7e200. First byte 0x6a instead of 0x6b
-	INFO: Allocated in key_alloc+0x10b/0x35f age=25 cpu=1 pid=5086
-	INFO: Freed in key_cleanup+0xd0/0xd5 age=12 cpu=1 pid=10
-	INFO: Slab 0xffffea000592cb90 objects=16 used=2 fp=0xffff880197a7e200 flags=0x200000000000c3
-	INFO: Object 0xffff880197a7e200 @offset=512 fp=0xffff880197a7e300
-
-	Bytes b4 0xffff880197a7e1f0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-	  Object 0xffff880197a7e200:  6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b jkkkkkkkkkkkkkkk
-
-
-Alternatively, we may see a system panic happen, such as:
-
-	BUG: unable to handle kernel NULL pointer dereference at 0000000000000001
-	IP: [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
-	PGD 6b2b4067 PUD 6a80d067 PMD 0
-	Oops: 0000 [#1] SMP
-	last sysfs file: /sys/kernel/kexec_crash_loaded
-	CPU 1
-	...
-	Pid: 31245, comm: su Not tainted 2.6.34-rc5-nofixed-nodebug #2 D2089/PRIMERGY
-	RIP: 0010:[<ffffffff810e61a3>]  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
-	RSP: 0018:ffff88006af3bd98  EFLAGS: 00010002
-	RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88007d19900b
-	RDX: 0000000100000000 RSI: 00000000000080d0 RDI: ffffffff81828430
-	RBP: ffffffff81828430 R08: ffff88000a293750 R09: 0000000000000000
-	R10: 0000000000000001 R11: 0000000000100000 R12: 00000000000080d0
-	R13: 00000000000080d0 R14: 0000000000000296 R15: ffffffff810f20ce
-	FS:  00007f97116bc700(0000) GS:ffff88000a280000(0000) knlGS:0000000000000000
-	CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-	CR2: 0000000000000001 CR3: 000000006a91c000 CR4: 00000000000006e0
-	DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-	DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-	Process su (pid: 31245, threadinfo ffff88006af3a000, task ffff8800374414c0)
-	Stack:
-	 0000000512e0958e 0000000000008000 ffff880037f8d180 0000000000000001
-	 0000000000000000 0000000000008001 ffff88007d199000 ffffffff810f20ce
-	 0000000000008000 ffff88006af3be48 0000000000000024 ffffffff810face3
-	Call Trace:
-	 [<ffffffff810f20ce>] ? get_empty_filp+0x70/0x12f
-	 [<ffffffff810face3>] ? do_filp_open+0x145/0x590
-	 [<ffffffff810ce208>] ? tlb_finish_mmu+0x2a/0x33
-	 [<ffffffff810ce43c>] ? unmap_region+0xd3/0xe2
-	 [<ffffffff810e4393>] ? virt_to_head_page+0x9/0x2d
-	 [<ffffffff81103916>] ? alloc_fd+0x69/0x10e
-	 [<ffffffff810ef4ed>] ? do_sys_open+0x56/0xfc
-	 [<ffffffff81008a02>] ? system_call_fastpath+0x16/0x1b
-	Code: 0f 1f 44 00 00 49 89 c6 fa 66 0f 1f 44 00 00 65 4c 8b 04 25 60 e8 00 00 48 8b 45 00 49 01 c0 49 8b 18 48 85 db 74 0d 48 63 45 18 <48> 8b 04 03 49 89 00 eb 14 4c 89 f9 83 ca ff 44 89 e6 48 89 ef
-	RIP  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
-
-
-This problem is that find_keyring_by_name does not confirm that the keyring is
-valid before accepting it.
-
-Skipping keyrings that have been reduced to a zero count seems the way to go.
-To this end, use atomic_inc_not_zero() to increment the usage count and skip
-the candidate keyring if that returns false.
-
-The following script _may_ cause the bug to happen, but there's no guarantee
-as the window of opportunity is small:
-
-	#!/bin/sh
-	LOOP=100000
-	USER=dummy_user
-	/bin/su -c "exit;" $USER || { /usr/sbin/adduser -m $USER; add=1; }
-	for ((i=0; i<LOOP; i++))
-	do
-		/bin/su -c "echo '$i' > /dev/null" $USER
-	done
-	(( add == 1 )) && /usr/sbin/userdel -r $USER
-	exit
-
-Note that the nominated user must not be in use.
-
-An alternative way of testing this may be:
-
-	for ((i=0; i<100000; i++))
-	do
-		keyctl session foo /bin/true || break
-	done >&/dev/null
-
-as that uses a keyring named "foo" rather than relying on the user and
-user-session named keyrings.
-
-Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Reported-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- security/keys/keyring.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
-
-
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 8fa2df0..d570824 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -526,9 +526,8 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
- 	struct key *keyring;
- 	int bucket;
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index bc0f670..66c525b 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -505,7 +505,7 @@ else
+ endif
  
--	keyring = ERR_PTR(-EINVAL);
- 	if (!name)
--		goto error;
-+		return ERR_PTR(-EINVAL);
- 
- 	bucket = keyring_hash(name);
- 
-@@ -555,17 +554,18 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
- 					   KEY_SEARCH) < 0)
- 				continue;
- 
--			/* we've got a match */
--			atomic_inc(&keyring->usage);
--			read_unlock(&keyring_name_lock);
--			goto error;
-+			/* we've got a match but we might end up racing with
-+			 * key_cleanup() if the keyring is currently 'dead'
-+			 * (ie. it has a zero usage count) */
-+			if (!atomic_inc_not_zero(&keyring->usage))
-+				continue;
-+			goto out;
- 		}
- 	}
- 
--	read_unlock(&keyring_name_lock);
- 	keyring = ERR_PTR(-ENOKEY);
--
-- error:
-+out:
-+	read_unlock(&keyring_name_lock);
- 	return keyring;
- 
- } /* end find_keyring_by_name() */
+ ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
+-	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/elfutils-dev);
++	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/libdw-dev);
+ 	BASIC_CFLAGS += -DNO_DWARF_SUPPORT
+ else
+ 	BASIC_CFLAGS += -I/usr/include/elfutils
+-- 
+1.7.0
 
-
----
-Best Regards,
-Toshiyuki Okajima
