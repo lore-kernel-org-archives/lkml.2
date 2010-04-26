@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab0DZN5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 09:57:24 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:37370 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab0DZN5W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 09:57:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=q8BMNBAqv6/t2fum1doKv6IClw7zb3pkr3g3w2bAcdaBCID2ZeYVhBS0F3e5Ij1y/q
-         zMTG7JRjIn8HChZPTAycij6cKG04wWXKclop7blKzuG9UNq1aHShoe8d3jPK+Pceqc81
-         FdiAwWziFGZczkw6inV85V+C1fhie4QvsdAEQ=
+	id S1752125Ab0DZOCt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 10:02:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56123 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751312Ab0DZOCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 10:02:48 -0400
+Date: Mon, 26 Apr 2010 11:01:57 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>
+Subject: Re: [PATCH -tip 1/4] [BUGFIX] perf tools: Initialize dso->node
+	member in dso__new
+Message-ID: <20100426140157.GE7460@ghostprotocols.net>
+References: <20100421195616.24664.89980.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-Date: Mon, 26 Apr 2010 14:57:21 +0100
-Message-ID: <g2zbffbecbb1004260657j7aff37dy9d10ca5ed37337c0@mail.gmail.com>
-Subject: [GIT PULL] Squashfs bug fixes for 2.6.34-rc6
-From: Phillip Lougher <phillip.lougher@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100421195616.24664.89980.stgit@localhost6.localdomain6>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Em Wed, Apr 21, 2010 at 03:56:16PM -0400, Masami Hiramatsu escreveu:
+> If dso->node member is not initilized, it causes a segmentation
+> fault when adding to other lists. It should be initilized in
+> dso__new().
+> 
+> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> ---
+> 
+>  tools/perf/util/symbol.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index e782e7d..e77c33a 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -189,6 +189,7 @@ struct dso *dso__new(const char *name)
+>  		self->sorted_by_name = 0;
+>  		self->has_build_id = 0;
+>  		self->kernel = DSO_TYPE_USER;
+> +		INIT_LIST_HEAD(&self->node);
+>  	}
+>  
+>  	return self;
 
-Please pull the following Squashfs bug fixes.  The locking bug was
-added in the 2.6.34 merge window and it is
-rather nasty as it breaks liveCDs.  The other bugs are much less
-important but have all come to light since the merge window.
+Trying to understand how this would be a problem, as:
 
-Thanks
+static inline void __list_add(struct list_head *new,
+                              struct list_head *prev,
+                              struct list_head *next)
+{
+        next->prev = new;
+        new->next = next;
+        new->prev = prev;
+        prev->next = new;
+}
 
-Phillip
+This is not a list head, just a node.
 
- --------------------------------
-The following changes since commit 0d0fb0f9c5fddef4a10242fe3337f00f528a3099:
-  Linus Torvalds (1):
-        Linux 2.6.34-rc4
+Looking at other messages where you described the problem to try to
+understand why this would help.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/pkl/squashfs-linus.git master
-
-Phillip Lougher (4):
-      squashfs: fix locking bug in zlib wrapper
-      squashfs: fix warn_on when root inode is corrupted
-      squashfs: add missing buffer free
-      squashfs: fix potential buffer over-run on 4K block file systems
-
- fs/squashfs/block.c        |    5 ++---
- fs/squashfs/super.c        |    4 +++-
- fs/squashfs/zlib_wrapper.c |    3 ++-
- 3 files changed, 7 insertions(+), 5 deletions(-)
+- Arnaldo
