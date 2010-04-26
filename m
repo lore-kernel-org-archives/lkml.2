@@ -1,95 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab0DZRuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 13:50:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	id S1753694Ab0DZRun (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 13:50:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26904 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752213Ab0DZRuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 13:50:39 -0400
+	id S1752261Ab0DZRuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 13:50:40 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, avi@redhat.com,
-       Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [PATCH 1/6] Enable pvclock flags in vcpu_time_info structure
-Date: Mon, 26 Apr 2010 13:46:23 -0400
-Message-Id: <1272303988-21929-2-git-send-email-glommer@redhat.com>
-In-Reply-To: <1272303988-21929-1-git-send-email-glommer@redhat.com>
+       Jeremy Fitzhardinge <jeremy@goop.org>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>
+Subject: [PATCH 2/6] Add a global synchronization point for pvclock
+Date: Mon, 26 Apr 2010 13:46:24 -0400
+Message-Id: <1272303988-21929-3-git-send-email-glommer@redhat.com>
+In-Reply-To: <1272303988-21929-2-git-send-email-glommer@redhat.com>
 References: <1272303988-21929-1-git-send-email-glommer@redhat.com>
+ <1272303988-21929-2-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes one padding byte and transform it into a flags
-field. New versions of guests using pvclock will query these flags
-upon each read.
+In recent stress tests, it was found that pvclock-based systems
+could seriously warp in smp systems. Using ingo's time-warp-test.c,
+I could trigger a scenario as bad as 1.5mi warps a minute in some systems.
+(to be fair, it wasn't that bad in most of them). Investigating further, I
+found out that such warps were caused by the very offset-based calculation
+pvclock is based on.
 
-Flags, however, will only be interpreted when the guest decides to.
-It uses the pvclock_valid_flags function to signal that a specific
-set of flags should be taken into consideration. Which flags are valid
-are usually devised via HV negotiation.
+This happens even on some machines that report constant_tsc in its tsc flags,
+specially on multi-socket ones.
+
+Two reads of the same kernel timestamp at approx the same time, will likely
+have tsc timestamped in different occasions too. This means the delta we
+calculate is unpredictable at best, and can probably be smaller in a cpu
+that is legitimately reading clock in a forward ocasion.
+
+Some adjustments on the host could make this window less likely to happen,
+but still, it pretty much poses as an intrinsic problem of the mechanism.
+
+A while ago, I though about using a shared variable anyway, to hold clock
+last state, but gave up due to the high contention locking was likely
+to introduce, possibly rendering the thing useless on big machines. I argue,
+however, that locking is not necessary.
+
+We do a read-and-return sequence in pvclock, and between read and return,
+the global value can have changed. However, it can only have changed
+by means of an addition of a positive value. So if we detected that our
+clock timestamp is less than the current global, we know that we need to
+return a higher one, even though it is not exactly the one we compared to.
+
+OTOH, if we detect we're greater than the current time source, we atomically
+replace the value with our new readings. This do causes contention on big
+boxes (but big here means *BIG*), but it seems like a good trade off, since
+it provide us with a time source guaranteed to be stable wrt time warps.
+
+After this patch is applied, I don't see a single warp in time during 5 days
+of execution, in any of the machines I saw them before.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
 CC: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/include/asm/pvclock-abi.h |    3 ++-
- arch/x86/include/asm/pvclock.h     |    1 +
- arch/x86/kernel/pvclock.c          |    9 +++++++++
- 3 files changed, 12 insertions(+), 1 deletions(-)
+ arch/x86/kernel/pvclock.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
-index 6d93508..ec5c41a 100644
---- a/arch/x86/include/asm/pvclock-abi.h
-+++ b/arch/x86/include/asm/pvclock-abi.h
-@@ -29,7 +29,8 @@ struct pvclock_vcpu_time_info {
- 	u64   system_time;
- 	u32   tsc_to_system_mul;
- 	s8    tsc_shift;
--	u8    pad[3];
-+	u8    flags;
-+	u8    pad[2];
- } __attribute__((__packed__)); /* 32 bytes */
- 
- struct pvclock_wall_clock {
-diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
-index 53235fd..c50823f 100644
---- a/arch/x86/include/asm/pvclock.h
-+++ b/arch/x86/include/asm/pvclock.h
-@@ -6,6 +6,7 @@
- 
- /* some helper functions for xen and kvm pv clock sources */
- cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src);
-+void pvclock_valid_flags(u8 flags);
- unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src);
- void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
- 			    struct pvclock_vcpu_time_info *vcpu,
 diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 03801f2..8f4af7b 100644
+index 8f4af7b..6cf6dec 100644
 --- a/arch/x86/kernel/pvclock.c
 +++ b/arch/x86/kernel/pvclock.c
-@@ -31,8 +31,16 @@ struct pvclock_shadow_time {
- 	u32 tsc_to_nsec_mul;
- 	int tsc_shift;
- 	u32 version;
-+	u8  flags;
- };
+@@ -118,11 +118,14 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src)
+ 	return pv_tsc_khz;
+ }
  
-+static u8 valid_flags = 0;
++static atomic64_t last_value = ATOMIC64_INIT(0);
 +
-+void pvclock_valid_flags(u8 flags)
-+{
-+	valid_flags = flags;
-+}
+ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
+ {
+ 	struct pvclock_shadow_time shadow;
+ 	unsigned version;
+ 	cycle_t ret, offset;
++	u64 last;
+ 
+ 	do {
+ 		version = pvclock_get_time_values(&shadow, src);
+@@ -132,6 +135,27 @@ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
+ 		barrier();
+ 	} while (version != src->version);
+ 
++	/*
++	 * Assumption here is that last_value, a global accumulator, always goes
++	 * forward. If we are less than that, we should not be much smaller.
++	 * We assume there is an error marging we're inside, and then the correction
++	 * does not sacrifice accuracy.
++	 *
++	 * For reads: global may have changed between test and return,
++	 * but this means someone else updated poked the clock at a later time.
++	 * We just need to make sure we are not seeing a backwards event.
++	 *
++	 * For updates: last_value = ret is not enough, since two vcpus could be
++	 * updating at the same time, and one of them could be slightly behind,
++	 * making the assumption that last_value always go forward fail to hold.
++	 */
++	last = atomic64_read(&last_value);
++	do {
++		if (ret < last)
++			return last;
++		last = atomic64_cmpxchg(&last_value, last, ret);
++	} while (unlikely(last != ret));
 +
- /*
-  * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
-  * yielding a 64-bit result.
-@@ -91,6 +99,7 @@ static unsigned pvclock_get_time_values(struct pvclock_shadow_time *dst,
- 		dst->system_timestamp  = src->system_time;
- 		dst->tsc_to_nsec_mul   = src->tsc_to_system_mul;
- 		dst->tsc_shift         = src->tsc_shift;
-+		dst->flags             = src->flags;
- 		rmb();		/* test version after fetching data */
- 	} while ((src->version & 1) || (dst->version != src->version));
+ 	return ret;
+ }
  
 -- 
 1.6.2.2
