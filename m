@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850Ab0DZInM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 04:43:12 -0400
-Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:41166 "EHLO
-	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab0DZInK (ORCPT
+	id S1752219Ab0DZIt7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 04:49:59 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:42814 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab0DZIt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 04:43:10 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4BD552CC.3000107@jic23.retrosnub.co.uk>
-Date: Mon, 26 Apr 2010 09:46:04 +0100
-From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20100109 Thunderbird/3.0
+	Mon, 26 Apr 2010 04:49:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=olvZ5xSnVJcIuJXxG7kX7fLd0zRtiHC72S9SaBdEsz4M9T3WYbV0r5XTtfNa21H7Pc
+         /EkH0N/JzfQf8ErSoiP683GCY54CzKNdSahPf2SxBq2Wg7hDX59z27F5suS+u8W3rEIR
+         59xNIGVynoz6YAbNmxu9OGSpPlYyOC0dteAI8=
 MIME-Version: 1.0
-To: Barry Song <21cnbao@gmail.com>
-CC: jic23@cam.ac.uk, gregkh@suse.de, linux-iio@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: fix typo in userspace example codes and document
-References: <1272255541-11835-1-git-send-email-21cnbao@gmail.com>
-In-Reply-To: <1272255541-11835-1-git-send-email-21cnbao@gmail.com>
+In-Reply-To: <20100423150207.7969c9f6@nehalam>
+References: <l2nb43bf5491004231314i13503c67yeccfc54bc1cae850@mail.gmail.com>
+	 <h2p9929d2391004231322r23528f32z8447a711a29e28ea@mail.gmail.com>
+	 <20100423135816.23f5861f@nehalam>
+	 <r2ob43bf5491004231403o64f8b88bsa9543d9910648d97@mail.gmail.com>
+	 <20100423150207.7969c9f6@nehalam>
+Date: Mon, 26 Apr 2010 10:49:55 +0200
+Message-ID: <y2lb43bf5491004260149x23beb95dqc9e177d9a6ecc679@mail.gmail.com>
+Subject: Re: [PATCH] e100: expose broadcast_disabled as a module option
+From: Erwan Velu <erwanaliasr1@gmail.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+       netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
+       linux-kernel@vger.kernel.org, jesse.brandeburg@intel.com,
+       bruce.w.allan@intel.com, alexander.h.duyck@intel.com,
+       peter.p.waskiewicz.jr@intel.com, john.ronciak@intel.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/10 05:19, Barry Song wrote:
-> Signed-off-by: Barry Song <21cnbao@gmail.com>
-Thanks Barry.  Ironically I rewrote this example yesterday to match the new
-abi (though I hadn't noticed the documentation error!).
-Still worth merging this as it may be a little while before everyone
-is happy with that patch set. Will hopefully post a new revision of that
-later today.
+Agreed that will be a better implementation. Changes of IFF_BROADCAST
+could play with this "broadcast_disabled" configuration switch to
+increase the cpu efficiency.
 
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
-> ---
->  .../iio/Documentation/lis3l02dqbuffersimple.c      |    2 +-
->  drivers/staging/iio/Documentation/userspace.txt    |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/Documentation/lis3l02dqbuffersimple.c b/drivers/staging/iio/Documentation/lis3l02dqbuffersimple.c
-> index 2b5cfc5..811dd14 100644
-> --- a/drivers/staging/iio/Documentation/lis3l02dqbuffersimple.c
-> +++ b/drivers/staging/iio/Documentation/lis3l02dqbuffersimple.c
-> @@ -20,7 +20,7 @@
->  
->  #include <linux/types.h>
->  #include <dirent.h>
-> -#include "iio_util.h"
-> +#include "iio_utils.h"
->  
->  static const char *ring_access = "/dev/iio/lis3l02dq_ring_access";
->  static const char *ring_event = "/dev/iio/lis3l02dq_ring_event";
-> diff --git a/drivers/staging/iio/Documentation/userspace.txt b/drivers/staging/iio/Documentation/userspace.txt
-> index 661015a..4838818 100644
-> --- a/drivers/staging/iio/Documentation/userspace.txt
-> +++ b/drivers/staging/iio/Documentation/userspace.txt
-> @@ -56,5 +56,5 @@ KERNEL="ring_event_line*", ID="spi1.0", DRIVER="lis3l02dq", NAME="iio/lis3l02dq_
->  KERNEL="event_line*", ID="spi1.0", DRIVER="lis3l02dq", NAME="iio/lis3l02dq_event"
->  KERNEL="ring_access*", ID="spi1.0", DRIVER="lis3l02dq", NAME="iio/lis3l02dq_ring_access"
->  
-> -The files, lis3l02dqbuffersimple.c and iio_util.h in this directory provide an example
-> +The files, lis3l02dqbuffersimple.c and iio_utils.h in this directory provide an example
->  of how to use the ring buffer and event interfaces.
+ I'm not a kernel expert and I don't really figure how the changes of
+the IFF_BROADCAST should be forwarded to the interfaces and how it can
+be manipulated. I saw that ifconfig have a '-broadcast' option but
+looks like none of my drivers are compatible with that.
 
+Does any one you could help me understanding what should be the good way to
+1- enabled/disabled IFF_BROADCAST for a given interface
+2- populate this changes to the driver
+
+Once I'll be able to have a proper patch using that, I'll post it
+again to the list.
+
+Cheers,
+Erwan
+
+2010/4/24 Stephen Hemminger <shemminger@vyatta.com>:
+> On Fri, 23 Apr 2010 23:03:59 +0200
+[...]
+> The point is that the driver can look at IFF_BROADCAST rather than having
+> module parameter. Module parameters are device driver specific and should
+> be avoid as much as possible in favor of general mechanism. This is a repeated
+> problem where users and vendors make special hooks that only work with their
+> driver, which makes life hard for other users and distribution providers.
+>
