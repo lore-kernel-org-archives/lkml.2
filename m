@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab0DZOiJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 10:38:09 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:55897 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004Ab0DZOiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 10:38:07 -0400
-Date: Mon, 26 Apr 2010 16:38:03 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-       Paolo Minazzi <paolo.minazzi@gmail.com>
-Subject: Re: [Patch] Catch filesystems lacking s_bdi
-Message-ID: <20100426143803.GM27497@kernel.dk>
-References: <20100422055448.GA27309@logfs.org> <20100422062631.GC27309@logfs.org> <alpine.LFD.2.00.1004220724170.9086@i5.linux-foundation.org> <alpine.LFD.2.00.1004220730280.9086@i5.linux-foundation.org> <20100422162709.GJ27497@kernel.dk> <20100422203358.GB30749@logfs.org> <20100423100532.GN27497@kernel.dk> <20100423205518.GB7008@logfs.org> <20100426094810.GE27497@kernel.dk> <20100426143253.GB4364@logfs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100426143253.GB4364@logfs.org>
+	id S1752497Ab0DZOmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 10:42:06 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:8575 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab0DZOmE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 10:42:04 -0400
+Date: Mon, 26 Apr 2010 16:42:17 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: USB gadget with drivers "on board"
+In-reply-to: <20100426141605.GO30801@buzzloop.caiaq.de>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+       linux-usb@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>
+Message-id: <op.vbrxsrw07p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.10 (Linux)
+References: <op.vbrfqdznfxrvh1@pikus> <20100426141605.GO30801@buzzloop.caiaq.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26 2010, J�rn Engel wrote:
-> > Yeah, it's a bad situation to be in. I changed that BUG_ON() to a
-> > WARN_ON(). I'm not too worried about that part, I'm more worried about
-> > the file system changed. OTOH, they do lack proper flushing now, so it's
-> > likely not a huge risk from that perspective.
-> 
-> It is worse still.  Using mtd->backing_dev_info results in 
-> kernel BUG at fs/fs-writeback.c:157
-> 
-> which is BUG_ON(!work->seen); in bdi_queue_work().  Logfs is affected
-> and I bet jffs2 is as well.  So much for dwmw2 or me actually testing
-> the fix. :(
-> 
-> I did a hexdump to see what sb->s_bdi actually contained and the result
-> was this:
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> 00 00 00 00 00 00 00 00                          ........
-> 
-> Which should be mtd_bdi_unmappable.  And at this point I have to admit
-> being clueless.  What exactly should a struct backing_dev_info contain
-> and for what purposes?  And where is this documented?
+> On Mon, Apr 26, 2010 at 10:29:05AM +0200, Michał Nazarewicz wrote:
+>> I need to create an USB gadget with drivers for Windows included
+>> "on board".  In particular, when the gadget is connected to Windows
+>> host it is detected as mass storage and mounted drive include the
+>> drivers.  However, when the drivers are installed, it is detected
+>> as some other device.
+>>
+>> Now, it seems that a simple composite device with two configurations
+>> is enough -- the first containing mass storage and the second other
+>> functions.  My tests show that Windows manages to set the first
+>> configuration and detect the mass storage interface.
 
-The important bit is that each bdi must be initialized and registered if
-it's going to be handling dirty data, it can't just be a static
-placeholder. See the bdi_setup_and_register() helper I added.
+On Mon, 26 Apr 2010 16:16:05 +0200, Daniel Mack <daniel@caiaq.de> wrote:
+> Why are you using two configurations on this device instead of one
+> configuration with two interfaces? Interfaces are not allowed to share
+> endpoints within one configuration, so they can be used simultaniously.
+
+Ideally, I would like to use two configurations on its own just like
+g_ether that is one configuration with RNDIS and some other functionality
+and another with CDC ECM and some other functionality.
+
+It seems however that such gadgets are not properly detected by Windows
+as composite devices and thus require a driver (I imagined a single INF
+should be enough but now I'm not even sure of that) and so I tried adding
+another configuration with just the mass storage function and this seems
+to be handled correctly.
+
+Now, even if I were to ignore the other RNDIS/ECM multiple personality
+disorder and sticking to a single configuration with RNDIS there's still
+an issue (or challenge if you will) of a "Found new driver" dialog
+popping up like crazy when the device is inserted but the drivers from
+mass storage didn't have time to install.  This is especially true since
+it was my experience that RDNIS is able to freeze Windows if it's not
+the first interface.
+
+So in the end, I'm looking for a method to get a device that can be
+plugged in and report as mass storage with drivers but when drivers
+are installed report as something else.  I know it is possible since
+I encountered several devices that do exactly that.
+
+
+PS. There seem to be some mass with the To and Cc headers in my
+original message.  Sorry about that.
 
 -- 
-Jens Axboe
-
+Best regards,                                           _     _
+  .o. | Liege of Serenely Enlightened Majesty of       o' \,=./ `o
+  ..o | Computer Science,  Michał "mina86" Nazarewicz     (o o)
+  ooo +---[mina86@mina86.com]---[mina86@jabber.org]---ooO--(_)--Ooo--
