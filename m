@@ -1,113 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab0DZVCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 17:02:09 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:45905 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab0DZVCI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 17:02:08 -0400
-Date: Mon, 26 Apr 2010 23:02:02 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-       valentin.longchamp@epfl.ch, grant.likely@secretlab.ca,
-       bryan.wu@canonical.com, amit.kucheria@canonical.com,
-       Jun.Li@freescale.com, xiao-lizhang@freescale.com
-Subject: Re: [PATCHv8 2.6.34-rc5 4/5] mxc: Add generic USB HW
- initialization for MX51
-Message-ID: <20100426210202.GW30801@buzzloop.caiaq.de>
-References: <1271998277-3949-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271998277-3949-2-git-send-email-Dinh.Nguyen@freescale.com>
- <1271998277-3949-3-git-send-email-Dinh.Nguyen@freescale.com>
- <1271998277-3949-4-git-send-email-Dinh.Nguyen@freescale.com>
+	id S1753648Ab0DZVDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 17:03:35 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:49888 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753167Ab0DZVDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 17:03:33 -0400
+Date: Mon, 26 Apr 2010 16:03:33 -0500
+From: "Serge E. Hallyn" <serue@us.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       James Morris <jmorris@namei.org>,
+       David Safford <safford@watson.ibm.com>,
+       Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH 04/14] evm: re-release
+Message-ID: <20100426210333.GB2029@us.ibm.com>
+References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <1271886594-3719-5-git-send-email-zohar@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1271998277-3949-4-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <1271886594-3719-5-git-send-email-zohar@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 11:51:16PM -0500, Dinh.Nguyen@freescale.com wrote:
+Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
+> EVM protects a file's security extended attributes against integrity
+> attacks. It maintains an HMAC-sha1 value across the extended attributes,
+> storing the value as the extended attribute 'security.evm'. EVM has gone
+> through a number of iterations, initially as an LSM module, subsequently
+> as a LIM integrity provider, and now, when co-located with a security_
+> hook, embedded directly in the security_ hook, similar to IMA.
+> 
+> This is the first part of a local file integrity verification system.
+> While this part does authenticate the selected extended attributes, and
+> cryptographically bind them to the inode, coming extensions will bind
+> other directory and inode metadata for more complete protection.  The
+> set of protected security extended attributes is configured at compile.
+> 
+> EVM depends on the Kernel Key Retention System to provide it with the
+> kernel master key for the HMAC operation.  The kernel master key is
+> securely loaded onto the root's keyring, typically by 'loadkernkey',
+> which either uses the TPM sealed secret key, if available, or a
+> password requested from the console.  To signal EVM, that the key has
+> been loaded onto the keyring, 'echo 1 > <securityfs>/evm'. This is
+> normally done in the initrd, which has already been measured as part
+> of the trusted boot. (Refer to http://linux-ima.sourceforge.net/#EVM.)
+> 
+> EVM adds the following three calls to the existing security hooks,
+> evm_inode_setxattr(), evm_inode_post_setxattr(), and
+> evm_inode_removexattr.
+> 
+> To initialize and update the 'security.evm' extended attribute, EVM
+> defines three calls: evm_inode_post_init(), evm_inode_post_setattr()
+> and evm_inode_post_removexattr() hooks.
+> 
+> To verify the integrity of an extended attribute, EVM exports
+> evm_verifyxattr().
+> 
+> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 
-[...]
+Acked-by: Serge Hallyn <serue@us.ibm.com>
 
-> diff --git a/arch/arm/plat-mxc/include/mach/mxc_ehci.h b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-> index 4b9b836..7fc5f99 100644
-> --- a/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-> +++ b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-> @@ -25,6 +25,18 @@
->  #define MXC_EHCI_INTERNAL_PHY		(1 << 7)
->  #define MXC_EHCI_IPPUE_DOWN		(1 << 8)
->  #define MXC_EHCI_IPPUE_UP		(1 << 9)
-> +#define MXC_EHCI_WAKEUP_ENABLED	(1 << 10)
-> +#define MXC_EHCI_ITC_NO_THRESHOLD	(1 << 11)
-> +
-> +#define MXC_USBCTRL_OFFSET		0
-> +#define MXC_USB_PHY_CTR_FUNC_OFFSET	0x8
-> +#define MXC_USB_PHY_CTR_FUNC2_OFFSET	0xc
-> +
-> +#define MX5_USBOTHER_REGS_OFFSET	0x800
-> +
-> +/* USB_PHY_CTRL_FUNC2*/
-> +#define MX5_USB_UTMI_PHYCTRL1_PLLDIV_MASK		0x3
-> +#define MX5_USB_UTMI_PHYCTRL1_PLLDIV_SHIFT		0
->  
->  struct mxc_usbh_platform_data {
->  	int (*init)(struct platform_device *pdev);
-> @@ -35,7 +47,7 @@ struct mxc_usbh_platform_data {
->  	struct otg_transceiver	*otg;
->  };
->  
-> -int mxc_set_usbcontrol(int port, unsigned int flags);
-> +int mxc_initialize_usb_hw(int port, unsigned int flags);
->  
->  #endif /* __INCLUDE_ASM_ARCH_MXC_EHCI_H */
->  
-> diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
-> index ead59f4..bb8d092 100644
-> --- a/drivers/usb/host/ehci-mxc.c
-> +++ b/drivers/usb/host/ehci-mxc.c
-> @@ -191,6 +191,11 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
->  		clk_enable(priv->ahbclk);
->  	}
->  
-> +	/* setup specific usb hw */
-> +	ret = mxc_initialize_usb_hw(pdev->id, pdata->flags);
-> +	if (ret < 0)
-> +		goto err_init;
-> +
->  	/* set USBMODE to host mode */
->  	temp = readl(hcd->regs + USBMODE_OFFSET);
->  	writel(temp | USBMODE_CM_HOST, hcd->regs + USBMODE_OFFSET);
-> @@ -199,11 +204,6 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
->  	writel(pdata->portsc, hcd->regs + PORTSC_OFFSET);
->  	mdelay(10);
->  
-> -	/* setup USBCONTROL. */
-> -	ret = mxc_set_usbcontrol(pdev->id, pdata->flags);
-> -	if (ret < 0)
-> -		goto err_init;
-> -
->  	/* Initialize the transceiver */
->  	if (pdata->otg) {
->  		pdata->otg->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
-
-I think there's still one concern left for the move of this function
-block, right? Dinh, is this actually necessary? Could you try calling
-mxc_initialize_usb_hw() from the location where mxc_set_usbcontrol() was
-used to be called? Or is there anything I overlook?
-
-This might look like nit-picking to you, but as Sascha explained, there
-is a certain risk of breaking functionality for existing boards, and if
-we can avoid that, we should.
-
-Meanwhile, I prepared a patch to clean up plat-mxc/ehci.c. I'll send it
-out once this series is accepted.
-
-Thanks,
-Daniel
-
+thanks,
+-serge
