@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab0DZXmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 19:42:54 -0400
-Received: from kroah.org ([198.145.64.141]:50924 "EHLO coco.kroah.org"
+	id S1754613Ab0DZXsU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 19:48:20 -0400
+Received: from fifo99.com ([67.223.236.141]:56550 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab0DZXmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 19:42:53 -0400
-Date: Mon, 26 Apr 2010 16:42:50 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Alex Manoussakis <alex@juniper.net>
-Subject: Re: linux-next: build warning in Linus' tree
-Message-ID: <20100426234250.GA20481@kroah.com>
-References: <20100427093019.ae1b8c48.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100427093019.ae1b8c48.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752301Ab0DZXsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 19:48:19 -0400
+Subject: Re: Q: sched_clock() vs. clocksource, how to implement correctly
+From: Daniel Walker <dwalker@fifo99.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Johannes Stezenbach <js@sig21.net>, John Stultz <johnstul@us.ibm.com>,
+       linux-kernel@vger.kernel.org, Magnus Damm <damm@opensource.se>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20100423182933.0df45b53@mschwide.boeblingen.de.ibm.com>
+References: <20100423150917.GA25714@sig21.net>
+	 <20100423182933.0df45b53@mschwide.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 26 Apr 2010 16:48:14 -0700
+Message-ID: <1272325694.32741.16.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 09:30:19AM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On Fri, 2010-04-23 at 18:29 +0200, Martin Schwidefsky wrote:
+> > Questions:
+> > 
+> > - Isn't sched_clock() supposed to be extended to 64bit so
+> >   that it practically never wraps?
+> >   (old implementations use cnt32_to_63())
 > 
-> Today's linux-next build (x86_64 allmodconfig) produced this warning:
+> Yes, sched_clock() is supposed to return a monotonic timestamp.
+>  
+> > - What would be the effect on scheduling when sched_clock() wraps?
 > 
-> drivers/usb/serial/ti_usb_3410_5052.c: In function 'ti_download_firmware':
-> drivers/usb/serial/ti_usb_3410_5052.c:1738: warning: format '%d' expects type 'int', but argument 5 has type 'size_t'
+> It would confuse the process accounting and the scheduling I guess.
 > 
-> Introduced by commit cdc04834ce70343aa6f87c5332ec66c35d968967 ("USB:
-> ti_usb_3410_5052: adding multitech dialup fax/modem devices").
 
-Thanks, Randy has already sent me a fix for this, I'm working on apply
-it to my tree soon (doing must-fix things first...)
+Are you sure about this? I'm pretty sure I've seen Ingo say multiple
+times that sched_clock can wrap, and can be unstable. For instance
+sched_clock is (was?) directly connected to the TSC on x86 ..
 
-thanks,
+If it really can't wrap there must bunches of architectures that would
+need to be fixed up.
 
-greg k-h
+Daniel
+
