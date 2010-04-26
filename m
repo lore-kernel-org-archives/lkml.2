@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab0DZXPp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 19:15:45 -0400
-Received: from mail-iw0-f202.google.com ([209.85.223.202]:49408 "EHLO
-	mail-iw0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab0DZXPn (ORCPT
+	id S1753184Ab0DZXP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 19:15:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47230 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752774Ab0DZXPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 19:15:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=YJa75r8B7zym68o0Z4eovT/fTmqYed7JS6tSY+HrYbz/Vwo1x57T+aJ07bARosp58C
-         2N6h88DFKs1OrAclAslzpdbvrLXeurdbWJeIaJm6xHTIx6Aq6xFUc/bNfCfvzSwUbbS6
-         gIfbTfShEUIBn/o7k0QlmHWPcHez5mfs56Mdo=
-MIME-Version: 1.0
-In-Reply-To: <1272321478-28481-3-git-send-email-mel@csn.ul.ie>
-References: <1272321478-28481-1-git-send-email-mel@csn.ul.ie>
-	 <1272321478-28481-3-git-send-email-mel@csn.ul.ie>
-Date: Tue, 27 Apr 2010 08:15:43 +0900
-Message-ID: <h2y28c262361004261615j3b1aa5f7kbe3f2eb0a30e99a5@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing the 
-	wrong VMA information
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 Apr 2010 19:15:53 -0400
+Date: Mon, 26 Apr 2010 16:14:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel =?ISO-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>
+Cc: Dan Carpenter <error27@gmail.com>,
+       Jani Nikula <ext-jani.1.nikula@nokia.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [patch] gpio: potential null dereference
+Message-Id: <20100426161446.d384c678.akpm@linux-foundation.org>
+In-Reply-To: <20100426230515.GA1388@emlix.com>
+References: <20100426192520.GU29093@bicker>
+	<20100426230515.GA1388@emlix.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 7:37 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> vma_adjust() is updating anon VMA information without any locks taken.
-> In contrast, file-backed mappings use the i_mmap_lock and this lack of
-> locking can result in races with page migration. During rmap_walk(),
-> vma_address() can return -EFAULT for an address that will soon be valid.
-> This leaves a dangling migration PTE behind which can later cause a BUG_ON
-> to trigger when the page is faulted in.
->
-> With the recent anon_vma changes, there can be more than one anon_vma->lock
-> that can be taken in a anon_vma_chain but a second lock cannot be spinned
-> upon in case of deadlock. Instead, the rmap walker tries to take locks of
-> different anon_vma's. If the attempt fails, the operation is restarted.
->
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+On Tue, 27 Apr 2010 01:05:15 +0200
+Daniel Gl__ckner <dg@emlix.com> wrote:
 
-Actually, I am worry about rollback approach like this.
-If we don't often need anon_vmas serializing, that's enough.
-But I am not sure how often we need locking of anon_vmas like this.
-Whenever we need it, we have to use rollback approach like this in future.
-In my opinion, it's not good.
+> On Mon, Apr 26, 2010 at 09:25:20PM +0200, Dan Carpenter wrote:
+> > Smatch found a potential null dereference in gpio_setup_irq().  The 
+> > "pdesc" variable is allocated with idr_find() that can return NULL.  If
+> > gpio_setup_irq() is called with 0 as gpio_flags and "pdesc" is null, it
+> > would OOPs here.
+> 
+> idr_find() doesn't allocate, idr_get_new_above() does.
+> Assuming idr_find() never fails for an id if idr_get_new_above()
+> successfully allocated that id, I don't think we can reach that
+> line with pdesc being NULL:
+> 
+> - There are two gotos leading to free_sd
+> - #2 is after a block that allocates pdesc
+> - #1 is in an if (!gpio_flags) block
+> - We exit early if ((desc->flags & GPIO_TRIGGER_MASK) == gpio_flags)
+> - Therefore (desc->flags & GPIO_TRIGGER_MASK) must be != 0 to reach #1
+> - Trigger flags are added to desc->flags only after we have
+>   successfully allocated pdesc (i.e. right before return 0)
+> - We start off with no trigger flags set
+> 
 
-Rik, can't we make anon_vma locks more simple?
-Anyway, Mel's patch is best now.
+heh, thanks.  I figured that something like that might be going on but
+couldn't be bothered picking through it all.
 
-I hope improving locks of anon_vmas without rollback approach in near future.
+That being said, the above sequence of steps is awfully (and unusually)
+intricate and is hence hard to preserve and could get broken at some
+future time.
 
-Thanks, Mel.
-
-
--- 
-Kind regards,
-Minchan Kim
