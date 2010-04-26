@@ -1,89 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab0DZSCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 14:02:05 -0400
-Received: from mail.gmx.net ([213.165.64.20]:37651 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754409Ab0DZSB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 14:01:56 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18Lp6luPGML0yMtQ89Yt198yeGFKhjDlVKkxn3HZm
-	P8r/w4yyPXcFlu
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+	id S1754596Ab0DZSCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 14:02:12 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:60766 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754409Ab0DZSCJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 14:02:09 -0400
+From: Chase Douglas <chase.douglas@canonical.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
-       ScottFang@viatech.com.cn, corbet@lwn.net,
-       Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 3/4] viafb: make suspend and resume work (on all machines?)
-Date: Mon, 26 Apr 2010 18:09:46 +0000
-Message-Id: <1272305387-4872-4-git-send-email-FlorianSchandinat@gmx.de>
-X-Mailer: git-send-email 1.6.3.2
-In-Reply-To: <1272305387-4872-1-git-send-email-FlorianSchandinat@gmx.de>
-References: <1272305387-4872-1-git-send-email-FlorianSchandinat@gmx.de>
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.53000000000000003
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH] ftrace: print sample std dev when function profiling
+Date: Mon, 26 Apr 2010 14:02:05 -0400
+Message-Id: <1272304925-2436-1-git-send-email-chase.douglas@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-viafb: make suspend and resume work (on all machines?)
+When combined with function graph tracing the ftrace function profiler
+also prints the average run time of functions. While this gives us some
+good information, it doesn't tell us anything about the variance of the
+run times of the function. This change prints out the s^2 sample
+standard deviation alongside the average.
 
-This patch removes the dangerous suspend and resume code that was
-developed for VX855 only. After this the framebuffer is expected to
-cause no longer serious (freezing) issues on any machines.
-However the hardware acceleration is broken now so only doing resume
-with unaccelerated framebuffers is save. This did not work previously
-as the 2D engine is not mapped if the framebuffer is not accelerated.
-The acceleration issue will be addressed later.
+This change adds one entry to the profile record structure. This
+increases the memory footprint of the function profiler by 1/3 on a
+32-bit system, and by 1/5 on a 64-bit system when function graphing is
+enabled, though the memory is only allocated when the profiler is turned
+on. During the profiling, one extra line of code adds the squared
+calltime to the new record entry, so this should not adversly affect
+performance.
 
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Note that the square of the sample standard deviation is printed because
+there is no sqrt implementation for unsigned long long in the kernel.
+
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
 ---
- drivers/video/via/viafbdev.c |   10 ----------
- drivers/video/via/viafbdev.h |    3 ---
- 2 files changed, 0 insertions(+), 13 deletions(-)
+ kernel/trace/ftrace.c |   20 +++++++++++++++++---
+ 1 files changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-index 4af5a43..86d3ded 100644
---- a/drivers/video/via/viafbdev.c
-+++ b/drivers/video/via/viafbdev.c
-@@ -1738,11 +1738,6 @@ static int viafb_suspend(struct pci_dev *pdev, pm_message_t state)
- {
- 	if (state.event == PM_EVENT_SUSPEND) {
- 		acquire_console_sem();
--
--		memcpy_fromio(viaparinfo->shared->saved_regs,
--			      viaparinfo->shared->engine_mmio + 0x100,
--			      0xff * sizeof(u32));
--
- 		fb_set_suspend(viafbinfo, 1);
- 
- 		viafb_sync(viafbinfo);
-@@ -1764,11 +1759,6 @@ static int viafb_resume(struct pci_dev *pdev)
- 	if (pci_enable_device(pdev))
- 		goto fail;
- 	pci_set_master(pdev);
--
--	memcpy_toio(viaparinfo->shared->engine_mmio + 0x100,
--		    viaparinfo->shared->saved_regs,
--		    0x100 * sizeof(u32));
--
- 	viafb_set_par(viafbinfo);
- 	if (viafb_dual_fb)
- 		viafb_set_par(viafbinfo1);
-diff --git a/drivers/video/via/viafbdev.h b/drivers/video/via/viafbdev.h
-index d58a0ac..4bc00ec 100644
---- a/drivers/video/via/viafbdev.h
-+++ b/drivers/video/via/viafbdev.h
-@@ -60,9 +60,6 @@ struct viafb_shared {
- 		u8 dst_bpp, u32 dst_addr, u32 dst_pitch, u32 dst_x, u32 dst_y,
- 		u32 *src_mem, u32 src_addr, u32 src_pitch, u32 src_x, u32 src_y,
- 		u32 fg_color, u32 bg_color, u8 fill_rop);
--
--	/* For suspend/resume */
--	u32 saved_regs[0x100];
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 0cccb6c..07deba1 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -253,6 +253,7 @@ struct ftrace_profile {
+ 	unsigned long			counter;
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ 	unsigned long long		time;
++	unsigned long long		time_squared;
+ #endif
  };
  
- struct viafb_par {
+@@ -355,9 +356,9 @@ static int function_stat_headers(struct seq_file *m)
+ {
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ 	seq_printf(m, "  Function                               "
+-		   "Hit    Time            Avg\n"
++		   "Hit    Time            Avg             s^2\n"
+ 		      "  --------                               "
+-		   "---    ----            ---\n");
++		   "---    ----            ---             ---\n");
+ #else
+ 	seq_printf(m, "  Function                               Hit\n"
+ 		      "  --------                               ---\n");
+@@ -373,6 +374,7 @@ static int function_stat_show(struct seq_file *m, void *v)
+ 	static DEFINE_MUTEX(mutex);
+ 	static struct trace_seq s;
+ 	unsigned long long avg;
++	unsigned long long stddev;
+ #endif
+ 
+ 	kallsyms_lookup(rec->ip, NULL, NULL, NULL, str);
+@@ -383,11 +385,21 @@ static int function_stat_show(struct seq_file *m, void *v)
+ 	avg = rec->time;
+ 	do_div(avg, rec->counter);
+ 
++	/* Sample standard deviation (s^2) */
++	if (rec->counter <= 1)
++		stddev = 0;
++	else {
++		stddev = rec->time_squared - rec->counter * avg * avg;
++		do_div(stddev, (rec->counter - 1) * 1000); /* ns^2 -> us^2 */
++	}
++
+ 	mutex_lock(&mutex);
+ 	trace_seq_init(&s);
+ 	trace_print_graph_duration(rec->time, &s);
+ 	trace_seq_puts(&s, "    ");
+ 	trace_print_graph_duration(avg, &s);
++	trace_seq_puts(&s, "    ");
++	trace_print_graph_duration(stddev, &s);
+ 	trace_print_seq(m, &s);
+ 	mutex_unlock(&mutex);
+ #endif
+@@ -657,8 +669,10 @@ static void profile_graph_return(struct ftrace_graph_ret *trace)
+ 	}
+ 
+ 	rec = ftrace_find_profiled_func(stat, trace->func);
+-	if (rec)
++	if (rec) {
+ 		rec->time += calltime;
++		rec->time_squared += calltime * calltime;
++	}
+ 
+  out:
+ 	local_irq_restore(flags);
 -- 
-1.6.3.2
+1.7.0.4
 
