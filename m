@@ -1,62 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab0DZWSt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 18:18:49 -0400
-Received: from tauceti.net ([62.245.250.166]:55094 "EHLO www.tauceti.net"
+	id S1755002Ab0DZWUS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 18:20:18 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:43869 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751787Ab0DZWSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 18:18:48 -0400
-Message-ID: <4BD61147.40709@tauceti.net>
-Date: Tue, 27 Apr 2010 00:18:47 +0200
-From: Robert Wimmer <kernel@tauceti.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100312 Thunderbird/3.0.3 ThunderBrowse/3.2.8.1
+	id S1754641Ab0DZWUQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 18:20:16 -0400
+From: Nicolas Palix <npalix@diku.dk>
+To: Joe Perches <joe@perches.com>
+Subject: Re: [PATCH 1/4] Add targets to use the Coccinelle checker
+Date: Tue, 27 Apr 2010 00:20:09 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; i686; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
+       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
+       linux-kbuild@vger.kernel.org, cocci@diku.dk
+References: <1272316279-12042-1-git-send-email-npalix@diku.dk> <1272316279-12042-2-git-send-email-npalix@diku.dk> <1272317821.15953.107.camel@Joe-Laptop.home>
+In-Reply-To: <1272317821.15953.107.camel@Joe-Laptop.home>
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       bugzilla-daemon@bugzilla.kernel.org,
-       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
-References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain> <4BD5F6C5.8080605@tauceti.net> <1272315854.8984.125.camel@localhost.localdomain>
-In-Reply-To: <1272315854.8984.125.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004270020.09447.npalix@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 26 April 2010 23:37:01 Joe Perches wrote:
+> I like the concept and believe the kernel tree is a better
+> repository for these scripts than an external website.
 
-> Sure. In addition to what you did above, please do
->
-> mount -t debugfs none /sys/kernel/debug
->
-> and then cat the contents of the pseudofile at
->
-> /sys/kernel/debug/tracing/stack_trace
->
-> Please do this more or less immediately after you've finished mounting
-> the NFSv4 client.
->   
+Thank you for your feedback and support.
 
-I've uploaded the stack trace. It was generated
-directly after mounting. Here are the stacks:
+I attached an updated version of the patch 1/4.
 
-After mounting:
-https://bugzilla.kernel.org/attachment.cgi?id=26153
-After the soft lockup:
-https://bugzilla.kernel.org/attachment.cgi?id=26154
-The dmesg output of the soft lockup:
-https://bugzilla.kernel.org/attachment.cgi?id=26155
+>  
+> On Mon, 2010-04-26 at 23:11 +0200, Nicolas Palix wrote:
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 3d29fa3..2aab763 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -1533,6 +1533,16 @@ L:	platform-driver-x86@vger.kernel.org
+> >  S:	Supported
+> >  F:	drivers/platform/x86/classmate-laptop.c
+> >  
+> > +COCCINELLE
+> 
+> COCCINELLE/Semantic Patches (SmPL)
+> 
+> > +coccicheck-context coccicheck-patch coccicheck-org coccicheck-report:
+> > +	@echo "\nPlease, check for false positive in the output before submitting a patch.\n\n"\
+> 
+> Please check for false positives etc...
+> 
+> > +		"Take particularly attention when using the \"patch\" mode\n"\
+> > +		"and carefully review the patch YOU are about to submit.\n"
+> 
+> you
+> 
+> 
+> 
+> 
+>From 98aba248f7cba64c771f3632c11b8188819c45a1 Mon Sep 17 00:00:00 2001
+From: Nicolas Palix <npalix@diku.dk>
+Date: Sun, 4 Apr 2010 15:42:57 +0200
+Subject: [PATCH 1/4] Add targets to use the Coccinelle checker
 
-> Does your server have the 'crossmnt' or 'nohide' flags set, or does it
-> use the 'refer' export option anywhere? If so, then we might have to
-> test further, since those may trigger the NFSv4 submount feature.
->   
-The server has the following settings:
-rw,nohide,insecure,async,no_subtree_check,no_root_squash
+Four targets are added. Each one generates a different
+output kind: context, patch, org, report.
+Every SmPL file in 'scripts/smpl' is given to the spatch frontend
+(located in the 'scripts' directory), and applied to the entire
+source tree.
 
-Thanks!
-Robert
+Signed-off-by: Nicolas Palix <npalix@diku.dk>
+---
+ MAINTAINERS       |   10 ++++++++++
+ Makefile          |    9 +++++++++
+ scripts/spatch.sh |   14 ++++++++++++++
+ 3 files changed, 33 insertions(+), 0 deletions(-)
+ create mode 100755 scripts/spatch.sh
 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3d29fa3..2aab763 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1533,6 +1533,16 @@ L:	platform-driver-x86@vger.kernel.org
+ S:	Supported
+ F:	drivers/platform/x86/classmate-laptop.c
+ 
++COCCINELLE/Semantic Patches (SmPL)
++M:	Julia Lawall <julia@diku.dk>
++M:	Gilles Muller <Gilles.Muller@lip6.fr>
++M:	Nicolas Palix <npalix@diku.dk>
++L:	cocci@diku.dk
++W:	http://coccinelle.lip6.fr/
++S:	Supported
++F:	scripts/smpl/
++F:	scripts/spatch.sh
++
+ CODA FILE SYSTEM
+ M:	Jan Harkes <jaharkes@cs.cmu.edu>
+ M:	coda@cs.cmu.edu
+diff --git a/Makefile b/Makefile
+index 67c1001..293c88b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -325,6 +325,7 @@ INSTALLKERNEL  := installkernel
+ DEPMOD		= /sbin/depmod
+ KALLSYMS	= scripts/kallsyms
+ PERL		= perl
++SPATCH          = spatch
+ CHECK		= sparse
+ 
+ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
+@@ -1424,6 +1425,14 @@ versioncheck:
+ 		-name '*.[hcS]' -type f -print | sort \
+ 		| xargs $(PERL) -w $(srctree)/scripts/checkversion.pl
+ 
++coccicheck-context coccicheck-patch coccicheck-org coccicheck-report:
++	@echo "\nPlease check for false positive in the output before submitting a patch.\n\n"\
++		"Take particularly attention when using the \"patch\" mode\n"\
++		"and carefully review the patch you are about to submit.\n"
++	@find $(srctree)/scripts/smpl/                        \
++		-name '*.cocci' -type f                       \
++		-exec $(srctree)/scripts/spatch.sh $(SPATCH) $(@:coccicheck-%=%) \{} $(srctree) \;
++
+ namespacecheck:
+ 	$(PERL) $(srctree)/scripts/namespace.pl
+ 
+diff --git a/scripts/spatch.sh b/scripts/spatch.sh
+new file mode 100755
+index 0000000..bdcca15
+--- /dev/null
++++ b/scripts/spatch.sh
+@@ -0,0 +1,14 @@
++#!/bin/sh
++
++SPATCH="$1"
++MODE="$2"
++COCCI="$3"
++DIR="$4"
++
++OPT=`grep "Option" $COCCI | cut -d':' -f2`
++FILE=`echo $COCCI | sed "s|$DIR/||"`
++
++echo Processing `basename $COCCI` with \"$OPT\"
++echo Message example to submit a patch:
++grep "^///" $COCCI | sed "s|///||" | sed "s|THISFILE|$FILE|"
++$SPATCH -D $MODE -very_quiet -sp_file $COCCI $OPT -dir $DIR
+-- 
+1.6.3.3
 
