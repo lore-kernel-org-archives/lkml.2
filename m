@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab0DZUD3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 16:03:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50755 "EHLO
+	id S1754927Ab0DZUDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 16:03:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:50727 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab0DZUCr (ORCPT
+	with ESMTP id S1753539Ab0DZUCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Apr 2010 16:02:47 -0400
-X-Authority-Analysis: v=1.1 cv=2/WNtoURsBD4grC4Rqfj62/w1mAETqRJkFX1sgq41IM= c=1 sm=0 a=4Sktz1x5WoEA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=uSEfUfkat4rXeH0mG2kA:9 a=yhzdY_oBqP-BomHK_8QA:7 a=xRQZdpsmtK2vlV4Mdyo_VzXa3ncA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Authority-Analysis: v=1.1 cv=2/WNtoURsBD4grC4Rqfj62/w1mAETqRJkFX1sgq41IM= c=1 sm=0 a=bFIIF_UHuOIA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=dYdySpNYLOdWUwRrqqYA:9 a=lu4LbzK5qTgBdNRnAy4A:7 a=KVUDRUxSQ9u8Mj2zmrkChx91FUQA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
-Message-Id: <20100426200243.933345924@goodmis.org>
+Message-Id: <20100426200243.649349066@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 26 Apr 2010 15:50:34 -0400
+Date: Mon, 26 Apr 2010 15:50:33 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -23,212 +23,331 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
        Mathieu Desnoyers <compudj@krystal.dyndns.org>,
        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
        Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 10/10][RFC] tracing: Combine event filter_active and enable into single flags field
+Subject: [PATCH 09/10][RFC] tracing: Remove duplicate id information in event structure
 References: <20100426195024.256424113@goodmis.org>
-Content-Disposition: inline; filename=0010-tracing-Combine-event-filter_active-and-enable-into-.patch
+Content-Disposition: inline; filename=0009-tracing-Remove-duplicate-id-information-in-event-str.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The filter_active and enable both use an int (4 bytes each) to
-set a single flag. We can save 4 bytes per event by combining the
-two into a single integer.
+Now that the trace_event structure is embedded in the ftrace_event_call
+structure, there is no need for the ftrace_event_call id field.
+The id field is the same as the trace_event type field.
+
+Removing the id and re-arranging the structure brings down the tracepoint
+footprint by another 5K.
 
    text	   data	    bss	    dec	    hex	filename
 5788186	1337252	9351592	16477030	 fb6b66	vmlinux.orig
+5761154	1268356	9351592	16381102	 f9f4ae	vmlinux.print
 5761074	1262596	9351592	16375262	 f9ddde	vmlinux.id
-5761007	1256916	9351592	16369515	 f9c76b	vmlinux.flags
-
-This gives us another 5K in savings.
-
-The modification of both the enable and filter fields are done
-under the event_mutex, so it is still safe to combine the two.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace_event.h       |   21 +++++++++++++++++++--
- kernel/trace/trace.h               |    2 +-
- kernel/trace/trace_events.c        |   14 +++++++-------
- kernel/trace/trace_events_filter.c |   10 +++++-----
- kernel/trace/trace_kprobe.c        |    2 +-
- 5 files changed, 33 insertions(+), 16 deletions(-)
+ include/linux/ftrace_event.h       |    5 ++---
+ include/trace/ftrace.h             |   12 ++++++------
+ kernel/trace/trace_event_perf.c    |    4 ++--
+ kernel/trace/trace_events.c        |    7 +++----
+ kernel/trace/trace_events_filter.c |    2 +-
+ kernel/trace/trace_export.c        |    4 ++--
+ kernel/trace/trace_kprobe.c        |   18 ++++++++++--------
+ kernel/trace/trace_syscalls.c      |   14 ++++++++------
+ 8 files changed, 34 insertions(+), 32 deletions(-)
 
 diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index b26507f..2e28c94 100644
+index aa3695a..b26507f 100644
 --- a/include/linux/ftrace_event.h
 +++ b/include/linux/ftrace_event.h
-@@ -141,6 +141,16 @@ struct ftrace_event_class {
- 	int			(*raw_init)(struct ftrace_event_call *);
- };
- 
-+enum {
-+	TRACE_EVENT_FL_ENABLED_BIT,
-+	TRACE_EVENT_FL_FILTERED_BIT,
-+};
-+
-+enum {
-+	TRACE_EVENT_FL_ENABLED	= (1 << TRACE_EVENT_FL_ENABLED_BIT),
-+	TRACE_EVENT_FL_FILTERED	= (1 << TRACE_EVENT_FL_FILTERED_BIT),
-+};
-+
- struct ftrace_event_call {
- 	struct list_head	list;
- 	struct ftrace_event_class *class;
-@@ -152,8 +162,15 @@ struct ftrace_event_call {
+@@ -147,14 +147,13 @@ struct ftrace_event_call {
+ 	char			*name;
+ 	struct dentry		*dir;
+ 	struct trace_event	event;
+-	int			enabled;
+-	int			id;
+ 	const char		*print_fmt;
+-	int			filter_active;
+ 	struct event_filter	*filter;
  	void			*mod;
  	void			*data;
  
--	int			enabled;
--	int			filter_active;
-+	/*
-+	 * 32 bit flags:
-+	 *   bit 1:		enabled
-+	 *   bit 2:		filter_active
-+	 *
-+	 *  Must hold event_mutex to change.
-+	 */
-+	unsigned int		flags;
-+
++	int			enabled;
++	int			filter_active;
  	int			perf_refcount;
  };
  
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index ff63bee..51ee319 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -779,7 +779,7 @@ filter_check_discard(struct ftrace_event_call *call, void *rec,
- 		     struct ring_buffer *buffer,
- 		     struct ring_buffer_event *event)
- {
--	if (unlikely(call->filter_active) &&
-+	if (unlikely(call->flags & TRACE_EVENT_FL_FILTERED) &&
- 	    !filter_match_preds(call->filter, rec)) {
- 		ring_buffer_discard_commit(buffer, event);
- 		return 1;
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index d7b3b56..246b05e 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -150,7 +150,7 @@
+  *
+  *	entry = iter->ent;
+  *
+- *	if (entry->type != event_<call>.id) {
++ *	if (entry->type != event_<call>->event.type) {
+  *		WARN_ON_ONCE(1);
+  *		return TRACE_TYPE_UNHANDLED;
+  *	}
+@@ -221,7 +221,7 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
+ 									\
+ 	entry = iter->ent;						\
+ 									\
+-	if (entry->type != event->id) {					\
++	if (entry->type != event->event.type) {				\
+ 		WARN_ON_ONCE(1);					\
+ 		return TRACE_TYPE_UNHANDLED;				\
+ 	}								\
+@@ -257,7 +257,7 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
+ 									\
+ 	entry = iter->ent;						\
+ 									\
+-	if (entry->type != event_##call.id) {				\
++	if (entry->type != event_##call.event.type) {			\
+ 		WARN_ON_ONCE(1);					\
+ 		return TRACE_TYPE_UNHANDLED;				\
+ 	}								\
+@@ -408,7 +408,7 @@ static inline notrace int ftrace_get_offsets_##call(			\
+  *	__data_size = ftrace_get_offsets_<call>(&__data_offsets, args);
+  *
+  *	event = trace_current_buffer_lock_reserve(&buffer,
+- *				  event_<call>.id,
++ *				  event_<call>->event.type,
+  *				  sizeof(*entry) + __data_size,
+  *				  irq_flags, pc);
+  *	if (!event)
+@@ -509,7 +509,7 @@ ftrace_raw_event_##call(proto,						\
+ 	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
+ 									\
+ 	event = trace_current_buffer_lock_reserve(&buffer,		\
+-				 event_call->id,			\
++				 event_call->event.type,		\
+ 				 sizeof(*entry) + __data_size,		\
+ 				 irq_flags, pc);			\
+ 	if (!event)							\
+@@ -700,7 +700,7 @@ perf_trace_##call(proto, struct ftrace_event_call *event_call)		\
+ 		      "profile buffer not large enough"))		\
+ 		return;							\
+ 	entry = (struct ftrace_raw_##call *)perf_trace_buf_prepare(	\
+-		__entry_size, event_call->id, &rctx, &irq_flags);	\
++		__entry_size, event_call->event.type, &rctx, &irq_flags); \
+ 	if (!entry)							\
+ 		return;							\
+ 	tstruct								\
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 95df5a7..b8febf0 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -75,7 +75,7 @@ int perf_trace_enable(int event_id)
+ 
+ 	mutex_lock(&event_mutex);
+ 	list_for_each_entry(event, &ftrace_events, list) {
+-		if (event->id == event_id &&
++		if (event->event.type == event_id &&
+ 		    event->class && event->class->perf_probe &&
+ 		    try_module_get(event->mod)) {
+ 			ret = perf_trace_event_enable(event);
+@@ -123,7 +123,7 @@ void perf_trace_disable(int event_id)
+ 
+ 	mutex_lock(&event_mutex);
+ 	list_for_each_entry(event, &ftrace_events, list) {
+-		if (event->id == event_id) {
++		if (event->event.type == event_id) {
+ 			perf_trace_event_disable(event);
+ 			module_put(event->mod);
+ 			break;
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 8d2e28e..176b8be 100644
+index 9aa298e..8d2e28e 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -144,8 +144,8 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+@@ -132,7 +132,6 @@ int trace_event_raw_init(struct ftrace_event_call *call)
+ 	id = register_ftrace_event(&call->event);
+ 	if (!id)
+ 		return -ENODEV;
+-	call->id = id;
  
- 	switch (enable) {
- 	case 0:
--		if (call->enabled) {
--			call->enabled = 0;
-+		if (call->flags & TRACE_EVENT_FL_ENABLED) {
-+			call->flags &= ~TRACE_EVENT_FL_ENABLED;
- 			tracing_stop_cmdline_record();
- 			if (call->class->reg)
- 				call->class->reg(call, TRACE_REG_UNREGISTER);
-@@ -156,7 +156,7 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
- 		}
- 		break;
- 	case 1:
--		if (!call->enabled) {
-+		if (!(call->flags & TRACE_EVENT_FL_ENABLED)) {
- 			tracing_start_cmdline_record();
- 			if (call->class->reg)
- 				ret = call->class->reg(call, TRACE_REG_REGISTER);
-@@ -170,7 +170,7 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
- 					"%s\n", call->name);
- 				break;
- 			}
--			call->enabled = 1;
-+			call->flags |= TRACE_EVENT_FL_ENABLED;
- 		}
- 		break;
- 	}
-@@ -359,7 +359,7 @@ s_next(struct seq_file *m, void *v, loff_t *pos)
- 	(*pos)++;
+ 	return 0;
+ }
+@@ -574,7 +573,7 @@ event_format_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 	trace_seq_init(s);
  
- 	list_for_each_entry_continue(call, &ftrace_events, list) {
--		if (call->enabled)
-+		if (call->flags & TRACE_EVENT_FL_ENABLED)
- 			return call;
- 	}
+ 	trace_seq_printf(s, "name: %s\n", call->name);
+-	trace_seq_printf(s, "ID: %d\n", call->id);
++	trace_seq_printf(s, "ID: %d\n", call->event.type);
+ 	trace_seq_printf(s, "format:\n");
  
-@@ -418,7 +418,7 @@ event_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
- 	struct ftrace_event_call *call = filp->private_data;
- 	char *buf;
+ 	head = trace_get_fields(call);
+@@ -648,7 +647,7 @@ event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+ 		return -ENOMEM;
  
--	if (call->enabled)
-+	if (call->flags & TRACE_EVENT_FL_ENABLED)
- 		buf = "1\n";
- 	else
- 		buf = "0\n";
-@@ -493,7 +493,7 @@ system_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
- 		 * or if all events or cleared, or if we have
- 		 * a mixture.
- 		 */
--		set |= (1 << !!call->enabled);
-+		set |= (1 << !!(call->flags & TRACE_EVENT_FL_ENABLED));
+ 	trace_seq_init(s);
+-	trace_seq_printf(s, "%d\n", call->id);
++	trace_seq_printf(s, "%d\n", call->event.type);
  
- 		/*
- 		 * If we have a mixture, no need to look further.
+ 	r = simple_read_from_buffer(ubuf, cnt, ppos,
+ 				    s->buffer, s->len);
+@@ -974,7 +973,7 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
+ 		trace_create_file("enable", 0644, call->dir, call,
+ 				  enable);
+ 
+-	if (call->id && (call->class->perf_probe || call->class->reg))
++	if (call->event.type && (call->class->perf_probe || call->class->reg))
+ 		trace_create_file("id", 0444, call->dir, call,
+ 		 		  id);
+ 
 diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index b8e3bf3..fbc72ee 100644
+index 560683d..b8e3bf3 100644
 --- a/kernel/trace/trace_events_filter.c
 +++ b/kernel/trace/trace_events_filter.c
-@@ -546,7 +546,7 @@ static void filter_disable_preds(struct ftrace_event_call *call)
- 	struct event_filter *filter = call->filter;
- 	int i;
+@@ -1394,7 +1394,7 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
+ 	mutex_lock(&event_mutex);
  
--	call->filter_active = 0;
-+	call->flags &= ~TRACE_EVENT_FL_FILTERED;
- 	filter->n_preds = 0;
+ 	list_for_each_entry(call, &ftrace_events, list) {
+-		if (call->id == event_id)
++		if (call->event.type == event_id)
+ 			break;
+ 	}
  
- 	for (i = 0; i < MAX_FILTER_PRED; i++)
-@@ -573,7 +573,7 @@ void destroy_preds(struct ftrace_event_call *call)
- {
- 	__free_preds(call->filter);
- 	call->filter = NULL;
--	call->filter_active = 0;
-+	call->flags &= ~TRACE_EVENT_FL_FILTERED;
- }
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index e878d06..8536e2a 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -153,7 +153,7 @@ static int ftrace_raw_init_event(struct ftrace_event_call *call)
+ #define F_printk(fmt, args...) #fmt ", "  __stringify(args)
  
- static struct event_filter *__alloc_preds(void)
-@@ -612,7 +612,7 @@ static int init_preds(struct ftrace_event_call *call)
- 	if (call->filter)
- 		return 0;
- 
--	call->filter_active = 0;
-+	call->flags &= ~TRACE_EVENT_FL_FILTERED;
- 	call->filter = __alloc_preds();
- 	if (IS_ERR(call->filter))
- 		return PTR_ERR(call->filter);
-@@ -1267,7 +1267,7 @@ static int replace_system_preds(struct event_subsystem *system,
- 		if (err)
- 			filter_disable_preds(call);
- 		else {
--			call->filter_active = 1;
-+			call->flags |= TRACE_EVENT_FL_FILTERED;
- 			replace_filter_string(filter, filter_string);
- 		}
- 		fail = false;
-@@ -1316,7 +1316,7 @@ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
- 	if (err)
- 		append_filter_err(ps, call->filter);
- 	else
--		call->filter_active = 1;
-+		call->flags |= TRACE_EVENT_FL_FILTERED;
- out:
- 	filter_opstack_clear(ps);
- 	postfix_clear(ps);
+ #undef FTRACE_ENTRY
+-#define FTRACE_ENTRY(call, struct_name, type, tstruct, print)		\
++#define FTRACE_ENTRY(call, struct_name, etype, tstruct, print)		\
+ 									\
+ struct ftrace_event_class event_class_ftrace_##call = {			\
+ 	.system			= __stringify(TRACE_SYSTEM),		\
+@@ -165,7 +165,7 @@ struct ftrace_event_call __used						\
+ __attribute__((__aligned__(4)))						\
+ __attribute__((section("_ftrace_events"))) event_##call = {		\
+ 	.name			= #call,				\
+-	.id			= type,					\
++	.event.type		= etype,				\
+ 	.class			= &event_class_ftrace_##call,		\
+ 	.print_fmt		= print,				\
+ };									\
 diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 934078b..0e3ded6 100644
+index d8061c3..934078b 100644
 --- a/kernel/trace/trace_kprobe.c
 +++ b/kernel/trace/trace_kprobe.c
-@@ -1382,7 +1382,7 @@ static int register_probe_event(struct trace_probe *tp)
+@@ -960,8 +960,8 @@ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
+ 
+ 	size = SIZEOF_KPROBE_TRACE_ENTRY(tp->nr_args);
+ 
+-	event = trace_current_buffer_lock_reserve(&buffer, call->id, size,
+-						  irq_flags, pc);
++	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
++						  size, irq_flags, pc);
+ 	if (!event)
+ 		return;
+ 
+@@ -992,8 +992,8 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
+ 
+ 	size = SIZEOF_KRETPROBE_TRACE_ENTRY(tp->nr_args);
+ 
+-	event = trace_current_buffer_lock_reserve(&buffer, call->id, size,
+-						  irq_flags, pc);
++	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
++						  size, irq_flags, pc);
+ 	if (!event)
+ 		return;
+ 
+@@ -1228,7 +1228,8 @@ static __kprobes void kprobe_perf_func(struct kprobe *kp,
+ 		     "profile buffer not large enough"))
+ 		return;
+ 
+-	entry = perf_trace_buf_prepare(size, call->id, &rctx, &irq_flags);
++	entry = perf_trace_buf_prepare(size, call->event.type,
++				       &rctx, &irq_flags);
+ 	if (!entry)
+ 		return;
+ 
+@@ -1258,7 +1259,8 @@ static __kprobes void kretprobe_perf_func(struct kretprobe_instance *ri,
+ 		     "profile buffer not large enough"))
+ 		return;
+ 
+-	entry = perf_trace_buf_prepare(size, call->id, &rctx, &irq_flags);
++	entry = perf_trace_buf_prepare(size, call->event.type,
++				       &rctx, &irq_flags);
+ 	if (!entry)
+ 		return;
+ 
+@@ -1375,8 +1377,8 @@ static int register_probe_event(struct trace_probe *tp)
+ 	}
+ 	if (set_print_fmt(tp) < 0)
+ 		return -ENOMEM;
+-	call->id = register_ftrace_event(&call->event);
+-	if (!call->id) {
++	ret = register_ftrace_event(&call->event);
++	if (!ret) {
  		kfree(call->print_fmt);
  		return -ENODEV;
  	}
--	call->enabled = 0;
-+	call->flags = 0;
- 	call->class->reg = kprobe_register;
- 	call->data = tp;
- 	ret = trace_add_event_call(call);
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index a4bed39..23fad22 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -108,7 +108,7 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
+ 	if (!entry)
+ 		goto end;
+ 
+-	if (entry->enter_event->id != ent->type) {
++	if (entry->enter_event->event.type != ent->type) {
+ 		WARN_ON_ONCE(1);
+ 		goto end;
+ 	}
+@@ -164,7 +164,7 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
+ 		return TRACE_TYPE_HANDLED;
+ 	}
+ 
+-	if (entry->exit_event->id != ent->type) {
++	if (entry->exit_event->event.type != ent->type) {
+ 		WARN_ON_ONCE(1);
+ 		return TRACE_TYPE_UNHANDLED;
+ 	}
+@@ -306,7 +306,7 @@ void ftrace_syscall_enter(struct pt_regs *regs, long id)
+ 	size = sizeof(*entry) + sizeof(unsigned long) * sys_data->nb_args;
+ 
+ 	event = trace_current_buffer_lock_reserve(&buffer,
+-			sys_data->enter_event->id, size, 0, 0);
++			sys_data->enter_event->event.type, size, 0, 0);
+ 	if (!event)
+ 		return;
+ 
+@@ -338,7 +338,7 @@ void ftrace_syscall_exit(struct pt_regs *regs, long ret)
+ 		return;
+ 
+ 	event = trace_current_buffer_lock_reserve(&buffer,
+-			sys_data->exit_event->id, sizeof(*entry), 0, 0);
++			sys_data->exit_event->event.type, sizeof(*entry), 0, 0);
+ 	if (!event)
+ 		return;
+ 
+@@ -502,7 +502,8 @@ static void perf_syscall_enter(struct pt_regs *regs, long id)
+ 		return;
+ 
+ 	rec = (struct syscall_trace_enter *)perf_trace_buf_prepare(size,
+-				sys_data->enter_event->id, &rctx, &flags);
++				sys_data->enter_event->event.type,
++				&rctx, &flags);
+ 	if (!rec)
+ 		return;
+ 
+@@ -577,7 +578,8 @@ static void perf_syscall_exit(struct pt_regs *regs, long ret)
+ 		return;
+ 
+ 	rec = (struct syscall_trace_exit *)perf_trace_buf_prepare(size,
+-				sys_data->exit_event->id, &rctx, &flags);
++				sys_data->exit_event->event.type,
++				&rctx, &flags);
+ 	if (!rec)
+ 		return;
+ 
 -- 
 1.7.0
 
