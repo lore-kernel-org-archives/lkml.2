@@ -1,137 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab0DZWhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 18:37:53 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:50719 "EHLO gir.skynet.ie"
+	id S1755502Ab0DZWuV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 18:50:21 -0400
+Received: from tundra.namei.org ([65.99.196.166]:57776 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755107Ab0DZWhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 18:37:50 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing the wrong VMA information
-Date: Mon, 26 Apr 2010 23:37:58 +0100
-Message-Id: <1272321478-28481-3-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1272321478-28481-1-git-send-email-mel@csn.ul.ie>
-References: <1272321478-28481-1-git-send-email-mel@csn.ul.ie>
+	id S1755477Ab0DZWuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 18:50:19 -0400
+Date: Tue, 27 Apr 2010 08:50:16 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: linux-security-module@vger.kernel.org, serue@us.ibm.com,
+       paulmck@us.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] CRED: Holding a spinlock does not imply the holding of
+ RCU read lock
+In-Reply-To: <20100426105849.26489.72831.stgit@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.00.1004270850050.13362@tundra.namei.org>
+References: <20100426105849.26489.72831.stgit@warthog.procyon.org.uk>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vma_adjust() is updating anon VMA information without any locks taken.
-In contrast, file-backed mappings use the i_mmap_lock and this lack of
-locking can result in races with page migration. During rmap_walk(),
-vma_address() can return -EFAULT for an address that will soon be valid.
-This leaves a dangling migration PTE behind which can later cause a BUG_ON
-to trigger when the page is faulted in.
+On Mon, 26 Apr 2010, David Howells wrote:
 
-With the recent anon_vma changes, there can be more than one anon_vma->lock
-that can be taken in a anon_vma_chain but a second lock cannot be spinned
-upon in case of deadlock. Instead, the rmap walker tries to take locks of
-different anon_vma's. If the attempt fails, the operation is restarted.
+> From: Serge E. Hallyn <serue@us.ibm.com>
+> 
+> Change the credentials documentation to make it clear that the RCU read lock
+> must be explicitly held when accessing credentials pointers in some other task
+> than current.  Holding a spinlock does not implicitly hold the RCU read lock.
+> 
+> Signed-off-by: Serge Hallyn <serue@us.ibm.com>
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: David Howells <dhowells@redhat.com>
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/ksm.c  |   13 +++++++++++++
- mm/mmap.c |    6 ++++++
- mm/rmap.c |   22 +++++++++++++++++++---
- 3 files changed, 38 insertions(+), 3 deletions(-)
 
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 3666d43..baa5b4d 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1674,9 +1674,22 @@ again:
- 		spin_lock(&anon_vma->lock);
- 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
- 			vma = vmac->vma;
-+
-+			/* See comment in mm/rmap.c#rmap_walk_anon on locking */
-+			if (anon_vma != vma->anon_vma) {
-+				if (!spin_trylock(&vma->anon_vma->lock)) {
-+					spin_unlock(&anon_vma->lock);
-+					goto again;
-+				}
-+			}
-+
- 			if (rmap_item->address < vma->vm_start ||
- 			    rmap_item->address >= vma->vm_end)
- 				continue;
-+
-+			if (anon_vma != vma->anon_vma)
-+				spin_unlock(&vma->anon_vma->lock);
-+
- 			/*
- 			 * Initially we examine only the vma which covers this
- 			 * rmap_item; but later, if there is still work to do,
-diff --git a/mm/mmap.c b/mm/mmap.c
-index f90ea92..61d6f1d 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -578,6 +578,9 @@ again:			remove_next = 1 + (end > next->vm_end);
- 		}
- 	}
- 
-+	if (vma->anon_vma)
-+		spin_lock(&vma->anon_vma->lock);
-+
- 	if (root) {
- 		flush_dcache_mmap_lock(mapping);
- 		vma_prio_tree_remove(vma, root);
-@@ -620,6 +623,9 @@ again:			remove_next = 1 + (end > next->vm_end);
- 	if (mapping)
- 		spin_unlock(&mapping->i_mmap_lock);
- 
-+	if (vma->anon_vma)
-+		spin_unlock(&vma->anon_vma->lock);
-+
- 	if (remove_next) {
- 		if (file) {
- 			fput(file);
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 85f203e..bc313a6 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1368,15 +1368,31 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
- 	 * are holding mmap_sem. Users without mmap_sem are required to
- 	 * take a reference count to prevent the anon_vma disappearing
- 	 */
-+retry:
- 	anon_vma = page_anon_vma(page);
- 	if (!anon_vma)
- 		return ret;
- 	spin_lock(&anon_vma->lock);
- 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
- 		struct vm_area_struct *vma = avc->vma;
--		unsigned long address = vma_address(page, vma);
--		if (address == -EFAULT)
--			continue;
-+		unsigned long address;
-+
-+		/*
-+		 * Guard against deadlocks by not spinning against
-+		 * vma->anon_vma->lock. If contention is found, release our
-+		 * lock and try again until VMA list can be traversed without
-+		 * contention.
-+		 */
-+		if (anon_vma != vma->anon_vma) {
-+			if (!spin_trylock(&vma->anon_vma->lock)) {
-+				spin_unlock(&anon_vma->lock);
-+				goto retry;
-+			}
-+		}
-+		address = vma_address(page, vma);
-+		if (anon_vma != vma->anon_vma)
-+			spin_unlock(&vma->anon_vma->lock);
-+
- 		ret = rmap_one(page, vma, address, arg);
- 		if (ret != SWAP_AGAIN)
- 			break;
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
+
+
 -- 
-1.6.5
-
+James Morris
+<jmorris@namei.org>
