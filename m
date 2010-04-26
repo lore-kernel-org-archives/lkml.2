@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab0DZTbk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 15:31:40 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:34989 "HELO
-	outbound-mail-313.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754735Ab0DZTbf (ORCPT
+	id S1755162Ab0DZTbx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 15:31:53 -0400
+Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:51611 "EHLO
+	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754734Ab0DZT2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 15:31:35 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=SvbODjmuSyQ9vWHsqZVp3OlIpdF1NJBdNBNjqmeICdhpCcjZfwS4h6jCG/1AUK/CG+d69WYYeZ5M+1GL47Aj79aKZ4xeqLfCDlbUqQ2bUv1U7Ta92Au+7BoSJoKIlJs1;
-Date: Mon, 26 Apr 2010 12:31:35 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Andy Isaacson <adi@hexapodia.org>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       "R. Andrew Bailey" <bailey@akamai.com>, Yinghai <yinghai.lu@oracle.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, guenter.roeck@ericsson.com,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
-Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below
- BIOS_END
-Message-ID: <20100426123135.5d095d2f@virtuousgeek.org>
-In-Reply-To: <20100426183436.GV11130@hexapodia.org>
-References: <4BC4E55B.7000103@oracle.com>
-	<4BCE8E3E.4030809@oracle.com>
-	<20100421193120.GD11130@hexapodia.org>
-	<201004231705.25659.bjorn.helgaas@hp.com>
-	<20100426183436.GV11130@hexapodia.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Mon, 26 Apr 2010 15:28:31 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+From: Jonathan Cameron <jic23@cam.ac.uk>
+To: iio-linux@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de,
+       Jonathan Cameron <jic23@cam.ac.uk>
+Subject: [PATCH 06/19] staging:iio: Move event attributes into the event[n] device in sysfs
+Date: Mon, 26 Apr 2010 20:31:08 +0100
+Message-Id: <1272310281-7418-7-git-send-email-jic23@cam.ac.uk>
+X-Mailer: git-send-email 1.6.4.4
+In-Reply-To: <1272310281-7418-6-git-send-email-jic23@cam.ac.uk>
+References: <1272310281-7418-1-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-2-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-3-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-4-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-5-git-send-email-jic23@cam.ac.uk>
+ <1272310281-7418-6-git-send-email-jic23@cam.ac.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Apr 2010 11:34:36 -0700
-Andy Isaacson <adi@hexapodia.org> wrote:
+Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+ drivers/staging/iio/industrialio-core.c |   25 ++++++++++++-------------
+ 1 files changed, 12 insertions(+), 13 deletions(-)
 
-> On Fri, Apr 23, 2010 at 05:05:24PM -0600, Bjorn Helgaas wrote:
-> > On Wednesday 21 April 2010 01:31:20 pm Andy Isaacson wrote:
-> > > On Tue, Apr 20, 2010 at 10:33:50PM -0700, Yinghai wrote:
-> > > > Update e820 at first, and later put them resource tree.
-> > > > Reserved that early, will not be allocated to unassigned PCI BAR
-> > > > 
-> > > > v3: remove probe_roms() that is not needed, because whole range is reserved
-> > > > 	 already
-> > > 
-> > > Test booted this patch series on the problematic t3400, seems to work
-> > > fine.  dmesg attached to bug 15744.
-> > 
-> > Thanks for testing (again).  I'm not confident that this series is
-> > going to be successful, so I started looking for other approaches.
-> > 
-> > I can't reproduce the exact problem you're seeing, but in my
-> > kludged-up attempt, the patch below is enough to keep us from
-> > assigning the space below 1MB to a device.
-> > 
-> > Would you guys (Andy & Andy, what a coincidence :-)) mind giving
-> > it a try?  This is intended to work on top of current upstream,
-> > with no other patches required.
-> > 
-> > Bjorn
-> > 
-> > 
-> > commit 7fb707eb97fdf6dc4fa4b127f127f8d00223afc7
-> > Author: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> > Date:   Fri Apr 23 15:22:10 2010 -0600
-> > 
-> > x86/PCI: never allocate PCI MMIO resources below BIOS_END
-> >     
-> > When we move a PCI device or assign resources to a device not configured
-> > by the BIOS, we want to avoid the BIOS region below 1MB.  Note that if the
-> > BIOS places devices below 1MB, we leave them there.
-> 
-> Works for me.  dmesg at
-> https://bugzilla.kernel.org/attachment.cgi?id=26150
-
-Great, thanks for testing.  Applied this one to my for-linus tree.  I
-still thing Yinghai's patches should go in as well (marking regions as
-busy seems like good housekeeping), but with this fixed they're a better
-fit for -next.
-
-Thanks,
+diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
+index c19a080..3df23be 100644
+--- a/drivers/staging/iio/industrialio-core.c
++++ b/drivers/staging/iio/industrialio-core.c
+@@ -676,16 +676,14 @@ static int iio_device_register_eventset(struct iio_dev *dev_info)
+ 					 dev_info->event_interfaces[i].id);
+ 			goto error_free_setup_ev_ints;
+ 		}
+-	}
+ 
+-	for (i = 0; i < dev_info->num_interrupt_lines; i++) {
+-		snprintf(dev_info->event_interfaces[i]._attrname, 20,
+-			"event_line%d_sources", i);
+-		dev_info->event_attrs[i].name
+-			= (const char *)
+-			(dev_info->event_interfaces[i]._attrname);
+-		ret = sysfs_create_group(&dev_info->dev.kobj,
+-					 &dev_info->event_attrs[i]);
++		dev_set_drvdata(&dev_info->event_interfaces[i].dev,
++				(void *)dev_info);
++		ret = sysfs_create_group(&dev_info
++					->event_interfaces[i]
++					.dev.kobj,
++					&dev_info->event_attrs[i]);
++
+ 		if (ret) {
+ 			dev_err(&dev_info->dev,
+ 				"Failed to register sysfs for event attrs");
+@@ -707,13 +705,13 @@ error_unregister_config_attrs:
+ 	i = dev_info->num_interrupt_lines - 1;
+ error_remove_sysfs_interfaces:
+ 	for (j = 0; j < i; j++)
+-		sysfs_remove_group(&dev_info->dev.kobj,
++		sysfs_remove_group(&dev_info
++				   ->event_interfaces[j].dev.kobj,
+ 				   &dev_info->event_attrs[j]);
+-	i = dev_info->num_interrupt_lines - 1;
+ error_free_setup_ev_ints:
+ 	for (j = 0; j < i; j++) {
+ 		iio_free_idr_val(&iio_event_idr,
+-				 dev_info->event_interfaces[i].id);
++				 dev_info->event_interfaces[j].id);
+ 		iio_free_ev_int(&dev_info->event_interfaces[j]);
+ 	}
+ 	kfree(dev_info->interrupts);
+@@ -731,7 +729,8 @@ static void iio_device_unregister_eventset(struct iio_dev *dev_info)
+ 	if (dev_info->num_interrupt_lines == 0)
+ 		return;
+ 	for (i = 0; i < dev_info->num_interrupt_lines; i++)
+-		sysfs_remove_group(&dev_info->dev.kobj,
++		sysfs_remove_group(&dev_info
++				   ->event_interfaces[i].dev.kobj,
+ 				   &dev_info->event_attrs[i]);
+ 
+ 	for (i = 0; i < dev_info->num_interrupt_lines; i++) {
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+1.6.4.4
+
