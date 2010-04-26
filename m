@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab0DZUwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 16:52:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7830 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753656Ab0DZUwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 16:52:50 -0400
-Date: Mon, 26 Apr 2010 16:52:44 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Subject: Re: [PATCH] blk-cgroup: Fix RCU correctness warning in
-	cfq_init_queue()
-Message-ID: <20100426205244.GG3372@redhat.com>
-References: <20100422235555.GA12004@redhat.com> <20100423001751.GX2524@linux.vnet.ibm.com> <20100423144138.GA5026@redhat.com> <20100423194649.GF2589@linux.vnet.ibm.com> <4BD4ED7A.5020205@cn.fujitsu.com> <20100426020631.GU2440@linux.vnet.ibm.com> <20100426133920.GA1559@redhat.com> <20100426144542.GA2529@linux.vnet.ibm.com> <20100426204208.GF3372@redhat.com> <20100426204704.GJ2529@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100426204704.GJ2529@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752558Ab0DZU4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 16:56:55 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34169 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128Ab0DZU4x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 16:56:53 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jason Wessel <jason.wessel@windriver.com>,
+       Michal Marek <mmarek@suse.cz>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kbuild@vger.kernel.org
+Subject: [PATCH] Correctly deal with make that has an argument which contains an "s"
+Date: Mon, 26 Apr 2010 15:56:14 -0500
+Message-Id: <1272315374-11951-1-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.6.4.rc1
+X-OriginalArrivalTime: 26 Apr 2010 20:56:38.0386 (UTC) FILETIME=[F6DFED20:01CAE582]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 01:47:04PM -0700, Paul E. McKenney wrote:
-> On Mon, Apr 26, 2010 at 04:42:08PM -0400, Vivek Goyal wrote:
-> > On Mon, Apr 26, 2010 at 07:45:42AM -0700, Paul E. McKenney wrote:
-> > > On Mon, Apr 26, 2010 at 09:39:20AM -0400, Vivek Goyal wrote:
-> > > > On Sun, Apr 25, 2010 at 07:06:31PM -0700, Paul E. McKenney wrote:
-> > > > > On Mon, Apr 26, 2010 at 09:33:46AM +0800, Li Zefan wrote:
-> > > > > > >>>>>> With RCU correctness on, We see following warning. This patch fixes it.
-> > > > > > >>>>> This is in initialization code, so that there cannot be any concurrent
-> > > > > > >>>>> updates, correct?  If so, looks good.
-> > > > > > >>>>>
-> > > > > > >>>> I think theoritically two instances of cfq_init_queue() can be running
-> > > > > > >>>> in parallel (for two different devices), and they both can call
-> > > > > > >>>> blkiocg_add_blkio_group(). But then we use a spin lock to protect
-> > > > > > >>>> blkio_cgroup.
-> > > > > > >>>>
-> > > > > > >>>> spin_lock_irqsave(&blkcg->lock, flags);
-> > > > > > >>>>
-> > > > > > >>>> So I guess two parallel updates should be fine.
-> > > > > > >>> OK, in that case, would it be possible add this spinlock to the condition
-> > > > > > >>> checked by css_id()'s rcu_dereference_check()?
-> > > > > > >> Hi Paul,
-> > > > > > >>
-> > > > > > >> I think adding these spinlock to condition checked might become little
-> > > > > > >> messy. And the reason being that this lock is subsystem (controller)
-> > > > > > >> specific and maintained by controller. Now if any controller implements
-> > > > > > >> a lock and we add that lock in css_id() rcu_dereference_check(), it will
-> > > > > > >> look ugly.
-> > > > > > >>
-> > > > > > >> So probably a better way is to make sure that css_id() is always called
-> > > > > > >> under rcu read lock so that we don't hit this warning?
-> > > > > > > 
-> > > > > > > As long as holding rcu_read_lock() prevents css_id() from the usual
-> > > > > > > problems such as access memory that was concurrently freed, yes.
-> > > > > > 
-> > > > > > blkiocg_add_blkio_group() also calls cgroup_path(), which also needs to
-> > > > > > be called within rcu_read_lock, so I think Vivek's patch is better than
-> > > > > > the one you posted in another mail thread.
-> > > > > 
-> > > > > My apologies, Vivek!  I lost track of your patch.  I have now replaced
-> > > > > my patch with yours.
-> > > > 
-> > > > Thanks Paul.
-> > > > 
-> > > > I sent this patch to Jens also, thinking he will apply to his tree. Looks
-> > > > like he has not applied it yet though.
-> > > > 
-> > > > Jens, is it ok if this patch gets merged through paul's tree or should it
-> > > > go through blk tree?
-> > > 
-> > > I am happy for it to go either way, so just let me know!
-> > 
-> > I am also happy to go either way. I guess you can go ahead with pulling it in.
-> 
-> I have it queued for 2.6.34.
+When using remake, which is based on gnumake, if you invoke
+an example build as shown below, the build will become silent
+due to the top level make file incorrectly guessing that
+the end user wants a silent build because an argument that
+contained an "s" was used.
 
-Thanks Paul. Where can I get your tree to clone from? I can test the
-changes. I can't find it on kernel.org.
+remake --no-extended-errors
 
-Thanks
-Vivek
+Fix up the top level Makefile to use filter with a list of
+options that mean silent with the various revisions of gnumake,
+instead of findstring.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+CC: Michal Marek <mmarek@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kbuild@vger.kernel.org
+---
+ Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index fa1db90..91ae299 100644
+--- a/Makefile
++++ b/Makefile
+@@ -294,7 +294,7 @@ endif
+ # If the user is running make -s (silent mode), suppress echoing of
+ # commands
+ 
+-ifneq ($(findstring s,$(MAKEFLAGS)),)
++ifneq ($(filter s% -s% --silent --quiet,$(MAKEFLAGS)),)
+   quiet=silent_
+ endif
+ 
+-- 
+1.6.3.3
+
