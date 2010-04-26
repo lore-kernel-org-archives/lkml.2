@@ -1,57 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab0DZWfQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 18:35:16 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35911 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754907Ab0DZWfN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 18:35:13 -0400
-Date: Mon, 26 Apr 2010 15:32:51 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: David Miller <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-       linux-kernel@vger.kernel.org, tglx@linutronix.de,
-       viro@zeniv.linux.org.uk, jblunck@suse.de, mingo@elte.hu,
-       jkacur@redhat.com
-Subject: Re: [GIT PULL v2] Preparation for BKL'ed ioctl removal
-In-Reply-To: <20100426220936.GB5695@nowhere>
-Message-ID: <alpine.LFD.2.00.1004261525410.3739@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004251040340.3739@i5.linux-foundation.org> <201004261030.21751.arnd@arndb.de> <alpine.LFD.2.00.1004261104310.3739@i5.linux-foundation.org> <20100426.134207.229746269.davem@davemloft.net> <20100426220936.GB5695@nowhere>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755484Ab0DZWhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 18:37:54 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:50706 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755180Ab0DZWhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 18:37:50 -0400
+From: Mel Gorman <mel@csn.ul.ie>
+To: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/2] mm,migration: During fork(), wait for migration to end if migration PTE is encountered
+Date: Mon, 26 Apr 2010 23:37:57 +0100
+Message-Id: <1272321478-28481-2-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1272321478-28481-1-git-send-email-mel@csn.ul.ie>
+References: <1272321478-28481-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-On Tue, 27 Apr 2010, Frederic Weisbecker wrote:
-> 
-> I've queued it for the next merge window in
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	bkl/ioctl
+At page migration, we replace pte with migration_entry, which has
+similar format as swap_entry and replace it with real pfn at the
+end of migration. But there is a race with fork()'s copy_page_range().
 
-Btw, I hope you took the second version, that had the two additional fixes 
-from Arnd (and my expansion of his fix to au1550_ac97.c).
+Assume page migraion on CPU A and fork in CPU B. On CPU A, a page of
+a process is under migration. On CPU B, a page's pte is under copy.
 
-Looking at the arch code, I doubt there are any big architecture-specific 
-things. But there could easily be some other drivers like au1550_ac97.c 
-that only get enabled on certain architectures and missed the grepping for 
-some reason.
+	CPUA			CPU B
+				do_fork()
+				copy_mm() (from process 1 to process2)
+				insert new vma to mmap_list (if inode/anon_vma)
+	pte_lock(process1)
+	unmap a page
+	insert migration_entry
+	pte_unlock(process1)
 
-That said, because of Arnd's fix, I did end up grepping for 
-'file_operations' and old-style gcc initializers (ie "ioctl: xyz" rather 
-than the proper ".ioctl = xyz"), and the grep came up empty.
+	migrate page copy
+				copy_page_range
+	remap new page by rmap_walk()
+	pte_lock(process2)
+	found no pte.
+	pte_unlock(process2)
+				pte lock(process2)
+				pte lock(process1)
+				copy migration entry to process2
+				pte unlock(process1)
+				pte unlokc(process2)
+	pte_lock(process1)
+	replace migration entry
+	to new page's pte.
+	pte_unlock(process1)
 
-But it's possible that there's something hiding: with all of serial, 
-bluetooth, block drivers, sound, socket proto's and v4l2 each having their 
-own 'ioctl' pointers, it's not entirely trivial to grep for it all and be 
-sure..
+Then, some serialization is necessary. IIUC, this is very rare event but
+it is reproducible if a lot of migration is happening a lot with the
+following program running in parallel.
 
-So there might be one or two cases still hiding, but it looks unlikely. 
-And I'm almost certain that it definitely isn't more than just one or two.
+    #include <stdio.h>
+    #include <string.h>
+    #include <stdlib.h>
+    #include <sys/mman.h>
 
-		Linus
+    #define SIZE (24*1048576UL)
+    #define CHILDREN 100
+    int main()
+    {
+	    int i = 0;
+	    pid_t pids[CHILDREN];
+	    char *buf = mmap(NULL, SIZE, PROT_READ|PROT_WRITE,
+			    MAP_PRIVATE|MAP_ANONYMOUS,
+			    0, 0);
+	    if (buf == MAP_FAILED) {
+		    perror("mmap");
+		    exit(-1);
+	    }
+
+	    while (++i) {
+		    int j = i % CHILDREN;
+
+		    if (j == 0) {
+			    printf("Waiting on children\n");
+			    for (j = 0; j < CHILDREN; j++) {
+				    memset(buf, i, SIZE);
+				    if (pids[j] != -1)
+					    waitpid(pids[j], NULL, 0);
+			    }
+			    j = 0;
+		    }
+
+		    if ((pids[j] = fork()) == 0) {
+			    memset(buf, i, SIZE);
+			    exit(EXIT_SUCCESS);
+		    }
+	    }
+
+	    munmap(buf, SIZE);
+    }
+
+copy_page_range() can wait for the end of migration.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+---
+ mm/memory.c |   24 +++++++++++++++---------
+ 1 files changed, 15 insertions(+), 9 deletions(-)
+
+diff --git a/mm/memory.c b/mm/memory.c
+index 833952d..36dadd4 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -675,15 +675,8 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 			}
+ 			if (likely(!non_swap_entry(entry)))
+ 				rss[MM_SWAPENTS]++;
+-			else if (is_write_migration_entry(entry) &&
+-					is_cow_mapping(vm_flags)) {
+-				/*
+-				 * COW mappings require pages in both parent
+-				 * and child to be set to read.
+-				 */
+-				make_migration_entry_read(&entry);
+-				pte = swp_entry_to_pte(entry);
+-				set_pte_at(src_mm, addr, src_pte, pte);
++			else {
++				BUG();
+ 			}
+ 		}
+ 		goto out_set_pte;
+@@ -760,6 +753,19 @@ again:
+ 			progress++;
+ 			continue;
+ 		}
++		if (unlikely(!pte_present(*src_pte) && !pte_file(*src_pte))) {
++			entry = pte_to_swp_entry(*src_pte);
++			if (is_migration_entry(entry)) {
++				/*
++				 * Because copying pte has the race with
++				 * pte rewriting of migraton, release lock
++				 * and retry.
++				 */
++				progress = 0;
++				entry.val = 0;
++				break;
++			}
++		}
+ 		entry.val = copy_one_pte(dst_mm, src_mm, dst_pte, src_pte,
+ 							vma, addr, rss);
+ 		if (entry.val)
+-- 
+1.6.5
+
