@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab0DZUPB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 16:15:01 -0400
-Received: from 007.netroom.de ([194.0.247.207]:11131 "EHLO 007.netroom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753417Ab0DZUPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 16:15:00 -0400
-Message-ID: <4BD5F43E.4090404@draisberghof.de>
-Date: Mon, 26 Apr 2010 22:14:54 +0200
-From: Josua Dietze <digidietze@draisberghof.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: =?UTF-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>,
-       Daniel Mack <daniel@caiaq.de>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       USB list <linux-usb@vger.kernel.org>,
-       Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: USB gadget with drivers "on board"
-References: <Pine.LNX.4.44L0.1004261531480.1764-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1004261531480.1764-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755018Ab0DZUWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 16:22:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:60853 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603Ab0DZUWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 16:22:32 -0400
+X-Authority-Analysis: v=1.1 cv=OQt9FTpBtG7aVA3iIcO4n/15BLkw2hRg/WlL4r7+KMc= c=1 sm=0 a=mWQjLl1nR8kA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=leD5DTHNUu-eLTKLX7IA:9 a=VjlsKlO8ihKgl3GvEC4A:7 a=oVuExRga5i7hcu3ljs7pqeKoRDAA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCHv6 0/4] tracing: function graph output for
+ preempt/irqs-off tracers
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: mingo@elte.hu, fweisbec@gmail.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1270227683-14631-1-git-send-email-jolsa@redhat.com>
+References: <1270227683-14631-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 26 Apr 2010 16:22:30 -0400
+Message-ID: <1272313350.9739.2.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Stern schrieb:
-
-> On Mon, 26 Apr 2010, Josua Dietze wrote:
->> These are the notorious mode switching devices. In Windows, they 
->> obviously install a special storage driver doing one specific action 
->> on each following plugging.
->> This action - some storage or control command - will "flip" the 
->> device, making it "disconnect" and returning as a completely different 
->> composite device.
->>
->> Storage commands used for this procedure range from "SCSI rezero" over 
->> "passthrough" to "SCSI eject", or involve vendor specific stuff.
+On Fri, 2010-04-02 at 19:01 +0200, Jiri Olsa wrote:
+> hi,
 > 
-> I was going to say the same thing.  For ease of use, I recommend using
-> a "SCSI eject" to trigger the mode change.  That way, Linux users who
-> don't have the usb-modeswitch program installed can get the same effect
-> by running eject.
+> updates based on comments by Frederic Weisbecker,
+> also rebase to latest master.
+> 
+> I'm sending reworked version of the graph output support for
+> preemptirqsoff/preemptoff/irqsoff tracers.
+> 
 
 
-Important for the Linux handling is that "mode 1" is clearly 
-distinguishable from "mode 2", either by using a different product ID 
-or by setting a different class for the device or interface 0 (will 
-most likely be "8" for the install mode).
+Hi Jiri,
 
-And it might be a good idea not to re-use any known ID for the install 
-mode, like the 05c6:1000 which my Samsung phone and loads of other 
-devices are using.
-This makes switch handling complicated (though not impossible).
+I haven't forgotten about you. I came back from the Linux Collaboration
+Summit with a bunch of TODO's and one of them took me all week. I spent
+the entire week hacking the ftrace.h file which takes up 100% of my
+concentration, so I never got to look at your patches.
+
+Your patch set is next on my todo list, so expect feedback from me
+either later today or tomorrow.
+
+Thanks for you patience,
+
+-- Steve
 
 
-Josua Dietze
