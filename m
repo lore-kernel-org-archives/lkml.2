@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab0DZWex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 18:34:53 -0400
-Received: from mail.gmx.net ([213.165.64.20]:54827 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754907Ab0DZWev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 18:34:51 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX184ElQoPKM4Qq5BMbcClcdkERvVSo/CJX9Nabl9yw
-	s3QHT9pSQnPdO7
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: "Greg Kroah-Hartman" <gregkh@suse.de>
-Subject: [PATCH] staging/otus: Add null check and fix coding style issue
-Date: Tue, 27 Apr 2010 00:34:49 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
-Cc: David Binderman <dcb314@hotmail.com>,
-       D Pranith Kumar <bobby.prani@gmail.com>,
-       Alexander Beregalov <a.beregalov@gmail.com>,
-       Simon Horman <horms@verge.net.au>, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+	id S1755422Ab0DZWfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 18:35:16 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35911 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754907Ab0DZWfN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 18:35:13 -0400
+Date: Mon, 26 Apr 2010 15:32:51 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: David Miller <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+       linux-kernel@vger.kernel.org, tglx@linutronix.de,
+       viro@zeniv.linux.org.uk, jblunck@suse.de, mingo@elte.hu,
+       jkacur@redhat.com
+Subject: Re: [GIT PULL v2] Preparation for BKL'ed ioctl removal
+In-Reply-To: <20100426220936.GB5695@nowhere>
+Message-ID: <alpine.LFD.2.00.1004261525410.3739@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1004251040340.3739@i5.linux-foundation.org> <201004261030.21751.arnd@arndb.de> <alpine.LFD.2.00.1004261104310.3739@i5.linux-foundation.org> <20100426.134207.229746269.davem@davemloft.net> <20100426220936.GB5695@nowhere>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004270034.49340.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.52000000000000002
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
 
-This patch removes mixing of declarations and code and adds a null-test
-after a kmalloc.
 
-Patch against linux-next as of 20100427
+On Tue, 27 Apr 2010, Frederic Weisbecker wrote:
+> 
+> I've queued it for the next merge window in
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	bkl/ioctl
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/otus/ioctl.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+Btw, I hope you took the second version, that had the two additional fixes 
+from Arnd (and my expansion of his fix to au1550_ac97.c).
 
-diff --git a/drivers/staging/otus/ioctl.c b/drivers/staging/otus/ioctl.c
-index 84be4b2..cface46 100644
---- a/drivers/staging/otus/ioctl.c
-+++ b/drivers/staging/otus/ioctl.c
-@@ -867,6 +867,7 @@ int usbdrvwext_giwscan(struct net_device *dev,
- 	char *current_ev = extra;
- 	char *end_buf;
- 	int i;
-+	struct zsBssListV1 *pBssList;
- 	/* BssList = wd->sta.pBssList; */
- 	/* zmw_get_wlan_dev(dev); */
- 
-@@ -874,8 +875,10 @@ int usbdrvwext_giwscan(struct net_device *dev,
- 		return 0;
- 
- 	/* struct zsBssList BssList; */
--	struct zsBssListV1 *pBssList = kmalloc(sizeof(struct zsBssListV1),
--								GFP_KERNEL);
-+	pBssList = kmalloc(sizeof(struct zsBssListV1), GFP_KERNEL);
-+	if (pBssList == NULL)
-+		return -ENOMEM;
-+
- 	if (data->length == 0)
- 		end_buf = extra + IW_SCAN_MAX_DATA;
- 	else
--- 
-1.6.4.4
+Looking at the arch code, I doubt there are any big architecture-specific 
+things. But there could easily be some other drivers like au1550_ac97.c 
+that only get enabled on certain architectures and missed the grepping for 
+some reason.
 
+That said, because of Arnd's fix, I did end up grepping for 
+'file_operations' and old-style gcc initializers (ie "ioctl: xyz" rather 
+than the proper ".ioctl = xyz"), and the grep came up empty.
+
+But it's possible that there's something hiding: with all of serial, 
+bluetooth, block drivers, sound, socket proto's and v4l2 each having their 
+own 'ioctl' pointers, it's not entirely trivial to grep for it all and be 
+sure..
+
+So there might be one or two cases still hiding, but it looks unlikely. 
+And I'm almost certain that it definitely isn't more than just one or two.
+
+		Linus
