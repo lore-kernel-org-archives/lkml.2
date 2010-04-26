@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab0DZCGg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 22:06:36 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:60539 "EHLO e4.ny.us.ibm.com"
+	id S1754388Ab0DZCHZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 22:07:25 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:48547 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753536Ab0DZCGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 22:06:35 -0400
-Date: Sun, 25 Apr 2010 19:06:31 -0700
+	id S1754187Ab0DZCHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 22:07:24 -0400
+Date: Sun, 25 Apr 2010 19:07:16 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Subject: Re: [PATCH] blk-cgroup: Fix RCU correctness warning in
- cfq_init_queue()
-Message-ID: <20100426020631.GU2440@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: johannes@sipsolutions.net, miles.lane@gmail.com, vgoyal@redhat.com,
+       eparis@redhat.com, laijs@cn.fujitsu.com, mingo@elte.hu,
+       peterz@infradead.org, linux-kernel@vger.kernel.org, nauman@google.com,
+       eric.dumazet@gmail.com, netdev@vger.kernel.org, jens.axboe@oracle.com,
+       guijianfeng@cn.fujitsu.com, lizf@cn.fujitsu.com
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
+ rcu_dereference_check() usage
+Message-ID: <20100426020716.GV2440@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100422155452.GD3228@redhat.com>
- <20100422231556.GW2524@linux.vnet.ibm.com>
- <20100422235555.GA12004@redhat.com>
- <20100423001751.GX2524@linux.vnet.ibm.com>
- <20100423144138.GA5026@redhat.com>
- <20100423194649.GF2589@linux.vnet.ibm.com>
- <4BD4ED7A.5020205@cn.fujitsu.com>
+References: <m2xa44ae5cd1004231559hcf90671asf146a43b4748c2c3@mail.gmail.com>
+ <20100425023455.GM2440@linux.vnet.ibm.com>
+ <1272181534.3614.1.camel@jlt3.sipsolutions.net>
+ <20100425.004925.54203352.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BD4ED7A.5020205@cn.fujitsu.com>
+In-Reply-To: <20100425.004925.54203352.davem@davemloft.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 09:33:46AM +0800, Li Zefan wrote:
-> >>>>>> With RCU correctness on, We see following warning. This patch fixes it.
-> >>>>> This is in initialization code, so that there cannot be any concurrent
-> >>>>> updates, correct?  If so, looks good.
-> >>>>>
-> >>>> I think theoritically two instances of cfq_init_queue() can be running
-> >>>> in parallel (for two different devices), and they both can call
-> >>>> blkiocg_add_blkio_group(). But then we use a spin lock to protect
-> >>>> blkio_cgroup.
-> >>>>
-> >>>> spin_lock_irqsave(&blkcg->lock, flags);
-> >>>>
-> >>>> So I guess two parallel updates should be fine.
-> >>> OK, in that case, would it be possible add this spinlock to the condition
-> >>> checked by css_id()'s rcu_dereference_check()?
-> >> Hi Paul,
-> >>
-> >> I think adding these spinlock to condition checked might become little
-> >> messy. And the reason being that this lock is subsystem (controller)
-> >> specific and maintained by controller. Now if any controller implements
-> >> a lock and we add that lock in css_id() rcu_dereference_check(), it will
-> >> look ugly.
-> >>
-> >> So probably a better way is to make sure that css_id() is always called
-> >> under rcu read lock so that we don't hit this warning?
-> > 
-> > As long as holding rcu_read_lock() prevents css_id() from the usual
-> > problems such as access memory that was concurrently freed, yes.
+On Sun, Apr 25, 2010 at 12:49:25AM -0700, David Miller wrote:
+> From: Johannes Berg <johannes@sipsolutions.net>
+> Date: Sun, 25 Apr 2010 09:45:34 +0200
 > 
-> blkiocg_add_blkio_group() also calls cgroup_path(), which also needs to
-> be called within rcu_read_lock, so I think Vivek's patch is better than
-> the one you posted in another mail thread.
+> > The station locking is a tad confusing, but I've added the right
+> > annotations already, should be coming to a kernel near you soon (i.e.
+> > are in net-2.6 right now).
+> 
+> Linus took in everything I have so it should be in Linus's tree
+> by now.
 
-My apologies, Vivek!  I lost track of your patch.  I have now replaced
-my patch with yours.
+Thank you both, Dave and Johannes!
 
 							Thanx, Paul
