@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab0DZUWd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 16:22:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:60853 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603Ab0DZUWc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 16:22:32 -0400
-X-Authority-Analysis: v=1.1 cv=OQt9FTpBtG7aVA3iIcO4n/15BLkw2hRg/WlL4r7+KMc= c=1 sm=0 a=mWQjLl1nR8kA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=leD5DTHNUu-eLTKLX7IA:9 a=VjlsKlO8ihKgl3GvEC4A:7 a=oVuExRga5i7hcu3ljs7pqeKoRDAA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCHv6 0/4] tracing: function graph output for
- preempt/irqs-off tracers
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: mingo@elte.hu, fweisbec@gmail.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1270227683-14631-1-git-send-email-jolsa@redhat.com>
-References: <1270227683-14631-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Mon, 26 Apr 2010 16:22:30 -0400
-Message-ID: <1272313350.9739.2.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755143Ab0DZUZo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 16:25:44 -0400
+Received: from tauceti.net ([62.245.250.166]:57524 "EHLO www.tauceti.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754438Ab0DZUZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 16:25:42 -0400
+Message-ID: <4BD5F6C5.8080605@tauceti.net>
+Date: Mon, 26 Apr 2010 22:25:41 +0200
+From: Robert Wimmer <kernel@tauceti.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100312 Thunderbird/3.0.3 ThunderBrowse/3.2.8.1
+MIME-Version: 1.0
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       bugzilla-daemon@bugzilla.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
+References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain>
+In-Reply-To: <1272284154.4252.34.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-02 at 19:01 +0200, Jiri Olsa wrote:
-> hi,
-> 
-> updates based on comments by Frederic Weisbecker,
-> also rebase to latest master.
-> 
-> I'm sending reworked version of the graph output support for
-> preemptirqsoff/preemptoff/irqsoff tracers.
-> 
 
+>>> I've added CONFIG_KALLSYMS and CONFIG_KALLSYMS_ALL
+>>> to my .config. I've uploaded the dmesg output. Maybe it
+>>> helps a little bit:
+>>>
+>>> https://bugzilla.kernel.org/attachment.cgi?id=26138
+>>>
+>>> - Robert
+>>>
+>>>       
+> That last trace is just saying that the NFSv4 reboot recovery code is
+> crashing (which is hardly surprising if the memory management is hosed).
+>
+> The initial bisection makes little sense to me: it is basically blaming
+> a page allocation problem on a change to the NFSv4 mount code. The only
+> way I can see that possibly happen is if you are hitting a stack
+> overflow.
+> So 2 questions:
+>
+>   - Are you able to reproduce the bug when using NFSv3 instead?
+>   
 
-Hi Jiri,
+I've tried with NFSv3 now. With v4 the error normally occur
+within 5 minutes. The VM is now running for one hour and no
+soft lockup so far. So I would say it can't be reproduced with
+v3.
 
-I haven't forgotten about you. I came back from the Linux Collaboration
-Summit with a bunch of TODO's and one of them took me all week. I spent
-the entire week hacking the ftrace.h file which takes up 100% of my
-concentration, so I never got to look at your patches.
+>   - Have you tried running with stack tracing enabled?
+>   
 
-Your patch set is next on my todo list, so expect feedback from me
-either later today or tomorrow.
+Can you explain this a little bit more please? CONFIG_STACKTRACE=y
+was already enabled. I've now enabled
 
-Thanks for you patience,
+CONFIG_USER_STACKTRACE_SUPPORT=y
+CONFIG_NOP_TRACER=y
+CONFIG_HAVE_FTRACE_NMI_ENTER=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_FTRACE_SYSCALLS=y
+CONFIG_FTRACE_NMI_ENTER=y
+CONFIG_CONTEXT_SWITCH_TRACER=y
+CONFIG_GENERIC_TRACER=y
+CONFIG_FTRACE=y
+CONFIG_FUNCTION_TRACER=y
+CONFIG_FUNCTION_GRAPH_TRACER=y
+CONFIG_FTRACE_SYSCALLS=y
+CONFIG_STACK_TRACER=y
+CONFIG_KMEMTRACE=y
+CONFIG_DYNAMIC_FTRACE=y
+CONFIG_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_MMIOTRACE_SUPPORT=y
 
--- Steve
+and run
 
+echo 1 > /proc/sys/kernel/stack_tracer_enabled
+
+But the output is mostly the same in dmesg/
+var/log/messages. Can you please guide me how I can
+enable the stack tracing you need?
+
+Thanks!
+Robert
 
