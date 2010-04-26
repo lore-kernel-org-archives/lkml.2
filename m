@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab0DZJcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 05:32:43 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:51519 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab0DZJcl (ORCPT
+	id S1752688Ab0DZJgK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 05:36:10 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:37016 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261Ab0DZJgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 05:32:41 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 26 Apr 2010 18:28:38 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-       Christoph Lameter <cl@linux.com>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUGFIX][mm][PATCH] fix migration race in rmap_walk
-Message-Id: <20100426182838.2cab9844.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100426084901.15c09a29.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100423120148.9ffa5881.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100423095922.GJ30306@csn.ul.ie>
-	<20100423155801.GA14351@csn.ul.ie>
-	<20100424110200.b491ec5f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100424104324.GD14351@csn.ul.ie>
-	<20100426084901.15c09a29.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 26 Apr 2010 05:36:09 -0400
+Message-ID: <4BD55E85.4020709@cs.helsinki.fi>
+Date: Mon, 26 Apr 2010 12:36:05 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+MIME-Version: 1.0
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, x86@kernel.org
+Subject: Re: [PATCH v3] x86: Do not write into VGA memory space if there is
+ no VGA device in the system
+References: <1271780217-27472-1-git-send-email-guenter.roeck@ericsson.com>
+In-Reply-To: <1271780217-27472-1-git-send-email-guenter.roeck@ericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Apr 2010 08:49:01 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Guenter Roeck kirjoitti:
+> Ensure that early_printk() does not write into VGA memory space
+> if there is not VGA device in the system.
+> 
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> ---
+> v3:
+> Changes are now limited to early_printk.c. Functionality is retained, meaning
+> there will still be output on the VGA console before setup_early_printk()
+> is called, but only if a VGA device is known to exist in the system.
+> 
+>  arch/x86/kernel/early_printk.c |   17 +++++++++++++----
+>  1 files changed, 13 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
+> index b9c830c..783cb25 100644
+> --- a/arch/x86/kernel/early_printk.c
+> +++ b/arch/x86/kernel/early_printk.c
+> @@ -170,10 +170,13 @@ asmlinkage void early_printk(const char *fmt, ...)
+>  	int n;
+>  	va_list ap;
+>  
+> -	va_start(ap, fmt);
+> -	n = vscnprintf(buf, sizeof(buf), fmt, ap);
+> -	early_console->write(early_console, buf, n);
+> -	va_end(ap);
+> +	if (early_console && (early_console_initialized ||
+> +			      boot_params.screen_info.orig_video_isVGA == 1)) {
+> +		va_start(ap, fmt);
+> +		n = vscnprintf(buf, sizeof(buf), fmt, ap);
+> +		early_console->write(early_console, buf, n);
+> +		va_end(ap);
+> +	}
+>  }
+>  
+>  static inline void early_console_register(struct console *con, int keep_early)
+> @@ -233,6 +236,12 @@ static int __init setup_early_printk(char *buf)
+>  #endif
+>  		buf++;
+>  	}
+> +
+> +	/* If there is no VGA device, don't try to use it as early console. */
+> +	if (early_console == &early_vga_console &&
+> +	    boot_params.screen_info.orig_video_isVGA != 1)
+> +		early_console = NULL;
 
-> On Sat, 24 Apr 2010 11:43:24 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
+Wouldn't it be better to switch to, say, serial console here to avoid 
+the NULL check in early_printk()?
 
-> > It looks nice but it still broke after 28 hours of running. The
-> > seq-counter is still insufficient to catch all changes that are made to
-> > the list. I'm beginning to wonder if a) this really can be fully safely
-> > locked with the anon_vma changes and b) if it has to be a spinlock to
-> > catch the majority of cases but still a lazy cleanup if there happens to
-> > be a race. It's unsatisfactory and I'm expecting I'll either have some
-> > insight to the new anon_vma changes that allow it to be locked or Rik
-> > knows how to restore the original behaviour which as Andrea pointed out
-> > was safe.
-> > 
-> Ouch. 
-
-Ok, reproduced. Here is status in my test + printk().
-
- * A race doesn't seem to happen if swap=off. 
-    I need to swapon to cause the bug.
- * Before unmap, mapcount=1, SwapCache for anonymous memory.
-   old page's flag was SWAPCACHE, Active, Uptodate, Referenced, Locked.
- * After remap, mapcount=0, return code=0.
-   new page's flag after remap was SwapCache, Active, Dirty, Uptodate, Referenced.
-
-(Hmm, dirty bit can be added by try_to_unamp().)
-
--Kame
-
-
-
+> +
+>  	return 0;
+>  }
+> 
