@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab0DZHlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 03:41:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47888 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053Ab0DZHlu (ORCPT
+	id S1754669Ab0DZHsg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 03:48:36 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:51680 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717Ab0DZHsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 03:41:50 -0400
-Date: Mon, 26 Apr 2010 09:41:36 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Farid Hammane <farid.hammane@gmail.com>, ben-linux@fluff.org,
-       Enrik.Berkhan@ge.com, linux-i2c@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] i2c-algo-pca: fix coding style issues in
-	i2c-algo-pca.c
-Message-ID: <20100426074136.GA20663@pengutronix.de>
-References: <1271973715-18331-1-git-send-email-farid.hammane@gmail.com> <20100423113326.3691bdd6@hyperion.delvare>
+	Mon, 26 Apr 2010 03:48:35 -0400
+Date: Mon, 26 Apr 2010 16:48:15 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh updates for 2.6.34-rc6
+Message-ID: <20100426074815.GA17288@linux-sh.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100423113326.3691bdd6@hyperion.delvare>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please pull from:
 
---FL5UXtIhxfXey3p5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh/for-2.6.34
 
+Which contains:
 
-Geez, that will teach me to review whitespace-fixes while working somewhere
-else :( Thanks for the catch!
+Guennadi Liakhovetski (2):
+      SH: fix TS field shift calculation for DMA drivers
+      SH: fix error paths in DMA driver
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Magnus Damm (2):
+      sh: Fix maximum number of SCIF ports in R2D defconfigs
+      sh: sh7751 pci controller io port fix
 
---FL5UXtIhxfXey3p5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkvVQ7AACgkQD27XaX1/VRtteQCdHEhyQPc5n513HAi8Jgn83xoy
-k3cAn3mgJqy0upBPPBFgUhphYgjyh5NM
-=bPmH
------END PGP SIGNATURE-----
-
---FL5UXtIhxfXey3p5--
+ arch/sh/configs/rts7751r2d1_defconfig      |    2 +-
+ arch/sh/configs/rts7751r2dplus_defconfig   |    2 +-
+ arch/sh/drivers/pci/pci-sh7751.c           |    5 +++--
+ arch/sh/include/cpu-sh4/cpu/dma-register.h |    2 +-
+ drivers/dma/shdma.c                        |   27 +++++++++++++++++++++------
+ 5 files changed, 27 insertions(+), 11 deletions(-)
