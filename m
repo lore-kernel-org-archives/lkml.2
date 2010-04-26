@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab0DZXdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 19:33:41 -0400
-Received: from mx1.emlix.com ([193.175.82.87]:38480 "EHLO mx1.emlix.com"
+	id S1754479Ab0DZXmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 19:42:54 -0400
+Received: from kroah.org ([198.145.64.141]:50924 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752774Ab0DZXdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 19:33:40 -0400
-X-Greylist: delayed 1688 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Apr 2010 19:33:40 EDT
-Date: Tue, 27 Apr 2010 01:05:15 +0200
-From: Daniel =?iso-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>
-To: Dan Carpenter <error27@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jani Nikula <ext-jani.1.nikula@nokia.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [patch] gpio: potential null dereference
-Message-ID: <20100426230515.GA1388@emlix.com>
-References: <20100426192520.GU29093@bicker>
+	id S1752301Ab0DZXmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 19:42:53 -0400
+Date: Mon, 26 Apr 2010 16:42:50 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Alex Manoussakis <alex@juniper.net>
+Subject: Re: linux-next: build warning in Linus' tree
+Message-ID: <20100426234250.GA20481@kroah.com>
+References: <20100427093019.ae1b8c48.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100426192520.GU29093@bicker>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-Organization: emlix gmbh, Goettingen, Germany
+In-Reply-To: <20100427093019.ae1b8c48.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 09:25:20PM +0200, Dan Carpenter wrote:
-> Smatch found a potential null dereference in gpio_setup_irq().  The 
-> "pdesc" variable is allocated with idr_find() that can return NULL.  If
-> gpio_setup_irq() is called with 0 as gpio_flags and "pdesc" is null, it
-> would OOPs here.
+On Tue, Apr 27, 2010 at 09:30:19AM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next build (x86_64 allmodconfig) produced this warning:
+> 
+> drivers/usb/serial/ti_usb_3410_5052.c: In function 'ti_download_firmware':
+> drivers/usb/serial/ti_usb_3410_5052.c:1738: warning: format '%d' expects type 'int', but argument 5 has type 'size_t'
+> 
+> Introduced by commit cdc04834ce70343aa6f87c5332ec66c35d968967 ("USB:
+> ti_usb_3410_5052: adding multitech dialup fax/modem devices").
 
-idr_find() doesn't allocate, idr_get_new_above() does.
-Assuming idr_find() never fails for an id if idr_get_new_above()
-successfully allocated that id, I don't think we can reach that
-line with pdesc being NULL:
+Thanks, Randy has already sent me a fix for this, I'm working on apply
+it to my tree soon (doing must-fix things first...)
 
-- There are two gotos leading to free_sd
-- #2 is after a block that allocates pdesc
-- #1 is in an if (!gpio_flags) block
-- We exit early if ((desc->flags & GPIO_TRIGGER_MASK) == gpio_flags)
-- Therefore (desc->flags & GPIO_TRIGGER_MASK) must be != 0 to reach #1
-- Trigger flags are added to desc->flags only after we have
-  successfully allocated pdesc (i.e. right before return 0)
-- We start off with no trigger flags set
+thanks,
 
-  Daniel
-
-
--- 
-Dipl.-Math. Daniel Glöckner, emlix GmbH, http://www.emlix.com
-Fon +49 551 30664-0, Fax -11, Bahnhofsallee 1b, 37081 Göttingen, Germany
-Sitz der Gesellschaft: Göttingen, Amtsgericht Göttingen HR B 3160
-Geschäftsführung: Dr. Uwe Kracke, Ust-IdNr.: DE 205 198 055
-
-emlix - your embedded linux partner
+greg k-h
