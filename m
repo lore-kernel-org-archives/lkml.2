@@ -1,57 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab0DZWXv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 18:23:51 -0400
-Received: from xenotime.net ([72.52.64.118]:36746 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754509Ab0DZWXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 18:23:50 -0400
-Message-ID: <4BD61266.5020905@xenotime.net>
-Date: Mon, 26 Apr 2010 15:23:34 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
-MIME-Version: 1.0
-To: Nicolas Palix <npalix@diku.dk>
-CC: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
-       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
-       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
-       linux-kbuild@vger.kernel.org, cocci@diku.dk
-Subject: Re: [PATCH 1/4] Add targets to use the Coccinelle checker
-References: <1272316279-12042-1-git-send-email-npalix@diku.dk> <1272316279-12042-2-git-send-email-npalix@diku.dk> <1272317821.15953.107.camel@Joe-Laptop.home> <201004270020.09447.npalix@diku.dk>
-In-Reply-To: <201004270020.09447.npalix@diku.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755168Ab0DZWY3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 18:24:29 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58177 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754810Ab0DZWY2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 18:24:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Al Viro <viro@zeniv.linux.org.uk>,
+       Jan Blunck <jblunck@suse.de>, Ingo Molnar <mingo@elte.hu>,
+       John Kacur <jkacur@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 4/6] staging: push down BKL into ioctl functions
+Date: Tue, 27 Apr 2010 00:24:03 +0200
+Message-Id: <1272320645-8671-5-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <201004262112.39906.arnd@arndb.de>
+References: <201004262112.39906.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX18QTUKZ0uNo5DbpMkiydUxNO7a1B2Agl4vDIMM
+ pOIgegz2ehW3xR89U003+D8nWiSMYWxdUl/7+Ch/Xwra00ENec
+ VexZGU2OwNhZaLmH6alow==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas Palix wrote:
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/staging/crystalhd/crystalhd_lnx.c |   13 +++++++++----
+ drivers/staging/dt3155/dt3155_drv.c       |   24 ++++++++++++++++++------
+ drivers/staging/poch/poch.c               |   17 +++++++++++++++--
+ drivers/staging/vme/devices/vme_user.c    |   18 +++++++++++++++---
+ 4 files changed, 57 insertions(+), 15 deletions(-)
 
-> diff --git a/Makefile b/Makefile
-> index 67c1001..293c88b 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -1424,6 +1425,14 @@ versioncheck:
->  		-name '*.[hcS]' -type f -print | sort \
->  		| xargs $(PERL) -w $(srctree)/scripts/checkversion.pl
->  
-> +coccicheck-context coccicheck-patch coccicheck-org coccicheck-report:
-> +	@echo "\nPlease check for false positive in the output before submitting a patch.\n\n"\
-
-	                                positives
-
-> +		"Take particularly attention when using the \"patch\" mode\n"\
-
-		      particular
-
-> +		"and carefully review the patch you are about to submit.\n"
-> +	@find $(srctree)/scripts/smpl/                        \
-> +		-name '*.cocci' -type f                       \
-> +		-exec $(srctree)/scripts/spatch.sh $(SPATCH) $(@:coccicheck-%=%) \{} $(srctree) \;
-> +
->  namespacecheck:
->  	$(PERL) $(srctree)/scripts/namespace.pl
->  
+diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c b/drivers/staging/crystalhd/crystalhd_lnx.c
+index 54bad65..3291e14 100644
+--- a/drivers/staging/crystalhd/crystalhd_lnx.c
++++ b/drivers/staging/crystalhd/crystalhd_lnx.c
+@@ -16,6 +16,7 @@
+ ***************************************************************************/
+ 
+ #include <linux/version.h>
++#include <linux/smp_lock.h>
+ #include <linux/slab.h>
+ 
+ #include "crystalhd_lnx.h"
+@@ -261,12 +262,12 @@ static int chd_dec_api_cmd(struct crystalhd_adp *adp, unsigned long ua,
+ }
+ 
+ /* API interfaces */
+-static int chd_dec_ioctl(struct inode *in, struct file *fd,
+-			 unsigned int cmd, unsigned long ua)
++static long chd_dec_ioctl(struct file *fd, unsigned int cmd, unsigned long ua)
+ {
+ 	struct crystalhd_adp *adp = chd_get_adp();
+ 	crystalhd_cmd_proc cproc;
+ 	struct crystalhd_user *uc;
++	int ret;
+ 
+ 	if (!adp || !fd) {
+ 		BCMLOG_ERR("Invalid adp\n");
+@@ -279,13 +280,17 @@ static int chd_dec_ioctl(struct inode *in, struct file *fd,
+ 		return -ENODATA;
+ 	}
+ 
++	lock_kernel();
+ 	cproc = crystalhd_get_cmd_proc(&adp->cmds, cmd, uc);
+ 	if (!cproc) {
+ 		BCMLOG_ERR("Unhandled command: %d\n", cmd);
++		unlock_kernel();
+ 		return -EINVAL;
+ 	}
+ 
+-	return chd_dec_api_cmd(adp, ua, uc->uid, cmd, cproc);
++	ret = chd_dec_api_cmd(adp, ua, uc->uid, cmd, cproc);
++	unlock_kernel();
++	return ret;
+ }
+ 
+ static int chd_dec_open(struct inode *in, struct file *fd)
+@@ -345,7 +350,7 @@ static int chd_dec_close(struct inode *in, struct file *fd)
+ 
+ static const struct file_operations chd_dec_fops = {
+ 	.owner   = THIS_MODULE,
+-	.ioctl   = chd_dec_ioctl,
++	.unlocked_ioctl = chd_dec_ioctl,
+ 	.open    = chd_dec_open,
+ 	.release = chd_dec_close,
+ };
+diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
+index e2c44ec..7e6095f 100644
+--- a/drivers/staging/dt3155/dt3155_drv.c
++++ b/drivers/staging/dt3155/dt3155_drv.c
+@@ -63,6 +63,7 @@ extern void printques(int);
+ #include <linux/types.h>
+ #include <linux/poll.h>
+ #include <linux/sched.h>
++#include <linux/smp_lock.h>
+ 
+ #include <asm/io.h>
+ #include <asm/uaccess.h>
+@@ -835,6 +836,17 @@ static unsigned int dt3155_poll (struct file * filp, poll_table *wait)
+   return 0;
+ }
+ 
++static long
++dt3155_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	int ret;
++
++	lock_kernel();
++	ret = dt3155_ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
++	unlock_kernel();
++
++	return ret;
++}
+ 
+ /*****************************************************
+  * file operations supported by DT3155 driver
+@@ -842,12 +854,12 @@ static unsigned int dt3155_poll (struct file * filp, poll_table *wait)
+  *  register_chrdev
+  *****************************************************/
+ static struct file_operations dt3155_fops = {
+-  read:		dt3155_read,
+-  ioctl:		dt3155_ioctl,
+-  mmap:		dt3155_mmap,
+-  poll:           dt3155_poll,
+-  open:		dt3155_open,
+-  release:	dt3155_close
++	.read		= dt3155_read,
++	.unlocked_ioctl	= dt3155_unlocked_ioctl,
++	.mmap		= dt3155_mmap,
++	.poll		= dt3155_poll,
++	.open		= dt3155_open,
++	.release	= dt3155_close
+ };
+ 
+ 
+diff --git a/drivers/staging/poch/poch.c b/drivers/staging/poch/poch.c
+index f940a34..bf46e29 100644
+--- a/drivers/staging/poch/poch.c
++++ b/drivers/staging/poch/poch.c
+@@ -16,6 +16,7 @@
+ #include <linux/sysfs.h>
+ #include <linux/poll.h>
+ #include <linux/idr.h>
++#include <linux/smp_lock.h>
+ #include <linux/interrupt.h>
+ #include <linux/init.h>
+ #include <linux/ioctl.h>
+@@ -911,7 +912,7 @@ static unsigned int poch_poll(struct file *filp, poll_table *pt)
+ 	return ret;
+ }
+ 
+-static int poch_ioctl(struct inode *inode, struct file *filp,
++static int poch_ioctl(struct file *filp,
+ 		      unsigned int cmd, unsigned long arg)
+ {
+ 	struct channel_info *channel = filp->private_data;
+@@ -1033,11 +1034,23 @@ static int poch_ioctl(struct inode *inode, struct file *filp,
+ 	return 0;
+ }
+ 
++static long
++poch_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	int ret;
++
++	lock_kernel();
++	ret = poch_ioctl(file, cmd, arg);
++	unlock_kernel();
++
++	return ret;
++}
++
+ static struct file_operations poch_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = poch_open,
+ 	.release = poch_release,
+-	.ioctl = poch_ioctl,
++	.poch_ioctl = poch_unlocked_ioctl,
+ 	.poll = poch_poll,
+ 	.mmap = poch_mmap
+ };
+diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+index 1ab9a98..bc16fc0 100644
+--- a/drivers/staging/vme/devices/vme_user.c
++++ b/drivers/staging/vme/devices/vme_user.c
+@@ -31,6 +31,7 @@
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/syscalls.h>
++#include <linux/smp_lock.h>
+ #include <linux/types.h>
+ 
+ #include <asm/io.h>
+@@ -130,8 +131,7 @@ static int vme_user_release(struct inode *, struct file *);
+ static ssize_t vme_user_read(struct file *, char *, size_t, loff_t *);
+ static ssize_t vme_user_write(struct file *, const char *, size_t, loff_t *);
+ static loff_t vme_user_llseek(struct file *, loff_t, int);
+-static int vme_user_ioctl(struct inode *, struct file *, unsigned int,
+-	unsigned long);
++static long vme_user_unlocked_ioctl(struct file *, unsigned int, unsigned long);
+ 
+ static int __init vme_user_probe(struct device *, int, int);
+ static int __exit vme_user_remove(struct device *, int, int);
+@@ -142,7 +142,7 @@ static struct file_operations vme_user_fops = {
+         .read = vme_user_read,
+         .write = vme_user_write,
+         .llseek = vme_user_llseek,
+-        .ioctl = vme_user_ioctl,
++        .unlocked_ioctl = vme_user_unlocked_ioctl,
+ };
+ 
+ 
+@@ -555,6 +555,18 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
+ 	return -EINVAL;
+ }
+ 
++static long
++vme_user_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	int ret;
++
++	lock_kernel();
++	ret = vme_user_ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
++	unlock_kernel();
++
++	return ret;
++}
++
+ 
+ /*
+  * Unallocate a previously allocated buffer
+-- 
+1.7.0.4
 
