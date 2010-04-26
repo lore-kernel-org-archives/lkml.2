@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab0DZRAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 13:00:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35203 "EHLO mx1.redhat.com"
+	id S1753882Ab0DZRBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 13:01:31 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:59875 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753972Ab0DZRAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 13:00:03 -0400
-Date: Mon, 26 Apr 2010 12:33:03 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org
-Subject: [PATCH] mmap: check ->vm_ops before dereferencing
-Message-ID: <20100426123303.5ef4ac01@annuminas.surriel.com>
-In-Reply-To: <20100426100305.GP29093@bicker>
-References: <20100426100305.GP29093@bicker>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751451Ab0DZRBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 13:01:30 -0400
+Date: Mon, 26 Apr 2010 19:01:28 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+       Paolo Minazzi <paolo.minazzi@gmail.com>
+Subject: Re: [PATCH 1/2] [MTD] Move mtd_bdi_*mappable to mtdcore.c
+Message-ID: <20100426170128.GO27497@kernel.dk>
+References: <alpine.LFD.2.00.1004220730280.9086@i5.linux-foundation.org> <20100422162709.GJ27497@kernel.dk> <20100422203358.GB30749@logfs.org> <20100423100532.GN27497@kernel.dk> <20100423205518.GB7008@logfs.org> <20100426094810.GE27497@kernel.dk> <20100426143253.GB4364@logfs.org> <20100426143803.GM27497@kernel.dk> <20100426144532.GN27497@kernel.dk> <20100426163050.GC4364@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100426163050.GC4364@logfs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check whether the VMA has a vm_ops before calling close, just
-like we check vm_ops before calling open a few dozen lines
-higher up in the function.
+On Mon, Apr 26 2010, Jörn Engel wrote:
+> On Mon, 26 April 2010 16:45:32 +0200, Jens Axboe wrote:
+> > 
+> > Took a quick look, and you want bdi_setup_and_register() for the three
+> > bdis listed in mtdbdi.c in mtdcore.c:init_mtd(). Or manual bdi_init()
+> > and bdi_register(). I'll take a look post-dinner. Either is workable,
+> > but since the flags are already setup, the latter may be cleaner.
+> 
+> Ok, here are two patches that appear to solve the problem for me.
+> 
+> diff --git a/drivers/mtd/devices/drais.c b/drivers/mtd/devices/drais.c
+> index b93ff3f..6f81b28 100644
+> --- a/drivers/mtd/devices/drais.c
+> +++ b/drivers/mtd/devices/drais.c
+> @@ -33,7 +33,7 @@
+>  #include <linux/sched.h>
+>  #include "drais.h"
+>  
+> -#undef DEBUG_ERASE
+> +#define DEBUG_ERASE
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reported-by: Dan Carpenter <error27@gmail.com>
+Leftover debugging?
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index f90ea92..456ec6f 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1977,7 +1977,8 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
- 		return 0;
- 
- 	/* Clean everything up if vma_adjust failed. */
--	new->vm_ops->close(new);
-+	if (new->vm_ops && new->vm_ops->close)
-+		new->vm_ops->close(new);
- 	if (new->vm_file) {
- 		if (vma->vm_flags & VM_EXECUTABLE)
- 			removed_exe_file_vma(mm);
+-- 
+Jens Axboe
 
