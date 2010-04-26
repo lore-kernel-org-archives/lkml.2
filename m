@@ -1,78 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab0DZAZt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 20:25:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44899 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302Ab0DZAZs (ORCPT
+	id S1754187Ab0DZAc0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 20:32:26 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:40212 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753332Ab0DZAcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 20:25:48 -0400
-Message-ID: <4BD4DCEA.8060602@oracle.com>
-Date: Sun, 25 Apr 2010 17:23:06 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Sun, 25 Apr 2010 20:32:25 -0400
+Date: Mon, 26 Apr 2010 10:32:13 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Hans-Peter Jansen <hpj@urpla.net>
+Cc: xfs@oss.sgi.com, opensuse-kernel@opensuse.org,
+       linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: 2.6.34-rc3: simple du (on a big xfs tree) triggers oom killer
+ [bisected: 57817c68229984818fea9e614d6f95249c3fb098]
+Message-ID: <20100426003213.GA11437@dastard>
+References: <201004050049.17952.hpj@urpla.net>
+ <20100413091823.GD7544@dastard>
+ <201004131142.33518.hpj@urpla.net>
+ <201004241844.23482.hpj@urpla.net>
 MIME-Version: 1.0
-To: tytso@mit.edu, Greg KH <greg@kroah.com>, Arve Hj?nnev?g <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 5/9] PM: suspend_block: Add debugfs file
-References: <1271984938-13920-1-git-send-email-arve@android.com> <1271984938-13920-2-git-send-email-arve@android.com> <1271984938-13920-3-git-send-email-arve@android.com> <1271984938-13920-4-git-send-email-arve@android.com> <1271984938-13920-5-git-send-email-arve@android.com> <1271984938-13920-6-git-send-email-arve@android.com> <20100423135853.478af057.randy.dunlap@oracle.com> <20100425181517.GA22676@kroah.com> <4BD49D9D.7020004@oracle.com> <20100426000025.GE667@thunk.org>
-In-Reply-To: <20100426000025.GE667@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090203.4BD4DD5D.012A:SCFMA4539811,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004241844.23482.hpj@urpla.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/10 17:00, tytso@mit.edu wrote:
-> On Sun, Apr 25, 2010 at 12:53:01PM -0700, Randy Dunlap wrote:
->>> It's debug-like information, and has more than one value per file, so
->>> debugfs seems like the proper place for it.  I have no objection to it
->>> going there.
->>
->> I have no objection if it really is debug info, but I'm not convinced
->> of that yet.
+On Sat, Apr 24, 2010 at 06:44:22PM +0200, Hans-Peter Jansen wrote:
+> On Tuesday 13 April 2010, 11:42:33 Hans-Peter Jansen wrote:
+> > On Tuesday 13 April 2010, 11:18:23 Dave Chinner wrote:
+> > > On Tue, Apr 13, 2010 at 10:50:35AM +0200, Hans-Peter Jansen wrote:
+> > > > Dave, may I ask you kindly for briefly elaborating on the worst
+> > > > consequences of just reverting this hunk, as I've done before?
+> > >
+> > > Well, given that is the new shrinker code generating the warnings,
+> > > reverting/removing that hunk will render the patch useless :0
+> >
+> > Excuse me, I didn't express myself well. I'm after the consequences of
+> > applying the revert, that I posted a few messages above.
+> >
+> > > I'll get you a working 2.6.33 patch tomorrow - it's dinner time
+> > > now....
+> >
+> > Cool, thanks.
 > 
-> Well, I'll note right now we have a somewhat annoying gap.  If you
-> need to export multiple values such that they are consistent with each
-> other, what's the choice?  /proc, where some (but not all) kernel
-> developers will say, "eeeeeeviilllll".  /sys is explicitly for single
-> value per files only.  And then we have /debugfs, where some pendants
-> are kvetching about whether something is "really" debug information.
+> Obviously and not totally unexpected, really fixing this is going to take 
+> more time.
 
-First of all, I am not a pendant.
+The problem is that the fix I did has been rejected by the upstream
+VM guys, and the stable rules are that fixes have to be in mainline
+before they can be put in a stable release.  So, until we get a fix
+in mainline, it can't be fixed in the -stable kernels.
 
-> One of the things that we sometimes have to tell people who are trying
-> to navigate the maze of upstream submission is that sometimes you need
-> to know who to ignore, and that sometimes rules are guidelines
-> (despite pendants who will NACK based on rules like, "/proc,
-> eeeeewwww", or "/debugfs must only strictly be for debug information".
+> FYI, 2.6.33.2 is still affected from this issue. 
 > 
-> Telling embedded developers who only want to submit their driver that
-> they must create a whole new pseudo-filesystem just to export a single
-> file that in older, simpler times, would have just been thrown into
-> /proc is really not fair, and is precisely the sort of thing that may
-> cause them to say, "f*ck it, these is one too many flaming hoops to
-> jump through".  If we throw up too many barriers, in the long run it's
-> not actually doing Linux a service.
+> Greg, you might search for a server using xfs filesystems and and a i586 
+> kernel >= 2.6.33, (2.6.32.11 of SLE11-SP1 will serve as well), log in as an 
+> ordinary user, do a "du" on /usr, and wait for the other users screaming...
 
-Yeah, I think that it should be in procfs.  It's not strictly closed
-to new files.  (IOW, I'm sure that we can find a bunch of recent files
-added to procfs.)
+Yet there's only been one report of the problem. While that doesn't
+make it any less serious, I don't think the problem you're reporting
+is as widespread as you are making it out to be. We'll get the fix
+done and upstream, and then it will go back to the stable kernel.
 
-> Sure, we need to make sure is code doesn't become a future burden, but
-> does a new file in /proc or something that might not _really_ be debug
-> information showing up in /debugfs really such a terrible thing in
-> terms of making the kernel less maintainable in the future?
+You could always apply the *tested* patches I posted that fix
+the problem, as....
 
-I don't think that we want to make debugfs required to get decent
-tuning info/stats from the kernel.  That's all.
+> BTW, all affected kernels, available from 
+> http://download.opensuse.org/repositories/home:/frispete: have the 
+> offending patch reverted (see subject), do run fine for me (on this 
+> aspect).
 
+... you seem to be capable of doing so.
+
+> Will you guys pass by another round of stable fixes without doing anything 
+> on this issue?
+
+If the process of getting the fix upstream takes longer than another
+stable release cycle, then yes. I'm sorry, but I can't control the
+process, and if someone takes a week to NACK a fix, then you're just
+going to have to wait longer. Feel free to run the fix in the
+meantime - testing it, even if it was NACKed will still help us
+because if it fixes your problem we know that we are fixing the
+_right problem_.
+
+If you can't live with this, then you shouldn't be running the
+latest and greatest kernels in your production environment....
+
+> Dave, this is why I'm kindly asking you: what might be the worst 
+> consequences, if we just do the revert for now (at least for 2.6.33), until 
+> you and Nick came to a final decision on how to solve this issue in the 
+> future.
+
+I've already told you - you could be reintroducing all the really
+hard to reproduce inode reclaim problems (oops, hangs, panics,
+potentially even fs corruption) that the patch in question was part
+of the fix for.  You're running code that changes reclaim in very
+subtle ways and has not been tested upstream in any way - if it
+breaks you get to keep all the broken pieces to yourself...
+
+Cheers,
+
+Dave.
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Dave Chinner
+david@fromorbit.com
