@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab0DZLhB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 07:37:01 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:55496 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240Ab0DZLhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 07:37:00 -0400
-Date: Mon, 26 Apr 2010 12:36:41 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       Christoph Lameter <cl@linux.com>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUGFIX][mm][PATCH] fix migration race in rmap_walk
-Message-ID: <20100426113640.GA8459@csn.ul.ie>
-References: <20100423120148.9ffa5881.kamezawa.hiroyu@jp.fujitsu.com> <20100423095922.GJ30306@csn.ul.ie> <20100423155801.GA14351@csn.ul.ie> <20100424110200.b491ec5f.kamezawa.hiroyu@jp.fujitsu.com> <20100424104324.GD14351@csn.ul.ie> <20100426084901.15c09a29.kamezawa.hiroyu@jp.fujitsu.com> <20100426182838.2cab9844.kamezawa.hiroyu@jp.fujitsu.com> <r2o28c262361004260248s62729484g14a720d37d5916f7@mail.gmail.com>
+	id S1752275Ab0DZL7f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 07:59:35 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:41011 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab0DZL7c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 07:59:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=MWhbWYapjD7zOBCYYkoy1JjQnZv8ZxFhgn3vjvJ/71jud8WuViOhsUd/Pfk7UhoHzL
+         S1YhAuVwk+yiLqg5WVa4ct0HB/F+FkCzdhBRM77Pk5xYHFNRzUSIAIBBq3MiTwusEiOE
+         PF1fcUAe95lXYfRPnqopa9Q5MDmQLZKDFitl4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <r2o28c262361004260248s62729484g14a720d37d5916f7@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4BD57213.7060207@linux.vnet.ibm.com>
+References: <20100322235053.GD9590@csn.ul.ie>
+	 <20100419214412.GB5336@cmpxchg.org>
+	 <4BCD55DA.2020000@linux.vnet.ibm.com>
+	 <20100420153202.GC5336@cmpxchg.org> <4BCDE2F0.3010009@redhat.com>
+	 <4BCE7DD1.70900@linux.vnet.ibm.com>
+	 <4BCEAAC6.7070602@linux.vnet.ibm.com> <4BCEFB4C.1070206@redhat.com>
+	 <4BCFEAD0.4010708@linux.vnet.ibm.com>
+	 <4BD57213.7060207@linux.vnet.ibm.com>
+Date: Mon, 26 Apr 2010 20:59:30 +0900
+Message-ID: <p2y2f11576a1004260459jcaf79962p50e4d29f990019ee@mail.gmail.com>
+Subject: Re: Subject: [PATCH][RFC] mm: make working set portion that is 
+	protected tunable v2
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Nick Piggin <npiggin@suse.de>, gregkh@novell.com,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       Chris Mason <chris.mason@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
+       Corrado Zoccolo <czoccolo@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 06:48:42PM +0900, Minchan Kim wrote:
-> On Mon, Apr 26, 2010 at 6:28 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Mon, 26 Apr 2010 08:49:01 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> >
-> >> On Sat, 24 Apr 2010 11:43:24 +0100
-> >> Mel Gorman <mel@csn.ul.ie> wrote:
-> >
-> >> > It looks nice but it still broke after 28 hours of running. The
-> >> > seq-counter is still insufficient to catch all changes that are made to
-> >> > the list. I'm beginning to wonder if a) this really can be fully safely
-> >> > locked with the anon_vma changes and b) if it has to be a spinlock to
-> >> > catch the majority of cases but still a lazy cleanup if there happens to
-> >> > be a race. It's unsatisfactory and I'm expecting I'll either have some
-> >> > insight to the new anon_vma changes that allow it to be locked or Rik
-> >> > knows how to restore the original behaviour which as Andrea pointed out
-> >> > was safe.
-> >> >
-> >> Ouch.
-> >
-> > Ok, reproduced. Here is status in my test + printk().
-> >
-> >  * A race doesn't seem to happen if swap=off.
-> >    I need to swapon to cause the bug
-> 
-> FYI,
-> 
-> Do you have a swapon/off bomb test?
-> When I saw your mail, I feel it might be culprit.
-> 
-> http://lkml.org/lkml/2010/4/22/762.
-> 
-> It is just guessing. I don't have a time to look into, now.
-> 
+Hi
 
-I haven't tried a swapon/off test but that patch is certainly important
-and closes an important race. A fork-heavy test will routinely hit the
-problem and applying the patch makes it very difficult to reproduce the
-problem. I've added it to my stack while I continue trying to pin down
-when the VMA-changes make a difference.
+I've quick reviewed your patch. but unfortunately I can't write my
+reviewed-by sign.
 
-I'm relooking at the seq counter approach. It appears to very rare the logic
-is actually triggered so reproducing is a problem. I'm still not convinced
-that just locking anon_vma is not the answer there. If it locks and as
-expand_downwards already locks and with the fork-based patch, I think the
-races might be closed but I'm not 100% certain yet.
+> Subject: [PATCH][RFC] mm: make working set portion that is protected tunable v2
+> From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+>
+> *updates in v2*
+> - use do_div
+>
+> This patch creates a knob to help users that have workloads suffering from the
+> fix 1:1 active inactive ratio brought into the kernel by "56e49d21 vmscan:
+> evict use-once pages first".
+> It also provides the tuning mechanisms for other users that want an even bigger
+> working set to be protected.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+We certainly need no knob. because typical desktop users use various
+application,
+various workload. then, the knob doesn't help them.
+
+Probably, I've missed previous discussion. I'm going to find your previous mail.
