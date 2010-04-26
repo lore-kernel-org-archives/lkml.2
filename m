@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab0DZSfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 14:35:22 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:45795 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326Ab0DZSfU (ORCPT
+	id S1752691Ab0DZSnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 14:43:37 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:44162 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751280Ab0DZSng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 14:35:20 -0400
-To: paulmck@linux.vnet.ibm.com
-Cc: Miles Lane <miles.lane@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious rcu_dereference_check() usage
-References: <t2la44ae5cd1004200838w87256e80v9dcde91342b321db@mail.gmail.com>
-	<20100421213543.GO2563@linux.vnet.ibm.com>
-	<20100422145640.GB3228@redhat.com>
-	<20100422160144.GC2524@linux.vnet.ibm.com>
-	<h2xa44ae5cd1004230550uf734c89eo2b1d1945d446068c@mail.gmail.com>
-	<20100423194255.GE2589@linux.vnet.ibm.com>
-	<m2xa44ae5cd1004231559hcf90671asf146a43b4748c2c3@mail.gmail.com>
-	<20100425023455.GM2440@linux.vnet.ibm.com>
-	<w2sa44ae5cd1004250849q73704370vc6af935c70db9b73@mail.gmail.com>
-	<p2ga44ae5cd1004251320j55d23ba7ua0fa14497f623d76@mail.gmail.com>
-	<20100426160925.GD2529@linux.vnet.ibm.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Mon, 26 Apr 2010 11:35:10 -0700
-In-Reply-To: <20100426160925.GD2529@linux.vnet.ibm.com> (Paul E. McKenney's message of "Mon\, 26 Apr 2010 09\:09\:25 -0700")
-Message-ID: <m1hbmydpup.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Mon, 26 Apr 2010 14:43:36 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: linux-pm@lists.linux-foundation.org
+Subject: Invalid opcode on resume from STR on Asus P4P800-VM
+Date: Mon, 26 Apr 2010 20:43:23 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: paulmck@linux.vnet.ibm.com, johannes@sipsolutions.net, lizf@cn.fujitsu.com, guijianfeng@cn.fujitsu.com, jens.axboe@oracle.com, netdev@vger.kernel.org, eric.dumazet@gmail.com, nauman@google.com, linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu, laijs@cn.fujitsu.com, eparis@redhat.com, vgoyal@redhat.com, miles.lane@gmail.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201004262043.24814.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
+Hello,
+I'm trying to debug oops on resume from suspend-to-RAM on Asus P4P800-VM
+mainboard. It crashes with invalid opcode (see below). The kernel is 
+2.6.32-trunk from Debian but the same problem is present with vanilla
+kernels - both newer and older (but screen remains blank most of the time,
+only keyboard LEDs blink indicating an oops).
 
-> Eric Dumazet traced these down to a commit from Eric Biederman.
->
-> If I don't hear from Eric Biederman in a few days, I will attempt a
-> patch, but it would be more likely to be correct coming from someone
-> with a better understanding of the code.  ;-)
+What can cause this problem?
 
-I already replied.
+     8.000339  invalid opcode: 0000 [#1] SMP
+     8.003529  last sysfs file: /sys/power/state
+     8.004265  Modules linked in: sco bridge stp bnep l2cacp crc16 bluetooth rfkill loop i2c_i801 snd_intel8x0 snd_ac97_codec shpchp ac97_bus 
+parport_pc parport
+rng_core pci_hotplug snd_pcsp snd_pcm snd_timer snd soundcore psmouse snd_page_alloc serio_raw evdev processor ext3 jbd mbcache ide_gd_mod 
+ata_generic libata scsi_mod
+ide_pci_generic i915 drm_kms_helper uhci_hcd drm i2c_algo_bit piix i2c_core ehci_hcd intel_agp e100 video ide_core mii floppy agpgart output 
+usbcore nls_base button
+thermal fan thermal_sys [last unloaded: scsi_wait_scan]
+[  148.004265]
+[  148.004265] Pid: 0, comm: swapper Not tainted (2.6.32-trunk-686 #1) To Be Filled By O.E.M.
+[  148.004265] EIP: 0060:[<c1008ff3>] EFLAGS: 00010086 CPU: 0
+[  148.004265] EIP is at mwait_idle+0x4e/0x6c
+[  148.004265] EAX: c1336008 EBX: c1336008 ECX: 00000000 EDX: 00000000
+[  148.004265] ESI: 00000000 EDI: c1339000 EBP: 01642003 ESP: c1337fd0
+[  148.004265]  DS: 0068 ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[  148.004265] Process swapper (pid: 0, ti=c1336000 task=c1364ba0 task.ti=c1336000)
+[  148.004265] Stack:
+[  148.004265] c1396004 c1002388 4176f186 d147e8ee c13c61e8 00099800 c1399800 a05e3121
+[  148.004265] <0> 46258193 c13c61e8 00010800 00000000
+[  148.004265] Call Trace:
+[  148.004265]  [<c1002388>] ? cpu_idle+0x89/0xa5
+[  148.004265]  [<c1399800>] ? start_kernel+0x30c/0x311
+[  148.004265] Code: 8b 15 50 e9 3e c1 f6 44 10 27 02 74 0f 89 e2 81 e2 00 e0 ff ff 8d 42 08 0f ae 7a 08 89 e3 31 c9 81 e3 00 e0 ff ff 89 ca 
+8d 43 08 <0f> 01 c8
+ 0f ae f0 89 f6 f6 43 08 08 75 08 89 c8 fb 0f 01 c9 eb
+[  148.004265] EIP: [<c1008ff3>] mwait_idle+0x4e/0x6c SS:ESP 0068:c1337fd0
+[  148.004265] ---[ end trace b2f32b48d4fa5394 ]---
+[  148.004265] Kernel panic - not syncing: Attempted to kill the idle task!
+[  148.004265] Pid: 0, comm: swapper Tainted: G      D    2.6.32-trunk-686 #1
+[  148.004265] Call Trace:
+[  148.004265]  [<c1259284>] ? panic+0x38/0xe4
+[  148.004265]  [<c1033805>] ? do_exit+0x5a/0x5c6
+[  148.004265]  [<c1259ee3>] ? printk+0xe/0x18
+[  148.004265]  [<c100509d>] ? oops_end+0x98/0x9d
+[  148.004265]  [<c100424b>] ? do_invalid_op+0x0/0x75
+[  148.004265]  [<c10042b7>] ? do_invalid_op+0x6c/0x75
+[  148.004265]  [<c1008ff3>] ? mwait_idle+0x4e/0x6c
+[  148.004265]  [<c1001f10>] ? __switch_to+0xcf/0x141
+[  148.004265]  [<c1046e9b>] ? hrtimer_get_next_event+0x8c/0xa0
+[  148.004265]  [<c103b9da>] ? get_next_timer_interrupt+0x16f/0x1da
+[  148.004265]  [<c1007fd1>] ? sched_clock+0x5/0x7
+[  148.004265]  [<c104829f>] ? sched_clock_local+0x15/0x11b
+[  148.004265]  [<c125af7b>] ? error_code+0x73/0x78
+[  148.004265]  [<c1008ff3>] ? mwait_idle+0x4e/0x6c
+[  148.004265]  [<c1002388>] ? cpu_idle+0x89/0xa5
+[  148.004265]  [<c1399800>] ? start_kernel+0x30c/0x311
+[  148.004265] [drm:drm_fb_helper_panic] *ERROR* panic occured, switching back to text console
 
-http://lkml.org/lkml/2010/4/21/420
 
-Eric
+-- 
+Ondrej Zary
