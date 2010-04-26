@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab0DYXxH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 19:53:07 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44026 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab0DYXxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 19:53:04 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 26 Apr 2010 08:49:01 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-       Christoph Lameter <cl@linux.com>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUGFIX][mm][PATCH] fix migration race in rmap_walk
-Message-Id: <20100426084901.15c09a29.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100424104324.GD14351@csn.ul.ie>
-References: <20100423120148.9ffa5881.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100423095922.GJ30306@csn.ul.ie>
-	<20100423155801.GA14351@csn.ul.ie>
-	<20100424110200.b491ec5f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100424104324.GD14351@csn.ul.ie>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753427Ab0DZAAl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 20:00:41 -0400
+Received: from THUNK.ORG ([69.25.196.29]:56278 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753239Ab0DZAAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Apr 2010 20:00:39 -0400
+Date: Sun, 25 Apr 2010 20:00:25 -0400
+From: tytso@mit.edu
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Greg KH <greg@kroah.com>, Arve Hj?nnev?g <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 5/9] PM: suspend_block: Add debugfs file
+Message-ID: <20100426000025.GE667@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Randy Dunlap <randy.dunlap@oracle.com>,
+	Greg KH <greg@kroah.com>, Arve Hj?nnev?g <arve@android.com>,
+	linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+	Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Len Brown <len.brown@intel.com>
+References: <1271984938-13920-1-git-send-email-arve@android.com>
+ <1271984938-13920-2-git-send-email-arve@android.com>
+ <1271984938-13920-3-git-send-email-arve@android.com>
+ <1271984938-13920-4-git-send-email-arve@android.com>
+ <1271984938-13920-5-git-send-email-arve@android.com>
+ <1271984938-13920-6-git-send-email-arve@android.com>
+ <20100423135853.478af057.randy.dunlap@oracle.com>
+ <20100425181517.GA22676@kroah.com>
+ <4BD49D9D.7020004@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BD49D9D.7020004@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Apr 2010 11:43:24 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
-
-> On Sat, Apr 24, 2010 at 11:02:00AM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Fri, 23 Apr 2010 16:58:01 +0100
-> > Mel Gorman <mel@csn.ul.ie> wrote:
-> > 
-> > > > I had considered this idea as well as it is vaguely similar to how zones get
-> > > > resized with a seqlock. I was hoping that the existing locking on anon_vma
-> > > > would be usable by backing off until uncontended but maybe not so lets
-> > > > check out this approach.
-> > > > 
-> > > 
-> > > A possible combination of the two approaches is as follows. It uses the
-> > > anon_vma lock mostly except where the anon_vma differs between the page
-> > > and the VMAs being walked in which case it uses the seq counter. I've
-> > > had it running a few hours now without problems but I'll leave it
-> > > running at least 24 hours.
-> > > 
-> > ok, I'll try this, too.
-> > 
-> > 
-> > > ==== CUT HERE ====
-> > >  mm,migration: Prevent rmap_walk_[anon|ksm] seeing the wrong VMA information by protecting against vma_adjust with a combination of locks and seq counter
-> > > 
-> > > vma_adjust() is updating anon VMA information without any locks taken.
-> > > In constract, file-backed mappings use the i_mmap_lock. This lack of
-> > > locking can result in races with page migration. During rmap_walk(),
-> > > vma_address() can return -EFAULT for an address that will soon be valid.
-> > > This leaves a dangling migration PTE behind which can later cause a
-> > > BUG_ON to trigger when the page is faulted in.
-> > > 
-> > > With the recent anon_vma changes, there is no single anon_vma->lock that
-> > > can be taken that is safe for rmap_walk() to guard against changes by
-> > > vma_adjust(). Instead, a lock can be taken on one VMA while changes
-> > > happen to another.
-> > > 
-> > > What this patch does is protect against updates with a combination of
-> > > locks and seq counters. First, the vma->anon_vma lock is taken by
-> > > vma_adjust() and the sequence counter starts. The lock is released and
-> > > the sequence ended when the VMA updates are complete.
-> > > 
-> > > The lock serialses rmap_walk_anon when the page and VMA share the same
-> > > anon_vma. Where the anon_vmas do not match, the seq counter is checked.
-> > > If a change is noticed, rmap_walk_anon drops its locks and starts again
-> > > from scratch as the VMA list may have changed. The dangling migration
-> > > PTE bug was not triggered after several hours of stress testing with
-> > > this patch applied.
-> > > 
-> > > [kamezawa.hiroyu@jp.fujitsu.com: Use of a seq counter]
-> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > 
-> > I think this patch is nice!
-> > 
+On Sun, Apr 25, 2010 at 12:53:01PM -0700, Randy Dunlap wrote:
+> > It's debug-like information, and has more than one value per file, so
+> > debugfs seems like the proper place for it.  I have no objection to it
+> > going there.
 > 
-> It looks nice but it still broke after 28 hours of running. The
-> seq-counter is still insufficient to catch all changes that are made to
-> the list. I'm beginning to wonder if a) this really can be fully safely
-> locked with the anon_vma changes and b) if it has to be a spinlock to
-> catch the majority of cases but still a lazy cleanup if there happens to
-> be a race. It's unsatisfactory and I'm expecting I'll either have some
-> insight to the new anon_vma changes that allow it to be locked or Rik
-> knows how to restore the original behaviour which as Andrea pointed out
-> was safe.
-> 
-Ouch. Hmm, how about the race in fork() I pointed out ?
+> I have no objection if it really is debug info, but I'm not convinced
+> of that yet.
 
-Thanks,
--Kame
+Well, I'll note right now we have a somewhat annoying gap.  If you
+need to export multiple values such that they are consistent with each
+other, what's the choice?  /proc, where some (but not all) kernel
+developers will say, "eeeeeeviilllll".  /sys is explicitly for single
+value per files only.  And then we have /debugfs, where some pendants
+are kvetching about whether something is "really" debug information.
 
+One of the things that we sometimes have to tell people who are trying
+to navigate the maze of upstream submission is that sometimes you need
+to know who to ignore, and that sometimes rules are guidelines
+(despite pendants who will NACK based on rules like, "/proc,
+eeeeewwww", or "/debugfs must only strictly be for debug information".
+
+Telling embedded developers who only want to submit their driver that
+they must create a whole new pseudo-filesystem just to export a single
+file that in older, simpler times, would have just been thrown into
+/proc is really not fair, and is precisely the sort of thing that may
+cause them to say, "f*ck it, these is one too many flaming hoops to
+jump through".  If we throw up too many barriers, in the long run it's
+not actually doing Linux a service.
+
+Sure, we need to make sure is code doesn't become a future burden, but
+does a new file in /proc or something that might not _really_ be debug
+information showing up in /debugfs really such a terrible thing in
+terms of making the kernel less maintainable in the future?
+
+Regards,
+
+						- Ted
