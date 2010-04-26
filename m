@@ -1,118 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab0DZX3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 19:29:08 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:43275 "EHLO mx2.netapp.com"
+	id S1753991Ab0DZX3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 19:29:47 -0400
+Received: from metis.kspace.net ([65.99.219.207]:48574 "EHLO metis.kspace.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753431Ab0DZX3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 19:29:04 -0400
-X-IronPort-AV: E=Sophos;i="4.52,276,1270450800"; 
-   d="dif'?scan'208";a="350608385"
-Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Robert Wimmer <kernel@tauceti.net>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       bugzilla-daemon@bugzilla.kernel.org,
-       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4BD61147.40709@tauceti.net>
-References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net>
-	 <20100419131718.GB16918@redhat.com>
-	 <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net>
-	 <20100421094249.GC30855@redhat.com>
-	 <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net>
-	 <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net>
-	 <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net>
-	 <20100425204916.GA12686@redhat.com>
-	 <1272284154.4252.34.camel@localhost.localdomain>
-	 <4BD5F6C5.8080605@tauceti.net>
-	 <1272315854.8984.125.camel@localhost.localdomain>
-	 <4BD61147.40709@tauceti.net>
-Content-Type: multipart/mixed; boundary="=-VJUQJgQ37UgEeLWr5kvS"
-Organization: NetApp
-Date: Mon, 26 Apr 2010 19:28:56 -0400
-Message-ID: <1272324536.16814.45.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-X-OriginalArrivalTime: 26 Apr 2010 23:28:58.0085 (UTC) FILETIME=[3E8F5150:01CAE598]
+	id S1752779Ab0DZX3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 19:29:46 -0400
+X-Greylist: delayed 1071 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Apr 2010 19:29:46 EDT
+Date: Mon, 26 Apr 2010 18:11:54 -0500
+From: Ryan Kuester <rkuester@metis.kspace.net>
+To: Eric Moore <Eric.Moore@lsi.com>, Kashyap Desai <kashyap.desai@lsi.com>,
+       DL-MPTFusionLinux@lsi.com
+Cc: support@lsi.com, linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: mptsas hangs caused by ATA pass-through explained
+Message-ID: <20100426231154.GB577@kspace.net>
+Mail-Followup-To: Eric Moore <Eric.Moore@lsi.com>,
+	Kashyap Desai <kashyap.desai@lsi.com>, DL-MPTFusionLinux@lsi.com,
+	support@lsi.com, linux-scsi@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I may have an explanation for the LSI 1068 HBA hangs provoked by ATA
+pass-through commands, in particular by smartctl.
 
---=-VJUQJgQ37UgEeLWr5kvS
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+First, my version of the symptoms.  On an LSI SAS1068E B3 HBA running
+01.29.00.00 firmware, with SATA disks, and with smartd running, I'm seeing
+occasional task, bus, and host resets, some of which lead to hard faults of
+the HBA requiring a reboot.  Abusively looping the smartctl command,
 
-On Tue, 2010-04-27 at 00:18 +0200, Robert Wimmer wrote:=20
-> > Sure. In addition to what you did above, please do
-> >
-> > mount -t debugfs none /sys/kernel/debug
-> >
-> > and then cat the contents of the pseudofile at
-> >
-> > /sys/kernel/debug/tracing/stack_trace
-> >
-> > Please do this more or less immediately after you've finished mounting
-> > the NFSv4 client.
-> >  =20
->=20
-> I've uploaded the stack trace. It was generated
-> directly after mounting. Here are the stacks:
->=20
-> After mounting:
-> https://bugzilla.kernel.org/attachment.cgi?id=3D26153
-> After the soft lockup:
-> https://bugzilla.kernel.org/attachment.cgi?id=3D26154
-> The dmesg output of the soft lockup:
-> https://bugzilla.kernel.org/attachment.cgi?id=3D26155
->=20
-> > Does your server have the 'crossmnt' or 'nohide' flags set, or does it
-> > use the 'refer' export option anywhere? If so, then we might have to
-> > test further, since those may trigger the NFSv4 submount feature.
-> >  =20
-> The server has the following settings:
-> rw,nohide,insecure,async,no_subtree_check,no_root_squash
->=20
-> Thanks!
-> Robert
->=20
->=20
+    # while true; do smartctl -a /dev/sdb > /dev/null; done
 
-That second trace is more than 5.5K deep, more than half of which is
-socket overhead :-(((.
+dramatically increases the frequency of these failures to nearly one per
+minute.  A high IO load through the HBA while looping smartctl seems to
+improve the chance of a full scsi host reset or a non-recoverable hang.
 
-The process stack does not appear to have overflowed, however that trace
-doesn't include any IRQ stack overhead.
+I reduced what smartctl was doing down to a simple test case which
+causes the hang with a single IO when pointed at the sd interface.  See
+the code at the bottom of this e-mail.  It uses an SG_IO ioctl to issue
+a single pass-through ATA identify device command.  If the buffer
+userspace gives for the read data has certain alignments, the task is
+issued to the HBA but the HBA fails to respond.  If run against the sg
+interface, neither the test code nor smartctl causes a hang.
 
-OK... So what happens if we get rid of half of that trace by forcing
-asynchronous tasks such as this to run entirely in rpciod instead of
-first trying to run in the process context?
+sd and sg handle the SG_IO ioctl slightly differently.  Unless you
+specifically set a flag to do direct IO, sg passes a buffer of its own,
+which is page-aligned, to the block layer and later copies the result
+into the userspace buffer regardless of its alignment.  sd, on the other
+hand, always does direct IO unless the userspace buffer fails an
+alignment test at block/blk-map.c line 57, in which case a page-aligned
+buffer is created and used for the transfer.
 
-See the attachment...
+The alignment test currently checks for word-alignment, the default
+setup by scsi_lib.c; therefore, userspace buffers of almost any
+alignment are given directly to the HBA as DMA targets.  The LSI 1068
+hardware doesn't seem to like at least a couple of the alignments which
+cross a page boundary (see the test code below).  Curiously, many
+page-boundary-crossing alignments do work just fine.
 
---=-VJUQJgQ37UgEeLWr5kvS
-Content-Disposition: attachment; filename="linux-2.6.34-000-reduce_async_rpc_stack_usage.dif"
-Content-Type: text/plain; name="linux-2.6.34-000-reduce_async_rpc_stack_usage.dif"; charset="UTF-8"
-Content-Transfer-Encoding: base64
+So, either the hardware has an bug handling certain alignments or the
+hardware has a stricter alignment requirement than the driver is
+advertising.  If stricter alignment is required, then in no case should
+misaligned buffers from userspace be allowed through without being
+bounced or at least causing an error to be returned.
 
-U1VOUlBDOiBSZWR1Y2UgYXN5bmNocm9ub3VzIFJQQyB0YXNrIHN0YWNrIHVzYWdlDQoNCkZyb206
-IFRyb25kIE15a2xlYnVzdCA8VHJvbmQuTXlrbGVidXN0QG5ldGFwcC5jb20+DQoNCldlIHNob3Vs
-ZCBqdXN0IGZhcm0gb3V0IGFzeW5jaHJvbm91cyBSUEMgdGFza3MgaW1tZWRpYXRlbHkgdG8gcnBj
-aW9kLi4uDQoNClNpZ25lZC1vZmYtYnk6IFRyb25kIE15a2xlYnVzdCA8VHJvbmQuTXlrbGVidXN0
-QG5ldGFwcC5jb20+DQotLS0NCg0KIG5ldC9zdW5ycGMvc2NoZWQuYyB8ICAgIDcgKysrKysrLQ0K
-IDEgZmlsZXMgY2hhbmdlZCwgNiBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9ucygtKQ0KDQoNCmRp
-ZmYgLS1naXQgYS9uZXQvc3VucnBjL3NjaGVkLmMgYi9uZXQvc3VucnBjL3NjaGVkLmMNCmluZGV4
-IGM4OTc5Y2UuLjIyYTA5N2YgMTAwNjQ0DQotLS0gYS9uZXQvc3VucnBjL3NjaGVkLmMNCisrKyBi
-L25ldC9zdW5ycGMvc2NoZWQuYw0KQEAgLTcyMCw3ICs3MjAsMTIgQEAgdm9pZCBycGNfZXhlY3V0
-ZShzdHJ1Y3QgcnBjX3Rhc2sgKnRhc2spDQogew0KIAlycGNfc2V0X2FjdGl2ZSh0YXNrKTsNCiAJ
-cnBjX3NldF9ydW5uaW5nKHRhc2spOw0KLQlfX3JwY19leGVjdXRlKHRhc2spOw0KKwlpZiAoUlBD
-X0lTX0FTWU5DKHRhc2spKSB7DQorCQlJTklUX1dPUksoJnRhc2stPnUudGtfd29yaywgcnBjX2Fz
-eW5jX3NjaGVkdWxlKTsNCisJCXF1ZXVlX3dvcmsocnBjaW9kX3dvcmtxdWV1ZSwgJnRhc2stPnUu
-dGtfd29yayk7DQorDQorCX0gZWxzZQ0KKwkJX19ycGNfZXhlY3V0ZSh0YXNrKTsNCiB9DQogDQog
-c3RhdGljIHZvaWQgcnBjX2FzeW5jX3NjaGVkdWxlKHN0cnVjdCB3b3JrX3N0cnVjdCAqd29yaykN
-Cg==
+It seems the mptsas driver could use blk_queue_dma_alignment() to advertise
+a stricter alignment requirement.  If it does, sd does the right thing and
+bounces misaligned buffers (see block/blk-map.c line 57).  The following
+patch to 2.6.34-rc5 makes my symptoms go away.  I'm sure this is the wrong
+place for this code, but it gets my idea across.
+
+diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
+index 6796597..1e034ad 100644
+--- a/drivers/message/fusion/mptscsih.c
++++ b/drivers/message/fusion/mptscsih.c
+@@ -2450,6 +2450,8 @@ mptscsih_slave_configure(struct scsi_device *sdev)
+ 		ioc->name,sdev->tagged_supported, sdev->simple_tags,
+ 		sdev->ordered_tags));
+ 
++	blk_queue_dma_alignment (sdev->request_queue, 512 - 1);
++
+ 	return 0;
+ }
+
+I look forward to hearing from you guys who know this hardware and code
+better than I do.  Is the hardware at fault, or should the driver be
+shielding the hardware better?  Where's the right place to add this code, if
+it's the right fix?
+
+Does this `fix' the problem for anyone besides me?
+
+Regards,
+-- Ryan Kuester
 
 
---=-VJUQJgQ37UgEeLWr5kvS--
+Here is a minimal bit of test code which causes the error.  BEWARE: this
+will hose the HBA at which you point it.  If that's controlling your
+root disk, you may hang your machine.
+
+/*
+ * sg_bomb -- send SG_IO ioctl which causes LSI 1068 HBA to hang
+ *
+ *   usage: sg_bomb <device>
+ *    e.g.: sg_bomb /dev/sdb
+ *    e.g.: sg_bomb /dev/sg1
+ *
+ *   Modify offset_into_page to adjust the degree of buffer misalignment.
+ */
+
+#include <unistd.h>
+#include <scsi/sg.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <stdlib.h>
+
+int main(int argc, char* argv[])
+{
+    char* filename = argv[1];
+    unsigned int offset_into_page = 0xe40;
+    // works: unsigned int offset_into_page = 0x0;
+    // hangs: unsigned int offset_into_page = 0xf00;
+    // works: unsigned int offset_into_page = 0xf04;
+
+    unsigned char ata_identify_cmd[] = {0x85, 0x08, 0x0e, 0, 0, 0, 0x01,
+        0, 0, 0, 0, 0, 0, 0, 0xec, 0};
+    unsigned char sense[32];
+    unsigned char* data = valloc(0x2000) + offset_into_page;
+    struct sg_io_hdr hdr = {
+        .interface_id = 'S',
+        .dxfer_direction = SG_DXFER_FROM_DEV,
+        .cmdp = ata_identify_cmd,
+        .cmd_len = 16,
+        .dxferp = data,
+        .dxfer_len = 512,
+        .sbp = sense,
+        .mx_sb_len = sizeof(sense),
+        .timeout = 5000,
+    };
+
+    int fd;
+    if ((fd = open(filename, O_RDWR|O_NONBLOCK)) < 0) 
+        perror();
+
+    return ioctl(fd, SG_IO, &hdr);
+}
