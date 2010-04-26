@@ -1,121 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471Ab0DZOdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 10:33:18 -0400
-Received: from lazybastard.de ([212.112.238.170]:47706 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab0DZOdR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 10:33:17 -0400
-Date: Mon, 26 Apr 2010 16:32:53 +0200
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-       Paolo Minazzi <paolo.minazzi@gmail.com>
-Subject: Re: [Patch] Catch filesystems lacking s_bdi
-Message-ID: <20100426143253.GB4364@logfs.org>
-References: <20100419102056.GS27497@kernel.dk> <20100422055448.GA27309@logfs.org> <20100422062631.GC27309@logfs.org> <alpine.LFD.2.00.1004220724170.9086@i5.linux-foundation.org> <alpine.LFD.2.00.1004220730280.9086@i5.linux-foundation.org> <20100422162709.GJ27497@kernel.dk> <20100422203358.GB30749@logfs.org> <20100423100532.GN27497@kernel.dk> <20100423205518.GB7008@logfs.org> <20100426094810.GE27497@kernel.dk>
+	id S1751961Ab0DZOem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 10:34:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55934 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128Ab0DZOek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 10:34:40 -0400
+Message-ID: <4BD5A43D.2060009@kernel.org>
+Date: Mon, 26 Apr 2010 16:33:33 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100426094810.GE27497@kernel.dk>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Pekka J Enberg <penberg@cs.helsinki.fi>
+CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Christoph Lameter <cl@linux.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Alex Shi <alex.shi@intel.com>, tim.c.chen@intel.com, npiggin@suse.de,
+       rientjes@google.com
+Subject: Re: [Bug #15713] hackbench regression due to commit 9dfc6e68bfe6e
+References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.vjH.sRSzLB@tosh>  <alpine.DEB.2.00.1004221045270.1204@router.home>  <4BD086D0.9090309@cs.helsinki.fi>  <alpine.DEB.2.00.1004232214520.29018@melkki.cs.helsinki.fi>  <1272265147.2078.648.camel@ymzhang.sh.intel.com>  <i2m84144f021004260022nb58e3e27vd351d6646b99f265@mail.gmail.com>  <4BD564BE.6020700@kernel.org> <x2o84144f021004260309k9edf9e88t92e4c988d12de234@mail.gmail.com> <4BD570A8.90304@kernel.org> <alpine.DEB.2.00.1004261710500.16526@melkki.cs.helsinki.fi>
+In-Reply-To: <alpine.DEB.2.00.1004261710500.16526@melkki.cs.helsinki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 26 Apr 2010 14:33:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 April 2010 11:48:11 +0200, Jens Axboe wrote:
-> On Fri, Apr 23 2010, Jörn Engel wrote:
-> > On Fri, 23 April 2010 12:05:32 +0200, Jens Axboe wrote:
-> > > 
-> > > So it's probably safe and good enough as-is, I'll add it. Thanks!
-> > 
-> > I cannot see this patch in your tree yet.  Could be the weekend or a
-> > deliberate decision not to send this for 2.6.34-rc anymore.
-> 
-> It's there, I put it in yesterday. It's definitely 2.6.34-rc material, I
-> hope to submit it tonight.
+Hello, Pekka.
 
-Ok, thanks.
+On 04/26/2010 04:17 PM, Pekka J Enberg wrote:
+> Even if the cacheline is dirtied like in the struct kmem_cache_cpu case?
 
-> > In case it was a deliberate decision, can we please make it explicit?  I
-> > don't like the idea of adding a BUG_ON() that potentially triggers for
-> > thousands of people this late in the stabilization process - but it is
-> > better than having people lose data.  Even if we already ran two stable
-> > kernels that way.
-> > 
-> > Damned if you do, damned if you don't. :(
-> 
-> Yeah, it's a bad situation to be in. I changed that BUG_ON() to a
-> WARN_ON(). I'm not too worried about that part, I'm more worried about
-> the file system changed. OTOH, they do lack proper flushing now, so it's
-> likely not a huge risk from that perspective.
+If my hypothesis is the case, I don't think dirtying or not would
+matter.  It's about two cpus sharing a cache line which usually is a
+bad idea but in this case happens to be a good idea because the two
+cpus sit on the same cache.
 
-It is worse still.  Using mtd->backing_dev_info results in 
-kernel BUG at fs/fs-writeback.c:157
+> If that's the case, don't we want the per-CPU allocator to support back
+> to back allocation for cores that are in the same package?
 
-which is BUG_ON(!work->seen); in bdi_queue_work().  Logfs is affected
-and I bet jffs2 is as well.  So much for dwmw2 or me actually testing
-the fix. :(
+I think it's probably gonna be an over-engineering effort.  W/ percpu
+allocator the rest of the cacheline would likely be occupied by
+another percpu item for the cpu, so it's not really wasted.  It's just
+used differently.  It would be good if we have a way to better pack
+small hot ones (for the same cpu) into the same cachelines but I don't
+think it would be wise to interleave stuff from different cpus.  It's
+not like there's only single way to save a cacheline after all.
 
-I did a hexdump to see what sb->s_bdi actually contained and the result
-was this:
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-00 00 00 00 00 00 00 00                          ........
-
-Which should be mtd_bdi_unmappable.  And at this point I have to admit
-being clueless.  What exactly should a struct backing_dev_info contain
-and for what purposes?  And where is this documented?
-
-Jörn
+Thanks.
 
 -- 
-He who knows others is wise.
-He who knows himself is enlightened.
--- Lao Tsu
+tejun
