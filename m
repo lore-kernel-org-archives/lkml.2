@@ -1,45 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474Ab0DZSpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 14:45:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62158 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753515Ab0DZSpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 14:45:13 -0400
-Date: Mon, 26 Apr 2010 15:45:10 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com
-Subject: Re: [PATCH 1/6] Enable pvclock flags in vcpu_time_info structure
-Message-ID: <20100426184510.GF16166@mothafucka.localdomain>
-References: <1272303988-21929-1-git-send-email-glommer@redhat.com>
- <1272303988-21929-2-git-send-email-glommer@redhat.com>
- <4BD5D76D.9020601@goop.org>
+	id S1754139Ab0DZSu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 14:50:26 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:35398 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab0DZSuY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 14:50:24 -0400
+Date: Mon, 26 Apr 2010 13:50:07 -0500
+From: "Serge E. Hallyn" <serue@us.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       James Morris <jmorris@namei.org>,
+       David Safford <safford@watson.ibm.com>,
+       Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH 03/14] xattr: define vfs_getxattr_alloc and
+ vfs_xattr_cmp
+Message-ID: <20100426185007.GA2029@us.ibm.com>
+References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <1271886594-3719-4-git-send-email-zohar@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BD5D76D.9020601@goop.org>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+In-Reply-To: <1271886594-3719-4-git-send-email-zohar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 11:11:57AM -0700, Jeremy Fitzhardinge wrote:
-> On 04/26/2010 10:46 AM, Glauber Costa wrote:
-> > This patch removes one padding byte and transform it into a flags
-> > field. New versions of guests using pvclock will query these flags
-> > upon each read.
-> >   
+Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
+> vfs_getxattr_alloc() and vfs_xattr_cmp() are two new kernel xattr
+> helper functions.  vfs_getxattr_alloc() first allocates memory for
+> the requested xattr and then retrieves it. vfs_xattr_cmp() compares
+> a given value with the contents of an extended attribute.
 > 
-> Is this necessary?  Why not just make the pvclock driver maintain a
-> local flag set, and have the HV backend call into it to update it.  Why
-> does it need to be part of the pvclock structure?
-Because it is already there, and we have plenty of space left?
+> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 
-There are obvious other ways, but I don't see any of them being simpler.
-If we go by the method you suggested, we'd have, for instance, to register
-the memory area where this flags lives. Which is a duplication of the
-infrastructure already present in kvmclock.
+(Heh, *thought* I had a hole to point to, but nope, looks good)
 
+Acked-by: Serge Hallyn <serue@us.ibm.com>
 
+thanks,
+-serge
+
+> 
+> diff --git a/fs/xattr.c b/fs/xattr.c
+> index 46f87e8..341ad71 100644
+> --- a/fs/xattr.c
+> +++ b/fs/xattr.c
+> @@ -159,6 +159,64 @@ out_noalloc:
+>  }
+>  EXPORT_SYMBOL_GPL(xattr_getsecurity);
+> 
+> +/*
+> + * vfs_getxattr_alloc - allocate memory, if necessary, before calling getxattr
+> + *
+> + * Allocate memory, if not already allocated, or re-allocate correct size,
+> + * before retrieving the extended attribute.
+> + *
+> + * Returns the result of alloc, if failed, or the getxattr operation.
+> + */
+> +ssize_t
+> +vfs_getxattr_alloc(struct dentry *dentry, const char *name, char **xattr_value,
+> +		   size_t xattr_size, gfp_t flags)
+> +{
+> +	struct inode *inode = dentry->d_inode;
+> +	char *value = *xattr_value;
+> +	int error;
+> +
+> +	error = xattr_permission(inode, name, MAY_READ);
+> +	if (error)
+> +		return error;
+> +
+> +	if (!inode->i_op->getxattr)
+> +		return -EOPNOTSUPP;
+> +
+> +	error = inode->i_op->getxattr(dentry, name, NULL, 0);
+> +	if (error < 0)
+> +		return error;
+> +
+> +	if (!value || (error > xattr_size)) {
+> +		value = krealloc(*xattr_value, error + 1, flags);
+> +		if (!value)
+> +			return -ENOMEM;
+> +		memset(value, 0, error + 1);
+> +	}
+> +
+> +	error = inode->i_op->getxattr(dentry, name, value, error);
+> +	*xattr_value = value;
+> +	return error;
+> +}
+> +
+> +/* Compare an extended attribute value with the given value */
+> +int vfs_xattr_cmp(struct dentry *dentry, const char *xattr_name,
+> +		  const char *value, size_t size, gfp_t flags)
+> +{
+> +	char *xattr_value = NULL;
+> +	int rc;
+> +
+> +	rc = vfs_getxattr_alloc(dentry, xattr_name, &xattr_value, 0, flags);
+> +	if (rc < 0)
+> +		return rc;
+> +
+> +	if ((rc != size) || (memcmp(xattr_value, value, rc) != 0))
+> +		rc = -EINVAL;
+> +	else
+> +		rc = 0;
+> +	kfree(xattr_value);
+> +	return rc;
+> +}
+> +
+>  ssize_t
+>  vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
+>  {
+> diff --git a/include/linux/xattr.h b/include/linux/xattr.h
+> index d079bec..8698de3 100644
+> --- a/include/linux/xattr.h
+> +++ b/include/linux/xattr.h
+> @@ -68,7 +68,10 @@ ssize_t generic_getxattr(struct dentry *dentry, const char *name, void *buffer,
+>  ssize_t generic_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size);
+>  int generic_setxattr(struct dentry *dentry, const char *name, const void *value, size_t size, int flags);
+>  int generic_removexattr(struct dentry *dentry, const char *name);
+> -
+> +ssize_t vfs_getxattr_alloc(struct dentry *dentry, const char *name,
+> +			   char **xattr_value, size_t size, gfp_t flags);
+> +int vfs_xattr_cmp(struct dentry *dentry, const char *xattr_name,
+> +		  const char *value, size_t size, gfp_t flags);
+>  #endif  /*  __KERNEL__  */
+> 
+>  #endif	/* _LINUX_XATTR_H */
+> -- 
+> 1.6.6.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
