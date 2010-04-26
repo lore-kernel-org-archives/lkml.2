@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab0DZJbZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 05:31:25 -0400
-Received: from mail.gmx.net ([213.165.64.20]:59193 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751010Ab0DZJbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 05:31:24 -0400
-X-Authenticated: #15668376
-X-Provags-ID: V01U2FsdGVkX187lrZk0Qs7klf1EAr0EOtBwq5ANL3uOEXC2iFJcv
-	Zz0cw4O/sVEbFj
-From: Sven Eckelmann <sven.eckelmann@gmx.de>
-To: linux-kernel@vger.kernel.org
-Subject: Range of 24/32 bit for atomic_t since 2.6.3
-Date: Mon, 26 Apr 2010 11:31:19 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-3-amd64; KDE/4.4.2; x86_64; ; )
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1373082.otb4QLlisk";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha512
+	id S1752611Ab0DZJcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 05:32:43 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:51519 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755Ab0DZJcl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 05:32:41 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 26 Apr 2010 18:28:38 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+       Christoph Lameter <cl@linux.com>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX][mm][PATCH] fix migration race in rmap_walk
+Message-Id: <20100426182838.2cab9844.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100426084901.15c09a29.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100423120148.9ffa5881.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100423095922.GJ30306@csn.ul.ie>
+	<20100423155801.GA14351@csn.ul.ie>
+	<20100424110200.b491ec5f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100424104324.GD14351@csn.ul.ie>
+	<20100426084901.15c09a29.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004261131.20178.sven.eckelmann@gmx.de>
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.65000000000000002
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1373082.otb4QLlisk
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Mon, 26 Apr 2010 08:49:01 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Hi,
+> On Sat, 24 Apr 2010 11:43:24 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
 
-currently arch/mn10300/include/asm/atomic.h and include/asm-generic/atomic.=
-h=20
-warns right before atomic_read/atomic_set/atomic_add_return/ atomic_sub_ret=
-urn=20
-that atomic_t only guarantees a useful range of 24 bits.=20
-Documentation/atomic_ops.txt informs about the historical reason why this w=
-as=20
-true for 32-bit Sparc - something that was changes in linux 2.6.3 using a h=
-ash=20
-array with spinlocks [1].
+> > It looks nice but it still broke after 28 hours of running. The
+> > seq-counter is still insufficient to catch all changes that are made to
+> > the list. I'm beginning to wonder if a) this really can be fully safely
+> > locked with the anon_vma changes and b) if it has to be a spinlock to
+> > catch the majority of cases but still a lazy cleanup if there happens to
+> > be a race. It's unsatisfactory and I'm expecting I'll either have some
+> > insight to the new anon_vma changes that allow it to be locked or Rik
+> > knows how to restore the original behaviour which as Andrea pointed out
+> > was safe.
+> > 
+> Ouch. 
 
-Is it save to assume that atomic_t provides us the full range of 32 bit aft=
-er=20
-2.6.3 and can those statements in both atomic.h be removed?
+Ok, reproduced. Here is status in my test + printk().
 
-Kind regards,
-	Sven Eckelmann
+ * A race doesn't seem to happen if swap=off. 
+    I need to swapon to cause the bug.
+ * Before unmap, mapcount=1, SwapCache for anonymous memory.
+   old page's flag was SWAPCACHE, Active, Uptodate, Referenced, Locked.
+ * After remap, mapcount=0, return code=0.
+   new page's flag after remap was SwapCache, Active, Dirty, Uptodate, Referenced.
 
-[1] http://lwn.net/Articles/71732/
+(Hmm, dirty bit can be added by try_to_unamp().)
 
---nextPart1373082.otb4QLlisk
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+-Kame
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQIcBAABCgAGBQJL1V1nAAoJEF2HCgfBJntG/9gP/2xkV8/daPwEOhczZba2Mpqs
-Shon/ZfAUMyJP0CTgqmeiNz1siYcKDr9CyNEiDKpHHCiAivvJv7/GxBtrmr3tAUh
-EH17FOzXflt2YtYwmpCz46L2LlaFTUZRkAFh17jqpBzFd1KqMsPw5Dyl/sYcNYjE
-OakT/itqskkxyuDnpljuHKSZGfmar1EjAkmpkTsQVDkQCzA7wgoqqmQGChooP0Bs
-eBX/ZOyKMyW15Z06Hq1WuKADGvXN/BhTM1h3l1BaP2ZMDHNw3CRscxq1S3CMr1ja
-2NtTL4vMvy+w8uE1gaOUsJbGwDYAFDz6o3hIbdozxIDaZ4PTa/FP8TwcyjsfZoDW
-ty7OLafm5ZYe2FE4qLEV41kzNsKBpnhuC6L4vZqBuR+grCpjY3ihzKpRxZ7uoq0u
-Y2xPX26PLdMab045NdrhoubsYWS87z79r971kXWp70RgtOryHFnQ03ygXYsEksJt
-CGxkwoBZodxEVhF3GkEgHwV1mkBaISK4p7kIrpyUTa3HE1nM/v9eK9bOmASpNRo6
-wrN+9myOmF8PQuUKXviSaT3rx4hc1fjLsiT4iiJCtNdO7hEQBpezwOBrbZ8XRl+l
-ahwMH3pzMNHHUimC1pEfb2wzmKC3dLDqW4Rb6Lc/NwcpEjvzRx+gFFjiMJH/NMl0
-dgOASMAz3qeRCWV9nQ9Q
-=CcWx
------END PGP SIGNATURE-----
 
---nextPart1373082.otb4QLlisk--
