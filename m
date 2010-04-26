@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab0DZAqz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Apr 2010 20:46:55 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:58873 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751017Ab0DZAqx (ORCPT
+	id S1753962Ab0DZAvo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Apr 2010 20:51:44 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58806 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753387Ab0DZAvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Apr 2010 20:46:53 -0400
-Date: Mon, 26 Apr 2010 10:46:45 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       xfs@oss.sgi.com
-Subject: Re: [PATCH 4/4] xfs: remove nr_to_write writeback windup.
-Message-ID: <20100426004645.GC11437@dastard>
-References: <1271731314-5893-1-git-send-email-david@fromorbit.com>
- <1271731314-5893-5-git-send-email-david@fromorbit.com>
- <20100422190936.GB19286@quack.suse.cz>
+	Sun, 25 Apr 2010 20:51:42 -0400
+Message-ID: <4BD4E354.6010803@oracle.com>
+Date: Sun, 25 Apr 2010 17:50:28 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100422190936.GB19286@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: tytso@mit.edu, Greg KH <greg@kroah.com>, Arve Hj?nnev?g <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 5/9] PM: suspend_block: Add debugfs file
+References: <1271984938-13920-2-git-send-email-arve@android.com> <1271984938-13920-3-git-send-email-arve@android.com> <1271984938-13920-4-git-send-email-arve@android.com> <1271984938-13920-5-git-send-email-arve@android.com> <1271984938-13920-6-git-send-email-arve@android.com> <20100423135853.478af057.randy.dunlap@oracle.com> <20100425181517.GA22676@kroah.com> <4BD49D9D.7020004@oracle.com> <20100426000025.GE667@thunk.org> <4BD4DCEA.8060602@oracle.com> <20100426004558.GA13043@thunk.org>
+In-Reply-To: <20100426004558.GA13043@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090208.4BD4E372.0117:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 22, 2010 at 09:09:37PM +0200, Jan Kara wrote:
-> On Tue 20-04-10 12:41:54, Dave Chinner wrote:
-> > From: Dave Chinner <dchinner@redhat.com>
-> > 
-> > Now that the background flush code has been fixed, we shouldn't need to
-> > silently multiply the wbc->nr_to_write to get good writeback. Remove
-> > that code.
-> > 
-> > Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> > ---
-> >  fs/xfs/linux-2.6/xfs_aops.c |    8 --------
-> >  1 files changed, 0 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/fs/xfs/linux-2.6/xfs_aops.c b/fs/xfs/linux-2.6/xfs_aops.c
-> > index 9962850..2b2225d 100644
-> > --- a/fs/xfs/linux-2.6/xfs_aops.c
-> > +++ b/fs/xfs/linux-2.6/xfs_aops.c
-> > @@ -1336,14 +1336,6 @@ xfs_vm_writepage(
-> >  	if (!page_has_buffers(page))
-> >  		create_empty_buffers(page, 1 << inode->i_blkbits, 0);
-> >  
-> > -
-> > -	/*
-> > -	 *  VM calculation for nr_to_write seems off.  Bump it way
-> > -	 *  up, this gets simple streaming writes zippy again.
-> > -	 *  To be reviewed again after Jens' writeback changes.
-> > -	 */
-> > -	wbc->nr_to_write *= 4;
-> > -
->   Hum, are you sure about this? I thought it's there because VM passes at
-> most 1024 pages to write from background writeback and you wanted to write
-> more in one go (at least ext4 wants to do this).
+On 04/25/10 17:45, tytso@mit.edu wrote:
+> On Sun, Apr 25, 2010 at 05:23:06PM -0700, Randy Dunlap wrote:
+>> Yeah, I think that it should be in procfs.  It's not strictly closed
+>> to new files.  (IOW, I'm sure that we can find a bunch of recent files
+>> added to procfs.)
+> 
+> That's reasonable (I think the whole /proc is evil crusade is really
+> dumb) --- but at the same time, remember how frustrating it is for the
+> poor embedded developer who doesn't know who to ignore and what
+> "rules" to ignore.  They were told months ago /proc is evil, and so
+> they moved it to /debugfs, precisely because it was billed as "it has
+> no rules".  For all I know some helpful community developer may have
+> even suggested that to them.
+> 
+> It is extremely frustrating to embedded developers when they get
+> conflicting advice, especially in this case, when it was *in* /proc in
+> the first place.  I'm not sure what to do about this --- my approach
+> is to sometimes say, "f*ck it, that's stupid advice", and ship it to
+> Linus, who tends to be *much* less of a pendant than most of the
+> people who review code --- but that's because I know what I can
+> ignore.  (I seriously doubt Linus cares much about whether it ends up
+> the file ends up /debugfs or /proc, and would take the code either
+> way.)  But for someone who doesn't understand when you can do this,
+> and who tries to follow every single piece of criticism they get, the
+> end result can often be a huge amount fo wasted time and frustration.
+> 
+> It would be nice if we could get better at this, since I'm sure this
+> is not the only time when embedded code submissions have gotten what
+> the submitting developers might consider to be a runaround....
 
-About 500MB/s sure. ;)
+Agreed, we could/should do much better.
+Agreed, I'm sure that it is frustrating to the contributors.
+Agreed about Linus taking it either way.  :)
 
-Seriously though, the problem that lead to us adding this
-multiplication was that writeback was not feeding XFS 1024 pages at
-a time - we were getting much less than this (somewhere in the order
-of 32-64 pages at a time. With the fixes I posted, in every
-circumstance I can see we are the correct number of pages (1024
-pages or what is left over from the last inode) being passed into
-->writepages, and writeback is back to full speed without needing
-this crutch. Indeed, this multiplication now causes  nr_to_write to
-go ballistic in some cirumstances, and that causes latency and
-fairness problems that will significantly reduce write rates for
-applications like NFS servers.
+Thanks for your summary and bringing it up (yet again).
 
-Realistically, XFS doesn't need to write more than 1024 pages in one
-go - the reason ext4 needs to do this is it's amazingly convoluted
-delayed allocation path and the fact that it's allocator is nowhere
-near as good at contiguous allocation across multiple invocations as
-the XFS allocator is. IOWs, XFS really just needs enough contiguous
-pages to be able to form large IOs, and given that most hardware
-limits the IO size to 1MB on x86_64, then 1024 pages is more than
-enough to provide this.
+> (And just to be clear, I'm not criticising your commends; my personal
+> preference is slightly in favor of /proc, but more than anythign else,
+> I consider it a very minor point.  I just want to point out that they
+> _started_ with the file in /proc and changed it to /debugfs based on
+> someone NACK'ing their patch, with a "/proc, eeeeewwww" comment.
+> Sometimes I think some code reviewers get too much of a sense of power
+> trip by thinking they can NACK other people's code over their own pet
+> peeves.... instead of approaching it from a somewhat more collegial
+> point of view trying to make the code better.  Present company
+> excepted, of course.  :-)
 
-Cheers,
 
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
