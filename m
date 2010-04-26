@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab0DZH03 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 03:26:29 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53363 "EHLO mx3.mail.elte.hu"
+	id S1754658Ab0DZHjc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 03:39:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61917 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754533Ab0DZH02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 03:26:28 -0400
-Date: Mon, 26 Apr 2010 09:25:41 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Al Viro <viro@zeniv.linux.org.uk>,
-       Jan Blunck <jblunck@suse.de>, John Kacur <jkacur@redhat.com>
-Subject: Re: [GIT PULL v2] Preparation for BKL'ed ioctl removal
-Message-ID: <20100426072541.GA25961@elte.hu>
-References: <1271390201-20431-1-git-send-regression-fweisbec@gmail.com>
- <201004242154.02421.arnd@arndb.de>
- <alpine.LFD.2.00.1004241258140.3739@i5.linux-foundation.org>
- <201004242240.51176.arnd@arndb.de>
- <alpine.LFD.2.00.1004241510530.3739@i5.linux-foundation.org>
- <20100425173912.GA5375@nowhere>
+	id S1754591Ab0DZHja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 03:39:30 -0400
+Message-ID: <4BD5432C.20409@redhat.com>
+Date: Mon, 26 Apr 2010 10:39:24 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100425173912.GA5375@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/10] KVM MMU: fix for calculating gpa in invlpg code
+References: <4BD3E306.4020202@cn.fujitsu.com> <4BD3E870.60000@cn.fujitsu.com> <4BD40F6D.3090002@redhat.com> <4BD50417.6090409@cn.fujitsu.com>
+In-Reply-To: <4BD50417.6090409@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/26/2010 06:10 AM, Xiao Guangrong wrote:
+>
+> Avi Kivity wrote:
+>    
+>> On 04/25/2010 10:00 AM, Xiao Guangrong wrote:
+>>      
+>>> If the guest is 32-bit, we should use 'quadrant' to adjust gpa
+>>> offset
+>>>
+>>> Changlog v2:
+>>> - when level is PT_DIRECTORY_LEVEL, the 'offset' should be
+>>>     'role.quadrant<<   8', thanks Avi for point it out
+>>>
+>>> Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
+>>> ---
+>>>    arch/x86/kvm/paging_tmpl.h |   13 +++++++++++--
+>>>    1 files changed, 11 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+>>> index d0cc07e..83cc72f 100644
+>>> --- a/arch/x86/kvm/paging_tmpl.h
+>>> +++ b/arch/x86/kvm/paging_tmpl.h
+>>> @@ -478,9 +478,18 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu,
+>>> gva_t gva)
+>>>                ((level == PT_DIRECTORY_LEVEL&&   is_large_pte(*sptep))) ||
+>>>                ((level == PT_PDPE_LEVEL&&   is_large_pte(*sptep)))) {
+>>>                struct kvm_mmu_page *sp = page_header(__pa(sptep));
+>>> -
+>>> +            int offset = 0;
+>>> +
+>>> +            if (PTTYPE == 32) {
+>>> +                if (level == PT_DIRECTORY_LEVEL)
+>>> +                    offset = PAGE_SHIFT - 4;
+>>> +                else
+>>> +                    offset = PT64_LEVEL_BITS;
+>>> +                offset = sp->role.quadrant<<   offset;
+>>> +            }
+>>>
+>>>        
+>> The calculation is really
+>>
+>>    shift = (PT32_LEVEL_BITS - PT64_LEVEL_BITS) * level;
+>>
+>>      
+> So, the offset is q<<  (PAGE_SHIFT - (PT32_LEVEL_BITS - PT64_LEVEL_BITS) * level - 2)?
+>    
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Ugh, what I meant was
 
-> > And don't try to conflate the issue of ioctl and BKL. There are still 
-> > code-paths that do lock_kernel() without the ioctl's, so the whole ioctl 
-> > renaming has _zero_ to do with CONFIG_BKL.
-> 
-> It's true, but once it gets pushed down/dropped from every core parts (which 
-> is what we are working on currently in parallel), lock_kernel() and 
-> .bkl_ioctl is only going to be used by unmaintained drivers. This is the 
-> time where having a CONFIG_BKL is going to make sense. And it won't be a 
-> question of saving some bytes but improve efficiency of schedule() for those 
-> who don't need such old or unmaintained drivers.
+   shift = PAGE_SHIFT - (PT_LEVEL_BITS - PT64_LEVEL_BITS) * level;
+   offset  = q << shift
 
-The scheduler will be helped most by getting rid of the BKL altogether. We are 
-in reaching distance of that now ...
+so,
 
-CONFIG_BKL would really just elongate the migration period, unnecessarily so.
+   pte_gpa = (sp->gfn << PAGE_SHIFT) + offset + (spte - sp->spt) * 
+sizeof(pt_element_t)
 
-> May be we should only start to focus on this new config once this state is 
-> reached.
+No magic numbers please.  Note it could work without the 'if (PTTYPE == 
+32)'.
 
-Once that state is achived we can just get rid of the BKL and mass-push 
-per-driver mutexes into those remaining drivers - in a possibly scripted way. 
-Something like:
 
-  foo-driver.c
+-- 
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
 
-  DEFINE_MUTEX(foo_mutex);
-
-  foo_ioctl()
-  {
-	mutex_lock(&foo_mutex);
-	...
-	mutex_unlock(&foo_mutex);
-  }
-
-  foo_open()
-  {
-	mutex_lock(&foo_mutex);
-	...
-	mutex_unlock(&foo_mutex);
-  }
-
-This could be done all automated for a hundred old drivers if need to be. 
-There would be no bkl_ioctl's left.
-
-That, even if it looks somewhat coarse is still better than having _yet 
-another_ 'temporary transition'. The Big Kernel Lock was supposed to be 
-transitionary to begin with. It's been 10+ years and counting :-)
-
-	Ingo
