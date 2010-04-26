@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab0DZHjc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 03:39:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754591Ab0DZHja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 03:39:30 -0400
-Message-ID: <4BD5432C.20409@redhat.com>
-Date: Mon, 26 Apr 2010 10:39:24 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1754650Ab0DZHlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 03:41:51 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47888 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab0DZHlu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 03:41:50 -0400
+Date: Mon, 26 Apr 2010 09:41:36 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Farid Hammane <farid.hammane@gmail.com>, ben-linux@fluff.org,
+       Enrik.Berkhan@ge.com, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] i2c-algo-pca: fix coding style issues in
+	i2c-algo-pca.c
+Message-ID: <20100426074136.GA20663@pengutronix.de>
+References: <1271973715-18331-1-git-send-email-farid.hammane@gmail.com> <20100423113326.3691bdd6@hyperion.delvare>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/10] KVM MMU: fix for calculating gpa in invlpg code
-References: <4BD3E306.4020202@cn.fujitsu.com> <4BD3E870.60000@cn.fujitsu.com> <4BD40F6D.3090002@redhat.com> <4BD50417.6090409@cn.fujitsu.com>
-In-Reply-To: <4BD50417.6090409@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
+Content-Disposition: inline
+In-Reply-To: <20100423113326.3691bdd6@hyperion.delvare>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2010 06:10 AM, Xiao Guangrong wrote:
->
-> Avi Kivity wrote:
->    
->> On 04/25/2010 10:00 AM, Xiao Guangrong wrote:
->>      
->>> If the guest is 32-bit, we should use 'quadrant' to adjust gpa
->>> offset
->>>
->>> Changlog v2:
->>> - when level is PT_DIRECTORY_LEVEL, the 'offset' should be
->>>     'role.quadrant<<   8', thanks Avi for point it out
->>>
->>> Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
->>> ---
->>>    arch/x86/kvm/paging_tmpl.h |   13 +++++++++++--
->>>    1 files changed, 11 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
->>> index d0cc07e..83cc72f 100644
->>> --- a/arch/x86/kvm/paging_tmpl.h
->>> +++ b/arch/x86/kvm/paging_tmpl.h
->>> @@ -478,9 +478,18 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu,
->>> gva_t gva)
->>>                ((level == PT_DIRECTORY_LEVEL&&   is_large_pte(*sptep))) ||
->>>                ((level == PT_PDPE_LEVEL&&   is_large_pte(*sptep)))) {
->>>                struct kvm_mmu_page *sp = page_header(__pa(sptep));
->>> -
->>> +            int offset = 0;
->>> +
->>> +            if (PTTYPE == 32) {
->>> +                if (level == PT_DIRECTORY_LEVEL)
->>> +                    offset = PAGE_SHIFT - 4;
->>> +                else
->>> +                    offset = PT64_LEVEL_BITS;
->>> +                offset = sp->role.quadrant<<   offset;
->>> +            }
->>>
->>>        
->> The calculation is really
->>
->>    shift = (PT32_LEVEL_BITS - PT64_LEVEL_BITS) * level;
->>
->>      
-> So, the offset is q<<  (PAGE_SHIFT - (PT32_LEVEL_BITS - PT64_LEVEL_BITS) * level - 2)?
->    
 
-Ugh, what I meant was
-
-   shift = PAGE_SHIFT - (PT_LEVEL_BITS - PT64_LEVEL_BITS) * level;
-   offset  = q << shift
-
-so,
-
-   pte_gpa = (sp->gfn << PAGE_SHIFT) + offset + (spte - sp->spt) * 
-sizeof(pt_element_t)
-
-No magic numbers please.  Note it could work without the 'if (PTTYPE == 
-32)'.
+--FL5UXtIhxfXey3p5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+Geez, that will teach me to review whitespace-fixes while working somewhere
+else :( Thanks for the catch!
 
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--FL5UXtIhxfXey3p5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkvVQ7AACgkQD27XaX1/VRtteQCdHEhyQPc5n513HAi8Jgn83xoy
+k3cAn3mgJqy0upBPPBFgUhphYgjyh5NM
+=bPmH
+-----END PGP SIGNATURE-----
+
+--FL5UXtIhxfXey3p5--
