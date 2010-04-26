@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab0DZUbr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 16:31:47 -0400
-Received: from isilmar.linta.de ([213.133.102.198]:43781 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753222Ab0DZUbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 16:31:45 -0400
-Date: Mon, 26 Apr 2010 22:31:36 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arjan van de Ven <arjan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [RFC PATCH v2] nohz/sched: disable ilb on !mc_capable()
-Message-ID: <20100426203136.GA1539@comet.dominikbrodowski.net>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Arjan van de Ven <arjan@linux.intel.com>,
-	linux-kernel@vger.kernel.org
+	id S1755204Ab0DZUeg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 16:34:36 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41660 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753145Ab0DZUef (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 16:34:35 -0400
+Date: Mon, 26 Apr 2010 16:34:35 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ondrej Zary <linux@rainbow-software.org>
+cc: "H. Peter Anvin" <hpa@zytor.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] Invalid opcode on resume from STR on Asus P4P800-VM
+In-Reply-To: <201004262155.06949.linux@rainbow-software.org>
+Message-ID: <Pine.LNX.4.44L0.1004261631320.1764-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-Date: Thu, 8 Apr 2010 21:51:18 +0200
-Subject: [PATCH] nohz/sched: disable ilb on !mc_capable()
+On Mon, 26 Apr 2010, Ondrej Zary wrote:
 
-On my dual-core, !mc_capbale() CPU, the idle load balancer (ilb) is one
-of the main reasons ticks are not stopped: Under moderate load (~98 % idle),
-upt o half of the calls to tick_nohz_top_sched_tick() are aborted due
-to calls to select_nohz_load_balancer(1).
+> On Monday 26 April 2010 21:17:27 Alan Stern wrote:
+> > On Mon, 26 Apr 2010, Ondrej Zary wrote:
+> > > Hello,
+> > > I'm trying to debug oops on resume from suspend-to-RAM on Asus P4P800-VM
+> > > mainboard. It crashes with invalid opcode (see below). The kernel is
+> > > 2.6.32-trunk from Debian but the same problem is present with vanilla
+> > > kernels - both newer and older (but screen remains blank most of the
+> > > time, only keyboard LEDs blink indicating an oops).
+> > >
+> > > What can cause this problem?
+> > >
+> > >      8.000339  invalid opcode: 0000 [#1] SMP
+> > >      8.003529  last sysfs file: /sys/power/state
+> > >      8.004265  Modules linked in: sco bridge stp bnep l2cacp crc16
+> > > bluetooth rfkill loop i2c_i801 snd_intel8x0 snd_ac97_codec shpchp
+> > > ac97_bus parport_pc parport
+> > > rng_core pci_hotplug snd_pcsp snd_pcm snd_timer snd soundcore psmouse
+> > > snd_page_alloc serio_raw evdev processor ext3 jbd mbcache ide_gd_mod
+> > > ata_generic libata scsi_mod
+> > > ide_pci_generic i915 drm_kms_helper uhci_hcd drm i2c_algo_bit piix
+> > > i2c_core ehci_hcd intel_agp e100 video ide_core mii floppy agpgart output
+> > > usbcore nls_base button
+> > > thermal fan thermal_sys [last unloaded: scsi_wait_scan]
+> > > [  148.004265]
+> > > [  148.004265] Pid: 0, comm: swapper Not tainted (2.6.32-trunk-686 #1) To
+> > > Be Filled By O.E.M. [  148.004265] EIP: 0060:[<c1008ff3>] EFLAGS:
+> > > 00010086 CPU: 0
+> > > [  148.004265] EIP is at mwait_idle+0x4e/0x6c
+> >
+> > I had exactly the same problem (on an HP computer with an Intel
+> > chipset).  As far as anyone could figure out, it is caused by a bug in
+> > the BIOS.  It's not entirely clear that this is the complete answer,
+> > but nothing else turned up.  See
+> >
+> > 	http://bugzilla.kernel.org/show_bug.cgi?id=15385
+> >
+> > for the complete record.  The best solution I could find was to boot
+> > with "idle=halt" on the command line.  You might check to see if any
+> > BIOS updates are available.
+> 
+> Thanks, it does not crash with "idle=halt" or "idle=poll". According to this:
+> http://siyobik.info/index.php?module=x86&id=215
+> the MWAIT instruction can be enabled/disabled in IA32_MISC_ENABLES MSR. Kernel 
+> probably should enable it at boot and also on resume.
+> Here's some more info:
+> http://software.intel.com/en-us/forums/showthread.php?t=63654
 
-I suspect this is caused by the following phenomenon:
+That could be the answer.  Clearly this should be handled by the 
+arch-specific boot/setup code.  I don't know enough about it, but other 
+people do.
 
-    CPU0				CPU1
-    <active>				<active>
-    tick_nohz_stop_sched_tick(1)
-    select_nohz_load_balancer(1)
-     => CPU0 becomes ilb owner,		<CPU1 becomes idle a bit later>
-        tick is not stopped,		tick_nohz_stop_sched_tick(1)
-        CPU0 goes to sleep for		 => CPU1 isn't the ilb owner,
-        exactly 1 tick.			    tick is stopped.
-    <short sleep>			<long sleep>
-    ---> scheduler_tick()
-    tick_nohz_stop_sched_tick(0)
-    tick_nohz_stop_sched_tick(1)
-     => is ilb owner, all CPUs are
-        idle, CPU0 may go to sleep.
+Alan Stern
 
-If all CPU cores have hardly anything to do, letting the active CPU do
-idle load balancing allows us to enter deep sleep states earlier, and for
-longer periods of time. Furthermore, on !mc_capable() systems, it seems that
-the ilb algorithm isn't needed at all. Let's show this for a 2-core system:
-
-- if both cores are active, ilb is deactivated
-- if no core is active, ilb is deactivated
-- if only one core is active, it attempts to balance its load off to other
-  CPUs on each tick anyway. ilb wouldn't act quicker.
-
-This patch decreases the amount of wakeups on my completely idle notebook by
-about two thirds.
-
-Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 5a5ea2c..8ad8a03 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3290,6 +3290,9 @@ int select_nohz_load_balancer(int stop_tick)
- 	if (stop_tick) {
- 		cpu_rq(cpu)->in_nohz_recently = 1;
- 
-+		if (!mc_capable())
-+			return 0;
-+
- 		if (!cpu_active(cpu)) {
- 			if (atomic_read(&nohz.load_balancer) != cpu)
- 				return 0;
-@@ -3339,6 +3342,9 @@ int select_nohz_load_balancer(int stop_tick)
- 		if (!cpumask_test_cpu(cpu, nohz.cpu_mask))
- 			return 0;
- 
-+		if (!mc_capable())
-+			return 0;
-+
- 		cpumask_clear_cpu(cpu, nohz.cpu_mask);
- 
- 		if (atomic_read(&nohz.load_balancer) == cpu)
