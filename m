@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab0DZJsP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 05:48:15 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:39587 "EHLO kernel.dk"
+	id S1753337Ab0DZJs2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 05:48:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35974 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838Ab0DZJsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 05:48:13 -0400
-Date: Mon, 26 Apr 2010 11:48:11 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [Patch] Catch filesystems lacking s_bdi
-Message-ID: <20100426094810.GE27497@kernel.dk>
-References: <20100419101559.GA4145@logfs.org> <20100419102056.GS27497@kernel.dk> <20100422055448.GA27309@logfs.org> <20100422062631.GC27309@logfs.org> <alpine.LFD.2.00.1004220724170.9086@i5.linux-foundation.org> <alpine.LFD.2.00.1004220730280.9086@i5.linux-foundation.org> <20100422162709.GJ27497@kernel.dk> <20100422203358.GB30749@logfs.org> <20100423100532.GN27497@kernel.dk> <20100423205518.GB7008@logfs.org>
+	id S1753240Ab0DZJs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 05:48:26 -0400
+Date: Mon, 26 Apr 2010 11:48:24 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Wayne Thomas <waynethomas69@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: HID: expand hid-topseed driver to support BTC "Emprex 3009URF
+ III  Vista MCE Remote"
+In-Reply-To: <t2g3711715e1004240718m8aacffc5o68fc9ccd1e66f212@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1004261146430.7579@pobox.suse.cz>
+References: <t2g3711715e1004240718m8aacffc5o68fc9ccd1e66f212@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100423205518.GB7008@logfs.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 23 2010, Jörn Engel wrote:
-> On Fri, 23 April 2010 12:05:32 +0200, Jens Axboe wrote:
-> > 
-> > So it's probably safe and good enough as-is, I'll add it. Thanks!
-> 
-> I cannot see this patch in your tree yet.  Could be the weekend or a
-> deliberate decision not to send this for 2.6.34-rc anymore.
+On Sat, 24 Apr 2010, Wayne Thomas wrote:
 
-It's there, I put it in yesterday. It's definitely 2.6.34-rc material, I
-hope to submit it tonight.
+> +config HID_BTC
+> +	tristate "BTC Emprex remote control support" if EMBEDDED
+> +	depends on USB_HID
+> +	default y
+> +	---help---
+> +	Say Y if you have a BTC Emprex remote control.
+> +
+>  config HID_CHERRY
+>  	tristate "Cherry" if EMBEDDED
+>  	depends on USB_HID
+> diff -uprN linux-2.6.33-clean/drivers/hid/Makefile linux/drivers/hid/Makefile
+> --- linux-2.6.33-clean/drivers/hid/Makefile	2010-04-22 20:48:43.000000000 +0200
+> +++ linux/drivers/hid/Makefile	2010-04-22 21:29:20.000000000 +0200
+> @@ -22,6 +22,7 @@ endif
+>  obj-$(CONFIG_HID_A4TECH)	+= hid-a4tech.o
+>  obj-$(CONFIG_HID_APPLE)		+= hid-apple.o
+>  obj-$(CONFIG_HID_BELKIN)	+= hid-belkin.o
+> +obj-$(CONFIG_HID_BTC)		+= hid-topseed.o
+>  obj-$(CONFIG_HID_CHERRY)	+= hid-cherry.o
+>  obj-$(CONFIG_HID_CHICONY)	+= hid-chicony.o
+>  obj-$(CONFIG_HID_CYPRESS)	+= hid-cypress.o
 
-> In case it was a deliberate decision, can we please make it explicit?  I
-> don't like the idea of adding a BUG_ON() that potentially triggers for
-> thousands of people this late in the stabilization process - but it is
-> better than having people lose data.  Even if we already ran two stable
-> kernels that way.
-> 
-> Damned if you do, damned if you don't. :(
+The separate config option for this is just overhead, I think. I'd suggest 
+just to update the Kconfig help text for CONFIG_TOPSPEED to mention that 
+it supports also this particular device.
 
-Yeah, it's a bad situation to be in. I changed that BUG_ON() to a
-WARN_ON(). I'm not too worried about that part, I'm more worried about
-the file system changed. OTOH, they do lack proper flushing now, so it's
-likely not a huge risk from that perspective.
+Thanks,
 
 -- 
-Jens Axboe
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
