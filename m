@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab0DZOgL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 10:36:11 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61738 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab0DZOgI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 10:36:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HMDU6/nxLQySLgQgWU0QgVXBhqupqTauFUOGafiCAa08FbkDQk7rzvr1lFIJd46cqs
-         iUF521lYeC9rruOX5Xm/EtnSdlFyslmp06BSu2v1ycwOkRk9NISioa6o++3yt+aszSfN
-         p2yU1tYK7qPvYRV55KjK9Fqp1xmcXhgD6Wpck=
+	id S1752213Ab0DZOiJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 10:38:09 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:55897 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab0DZOiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 10:38:07 -0400
+Date: Mon, 26 Apr 2010 16:38:03 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+       Paolo Minazzi <paolo.minazzi@gmail.com>
+Subject: Re: [Patch] Catch filesystems lacking s_bdi
+Message-ID: <20100426143803.GM27497@kernel.dk>
+References: <20100422055448.GA27309@logfs.org> <20100422062631.GC27309@logfs.org> <alpine.LFD.2.00.1004220724170.9086@i5.linux-foundation.org> <alpine.LFD.2.00.1004220730280.9086@i5.linux-foundation.org> <20100422162709.GJ27497@kernel.dk> <20100422203358.GB30749@logfs.org> <20100423100532.GN27497@kernel.dk> <20100423205518.GB7008@logfs.org> <20100426094810.GE27497@kernel.dk> <20100426143253.GB4364@logfs.org>
 MIME-Version: 1.0
-In-Reply-To: <20100426.025542.193706542.davem@davemloft.net>
-References: <20100426.025542.193706542.davem@davemloft.net>
-Date: Mon, 26 Apr 2010 10:36:01 -0400
-Message-ID: <w2pb4198de61004260736sdc815942z1ea3d650c33e5890@mail.gmail.com>
-Subject: Re: [PATCH] drm/radeon: Fix sparc regression in r300_scratch()
-From: Matt Turner <mattst88@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: airlied@redhat.com, dri-devel@lists.freedesktop.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100426143253.GB4364@logfs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 5:55 AM, David Miller <davem@davemloft.net> wrote:
->
-> Commit b4fe945405e477cded91772b4fec854705443dd5 ("drm/radeon: Fix
-> memory allocation failures in the preKMS command stream checking.")
-> added a regression in that it completely tossed the get_unaligned()
-> done by r300_scratch() which we added in commit
-> 958a6f8ccb1964adc3eec84cf401c5baeb4fbca0 ("drm: radeon: Fix unaligned
-> access in r300_scratch().").
->
-> Put it back.
->
-> Signed-off-by: David S. Miller <davem@davemloft.net>
->
-> diff --git a/drivers/gpu/drm/radeon/r300_cmdbuf.c b/drivers/gpu/drm/radeon/r300_cmdbuf.c
-> index ea46d55..c5c2742 100644
-> --- a/drivers/gpu/drm/radeon/r300_cmdbuf.c
-> +++ b/drivers/gpu/drm/radeon/r300_cmdbuf.c
-> @@ -921,7 +921,7 @@ static int r300_scratch(drm_radeon_private_t *dev_priv,
->
->        ptr_addr = drm_buffer_read_object(cmdbuf->buffer,
->                        sizeof(stack_ptr_addr), &stack_ptr_addr);
-> -       ref_age_base = (u32 *)(unsigned long)*ptr_addr;
-> +       ref_age_base = (u32 *)(unsigned long)get_unaligned(ptr_addr);
->
->        for (i=0; i < header.scratch.n_bufs; i++) {
->                buf_idx = drm_buffer_pointer_to_dword(cmdbuf->buffer, 0);
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
->
+On Mon, Apr 26 2010, Jörn Engel wrote:
+> > Yeah, it's a bad situation to be in. I changed that BUG_ON() to a
+> > WARN_ON(). I'm not too worried about that part, I'm more worried about
+> > the file system changed. OTOH, they do lack proper flushing now, so it's
+> > likely not a huge risk from that perspective.
+> 
+> It is worse still.  Using mtd->backing_dev_info results in 
+> kernel BUG at fs/fs-writeback.c:157
+> 
+> which is BUG_ON(!work->seen); in bdi_queue_work().  Logfs is affected
+> and I bet jffs2 is as well.  So much for dwmw2 or me actually testing
+> the fix. :(
+> 
+> I did a hexdump to see what sb->s_bdi actually contained and the result
+> was this:
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> 00 00 00 00 00 00 00 00                          ........
+> 
+> Which should be mtd_bdi_unmappable.  And at this point I have to admit
+> being clueless.  What exactly should a struct backing_dev_info contain
+> and for what purposes?  And where is this documented?
 
-Should help Alpha as well.
+The important bit is that each bdi must be initialized and registered if
+it's going to be handling dirty data, it can't just be a static
+placeholder. See the bdi_setup_and_register() helper I added.
 
-Acked-by: Matt Turner <mattst88@gmail.com>
+-- 
+Jens Axboe
+
