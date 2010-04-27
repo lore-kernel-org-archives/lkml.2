@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab0D0A3G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 20:29:06 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:49751 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753559Ab0D0A3E convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 20:29:04 -0400
+	id S1754961Ab0D0AbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 20:31:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50224 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754642Ab0D0AbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 20:31:21 -0400
+Message-ID: <4BD63031.6050105@redhat.com>
+Date: Mon, 26 Apr 2010 20:30:41 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-In-Reply-To: <201004201124.00326.trenn@suse.de>
-References: <20100418115949.7b743898@infradead.org>
-	 <4BCC147B.10708@tremplin-utc.net>
-	 <20100419064325.49cb3108@infradead.org>
-	 <201004201124.00326.trenn@suse.de>
-Date: Mon, 26 Apr 2010 17:29:01 -0700
-Message-ID: <m2x8bb80c381004261729r2e9b0df2q961c1d10430b2e1f@mail.gmail.com>
-Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with 
-	ondemand during disk IO
-From: Mike Chan <mike@android.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Arjan van de Ven <arjan@infradead.org>,
-       =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-       peterz@infradead.org, tglx@linutronix.de, davej@redhat.com,
-       cpufreq@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mel Gorman <mel@csn.ul.ie>
+CC: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+ the wrong VMA information
+References: <1272321478-28481-1-git-send-email-mel@csn.ul.ie> <1272321478-28481-3-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <1272321478-28481-3-git-send-email-mel@csn.ul.ie>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 20, 2010 at 2:24 AM, Thomas Renninger <trenn@suse.de> wrote:
-> On Monday 19 April 2010 15:43:25 Arjan van de Ven wrote:
->> On Mon, 19 Apr 2010 10:29:47 +0200
->> Éric Piel <eric.piel@tremplin-utc.net> wrote:
->> > >
->> > > The problem and fix are both verified with the "perf timechar" tool.
->> > Hi,
->> > I don't doubt that keeping the cpu full frequency during IO can
->> > improve some specific workloads, however in your log message you
->> > don't explain how much we are loosing.
->>
->> first of all, it's so bad that people will just turn the whole power
->> management off... at which point fixing the really bad bug is actually
->> quite a win
-> Not sure you fix a bug, I expect this was done on purpose.
-> The ondemand governor disadvantages processes with alternating short CPU
-> load peaks and idle sequences.
-> IO bound processes typically show up with such a behavior.
->
-> But I follow Eric and agree that if it costs that much, changing
-> above sounds sane.
-> Still, I could imagine some people might want to not raise freq on IO bound
-> process activity, therefore this should get another ondemand param, similar
-> to ignore_nice_load.
->
+On 04/26/2010 06:37 PM, Mel Gorman wrote:
 
-I agree with Thomas here. Some of these assumptions on IO / FSB
-performance with cpu speed do not hold true on various ARM platforms.
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 85f203e..bc313a6 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -1368,15 +1368,31 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+>   	 * are holding mmap_sem. Users without mmap_sem are required to
+>   	 * take a reference count to prevent the anon_vma disappearing
+>   	 */
+> +retry:
+>   	anon_vma = page_anon_vma(page);
+>   	if (!anon_vma)
+>   		return ret;
+>   	spin_lock(&anon_vma->lock);
+>   	list_for_each_entry(avc,&anon_vma->head, same_anon_vma) {
+>   		struct vm_area_struct *vma = avc->vma;
+> -		unsigned long address = vma_address(page, vma);
+> -		if (address == -EFAULT)
+> -			continue;
+> +		unsigned long address;
+> +
+> +		/*
+> +		 * Guard against deadlocks by not spinning against
+> +		 * vma->anon_vma->lock. If contention is found, release our
+> +		 * lock and try again until VMA list can be traversed without
+> +		 * contention.
+> +		 */
+> +		if (anon_vma != vma->anon_vma) {
+> +			if (!spin_trylock(&vma->anon_vma->lock)) {
+> +				spin_unlock(&anon_vma->lock);
+> +				goto retry;
+> +			}
+> +		}
 
-Perhaps we could have a min_io_freq value? Which is the min speed for
-the cpu to run at for IO bound activity. In the original patch,
-min_io_freq = scaling_max_freq. For various arm devices I can happily
-set min_io_freq to the lowest cpu speed that satisfies bus speeds.
+If you're part way down the list, surely you'll need to
+unlock multiple anon_vmas here before going to retry?
 
--- Mike
+Otherwise you could forget to unlock one that you already
+locked, and live-lock here.
 
->    Thomas
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+-- 
+All rights reversed
