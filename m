@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab0D0T43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 15:56:29 -0400
-Received: from zelda.netsplit.com ([87.194.19.211]:50593 "EHLO
-	zelda.netsplit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756754Ab0D0T41 (ORCPT
+	id S1756827Ab0D0T70 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 15:59:26 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:50459 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754999Ab0D0T7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 15:56:27 -0400
-X-Greylist: delayed 1151 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Apr 2010 15:56:27 EDT
-Subject: [ANNOUNCE] upstart 0.6.6 released
-From: Scott James Remnant <scott@netsplit.com>
-To: upstart-devel@lists.ubuntu.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-miXh/zXmUCk09iixvIT6"
-Date: Tue, 27 Apr 2010 12:37:06 -0700
-Message-ID: <1272397026.1617.13.camel@wing-commander>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 27 Apr 2010 15:59:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZqTyrKJpQt+AKNK4UB5tON8TzFp4dTmJDRnNuHZYsnh3KOuNPivxyWqUNyF5TqJS+2
+         f9Ztlhxg2TS0PIZC6+CtfqIcPSt3LiZF57b2FZ3GKxLJSCKO+PZNasfgSBsbTsYHsNkW
+         pP+gT58P2pytlNL0RJjXUhVnZ0kZjxEC8sATE=
+Date: Tue, 27 Apr 2010 21:59:20 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: John Kacur <jkacur@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+       =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Subject: Re: [PATCH 1/7] logfs: push down BKL into ioctl function
+Message-ID: <20100427195912.GD5586@nowhere>
+References: <alpine.LFD.2.00.1004271359180.3318@localhost> <1272378265-10909-2-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272378265-10909-2-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-miXh/zXmUCk09iixvIT6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-The main change in this release is that Upstart now takes care of
-mounting /proc and /sys on boot in the case where they haven't already
-been mounted by an initramfs or initrd.  This corrects the long-running
-"chicken and egg" due to Upstart's use of /proc/self/fd to execute shell
-code, and allows Upstart to use /sys in future as well.
-
-
-0.6.6  2010-04-27  "No, she's dead, this is her son"
-
-        * Upstart will automatically mount /proc and /sys on boot if they
-          have not already been mounted by the kernel or initramfs.
-          (Bug: #426263)
-
-        * Fixed double-quoting issue with the --with-local-libnih configure
-          option.  (Bug: #530385)
-
-        * libnih 1.0.2 is now required.
+On Tue, Apr 27, 2010 at 04:24:19PM +0200, Arnd Bergmann wrote:
+> --- a/fs/smbfs/ioctl.c
+> +++ b/fs/smbfs/ioctl.c
+> @@ -26,7 +26,7 @@ int
+>  smb_ioctl(struct inode *inode, struct file *filp,
+>  	  unsigned int cmd, unsigned long arg)
+>  {
+> -	struct smb_sb_info *server = server_from_inode(inode);
+> +	struct smb_sb_info *server = server_from_inode(filp->f_path.dentry->d_inode);
+>  	struct smb_conn_opt opt;
+>  	int result = -EINVAL;
 
 
-The tarball can be found here:
+I've included this part in the smbfs pushdown patch.
 
-        http://upstart.ubuntu.com/download/
-
-For more information on upstart:
-
-        http://upstart.ubuntu.com/
-
-
-Scott
---=20
-Have you ever, ever felt like this?
-Had strange things happen?  Are you going round the twist?
-
---=-miXh/zXmUCk09iixvIT6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkvXPOIACgkQIexP3IStZ2x3egCgh7laFVTr8kXZ0Bx80w1l1hBL
-GKMAn1gL3+fIRhRi9zTrZ2Yg1PeH19+/
-=41GF
------END PGP SIGNATURE-----
-
---=-miXh/zXmUCk09iixvIT6--
+Thanks.
 
