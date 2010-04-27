@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab0D0NSi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 09:18:38 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:55632 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab0D0NSh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 09:18:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=igNQ3GkEi9sMrjWKxLF7Kd1xw7c3rcb7wAcLe3uQxg4TEbmyH56b80AwyMJC6RRztb
-         LNRgohyNiQdJBPcOIxWDo8Q0xzkEDXtohVqSJ2ppdRF7DmfsRjezQeHKK00DvNHpmyPr
-         RXjwjeLF94Ta2GTMLLpah03QhBDYecrSgQAFk=
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH] tosa_battery: fix FTBFS bug due to driver_data access
-Date: Tue, 27 Apr 2010 17:18:22 +0400
-Message-Id: <1272374302-9506-1-git-send-email-dbaryshkov@gmail.com>
-X-Mailer: git-send-email 1.7.0
+	id S1755573Ab0D0NTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 09:19:13 -0400
+Received: from www.tglx.de ([62.245.132.106]:34763 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755578Ab0D0NTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 09:19:06 -0400
+Date: Tue, 27 Apr 2010 15:18:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Primiano Tucci <p.tucci@gmail.com>
+cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       rostedt <rostedt@goodmis.org>
+Subject: Re: Considerations on sched APIs under RT patch
+In-Reply-To: <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1004271517440.2951@localhost.localdomain>
+References: <s2uc5b2c05b1004191348p517c8ac4z32104ea91dd1ca67@mail.gmail.com>  <1271755208.1676.422.camel@laptop> <k2nc5b2c05b1004201456j846b15a0oaa261d16740b5e33@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-862821315-1272374334=:2951"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
----
- drivers/power/tosa_battery.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-diff --git a/drivers/power/tosa_battery.c b/drivers/power/tosa_battery.c
-index 2eab35a..ee04936 100644
---- a/drivers/power/tosa_battery.c
-+++ b/drivers/power/tosa_battery.c
-@@ -61,7 +61,7 @@ static unsigned long tosa_read_bat(struct tosa_bat *bat)
- 	mutex_lock(&bat_lock);
- 	gpio_set_value(bat->gpio_bat, 1);
- 	msleep(5);
--	value = wm97xx_read_aux_adc(bat->psy.dev->parent->driver_data,
-+	value = wm97xx_read_aux_adc(dev_get_drvdata(bat->psy.dev->parent),
- 			bat->adc_bat);
- 	gpio_set_value(bat->gpio_bat, 0);
- 	mutex_unlock(&bat_lock);
-@@ -81,7 +81,7 @@ static unsigned long tosa_read_temp(struct tosa_bat *bat)
- 	mutex_lock(&bat_lock);
- 	gpio_set_value(bat->gpio_temp, 1);
- 	msleep(5);
--	value = wm97xx_read_aux_adc(bat->psy.dev->parent->driver_data,
-+	value = wm97xx_read_aux_adc(dev_get_drvdata(bat->psy.dev->parent),
- 			bat->adc_temp);
- 	gpio_set_value(bat->gpio_temp, 0);
- 	mutex_unlock(&bat_lock);
--- 
-1.7.0
+--8323328-862821315-1272374334=:2951
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
+On Tue, 20 Apr 2010, Primiano Tucci wrote:
+
+> Hi Peter,
+> thank you for your reply.
+> 
+> On Tue, Apr 20, 2010 at 11:20 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Mon, 2010-04-19 at 22:48 +0200, Primiano Tucci wrote:
+> >
+> >> Yesterday days I found a strange behavior of the scheduler API's using
+> >> the RT patch, in particular the pthread_setaffinity_np (that stands on
+> >> sched_setaffinity).
+> >
+> >> I think the main problem is that sched_setaffinity makes use of a
+> >> rwlock, but rwlocks are pre-emptible with the RT patch.
+> >
+> > It does? where?
+> >
+> > sys_sched_setaffinity()
+> >  sched_setaffinity()
+> >    set_cpus_allowed_ptr()
+> 
+> 
+> I see
+> 
+> long sched_setaffinity(pid_t pid, const struct cpumask *in_mask) {
+> 	cpumask_var_t cpus_allowed, new_mask;
+> 	struct task_struct *p;
+> 	int retval;
+> 
+> 	get_online_cpus();
+> -->	read_lock(&tasklist_lock);
+
+You must be looking at some older version of -rt. The current
+2.6.33-rt series does not take tasklist_lock in sched_setaffinity().
+
+Thanks,
+
+	tglx
+--8323328-862821315-1272374334=:2951--
