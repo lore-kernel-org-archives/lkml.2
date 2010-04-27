@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab0D0XTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 19:19:07 -0400
-Received: from kroah.org ([198.145.64.141]:58762 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085Ab0D0XTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 19:19:03 -0400
-Date: Tue, 27 Apr 2010 16:18:39 -0700
-From: Greg KH <greg@kroah.com>
-To: Marin Mitov <mitov@issp.bas.bg>
-Cc: Scott Smedley <ss@aao.gov.au>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Yet another (third) dt3155 driver PCI/video4linux
- compliant
-Message-ID: <20100427231839.GA26416@kroah.com>
-References: <201003201118.36736.mitov@issp.bas.bg>
- <20100320130158.GA13682@kroah.com>
- <201003202140.16412.mitov@issp.bas.bg>
+	id S1753417Ab0D0XWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 19:22:13 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56914 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184Ab0D0XWM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 19:22:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201003202140.16412.mitov@issp.bas.bg>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201004280003.31668.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1004271432280.1850-100000@iolanthe.rowland.org>
+	 <201004280003.31668.rjw@sisk.pl>
+Date: Tue, 27 Apr 2010 16:22:11 -0700
+Message-ID: <t2sd6200be21004271622k3e102381i7d766c3635d71a6a@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 2/9] PM: suspend_block: Add driver to access 
+	suspend blockers from user-space
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Pavel Machek <pavel@ucw.cz>,
+       Len Brown <len.brown@intel.com>, linux-doc@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Magnus Damm <damm@igel.co.jp>, linux-pm@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 20, 2010 at 09:40:16PM +0200, Marin Mitov wrote:
-> On 20.3.2010, Greg KH wrote:
-> > On Sat, Mar 20, 2010 at 11:18:36AM +0200, Marin Mitov wrote:
-> > > Hi Scott, Greg, all,
-> > > 
-> > > Here you will find a link to the source code for a dt3155 driver
-> > > rewritten to be  PCI/video4linux compliant.
-> > > 
-> > > http://lfb.issp.bas.bg/~mitov/linux/dt3155v4l/
-> > > 
-> > > It works with xawtv (if the window is bigger than the acquired image).
-> > > See 
-> > > 
-> > > http://lfb.issp.bas.bg/~mitov/linux/dt3155v4l/00README
-> > > 
-> > > for more details.
-> > > 
-> > > Any critics/comments will be appreciated.
-> > 
-> > Can you send it in patch form?  I can't really do anything with it like
-> > this, sorry.
-> > 
-> > greg k-h
-> 
-> OK, here it is:
-> 
-> ======================================================
-> 
-> Kernel module (device driver) for dt3155 frame grabber
-> video4linux2 compliant (finaly). Works with xawtv.
-> 
-> ======================================================
-> 
-> This driver is written (almost) from scratch, usung the
-> allocator developed for dt3155pci see bellow). The driver
-> uses videobuf-dma-contig interface modified to use the above
-> mentioned allocator instead of dma_alloc_coheren().
-> 
-> The first thing to do was to design a new allocator based
-> on allocating a configurable number of 4MB chunks of memory,
-> that latter are broken into frame buffers of 768x576 bytes
-> kept in different FIFOs (queues). As far as the driver autoloads
-> as a kernel module during kernel boot, the allocation of 4MB
-> chunks succeeds.
-> 
-> The driver keeps three FIFOs: one for 4MB chunks, one for free
-> buffers (available for allocations) and one for buffers already
-> allocated. Allocation/deallocation is done automatically though
-> the video4linux videobuf subsystem (some pointers to functions
-> are replaced by driver supplied functions).
-> 
-> Sure, there are problems:
-> 
-> 1. The device works by read() method only (for now).
-> 
-> 2. Works for CCIR, but should work for RS-170 (not tested)
->    This is made during kernel configuration.
-> 
-> 3. Could work for multiple dt3155 frame grabbers in a PC,
->    (private data is allocated during PCI probe() method), but
->    is not tested due to lack of a second board.
-> 
-> 4. Not tested on a BIG ENDIAN architecture.
-> 
-> 5. Many others you could find .... :-)
-> 
-> All critics, comments, suggestions are wellcome.
+2010/4/27 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Tuesday 27 April 2010, Alan Stern wrote:
+>> On Mon, 26 Apr 2010, Arve Hjønnevåg wrote:
+>>
+>> > > If you insist on using ioctl for init, you should use the standard
+>> > > convention for passing variable-length data.  The userspace program
+>> > > sets up a fixed-size buffer containing a pointer to the name and the
+>> > > name's length, and it passes the buffer's address as the ioctl
+>> > > argument.
+>> >
+>> > Are you sure that is the standard? I searched for ioctls with NAME in
+>> > their name and only found one that passed the name that way. The rest
+>> > used fixed length string buffers, or passed the buffersize to _IOC
+>> > like I do. For instance, input.h has ioctls to read string and
+>> > bitmasks where user space specify the buffer size as an argument to
+>> > the ioctl macro. These pass data from the kernel to user space, but I
+>> > don't passing a string length is any worse than passing a buffer size.
+>>
+>> You're right.  Okay, I withdraw my objection.
+>
+> In the meantime, though, I thought that the suspend blocker might be created
+> by _open() if we found a way to automatically choose a name for it.  That'd be
+> kind of logical, since it's later destroyed by _release().
+>
+> So, what about using the name of the process that opened the special device
+> file (or that name with'0' appended, or generally with a number appended) as
+> the suspend blocker name?
+>
 
-I like it, want me to apply it?  Right now it fails to build, but that
-should be simple to fix up, I'll be glad to do that.
+I prefer to let user space choose the name since we use more than one
+suspend blocker in the same process.
 
-thanks,
-
-greg k-h
+-- 
+Arve Hjønnevåg
