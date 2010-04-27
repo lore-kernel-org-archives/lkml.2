@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab0D0Q3L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 12:29:11 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:43170 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab0D0Q3G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 12:29:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=l0vvjjXeTlDodTxkh8qnxEm3y0CeraV7JXae6Fke3wXZYfFeFL+XVmPNn6QZN0Jxxn
-         yypuTFKPWS5L9eeQKBGwDK5qdUcjet4+kTvWIsLc0eohrPOU7RGlLHJGI15PaqgAISSY
-         Psas69MwaSA3qsGn8sIrfrJOT3E/0n3Q1p6qE=
-Date: Tue, 27 Apr 2010 18:29:02 +0200 (CEST)
-From: John Kacur <jkacur@redhat.com>
-X-X-Sender: jkacur@localhost
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: John Kacur <jkacur@redhat.com>,
-       =?ISO-8859-15?Q?J=F6rn_Engel?= <joern@logfs.org>,
-       Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/7] logfs: push down BKL into ioctl function
-In-Reply-To: <alpine.LFD.2.00.1004270833530.3739@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1004271826140.3318@localhost>
-References: <alpine.LFD.2.00.1004271359180.3318@localhost> <1272378265-10909-2-git-send-email-arnd@arndb.de> <20100427145804.GA16794@logfs.org> <201004271705.50499.arnd@arndb.de> <20100427150919.GB16794@logfs.org> <alpine.LFD.2.00.1004271725490.3318@localhost>
- <alpine.LFD.2.00.1004270833530.3739@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756338Ab0D0Qco (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 12:32:44 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:42081 "EHLO mail.mnsspb.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753164Ab0D0Qcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 12:32:43 -0400
+X-Greylist: delayed 953 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Apr 2010 12:32:42 EDT
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Kirill Smelkov <kirr@mns.spb.ru>
+Subject: [PATCH] bttv: Add another ids for IVC-200
+Date: Tue, 27 Apr 2010 20:17:51 +0400
+Message-Id: <1272385071-26310-1-git-send-email-kirr@mns.spb.ru>
+X-Mailer: git-send-email 1.7.1.rc2.12.g3a006
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I have 3 IVC-200 cards (with 4 video channels on each).
 
+2 of the cards identify theirselves as 000[0-3]:a155 (ids already in
+cardlist) and another one identifies itself as 080[0-3]:a155, which ids
+were unknown so far.
 
-On Tue, 27 Apr 2010, Linus Torvalds wrote:
+Note - it's IVC-200, not IVC-200G.
 
-> 
-> 
-> On Tue, 27 Apr 2010, John Kacur wrote:
-> >
-> > You can ask Linus whether he'll take a convert unlocked_ioctl now or not.
-> 
-> Absolutely not.
-> 
-> I could imagine merging something like just the bkl_ioctl rename: if it 
-> breaks, it won't compile, so there is little risk, and _if_ it helps the 
-> next merge window I could merge it early.
-> 
-> But it looks like people are trying to avoid it entirely, and there is not 
-> a way in *hell* I will take some big and scary "push BKL down" patch that 
-> is clearly _not_ 99% mechanical and clearly _can_ introduce major and 
-> subtle bugs while compiling. 
-> 
+Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+---
+ Documentation/video4linux/CARDLIST.bttv |    2 +-
+ drivers/media/video/bt8xx/bttv-cards.c  |    4 ++++
+ 2 files changed, 5 insertions(+), 1 deletions(-)
 
-Heh, that's exactly what I thought you would say, but still good to 
-clarify it for everyone.
+diff --git a/Documentation/video4linux/CARDLIST.bttv b/Documentation/video4linux/CARDLIST.bttv
+index f11c583..4739d56 100644
+--- a/Documentation/video4linux/CARDLIST.bttv
++++ b/Documentation/video4linux/CARDLIST.bttv
+@@ -100,7 +100,7 @@
+  99 -> AD-TVK503
+ 100 -> Hercules Smart TV Stereo
+ 101 -> Pace TV & Radio Card
+-102 -> IVC-200                                             [0000:a155,0001:a155,0002:a155,0003:a155,0100:a155,0101:a155,0102:a155,0103:a155]
++102 -> IVC-200                                             [0000:a155,0001:a155,0002:a155,0003:a155,0100:a155,0101:a155,0102:a155,0103:a155,0800:a155,0801:a155,0802:a155,0803:a155]
+ 103 -> Grand X-Guard / Trust 814PCI                        [0304:0102]
+ 104 -> Nebula Electronics DigiTV                           [0071:0101]
+ 105 -> ProVideo PV143                                      [aa00:1430,aa00:1431,aa00:1432,aa00:1433,aa03:1433]
+diff --git a/drivers/media/video/bt8xx/bttv-cards.c b/drivers/media/video/bt8xx/bttv-cards.c
+index 716870a..7af56cd 100644
+--- a/drivers/media/video/bt8xx/bttv-cards.c
++++ b/drivers/media/video/bt8xx/bttv-cards.c
+@@ -241,6 +241,10 @@ static struct CARD {
+ 	{ 0xa1550101, BTTV_BOARD_IVC200,        "IVC-200G" },
+ 	{ 0xa1550102, BTTV_BOARD_IVC200,        "IVC-200G" },
+ 	{ 0xa1550103, BTTV_BOARD_IVC200,        "IVC-200G" },
++	{ 0xa1550800, BTTV_BOARD_IVC200,        "IVC-200"  },
++	{ 0xa1550801, BTTV_BOARD_IVC200,        "IVC-200"  },
++	{ 0xa1550802, BTTV_BOARD_IVC200,        "IVC-200"  },
++	{ 0xa1550803, BTTV_BOARD_IVC200,        "IVC-200"  },
+ 	{ 0xa182ff00, BTTV_BOARD_IVC120,        "IVC-120G" },
+ 	{ 0xa182ff01, BTTV_BOARD_IVC120,        "IVC-120G" },
+ 	{ 0xa182ff02, BTTV_BOARD_IVC120,        "IVC-120G" },
+-- 
+1.7.1.rc2.12.g3a006
 
-John 
