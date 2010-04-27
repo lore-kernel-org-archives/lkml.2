@@ -1,72 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab0D0Plp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 11:41:45 -0400
-Received: from usul.saidi.cx ([204.11.33.34]:50201 "EHLO usul.overt.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754033Ab0D0Plm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 11:41:42 -0400
-Date: Tue, 27 Apr 2010 08:41:34 -0700
-From: Philip Langdale <philipl@overt.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Jeff Garrett <jeff@jgarrett.org>, Andi Kleen <andi@firstfloor.org>,
-       linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: acpi_idle: Very idle Core i7 machine never enters C3
-Message-ID: <20100427084134.2874d142@fido5>
-In-Reply-To: <alpine.LFD.2.00.1004270319560.3999@localhost.localdomain>
-References: <20100126084740.GA5265@jgarrett.org>
-	<87y6jkee1b.fsf@basil.nowhere.org>
-	<20100205160900.GA2736@jgarrett.org>
-	<alpine.LFD.2.00.1002051238280.4050@localhost.localdomain>
-	<20100426194002.586fbaa5@fido5>
-	<alpine.LFD.2.00.1004270319560.3999@localhost.localdomain>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-RunX1: Yes
+	id S1754904Ab0D0Pnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 11:43:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35515 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753915Ab0D0Pnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 11:43:31 -0400
+Date: Tue, 27 Apr 2010 17:42:11 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
+ PageSwapCache  pages
+Message-ID: <20100427154211.GA8860@random.random>
+References: <1271946226.2100.211.camel@barrios-desktop>
+ <1271947206.2100.216.camel@barrios-desktop>
+ <20100422154443.GD30306@csn.ul.ie>
+ <20100423183135.GT32034@random.random>
+ <20100423192311.GC14351@csn.ul.ie>
+ <20100423193948.GU32034@random.random>
+ <20100423213549.GV32034@random.random>
+ <20100424105226.GF14351@csn.ul.ie>
+ <20100425144113.GB5789@random.random>
+ <20100427094002.GD4895@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100427094002.GD4895@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Apr 2010 03:26:34 -0400 (EDT)
-Len Brown <lenb@kernel.org> wrote:
-
+On Tue, Apr 27, 2010 at 10:40:02AM +0100, Mel Gorman wrote:
+> On Sun, Apr 25, 2010 at 04:41:13PM +0200, Andrea Arcangeli wrote:
+> > On Sat, Apr 24, 2010 at 11:52:27AM +0100, Mel Gorman wrote:
+> > > It should be. I expect that's why you have never seen the bugon in
+> > > swapops.
+> > 
+> > Oh I just got the very crash you're talking about with aa.git with
+> > your v8 code. Weird that I never reproduced it before! I think it's
+> > because I fixed gcc to be fully backed by hugepages always (without
+> > khugepaged) and I was rebuilding a couple of packages, and that now
+> > triggers memory compaction much more, but mixed with heavy
+> > fork/execve. This is the only instability I managed to reproduce over
+> > 24 hours of stress testing and it's clearly not related to transparent
+> > hugepage support but it's either a bug in migrate.c (more likely) or
+> > memory compaction.
+> > 
+> > Note that I'm running with the 2.6.33 anon-vma code, so it will
+> > relieve you to know it's not the anon-vma recent changes causing this
+> > (well I can't rule out anon-vma bugs, but if it's anon-vma, it's a
+> > longstanding one).
+> > 
+> > kernel BUG at include/linux/swapops.h:105!
+> > invalid opcode: 0000 [#1] SMP 
+> > last sysfs file: /sys/devices/pci0000:00/0000:00:12.0/host0/target0:0:0/0:0:0:0/block/sr0/size
+> > CPU 0 
+> > Modules linked in: nls_iso8859_1 loop twofish twofish_common tun bridge stp llc bnep sco rfcomm l2cap bluetooth snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss usbhid gspca_pac207 gspca_main videodev v4l1_compat v4l2_compat_ioctl32 snd_hda_codec_realtek ohci_hcd snd_hda_intel ehci_hcd usbcore snd_hda_codec snd_pcm snd_timer snd snd_page_alloc sg psmouse sr_mod pcspkr
+> > 
+> > Pid: 13351, comm: basename Not tainted 2.6.34-rc5 #23 M2A-VM/System Product Name
+> > RIP: 0010:[<ffffffff810e66b0>]  [<ffffffff810e66b0>] migration_entry_wait+0x170/0x180
+> > RSP: 0000:ffff88009ab6fa58  EFLAGS: 00010246
+> > RAX: ffffea0000000000 RBX: ffffea000234eed8 RCX: ffff8800aaa95298
+> > RDX: 00000000000a168d RSI: ffff88000411ae28 RDI: ffffea00025550a8
+> > RBP: ffffea0002555098 R08: ffff88000411ae28 R09: 0000000000000000
+> > R10: 0000000000000008 R11: 0000000000000009 R12: 00000000aaa95298
+> > R13: 00007ffff8a53000 R14: ffff88000411ae28 R15: ffff88011108a7c0
+> > FS:  00002adf29469b90(0000) GS:ffff880001a00000(0000) knlGS:0000000055700d50
+> > CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > CR2: 00007ffff8a53000 CR3: 0000000004f80000 CR4: 00000000000006f0
+> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > Process basename (pid: 13351, threadinfo ffff88009ab6e000, task ffff88009ab96c70)
+> > Stack:
+> > ffff8800aaa95280 ffffffff810ce472 ffff8801134a7ce8 0000000000000000
+> > <0> 00000000142d1a3e ffffffff810c2e35 79f085e9c08a4db7 62d38944fd014000
+> > <0> 76b07a274b0c057a ffffea00025649f8 f8000000000a168d d19934e84d2a74f3
+> > Call Trace:
+> > [<ffffffff810ce472>] ? page_add_new_anon_rmap+0x72/0xc0
+> > [<ffffffff810c2e35>] ? handle_pte_fault+0x7a5/0x7d0
+> > [<ffffffff8150506d>] ? do_page_fault+0x13d/0x420
+> > [<ffffffff8150215f>] ? page_fault+0x1f/0x30
+> > [<ffffffff81273bfb>] ? strnlen_user+0x4b/0x80
+> > [<ffffffff81131f4e>] ? load_elf_binary+0x12be/0x1c80
+> > [<ffffffff810f426d>] ? search_binary_handler+0xad/0x2c0
+> > [<ffffffff810f5ce7>] ? do_execve+0x247/0x320
+> > [<ffffffff8100ab16>] ? sys_execve+0x36/0x60
+> > [<ffffffff8100314a>] ? stub_execve+0x6a/0xc0
+> > Code: 5e ff ff ff 8d 41 01 89 4c 24 08 89 44 24 04 8b 74 24 04 8b 44 24 08 f0 0f b1 32 89 44 24 0c 8b 44 24 0c 39 c8 74 a4 89 c1 eb d1 <0f> 0b eb fe 66 66 66 2e 0f 1f 84 00 00 00 00 00 41 54 49 89 d4 
+> > RIP  [<ffffffff810e66b0>] migration_entry_wait+0x170/0x180
+> > RSP <ffff88009ab6fa58>
+> > ---[ end trace 840ce8bc6f6dc402 ]---
+> > 
+> > It doesn't look like a coincidence the page that had the migration PTE
+> > set was the argv in the user stack during execve. The bug has to be
+> > there. Or maybe it's a coincidence and it will mislead us. If you've
+> > other stack traces please post them so I can have more info (I'll post
+> > more stack traces if I get them again, it doesn't look easy to
+> > reproduce, supposedly the bug has always been there since the first
+> > time I used memory compaction, and this is the first time I reproduce
+> > it).
+> > 
 > 
-> 
-> Curious failure.
-> I could imagine that there is something in the design of this board
-> where we want to not enter a deep C-state, and thus the board and
-> Linux are doing the right thing by avoiding the C-state.
-> However, ignoring the bm-status check and blindly going to that state
-> I would expect to impact throughput and latency, but don't see
-> how that might 'serialize' the workload or otherwise cause it
-> to use some cores and not others.
+> The oopses I am getting look very similar. The page is encountered in
+> the stack while copying the arguements in. I don't think it's a
+> coincidence.
 
-Hmm - and now I can't reproduce it. I got proper parallelization across
-the kernel compile. I guess some sort of runtime state was messed up,
-and I obviously lost that then I rebooted. :-/
- 
-> It is possible that we jump into those deep states just to be
-> immediately forced to jump right back out.  You'd see this in
-> high usage counts under /sys/devices/system/cpu/cpu*/cpuidle
-> 
-> turbostat, of course, would tell you the actual residency in those
-> states. Of course there is a twist...  The hardware has a feature to
-> recognize thrashing and may demote an OS request for a deep state into
-> an actual hardware request for a shallower state.  this is one reason
-> that the output of powertop (request) and turbostat (result)
-> may be different.
+Awesome this is happening in the same page and in the same place!
+Thanks a lot for sharing your oops (I'm running the same kernel again
+and I never reproduced it again but I didn't apply the "reproducer"
+stress to it but only plenty of gcc hugepage loads, I think rebuilding
+gcc with hugepage-gcc is what triggered it the first time, as gcc
+takes more memory to build and has a lot more of pathologic cases like
+translate.o taking lots of memory than the kernel or glibc which I
+rebuilt a lot recently).
 
-Without the patch, Turbostat showed C3 residency of 99% for most
-hyper-threads with one or two getting ~15% C6 residency. PC3 was 75%.
-Cores were at their lowest P state.
+Reducing the race to this will help tremendously. If I understand
+correctly patch 1 didn't fix it (and patch 2 can't be the issue for me
+as I'm running 2.6.33 anon-vma code). I'll check ASAP if patch 1 is
+needed even if it's not fixing this bug, or if it's unnecessary, and
+what else could be wrong...
 
-With the patch, C6 residency is 99%, PC6 is 75% and 7 hyper-threads at
-lowest P state with one stubborning running at a higher level.
-
-I have a very similarly configured machine with an asus motherboard and
-it doesn't have this problem - which is another reason I'm wondering if
-it's an OEM screwup.
-
---phil
+Thanks a lot for the help!
+Andrea
