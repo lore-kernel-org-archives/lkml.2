@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab0D0MFo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 08:05:44 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:39773 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473Ab0D0MFn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 08:05:43 -0400
+	id S1754340Ab0D0MGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 08:06:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5240 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753626Ab0D0MGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 08:06:05 -0400
+Message-ID: <4BD6D329.5060204@redhat.com>
+Date: Tue, 27 Apr 2010 15:06:01 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <j2t1ba2fa241004270418hd37b1fdk83f31d4f608584f9@mail.gmail.com>
-References: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com> 
-	<20100419145934.GA10893@kroah.com> <t2w1ba2fa241004211522le49fc938m341553b0f2b89031@mail.gmail.com> 
-	<20100425163711.GA20196@kroah.com> <o2n1ba2fa241004251222x6ab49726p9757fd8be4952bee@mail.gmail.com> 
-	<20100425193658.GA24039@kroah.com> <m2g1ba2fa241004251309oa5592255lb4e4b96ea07dd12a@mail.gmail.com> 
-	<o2qac3eb2511004260338xd8146a7dy415d3f0f4f1c8bbc@mail.gmail.com> 
-	<1272295140.2434.8.camel@yio.site> <j2t1ba2fa241004270418hd37b1fdk83f31d4f608584f9@mail.gmail.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Tue, 27 Apr 2010 14:05:25 +0200
-Message-ID: <s2yac3eb2511004270505g4ded10f5k5322850e8b58790f@mail.gmail.com>
-Subject: Re: request_firmware API exhaust memory
-To: Tomas Winkler <tomasw@gmail.com>
-Cc: Greg KH <greg@kroah.com>, Johannes Berg <johannes@sipsolutions.net>,
-       David Woodhouse <dwmw2@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/22] KVM: MMU: Make tdp_enabled a mmu-context parameter
+References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com> <1272364712-17425-3-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1272364712-17425-3-git-send-email-joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 13:18, Tomas Winkler <tomasw@gmail.com> wrote:
+On 04/27/2010 01:38 PM, Joerg Roedel wrote:
+> This patch changes the tdp_enabled flag from its global
+> meaning to the mmu-context and renames it to direct_map
+> there. This is necessary for Nested SVM with emulation of
+> Nested Paging where we need an extra MMU context to shadow
+> the Nested Nested Page Table.
+>
+> @@ -2423,6 +2424,7 @@ static int init_kvm_softmmu(struct kvm_vcpu *vcpu)
+>   		r = paging32_init_context(vcpu);
+>
+>   	vcpu->arch.mmu.base_role.cr4_pae = !!is_pae(vcpu);
+> +	vcpu->arch.mmu.direct_map        = false;
+>
+>   	return r;
+>   }
+>    
 
-> The difference between vfree and vunmap is that vfree request for
-> deallocating the pages while vunmap leaves the  pages allocated.
+We could also set direct_map = true for real mode, would probably 
+simplify some later logic (can be cleaned up later, no need to update now).
 
-No, that's not the problem, as described in the earlier mail. Only if
-the are vmalloc'd they will ever get free'd. The kernel will not take
-over custom pages you just mapped. They will never get touched by
-vfree. The page count in the vm area will always be zero.
+-- 
+error compiling committee.c: too many arguments to function
 
-> I
-> don't think you can replace vfree with vunmap the way you did.
-> The transition from vmalloc to alloc_pages were done by the patch
-> bellow.
-
-Sure, if you do vmap, you need to do vunmap, not vfree. But the pages
-you need to take care of yourself, like you have allocated them. vfree
-in that context makes only sense if you use vmalloc.
-
-The patch I posted makes the issue go away. It's still not the right
-fix, because the pages are only get freed when the device id cleaned
-up, not on calling release_firmware. But it should illustrate the
-underlying issue, and that there is no leaked memory anymore.
-
->  I think this needs some more review.
-
-If David does not fix it, it probably just needs to be reverted. And
-instead of implementing our own "memory management", we should rather
-add a vrealloc(), and the firmware loader should use that.
-
-Thanks,
-Kay
