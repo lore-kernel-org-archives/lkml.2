@@ -1,84 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab0D0FyM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 01:54:12 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:59944 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab0D0FyK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 01:54:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=L33TI1r9bKDj3BR/YKGMGhSjWRwJYIn+H5q+iPPmf9/Igd0fLzrFHM/O2PElElWeZV
-         IsWiE0oOmmTOGfPPVfcnsUlzqqCdBDubGOQihC39vPJEm8K+EN7efpMyr8Fu3HM41XrH
-         JngwM9H6QjPCq+qDjLGwNVG+hn5/gXt83UnBk=
-MIME-Version: 1.0
-In-Reply-To: <1272315374-11951-1-git-send-email-jason.wessel@windriver.com>
-References: <1272315374-11951-1-git-send-email-jason.wessel@windriver.com>
-Date: Tue, 27 Apr 2010 13:54:09 +0800
-Message-ID: <p2p2375c9f91004262254v20e361aexf508b81350e03ec1@mail.gmail.com>
-Subject: Re: [PATCH] Correctly deal with make that has an argument which 
-	contains an "s"
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752205Ab0D0F4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 01:56:25 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47953 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751Ab0D0F4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 01:56:24 -0400
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Apr 2010 15:56:10 +1000
+Message-ID: <1272347770.24542.1.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 4:56 AM, Jason Wessel
-<jason.wessel@windriver.com> wrote:
-> When using remake, which is based on gnumake, if you invoke
-> an example build as shown below, the build will become silent
-> due to the top level make file incorrectly guessing that
-> the end user wants a silent build because an argument that
-> contained an "s" was used.
->
-> remake --no-extended-errors
->
-> Fix up the top level Makefile to use filter with a list of
-> options that mean silent with the various revisions of gnumake,
-> instead of findstring.
->
-> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-> CC: Michal Marek <mmarek@suse.cz>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: linux-kbuild@vger.kernel.org
+Hi Linus !
+
+PowerPC has been a bit quiet this time around :-) That is until Kumar
+woke me up with a few fixes and defconfig updates for the freescale
+embedded platforms.
+
+Cheers,
+Ben.
+
+The following changes since commit b91ce4d14a21fc04d165be30319541e0f9204f15:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../davem/net-2.6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+Anton Vorontsov (1):
+      powerpc/85xx/86xx: Fix build w/ CONFIG_PCI=n
+
+Becky Bruce (1):
+      powerpc/fsl_booke: Correct test for MMU_FTR_BIG_PHYS
+
+Kim Phillips (4):
+      powerpc/83xx: add RTC drivers in 83xx defconfig
+      powerpc/83xx: enable EPOLL syscall in defconfig
+      powerpc/83xx: configure SIL SATA driver in 83xx-wide defconfig
+      powerpc/mpc8xxx defconfigs - turn off SYSFS_DEPRECATED
+
+Kumar Gala (2):
+      powerpc: 2.6.34 update of defconfigs for embedded 6xx/7xxx, 8xx, 8xxx
+      powerpc/fsl-booke: Fix CONFIG_RELOCATABLE support on FSL Book-E ppc32
+
+Wolfgang Ocker (1):
+      powerpc/fsl-cpm: Configure clock correctly for SCC
+
+ arch/powerpc/configs/83xx/asp8347_defconfig       |   44 ++++----
+ arch/powerpc/configs/83xx/kmeter1_defconfig       |   28 +++--
+ arch/powerpc/configs/83xx/mpc8313_rdb_defconfig   |   49 +++++----
+ arch/powerpc/configs/83xx/mpc8315_rdb_defconfig   |   50 +++++----
+ arch/powerpc/configs/83xx/mpc832x_mds_defconfig   |   45 ++++----
+ arch/powerpc/configs/83xx/mpc832x_rdb_defconfig   |   49 ++++----
+ arch/powerpc/configs/83xx/mpc834x_itx_defconfig   |   44 ++++----
+ arch/powerpc/configs/83xx/mpc834x_itxgp_defconfig |   43 ++++----
+ arch/powerpc/configs/83xx/mpc834x_mds_defconfig   |   46 +++++----
+ arch/powerpc/configs/83xx/mpc836x_mds_defconfig   |   45 ++++----
+ arch/powerpc/configs/83xx/mpc836x_rdk_defconfig   |   44 ++++---
+ arch/powerpc/configs/83xx/mpc837x_mds_defconfig   |   46 +++++----
+ arch/powerpc/configs/83xx/mpc837x_rdb_defconfig   |   51 +++++----
+ arch/powerpc/configs/83xx/sbc834x_defconfig       |   44 ++++----
+ arch/powerpc/configs/85xx/ksi8560_defconfig       |   23 +++-
+ arch/powerpc/configs/85xx/mpc8540_ads_defconfig   |   25 +++--
+ arch/powerpc/configs/85xx/mpc8560_ads_defconfig   |   34 ++++--
+ arch/powerpc/configs/85xx/mpc85xx_cds_defconfig   |   31 ++++--
+ arch/powerpc/configs/85xx/sbc8548_defconfig       |   31 ++++--
+ arch/powerpc/configs/85xx/sbc8560_defconfig       |   25 +++--
+ arch/powerpc/configs/85xx/socrates_defconfig      |   51 +++++----
+ arch/powerpc/configs/85xx/stx_gp3_defconfig       |   51 +++++----
+ arch/powerpc/configs/85xx/tqm8540_defconfig       |   48 +++++---
+ arch/powerpc/configs/85xx/tqm8541_defconfig       |   54 ++++++---
+ arch/powerpc/configs/85xx/tqm8548_defconfig       |   47 +++++---
+ arch/powerpc/configs/85xx/tqm8555_defconfig       |   54 ++++++---
+ arch/powerpc/configs/85xx/tqm8560_defconfig       |   54 ++++++---
+ arch/powerpc/configs/85xx/xes_mpc85xx_defconfig   |   59 +++++++---
+ arch/powerpc/configs/86xx/gef_ppc9a_defconfig     |  102 +++++++++++-------
+ arch/powerpc/configs/86xx/gef_sbc310_defconfig    |   53 ++++++----
+ arch/powerpc/configs/86xx/gef_sbc610_defconfig    |   96 +++++++++++------
+ arch/powerpc/configs/86xx/mpc8610_hpcd_defconfig  |   34 +++---
+ arch/powerpc/configs/86xx/mpc8641_hpcn_defconfig  |   48 +++++---
+ arch/powerpc/configs/86xx/sbc8641d_defconfig      |   40 ++++---
+ arch/powerpc/configs/adder875_defconfig           |   18 ++--
+ arch/powerpc/configs/c2k_defconfig                |   55 ++++-----
+ arch/powerpc/configs/ep8248e_defconfig            |   20 +++-
+ arch/powerpc/configs/ep88xc_defconfig             |   17 ++--
+ arch/powerpc/configs/linkstation_defconfig        |   48 +++++---
+ arch/powerpc/configs/mgcoge_defconfig             |   31 ++++--
+ arch/powerpc/configs/mgsuvd_defconfig             |   19 ++--
+ arch/powerpc/configs/mpc7448_hpc2_defconfig       |   26 +++--
+ arch/powerpc/configs/mpc8272_ads_defconfig        |   23 +++-
+ arch/powerpc/configs/mpc83xx_defconfig            |  124 ++++++++++++++++-----
+ arch/powerpc/configs/mpc85xx_defconfig            |   62 +++++++----
+ arch/powerpc/configs/mpc85xx_smp_defconfig        |   64 +++++++----
+ arch/powerpc/configs/mpc866_ads_defconfig         |   20 ++--
+ arch/powerpc/configs/mpc86xx_defconfig            |   57 ++++++----
+ arch/powerpc/configs/mpc885_ads_defconfig         |   20 ++--
+ arch/powerpc/configs/pq2fads_defconfig            |   22 +++-
+ arch/powerpc/configs/prpmc2800_defconfig          |   52 ++++++---
+ arch/powerpc/configs/storcenter_defconfig         |   33 +++---
+ arch/powerpc/include/asm/page.h                   |   15 +++-
+ arch/powerpc/mm/fsl_booke_mmu.c                   |    4 +-
+ arch/powerpc/platforms/85xx/Kconfig               |    4 +-
+ arch/powerpc/platforms/86xx/Kconfig               |    4 +-
+ arch/powerpc/sysdev/cpm1.c                        |   14 ++-
+ arch/powerpc/sysdev/cpm2.c                        |   11 ++-
+ 58 files changed, 1446 insertions(+), 905 deletions(-)
 
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
-
-Thanks.
-
-
-> ---
->  Makefile |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/Makefile b/Makefile
-> index fa1db90..91ae299 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -294,7 +294,7 @@ endif
->  # If the user is running make -s (silent mode), suppress echoing of
->  # commands
->
-> -ifneq ($(findstring s,$(MAKEFLAGS)),)
-> +ifneq ($(filter s% -s% --silent --quiet,$(MAKEFLAGS)),)
->   quiet=silent_
->  endif
->
-> --
-> 1.6.3.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
