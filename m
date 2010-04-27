@@ -1,100 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab0D0N2U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 09:28:20 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:7180 "EHLO
-	VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755741Ab0D0N2S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 09:28:18 -0400
-X-SpamScore: -26
-X-BigFish: VPS-26(zz1432P98dN936eM9371Pab9bhzz1202hzz6ff19hz32i2a8h87h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L1JEQS-01-BF6-02
-X-M-MSG: 
-Date: Tue, 27 Apr 2010 15:28:01 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/22] KVM: MMU: Track page fault data in struct vcpu
-Message-ID: <20100427132801.GI11097@amd.com>
-References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com>
- <1272364712-17425-17-git-send-email-joerg.roedel@amd.com>
- <4BD6DF7C.1090203@redhat.com>
+	id S1755845Ab0D0N2c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 09:28:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54983 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755775Ab0D0N2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 09:28:19 -0400
+Date: Tue, 27 Apr 2010 15:28:12 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Oliver Neukum <oliver@neukum.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Nicu Pavel <npavel@ituner.com>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>
+Subject: Re: [PATCH 2/2] hid: add PM support to PicoLCD device
+In-Reply-To: <20100425214306.5d7be049@neptune.home>
+Message-ID: <alpine.LNX.2.00.1004271525330.9849@pobox.suse.cz>
+References: <20100425214003.7e87c6a3@neptune.home> <20100425214306.5d7be049@neptune.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4BD6DF7C.1090203@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 27 Apr 2010 13:28:01.0834 (UTC) FILETIME=[75C5C8A0:01CAE60D]
-X-Reverse-DNS: unknown
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 03:58:36PM +0300, Avi Kivity wrote:
-> On 04/27/2010 01:38 PM, Joerg Roedel wrote:
-> >This patch introduces two fields in vcpu_arch for x86:
-> >
-> >	* fault_address
-> >	* fault_error_code
-> >
-> >This will be used to correctly propagate page faults back
-> >into the guest when we could have either an ordinary page
-> >fault or a nested page fault. In the case of a nested page
-> >fault the fault-address is different from the original
-> >address that should be walked. So we need to keep track
-> >about the real fault-address.
-> >We could also remove the current path of the error_code to
-> >the fault. But this change is too invasive and outside the
-> >scope of this patch set. It will be changed and tested
-> >seperatly.
-> >
-> >Signed-off-by: Joerg Roedel<joerg.roedel@amd.com>
-> >---
-> >  arch/x86/include/asm/kvm_host.h |    3 +++
-> >  arch/x86/kvm/paging_tmpl.h      |    4 ++++
-> >  2 files changed, 7 insertions(+), 0 deletions(-)
-> >
-> >diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> >index d9dfc8c..8426870 100644
-> >--- a/arch/x86/include/asm/kvm_host.h
-> >+++ b/arch/x86/include/asm/kvm_host.h
-> >@@ -298,6 +298,9 @@ struct kvm_vcpu_arch {
-> >  	/* Used for two dimensional paging emulation */
-> >  	struct kvm_mmu nested_mmu;
-> >
-> >+	unsigned long fault_address;
+On Sun, 25 Apr 2010, Bruno Prémont wrote:
+
+> Add PM support in order to turn off backlight on suspend, restore
+> it on resume and especially restore complete state on reset-resume.
 > 
-> Probably a problem on i386.  How does npt handle faults when the
-> guest is using pae paging and the host (in our case the guest...)
-> isn't?  I see it uses exit_info_2 for the address, which is a u64.
-
-This shouldn't be an issue. If we run on 32bit host with nested paging
-the guest can't have more than 4gb of addressable memory because of the
-page table limitations (nested page table is always in host format).
-
-> So we probably need to upgrade gva_t to a u64.  Please send this as
-> a separate patch, and test on i386 hosts.
+> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+> ---
+>  drivers/hid/hid-picolcd.c |   61 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 61 insertions(+), 0 deletions(-)
 > 
-> >+	int fault_error_code;
-> 
-> unsigned.
+> diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
+> index aa6f2e1..c652390 100644
+> --- a/drivers/hid/hid-picolcd.c
+> +++ b/drivers/hid/hid-picolcd.c
+> @@ -852,6 +852,20 @@ static inline int picolcd_resume_backlight(struct picolcd_data *data)
+>  	return picolcd_set_brightness(data->backlight);
+>  }
+>  
+> +#ifdef CONFIG_PM
+> +static void picolcd_suspend_backlight(struct picolcd_data *data)
+> +{
+> +	int bl_power = data->lcd_power;
+> +	if (!data->backlight)
+> +		return;
+> +
+> +	data->backlight->props.power = FB_BLANK_POWERDOWN;
+> +	picolcd_set_brightness(data->backlight);
+> +	data->lcd_power = data->backlight->props.power = bl_power;
+> +}
+> +#else
+> +#define picolcd_suspend_backlight(a)
+> +#endif /* CONFIG_PM */
 
-Right. I'll fix it.
+Stylistic thing -- it would be nice if this was actually 
 
-> Maybe put the two in a struct, easier to pass around.
+static inline void picolcd_suspend_backlight(struct picolcd_data *data)
+{
+	return 0;
+}
 
-Yeah, makes it easier to read.
+But why do you need to have it defined in !CONFIG_PM situation anyway? 
+It's not used otherwise at all.
 
-	Joerg
+>  #else
+>  static inline int picolcd_init_backlight(struct picolcd_data *data,
+>  		struct hid_report *report)
+> @@ -865,6 +879,7 @@ static inline int picolcd_resume_backlight(struct picolcd_data *data)
+>  {
+>  	return 0;
+>  }
+> +#define picolcd_suspend_backlight(a)
 
+Any why is it defined once more here?
 
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
