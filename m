@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab0D0UTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 16:19:05 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:59530 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab0D0UTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 16:19:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=aEW9viy/pEEufIGb4+sR1CNjejk6VG1TLaTKiX8PuK8wQxkHorWOGhzSDkeTLEFabk
-         f/hNR0TmHBNJYX2SKmMUz1EuToxW9vqnpV5t41WnELERKXRoxCLCA0DNmxjAgPDKyxRT
-         7WRE9Z6gMEY8s6R3R4TeUNU88y0XSlZF6U8Zo=
-Date: Tue, 27 Apr 2010 22:12:52 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: John Kacur <jkacur@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/7] logfs: push down BKL into ioctl function
-Message-ID: <20100427201247.GE5586@nowhere>
-References: <alpine.LFD.2.00.1004271359180.3318@localhost> <alpine.LFD.2.00.1004271725490.3318@localhost> <20100427153209.GD16794@logfs.org> <201004271738.50505.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201004271738.50505.arnd@arndb.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754700Ab0D0UXK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 16:23:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43540 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753933Ab0D0UXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 16:23:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,283,1270450800"; 
+   d="scan'208";a="616968691"
+Subject: Re: [Fwd: 2.6.34-rc4/5: iwlagn unusable until reload]
+From: reinette chatre <reinette.chatre@intel.com>
+To: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Cc: "Zhao, Shanyu" <shanyu.zhao@intel.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1272399067.4381.10749.camel@rchatre-DESK>
+References: <1272399067.4381.10749.camel@rchatre-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Apr 2010 13:23:07 -0700
+Message-ID: <1272399787.4381.10768.camel@rchatre-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 05:38:50PM +0200, Arnd Bergmann wrote:
-> On Tuesday 27 April 2010, Jörn Engel wrote:
-> > On Tue, 27 April 2010 17:27:19 +0200, John Kacur wrote:
-> > > 
-> > > Hasn't the "current" merge window been over with for weeks? I was assuming 
-> > > that bkl push down, or other bkl patches are for the next merge window.
+I see now that a new kernel.org bug
+(https://bugzilla.kernel.org/show_bug.cgi?id=15862 ) has been created
+for this issue. We'll track it there.
+
+Reinette
+
+On Tue, 2010-04-27 at 13:11 -0700, reinette chatre wrote:
+> Nico,
+> 
+> The wireless folks don't really hang out on lkml. I'm forwarding your
+> message to the linux-wireless mailing list.
+> 
+> Reinette
+> 
+> 
+> -------- Forwarded Message --------
+> > From: Nico Schottelius <nico-linux-20100427@schottelius.org>
+> > To: LKML <linux-kernel@vger.kernel.org>
+> > Subject: 2.6.34-rc4/5: iwlagn unusable until reload
+> > Date: Tue, 27 Apr 2010 00:49:34 -0700
 > > 
-> > That's what I was thinking.  But some of the bkl related discussion gave
-> > me the impression that such patches were still being merged.  So I
-> > wanted to be sure.
+> > Hello again!
+> > 
+> > If I try to use iwlagn on the X201 with
+> > 
+> > 02:00.0 Network controller: Intel Corporation WiFi Link 6000 Series (rev 35)
+> > 
+> > and 2.6.34-rc5-00211-gb91ce4d, I get a lot of error and no connection,
+> > until I
+> > 
+> > [root@kr ~]# rmmod iwlagn
+> > [root@kr ~]# modprobe iwlagn
+> > 
+> > Attached dmesg before & after.
+> > 
+> > Cheers,
+> > 
+> > Nico
+> > 
 > 
-> Yes, just queue it for the 2.6.35-rc1 window and make sure it shows up in
-> linux-next, or send a replacement patch with your Ack or S-o-b so we can
-> put it into the BKL queue.
-> 
-> 	Arnd
 
-
-I've applied this series in bkl/ioctl, it passed allyesconfig in sparc.
-I will apply the others from you and John tomorrow or so (and will enjoy
-my part as well). Jörn, please queue this patch if you want to, as you prefer,
-we can host it as well if necessary.
-
-Linus I hope you don't mind but I've dropped the .bkl_ioctl renaming.
-In fact it had conflicts with several trees in Linux-next and now that
-we are about to pushdown in every ioctl users, this would be an
-unnecessary step I think.
-
-Thanks.
 
