@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab0D0T70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 15:59:26 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:50459 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754999Ab0D0T7Z (ORCPT
+	id S1751984Ab0D0UGA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 16:06:00 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:4449 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab0D0UF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 15:59:25 -0400
+	Tue, 27 Apr 2010 16:05:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZqTyrKJpQt+AKNK4UB5tON8TzFp4dTmJDRnNuHZYsnh3KOuNPivxyWqUNyF5TqJS+2
-         f9Ztlhxg2TS0PIZC6+CtfqIcPSt3LiZF57b2FZ3GKxLJSCKO+PZNasfgSBsbTsYHsNkW
-         pP+gT58P2pytlNL0RJjXUhVnZ0kZjxEC8sATE=
-Date: Tue, 27 Apr 2010 21:59:20 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: John Kacur <jkacur@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-       =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Subject: Re: [PATCH 1/7] logfs: push down BKL into ioctl function
-Message-ID: <20100427195912.GD5586@nowhere>
-References: <alpine.LFD.2.00.1004271359180.3318@localhost> <1272378265-10909-2-git-send-email-arnd@arndb.de>
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=L4BqjYYFX1wFhDaO3V2wdpNBB8Ioi0uNvcltMrJ7Pqmuv4JvI5eUG4DHTJ9HWnyWyz
+         A46R+NP81it7wvvAUzsvfSWFsIeaR7PL/bTCZLKjpyj1wJm9gifB/tJvQzZDpjgDm43m
+         Q23Pyeaw17yHikb6rpsCT0cAhLKWgqIU593Ns=
+Date: Tue, 27 Apr 2010 22:05:38 +0200 (CEST)
+From: John Kacur <jkacur@gmail.com>
+X-X-Sender: jkacur@localhost
+To: Thomas Gleixner <tglx@linutronix.de>, Nick Piggin <npiggin@suse.de>
+cc: jstultz@gmail.com, LKML <linux-kernel@vger.kernel.org>,
+       linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: 2.6.33.3-rt16 compile failure in fs/ecryptfs/inode.o
+Message-ID: <alpine.LFD.2.00.1004272202250.3318@localhost>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272378265-10909-2-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2008694044-1272398755=:3318"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 04:24:19PM +0200, Arnd Bergmann wrote:
-> --- a/fs/smbfs/ioctl.c
-> +++ b/fs/smbfs/ioctl.c
-> @@ -26,7 +26,7 @@ int
->  smb_ioctl(struct inode *inode, struct file *filp,
->  	  unsigned int cmd, unsigned long arg)
->  {
-> -	struct smb_sb_info *server = server_from_inode(inode);
-> +	struct smb_sb_info *server = server_from_inode(filp->f_path.dentry->d_inode);
->  	struct smb_conn_opt opt;
->  	int result = -EINVAL;
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-2008694044-1272398755=:3318
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 
 
-I've included this part in the smbfs pushdown patch.
+make O=/bld/2.6.33.3-rt16/ fs/ecryptfs/inode.o
+  Using /home/jkacur/jk-2.6 as source for kernel
+  GEN     /bld/2.6.33.3-rt16/Makefile
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    /home/jkacur/jk-2.6/scripts/checksyscalls.sh
+  CC [M]  fs/ecryptfs/inode.o
+/home/jkacur/jk-2.6/fs/ecryptfs/inode.c: In function 
+¡ecryptfs_lookup_and_interpose_lower¢:
+/home/jkacur/jk-2.6/fs/ecryptfs/inode.c:266: error: wrong type argument to 
+unary exclamation mark
+make[2]: *** [fs/ecryptfs/inode.o] Error 1
+make[1]: *** [fs/ecryptfs/inode.o] Error 2
+make: *** [sub-make] Error 2
 
-Thanks.
+The above comes from: 
+commit 5c0eb5cec064ce26ffcd0cdd684c9b6dd7c9074e
+Author: Nick Piggin <npiggin@suse.de>
+Date:   Fri Jan 29 15:38:21 2010 -0800
 
+    fs-dcache-scale-d_count
+
+--8323328-2008694044-1272398755=:3318--
