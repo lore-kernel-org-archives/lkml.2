@@ -1,37 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab0D0R7x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 13:59:53 -0400
-Received: from kroah.org ([198.145.64.141]:36675 "EHLO coco.kroah.org"
+	id S1756632Ab0D0R7z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 13:59:55 -0400
+Received: from kroah.org ([198.145.64.141]:36665 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756532Ab0D0R7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 13:59:51 -0400
-Date: Tue, 27 Apr 2010 10:49:18 -0700
+	id S1756603Ab0D0R7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 13:59:49 -0400
+Date: Tue, 27 Apr 2010 10:35:45 -0700
 From: Greg KH <greg@kroah.com>
-To: Niklas Gottschalk <gottschalk.niklas@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, jarod@redhat.com,
-       abraham.manu@gmail.com, davilla@4pi.com, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] Staging: crystalhd: fix brace and whitespace coding
- style issue in crystalhd_hw.c
-Message-ID: <20100427174918.GA18314@kroah.com>
-References: <1268338543.19171.3.camel@GentooBox>
+To: Patrick Rooney <candyguitar@googlemail.com>
+Cc: gregkh@suse.de, jmm@debian.org, mithlesh@linsyssoft.com, svenne@krap.dk,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: wlan-ng: Fixed 80-character line coding style
+ issues in p80211req.c
+Message-ID: <20100427173545.GA17535@kroah.com>
+References: <92a765341003100046o179369d4r95dd99f08bdec6bb@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1268338543.19171.3.camel@GentooBox>
+In-Reply-To: <92a765341003100046o179369d4r95dd99f08bdec6bb@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 11, 2010 at 09:15:43PM +0100, Niklas Gottschalk wrote:
-> >From 33c0dbc048046e0666926de47a74d8870e3d4099 Mon Sep 17 00:00:00 2001
-> From: coach <coach@GentooBox.(none)>
-> Date: Thu, 11 Mar 2010 20:42:18 +0100
-> Subject: [PATCH] Staging: crystalhd: fix brace and whitespace coding style issue in crystalhd_hw.c
->  This is a patch to the crystalhd_hw.c file that fixes up some brace and whitespace warnings found by the checkpatch.pl tool
->  Signed-off-by: Niklas Gottschalk <gottschalk.niklas@googlemail.com>
+On Wed, Mar 10, 2010 at 08:46:30AM +0000, Patrick Rooney wrote:
+> Sorry to add this as an attachment, but copying and pasting corrupts
+> the patch, and git is telling me that: "git: 'send-email' is not a
+> git-command. See 'git --help'." (was following the instructions in
+> http://www.tuxradar.com/content/newbies-guide-hacking-linux-kernel; I
+> use Ubuntu 9.10).
 
-Sorry, but someone else already sent in this patch.
+That is because you need to install the "git-email" package, or some
+such thing...
+
+thanks,
 
 greg k-h
