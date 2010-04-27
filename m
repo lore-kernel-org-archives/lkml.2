@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab0D0UbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 16:31:12 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:46583 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275Ab0D0UbK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 16:31:10 -0400
-Subject: Re: 2.6.33.3-rt16 Oops caused by umount
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Xianghua Xiao <xiaoxianghua@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1272399798.2255.2.camel@localhost>
-References: <l2ye6bf505b1004271144ta6817962vec8167d813658648@mail.gmail.com>
-	 <alpine.LFD.2.00.1004272053130.2951@localhost.localdomain>
-	 <1272399798.2255.2.camel@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 27 Apr 2010 13:30:46 -0700
-Message-ID: <1272400246.2255.5.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1755896Ab0D0Ubo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 16:31:44 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:39379 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754950Ab0D0Ubn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 16:31:43 -0400
+From: Linus WALLEIJ <linus.walleij@stericsson.com>
+To: Linus WALLEIJ <linus.walleij@stericsson.com>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+       Alessandro Rubini <rubini@unipv.it>
+Date: Tue, 27 Apr 2010 22:07:37 +0200
+Subject: RE: [PATCH] DMAENGINE: DMA40 U8500 platform configuration v4
+Thread-Topic: [PATCH] DMAENGINE: DMA40 U8500 platform configuration v4
+Thread-Index: AcrmPTd6nhSPjRzUTeybJdj3WevEPAAB+0DQ
+Message-ID: <CEE6BB42CAD6E947908279175AF8470A025A4964A5@EXDCVYMBSTM006.EQ1STM.local>
+References: <1272395344-744-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1272395344-744-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-27 at 13:23 -0700, john stultz wrote:
-> On Tue, 2010-04-27 at 20:56 +0200, Thomas Gleixner wrote:
-> > On Tue, 27 Apr 2010, Xianghua Xiao wrote:
-> > 
-> > cc'ed John
-> > 
-> > > 2.6.33.2-rt13 worked fine, however on 2.6.33.3-rt16, when I do reboot, it oops:
-> > > 
-> > > # reboot
-> > > # Oops: Kernel access of bad area, sig: 11 [#1]
-> > > PREEMPT 83xx Sys
-> > > Modules linked in:
-> > > NIP: c00efc68 LR: c00efc38 CTR: 00000000
-> > > REGS: ce6e3dc0 TRAP: 0300   Not tainted  (2.6.33.3-rt16)
-> > > MSR: 00009032 <EE,ME,IR,DR>  CR: 24000448  XER: 00000000
-> > > DAR: 00000038, DSISR: 20000000
-> > > TASK = cd89ccc0[1613] 'umount' THREAD: ce6e2000
-> > > GPR00: 00000000 ce6e3e70 cd89ccc0 ce6e3ddc 22222222 00000000 ce6e3e24 ce6e3e04
-> > > GPR08: 00008000 00000010 cdfa2130 cdfa26e0 44000442 100bbc1c 0fffd000 ffffffff
-> > > GPR16: 00000001 00000000 007fff00 00000000 00000000 00000001 ce6e3eb8 00000021
-> > > GPR24: 00000060 00000000 00000000 ceb94c40 00000000 ceb94cc0 c065781c ce6e3e70
-> > > NIP [c00efc68] fs_may_remount_ro+0x6c/0xd8
-> > > LR [c00efc38] fs_may_remount_ro+0x3c/0xd8
-> > > Call Trace:
-> > > [ce6e3e70] [c00efc38] fs_may_remount_ro+0x3c/0xd8 (unreliable)
-> > > [ce6e3e90] [c00f1198] do_remount_sb+0x11c/0x164
-> > > [ce6e3eb0] [c0113a3c] do_mount+0x538/0x86c
-> > > [ce6e3f10] [c0113e30] sys_mount+0xc0/0x120
-> > > [ce6e3f40] [c00178d8] ret_from_syscall+0x0/0x38
-> > > --- Exception: c01 at 0xfe5f8c4
-> > >     LR = 0x10051b88
-> > > Instruction dump:
-> > > 38000000 817d00c0 3bbd00c0 60088000 814b0000 2f8a0000 419e0008 7c00522c
-> > > 7f8be800 419e004c 812b000c 81290040 <80090028> 2f800000 419e0028 a009006e
-> > > ---[ end trace 17c711f9d369c3a3 ]---
+[Self]
+
+> This completes the DMA40 support with the platform-specific
+> configuration for U8500/DB8500.
+(...)
+> --- a/arch/arm/mach-ux500/board-mop500.c
+> +++ b/arch/arm/mach-ux500/board-mop500.c
+> @@ -137,7 +137,7 @@ static void __init u8500_init_machine(void)
+>  	u8500_init_devices();
+>  }
 > 
-> Hey Xianghua, 
-> 	What filesystem was this on? And what architecture? 
+> -MACHINE_START(U8500, "ST-Ericsson MOP500 platform")
+> +MACHINE_START(NOMADIK, "ST-Ericsson MOP500 platform")
 
-Also a .config would be helpful.
+Oh no, I shouldn't touch that. Will fix this...
 
-thanks
--john
-
-
+Yours,
+Linus Walleij
