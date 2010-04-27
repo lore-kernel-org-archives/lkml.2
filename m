@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab0D0Q2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 12:28:09 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:43917
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752916Ab0D0Q2G (ORCPT
+	id S1756383Ab0D0Q2U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 12:28:20 -0400
+Received: from liberdade.minaslivre.org ([72.232.254.139]:40382 "EHLO
+	liberdade.minaslivre.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756356Ab0D0Q2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 12:28:06 -0400
-X-SpamScore: -32
-X-BigFish: VPS-32(zz1432P98dN936eM179dN9371Pzz1202hzzz32i87h2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L1JN2B-01-0RD-02
-X-M-MSG: 
-Date: Tue, 27 Apr 2010 18:27:45 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/22] KVM: MMU: Introduce kvm_read_guest_page_x86()
-Message-ID: <20100427162745.GA18832@amd.com>
-References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com>
- <1272364712-17425-16-git-send-email-joerg.roedel@amd.com>
- <4BD6DE15.8070409@redhat.com>
- <20100427132030.GH11097@amd.com>
- <4BD6E80A.2000201@redhat.com>
- <20100427154024.GL11097@amd.com>
- <4BD70C41.2060202@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4BD70C41.2060202@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 27 Apr 2010 16:27:45.0941 (UTC) FILETIME=[9199EC50:01CAE626]
-X-Reverse-DNS: unknown
+	Tue, 27 Apr 2010 12:28:13 -0400
+X-Greylist: delayed 634 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Apr 2010 12:28:13 EDT
+From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+       Nick Piggin <npiggin@suse.de>,
+       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+       Randy Dunlap <rdunlap@xenotime.net>, Christoph Hellwig <hch@lst.de>,
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH] trivial: inode uses a mutex instead of a semaphore.
+Date: Tue, 27 Apr 2010 13:17:25 -0300
+Message-Id: <1272385045-4037-1-git-send-email-cascardo@holoscopio.com>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 07:09:37PM +0300, Avi Kivity wrote:
-> On 04/27/2010 06:40 PM, Joerg Roedel wrote:
-> >
-> >Currently its a bit unclear when to use mmu or nested_mmu. With a
-> >pointer it would be unclear to the code reader when to use the pointer
-> >and when to select the mmu_contexts directly.
-> 
-> I think in most cases you'd want full translation, thus the pointer.
-> This should be the default.  In specific cases you'd want just the
-> non-nested guest translation.
+Replace the introduced i_sem by an i_mutex in the filesystem locking
+documentation. This was introduced [1] after all occurrences were
+already replaced in the same text [2]. However, the term "inode
+semaphore" has not been replaced then, and it's replaced now.
 
-Hmm, for most cases == all gva_to_gpa cases. The page fault path can't
-use the pointer. I'll try out how this works. It shouldn't be too
-complicated.
+[1] afddba49d18f346e5cc2938b6ed7c512db18ca68
+[2] a7bc02f4f47fd0e7860c6589f0ad000d1476f7a3
 
-	Joerg
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Cc: Nick Piggin <npiggin@suse.de>
+Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+---
+ Documentation/filesystems/Locking |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index 06bbbed..af16080 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -178,7 +178,7 @@ prototypes:
+ locking rules:
+ 	All except set_page_dirty may block
+ 
+-			BKL	PageLocked(page)	i_sem
++			BKL	PageLocked(page)	i_mutex
+ writepage:		no	yes, unlocks (see below)
+ readpage:		no	yes, unlocks
+ sync_page:		no	maybe
+@@ -429,7 +429,7 @@ check_flags:		no
+ implementations.  If your fs is not using generic_file_llseek, you
+ need to acquire and release the appropriate locks in your ->llseek().
+ For many filesystems, it is probably safe to acquire the inode
+-semaphore.  Note some filesystems (i.e. remote ones) provide no
++mutex.  Note some filesystems (i.e. remote ones) provide no
+ protection for i_size so you will need to use the BKL.
+ 
+ Note: ext2_release() was *the* source of contention on fs-intensive
+-- 
+1.6.6.1
 
