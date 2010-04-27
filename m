@@ -1,84 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab0D0NCI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 09:02:08 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:39793 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755587Ab0D0NCB (ORCPT
+	id S1755594Ab0D0NDn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 09:03:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52308 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab0D0NDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 09:02:01 -0400
-Subject: Re: [PATCH] Fix Oops with Atmel SPI
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Anders Larsen <al@alarsen.net>
-Cc: linux-mtd@lists.infradead.org, Ian McDonnell <ian@brightstareng.com>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Matthias Kaehlcke <matthias@kaehlcke.net>,
-       Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org
-In-Reply-To: <1271158315l.25331l.9l@i-dmzi_al.realan.de>
-References: <1271158315l.25331l.9l@i-dmzi_al.realan.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Apr 2010 15:57:29 +0300
-Message-ID: <1272373049.7750.4.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	Tue, 27 Apr 2010 09:03:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: John Kacur <jkacur@redhat.com>
+Subject: Re: [PATCH 10/10] bkl: Fix-up compile problems as a result of the bkl-pushdown.
+Date: Tue, 27 Apr 2010 15:03:17 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: lkml <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>
+References: <1272359898-32020-1-git-send-email-jkacur@redhat.com> <201004271317.45503.arnd@arndb.de> <alpine.LFD.2.00.1004271352510.3318@localhost>
+In-Reply-To: <alpine.LFD.2.00.1004271352510.3318@localhost>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 27 Apr 2010 13:01:43.0363 (UTC) FILETIME=[C8EE3930:01CAE609]
-X-Nokia-AV: Clean
+Message-Id: <201004271503.18077.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX18vdMhHLMofDTo2TLCRHj0hjthO4Fd+OD9KczO
+ Q9qsHGzC3vKuzUiRvu3MX0usR7ovPJ3s2EfvOLnBPDdqepnXsr
+ vAw7lzDBc93isSeZ2v9KA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-13 at 13:31 +0200, Anders Larsen wrote:
-> Tweak MTD's cache allocation to make it work with the atmel DMA'ed SPI.
-> Substitute kmalloc for vmalloc so the cache buffer is mappable as per
-> the Atmel SPI driver's requirements, otherwise an Oops would occur.
-> 
-> The original patch by Ian McDonnell <ian@brightstareng.com> was found here:
-> http://lists.infradead.org/pipermail/linux-mtd/2007-December/020184.html
-> 
-> Signed-off-by: Anders Larsen <al@alarsen.net>
-> Cc: Ian McDonnell <ian@brightstareng.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Matthias Kaehlcke <matthias@kaehlcke.net>
-> Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> Cc: Nicolas Pitre <nico@fluxnic.net>
-> ---
->  drivers/mtd/mtdblock.c |    8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> Index: b/drivers/mtd/mtdblock.c
-> ===================================================================
-> --- a/drivers/mtd/mtdblock.c
-> +++ b/drivers/mtd/mtdblock.c
-> @@ -253,7 +253,11 @@ static int mtdblock_writesect(struct mtd
->  {
->  	struct mtdblk_dev *mtdblk = mtdblks[dev->devnum];
->  	if (unlikely(!mtdblk->cache_data && mtdblk->cache_size)) {
-> +#ifdef CONFIG_SPI_ATMEL
-> +		mtdblk->cache_data = kmalloc(mtdblk->mtd->erasesize, GFP_KERNEL);
-> +#else
->  		mtdblk->cache_data = vmalloc(mtdblk->mtd->erasesize);
-> +#endif
->  		if (!mtdblk->cache_data)
->  			return -EINTR;
->  		/* -EINTR is not really correct, but it is the best match
-> @@ -322,7 +326,11 @@ static int mtdblock_release(struct mtd_b
->  		mtdblks[dev] = NULL;
->  		if (mtdblk->mtd->sync)
->  			mtdblk->mtd->sync(mtdblk->mtd);
-> +#ifdef CONFIG_SPI_ATMEL
-> +		kfree(mtdblk->cache_data);
-> +#else
->  		vfree(mtdblk->cache_data);
-> +#endif
->  		kfree(mtdblk);
->  	}
+On Tuesday 27 April 2010, John Kacur wrote:
+> Well it is certainly possible that my fixup is not correct too - your 
+> patch cannot be correct, because it doesn't compile! Here is what I get 
+> when I apply your patch to a recent linus/master
 
-This is an old problem. Instead of doing this dirty hack, change the
-code and teach it to work with array of 1-4 pages , not with buffers.
+Ah, I see.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+> make O=/bld/arnd/ drivers/media/video/v4l2-dev.o
+> -----CUT A BUNCH OF STUFF OUT ---
+>   CC      drivers/media/video/v4l2-dev.o
+> /home/jkacur/jk-2.6/drivers/media/video/v4l2-dev.c: In function 
+> ‘v4l2_ioctl’:
+> /home/jkacur/jk-2.6/drivers/media/video/v4l2-dev.c:230: warning: passing 
+> argument 1 of ‘vdev->fops->ioctl’ from incompatible pointer type
+> /home/jkacur/jk-2.6/drivers/media/video/v4l2-dev.c:230: note: expected 
+> ‘struct file *’ but argument is of type ‘struct inode *’
 
+I didn't realize that the prototype for the locked ->ioctl function in
+v4l2 does not take the inode argument, so that needs to be dropped from
+my patch (i.e. not added).
+
+Or we do it slightly better and clean up the code a bit in the process.
+
+Mauro, does this patch make sense to you? It would be good to have your
+Ack so we can queue this in the series leading to the removal of the
+->ioctl file operation. We can also do the minimal change and let you
+take care of fixing this up in a different way in your own tree.
+
+---
+Subject: v4l: convert v4l2-dev to unlocked_ioctl
+
+v4l2 implements two separate file operations for drivers that use locked
+and unlocked ioctl callbacks. Since we want to remove the ioctl file operation
+in favor of the unlocked variant, this separation no longer seems helpful.
+
+Unfortunately, there are still 77 drivers with locked ioctl functions in
+their v4l2_file_operations, which need to be taken care of separately.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/media/video/v4l2-dev.c |   52 +++++++++++----------------------------
+ 1 files changed, 15 insertions(+), 37 deletions(-)
+
+diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-dev.c
+index 7090699..ab198ba 100644
+--- a/drivers/media/video/v4l2-dev.c
++++ b/drivers/media/video/v4l2-dev.c
+@@ -25,6 +25,7 @@
+ #include <linux/init.h>
+ #include <linux/kmod.h>
+ #include <linux/slab.h>
++#include <linux/smp_lock.h>
+ #include <asm/uaccess.h>
+ #include <asm/system.h>
+ 
+@@ -215,28 +216,24 @@ static unsigned int v4l2_poll(struct file *filp, struct poll_table_struct *poll)
+ 	return vdev->fops->poll(filp, poll);
+ }
+ 
+-static int v4l2_ioctl(struct inode *inode, struct file *filp,
+-		unsigned int cmd, unsigned long arg)
++static long v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ {
+ 	struct video_device *vdev = video_devdata(filp);
++	int ret;
+ 
+-	if (!vdev->fops->ioctl)
+-		return -ENOTTY;
+ 	/* Allow ioctl to continue even if the device was unregistered.
+ 	   Things like dequeueing buffers might still be useful. */
+-	return vdev->fops->ioctl(filp, cmd, arg);
+-}
+-
+-static long v4l2_unlocked_ioctl(struct file *filp,
+-		unsigned int cmd, unsigned long arg)
+-{
+-	struct video_device *vdev = video_devdata(filp);
++	if (vdev->fops->unlocked_ioctl) {
++		ret = vdev->fops->unlocked_ioctl(filp, cmd, arg);
++	} else if (vdev->fops->ioctl) {
++		/* TODO: convert all drivers to unlocked_ioctl */
++		lock_kernel();
++		ret = vdev->fops->ioctl(filp, cmd, arg);
++		unlock_kernel();
++	} else 
++		ret = -ENOTTY;
+ 
+-	if (!vdev->fops->unlocked_ioctl)
+-		return -ENOTTY;
+-	/* Allow ioctl to continue even if the device was unregistered.
+-	   Things like dequeueing buffers might still be useful. */
+-	return vdev->fops->unlocked_ioctl(filp, cmd, arg);
++	return ret;
+ }
+ 
+ #ifdef CONFIG_MMU
+@@ -307,22 +304,6 @@ static int v4l2_release(struct inode *inode, struct file *filp)
+ 	return ret;
+ }
+ 
+-static const struct file_operations v4l2_unlocked_fops = {
+-	.owner = THIS_MODULE,
+-	.read = v4l2_read,
+-	.write = v4l2_write,
+-	.open = v4l2_open,
+-	.get_unmapped_area = v4l2_get_unmapped_area,
+-	.mmap = v4l2_mmap,
+-	.unlocked_ioctl = v4l2_unlocked_ioctl,
+-#ifdef CONFIG_COMPAT
+-	.compat_ioctl = v4l2_compat_ioctl32,
+-#endif
+-	.release = v4l2_release,
+-	.poll = v4l2_poll,
+-	.llseek = no_llseek,
+-};
+-
+ static const struct file_operations v4l2_fops = {
+ 	.owner = THIS_MODULE,
+ 	.read = v4l2_read,
+@@ -330,7 +311,7 @@ static const struct file_operations v4l2_fops = {
+ 	.open = v4l2_open,
+ 	.get_unmapped_area = v4l2_get_unmapped_area,
+ 	.mmap = v4l2_mmap,
+-	.ioctl = v4l2_ioctl,
++	.unlocked_ioctl = v4l2_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = v4l2_compat_ioctl32,
+ #endif
+@@ -517,10 +498,7 @@ static int __video_register_device(struct video_device *vdev, int type, int nr,
+ 		ret = -ENOMEM;
+ 		goto cleanup;
+ 	}
+-	if (vdev->fops->unlocked_ioctl)
+-		vdev->cdev->ops = &v4l2_unlocked_fops;
+-	else
+-		vdev->cdev->ops = &v4l2_fops;
++	vdev->cdev->ops = &v4l2_fops;
+ 	vdev->cdev->owner = vdev->fops->owner;
+ 	ret = cdev_add(vdev->cdev, MKDEV(VIDEO_MAJOR, vdev->minor), 1);
+ 	if (ret < 0) {
