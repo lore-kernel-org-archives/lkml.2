@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab0D0FKl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 01:10:41 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60029 "EHLO smtps.tip.net.au"
+	id S1751683Ab0D0FQD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 01:16:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27494 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828Ab0D0FKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 01:10:40 -0400
-Date: Tue, 27 Apr 2010 15:10:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Linux Next <linux-next@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: A few tree inclusion update requests
-Message-Id: <20100427151035.c727c9e5.sfr@canb.auug.org.au>
-In-Reply-To: <20100427025530.GE5695@nowhere>
-References: <20100410134221.GC5204@nowhere>
-	<20100413094618.76ac20a8.sfr@canb.auug.org.au>
-	<20100427025530.GE5695@nowhere>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__27_Apr_2010_15_10_35_+1000_IAw+bK=gSDfag3vj"
+	id S1750897Ab0D0FQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 01:16:00 -0400
+Date: Tue, 27 Apr 2010 07:09:13 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+       netdev@vger.kernel.org
+Subject: Re: linux-next: manual merge of the rr tree with the net tree
+Message-ID: <20100427040913.GA19951@redhat.com>
+References: <20100427115852.9f4cbb0f.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100427115852.9f4cbb0f.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Apr_2010_15_10_35_+1000_IAw+bK=gSDfag3vj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 27, 2010 at 11:58:52AM +1000, Stephen Rothwell wrote:
+> Hi Rusty,
+> 
+> Today's linux-next merge of the rr tree got a conflict in
+> drivers/net/virtio_net.c between commit
+> 5e01d2f91df62be4d6f282149bc2a8858992ceca ("virtio-net: move sg off
+> stack") from the net tree and commit
+> 7f62a724a65f864d84f50857bbfd36c240155c8f ("virtio_net: use virtqueue_xxx
+> wrappers") from the rr tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Hi Frederic,
+Hmm, Rusty, do you intend for the patches to go through netdev this
+time? If you do, it might be simplest to just ask Dave to merge
+them in net-next-2.6 now. I can prepare and send them if you like.
 
-On Tue, 27 Apr 2010 04:55:32 +0200 Frederic Weisbecker <fweisbec@gmail.com>=
- wrote:
->
-> Could you please integrate the following new tree in linux-next?
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	bkl/ioctl
-
-Added from today.
-
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Tue__27_Apr_2010_15_10_35_+1000_IAw+bK=gSDfag3vj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvWccsACgkQjjKRsyhoI8zNhwCfbRawDnoyQ56GIS/MIoP06RuI
-/vAAniQG5n2sNPTOJ/iA0J8NhQjllMKP
-=IK0s
------END PGP SIGNATURE-----
-
---Signature=_Tue__27_Apr_2010_15_10_35_+1000_IAw+bK=gSDfag3vj--
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc drivers/net/virtio_net.c
+> index b0a85d0,91738d8..0000000
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@@ -336,11 -335,11 +336,11 @@@ static int add_recvbuf_small(struct vir
+>   	skb_put(skb, MAX_PACKET_LEN);
+>   
+>   	hdr = skb_vnet_hdr(skb);
+>  -	sg_set_buf(sg, &hdr->hdr, sizeof hdr->hdr);
+>  +	sg_set_buf(vi->rx_sg, &hdr->hdr, sizeof hdr->hdr);
+>   
+>  -	skb_to_sgvec(skb, sg + 1, 0, skb->len);
+>  +	skb_to_sgvec(skb, vi->rx_sg + 1, 0, skb->len);
+>   
+> - 	err = vi->rvq->vq_ops->add_buf(vi->rvq, vi->rx_sg, 0, 2, skb);
+>  -	err = virtqueue_add_buf(vi->rvq, sg, 0, 2, skb);
+> ++	err = virtqueue_add_buf(vi->rvq, vi->rx_sg, 0, 2, skb);
+>   	if (err < 0)
+>   		dev_kfree_skb(skb);
+>   
+> @@@ -385,7 -386,7 +385,7 @@@ static int add_recvbuf_big(struct virtn
+>   
+>   	/* chain first in list head */
+>   	first->private = (unsigned long)list;
+> - 	err = vi->rvq->vq_ops->add_buf(vi->rvq, vi->rx_sg, 0, MAX_SKB_FRAGS + 2,
+>  -	err = virtqueue_add_buf(vi->rvq, sg, 0, MAX_SKB_FRAGS + 2,
+> ++	err = virtqueue_add_buf(vi->rvq, vi->rx_sg, 0, MAX_SKB_FRAGS + 2,
+>   				       first);
+>   	if (err < 0)
+>   		give_pages(vi, first);
+> @@@ -402,9 -404,9 +402,9 @@@ static int add_recvbuf_mergeable(struc
+>   	if (!page)
+>   		return -ENOMEM;
+>   
+>  -	sg_init_one(&sg, page_address(page), PAGE_SIZE);
+>  +	sg_init_one(vi->rx_sg, page_address(page), PAGE_SIZE);
+>   
+> - 	err = vi->rvq->vq_ops->add_buf(vi->rvq, vi->rx_sg, 0, 1, page);
+>  -	err = virtqueue_add_buf(vi->rvq, &sg, 0, 1, page);
+> ++	err = virtqueue_add_buf(vi->rvq, vi->rx_sg, 0, 1, page);
+>   	if (err < 0)
+>   		give_pages(vi, page);
+>   
+> @@@ -549,13 -554,12 +549,12 @@@ static int xmit_skb(struct virtnet_inf
+>   
+>   	/* Encode metadata header at front. */
+>   	if (vi->mergeable_rx_bufs)
+>  -		sg_set_buf(sg, &hdr->mhdr, sizeof hdr->mhdr);
+>  +		sg_set_buf(vi->tx_sg, &hdr->mhdr, sizeof hdr->mhdr);
+>   	else
+>  -		sg_set_buf(sg, &hdr->hdr, sizeof hdr->hdr);
+>  +		sg_set_buf(vi->tx_sg, &hdr->hdr, sizeof hdr->hdr);
+>   
+>  -	hdr->num_sg = skb_to_sgvec(skb, sg+1, 0, skb->len) + 1;
+>  -	return virtqueue_add_buf(vi->svq, sg, hdr->num_sg, 0, skb);
+>  +	hdr->num_sg = skb_to_sgvec(skb, vi->tx_sg + 1, 0, skb->len) + 1;
+> - 	return vi->svq->vq_ops->add_buf(vi->svq, vi->tx_sg, hdr->num_sg,
+> - 					0, skb);
+> ++	return virtqueue_add_buf(vi->svq, vi->tx_sg, hdr->num_sg, 0, skb);
+>   }
+>   
+>   static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
