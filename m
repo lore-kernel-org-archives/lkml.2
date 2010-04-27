@@ -1,116 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab0D0QdT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 12:33:19 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:41336 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab0D0QdP (ORCPT
+	id S1756460Ab0D0Qe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 12:34:26 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58087
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756317Ab0D0QeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 12:33:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=IFK7625G6ywcEaWopZ537YMFdB589syGTMdlktCBpfk1KMfgKrtwPqQEEjJmVOtP2e
-         tSvvWveglz4rOb2yQAmNsxKmqpxVLZDmvb54Pr6JAvz8VsLK23bmpl/i7ngBdKD6Y5tH
-         MWZCe+Cxd361fXIFJybVUGWwi23Qp7ZI9Djl0=
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
- rcu_dereference_check() usage
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Miles Lane <miles.lane@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       netdev@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-In-Reply-To: <20100427162201.GA5826@linux.vnet.ibm.com>
-References: <20100422160144.GC2524@linux.vnet.ibm.com>
-	 <h2xa44ae5cd1004230550uf734c89eo2b1d1945d446068c@mail.gmail.com>
-	 <20100423194255.GE2589@linux.vnet.ibm.com>
-	 <m2xa44ae5cd1004231559hcf90671asf146a43b4748c2c3@mail.gmail.com>
-	 <20100425023455.GM2440@linux.vnet.ibm.com>
-	 <w2sa44ae5cd1004250849q73704370vc6af935c70db9b73@mail.gmail.com>
-	 <p2ga44ae5cd1004251320j55d23ba7ua0fa14497f623d76@mail.gmail.com>
-	 <20100426160925.GD2529@linux.vnet.ibm.com>
-	 <m1hbmydpup.fsf@fess.ebiederm.org>
-	 <20100427042744.GD2510@linux.vnet.ibm.com>
-	 <20100427162201.GA5826@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Apr 2010 18:33:04 +0200
-Message-ID: <1272385984.2295.318.camel@edumazet-laptop>
+	Tue, 27 Apr 2010 12:34:24 -0400
+Date: Tue, 27 Apr 2010 09:34:30 -0700 (PDT)
+Message-Id: <20100427.093430.258110898.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, yoshfuji@linux-ipv6.org
+Subject: Re: linux-next: build failure after merge of the final tree (net
+ tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100427152516.580ee620.sfr@canb.auug.org.au>
+References: <20100427152516.580ee620.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 27 avril 2010 à 09:22 -0700, Paul E. McKenney a écrit :
-> On Mon, Apr 26, 2010 at 09:27:44PM -0700, Paul E. McKenney wrote:
-> > On Mon, Apr 26, 2010 at 11:35:10AM -0700, Eric W. Biederman wrote:
-> > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
-> > > 
-> > > > Eric Dumazet traced these down to a commit from Eric Biederman.
-> > > >
-> > > > If I don't hear from Eric Biederman in a few days, I will attempt a
-> > > > patch, but it would be more likely to be correct coming from someone
-> > > > with a better understanding of the code.  ;-)
-> > > 
-> > > I already replied.
-> > > 
-> > > http://lkml.org/lkml/2010/4/21/420
-> > 
-> > You did indeed!!!  This experience is giving me an even better appreciation
-> > of the maintainers' ability to keep all their patches straight!
-> > 
-> > I will put together something based on your suggestion.
-> 
-> How about the following?
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> commit 85fa42bd568ab99c375f018761ae6345249942cd
-> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Date:   Mon Apr 26 21:40:05 2010 -0700
-> 
->     net: suppress RCU lockdep false positive in twsk_net()
->     
->     Calls to twsk_net() are in some cases protected by reference counting
->     as an alternative to RCU protection.  Cases covered by reference counts
->     include __inet_twsk_kill(), inet_twsk_free(), inet_twdr_do_twkill_work(),
->     inet_twdr_twcal_tick(), and tcp_timewait_state_process().  RCU is used
->     by inet_twsk_purge().  Locking is used by established_get_first()
->     and established_get_next().  Finally, __inet_twsk_hashdance() is an
->     initialization case.
->     
->     It appears to be non-trivial to locate the appropriate locks and
->     reference counts from within twsk_net(), so used rcu_dereference_raw().
->     
->     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/include/net/inet_timewait_sock.h b/include/net/inet_timewait_sock.h
-> index 79f67ea..a066fdd 100644
-> --- a/include/net/inet_timewait_sock.h
-> +++ b/include/net/inet_timewait_sock.h
-> @@ -224,7 +224,9 @@ static inline
->  struct net *twsk_net(const struct inet_timewait_sock *twsk)
->  {
->  #ifdef CONFIG_NET_NS
-> -	return rcu_dereference(twsk->tw_net);
-> +	return rcu_dereference_raw(twsk->tw_net); /* protected by locking, */
-> +						  /* reference counting, */
-> +						  /* initialization, or RCU. */
->  #else
->  	return &init_net;
->  #endif
-> --
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 27 Apr 2010 15:25:16 +1000
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+> After merging the bkl-ioctl tree, today's linux-next build (powerpc
+> ppc44x_defconfig) failed like this:
+> 
+> net/bridge/br_multicast.c: In function 'br_ip6_multicast_alloc_query':
+> net/bridge/br_multicast.c:469: error: implicit declaration of function 'csum_ipv6_magic'
+> 
+> Introduced by commit 08b202b6726459626c73ecfa08fcdc8c3efc76c2 ("bridge
+> br_multicast: IPv6 MLD support") from the net tree.
+> 
+> csum_ipv6_magic is declared in net/ip6_checksum.h ...
 
+Bummer, powerpc is one of the few platforms that doesn't get the header
+file implicitly so you always trip over this whereas we never see it in
+x86 and sparc64 builds :-)
 
+I'll fix this, thanks!
