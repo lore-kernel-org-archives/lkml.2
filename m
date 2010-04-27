@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab0D0FQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 01:16:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27494 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750897Ab0D0FQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 01:16:00 -0400
-Date: Tue, 27 Apr 2010 07:09:13 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
+	id S1751656Ab0D0FSr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 01:18:47 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:51865 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab0D0FSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 01:18:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=kgTjGIx8DETNo6zFQh1FXG/9GPsKgK6ug7djosnrZxo67nSYdFBkF9+0uugCo9f9F6
+         oLTu/bk5fxMJddCCJazB/GU9vaq9djQ6lEzgL+WRUIW3VanJk51G4/f4k6oOOd90bkj7
+         mY5QDYn3cwKIjNl6ypmSlSTw3a6OEdMT+m9fQ=
+Date: Tue, 27 Apr 2010 07:18:42 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-       netdev@vger.kernel.org
-Subject: Re: linux-next: manual merge of the rr tree with the net tree
-Message-ID: <20100427040913.GA19951@redhat.com>
-References: <20100427115852.9f4cbb0f.sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Arnd Bergmann <arnd@arndb.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the bkl-ioctl tree with the
+	bkl-procfs tree
+Message-ID: <20100427051841.GF5695@nowhere>
+References: <20100427150636.241eb65b.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100427115852.9f4cbb0f.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100427150636.241eb65b.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 11:58:52AM +1000, Stephen Rothwell wrote:
-> Hi Rusty,
+On Tue, Apr 27, 2010 at 03:06:36PM +1000, Stephen Rothwell wrote:
+> Hi Frédéric,
 > 
-> Today's linux-next merge of the rr tree got a conflict in
-> drivers/net/virtio_net.c between commit
-> 5e01d2f91df62be4d6f282149bc2a8858992ceca ("virtio-net: move sg off
-> stack") from the net tree and commit
-> 7f62a724a65f864d84f50857bbfd36c240155c8f ("virtio_net: use virtqueue_xxx
-> wrappers") from the rr tree.
+> Today's linux-next merge of the bkl-ioctl tree got a conflict in
+> fs/proc/inode.c between commit 3ab8dfb0802f33741cc4afa6adf7cb30b1cd1761
+> ("procfs: Kill the bkl in ioctl") from the bkl-procfs tree and commit
+> 1dd97d3d546aa14db7efa5366b21d1336b91379e ("Rename 'struct
+> file_operations' 'ioctl' fn pointer to 'bkl_ioctl'") from the bkl-ioctl
+> tree.
 > 
-> I fixed it up (see below) and can carry the fix as necessary.
-
-Hmm, Rusty, do you intend for the patches to go through netdev this
-time? If you do, it might be simplest to just ask Dave to merge
-them in net-next-2.6 now. I can prepare and send them if you like.
-
+> I fixed it up (see below - probably not optimal) and can carry the fix as
+> necessary.
 > -- 
 > Cheers,
 > Stephen Rothwell                    sfr@canb.auug.org.au
 > 
-> diff --cc drivers/net/virtio_net.c
-> index b0a85d0,91738d8..0000000
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@@ -336,11 -335,11 +336,11 @@@ static int add_recvbuf_small(struct vir
->   	skb_put(skb, MAX_PACKET_LEN);
+> diff --cc fs/proc/inode.c
+> index aea8502,8e8f813..0000000
+> --- a/fs/proc/inode.c
+> +++ b/fs/proc/inode.c
+> @@@ -231,10 -231,10 +231,10 @@@ static long proc_reg_unlocked_ioctl(str
+>   		rv = unlocked_ioctl(file, cmd, arg);
+>   		if (rv == -ENOIOCTLCMD)
+>   			rv = -EINVAL;
+> - 	} else if (ioctl) {
+> + 	} else if (bkl_ioctl) {
+>  -		lock_kernel();
+>  +		WARN_ONCE(1, "Procfs ioctl handlers must use unlocked_ioctl, "
+>  +			  "%pf will be called without the Bkl held\n", bkl_ioctl);
+> - 		rv = ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
+> + 		rv = bkl_ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
+>  -		unlock_kernel();
+>   	}
 >   
->   	hdr = skb_vnet_hdr(skb);
->  -	sg_set_buf(sg, &hdr->hdr, sizeof hdr->hdr);
->  +	sg_set_buf(vi->rx_sg, &hdr->hdr, sizeof hdr->hdr);
->   
->  -	skb_to_sgvec(skb, sg + 1, 0, skb->len);
->  +	skb_to_sgvec(skb, vi->rx_sg + 1, 0, skb->len);
->   
-> - 	err = vi->rvq->vq_ops->add_buf(vi->rvq, vi->rx_sg, 0, 2, skb);
->  -	err = virtqueue_add_buf(vi->rvq, sg, 0, 2, skb);
-> ++	err = virtqueue_add_buf(vi->rvq, vi->rx_sg, 0, 2, skb);
->   	if (err < 0)
->   		dev_kfree_skb(skb);
->   
-> @@@ -385,7 -386,7 +385,7 @@@ static int add_recvbuf_big(struct virtn
->   
->   	/* chain first in list head */
->   	first->private = (unsigned long)list;
-> - 	err = vi->rvq->vq_ops->add_buf(vi->rvq, vi->rx_sg, 0, MAX_SKB_FRAGS + 2,
->  -	err = virtqueue_add_buf(vi->rvq, sg, 0, MAX_SKB_FRAGS + 2,
-> ++	err = virtqueue_add_buf(vi->rvq, vi->rx_sg, 0, MAX_SKB_FRAGS + 2,
->   				       first);
->   	if (err < 0)
->   		give_pages(vi, first);
-> @@@ -402,9 -404,9 +402,9 @@@ static int add_recvbuf_mergeable(struc
->   	if (!page)
->   		return -ENOMEM;
->   
->  -	sg_init_one(&sg, page_address(page), PAGE_SIZE);
->  +	sg_init_one(vi->rx_sg, page_address(page), PAGE_SIZE);
->   
-> - 	err = vi->rvq->vq_ops->add_buf(vi->rvq, vi->rx_sg, 0, 1, page);
->  -	err = virtqueue_add_buf(vi->rvq, &sg, 0, 1, page);
-> ++	err = virtqueue_add_buf(vi->rvq, vi->rx_sg, 0, 1, page);
->   	if (err < 0)
->   		give_pages(vi, page);
->   
-> @@@ -549,13 -554,12 +549,12 @@@ static int xmit_skb(struct virtnet_inf
->   
->   	/* Encode metadata header at front. */
->   	if (vi->mergeable_rx_bufs)
->  -		sg_set_buf(sg, &hdr->mhdr, sizeof hdr->mhdr);
->  +		sg_set_buf(vi->tx_sg, &hdr->mhdr, sizeof hdr->mhdr);
->   	else
->  -		sg_set_buf(sg, &hdr->hdr, sizeof hdr->hdr);
->  +		sg_set_buf(vi->tx_sg, &hdr->hdr, sizeof hdr->hdr);
->   
->  -	hdr->num_sg = skb_to_sgvec(skb, sg+1, 0, skb->len) + 1;
->  -	return virtqueue_add_buf(vi->svq, sg, hdr->num_sg, 0, skb);
->  +	hdr->num_sg = skb_to_sgvec(skb, vi->tx_sg + 1, 0, skb->len) + 1;
-> - 	return vi->svq->vq_ops->add_buf(vi->svq, vi->tx_sg, hdr->num_sg,
-> - 					0, skb);
-> ++	return virtqueue_add_buf(vi->svq, vi->tx_sg, hdr->num_sg, 0, skb);
->   }
->   
->   static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+>   	pde_users_dec(pde);
+
+
+Thanks, looks like the right fix!
+
