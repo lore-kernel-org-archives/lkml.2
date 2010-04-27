@@ -1,121 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab0D0Nl7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 09:41:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2069 "EHLO mx1.redhat.com"
+	id S1755961Ab0D0No1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 09:44:27 -0400
+Received: from www.tglx.de ([62.245.132.106]:59230 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755908Ab0D0Nlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 09:41:47 -0400
-Date: Tue, 27 Apr 2010 10:28:07 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-       Jeremy Fitzhardinge <jeremy@goop.org>,
-       Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 2/6] Add a global synchronization point for pvclock
-Message-ID: <20100427132807.GB18410@amt.cnet>
-References: <1272303988-21929-1-git-send-email-glommer@redhat.com>
- <1272303988-21929-2-git-send-email-glommer@redhat.com>
- <1272303988-21929-3-git-send-email-glommer@redhat.com>
+	id S1752930Ab0D0NoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 09:44:25 -0400
+Date: Tue, 27 Apr 2010 15:42:11 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Guillaume Knispel <gknispel@proformatique.com>
+cc: linux-kernel@vger.kernel.org, Linuxppc-dev@lists.ozlabs.org,
+       Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Haavard Skinnemoen <hskinnemoen@atmel.com>, Ingo Molnar <mingo@elte.hu>,
+       Lars-Peter Clausen <lars@metafoo.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Michael Buesch <mb@bu3sch.de>, Peter Zijlstra <peterz@infradead.org>,
+       Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 1/2] genirq: reliably replay pending edge-triggered irq
+In-Reply-To: <1271941798-9659-2-git-send-email-gknispel@proformatique.com>
+Message-ID: <alpine.LFD.2.00.1004271537130.2951@localhost.localdomain>
+References: <1271941798-9659-1-git-send-email-gknispel@proformatique.com> <1271941798-9659-2-git-send-email-gknispel@proformatique.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272303988-21929-3-git-send-email-glommer@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 01:46:24PM -0400, Glauber Costa wrote:
-> In recent stress tests, it was found that pvclock-based systems
-> could seriously warp in smp systems. Using ingo's time-warp-test.c,
-> I could trigger a scenario as bad as 1.5mi warps a minute in some systems.
-> (to be fair, it wasn't that bad in most of them). Investigating further, I
-> found out that such warps were caused by the very offset-based calculation
-> pvclock is based on.
-> 
-> This happens even on some machines that report constant_tsc in its tsc flags,
-> specially on multi-socket ones.
-> 
-> Two reads of the same kernel timestamp at approx the same time, will likely
-> have tsc timestamped in different occasions too. This means the delta we
-> calculate is unpredictable at best, and can probably be smaller in a cpu
-> that is legitimately reading clock in a forward ocasion.
-> 
-> Some adjustments on the host could make this window less likely to happen,
-> but still, it pretty much poses as an intrinsic problem of the mechanism.
-> 
-> A while ago, I though about using a shared variable anyway, to hold clock
-> last state, but gave up due to the high contention locking was likely
-> to introduce, possibly rendering the thing useless on big machines. I argue,
-> however, that locking is not necessary.
-> 
-> We do a read-and-return sequence in pvclock, and between read and return,
-> the global value can have changed. However, it can only have changed
-> by means of an addition of a positive value. So if we detected that our
-> clock timestamp is less than the current global, we know that we need to
-> return a higher one, even though it is not exactly the one we compared to.
-> 
-> OTOH, if we detect we're greater than the current time source, we atomically
-> replace the value with our new readings. This do causes contention on big
-> boxes (but big here means *BIG*), but it seems like a good trade off, since
-> it provide us with a time source guaranteed to be stable wrt time warps.
-> 
-> After this patch is applied, I don't see a single warp in time during 5 days
-> of execution, in any of the machines I saw them before.
-> 
-> Signed-off-by: Glauber Costa <glommer@redhat.com>
-> CC: Jeremy Fitzhardinge <jeremy@goop.org>
-> CC: Avi Kivity <avi@redhat.com>
-> CC: Marcelo Tosatti <mtosatti@redhat.com>
-> CC: Zachary Amsden <zamsden@redhat.com>
+On Thu, 22 Apr 2010, Guillaume Knispel wrote:
+
+> When the critical section in handle_edge_irq() is executed after
+> IRQ_DISABLED has been set in the one in disable_irq(), the interrupt is
+
+  in the one ? -ENOPARSE
+
+> acked and masked at controller level and IRQ_PENDING is set.
 > ---
->  arch/x86/kernel/pvclock.c |   24 ++++++++++++++++++++++++
->  1 files changed, 24 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-> index 8f4af7b..6cf6dec 100644
-> --- a/arch/x86/kernel/pvclock.c
-> +++ b/arch/x86/kernel/pvclock.c
-> @@ -118,11 +118,14 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src)
->  	return pv_tsc_khz;
->  }
->  
-> +static atomic64_t last_value = ATOMIC64_INIT(0);
-> +
->  cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
->  {
->  	struct pvclock_shadow_time shadow;
->  	unsigned version;
->  	cycle_t ret, offset;
-> +	u64 last;
->  
->  	do {
->  		version = pvclock_get_time_values(&shadow, src);
-> @@ -132,6 +135,27 @@ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
->  		barrier();
->  	} while (version != src->version);
->  
-> +	/*
-> +	 * Assumption here is that last_value, a global accumulator, always goes
-> +	 * forward. If we are less than that, we should not be much smaller.
-> +	 * We assume there is an error marging we're inside, and then the correction
-> +	 * does not sacrifice accuracy.
-> +	 *
-> +	 * For reads: global may have changed between test and return,
-> +	 * but this means someone else updated poked the clock at a later time.
-> +	 * We just need to make sure we are not seeing a backwards event.
-> +	 *
-> +	 * For updates: last_value = ret is not enough, since two vcpus could be
-> +	 * updating at the same time, and one of them could be slightly behind,
-> +	 * making the assumption that last_value always go forward fail to hold.
-> +	 */
-> +	last = atomic64_read(&last_value);
-> +	do {
-> +		if (ret < last)
-> +			return last;
-> +		last = atomic64_cmpxchg(&last_value, last, ret);
-> +	} while (unlikely(last != ret));
+>  arch/arm/Kconfig                                   |    4 ----
+>  arch/arm/configs/acs5k_defconfig                   |    1 -
+>  arch/arm/configs/acs5k_tiny_defconfig              |    1 -
 
-Wraparound?
+   Changing the defconfigs should be a separate patch and I'm not
+   going to push such a thing through the genirq tree. The stale
+   entries do not hurt.
 
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 127b871..9bec343 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -1423,7 +1423,7 @@ int setup_ioapic_entry(int apic_id, int irq,
+>  	entry->polarity = polarity;
+>  
+>  	/* Mask level triggered irqs.
+> -	 * Use IRQ_DELAYED_DISABLE for edge triggered irqs.
+> +	 * Edge triggered irqs can be resent by software.
+
+  That change is unrelated and should be done in a seperate patch.
+
+Thanks,
+
+	tglx
