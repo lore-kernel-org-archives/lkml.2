@@ -1,68 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab0D0RJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 13:09:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754119Ab0D0RJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 13:09:37 -0400
-Message-ID: <4BD71A2D.6050309@redhat.com>
-Date: Tue, 27 Apr 2010 13:09:01 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.5) Gecko/20091210 Fedora/3.0-4.el6 Thunderbird/3.0
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com, x86@kernel.org,
-       clalance@redhat.com, drjones@redhat.com
-Subject: Re: [LKML] [PATCH] Fix NULL pointer for Xen guests
-References: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com> <20100427165816.GA24707@phenom.dumpdata.com>
-In-Reply-To: <20100427165816.GA24707@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754735Ab0D0RNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 13:13:17 -0400
+Received: from vms173007pub.verizon.net ([206.46.173.7]:14184 "EHLO
+	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754114Ab0D0RNP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 13:13:15 -0400
+Date: Tue, 27 Apr 2010 13:12:49 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Cc: linux-acpi@vger.kernel.org, rui.zhang@intel.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: fix fan module removal when ACPI_PROCFS is disabled
+In-reply-to: <1272385158-4080-1-git-send-email-cascardo@holoscopio.com>
+Message-id: <alpine.LFD.2.00.1004271309190.4006@localhost.localdomain>
+References: <1272385158-4080-1-git-send-email-cascardo@holoscopio.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> When ACPI_PROCFS is disabled, /proc/acpi/fan/ directory is not created.
+> So, it should not be removed during the module removal either.
 
+Yes, this patch would make the #ifdefs consistent.
+But it looks like remove_proc_entry() just silently does nothing
+if the directory is not there, yes?
 
-On 04/27/2010 12:58 PM, Konrad Rzeszutek Wilk wrote:
-> On Tue, Apr 27, 2010 at 11:24:42AM -0400, Prarit Bhargava wrote:
->    
->> Upstream PV guests fail to boot because of a NULL pointer.  It is possible that
->> xen guests have irq_desc->chip_data = NULL.
->>      
-> Can you provide a short example of test scenario? As in what I should do
-> to reproduce this problem?
->    
+What I'd really like to see is a patch removing fan.c's proc code 
+completely.  It was scheduld for removal in July 2008.
 
-Take the latest upstream (well ... to be honest, a bit older than that 
-because of some other bugs) -- take 2.6.33 and try to boot it as a PV 
-guest.  I'm using a RHEL5 Xen HV fwiw ...
-
-P.
-
->> Test for NULL chip_data pointer before attempting to complete an irq move.
->>
->> Signed-off-by: Prarit Bhargava<prarit@redhat.com>
->> Acked-by: Suresh Siddha<suresh.b.siddha@intel.com>
->>
->> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
->> index 127b871..eb2789c 100644
->> --- a/arch/x86/kernel/apic/io_apic.c
->> +++ b/arch/x86/kernel/apic/io_apic.c
->> @@ -2545,6 +2545,9 @@ void irq_force_complete_move(int irq)
->>   	struct irq_desc *desc = irq_to_desc(irq);
->>   	struct irq_cfg *cfg = desc->chip_data;
->>
->> +	if (!cfg)
->> +		return;
->> +
->>   	__irq_complete_move(&desc, cfg->vector);
->>   }
->>   #else
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>      
+thanks,
+Len Brown, Intel Open Source Technology Center
