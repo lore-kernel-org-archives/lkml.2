@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab0D0RHS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 13:07:18 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:37817 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785Ab0D0RHQ convert rfc822-to-8bit (ORCPT
+	id S1754827Ab0D0RI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 13:08:26 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:15275 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119Ab0D0RIW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 13:07:16 -0400
+	Tue, 27 Apr 2010 13:08:22 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=IrqLNIayiV938286jcsFFkdxlF8UVqYdl78xZi4lFbXn9KXn39zKjWPIIVoL5Ufr/
+	3q7rhNZbI6nWI8H6PRIWg==
 MIME-Version: 1.0
-In-Reply-To: <20100427154043.GA25860@tuxdriver.com>
-References: <20100427112842.3eec02a1.sfr@canb.auug.org.au>
-	 <20100427154043.GA25860@tuxdriver.com>
-Date: Tue, 27 Apr 2010 10:07:12 -0700
-Message-ID: <i2p446ae9281004271007h43f9949dw9848a7786a9c7be1@mail.gmail.com>
-Subject: Re: linux-next: build warning after merge of the wireless tree
-From: Steve deRosier <steve@cozybit.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
+In-Reply-To: <1272380262-23671-2-git-send-email-trenn@suse.de>
+References: <1272380262-23671-1-git-send-email-trenn@suse.de>
+	 <1272380262-23671-2-git-send-email-trenn@suse.de>
+Date: Tue, 27 Apr 2010 10:08:17 -0700
+Message-ID: <u2n3055132f1004271008m9528841brcbff0aa031a8af43@mail.gmail.com>
+Subject: Re: [PATCH 1/2] acpi-cpufreq: Fix CPU_ANY CPUFREQ_{PRE,POST}CHANGE 
+	notification
+From: Venkatesh Pallipadi <venki@google.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: x86@kernel.org, linux-trace-users@vger.kernel.org,
+       linux-perf-users@vger.kernel.org, robert.schoene@tu-dresden.de,
+       cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com,
+       arjan@infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 8:40 AM, John W. Linville
-<linville@tuxdriver.com> wrote:
+Acked-by: Venkatesh Pallipadi <venki@google.com>
+
+On Tue, Apr 27, 2010 at 7:57 AM, Thomas Renninger <trenn@suse.de> wrote:
 >
-> Right.  So in wireless-testing I did the includes in the other order
-> (i.e. "deb_defs.h" first), but that is a bit ugly.  Any suggestions
-> on alternatives?
+> This has been found be review.
+> Currently PRE/POSTCHANGE events seem to only be thrown for one core
+> if the BIOS tells us to run in CPU_ANY mode (switching one/any
+> of the depending cores is enough).
 >
-> "#undef pr_fmt" just before the "#define pr_fmt(fmt)..." line in
-> db_defs.h seems to eliminate the warning even with the more normal
-> ordering of the #include lines.  I'm not familiar with the usage of
-> pr_fmt -- will doing the above preserve the desired effect?
-
-John,
-
-I thought about that particular strategy (doing the #undef) instead of
-the non-traditional include mess.  But not being familiar enough with
-the pr_fmt stuff, I didn't want to do it.
-
-My goal was to get the '#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt'
-line in the deb_defs.h header so it was only in one place.  But to
-build, that define must be before kernel.h gets included anywhere.
-Hence the current mess.
-
-I'm OK with the #undef strategy and moving the deb_defs.h include to a
-better position if that's the correct way to do this.  Please let me
-know if I have any action items on this.
-
-- Steve
+> Signed-off-by: Thomas Renninger <trenn@suse.de>
+> CC: venki@google.com
+> CC: davej@redhat.com
+> CC: linux-kernel@vger.kernel.org
+> CC: cpufreq@vger.kernel.org
+> CC: linux-perf-users@vger.kernel.org
+> CC: linux-trace-users@vger.kernel.org
+> CC: x86@kernel.org
+> CC: robert.schoene@tu-dresden.de
+> ---
+>  arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
+> index 4591680..c6de3a9 100644
+> --- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
+> +++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
+> @@ -391,7 +391,7 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
+>
+>        freqs.old = perf->states[perf->state].core_frequency * 1000;
+>        freqs.new = data->freq_table[next_state].frequency;
+> -       for_each_cpu(i, cmd.mask) {
+> +       for_each_cpu(i, policy->cpus) {
+>                freqs.cpu = i;
+>                cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
+>        }
+> @@ -407,7 +407,7 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
+>                }
+>        }
+>
+> -       for_each_cpu(i, cmd.mask) {
+> +       for_each_cpu(i, policy->cpus) {
+>                freqs.cpu = i;
+>                cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+>        }
+> --
+> 1.6.3
+>
