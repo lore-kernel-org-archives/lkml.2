@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab0D0RI0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 13:08:26 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:15275 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119Ab0D0RIW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 13:08:22 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=IrqLNIayiV938286jcsFFkdxlF8UVqYdl78xZi4lFbXn9KXn39zKjWPIIVoL5Ufr/
-	3q7rhNZbI6nWI8H6PRIWg==
+	id S1754675Ab0D0RIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 13:08:21 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41712 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754107Ab0D0RIT (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 27 Apr 2010 13:08:19 -0400
+Date: Tue, 27 Apr 2010 13:07:15 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: akpm@linux-foundation.org, linux-arch@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [LKML] [PATCH -mm 0/6] remove unnecessary sync_single_range_*
+	in dma_map_ops
+Message-ID: <20100427170715.GA24826@phenom.dumpdata.com>
+References: <1272371140-6085-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-In-Reply-To: <1272380262-23671-2-git-send-email-trenn@suse.de>
-References: <1272380262-23671-1-git-send-email-trenn@suse.de>
-	 <1272380262-23671-2-git-send-email-trenn@suse.de>
-Date: Tue, 27 Apr 2010 10:08:17 -0700
-Message-ID: <u2n3055132f1004271008m9528841brcbff0aa031a8af43@mail.gmail.com>
-Subject: Re: [PATCH 1/2] acpi-cpufreq: Fix CPU_ANY CPUFREQ_{PRE,POST}CHANGE 
-	notification
-From: Venkatesh Pallipadi <venki@google.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: x86@kernel.org, linux-trace-users@vger.kernel.org,
-       linux-perf-users@vger.kernel.org, robert.schoene@tu-dresden.de,
-       cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com,
-       arjan@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272371140-6085-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4BD719DB.0045:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Venkatesh Pallipadi <venki@google.com>
+On Tue, Apr 27, 2010 at 09:25:34PM +0900, FUJITA Tomonori wrote:
+> This patchset removes useless sync_single_range_for_cpu and
+> sync_single_range_for_device hooks in dma_map_ops. These hooks were
+> for dma_sync_single_range_* DMA API, however, the API became obsolete
+> (the description in DMA API docs was removed too). Architecutres
+> should use sync_single_for_cpu and sync_single_for_device hooks
+> instead (as DMA API docs say, they need to support a partial sync).
+> 
+> We could remove dma_sync_single_range_* DMA API completely (no user in
+> -mm) but the API had been until 2.6.34-rc so I guess that it might be
+> better to leave it alone for some time.
+> 
+> The first patch is a bug fix and might be 2.6.34-rc material however
+> the API is not so popular (only net/b44.c uses) and we are already in
+> -rc5. I guess that it would be fine to merge it in the next merge
+> window.
 
-On Tue, Apr 27, 2010 at 7:57 AM, Thomas Renninger <trenn@suse.de> wrote:
->
-> This has been found be review.
-> Currently PRE/POSTCHANGE events seem to only be thrown for one core
-> if the BIOS tells us to run in CPU_ANY mode (switching one/any
-> of the depending cores is enough).
->
-> Signed-off-by: Thomas Renninger <trenn@suse.de>
-> CC: venki@google.com
-> CC: davej@redhat.com
-> CC: linux-kernel@vger.kernel.org
-> CC: cpufreq@vger.kernel.org
-> CC: linux-perf-users@vger.kernel.org
-> CC: linux-trace-users@vger.kernel.org
-> CC: x86@kernel.org
-> CC: robert.schoene@tu-dresden.de
-> ---
->  arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-> index 4591680..c6de3a9 100644
-> --- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-> +++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-> @@ -391,7 +391,7 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
->
->        freqs.old = perf->states[perf->state].core_frequency * 1000;
->        freqs.new = data->freq_table[next_state].frequency;
-> -       for_each_cpu(i, cmd.mask) {
-> +       for_each_cpu(i, policy->cpus) {
->                freqs.cpu = i;
->                cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
->        }
-> @@ -407,7 +407,7 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
->                }
->        }
->
-> -       for_each_cpu(i, cmd.mask) {
-> +       for_each_cpu(i, policy->cpus) {
->                freqs.cpu = i;
->                cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
->        }
-> --
-> 1.6.3
->
+Not sure if this is needed since the patches aren't that complex, but I
+did do a review of all of them. Hence:
+
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
