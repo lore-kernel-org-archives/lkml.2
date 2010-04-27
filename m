@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab0D0GnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 02:43:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15704 "EHLO mga09.intel.com"
+	id S1753070Ab0D0GoL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 02:44:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2242 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092Ab0D0GnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 02:43:04 -0400
+	id S1753090Ab0D0Gnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 02:43:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,278,1270450800"; 
-   d="scan'208";a="616765456"
+   d="scan'208";a="616765519"
 From: Huang Ying <ying.huang@intel.com>
 To: lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 01/12] ACPI, IO memory pre-mapping and atomic accessing
-Date: Tue, 27 Apr 2010 14:41:10 +0800
-Message-Id: <1272350481-27951-2-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 11/12] ACPI, APEI, Error Record Serialization Table (ERST) support
+Date: Tue, 27 Apr 2010 14:41:20 +0800
+Message-Id: <1272350481-27951-12-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
 References: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
@@ -23,51 +23,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some ACPI IO accessing need to be done in atomic context. For example,
-APEI ERST operations may be used for permanent storage in hardware
-error handler. That is, it may be called in atomic contexts such as
-IRQ or NMI, etc. And, ERST/EINJ implement their operations via IO
-memory/port accessing.  But the IO memory accessing method provided by
-ACPI (acpi_read/acpi_write) maps the IO memory during it is accessed,
-so it can not be used in atomic context. To solve the issue, the IO
-memory should be pre-mapped during EINJ/ERST initializing. A linked
-list is used to record which memory area has been mapped, when memory
-is accessed in hardware error handler, search the linked list for the
-mapped virtual address from the given physical address.
+ERST is a way provided by APEI to save and retrieve hardware error
+record to and from some simple persistent storage (such as flash).
+
+The Linux kernel support implementation is quite simple and workable
+in NMI context. So it can be used to save hardware error record into
+flash in hardware error exception or NMI handler, where other more
+complex persistent storage such as disk is not usable. After saving
+hardware error records via ERST in hardware error exception or NMI
+handler, the error records can be retrieved and logged into disk or
+network after a clean reboot.
+
+For more information about ERST, please refer to ACPI Specification
+version 4.0, section 17.4.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/acpi/Makefile   |    1 
- drivers/acpi/atomicio.c |  360 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/acpi/atomicio.h |   10 +
- 3 files changed, 371 insertions(+)
- create mode 100644 drivers/acpi/atomicio.c
- create mode 100644 include/acpi/atomicio.h
+ Documentation/kernel-parameters.txt |    4 
+ drivers/acpi/apei/Makefile          |    2 
+ drivers/acpi/apei/erst.c            |  852 ++++++++++++++++++++++++++++++++++++
+ include/acpi/apei.h                 |   21 
+ 4 files changed, 878 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/acpi/apei/erst.c
 
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -19,6 +19,7 @@ obj-y				+= acpi.o \
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -750,6 +750,10 @@ and is between 256 and 4096 characters.
+ 			Default value is 0.
+ 			Value can be changed at runtime via /selinux/enforce.
  
- # All the builtin files are in the "acpi." module_param namespace.
- acpi-y				+= osl.o utils.o reboot.o
-+acpi-y				+= atomicio.o
- acpi-y				+= hest.o
++	erst_disable	[ACPI]
++			Disable Error Record Serialization Table (ERST)
++			support.
++
+ 	ether=		[HW,NET] Ethernet cards parameters
+ 			This option is obsoleted by the "netdev=" option, which
+ 			has equivalent usage. See its documentation for details.
+--- a/drivers/acpi/apei/Makefile
++++ b/drivers/acpi/apei/Makefile
+@@ -2,4 +2,4 @@ obj-$(CONFIG_ACPI_APEI)		+= apei.o
+ obj-$(CONFIG_ACPI_APEI_GHES)	+= ghes.o
+ obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
  
- # sleep related files
+-apei-y := apei-base.o hest.o cper.o
++apei-y := apei-base.o hest.o cper.o erst.o
 --- /dev/null
-+++ b/drivers/acpi/atomicio.c
-@@ -0,0 +1,360 @@
++++ b/drivers/acpi/apei/erst.c
+@@ -0,0 +1,852 @@
 +/*
-+ * atomicio.c - ACPI IO memory pre-mapping/post-unmapping, then
-+ * accessing in atomic context.
++ * APEI Error Record Serialization Table support
 + *
-+ * This is used for NMI handler to access IO memory area, because
-+ * ioremap/iounmap can not be used in NMI handler. The IO memory area
-+ * is pre-mapped in process context and accessed in NMI handler.
++ * ERST is a way provided by APEI to save and retrieve hardware error
++ * infomation to and from a persistent store.
 + *
-+ * Copyright (C) 2009-2010, Intel Corp.
-+ *	Author: Huang Ying <ying.huang@intel.com>
++ * For more information about ERST, please refer to ACPI Specification
++ * version 4.0, section 17.4.
++ *
++ * Copyright 2010 Intel Corp.
++ *   Author: Huang Ying <ying.huang@intel.com>
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License version
@@ -86,348 +100,859 @@ Signed-off-by: Andi Kleen <ak@linux.intel.com>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/init.h>
-+#include <linux/acpi.h>
++#include <linux/delay.h>
 +#include <linux/io.h>
-+#include <linux/kref.h>
-+#include <linux/rculist.h>
-+#include <linux/interrupt.h>
-+#include <acpi/atomicio.h>
++#include <linux/acpi.h>
++#include <linux/uaccess.h>
++#include <linux/cper.h>
++#include <linux/nmi.h>
++#include <acpi/apei.h>
 +
-+#define ACPI_PFX "ACPI: "
++#include "apei-internal.h"
 +
-+static LIST_HEAD(acpi_iomaps);
++#define ERST_PFX "ERST: "
++
++/* ERST command status */
++#define ERST_STATUS_SUCCESS			0x0
++#define ERST_STATUS_NOT_ENOUGH_SPACE		0x1
++#define ERST_STATUS_HARDWARE_NOT_AVAILABLE	0x2
++#define ERST_STATUS_FAILED			0x3
++#define ERST_STATUS_RECORD_STORE_EMPTY		0x4
++#define ERST_STATUS_RECORD_NOT_FOUND		0x5
++
++#define ERST_TAB_ENTRY(tab)						\
++	((struct acpi_whea_header *)((char *)(tab) +			\
++				     sizeof(struct acpi_table_erst)))
++
++#define SPIN_UNIT		100			/* 100ns */
++/* Firmware should respond within 1 miliseconds */
++#define FIRMWARE_TIMEOUT	(1 * NSEC_PER_MSEC)
++#define FIRMWARE_MAX_STALL	50			/* 50us */
++
++int erst_disable;
++EXPORT_SYMBOL_GPL(erst_disable);
++
++static struct acpi_table_erst *erst_tab;
++
++/* ERST Error Log Address Range atrributes */
++#define ERST_RANGE_RESERVED	0x0001
++#define ERST_RANGE_NVRAM	0x0002
++#define ERST_RANGE_SLOW		0x0004
++
 +/*
-+ * Used for mutual exclusion between writers of acpi_iomaps list, for
-+ * synchronization between readers and writer, RCU is used.
++ * ERST Error Log Address Range, used as buffer for reading/writing
++ * error records.
 + */
-+static DEFINE_SPINLOCK(acpi_iomaps_lock);
-+
-+struct acpi_iomap {
-+	struct list_head list;
++static struct erst_erange {
++	u64 base;
++	u64 size;
 +	void __iomem *vaddr;
-+	unsigned long size;
-+	phys_addr_t paddr;
-+	struct kref ref;
++	u32 attr;
++} erst_erange;
++
++/*
++ * Prevent ERST interpreter to run simultaneously, because the
++ * corresponding firmware implementation may not work properly when
++ * invoked simultaneously.
++ *
++ * It is used to provide exclusive accessing for ERST Error Log
++ * Address Range too.
++ */
++static DEFINE_SPINLOCK(erst_lock);
++
++static inline int erst_errno(int command_status)
++{
++	switch (command_status) {
++	case ERST_STATUS_SUCCESS:
++		return 0;
++	case ERST_STATUS_HARDWARE_NOT_AVAILABLE:
++		return -ENODEV;
++	case ERST_STATUS_NOT_ENOUGH_SPACE:
++		return -ENOSPC;
++	case ERST_STATUS_RECORD_STORE_EMPTY:
++	case ERST_STATUS_RECORD_NOT_FOUND:
++		return -ENOENT;
++	default:
++		return -EINVAL;
++	}
++}
++
++static int erst_timedout(u64 *t, u64 spin_unit)
++{
++	if ((s64)*t < spin_unit) {
++		pr_warning(FW_WARN ERST_PFX
++			   "Firmware does not respond in time\n");
++		return 1;
++	}
++	*t -= spin_unit;
++	ndelay(spin_unit);
++	touch_nmi_watchdog();
++	return 0;
++}
++
++static int erst_exec_load_var1(struct apei_exec_context *ctx,
++			       struct acpi_whea_header *entry)
++{
++	return __apei_exec_read_register(entry, &ctx->var1);
++}
++
++static int erst_exec_load_var2(struct apei_exec_context *ctx,
++			       struct acpi_whea_header *entry)
++{
++	return __apei_exec_read_register(entry, &ctx->var2);
++}
++
++static int erst_exec_store_var1(struct apei_exec_context *ctx,
++				struct acpi_whea_header *entry)
++{
++	return __apei_exec_write_register(entry, ctx->var1);
++}
++
++static int erst_exec_add(struct apei_exec_context *ctx,
++			 struct acpi_whea_header *entry)
++{
++	ctx->var1 += ctx->var2;
++	return 0;
++}
++
++static int erst_exec_subtract(struct apei_exec_context *ctx,
++			      struct acpi_whea_header *entry)
++{
++	ctx->var1 -= ctx->var2;
++	return 0;
++}
++
++static int erst_exec_add_value(struct apei_exec_context *ctx,
++			       struct acpi_whea_header *entry)
++{
++	int rc;
++	u64 val;
++
++	rc = __apei_exec_read_register(entry, &val);
++	if (rc)
++		return rc;
++	val += ctx->value;
++	rc = __apei_exec_write_register(entry, val);
++	return rc;
++}
++
++static int erst_exec_subtract_value(struct apei_exec_context *ctx,
++				    struct acpi_whea_header *entry)
++{
++	int rc;
++	u64 val;
++
++	rc = __apei_exec_read_register(entry, &val);
++	if (rc)
++		return rc;
++	val -= ctx->value;
++	rc = __apei_exec_write_register(entry, val);
++	return rc;
++}
++
++static int erst_exec_stall(struct apei_exec_context *ctx,
++			   struct acpi_whea_header *entry)
++{
++	u64 stall_time;
++
++	if (ctx->value > FIRMWARE_MAX_STALL) {
++		if (!in_nmi())
++			pr_warning(FW_WARN ERST_PFX
++			"Too long stall time for stall instruction: %llx.\n",
++				   ctx->value);
++		stall_time = FIRMWARE_MAX_STALL;
++	} else
++		stall_time = ctx->value;
++	udelay(stall_time);
++	return 0;
++}
++
++static int erst_exec_stall_while_true(struct apei_exec_context *ctx,
++				      struct acpi_whea_header *entry)
++{
++	int rc;
++	u64 val;
++	u64 timeout = FIRMWARE_TIMEOUT;
++	u64 stall_time;
++
++	if (ctx->var1 > FIRMWARE_MAX_STALL) {
++		if (!in_nmi())
++			pr_warning(FW_WARN ERST_PFX
++		"Too long stall time for stall while true instruction: %llx.\n",
++				   ctx->var1);
++		stall_time = FIRMWARE_MAX_STALL;
++	} else
++		stall_time = ctx->var1;
++
++	for (;;) {
++		rc = __apei_exec_read_register(entry, &val);
++		if (rc)
++			return rc;
++		if (val != ctx->value)
++			break;
++		if (erst_timedout(&timeout, stall_time * NSEC_PER_USEC))
++			return -EIO;
++	}
++	return 0;
++}
++
++static int erst_exec_skip_next_instruction_if_true(
++	struct apei_exec_context *ctx,
++	struct acpi_whea_header *entry)
++{
++	int rc;
++	u64 val;
++
++	rc = __apei_exec_read_register(entry, &val);
++	if (rc)
++		return rc;
++	if (val == ctx->value) {
++		ctx->ip += 2;
++		return APEI_EXEC_SET_IP;
++	}
++
++	return 0;
++}
++
++static int erst_exec_goto(struct apei_exec_context *ctx,
++			  struct acpi_whea_header *entry)
++{
++	ctx->ip = ctx->value;
++	return APEI_EXEC_SET_IP;
++}
++
++static int erst_exec_set_src_address_base(struct apei_exec_context *ctx,
++					  struct acpi_whea_header *entry)
++{
++	return __apei_exec_read_register(entry, &ctx->src_base);
++}
++
++static int erst_exec_set_dst_address_base(struct apei_exec_context *ctx,
++					  struct acpi_whea_header *entry)
++{
++	return __apei_exec_read_register(entry, &ctx->dst_base);
++}
++
++static int erst_exec_move_data(struct apei_exec_context *ctx,
++			       struct acpi_whea_header *entry)
++{
++	int rc;
++	u64 offset;
++
++	rc = __apei_exec_read_register(entry, &offset);
++	if (rc)
++		return rc;
++	memmove((void *)ctx->dst_base + offset,
++		(void *)ctx->src_base + offset,
++		ctx->var2);
++
++	return 0;
++}
++
++static struct apei_exec_ins_type erst_ins_type[] = {
++	[ACPI_ERST_READ_REGISTER] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = apei_exec_read_register,
++	},
++	[ACPI_ERST_READ_REGISTER_VALUE] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = apei_exec_read_register_value,
++	},
++	[ACPI_ERST_WRITE_REGISTER] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = apei_exec_write_register,
++	},
++	[ACPI_ERST_WRITE_REGISTER_VALUE] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = apei_exec_write_register_value,
++	},
++	[ACPI_ERST_NOOP] = {
++		.flags = 0,
++		.run = apei_exec_noop,
++	},
++	[ACPI_ERST_LOAD_VAR1] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = erst_exec_load_var1,
++	},
++	[ACPI_ERST_LOAD_VAR2] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = erst_exec_load_var2,
++	},
++	[ACPI_ERST_STORE_VAR1] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = erst_exec_store_var1,
++	},
++	[ACPI_ERST_ADD] = {
++		.flags = 0,
++		.run = erst_exec_add,
++	},
++	[ACPI_ERST_SUBTRACT] = {
++		.flags = 0,
++		.run = erst_exec_subtract,
++	},
++	[ACPI_ERST_ADD_VALUE] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = erst_exec_add_value,
++	},
++	[ACPI_ERST_SUBTRACT_VALUE] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = erst_exec_subtract_value,
++	},
++	[ACPI_ERST_STALL] = {
++		.flags = 0,
++		.run = erst_exec_stall,
++	},
++	[ACPI_ERST_STALL_WHILE_TRUE] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = erst_exec_stall_while_true,
++	},
++	[ACPI_ERST_SKIP_NEXT_IF_TRUE] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = erst_exec_skip_next_instruction_if_true,
++	},
++	[ACPI_ERST_GOTO] = {
++		.flags = 0,
++		.run = erst_exec_goto,
++	},
++	[ACPI_ERST_SET_SRC_ADDRESS_BASE] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = erst_exec_set_src_address_base,
++	},
++	[ACPI_ERST_SET_DST_ADDRESS_BASE] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = erst_exec_set_dst_address_base,
++	},
++	[ACPI_ERST_MOVE_DATA] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run = erst_exec_move_data,
++	},
 +};
 +
-+/* acpi_iomaps_lock or RCU read lock must be held before calling */
-+static struct acpi_iomap *__acpi_find_iomap(phys_addr_t paddr,
-+					    unsigned long size)
++static inline void erst_exec_ctx_init(struct apei_exec_context *ctx)
 +{
-+	struct acpi_iomap *map;
-+
-+	list_for_each_entry_rcu(map, &acpi_iomaps, list) {
-+		if (map->paddr + map->size >= paddr + size &&
-+		    map->paddr <= paddr)
-+			return map;
-+	}
-+	return NULL;
++	apei_exec_ctx_init(ctx, erst_ins_type, ARRAY_SIZE(erst_ins_type),
++			   ERST_TAB_ENTRY(erst_tab), erst_tab->entries);
 +}
 +
-+/*
-+ * Atomic "ioremap" used by NMI handler, if the specified IO memory
-+ * area is not pre-mapped, NULL will be returned.
-+ *
-+ * acpi_iomaps_lock or RCU read lock must be held before calling
-+ */
-+static void __iomem *__acpi_ioremap_fast(phys_addr_t paddr,
-+					 unsigned long size)
++static int erst_get_erange(struct erst_erange *range)
 +{
-+	struct acpi_iomap *map;
++	struct apei_exec_context ctx;
++	int rc;
 +
-+	map = __acpi_find_iomap(paddr, size);
-+	if (map)
-+		return map->vaddr + (paddr - map->paddr);
-+	else
-+		return NULL;
++	erst_exec_ctx_init(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_ERST_GET_ERROR_RANGE);
++	if (rc)
++		return rc;
++	range->base = apei_exec_ctx_get_output(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_ERST_GET_ERROR_LENGTH);
++	if (rc)
++		return rc;
++	range->size = apei_exec_ctx_get_output(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_ERST_GET_ERROR_ATTRIBUTES);
++	if (rc)
++		return rc;
++	range->attr = apei_exec_ctx_get_output(&ctx);
++
++	return 0;
 +}
 +
-+/* acpi_iomaps_lock must be held before calling */
-+static void __iomem *__acpi_try_ioremap(phys_addr_t paddr,
-+					unsigned long size)
++static ssize_t __erst_get_record_count(void)
 +{
-+	struct acpi_iomap *map;
++	struct apei_exec_context ctx;
++	int rc;
 +
-+	map = __acpi_find_iomap(paddr, size);
-+	if (map) {
-+		kref_get(&map->ref);
-+		return map->vaddr + (paddr - map->paddr);
-+	} else
-+		return NULL;
++	erst_exec_ctx_init(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_ERST_GET_RECORD_COUNT);
++	if (rc)
++		return rc;
++	return apei_exec_ctx_get_output(&ctx);
 +}
 +
-+/*
-+ * Used to pre-map the specified IO memory area. First try to find
-+ * whether the area is already pre-mapped, if it is, increase the
-+ * reference count (in __acpi_try_ioremap) and return; otherwise, do
-+ * the real ioremap, and add the mapping into acpi_iomaps list.
-+ */
-+static void __iomem *acpi_pre_map(phys_addr_t paddr,
-+				  unsigned long size)
++ssize_t erst_get_record_count(void)
 +{
-+	void __iomem *vaddr;
-+	struct acpi_iomap *map;
-+	unsigned long pg_sz, flags;
-+	phys_addr_t pg_off;
-+
-+	spin_lock_irqsave(&acpi_iomaps_lock, flags);
-+	vaddr = __acpi_try_ioremap(paddr, size);
-+	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
-+	if (vaddr)
-+		return vaddr;
-+
-+	pg_off = paddr & PAGE_MASK;
-+	pg_sz = ((paddr + size + PAGE_SIZE - 1) & PAGE_MASK) - pg_off;
-+	vaddr = ioremap(pg_off, pg_sz);
-+	if (!vaddr)
-+		return NULL;
-+	map = kmalloc(sizeof(*map), GFP_KERNEL);
-+	if (!map)
-+		goto err_unmap;
-+	INIT_LIST_HEAD(&map->list);
-+	map->paddr = pg_off;
-+	map->size = pg_sz;
-+	map->vaddr = vaddr;
-+	kref_init(&map->ref);
-+
-+	spin_lock_irqsave(&acpi_iomaps_lock, flags);
-+	vaddr = __acpi_try_ioremap(paddr, size);
-+	if (vaddr) {
-+		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
-+		iounmap(map->vaddr);
-+		kfree(map);
-+		return vaddr;
-+	}
-+	list_add_tail_rcu(&map->list, &acpi_iomaps);
-+	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
-+
-+	return vaddr + (paddr - pg_off);
-+err_unmap:
-+	iounmap(vaddr);
-+	return NULL;
-+}
-+
-+/* acpi_iomaps_lock must be held before calling */
-+static void __acpi_kref_del_iomap(struct kref *ref)
-+{
-+	struct acpi_iomap *map;
-+
-+	map = container_of(ref, struct acpi_iomap, ref);
-+	list_del_rcu(&map->list);
-+}
-+
-+/*
-+ * Used to post-unmap the specified IO memory area. The iounmap is
-+ * done only if the reference count goes zero.
-+ */
-+static void acpi_post_unmap(phys_addr_t paddr, unsigned long size)
-+{
-+	struct acpi_iomap *map;
++	ssize_t count;
 +	unsigned long flags;
-+	int del;
 +
-+	spin_lock_irqsave(&acpi_iomaps_lock, flags);
-+	map = __acpi_find_iomap(paddr, size);
-+	BUG_ON(!map);
-+	del = kref_put(&map->ref, __acpi_kref_del_iomap);
-+	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
++	if (erst_disable)
++		return -ENODEV;
 +
-+	if (!del)
-+		return;
++	spin_lock_irqsave(&erst_lock, flags);
++	count = __erst_get_record_count();
++	spin_unlock_irqrestore(&erst_lock, flags);
 +
-+	synchronize_rcu();
-+	iounmap(map->vaddr);
-+	kfree(map);
++	return count;
 +}
++EXPORT_SYMBOL_GPL(erst_get_record_count);
 +
-+/* In NMI handler, should set silent = 1 */
-+static int acpi_check_gar(struct acpi_generic_address *reg,
-+			  u64 *paddr, int silent)
++static int __erst_get_next_record_id(u64 *record_id)
 +{
-+	u32 width, space_id;
-+
-+	width = reg->bit_width;
-+	space_id = reg->space_id;
-+	/* Handle possible alignment issues */
-+	memcpy(paddr, &reg->address, sizeof(*paddr));
-+	if (!*paddr) {
-+		if (!silent)
-+			pr_warning(FW_BUG ACPI_PFX
-+			"Invalid physical address in GAR [0x%llx/%u/%u]\n",
-+				   *paddr, width, space_id);
-+		return -EINVAL;
-+	}
-+
-+	if ((width != 8) && (width != 16) && (width != 32) && (width != 64)) {
-+		if (!silent)
-+			pr_warning(FW_BUG ACPI_PFX
-+				   "Invalid bit width in GAR [0x%llx/%u/%u]\n",
-+				   *paddr, width, space_id);
-+		return -EINVAL;
-+	}
-+
-+	if (space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY &&
-+	    space_id != ACPI_ADR_SPACE_SYSTEM_IO) {
-+		if (!silent)
-+			pr_warning(FW_BUG ACPI_PFX
-+			"Invalid address space type in GAR [0x%llx/%u/%u]\n",
-+				   *paddr, width, space_id);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+/* Pre-map, working on GAR */
-+int acpi_pre_map_gar(struct acpi_generic_address *reg)
-+{
-+	u64 paddr;
-+	void __iomem *vaddr;
++	struct apei_exec_context ctx;
 +	int rc;
 +
-+	if (reg->space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY)
-+		return 0;
-+
-+	rc = acpi_check_gar(reg, &paddr, 0);
++	erst_exec_ctx_init(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_ERST_GET_RECORD_ID);
 +	if (rc)
 +		return rc;
-+
-+	vaddr = acpi_pre_map(paddr, reg->bit_width / 8);
-+	if (!vaddr)
-+		return -EIO;
++	*record_id = apei_exec_ctx_get_output(&ctx);
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL_GPL(acpi_pre_map_gar);
-+
-+/* Post-unmap, working on GAR */
-+int acpi_post_unmap_gar(struct acpi_generic_address *reg)
-+{
-+	u64 paddr;
-+	int rc;
-+
-+	if (reg->space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY)
-+		return 0;
-+
-+	rc = acpi_check_gar(reg, &paddr, 0);
-+	if (rc)
-+		return rc;
-+
-+	acpi_post_unmap(paddr, reg->bit_width / 8);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(acpi_post_unmap_gar);
 +
 +/*
-+ * Can be used in atomic (including NMI) or process context. RCU read
-+ * lock can only be released after the IO memory area accessing.
++ * Get the record ID of an existing error record on the persistent
++ * storage. If there is no error record on the persistent storage, the
++ * returned record_id is APEI_ERST_INVALID_RECORD_ID.
 + */
-+static int acpi_atomic_read_mem(u64 paddr, u64 *val, u32 width)
++int erst_get_next_record_id(u64 *record_id)
 +{
-+	void __iomem *addr;
++	int rc;
++	unsigned long flags;
 +
-+	rcu_read_lock();
-+	addr = __acpi_ioremap_fast(paddr, width);
-+	switch (width) {
-+	case 8:
-+		*val = readb(addr);
-+		break;
-+	case 16:
-+		*val = readw(addr);
-+		break;
-+	case 32:
-+		*val = readl(addr);
-+		break;
-+	case 64:
-+		*val = readq(addr);
-+		break;
-+	default:
-+		return -EINVAL;
++	if (erst_disable)
++		return -ENODEV;
++
++	spin_lock_irqsave(&erst_lock, flags);
++	rc = __erst_get_next_record_id(record_id);
++	spin_unlock_irqrestore(&erst_lock, flags);
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(erst_get_next_record_id);
++
++static int __erst_write_to_storage(u64 offset)
++{
++	struct apei_exec_context ctx;
++	u64 timeout = FIRMWARE_TIMEOUT;
++	u64 val;
++	int rc;
++
++	erst_exec_ctx_init(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_WRITE);
++	if (rc)
++		return rc;
++	apei_exec_ctx_set_input(&ctx, offset);
++	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_OFFSET);
++	if (rc)
++		return rc;
++	rc = apei_exec_run(&ctx, ACPI_ERST_EXECUTE_OPERATION);
++	if (rc)
++		return rc;
++	for (;;) {
++		rc = apei_exec_run(&ctx, ACPI_ERST_CHECK_BUSY_STATUS);
++		if (rc)
++			return rc;
++		val = apei_exec_ctx_get_output(&ctx);
++		if (!val)
++			break;
++		if (erst_timedout(&timeout, SPIN_UNIT))
++			return -EIO;
 +	}
-+	rcu_read_unlock();
++	rc = apei_exec_run(&ctx, ACPI_ERST_GET_COMMAND_STATUS);
++	if (rc)
++		return rc;
++	val = apei_exec_ctx_get_output(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_ERST_END);
++	if (rc)
++		return rc;
++
++	return erst_errno(val);
++}
++
++static int __erst_read_from_storage(u64 record_id, u64 offset)
++{
++	struct apei_exec_context ctx;
++	u64 timeout = FIRMWARE_TIMEOUT;
++	u64 val;
++	int rc;
++
++	erst_exec_ctx_init(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_READ);
++	if (rc)
++		return rc;
++	apei_exec_ctx_set_input(&ctx, offset);
++	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_OFFSET);
++	if (rc)
++		return rc;
++	apei_exec_ctx_set_input(&ctx, record_id);
++	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_ID);
++	if (rc)
++		return rc;
++	rc = apei_exec_run(&ctx, ACPI_ERST_EXECUTE_OPERATION);
++	if (rc)
++		return rc;
++	for (;;) {
++		rc = apei_exec_run(&ctx, ACPI_ERST_CHECK_BUSY_STATUS);
++		if (rc)
++			return rc;
++		val = apei_exec_ctx_get_output(&ctx);
++		if (!val)
++			break;
++		if (erst_timedout(&timeout, SPIN_UNIT))
++			return -EIO;
++	};
++	rc = apei_exec_run(&ctx, ACPI_ERST_GET_COMMAND_STATUS);
++	if (rc)
++		return rc;
++	val = apei_exec_ctx_get_output(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_ERST_END);
++	if (rc)
++		return rc;
++
++	return erst_errno(val);
++}
++
++static int __erst_clear_from_storage(u64 record_id)
++{
++	struct apei_exec_context ctx;
++	u64 timeout = FIRMWARE_TIMEOUT;
++	u64 val;
++	int rc;
++
++	erst_exec_ctx_init(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_CLEAR);
++	if (rc)
++		return rc;
++	apei_exec_ctx_set_input(&ctx, record_id);
++	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_ID);
++	if (rc)
++		return rc;
++	rc = apei_exec_run(&ctx, ACPI_ERST_EXECUTE_OPERATION);
++	if (rc)
++		return rc;
++	for (;;) {
++		rc = apei_exec_run(&ctx, ACPI_ERST_CHECK_BUSY_STATUS);
++		if (rc)
++			return rc;
++		val = apei_exec_ctx_get_output(&ctx);
++		if (!val)
++			break;
++		if (erst_timedout(&timeout, SPIN_UNIT))
++			return -EIO;
++	}
++	rc = apei_exec_run(&ctx, ACPI_ERST_GET_COMMAND_STATUS);
++	if (rc)
++		return rc;
++	val = apei_exec_ctx_get_output(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_ERST_END);
++	if (rc)
++		return rc;
++
++	return erst_errno(val);
++}
++
++/* NVRAM ERST Error Log Address Range is not supported yet */
++static void pr_unimpl_nvram(void)
++{
++	if (printk_ratelimit())
++		pr_warning(ERST_PFX
++		"NVRAM ERST Log Address Range is not implemented yet\n");
++}
++
++static int __erst_write_to_nvram(const struct cper_record_header *record)
++{
++	/* do not print message, because printk is not safe for NMI */
++	return -ENOSYS;
++}
++
++static int __erst_read_to_erange_from_nvram(u64 record_id, u64 *offset)
++{
++	pr_unimpl_nvram();
++	return -ENOSYS;
++}
++
++static int __erst_clear_from_nvram(u64 record_id)
++{
++	pr_unimpl_nvram();
++	return -ENOSYS;
++}
++
++int erst_write(const struct cper_record_header *record)
++{
++	int rc;
++	unsigned long flags;
++	struct cper_record_header *rcd_erange;
++
++	if (erst_disable)
++		return -ENODEV;
++
++	if (memcmp(record->signature, CPER_SIG_RECORD, CPER_SIG_SIZE))
++		return -EINVAL;
++
++	if (erst_erange.attr & ERST_RANGE_NVRAM) {
++		if (!spin_trylock_irqsave(&erst_lock, flags))
++			return -EBUSY;
++		rc = __erst_write_to_nvram(record);
++		spin_unlock_irqrestore(&erst_lock, flags);
++		return rc;
++	}
++
++	if (record->record_length > erst_erange.size)
++		return -EINVAL;
++
++	if (!spin_trylock_irqsave(&erst_lock, flags))
++		return -EBUSY;
++	memcpy(erst_erange.vaddr, record, record->record_length);
++	rcd_erange = erst_erange.vaddr;
++	/* signature for serialization system */
++	memcpy(&rcd_erange->persistence_information, "ER", 2);
++
++	rc = __erst_write_to_storage(0);
++	spin_unlock_irqrestore(&erst_lock, flags);
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(erst_write);
++
++static int __erst_read_to_erange(u64 record_id, u64 *offset)
++{
++	int rc;
++
++	if (erst_erange.attr & ERST_RANGE_NVRAM)
++		return __erst_read_to_erange_from_nvram(
++			record_id, offset);
++
++	rc = __erst_read_from_storage(record_id, 0);
++	if (rc)
++		return rc;
++	*offset = 0;
 +
 +	return 0;
 +}
 +
-+static int acpi_atomic_write_mem(u64 paddr, u64 val, u32 width)
++static ssize_t __erst_read(u64 record_id, struct cper_record_header *record,
++			   size_t buflen)
 +{
-+	void __iomem *addr;
++	int rc;
++	u64 offset, len = 0;
++	struct cper_record_header *rcd_tmp;
 +
-+	rcu_read_lock();
-+	addr = __acpi_ioremap_fast(paddr, width);
-+	switch (width) {
-+	case 8:
-+		writeb(val, addr);
-+		break;
-+	case 16:
-+		writew(val, addr);
-+		break;
-+	case 32:
-+		writel(val, addr);
-+		break;
-+	case 64:
-+		writeq(val, addr);
-+		break;
-+	default:
-+		return -EINVAL;
++	rc = __erst_read_to_erange(record_id, &offset);
++	if (rc)
++		return rc;
++	rcd_tmp = erst_erange.vaddr + offset;
++	len = rcd_tmp->record_length;
++	if (len <= buflen)
++		memcpy(record, rcd_tmp, len);
++
++	return len;
++}
++
++/*
++ * If return value > buflen, the buffer size is not big enough,
++ * else if return value < 0, something goes wrong,
++ * else everything is OK, and return value is record length
++ */
++ssize_t erst_read(u64 record_id, struct cper_record_header *record,
++		  size_t buflen)
++{
++	ssize_t len;
++	unsigned long flags;
++
++	if (erst_disable)
++		return -ENODEV;
++
++	spin_lock_irqsave(&erst_lock, flags);
++	len = __erst_read(record_id, record, buflen);
++	spin_unlock_irqrestore(&erst_lock, flags);
++	return len;
++}
++EXPORT_SYMBOL_GPL(erst_read);
++
++/*
++ * If return value > buflen, the buffer size is not big enough,
++ * else if return value = 0, there is no more record to read,
++ * else if return value < 0, something goes wrong,
++ * else everything is OK, and return value is record length
++ */
++ssize_t erst_read_next(struct cper_record_header *record, size_t buflen)
++{
++	int rc;
++	ssize_t len;
++	unsigned long flags;
++	u64 record_id;
++
++	spin_lock_irqsave(&erst_lock, flags);
++	rc = __erst_get_next_record_id(&record_id);
++	if (rc) {
++		spin_unlock_irqrestore(&erst_lock, flags);
++		return rc;
 +	}
-+	rcu_read_unlock();
++	/* no more record */
++	if (record_id == APEI_ERST_INVALID_RECORD_ID) {
++		spin_unlock_irqrestore(&erst_lock, flags);
++		return 0;
++	}
++
++	len = __erst_read(record_id, record, buflen);
++	spin_unlock_irqrestore(&erst_lock, flags);
++
++	return len;
++}
++EXPORT_SYMBOL_GPL(erst_read_next);
++
++int erst_clear(u64 record_id)
++{
++	int rc;
++	unsigned long flags;
++
++	if (erst_disable)
++		return -ENODEV;
++
++	spin_lock_irqsave(&erst_lock, flags);
++	if (erst_erange.attr & ERST_RANGE_NVRAM)
++		rc = __erst_clear_from_nvram(record_id);
++	else
++		rc = __erst_clear_from_storage(record_id);
++	spin_unlock_irqrestore(&erst_lock, flags);
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(erst_clear);
++
++static int __init setup_erst_disable(char *str)
++{
++	erst_disable = 1;
++	return 0;
++}
++
++__setup("erst_disable", setup_erst_disable);
++
++static int erst_check_table(struct acpi_table_erst *erst_tab)
++{
++	if (erst_tab->header_length != sizeof(struct acpi_table_erst))
++		return -EINVAL;
++	if (erst_tab->header.length < sizeof(struct acpi_table_erst))
++		return -EINVAL;
++	if (erst_tab->entries !=
++	    (erst_tab->header.length - sizeof(struct acpi_table_erst)) /
++	    sizeof(struct acpi_erst_entry))
++		return -EINVAL;
 +
 +	return 0;
 +}
 +
-+/* GAR accessing in atomic (including NMI) or process context */
-+int acpi_atomic_read(u64 *val, struct acpi_generic_address *reg)
++static int __init erst_init(void)
 +{
-+	u64 paddr;
-+	int rc;
++	int rc = 0;
++	acpi_status status;
++	struct apei_exec_context ctx;
++	struct apei_resources erst_resources;
++	struct resource *r;
 +
-+	rc = acpi_check_gar(reg, &paddr, 1);
-+	if (rc)
-+		return rc;
++	if (acpi_disabled)
++		goto err;
 +
-+	*val = 0;
-+	switch (reg->space_id) {
-+	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
-+		return acpi_atomic_read_mem(paddr, val, reg->bit_width);
-+	case ACPI_ADR_SPACE_SYSTEM_IO:
-+		return acpi_os_read_port(paddr, (u32 *)val, reg->bit_width);
-+	default:
-+		return -EINVAL;
++	if (erst_disable) {
++		pr_info(ERST_PFX
++	"Error Record Serialization Table (ERST) support is disabled.\n");
++		goto err;
 +	}
-+}
-+EXPORT_SYMBOL_GPL(acpi_atomic_read);
 +
-+int acpi_atomic_write(u64 val, struct acpi_generic_address *reg)
-+{
-+	u64 paddr;
-+	int rc;
-+
-+	rc = acpi_check_gar(reg, &paddr, 1);
-+	if (rc)
-+		return rc;
-+
-+	switch (reg->space_id) {
-+	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
-+		return acpi_atomic_write_mem(paddr, val, reg->bit_width);
-+	case ACPI_ADR_SPACE_SYSTEM_IO:
-+		return acpi_os_write_port(paddr, val, reg->bit_width);
-+	default:
-+		return -EINVAL;
++	status = acpi_get_table(ACPI_SIG_ERST, 0,
++				(struct acpi_table_header **)&erst_tab);
++	if (status == AE_NOT_FOUND) {
++		pr_err(ERST_PFX "Table is not found!\n");
++		goto err;
++	} else if (ACPI_FAILURE(status)) {
++		const char *msg = acpi_format_exception(status);
++		pr_err(ERST_PFX "Failed to get table, %s\n", msg);
++		rc = -EINVAL;
++		goto err;
 +	}
++
++	rc = erst_check_table(erst_tab);
++	if (rc) {
++		pr_err(FW_BUG ERST_PFX "ERST table is invalid\n");
++		goto err;
++	}
++
++	apei_resources_init(&erst_resources);
++	erst_exec_ctx_init(&ctx);
++	rc = apei_exec_collect_resources(&ctx, &erst_resources);
++	if (rc)
++		goto err_fini;
++	rc = apei_resources_request(&erst_resources, "APEI ERST");
++	if (rc)
++		goto err_fini;
++	rc = apei_exec_pre_map_gars(&ctx);
++	if (rc)
++		goto err_release;
++	rc = erst_get_erange(&erst_erange);
++	if (rc) {
++		if (rc == -ENODEV)
++			pr_info(ERST_PFX
++	"The corresponding hardware device or firmware implementation "
++	"is not available.\n");
++		else
++			pr_err(ERST_PFX
++			       "Failed to get Error Log Address Range.\n");
++		goto err_unmap_reg;
++	}
++
++	r = request_mem_region(erst_erange.base, erst_erange.size, "APEI ERST");
++	if (!r) {
++		pr_err(ERST_PFX
++		"Can not request iomem region <0x%16llx-0x%16llx> for ERST.\n",
++		(unsigned long long)erst_erange.base,
++		(unsigned long long)erst_erange.base + erst_erange.size);
++		rc = -EIO;
++		goto err_unmap_reg;
++	}
++	rc = -ENOMEM;
++	erst_erange.vaddr = ioremap_cache(erst_erange.base,
++					  erst_erange.size);
++	if (!erst_erange.vaddr)
++		goto err_release_erange;
++
++	pr_info(ERST_PFX
++	"Error Record Serialization Table (ERST) support is initialized.\n");
++
++	return 0;
++
++err_release_erange:
++	release_mem_region(erst_erange.base, erst_erange.size);
++err_unmap_reg:
++	apei_exec_post_unmap_gars(&ctx);
++err_release:
++	apei_resources_release(&erst_resources);
++err_fini:
++	apei_resources_fini(&erst_resources);
++err:
++	erst_disable = 1;
++	return rc;
 +}
-+EXPORT_SYMBOL_GPL(acpi_atomic_write);
---- /dev/null
-+++ b/include/acpi/atomicio.h
-@@ -0,0 +1,10 @@
-+#ifndef ACPI_ATOMIC_IO_H
-+#define ACPI_ATOMIC_IO_H
 +
-+int acpi_pre_map_gar(struct acpi_generic_address *reg);
-+int acpi_post_unmap_gar(struct acpi_generic_address *reg);
++device_initcall(erst_init);
+--- a/include/acpi/apei.h
++++ b/include/acpi/apei.h
+@@ -5,9 +5,30 @@
+ #ifndef ACPI_APEI_H
+ #define ACPI_APEI_H
+ 
++#include <linux/acpi.h>
++#include <linux/cper.h>
++#include <asm/ioctls.h>
 +
-+int acpi_atomic_read(u64 *val, struct acpi_generic_address *reg);
-+int acpi_atomic_write(u64 val, struct acpi_generic_address *reg);
++#define APEI_ERST_INVALID_RECORD_ID	0xffffffffffffffffULL
++
++#define APEI_ERST_CLEAR_RECORD		_IOW('E', 1, u64)
++#define APEI_ERST_GET_RECORD_COUNT	_IOR('E', 2, u32)
++
++#ifdef __KERNEL__
++
+ extern int hest_disable;
++extern int erst_disable;
+ 
+ typedef int (*apei_hest_func_t)(struct acpi_hest_header *hest_hdr, void *data);
+ int apei_hest_parse(apei_hest_func_t func, void *data);
+ 
++int erst_write(const struct cper_record_header *record);
++ssize_t erst_get_record_count(void);
++int erst_get_next_record_id(u64 *record_id);
++ssize_t erst_read(u64 record_id, struct cper_record_header *record,
++		  size_t buflen);
++ssize_t erst_read_next(struct cper_record_header *record, size_t buflen);
++int erst_clear(u64 record_id);
 +
 +#endif
+ #endif
