@@ -1,105 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab0D0Mmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 08:42:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630Ab0D0Mm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 08:42:29 -0400
-Message-ID: <4BD6DBB3.7050908@redhat.com>
-Date: Tue, 27 Apr 2010 15:42:27 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/22] KVM: X86: Add kvm_read_guest_page_tdp function
-References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com> <1272364712-17425-14-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1272364712-17425-14-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755533Ab0D0Mn3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 08:43:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51468 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab0D0Mn2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 08:43:28 -0400
+Subject: Re: request_firmware API exhaust memory
+From: David Woodhouse <dwmw2@infradead.org>
+To: Kay Sievers <kay.sievers@vrfy.org>, dhowells@redhat.com
+Cc: Tomas Winkler <tomasw@gmail.com>, Greg KH <greg@kroah.com>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <s2yac3eb2511004270505g4ded10f5k5322850e8b58790f@mail.gmail.com>
+References: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com>
+	 <20100419145934.GA10893@kroah.com>
+	 <t2w1ba2fa241004211522le49fc938m341553b0f2b89031@mail.gmail.com>
+	 <20100425163711.GA20196@kroah.com>
+	 <o2n1ba2fa241004251222x6ab49726p9757fd8be4952bee@mail.gmail.com>
+	 <20100425193658.GA24039@kroah.com>
+	 <m2g1ba2fa241004251309oa5592255lb4e4b96ea07dd12a@mail.gmail.com>
+	 <o2qac3eb2511004260338xd8146a7dy415d3f0f4f1c8bbc@mail.gmail.com>
+	 <1272295140.2434.8.camel@yio.site>
+	 <j2t1ba2fa241004270418hd37b1fdk83f31d4f608584f9@mail.gmail.com>
+	 <s2yac3eb2511004270505g4ded10f5k5322850e8b58790f@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Apr 2010 13:43:07 +0100
+Message-ID: <1272372187.5484.3981.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2010 01:38 PM, Joerg Roedel wrote:
-> This patch adds a function which can read from the guests
-> physical memory or from the guest's guest physical memory.
-> This will be used in the two-dimensional page table walker.
->
-> Signed-off-by: Joerg Roedel<joerg.roedel@amd.com>
-> ---
->   arch/x86/include/asm/kvm_host.h |    3 +++
->   arch/x86/kvm/x86.c              |   24 ++++++++++++++++++++++++
->   2 files changed, 27 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 3cbfb51..7851bbc 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -635,6 +635,9 @@ void kvm_requeue_exception(struct kvm_vcpu *vcpu, unsigned nr);
->   void kvm_requeue_exception_e(struct kvm_vcpu *vcpu, unsigned nr, u32 error_code);
->   void kvm_inject_page_fault(struct kvm_vcpu *vcpu, unsigned long cr2,
->   			   u32 error_code);
-> +int kvm_read_guest_page_tdp(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
-> +			    gfn_t gfn, void *data, int offset, int len,
-> +			    u32 *error);
->   bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
->
->   int kvm_pic_set_irq(void *opaque, int irq, int level);
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 6b2ce1d..558d995 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -356,6 +356,30 @@ bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl)
->   EXPORT_SYMBOL_GPL(kvm_require_cpl);
->
->   /*
-> + * This function will be used to read from the physical memory of the currently
-> + * running guest. The difference to kvm_read_guest_page ist that this function
-> + * can read from guest physical or from the guest's guest physical memory.
-> + */
->    
+On Tue, 2010-04-27 at 14:05 +0200, Kay Sievers wrote:
+> 
+> The patch I posted makes the issue go away. It's still not the right
+> fix, because the pages are only get freed when the device id cleaned
+> up, not on calling release_firmware. But it should illustrate the
+> underlying issue, and that there is no leaked memory anymore.
+> 
+> >  I think this needs some more review.
+> 
+> If David does not fix it, it probably just needs to be reverted. And
+> instead of implementing our own "memory management", we should rather
+> add a vrealloc(), and the firmware loader should use that. 
 
-s/ist/is/
+The whole point was to avoid the vrealloc(). We really don't want to be
+screwing with page tables, globally, for each page written from
+userspace.
 
-> +int kvm_read_guest_page_tdp(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
-> +			    gfn_t gfn, void *data, int offset, int len,
-> +			    u32 *error)
->    
+This untested patch attempts to put the page array into the 'struct
+firmware' so that we can free it from release_firmware().
 
-Naming: I see 'tdp' as a host property, and this is valid whether tdp is 
-enabled or not.  Suggest calling it kvm_read_nested_guest_page().
+It would actually be nice if we could make that the _primary_ method of
+returning data to drivers, and we could ditch the vmap() requirement
+altogether... drivers which really need it to be virtually contiguous
+can depend on CONFIG_MMU and do the vmap() for themselves.
 
-Following mmu.txt, the parameter would be ngfn, not gfn.
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 985da11..cc9a79b 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -162,8 +162,13 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 			mutex_unlock(&fw_lock);
+ 			break;
+ 		}
+-		vfree(fw_priv->fw->data);
++		vunmap(fw_priv->fw->data);
+ 		fw_priv->fw->data = NULL;
++		if (fw_priv->fw->pages) {
++			for (i = 0; i < PFN_UP(fw_priv->fw->size); i++)
++				__free_page(fw_priv->fw->pages[i]);
++			kfree(fw_priv->fw->pages);
++		}
+ 		for (i = 0; i < fw_priv->nr_pages; i++)
+ 			__free_page(fw_priv->pages[i]);
+ 		kfree(fw_priv->pages);
+@@ -176,7 +181,7 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 		break;
+ 	case 0:
+ 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
+-			vfree(fw_priv->fw->data);
++			vunmap(fw_priv->fw->data);
+ 			fw_priv->fw->data = vmap(fw_priv->pages,
+ 						 fw_priv->nr_pages,
+ 						 0, PAGE_KERNEL_RO);
+@@ -184,7 +189,9 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 				dev_err(dev, "%s: vmap() failed\n", __func__);
+ 				goto err;
+ 			}
+-			/* Pages will be freed by vfree() */
++			/* Pages are now owned by 'struct firmware' */
++			fw_priv->fw->pages = fw_priv->pages;
++			fw_priv->pages = NULL;
+ 			fw_priv->page_array_size = 0;
+ 			fw_priv->nr_pages = 0;
+ 			complete(&fw_priv->completion);
+@@ -571,6 +578,7 @@ void
+ release_firmware(const struct firmware *fw)
+ {
+ 	struct builtin_fw *builtin;
++	int i;
+ 
+ 	if (fw) {
+ 		for (builtin = __start_builtin_fw; builtin != __end_builtin_fw;
+@@ -578,7 +586,12 @@ release_firmware(const struct firmware *fw)
+ 			if (fw->data == builtin->data)
+ 				goto free_fw;
+ 		}
+-		vfree(fw->data);
++		vunmap(fw->data);
++		if (fw->pages) {
++			for (i = 0; i < PFN_UP(fw->size); i++)
++				__free_page(fw->pages[i]);
++			kfree(fw->pages);
++		}
+ 	free_fw:
+ 		kfree(fw);
+ 	}
 
-> +{
-> +	gfn_t real_gfn;
-> +	gpa_t gpa;
-> +
-> +	*error   = 0;
-> +	gpa      = gfn<<  PAGE_SHIFT;
-> +	real_gfn = mmu->translate_gpa(vcpu, gpa, error);
->    
-
-Overflow: sizeof(gpa) > sizeof(gfn).
-
-> +	if (real_gfn == UNMAPPED_GVA)
-> +		return -EFAULT;
-> +
-> +	real_gfn>>= PAGE_SHIFT;
->    
-
-gpa_to_gfn().
-
-> +
-> +	return kvm_read_guest_page(vcpu->kvm, real_gfn, data, offset, len);
-> +}
-> +EXPORT_SYMBOL_GPL(kvm_read_guest_page_tdp);
-> +
->    
 
 -- 
-error compiling committee.c: too many arguments to function
+dwmw2
 
