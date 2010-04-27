@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab0D0XAr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 19:00:47 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:44490 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab0D0XAq (ORCPT
+	id S932104Ab0D0XBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 19:01:52 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:53936 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754868Ab0D0XBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 19:00:46 -0400
-From: Eric Anholt <eric@anholt.net>
-To: Jan Beulich <JBeulich@novell.com>, Brice.Goglin@ens-lyon.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: intel_i830_chipset_flush(): local clflush() vs. global wbinvd()
-In-Reply-To: <4BD5787C020000780003C1DB@vpn.id2.novell.com>
-References: <4BD5787C020000780003C1DB@vpn.id2.novell.com>
-Date: Tue, 27 Apr 2010 16:00:30 -0700
-Message-ID: <8739ygwlf5.fsf@pollan.anholt.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 27 Apr 2010 19:01:51 -0400
+Date: Tue, 27 Apr 2010 19:01:21 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
+       Peter Jones <pjones@redhat.com>,
+       Konrad Rzeszutek Wilk <konrad@kernel.org>, linux-next@vger.kernel.org
+Subject: Re: linux-next: April 27 (iscsi_ibft)
+Message-ID: <20100427230121.GA31743@andromeda.dapyr.net>
+References: <80edf231-ef31-4f21-ab1b-1a21fda35809@default>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <80edf231-ef31-4f21-ab1b-1a21fda35809@default>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 27, 2010 at 09:13:16AM -0700, Randy Dunlap wrote:
+> when CONFIG_ACPI is not enabled:
+> 
+> drivers/firmware/iscsi_ibft_find.c:112: error: dereferencing pointer to incomplete type
+> drivers/firmware/iscsi_ibft_find.c:112: error: dereferencing pointer to incomplete type
+> drivers/firmware/iscsi_ibft_find.c:112: warning: type defaults to 'int' in declaration of 'type name'
+> drivers/firmware/iscsi_ibft_find.c:112: error: dereferencing pointer to incomplete type
+> drivers/firmware/iscsi_ibft_find.c:112: warning: type defaults to 'int' in declaration of 'type name'
 
-On Mon, 26 Apr 2010 10:26:52 +0100, "Jan Beulich" <JBeulich@novell.com> wro=
-te:
-> Eric, Brice,
->=20
-> what is the point of issuing wbinvd() on all CPUs here if clflush isn't
-> available, but using clflush() (if available) only on the current CPU?
+Yikes.
 
-From=20the IA-32 architecture manuals:
+Randy, thank you for spotting this and sending an e-mail my way.
 
-WBINVD: "Writes back all modified cache lines in the processor=E2=80=99s
-         internal cache to main memory and invalidates (flushes) the
-         internal caches. The instruction then issues a special-
-         function bus cycle that directs external caches to also write
-         back modified data and another bus cycle to indicate that the
-         external caches should be invalidated.
+It is all b/c we now use the 'struct acpi_table_ibft *ibft_addr' which
+is gone when !CONFIG_ACPI.
 
-CLFLUSH: "Invalidates the cache line that contains the linear address
-          specified with the source operand from all levels of the
-          processor cache hierarchy (data and instruction). The
-          invalidation is broadcast throughout the cache coherence
-          domain. If, at any level of the cache hierarchy, the line is
-          inconsistent with memory (dirty) it is written to memory
-          before invalidation. The source operand is a byte memory
-          location.
+Peter, if we did in an #ifdef !CONFIG_ACPI in iscsi_ibft.h and included
+a copy of the old ibft_struct that should work.
 
-My reading of these two is that wbinvd affects this processor's cache
-lines, while clflush affects the cacheline regardless of which CPU owns
-it since they all share the same coherence domain.
+Or we make the code dependent on CONFIG_ACPI (in the Kconfig
+file).
 
-Given that on many systems without CLFLUSH (8xx chipsets), we have
-issues with getting coherence to external memory successfully (note how
-neither of those instructions provide that!), I'm not sure it's a good
-time to be worrying about how to improve cache flushing performance on them!
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvXbI4ACgkQHUdvYGzw6veAyACeKCet/nCb7ILM/zYWwshFWVoQ
-VZwAnRQkimfqhM64QoQt0Kvfvp20qVzg
-=tCEL
------END PGP SIGNATURE-----
---=-=-=--
+Peter, Randy: Which option do you think makes more sense?
