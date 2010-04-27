@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333Ab0D0GzK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 02:55:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56457 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab0D0GzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 02:55:08 -0400
-Date: Tue, 27 Apr 2010 08:54:51 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: mingo@elte.hu, fweisbec@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 4/4] tracing: graph output support for
- preemptirqsoff/preemptoff tracers
-Message-ID: <20100427065451.GA1912@jolsa.lab.eng.brq.redhat.com>
-References: <1270227683-14631-1-git-send-email-jolsa@redhat.com>
- <1270227683-14631-5-git-send-email-jolsa@redhat.com>
- <1272332143.9739.39.camel@gandalf.stny.rr.com>
+	id S1752736Ab0D0Gzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 02:55:52 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:15009
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751406Ab0D0Gzu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 02:55:50 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(zz1432P98dNzz1202hzz6ff19h6d525hz32i2a8h43h65h)
+X-Spam-TCS-SCL: 4:0
+X-WSS-ID: 0L1IWKP-01-F0T-02
+X-M-MSG: 
+Date: Tue, 27 Apr 2010 08:55:34 +0200
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+       stable-review@kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [049/197] x86, amd: Get multi-node CPU info from NodeId MSR
+ instead of PCI config space
+Message-ID: <20100427065534.GB6248@alberich.amd.com>
+References: <20100422190911.735233389@kvm.kroah.org>
+ <alpine.LNX.2.00.1004261906410.7579@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <1272332143.9739.39.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <alpine.LNX.2.00.1004261906410.7579@pobox.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 27 Apr 2010 06:55:35.0029 (UTC) FILETIME=[A2C87A50:01CAE5D6]
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 09:35:43PM -0400, Steven Rostedt wrote:
-> On Fri, 2010-04-02 at 19:01 +0200, Jiri Olsa wrote:
-> > hi,
-> > 
-> > adding support for graph output for preemptirqsoff/preemptoff tracers.
-> > 
+On Mon, Apr 26, 2010 at 07:10:37PM +0200, Jiri Kosina wrote:
+> On Thu, 22 Apr 2010, Greg KH wrote:
 > 
-> So far I like the series. But I'm confused why this patch is separate
-> from patch 3. Is there some reason for it?
-> 
-> If not, I'll just merge this into patch 3
+> > 2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-no particular reason, just wanted to separate the graph support
-for single tracer... I have no problem with merging those 2
-
-jirka
+[...]
 
 > 
-> -- Steve
+> This patch is causing kernel panic on boot on Magny Cours CPU here (cpu 
+> family 16, model 9, stepping 1).
 > 
-> > wbr,
-> > jirka
-> > 
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > ---
-> >  kernel/trace/trace_irqsoff.c |   12 ++++++++++++
-> >  1 files changed, 12 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-> > index cc20d7c..6fd486e 100644
-> > --- a/kernel/trace/trace_irqsoff.c
-> > +++ b/kernel/trace/trace_irqsoff.c
-> > @@ -672,9 +672,15 @@ static struct tracer preemptoff_tracer __read_mostly =
-> >  	.start		= irqsoff_tracer_start,
-> >  	.stop		= irqsoff_tracer_stop,
-> >  	.print_max	= 1,
-> > +	.print_header   = irqsoff_print_header,
-> > +	.print_line     = irqsoff_print_line,
-> > +	.flags		= &tracer_flags,
-> > +	.set_flag	= irqsoff_set_flag,
-> >  #ifdef CONFIG_FTRACE_SELFTEST
-> >  	.selftest    = trace_selftest_startup_preemptoff,
-> >  #endif
-> > +	.open		= irqsoff_trace_open,
-> > +	.close		= irqsoff_trace_close,
-> >  };
-> >  # define register_preemptoff(trace) register_tracer(&trace)
-> >  #else
-> > @@ -700,9 +706,15 @@ static struct tracer preemptirqsoff_tracer __read_mostly =
-> >  	.start		= irqsoff_tracer_start,
-> >  	.stop		= irqsoff_tracer_stop,
-> >  	.print_max	= 1,
-> > +	.print_header   = irqsoff_print_header,
-> > +	.print_line     = irqsoff_print_line,
-> > +	.flags		= &tracer_flags,
-> > +	.set_flag	= irqsoff_set_flag,
-> >  #ifdef CONFIG_FTRACE_SELFTEST
-> >  	.selftest    = trace_selftest_startup_preemptirqsoff,
-> >  #endif
-> > +	.open		= irqsoff_trace_open,
-> > +	.close		= irqsoff_trace_close,
-> >  };
-> >  
-> >  # define register_preemptirqsoff(trace) register_tracer(&trace)
+> Please see screenshot from the paniced kernel on 
 > 
+>    http://www.jikos.cz/jikos/junk/screenshot.jpg 
 > 
+> (sorry for bad quality of this screenshot, it was captured only from the 
+> IPMI/HTTP console so far, I will try to grab something better tomorrow)
+> 
+> Also this screenshot probably doesn't show the complete picture -- see the 
+> "end trace" marker on the very first line. I will try to have something 
+> better tomorrow, but maybe this rings bell for someone right away.
+
+This looks like a BIOS issue to me. Obviously this is a pre-production
+test system where an old BIOS is installed. A BIOS update should fix
+this issue for you.
+
+
+Regards,
+
+Andreas
+
+-- 
+Operating | Advanced Micro Devices GmbH
+  System  | Karl-Hammerschmidt-Str. 34, 85609 Dornach b. München, Germany
+ Research | Geschäftsführer: Andrew Bowd, Thomas M. McCoy, Giuliano Meroni
+  Center  | Sitz: Dornach, Gemeinde Aschheim, Landkreis München
+  (OSRC)  | Registergericht München, HRB Nr. 43632
+
+
