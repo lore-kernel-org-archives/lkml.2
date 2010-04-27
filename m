@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527Ab0D0Qgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 12:36:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39460 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756499Ab0D0Qgi (ORCPT
+	id S1754429Ab0D0QlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 12:41:24 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:54224 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab0D0QlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 12:36:38 -0400
-Date: Tue, 27 Apr 2010 09:35:45 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Tony Lindgren <tony@atomide.com>
-cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] omap fixes for v2.6.34-rc5
-In-Reply-To: <20100427161217.GB7225@atomide.com>
-Message-ID: <alpine.LFD.2.00.1004270934220.3739@i5.linux-foundation.org>
-References: <20100426190005.GJ7225@atomide.com> <alpine.LFD.2.00.1004270831430.3739@i5.linux-foundation.org> <20100427161217.GB7225@atomide.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 27 Apr 2010 12:41:23 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: fat: excessive log spamming due to corrupted fs
+References: <20100422155944.GA22181@sig21.net>
+	<87633d2pm3.fsf@devron.myhome.or.jp>
+	<20100427101423.GA30678@sig21.net>
+	<87wrvt16p7.fsf@devron.myhome.or.jp>
+Date: Wed, 28 Apr 2010 01:41:18 +0900
+In-Reply-To: <87wrvt16p7.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
+	"Tue, 27 Apr 2010 20:21:56 +0900")
+Message-ID: <874oiw26hd.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.93 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
 
+>> comment about KERN_CONT in kernel.h.  But maybe it only happens
+>> for /var/log/kern.log and my xconsole when generating too much
+>> output too quickly, "dmesg -s 10000000 | less" did not show
+>> the corruption (but only shows ~2700 lines out of the ~10000).
 
-On Tue, 27 Apr 2010, Tony Lindgren wrote:
-> 
-> OK point taken. I should have dealt with this earlier. Will only queue
-> regressions after -rc3 or so.
-
-Note that the "only regressions" is certainly not a hard rule. Anything 
-that would be valid for -stable is obviously always valid: security 
-issues, major oopses etc etc.
-
-But the "only regressions" should kind of be the guiding line, and the 
-others are more like "this is so serious that it should go in regardless 
-of anything else".
-
-			Linus
+Um, please check syslog at same time with dmesg. If there is corruption
+in syslog, but there is not in dmesg. It sounds like userland problem.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
