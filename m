@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab0D0B2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 21:28:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47267 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753091Ab0D0B2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 21:28:36 -0400
-Date: Tue, 27 Apr 2010 11:28:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Mike Christie <michaelc@cs.wisc.edu>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Eric Dumazet <eric.dumazet@gmail.com>
-Subject: linux-next: manual merge of the net tree with Linus' tree
-Message-Id: <20100427112835.f2b6662c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753761Ab0D0B3M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 21:29:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54027 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752901Ab0D0B3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 21:29:08 -0400
+Date: Mon, 26 Apr 2010 18:27:27 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Andy Isaacson <adi@hexapodia.org>,
+       "R. Andrew Bailey" <bailey@akamai.com>, Yinghai <yinghai.lu@oracle.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       guenter.roeck@ericsson.com,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
+Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below   
+ BIOS_END
+In-Reply-To: <20100426170547.5d7daa47@virtuousgeek.org>
+Message-ID: <alpine.LFD.2.00.1004261824570.3739@i5.linux-foundation.org>
+References: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com> <20100426162517.4ad308ff@virtuousgeek.org> <a96459c7f3573eef81dd6d6c4e3dedd8.squirrel@www.zytor.com> <20100426170547.5d7daa47@virtuousgeek.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-Today's linux-next merge of the net tree got a conflict in
-drivers/scsi/iscsi_tcp.c between commit
-d7d05548a62c87ee55b0c81933669177f885aa8d ("[SCSI] iscsi_tcp: fix
-relogin/shutdown hang") from the  tree and commit
-aa395145165cb06a0d0885221bbe0ce4a564391d ("net: sk_sleep() helper") from
-the net tree.
 
-I fixed it up (see below) and can carry the fix for a while.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+On Mon, 26 Apr 2010, Jesse Barnes wrote:
+> 
+> Glad we agree.  As I said (and echoing Bjorn), I think it would be best
+> to reserve this space in a way that doesn't just use IORESOURCE_BUSY.
+> We want and need to do allocations from the special region, so we
+> should mark it as such.
 
-diff --cc drivers/scsi/iscsi_tcp.c
-index cdb4fd8,9eae04a..0000000
---- a/drivers/scsi/iscsi_tcp.c
-+++ b/drivers/scsi/iscsi_tcp.c
-@@@ -601,9 -599,9 +601,9 @@@ static void iscsi_sw_tcp_conn_stop(stru
-  	set_bit(ISCSI_SUSPEND_BIT, &conn->suspend_rx);
-  	write_unlock_bh(&tcp_sw_conn->sock->sk->sk_callback_lock);
-  
-- 	if (sock->sk->sk_sleep) {
- -	if (sk_sleep(sock->sk) && waitqueue_active(sk_sleep(sock->sk))) {
-++	if (sk_sleep(sock->sk)) {
-  		sock->sk->sk_err = EIO;
-- 		wake_up_interruptible(sock->sk->sk_sleep);
-+ 		wake_up_interruptible(sk_sleep(sock->sk));
-  	}
-  
-  	iscsi_conn_stop(cls_conn, flag);
+I think Bjorn's patch to pcibios_align_resource() is really good and 
+clever, and I think it should take care of the need for IORESOURCE_BUSY, 
+no? We do want to let devices that are _already_ allocated there insert 
+their resources, it's just that we never want to allocate new ones in the 
+low 1M region.
+
+Do we actually have a regression left with Bjorn's patch?
+
+		Linus
