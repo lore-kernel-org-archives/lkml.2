@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab0D0Cva (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 22:51:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56383 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753023Ab0D0Cv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 22:51:28 -0400
-Date: Tue, 27 Apr 2010 12:51:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Eric Anholt <eric@anholt.net>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20100427125126.4ed062dc.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753978Ab0D0Czg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 22:55:36 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:57297 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187Ab0D0Czf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 22:55:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=B5yEqau42o3DhySKQy+J6ayhFXJcy0zcEb1bLCgA4fk/vlRM410jKT58kzyr7HFwFr
+         X9RiGSibzoMWPB+ig28Ha/O/An9XqUPwXCWWn1yg26v5+95xkZDiVjZeHkhbbrj5H3oS
+         CtYvZYCKXKMCX9OLq0KH2NhJbA7g4Fwplsce8=
+Date: Tue, 27 Apr 2010 04:55:32 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Linux Next <linux-next@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: A few tree inclusion update requests
+Message-ID: <20100427025530.GE5695@nowhere>
+References: <20100410134221.GC5204@nowhere> <20100413094618.76ac20a8.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100413094618.76ac20a8.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Tue, Apr 13, 2010 at 09:46:18AM +1000, Stephen Rothwell wrote:
+> You will need to ensure that the patches/commits in your tree/series have
+> been:
+>      * submitted under GPL v2 (or later) and include the Contributor's
+> 	Signed-off-by,
+>      * posted to the relevant mailing list,
+>      * reviewed by you (or another maintainer of your subsystem tree),
+>      * successfully unit tested, and 
+>      * destined for the current or next Linux merge window.
+> 
+> Basically, this should be just what you would send to Linus (or ask him
+> to fetch).  It is allowed to be rebased if you deem it necessary.
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/i915/i915_drv.h between commit
-20bf377e679208ba9ae0edcb8c70a8f6d33d17f9 ("drm/i915: cleanup FBC buffers
-at unload time") from Linus' tree and commit
-8be48d924c307e72e3797ab5bde81b07a1ccc52d ("drm/kms/fb: move to using fb
-helper crtc grouping instead of core crtc list") from the drm tree.
 
-Just overlapping additions.  I fixed it up (see below) and can carry the
-fix for a while.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Hi Stephen,
 
-diff --cc drivers/gpu/drm/i915/i915_drv.h
-index 6e47900,242993b..0000000
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@@ -635,8 -641,8 +645,11 @@@ typedef struct drm_i915_private 
-  
-  	enum no_fbc_reason no_fbc_reason;
-  
- +	struct drm_mm_node *compressed_fb;
- +	struct drm_mm_node *compressed_llb;
-++
-+ 	/* list of fbdev register on this device */
-+ 	struct intel_fbdev *fbdev;
-  } drm_i915_private_t;
-  
-  /** driver private structure attached to each drm_gem_object */
-@@@ -1142,8 -1154,10 +1161,11 @@@ extern int i915_wait_ring(struct drm_de
-  
-  #define HAS_PCH_SPLIT(dev) (IS_IRONLAKE(dev) ||	\
-  			    IS_GEN6(dev))
- +#define HAS_PIPE_CONTROL(dev) (IS_IRONLAKE(dev) || IS_GEN6(dev))
-  
-+ #define INTEL_PCH_TYPE(dev) (((struct drm_i915_private *)(dev)->dev_private)->pch_type)
-+ #define HAS_PCH_CPT(dev) (INTEL_PCH_TYPE(dev) == PCH_CPT)
-+ 
-  #define PRIMARY_RINGBUFFER_SIZE         (128*1024)
-  
-  #endif
+Could you please integrate the following new tree in linux-next?
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	bkl/ioctl
+
+Thanks!
+
