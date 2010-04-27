@@ -1,207 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab0D0Goj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 02:44:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2551 "EHLO mga09.intel.com"
+	id S1752213Ab0D0GnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 02:43:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61927 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752618Ab0D0GnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 02:43:12 -0400
+	id S1750952Ab0D0GnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 02:43:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,278,1270450800"; 
-   d="scan'208";a="616765482"
+   d="scan'208";a="616765449"
 From: Huang Ying <ying.huang@intel.com>
 To: lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
-       linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 07/12] ACPI Hardware Error Device (PNP0C33) support
-Date: Tue, 27 Apr 2010 14:41:16 +0800
-Message-Id: <1272350481-27951-8-git-send-email-ying.huang@intel.com>
+       linux-acpi@vger.kernel.org
+Subject: ACPI, APEI support
+Date: Tue, 27 Apr 2010 14:41:09 +0800
+Message-Id: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
-References: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hardware Error Device (PNP0C33) is used to report some hardware errors
-notified via SCI, mainly the corrected errors. Some APEI Generic
-Hardware Error Source (GHES) may use SCI on hardware error device to
-notify hardware error to kernel.
 
-After receiving notification from ACPI core, it is forwarded to all
-listeners via a notifier chain. The listener such as APEI GHES should
-check corresponding error source for new events when notified.
+This patchset adds the APEI (ACPI Platform Error Interface) support to
+Linux kernel.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- drivers/acpi/Kconfig  |    7 +++
- drivers/acpi/Makefile |    1 
- drivers/acpi/hed.c    |  112 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/acpi/hed.h    |   18 ++++++++
- 4 files changed, 138 insertions(+)
- create mode 100644 drivers/acpi/hed.c
- create mode 100644 include/acpi/hed.h
+01-06 include the basic APEI HEST parsing and EINJ support. They have
+been posted to mailing list before and get some reviews and
+ACKs. Changes since the last post are as follow.
 
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -360,6 +360,13 @@ config ACPI_SBS
- 	  To compile this driver as a module, choose M here:
- 	  the modules will be called sbs and sbshc.
- 
-+config ACPI_HED
-+	tristate "Hardware Error Device"
-+	help
-+	  This driver supports the Hardware Error Device (PNP0C33),
-+	  which is used to report some hardware errors notified via
-+	  SCI, mainly the corrected errors.
-+
- source "drivers/acpi/apei/Kconfig"
- 
- endif	# ACPI
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -59,6 +59,7 @@ obj-$(CONFIG_ACPI_BATTERY)	+= battery.o
- obj-$(CONFIG_ACPI_SBS)		+= sbshc.o
- obj-$(CONFIG_ACPI_SBS)		+= sbs.o
- obj-$(CONFIG_ACPI_POWER_METER)	+= power_meter.o
-+obj-$(CONFIG_ACPI_HED)		+= hed.o
- 
- # processor has its own "processor." module_param namespace
- processor-y			:= processor_driver.o processor_throttling.o
---- /dev/null
-+++ b/drivers/acpi/hed.c
-@@ -0,0 +1,112 @@
-+/*
-+ * ACPI Hardware Error Device (PNP0C33) Driver
-+ *
-+ * Copyright (C) 2010, Intel Corp.
-+ *	Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * ACPI Hardware Error Device is used to report some hardware errors
-+ * notified via SCI, mainly the corrected errors.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation;
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/acpi.h>
-+#include <acpi/acpi_bus.h>
-+#include <acpi/acpi_drivers.h>
-+#include <acpi/hed.h>
-+
-+static struct acpi_device_id acpi_hed_ids[] = {
-+	{"PNP0C33", 0},
-+	{"", 0},
-+};
-+MODULE_DEVICE_TABLE(acpi, acpi_hed_ids);
-+
-+static acpi_handle hed_handle;
-+
-+static BLOCKING_NOTIFIER_HEAD(acpi_hed_notify_list);
-+
-+int register_acpi_hed_notifier(struct notifier_block *nb)
-+{
-+	return blocking_notifier_chain_register(&acpi_hed_notify_list, nb);
-+}
-+EXPORT_SYMBOL_GPL(register_acpi_hed_notifier);
-+
-+void unregister_acpi_hed_notifier(struct notifier_block *nb)
-+{
-+	blocking_notifier_chain_unregister(&acpi_hed_notify_list, nb);
-+}
-+EXPORT_SYMBOL_GPL(unregister_acpi_hed_notifier);
-+
-+/*
-+ * SCI to report hardware error is forwarded to the listeners of HED,
-+ * it is used by HEST Generic Hardware Error Source with notify type
-+ * SCI.
-+ */
-+static void acpi_hed_notify(struct acpi_device *device, u32 event)
-+{
-+	return blocking_notifier_call_chain(&acpi_hed_notify_list, 0, NULL);
-+}
-+
-+static int __devinit acpi_hed_add(struct acpi_device *device)
-+{
-+	/* Only one hardware error device */
-+	if (hed_handle)
-+		return -EINVAL;
-+	hed_handle = device->handle;
-+	return 0;
-+}
-+
-+static int __devexit acpi_hed_remove(struct acpi_device *device, int type)
-+{
-+	hed_handle = NULL;
-+	return 0;
-+}
-+
-+static struct acpi_driver acpi_hed_driver = {
-+	.name = "hardware_error_device",
-+	.class = "hardware_error",
-+	.ids = acpi_hed_ids,
-+	.ops = {
-+		.add = acpi_hed_add,
-+		.remove = acpi_hed_remove,
-+		.notify = acpi_hed_notify,
-+	},
-+};
-+
-+static int __init acpi_hed_init(void)
-+{
-+	if (acpi_disabled)
-+		return -ENODEV;
-+
-+	if (acpi_bus_register_driver(&acpi_hed_driver) < 0)
-+		return -ENODEV;
-+
-+	return 0;
-+}
-+
-+static void __exit acpi_hed_exit(void)
-+{
-+	acpi_bus_unregister_driver(&acpi_hed_driver);
-+}
-+
-+module_init(acpi_hed_init);
-+module_exit(acpi_hed_exit);
-+
-+ACPI_MODULE_NAME("hed");
-+MODULE_AUTHOR("Huang Ying");
-+MODULE_DESCRIPTION("ACPI Hardware Error Device Driver");
-+MODULE_LICENSE("GPL");
---- /dev/null
-+++ b/include/acpi/hed.h
-@@ -0,0 +1,18 @@
-+/*
-+ * hed.h - ACPI Hardware Error Device
-+ *
-+ * Copyright (C) 2009, Intel Corp.
-+ *	Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-+
-+#ifndef ACPI_HED_H
-+#define ACPI_HED_H
-+
-+#include <linux/notifier.h>
-+
-+int register_acpi_hed_notifier(struct notifier_block *nb);
-+void unregister_acpi_hed_notifier(struct notifier_block *nb);
-+
-+#endif
+- Make APEI infrastructure and HEST parsing configurable built-in
+  instead of modules to solve some dependency issues.
+
+- Some minor fixes, such as printk
+
+07-10 are newly added to support GHES (Generic Hardware Error Source)
+corrected memory error. On some machines, Machine Check can not report
+physical address for some corrected memory errors, but GHES can do
+that. So this simplified GHES is implemented and posted firstly.
+
+11-12 are newly added to support using ERST for persistent storage of
+MCE. This can improve fatal MCE report.
+
+[PATCH 01/12] ACPI, IO memory pre-mapping and atomic accessing
+[PATCH 02/12] ACPI, APEI, APEI supporting infrastructure
+[PATCH 03/12] ACPI, APEI, HEST table parsing
+[PATCH 04/12] ACPI, APEI, EINJ support
+[PATCH 05/12] ACPI, APEI, Document for APEI
+[PATCH 06/12] ACPI, APEI, PCIE AER, use general HEST table parsing in AER firmware_first setup
+[PATCH 07/12] ACPI Hardware Error Device (PNP0C33) support
+[PATCH 08/12] Unified UUID/GUID definition
+[PATCH 09/12] ACPI, APEI, UEFI Common Platform Error Record (CPER) header
+[PATCH 10/12] ACPI, APEI, Generic Hardware Error Source memory error support
+[PATCH 11/12] ACPI, APEI, Error Record Serialization Table (ERST) support
+[PATCH 12/12] ACPI, APEI, Use ERST for persistent storage of MCE
+
