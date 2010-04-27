@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757498Ab0D0Ww0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 18:52:26 -0400
-Received: from sh.osrg.net ([192.16.179.4]:56750 "EHLO sh.osrg.net"
+	id S932096Ab0D0W4G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 18:56:06 -0400
+Received: from tauceti.net ([62.245.250.166]:60646 "EHLO www.tauceti.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755088Ab0D0WwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 18:52:24 -0400
-Date: Wed, 28 Apr 2010 07:50:07 +0900
-To: linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-       davem@davemloft.net, linux-kernel@vger.kernel.org,
-       fujita.tomonori@lab.ntt.co.jp
-Subject: Re: [PATCH] ARM: dmabounce: fix partial sync in dma_sync_single_*
-	API
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100413142607V.fujita.tomonori@lab.ntt.co.jp>
-References: <20100405123847C.fujita.tomonori@lab.ntt.co.jp>
-	<20100412193536.GO3048@n2100.arm.linux.org.uk>
-	<20100413142607V.fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755088Ab0D0W4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 18:56:04 -0400
+Message-ID: <4BD76B81.2070606@tauceti.net>
+Date: Wed, 28 Apr 2010 00:56:01 +0200
+From: Robert Wimmer <kernel@tauceti.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100427 Thunderbird/3.0.4 ThunderBrowse/3.2.8.1
+MIME-Version: 1.0
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       bugzilla-daemon@bugzilla.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
+References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain> <4BD5F6C5.8080605@tauceti.net> <1272315854.8984.125.camel@localhost.localdomain> <4BD61147.40709@tauceti.net> <1272324536.16814.45.camel@localhost.localdomain>
+In-Reply-To: <1272324536.16814.45.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100428075137J.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 28 Apr 2010 07:50:09 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Apr 2010 14:27:04 +0900
-FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+I've applied the patch against the kernel which I got
+from "git clone ...." resulted in a kernel 2.6.34-rc5.
 
-> On Mon, 12 Apr 2010 20:35:36 +0100
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> 
-> > On Mon, Apr 05, 2010 at 12:39:32PM +0900, FUJITA Tomonori wrote:
-> > > I don't have arm hardware that uses dmabounce so I can't confirm the
-> > > problem but seems that dmabounce doesn't work for some drivers...
-> > 
-> > Patch reviews fine, except for one niggle.  I too don't have hardware
-> > I can test (well, I do except the kernel stopped supporting the UDA1341
-> > audio codec on the SA1110 Neponset.)
-> 
-> Thanks for reviewing.
-> 
-> > > @@ -171,10 +172,17 @@ find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_
-> > >  	read_lock_irqsave(&device_info->lock, flags);
-> > >  
-> > >  	list_for_each_entry(b, &device_info->safe_buffers, node)
-> > > -		if (b->safe_dma_addr == safe_dma_addr) {
-> > > -			rb = b;
-> > > -			break;
-> > > -		}
-> > > +		if (for_sync) {
-> > > +			if (b->safe_dma_addr <= safe_dma_addr &&
-> > > +			    safe_dma_addr < b->safe_dma_addr + b->size) {
-> > > +				rb = b;
-> > > +				break;
-> > > +			}
-> > > +		} else
-> > > +			if (b->safe_dma_addr == safe_dma_addr) {
-> > > +				rb = b;
-> > > +				break;
-> > > +			}
-> > 
-> > This is the niggle; I don't like this indentation style.  If you want to
-> > indent this if () statement, then please format like this:
-> > 
-> > 		} else {
-> > 			if (b->safe...) {
-> > 				...
-> > 			}
-> > 		}
-> > 
-> > or format it as:
-> > 
-> > 		} else if (b->safe...) {
-> > 			...
-> > 		}
-> 
-> ok, here's the fixed patch.
-> 
-> =
-> From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> Subject: [PATCH] ARM: dmabounce: fix partial sync in dma_sync_single_* API
-> 
-> Some network drivers do a partial sync with
-> dma_sync_single_for_{device|cpu}. The dma_addr argument might not be
-> the same as one as passed into the mapping API.
-> 
-> This adds some tricks to find_safe_buffer() for
-> dma_sync_single_for_{device|cpu}.
-> 
-> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> ---
->  arch/arm/common/dmabounce.c |   30 +++++++++++++++++++++---------
->  1 files changed, 21 insertions(+), 9 deletions(-)
+The stack trace after mounting NFS is here:
+https://bugzilla.kernel.org/attachment.cgi?id=26166
+/var/log/messages after soft lockup:
+https://bugzilla.kernel.org/attachment.cgi?id=26167
 
-Ping?
+I hope that there is any usefull information in there.
 
-Is this going to be merged via the arm tree?
+Thanks!
+Robert
+
+On 04/27/10 01:28, Trond Myklebust wrote:
+> On Tue, 2010-04-27 at 00:18 +0200, Robert Wimmer wrote: 
+>   
+>>> Sure. In addition to what you did above, please do
+>>>
+>>> mount -t debugfs none /sys/kernel/debug
+>>>
+>>> and then cat the contents of the pseudofile at
+>>>
+>>> /sys/kernel/debug/tracing/stack_trace
+>>>
+>>> Please do this more or less immediately after you've finished mounting
+>>> the NFSv4 client.
+>>>   
+>>>       
+>> I've uploaded the stack trace. It was generated
+>> directly after mounting. Here are the stacks:
+>>
+>> After mounting:
+>> https://bugzilla.kernel.org/attachment.cgi?id=26153
+>> After the soft lockup:
+>> https://bugzilla.kernel.org/attachment.cgi?id=26154
+>> The dmesg output of the soft lockup:
+>> https://bugzilla.kernel.org/attachment.cgi?id=26155
+>>
+>>     
+>>> Does your server have the 'crossmnt' or 'nohide' flags set, or does it
+>>> use the 'refer' export option anywhere? If so, then we might have to
+>>> test further, since those may trigger the NFSv4 submount feature.
+>>>   
+>>>       
+>> The server has the following settings:
+>> rw,nohide,insecure,async,no_subtree_check,no_root_squash
+>>
+>> Thanks!
+>> Robert
+>>
+>>
+>>     
+> That second trace is more than 5.5K deep, more than half of which is
+> socket overhead :-(((.
+>
+> The process stack does not appear to have overflowed, however that trace
+> doesn't include any IRQ stack overhead.
+>
+> OK... So what happens if we get rid of half of that trace by forcing
+> asynchronous tasks such as this to run entirely in rpciod instead of
+> first trying to run in the process context?
+>
+> See the attachment...
+>   
+
