@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756460Ab0D0Qe0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 12:34:26 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58087
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756317Ab0D0QeY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 12:34:24 -0400
-Date: Tue, 27 Apr 2010 09:34:30 -0700 (PDT)
-Message-Id: <20100427.093430.258110898.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, yoshfuji@linux-ipv6.org
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100427152516.580ee620.sfr@canb.auug.org.au>
-References: <20100427152516.580ee620.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1756478Ab0D0QgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 12:36:10 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53664 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752494Ab0D0QgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 12:36:08 -0400
+Date: Tue, 27 Apr 2010 17:35:49 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+	the wrong VMA information
+Message-ID: <20100427163549.GG4895@csn.ul.ie>
+References: <1272321478-28481-1-git-send-email-mel@csn.ul.ie> <1272321478-28481-3-git-send-email-mel@csn.ul.ie> <20100427090706.7ca68e12.kamezawa.hiroyu@jp.fujitsu.com> <20100427125040.634f56b3.kamezawa.hiroyu@jp.fujitsu.com> <20100427085951.GB4895@csn.ul.ie> <20100427180949.673350f2.kamezawa.hiroyu@jp.fujitsu.com> <20100427102905.GE4895@csn.ul.ie> <20100427153759.GZ8860@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100427153759.GZ8860@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 27 Apr 2010 15:25:16 +1000
-
-> After merging the bkl-ioctl tree, today's linux-next build (powerpc
-> ppc44x_defconfig) failed like this:
+On Tue, Apr 27, 2010 at 05:37:59PM +0200, Andrea Arcangeli wrote:
+> On Tue, Apr 27, 2010 at 11:29:05AM +0100, Mel Gorman wrote:
+> > It could have been in both but the vma lock should have been held across
+> > the rmap_one. It still reproduces but it's still the right thing to do.
+> > This is the current version of patch 2/2.
 > 
-> net/bridge/br_multicast.c: In function 'br_ip6_multicast_alloc_query':
-> net/bridge/br_multicast.c:469: error: implicit declaration of function 'csum_ipv6_magic'
+> Well, keep in mind I reproduced the swapops bug with 2.6.33 anon-vma
+> code, it's unlikely that focusing on patch 2 you'll fix bug in
+> swapops.h. If this is a bug in the new anon-vma code, it needs fixing
+> of course! But I doubt this bug is related to swapops in execve on the
+> bprm->p args.
 > 
-> Introduced by commit 08b202b6726459626c73ecfa08fcdc8c3efc76c2 ("bridge
-> br_multicast: IPv6 MLD support") from the net tree.
+
+Why do you doubt it's unrelated to execve? From what I've seen during the day,
+there is a race in execve where the VMA gets moved (under the anon_vma lock)
+before the page-tables are copied with move_ptes (without a lock). In that
+case, execve can encounter and copy migration ptes before migration removes
+them. This also applies to mainline because it is only taking the RCU lock
+and not the anon_vma->lock.
+
+I have a prototype that "handles" the situation with the new anon_vma
+code by removing the migration ptes it finds while moving page tables
+but it needs more work before releasing.
+
+An alternative would be to split vma_adjust() into locked and unlocked
+versions. shift_arg_pages() could then take the anon_vma lock to lock
+both the VMA move and the pagetable copy here.
+
+        /*
+         * cover the whole range: [new_start, old_end)
+         */
+        if (vma_adjust(vma, new_start, old_end, vma->vm_pgoff, NULL))
+                return -ENOMEM;
+
+        /*
+         * move the page tables downwards, on failure we rely on
+         * process cleanup to remove whatever mess we made.
+         */
+        if (length != move_page_tables(vma, old_start,
+                                       vma, new_start, length))
+                return -ENOMEM;
+
+It'd be messy to split up the locking of vma_adjust like this though and
+exec() will hold the anon_vma locks for longer just to guard against
+migration. It's not clear this is better than having move_ptes handle
+the
+
+> I've yet to check in detail patch 1 sorry, I'll let you know my
+> opinion about it as soon as I checked it in detail.
 > 
-> csum_ipv6_magic is declared in net/ip6_checksum.h ...
 
-Bummer, powerpc is one of the few platforms that doesn't get the header
-file implicitly so you always trip over this whereas we never see it in
-x86 and sparc64 builds :-)
+No problem. I still need to revisit all of these patches once I am
+confident the swapops bug cannot be triggered any more.
 
-I'll fix this, thanks!
