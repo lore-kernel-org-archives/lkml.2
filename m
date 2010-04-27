@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750883Ab0D0EER (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 00:04:17 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:45181 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab0D0EEP convert rfc822-to-8bit (ORCPT
+	id S1750977Ab0D0EHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 00:07:23 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39322 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1749667Ab0D0EHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 00:04:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1004261518130.1764-100000@iolanthe.rowland.org>
-References: <v2ld6200be21004251534y6c820e96l824f3288201a757d@mail.gmail.com>
-	 <Pine.LNX.4.44L0.1004261518130.1764-100000@iolanthe.rowland.org>
-Date: Mon, 26 Apr 2010 21:04:12 -0700
-Message-ID: <y2nd6200be21004262104mb81ba7d6xe5c8f35689ca20a0@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 2/9] PM: suspend_block: Add driver to access 
-	suspend blockers from user-space
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-       linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
-       linux-pm@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 Apr 2010 00:07:22 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 27 Apr 2010 13:03:19 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+ the wrong VMA information
+Message-Id: <20100427130319.248cb8e1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100427125040.634f56b3.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1272321478-28481-1-git-send-email-mel@csn.ul.ie>
+	<1272321478-28481-3-git-send-email-mel@csn.ul.ie>
+	<20100427090706.7ca68e12.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100427125040.634f56b3.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/26 Alan Stern <stern@rowland.harvard.edu>:
-> On Sun, 25 Apr 2010, Arve Hjønnevåg wrote:
->
->> >> > >> > +User-space API
->> >> > >> > +==============
->> >> > >> > +
->> >> > >> > +To create a suspend_blocker from user-space, open the suspend_blocker device:
->> >> > >> > +    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
->> >> > >> > +then call:
->> >> > >> > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_INIT(strlen(name)), name);
->> >> > >>
->> >> > >>
->> >> > >> This seems like very wrong idea -- it uses different ioctl number for
->> >> > >> each length AFAICT.
->> >> > >
->> >> > > How about specifying the name by an ordinary write() call instead of
->> >> > > by an ioctl()?
->> >> > >
->> >> >
->> >> > I prefer using ioctls. We have three operations at the moment. Init,
->> >> > block and unblock. If we do init with write but block and unblock
->> >> > using ioctls, it would be pretty strange. Specifying a command and
->> >>
->> >> Why would it be "strange"?
->> >
->> > Why indeed?  Using write() is the natural way to pass a data buffer
->> > into the kernel, especially a variable-length buffer.
->> >
->> > Mixing ioctl() and write() might seem strange at first, but it has
->> > plenty of precedent.  Consider adjusting the settings for a serial
->> > port, for example.
->> >
->> That sound like to opposite situation to me. It uses ioctls for setup
->> and read/write access the data stream.
->
-> Or you could say that it uses ioctls to send commands and read/write to
-> pass data.  That's pretty much what you would be doing.
->
-> Let's put it another way: You find it excessively strange to do init
-> using write and to send commands via ioctl, but you don't find it
-> strange to abuse the ioctl number code for passing the string length?
-> The old saying about motes and beams applies here...
->
-> If you insist on using ioctl for init, you should use the standard
-> convention for passing variable-length data.  The userspace program
-> sets up a fixed-size buffer containing a pointer to the name and the
-> name's length, and it passes the buffer's address as the ioctl
-> argument.
+On Tue, 27 Apr 2010 12:50:40 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Are you sure that is the standard? I searched for ioctls with NAME in
-their name and only found one that passed the name that way. The rest
-used fixed length string buffers, or passed the buffersize to _IOC
-like I do. For instance, input.h has ioctls to read string and
-bitmasks where user space specify the buffer size as an argument to
-the ioctl macro. These pass data from the kernel to user space, but I
-don't passing a string length is any worse than passing a buffer size.
+> On Tue, 27 Apr 2010 09:07:06 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > On Mon, 26 Apr 2010 23:37:58 +0100
+> > Mel Gorman <mel@csn.ul.ie> wrote:
+> > 
+> > > vma_adjust() is updating anon VMA information without any locks taken.
+> > > In contrast, file-backed mappings use the i_mmap_lock and this lack of
+> > > locking can result in races with page migration. During rmap_walk(),
+> > > vma_address() can return -EFAULT for an address that will soon be valid.
+> > > This leaves a dangling migration PTE behind which can later cause a BUG_ON
+> > > to trigger when the page is faulted in.
+> > > 
+> > > With the recent anon_vma changes, there can be more than one anon_vma->lock
+> > > that can be taken in a anon_vma_chain but a second lock cannot be spinned
+> > > upon in case of deadlock. Instead, the rmap walker tries to take locks of
+> > > different anon_vma's. If the attempt fails, the operation is restarted.
+> > > 
+> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > 
+> > Ok, acquiring vma->anon_vma->spin_lock always sounds very safe.
+> > (but slow.)
+> > 
+> > I'll test this, too.
+> > 
+> > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> 
+> Sorry. reproduced. It seems the same bug before patch. 
+> mapcount 1 -> unmap -> remap -> mapcount 0. And it was SwapCache.
+> 
+Sorry again. It was _not_ SwapCache. Just SwapBacked.
 
--- 
-Arve Hjønnevåg
+Thanks,
+-Kame
+
