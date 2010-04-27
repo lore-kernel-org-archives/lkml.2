@@ -1,195 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab0D0UNW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 16:13:22 -0400
-Received: from fg-out-1718.google.com ([72.14.220.152]:50385 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918Ab0D0UNU convert rfc822-to-8bit (ORCPT
+	id S1754111Ab0D0URJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 16:17:09 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:50057 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab0D0URG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 16:13:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=hEzPsjf51rwzZ/oM8qAc1C+3YY1KtuycC2v/1NgK9bjbWLzKwj37mQ7CHMVBMRDIxy
-         VMCW+kpE1uid1hXlwEvkBO1HHMk6ZuDp2XEuruF3BA1ZwFgNgwXcdmBYYzYUpqwDGJrW
-         CNkJa7632jdWROKciX7ydGXxjPKSIZTILMMNo=
-MIME-Version: 1.0
-In-Reply-To: <20100427105750.1cfe59b9.akpm@linux-foundation.org>
-References: <1268258994.2183.14.camel@carter>
-	 <ca2dc2821003200604m7c8cdea4r64ab8c98e7ec8242@mail.gmail.com>
-	 <20100321135836.GA11661@zhen-devel.sh.intel.com>
-	 <ca2dc2821003210830h2025df79r477cca7d81ddd28d@mail.gmail.com>
-	 <20100322205704.ac4cd9ae.akpm@linux-foundation.org>
-	 <alpine.DEB.2.01.1003222111070.5493@bogon.housecafe.de>
-	 <ca2dc2821003230440w3d96612aja0d4e083d3cc8c02@mail.gmail.com>
-	 <20100324111436.fe5d2906.akpm@linux-foundation.org>
-	 <ca2dc2821003250955x211ef2f8la16ded9759ccb6ab@mail.gmail.com>
-	 <20100427105750.1cfe59b9.akpm@linux-foundation.org>
-Date: Tue, 27 Apr 2010 22:06:21 +0200
-Message-ID: <n2tca2dc2821004271306nfc0c9c76o143b796e8af6ced8@mail.gmail.com>
-Subject: Re: [PATCH] intel-agp.c: Fix crash when accessing nonexistent GTT 
-	entries in i915
-From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christian Kujau <lists@nerdbynature.de>,
-       Zhenyu Wang <zhenyuw@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, David.Woodhouse@intel.com,
-       dwmw2@infradead.org, eric@anholt.net, ben@decadent.org.uk,
-       gregkh@suse.de, Dave Airlie <airlied@linux.ie>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Apr 2010 16:17:06 -0400
+Date: Tue, 27 Apr 2010 22:16:48 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Oliver Neukum <oliver@neukum.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Nicu Pavel <npavel@ituner.com>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>
+Subject: Re: [PATCH 2/2] hid: add PM support to PicoLCD device
+Message-ID: <20100427221648.39735c41@neptune.home>
+In-Reply-To: <alpine.LNX.2.00.1004271525330.9849@pobox.suse.cz>
+References: <20100425214003.7e87c6a3@neptune.home>
+	<20100425214306.5d7be049@neptune.home>
+	<alpine.LNX.2.00.1004271525330.9849@pobox.suse.cz>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 7:57 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu, 25 Mar 2010 17:55:56 +0100
-> Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
->
->> On Wed, Mar 24, 2010 at 7:14 PM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->> > On Tue, 23 Mar 2010 12:40:05 +0100
->> > Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
->> >
->> >> On Tue, Mar 23, 2010 at 5:14 AM, Christian Kujau <lists@nerdbynature.de> wrote:
->> >> > On Mon, 22 Mar 2010 at 20:57, Andrew Morton wrote:
->> >> >> On Sun, 21 Mar 2010 16:30:20 +0100 Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
->> >> >> > I bisected in order to find the commit 5877960869333e42ebeb733e8d9d5630ff96d350.
->> >> >
->> >> > I believe this[0] is fc61901373987ad61851ed001fe971f3ee8d96a3 upstream:
->> >>
->> >> Indeed. Also in
->> >>
->> >> http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.32.y.git;a=commit;h=fc61901373987ad61851ed001fe971f3ee8d96a3
->> >
->> > Does reverting that patch from the current code fix the crash?
->>
->> Yes. In addition, applying the patch I provided also fixes it in current code.
->>
->
-> Well great. †A whole pile of new stuff has turned up in linux-next's
-> drivers/char/agp/intel-agp.c. †As far as I can tell none of it
-> address the regression which you've reported and your patch no longer
-> applies at all so I have to drop the patch.
->
-> Perhaps "agp/intel: put back check that we have a driver for the
-> bridge" fixes it, but it isn't tagged for -stable backporting.
+On Tue, 27 April 2010 Jiri Kosina <jkosina@suse.cz> wrote:
+> On Sun, 25 Apr 2010, Bruno Pr√©mont wrote:
+> 
+> > Add PM support in order to turn off backlight on suspend, restore
+> > it on resume and especially restore complete state on reset-resume.
+> > 
+> > Signed-off-by: Bruno Pr√©mont <bonbons@linux-vserver.org>
+> > ---
+> >  drivers/hid/hid-picolcd.c |   61 +++++++++++++++++++++++++++++++++++++++++++++
+> >  1 files changed, 61 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
+> > index aa6f2e1..c652390 100644
+> > --- a/drivers/hid/hid-picolcd.c
+> > +++ b/drivers/hid/hid-picolcd.c
+> > @@ -852,6 +852,20 @@ static inline int picolcd_resume_backlight(struct picolcd_data *data)
+> >  	return picolcd_set_brightness(data->backlight);
+> >  }
+> >  
+> > +#ifdef CONFIG_PM
+> > +static void picolcd_suspend_backlight(struct picolcd_data *data)
+> > +{
+> > +	int bl_power = data->lcd_power;
+> > +	if (!data->backlight)
+> > +		return;
+> > +
+> > +	data->backlight->props.power = FB_BLANK_POWERDOWN;
+> > +	picolcd_set_brightness(data->backlight);
+> > +	data->lcd_power = data->backlight->props.power = bl_power;
+> > +}
+> > +#else
+> > +#define picolcd_suspend_backlight(a)
+> > +#endif /* CONFIG_PM */
+> 
+> Stylistic thing -- it would be nice if this was actually 
+> 
+> static inline void picolcd_suspend_backlight(struct picolcd_data *data)
+> {
+> 	return 0;
+> }
+> 
+> But why do you need to have it defined in !CONFIG_PM situation anyway? 
+> It's not used otherwise at all.
 
-I can try linux-next and see if it works again.
+Yeah, I could drop the #else branch (of #ifconfig CONFIG_PM).
 
-In addition, I have to test the regression with some newer X version
-yet, as Zhenyu told me.
+Is gcc quiet about defined but unused static inline functions?
+It's in order to avoid those warnings that I used #define bla().
+(same in other occasions of stubs returning void.
 
->
-> Rafael, Maciej: if you're not already tracking this as a 2.6.32->2.6.33
-> regression then please do so.
->
-> David, can you please help us to get this sorted out in both 2.6.33.x
-> and in mainline?
->
->
->
-> From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
->
-> Commit fc61901373987ad61851ed001fe971f3ee8d96a3 ("agp/intel-agp: Clear
-> entire GTT on startup") (included since 2.6.32.4) crashes (locks up) the
-> 82915G/GV/910GL Controller when intel-agp.c tries to access nonexistent
-> GTT entries at:
->
-> - † † † † † † † for (i = intel_private.gtt_entries; i < current_size->num_entries; i++) {
-> + † † † † † † † for (i = intel_private.gtt_entries; i < intel_private.gtt_total_size; i++) {
->
-> Rationale: I915 (gma900) has 128 MB of video memory (maximum), as per
-> intel.com (
-> http://www.intel.com/support/graphics/intel915g/sb/CS-012579.htm ) and
-> lscpi:
->
-> 00:02.0 VGA compatible controller: Intel Corporation 82915G/GV/910GL Integrated Graphics Controller (rev 04) (prog-if 00 [VGA controller])
-> † † † †Subsystem: Intel Corporation Device 4147
-> † † † †Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-> † † † †Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> † † † †Latency: 0
-> † † † †Interrupt: pin A routed to IRQ 11
-> † † † †Region 0: Memory at ff480000 (32-bit, non-prefetchable) [size=512K]
-> † † † †Region 1: I/O ports at ec00 [size=8]
-> † † † †Region 2: Memory at d8000000 (32-bit, prefetchable) [size=128M]
-> † † † †Region 3: Memory at ff440000 (32-bit, non-prefetchable) [size=256K]
-> † † † †Capabilities: <access denied>
->
-> AFAIK, that implies that its gtt_total_size (in pages) should be 32K (as
-> num_entries showed before the commit) instead of 64K.
->
-> Note: The IS_I915 macro includes 945; however, only GMA900 (I915) had 128
-> MB as the maximum AFAIK. †Therefore, I divided the IS_I915 macro. †I do
-> not know about the "E7221" (please check).
->
-> How to reproduce: Access kernel.org in iceweasel (Debian Lenny) and the X
-> server will crash. †Sometimes, the kernel freezes.
->
-> The fix should be applied to stable series, as well as 2.6.33 and
-> 2.6.34-rc1.
->
-> Signed-off-by: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-> Cc: David Woodhouse <David.Woodhouse@intel.com>
-> Cc: Eric Anholt <eric@anholt.net>
-> Cc: Zhenyu Wang <zhenyuw@linux.intel.com>
-> Cc: Dave Airlie <airlied@linux.ie>
-> Cc: <stable@kernel.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
->
-> †drivers/char/agp/intel-agp.c | † 12 +++++++-----
-> †1 file changed, 7 insertions(+), 5 deletions(-)
->
-> diff -puN drivers/char/agp/intel-agp.c~intel-agpc-fix-crash-when-accessing-nonexistent-gtt-entries-in-i915 drivers/char/agp/intel-agp.c
-> --- a/drivers/char/agp/intel-agp.c~intel-agpc-fix-crash-when-accessing-nonexistent-gtt-entries-in-i915
-> +++ a/drivers/char/agp/intel-agp.c
-> @@ -74,11 +74,11 @@ EXPORT_SYMBOL(intel_agp_enabled);
-> †#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB †0x0104
-> †#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_IG †0x0106
->
-> -/* cover 915 and 945 variants */
-> †#define IS_I915 (agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_E7221_HB || \
-> † † † † † † † † agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_82915G_HB || \
-> - † † † † † † † †agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_82915GM_HB || \
-> - † † † † † † † †agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_82945G_HB || \
-> + † † † † † † † †agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_82915GM_HB)
-> +
-> +#define IS_I945 (agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_82945G_HB || \
-> † † † † † † † † agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_82945GM_HB || \
-> † † † † † † † † agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_82945GME_HB)
->
-> @@ -824,14 +824,14 @@ static void intel_i830_init_gtt_entries(
-> † † † † † † † † † † † †break;
-> † † † † † † † †case I915_GMCH_GMS_STOLEN_48M:
-> † † † † † † † † † † † †/* Check it's really I915G */
-> - † † † † † † † † † † † if (IS_I915 || IS_I965 || IS_G33 || IS_G4X)
-> + † † † † † † † † † † † if (IS_I915 || IS_I945 || IS_I965 || IS_G33 || IS_G4X)
-> † † † † † † † † † † † † † † † †gtt_entries = MB(48) - KB(size);
-> † † † † † † † † † † † †else
-> † † † † † † † † † † † † † † † †gtt_entries = 0;
-> † † † † † † † † † † † †break;
-> † † † † † † † †case I915_GMCH_GMS_STOLEN_64M:
-> † † † † † † † † † † † †/* Check it's really I915G */
-> - † † † † † † † † † † † if (IS_I915 || IS_I965 || IS_G33 || IS_G4X)
-> + † † † † † † † † † † † if (IS_I915 || IS_I945 || IS_I965 || IS_G33 || IS_G4X)
-> † † † † † † † † † † † † † † † †gtt_entries = MB(64) - KB(size);
-> † † † † † † † † † † † †else
-> † † † † † † † † † † † † † † † †gtt_entries = 0;
-> @@ -1400,6 +1400,8 @@ static int intel_i915_create_gatt_table(
->
-> † † † †if (IS_G33)
-> † † † † † †gtt_map_size = 1024 * 1024; /* 1M on G33 */
-> + † † † else if (IS_I915)
-> + † † † † † gtt_map_size = 128 * 1024; /* 128K on I915 */
-> † † † †intel_private.gtt = ioremap(temp2, gtt_map_size);
-> † † † †if (!intel_private.gtt)
-> † † † † † † † †return -ENOMEM;
-> diff -puN /dev/null /dev/null
-> _
->
->
+Might be I forgot the inline keyword for the case I got the warning
+about defined but unused function. Will check tomorrow.
+
+> >  #else
+> >  static inline int picolcd_init_backlight(struct picolcd_data *data,
+> >  		struct hid_report *report)
+> > @@ -865,6 +879,7 @@ static inline int picolcd_resume_backlight(struct picolcd_data *data)
+> >  {
+> >  	return 0;
+> >  }
+> > +#define picolcd_suspend_backlight(a)
+> 
+> Any why is it defined once more here?
+
+Thats in the case where CONFIG_HID_PICOLCD_BACKLIGHT is not defined.
+c.f. the #else at the beginning of this quote.
+
+
+Thanks,
+Bruno
