@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab0D0JZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 05:25:57 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49148 "EHLO mx3.mail.elte.hu"
+	id S1754327Ab0D0JZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 05:25:46 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17429 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754432Ab0D0JZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 05:25:55 -0400
-Date: Tue, 27 Apr 2010 11:25:30 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Al Viro <viro@zeniv.linux.org.uk>,
-       Jan Blunck <jblunck@suse.de>, John Kacur <jkacur@redhat.com>
-Subject: Re: [GIT PULL v2] Preparation for BKL'ed ioctl removal
-Message-ID: <20100427092530.GD11348@elte.hu>
-References: <1271390201-20431-1-git-send-regression-fweisbec@gmail.com>
- <20100425173912.GA5375@nowhere>
- <20100426072541.GA25961@elte.hu>
- <201004261329.28427.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004261329.28427.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1749667Ab0D0JZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 05:25:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,279,1270450800"; 
+   d="scan'208";a="270502396"
+Subject: Re: [PATCH 2/2] KVM, Fix QEMU-KVM is killed by guest SRAO MCE
+From: Huang Ying <ying.huang@intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
+       kvm@vger.kernel.org
+In-Reply-To: <4BD69680.10402@redhat.com>
+References: <1272351860.24125.15.camel@yhuang-dev.sh.intel.com>
+	 <4BD69680.10402@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Apr 2010 17:25:41 +0800
+Message-ID: <1272360341.24125.116.camel@yhuang-dev.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-04-27 at 15:47 +0800, Avi Kivity wrote:
+> (please copy kvm@vger.kernel.org on kvm patches)
 
-* Arnd Bergmann <arnd@arndb.de> wrote:
+Sorry, will do that for all future patches.
 
-> On Monday 26 April 2010, Ingo Molnar wrote:
-> > This could be done all automated for a hundred old drivers if need to be. 
-> > There would be no bkl_ioctl's left.
+> On 04/27/2010 10:04 AM, Huang Ying wrote:
+> >
+> > +static void kvm_send_hwpoison_signal(struct kvm *kvm, gfn_t gfn)
+> > +{
+> > +	char buf[1];
+> > +	void __user *hva;
+> > +	int r;
+> > +
+> > +	/* Touch the page, so send SIGBUS */
+> > +	hva = (void __user *)gfn_to_hva(kvm, gfn);
+> > +	r = copy_from_user(buf, hva, 1);
+> >    
 > 
-> I don't think it can be fully automated. [...]
-
-Corner cases are not a problem as long as the risk of them going unnoticed is 
-lower than the risk of a manual conversion introducing bugs.
-
-> [...] For the majority of the modules, your approach would work fine, but 
-> there are still the well-known pitfalls in corner cases:
+> No error check?  What will a copy_from_user() of poisoned page expected 
+> to return?
 > 
-> - recursive uses in functions outside of ioctl (possibly none left
->   after the TTY layer is done, but who knows)
+> Best to return -EFAULT on failure for consistency.
 
-Not a problem even if there's any such usage left: lockdep will sort those out 
-very quickly.
+Just want to use the side effect of copy_from_user, SIGBUS will be sent
+to current process because the page touched is marked as poisoned. That
+is, failure is expected, so the return value is not checked.
 
-> - lock-order problems with other mutexes (see DRM)
+> > +}
+> > +
+> >   static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn)
+> >   {
+> >   	int r;
+> > @@ -1997,7 +2009,11 @@ static int nonpaging_map(struct kvm_vcpu
+> >   	/* mmio */
+> >   	if (is_error_pfn(pfn)) {
+> >   		kvm_release_pfn_clean(pfn);
+> > -		return 1;
+> > +		if (is_hwpoison_pfn(pfn)) {
+> > +			kvm_send_hwpoison_signal(vcpu->kvm, gfn);
+> > +			return 0;
+> > +		} else
+> > +			return 1;
+> >   	}
+> >    
+> 
+> This is duplicated several times.  Please introduce a kvm_handle_bad_page():
+> 
+>      if (is_error_pfn(pfn))
+>          return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
 
-This too will be mapped out very quickly via lockdep.
+OK. Will do that.
 
-> - code that depends on autorelease to allow one ioctl while another
->   is sleeping. (a small number of drivers)
+Best Regards,
+Huang Ying
 
-This is a real issue, and in fact it's an unknown: there may be an unknown 
-number of random sleep points within BKL codepaths that is being relied on in 
-creative ways.
 
-Note that by introducing a mutex we (in most cases) make the locking 
-_stricter_, so the biggest risk from that is a lockup - which will be 
-debuggable via lockdep.
-
-	Ingo
