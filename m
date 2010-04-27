@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab0D0Hwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 03:52:32 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:38617 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752248Ab0D0Hwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 03:52:30 -0400
-Date: Tue, 27 Apr 2010 09:52:29 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-       Paolo Minazzi <paolo.minazzi@gmail.com>
-Subject: Re: [PATCH 2/2] [MTD] Call bdi_init() and bdi_register()
-Message-ID: <20100427075229.GB27497@kernel.dk>
-References: <20100423100532.GN27497@kernel.dk> <20100423205518.GB7008@logfs.org> <20100426094810.GE27497@kernel.dk> <20100426143253.GB4364@logfs.org> <20100426143803.GM27497@kernel.dk> <20100426144532.GN27497@kernel.dk> <20100426163050.GC4364@logfs.org> <20100426163126.GD4364@logfs.org> <20100426170247.GP27497@kernel.dk> <20100426171236.GG4364@logfs.org>
+	id S1753723Ab0D0HzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 03:55:09 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:62878 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab0D0HzH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 03:55:07 -0400
+Message-ID: <4BD69846.8090607@monstr.eu>
+Date: Tue, 27 Apr 2010 09:54:46 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100426171236.GG4364@logfs.org>
+To: steve@digidescorp.com
+CC: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] microblaze: add stack unwinder
+References: <1271220928-3502-1-git-send-email-steve@digidescorp.com>	 <4BC5F11C.3080305@monstr.eu> <1272339089.17476.1.camel@iscandar.digidescorp.com>
+In-Reply-To: <1272339089.17476.1.camel@iscandar.digidescorp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26 2010, Jörn Engel wrote:
-> On Mon, 26 April 2010 19:02:48 +0200, Jens Axboe wrote:
-> > On Mon, Apr 26 2010, Jörn Engel wrote:
-> > > Otherwise we hit a BUG_ON in bdi_queue_work().
-> > > 
-> > > Signed-off-by: Joern Engel <joern@logfs.org>
-> > > ---
-> > >  drivers/mtd/mtdcore.c |   17 ++++++++++++++++-
-> > >  1 files changed, 16 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
-> > > index cb4858b..8dd3e46 100644
-> > > --- a/drivers/mtd/mtdcore.c
-> > > +++ b/drivers/mtd/mtdcore.c
-> > > @@ -322,6 +322,12 @@ int add_mtd_device(struct mtd_info *mtd)
-> > >  		if (!mtd_table[i]) {
-> > >  			struct mtd_notifier *not;
-> > >  
-> > > +			err = bdi_register(mtd->backing_dev_info, NULL, "mtd%d",
-> > > +					i);
-> > > +			if (err) {
-> > > +				/* We lose the errno information :( */
-> > > +				break;
-> > > +			}
-> > 
-> > This is not a good idea, even if it'll currently work.
-> > 
-> > > @@ -692,6 +698,15 @@ static int __init init_mtd(void)
-> > >  	int ret;
-> > >  	ret = class_register(&mtd_class);
-> > >  
-> > > +	ret = bdi_init(&mtd_bdi_unmappable);
-> > > +	if (ret)
-> > > +		return ret;
-> > > +	ret = bdi_init(&mtd_bdi_ro_mappable);
-> > > +	if (ret)
-> > > +		return ret;
-> > > +	ret = bdi_init(&mtd_bdi_rw_mappable);
-> > > +	if (ret)
-> > > +		return ret;
-> > 
-> > Do the bdi_register() here as well.
+Steven J. Magnani wrote:
+> On Wed, 2010-04-14 at 18:45 +0200, Michal Simek wrote:
+>>> diff -uprN a/arch/microblaze/kernel/traps.c
+>> b/arch/microblaze/kernel/traps.c
+>>> --- a/arch/microblaze/kernel/traps.c  2010-04-09 21:52:36.000000000
+>>> +++ b/arch/microblaze/kernel/traps.c  2010-04-12 22:16:01.000000000 
+> [snip]
+>>>  
+>>> -     if (!stack)
+>>> -             stack = (unsigned long *)&stack;
+>>> +     if (fp == 0) {
+>>> +             if (task)
+>>> +                     fp = ((struct thread_info *)
+>>> +                             (task->stack))->cpu_context.r1;
+>>> +             else {
+>>> +                     /* Pick up caller of dump_stack() */
+>>> +                     fp = (__u32)&sp - 8;
+>>> +             }
+>>> +     }
+>> just coding style.
+>>
+>>         if (fp == 0)
+>>                 if (task)
+>>                         fp = ((struct thread_info *)
+>>                                 (task->stack))->cpu_context.r1;
+>>                 else
+>>                         /* Pick up caller of dump_stack() */
+>>                         fp = (__u32)&sp - 8;
 > 
-> -ENOBRAIN
-> 
-> Initially I wanted to do just than.  Then I looked at the block layer
-> and thought we could create one backing_dev_info per mtd as well.  Not
-> necessarily a bad if I would actually _create_ them and not just reuse
-> the same ones over and over again.
+> Do you feel strongly about this? I try to always use braces on if/else
+> clauses that have more than one line. I've found that the extra
+> characters are well worth the savings in debugging time when someone
+> tries to extend the clause and forgets to add the braces.
 
-I cooked up that patch myself, here:
+It will work. I like brackets too. I agree that can save a lot of time 
+with debugging.
 
-http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0661b1ac5d48eb47c8a5948c0554fea25e0895ab
+I just didn't like that inconsistency in if (task) part.
 
-Care to give it a quick spin?
+If is if (task)  { ... } else {...} then I am ok with it if 
+checkpatch.pl doesn't report it as warning.
+
+
+Michal
+
+
 
 -- 
-Jens Axboe
-
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
