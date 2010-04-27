@@ -1,84 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab0D0Nlx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 09:41:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56263 "EHLO mx1.redhat.com"
+	id S1755986Ab0D0Nl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 09:41:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29430 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755896Ab0D0Nlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 09:41:46 -0400
-Date: Tue, 27 Apr 2010 10:30:48 -0300
+	id S1755843Ab0D0Nlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 09:41:47 -0400
+Date: Tue, 27 Apr 2010 10:35:43 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
 To: Glauber Costa <glommer@redhat.com>
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com
-Subject: Re: [PATCH 4/6] export new cpuid KVM_CAP
-Message-ID: <20100427133048.GC18410@amt.cnet>
+Subject: Re: [PATCH 5/6] Try using new kvm clock msrs
+Message-ID: <20100427133543.GD18410@amt.cnet>
 References: <1272303988-21929-1-git-send-email-glommer@redhat.com>
  <1272303988-21929-2-git-send-email-glommer@redhat.com>
  <1272303988-21929-3-git-send-email-glommer@redhat.com>
  <1272303988-21929-4-git-send-email-glommer@redhat.com>
  <1272303988-21929-5-git-send-email-glommer@redhat.com>
+ <1272303988-21929-6-git-send-email-glommer@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1272303988-21929-5-git-send-email-glommer@redhat.com>
+In-Reply-To: <1272303988-21929-6-git-send-email-glommer@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 01:46:26PM -0400, Glauber Costa wrote:
-> Since we're changing the msrs kvmclock uses, we have to communicate
-> that to the guest, through cpuid. We can add a new KVM_CAP to the
-> hypervisor, and then patch userspace to recognize it.
+On Mon, Apr 26, 2010 at 01:46:27PM -0400, Glauber Costa wrote:
+> We now added a new set of clock-related msrs in replacement of the old
+> ones. In theory, we could just try to use them and get a return value
+> indicating they do not exist, due to our use of kvm_write_msr_save.
 > 
-> And if we ever add a new cpuid bit in the future, we have to do that again,
-> which create some complexity and delay in feature adoption.
+> However, kvm clock registration happens very early, and if we ever
+> try to write to a non-existant MSR, we raise a lethal #GP, since our
+> idt handlers are not in place yet.
 > 
-> Instead, what I'm proposing in this patch is a new capability, called
-> KVM_CAP_X86_CPUID_FEATURE_LIST, that returns the current feature list
-> currently supported by the hypervisor. If we ever want to add or remove
-> some feature, we only need to tweak into the HV, leaving userspace untouched.
+> So this patch tests for a cpuid feature exported by the host to
+> decide which set of msrs are supported.
 > 
 > Signed-off-by: Glauber Costa <glommer@redhat.com>
 > ---
->  arch/x86/include/asm/kvm_para.h |    4 ++++
->  arch/x86/kvm/x86.c              |    6 ++++++
->  include/linux/kvm.h             |    1 +
->  3 files changed, 11 insertions(+), 0 deletions(-)
+>  arch/x86/kernel/kvmclock.c |   56 +++++++++++++++++++++++++++----------------
+>  1 files changed, 35 insertions(+), 21 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> index 9734808..f019f8c 100644
-> --- a/arch/x86/include/asm/kvm_para.h
-> +++ b/arch/x86/include/asm/kvm_para.h
-> @@ -16,6 +16,10 @@
->  #define KVM_FEATURE_CLOCKSOURCE		0
->  #define KVM_FEATURE_NOP_IO_DELAY	1
->  #define KVM_FEATURE_MMU_OP		2
-> +/* This indicates that the new set of kvmclock msrs
-> + * are available. The use of 0x11 and 0x12 is deprecated
-> + */
-> +#define KVM_FEATURE_CLOCKSOURCE2        3
+> diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+> index feaeb0d..f2f6aee 100644
+> --- a/arch/x86/kernel/kvmclock.c
+> +++ b/arch/x86/kernel/kvmclock.c
+> @@ -29,6 +29,8 @@
+>  #define KVM_SCALE 22
 >  
->  #define MSR_KVM_WALL_CLOCK  0x11
->  #define MSR_KVM_SYSTEM_TIME 0x12
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index a2ead7f..04f04aa 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -1545,6 +1545,12 @@ int kvm_dev_ioctl_check_extension(long ext)
->  	case KVM_CAP_MCE:
->  		r = KVM_MAX_MCE_BANKS;
->  		break;
-> +	case KVM_CAP_X86_CPUID_FEATURE_LIST:
-> +		r = (1 << KVM_FEATURE_CLOCKSOURCE) |
-> +		(1 << KVM_FEATURE_NOP_IO_DELAY) |
-> +		(1 << KVM_FEATURE_MMU_OP) |
+>  static int kvmclock = 1;
+> +static int msr_kvm_system_time = MSR_KVM_SYSTEM_TIME;
+> +static int msr_kvm_wall_clock = MSR_KVM_WALL_CLOCK;
+>  
+>  static int parse_no_kvmclock(char *arg)
+>  {
+> @@ -41,6 +43,7 @@ early_param("no-kvmclock", parse_no_kvmclock);
+>  static DEFINE_PER_CPU_SHARED_ALIGNED(struct pvclock_vcpu_time_info, hv_clock);
+>  static struct pvclock_wall_clock wall_clock;
+>  
+> +
 
-Remove this flag, it has been deprecated.
+Extra newline.
 
-> +		(1 << KVM_FEATURE_CLOCKSOURCE2);
-> +		break;
->  	default:
+>  /*
+>   * The wallclock is the time of day when we booted. Since then, some time may
+>   * have elapsed since the hypervisor wrote the data. So we try to account for
+> @@ -54,7 +57,8 @@ static unsigned long kvm_get_wallclock(void)
+>  
+>  	low = (int)__pa_symbol(&wall_clock);
+>  	high = ((u64)__pa_symbol(&wall_clock) >> 32);
+> -	native_write_msr(MSR_KVM_WALL_CLOCK, low, high);
+> +
+> +	native_write_msr_safe(msr_kvm_wall_clock, low, high);
+>  
+>  	vcpu_time = &get_cpu_var(hv_clock);
+>  	pvclock_read_wallclock(&wall_clock, vcpu_time, &ts);
+> @@ -130,7 +134,8 @@ static int kvm_register_clock(char *txt)
+>  	high = ((u64)__pa(&per_cpu(hv_clock, cpu)) >> 32);
+>  	printk(KERN_INFO "kvm-clock: cpu %d, msr %x:%x, %s\n",
+>  	       cpu, high, low, txt);
+> -	return native_write_msr_safe(MSR_KVM_SYSTEM_TIME, low, high);
+> +
+> +	return native_write_msr_safe(msr_kvm_system_time, low, high);
+>  }
+>  
+>  #ifdef CONFIG_X86_LOCAL_APIC
+> @@ -165,14 +170,15 @@ static void __init kvm_smp_prepare_boot_cpu(void)
+>  #ifdef CONFIG_KEXEC
+>  static void kvm_crash_shutdown(struct pt_regs *regs)
+>  {
+> -	native_write_msr_safe(MSR_KVM_SYSTEM_TIME, 0, 0);
+> +
+> +	native_write_msr(msr_kvm_system_time, 0, 0);
+>  	native_machine_crash_shutdown(regs);
+>  }
+>  #endif
+>  
+>  static void kvm_shutdown(void)
+>  {
+> -	native_write_msr_safe(MSR_KVM_SYSTEM_TIME, 0, 0);
+> +	native_write_msr(msr_kvm_system_time, 0, 0);
+>  	native_machine_shutdown();
+>  }
+>  
+> @@ -181,27 +187,35 @@ void __init kvmclock_init(void)
+>  	if (!kvm_para_available())
+>  		return;
+>  
+> -	if (kvmclock && kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE)) {
+> -		if (kvm_register_clock("boot clock"))
+> -			return;
+> -		pv_time_ops.sched_clock = kvm_clock_read;
+> -		x86_platform.calibrate_tsc = kvm_get_tsc_khz;
+> -		x86_platform.get_wallclock = kvm_get_wallclock;
+> -		x86_platform.set_wallclock = kvm_set_wallclock;
+> +	if (kvmclock && kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE2)) {
+> +		msr_kvm_system_time = MSR_KVM_SYSTEM_TIME_NEW;
+> +		msr_kvm_wall_clock = MSR_KVM_WALL_CLOCK_NEW;
+> +	}
+> +	else if (!(kvmclock && kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE)))
+> +		return;
 
-Also missing qemu-kvm/qemu patches.
+Non conformant indentation.
 
