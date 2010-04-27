@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab0D0FGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 01:06:41 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35680 "EHLO smtps.tip.net.au"
+	id S1751581Ab0D0FKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 01:10:41 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60029 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994Ab0D0FGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 01:06:38 -0400
-Date: Tue, 27 Apr 2010 15:06:36 +1000
+	id S1750828Ab0D0FKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 01:10:40 -0400
+Date: Tue, 27 Apr 2010 15:10:35 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: =?UTF-8?B?IkZyw6lkw6lyaWMgV2Vpc2JlY2tlciI=?= <fweisbec@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Arnd Bergmann <arnd@arndb.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: linux-next: manual merge of the bkl-ioctl tree with the bkl-procfs
- tree
-Message-Id: <20100427150636.241eb65b.sfr@canb.auug.org.au>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Linux Next <linux-next@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: A few tree inclusion update requests
+Message-Id: <20100427151035.c727c9e5.sfr@canb.auug.org.au>
+In-Reply-To: <20100427025530.GE5695@nowhere>
+References: <20100410134221.GC5204@nowhere>
+	<20100413094618.76ac20a8.sfr@canb.auug.org.au>
+	<20100427025530.GE5695@nowhere>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__27_Apr_2010_15_10_35_+1000_IAw+bK=gSDfag3vj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frédéric,
+--Signature=_Tue__27_Apr_2010_15_10_35_+1000_IAw+bK=gSDfag3vj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Today's linux-next merge of the bkl-ioctl tree got a conflict in
-fs/proc/inode.c between commit 3ab8dfb0802f33741cc4afa6adf7cb30b1cd1761
-("procfs: Kill the bkl in ioctl") from the bkl-procfs tree and commit
-1dd97d3d546aa14db7efa5366b21d1336b91379e ("Rename 'struct
-file_operations' 'ioctl' fn pointer to 'bkl_ioctl'") from the bkl-ioctl
-tree.
+Hi Frederic,
 
-I fixed it up (see below - probably not optimal) and can carry the fix as
-necessary.
--- 
+On Tue, 27 Apr 2010 04:55:32 +0200 Frederic Weisbecker <fweisbec@gmail.com>=
+ wrote:
+>
+> Could you please integrate the following new tree in linux-next?
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	bkl/ioctl
+
+Added from today.
+
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
+
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Stephen Rothwell=20
+sfr@canb.auug.org.au
 
-diff --cc fs/proc/inode.c
-index aea8502,8e8f813..0000000
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@@ -231,10 -231,10 +231,10 @@@ static long proc_reg_unlocked_ioctl(str
-  		rv = unlocked_ioctl(file, cmd, arg);
-  		if (rv == -ENOIOCTLCMD)
-  			rv = -EINVAL;
-- 	} else if (ioctl) {
-+ 	} else if (bkl_ioctl) {
- -		lock_kernel();
- +		WARN_ONCE(1, "Procfs ioctl handlers must use unlocked_ioctl, "
- +			  "%pf will be called without the Bkl held\n", bkl_ioctl);
-- 		rv = ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
-+ 		rv = bkl_ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
- -		unlock_kernel();
-  	}
-  
-  	pde_users_dec(pde);
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Tue__27_Apr_2010_15_10_35_+1000_IAw+bK=gSDfag3vj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvWccsACgkQjjKRsyhoI8zNhwCfbRawDnoyQ56GIS/MIoP06RuI
+/vAAniQG5n2sNPTOJ/iA0J8NhQjllMKP
+=IK0s
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Apr_2010_15_10_35_+1000_IAw+bK=gSDfag3vj--
