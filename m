@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab0D0LkU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 07:40:20 -0400
-Received: from lazybastard.de ([212.112.238.170]:56294 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755258Ab0D0LkQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 07:40:16 -0400
-Date: Tue, 27 Apr 2010 13:40:04 +0200
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Paolo Minazzi <paolo.minazzi@gmail.com>
-Cc: Jens Axboe <jens.axboe@oracle.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 2/2] [MTD] Call bdi_init() and bdi_register()
-Message-ID: <20100427114004.GD13859@logfs.org>
-References: <20100423205518.GB7008@logfs.org> <20100426094810.GE27497@kernel.dk> <20100426143253.GB4364@logfs.org> <20100426143803.GM27497@kernel.dk> <20100426144532.GN27497@kernel.dk> <20100426163050.GC4364@logfs.org> <20100426163126.GD4364@logfs.org> <x2v4aa525de1004270201t9f57f49fv1e9cfbb2d886e4ad@mail.gmail.com> <20100427111759.GA13859@logfs.org> <h2h4aa525de1004270431hd98c271ag61462bdb778f7769@mail.gmail.com>
+	id S1755264Ab0D0Lr3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 07:47:29 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45765 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752628Ab0D0Lr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 07:47:26 -0400
+Message-ID: <4BD6CECC.9080507@suse.cz>
+Date: Tue, 27 Apr 2010 13:47:24 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.9 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <h2h4aa525de1004270431hd98c271ag61462bdb778f7769@mail.gmail.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-kbuild <linux-kbuild@vger.kernel.org>,
+       =?ISO-8859-2?Q?Am=E9rico_?= =?ISO-8859-2?Q?Wang?= 
+	<xiyou.wangcong@gmail.com>
+Subject: Re: [PATCH] Correctly deal with make that has an argument which contains
+ an "s"
+References: <1272315374-11951-1-git-send-email-jason.wessel@windriver.com>
+In-Reply-To: <1272315374-11951-1-git-send-email-jason.wessel@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 April 2010 13:31:11 +0200, Paolo Minazzi wrote:
+On 26.4.2010 22:56, Jason Wessel wrote:
+> When using remake, which is based on gnumake, if you invoke
+> an example build as shown below, the build will become silent
+> due to the top level make file incorrectly guessing that
+> the end user wants a silent build because an argument that
+> contained an "s" was used.
 > 
-> > If you add "rootfstype=romfs" to the command line, does the problem
-> > still exist?
+> remake --no-extended-errors
+
+BTW, make --warn-undefined-variables also triggers this (although no one
+will use this option on the kernel makefiles).
+
+
+> Fix up the top level Makefile to use filter with a list of
+> options that mean silent with the various revisions of gnumake,
+> instead of findstring.
 > 
-> Jorn , you are right.
-> It seems work....
-> please wait....
+> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+> CC: Michal Marek <mmarek@suse.cz>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: linux-kbuild@vger.kernel.org
+> ---
+>  Makefile |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Makefile b/Makefile
+> index fa1db90..91ae299 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -294,7 +294,7 @@ endif
+>  # If the user is running make -s (silent mode), suppress echoing of
+>  # commands
+>  
+> -ifneq ($(findstring s,$(MAKEFLAGS)),)
+> +ifneq ($(filter s% -s% --silent --quiet,$(MAKEFLAGS)),)
 
-Ok, I'm pretty sure that logfs returns -EIO where it should return
--EINVAL.  If filesystems are tried in alphabetical order, logfs comes
-first and -EIO tells the kernel to stop trying and panic, essentially.
+I played a bit with GNU make 3.81. Checking for --silent and --quiet is
+not necessary, because make always stores the short option if available.
+Now I was wondering if the 's' option is always at the beginning,
+looking at make-3.81/main.c, it turns out that the order in which the
+options appear in $(MAKEFLAGS) is the reverse order of the switches
+array, where 's' is near the end of the array:
 
-Will cook up a patch...
+    { 's', flag, (char *) &silent_flag, 1, 1, 0, 0, 0, "silent" },
+                                           ^ store in $(MAKEFLAGS)?
+    { 'S', flag_off, (char *) &keep_going_flag, 1, 1, 0, 0,
+      (char *) &default_keep_going_flag, "no-keep-going" },
+    { 't', flag, (char *) &touch_flag, 1, 1, 1, 0, 0, "touch" },
+    { 'v', flag, (char *) &print_version_flag, 1, 1, 0, 0, 0, "version" },
+    { 'w', flag, (char *) &print_directory_flag, 1, 1, 0, 0, 0,
+      "print-directory" },
+    { CHAR_MAX+3, flag, (char *) &inhibit_print_directory_flag, 1, 1, 0,
+0, 0,
+      "no-print-directory" },
+    { 'W', string, (char *) &new_files, 0, 0, 0, 0, 0, "what-if" },
+    { CHAR_MAX+4, flag, (char *) &warn_undefined_variables_flag, 1, 1,
+0, 0, 0,
+      "warn-undefined-variables" },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 
-Jörn
 
--- 
-A defeated army first battles and then seeks victory.
--- Sun Tzu
+The only other single-letter options that come after 's' (before 's' in
+the $(MAKEFLAGS) variable) are 't', which doesn't work with the kernel,
+and 'w', which doesn't work either (the Makefile adds
+--no-print-directory). So we can indeed get away with s% and -s% (until
+the next make version changes the sort order, that is ;)).
+
+Michal
