@@ -1,155 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab0D0LxT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 07:53:19 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:40210 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755288Ab0D0LxK convert rfc822-to-8bit (ORCPT
+	id S1755276Ab0D0LxH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 07:53:07 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:35744 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077Ab0D0LxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 07:53:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=LquK/pUcbTUDZYV4hTKXWSY3dHpev1eNuiA8sBJRegTw5UGtSiTUZDZujUhRbXT6Cy
-         bV7l529CYONaDjP2JF3PhnPUpXv7fdJqcRcJW6AUOQZBHLo4bVtKN57s4Ojv1u4KsDyc
-         XmVFWCl3NZ1yR+wOSTaLW+pa/qOi7cvkJTepI=
-MIME-Version: 1.0
-In-Reply-To: <j2t1ba2fa241004270418hd37b1fdk83f31d4f608584f9@mail.gmail.com>
-References: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com>
-	 <20100419145934.GA10893@kroah.com>
-	 <t2w1ba2fa241004211522le49fc938m341553b0f2b89031@mail.gmail.com>
-	 <20100425163711.GA20196@kroah.com>
-	 <o2n1ba2fa241004251222x6ab49726p9757fd8be4952bee@mail.gmail.com>
-	 <20100425193658.GA24039@kroah.com>
-	 <m2g1ba2fa241004251309oa5592255lb4e4b96ea07dd12a@mail.gmail.com>
-	 <o2qac3eb2511004260338xd8146a7dy415d3f0f4f1c8bbc@mail.gmail.com>
-	 <1272295140.2434.8.camel@yio.site>
-	 <j2t1ba2fa241004270418hd37b1fdk83f31d4f608584f9@mail.gmail.com>
-Date: Tue, 27 Apr 2010 14:53:07 +0300
-Message-ID: <z2s1ba2fa241004270453u38bd88cbs40e818ebc9a39a65@mail.gmail.com>
-Subject: Re: request_firmware API exhaust memory
-From: Tomas Winkler <tomasw@gmail.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg KH <greg@kroah.com>, Johannes Berg <johannes@sipsolutions.net>,
-       David Woodhouse <dwmw2@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 Apr 2010 07:53:01 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
+       ngupta@vflare.org, JBeulich@novell.com, chris.mason@oracle.com,
+       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
+       akpm@linux-foundation.org, riel@redhat.com
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+In-Reply-To: Your message of "Sun, 25 Apr 2010 06:37:30 PDT."
+             <c5062f3a-3232-4b21-b032-2ee1f2485ff0@default>
+From: Valdis.Kletnieks@vt.edu
+References: <20100422134249.GA2963@ca-server1.us.oracle.com> <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default> <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default> <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <b559c57a-0acb-4338-af21-dbfc3b3c0de5@default> <4BD336CF.1000103@redhat.com>
+            <c5062f3a-3232-4b21-b032-2ee1f2485ff0@default>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1272369145_5118P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 27 Apr 2010 07:52:25 -0400
+Message-ID: <72951.1272369145@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020202.4BD6CFFB.00F0,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 2:18 PM, Tomas Winkler <tomasw@gmail.com> wrote:
-> On Mon, Apr 26, 2010 at 6:19 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
->> On Mon, 2010-04-26 at 12:38 +0200, Kay Sievers wrote:
->>> On Sun, Apr 25, 2010 at 22:09, Tomas Winkler <tomasw@gmail.com> wrote:
->>> > Said thing is that I don't see where the memory goes.... Anyhow I will
->>> > try to run valgrin on udev just to be sure.
->>>
->>> Nah, that memory would be freed, if you kill all udev processes, which
->>> it doesn't.
->>>
->>> The many udev worker processes you see for a few seconds was caused by
->>> udevd handling events with TIMEOUT= set special. We need to make sure,
->>> that firmware events run immediately and don't wait for other
->>> processes to finish. The logic who does that was always creating a new
->>> worker. I changed this now, but this will not affect the underlying
->>> problem you are seeing, it will just make the udev workers not grow in
->>> a timeframe of less than 10 seconds. The change is here:
->>>   http://git.kernel.org/?p=linux/hotplug/udev.git;a=commit;h=665ee17def2caa6811ae032ae68ebf8239a18cf8
->>> but as mentioned, this change is unrelated to the memory leak you are seeing.
->>>
->>> > I'll be glad If someone can run my simple driver I posted and confirm
->>> > that sees the same problem
->>>
->>> I can confirm that memory gets lost. I suspect for some reason the
->>> firmware does not get properly cleaned up. If you increase the size of
->>> the firmware image, it will leak memory much faster.
->>
->> I guess, the assumption that vfree() will free pages which are allocated
->> by custom code, and not by vmalloc(), is not true.
->>
->> The attached changes seem to fix the issue for me.
->>
->> The custom page array mangling was introduced by David as an optimization
->> with commit 6e03a201bbe8137487f340d26aa662110e324b20 and this should be
->> checked, and if needed be fixed.
->>
->> Cheers,
->> Kay
->>
->>
->> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
->> index 985da11..fe4e872 100644
->> --- a/drivers/base/firmware_class.c
->> +++ b/drivers/base/firmware_class.c
->> @@ -162,7 +162,7 @@ static ssize_t firmware_loading_store(struct device *dev,
->>                        mutex_unlock(&fw_lock);
->>                        break;
->>                }
->> -               vfree(fw_priv->fw->data);
->> +               vunmap(fw_priv->fw->data);
->>                fw_priv->fw->data = NULL;
->>                for (i = 0; i < fw_priv->nr_pages; i++)
->>                        __free_page(fw_priv->pages[i]);
->> @@ -176,7 +176,7 @@ static ssize_t firmware_loading_store(struct device *dev,
->>                break;
->>        case 0:
->>                if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
->> -                       vfree(fw_priv->fw->data);
->> +                       vunmap(fw_priv->fw->data);
->>                        fw_priv->fw->data = vmap(fw_priv->pages,
->>                                                 fw_priv->nr_pages,
->>                                                 0, PAGE_KERNEL_RO);
->> @@ -184,9 +184,6 @@ static ssize_t firmware_loading_store(struct device *dev,
->>                                dev_err(dev, "%s: vmap() failed\n", __func__);
->>                                goto err;
->>                        }
->> -                       /* Pages will be freed by vfree() */
->> -                       fw_priv->page_array_size = 0;
->> -                       fw_priv->nr_pages = 0;
->>                        complete(&fw_priv->completion);
->>                        clear_bit(FW_STATUS_LOADING, &fw_priv->status);
->>                        break;
->> @@ -578,7 +575,7 @@ release_firmware(const struct firmware *fw)
->>                        if (fw->data == builtin->data)
->>                                goto free_fw;
->>                }
->> -               vfree(fw->data);
->> +               vunmap(fw->data);
->>        free_fw:
->>                kfree(fw);
->>        }
->>
->
-> The difference between vfree and vunmap is that vfree request for
-> deallocating the pages while vunmap leaves the  pages allocated. I
-> don't think you can replace vfree with vunmap the way you did.
-> The transition from vmalloc to alloc_pages were done by the patch
-> bellow.  I think this needs some more review.
->
-> commit 6e03a201bbe8137487f340d26aa662110e324b20
-> Author: David Woodhouse <dwmw2@infradead.org>
-> Date:   Thu Apr 9 22:04:07 2009 -0700
->
->    firmware: speed up request_firmware(), v3
->
->    Rather than calling vmalloc() repeatedly to grow the firmware image as
->    we receive data from userspace, just allocate and fill individual pages.
->    Then vmap() the whole lot in one go when we're done.
->
->    A quick test with a 337KiB iwlagn firmware shows the time taken for
->    request_firmware() going from ~32ms to ~5ms after I apply this patch.
->
->    [v2: define PAGE_KERNEL_RO as PAGE_KERNEL where necessary, use min_t()]
->    [v3: kunmap() takes the struct page *, not the virtual address]
->
->    Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
->    Tested-by: Sachin Sant <sachinp@in.ibm.com
+--==_Exmh_1272369145_5118P
+Content-Type: text/plain; charset=us-ascii
+
+On Sun, 25 Apr 2010 06:37:30 PDT, Dan Magenheimer said:
+
+> While I admit that I started this whole discussion by implying
+> that frontswap (and cleancache) might be useful for SSDs, I think
+> we are going far astray here.  Frontswap is synchronous for a
+> reason: It uses real RAM, but RAM that is not directly addressable
+> by a (guest) kernel.
+
+Are there any production boxes that actually do this currently? I know IBM had
+'expanded storage' on the 3090 series 20 years ago, haven't checked if the
+Z-series still do that.  Was very cool at the time - supported 900+ users with
+128M of main memory and 256M of expanded storage, because you got the first
+3,000 or so page faults per second for almost free.  Oh, and the 3090 had 2
+special opcodes for "move page to/from expanded", so it was a very fast but
+still synchronous move (for whatever that's worth).
 
 
-It looks like to me that  fw_realloc_buffer missing some 'vREmap' code
+--==_Exmh_1272369145_5118P
+Content-Type: application/pgp-signature
 
-Tomas
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFL1s/5cC3lWbTT17ARAmumAKCHjFyFj3JFTplh2Gvlql0yTNIP+gCfdMBX
+OFkOMpZhtkWzYVdCP8d89Sw=
+=sCDE
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1272369145_5118P--
+
