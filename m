@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab0D0Gnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 02:43:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2242 "EHLO mga09.intel.com"
+	id S1752398Ab0D0Gnf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 02:43:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2551 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753135Ab0D0Gne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 02:43:34 -0400
+	id S1752903Ab0D0GnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 02:43:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,278,1270450800"; 
-   d="scan'208";a="616765526"
+   d="scan'208";a="616765514"
 From: Huang Ying <ying.huang@intel.com>
 To: lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 12/12] ACPI, APEI, Use ERST for persistent storage of MCE
-Date: Tue, 27 Apr 2010 14:41:21 +0800
-Message-Id: <1272350481-27951-13-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 10/12] ACPI, APEI, Generic Hardware Error Source memory error support
+Date: Tue, 27 Apr 2010 14:41:19 +0800
+Message-Id: <1272350481-27951-11-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
 References: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
@@ -23,303 +23,573 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Traditionally, fatal MCE will cause Linux print error log to console
-then reboot. Because MCE registers will preserve their content after
-warm reboot, the hardware error can be logged to disk or network after
-reboot. But system may fail to warm reboot, then you may lose the
-hardware error log. ERST can help here. Through saving the hardware
-error log into flash via ERST before go panic, the hardware error log
-can be gotten from the flash after system boot successful again.
+Generic Hardware Error Source provides a way to report platform
+hardware errors (such as that from chipset). It works in so called
+"Firmware First" mode, that is, hardware errors are reported to
+firmware firstly, then reported to Linux by firmware. This way, some
+non-standard hardware error registers or non-standard hardware link
+can be checked by firmware to produce more valuable hardware error
+information for Linux.
 
-The fatal MCE processing procedure with ERST involved is as follow:
+Now, only SCI notification type and memory errors are supported. More
+notification type and hardware error type will be added later. These
+memory errors are reported to user space through /dev/mcelog via
+faking a corrected Machine Check, so that the error memory page can be
+offlined by /sbin/mcelog if the error count for one page is beyond the
+threshold.
 
-- Hardware detect error, MCE raised
-- MCE read MCE registers, check error severity (fatal), prepare error record
-- Write MCE error record into flash via ERST
-- Go panic, then trigger system reboot
-- System reboot, /sbin/mcelog run, it reads /dev/mcelog to check flash
-  for error record of previous boot via ERST, and output and clear
-  them if available
-- /sbin/mcelog logs error records into disk or network
-
-ERST only accepts CPER record format, but there is no pre-defined CPER
-section can accommodate all information in struct mce, so a customized
-section type is defined to hold struct mce inside a CPER record as an
-error section.
+On some machines, Machine Check can not report physical address for
+some corrected memory errors, but GHES can do that. So this simplified
+GHES is implemented firstly.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce-apei.c     |   86 ++++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/mcheck/mce-internal.h |   23 ++++++++
- arch/x86/kernel/cpu/mcheck/mce.c          |   79 +++++++++++++++++++++++----
- 3 files changed, 177 insertions(+), 11 deletions(-)
+ arch/x86/include/asm/mce.h            |    8 
+ arch/x86/kernel/cpu/mcheck/Makefile   |    2 
+ arch/x86/kernel/cpu/mcheck/mce-apei.c |   52 ++++
+ drivers/acpi/apei/Kconfig             |   14 +
+ drivers/acpi/apei/Makefile            |    1 
+ drivers/acpi/apei/ghes.c              |  425 ++++++++++++++++++++++++++++++++++
+ 6 files changed, 502 insertions(+)
+ create mode 100644 arch/x86/kernel/cpu/mcheck/mce-apei.c
+ create mode 100644 drivers/acpi/apei/ghes.c
 
---- a/arch/x86/kernel/cpu/mcheck/mce-apei.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
-@@ -8,6 +8,9 @@
-  * the error memory page can be offlined by /sbin/mcelog if the error
-  * count for one page is beyond the threshold.
-  *
-+ * For fatal MCE, save MCE record into persistent storage via ERST, so
-+ * that the MCE record can be logged after reboot via ERST.
-+ *
-  * Copyright 2010 Intel Corp.
-  *   Author: Huang Ying <ying.huang@intel.com>
-  *
-@@ -50,3 +53,86 @@ void apei_mce_report_mem_error(int corre
- 	mce_notify_irq();
- }
- EXPORT_SYMBOL_GPL(apei_mce_report_mem_error);
-+
-+#define CPER_CREATOR_MCE						\
-+	UUID_LE(0x75a574e3, 0x5052, 0x4b29, 0x8a, 0x8e, 0xbe, 0x2c,	\
-+		0x64, 0x90, 0xb8, 0x9d)
-+#define CPER_SECTION_TYPE_MCE						\
-+	UUID_LE(0xfe08ffbe, 0x95e4, 0x4be7, 0xbc, 0x73, 0x40, 0x96,	\
-+		0x04, 0x4a, 0x38, 0xfc)
-+
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -225,5 +225,13 @@ extern void mcheck_intel_therm_init(void
+ static inline void mcheck_intel_therm_init(void) { }
+ #endif
+ 
 +/*
-+ * CPER specification (in UEFI specification 2.3 appendix N) requires
-+ * byte-packed.
++ * Used by APEI to report memory error via /dev/mcelog
 + */
-+struct cper_mce_record {
-+	struct cper_record_header hdr;
-+	struct cper_section_descriptor sec_hdr;
-+	struct mce mce;
-+} __packed;
 +
-+int apei_write_mce(struct mce *m)
-+{
-+	struct cper_mce_record rcd;
++struct cper_sec_mem_err;
++extern void apei_mce_report_mem_error(int corrected,
++				      struct cper_sec_mem_err *mem_err);
 +
-+	memset(&rcd, 0, sizeof(rcd));
-+	memcpy(rcd.hdr.signature, CPER_SIG_RECORD, CPER_SIG_SIZE);
-+	rcd.hdr.revision = CPER_RECORD_REV;
-+	rcd.hdr.signature_end = CPER_SIG_END;
-+	rcd.hdr.section_count = 1;
-+	rcd.hdr.error_severity = CPER_SER_FATAL;
-+	/* timestamp, platform_id, partition_id are all invalid */
-+	rcd.hdr.validation_bits = 0;
-+	rcd.hdr.record_length = sizeof(rcd);
-+	rcd.hdr.creator_id = CPER_CREATOR_MCE;
-+	rcd.hdr.notification_type = CPER_NOTIFY_MCE;
-+	rcd.hdr.record_id = cper_next_record_id();
-+	rcd.hdr.flags = CPER_HW_ERROR_FLAGS_PREVERR;
-+
-+	rcd.sec_hdr.section_offset = (void *)&rcd.mce - (void *)&rcd;
-+	rcd.sec_hdr.section_length = sizeof(rcd.mce);
-+	rcd.sec_hdr.revision = CPER_SEC_REV;
-+	/* fru_id and fru_text is invalid */
-+	rcd.sec_hdr.validation_bits = 0;
-+	rcd.sec_hdr.flags = CPER_SEC_PRIMARY;
-+	rcd.sec_hdr.section_type = CPER_SECTION_TYPE_MCE;
-+	rcd.sec_hdr.section_severity = CPER_SER_FATAL;
-+
-+	memcpy(&rcd.mce, m, sizeof(*m));
-+
-+	return erst_write(&rcd.hdr);
-+}
-+
-+ssize_t apei_read_mce(struct mce *m, u64 *record_id)
-+{
-+	struct cper_mce_record rcd;
-+	ssize_t len;
-+
-+	len = erst_read_next(&rcd.hdr, sizeof(rcd));
-+	if (len <= 0)
-+		return len;
-+	/* Can not skip other records in storage via ERST unless clear them */
-+	else if (len != sizeof(rcd) ||
-+		 uuid_le_cmp(rcd.hdr.creator_id, CPER_CREATOR_MCE)) {
-+		if (printk_ratelimit())
-+			pr_warning(
-+			"MCE-APEI: Can not skip the unknown record in ERST");
-+		return -EIO;
-+	}
-+
-+	memcpy(m, &rcd.mce, sizeof(*m));
-+	*record_id = rcd.hdr.record_id;
-+
-+	return sizeof(*m);
-+}
-+
-+/* Check whether there is record in ERST */
-+int apei_check_mce(void)
-+{
-+	return erst_get_record_count();
-+}
-+
-+int apei_clear_mce(u64 record_id)
-+{
-+	return erst_clear(record_id);
-+}
---- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
-+++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-@@ -28,3 +28,26 @@ extern int mce_ser;
+ #endif /* __KERNEL__ */
+ #endif /* _ASM_X86_MCE_H */
+--- a/arch/x86/kernel/cpu/mcheck/Makefile
++++ b/arch/x86/kernel/cpu/mcheck/Makefile
+@@ -7,3 +7,5 @@ obj-$(CONFIG_X86_MCE_THRESHOLD) += thres
+ obj-$(CONFIG_X86_MCE_INJECT)	+= mce-inject.o
  
- extern struct mce_bank *mce_banks;
- 
-+#ifdef CONFIG_ACPI_APEI
-+int apei_write_mce(struct mce *m);
-+ssize_t apei_read_mce(struct mce *m, u64 *record_id);
-+int apei_check_mce(void);
-+int apei_clear_mce(u64 record_id);
-+#else
-+static inline int apei_write_mce(struct mce *m)
-+{
-+	return -EINVAL;
-+}
-+static inline ssize_t apei_read_mce(struct mce *m, u64 *record_id)
-+{
-+	return 0;
-+}
-+static inline int apei_check_mce(void)
-+{
-+	return 0;
-+}
-+static inline int apei_clear_mce(u64 record_id)
-+{
-+	return -EINVAL;
-+}
-+#endif
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -264,7 +264,7 @@ static void wait_for_panic(void)
- 
- static void mce_panic(char *msg, struct mce *final, char *exp)
- {
--	int i;
-+	int i, apei_err = 0;
- 
- 	if (!fake_panic) {
- 		/*
-@@ -287,8 +287,11 @@ static void mce_panic(char *msg, struct
- 		struct mce *m = &mcelog.entry[i];
- 		if (!(m->status & MCI_STATUS_VAL))
- 			continue;
--		if (!(m->status & MCI_STATUS_UC))
-+		if (!(m->status & MCI_STATUS_UC)) {
- 			print_mce(m);
-+			if (!apei_err)
-+				apei_err = apei_write_mce(m);
-+		}
- 	}
- 	/* Now print uncorrected but with the final one last */
- 	for (i = 0; i < MCE_LOG_LEN; i++) {
-@@ -297,11 +300,17 @@ static void mce_panic(char *msg, struct
- 			continue;
- 		if (!(m->status & MCI_STATUS_UC))
- 			continue;
--		if (!final || memcmp(m, final, sizeof(struct mce)))
-+		if (!final || memcmp(m, final, sizeof(struct mce))) {
- 			print_mce(m);
-+			if (!apei_err)
-+				apei_err = apei_write_mce(m);
-+		}
- 	}
--	if (final)
-+	if (final) {
- 		print_mce(final);
-+		if (!apei_err)
-+			apei_err = apei_write_mce(final);
-+	}
- 	if (cpu_missing)
- 		printk(KERN_EMERG "Some CPUs didn't answer in synchronization\n");
- 	print_mce_tail();
-@@ -1493,6 +1502,43 @@ static void collect_tscs(void *data)
- 	rdtscll(cpu_tsc[smp_processor_id()]);
- }
- 
-+static int mce_apei_read_done;
+ obj-$(CONFIG_X86_THERMAL_VECTOR) += therm_throt.o
 +
-+/* Collect MCE record of previous boot in persistent storage via APEI ERST. */
-+static int __mce_read_apei(char __user **ubuf, size_t usize)
++obj-$(CONFIG_ACPI_APEI)		+= mce-apei.o
+--- /dev/null
++++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
+@@ -0,0 +1,52 @@
++/*
++ * Bridge between MCE and APEI
++ *
++ * On some machine, corrected memory errors are reported via APEI
++ * generic hardware error source (GHES) instead of corrected Machine
++ * Check. These corrected memory errors can be reported to user space
++ * through /dev/mcelog via faking a corrected Machine Check, so that
++ * the error memory page can be offlined by /sbin/mcelog if the error
++ * count for one page is beyond the threshold.
++ *
++ * Copyright 2010 Intel Corp.
++ *   Author: Huang Ying <ying.huang@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/kernel.h>
++#include <linux/acpi.h>
++#include <linux/cper.h>
++#include <acpi/apei.h>
++#include <asm/mce.h>
++
++#include "mce-internal.h"
++
++void apei_mce_report_mem_error(int corrected, struct cper_sec_mem_err *mem_err)
 +{
-+	int rc;
-+	u64 record_id;
 +	struct mce m;
 +
-+	if (usize < sizeof(struct mce))
-+		return -EINVAL;
++	/* Only corrected MC is reported */
++	if (!corrected)
++		return;
 +
-+	rc = apei_read_mce(&m, &record_id);
-+	/* Error or no more MCE record */
-+	if (rc <= 0) {
-+		mce_apei_read_done = 1;
-+		return rc;
++	mce_setup(&m);
++	m.bank = 1;
++	/* Fake a memory read corrected error with unknown channel */
++	m.status = MCI_STATUS_VAL | MCI_STATUS_EN | MCI_STATUS_ADDRV | 0x9f;
++	m.addr = mem_err->physical_addr;
++	mce_log(&m);
++	mce_notify_irq();
++}
++EXPORT_SYMBOL_GPL(apei_mce_report_mem_error);
+--- a/drivers/acpi/apei/Kconfig
++++ b/drivers/acpi/apei/Kconfig
+@@ -7,6 +7,20 @@ config ACPI_APEI
+ 	  especially. In addition it supports error serialization and
+ 	  error injection.
+ 
++config ACPI_APEI_GHES
++	tristate "APEI Generic Hardware Error Source"
++	depends on ACPI_APEI && X86
++	select ACPI_HED
++	help
++	  Generic Hardware Error Source provides a way to report
++	  platform hardware errors (such as that from chipset). It
++	  works in so called "Firmware First" mode, that is, hardware
++	  errors are reported to firmware firstly, then reported to
++	  Linux by firmware. This way, some non-standard hardware
++	  error registers or non-standard hardware link can be checked
++	  by firmware to produce more valuable hardware error
++	  information for Linux.
++
+ config ACPI_APEI_EINJ
+ 	tristate "APEI Error INJection (EINJ)"
+ 	depends on ACPI_APEI && DEBUG_FS
+--- a/drivers/acpi/apei/Makefile
++++ b/drivers/acpi/apei/Makefile
+@@ -1,4 +1,5 @@
+ obj-$(CONFIG_ACPI_APEI)		+= apei.o
++obj-$(CONFIG_ACPI_APEI_GHES)	+= ghes.o
+ obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
+ 
+ apei-y := apei-base.o hest.o cper.o
+--- /dev/null
++++ b/drivers/acpi/apei/ghes.c
+@@ -0,0 +1,425 @@
++/*
++ * APEI Generic Hardware Error Source support
++ *
++ * Generic Hardware Error Source provides a way to report platform
++ * hardware errors (such as that from chipset). It works in so called
++ * "Firmware First" mode, that is, hardware errors are reported to
++ * firmware firstly, then reported to Linux by firmware. This way,
++ * some non-standard hardware error registers or non-standard hardware
++ * link can be checked by firmware to produce more hardware error
++ * information for Linux.
++ *
++ * For more information about Generic Hardware Error Source, please
++ * refer to ACPI Specification version 4.0, section 17.3.2.6
++ *
++ * Now, only SCI notification type and memory errors are
++ * supported. More notification type and hardware error type will be
++ * added later.
++ *
++ * Copyright 2010 Intel Corp.
++ *   Author: Huang Ying <ying.huang@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation;
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/acpi.h>
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/cper.h>
++#include <linux/kdebug.h>
++#include <acpi/apei.h>
++#include <acpi/atomicio.h>
++#include <acpi/hed.h>
++#include <asm/mce.h>
++
++#include "apei-internal.h"
++
++#define GHES_PFX	"GHES: "
++
++#define GHES_ESTATUS_MAX_SIZE		65536
++
++/*
++ * One struct ghes is created for each generic hardware error
++ * source.
++ *
++ * It provides the context for APEI hardware error timer/IRQ/SCI/NMI
++ * handler. Handler for one generic hardware error source is only
++ * triggered after the previous one is done. So handler can uses
++ * struct ghes without locking.
++ *
++ * estatus: memory buffer for error status block, allocated during
++ * HEST parsing.
++ */
++#define GHES_TO_CLEAR		0x0001
++
++struct ghes {
++	struct acpi_hest_generic *generic;
++	struct acpi_hest_generic_status *estatus;
++	struct list_head list;
++	u64 buffer_paddr;
++	unsigned long flags;
++};
++
++/*
++ * Error source lists, one list for each notification method. The
++ * members in lists are struct ghes.
++ *
++ * The list members are only added in HEST parsing and deleted during
++ * module_exit, that is, single-threaded. So no lock is needed for
++ * that.
++ *
++ * But the mutual exclusion is needed between members adding/deleting
++ * and timer/IRQ/SCI/NMI handler, which may traverse the list. RCU is
++ * used for that.
++ */
++static LIST_HEAD(ghes_sci);
++
++static struct ghes *ghes_new(struct acpi_hest_generic *generic)
++{
++	struct ghes *ghes;
++	unsigned int error_block_length;
++	int rc;
++
++	ghes = kzalloc(sizeof(*ghes), GFP_KERNEL);
++	if (!ghes)
++		return ERR_PTR(-ENOMEM);
++	ghes->generic = generic;
++	INIT_LIST_HEAD(&ghes->list);
++	rc = acpi_pre_map_gar(&generic->error_status_address);
++	if (rc)
++		goto err_free;
++	error_block_length = generic->error_block_length;
++	if (error_block_length > GHES_ESTATUS_MAX_SIZE) {
++		pr_warning(FW_WARN GHES_PFX
++			   "Error status block length is too long: %u for "
++			   "generic hardware error source: %d.\n",
++			   error_block_length, generic->header.source_id);
++		error_block_length = GHES_ESTATUS_MAX_SIZE;
 +	}
-+	rc = -EFAULT;
-+	if (copy_to_user(*ubuf, &m, sizeof(struct mce)))
-+		return rc;
-+	/*
-+	 * In fact, we should have cleared the record after that has
-+	 * been flushed to the disk or sent to network in
-+	 * /sbin/mcelog, but we have no interface to support that now,
-+	 * so just clear it to avoid duplication.
-+	 */
-+	rc = apei_clear_mce(record_id);
-+	if (rc) {
-+		mce_apei_read_done = 1;
-+		return rc;
++	ghes->estatus = kmalloc(error_block_length, GFP_KERNEL);
++	if (!ghes->estatus) {
++		rc = -ENOMEM;
++		goto err_unmap;
 +	}
-+	*ubuf += sizeof(struct mce);
++
++	return ghes;
++
++err_unmap:
++	acpi_post_unmap_gar(&generic->error_status_address);
++err_free:
++	kfree(ghes);
++	return ERR_PTR(rc);
++}
++
++static void ghes_fini(struct ghes *ghes)
++{
++	kfree(ghes->estatus);
++	acpi_post_unmap_gar(&ghes->generic->error_status_address);
++}
++
++enum {
++	GHES_SER_NO = 0x0,
++	GHES_SER_CORRECTED = 0x1,
++	GHES_SER_RECOVERABLE = 0x2,
++	GHES_SER_PANIC = 0x3,
++};
++
++static inline int ghes_severity(int severity)
++{
++	switch (severity) {
++	case CPER_SER_INFORMATIONAL:
++		return GHES_SER_NO;
++	case CPER_SER_CORRECTED:
++		return GHES_SER_CORRECTED;
++	case CPER_SER_RECOVERABLE:
++		return GHES_SER_RECOVERABLE;
++	case CPER_SER_FATAL:
++		return GHES_SER_PANIC;
++	default:
++		/* Unkown, go panic */
++		return GHES_SER_PANIC;
++	}
++}
++
++/* SCI handler run in work queue, so ioremap can be used here */
++static int ghes_copy_tofrom_phys(void *buffer, u64 paddr, u32 len,
++				 int from_phys)
++{
++	void *vaddr;
++
++	vaddr = ioremap_cache(paddr, len);
++	if (!vaddr)
++		return -ENOMEM;
++	if (from_phys)
++		memcpy(buffer, vaddr, len);
++	else
++		memcpy(vaddr, buffer, len);
++	iounmap(vaddr);
 +
 +	return 0;
 +}
 +
- static ssize_t mce_read(struct file *filp, char __user *ubuf, size_t usize,
- 			loff_t *off)
- {
-@@ -1506,15 +1552,19 @@ static ssize_t mce_read(struct file *fil
- 		return -ENOMEM;
- 
- 	mutex_lock(&mce_read_mutex);
++static int ghes_read_estatus(struct ghes *ghes, int silent)
++{
++	struct acpi_hest_generic *g = ghes->generic;
++	u64 buf_paddr;
++	u32 len;
++	int rc;
 +
-+	if (!mce_apei_read_done) {
-+		err = __mce_read_apei(&buf, usize);
-+		if (err || buf != ubuf)
-+			goto out;
++	rc = acpi_atomic_read(&buf_paddr, &g->error_status_address);
++	if (rc) {
++		if (!silent && printk_ratelimit())
++			pr_warning(FW_WARN GHES_PFX
++"Failed to read error status block address for hardware error source: %d.\n",
++				   g->header.source_id);
++		return -EIO;
++	}
++	if (!buf_paddr)
++		return -ENOENT;
++
++	rc = ghes_copy_tofrom_phys(ghes->estatus, buf_paddr,
++				   sizeof(*ghes->estatus), 1);
++	if (rc)
++		return rc;
++	if (!ghes->estatus->block_status)
++		return -ENOENT;
++
++	ghes->buffer_paddr = buf_paddr;
++	ghes->flags |= GHES_TO_CLEAR;
++
++	rc = -EIO;
++	len = apei_estatus_len(ghes->estatus);
++	if (len < sizeof(*ghes->estatus))
++		goto err_read_block;
++	if (len > ghes->generic->error_block_length)
++		goto err_read_block;
++	if (apei_estatus_check_header(ghes->estatus))
++		goto err_read_block;
++	rc = ghes_copy_tofrom_phys(ghes->estatus + 1,
++				   buf_paddr + sizeof(*ghes->estatus),
++				   len - sizeof(*ghes->estatus), 1);
++	if (rc)
++		return rc;
++	if (apei_estatus_check(ghes->estatus))
++		goto err_read_block;
++	rc = 0;
++
++err_read_block:
++	if (rc && !silent)
++		pr_warning(FW_WARN GHES_PFX
++			   "Failed to read error status block!\n");
++	return rc;
++}
++
++static void ghes_clear_estatus(struct ghes *ghes)
++{
++	ghes->estatus->block_status = 0;
++	if (!(ghes->flags & GHES_TO_CLEAR))
++		return;
++	ghes_copy_tofrom_phys(ghes->estatus, ghes->buffer_paddr,
++			      sizeof(ghes->estatus->block_status), 0);
++	ghes->flags &= ~GHES_TO_CLEAR;
++}
++
++static void ghes_do_proc(struct ghes *ghes)
++{
++	int ser, processed = 0;
++	struct acpi_hest_generic_data *gdata;
++
++	ser = ghes_severity(ghes->estatus->error_severity);
++	apei_estatus_for_each_section(ghes->estatus, gdata) {
++		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
++				 CPER_SEC_PLATFORM_MEM)) {
++			apei_mce_report_mem_error(
++				ser == GHES_SER_CORRECTED,
++				(struct cper_sec_mem_err *)(gdata+1));
++			processed = 1;
++		}
 +	}
 +
- 	next = rcu_dereference_check_mce(mcelog.next);
- 
- 	/* Only supports full reads right now */
--	if (*off != 0 || usize < MCE_LOG_LEN*sizeof(struct mce)) {
--		mutex_unlock(&mce_read_mutex);
--		kfree(cpu_tsc);
--
--		return -EINVAL;
--	}
-+	err = -EINVAL;
-+	if (*off != 0 || usize < MCE_LOG_LEN*sizeof(struct mce))
-+		goto out;
- 
- 	err = 0;
- 	prev = 0;
-@@ -1562,10 +1612,15 @@ timeout:
- 			memset(&mcelog.entry[i], 0, sizeof(struct mce));
- 		}
- 	}
++	if (!processed && printk_ratelimit())
++		pr_warning(GHES_PFX
++		"Unknown error record from generic hardware error source: %d\n",
++			   ghes->generic->header.source_id);
++}
 +
-+	if (err)
-+		err = -EFAULT;
++static int ghes_proc(struct ghes *ghes)
++{
++	int rc;
++
++	rc = ghes_read_estatus(ghes, 0);
++	if (rc)
++		goto out;
++	ghes_do_proc(ghes);
 +
 +out:
- 	mutex_unlock(&mce_read_mutex);
- 	kfree(cpu_tsc);
- 
--	return err ? -EFAULT : buf - ubuf;
-+	return err ? err : buf - ubuf;
- }
- 
- static unsigned int mce_poll(struct file *file, poll_table *wait)
-@@ -1573,6 +1628,8 @@ static unsigned int mce_poll(struct file
- 	poll_wait(file, &mce_wait, wait);
- 	if (rcu_dereference_check_mce(mcelog.next))
- 		return POLLIN | POLLRDNORM;
-+	if (!mce_apei_read_done && apei_check_mce())
-+		return POLLIN | POLLRDNORM;
- 	return 0;
- }
- 
++	ghes_clear_estatus(ghes);
++	return 0;
++}
++
++static int ghes_notify_sci(struct notifier_block *this,
++				  unsigned long event, void *data)
++{
++	struct ghes *ghes;
++	int ret = NOTIFY_DONE;
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(ghes, &ghes_sci, list) {
++		if (!ghes_proc(ghes))
++			ret = NOTIFY_OK;
++	}
++	rcu_read_unlock();
++
++	return ret;
++}
++
++static struct notifier_block ghes_notifier_sci = {
++	.notifier_call = ghes_notify_sci,
++};
++
++static int hest_ghes_parse(struct acpi_hest_header *hest_hdr, void *data)
++{
++	struct acpi_hest_generic *generic;
++	struct ghes *ghes = NULL;
++	int rc = 0;
++
++	if (hest_hdr->type != ACPI_HEST_TYPE_GENERIC_ERROR)
++		return 0;
++
++	generic = (struct acpi_hest_generic *)hest_hdr;
++	if (!generic->enabled)
++		return 0;
++
++	if (generic->error_block_length <
++	    sizeof(struct acpi_hest_generic_status)) {
++		pr_warning(FW_BUG GHES_PFX
++"Invalid error block length: %u for generic hardware error source: %d\n",
++			   generic->error_block_length,
++			   generic->header.source_id);
++		goto err;
++	}
++	if (generic->records_to_preallocate == 0) {
++		pr_warning(FW_BUG GHES_PFX
++"Invalid records to preallocate: %u for generic hardware error source: %d\n",
++			   generic->records_to_preallocate,
++			   generic->header.source_id);
++		goto err;
++	}
++	ghes = ghes_new(generic);
++	if (IS_ERR(ghes)) {
++		rc = PTR_ERR(ghes);
++		ghes = NULL;
++		goto err;
++	}
++	switch (generic->notify.type) {
++	case ACPI_HEST_NOTIFY_POLLED:
++		pr_warning(GHES_PFX
++"Generic hardware error source: %d notified via POLL is not supported!\n",
++			   generic->header.source_id);
++		break;
++	case ACPI_HEST_NOTIFY_EXTERNAL:
++	case ACPI_HEST_NOTIFY_LOCAL:
++		pr_warning(GHES_PFX
++"Generic hardware error source: %d notified via IRQ is not supported!\n",
++			   generic->header.source_id);
++		break;
++	case ACPI_HEST_NOTIFY_SCI:
++		if (list_empty(&ghes_sci))
++			register_acpi_hed_notifier(&ghes_notifier_sci);
++		list_add_rcu(&ghes->list, &ghes_sci);
++		break;
++	case ACPI_HEST_NOTIFY_NMI:
++		pr_warning(GHES_PFX
++"Generic hardware error source: %d notified via NMI is not supported!\n",
++			   generic->header.source_id);
++		break;
++	default:
++		pr_warning(FW_WARN GHES_PFX
++	"Unknown notification type: %u for generic hardware error source: %d\n",
++			   generic->notify.type, generic->header.source_id);
++		break;
++	}
++
++	return 0;
++err:
++	if (ghes)
++		ghes_fini(ghes);
++	return rc;
++}
++
++static void ghes_cleanup(void)
++{
++	struct ghes *ghes, *nghes;
++
++	if (!list_empty(&ghes_sci))
++		unregister_acpi_hed_notifier(&ghes_notifier_sci);
++
++	synchronize_rcu();
++
++	list_for_each_entry_safe(ghes, nghes, &ghes_sci, list) {
++		list_del(&ghes->list);
++		ghes_fini(ghes);
++		kfree(ghes);
++	}
++}
++
++static int __init ghes_init(void)
++{
++	int rc;
++
++	if (acpi_disabled)
++		return -ENODEV;
++
++	if (hest_disable) {
++		pr_info(GHES_PFX "HEST is not enabled!\n");
++		return -EINVAL;
++	}
++
++	rc = apei_hest_parse(hest_ghes_parse, NULL);
++	if (rc) {
++		pr_err(GHES_PFX
++		"Error during parsing HEST generic hardware error sources.\n");
++		goto err_cleanup;
++	}
++
++	if (list_empty(&ghes_sci)) {
++		pr_info(GHES_PFX
++			"No functional generic hardware error sources.\n");
++		rc = -ENODEV;
++		goto err_cleanup;
++	}
++
++	pr_info(GHES_PFX
++		"Generic Hardware Error Source support is initialized.\n");
++
++	return 0;
++err_cleanup:
++	ghes_cleanup();
++	return rc;
++}
++
++static void __exit ghes_exit(void)
++{
++	ghes_cleanup();
++}
++
++module_init(ghes_init);
++module_exit(ghes_exit);
++
++MODULE_AUTHOR("Huang Ying");
++MODULE_DESCRIPTION("APEI Generic Hardware Error Source support");
++MODULE_LICENSE("GPL");
