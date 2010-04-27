@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab0D0LbR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 07:31:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56789 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab0D0LbN convert rfc822-to-8bit (ORCPT
+	id S1755063Ab0D0Lbx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 07:31:53 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:46935 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754701Ab0D0Lbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 07:31:13 -0400
+	Tue, 27 Apr 2010 07:31:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TUi7cMDdpuxs1OiphVwDTUClKParkU9Kyqo7V4LwTPizkHCc9tx+MB7i7q7DRSnhF5
-         EZi9vqKGkXlHEFBc3JeOMNQ/7Bb/8zoRUrgppSe9f9LJcCesw545F8kzQ6qHEZeUdHYM
-         605evN9qrrgowX9tWFJmWfcG5WM5ISscBFT3Y=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=j3WCyyuiQY2Zo/PiQLAkwD0YnSSsrW3fKHTl6KSjtwRKJYu3AlutsMo95Tcxx4eCoU
+         3NqojRQsbyfniloQMrCuAc8jOmROsAtJcci/04DTwD0UqOmSNG7U3mOoQfpNzy7cFCod
+         9NRC4876qpFXQ7cS9SJ4SuB9cireFe+M0iuoY=
 MIME-Version: 1.0
-In-Reply-To: <20100427111759.GA13859@logfs.org>
-References: <20100422203358.GB30749@logfs.org>
-	 <20100423205518.GB7008@logfs.org> <20100426094810.GE27497@kernel.dk>
-	 <20100426143253.GB4364@logfs.org> <20100426143803.GM27497@kernel.dk>
-	 <20100426144532.GN27497@kernel.dk> <20100426163050.GC4364@logfs.org>
-	 <20100426163126.GD4364@logfs.org>
-	 <x2v4aa525de1004270201t9f57f49fv1e9cfbb2d886e4ad@mail.gmail.com>
-	 <20100427111759.GA13859@logfs.org>
-Date: Tue, 27 Apr 2010 13:31:11 +0200
-Message-ID: <h2h4aa525de1004270431hd98c271ag61462bdb778f7769@mail.gmail.com>
-Subject: Re: [PATCH 2/2] [MTD] Call bdi_init() and bdi_register()
-From: Paolo Minazzi <paolo.minazzi@gmail.com>
-To: =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>
-Cc: Jens Axboe <jens.axboe@oracle.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+In-Reply-To: <71097.1272365836@localhost>
+References: <20100427063547.GL5724@kvack.org> <71097.1272365836@localhost>
+Date: Tue, 27 Apr 2010 14:31:50 +0300
+X-Google-Sender-Auth: 579c1a27a4c6fcdb
+Message-ID: <u2k84144f021004270431ke981e355i6e82688bfe3842aa@mail.gmail.com>
+Subject: Re: I am an emotional amoeba who loves Erika-with-a-k and 
+	Erika-with-a-k loves me.
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Valdis.Kletnieks@vt.edu
+Cc: Benjamin LaHaise <bcrl@lhnet.ca>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If you add "rootfstype=romfs" to the command line, does the problem
-> still exist?
->
-> Jörn
+On Tue, 27 Apr 2010 02:35:47 EDT, Benjamin LaHaise said:
+>> I am an emotional amoeba Erika loves because I love Erika, and we care
+>> about each other more than anyone we've ever met because we love
+>> technology more than our friends and family.
 
-Jorn , you are right.
-It seems work....
-please wait....
+On Tue, Apr 27, 2010 at 1:57 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> Doood - Facebook has a "It's Complicated" button. Use it. We don't really
+> care - we debug hardware and software, not liveware.
+
+I care but there's not much I can do unless he posts the complete oops
+and his .config.
