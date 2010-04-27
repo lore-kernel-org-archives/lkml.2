@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab0D0SHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 14:07:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38831 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751581Ab0D0SHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 14:07:23 -0400
-Message-ID: <4BD727D6.20609@redhat.com>
-Date: Tue, 27 Apr 2010 21:07:18 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1756583Ab0D0SIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 14:08:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43686 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157Ab0D0SIB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 14:08:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NkgJ6x1huuaior6cEO1RJdnasjfrLcv4TyVFM9zrH90P8gpgAIqT5hUW9j7tKj4UQM
+         MPpuwNuJR6waIxPt/Yvnfxo8zLWNVjRmf0UL+ysBAOoVrWhcNYKEm0WE7e24xCIr6WwE
+         Wa0O2vQK8W/mriZvzJbP9Tpu6cGo4vLoNDucM=
+Date: Tue, 27 Apr 2010 20:07:56 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] lockdep: Fix redundant_hardirqs_on incremented with
+	irqs enabled
+Message-ID: <20100427180749.GB5586@nowhere>
+References: <20100415200414.1ef705c8.sfr@canb.auug.org.au> <1271338670-4537-1-git-send-regression-fweisbec@gmail.com> <20100427173227.7ec29329.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH 1/6] Enable pvclock flags in vcpu_time_info structure
-References: <1272303988-21929-1-git-send-email-glommer@redhat.com> <1272303988-21929-2-git-send-email-glommer@redhat.com>
-In-Reply-To: <1272303988-21929-2-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100427173227.7ec29329.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2010 08:46 PM, Glauber Costa wrote:
-> This patch removes one padding byte and transform it into a flags
-> field. New versions of guests using pvclock will query these flags
-> upon each read.
->
-> Flags, however, will only be interpreted when the guest decides to.
-> It uses the pvclock_valid_flags function to signal that a specific
-> set of flags should be taken into consideration. Which flags are valid
-> are usually devised via HV negotiation.
->
->
-> +void pvclock_valid_flags(u8 flags);
->    
+On Tue, Apr 27, 2010 at 05:32:27PM +1000, Stephen Rothwell wrote:
+> Hi Frederic,
+> 
+> On Thu, 15 Apr 2010 15:37:50 +0200 Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> >
+> > When a path restore the flags while irqs are already enabled, we
+> > update the per cpu var redundant_hardirqs_on in a racy fashion
+> > and debug_atomic_inc() warns about this situation.
+> > 
+> > In this particular case, we need to explictly disable the irqs before
+> > updating this stat var in order to update it safely.
+> > 
+> > Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: David Miller <davem@davemloft.net>
+> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > ---
+> >  kernel/lockdep.c |    4 ++++
+> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> Ping?  Any movement on this?
 
-set_pvclock_valid_flags() (or just set_pvclock_flags? 
-pvclock_set_flags()?).  The original name looks like a getter.
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+Ingo, if you have no problems with these two patches, could you please
+apply them?
+
+Thanks.
 
