@@ -1,84 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab0D0WZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 18:25:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30481 "EHLO mx1.redhat.com"
+	id S1757378Ab0D0W20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 18:28:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6524 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755272Ab0D0WZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 18:25:15 -0400
-Date: Wed, 28 Apr 2010 00:22:45 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/3] mm,migration: During fork(), wait for migration to
- end if migration PTE is encountered
-Message-ID: <20100427222245.GE8860@random.random>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
- <1272403852-10479-2-git-send-email-mel@csn.ul.ie>
+	id S1755272Ab0D0W2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 18:28:25 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+Subject: [PATCH -tip 2/2] [BUGFIX] kprobes/x86: Fix removed int3 checking order
+To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
+Cc: systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Dave Anderson <anderson@redhat.com>, Ingo Molnar <mingo@elte.hu>
+Date: Tue, 27 Apr 2010 18:33:49 -0400
+Message-ID: <20100427223348.2322.9112.stgit@localhost6.localdomain6>
+In-Reply-To: <20100427223312.2322.60512.stgit@localhost6.localdomain6>
+References: <20100427223312.2322.60512.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272403852-10479-2-git-send-email-mel@csn.ul.ie>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok I had a first look:
+Fix kprobe/x86 to check removed int3 when failing to get kprobe
+from hlist. Since we have a time window between checking int3
+exists on probed address and getting kprobe on that address,
+we can have following senario.
+-------
+CPU1                     CPU2
+hit int3
+check int3 exists
+                         remove int3
+                         remove kprobe from hlist
+get kprobe from hlist
+no kprobe->OOPS!
+-------
+This patch moves int3 checking if there is no kprobe on that
+address for fixing this problem as follows;
+------
+CPU1                     CPU2
+hit int3
+                         remove int3
+                         remove kprobe from hlist
+get kprobe from hlist
+no kprobe->check int3 exists
+         ->rollback&retry
+------
 
-On Tue, Apr 27, 2010 at 10:30:50PM +0100, Mel Gorman wrote:
-> 	CPUA			CPU B
-> 				do_fork()
-> 				copy_mm() (from process 1 to process2)
-> 				insert new vma to mmap_list (if inode/anon_vma)
+Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Dave Anderson <anderson@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
 
-Insert to the tail of the anon_vma list...
+ arch/x86/kernel/kprobes.c |   27 +++++++++++++--------------
+ 1 files changed, 13 insertions(+), 14 deletions(-)
 
-> 	pte_lock(process1)
-> 	unmap a page
-> 	insert migration_entry
-> 	pte_unlock(process1)
-> 
-> 	migrate page copy
-> 				copy_page_range
-> 	remap new page by rmap_walk()
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index f2f56c0..345a4b1 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -542,20 +542,6 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+ 	struct kprobe_ctlblk *kcb;
+ 
+ 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
+-	if (*addr != BREAKPOINT_INSTRUCTION) {
+-		/*
+-		 * The breakpoint instruction was removed right
+-		 * after we hit it.  Another cpu has removed
+-		 * either a probepoint or a debugger breakpoint
+-		 * at this address.  In either case, no further
+-		 * handling of this interrupt is appropriate.
+-		 * Back up over the (now missing) int3 and run
+-		 * the original instruction.
+-		 */
+-		regs->ip = (unsigned long)addr;
+-		return 1;
+-	}
+-
+ 	/*
+ 	 * We don't want to be preempted for the entire
+ 	 * duration of kprobe processing. We conditionally
+@@ -587,6 +573,19 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+ 				setup_singlestep(p, regs, kcb, 0);
+ 			return 1;
+ 		}
++	} else if (*addr != BREAKPOINT_INSTRUCTION) {
++		/*
++		 * The breakpoint instruction was removed right
++		 * after we hit it.  Another cpu has removed
++		 * either a probepoint or a debugger breakpoint
++		 * at this address.  In either case, no further
++		 * handling of this interrupt is appropriate.
++		 * Back up over the (now missing) int3 and run
++		 * the original instruction.
++		 */
++		regs->ip = (unsigned long)addr;
++		preempt_enable_no_resched();
++		return 1;
+ 	} else if (kprobe_running()) {
+ 		p = __get_cpu_var(current_kprobe);
+ 		if (p->break_handler && p->break_handler(p, regs)) {
 
-rmap_walk will walk process1 first! It's at the head, the vmas with
-unmapped ptes are at the tail so process1 is walked before process2.
 
-> 	pte_lock(process2)
-> 	found no pte.
-> 	pte_unlock(process2)
-> 				pte lock(process2)
-> 				pte lock(process1)
-> 				copy migration entry to process2
-> 				pte unlock(process1)
-> 				pte unlokc(process2)
-> 	pte_lock(process1)
-> 	replace migration entry
-> 	to new page's pte.
-> 	pte_unlock(process1)
-
-rmap_walk has to lock down process1 before process2, this is the
-ordering issue I already mentioned in earlier email. So it cannot
-happen and this patch is unnecessary.
-
-The ordering is fundamental and as said anon_vma_link already adds new
-vmas to the _tail_ of the anon-vma. And this is why it has to add to
-the tail. If anon_vma_link would add new vmas to the head of the list,
-the above bug could materialize, but it doesn't so it cannot happen.
-
-In mainline anon_vma_link is called anon_vma_chain_link, see the
-list_add_tail there to provide this guarantee.
-
-Because process1 is walked first by CPU A, the migration entry is
-replaced by the final pte before copy-migration-entry
-runs. Alternatively if copy-migration-entry runs before before
-process1 is walked, the migration entry will be copied and found in
-process 2.
-
-Comments welcome.
-Andrea
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
