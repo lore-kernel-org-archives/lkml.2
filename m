@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab0D0Ubo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 16:31:44 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:39379 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754950Ab0D0Ubn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 16:31:43 -0400
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Linus WALLEIJ <linus.walleij@stericsson.com>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Alessandro Rubini <rubini@unipv.it>
-Date: Tue, 27 Apr 2010 22:07:37 +0200
-Subject: RE: [PATCH] DMAENGINE: DMA40 U8500 platform configuration v4
-Thread-Topic: [PATCH] DMAENGINE: DMA40 U8500 platform configuration v4
-Thread-Index: AcrmPTd6nhSPjRzUTeybJdj3WevEPAAB+0DQ
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A025A4964A5@EXDCVYMBSTM006.EQ1STM.local>
-References: <1272395344-744-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1272395344-744-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755914Ab0D0UhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 16:37:05 -0400
+Received: from xenotime.net ([72.52.64.118]:43961 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755109Ab0D0UhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 16:37:01 -0400
+Date: Tue, 27 Apr 2010 13:36:58 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Michal Marek <mmarek@suse.cz>, Randy Dunlap <randy.dunlap@oracle.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 4/6] gconfig: fix null pointer warning
+Message-Id: <20100427133658.64e25ab5.rdunlap@xenotime.net>
+In-Reply-To: <4BD696EC.1090100@cn.fujitsu.com>
+References: <4BD696C0.8050500@cn.fujitsu.com>
+	<4BD696EC.1090100@cn.fujitsu.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Self]
+On Tue, 27 Apr 2010 15:49:00 +0800 Li Zefan wrote:
 
-> This completes the DMA40 support with the platform-specific
-> configuration for U8500/DB8500.
-(...)
-> --- a/arch/arm/mach-ux500/board-mop500.c
-> +++ b/arch/arm/mach-ux500/board-mop500.c
-> @@ -137,7 +137,7 @@ static void __init u8500_init_machine(void)
->  	u8500_init_devices();
->  }
+> In gconfig if you enable "Show all options", you'll see some "(null)"
+> config options, and clicking those options triggers a warning:
 > 
-> -MACHINE_START(U8500, "ST-Ericsson MOP500 platform")
-> +MACHINE_START(NOMADIK, "ST-Ericsson MOP500 platform")
+> (gconf:9368): Gtk-CRITICAL **: gtk_text_buffer_insert_with_tags: assertion `text != NULL' failed
+> 
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 
-Oh no, I shouldn't touch that. Will fix this...
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Yours,
-Linus Walleij
+> ---
+>  scripts/kconfig/gconf.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/scripts/kconfig/gconf.c b/scripts/kconfig/gconf.c
+> index 1b18329..d669882 100644
+> --- a/scripts/kconfig/gconf.c
+> +++ b/scripts/kconfig/gconf.c
+> @@ -1343,7 +1343,8 @@ static void update_tree(struct menu *src, GtkTreeIter * dst)
+>  #endif
+>  
+>  		if ((opt_mode == OPT_NORMAL && !menu_is_visible(child1)) ||
+> -		    (opt_mode == OPT_PROMPT && !menu_has_prompt(child1))) {
+> +		    (opt_mode == OPT_PROMPT && !menu_has_prompt(child1)) ||
+> +		    (opt_mode == OPT_ALL    && !menu_get_prompt(child1))) {
+>  
+>  			/* remove node */
+>  			if (gtktree_iter_find_node(dst, menu1) != NULL) {
+> @@ -1425,7 +1426,7 @@ static void display_tree(struct menu *menu)
+>  
+>  		if ((opt_mode == OPT_NORMAL && menu_is_visible(child)) ||
+>  		    (opt_mode == OPT_PROMPT && menu_has_prompt(child)) ||
+> -		    (opt_mode == OPT_ALL))
+> +		    (opt_mode == OPT_ALL    && menu_get_prompt(child)))
+>  			place_node(child, fill_row(child));
+>  #ifdef DEBUG
+>  		printf("%*c%s: ", indent, ' ', menu_get_prompt(child));
+> -- 
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
