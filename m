@@ -1,175 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062Ab0D0GvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 02:51:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37158 "EHLO mx1.suse.de"
+	id S1752333Ab0D0GzK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 02:55:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56457 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735Ab0D0GvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 02:51:12 -0400
-Date: Tue, 27 Apr 2010 08:51:09 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Tony Vroon <tony@linx.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>
-Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
-Message-ID: <20100427065109.GA3907@tiehlicka.suse.cz>
-References: <20100401133923.GA4104@tiehlicka.suse.cz>
- <201004250435.42779.rjw@sisk.pl>
- <20100426150503.GA4005@tiehlicka.suse.cz>
- <201004262051.09175.rjw@sisk.pl>
+	id S1750952Ab0D0GzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 02:55:08 -0400
+Date: Tue, 27 Apr 2010 08:54:51 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: mingo@elte.hu, fweisbec@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 4/4] tracing: graph output support for
+ preemptirqsoff/preemptoff tracers
+Message-ID: <20100427065451.GA1912@jolsa.lab.eng.brq.redhat.com>
+References: <1270227683-14631-1-git-send-email-jolsa@redhat.com>
+ <1270227683-14631-5-git-send-email-jolsa@redhat.com>
+ <1272332143.9739.39.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201004262051.09175.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1272332143.9739.39.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 26-04-10 20:51:09, Rafael J. Wysocki wrote:
-> On Monday 26 April 2010, Michal Hocko wrote:
-> > On Sun 25-04-10 04:35:42, Rafael J. Wysocki wrote:
-> > > On Monday 19 April 2010, Rafael J. Wysocki wrote:
-> > > > On Monday 19 April 2010, Michal Hocko wrote:
-> > > > > On Fri 16-04-10 20:00:29, Rafael J. Wysocki wrote:
-> > > > > > On Wednesday 14 April 2010, Michal Hocko wrote:
-> > > > > > > On Tue 13-04-10 22:53:37, Rafael J. Wysocki wrote:
-> > > > > > > > On Tuesday 13 April 2010, Michal Hocko wrote:
-> > > > > > > > > On Tue 13-04-10 01:01:54, Rafael J. Wysocki wrote:
-> > > > > > > > > > On Saturday 10 April 2010, Rafael J. Wysocki wrote:
-> > > > > > > > > > > On Friday 09 April 2010, Tony Vroon wrote:
-> > > > > > > > > > > > On Fri, 2010-04-09 at 22:42 +0200, Rafael J. Wysocki wrote:
-> > > > > > > > > > > > > Please check if the patch below changes anything.
-> > > > > > > > > > > > >  drivers/acpi/wakeup.c |    4 ++--
-> > > > > > > > > > > > >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > > > > > > > > > > > 
-> > > > > > > > > > > > That didn't change the behaviour for me, sorry.
-> > > > > > > > > > > 
-> > > > > > > > > > > Well, I would be sorry if it did, because the patch removed some useful code. :-)
-> > > > > > > > > > > 
-> > > > > > > > > > > > (I made sure to go through a full power down session before trying the
-> > > > > > > > > > > > patched kernel)
-> > > > > > > > > > > 
-> > > > > > > > > > > Thanks for testing.  So it looks like we don't disable the GPE during power off.
-> > > > > > > > > > > 
-> > > > > > > > > > > I'll try to figure out what's going on, please stay tuned.
-> > > > > > > > > > 
-> > > > > > > > > > Can you please check if the patch below changes the behavior?
-> > > > > > > > > 
-> > > > > > > > > Unfortunately, it didn't help either (I have tried on top of the fresh
-> > > > > > > > > rc4).
-> > > > > > > > 
-> > > > > > > > That gets really weird.
-> > > > > > > > 
-> > > > > > > > > > ---
-> > > > > > > > > >  drivers/acpi/wakeup.c |    6 +++---
-> > > > > > > > > >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > > > > > > > > > 
-> > > > > > > > > > Index: linux-2.6/drivers/acpi/wakeup.c
-> > > > > > > > > > ===================================================================
-> > > > > > > > > > --- linux-2.6.orig/drivers/acpi/wakeup.c
-> > > > > > > > > > +++ linux-2.6/drivers/acpi/wakeup.c
-> > > > > > > > > > @@ -63,17 +63,17 @@ void acpi_enable_wakeup_device(u8 sleep_
-> > > > > > > > > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
-> > > > > > > > > >  		struct acpi_device *dev =
-> > > > > > > > > >  			container_of(node, struct acpi_device, wakeup_list);
-> > > > > > > > > > +		u8 action = ACPI_GPE_ENABLE;
-> > > > > > > > 
-> > > > > > > > Can you try to change the above to ACPI_GPE_DISABLE and retest, please?
-> > > > > > > 
-> > > > > > > Unfortunately didn't help as well...
-> > > > > > > Just for reference:
-> > > > > > > 
-> > > > > > > diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
-> > > > > > > index 248b473..f23c08f 100644
-> > > > > > > --- a/drivers/acpi/wakeup.c
-> > > > > > > +++ b/drivers/acpi/wakeup.c
-> > > > > > > @@ -63,7 +63,7 @@ void acpi_enable_wakeup_device(u8 sleep_state)
-> > > > > > >  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
-> > > > > > >  		struct acpi_device *dev =
-> > > > > > >  			container_of(node, struct acpi_device, wakeup_list);
-> > > > > > > -		u8 action = ACPI_GPE_ENABLE;
-> > > > > > > +		u8 action = ACPI_GPE_DISABLE;
-> > > > > > 
-> > > > > > That probably means the chipset enables the GPEs by itself _after_ we've
-> > > > > > disabled them in acpi_enable_wakeup_device().
-> > > > > 
-> > > > > Is this something BIOS specific?
-> > > > > 
-> > > > > > 
-> > > > > > Unfortunately, I can't reproduce the issue on any of my test boxes and it's
-> > > > > > hard to find the source of the problem staring at the code.
-> > > > > 
-> > > > > Are there any debug options I can turn on to provide some information?
-> > > > 
-> > > > We can only check what the kernel tells us before power off, but all that seems
-> > > > correct.
-> > > > 
-> > > > > Btw. what exactly does this mean? In what state is the laptop while it
-> > > > > is turned off and GPE is enabled?
-> > > > 
-> > > > If a GPE is enabled, then some part of the chipset has power provided so that
-> > > > it can signal wakeup.
-> > > > 
-> > > > I'll look into it a bit more later today.
-> > > 
-> > > Please try the patch below.  It kind of restores the previous behavior,
-> > > let's see if it changes anything.
+On Mon, Apr 26, 2010 at 09:35:43PM -0400, Steven Rostedt wrote:
+> On Fri, 2010-04-02 at 19:01 +0200, Jiri Olsa wrote:
+> > hi,
 > > 
-> > Again, no success. Just to make sure that I didn't screw anything. I
-> > have used just the following patch on top of the clean rc5 (your patch
-> > has failed with some rejects but I guess that the following should do
-> > the same):
+> > adding support for graph output for preemptirqsoff/preemptoff tracers.
+> > 
 > 
-> Thanks for testing.  Did you try the second thing, ie. try to comment out the
-> acpi_enable_gpe() in drivers/acpi/wakeup.c:acpi_wakeup_device_init() and
-> retest (if you haven't done that already)?
+> So far I like the series. But I'm confused why this patch is separate
+> from patch 3. Is there some reason for it?
+> 
+> If not, I'll just merge this into patch 3
 
-I have tried it just now and still no success.
+no particular reason, just wanted to separate the graph support
+for single tracer... I have no problem with merging those 2
 
-
-commit 1a7e7c9ac82aa2de185fa2f686417a5eb7765420
-Author: Michal Hocko <mhocko@suse.cz>
-Date:   Tue Apr 27 08:22:23 2010 +0200
-
-    disable acpi_enable_gpe in acpi_wakeup_device_init
-    
-    as suggested by Rafael.
-
-diff --git a/drivers/acpi/wakeup.c b/drivers/acpi/wakeup.c
-index 4b9d339..a0f4859 100644
---- a/drivers/acpi/wakeup.c
-+++ b/drivers/acpi/wakeup.c
-@@ -113,8 +113,9 @@ int __init acpi_wakeup_device_init(void)
- 		if (!dev->wakeup.flags.always_enabled ||
- 		    dev->wakeup.state.enabled)
- 			continue;
-- 		acpi_enable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
-+ 		/*acpi_enable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
-  				ACPI_GPE_TYPE_WAKE);
-+		 */
- 		dev->wakeup.state.enabled = 1;
- 	}
- 	mutex_unlock(&acpi_device_lock);
-
-On top of the previous patch. If I understand that correctly then this
-is really strange because this patch disables GPE completely, doesn't
-it?
+jirka
 
 > 
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+> -- Steve
+> 
+> > wbr,
+> > jirka
+> > 
+> > 
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > ---
+> >  kernel/trace/trace_irqsoff.c |   12 ++++++++++++
+> >  1 files changed, 12 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+> > index cc20d7c..6fd486e 100644
+> > --- a/kernel/trace/trace_irqsoff.c
+> > +++ b/kernel/trace/trace_irqsoff.c
+> > @@ -672,9 +672,15 @@ static struct tracer preemptoff_tracer __read_mostly =
+> >  	.start		= irqsoff_tracer_start,
+> >  	.stop		= irqsoff_tracer_stop,
+> >  	.print_max	= 1,
+> > +	.print_header   = irqsoff_print_header,
+> > +	.print_line     = irqsoff_print_line,
+> > +	.flags		= &tracer_flags,
+> > +	.set_flag	= irqsoff_set_flag,
+> >  #ifdef CONFIG_FTRACE_SELFTEST
+> >  	.selftest    = trace_selftest_startup_preemptoff,
+> >  #endif
+> > +	.open		= irqsoff_trace_open,
+> > +	.close		= irqsoff_trace_close,
+> >  };
+> >  # define register_preemptoff(trace) register_tracer(&trace)
+> >  #else
+> > @@ -700,9 +706,15 @@ static struct tracer preemptirqsoff_tracer __read_mostly =
+> >  	.start		= irqsoff_tracer_start,
+> >  	.stop		= irqsoff_tracer_stop,
+> >  	.print_max	= 1,
+> > +	.print_header   = irqsoff_print_header,
+> > +	.print_line     = irqsoff_print_line,
+> > +	.flags		= &tracer_flags,
+> > +	.set_flag	= irqsoff_set_flag,
+> >  #ifdef CONFIG_FTRACE_SELFTEST
+> >  	.selftest    = trace_selftest_startup_preemptirqsoff,
+> >  #endif
+> > +	.open		= irqsoff_trace_open,
+> > +	.close		= irqsoff_trace_close,
+> >  };
+> >  
+> >  # define register_preemptirqsoff(trace) register_tracer(&trace)
+> 
+> 
