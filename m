@@ -1,112 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab0D0Mlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 08:41:39 -0400
-Received: from fg-out-1718.google.com ([72.14.220.158]:40330 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab0D0Mlh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 08:41:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WSFikMdnm6+JQCgB8UOcHAs4AuYjfvIqcWNTJHkWrGkn005jyxATBOHfqajrIOy7SS
-         OxniaAGjBl7CgZqAh3kJtpfcFUBWgBPpIENapiLS5D26x1fZjOtBpHhCqJ13APLyYvle
-         qkB8gOL2+PKI6FDEnvtUtKj9PQYQABtJgTINs=
+	id S1755521Ab0D0Mmc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 08:42:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752630Ab0D0Mm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 08:42:29 -0400
+Message-ID: <4BD6DBB3.7050908@redhat.com>
+Date: Tue, 27 Apr 2010 15:42:27 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1004271359180.3318@localhost>
-References: <1272359898-32020-1-git-send-email-jkacur@redhat.com>
-	 <201004271331.58130.arnd@arndb.de>
-	 <alpine.LFD.2.00.1004271359180.3318@localhost>
-Date: Tue, 27 Apr 2010 14:41:35 +0200
-Message-ID: <m2xc62985531004270541n6537bc9bj1936319952a9f4ca@mail.gmail.com>
-Subject: Re: [PATCH 00/10] bkl: pushdowns from Arnd, and compile fixes
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: John Kacur <jkacur@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/22] KVM: X86: Add kvm_read_guest_page_tdp function
+References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com> <1272364712-17425-14-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1272364712-17425-14-git-send-email-joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/27 John Kacur <jkacur@redhat.com>:
+On 04/27/2010 01:38 PM, Joerg Roedel wrote:
+> This patch adds a function which can read from the guests
+> physical memory or from the guest's guest physical memory.
+> This will be used in the two-dimensional page table walker.
 >
+> Signed-off-by: Joerg Roedel<joerg.roedel@amd.com>
+> ---
+>   arch/x86/include/asm/kvm_host.h |    3 +++
+>   arch/x86/kvm/x86.c              |   24 ++++++++++++++++++++++++
+>   2 files changed, 27 insertions(+), 0 deletions(-)
 >
-> On Tue, 27 Apr 2010, Arnd Bergmann wrote:
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 3cbfb51..7851bbc 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -635,6 +635,9 @@ void kvm_requeue_exception(struct kvm_vcpu *vcpu, unsigned nr);
+>   void kvm_requeue_exception_e(struct kvm_vcpu *vcpu, unsigned nr, u32 error_code);
+>   void kvm_inject_page_fault(struct kvm_vcpu *vcpu, unsigned long cr2,
+>   			   u32 error_code);
+> +int kvm_read_guest_page_tdp(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
+> +			    gfn_t gfn, void *data, int offset, int len,
+> +			    u32 *error);
+>   bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
 >
->> On Tuesday 27 April 2010, John Kacur wrote:
->> > These are bkl pushdowns from Arnd that conflicted with
->> > Linus's "Preparation for BKL'ed ioctl removal patch". I fixed-up the merge
->> > conflicts. In addition - during allyesconfig compile testing on x86_64 I found
->> > a number of issues that I fixed-up
->>
->> Thanks for catching the scsi bugs! It was getting late yesterday night, so
->> I didn't go through a full allyesconfig then.
->>
->> > I pushed these to my own new linus-bkl tree.
->> > git://www.kernel.org/pub/scm/linux/kernel/git/jkacur/jk-2.6.git linux-bkl
->> >
->> > Frederic, if you want to grab those, pls do so. also, we might want to combine
->> > my compile fixes with Arnd's push-down patches, for better git bisectability.
->>
->> Yes, your fixes (except the v4l2 patch, see comment there) should best be
->> merged into the main patches.
->>
->> The idea was that if we manage to kill all fops->ioctl users right away,
->> we wouldn't even need Linus' patch and move to dungeon level 2 directly.
->> Either way works for me though.
->>
->> Should we just split up the rest? If you, Frederic and me each take one
->> of these chunks, we're done. According to the diffstat from Linus' patch,
->> this is what's left:
+>   int kvm_pic_set_irq(void *opaque, int irq, int level);
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 6b2ce1d..558d995 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -356,6 +356,30 @@ bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl)
+>   EXPORT_SYMBOL_GPL(kvm_require_cpl);
 >
-> Okay - good plan. I AM trying to balance doing my own day-to-day work,
-> and writing slides for a conference but I'm sure you and Frederic are
->  just as pressed for time as me, so lets go-ahead and divide it up!
-> That will prevent us from doing redundant work.
-> I assume the target is 2.6.35 so, we have a little bit of time anyway.
->
-> I suggest we divide up a) and b) first and postone c) until the first
-> parts are done.
->
-> Arranging our names by alphabetical order and shuffling the files
-> off one at a time (for variety), I get this. Is everybody happy with that?
-> 36 files / 3 = 12 files each.
-> Jan - speak up if you want in.
->
-> Arnd
-> ----
-> arch/cris/arch-v10/drivers/ds1302.c
-> arch/cris/arch-v10/drivers/pcf8563.c
-> arch/cris/arch-v32/drivers/i2c.c
-> arch/cris/arch-v32/drivers/pcf8563.c
-> arch/ia64/sn/kernel/sn2/sn_hwperf.c
-> arch/m68k/mvme16x/rtc.c
-> arch/um/drivers/mmapper_kern.c
-> fs/coda/psdev.c
-> fs/hfsplus/dir.c
-> fs/logfs/file.c
-> fs/ntfs/dir.c
-> fs/smbfs/file.c
->
-> Frederic
-> --------
-> arch/cris/arch-v10/drivers/gpio.c
-> arch/cris/arch-v10/drivers/sync_serial.c
-> arch/cris/arch-v32/drivers/mach-a3/gpio.c
-> arch/cris/arch-v32/drivers/sync_serial.c
-> arch/m68k/bvme6000/rtc.c
-> arch/um/drivers/harddog_kern.c
-> fs/autofs/root.c
-> fs/fat/dir.c
-> fs/hfsplus/inode.c
-> fs/ncpfs/dir.c
-> fs/ntfs/file.c
-> fs/udf/dir.c
+>   /*
+> + * This function will be used to read from the physical memory of the currently
+> + * running guest. The difference to kvm_read_guest_page ist that this function
+> + * can read from guest physical or from the guest's guest physical memory.
+> + */
+>    
 
+s/ist/is/
 
+> +int kvm_read_guest_page_tdp(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
+> +			    gfn_t gfn, void *data, int offset, int len,
+> +			    u32 *error)
+>    
 
-Ok :)
+Naming: I see 'tdp' as a host property, and this is valid whether tdp is 
+enabled or not.  Suggest calling it kvm_read_nested_guest_page().
+
+Following mmu.txt, the parameter would be ngfn, not gfn.
+
+> +{
+> +	gfn_t real_gfn;
+> +	gpa_t gpa;
+> +
+> +	*error   = 0;
+> +	gpa      = gfn<<  PAGE_SHIFT;
+> +	real_gfn = mmu->translate_gpa(vcpu, gpa, error);
+>    
+
+Overflow: sizeof(gpa) > sizeof(gfn).
+
+> +	if (real_gfn == UNMAPPED_GVA)
+> +		return -EFAULT;
+> +
+> +	real_gfn>>= PAGE_SHIFT;
+>    
+
+gpa_to_gfn().
+
+> +
+> +	return kvm_read_guest_page(vcpu->kvm, real_gfn, data, offset, len);
+> +}
+> +EXPORT_SYMBOL_GPL(kvm_read_guest_page_tdp);
+> +
+>    
+
+-- 
+error compiling committee.c: too many arguments to function
+
