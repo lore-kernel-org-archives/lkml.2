@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab0D0POx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 11:14:53 -0400
-Received: from kroah.org ([198.145.64.141]:44779 "EHLO coco.kroah.org"
+	id S1754575Ab0D0PPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 11:15:38 -0400
+Received: from kroah.org ([198.145.64.141]:44786 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab0D0POt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752908Ab0D0POt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Apr 2010 11:14:49 -0400
-Date: Tue, 27 Apr 2010 08:13:35 -0700
+Date: Tue, 27 Apr 2010 08:14:15 -0700
 From: Greg KH <greg@kroah.com>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
-       netdev@vger.kernel.org, John Sheehan <john.d.sheehan@gmail.com>
-Subject: Re: linux-next: manual merge of the staging-next tree with the net
- tree
-Message-ID: <20100427151335.GB7653@kroah.com>
-References: <20100427142655.49673ff1.sfr@canb.auug.org.au>
+Cc: =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Vijay Kumar <vijaykumar@bravegnu.org>
+Subject: Re: linux-next: manual merge of the bkl-ioctl tree with the
+ staging-next tree
+Message-ID: <20100427151415.GC7653@kroah.com>
+References: <20100427144804.cbfa9564.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100427142655.49673ff1.sfr@canb.auug.org.au>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100427144804.cbfa9564.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 02:26:55PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On Tue, Apr 27, 2010 at 02:48:04PM +1000, Stephen Rothwell wrote:
+> Hi Frédéric,
 > 
-> Today's linux-next merge of the staging-next tree got a conflict in
-> drivers/staging/arlan/arlan-main.c between commit
-> 22bedad3ce112d5ca1eaf043d4990fa2ed698c87 ("net: convert multicast list to
-> list_head") from the net tree and commit
-> 8db2022b08e232bb237b2162f03ff5f6e7c0c35e ("staging: arlan: fix errors
-> reported by checkpatch.pl tool") from the staging-next tree.
+> Today's linux-next merge of the bkl-ioctl tree got a conflict in
+> drivers/staging/poch/poch.c between commit
+> ba7d84da197c348efa2b2984a848e0fbccd4b9b0 ("Staging: Remove staging/poch")
+> from the staging-next tree and commit
+> 1dd97d3d546aa14db7efa5366b21d1336b91379e ("Rename 'struct
+> file_operations' 'ioctl' fn pointer to 'bkl_ioctl'") from the bkl-ioctl
+> tree.
 > 
-> I fixed it up (see below) and can carry the fix as necessary.
+> The former just removed the file, so I did as well.
 
-That looks fine, thanks.
+That's the correct fix :)
+
+thanks,
 
 greg k-h
