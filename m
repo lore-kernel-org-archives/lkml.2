@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab0D0Uu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 16:50:59 -0400
-Received: from www.tglx.de ([62.245.132.106]:39623 "EHLO www.tglx.de"
+	id S1756883Ab0D0UxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 16:53:10 -0400
+Received: from www.tglx.de ([62.245.132.106]:42563 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756493Ab0D0Uu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 16:50:57 -0400
-Date: Tue, 27 Apr 2010 22:50:46 +0200 (CEST)
+	id S1755314Ab0D0UxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 16:53:08 -0400
+Date: Tue, 27 Apr 2010 22:53:01 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: John Kacur <jkacur@gmail.com>
-cc: Nick Piggin <npiggin@suse.de>, jstultz@gmail.com,
-       LKML <linux-kernel@vger.kernel.org>,
-       linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: 2.6.33.3-rt16 compile failure in fs/ecryptfs/inode.o
-In-Reply-To: <alpine.LFD.2.00.1004272202250.3318@localhost>
-Message-ID: <alpine.LFD.2.00.1004272249400.2951@localhost.localdomain>
-References: <alpine.LFD.2.00.1004272202250.3318@localhost>
+To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+cc: rt-users <linux-rt-users@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>
+Subject: Re: 2.6.33.3-rt16: WARNING: at fs/namespace.c:1197
+ umount_tree+0x127/0x175()
+In-Reply-To: <20100427202750.GC2679@uudg.org>
+Message-ID: <alpine.LFD.2.00.1004272252270.2951@localhost.localdomain>
+References: <20100427202750.GC2679@uudg.org>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1968843256-1272401447=:2951"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tue, 27 Apr 2010, Luis Claudio R. Goncalves wrote:
 
---8323328-1968843256-1272401447=:2951
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+CC'ed John
 
-On Tue, 27 Apr 2010, John Kacur wrote:
-> make O=/bld/2.6.33.3-rt16/ fs/ecryptfs/inode.o
->   Using /home/jkacur/jk-2.6 as source for kernel
->   GEN     /bld/2.6.33.3-rt16/Makefile
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
->   CALL    /home/jkacur/jk-2.6/scripts/checksyscalls.sh
->   CC [M]  fs/ecryptfs/inode.o
-> /home/jkacur/jk-2.6/fs/ecryptfs/inode.c: In function 
-> ¡ecryptfs_lookup_and_interpose_lower¢:
-> /home/jkacur/jk-2.6/fs/ecryptfs/inode.c:266: error: wrong type argument to 
-> unary exclamation mark
-> make[2]: *** [fs/ecryptfs/inode.o] Error 1
-> make[1]: *** [fs/ecryptfs/inode.o] Error 2
-> make: *** [sub-make] Error 2
+> Hello!
 > 
-> The above comes from: 
-> commit 5c0eb5cec064ce26ffcd0cdd684c9b6dd7c9074e
-> Author: Nick Piggin <npiggin@suse.de>
-> Date:   Fri Jan 29 15:38:21 2010 -0800
-
-Half the truth :) It got not fixed up in a later patch which made
-d_count atomic_t again. Fix below.
-
-Thanks,
-
-	tglx
----
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index 2fb8fd1..23dc2af 100644
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -263,7 +263,7 @@ int ecryptfs_lookup_and_interpose_lower(struct dentry *ecryptfs_dentry,
- 				   ecryptfs_dentry->d_parent));
- 	lower_inode = lower_dentry->d_inode;
- 	fsstack_copy_attr_atime(ecryptfs_dir_inode, lower_dir_dentry->d_inode);
--	BUG_ON(!lower_dentry->d_count);
-+	BUG_ON(!atomic_read(&lower_dentry->d_count));
- 	ecryptfs_set_dentry_private(ecryptfs_dentry,
- 				    kmem_cache_alloc(ecryptfs_dentry_info_cache,
- 						     GFP_KERNEL));
---8323328-1968843256-1272401447=:2951--
+> I see this warning during system boot and it hangs while loading X and even
+> though I can change from one VT to another (ctrl+alt+F<num>) no keys
+> pressed seem to have any effect.
+> 
+> ------------[ cut here ]------------
+> WARNING: at fs/namespace.c:1197 umount_tree+0x127/0x175()
+> Hardware name: KQ260AA-AC4 a6540br
+> Modules linked in: i915 drm_kms_helper drm video output ipt_MASQUERADE iptable_nat nf_nat bridge stp llc vfat fat sunrpc ipv6 xt_physdev ipt_REJECT xt_tcpudp nf_conntrack_ipv4 nf_defrag_ipv4 xt_state iptable_filter ip_tables x_tables dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod kvm_intel kvm uinput tuner_simple tuner_types wm8775 tda9887 tda8290 tuner snd_hda_codec_realtek cx25840 snd_hda_intel snd_hda_codec snd_hwdep snd_seq usb_storage snd_seq_device ivtv snd_pcm i2c_algo_bit cx2341x v4l2_common videodev snd_timer firewire_ohci snd firewire_core v4l1_compat v4l2_compat_ioctl32 ir_common ir_core i2c_i801 soundcore crc_itu_t tveeprom i2c_core iTCO_wdt snd_page_alloc sr_mod intel_agp iTCO_vendor_support serio_raw pcspkr sg button r8169 mii cdrom ahci libata sd_mod scsi_mod crc_t10dif ext3 jbd mbcache uhci_hcd ohci_hcd ehci_hcd [last unloaded: microcode]
+> Pid: 2267, comm: libvirtd Not tainted 2.6.33.3-rt16 #28
+> Call Trace:
+> [<ffffffff81040e3b>] warn_slowpath_common+0x7c/0x94
+> [<ffffffff81040e67>] warn_slowpath_null+0x14/0x16
+> [<ffffffff81115a7f>] umount_tree+0x127/0x175
+> [<ffffffff81116d1d>] put_mnt_ns+0xc2/0xf0
+> [<ffffffff81061a1d>] free_nsproxy+0x1f/0x86
+> [<ffffffff81061abc>] switch_task_namespaces+0x38/0x3c
+> [<ffffffff81061ad0>] exit_task_namespaces+0x10/0x12
+> [<ffffffff81044ae3>] do_exit+0x595/0x738
+> [<ffffffff81360626>] ? rt_mutex_unlock+0xe/0x10
+> [<ffffffff81360db8>] ? lockdep_sys_exit_thunk+0x35/0x67
+> [<ffffffff81044d10>] do_group_exit+0x8a/0xb9
+> [<ffffffff81044d56>] sys_exit_group+0x17/0x1b
+> [<ffffffff81002d32>] system_call_fastpath+0x16/0x1b
+> ---[ end trace 348d259112b3e793 ]---
+> 
+> 
+> The warning comes from:
+> 
+> 	WARN_ON(!(p->mnt_flags & MNT_MOUNTED));
+> 
+> Regards,
+> Luis
+> -- 
+> [ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
+> [ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
