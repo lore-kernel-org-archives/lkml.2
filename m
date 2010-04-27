@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab0D0W4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 18:56:06 -0400
-Received: from tauceti.net ([62.245.250.166]:60646 "EHLO www.tauceti.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755088Ab0D0W4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 18:56:04 -0400
-Message-ID: <4BD76B81.2070606@tauceti.net>
-Date: Wed, 28 Apr 2010 00:56:01 +0200
-From: Robert Wimmer <kernel@tauceti.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100427 Thunderbird/3.0.4 ThunderBrowse/3.2.8.1
+	id S932101Ab0D0W5M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 18:57:12 -0400
+Received: from forward8.mail.yandex.net ([77.88.61.38]:40149 "EHLO
+	forward8.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147Ab0D0W5L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 18:57:11 -0400
+X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Apr 2010 18:57:11 EDT
+From: Sergey Temerkhanov <temerkhanov@yandex.ru>
+To: "linux-aio" <linux-aio@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH][RFC] AIO: always reinitialize iocb->ki_run_list at the end of aio_run_iocb()
+Date: Wed, 28 Apr 2010 02:51:43 +0400
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-desktop; KDE/4.3.5; x86_64; ; )
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       bugzilla-daemon@bugzilla.kernel.org,
-       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
-References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain> <4BD5F6C5.8080605@tauceti.net> <1272315854.8984.125.camel@localhost.localdomain> <4BD61147.40709@tauceti.net> <1272324536.16814.45.camel@localhost.localdomain>
-In-Reply-To: <1272324536.16814.45.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_/p21LWMN5hJm4wa"
+Message-Id: <201004280251.43430.temerkhanov@yandex.ru>
+X-Yandex-TimeMark: 1272408722
+X-Yandex-Spam: 1
+X-Yandex-Front: smtp7.mail.yandex.net
+X-Yandex-Suid-Status: 1 0,1 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've applied the patch against the kernel which I got
-from "git clone ...." resulted in a kernel 2.6.34-rc5.
+--Boundary-00=_/p21LWMN5hJm4wa
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 
-The stack trace after mounting NFS is here:
-https://bugzilla.kernel.org/attachment.cgi?id=26166
-/var/log/messages after soft lockup:
-https://bugzilla.kernel.org/attachment.cgi?id=26167
+This patch makes aio_run_iocb() to always reinitialize iocb->ki_run_list (not 
+only when iocb->ki_retry() function returns -EIOCBRETRY) so that subsequent 
+call of kick_iocb() will succeed.
 
-I hope that there is any usefull information in there.
+Regards, Sergey Temerkhanov,
+Cifronic ZAO.
 
-Thanks!
-Robert
+--Boundary-00=_/p21LWMN5hJm4wa
+Content-Type: text/x-patch;
+  charset="us-ascii";
+  name="reinit-ki_run_list.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="reinit-ki_run_list.patch"
 
-On 04/27/10 01:28, Trond Myklebust wrote:
-> On Tue, 2010-04-27 at 00:18 +0200, Robert Wimmer wrote: 
->   
->>> Sure. In addition to what you did above, please do
->>>
->>> mount -t debugfs none /sys/kernel/debug
->>>
->>> and then cat the contents of the pseudofile at
->>>
->>> /sys/kernel/debug/tracing/stack_trace
->>>
->>> Please do this more or less immediately after you've finished mounting
->>> the NFSv4 client.
->>>   
->>>       
->> I've uploaded the stack trace. It was generated
->> directly after mounting. Here are the stacks:
->>
->> After mounting:
->> https://bugzilla.kernel.org/attachment.cgi?id=26153
->> After the soft lockup:
->> https://bugzilla.kernel.org/attachment.cgi?id=26154
->> The dmesg output of the soft lockup:
->> https://bugzilla.kernel.org/attachment.cgi?id=26155
->>
->>     
->>> Does your server have the 'crossmnt' or 'nohide' flags set, or does it
->>> use the 'refer' export option anywhere? If so, then we might have to
->>> test further, since those may trigger the NFSv4 submount feature.
->>>   
->>>       
->> The server has the following settings:
->> rw,nohide,insecure,async,no_subtree_check,no_root_squash
->>
->> Thanks!
->> Robert
->>
->>
->>     
-> That second trace is more than 5.5K deep, more than half of which is
-> socket overhead :-(((.
->
-> The process stack does not appear to have overflowed, however that trace
-> doesn't include any IRQ stack overhead.
->
-> OK... So what happens if we get rid of half of that trace by forcing
-> asynchronous tasks such as this to run entirely in rpciod instead of
-> first trying to run in the process context?
->
-> See the attachment...
->   
+diff -r 97344a0f62c9 fs/aio.c
+--- a/fs/aio.c	Tue Apr 27 21:18:14 2010 +0400
++++ b/fs/aio.c	Tue Apr 27 21:30:23 2010 +0400
+@@ -748,6 +748,9 @@
+ out:
+ 	spin_lock_irq(&ctx->ctx_lock);
+ 
++	/* will make __queue_kicked_iocb succeed from here on */
++	INIT_LIST_HEAD(&iocb->ki_run_list);
++
+ 	if (-EIOCBRETRY == ret) {
+ 		/*
+ 		 * OK, now that we are done with this iteration
+@@ -756,8 +759,6 @@
+ 		 * "kick" can start the next iteration
+ 		 */
+ 
+-		/* will make __queue_kicked_iocb succeed from here on */
+-		INIT_LIST_HEAD(&iocb->ki_run_list);
+ 		/* we must queue the next iteration ourselves, if it
+ 		 * has already been kicked */
+ 		if (kiocbIsKicked(iocb)) {
 
+--Boundary-00=_/p21LWMN5hJm4wa--
