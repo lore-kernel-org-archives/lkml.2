@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab0D0Gnf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 02:43:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2551 "EHLO mga09.intel.com"
+	id S1752746Ab0D0GnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 02:43:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61927 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903Ab0D0GnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 02:43:19 -0400
+	id S1751451Ab0D0GnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 02:43:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,278,1270450800"; 
-   d="scan'208";a="616765514"
+   d="scan'208";a="616765460"
 From: Huang Ying <ying.huang@intel.com>
 To: lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 10/12] ACPI, APEI, Generic Hardware Error Source memory error support
-Date: Tue, 27 Apr 2010 14:41:19 +0800
-Message-Id: <1272350481-27951-11-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 02/12] ACPI, APEI, APEI supporting infrastructure
+Date: Tue, 27 Apr 2010 14:41:11 +0800
+Message-Id: <1272350481-27951-3-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
 References: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
@@ -23,77 +23,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generic Hardware Error Source provides a way to report platform
-hardware errors (such as that from chipset). It works in so called
-"Firmware First" mode, that is, hardware errors are reported to
-firmware firstly, then reported to Linux by firmware. This way, some
-non-standard hardware error registers or non-standard hardware link
-can be checked by firmware to produce more valuable hardware error
-information for Linux.
+APEI stands for ACPI Platform Error Interface, which allows to report
+errors (for example from the chipset) to the operating system. This
+improves NMI handling especially. In addition it supports error
+serialization and error injection.
 
-Now, only SCI notification type and memory errors are supported. More
-notification type and hardware error type will be added later. These
-memory errors are reported to user space through /dev/mcelog via
-faking a corrected Machine Check, so that the error memory page can be
-offlined by /sbin/mcelog if the error count for one page is beyond the
-threshold.
+For more information about APEI, please refer to ACPI Specification
+version 4.0, chapter 17.
 
-On some machines, Machine Check can not report physical address for
-some corrected memory errors, but GHES can do that. So this simplified
-GHES is implemented firstly.
+This patch provides some common functions used by more than one APEI
+tables, mainly framework of interpreter for EINJ and ERST.
+
+A machine readable language is defined for EINJ and ERST for OS to
+execute, and so to drive the firmware to fulfill the corresponding
+functions. The machine language for EINJ and ERST is compatible, so a
+common framework is defined for them.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/mce.h            |    8 
- arch/x86/kernel/cpu/mcheck/Makefile   |    2 
- arch/x86/kernel/cpu/mcheck/mce-apei.c |   52 ++++
- drivers/acpi/apei/Kconfig             |   14 +
- drivers/acpi/apei/Makefile            |    1 
- drivers/acpi/apei/ghes.c              |  425 ++++++++++++++++++++++++++++++++++
- 6 files changed, 502 insertions(+)
- create mode 100644 arch/x86/kernel/cpu/mcheck/mce-apei.c
- create mode 100644 drivers/acpi/apei/ghes.c
+ drivers/acpi/Kconfig              |    2 
+ drivers/acpi/Makefile             |    2 
+ drivers/acpi/apei/Kconfig         |    9 
+ drivers/acpi/apei/Makefile        |    3 
+ drivers/acpi/apei/apei-base.c     |  593 ++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/apei/apei-internal.h |   95 ++++++
+ 6 files changed, 704 insertions(+)
+ create mode 100644 drivers/acpi/apei/Kconfig
+ create mode 100644 drivers/acpi/apei/Makefile
+ create mode 100644 drivers/acpi/apei/apei-base.c
+ create mode 100644 drivers/acpi/apei/apei-internal.h
 
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -225,5 +225,13 @@ extern void mcheck_intel_therm_init(void
- static inline void mcheck_intel_therm_init(void) { }
- #endif
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -360,4 +360,6 @@ config ACPI_SBS
+ 	  To compile this driver as a module, choose M here:
+ 	  the modules will be called sbs and sbshc.
  
-+/*
-+ * Used by APEI to report memory error via /dev/mcelog
-+ */
++source "drivers/acpi/apei/Kconfig"
 +
-+struct cper_sec_mem_err;
-+extern void apei_mce_report_mem_error(int corrected,
-+				      struct cper_sec_mem_err *mem_err);
-+
- #endif /* __KERNEL__ */
- #endif /* _ASM_X86_MCE_H */
---- a/arch/x86/kernel/cpu/mcheck/Makefile
-+++ b/arch/x86/kernel/cpu/mcheck/Makefile
-@@ -7,3 +7,5 @@ obj-$(CONFIG_X86_MCE_THRESHOLD) += thres
- obj-$(CONFIG_X86_MCE_INJECT)	+= mce-inject.o
+ endif	# ACPI
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -67,3 +67,5 @@ processor-y			+= processor_idle.o proces
+ processor-$(CONFIG_CPU_FREQ)	+= processor_perflib.o
  
- obj-$(CONFIG_X86_THERMAL_VECTOR) += therm_throt.o
+ obj-$(CONFIG_ACPI_PROCESSOR_AGGREGATOR) += acpi_pad.o
 +
-+obj-$(CONFIG_ACPI_APEI)		+= mce-apei.o
++obj-$(CONFIG_ACPI_APEI)		+= apei/
 --- /dev/null
-+++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
-@@ -0,0 +1,52 @@
++++ b/drivers/acpi/apei/Kconfig
+@@ -0,0 +1,9 @@
++config ACPI_APEI
++	bool "ACPI Platform Error Interface (APEI)"
++	depends on X86
++	help
++	  APEI allows to report errors (for example from the chipset)
++	  to the operating system. This improves NMI handling
++	  especially. In addition it supports error serialization and
++	  error injection.
++
+--- /dev/null
++++ b/drivers/acpi/apei/Makefile
+@@ -0,0 +1,3 @@
++obj-$(CONFIG_ACPI_APEI)		+= apei.o
++
++apei-y := apei-base.o
+--- /dev/null
++++ b/drivers/acpi/apei/apei-base.c
+@@ -0,0 +1,593 @@
 +/*
-+ * Bridge between MCE and APEI
++ * apei-base.c - ACPI Platform Error Interface (APEI) supporting
++ * infrastructure
 + *
-+ * On some machine, corrected memory errors are reported via APEI
-+ * generic hardware error source (GHES) instead of corrected Machine
-+ * Check. These corrected memory errors can be reported to user space
-+ * through /dev/mcelog via faking a corrected Machine Check, so that
-+ * the error memory page can be offlined by /sbin/mcelog if the error
-+ * count for one page is beyond the threshold.
++ * APEI allows to report errors (for example from the chipset) to the
++ * the operating system. This improves NMI handling especially. In
++ * addition it supports error serialization and error injection.
 + *
-+ * Copyright 2010 Intel Corp.
-+ *   Author: Huang Ying <ying.huang@intel.com>
++ * For more information about APEI, please refer to ACPI Specification
++ * version 4.0, chapter 17.
++ *
++ * This file has Common functions used by more than one APEI table,
++ * including framework of interpreter for ERST and EINJ; resource
++ * management for APEI registers.
++ *
++ * Copyright (C) 2009, Intel Corp.
++ *	Author: Huang Ying <ying.huang@intel.com>
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License version
@@ -110,486 +125,661 @@ Signed-off-by: Andi Kleen <ak@linux.intel.com>
 + */
 +
 +#include <linux/kernel.h>
-+#include <linux/acpi.h>
-+#include <linux/cper.h>
-+#include <acpi/apei.h>
-+#include <asm/mce.h>
-+
-+#include "mce-internal.h"
-+
-+void apei_mce_report_mem_error(int corrected, struct cper_sec_mem_err *mem_err)
-+{
-+	struct mce m;
-+
-+	/* Only corrected MC is reported */
-+	if (!corrected)
-+		return;
-+
-+	mce_setup(&m);
-+	m.bank = 1;
-+	/* Fake a memory read corrected error with unknown channel */
-+	m.status = MCI_STATUS_VAL | MCI_STATUS_EN | MCI_STATUS_ADDRV | 0x9f;
-+	m.addr = mem_err->physical_addr;
-+	mce_log(&m);
-+	mce_notify_irq();
-+}
-+EXPORT_SYMBOL_GPL(apei_mce_report_mem_error);
---- a/drivers/acpi/apei/Kconfig
-+++ b/drivers/acpi/apei/Kconfig
-@@ -7,6 +7,20 @@ config ACPI_APEI
- 	  especially. In addition it supports error serialization and
- 	  error injection.
- 
-+config ACPI_APEI_GHES
-+	tristate "APEI Generic Hardware Error Source"
-+	depends on ACPI_APEI && X86
-+	select ACPI_HED
-+	help
-+	  Generic Hardware Error Source provides a way to report
-+	  platform hardware errors (such as that from chipset). It
-+	  works in so called "Firmware First" mode, that is, hardware
-+	  errors are reported to firmware firstly, then reported to
-+	  Linux by firmware. This way, some non-standard hardware
-+	  error registers or non-standard hardware link can be checked
-+	  by firmware to produce more valuable hardware error
-+	  information for Linux.
-+
- config ACPI_APEI_EINJ
- 	tristate "APEI Error INJection (EINJ)"
- 	depends on ACPI_APEI && DEBUG_FS
---- a/drivers/acpi/apei/Makefile
-+++ b/drivers/acpi/apei/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_ACPI_APEI)		+= apei.o
-+obj-$(CONFIG_ACPI_APEI_GHES)	+= ghes.o
- obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
- 
- apei-y := apei-base.o hest.o cper.o
---- /dev/null
-+++ b/drivers/acpi/apei/ghes.c
-@@ -0,0 +1,425 @@
-+/*
-+ * APEI Generic Hardware Error Source support
-+ *
-+ * Generic Hardware Error Source provides a way to report platform
-+ * hardware errors (such as that from chipset). It works in so called
-+ * "Firmware First" mode, that is, hardware errors are reported to
-+ * firmware firstly, then reported to Linux by firmware. This way,
-+ * some non-standard hardware error registers or non-standard hardware
-+ * link can be checked by firmware to produce more hardware error
-+ * information for Linux.
-+ *
-+ * For more information about Generic Hardware Error Source, please
-+ * refer to ACPI Specification version 4.0, section 17.3.2.6
-+ *
-+ * Now, only SCI notification type and memory errors are
-+ * supported. More notification type and hardware error type will be
-+ * added later.
-+ *
-+ * Copyright 2010 Intel Corp.
-+ *   Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation;
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/init.h>
 +#include <linux/acpi.h>
 +#include <linux/io.h>
++#include <linux/kref.h>
++#include <linux/rculist.h>
 +#include <linux/interrupt.h>
-+#include <linux/cper.h>
-+#include <linux/kdebug.h>
-+#include <acpi/apei.h>
++#include <linux/debugfs.h>
 +#include <acpi/atomicio.h>
-+#include <acpi/hed.h>
-+#include <asm/mce.h>
 +
 +#include "apei-internal.h"
 +
-+#define GHES_PFX	"GHES: "
-+
-+#define GHES_ESTATUS_MAX_SIZE		65536
++#define APEI_PFX "APEI: "
 +
 +/*
-+ * One struct ghes is created for each generic hardware error
-+ * source.
-+ *
-+ * It provides the context for APEI hardware error timer/IRQ/SCI/NMI
-+ * handler. Handler for one generic hardware error source is only
-+ * triggered after the previous one is done. So handler can uses
-+ * struct ghes without locking.
-+ *
-+ * estatus: memory buffer for error status block, allocated during
-+ * HEST parsing.
++ * APEI ERST (Error Record Serialization Table) and EINJ (Error
++ * INJection) interpreter framework.
 + */
-+#define GHES_TO_CLEAR		0x0001
 +
-+struct ghes {
-+	struct acpi_hest_generic *generic;
-+	struct acpi_hest_generic_status *estatus;
-+	struct list_head list;
-+	u64 buffer_paddr;
-+	unsigned long flags;
-+};
++#define APEI_EXEC_PRESERVE_REGISTER	0x1
 +
-+/*
-+ * Error source lists, one list for each notification method. The
-+ * members in lists are struct ghes.
-+ *
-+ * The list members are only added in HEST parsing and deleted during
-+ * module_exit, that is, single-threaded. So no lock is needed for
-+ * that.
-+ *
-+ * But the mutual exclusion is needed between members adding/deleting
-+ * and timer/IRQ/SCI/NMI handler, which may traverse the list. RCU is
-+ * used for that.
-+ */
-+static LIST_HEAD(ghes_sci);
-+
-+static struct ghes *ghes_new(struct acpi_hest_generic *generic)
++void apei_exec_ctx_init(struct apei_exec_context *ctx,
++			struct apei_exec_ins_type *ins_table,
++			u32 instructions,
++			struct acpi_whea_header *action_table,
++			u32 entries)
 +{
-+	struct ghes *ghes;
-+	unsigned int error_block_length;
++	ctx->ins_table = ins_table;
++	ctx->instructions = instructions;
++	ctx->action_table = action_table;
++	ctx->entries = entries;
++}
++EXPORT_SYMBOL_GPL(apei_exec_ctx_init);
++
++int __apei_exec_read_register(struct acpi_whea_header *entry, u64 *val)
++{
 +	int rc;
 +
-+	ghes = kzalloc(sizeof(*ghes), GFP_KERNEL);
-+	if (!ghes)
-+		return ERR_PTR(-ENOMEM);
-+	ghes->generic = generic;
-+	INIT_LIST_HEAD(&ghes->list);
-+	rc = acpi_pre_map_gar(&generic->error_status_address);
++	rc = acpi_atomic_read(val, &entry->register_region);
 +	if (rc)
-+		goto err_free;
-+	error_block_length = generic->error_block_length;
-+	if (error_block_length > GHES_ESTATUS_MAX_SIZE) {
-+		pr_warning(FW_WARN GHES_PFX
-+			   "Error status block length is too long: %u for "
-+			   "generic hardware error source: %d.\n",
-+			   error_block_length, generic->header.source_id);
-+		error_block_length = GHES_ESTATUS_MAX_SIZE;
-+	}
-+	ghes->estatus = kmalloc(error_block_length, GFP_KERNEL);
-+	if (!ghes->estatus) {
-+		rc = -ENOMEM;
-+		goto err_unmap;
-+	}
-+
-+	return ghes;
-+
-+err_unmap:
-+	acpi_post_unmap_gar(&generic->error_status_address);
-+err_free:
-+	kfree(ghes);
-+	return ERR_PTR(rc);
-+}
-+
-+static void ghes_fini(struct ghes *ghes)
-+{
-+	kfree(ghes->estatus);
-+	acpi_post_unmap_gar(&ghes->generic->error_status_address);
-+}
-+
-+enum {
-+	GHES_SER_NO = 0x0,
-+	GHES_SER_CORRECTED = 0x1,
-+	GHES_SER_RECOVERABLE = 0x2,
-+	GHES_SER_PANIC = 0x3,
-+};
-+
-+static inline int ghes_severity(int severity)
-+{
-+	switch (severity) {
-+	case CPER_SER_INFORMATIONAL:
-+		return GHES_SER_NO;
-+	case CPER_SER_CORRECTED:
-+		return GHES_SER_CORRECTED;
-+	case CPER_SER_RECOVERABLE:
-+		return GHES_SER_RECOVERABLE;
-+	case CPER_SER_FATAL:
-+		return GHES_SER_PANIC;
-+	default:
-+		/* Unkown, go panic */
-+		return GHES_SER_PANIC;
-+	}
-+}
-+
-+/* SCI handler run in work queue, so ioremap can be used here */
-+static int ghes_copy_tofrom_phys(void *buffer, u64 paddr, u32 len,
-+				 int from_phys)
-+{
-+	void *vaddr;
-+
-+	vaddr = ioremap_cache(paddr, len);
-+	if (!vaddr)
-+		return -ENOMEM;
-+	if (from_phys)
-+		memcpy(buffer, vaddr, len);
-+	else
-+		memcpy(vaddr, buffer, len);
-+	iounmap(vaddr);
++		return rc;
++	*val >>= entry->register_region.bit_offset;
++	*val &= entry->mask;
 +
 +	return 0;
 +}
 +
-+static int ghes_read_estatus(struct ghes *ghes, int silent)
++int apei_exec_read_register(struct apei_exec_context *ctx,
++			    struct acpi_whea_header *entry)
 +{
-+	struct acpi_hest_generic *g = ghes->generic;
-+	u64 buf_paddr;
-+	u32 len;
++	int rc;
++	u64 val = 0;
++
++	rc = __apei_exec_read_register(entry, &val);
++	if (rc)
++		return rc;
++	ctx->value = val;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(apei_exec_read_register);
++
++int apei_exec_read_register_value(struct apei_exec_context *ctx,
++				  struct acpi_whea_header *entry)
++{
 +	int rc;
 +
-+	rc = acpi_atomic_read(&buf_paddr, &g->error_status_address);
-+	if (rc) {
-+		if (!silent && printk_ratelimit())
-+			pr_warning(FW_WARN GHES_PFX
-+"Failed to read error status block address for hardware error source: %d.\n",
-+				   g->header.source_id);
-+		return -EIO;
++	rc = apei_exec_read_register(ctx, entry);
++	if (rc)
++		return rc;
++	ctx->value = (ctx->value == entry->value);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(apei_exec_read_register_value);
++
++int __apei_exec_write_register(struct acpi_whea_header *entry, u64 val)
++{
++	int rc;
++
++	val &= entry->mask;
++	val <<= entry->register_region.bit_offset;
++	if (entry->flags & APEI_EXEC_PRESERVE_REGISTER) {
++		u64 valr = 0;
++		rc = acpi_atomic_read(&valr, &entry->register_region);
++		if (rc)
++			return rc;
++		valr &= ~(entry->mask << entry->register_region.bit_offset);
++		val |= valr;
 +	}
-+	if (!buf_paddr)
-+		return -ENOENT;
++	rc = acpi_atomic_write(val, &entry->register_region);
 +
-+	rc = ghes_copy_tofrom_phys(ghes->estatus, buf_paddr,
-+				   sizeof(*ghes->estatus), 1);
-+	if (rc)
-+		return rc;
-+	if (!ghes->estatus->block_status)
-+		return -ENOENT;
-+
-+	ghes->buffer_paddr = buf_paddr;
-+	ghes->flags |= GHES_TO_CLEAR;
-+
-+	rc = -EIO;
-+	len = apei_estatus_len(ghes->estatus);
-+	if (len < sizeof(*ghes->estatus))
-+		goto err_read_block;
-+	if (len > ghes->generic->error_block_length)
-+		goto err_read_block;
-+	if (apei_estatus_check_header(ghes->estatus))
-+		goto err_read_block;
-+	rc = ghes_copy_tofrom_phys(ghes->estatus + 1,
-+				   buf_paddr + sizeof(*ghes->estatus),
-+				   len - sizeof(*ghes->estatus), 1);
-+	if (rc)
-+		return rc;
-+	if (apei_estatus_check(ghes->estatus))
-+		goto err_read_block;
-+	rc = 0;
-+
-+err_read_block:
-+	if (rc && !silent)
-+		pr_warning(FW_WARN GHES_PFX
-+			   "Failed to read error status block!\n");
 +	return rc;
 +}
 +
-+static void ghes_clear_estatus(struct ghes *ghes)
++int apei_exec_write_register(struct apei_exec_context *ctx,
++			     struct acpi_whea_header *entry)
 +{
-+	ghes->estatus->block_status = 0;
-+	if (!(ghes->flags & GHES_TO_CLEAR))
-+		return;
-+	ghes_copy_tofrom_phys(ghes->estatus, ghes->buffer_paddr,
-+			      sizeof(ghes->estatus->block_status), 0);
-+	ghes->flags &= ~GHES_TO_CLEAR;
++	return __apei_exec_write_register(entry, ctx->value);
++}
++EXPORT_SYMBOL_GPL(apei_exec_write_register);
++
++int apei_exec_write_register_value(struct apei_exec_context *ctx,
++				   struct acpi_whea_header *entry)
++{
++	int rc;
++
++	ctx->value = entry->value;
++	rc = apei_exec_write_register(ctx, entry);
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(apei_exec_write_register_value);
++
++int apei_exec_noop(struct apei_exec_context *ctx,
++		   struct acpi_whea_header *entry)
++{
++	return 0;
++}
++EXPORT_SYMBOL_GPL(apei_exec_noop);
++
++/*
++ * Interpret the specified action. Go through whole action table,
++ * execute all instructions belong to the action.
++ */
++int apei_exec_run(struct apei_exec_context *ctx, u8 action)
++{
++	int rc;
++	u32 i, ip;
++	struct acpi_whea_header *entry;
++	apei_exec_ins_func_t run;
++
++	ctx->ip = 0;
++
++	/*
++	 * "ip" is the instruction pointer of current instruction,
++	 * "ctx->ip" specifies the next instruction to executed,
++	 * instruction "run" function may change the "ctx->ip" to
++	 * implement "goto" semantics.
++	 */
++rewind:
++	ip = 0;
++	for (i = 0; i < ctx->entries; i++) {
++		entry = &ctx->action_table[i];
++		if (entry->action != action)
++			continue;
++		if (ip == ctx->ip) {
++			if (entry->instruction >= ctx->instructions ||
++			    !ctx->ins_table[entry->instruction].run) {
++				pr_warning(FW_WARN APEI_PFX
++			"Invalid action table, unknown instruction type: %d\n",
++					   entry->instruction);
++				return -EINVAL;
++			}
++			run = ctx->ins_table[entry->instruction].run;
++			rc = run(ctx, entry);
++			if (rc < 0)
++				return rc;
++			else if (rc != APEI_EXEC_SET_IP)
++				ctx->ip++;
++		}
++		ip++;
++		if (ctx->ip < ip)
++			goto rewind;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(apei_exec_run);
++
++typedef int (*apei_exec_entry_func_t)(struct apei_exec_context *ctx,
++				      struct acpi_whea_header *entry,
++				      void *data);
++
++static int apei_exec_for_each_entry(struct apei_exec_context *ctx,
++				    apei_exec_entry_func_t func,
++				    void *data,
++				    int *end)
++{
++	u8 ins;
++	int i, rc;
++	struct acpi_whea_header *entry;
++	struct apei_exec_ins_type *ins_table = ctx->ins_table;
++
++	for (i = 0; i < ctx->entries; i++) {
++		entry = ctx->action_table + i;
++		ins = entry->instruction;
++		if (end)
++			*end = i;
++		if (ins >= ctx->instructions || !ins_table[ins].run) {
++			pr_warning(FW_WARN APEI_PFX
++			"Invalid action table, unknown instruction type: %d\n",
++				   ins);
++			return -EINVAL;
++		}
++		rc = func(ctx, entry, data);
++		if (rc)
++			return rc;
++	}
++
++	return 0;
 +}
 +
-+static void ghes_do_proc(struct ghes *ghes)
++static int pre_map_gar_callback(struct apei_exec_context *ctx,
++				struct acpi_whea_header *entry,
++				void *data)
 +{
-+	int ser, processed = 0;
-+	struct acpi_hest_generic_data *gdata;
++	u8 ins = entry->instruction;
 +
-+	ser = ghes_severity(ghes->estatus->error_severity);
-+	apei_estatus_for_each_section(ghes->estatus, gdata) {
-+		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
-+				 CPER_SEC_PLATFORM_MEM)) {
-+			apei_mce_report_mem_error(
-+				ser == GHES_SER_CORRECTED,
-+				(struct cper_sec_mem_err *)(gdata+1));
-+			processed = 1;
++	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
++		return acpi_pre_map_gar(&entry->register_region);
++
++	return 0;
++}
++
++/*
++ * Pre-map all GARs in action table to make it possible to access them
++ * in NMI handler.
++ */
++int apei_exec_pre_map_gars(struct apei_exec_context *ctx)
++{
++	int rc, end;
++
++	rc = apei_exec_for_each_entry(ctx, pre_map_gar_callback,
++				      NULL, &end);
++	if (rc) {
++		struct apei_exec_context ctx_unmap;
++		memcpy(&ctx_unmap, ctx, sizeof(*ctx));
++		ctx_unmap.entries = end;
++		apei_exec_post_unmap_gars(&ctx_unmap);
++	}
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(apei_exec_pre_map_gars);
++
++static int post_unmap_gar_callback(struct apei_exec_context *ctx,
++				   struct acpi_whea_header *entry,
++				   void *data)
++{
++	u8 ins = entry->instruction;
++
++	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
++		acpi_post_unmap_gar(&entry->register_region);
++
++	return 0;
++}
++
++/* Post-unmap all GAR in action table. */
++int apei_exec_post_unmap_gars(struct apei_exec_context *ctx)
++{
++	return apei_exec_for_each_entry(ctx, post_unmap_gar_callback,
++					NULL, NULL);
++}
++EXPORT_SYMBOL_GPL(apei_exec_post_unmap_gars);
++
++/*
++ * Resource management for GARs in APEI
++ */
++struct apei_res {
++	struct list_head list;
++	unsigned long start;
++	unsigned long end;
++};
++
++/* Collect all resources requested, to avoid conflict */
++struct apei_resources apei_resources_all = {
++	.iomem = LIST_HEAD_INIT(apei_resources_all.iomem),
++	.ioport = LIST_HEAD_INIT(apei_resources_all.ioport),
++};
++
++static int apei_res_add(struct list_head *res_list,
++			unsigned long start, unsigned long size)
++{
++	struct apei_res *res, *resn, *res_ins = NULL;
++	unsigned long end = start + size;
++
++	if (end <= start)
++		return 0;
++repeat:
++	list_for_each_entry_safe(res, resn, res_list, list) {
++		if (res->start > end || res->end < start)
++			continue;
++		else if (end <= res->end && start >= res->start) {
++			kfree(res_ins);
++			return 0;
++		}
++		list_del(&res->list);
++		res->start = start = min(res->start, start);
++		res->end = end = max(res->end, end);
++		kfree(res_ins);
++		res_ins = res;
++		goto repeat;
++	}
++
++	if (res_ins)
++		list_add(&res_ins->list, res_list);
++	else {
++		res_ins = kmalloc(sizeof(*res), GFP_KERNEL);
++		if (!res_ins)
++			return -ENOMEM;
++		res_ins->start = start;
++		res_ins->end = end;
++		list_add(&res_ins->list, res_list);
++	}
++
++	return 0;
++}
++
++static int apei_res_sub(struct list_head *res_list1,
++			struct list_head *res_list2)
++{
++	struct apei_res *res1, *resn1, *res2, *res;
++	res1 = list_entry(res_list1->next, struct apei_res, list);
++	resn1 = list_entry(res1->list.next, struct apei_res, list);
++	while (&res1->list != res_list1) {
++		list_for_each_entry(res2, res_list2, list) {
++			if (res1->start >= res2->end ||
++			    res1->end <= res2->start)
++				continue;
++			else if (res1->end <= res2->end &&
++				 res1->start >= res2->start) {
++				list_del(&res1->list);
++				kfree(res1);
++				break;
++			} else if (res1->end > res2->end &&
++				   res1->start < res2->start) {
++				res = kmalloc(sizeof(*res), GFP_KERNEL);
++				if (!res)
++					return -ENOMEM;
++				res->start = res2->end;
++				res->end = res1->end;
++				res1->end = res2->start;
++				list_add(&res->list, &res1->list);
++				resn1 = res;
++			} else {
++				if (res1->start < res2->start)
++					res1->end = res2->start;
++				else
++					res1->start = res2->end;
++			}
++		}
++		res1 = resn1;
++		resn1 = list_entry(resn1->list.next, struct apei_res, list);
++	}
++
++	return 0;
++}
++
++static void apei_res_clean(struct list_head *res_list)
++{
++	struct apei_res *res, *resn;
++
++	list_for_each_entry_safe(res, resn, res_list, list) {
++		list_del(&res->list);
++		kfree(res);
++	}
++}
++
++void apei_resources_fini(struct apei_resources *resources)
++{
++	apei_res_clean(&resources->iomem);
++	apei_res_clean(&resources->ioport);
++}
++EXPORT_SYMBOL_GPL(apei_resources_fini);
++
++static int apei_resources_merge(struct apei_resources *resources1,
++				struct apei_resources *resources2)
++{
++	int rc;
++	struct apei_res *res;
++
++	list_for_each_entry(res, &resources2->iomem, list) {
++		rc = apei_res_add(&resources1->iomem, res->start,
++				  res->end - res->start);
++		if (rc)
++			return rc;
++	}
++	list_for_each_entry(res, &resources2->ioport, list) {
++		rc = apei_res_add(&resources1->ioport, res->start,
++				  res->end - res->start);
++		if (rc)
++			return rc;
++	}
++
++	return 0;
++}
++
++/*
++ * EINJ has two groups of GARs (EINJ table entry and trigger table
++ * entry), so common resources are subtracted from the trigger table
++ * resources before the second requesting.
++ */
++int apei_resources_sub(struct apei_resources *resources1,
++		       struct apei_resources *resources2)
++{
++	int rc;
++
++	rc = apei_res_sub(&resources1->iomem, &resources2->iomem);
++	if (rc)
++		return rc;
++	return apei_res_sub(&resources1->ioport, &resources2->ioport);
++}
++EXPORT_SYMBOL_GPL(apei_resources_sub);
++
++/*
++ * IO memory/port rersource management mechanism is used to check
++ * whether memory/port area used by GARs conflicts with normal memory
++ * or IO memory/port of devices.
++ */
++int apei_resources_request(struct apei_resources *resources,
++			   const char *desc)
++{
++	struct apei_res *res, *res_bak;
++	struct resource *r;
++
++	apei_resources_sub(resources, &apei_resources_all);
++
++	list_for_each_entry(res, &resources->iomem, list) {
++		r = request_mem_region(res->start, res->end - res->start,
++				       desc);
++		if (!r) {
++			pr_err(APEI_PFX
++		"Can not request iomem region <%016llx-%016llx> for GARs.\n",
++			       (unsigned long long)res->start,
++			       (unsigned long long)res->end);
++			res_bak = res;
++			goto err_unmap_iomem;
 +		}
 +	}
 +
-+	if (!processed && printk_ratelimit())
-+		pr_warning(GHES_PFX
-+		"Unknown error record from generic hardware error source: %d\n",
-+			   ghes->generic->header.source_id);
-+}
-+
-+static int ghes_proc(struct ghes *ghes)
-+{
-+	int rc;
-+
-+	rc = ghes_read_estatus(ghes, 0);
-+	if (rc)
-+		goto out;
-+	ghes_do_proc(ghes);
-+
-+out:
-+	ghes_clear_estatus(ghes);
-+	return 0;
-+}
-+
-+static int ghes_notify_sci(struct notifier_block *this,
-+				  unsigned long event, void *data)
-+{
-+	struct ghes *ghes;
-+	int ret = NOTIFY_DONE;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(ghes, &ghes_sci, list) {
-+		if (!ghes_proc(ghes))
-+			ret = NOTIFY_OK;
++	list_for_each_entry(res, &resources->ioport, list) {
++		r = request_region(res->start, res->end - res->start, desc);
++		if (!r) {
++			pr_err(APEI_PFX
++		"Can not request ioport region <%016llx-%016llx> for GARs.\n",
++			       (unsigned long long)res->start,
++			       (unsigned long long)res->end);
++			res_bak = res;
++			goto err_unmap_ioport;
++		}
 +	}
-+	rcu_read_unlock();
 +
-+	return ret;
-+}
-+
-+static struct notifier_block ghes_notifier_sci = {
-+	.notifier_call = ghes_notify_sci,
-+};
-+
-+static int hest_ghes_parse(struct acpi_hest_header *hest_hdr, void *data)
-+{
-+	struct acpi_hest_generic *generic;
-+	struct ghes *ghes = NULL;
-+	int rc = 0;
-+
-+	if (hest_hdr->type != ACPI_HEST_TYPE_GENERIC_ERROR)
-+		return 0;
-+
-+	generic = (struct acpi_hest_generic *)hest_hdr;
-+	if (!generic->enabled)
-+		return 0;
-+
-+	if (generic->error_block_length <
-+	    sizeof(struct acpi_hest_generic_status)) {
-+		pr_warning(FW_BUG GHES_PFX
-+"Invalid error block length: %u for generic hardware error source: %d\n",
-+			   generic->error_block_length,
-+			   generic->header.source_id);
-+		goto err;
-+	}
-+	if (generic->records_to_preallocate == 0) {
-+		pr_warning(FW_BUG GHES_PFX
-+"Invalid records to preallocate: %u for generic hardware error source: %d\n",
-+			   generic->records_to_preallocate,
-+			   generic->header.source_id);
-+		goto err;
-+	}
-+	ghes = ghes_new(generic);
-+	if (IS_ERR(ghes)) {
-+		rc = PTR_ERR(ghes);
-+		ghes = NULL;
-+		goto err;
-+	}
-+	switch (generic->notify.type) {
-+	case ACPI_HEST_NOTIFY_POLLED:
-+		pr_warning(GHES_PFX
-+"Generic hardware error source: %d notified via POLL is not supported!\n",
-+			   generic->header.source_id);
-+		break;
-+	case ACPI_HEST_NOTIFY_EXTERNAL:
-+	case ACPI_HEST_NOTIFY_LOCAL:
-+		pr_warning(GHES_PFX
-+"Generic hardware error source: %d notified via IRQ is not supported!\n",
-+			   generic->header.source_id);
-+		break;
-+	case ACPI_HEST_NOTIFY_SCI:
-+		if (list_empty(&ghes_sci))
-+			register_acpi_hed_notifier(&ghes_notifier_sci);
-+		list_add_rcu(&ghes->list, &ghes_sci);
-+		break;
-+	case ACPI_HEST_NOTIFY_NMI:
-+		pr_warning(GHES_PFX
-+"Generic hardware error source: %d notified via NMI is not supported!\n",
-+			   generic->header.source_id);
-+		break;
-+	default:
-+		pr_warning(FW_WARN GHES_PFX
-+	"Unknown notification type: %u for generic hardware error source: %d\n",
-+			   generic->notify.type, generic->header.source_id);
-+		break;
-+	}
++	apei_resources_merge(&apei_resources_all, resources);
 +
 +	return 0;
-+err:
-+	if (ghes)
-+		ghes_fini(ghes);
-+	return rc;
-+}
-+
-+static void ghes_cleanup(void)
-+{
-+	struct ghes *ghes, *nghes;
-+
-+	if (!list_empty(&ghes_sci))
-+		unregister_acpi_hed_notifier(&ghes_notifier_sci);
-+
-+	synchronize_rcu();
-+
-+	list_for_each_entry_safe(ghes, nghes, &ghes_sci, list) {
-+		list_del(&ghes->list);
-+		ghes_fini(ghes);
-+		kfree(ghes);
++err_unmap_ioport:
++	list_for_each_entry(res, &resources->ioport, list) {
++		if (res == res_bak)
++			break;
++		release_mem_region(res->start, res->end - res->start);
 +	}
++	res_bak = NULL;
++err_unmap_iomem:
++	list_for_each_entry(res, &resources->iomem, list) {
++		if (res == res_bak)
++			break;
++		release_region(res->start, res->end - res->start);
++	}
++	return -EINVAL;
 +}
++EXPORT_SYMBOL_GPL(apei_resources_request);
 +
-+static int __init ghes_init(void)
++void apei_resources_release(struct apei_resources *resources)
 +{
-+	int rc;
++	struct apei_res *res;
 +
-+	if (acpi_disabled)
-+		return -ENODEV;
++	list_for_each_entry(res, &resources->iomem, list)
++		release_mem_region(res->start, res->end - res->start);
++	list_for_each_entry(res, &resources->ioport, list)
++		release_region(res->start, res->end - res->start);
 +
-+	if (hest_disable) {
-+		pr_info(GHES_PFX "HEST is not enabled!\n");
++	apei_resources_sub(&apei_resources_all, resources);
++}
++EXPORT_SYMBOL_GPL(apei_resources_release);
++
++static int apei_check_gar(struct acpi_generic_address *reg, u64 *paddr)
++{
++	u32 width, space_id;
++
++	width = reg->bit_width;
++	space_id = reg->space_id;
++	/* Handle possible alignment issues */
++	memcpy(paddr, &reg->address, sizeof(*paddr));
++	if (!*paddr) {
++		pr_warning(FW_BUG APEI_PFX
++			   "Invalid physical address in GAR [0x%llx/%u/%u]\n",
++			   *paddr, width, space_id);
 +		return -EINVAL;
 +	}
 +
-+	rc = apei_hest_parse(hest_ghes_parse, NULL);
-+	if (rc) {
-+		pr_err(GHES_PFX
-+		"Error during parsing HEST generic hardware error sources.\n");
-+		goto err_cleanup;
++	if ((width != 8) && (width != 16) && (width != 32) && (width != 64)) {
++		pr_warning(FW_BUG APEI_PFX
++			   "Invalid bit width in GAR [0x%llx/%u/%u]\n",
++			   *paddr, width, space_id);
++		return -EINVAL;
 +	}
 +
-+	if (list_empty(&ghes_sci)) {
-+		pr_info(GHES_PFX
-+			"No functional generic hardware error sources.\n");
-+		rc = -ENODEV;
-+		goto err_cleanup;
++	if (space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY &&
++	    space_id != ACPI_ADR_SPACE_SYSTEM_IO) {
++		pr_warning(FW_BUG APEI_PFX
++			   "Invalid address space type in GAR [0x%llx/%u/%u]\n",
++			   *paddr, width, space_id);
++		return -EINVAL;
 +	}
-+
-+	pr_info(GHES_PFX
-+		"Generic Hardware Error Source support is initialized.\n");
 +
 +	return 0;
-+err_cleanup:
-+	ghes_cleanup();
-+	return rc;
 +}
 +
-+static void __exit ghes_exit(void)
++static int collect_res_callback(struct apei_exec_context *ctx,
++				struct acpi_whea_header *entry,
++				void *data)
 +{
-+	ghes_cleanup();
++	struct apei_resources *resources = data;
++	struct acpi_generic_address *reg = &entry->register_region;
++	u8 ins = entry->instruction;
++	u64 paddr;
++	int rc;
++
++	if (!(ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER))
++		return 0;
++
++	rc = apei_check_gar(reg, &paddr);
++	if (rc)
++		return rc;
++
++	switch (reg->space_id) {
++	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
++		return apei_res_add(&resources->iomem, paddr,
++				    reg->bit_width / 8);
++	case ACPI_ADR_SPACE_SYSTEM_IO:
++		return apei_res_add(&resources->ioport, paddr,
++				    reg->bit_width / 8);
++	default:
++		return -EINVAL;
++	}
 +}
 +
-+module_init(ghes_init);
-+module_exit(ghes_exit);
++/*
++ * Same register may be used by multiple instructions in GARs, so
++ * resources are collected before requesting.
++ */
++int apei_exec_collect_resources(struct apei_exec_context *ctx,
++				struct apei_resources *resources)
++{
++	return apei_exec_for_each_entry(ctx, collect_res_callback,
++					resources, NULL);
++}
++EXPORT_SYMBOL_GPL(apei_exec_collect_resources);
 +
-+MODULE_AUTHOR("Huang Ying");
-+MODULE_DESCRIPTION("APEI Generic Hardware Error Source support");
-+MODULE_LICENSE("GPL");
++struct dentry *apei_get_debugfs_dir(void)
++{
++	static struct dentry *dapei;
++
++	if (!dapei)
++		dapei = debugfs_create_dir("apei", NULL);
++
++	return dapei;
++}
++EXPORT_SYMBOL_GPL(apei_get_debugfs_dir);
+--- /dev/null
++++ b/drivers/acpi/apei/apei-internal.h
+@@ -0,0 +1,95 @@
++/*
++ * apei-internal.h - ACPI Platform Error Interface internal
++ * definations.
++ */
++
++#ifndef APEI_INTERNAL_H
++#define APEI_INTERNAL_H
++
++struct apei_exec_context;
++
++typedef int (*apei_exec_ins_func_t)(struct apei_exec_context *ctx,
++				    struct acpi_whea_header *entry);
++
++#define APEI_EXEC_INS_ACCESS_REGISTER	0x0001
++
++struct apei_exec_ins_type {
++	u32 flags;
++	apei_exec_ins_func_t run;
++};
++
++struct apei_exec_context {
++	u32 ip;
++	u64 value;
++	u64 var1;
++	u64 var2;
++	u64 src_base;
++	u64 dst_base;
++	struct apei_exec_ins_type *ins_table;
++	u32 instructions;
++	struct acpi_whea_header *action_table;
++	u32 entries;
++};
++
++void apei_exec_ctx_init(struct apei_exec_context *ctx,
++			struct apei_exec_ins_type *ins_table,
++			u32 instructions,
++			struct acpi_whea_header *action_table,
++			u32 entries);
++
++static inline void apei_exec_ctx_set_input(struct apei_exec_context *ctx,
++					   u64 input)
++{
++	ctx->value = input;
++}
++
++static inline u64 apei_exec_ctx_get_output(struct apei_exec_context *ctx)
++{
++	return ctx->value;
++}
++
++int apei_exec_run(struct apei_exec_context *ctx, u8 action);
++
++/* Common instruction implementation */
++
++/* IP has been set in instruction function */
++#define APEI_EXEC_SET_IP	1
++
++int __apei_exec_read_register(struct acpi_whea_header *entry, u64 *val);
++int __apei_exec_write_register(struct acpi_whea_header *entry, u64 val);
++int apei_exec_read_register(struct apei_exec_context *ctx,
++			    struct acpi_whea_header *entry);
++int apei_exec_read_register_value(struct apei_exec_context *ctx,
++				  struct acpi_whea_header *entry);
++int apei_exec_write_register(struct apei_exec_context *ctx,
++			     struct acpi_whea_header *entry);
++int apei_exec_write_register_value(struct apei_exec_context *ctx,
++				   struct acpi_whea_header *entry);
++int apei_exec_noop(struct apei_exec_context *ctx,
++		   struct acpi_whea_header *entry);
++int apei_exec_pre_map_gars(struct apei_exec_context *ctx);
++int apei_exec_post_unmap_gars(struct apei_exec_context *ctx);
++
++struct apei_resources {
++	struct list_head iomem;
++	struct list_head ioport;
++};
++
++static inline void apei_resources_init(struct apei_resources *resources)
++{
++	INIT_LIST_HEAD(&resources->iomem);
++	INIT_LIST_HEAD(&resources->ioport);
++}
++
++void apei_resources_fini(struct apei_resources *resources);
++int apei_resources_sub(struct apei_resources *resources1,
++		       struct apei_resources *resources2);
++int apei_resources_request(struct apei_resources *resources,
++			   const char *desc);
++void apei_resources_release(struct apei_resources *resources);
++int apei_exec_collect_resources(struct apei_exec_context *ctx,
++				struct apei_resources *resources);
++
++struct dentry;
++struct dentry *apei_get_debugfs_dir(void);
++#endif
