@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab0D0RSE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 13:18:04 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50148
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754221Ab0D0RSA (ORCPT
+	id S1755851Ab0D0RTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 13:19:06 -0400
+Received: from liberdade.minaslivre.org ([72.232.254.139]:52385 "EHLO
+	liberdade.minaslivre.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755271Ab0D0RTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 13:18:00 -0400
-Date: Tue, 27 Apr 2010 10:18:04 -0700 (PDT)
-Message-Id: <20100427.101804.13765995.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, yoshfuji@linux-ipv6.org
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100427.093430.258110898.davem@davemloft.net>
-References: <20100427152516.580ee620.sfr@canb.auug.org.au>
-	<20100427.093430.258110898.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Apr 2010 13:19:04 -0400
+Date: Tue, 27 Apr 2010 14:18:55 -0300
+From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-acpi@vger.kernel.org, rui.zhang@intel.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: fix fan module removal when ACPI_PROCFS is
+ disabled
+Message-ID: <20100427171854.GE1493@holoscopio.com>
+References: <1272385158-4080-1-git-send-email-cascardo@holoscopio.com>
+ <alpine.LFD.2.00.1004271309190.4006@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EY/WZ/HvNxOox07X"
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004271309190.4006@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Tue, 27 Apr 2010 09:34:30 -0700 (PDT)
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 27 Apr 2010 15:25:16 +1000
-> 
->> After merging the bkl-ioctl tree, today's linux-next build (powerpc
->> ppc44x_defconfig) failed like this:
->> 
->> net/bridge/br_multicast.c: In function 'br_ip6_multicast_alloc_query':
->> net/bridge/br_multicast.c:469: error: implicit declaration of function 'csum_ipv6_magic'
->> 
->> Introduced by commit 08b202b6726459626c73ecfa08fcdc8c3efc76c2 ("bridge
->> br_multicast: IPv6 MLD support") from the net tree.
->> 
->> csum_ipv6_magic is declared in net/ip6_checksum.h ...
-> 
-> Bummer, powerpc is one of the few platforms that doesn't get the header
-> file implicitly so you always trip over this whereas we never see it in
-> x86 and sparc64 builds :-)
-> 
-> I'll fix this, thanks!
+--EY/WZ/HvNxOox07X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I just committed the following for this:
+On Tue, Apr 27, 2010 at 01:12:49PM -0400, Len Brown wrote:
+> > When ACPI_PROCFS is disabled, /proc/acpi/fan/ directory is not created.
+> > So, it should not be removed during the module removal either.
+>=20
+> Yes, this patch would make the #ifdefs consistent.
+> But it looks like remove_proc_entry() just silently does nothing
+> if the directory is not there, yes?
+>=20
 
-bridge: Fix build of ipv6 multicast code.
+No, I get a WARNING right now. That's why I hit the problem, I've just
+randomly removed fan.
 
-Based upon a report from Stephen Rothwell:
+> What I'd really like to see is a patch removing fan.c's proc code=20
+> completely.  It was scheduld for removal in July 2008.
+>=20
 
---------------------
-net/bridge/br_multicast.c: In function 'br_ip6_multicast_alloc_query':
-net/bridge/br_multicast.c:469: error: implicit declaration of function 'csum_ipv6_magic'
+Well, no config for "old fan /proc files"? Simply drop it? If that's OK,
+I'll gladly submit another patch.
 
-Introduced by commit 08b202b6726459626c73ecfa08fcdc8c3efc76c2 ("bridge
-br_multicast: IPv6 MLD support") from the net tree.
+> thanks,
+> Len Brown, Intel Open Source Technology Center
 
-csum_ipv6_magic is declared in net/ip6_checksum.h ...
---------------------
+--EY/WZ/HvNxOox07X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/bridge/br_multicast.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index e481dbd..2048ef0 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -28,6 +28,7 @@
- #include <net/ipv6.h>
- #include <net/mld.h>
- #include <net/addrconf.h>
-+#include <net/ip6_checksum.h>
- #endif
- 
- #include "br_private.h"
--- 
-1.7.0.4
+iQIcBAEBAgAGBQJL1xx9AAoJEEWxSg7udFZIZewQAJPQX6ABcApgwy5Qoe6usmcX
++46F5aRnziy/t4xxyKkRSJ0ZenGb5ma4fjIqhGWZ4D4G1Aoeg14Ia2E61gyL2Qss
+oHwmv8qkOVtsmg8NFX8mfIVJEkGn9iW+BoJ/CHjbyYfY4U6Z1U52B/hmSlUiRzKC
+a5gF3Oz+DcFJqATk1/uRuQ1fSXWgKTPpt6liKFAQnHIplJ85TW3is4VDcIiBkJiD
+gsxN9C/NaKBioMK+a5pq4/EYwl0q5oIi1VrjqZaJuly1VWFV+tTlFeW8w7QH6qN1
+oqYppHj3QX+hvv2Zj6+Q/ai2i7mFtiutIqOBhrujqhZhVzyPZ+zN7ow9K7M0Xnpu
+kBMCEIdtEEjzL0V/7r3/Y5OjvYV9wkh8j2ZqW7/KbRcvmj4ePFiX/G78vvFVhxqe
+FOGssAAshUg4FiyN82adhSQU/rZgjJ7/dJNs/e//GUxzJBBUdwong5mN656h34GK
+TQraDLKrUkR+PDSz6RjbJb1aNu958jEVOVKJEwAdKh7edRI5TALb/lSgvTFlrNdz
+LSKzjeKuxB032zCRTxaI4hCSrCA6RhACsxz2AOujYbE/fua/lQaKJOcW/7fXQ0oP
+UuaMApPb8ZrwDo/LSoL+oFhfLy1m5KVmLb/KH55y+BifTB5foRUgagp8ErSpqIug
+bFZBmKuhaq5Q3axj0Eby
+=HXjH
+-----END PGP SIGNATURE-----
 
+--EY/WZ/HvNxOox07X--
