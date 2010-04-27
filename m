@@ -1,108 +1,432 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab0D0IVW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 04:21:22 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:57424 "EHLO
+	id S1753690Ab0D0IWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 04:22:23 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:57426 "EHLO
 	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838Ab0D0IVU (ORCPT
+	with ESMTP id S1751085Ab0D0IWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 04:21:20 -0400
-X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Apr 2010 04:21:20 EDT
+	Tue, 27 Apr 2010 04:22:20 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: rjw@sisk.pl
 Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-       Nigel Cunningham <ncunningham@crca.org.au>,
-       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 1/5] FS: libfs, implement simple_write_to_buffer
-Date: Tue, 27 Apr 2010 10:15:14 +0200
-Message-Id: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
+       Nigel Cunningham <ncunningham@crca.org.au>
+Subject: [PATCH 2/5] PM / Hibernate: snapshot cleanup
+Date: Tue, 27 Apr 2010 10:15:15 +0200
+Message-Id: <1272356118-10012-2-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.0.3
+In-Reply-To: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
+References: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be used in suspend code and serves as an easy wrap around
-copy_from_user. Similar to simple_read_from_buffer, it takes care
-of transfers with proper lengths depending on available and count
-parameters and advances ppos appropriately.
+From: Jiri Slaby <jirislaby@gmail.com>
+
+Remove support of reads with offset. This means snapshot_read/write_next
+now does not accept count parameter. It allows to clean up the functions
+and snapshot handle which no longer needs to care about offsets.
+
+/dev/snapshot handler is converted to simple_{read_from,write_to}_buffer
+which take care of offsets.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: Nigel Cunningham <ncunningham@crca.org.au>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org
 ---
- fs/libfs.c         |   35 +++++++++++++++++++++++++++++++++++
- include/linux/fs.h |    2 ++
- 2 files changed, 37 insertions(+), 0 deletions(-)
+ kernel/power/power.h    |   18 +-----
+ kernel/power/snapshot.c |  145 ++++++++++++++++++-----------------------------
+ kernel/power/swap.c     |    8 +-
+ kernel/power/user.c     |   37 ++++++++----
+ 4 files changed, 88 insertions(+), 120 deletions(-)
 
-diff --git a/fs/libfs.c b/fs/libfs.c
-index ea9a6cc..cfab42a 100644
---- a/fs/libfs.c
-+++ b/fs/libfs.c
-@@ -547,6 +547,40 @@ ssize_t simple_read_from_buffer(void __user *to, size_t count, loff_t *ppos,
+diff --git a/kernel/power/power.h b/kernel/power/power.h
+index 46c5a26..b1e207d 100644
+--- a/kernel/power/power.h
++++ b/kernel/power/power.h
+@@ -97,24 +97,12 @@ extern int hibernate_preallocate_memory(void);
+  */
+ 
+ struct snapshot_handle {
+-	loff_t		offset;	/* number of the last byte ready for reading
+-				 * or writing in the sequence
+-				 */
+ 	unsigned int	cur;	/* number of the block of PAGE_SIZE bytes the
+ 				 * next operation will refer to (ie. current)
+ 				 */
+-	unsigned int	cur_offset;	/* offset with respect to the current
+-					 * block (for the next operation)
+-					 */
+-	unsigned int	prev;	/* number of the block of PAGE_SIZE bytes that
+-				 * was the current one previously
+-				 */
+ 	void		*buffer;	/* address of the block to read from
+ 					 * or write to
+ 					 */
+-	unsigned int	buf_offset;	/* location to read from or write to,
+-					 * given as a displacement from 'buffer'
+-					 */
+ 	int		sync_read;	/* Set to one to notify the caller of
+ 					 * snapshot_write_next() that it may
+ 					 * need to call wait_on_bio_chain()
+@@ -125,12 +113,12 @@ struct snapshot_handle {
+  * snapshot_read_next()/snapshot_write_next() is allowed to
+  * read/write data after the function returns
+  */
+-#define data_of(handle)	((handle).buffer + (handle).buf_offset)
++#define data_of(handle)	((handle).buffer)
+ 
+ extern unsigned int snapshot_additional_pages(struct zone *zone);
+ extern unsigned long snapshot_get_image_size(void);
+-extern int snapshot_read_next(struct snapshot_handle *handle, size_t count);
+-extern int snapshot_write_next(struct snapshot_handle *handle, size_t count);
++extern int snapshot_read_next(struct snapshot_handle *handle);
++extern int snapshot_write_next(struct snapshot_handle *handle);
+ extern void snapshot_write_finalize(struct snapshot_handle *handle);
+ extern int snapshot_image_loaded(struct snapshot_handle *handle);
+ 
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index be861c2..25ce010 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1604,14 +1604,9 @@ pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
+  *	snapshot_handle structure.  The structure gets updated and a pointer
+  *	to it should be passed to this function every next time.
+  *
+- *	The @count parameter should contain the number of bytes the caller
+- *	wants to read from the snapshot.  It must not be zero.
+- *
+  *	On success the function returns a positive number.  Then, the caller
+  *	is allowed to read up to the returned number of bytes from the memory
+- *	location computed by the data_of() macro.  The number returned
+- *	may be smaller than @count, but this only happens if the read would
+- *	cross a page boundary otherwise.
++ *	location computed by the data_of() macro.
+  *
+  *	The function returns 0 to indicate the end of data stream condition,
+  *	and a negative number is returned on error.  In such cases the
+@@ -1619,7 +1614,7 @@ pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
+  *	any more.
+  */
+ 
+-int snapshot_read_next(struct snapshot_handle *handle, size_t count)
++int snapshot_read_next(struct snapshot_handle *handle)
+ {
+ 	if (handle->cur > nr_meta_pages + nr_copy_pages)
+ 		return 0;
+@@ -1630,7 +1625,7 @@ int snapshot_read_next(struct snapshot_handle *handle, size_t count)
+ 		if (!buffer)
+ 			return -ENOMEM;
+ 	}
+-	if (!handle->offset) {
++	if (!handle->cur) {
+ 		int error;
+ 
+ 		error = init_header((struct swsusp_info *)buffer);
+@@ -1639,42 +1634,30 @@ int snapshot_read_next(struct snapshot_handle *handle, size_t count)
+ 		handle->buffer = buffer;
+ 		memory_bm_position_reset(&orig_bm);
+ 		memory_bm_position_reset(&copy_bm);
+-	}
+-	if (handle->prev < handle->cur) {
+-		if (handle->cur <= nr_meta_pages) {
+-			memset(buffer, 0, PAGE_SIZE);
+-			pack_pfns(buffer, &orig_bm);
+-		} else {
+-			struct page *page;
++	} else if (handle->cur <= nr_meta_pages) {
++		memset(buffer, 0, PAGE_SIZE);
++		pack_pfns(buffer, &orig_bm);
++	} else {
++		struct page *page;
+ 
+-			page = pfn_to_page(memory_bm_next_pfn(&copy_bm));
+-			if (PageHighMem(page)) {
+-				/* Highmem pages are copied to the buffer,
+-				 * because we can't return with a kmapped
+-				 * highmem page (we may not be called again).
+-				 */
+-				void *kaddr;
++		page = pfn_to_page(memory_bm_next_pfn(&copy_bm));
++		if (PageHighMem(page)) {
++			/* Highmem pages are copied to the buffer,
++			 * because we can't return with a kmapped
++			 * highmem page (we may not be called again).
++			 */
++			void *kaddr;
+ 
+-				kaddr = kmap_atomic(page, KM_USER0);
+-				memcpy(buffer, kaddr, PAGE_SIZE);
+-				kunmap_atomic(kaddr, KM_USER0);
+-				handle->buffer = buffer;
+-			} else {
+-				handle->buffer = page_address(page);
+-			}
++			kaddr = kmap_atomic(page, KM_USER0);
++			memcpy(buffer, kaddr, PAGE_SIZE);
++			kunmap_atomic(kaddr, KM_USER0);
++			handle->buffer = buffer;
++		} else {
++			handle->buffer = page_address(page);
+ 		}
+-		handle->prev = handle->cur;
+-	}
+-	handle->buf_offset = handle->cur_offset;
+-	if (handle->cur_offset + count >= PAGE_SIZE) {
+-		count = PAGE_SIZE - handle->cur_offset;
+-		handle->cur_offset = 0;
+-		handle->cur++;
+-	} else {
+-		handle->cur_offset += count;
+ 	}
+-	handle->offset += count;
+-	return count;
++	handle->cur++;
++	return PAGE_SIZE;
  }
  
  /**
-+ * simple_write_to_buffer - copy data from user space to the buffer
-+ * @to: the buffer to write to
-+ * @available: the size of the buffer
-+ * @ppos: the current position in the buffer
-+ * @from: the user space buffer to read from
-+ * @count: the maximum number of bytes to read
-+ *
-+ * The simple_write_to_buffer() function reads up to @count bytes from the user
-+ * space address starting at @from into the buffer @to at offset @ppos.
-+ *
-+ * On success, the number of bytes written is returned and the offset @ppos is
-+ * advanced by this number, or negative value is returned on error.
-+ **/
-+ssize_t simple_write_to_buffer(void *to, size_t available, loff_t *ppos,
-+		const void __user *from, size_t count)
-+{
-+	loff_t pos = *ppos;
-+	size_t ret;
+@@ -2133,14 +2116,9 @@ static void *get_buffer(struct memory_bitmap *bm, struct chain_allocator *ca)
+  *	snapshot_handle structure.  The structure gets updated and a pointer
+  *	to it should be passed to this function every next time.
+  *
+- *	The @count parameter should contain the number of bytes the caller
+- *	wants to write to the image.  It must not be zero.
+- *
+  *	On success the function returns a positive number.  Then, the caller
+  *	is allowed to write up to the returned number of bytes to the memory
+- *	location computed by the data_of() macro.  The number returned
+- *	may be smaller than @count, but this only happens if the write would
+- *	cross a page boundary otherwise.
++ *	location computed by the data_of() macro.
+  *
+  *	The function returns 0 to indicate the "end of file" condition,
+  *	and a negative number is returned on error.  In such cases the
+@@ -2148,16 +2126,18 @@ static void *get_buffer(struct memory_bitmap *bm, struct chain_allocator *ca)
+  *	any more.
+  */
+ 
+-int snapshot_write_next(struct snapshot_handle *handle, size_t count)
++int snapshot_write_next(struct snapshot_handle *handle)
+ {
+ 	static struct chain_allocator ca;
+ 	int error = 0;
+ 
+ 	/* Check if we have already loaded the entire image */
+-	if (handle->prev && handle->cur > nr_meta_pages + nr_copy_pages)
++	if (handle->cur > 1 && handle->cur > nr_meta_pages + nr_copy_pages)
+ 		return 0;
+ 
+-	if (handle->offset == 0) {
++	handle->sync_read = 1;
 +
-+	if (pos < 0)
-+		return -EINVAL;
-+	if (pos >= available || !count)
-+		return 0;
-+	if (count > available - pos)
-+		count = available - pos;
-+	ret = copy_from_user(to + pos, from, count);
-+	if (ret == count)
-+		return -EFAULT;
-+	count -= ret;
-+	*ppos = pos + count;
-+	return count;
-+}
++	if (!handle->cur) {
+ 		if (!buffer)
+ 			/* This makes the buffer be freed by swsusp_free() */
+ 			buffer = get_image_page(GFP_ATOMIC, PG_ANY);
+@@ -2166,56 +2146,43 @@ int snapshot_write_next(struct snapshot_handle *handle, size_t count)
+ 			return -ENOMEM;
+ 
+ 		handle->buffer = buffer;
+-	}
+-	handle->sync_read = 1;
+-	if (handle->prev < handle->cur) {
+-		if (handle->prev == 0) {
+-			error = load_header(buffer);
+-			if (error)
+-				return error;
++	} else if (handle->cur == 1) {
++		error = load_header(buffer);
++		if (error)
++			return error;
+ 
+-			error = memory_bm_create(&copy_bm, GFP_ATOMIC, PG_ANY);
+-			if (error)
+-				return error;
++		error = memory_bm_create(&copy_bm, GFP_ATOMIC, PG_ANY);
++		if (error)
++			return error;
 +
-+/**
-  * memory_read_from_buffer - copy data from the buffer
-  * @to: the kernel space buffer to read to
-  * @count: the maximum number of bytes to read
-@@ -864,6 +898,7 @@ EXPORT_SYMBOL(simple_statfs);
- EXPORT_SYMBOL(simple_sync_file);
- EXPORT_SYMBOL(simple_unlink);
- EXPORT_SYMBOL(simple_read_from_buffer);
-+EXPORT_SYMBOL(simple_write_to_buffer);
- EXPORT_SYMBOL(memory_read_from_buffer);
- EXPORT_SYMBOL(simple_transaction_set);
- EXPORT_SYMBOL(simple_transaction_get);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 66f3caa..e594a8d 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2372,6 +2372,8 @@ extern void simple_release_fs(struct vfsmount **mount, int *count);
++	} else if (handle->cur <= nr_meta_pages + 1) {
++		error = unpack_orig_pfns(buffer, &copy_bm);
++		if (error)
++			return error;
  
- extern ssize_t simple_read_from_buffer(void __user *to, size_t count,
- 			loff_t *ppos, const void *from, size_t available);
-+extern ssize_t simple_write_to_buffer(void *to, size_t available, loff_t *ppos,
-+		const void __user *from, size_t count);
+-		} else if (handle->prev <= nr_meta_pages) {
+-			error = unpack_orig_pfns(buffer, &copy_bm);
++		if (handle->cur == nr_meta_pages + 1) {
++			error = prepare_image(&orig_bm, &copy_bm);
+ 			if (error)
+ 				return error;
  
- extern int simple_fsync(struct file *, struct dentry *, int);
+-			if (handle->prev == nr_meta_pages) {
+-				error = prepare_image(&orig_bm, &copy_bm);
+-				if (error)
+-					return error;
+-
+-				chain_init(&ca, GFP_ATOMIC, PG_SAFE);
+-				memory_bm_position_reset(&orig_bm);
+-				restore_pblist = NULL;
+-				handle->buffer = get_buffer(&orig_bm, &ca);
+-				handle->sync_read = 0;
+-				if (IS_ERR(handle->buffer))
+-					return PTR_ERR(handle->buffer);
+-			}
+-		} else {
+-			copy_last_highmem_page();
++			chain_init(&ca, GFP_ATOMIC, PG_SAFE);
++			memory_bm_position_reset(&orig_bm);
++			restore_pblist = NULL;
+ 			handle->buffer = get_buffer(&orig_bm, &ca);
++			handle->sync_read = 0;
+ 			if (IS_ERR(handle->buffer))
+ 				return PTR_ERR(handle->buffer);
+-			if (handle->buffer != buffer)
+-				handle->sync_read = 0;
+ 		}
+-		handle->prev = handle->cur;
+-	}
+-	handle->buf_offset = handle->cur_offset;
+-	if (handle->cur_offset + count >= PAGE_SIZE) {
+-		count = PAGE_SIZE - handle->cur_offset;
+-		handle->cur_offset = 0;
+-		handle->cur++;
+ 	} else {
+-		handle->cur_offset += count;
++		copy_last_highmem_page();
++		handle->buffer = get_buffer(&orig_bm, &ca);
++		if (IS_ERR(handle->buffer))
++			return PTR_ERR(handle->buffer);
++		if (handle->buffer != buffer)
++			handle->sync_read = 0;
+ 	}
+-	handle->offset += count;
+-	return count;
++	handle->cur++;
++	return PAGE_SIZE;
+ }
  
+ /**
+@@ -2230,7 +2197,7 @@ void snapshot_write_finalize(struct snapshot_handle *handle)
+ {
+ 	copy_last_highmem_page();
+ 	/* Free only if we have loaded the image entirely */
+-	if (handle->prev && handle->cur > nr_meta_pages + nr_copy_pages) {
++	if (handle->cur > 1 && handle->cur > nr_meta_pages + nr_copy_pages) {
+ 		memory_bm_free(&orig_bm, PG_UNSAFE_CLEAR);
+ 		free_highmem_data();
+ 	}
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 66824d7..7f2a17e 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -431,7 +431,7 @@ static int save_image(struct swap_map_handle *handle,
+ 	bio = NULL;
+ 	do_gettimeofday(&start);
+ 	while (1) {
+-		ret = snapshot_read_next(snapshot, PAGE_SIZE);
++		ret = snapshot_read_next(snapshot);
+ 		if (ret <= 0)
+ 			break;
+ 		ret = swap_write_page(handle, data_of(*snapshot), &bio);
+@@ -492,7 +492,7 @@ int swsusp_write(unsigned int flags)
+ 		return error;
+ 	}
+ 	memset(&snapshot, 0, sizeof(struct snapshot_handle));
+-	error = snapshot_read_next(&snapshot, PAGE_SIZE);
++	error = snapshot_read_next(&snapshot);
+ 	if (error < PAGE_SIZE) {
+ 		if (error >= 0)
+ 			error = -EFAULT;
+@@ -615,7 +615,7 @@ static int load_image(struct swap_map_handle *handle,
+ 	bio = NULL;
+ 	do_gettimeofday(&start);
+ 	for ( ; ; ) {
+-		error = snapshot_write_next(snapshot, PAGE_SIZE);
++		error = snapshot_write_next(snapshot);
+ 		if (error <= 0)
+ 			break;
+ 		error = swap_read_page(handle, data_of(*snapshot), &bio);
+@@ -660,7 +660,7 @@ int swsusp_read(unsigned int *flags_p)
+ 	*flags_p = swsusp_header->flags;
+ 
+ 	memset(&snapshot, 0, sizeof(struct snapshot_handle));
+-	error = snapshot_write_next(&snapshot, PAGE_SIZE);
++	error = snapshot_write_next(&snapshot);
+ 	if (error < PAGE_SIZE)
+ 		return error < 0 ? error : -EFAULT;
+ 	header = (struct swsusp_info *)data_of(snapshot);
+diff --git a/kernel/power/user.c b/kernel/power/user.c
+index a8c9621..e819e17 100644
+--- a/kernel/power/user.c
++++ b/kernel/power/user.c
+@@ -151,6 +151,7 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
+ {
+ 	struct snapshot_data *data;
+ 	ssize_t res;
++	loff_t pg_offp = *offp & ~PAGE_MASK;
+ 
+ 	mutex_lock(&pm_mutex);
+ 
+@@ -159,14 +160,19 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
+ 		res = -ENODATA;
+ 		goto Unlock;
+ 	}
+-	res = snapshot_read_next(&data->handle, count);
+-	if (res > 0) {
+-		if (copy_to_user(buf, data_of(data->handle), res))
+-			res = -EFAULT;
+-		else
+-			*offp = data->handle.offset;
++	if (!pg_offp) { /* on page boundary? */
++		res = snapshot_read_next(&data->handle);
++		if (res <= 0)
++			goto Unlock;
++	} else {
++		res = PAGE_SIZE - pg_offp;
+ 	}
+ 
++	res = simple_read_from_buffer(buf, count, &pg_offp,
++			data_of(data->handle), res);
++	if (res > 0)
++		*offp += res;
++
+  Unlock:
+ 	mutex_unlock(&pm_mutex);
+ 
+@@ -178,18 +184,25 @@ static ssize_t snapshot_write(struct file *filp, const char __user *buf,
+ {
+ 	struct snapshot_data *data;
+ 	ssize_t res;
++	loff_t pg_offp = *offp & ~PAGE_MASK;
+ 
+ 	mutex_lock(&pm_mutex);
+ 
+ 	data = filp->private_data;
+-	res = snapshot_write_next(&data->handle, count);
+-	if (res > 0) {
+-		if (copy_from_user(data_of(data->handle), buf, res))
+-			res = -EFAULT;
+-		else
+-			*offp = data->handle.offset;
++
++	if (!pg_offp) {
++		res = snapshot_write_next(&data->handle);
++		if (res <= 0)
++			goto unlock;
++	} else {
++		res = PAGE_SIZE - pg_offp;
+ 	}
+ 
++	res = simple_write_to_buffer(data_of(data->handle), res, &pg_offp,
++			buf, count);
++	if (res > 0)
++		*offp += res;
++unlock:
+ 	mutex_unlock(&pm_mutex);
+ 
+ 	return res;
 -- 
 1.7.0.3
 
