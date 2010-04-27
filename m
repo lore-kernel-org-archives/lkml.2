@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab0D0IWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 04:22:23 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:57426 "EHLO
+	id S1754112Ab0D0IWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 04:22:30 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:57427 "EHLO
 	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab0D0IWU (ORCPT
+	with ESMTP id S1753936Ab0D0IW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 04:22:20 -0400
+	Tue, 27 Apr 2010 04:22:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: rjw@sisk.pl
 Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
        Nigel Cunningham <ncunningham@crca.org.au>
-Subject: [PATCH 2/5] PM / Hibernate: snapshot cleanup
-Date: Tue, 27 Apr 2010 10:15:15 +0200
-Message-Id: <1272356118-10012-2-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 3/5] PM / Hibernate: separate block_io
+Date: Tue, 27 Apr 2010 10:15:16 +0200
+Message-Id: <1272356118-10012-3-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
 References: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
@@ -22,411 +22,430 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jirislaby@gmail.com>
-
-Remove support of reads with offset. This means snapshot_read/write_next
-now does not accept count parameter. It allows to clean up the functions
-and snapshot handle which no longer needs to care about offsets.
-
-/dev/snapshot handler is converted to simple_{read_from,write_to}_buffer
-which take care of offsets.
+Move block I/O operations to a separate file. It is because it will
+be used later not only by the swap writer.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: Nigel Cunningham <ncunningham@crca.org.au>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 ---
- kernel/power/power.h    |   18 +-----
- kernel/power/snapshot.c |  145 ++++++++++++++++++-----------------------------
- kernel/power/swap.c     |    8 +-
- kernel/power/user.c     |   37 ++++++++----
- 4 files changed, 88 insertions(+), 120 deletions(-)
+ kernel/power/Makefile   |    3 +-
+ kernel/power/block_io.c |  103 +++++++++++++++++++++++++++++++++++
+ kernel/power/power.h    |    9 +++
+ kernel/power/swap.c     |  136 +++++++++--------------------------------------
+ 4 files changed, 139 insertions(+), 112 deletions(-)
+ create mode 100644 kernel/power/block_io.c
 
+diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+index 4319181..524e058 100644
+--- a/kernel/power/Makefile
++++ b/kernel/power/Makefile
+@@ -8,7 +8,8 @@ obj-$(CONFIG_PM_SLEEP)		+= console.o
+ obj-$(CONFIG_FREEZER)		+= process.o
+ obj-$(CONFIG_SUSPEND)		+= suspend.o
+ obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
+-obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o
++obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
++				   block_io.o
+ obj-$(CONFIG_HIBERNATION_NVS)	+= hibernate_nvs.o
+ 
+ obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
+diff --git a/kernel/power/block_io.c b/kernel/power/block_io.c
+new file mode 100644
+index 0000000..3ba57e0
+--- /dev/null
++++ b/kernel/power/block_io.c
+@@ -0,0 +1,103 @@
++/*
++ * This file provides functions for block I/O operations on swap/file.
++ *
++ * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@suse.cz>
++ * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
++ *
++ * This file is released under the GPLv2.
++ */
++
++#include <linux/bio.h>
++#include <linux/kernel.h>
++#include <linux/pagemap.h>
++#include <linux/swap.h>
++
++#include "power.h"
++
++/**
++ *	submit - submit BIO request.
++ *	@rw:	READ or WRITE.
++ *	@off	physical offset of page.
++ *	@page:	page we're reading or writing.
++ *	@bio_chain: list of pending biod (for async reading)
++ *
++ *	Straight from the textbook - allocate and initialize the bio.
++ *	If we're reading, make sure the page is marked as dirty.
++ *	Then submit it and, if @bio_chain == NULL, wait.
++ */
++static int submit(int rw, struct block_device *bdev, sector_t sector,
++		struct page *page, struct bio **bio_chain)
++{
++	const int bio_rw = rw | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_UNPLUG);
++	struct bio *bio;
++
++	bio = bio_alloc(__GFP_WAIT | __GFP_HIGH, 1);
++	bio->bi_sector = sector;
++	bio->bi_bdev = bdev;
++	bio->bi_end_io = end_swap_bio_read;
++
++	if (bio_add_page(bio, page, PAGE_SIZE, 0) < PAGE_SIZE) {
++		printk(KERN_ERR "PM: Adding page to bio failed at %ld\n",
++			sector);
++		bio_put(bio);
++		return -EFAULT;
++	}
++
++	lock_page(page);
++	bio_get(bio);
++
++	if (bio_chain == NULL) {
++		submit_bio(bio_rw, bio);
++		wait_on_page_locked(page);
++		if (rw == READ)
++			bio_set_pages_dirty(bio);
++		bio_put(bio);
++	} else {
++		if (rw == READ)
++			get_page(page);	/* These pages are freed later */
++		bio->bi_private = *bio_chain;
++		*bio_chain = bio;
++		submit_bio(bio_rw, bio);
++	}
++	return 0;
++}
++
++int hib_bio_read_page(pgoff_t page_off, void *addr, struct bio **bio_chain)
++{
++	return submit(READ, hib_resume_bdev, page_off * (PAGE_SIZE >> 9),
++			virt_to_page(addr), bio_chain);
++}
++
++int hib_bio_write_page(pgoff_t page_off, void *addr, struct bio **bio_chain)
++{
++	return submit(WRITE, hib_resume_bdev, page_off * (PAGE_SIZE >> 9),
++			virt_to_page(addr), bio_chain);
++}
++
++int hib_wait_on_bio_chain(struct bio **bio_chain)
++{
++	struct bio *bio;
++	struct bio *next_bio;
++	int ret = 0;
++
++	if (bio_chain == NULL)
++		return 0;
++
++	bio = *bio_chain;
++	if (bio == NULL)
++		return 0;
++	while (bio) {
++		struct page *page;
++
++		next_bio = bio->bi_private;
++		page = bio->bi_io_vec[0].bv_page;
++		wait_on_page_locked(page);
++		if (!PageUptodate(page) || PageError(page))
++			ret = -EIO;
++		put_page(page);
++		bio_put(bio);
++		bio = next_bio;
++	}
++	*bio_chain = NULL;
++	return ret;
++}
 diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 46c5a26..b1e207d 100644
+index b1e207d..006270f 100644
 --- a/kernel/power/power.h
 +++ b/kernel/power/power.h
-@@ -97,24 +97,12 @@ extern int hibernate_preallocate_memory(void);
-  */
+@@ -142,6 +142,15 @@ extern int swsusp_read(unsigned int *flags_p);
+ extern int swsusp_write(unsigned int flags);
+ extern void swsusp_close(fmode_t);
  
- struct snapshot_handle {
--	loff_t		offset;	/* number of the last byte ready for reading
--				 * or writing in the sequence
--				 */
- 	unsigned int	cur;	/* number of the block of PAGE_SIZE bytes the
- 				 * next operation will refer to (ie. current)
- 				 */
--	unsigned int	cur_offset;	/* offset with respect to the current
--					 * block (for the next operation)
--					 */
--	unsigned int	prev;	/* number of the block of PAGE_SIZE bytes that
--				 * was the current one previously
--				 */
- 	void		*buffer;	/* address of the block to read from
- 					 * or write to
- 					 */
--	unsigned int	buf_offset;	/* location to read from or write to,
--					 * given as a displacement from 'buffer'
--					 */
- 	int		sync_read;	/* Set to one to notify the caller of
- 					 * snapshot_write_next() that it may
- 					 * need to call wait_on_bio_chain()
-@@ -125,12 +113,12 @@ struct snapshot_handle {
-  * snapshot_read_next()/snapshot_write_next() is allowed to
-  * read/write data after the function returns
-  */
--#define data_of(handle)	((handle).buffer + (handle).buf_offset)
-+#define data_of(handle)	((handle).buffer)
- 
- extern unsigned int snapshot_additional_pages(struct zone *zone);
- extern unsigned long snapshot_get_image_size(void);
--extern int snapshot_read_next(struct snapshot_handle *handle, size_t count);
--extern int snapshot_write_next(struct snapshot_handle *handle, size_t count);
-+extern int snapshot_read_next(struct snapshot_handle *handle);
-+extern int snapshot_write_next(struct snapshot_handle *handle);
- extern void snapshot_write_finalize(struct snapshot_handle *handle);
- extern int snapshot_image_loaded(struct snapshot_handle *handle);
- 
-diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-index be861c2..25ce010 100644
---- a/kernel/power/snapshot.c
-+++ b/kernel/power/snapshot.c
-@@ -1604,14 +1604,9 @@ pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
-  *	snapshot_handle structure.  The structure gets updated and a pointer
-  *	to it should be passed to this function every next time.
-  *
-- *	The @count parameter should contain the number of bytes the caller
-- *	wants to read from the snapshot.  It must not be zero.
-- *
-  *	On success the function returns a positive number.  Then, the caller
-  *	is allowed to read up to the returned number of bytes from the memory
-- *	location computed by the data_of() macro.  The number returned
-- *	may be smaller than @count, but this only happens if the read would
-- *	cross a page boundary otherwise.
-+ *	location computed by the data_of() macro.
-  *
-  *	The function returns 0 to indicate the end of data stream condition,
-  *	and a negative number is returned on error.  In such cases the
-@@ -1619,7 +1614,7 @@ pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
-  *	any more.
-  */
- 
--int snapshot_read_next(struct snapshot_handle *handle, size_t count)
-+int snapshot_read_next(struct snapshot_handle *handle)
- {
- 	if (handle->cur > nr_meta_pages + nr_copy_pages)
- 		return 0;
-@@ -1630,7 +1625,7 @@ int snapshot_read_next(struct snapshot_handle *handle, size_t count)
- 		if (!buffer)
- 			return -ENOMEM;
- 	}
--	if (!handle->offset) {
-+	if (!handle->cur) {
- 		int error;
- 
- 		error = init_header((struct swsusp_info *)buffer);
-@@ -1639,42 +1634,30 @@ int snapshot_read_next(struct snapshot_handle *handle, size_t count)
- 		handle->buffer = buffer;
- 		memory_bm_position_reset(&orig_bm);
- 		memory_bm_position_reset(&copy_bm);
--	}
--	if (handle->prev < handle->cur) {
--		if (handle->cur <= nr_meta_pages) {
--			memset(buffer, 0, PAGE_SIZE);
--			pack_pfns(buffer, &orig_bm);
--		} else {
--			struct page *page;
-+	} else if (handle->cur <= nr_meta_pages) {
-+		memset(buffer, 0, PAGE_SIZE);
-+		pack_pfns(buffer, &orig_bm);
-+	} else {
-+		struct page *page;
- 
--			page = pfn_to_page(memory_bm_next_pfn(&copy_bm));
--			if (PageHighMem(page)) {
--				/* Highmem pages are copied to the buffer,
--				 * because we can't return with a kmapped
--				 * highmem page (we may not be called again).
--				 */
--				void *kaddr;
-+		page = pfn_to_page(memory_bm_next_pfn(&copy_bm));
-+		if (PageHighMem(page)) {
-+			/* Highmem pages are copied to the buffer,
-+			 * because we can't return with a kmapped
-+			 * highmem page (we may not be called again).
-+			 */
-+			void *kaddr;
- 
--				kaddr = kmap_atomic(page, KM_USER0);
--				memcpy(buffer, kaddr, PAGE_SIZE);
--				kunmap_atomic(kaddr, KM_USER0);
--				handle->buffer = buffer;
--			} else {
--				handle->buffer = page_address(page);
--			}
-+			kaddr = kmap_atomic(page, KM_USER0);
-+			memcpy(buffer, kaddr, PAGE_SIZE);
-+			kunmap_atomic(kaddr, KM_USER0);
-+			handle->buffer = buffer;
-+		} else {
-+			handle->buffer = page_address(page);
- 		}
--		handle->prev = handle->cur;
--	}
--	handle->buf_offset = handle->cur_offset;
--	if (handle->cur_offset + count >= PAGE_SIZE) {
--		count = PAGE_SIZE - handle->cur_offset;
--		handle->cur_offset = 0;
--		handle->cur++;
--	} else {
--		handle->cur_offset += count;
- 	}
--	handle->offset += count;
--	return count;
-+	handle->cur++;
-+	return PAGE_SIZE;
- }
- 
- /**
-@@ -2133,14 +2116,9 @@ static void *get_buffer(struct memory_bitmap *bm, struct chain_allocator *ca)
-  *	snapshot_handle structure.  The structure gets updated and a pointer
-  *	to it should be passed to this function every next time.
-  *
-- *	The @count parameter should contain the number of bytes the caller
-- *	wants to write to the image.  It must not be zero.
-- *
-  *	On success the function returns a positive number.  Then, the caller
-  *	is allowed to write up to the returned number of bytes to the memory
-- *	location computed by the data_of() macro.  The number returned
-- *	may be smaller than @count, but this only happens if the write would
-- *	cross a page boundary otherwise.
-+ *	location computed by the data_of() macro.
-  *
-  *	The function returns 0 to indicate the "end of file" condition,
-  *	and a negative number is returned on error.  In such cases the
-@@ -2148,16 +2126,18 @@ static void *get_buffer(struct memory_bitmap *bm, struct chain_allocator *ca)
-  *	any more.
-  */
- 
--int snapshot_write_next(struct snapshot_handle *handle, size_t count)
-+int snapshot_write_next(struct snapshot_handle *handle)
- {
- 	static struct chain_allocator ca;
- 	int error = 0;
- 
- 	/* Check if we have already loaded the entire image */
--	if (handle->prev && handle->cur > nr_meta_pages + nr_copy_pages)
-+	if (handle->cur > 1 && handle->cur > nr_meta_pages + nr_copy_pages)
- 		return 0;
- 
--	if (handle->offset == 0) {
-+	handle->sync_read = 1;
++/* kernel/power/block_io.c */
++extern struct block_device *hib_resume_bdev;
 +
-+	if (!handle->cur) {
- 		if (!buffer)
- 			/* This makes the buffer be freed by swsusp_free() */
- 			buffer = get_image_page(GFP_ATOMIC, PG_ANY);
-@@ -2166,56 +2146,43 @@ int snapshot_write_next(struct snapshot_handle *handle, size_t count)
- 			return -ENOMEM;
- 
- 		handle->buffer = buffer;
--	}
--	handle->sync_read = 1;
--	if (handle->prev < handle->cur) {
--		if (handle->prev == 0) {
--			error = load_header(buffer);
--			if (error)
--				return error;
-+	} else if (handle->cur == 1) {
-+		error = load_header(buffer);
-+		if (error)
-+			return error;
- 
--			error = memory_bm_create(&copy_bm, GFP_ATOMIC, PG_ANY);
--			if (error)
--				return error;
-+		error = memory_bm_create(&copy_bm, GFP_ATOMIC, PG_ANY);
-+		if (error)
-+			return error;
++extern int hib_bio_read_page(pgoff_t page_off, void *addr,
++		struct bio **bio_chain);
++extern int hib_bio_write_page(pgoff_t page_off, void *addr,
++		struct bio **bio_chain);
++extern int hib_wait_on_bio_chain(struct bio **bio_chain);
 +
-+	} else if (handle->cur <= nr_meta_pages + 1) {
-+		error = unpack_orig_pfns(buffer, &copy_bm);
-+		if (error)
-+			return error;
- 
--		} else if (handle->prev <= nr_meta_pages) {
--			error = unpack_orig_pfns(buffer, &copy_bm);
-+		if (handle->cur == nr_meta_pages + 1) {
-+			error = prepare_image(&orig_bm, &copy_bm);
- 			if (error)
- 				return error;
- 
--			if (handle->prev == nr_meta_pages) {
--				error = prepare_image(&orig_bm, &copy_bm);
--				if (error)
--					return error;
--
--				chain_init(&ca, GFP_ATOMIC, PG_SAFE);
--				memory_bm_position_reset(&orig_bm);
--				restore_pblist = NULL;
--				handle->buffer = get_buffer(&orig_bm, &ca);
--				handle->sync_read = 0;
--				if (IS_ERR(handle->buffer))
--					return PTR_ERR(handle->buffer);
--			}
--		} else {
--			copy_last_highmem_page();
-+			chain_init(&ca, GFP_ATOMIC, PG_SAFE);
-+			memory_bm_position_reset(&orig_bm);
-+			restore_pblist = NULL;
- 			handle->buffer = get_buffer(&orig_bm, &ca);
-+			handle->sync_read = 0;
- 			if (IS_ERR(handle->buffer))
- 				return PTR_ERR(handle->buffer);
--			if (handle->buffer != buffer)
--				handle->sync_read = 0;
- 		}
--		handle->prev = handle->cur;
--	}
--	handle->buf_offset = handle->cur_offset;
--	if (handle->cur_offset + count >= PAGE_SIZE) {
--		count = PAGE_SIZE - handle->cur_offset;
--		handle->cur_offset = 0;
--		handle->cur++;
- 	} else {
--		handle->cur_offset += count;
-+		copy_last_highmem_page();
-+		handle->buffer = get_buffer(&orig_bm, &ca);
-+		if (IS_ERR(handle->buffer))
-+			return PTR_ERR(handle->buffer);
-+		if (handle->buffer != buffer)
-+			handle->sync_read = 0;
- 	}
--	handle->offset += count;
--	return count;
-+	handle->cur++;
-+	return PAGE_SIZE;
- }
- 
- /**
-@@ -2230,7 +2197,7 @@ void snapshot_write_finalize(struct snapshot_handle *handle)
- {
- 	copy_last_highmem_page();
- 	/* Free only if we have loaded the image entirely */
--	if (handle->prev && handle->cur > nr_meta_pages + nr_copy_pages) {
-+	if (handle->cur > 1 && handle->cur > nr_meta_pages + nr_copy_pages) {
- 		memory_bm_free(&orig_bm, PG_UNSAFE_CLEAR);
- 		free_highmem_data();
- 	}
+ struct timeval;
+ /* kernel/power/swsusp.c */
+ extern void swsusp_show_speed(struct timeval *, struct timeval *,
 diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 66824d7..7f2a17e 100644
+index 7f2a17e..1b1ab6f 100644
 --- a/kernel/power/swap.c
 +++ b/kernel/power/swap.c
-@@ -431,7 +431,7 @@ static int save_image(struct swap_map_handle *handle,
- 	bio = NULL;
- 	do_gettimeofday(&start);
- 	while (1) {
--		ret = snapshot_read_next(snapshot, PAGE_SIZE);
-+		ret = snapshot_read_next(snapshot);
- 		if (ret <= 0)
- 			break;
- 		ret = swap_write_page(handle, data_of(*snapshot), &bio);
-@@ -492,7 +492,7 @@ int swsusp_write(unsigned int flags)
- 		return error;
- 	}
- 	memset(&snapshot, 0, sizeof(struct snapshot_handle));
--	error = snapshot_read_next(&snapshot, PAGE_SIZE);
-+	error = snapshot_read_next(&snapshot);
- 	if (error < PAGE_SIZE) {
- 		if (error >= 0)
- 			error = -EFAULT;
-@@ -615,7 +615,7 @@ static int load_image(struct swap_map_handle *handle,
- 	bio = NULL;
- 	do_gettimeofday(&start);
- 	for ( ; ; ) {
--		error = snapshot_write_next(snapshot, PAGE_SIZE);
-+		error = snapshot_write_next(snapshot);
- 		if (error <= 0)
- 			break;
- 		error = swap_read_page(handle, data_of(*snapshot), &bio);
-@@ -660,7 +660,7 @@ int swsusp_read(unsigned int *flags_p)
- 	*flags_p = swsusp_header->flags;
+@@ -145,93 +145,7 @@ int swsusp_swap_in_use(void)
+  */
  
- 	memset(&snapshot, 0, sizeof(struct snapshot_handle));
--	error = snapshot_write_next(&snapshot, PAGE_SIZE);
-+	error = snapshot_write_next(&snapshot);
- 	if (error < PAGE_SIZE)
- 		return error < 0 ? error : -EFAULT;
- 	header = (struct swsusp_info *)data_of(snapshot);
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index a8c9621..e819e17 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -151,6 +151,7 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
+ static unsigned short root_swap = 0xffff;
+-static struct block_device *resume_bdev;
+-
+-/**
+- *	submit - submit BIO request.
+- *	@rw:	READ or WRITE.
+- *	@off	physical offset of page.
+- *	@page:	page we're reading or writing.
+- *	@bio_chain: list of pending biod (for async reading)
+- *
+- *	Straight from the textbook - allocate and initialize the bio.
+- *	If we're reading, make sure the page is marked as dirty.
+- *	Then submit it and, if @bio_chain == NULL, wait.
+- */
+-static int submit(int rw, pgoff_t page_off, struct page *page,
+-			struct bio **bio_chain)
+-{
+-	const int bio_rw = rw | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_UNPLUG);
+-	struct bio *bio;
+-
+-	bio = bio_alloc(__GFP_WAIT | __GFP_HIGH, 1);
+-	bio->bi_sector = page_off * (PAGE_SIZE >> 9);
+-	bio->bi_bdev = resume_bdev;
+-	bio->bi_end_io = end_swap_bio_read;
+-
+-	if (bio_add_page(bio, page, PAGE_SIZE, 0) < PAGE_SIZE) {
+-		printk(KERN_ERR "PM: Adding page to bio failed at %ld\n",
+-			page_off);
+-		bio_put(bio);
+-		return -EFAULT;
+-	}
+-
+-	lock_page(page);
+-	bio_get(bio);
+-
+-	if (bio_chain == NULL) {
+-		submit_bio(bio_rw, bio);
+-		wait_on_page_locked(page);
+-		if (rw == READ)
+-			bio_set_pages_dirty(bio);
+-		bio_put(bio);
+-	} else {
+-		if (rw == READ)
+-			get_page(page);	/* These pages are freed later */
+-		bio->bi_private = *bio_chain;
+-		*bio_chain = bio;
+-		submit_bio(bio_rw, bio);
+-	}
+-	return 0;
+-}
+-
+-static int bio_read_page(pgoff_t page_off, void *addr, struct bio **bio_chain)
+-{
+-	return submit(READ, page_off, virt_to_page(addr), bio_chain);
+-}
+-
+-static int bio_write_page(pgoff_t page_off, void *addr, struct bio **bio_chain)
+-{
+-	return submit(WRITE, page_off, virt_to_page(addr), bio_chain);
+-}
+-
+-static int wait_on_bio_chain(struct bio **bio_chain)
+-{
+-	struct bio *bio;
+-	struct bio *next_bio;
+-	int ret = 0;
+-
+-	if (bio_chain == NULL)
+-		return 0;
+-
+-	bio = *bio_chain;
+-	if (bio == NULL)
+-		return 0;
+-	while (bio) {
+-		struct page *page;
+-
+-		next_bio = bio->bi_private;
+-		page = bio->bi_io_vec[0].bv_page;
+-		wait_on_page_locked(page);
+-		if (!PageUptodate(page) || PageError(page))
+-			ret = -EIO;
+-		put_page(page);
+-		bio_put(bio);
+-		bio = next_bio;
+-	}
+-	*bio_chain = NULL;
+-	return ret;
+-}
++struct block_device *hib_resume_bdev;
+ 
+ /*
+  * Saving part
+@@ -241,14 +155,14 @@ static int mark_swapfiles(sector_t start, unsigned int flags)
  {
- 	struct snapshot_data *data;
- 	ssize_t res;
-+	loff_t pg_offp = *offp & ~PAGE_MASK;
+ 	int error;
  
- 	mutex_lock(&pm_mutex);
+-	bio_read_page(swsusp_resume_block, swsusp_header, NULL);
++	hib_bio_read_page(swsusp_resume_block, swsusp_header, NULL);
+ 	if (!memcmp("SWAP-SPACE",swsusp_header->sig, 10) ||
+ 	    !memcmp("SWAPSPACE2",swsusp_header->sig, 10)) {
+ 		memcpy(swsusp_header->orig_sig,swsusp_header->sig, 10);
+ 		memcpy(swsusp_header->sig,SWSUSP_SIG, 10);
+ 		swsusp_header->image = start;
+ 		swsusp_header->flags = flags;
+-		error = bio_write_page(swsusp_resume_block,
++		error = hib_bio_write_page(swsusp_resume_block,
+ 					swsusp_header, NULL);
+ 	} else {
+ 		printk(KERN_ERR "PM: Swap header not found!\n");
+@@ -267,18 +181,18 @@ static int swsusp_swap_check(void) /* This is called before saving image */
+ 	int res;
  
-@@ -159,14 +160,19 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
- 		res = -ENODATA;
- 		goto Unlock;
- 	}
--	res = snapshot_read_next(&data->handle, count);
--	if (res > 0) {
--		if (copy_to_user(buf, data_of(data->handle), res))
--			res = -EFAULT;
--		else
--			*offp = data->handle.offset;
-+	if (!pg_offp) { /* on page boundary? */
-+		res = snapshot_read_next(&data->handle);
-+		if (res <= 0)
-+			goto Unlock;
-+	} else {
-+		res = PAGE_SIZE - pg_offp;
- 	}
+ 	res = swap_type_of(swsusp_resume_device, swsusp_resume_block,
+-			&resume_bdev);
++			&hib_resume_bdev);
+ 	if (res < 0)
+ 		return res;
  
-+	res = simple_read_from_buffer(buf, count, &pg_offp,
-+			data_of(data->handle), res);
-+	if (res > 0)
-+		*offp += res;
-+
-  Unlock:
- 	mutex_unlock(&pm_mutex);
+ 	root_swap = res;
+-	res = blkdev_get(resume_bdev, FMODE_WRITE);
++	res = blkdev_get(hib_resume_bdev, FMODE_WRITE);
+ 	if (res)
+ 		return res;
  
-@@ -178,18 +184,25 @@ static ssize_t snapshot_write(struct file *filp, const char __user *buf,
- {
- 	struct snapshot_data *data;
- 	ssize_t res;
-+	loff_t pg_offp = *offp & ~PAGE_MASK;
- 
- 	mutex_lock(&pm_mutex);
- 
- 	data = filp->private_data;
--	res = snapshot_write_next(&data->handle, count);
--	if (res > 0) {
--		if (copy_from_user(data_of(data->handle), buf, res))
--			res = -EFAULT;
--		else
--			*offp = data->handle.offset;
-+
-+	if (!pg_offp) {
-+		res = snapshot_write_next(&data->handle);
-+		if (res <= 0)
-+			goto unlock;
-+	} else {
-+		res = PAGE_SIZE - pg_offp;
- 	}
- 
-+	res = simple_write_to_buffer(data_of(data->handle), res, &pg_offp,
-+			buf, count);
-+	if (res > 0)
-+		*offp += res;
-+unlock:
- 	mutex_unlock(&pm_mutex);
+-	res = set_blocksize(resume_bdev, PAGE_SIZE);
++	res = set_blocksize(hib_resume_bdev, PAGE_SIZE);
+ 	if (res < 0)
+-		blkdev_put(resume_bdev, FMODE_WRITE);
++		blkdev_put(hib_resume_bdev, FMODE_WRITE);
  
  	return res;
+ }
+@@ -309,7 +223,7 @@ static int write_page(void *buf, sector_t offset, struct bio **bio_chain)
+ 	} else {
+ 		src = buf;
+ 	}
+-	return bio_write_page(offset, src, bio_chain);
++	return hib_bio_write_page(offset, src, bio_chain);
+ }
+ 
+ /*
+@@ -380,7 +294,7 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
+ 		return error;
+ 	handle->cur->entries[handle->k++] = offset;
+ 	if (handle->k >= MAP_PAGE_ENTRIES) {
+-		error = wait_on_bio_chain(bio_chain);
++		error = hib_wait_on_bio_chain(bio_chain);
+ 		if (error)
+ 			goto out;
+ 		offset = alloc_swapdev_block(root_swap);
+@@ -441,7 +355,7 @@ static int save_image(struct swap_map_handle *handle,
+ 			printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
+ 		nr_pages++;
+ 	}
+-	err2 = wait_on_bio_chain(&bio);
++	err2 = hib_wait_on_bio_chain(&bio);
+ 	do_gettimeofday(&stop);
+ 	if (!ret)
+ 		ret = err2;
+@@ -553,7 +467,7 @@ static int get_swap_reader(struct swap_map_handle *handle, sector_t start)
+ 	if (!handle->cur)
+ 		return -ENOMEM;
+ 
+-	error = bio_read_page(start, handle->cur, NULL);
++	error = hib_bio_read_page(start, handle->cur, NULL);
+ 	if (error) {
+ 		release_swap_reader(handle);
+ 		return error;
+@@ -573,17 +487,17 @@ static int swap_read_page(struct swap_map_handle *handle, void *buf,
+ 	offset = handle->cur->entries[handle->k];
+ 	if (!offset)
+ 		return -EFAULT;
+-	error = bio_read_page(offset, buf, bio_chain);
++	error = hib_bio_read_page(offset, buf, bio_chain);
+ 	if (error)
+ 		return error;
+ 	if (++handle->k >= MAP_PAGE_ENTRIES) {
+-		error = wait_on_bio_chain(bio_chain);
++		error = hib_wait_on_bio_chain(bio_chain);
+ 		handle->k = 0;
+ 		offset = handle->cur->next_swap;
+ 		if (!offset)
+ 			release_swap_reader(handle);
+ 		else if (!error)
+-			error = bio_read_page(offset, handle->cur, NULL);
++			error = hib_bio_read_page(offset, handle->cur, NULL);
+ 	}
+ 	return error;
+ }
+@@ -622,14 +536,14 @@ static int load_image(struct swap_map_handle *handle,
+ 		if (error)
+ 			break;
+ 		if (snapshot->sync_read)
+-			error = wait_on_bio_chain(&bio);
++			error = hib_wait_on_bio_chain(&bio);
+ 		if (error)
+ 			break;
+ 		if (!(nr_pages % m))
+ 			printk("\b\b\b\b%3d%%", nr_pages / m);
+ 		nr_pages++;
+ 	}
+-	err2 = wait_on_bio_chain(&bio);
++	err2 = hib_wait_on_bio_chain(&bio);
+ 	do_gettimeofday(&stop);
+ 	if (!error)
+ 		error = err2;
+@@ -686,11 +600,11 @@ int swsusp_check(void)
+ {
+ 	int error;
+ 
+-	resume_bdev = open_by_devnum(swsusp_resume_device, FMODE_READ);
+-	if (!IS_ERR(resume_bdev)) {
+-		set_blocksize(resume_bdev, PAGE_SIZE);
++	hib_resume_bdev = open_by_devnum(swsusp_resume_device, FMODE_READ);
++	if (!IS_ERR(hib_resume_bdev)) {
++		set_blocksize(hib_resume_bdev, PAGE_SIZE);
+ 		memset(swsusp_header, 0, PAGE_SIZE);
+-		error = bio_read_page(swsusp_resume_block,
++		error = hib_bio_read_page(swsusp_resume_block,
+ 					swsusp_header, NULL);
+ 		if (error)
+ 			goto put;
+@@ -698,7 +612,7 @@ int swsusp_check(void)
+ 		if (!memcmp(SWSUSP_SIG, swsusp_header->sig, 10)) {
+ 			memcpy(swsusp_header->sig, swsusp_header->orig_sig, 10);
+ 			/* Reset swap signature now */
+-			error = bio_write_page(swsusp_resume_block,
++			error = hib_bio_write_page(swsusp_resume_block,
+ 						swsusp_header, NULL);
+ 		} else {
+ 			error = -EINVAL;
+@@ -706,11 +620,11 @@ int swsusp_check(void)
+ 
+ put:
+ 		if (error)
+-			blkdev_put(resume_bdev, FMODE_READ);
++			blkdev_put(hib_resume_bdev, FMODE_READ);
+ 		else
+ 			pr_debug("PM: Signature found, resuming\n");
+ 	} else {
+-		error = PTR_ERR(resume_bdev);
++		error = PTR_ERR(hib_resume_bdev);
+ 	}
+ 
+ 	if (error)
+@@ -725,12 +639,12 @@ put:
+ 
+ void swsusp_close(fmode_t mode)
+ {
+-	if (IS_ERR(resume_bdev)) {
++	if (IS_ERR(hib_resume_bdev)) {
+ 		pr_debug("PM: Image device not initialised\n");
+ 		return;
+ 	}
+ 
+-	blkdev_put(resume_bdev, mode);
++	blkdev_put(hib_resume_bdev, mode);
+ }
+ 
+ static int swsusp_header_init(void)
 -- 
 1.7.0.3
 
