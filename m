@@ -1,147 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab0D0P1y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 11:27:54 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:33434 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754817Ab0D0P1n (ORCPT
+	id S1754717Ab0D0P2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 11:28:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64528 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968Ab0D0P2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 11:27:43 -0400
-From: Dinh.Nguyen@freescale.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-       grant.likely@secretlab.ca, bryan.wu@canonical.com,
-       amit.kucheria@canonical.com, Jun.Li@freescale.com,
-       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv9 2.6.34-rc5 2/5] mx5: Add USB device definitions for Freescale MX51 Babbage HW
-Date: Tue, 27 Apr 2010 10:18:44 -0500
-Message-Id: <1272381527-30354-2-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1272381527-30354-1-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1272381527-30354-1-git-send-email-Dinh.Nguyen@freescale.com>
+	Tue, 27 Apr 2010 11:28:07 -0400
+Message-ID: <4BD70251.9060501@ru.mvista.com>
+Date: Tue, 27 Apr 2010 19:27:13 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+MIME-Version: 1.0
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: haavard.skinnemoen@atmel.com, linux-arm-kernel@lists.infradead.org,
+       akpm@linux-foundation.org, linux-mmc@vger.kernel.org,
+       kernel@avr32linux.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] MMC: atmel-mci: fix two parameters swapped
+References: <1271671952-29204-1-git-send-email-nicolas.ferre@atmel.com> <bfa27c51250b39deeccbf6f3a656db4e0b73ce92.1272378853.git.nicolas.ferre@atmel.com>
+In-Reply-To: <bfa27c51250b39deeccbf6f3a656db4e0b73ce92.1272378853.git.nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Hello.
 
-This patch is part of enabling USB for Freescale MX51 Babbage HW. This
-patch adds device structures for USB Host1 and OTG port, and adds
-clocking information for USB HW.
+Nicolas Ferre wrote:
 
-This patch applies to 2.6.34-rc5.
+> Two parameters were swapped in the calls to atmci_init_slot(). Two parameters
+> were swapped in the calls to atmci_init_slot().
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/mach-mx5/clock-mx51.c |    8 ++++++
- arch/arm/mach-mx5/devices.c    |   49 ++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-mx5/devices.h    |    2 +
- 3 files changed, 59 insertions(+), 0 deletions(-)
+  The same sentence is repeated twice.
 
-diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
-index 8f85f73..dcca330 100644
---- a/arch/arm/mach-mx5/clock-mx51.c
-+++ b/arch/arm/mach-mx5/clock-mx51.c
-@@ -761,6 +761,10 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG9_OFFSET,
- DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
- 	NULL,  NULL, &ipg_clk, NULL);
- 
-+/* USB */
-+DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
-+	NULL, NULL, &pll3_sw_clk, NULL);
-+
- /* FEC */
- DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
- 	NULL,  NULL, &ipg_clk, NULL);
-@@ -778,6 +782,10 @@ static struct clk_lookup lookups[] = {
- 	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
- 	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
- 	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
-+	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
-+	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
-+	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
-+	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
- };
- 
- static void clk_tree_init(void)
-diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
-index 5070ae1..e6262f3 100644
---- a/arch/arm/mach-mx5/devices.c
-+++ b/arch/arm/mach-mx5/devices.c
-@@ -11,6 +11,7 @@
-  */
- 
- #include <linux/platform_device.h>
-+#include <linux/dma-mapping.h>
- #include <linux/gpio.h>
- #include <mach/hardware.h>
- #include <mach/imx-uart.h>
-@@ -92,6 +93,54 @@ struct platform_device mxc_fec_device = {
- 	.resource = mxc_fec_resources,
- };
- 
-+static u64 usb_dma_mask = DMA_BIT_MASK(32);
-+
-+static struct resource usbotg_resources[] = {
-+	{
-+		.start = MX51_OTG_BASE_ADDR,
-+		.end = MX51_OTG_BASE_ADDR + 0x1ff,
-+		.flags = IORESOURCE_MEM,
-+	},
-+	{
-+		.start = MX51_MXC_INT_USB_OTG,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+struct platform_device mxc_usbdr_host_device = {
-+	.name = "mxc-ehci",
-+	.id = 0,
-+	.num_resources = ARRAY_SIZE(usbotg_resources),
-+	.resource = usbotg_resources,
-+	.dev = {
-+		.dma_mask = &usb_dma_mask,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
-+	},
-+};
-+
-+static struct resource usbh1_resources[] = {
-+	{
-+		.start = MX51_OTG_BASE_ADDR + 0x200,
-+		.end = MX51_OTG_BASE_ADDR + 0x200 + 0x1ff,
-+		.flags = IORESOURCE_MEM,
-+	},
-+	{
-+		.start = MX51_MXC_INT_USB_H1,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+struct platform_device mxc_usbh1_device = {
-+	.name = "mxc-ehci",
-+	.id = 1,
-+	.num_resources = ARRAY_SIZE(usbh1_resources),
-+	.resource = usbh1_resources,
-+	.dev = {
-+		.dma_mask = &usb_dma_mask,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
-+	},
-+};
-+
- static struct mxc_gpio_port mxc_gpio_ports[] = {
- 	{
- 		.chip.label = "gpio-0",
-diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
-index f339ab8..95c45f9 100644
---- a/arch/arm/mach-mx5/devices.h
-+++ b/arch/arm/mach-mx5/devices.h
-@@ -2,3 +2,5 @@ extern struct platform_device mxc_uart_device0;
- extern struct platform_device mxc_uart_device1;
- extern struct platform_device mxc_uart_device2;
- extern struct platform_device mxc_fec_device;
-+extern struct platform_device mxc_usbdr_host_device;
-+extern struct platform_device mxc_usbh1_device;
--- 
-1.6.0.4
+>  Their values
+>   
+
+   ???
+
+> Reported-by: Anders Grahn <anders.grahn@hd-wireless.se>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+WBR, Sergei
 
