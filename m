@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab0D0AnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 20:43:17 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:58751 "EHLO relay.sgi.com"
+	id S1753444Ab0D0AtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 20:49:18 -0400
+Received: from claw.goop.org ([74.207.240.146]:43006 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624Ab0D0AnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 20:43:15 -0400
-Message-ID: <4BD63320.8080104@sgi.com>
-Date: Mon, 26 Apr 2010 17:43:12 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1751599Ab0D0AtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 20:49:16 -0400
+Message-ID: <4BD6348A.5010602@goop.org>
+Date: Mon, 26 Apr 2010 17:49:14 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Pavel Machek <pavel@ucw.cz>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, Rik van Riel <riel@redhat.com>,
-       John Stoffel <john@stoffel.org>, Hedi Berriche <hedi@sgi.com>,
-       Jack Steiner <steiner@sgi.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] init: Provide a kernel start parameter to increase
- pid_max v3
-References: <20100421193350.GU16427@zorg.emea.sgi.com> <19407.23456.469074.256306@stoffel.org> <20100421222414.GA26241@suse.de> <4BCF80F2.2010906@redhat.com> <20100421232200.GA22877@suse.de> <20100422102852.72837494@lxorguk.ukuu.org.uk> <alpine.LFD.2.00.1004220743080.9086@i5.linux-foundation.org> <20100425071606.GB1275@ucw.cz> <alpine.LFD.2.00.1004251002480.3739@i5.linux-foundation.org> <4BD5EDF9.6030504@sgi.com> <20100426204648.GC30736@suse.de>
-In-Reply-To: <20100426204648.GC30736@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Avi Kivity <avi@redhat.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, hugh.dickins@tiscali.co.uk, ngupta@vflare.org,
+       JBeulich@novell.com, chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com
+Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
+References: <20100422134249.GA2963@ca-server1.us.oracle.com> <4BD06B31.9050306@redhat.com> <53c81c97-b30f-4081-91a1-7cef1879c6fa@default> <4BD07594.9080905@redhat.com> <b1036777-129b-4531-a730-1e9e5a87cea9@default> <4BD16D09.2030803@redhat.com> <b01d7882-1a72-4ba9-8f46-ba539b668f56@default> <4BD1A74A.2050003@redhat.com> <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default> <4BD1B427.9010905@redhat.com> <b559c57a-0acb-4338-af21-dbfc3b3c0de5@default 4BD336CF.1000103@redhat.com> <d1bb78ca-5ef6-4a8d-af79-a265f2d4339c@default> <4BD43182.1040508@redhat.com>
+In-Reply-To: <4BD43182.1040508@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/25/2010 05:11 AM, Avi Kivity wrote:
+> No need to change the kernel at all; the hypervisor controls the page
+> tables.
 
+Not in Xen PV guests (the hypervisor vets guest updates, but it can't
+safely make its own changes to the pagetables).  (Its kind of annoying.)
 
-Greg KH wrote:
-> On Mon, Apr 26, 2010 at 12:48:09PM -0700, Mike Travis wrote:
->> Subject: [Patch 1/1] init: Provide a kernel start parameter to increase pid_max v3
-> 
-> Your subject is now incorrect, based on the patch.  You should also
-> adjust the body of the changelog to reflect the code change.
-> 
-> thanks,
-> 
-> greg k-h
-
-Thanks for that catch.  I had changed the name of the patch, but not the subject.
-
--Mike
+    J
