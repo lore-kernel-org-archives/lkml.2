@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab0D0VGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 17:06:14 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58332 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab0D0VGN convert rfc822-to-8bit (ORCPT
+	id S1754885Ab0D0VHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 17:07:43 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:43865 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561Ab0D0VHm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 17:06:13 -0400
+	Tue, 27 Apr 2010 17:07:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ueKvEeX4XwO2Z9oN+VP+XFdQBVUR1zM9ZBuxg39Q95LUNv934tcJaKuACmiZ9n7emi
-         ooEOoouD80BWUbeRlhv5vdbUOpRYWru3j38aeCWbLisldxdNlb17BG5nxoZ5ej7WVhBk
-         CSnJKACE/VVfKdPy+9cWjPnm/jRIRzTBvkYlI=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rgdSWybrtGiNaJUz8Q/MdZay2r87P8ERSNc9eXzyJwjPQ3/iaE88K/fRxLf1rRey66
+         LgcNQvFM1myUtFy1ADaMvSOcZTFo1XgBH95BKTZlaggztEnDYTj8ju+ZpW7YHLh/wKHB
+         lpFcEYUE+/s3ZW5uZz/Rcw/Q0B8qSRkSmytoQ=
 MIME-Version: 1.0
-In-Reply-To: <1272401402.9739.77.camel@gandalf.stny.rr.com>
-References: <1272304925-2436-1-git-send-email-chase.douglas@canonical.com>
-	 <1272401402.9739.77.camel@gandalf.stny.rr.com>
-Date: Tue, 27 Apr 2010 17:06:12 -0400
-X-Google-Sender-Auth: 1a1bed4d0b5d630a
-Message-ID: <y2k40ec3ea41004271406x3727625cwa3c5d628e0e9ad3b@mail.gmail.com>
-Subject: Re: [PATCH] ftrace: print sample std dev when function profiling
-From: Chase Douglas <chase.douglas@canonical.com>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <20100427132607.49c68196.akpm@linux-foundation.org>
+References: <1268258994.2183.14.camel@carter>
+	 <ca2dc2821003210830h2025df79r477cca7d81ddd28d@mail.gmail.com>
+	 <20100322205704.ac4cd9ae.akpm@linux-foundation.org>
+	 <alpine.DEB.2.01.1003222111070.5493@bogon.housecafe.de>
+	 <ca2dc2821003230440w3d96612aja0d4e083d3cc8c02@mail.gmail.com>
+	 <20100324111436.fe5d2906.akpm@linux-foundation.org>
+	 <ca2dc2821003250955x211ef2f8la16ded9759ccb6ab@mail.gmail.com>
+	 <20100427105750.1cfe59b9.akpm@linux-foundation.org>
+	 <n2tca2dc2821004271306nfc0c9c76o143b796e8af6ced8@mail.gmail.com>
+	 <20100427132607.49c68196.akpm@linux-foundation.org>
+Date: Tue, 27 Apr 2010 23:07:39 +0200
+Message-ID: <v2gca2dc2821004271407o59e3e2d4n135bb050510a2e63@mail.gmail.com>
+Subject: Re: [PATCH] intel-agp.c: Fix crash when accessing nonexistent GTT 
+	entries in i915
+From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christian Kujau <lists@nerdbynature.de>,
+       Zhenyu Wang <zhenyuw@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>, David.Woodhouse@intel.com,
+       dwmw2@infradead.org, eric@anholt.net, ben@decadent.org.uk,
+       gregkh@suse.de, Dave Airlie <airlied@linux.ie>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 4:50 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Mon, 2010-04-26 at 14:02 -0400, Chase Douglas wrote:
+On Tue, Apr 27, 2010 at 10:26 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 27 Apr 2010 22:06:21 +0200
+> Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
 >
->> +     /* Sample standard deviation (s^2) */
->> +     if (rec->counter <= 1)
->> +             stddev = 0;
->> +     else {
->> +             stddev = rec->time_squared - rec->counter * avg * avg;
->> +             do_div(stddev, (rec->counter - 1) * 1000); /* ns^2 -> us^2 */
+>> On Tue, Apr 27, 2010 at 7:57 PM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>> > On Thu, 25 Mar 2010 17:55:56 +0100
+>> > Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
+>> >
+>> >> On Wed, Mar 24, 2010 at 7:14 PM, Andrew Morton
+>> >> <akpm@linux-foundation.org> wrote:
+>> >> > On Tue, 23 Mar 2010 12:40:05 +0100
+>> >> > Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
+>> >> >
+>> >> >> On Tue, Mar 23, 2010 at 5:14 AM, Christian Kujau <lists@nerdbynature.de> wrote:
+>> >> >> > On Mon, 22 Mar 2010 at 20:57, Andrew Morton wrote:
+>> >> >> >> On Sun, 21 Mar 2010 16:30:20 +0100 Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
+>> >> >> >> > I bisected in order to find the commit 5877960869333e42ebeb733e8d9d5630ff96d350.
+>> >> >> >
+>> >> >> > I believe this[0] is fc61901373987ad61851ed001fe971f3ee8d96a3 upstream:
+>> >> >>
+>> >> >> Indeed. Also in
+>> >> >>
+>> >> >> http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.32.y.git;a=commit;h=fc61901373987ad61851ed001fe971f3ee8d96a3
+>> >> >
+>> >> > Does reverting that patch from the current code fix the crash?
+>> >>
+>> >> Yes. In addition, applying the patch I provided also fixes it in current code.
+>> >>
+>> >
+>> > Well great. __A whole pile of new stuff has turned up in linux-next's
+>> > drivers/char/agp/intel-agp.c. __As far as I can tell none of it
+>> > address the regression which you've reported and your patch no longer
+>> > applies at all so I have to drop the patch.
+>> >
+>> > Perhaps "agp/intel: put back check that we have a driver for the
+>> > bridge" fixes it, but it isn't tagged for -stable backporting.
+>>
+>> I can try linux-next and see if it works again.
 >
-> Shouldn't this be:
+> Thanks.
 >
->        do_div(stddev, (rec->counter - 1) * 1000000); ?
+>> In addition, I have to test the regression with some newer X version
+>> yet, as Zhenyu told me.
 >
-> (x / 1000)^2 == x^2 / 1000^2
+> That would seem to be counter-productive.  If you install a newer X and
+> the bug goes away, you've just gone and made it harder for yourself to
+> reproduce the bug.
+>
 
-The trace_print_graph_duration function divides the value by 1000
-again to display in us units. I could make the comment more clear, but
-I didn't want to make a big fuss over a unit conversion.
-
-I also figured this out *after* I had some really wrong looking
-numbers :). I made sure this patch produced the correct value after
-two events, so I assume the math is correct.
-
--- Chase
+Oh, of course. I meant compiling the latest version somewhere and have
+both versions ready (the Debian's one and the one from x.org).
