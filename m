@@ -1,105 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab0D0DTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 23:19:41 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46229 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752589Ab0D0DTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 23:19:40 -0400
-Date: Tue, 27 Apr 2010 13:19:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: Can you include a new git tree in linux-next, the staging-next
- tree?
-Message-Id: <20100427131935.9d48a17b.sfr@canb.auug.org.au>
-In-Reply-To: <20100427000104.GA31358@kroah.com>
-References: <20100427000104.GA31358@kroah.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+	id S1753411Ab0D0DVz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 23:21:55 -0400
+Received: from usul.saidi.cx ([204.11.33.34]:42450 "EHLO usul.overt.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753019Ab0D0DVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 23:21:54 -0400
+X-Greylist: delayed 2494 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Apr 2010 23:21:54 EDT
+Date: Mon, 26 Apr 2010 19:40:02 -0700
+From: Philip Langdale <philipl@overt.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Jeff Garrett <jeff@jgarrett.org>, Andi Kleen <andi@firstfloor.org>,
+       linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: acpi_idle: Very idle Core i7 machine never enters C3
+Message-ID: <20100426194002.586fbaa5@fido5>
+In-Reply-To: <alpine.LFD.2.00.1002051238280.4050@localhost.localdomain>
+References: <20100126084740.GA5265@jgarrett.org>
+	<87y6jkee1b.fsf@basil.nowhere.org>
+	<20100205160900.GA2736@jgarrett.org>
+	<alpine.LFD.2.00.1002051238280.4050@localhost.localdomain>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__27_Apr_2010_13_19_35_+1000_AQ7dPr.sCW1CCgNP"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SA-Do-Not-RunX1: Yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Apr_2010_13_19_35_+1000_AQ7dPr.sCW1CCgNP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 05 Feb 2010 12:45:21 -0500 (EST)
+Len Brown <lenb@kernel.org> wrote:
 
-Hi Greg,
+> Jeff,
+> What do you see if you apply just the patch below?
+> 
+> Also, in addition to "powertop -d" to show what the kernel requests,
+> please run turbostat to show what the hardware actually did:
+> 
+> http://userweb.kernel.org/~lenb/acpi/utils/pmtools-latest/turbostat/turbostat.c
+> 
+> eg.
+> # turbostat -d -v sleep 5
+> 
+> thanks,
+> -Len Brown, Intel Open Source Technology Center
+> ---
 
-On Mon, 26 Apr 2010 17:01:04 -0700 Greg KH <greg@kroah.com> wrote:
->
-> Welcome back from your break :)
+To resurrect this thread...
 
-Thanks - I was nice and refreshed until about 9am this morning :-)
+I have a giga-byte GA-P55M-UD4 motherboard and I have this same problem
+as well. Len's patch "works" in that I see C6 being used, but it also
+cripples the system - if I do a make -j16 kernel build, I see most jobs
+serialized onto one or two cores. Without the patch, I see the
+full utilization of all 8 hyper-threads as expected.
 
-> Could you include a new git tree in linux-next, the staging-next tree
-> at:
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-next-2.6.git
->=20
-> the branch is "staging-next" to pull from.
+Now, gigabyte have already b0rked these boards up by using the UHCI
+controllers on the PCH instead of the rate matching hubs. Maybe that's
+directly the cause of BM activity - maybe they screwed something else
+up - is it possible for BIOS/ACPI mistakes to lead to this behaviour?
 
-OK, I will add it at the end today.  I assume that this will be based off
-Linus' tree?
+Jeff - is your board gigabyte too?
 
-> I'm trying to do the -next work for staging in a git tree to keep my
-> development quilt trees smaller, and make it a bit easier for others to
-> work off of if they want to.
+--phil
 
-Should I drop the "staging" quilt tree?
+> diff --git a/drivers/acpi/processor_idle.c
+> b/drivers/acpi/processor_idle.c index 7c0441f..f528625 100644
+> --- a/drivers/acpi/processor_idle.c
+> +++ b/drivers/acpi/processor_idle.c
+> @@ -763,7 +763,7 @@ static const struct file_operations
+> acpi_processor_power_fops = { static int acpi_idle_bm_check(void)
+>  {
+>  	u32 bm_status = 0;
+> -
+> +return bm_status;
+>  	acpi_read_bit_register(ACPI_BITREG_BUS_MASTER_STATUS,
+> &bm_status); if (bm_status)
+>  		acpi_write_bit_register(ACPI_BITREG_BUS_MASTER_STATUS,
+> 1);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> 
 
-> If I've messed anything up, please let me know.
 
-You'll hear the screams :-)
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Tue__27_Apr_2010_13_19_35_+1000_AQ7dPr.sCW1CCgNP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvWV8cACgkQjjKRsyhoI8wu7ACfZZa48GvAAaxVw5ZXR4xKSKN3
-D+8AnA9aQnlmJzrgJXFA7FLbQ8YwfLQ6
-=Y9NW
------END PGP SIGNATURE-----
-
---Signature=_Tue__27_Apr_2010_13_19_35_+1000_AQ7dPr.sCW1CCgNP--
+--phil
