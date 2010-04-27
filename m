@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab0D0GnP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 02:43:15 -0400
+	id S1751254Ab0D0GnX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 02:43:23 -0400
 Received: from mga09.intel.com ([134.134.136.24]:2551 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558Ab0D0GnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 02:43:11 -0400
+	id S1752894Ab0D0GnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 02:43:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,278,1270450800"; 
-   d="scan'208";a="616765478"
+   d="scan'208";a="616765488"
 From: Huang Ying <ying.huang@intel.com>
 To: lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 06/12] ACPI, APEI, PCIE AER, use general HEST table parsing in AER firmware_first setup
-Date: Tue, 27 Apr 2010 14:41:15 +0800
-Message-Id: <1272350481-27951-7-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 08/12] Unified UUID/GUID definition
+Date: Tue, 27 Apr 2010 14:41:17 +0800
+Message-Id: <1272350481-27951-9-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
 References: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
@@ -23,383 +23,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, a dedicated HEST tabling parsing code is used for PCIE AER
-firmware_first setup. It is rebased on general HEST tabling parsing
-code of APEI. The firmware_first setup code is moved from PCI core to
-AER driver too, because it is only AER related.
+There are many different UUID/GUID definitions in kernel, such as that
+in EFI, many file systems, some drivers, etc. Every kernel components
+need UUID/GUID has its own definition. This patch provides a unified
+definition for UUID/GUID.
+
+UUID is defined via typedef. This makes that UUID appears more like a
+preliminary type, and makes the data type explicit (comparing with
+implicit "u8 uuid[16]").
+
+The binary representation of UUID/GUID can be little-endian (used by
+EFI, etc) or big-endian (defined by RFC4122), so both is defined.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 ---
- drivers/acpi/Makefile              |    1 
- drivers/acpi/hest.c                |  135 -------------------------------------
- drivers/pci/pcie/aer/aerdrv.h      |   17 ++++
- drivers/pci/pcie/aer/aerdrv_acpi.c |   77 +++++++++++++++++++++
- drivers/pci/pcie/aer/aerdrv_core.c |    8 +-
- drivers/pci/probe.c                |    8 --
- include/acpi/acpi_hest.h           |   12 ---
- include/linux/pci.h                |    3 
- 8 files changed, 100 insertions(+), 161 deletions(-)
- delete mode 100644 drivers/acpi/hest.c
- delete mode 100644 include/acpi/acpi_hest.h
+ include/linux/uuid.h |   70 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ lib/Makefile         |    2 -
+ lib/uuid.c           |   53 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 124 insertions(+), 1 deletion(-)
+ create mode 100644 include/linux/uuid.h
+ create mode 100644 lib/uuid.c
 
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -20,7 +20,6 @@ obj-y				+= acpi.o \
- # All the builtin files are in the "acpi." module_param namespace.
- acpi-y				+= osl.o utils.o reboot.o
- acpi-y				+= atomicio.o
--acpi-y				+= hest.o
- 
- # sleep related files
- acpi-y				+= wakeup.o
---- a/drivers/acpi/hest.c
-+++ /dev/null
-@@ -1,135 +0,0 @@
--#include <linux/acpi.h>
--#include <linux/pci.h>
--
--#define PREFIX "ACPI: "
--
--static inline unsigned long parse_acpi_hest_ia_machine_check(struct acpi_hest_ia_machine_check *p)
--{
--	return sizeof(*p) +
--		(sizeof(struct acpi_hest_ia_error_bank) * p->num_hardware_banks);
--}
--
--static inline unsigned long parse_acpi_hest_ia_corrected(struct acpi_hest_ia_corrected *p)
--{
--	return sizeof(*p) +
--		(sizeof(struct acpi_hest_ia_error_bank) * p->num_hardware_banks);
--}
--
--static inline unsigned long parse_acpi_hest_ia_nmi(struct acpi_hest_ia_nmi *p)
--{
--	return sizeof(*p);
--}
--
--static inline unsigned long parse_acpi_hest_generic(struct acpi_hest_generic *p)
--{
--	return sizeof(*p);
--}
--
--static inline unsigned int hest_match_pci(struct acpi_hest_aer_common *p, struct pci_dev *pci)
--{
--	return	(0           == pci_domain_nr(pci->bus) &&
--		 p->bus      == pci->bus->number &&
--		 p->device   == PCI_SLOT(pci->devfn) &&
--		 p->function == PCI_FUNC(pci->devfn));
--}
--
--static unsigned long parse_acpi_hest_aer(void *hdr, int type, struct pci_dev *pci, int *firmware_first)
--{
--	struct acpi_hest_aer_common *p = hdr + sizeof(struct acpi_hest_header);
--	unsigned long rc=0;
--	u8 pcie_type = 0;
--	u8 bridge = 0;
--	switch (type) {
--	case ACPI_HEST_TYPE_AER_ROOT_PORT:
--		rc = sizeof(struct acpi_hest_aer_root);
--		pcie_type = PCI_EXP_TYPE_ROOT_PORT;
--		break;
--	case ACPI_HEST_TYPE_AER_ENDPOINT:
--		rc = sizeof(struct acpi_hest_aer);
--		pcie_type = PCI_EXP_TYPE_ENDPOINT;
--		break;
--	case ACPI_HEST_TYPE_AER_BRIDGE:
--		rc = sizeof(struct acpi_hest_aer_bridge);
--		if ((pci->class >> 16) == PCI_BASE_CLASS_BRIDGE)
--			bridge = 1;
--		break;
--	}
--
--	if (p->flags & ACPI_HEST_GLOBAL) {
--		if ((pci->is_pcie && (pci->pcie_type == pcie_type)) || bridge)
--			*firmware_first = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
--	}
--	else
--		if (hest_match_pci(p, pci))
--			*firmware_first = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
--	return rc;
--}
--
--static int acpi_hest_firmware_first(struct acpi_table_header *stdheader, struct pci_dev *pci)
--{
--	struct acpi_table_hest *hest = (struct acpi_table_hest *)stdheader;
--	void *p = (void *)hest + sizeof(*hest); /* defined by the ACPI 4.0 spec */
--	struct acpi_hest_header *hdr = p;
--
--	int i;
--	int firmware_first = 0;
--	static unsigned char printed_unused = 0;
--	static unsigned char printed_reserved = 0;
--
--	for (i=0, hdr=p; p < (((void *)hest) + hest->header.length) && i < hest->error_source_count; i++) {
--		switch (hdr->type) {
--		case ACPI_HEST_TYPE_IA32_CHECK:
--			p += parse_acpi_hest_ia_machine_check(p);
--			break;
--		case ACPI_HEST_TYPE_IA32_CORRECTED_CHECK:
--			p += parse_acpi_hest_ia_corrected(p);
--			break;
--		case ACPI_HEST_TYPE_IA32_NMI:
--			p += parse_acpi_hest_ia_nmi(p);
--			break;
--		/* These three should never appear */
--		case ACPI_HEST_TYPE_NOT_USED3:
--		case ACPI_HEST_TYPE_NOT_USED4:
--		case ACPI_HEST_TYPE_NOT_USED5:
--			if (!printed_unused) {
--				printk(KERN_DEBUG PREFIX
--				       "HEST Error Source list contains an obsolete type (%d).\n", hdr->type);
--				printed_unused = 1;
--			}
--			break;
--		case ACPI_HEST_TYPE_AER_ROOT_PORT:
--		case ACPI_HEST_TYPE_AER_ENDPOINT:
--		case ACPI_HEST_TYPE_AER_BRIDGE:
--			p += parse_acpi_hest_aer(p, hdr->type, pci, &firmware_first);
--			break;
--		case ACPI_HEST_TYPE_GENERIC_ERROR:
--			p += parse_acpi_hest_generic(p);
--			break;
--		/* These should never appear either */
--		case ACPI_HEST_TYPE_RESERVED:
--		default:
--			if (!printed_reserved) {
--				printk(KERN_DEBUG PREFIX
--				       "HEST Error Source list contains a reserved type (%d).\n", hdr->type);
--				printed_reserved = 1;
--			}
--			break;
--		}
--	}
--	return firmware_first;
--}
--
--int acpi_hest_firmware_first_pci(struct pci_dev *pci)
--{
--	acpi_status status = AE_NOT_FOUND;
--	struct acpi_table_header *hest = NULL;
--	status = acpi_get_table(ACPI_SIG_HEST, 1, &hest);
--
--	if (ACPI_SUCCESS(status)) {
--		if (acpi_hest_firmware_first(hest, pci)) {
--			return 1;
--		}
--	}
--	return 0;
--}
--EXPORT_SYMBOL_GPL(acpi_hest_firmware_first_pci);
---- a/drivers/pci/pcie/aer/aerdrv.h
-+++ b/drivers/pci/pcie/aer/aerdrv.h
-@@ -134,4 +134,21 @@ static inline int aer_osc_setup(struct p
- }
- #endif
- 
-+#ifdef CONFIG_ACPI_APEI
-+extern int pcie_aer_get_firmware_first(struct pci_dev *pci_dev);
-+#else
-+static inline int pcie_aer_get_firmware_first(struct pci_dev *pci_dev)
+--- /dev/null
++++ b/include/linux/uuid.h
+@@ -0,0 +1,70 @@
++/*
++ * UUID/GUID definition
++ *
++ * Copyright (C) 2010, Intel Corp.
++ *	Huang Ying <ying.huang@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation;
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#ifndef _LINUX_UUID_H_
++#define _LINUX_UUID_H_
++
++#include <linux/types.h>
++#include <linux/string.h>
++
++typedef struct {
++	__u8 b[16];
++} uuid_le;
++
++typedef struct {
++	__u8 b[16];
++} uuid_be;
++
++#define UUID_LE(a, b, c, d0, d1, d2, d3, d4, d5, d6, d7)		\
++((uuid_le)								\
++{{ (a) & 0xff, ((a) >> 8) & 0xff, ((a) >> 16) & 0xff, ((a) >> 24) & 0xff, \
++   (b) & 0xff, ((b) >> 8) & 0xff,					\
++   (c) & 0xff, ((c) >> 8) & 0xff,					\
++   (d0), (d1), (d2), (d3), (d4), (d5), (d6), (d7) }})
++
++#define UUID_BE(a, b, c, d0, d1, d2, d3, d4, d5, d6, d7)		\
++((uuid_be)								\
++{{ ((a) >> 24) & 0xff, ((a) >> 16) & 0xff, ((a) >> 8) & 0xff, (a) & 0xff, \
++   ((b) >> 8) & 0xff, (b) & 0xff,					\
++   ((c) >> 8) & 0xff, (c) & 0xff,					\
++   (d0), (d1), (d2), (d3), (d4), (d5), (d6), (d7) }})
++
++#define NULL_UUID_LE							\
++	UUID_LE(0x00000000, 0x0000, 0x0000, 0x00, 0x00, 0x00, 0x00,	\
++		0x00, 0x00, 0x00, 0x00)
++
++#define NULL_UUID_BE							\
++	UUID_BE(0x00000000, 0x0000, 0x0000, 0x00, 0x00, 0x00, 0x00,	\
++		0x00, 0x00, 0x00, 0x00)
++
++static inline int uuid_le_cmp(const uuid_le u1, const uuid_le u2)
 +{
-+	if (pci_dev->__aer_firmware_first_valid)
-+		return pci_dev->__aer_firmware_first;
-+	return 0;
++	return memcmp(&u1, &u2, sizeof(uuid_le));
 +}
++
++static inline int uuid_be_cmp(const uuid_be u1, const uuid_be u2)
++{
++	return memcmp(&u1, &u2, sizeof(uuid_be));
++}
++
++extern void uuid_le_gen(uuid_le *u);
++extern void uuid_be_gen(uuid_be *u);
++
 +#endif
-+
-+static inline void pcie_aer_force_firmware_first(struct pci_dev *pci_dev,
-+						 int enable)
-+{
-+	pci_dev->__aer_firmware_first = !!enable;
-+	pci_dev->__aer_firmware_first_valid = 1;
-+}
- #endif /* _AERDRV_H_ */
---- a/drivers/pci/pcie/aer/aerdrv_acpi.c
-+++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
-@@ -16,6 +16,7 @@
- #include <linux/acpi.h>
- #include <linux/pci-acpi.h>
- #include <linux/delay.h>
-+#include <acpi/apei.h>
- #include "aerdrv.h"
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -21,7 +21,7 @@ lib-y	+= kobject.o kref.o klist.o
  
- /**
-@@ -53,3 +54,79 @@ int aer_osc_setup(struct pcie_device *pc
+ obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+ 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+-	 string_helpers.o gcd.o lcm.o list_sort.o
++	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o
  
- 	return 0;
- }
+ ifeq ($(CONFIG_DEBUG_KOBJECT),y)
+ CFLAGS_kobject.o += -DDEBUG
+--- /dev/null
++++ b/lib/uuid.c
+@@ -0,0 +1,53 @@
++/*
++ * Unified UUID/GUID definition
++ *
++ * Copyright (C) 2009, Intel Corp.
++ *	Huang Ying <ying.huang@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation;
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
 +
-+#ifdef CONFIG_ACPI_APEI
-+static inline int hest_match_pci(struct acpi_hest_aer_common *p,
-+				 struct pci_dev *pci)
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/uuid.h>
++#include <linux/random.h>
++
++static void __uuid_gen_common(__u8 b[16])
 +{
-+	return	(0           == pci_domain_nr(pci->bus) &&
-+		 p->bus      == pci->bus->number &&
-+		 p->device   == PCI_SLOT(pci->devfn) &&
-+		 p->function == PCI_FUNC(pci->devfn));
-+}
++	int i;
++	u32 r;
 +
-+struct aer_hest_parse_info {
-+	struct pci_dev *pci_dev;
-+	int firmware_first;
-+};
-+
-+static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
-+{
-+	struct aer_hest_parse_info *info = data;
-+	struct acpi_hest_aer_common *p;
-+	u8 pcie_type = 0;
-+	u8 bridge = 0;
-+	int ff = 0;
-+
-+	switch (hest_hdr->type) {
-+	case ACPI_HEST_TYPE_AER_ROOT_PORT:
-+		pcie_type = PCI_EXP_TYPE_ROOT_PORT;
-+		break;
-+	case ACPI_HEST_TYPE_AER_ENDPOINT:
-+		pcie_type = PCI_EXP_TYPE_ENDPOINT;
-+		break;
-+	case ACPI_HEST_TYPE_AER_BRIDGE:
-+		if ((info->pci_dev->class >> 16) == PCI_BASE_CLASS_BRIDGE)
-+			bridge = 1;
-+		break;
-+	default:
-+		return 0;
++	for (i = 0; i < 4; i++) {
++		r = random32();
++		memcpy(b + i * 4, &r, 4);
 +	}
-+
-+	p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
-+	if (p->flags & ACPI_HEST_GLOBAL) {
-+		if ((info->pci_dev->is_pcie &&
-+		     info->pci_dev->pcie_type == pcie_type) || bridge)
-+			ff = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
-+	} else
-+		if (hest_match_pci(p, info->pci_dev))
-+			ff = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
-+	info->firmware_first = ff;
-+
-+	return 0;
++	/* reversion 0b10 */
++	b[8] = (b[8] & 0x3F) | 0x80;
 +}
 +
-+static void aer_set_firmware_first(struct pci_dev *pci_dev)
++void uuid_le_gen(uuid_le *lu)
 +{
-+	int rc;
-+	struct aer_hest_parse_info info = {
-+		.pci_dev	= pci_dev,
-+		.firmware_first	= 0,
-+	};
-+
-+	rc = apei_hest_parse(aer_hest_parse, &info);
-+
-+	if (rc)
-+		pci_dev->__aer_firmware_first = 0;
-+	else
-+		pci_dev->__aer_firmware_first = info.firmware_first;
-+	pci_dev->__aer_firmware_first_valid = 1;
++	__uuid_gen_common(lu->b);
++	/* version 4 : random generation */
++	lu->b[7] = (lu->b[7] & 0x0F) | 0x40;
 +}
++EXPORT_SYMBOL_GPL(uuid_le_gen);
 +
-+int pcie_aer_get_firmware_first(struct pci_dev *dev)
++void uuid_be_gen(uuid_be *bu)
 +{
-+	if (!dev->__aer_firmware_first_valid)
-+		aer_set_firmware_first(dev);
-+	return dev->__aer_firmware_first;
++	__uuid_gen_common(bu->b);
++	/* version 4 : random generation */
++	bu->b[6] = (bu->b[6] & 0x0F) | 0x40;
 +}
-+#endif
---- a/drivers/pci/pcie/aer/aerdrv_core.c
-+++ b/drivers/pci/pcie/aer/aerdrv_core.c
-@@ -36,7 +36,7 @@ int pci_enable_pcie_error_reporting(stru
- 	u16 reg16 = 0;
- 	int pos;
- 
--	if (dev->aer_firmware_first)
-+	if (pcie_aer_get_firmware_first(dev))
- 		return -EIO;
- 
- 	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
-@@ -64,7 +64,7 @@ int pci_disable_pcie_error_reporting(str
- 	u16 reg16 = 0;
- 	int pos;
- 
--	if (dev->aer_firmware_first)
-+	if (pcie_aer_get_firmware_first(dev))
- 		return -EIO;
- 
- 	pos = pci_pcie_cap(dev);
-@@ -859,7 +859,7 @@ void aer_delete_rootport(struct aer_rpc
-  */
- int aer_init(struct pcie_device *dev)
- {
--	if (dev->port->aer_firmware_first) {
-+	if (pcie_aer_get_firmware_first(dev->port)) {
- 		dev_printk(KERN_DEBUG, &dev->device,
- 			   "PCIe errors handled by platform firmware.\n");
- 		goto out;
-@@ -873,7 +873,7 @@ out:
- 	if (forceload) {
- 		dev_printk(KERN_DEBUG, &dev->device,
- 			   "aerdrv forceload requested.\n");
--		dev->port->aer_firmware_first = 0;
-+		pcie_aer_force_firmware_first(dev->port, 0);
- 		return 0;
- 	}
- 	return -ENXIO;
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -10,7 +10,6 @@
- #include <linux/module.h>
- #include <linux/cpumask.h>
- #include <linux/pci-aspm.h>
--#include <acpi/acpi_hest.h>
- #include "pci.h"
- 
- #define CARDBUS_LATENCY_TIMER	176	/* secondary latency timer */
-@@ -904,12 +903,6 @@ void set_pcie_hotplug_bridge(struct pci_
- 		pdev->is_hotplug_bridge = 1;
- }
- 
--static void set_pci_aer_firmware_first(struct pci_dev *pdev)
--{
--	if (acpi_hest_firmware_first_pci(pdev))
--		pdev->aer_firmware_first = 1;
--}
--
- #define LEGACY_IO_RESOURCE	(IORESOURCE_IO | IORESOURCE_PCI_FIXED)
- 
- /**
-@@ -939,7 +932,6 @@ int pci_setup_device(struct pci_dev *dev
- 	dev->multifunction = !!(hdr_type & 0x80);
- 	dev->error_state = pci_channel_io_normal;
- 	set_pcie_port_type(dev);
--	set_pci_aer_firmware_first(dev);
- 
- 	list_for_each_entry(slot, &dev->bus->slots, list)
- 		if (PCI_SLOT(dev->devfn) == slot->number)
---- a/include/acpi/acpi_hest.h
-+++ /dev/null
-@@ -1,12 +0,0 @@
--#ifndef __ACPI_HEST_H
--#define __ACPI_HEST_H
--
--#include <linux/pci.h>
--
--#ifdef CONFIG_ACPI
--extern int acpi_hest_firmware_first_pci(struct pci_dev *pci);
--#else
--static inline int acpi_hest_firmware_first_pci(struct pci_dev *pci) { return 0; }
--#endif
--
--#endif
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -311,7 +311,8 @@ struct pci_dev {
- 	unsigned int	is_virtfn:1;
- 	unsigned int	reset_fn:1;
- 	unsigned int    is_hotplug_bridge:1;
--	unsigned int    aer_firmware_first:1;
-+	unsigned int    __aer_firmware_first_valid:1;
-+	unsigned int	__aer_firmware_first:1;
- 	pci_dev_flags_t dev_flags;
- 	atomic_t	enable_cnt;	/* pci_enable_device has been called */
- 
++EXPORT_SYMBOL_GPL(uuid_be_gen);
