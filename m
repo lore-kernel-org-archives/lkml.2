@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab0D0DoE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 23:44:04 -0400
-Received: from kroah.org ([198.145.64.141]:59576 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753027Ab0D0DoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 23:44:01 -0400
-Date: Mon, 26 Apr 2010 20:37:42 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: Can you include a new git tree in linux-next, the staging-next
-	tree?
-Message-ID: <20100427033742.GA4759@kroah.com>
-References: <20100427000104.GA31358@kroah.com> <20100427131935.9d48a17b.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100427131935.9d48a17b.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1753816Ab0D0Dv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 23:51:27 -0400
+Received: from mail.digidescorp.com ([66.244.163.200]:25457 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab0D0Dv0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 23:51:26 -0400
+X-Spam-Processed: digidescorp.com, Mon, 26 Apr 2010 22:51:26 -0500
+X-Authenticated-Sender: steve@digidescorp.com
+X-MDRemoteIP: 99.142.27.17
+X-Return-Path: prvs=1733b75585=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] microblaze: add stack unwinder
+From: "Steven J. Magnani" <steve@digidescorp.com>
+Reply-To: steve@digidescorp.com
+To: monstr@monstr.eu
+Cc: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
+In-Reply-To: <4BC5F11C.3080305@monstr.eu>
+References: <1271220928-3502-1-git-send-email-steve@digidescorp.com>
+	 <4BC5F11C.3080305@monstr.eu>
+Content-Type: text/plain
+Organization: Digital Design Corporation
+Date: Mon, 26 Apr 2010 22:31:29 -0500
+Message-Id: <1272339089.17476.1.camel@iscandar.digidescorp.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 01:19:35PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On Wed, 2010-04-14 at 18:45 +0200, Michal Simek wrote:
+> > diff -uprN a/arch/microblaze/kernel/traps.c
+> b/arch/microblaze/kernel/traps.c
+> > --- a/arch/microblaze/kernel/traps.c  2010-04-09 21:52:36.000000000
+> > +++ b/arch/microblaze/kernel/traps.c  2010-04-12 22:16:01.000000000 
+[snip]
+> >  
+> > -     if (!stack)
+> > -             stack = (unsigned long *)&stack;
+> > +     if (fp == 0) {
+> > +             if (task)
+> > +                     fp = ((struct thread_info *)
+> > +                             (task->stack))->cpu_context.r1;
+> > +             else {
+> > +                     /* Pick up caller of dump_stack() */
+> > +                     fp = (__u32)&sp - 8;
+> > +             }
+> > +     }
 > 
-> On Mon, 26 Apr 2010 17:01:04 -0700 Greg KH <greg@kroah.com> wrote:
-> >
-> > Welcome back from your break :)
+> just coding style.
 > 
-> Thanks - I was nice and refreshed until about 9am this morning :-)
-> 
-> > Could you include a new git tree in linux-next, the staging-next tree
-> > at:
-> > 	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-next-2.6.git
-> > 
-> > the branch is "staging-next" to pull from.
-> 
-> OK, I will add it at the end today.  I assume that this will be based off
-> Linus' tree?
+>         if (fp == 0)
+>                 if (task)
+>                         fp = ((struct thread_info *)
+>                                 (task->stack))->cpu_context.r1;
+>                 else
+>                         /* Pick up caller of dump_stack() */
+>                         fp = (__u32)&sp - 8;
 
-Yes.
+Do you feel strongly about this? I try to always use braces on if/else
+clauses that have more than one line. I've found that the extra
+characters are well worth the savings in debugging time when someone
+tries to extend the clause and forgets to add the braces.
 
-> > I'm trying to do the -next work for staging in a git tree to keep my
-> > development quilt trees smaller, and make it a bit easier for others to
-> > work off of if they want to.
-> 
-> Should I drop the "staging" quilt tree?
+Steve
 
-Yes, but not the staging.current tree, I'll still use that for now in
-quilt.
 
-thanks,
-
-greg k-h
