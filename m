@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab0D0Seq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 14:34:46 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50963 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab0D0Sep (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 27 Apr 2010 14:34:45 -0400
-Date: Tue, 27 Apr 2010 14:34:28 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com, x86@kernel.org,
-       clalance@redhat.com, drjones@redhat.com
-Subject: Re: [LKML] [PATCH] Fix NULL pointer for Xen guests
-Message-ID: <20100427183428.GA15385@phenom.dumpdata.com>
-References: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com> <20100427165816.GA24707@phenom.dumpdata.com> <4BD71A2D.6050309@redhat.com>
+	id S1755597Ab0D0Sfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 14:35:45 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:57349 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292Ab0D0Sfo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 14:35:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=MxFFiiO69BfhG9+BQVPLP7YSIJ6ICUWfr5w4cGs7eeT3fOPnq77NzFrs88h4gP/Vgt
+         s3ckQ1uy4cneiQgDdx8g8J8NGRC6wtgghVIv3VkMtMhHmbfavr3mD1/xVPccNJzTvN+T
+         NNhKWfJ9lMfeWmNnwitYe4kycgtUWYsY8Lr4Q=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: David Miller <davem@davemloft.net>
+Subject: Re: 2.6.34-rc5+: oops in IPv6
+Date: Tue, 27 Apr 2010 20:35:37 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc5; KDE/4.3.4; i686; ; )
+Cc: manuel.lauss@googlemail.com, linux-kernel@vger.kernel.org
+References: <z2if861ec6f1004250745u94892bdbw9b17db4be57b131b@mail.gmail.com> <201004262058.24465.maciej.rutecki@gmail.com> <20100426.120200.179935218.davem@davemloft.net>
+In-Reply-To: <20100426.120200.179935218.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BD71A2D.6050309@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090206.4BD72E40.0089:SCFMA922111,ss=1,fgs=0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004272035.37602.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Can you provide a short example of test scenario? As in what I should do
->> to reproduce this problem?
->>    
->
-> Take the latest upstream (well ... to be honest, a bit older than that  
-> because of some other bugs) -- take 2.6.33 and try to boot it as a PV  
+On poniedziałek, 26 kwietnia 2010 o 21:02:00 David Miller wrote:
+> From: Maciej Rutecki <maciej.rutecki@gmail.com>
+> Date: Mon, 26 Apr 2010 20:58:24 +0200
+> 
+> > On niedziela, 25 kwietnia 2010 o 16:45:41 Manuel Lauss wrote:
+> >> 2.6.34-rc5-00204-gddc9b34  dies when sshd (openssh 5.5) is started
+> >> Last pull I made on April 23 was fine.
+> >>
+> >> (transcribed from a photo):
+> >>
+> >> BUG: unable to handle kernel NULL pointer dereference at 00000004
+> >> IP: [<b1535b72>] inet6_csk_bind_conflict+0x6e/0xb0
+> >
+> > I created a Bugzilla entry at
+> > https://bugzilla.kernel.org/show_bug.cgi?id=15857
+> > for your bug report, please add your address to the CC list in there,
+> > thanks!
+> 
+> It's fixed in Linus's tree like an hour after he reported this.
+> 
 
-2.6.34-rc5 PV boots under Xen for me (and pretty much since 2.6.33 +
-Suresh fix for the CONFIG_RODATA_MARK).
+Thanks for information. Closed.
 
-Perhaps I am missing some of the .config options you have set that make it not work?
-
-The irqbalance daemon looks to be running - but I think you are hitting
-this during bootup?  How long do you have to wait for this to trigger?
-
-How many CPUs did you assign to your guest?
-
-What are the "other bugs" you speak off?
-
-> guest.  I'm using a RHEL5 Xen HV fwiw ...
-
-OK, so your control domain is RHEL5. Mine is the Jeremy's xen/next one
-(2.6.32). Let me try to compile RHEL5 under FC11 - any tricks necessary
-to do that?
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
