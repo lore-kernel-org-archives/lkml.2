@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab0D0Q6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 12:58:15 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57186 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab0D0Q6O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 12:58:14 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.160.239.110
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+QtWgtj4M2H1HhB9G17i6+
-Date: Tue, 27 Apr 2010 09:58:13 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] omap fixes for v2.6.34-rc5
-Message-ID: <20100427165813.GC7225@atomide.com>
-References: <20100426190005.GJ7225@atomide.com>
- <alpine.LFD.2.00.1004270831430.3739@i5.linux-foundation.org>
- <20100427161217.GB7225@atomide.com>
- <alpine.LFD.2.00.1004270934220.3739@i5.linux-foundation.org>
+	id S1754048Ab0D0RAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 13:00:11 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49430 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337Ab0D0RAI (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 27 Apr 2010 13:00:08 -0400
+Date: Tue, 27 Apr 2010 12:58:16 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com, x86@kernel.org,
+       clalance@redhat.com, drjones@redhat.com
+Subject: Re: [LKML] [PATCH] Fix NULL pointer for Xen guests
+Message-ID: <20100427165816.GA24707@phenom.dumpdata.com>
+References: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004270934220.3739@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4BD717D8.00D4:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds <torvalds@linux-foundation.org> [100427 09:31]:
+On Tue, Apr 27, 2010 at 11:24:42AM -0400, Prarit Bhargava wrote:
+> Upstream PV guests fail to boot because of a NULL pointer.  It is possible that
+> xen guests have irq_desc->chip_data = NULL.
+
+Can you provide a short example of test scenario? As in what I should do
+to reproduce this problem?
 > 
+> Test for NULL chip_data pointer before attempting to complete an irq move.
 > 
-> On Tue, 27 Apr 2010, Tony Lindgren wrote:
-> > 
-> > OK point taken. I should have dealt with this earlier. Will only queue
-> > regressions after -rc3 or so.
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 > 
-> Note that the "only regressions" is certainly not a hard rule. Anything 
-> that would be valid for -stable is obviously always valid: security 
-> issues, major oopses etc etc.
-
-Sure.
- 
-> But the "only regressions" should kind of be the guiding line, and the 
-> others are more like "this is so serious that it should go in regardless 
-> of anything else".
-
-OK. I guess was using criteria like "this is needed to boot this and that
-board in a usable way" and "let's get all the fixes in" criteria, but that
-should have been done way earlier.
-
-Regards,
-
-Tony
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 127b871..eb2789c 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -2545,6 +2545,9 @@ void irq_force_complete_move(int irq)
+>  	struct irq_desc *desc = irq_to_desc(irq);
+>  	struct irq_cfg *cfg = desc->chip_data;
+>  
+> +	if (!cfg)
+> +		return;
+> +
+>  	__irq_complete_move(&desc, cfg->vector);
+>  }
+>  #else
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
