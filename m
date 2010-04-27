@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab0D0LCP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 07:02:15 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:14594 "EHLO
+	id S1754865Ab0D0LCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 07:02:20 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:14608 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754276Ab0D0LCM (ORCPT
+	by vger.kernel.org with ESMTP id S1754586Ab0D0LCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 07:02:12 -0400
-Message-ID: <001f01cae5f9$157be920$66f8800a@maildom.okisemi.com>
+	Tue, 27 Apr 2010 07:02:14 -0400
+Message-ID: <002301cae5f9$1622b070$66f8800a@maildom.okisemi.com>
 From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
 To: "LKML" <linux-kernel@vger.kernel.org>
 Cc: "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
        "Intel OTC" <joel.clark@intel.com>,
        "Andrew" <andrew.chih.howe.khor@intel.com>
-Subject: [PATCH] Topcliff UART: Add the UART driver [2/2]
+Subject: [PATCH] Topcliff DMA: Add the DMA driver [4/4]
 MIME-Version: 1.0
-Date: Tue, 27 Apr 2010 20:01:30 +0900
+Date: Tue, 27 Apr 2010 20:01:44 +0900
 Content-Type: message/partial;
-	total=2;
-	id="01CAE5F9.14B84B00@tsmail03";
-	number=2
+	total=4;
+	id="01CAE5F9.14BABC00@tsmail03";
+	number=4
 X-Priority: 3
 X-MSMail-Priority: Normal
 X-Mailer: Microsoft Outlook Express 6.00.2800.1983
@@ -31,221 +31,356 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-+  .subvendor  = PCI_ANY_ID,
-+  .subdevice  = PCI_ANY_ID,
-+  .init  = pci_pch_init,
-+  .setup      = pci_pch_setup,
-+ },
-+ {
-+  .vendor     = PCI_VENDOR_ID_INTEL,
-+  .device     = PCI_DEVICE_ID_PCH_UART3,
-+  .subvendor  = PCI_ANY_ID,
-+  .subdevice  = PCI_ANY_ID,
-+  .init  = pci_pch_init,
-+  .setup      = pci_pch_setup,
-+ },
-+#endif
-+ /*
-   * Default "match everything" terminator entry
-   */
-  {
-@@ -1571,6 +1691,10 @@
-  pbn_ADDIDATA_PCIe_2_3906250,
-  pbn_ADDIDATA_PCIe_4_3906250,
-  pbn_ADDIDATA_PCIe_8_3906250,
-+#if defined(ENABLE_SERIAL_8250_PCH)
-+ pbn_pch_uart_8L_256FIFO,  /* pch 8 Line UART with 256 byte FIFO */
-+ pbn_pch_uart_2L_64FIFO    /* pch 2 Line UART with 64 byte FIFO */
-+#endif
- };
-
- /*
-@@ -2228,6 +2352,27 @@
-   .uart_offset = 0x200,
-   .first_offset = 0x1000,
-  },
++ pci_iounmap(pdev, (void *)dev->base_addr);
++ dev->base_addr = 0;
++ PCH_DEBUG("pch_dma_remove -> Function pci_iounmap invoked "
++    "successfully.\n");
 +
-+#if defined(ENABLE_SERIAL_8250_PCH)
++ /* Releasing the requested regions. */
++ pci_release_regions(pdev);
++ PCH_DEBUG("pch_dma_remove -> Function pci_release_regions "
++    "invoked successfully.\n");
 +
-+ /*
-+  * PCH UART
++ /* Disabling the device. */
++ pci_disable_device(pdev);
++ PCH_DEBUG("pch_dma_remove -> Function pci_disable_device "
++    "invoked successfully.\n");
++
++ PCH_DEBUG("Function pch_dma_remove invoked  "
++    "successfully for device %x.\n", pdev->device);
++}
++
++#ifdef CONFIG_PM
++/*! @ingroup PCILayerAPI
++ @fn  static int pch_dma_suspend(struct pci_dev* pdev,
++    pm_message_t state)
++ @brief  Implements the suspend function for the pci_driver.
++ @remarks This function is used as the suspend function of the PCI
++    Driver.
++    The PCI core will be invoking this function once
++    it receives a suspend event from the PM layer.
++    The main tasks performed by this functions are:
++    - Prepares the device so that it can enter the
++    suspend state by saving the current state.
++    - Disables all the DMA channels and the
++    associated interrupts.
++    - Changes the power state of the device to low
++    power state.
++
++ @param pdev [@ref INOUT] Reference to the pci_device structure.
++ @param state [@ref IN] The state of the device.
++
++ @return int
++   - @ref PCH_DMA_SUCCESS --> On success.
++   - -ENOMEM --> pci_save_state error status code.
++
++ @see
++   - pch_dma_controller_driver
 +  */
-+ [pbn_pch_uart_8L_256FIFO] = {
-+  .flags      = FL_BASE0,
-+  .num_ports  = 1,
-+  .base_baud  = 115200,  /* OKISEMI For LSI */
-+  .reg_shift  = 0,
-+ },
++static int pch_dma_suspend(struct pci_dev *pdev, pm_message_t state)
++{
++ int retval;
++ struct pch_dma_devices *dev;
 +
-+ [pbn_pch_uart_2L_64FIFO] = {
-+  .flags      = FL_BASE0,
-+  .num_ports  = 1,
-+  .base_baud  = 115200,  /* OKISEMI For LSI*/
-+  .reg_shift  = 0,
-+ },
-+#endif
++ /* Setting flag for denoting Suspension. */
++ pch_device_suspended = 1;
 +
- };
-
- static const struct pci_device_id softmodem_blacklist[] = {
-@@ -2473,8 +2618,20 @@
-   return -EINVAL;
-  }
-
-+#ifdef DEBUG
-+ printk(KERN_DEBUG "PCH UART LOG:function pciserial_init_one ent->vendor"
-+        " = %x\n, ent->device = %x, ent->driver_data = %ld\n  ",
-+        ent->vendor, ent->device, ent->driver_data);
-+#endif
++ /* Getting the driver data. */
++ dev = pci_get_drvdata(pdev);
 +
-  board = &pci_boards[ent->driver_data];
-
-+#ifdef DEBUG
-+ printk(KERN_DEBUG "PCH UART LOG:function pciserial_init_one board->"
-+       "base_baud = %u\n, board->flags = %d, board->num_ports = %d\n "
-+       , board->base_baud, board->flags, board->num_ports);
-+#endif
++ /* Saving the current state of the device. */
++ retval = pci_save_state(pdev);
++ if (retval == 0) {
++  PCH_DEBUG("pch_dma_suspend -> Function pci_save_state invoked "
++     "successfully (returned %d).\n", retval);
 +
-  rc = pci_enable_device(dev);
-  if (rc)
-   return rc;
-@@ -2540,6 +2697,17 @@
-  if (priv)
-   pciserial_suspend_ports(priv);
-
-+#if defined(ENABLE_SERIAL_8250_PCH)
++  /* De-initializing the device for suspension. */
++  dma_exit(dev->dev_typ);
++  PCH_DEBUG("pch_dma_suspend -> Function dma_exit invoked "
++     "successfully.\n");
 +
-+#ifdef DEBUG
-+ printk(KERN_DEBUG "PCH UART LOG:pciserial_suspend_one->pci_enable_wake"
-+       "invoked \n");
-+#endif
++  /* Disabling the wake-up feature. */
++  pci_enable_wake(pdev, PCI_D3hot, 0);
++  PCH_DEBUG("pch_dma_suspend -> Function pci_enable_wake "
++     "invoked successfully.\n");
 +
++  /* Setting the device to new state. */
++  pci_set_power_state(pdev, pci_choose_state(pdev, state));
++  PCH_DEBUG("pch_dma_suspend -> Function pci_set_power_state "
++     "invoked successfully.\n");
 +
-+ pci_enable_wake(dev, PCI_D3hot, 1);
-+#endif
++  /* Disabling the device. */
++  pci_disable_device(pdev);
++  PCH_DEBUG("pch_dma_suspend -> Function pci_disable_device "
++     "invoked successfully.\n");
 +
-  pci_save_state(dev);
-  pci_set_power_state(dev, pci_choose_state(dev, state));
-  return 0;
-@@ -2561,6 +2729,17 @@
-   /* FIXME: We cannot simply error out here */
-   if (err)
-    printk(KERN_ERR "pciserial: Unable to re-enable ports, trying to
-continue.\n");
++  retval = PCH_DMA_SUCCESS;
++  PCH_DEBUG("pch_dma_suspend -> Suspension successful for "
++     "the device %x.\n", pdev->device);
++ } else {
++  PCH_LOG(KERN_ERR,
++   "pch_dma_suspend -> Function pci_save_state failed"
++   "returned %d.\n", retval);
 +
-+#if defined(ENABLE_SERIAL_8250_PCH)
++  /* De-setting the flag on Suspend failure. */
++  pch_device_suspended = 0;
 +
-+#ifdef DEBUG
-+ printk(KERN_DEBUG "PCH UART LOG:pciserial_resume_one->pci_enable_wake"
-+       "invoked \n");
-+#endif
++  PCH_DEBUG("pch_dma_suspend -> Suspension un-successful for "
++     "the device %x.\n", pdev->device);
++ }
 +
-+ pci_enable_wake(dev, PCI_D3hot, 0);
-+#endif
++ PCH_DEBUG("Function pch_dma_suspend returns %d.\n", retval);
++ return retval;
++}
 +
-   pciserial_resume_ports(priv);
-  }
-  return 0;
-@@ -3649,6 +3828,48 @@
-   0, 0, pbn_b0_1_115200 },
-
-  /*
-+  * PCH UART
++/*! @ingroup PCILayerAPI
++ @fn   static int pch_dma_resume(struct pci_dev* pdev)
++ @brief  Implements the resume function for the pci_driver.
++ @remarks This function is used as the resume function of the
++    PCI driver. The PCI core will be invoking this
++    function once it receives a resume event from
++    the PM layer. The main tasks performed by this
++    function are:
++    - Restores the power state of the device to
++    normal state.
++    - Enables the device so that it returns to its
++    normal state.
++
++ @param  pdev [@ref INOUT] Pointer to the pci_device
++    structure.
++
++ @return int
++   - @ref PCH_DMA_SUCCESS --> On success.
++   - -EIO  --> pci_enable_device error status code.
++   - -EINVAL --> pci_enable_device .
++
++ @see
++   - pch_dma_controller_driver
++
 +  */
-+#if defined(ENABLE_SERIAL_8250_PCH)
++static int pch_dma_resume(struct pci_dev *pdev)
++{
++ int retval;
 +
-+ {   PCI_VENDOR_ID_INTEL,
-+  /*device id for pch uart with 8 i/o lines and 256 byte fifo. */
-+  PCI_DEVICE_ID_PCH_UART0,
-+  PCI_ANY_ID,
-+  PCI_ANY_ID,
-+  0,
-+  0,
-+  pbn_pch_uart_8L_256FIFO },
++ /* Setting the device to normal power state. */
++ (void)pci_set_power_state(pdev, PCI_D0);
++ PCH_DEBUG("pch_dma_resume -> Function pci_set_power_state invoked "
++    "successfully.\n");
 +
-+ {   PCI_VENDOR_ID_INTEL,
-+  /*device id for pch uart with 2 i/o lines and 256 byte fifo. */
-+  PCI_DEVICE_ID_PCH_UART1,
-+  PCI_ANY_ID,
-+  PCI_ANY_ID,
-+  0,
-+  0,
-+  pbn_pch_uart_2L_64FIFO },
++ /* Restoring the device state. */
++ (void)pci_restore_state(pdev);
++ PCH_DEBUG("pch_dma_resume -> Function pci_restore_state invoked "
++    "successfully.\n");
 +
-+ {   PCI_VENDOR_ID_INTEL,
-+  /*device id for pch uart with 8 i/o lines and 64 byte fifo. */
-+  PCI_DEVICE_ID_PCH_UART2,
-+  PCI_ANY_ID,
-+  PCI_ANY_ID,
-+  0,
-+  0,
-+  pbn_pch_uart_2L_64FIFO },
++ /* Enabling the device. */
++ retval = pci_enable_device(pdev);
 +
-+ {   PCI_VENDOR_ID_INTEL,
-+  /*device id for pch uart with 2 i/o lines and 64 byte fifo. */
-+  PCI_DEVICE_ID_PCH_UART3,
-+  PCI_ANY_ID,
-+  PCI_ANY_ID,
-+  0,
-+  0,
-+  pbn_pch_uart_2L_64FIFO },
++ if (0 == retval) {
++  PCH_DEBUG("pch_dma_resume -> Function pci_enable_device "
++     "invoked successfully returned %d.\n", retval);
++
++  pci_set_master(pdev);
++  PCH_DEBUG("pch_dma_resume -> Function pci_set_master invoked "
++     "successfully.\n");
++
++  (void)pci_enable_wake(pdev, PCI_D3hot, 0);
++  PCH_DEBUG("pch_dma_resume -> Function pci_enable_wake invoked "
++     "successfully.\n");
++
++  retval = PCH_DMA_SUCCESS;
++
++  /* De-setting the suspend flag to denote resumption
++  successful. */
++  pch_device_suspended = 0;
++
++  PCH_DEBUG("pch_dma_resume -> Resume successful for the "
++     "device %x.\n", pdev->device);
++ } else {
++  PCH_LOG(KERN_ERR,
++   "pch_dma_resume -> Function pci_enable_device failed "
++   "returned %d.\n", retval);
++
++  PCH_DEBUG("pch_dma_resume -> Resume failed for the device "
++     "%x.\n", pdev->device);
++ }
++
++ PCH_DEBUG("Function pch_dma_resume returns %d.\n", retval);
++ return retval;
++}
 +#endif
 +
-+ /*
-   * These entries match devices with class COMMUNICATION_SERIAL,
-   * COMMUNICATION_MODEM or COMMUNICATION_MULTISERIAL
-   */
-diff -urN linux-2.6.33.1/drivers/serial/Kconfig
-topcliff-2.6.33.1/drivers/serial/Kconfig
---- linux-2.6.33.1/drivers/serial/Kconfig 2010-03-16 01:09:39.000000000
-+0900
-+++ topcliff-2.6.33.1/drivers/serial/Kconfig 2010-03-23 10:34:44.000000000
-+0900
-@@ -89,6 +89,21 @@
-    disable this feature if you only need legacy serial support.
-    Saves about 9K.
-
-+config SERIAL_8250_PCH
-+ tristate "PCH PCI serial device support"
-+ depends on SERIAL_8250 && PCI && SERIAL_8250_PCI
-+ default SERIAL_8250_PCI
-+ help
-+   This makes the PCH PCI serial driver to support high speed PCH serial
-ports.
++/*! @ingroup PCILayerFacilitators
++ @struct  pch_dma_controller_driver
++ @brief  Used for registering the PCI driver functionalities.
++ @remarks This is an instance of the structure pci_driver which
++    stores references to the PCI Driver
++    functionalities.
++    It is used during PCI driver registration for
++    interfacing the DMA module functionalities with
++    that of the Kernel subsystem.
 +
-+config SERIAL_8250_PCH_DMA
-+ bool "Enable DMA mode of PCH PCI serial device"
-+ depends on SERIAL_8250_PCH
-+ select PCH_UART_DMA
-+ default y
-+ help
-+   This makes the PCH PCI serial driver with DMA mode.
++ @see
++   - pch_dma_pci_init
++   - pch_dma_pci_exit
++*/
 +
- config SERIAL_8250_PNP
-  tristate "8250/16550 PNP device support" if EMBEDDED
-  depends on SERIAL_8250 && PNP
-diff -urN linux-2.6.33.1/drivers/serial/Makefile
-topcliff-2.6.33.1/drivers/serial/Makefile
---- linux-2.6.33.1/drivers/serial/Makefile 2010-03-16 01:09:39.000000000
-+0900
-+++ topcliff-2.6.33.1/drivers/serial/Makefile 2010-04-27 11:29:58.000000000
-+0900
-@@ -1,6 +1,17 @@
- #
- # Makefile for the kernel serial device drivers.
- #
-+#
-+#This is needed to enable pch dma#
-+#EXTRA_CFLAGS +=-DENABLE_PCH_DMA_FEATURE
-+ifdef CONFIG_SERIAL_8250_PCH
-+EXTRA_CFLAGS +=-DENABLE_SERIAL_8250_PCH
-+endif
++static struct pci_driver pch_dma_controller_driver = {
++ .name = "pch_dma",  /**< Name of the module. */
++ .id_table = pch_dma_pcidev_id, /**< The list of supported devices. */
++ .probe = pch_dma_probe,  /**< The probe function. */
++ .remove = __devexit_p(pch_dma_remove), /**< The remove function. */
++#ifdef CONFIG_PM
++ .suspend = pch_dma_suspend, /**< The suspend function. */
++ .resume = pch_dma_resume /**< The resume function. */
++#endif
++};
 +
-+ifdef CONFIG_PCH_UART_DMA
-+EXTRA_CFLAGS +=-DENABLE_PCH_DMA_FEATURE
-+EXTRA_CFLAGS +=-Idrivers/dma/pch_dma/
-+endif
-
- obj-$(CONFIG_SERIAL_CORE) += serial_core.o
- obj-$(CONFIG_SERIAL_21285) += 21285.o
++/*! @ingroup PCILayerAPI
++ @fn   static __init int pch_dma_pci_init(void)
++ @brief  Module initialization routine.
++ @remarks This function is invoked when the module is
++    loaded. The main tasks performed by this
++    function are:
++    - Initializes the module.
++    - Initializes the local structures
++    and registers the module as PCI Driver
++    with the kernel subsystem.
++
++ @return int
++   - @ref PCH_DMA_SUCCESS --> On success.
++   - -EEXIST --> pci_register_driver error status
++      code.
++   - -EINVAL --> pci_register_driver error status
++      code.
++   - -ENOMEM --> pci_register_driver error status
++      code.
++
++  */
++static __init int pch_dma_pci_init(void)
++{
++ int retval;
++
++ /* Registering the module as PCI Driver. */
++ retval = pci_register_driver(&pch_dma_controller_driver);
++
++ if (0 == retval) {
++  PCH_DEBUG
++      ("pch_dma_pci_init -> Function pci_register_driver invoked "
++       "successfully returned %d.\n", retval);
++
++  retval = PCH_DMA_SUCCESS;
++ } else {
++  PCH_LOG(KERN_ERR,
++   "pch_dma_pci_init -> Function pci_register_driver "
++   "failed returned %d.\n", retval);
++ }
++
++ PCH_DEBUG("Function pch_dma_pci_init returns %d.\n", retval);
++ return retval;
++}
++
++/*! @ingroup PCILayerAPI
++ @fn   static __exit void pch_dma_pci_exit(void)
++ @brief  Module exit handler.
++ @remarks Kernel subsystem will be invoking this routine
++    once the module gets unloaded. The main tasks
++    performed by this function are:
++    - Un-registers the PCI driver.
++    - Unloads the module.
++
++ @return  None.
++  */
++static __exit void pch_dma_pci_exit(void)
++{
++ /* Un-registering the module as PCI Driver. */
++ pci_unregister_driver(&pch_dma_controller_driver);
++ PCH_DEBUG("pch_dma_pci_exit -> Function pci_unregister_driver "
++    "invoked successfully.\n");
++
++ PCH_DEBUG("Function pch_dma_pci_exit invoked successfully.\n");
++}
++
++MODULE_DEVICE_TABLE(pci, pch_dma_pcidev_id);
++module_init(pch_dma_pci_init);
++module_exit(pch_dma_pci_exit);
+diff -urN linux-2.6.33.1/drivers/dma/pch_dma/pch_dma_pci.h
+topcliff-2.6.33.1/drivers/dma/pch_dma/pch_dma_pci.h
+--- linux-2.6.33.1/drivers/dma/pch_dma/pch_dma_pci.h 1970-01-01
+09:00:00.000000000 +0900
++++ topcliff-2.6.33.1/drivers/dma/pch_dma/pch_dma_pci.h 2010-04-27
+11:46:20.000000000 +0900
+@@ -0,0 +1,72 @@
++/**
++ * @file pch_dma_pci.h
++ *
++ * @brief
++ * This file declares the constants & functions used by the
++ *  PCH_DMA_CONTROLLER driver.
++ *
++ * @version 0.90
++ * @section
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307,
+USA.
++ *
++ * <hr>
++ */
++
++/*
++ * History:
++ * Copyright (C) 2008 OKI SEMICONDUCTOR Co., LTD.
++ *
++ *
++ * created:
++ * OKISEMI 04/14/2010
++ *
++ */
++
++#ifndef __PCH_DMA_PCI_H__
++#define __PCH_DMA_PCI_H__
++
++/*! @ingroup PCILayer
++ @def  PCI_DEVICE_ID_INTEL_PCH1_DMA4_0
++ @brief  The Device ID of one of the DMA device
++    with 4 channels used for the GE devices.
++ @note  This is used for registering the DMA module
++    with the PCI subsystem of the Kernel, so that
++    the module is loaded when the required device
++    is detected.
++
++ @see
++  - pch_dma_pcidev_id
++  - get_dev_type
++*/
++#define PCI_DEVICE_ID_INTEL_PCH1_DMA4_0  (0x8815UL)
++
++/*! @ingroup PCILayer
++ @def  PCI_DEVICE_ID_DMA8_0_CONTROLLER
++ @brief  The Device ID of one of the DMA device
++    with 8 channels used for the GE devcies.
++ @note  This is used for registering the DMA module
++    with the PCI subsystem of the Kernel, so that
++    the module is loaded when the required device
++    is detected.
++
++ @see
++  - pch_dma_pcidev_id
++  - get_dev_type
++*/
++#define PCI_DEVICE_ID_INTEL_PCH1_DMA8_0  (0x8810UL)
++
++extern unsigned char pch_device_suspended; /* The device suspend flag.  */
++extern spinlock_t pch_device_lock; /* The device lock variable. */
++
++#endif
 
