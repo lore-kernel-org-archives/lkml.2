@@ -1,66 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab0D1QI6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 12:08:58 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:26642 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab0D1QIw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 12:08:52 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai <yinghai.lu@oracle.com>
-Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below    BIOS_END
-Date: Wed, 28 Apr 2010 10:07:36 -0600
-User-Agent: KMail/1.9.10
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Andy Isaacson <adi@hexapodia.org>,
-       "R. Andrew Bailey" <bailey@akamai.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       guenter.roeck@ericsson.com,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
-References: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com> <4BD640E3.1050101@oracle.com> <201004270911.12124.bjorn.helgaas@hp.com>
-In-Reply-To: <201004270911.12124.bjorn.helgaas@hp.com>
+	id S1752098Ab0D1MTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 08:19:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750859Ab0D1MTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 08:19:08 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+Subject: [PATCH -tip 1/2] [RESEND] kprobes: Move enable/disable_kprobe() out
+	from debugfs code
+To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
+Cc: systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
+Date: Tue, 27 Apr 2010 18:33:12 -0400
+Message-ID: <20100427223312.2322.60512.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004281007.37016.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai, ping, do you have any more information about this?
+Move enable/disable_kprobe() API out from debugfs related code,
+because these interfaces are not related to debugfs interface.
 
-On Tuesday 27 April 2010 09:11:10 am Bjorn Helgaas wrote:
-> On Monday 26 April 2010 07:41:55 pm Yinghai wrote:
-> But let's double-check this:
-> 
-> > also find one AMD system:
-> > [    7.056011] pci_root PNP0A03:00: host bridge window [mem 0xfed20000-0xffffffff]
-> > ...
-> > pci assign unassign code could use range like [mem 0xfed20000-0xffffffff] wrongly.
-> 
-> I agree, it's very unlikely that it's safe to put PCI devices all the
-> way up to 0xffffffff.  I suspect this might be fixed by d558b483d5a,
-> which computes the end of the bridge window using _MAX rather than _LEN.
-> 
-> See https://bugzilla.kernel.org/show_bug.cgi?id=15480#c15 for an example
-> similar to the one above: we originally thought the window was
-> [mem 0xcff00000-0xffffffff], but d558b483d5a changes that to
-> [mem 0xcff00000-0xfebfffff], which matches what Windows found.
-> 
-> Yinghai, can you take a look at your AMD system again with a kernel that
-> includes d558b483d5a, and see whether we still have a problem?  If we
-> *do* still have a problem, please open a bugzilla and attach a dmesg log
-> with ACPI resource info collected with the debug patch here:
-> https://bugzilla.kernel.org/show_bug.cgi?id=15533#c5
-> 
-> Bjorn
-> 
+Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+Acked-by:  Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Acked-by: Tony Luck <tony.luck@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+
+ kernel/kprobes.c |  132 +++++++++++++++++++++++++++---------------------------
+ 1 files changed, 66 insertions(+), 66 deletions(-)
+
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 0ed46f3..282035f 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1588,6 +1588,72 @@ static void __kprobes kill_kprobe(struct kprobe *p)
+ 	arch_remove_kprobe(p);
+ }
+ 
++/* Disable one kprobe */
++int __kprobes disable_kprobe(struct kprobe *kp)
++{
++	int ret = 0;
++	struct kprobe *p;
++
++	mutex_lock(&kprobe_mutex);
++
++	/* Check whether specified probe is valid. */
++	p = __get_valid_kprobe(kp);
++	if (unlikely(p == NULL)) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	/* If the probe is already disabled (or gone), just return */
++	if (kprobe_disabled(kp))
++		goto out;
++
++	kp->flags |= KPROBE_FLAG_DISABLED;
++	if (p != kp)
++		/* When kp != p, p is always enabled. */
++		try_to_disable_aggr_kprobe(p);
++
++	if (!kprobes_all_disarmed && kprobe_disabled(p))
++		disarm_kprobe(p);
++out:
++	mutex_unlock(&kprobe_mutex);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(disable_kprobe);
++
++/* Enable one kprobe */
++int __kprobes enable_kprobe(struct kprobe *kp)
++{
++	int ret = 0;
++	struct kprobe *p;
++
++	mutex_lock(&kprobe_mutex);
++
++	/* Check whether specified probe is valid. */
++	p = __get_valid_kprobe(kp);
++	if (unlikely(p == NULL)) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	if (kprobe_gone(kp)) {
++		/* This kprobe has gone, we couldn't enable it. */
++		ret = -EINVAL;
++		goto out;
++	}
++
++	if (p != kp)
++		kp->flags &= ~KPROBE_FLAG_DISABLED;
++
++	if (!kprobes_all_disarmed && kprobe_disabled(p)) {
++		p->flags &= ~KPROBE_FLAG_DISABLED;
++		arm_kprobe(p);
++	}
++out:
++	mutex_unlock(&kprobe_mutex);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(enable_kprobe);
++
+ void __kprobes dump_kprobe(struct kprobe *kp)
+ {
+ 	printk(KERN_WARNING "Dumping kprobe:\n");
+@@ -1805,72 +1871,6 @@ static const struct file_operations debugfs_kprobes_operations = {
+ 	.release        = seq_release,
+ };
+ 
+-/* Disable one kprobe */
+-int __kprobes disable_kprobe(struct kprobe *kp)
+-{
+-	int ret = 0;
+-	struct kprobe *p;
+-
+-	mutex_lock(&kprobe_mutex);
+-
+-	/* Check whether specified probe is valid. */
+-	p = __get_valid_kprobe(kp);
+-	if (unlikely(p == NULL)) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+-	/* If the probe is already disabled (or gone), just return */
+-	if (kprobe_disabled(kp))
+-		goto out;
+-
+-	kp->flags |= KPROBE_FLAG_DISABLED;
+-	if (p != kp)
+-		/* When kp != p, p is always enabled. */
+-		try_to_disable_aggr_kprobe(p);
+-
+-	if (!kprobes_all_disarmed && kprobe_disabled(p))
+-		disarm_kprobe(p);
+-out:
+-	mutex_unlock(&kprobe_mutex);
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(disable_kprobe);
+-
+-/* Enable one kprobe */
+-int __kprobes enable_kprobe(struct kprobe *kp)
+-{
+-	int ret = 0;
+-	struct kprobe *p;
+-
+-	mutex_lock(&kprobe_mutex);
+-
+-	/* Check whether specified probe is valid. */
+-	p = __get_valid_kprobe(kp);
+-	if (unlikely(p == NULL)) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+-	if (kprobe_gone(kp)) {
+-		/* This kprobe has gone, we couldn't enable it. */
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+-	if (p != kp)
+-		kp->flags &= ~KPROBE_FLAG_DISABLED;
+-
+-	if (!kprobes_all_disarmed && kprobe_disabled(p)) {
+-		p->flags &= ~KPROBE_FLAG_DISABLED;
+-		arm_kprobe(p);
+-	}
+-out:
+-	mutex_unlock(&kprobe_mutex);
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(enable_kprobe);
+-
+ static void __kprobes arm_all_kprobes(void)
+ {
+ 	struct hlist_head *head;
 
 
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
