@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab0D0PM2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 11:12:28 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:30010 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447Ab0D0PM0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 11:12:26 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai <yinghai.lu@oracle.com>
-Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below    BIOS_END
-Date: Tue, 27 Apr 2010 09:11:10 -0600
-User-Agent: KMail/1.9.10
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Andy Isaacson <adi@hexapodia.org>,
-       "R. Andrew Bailey" <bailey@akamai.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       guenter.roeck@ericsson.com,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
-References: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com> <alpine.LFD.2.00.1004261824570.3739@i5.linux-foundation.org> <4BD640E3.1050101@oracle.com>
-In-Reply-To: <4BD640E3.1050101@oracle.com>
+	id S1754018Ab0D0POy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 11:14:54 -0400
+Received: from kroah.org ([198.145.64.141]:44791 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753349Ab0D0POu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 11:14:50 -0400
+Date: Tue, 27 Apr 2010 08:14:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Sjur Braendeland <sjur.brandeland@stericsson.com>,
+       David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+       Pavan Savoy <pavan_savoy@ti.com>
+Subject: Re: linux-next: manual merge of the tty tree with the net tree
+Message-ID: <20100427151434.GD7653@kroah.com>
+References: <20100427135706.259fa9c9.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201004270911.12124.bjorn.helgaas@hp.com>
+In-Reply-To: <20100427135706.259fa9c9.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 26 April 2010 07:41:55 pm Yinghai wrote:
-> On 04/26/2010 06:27 PM, Linus Torvalds wrote:
-> > Do we actually have a regression left with Bjorn's patch?
+On Tue, Apr 27, 2010 at 01:57:06PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the tty tree got a conflict in
+> include/linux/tty.h between commit
+> 9b27105b4a44c54bf91ecd7d0315034ae75684f7 ("net-caif-driver: add CAIF
+> serial driver (ldisc)") from the net tree and commit
+> f3150d54db0e0caa1871f66b2424f463a34a7e7b ("serial: TTY: new ldiscs for
+> staging") from the tty tree.
+> 
+> I fixed it up (they both changed NR_LDISCS - I used the higher number) and
+> can carry the fix as necessary.
 
-After the pcibios_align_resource() patch, I'm not aware of any regressions.
+Thanks, the higher number should be what is needed here.
 
-But let's double-check this:
-
-> also find one AMD system:
-> [    7.056011] pci_root PNP0A03:00: host bridge window [mem 0xfed20000-0xffffffff]
-> ...
-> pci assign unassign code could use range like [mem 0xfed20000-0xffffffff] wrongly.
-
-I agree, it's very unlikely that it's safe to put PCI devices all the
-way up to 0xffffffff.  I suspect this might be fixed by d558b483d5a,
-which computes the end of the bridge window using _MAX rather than _LEN.
-
-See https://bugzilla.kernel.org/show_bug.cgi?id=15480#c15 for an example
-similar to the one above: we originally thought the window was
-[mem 0xcff00000-0xffffffff], but d558b483d5a changes that to
-[mem 0xcff00000-0xfebfffff], which matches what Windows found.
-
-Yinghai, can you take a look at your AMD system again with a kernel that
-includes d558b483d5a, and see whether we still have a problem?  If we
-*do* still have a problem, please open a bugzilla and attach a dmesg log
-with ACPI resource info collected with the debug patch here:
-https://bugzilla.kernel.org/show_bug.cgi?id=15533#c5
-
-Bjorn
+greg k-h
