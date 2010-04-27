@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab0D0RBd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 13:01:33 -0400
-Received: from isilmar.linta.de ([213.133.102.198]:56413 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752219Ab0D0RBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 13:01:31 -0400
-Date: Tue, 27 Apr 2010 18:59:51 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [RFC] PCMCIA patches for 2.6.34-rc5 -- 2nd batch
-Message-ID: <20100427165951.GA9276@comet.dominikbrodowski.net>
-Mail-Followup-To: linux-pcmcia@lists.infradead.org,
-	linux-kernel@vger.kernel.org
+	id S1754278Ab0D0RHS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 13:07:18 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:37817 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785Ab0D0RHQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 13:07:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100427154043.GA25860@tuxdriver.com>
+References: <20100427112842.3eec02a1.sfr@canb.auug.org.au>
+	 <20100427154043.GA25860@tuxdriver.com>
+Date: Tue, 27 Apr 2010 10:07:12 -0700
+Message-ID: <i2p446ae9281004271007h43f9949dw9848a7786a9c7be1@mail.gmail.com>
+Subject: Re: linux-next: build warning after merge of the wireless tree
+From: Steve deRosier <steve@cozybit.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Tue, Apr 27, 2010 at 8:40 AM, John W. Linville
+<linville@tuxdriver.com> wrote:
+>
+> Right.  So in wireless-testing I did the includes in the other order
+> (i.e. "deb_defs.h" first), but that is a bit ugly.  Any suggestions
+> on alternatives?
+>
+> "#undef pr_fmt" just before the "#define pr_fmt(fmt)..." line in
+> db_defs.h seems to eliminate the warning even with the more normal
+> ordering of the #include lines.  I'm not familiar with the usage of
+> pr_fmt -- will doing the above preserve the desired effect?
 
-in order to solve bugzilla bug 13426, and to fix another bug Alexander Kurz
-tracked down, I intend to submit a pull request for two additional
-patches tomorrow. They're available at
+John,
 
-git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
+I thought about that particular strategy (doing the #undef) instead of
+the non-traditional include mess.  But not being familiar enough with
+the pr_fmt stuff, I didn't want to do it.
 
-As usual, I'm interested in your input to this patch series. The individual
-patches will be sent out to the PCMCIA list in a few moments.
+My goal was to get the '#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt'
+line in the deb_defs.h header so it was only in one place.  But to
+build, that define must be before kernel.h gets included anywhere.
+Hence the current mess.
 
-Best,
-	Dominik
+I'm OK with the #undef strategy and moving the deb_defs.h include to a
+better position if that's the correct way to do this.  Please let me
+know if I have any action items on this.
 
-Alexander Kurz (1):
-      pcmcia: fix matching rules for pseudo-multi-function cards
-
-Dominik Brodowski (1):
-      pcmcia: pcmcia_dev_present bugfix
-
- drivers/pcmcia/ds.c |   54 +++++++++++++++++----------------------------------
- include/pcmcia/ds.h |    7 ++---
- include/pcmcia/ss.h |    8 ++----
- 3 files changed, 24 insertions(+), 45 deletions(-)
+- Steve
