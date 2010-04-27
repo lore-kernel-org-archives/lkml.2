@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab0D0IXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 04:23:39 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:57428 "EHLO
+	id S1754130Ab0D0IYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 04:24:05 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:57429 "EHLO
 	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab0D0IXi (ORCPT
+	with ESMTP id S1753936Ab0D0IYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 04:23:38 -0400
+	Tue, 27 Apr 2010 04:24:03 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: rjw@sisk.pl
 Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
        Nigel Cunningham <ncunningham@crca.org.au>
-Subject: [PATCH 4/5] PM / Hibernate: move the first_sector out of swsusp_write
-Date: Tue, 27 Apr 2010 10:15:17 +0200
-Message-Id: <1272356118-10012-4-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 5/5] PM / Hibernate: group swap ops
+Date: Tue, 27 Apr 2010 10:15:18 +0200
+Message-Id: <1272356118-10012-5-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
 References: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
@@ -22,149 +22,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jirislaby@gmail.com>
-
-The first sector knowledge is swap-only specific. Move it into the
-swap handle. This will be needed for later non-swap specific code
-moving into snapshot.c.
+Move all the swap processing into one function. It will make swap
+calls from a non-swap code easier.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: Nigel Cunningham <ncunningham@crca.org.au>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Acked-by: Pavel Machek <pavel@ucw.cz>
 ---
- kernel/power/swap.c |   76 +++++++++++++++++++++++++-------------------------
- 1 files changed, 38 insertions(+), 38 deletions(-)
+ kernel/power/swap.c |  117 ++++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 74 insertions(+), 43 deletions(-)
 
 diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 1b1ab6f..63e8062 100644
+index 63e8062..b0bb217 100644
 --- a/kernel/power/swap.c
 +++ b/kernel/power/swap.c
-@@ -29,6 +29,40 @@
- 
- #define SWSUSP_SIG	"S1SUSPEND"
- 
-+/*
-+ *	The swap map is a data structure used for keeping track of each page
-+ *	written to a swap partition.  It consists of many swap_map_page
-+ *	structures that contain each an array of MAP_PAGE_SIZE swap entries.
-+ *	These structures are stored on the swap and linked together with the
-+ *	help of the .next_swap member.
+@@ -208,9 +208,10 @@ static int mark_swapfiles(struct swap_map_handle *handle, unsigned int flags)
+ /**
+  *	swsusp_swap_check - check if the resume device is a swap device
+  *	and get its index (if so)
 + *
-+ *	The swap map is created during suspend.  The swap map pages are
-+ *	allocated and populated one at a time, so we only need one memory
-+ *	page to set up the entire structure.
-+ *
-+ *	During resume we also only need to use one swap_map_page structure
-+ *	at a time.
-+ */
-+
-+#define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
-+
-+struct swap_map_page {
-+	sector_t entries[MAP_PAGE_ENTRIES];
-+	sector_t next_swap;
-+};
-+
-+/**
-+ *	The swap_map_handle structure is used for handling swap in
-+ *	a file-alike way
-+ */
-+
-+struct swap_map_handle {
-+	struct swap_map_page *cur;
-+	sector_t cur_swap;
-+	sector_t first_sector;
-+	unsigned int k;
-+};
-+
- struct swsusp_header {
- 	char reserved[PAGE_SIZE - 20 - sizeof(sector_t) - sizeof(int)];
- 	sector_t image;
-@@ -151,7 +185,7 @@ struct block_device *hib_resume_bdev;
-  * Saving part
++ *	This is called before saving image
   */
+-
+-static int swsusp_swap_check(void) /* This is called before saving image */
++static int swsusp_swap_check(void)
+ {
+ 	int res;
  
--static int mark_swapfiles(sector_t start, unsigned int flags)
-+static int mark_swapfiles(struct swap_map_handle *handle, unsigned int flags)
+@@ -269,17 +270,33 @@ static void release_swap_writer(struct swap_map_handle *handle)
+ 
+ static int get_swap_writer(struct swap_map_handle *handle)
+ {
++	int ret;
++
++	ret = swsusp_swap_check();
++	if (ret) {
++		if (ret != -ENOSPC)
++			printk(KERN_ERR "PM: Cannot find swap device, try "
++					"swapon -a.\n");
++		return ret;
++	}
+ 	handle->cur = (struct swap_map_page *)get_zeroed_page(GFP_KERNEL);
+-	if (!handle->cur)
+-		return -ENOMEM;
++	if (!handle->cur) {
++		ret = -ENOMEM;
++		goto err_close;
++	}
+ 	handle->cur_swap = alloc_swapdev_block(root_swap);
+ 	if (!handle->cur_swap) {
+-		release_swap_writer(handle);
+-		return -ENOSPC;
++		ret = -ENOSPC;
++		goto err_rel;
+ 	}
+ 	handle->k = 0;
+ 	handle->first_sector = handle->cur_swap;
+ 	return 0;
++err_rel:
++	release_swap_writer(handle);
++err_close:
++	swsusp_close(FMODE_WRITE);
++	return ret;
+ }
+ 
+ static int swap_write_page(struct swap_map_handle *handle, void *buf,
+@@ -322,6 +339,24 @@ static int flush_swap_writer(struct swap_map_handle *handle)
+ 		return -EINVAL;
+ }
+ 
++static int swap_writer_finish(struct swap_map_handle *handle,
++		unsigned int flags, int error)
++{
++	if (!error) {
++		flush_swap_writer(handle);
++		printk(KERN_INFO "PM: S");
++		error = mark_swapfiles(handle, flags);
++		printk("|\n");
++	}
++
++	if (error)
++		free_all_swap_pages(root_swap);
++	release_swap_writer(handle);
++	swsusp_close(FMODE_WRITE);
++
++	return error;
++}
++
+ /**
+  *	save_image - save the suspend image data
+  */
+@@ -399,48 +434,34 @@ int swsusp_write(unsigned int flags)
+ 	struct swap_map_handle handle;
+ 	struct snapshot_handle snapshot;
+ 	struct swsusp_info *header;
++	unsigned long pages;
+ 	int error;
+ 
+-	error = swsusp_swap_check();
++	pages = snapshot_get_image_size();
++	error = get_swap_writer(&handle);
+ 	if (error) {
+-		printk(KERN_ERR "PM: Cannot find swap device, try "
+-				"swapon -a.\n");
++		printk(KERN_ERR "PM: Cannot get swap writer\n");
+ 		return error;
+ 	}
++	if (!enough_swap(pages)) {
++		printk(KERN_ERR "PM: Not enough free swap\n");
++		error = -ENOSPC;
++		goto out_finish;
++	}
+ 	memset(&snapshot, 0, sizeof(struct snapshot_handle));
+ 	error = snapshot_read_next(&snapshot);
+ 	if (error < PAGE_SIZE) {
+ 		if (error >= 0)
+ 			error = -EFAULT;
+ 
+-		goto out;
++		goto out_finish;
+ 	}
+ 	header = (struct swsusp_info *)data_of(snapshot);
+-	if (!enough_swap(header->pages)) {
+-		printk(KERN_ERR "PM: Not enough free swap\n");
+-		error = -ENOSPC;
+-		goto out;
+-	}
+-	error = get_swap_writer(&handle);
+-	if (!error) {
+-		error = swap_write_page(&handle, header, NULL);
+-		if (!error)
+-			error = save_image(&handle, &snapshot,
+-					header->pages - 1);
+-
+-		if (!error) {
+-			flush_swap_writer(&handle);
+-			printk(KERN_INFO "PM: S");
+-			error = mark_swapfiles(&handle, flags);
+-			printk("|\n");
+-		}
+-	}
+-	if (error)
+-		free_all_swap_pages(root_swap);
+-
+-	release_swap_writer(&handle);
+- out:
+-	swsusp_close(FMODE_WRITE);
++	error = swap_write_page(&handle, header, NULL);
++	if (!error)
++		error = save_image(&handle, &snapshot, pages - 1);
++out_finish:
++	error = swap_writer_finish(&handle, flags, error);
+ 	return error;
+ }
+ 
+@@ -456,18 +477,21 @@ static void release_swap_reader(struct swap_map_handle *handle)
+ 	handle->cur = NULL;
+ }
+ 
+-static int get_swap_reader(struct swap_map_handle *handle, sector_t start)
++static int get_swap_reader(struct swap_map_handle *handle,
++		unsigned int *flags_p)
  {
  	int error;
  
-@@ -160,7 +194,7 @@ static int mark_swapfiles(sector_t start, unsigned int flags)
- 	    !memcmp("SWAPSPACE2",swsusp_header->sig, 10)) {
- 		memcpy(swsusp_header->orig_sig,swsusp_header->sig, 10);
- 		memcpy(swsusp_header->sig,SWSUSP_SIG, 10);
--		swsusp_header->image = start;
-+		swsusp_header->image = handle->first_sector;
- 		swsusp_header->flags = flags;
- 		error = hib_bio_write_page(swsusp_resume_block,
- 					swsusp_header, NULL);
-@@ -226,39 +260,6 @@ static int write_page(void *buf, sector_t offset, struct bio **bio_chain)
- 	return hib_bio_write_page(offset, src, bio_chain);
+-	if (!start)
++	*flags_p = swsusp_header->flags;
++
++	if (!swsusp_header->image) /* how can this happen? */
+ 		return -EINVAL;
+ 
+ 	handle->cur = (struct swap_map_page *)get_zeroed_page(__GFP_WAIT | __GFP_HIGH);
+ 	if (!handle->cur)
+ 		return -ENOMEM;
+ 
+-	error = hib_bio_read_page(start, handle->cur, NULL);
++	error = hib_bio_read_page(swsusp_header->image, handle->cur, NULL);
+ 	if (error) {
+ 		release_swap_reader(handle);
+ 		return error;
+@@ -502,6 +526,13 @@ static int swap_read_page(struct swap_map_handle *handle, void *buf,
+ 	return error;
  }
  
--/*
-- *	The swap map is a data structure used for keeping track of each page
-- *	written to a swap partition.  It consists of many swap_map_page
-- *	structures that contain each an array of MAP_PAGE_SIZE swap entries.
-- *	These structures are stored on the swap and linked together with the
-- *	help of the .next_swap member.
-- *
-- *	The swap map is created during suspend.  The swap map pages are
-- *	allocated and populated one at a time, so we only need one memory
-- *	page to set up the entire structure.
-- *
-- *	During resume we also only need to use one swap_map_page structure
-- *	at a time.
-- */
--
--#define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
--
--struct swap_map_page {
--	sector_t entries[MAP_PAGE_ENTRIES];
--	sector_t next_swap;
--};
--
--/**
-- *	The swap_map_handle structure is used for handling swap in
-- *	a file-alike way
-- */
--
--struct swap_map_handle {
--	struct swap_map_page *cur;
--	sector_t cur_swap;
--	unsigned int k;
--};
--
- static void release_swap_writer(struct swap_map_handle *handle)
- {
- 	if (handle->cur)
-@@ -277,6 +278,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
- 		return -ENOSPC;
- 	}
- 	handle->k = 0;
-+	handle->first_sector = handle->cur_swap;
- 	return 0;
- }
++static int swap_reader_finish(struct swap_map_handle *handle)
++{
++	release_swap_reader(handle);
++
++	return 0;
++}
++
+ /**
+  *	load_image - load the image using the swap map handle
+  *	@handle and the snapshot handle @snapshot
+@@ -571,20 +602,20 @@ int swsusp_read(unsigned int *flags_p)
+ 	struct snapshot_handle snapshot;
+ 	struct swsusp_info *header;
  
-@@ -421,8 +423,6 @@ int swsusp_write(unsigned int flags)
- 	}
- 	error = get_swap_writer(&handle);
- 	if (!error) {
--		sector_t start = handle.cur_swap;
+-	*flags_p = swsusp_header->flags;
 -
- 		error = swap_write_page(&handle, header, NULL);
- 		if (!error)
- 			error = save_image(&handle, &snapshot,
-@@ -431,7 +431,7 @@ int swsusp_write(unsigned int flags)
- 		if (!error) {
- 			flush_swap_writer(&handle);
- 			printk(KERN_INFO "PM: S");
--			error = mark_swapfiles(start, flags);
-+			error = mark_swapfiles(&handle, flags);
- 			printk("|\n");
- 		}
- 	}
+ 	memset(&snapshot, 0, sizeof(struct snapshot_handle));
+ 	error = snapshot_write_next(&snapshot);
+ 	if (error < PAGE_SIZE)
+ 		return error < 0 ? error : -EFAULT;
+ 	header = (struct swsusp_info *)data_of(snapshot);
+-	error = get_swap_reader(&handle, swsusp_header->image);
++	error = get_swap_reader(&handle, flags_p);
++	if (error)
++		goto end;
+ 	if (!error)
+ 		error = swap_read_page(&handle, header, NULL);
+ 	if (!error)
+ 		error = load_image(&handle, &snapshot, header->pages - 1);
+-	release_swap_reader(&handle);
+-
++	swap_reader_finish(&handle);
++end:
+ 	if (!error)
+ 		pr_debug("PM: Image successfully loaded\n");
+ 	else
 -- 
 1.7.0.3
 
