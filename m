@@ -1,82 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab0D0P0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 11:26:32 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:24410 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab0D0P0b (ORCPT
+	id S1754661Ab0D0P1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 11:27:25 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:33394 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753618Ab0D0P1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 11:26:31 -0400
-Date: Tue, 27 Apr 2010 18:25:44 +0300
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: robert.richter@amd.com, schwidefsky@de.ibm.com, mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] updates for oprofile
-Message-ID: <20100427152544.GA9063@pcarmody-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-OriginalArrivalTime: 27 Apr 2010 15:26:11.0432 (UTC) FILETIME=[F7809680:01CAE61D]
-X-Nokia-AV: Clean
+	Tue, 27 Apr 2010 11:27:22 -0400
+From: Dinh.Nguyen@freescale.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+       grant.likely@secretlab.ca, bryan.wu@canonical.com,
+       amit.kucheria@canonical.com, Jun.Li@freescale.com,
+       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv9 2.6.34-rc5 3/5] mx5: Enable board specific functions for enabling USB host on Babbage
+Date: Tue, 27 Apr 2010 10:18:45 -0500
+Message-Id: <1272381527-30354-3-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1272381527-30354-2-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1272381527-30354-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1272381527-30354-2-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, et al., 
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Regarding today's pulled request, containing:
+This patch enables USB host functionality for Host1 and OTG port on
+Freescale MX51 Babbage HW. This patch contains the board specific
+HW initialization of the USB HW.
 
-commit bc078e4eab65f11bbaeed380593ab8151b30d703
-Author: Martin Schwidefsky <schwidef...@de.ibm.com>
-Date:   Tue Mar 2 16:01:10 2010 +0100
+This patch applies to 2.6.34-rc5.
 
-    oprofile: convert oprofile from timer_hook to hrtimer
-    
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Reviewed-by: Daniel Mack <daniel@caiaq.de>
+---
+ arch/arm/mach-mx5/board-mx51_babbage.c |  129 ++++++++++++++++++++++++++++++++
+ 1 files changed, 129 insertions(+), 0 deletions(-)
 
-Information is a touch scant, as I'm doing the investigation as I
-write, but I believe that that patch can cause ooops regressions
-via a null-pointer dereference in oprofile_add_sample().
+diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
+index ee67a71..99f7ea9 100644
+--- a/arch/arm/mach-mx5/board-mx51_babbage.c
++++ b/arch/arm/mach-mx5/board-mx51_babbage.c
+@@ -12,11 +12,15 @@
+ 
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/delay.h>
++#include <linux/io.h>
+ 
+ #include <mach/common.h>
+ #include <mach/hardware.h>
+ #include <mach/imx-uart.h>
+ #include <mach/iomux-mx51.h>
++#include <mach/mxc_ehci.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/setup.h>
+@@ -26,6 +30,17 @@
+ 
+ #include "devices.h"
+ 
++#define BABBAGE_USB_HUB_RESET	(0*32 + 7)	/* GPIO_1_7 */
++#define BABBAGE_USBH1_STP	(0*32 + 27)	/* GPIO_1_27 */
++
++/* USB_CTRL_1 */
++#define MX51_USB_CTRL_1_OFFSET			0x10
++#define MX51_USB_CTRL_UH1_EXT_CLK_EN		(1 << 25)
++
++#define	MX51_USB_PLLDIV_12_MHZ		0x00
++#define	MX51_USB_PLL_DIV_19_2_MHZ	0x01
++#define	MX51_USB_PLL_DIV_24_MHZ	0x02
++
+ static struct platform_device *devices[] __initdata = {
+ 	&mxc_fec_device,
+ };
+@@ -46,6 +61,22 @@ static struct pad_desc mx51babbage_pads[] = {
+ 	MX51_PAD_EIM_D26__UART3_TXD,
+ 	MX51_PAD_EIM_D27__UART3_RTS,
+ 	MX51_PAD_EIM_D24__UART3_CTS,
++
++	/* USB HOST1 */
++	MX51_PAD_USBH1_CLK__USBH1_CLK,
++	MX51_PAD_USBH1_DIR__USBH1_DIR,
++	MX51_PAD_USBH1_NXT__USBH1_NXT,
++	MX51_PAD_USBH1_DATA0__USBH1_DATA0,
++	MX51_PAD_USBH1_DATA1__USBH1_DATA1,
++	MX51_PAD_USBH1_DATA2__USBH1_DATA2,
++	MX51_PAD_USBH1_DATA3__USBH1_DATA3,
++	MX51_PAD_USBH1_DATA4__USBH1_DATA4,
++	MX51_PAD_USBH1_DATA5__USBH1_DATA5,
++	MX51_PAD_USBH1_DATA6__USBH1_DATA6,
++	MX51_PAD_USBH1_DATA7__USBH1_DATA7,
++
++	/* USB HUB reset line*/
++	MX51_PAD_GPIO_1_7__GPIO1_7,
+ };
+ 
+ /* Serial ports */
+@@ -66,15 +97,113 @@ static inline void mxc_init_imx_uart(void)
+ }
+ #endif /* SERIAL_IMX */
+ 
++static int gpio_usbh1_active(void)
++{
++	struct pad_desc usbh1stp_gpio = MX51_PAD_USBH1_STP__GPIO_1_27;
++	int ret;
++
++	/* Set USBH1_STP to GPIO and toggle it */
++	mxc_iomux_v3_setup_pad(&usbh1stp_gpio);
++	ret = gpio_request(BABBAGE_USBH1_STP, "usbh1_stp");
++
++	if (ret) {
++		pr_debug("failed to get MX51_PAD_USBH1_STP__GPIO_1_27: %d\n", ret);
++		return ret;
++	}
++	gpio_direction_output(BABBAGE_USBH1_STP, 0);
++	gpio_set_value(BABBAGE_USBH1_STP, 1);
++	msleep(100);
++	gpio_free(BABBAGE_USBH1_STP);
++	return 0;
++}
++
++static inline void babbage_usbhub_reset(void)
++{
++	int ret;
++
++	/* Bring USB hub out of reset */
++	ret = gpio_request(BABBAGE_USB_HUB_RESET, "GPIO1_7");
++	if (ret) {
++		printk(KERN_ERR"failed to get GPIO_USB_HUB_RESET: %d\n", ret);
++		return;
++	}
++	gpio_direction_output(BABBAGE_USB_HUB_RESET, 0);
++
++	/* USB HUB RESET - De-assert USB HUB RESET_N */
++	msleep(1);
++	gpio_set_value(BABBAGE_USB_HUB_RESET, 0);
++	msleep(1);
++	gpio_set_value(BABBAGE_USB_HUB_RESET, 1);
++}
++
++/* This function is board specific as the bit mask for the plldiv will also
++be different for other Freescale SoCs, thus a common bitmask is not
++possible and cannot get place in /plat-mxc/ehci.c.*/
++static int initialize_otg_port(struct platform_device *pdev)
++{
++	u32 v;
++	void __iomem *usb_base;
++	u32 usbother_base;
++
++	usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
++	usbother_base = usb_base + MX5_USBOTHER_REGS_OFFSET;
++
++	/* Set the PHY clock to 19.2MHz */
++	v = __raw_readl(usbother_base + MXC_USB_PHY_CTR_FUNC2_OFFSET);
++	v &= ~MX5_USB_UTMI_PHYCTRL1_PLLDIV_MASK;
++	v |= MX51_USB_PLL_DIV_19_2_MHZ;
++	__raw_writel(v, usbother_base + MXC_USB_PHY_CTR_FUNC2_OFFSET);
++	iounmap(usb_base);
++	return 0;
++}
++
++static int initialize_usbh1_port(struct platform_device *pdev)
++{
++	u32 v;
++	void __iomem *usb_base;
++	u32 usbother_base;
++
++	usb_base = ioremap(MX51_OTG_BASE_ADDR, SZ_4K);
++	usbother_base = usb_base + MX5_USBOTHER_REGS_OFFSET;
++
++	/* The clock for the USBH1 ULPI port will come externally from the PHY. */
++	v = __raw_readl(usbother_base + MX51_USB_CTRL_1_OFFSET);
++	__raw_writel(v | MX51_USB_CTRL_UH1_EXT_CLK_EN, usbother_base + MX51_USB_CTRL_1_OFFSET);
++	iounmap(usb_base);
++	return 0;
++}
++
++static struct mxc_usbh_platform_data dr_utmi_config = {
++	.init		= initialize_otg_port,
++	.portsc	= MXC_EHCI_UTMI_16BIT,
++	.flags	= MXC_EHCI_INTERNAL_PHY,
++};
++
++static struct mxc_usbh_platform_data usbh1_config = {
++	.init		= initialize_usbh1_port,
++	.portsc	= MXC_EHCI_MODE_ULPI,
++	.flags	= (MXC_EHCI_POWER_PINS_ENABLED | MXC_EHCI_ITC_NO_THRESHOLD),
++};
++
+ /*
+  * Board specific initialization.
+  */
+ static void __init mxc_board_init(void)
+ {
++	struct pad_desc usbh1stp = MX51_PAD_USBH1_STP__USBH1_STP;
++
+ 	mxc_iomux_v3_setup_multiple_pads(mx51babbage_pads,
+ 					ARRAY_SIZE(mx51babbage_pads));
+ 	mxc_init_imx_uart();
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
++
++	mxc_register_device(&mxc_usbdr_host_device, &dr_utmi_config);
++
++	gpio_usbh1_active();
++	mxc_register_device(&mxc_usbh1_device, &usbh1_config);
++	/* setback USBH1_STP to be function */
++	mxc_iomux_v3_setup_pad(&usbh1stp);
++	babbage_usbhub_reset();
+ }
+ 
+ static void __init mx51_babbage_timer_init(void)
+-- 
+1.6.0.4
 
-That function declares:
-"""
-/**
- * Add a sample. This may be called from any context.
- */
-void oprofile_add_sample(struct pt_regs * const regs, unsigned long event);
-"""
-
-And begins:
-"""
-void oprofile_add_sample(struct pt_regs * const regs, unsigned long event)
-{
-        int is_kernel = !user_mode(regs);
-"""
-
-Where on at least two major architectures (Arm, x86), user_mode()
-unconditionally dereferences its parameter.
-
-Now oprofile_add_sample() is called from this context:
-"""
-static enum hrtimer_restart oprofile_hrtimer_notify(struct hrtimer *hrtimer)
-{
-         oprofile_add_sample(get_irq_regs(), 0);
-"""
-
-And get_irq_regs() is NULL when not in an IRQ context.
-
-Bang.
-
-An example of this kind of thing kicking in has already been encountered 
-last year:
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg14069.html
-(That thread got a little side-tracked onto OMAP specifics, but the 
-original report is topical.)
-
-Now would be a very good time for the "many eyes" principle to kick in.
-
-I'm now looking into workarounds, but nothing that I'd necessarily
-want to submit as a real fix.
-
-Phil
-cc:'d replies appreciated
