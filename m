@@ -1,160 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab0D0Vbg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 17:31:36 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:58451 "EHLO gir.skynet.ie"
+	id S1757239Ab0D0VeO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 17:34:14 -0400
+Received: from kroah.org ([198.145.64.141]:44397 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757174Ab0D0Vaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 17:30:55 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/3] mm,migration: During fork(), wait for migration to end if migration PTE is encountered
-Date: Tue, 27 Apr 2010 22:30:50 +0100
-Message-Id: <1272403852-10479-2-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
+	id S1757159Ab0D0VeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 17:34:12 -0400
+Date: Tue, 27 Apr 2010 14:33:59 -0700
+From: Greg KH <greg@kroah.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       linux-pm@lists.linux-foundation.org, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [RFC] ehci: Disable wake on overcurrent (WKOC_E)
+ and disconnect (WKDISC_E)
+Message-ID: <20100427213359.GA29696@kroah.com>
+References: <Pine.LNX.4.44L0.1004271509450.1850-100000@iolanthe.rowland.org>
+ <201004272246.51494.linux@rainbow-software.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004272246.51494.linux@rainbow-software.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Tue, Apr 27, 2010 at 10:46:48PM +0200, Ondrej Zary wrote:
+> > Why would you want to change the jumper settings?  Host controllers are
+> > _supposed_ to supply 5V power during system suspend.
+> 
+> Maybe because I don't want all my USB devices to be powered when the system is 
+> turned off. I doubt that laptop in suspend-to-RAM (on battery) provides power 
+> to USB ports.
 
-At page migration, we replace pte with migration_entry, which has
-similar format as swap_entry and replace it with real pfn at the
-end of migration. But there is a race with fork()'s copy_page_range().
+On the contrary, it does.  Some of us use this mode to charge devices :)
 
-Assume page migraion on CPU A and fork in CPU B. On CPU A, a page of
-a process is under migration. On CPU B, a page's pte is under copy.
+thanks,
 
-	CPUA			CPU B
-				do_fork()
-				copy_mm() (from process 1 to process2)
-				insert new vma to mmap_list (if inode/anon_vma)
-	pte_lock(process1)
-	unmap a page
-	insert migration_entry
-	pte_unlock(process1)
-
-	migrate page copy
-				copy_page_range
-	remap new page by rmap_walk()
-	pte_lock(process2)
-	found no pte.
-	pte_unlock(process2)
-				pte lock(process2)
-				pte lock(process1)
-				copy migration entry to process2
-				pte unlock(process1)
-				pte unlokc(process2)
-	pte_lock(process1)
-	replace migration entry
-	to new page's pte.
-	pte_unlock(process1)
-
-Then, some serialization is necessary. IIUC, this is very rare event but
-it is reproducible if a lot of migration is happening a lot with the
-following program running in parallel.
-
-    #include <stdio.h>
-    #include <string.h>
-    #include <stdlib.h>
-    #include <sys/mman.h>
-
-    #define SIZE (24*1048576UL)
-    #define CHILDREN 100
-    int main()
-    {
-	    int i = 0;
-	    pid_t pids[CHILDREN];
-	    char *buf = mmap(NULL, SIZE, PROT_READ|PROT_WRITE,
-			    MAP_PRIVATE|MAP_ANONYMOUS,
-			    0, 0);
-	    if (buf == MAP_FAILED) {
-		    perror("mmap");
-		    exit(-1);
-	    }
-
-	    while (++i) {
-		    int j = i % CHILDREN;
-
-		    if (j == 0) {
-			    printf("Waiting on children\n");
-			    for (j = 0; j < CHILDREN; j++) {
-				    memset(buf, i, SIZE);
-				    if (pids[j] != -1)
-					    waitpid(pids[j], NULL, 0);
-			    }
-			    j = 0;
-		    }
-
-		    if ((pids[j] = fork()) == 0) {
-			    memset(buf, i, SIZE);
-			    exit(EXIT_SUCCESS);
-		    }
-	    }
-
-	    munmap(buf, SIZE);
-    }
-
-copy_page_range() can wait for the end of migration.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
----
- mm/memory.c |   25 +++++++++++++++----------
- 1 files changed, 15 insertions(+), 10 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 833952d..800d77f 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -675,16 +675,8 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 			}
- 			if (likely(!non_swap_entry(entry)))
- 				rss[MM_SWAPENTS]++;
--			else if (is_write_migration_entry(entry) &&
--					is_cow_mapping(vm_flags)) {
--				/*
--				 * COW mappings require pages in both parent
--				 * and child to be set to read.
--				 */
--				make_migration_entry_read(&entry);
--				pte = swp_entry_to_pte(entry);
--				set_pte_at(src_mm, addr, src_pte, pte);
--			}
-+			else
-+				BUG();
- 		}
- 		goto out_set_pte;
- 	}
-@@ -760,6 +752,19 @@ again:
- 			progress++;
- 			continue;
- 		}
-+		if (unlikely(!pte_present(*src_pte) && !pte_file(*src_pte))) {
-+			entry = pte_to_swp_entry(*src_pte);
-+			if (is_migration_entry(entry)) {
-+				/*
-+				 * Because copying pte has the race with
-+				 * pte rewriting of migraton, release lock
-+				 * and retry.
-+				 */
-+				progress = 0;
-+				entry.val = 0;
-+				break;
-+			}
-+		}
- 		entry.val = copy_one_pte(dst_mm, src_mm, dst_pte, src_pte,
- 							vma, addr, rss);
- 		if (entry.val)
--- 
-1.6.5
-
+greg k-h
