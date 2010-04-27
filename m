@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab0D0GnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 02:43:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61927 "EHLO mga09.intel.com"
+	id S1753438Ab0D0Go6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 02:44:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2551 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab0D0GnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 02:43:04 -0400
+	id S1750952Ab0D0GnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 02:43:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,278,1270450800"; 
-   d="scan'208";a="616765449"
+   d="scan'208";a="616765474"
 From: Huang Ying <ying.huang@intel.com>
 To: lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
-       linux-acpi@vger.kernel.org
-Subject: ACPI, APEI support
-Date: Tue, 27 Apr 2010 14:41:09 +0800
-Message-Id: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
+       linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 05/12] ACPI, APEI, Document for APEI
+Date: Tue, 27 Apr 2010 14:41:14 +0800
+Message-Id: <1272350481-27951-6-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.0
+In-Reply-To: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
+References: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add document for APEI, including kernel parameters and EINJ debug file
+sytem interface.
 
-This patchset adds the APEI (ACPI Platform Error Interface) support to
-Linux kernel.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ Documentation/acpi/apei/einj.txt    |   49 ++++++++++++++++++++++++++++++++++++
+ Documentation/kernel-parameters.txt |    5 +++
+ 2 files changed, 54 insertions(+)
+ create mode 100644 Documentation/acpi/apei/einj.txt
 
-01-06 include the basic APEI HEST parsing and EINJ support. They have
-been posted to mailing list before and get some reviews and
-ACKs. Changes since the last post are as follow.
-
-- Make APEI infrastructure and HEST parsing configurable built-in
-  instead of modules to solve some dependency issues.
-
-- Some minor fixes, such as printk
-
-07-10 are newly added to support GHES (Generic Hardware Error Source)
-corrected memory error. On some machines, Machine Check can not report
-physical address for some corrected memory errors, but GHES can do
-that. So this simplified GHES is implemented and posted firstly.
-
-11-12 are newly added to support using ERST for persistent storage of
-MCE. This can improve fatal MCE report.
-
-[PATCH 01/12] ACPI, IO memory pre-mapping and atomic accessing
-[PATCH 02/12] ACPI, APEI, APEI supporting infrastructure
-[PATCH 03/12] ACPI, APEI, HEST table parsing
-[PATCH 04/12] ACPI, APEI, EINJ support
-[PATCH 05/12] ACPI, APEI, Document for APEI
-[PATCH 06/12] ACPI, APEI, PCIE AER, use general HEST table parsing in AER firmware_first setup
-[PATCH 07/12] ACPI Hardware Error Device (PNP0C33) support
-[PATCH 08/12] Unified UUID/GUID definition
-[PATCH 09/12] ACPI, APEI, UEFI Common Platform Error Record (CPER) header
-[PATCH 10/12] ACPI, APEI, Generic Hardware Error Source memory error support
-[PATCH 11/12] ACPI, APEI, Error Record Serialization Table (ERST) support
-[PATCH 12/12] ACPI, APEI, Use ERST for persistent storage of MCE
-
+--- /dev/null
++++ b/Documentation/acpi/apei/einj.txt
+@@ -0,0 +1,49 @@
++			APEI Error INJection
++			~~~~~~~~~~~~~~~~~~~~
++
++EINJ provides a hardware error injection mechanism, it is very useful
++for debugging and testing of other APEI and RAS features.
++
++To use EINJ, make the following is enabled in your kernel
++configuration:
++
++CONFIG_DEBUG_FS
++CONFIG_ACPI_APEI
++CONFIG_ACPI_APEI_EINJ
++
++The user interface of EINJ is in debug file system, under the
++directory apei/einj. The following files are provided.
++
++- available_error_type
++  Read this file will return the error injection capability of the
++  platform, that is, which error types are supported. The error type
++  definition is as follow, the left field is the error type value, the
++  right field is error description.
++
++    0x00000001	Processor Correctable
++    0x00000002	Processor Uncorrectable non-fatal
++    0x00000004	Processor Uncorrectable fatal
++    0x00000008  Memory Correctable
++    0x00000010  Memory Uncorrectable non-fatal
++    0x00000020  Memory Uncorrectable fatal
++    0x00000040	PCI Express Correctable
++    0x00000080	PCI Express Uncorrectable fatal
++    0x00000100	PCI Express Uncorrectable non-fatal
++    0x00000200	Platform Correctable
++    0x00000400	Platform Uncorrectable non-fatal
++    0x00000800	Platform Uncorrectable fatal
++
++  The format of file contents are as above, except there are only the
++  available error type lines.
++
++- error_type
++  This file is used to set the error type value. The error type value
++  is defined in "available_error_type" description.
++
++- error_inject
++  Write any integer to this file to trigger the error
++  injection. Before this, please specify all necessary error
++  parameters.
++
++For more information about EINJ, please refer to ACPI specification
++version 4.0, section 17.5.
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -843,6 +843,11 @@ and is between 256 and 4096 characters.
+ 	hd=		[EIDE] (E)IDE hard drive subsystem geometry
+ 			Format: <cyl>,<head>,<sect>
+ 
++	hest_disable	[ACPI]
++			Disable Hardware Error Source Table (HEST) support,
++			corresponding firmware-first mode error processing
++			logic will be disabled.
++
+ 	highmem=nn[KMG]	[KNL,BOOT] forces the highmem zone to have an exact
+ 			size of <nn>. This works even on boxes that have no
+ 			highmem otherwise. This also works to reduce highmem
