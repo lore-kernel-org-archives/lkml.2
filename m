@@ -1,72 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab0D0LEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 07:04:39 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:65260 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab0D0LEh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 07:04:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=lQE1UP6fzgltsiVogiwSc5HWBd0flsBmeCW286cKWbMbagBvpgLMiuHZHcNO4XfmvP
-         35DdFGxQFKDV1i2IhMyBh4P+piDDSGoDo5RSuuF4njn6H6CX6sSvm2ufGEKRlDEHZd2s
-         vOr+Gp6P7gLTPy0+pERnRio7uJfEh2cTktECk=
-From: Pedro Francisco <pedrogfrancisco@gmail.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: ath5k misbehaving affecting other kernel parts unrelated?
-Date: Tue, 27 Apr 2010 12:04:29 +0100
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: me@bobcopeland.com, Vegard Nossum <vegard.nossum@gmail.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-       mickflemm@gmail.com
-References: <201004230806.13628.pedrogfrancisco@gmail.com> <4BD4A639.8000703@gmail.com> <201004252224.05509.pedrogfrancisco@gmail.com>
-In-Reply-To: <201004252224.05509.pedrogfrancisco@gmail.com>
+	id S1754582Ab0D0LMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 07:12:37 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:33920 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751001Ab0D0LMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 07:12:33 -0400
+Date: Tue, 27 Apr 2010 12:12:14 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 04/14] mm,migration: Allow the migration of
+	PageSwapCache  pages
+Message-ID: <20100427111213.GF4895@csn.ul.ie>
+References: <1271947206.2100.216.camel@barrios-desktop> <20100422154443.GD30306@csn.ul.ie> <20100423183135.GT32034@random.random> <20100423192311.GC14351@csn.ul.ie> <20100423193948.GU32034@random.random> <20100423213549.GV32034@random.random> <20100424105226.GF14351@csn.ul.ie> <20100425144113.GB5789@random.random> <20100427094002.GD4895@csn.ul.ie> <20100427194139.63ef0864.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201004271204.30068.pedrogfrancisco@gmail.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100427194139.63ef0864.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Domingo, 25 de Abril de 2010 22:24:04 Pedro Francisco escreveu:
-> A Domingo, 25 de Abril de 2010 21:29:45 Jiri Slaby escreveu:
-> > On 04/25/2010 09:22 PM, me@bobcopeland.com wrote:
-> > > On Sat, Apr 24, 2010 at 06:28:36PM +0100, Pedro Francisco wrote:
-> > >> ======================================================================
-> > >> == ===== [ 2658.663424] BUG kmalloc-4096: Poison overwritten
-> > >> [ 2658.663483]
-> > > 
-> > > Ok there are 4 messages here, two of them are definitely 802.11
-> > > beacons, which would point the finger squarely at ath5k.  We had
-> > > reports of this some time ago but a few things got rewritten around
-> > > that time.  I'd guess the rx DMA code is still subtly broken.
-> > > 
-> > >> 6b 6b kkkkkkkkkkkkkkkk
-> > >> [ 2658.664816]   Object 0xed3db0c0:  c4 00 84 00 00 22 43 89 42 69 4e
-> > >> 12 ca 6f 6f 6f �...."C.BiN.�ooo
-> > >> [ 4689.945547]   Object 0xed3d9080:  c4 00 70 00 00 22 43 89 42 69 fe
-> > >> 08 eb 14 14 14 �.p.."C.Bi�.�...
-> > > 
-> > > Offhand, I'm not sure what pattern these are.
-> > 
-> > These are CTS frames. So I think ath5k is to blame too :/.
-> > 
-> > regards,
+On Tue, Apr 27, 2010 at 07:41:39PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 27 Apr 2010 10:40:02 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> Do note that's on a 2.6.32 kernel. I've however a new dmesg/syslog which on
-> a 2.6.34-rc5-daily has the same kind of issues. It's 400kB in size..... Do
-> you want me to send it to the mailing list?
+> > On Sun, Apr 25, 2010 at 04:41:13PM +0200, Andrea Arcangeli wrote:
+> > > On Sat, Apr 24, 2010 at 11:52:27AM +0100, Mel Gorman wrote:
+> > > > It should be. I expect that's why you have never seen the bugon in
+> > > > swapops.
+> > > 
+> > > Oh I just got the very crash you're talking about with aa.git with
+> > > your v8 code. Weird that I never reproduced it before! I think it's
+> > > because I fixed gcc to be fully backed by hugepages always (without
+> > > khugepaged) and I was rebuilding a couple of packages, and that now
+> > > triggers memory compaction much more, but mixed with heavy
+> > > fork/execve. This is the only instability I managed to reproduce over
+> > > 24 hours of stress testing and it's clearly not related to transparent
+> > > hugepage support but it's either a bug in migrate.c (more likely) or
+> > > memory compaction.
+> > > 
+> > > Note that I'm running with the 2.6.33 anon-vma code, so it will
+> > > relieve you to know it's not the anon-vma recent changes causing this
+> > > (well I can't rule out anon-vma bugs, but if it's anon-vma, it's a
+> > > longstanding one).
+> > > 
+> > > kernel BUG at include/linux/swapops.h:105!
+> > > invalid opcode: 0000 [#1] SMP 
+> > > last sysfs file: /sys/devices/pci0000:00/0000:00:12.0/host0/target0:0:0/0:0:0:0/block/sr0/size
+> > > CPU 0 
+> > > Modules linked in: nls_iso8859_1 loop twofish twofish_common tun bridge stp llc bnep sco rfcomm l2cap bluetooth snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss usbhid gspca_pac207 gspca_main videodev v4l1_compat v4l2_compat_ioctl32 snd_hda_codec_realtek ohci_hcd snd_hda_intel ehci_hcd usbcore snd_hda_codec snd_pcm snd_timer snd snd_page_alloc sg psmouse sr_mod pcspkr
+> > > 
+> > > Pid: 13351, comm: basename Not tainted 2.6.34-rc5 #23 M2A-VM/System Product Name
+> > > RIP: 0010:[<ffffffff810e66b0>]  [<ffffffff810e66b0>] migration_entry_wait+0x170/0x180
+> > > RSP: 0000:ffff88009ab6fa58  EFLAGS: 00010246
+> > > RAX: ffffea0000000000 RBX: ffffea000234eed8 RCX: ffff8800aaa95298
+> > > RDX: 00000000000a168d RSI: ffff88000411ae28 RDI: ffffea00025550a8
+> > > RBP: ffffea0002555098 R08: ffff88000411ae28 R09: 0000000000000000
+> > > R10: 0000000000000008 R11: 0000000000000009 R12: 00000000aaa95298
+> > > R13: 00007ffff8a53000 R14: ffff88000411ae28 R15: ffff88011108a7c0
+> > > FS:  00002adf29469b90(0000) GS:ffff880001a00000(0000) knlGS:0000000055700d50
+> > > CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > > CR2: 00007ffff8a53000 CR3: 0000000004f80000 CR4: 00000000000006f0
+> > > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > > Process basename (pid: 13351, threadinfo ffff88009ab6e000, task ffff88009ab96c70)
+> > > Stack:
+> > > ffff8800aaa95280 ffffffff810ce472 ffff8801134a7ce8 0000000000000000
+> > > <0> 00000000142d1a3e ffffffff810c2e35 79f085e9c08a4db7 62d38944fd014000
+> > > <0> 76b07a274b0c057a ffffea00025649f8 f8000000000a168d d19934e84d2a74f3
+> > > Call Trace:
+> > > [<ffffffff810ce472>] ? page_add_new_anon_rmap+0x72/0xc0
+> > > [<ffffffff810c2e35>] ? handle_pte_fault+0x7a5/0x7d0
+> > > [<ffffffff8150506d>] ? do_page_fault+0x13d/0x420
+> > > [<ffffffff8150215f>] ? page_fault+0x1f/0x30
+> > > [<ffffffff81273bfb>] ? strnlen_user+0x4b/0x80
+> > > [<ffffffff81131f4e>] ? load_elf_binary+0x12be/0x1c80
+> > > [<ffffffff810f426d>] ? search_binary_handler+0xad/0x2c0
+> > > [<ffffffff810f5ce7>] ? do_execve+0x247/0x320
+> > > [<ffffffff8100ab16>] ? sys_execve+0x36/0x60
+> > > [<ffffffff8100314a>] ? stub_execve+0x6a/0xc0
+> > > Code: 5e ff ff ff 8d 41 01 89 4c 24 08 89 44 24 04 8b 74 24 04 8b 44 24 08 f0 0f b1 32 89 44 24 0c 8b 44 24 0c 39 c8 74 a4 89 c1 eb d1 <0f> 0b eb fe 66 66 66 2e 0f 1f 84 00 00 00 00 00 41 54 49 89 d4 
+> > > RIP  [<ffffffff810e66b0>] migration_entry_wait+0x170/0x180
+> > > RSP <ffff88009ab6fa58>
+> > > ---[ end trace 840ce8bc6f6dc402 ]---
+> > > 
+> > > It doesn't look like a coincidence the page that had the migration PTE
+> > > set was the argv in the user stack during execve. The bug has to be
+> > > there. Or maybe it's a coincidence and it will mislead us. If you've
+> > > other stack traces please post them so I can have more info (I'll post
+> > > more stack traces if I get them again, it doesn't look easy to
+> > > reproduce, supposedly the bug has always been there since the first
+> > > time I used memory compaction, and this is the first time I reproduce
+> > > it).
+> > > 
+> > 
+> > The oopses I am getting look very similar. The page is encountered in
+> > the stack while copying the arguements in. I don't think it's a
+> > coincidence.
+> > 
 > 
-> Or should I open a bug report on the kernel bugzilla and post them there?
-> Or do both?
+> Hmm. booby trap aronude here ?
 
-Now live on... https://bugzilla.kernel.org/show_bug.cgi?id=15861
+I think so. I have a debugging patch running at the moment that is
+checking for migration ptes while the page tables are being moved.
+
+> ==
+> static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
+> {
+> ....
+>        /*
+>          * cover the whole range: [new_start, old_end)
+>          */
+>         if (vma_adjust(vma, new_start, old_end, vma->vm_pgoff, NULL))
+>                 return -ENOMEM;
+> 
+>         /*
+>          * move the page tables downwards, on failure we rely on
+>          * process cleanup to remove whatever mess we made.
+>          */
+>         if (length != move_page_tables(vma, old_start,
+>                                        vma, new_start, length))
+>                 return -ENOMEM;
+> ...
+
+Specfically, I have it in move_ptes. If migration entries are being found
+there, it would be reasonable for exec() to wait on migration to complete
+but what you suggest below is more plausible.
+
+>         /*
+>          * Shrink the vma to just the new range.  Always succeeds.
+>          */
+>         vma_adjust(vma, new_start, new_end, vma->vm_pgoff, NULL);
+> 
+> 	
+> ==
+> 
+> I think we have wrong vma_address() -> "pte"
+> ==
+> 	=== (A) ===
+> 	vma_adjust().  ---- (*)
+> 	=== (B) ===
+> 	move_pte().
+> ==
+> 
+> 	vma_address(page, vma)
+> 	=> address = vma->vm_start + ((page->index << shift) - vma->vm_pgoff) << PAGE_SHIFT);
+> 
+> So, vma_address() in zone (A) and vma_address in (B) will return different address.
+> 
+
+Yes. I was expecting that the anon_vma lock in vma_adjust would delay exec
+until migration completed.
+
+> When pte inludes migration_pte, this seems critical. Because an address pointed
+> by vma_address() in zone (B) will not contain migration_pte until
+> move_ptes() ends.
+> 
+
+This is plausible considering that, like vma_adjust(), move_ptes does
+not appear to take the anon_vma->lock in the same fashion as i_mmap_lock
+is taken for files.
 
 -- 
-Pedro
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
