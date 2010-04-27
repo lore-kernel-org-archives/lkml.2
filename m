@@ -1,36 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab0D0Pio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 11:38:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24619 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab0D0Pin (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 11:38:43 -0400
-Message-ID: <4BD70485.1070203@oracle.com>
-Date: Tue, 27 Apr 2010 08:36:37 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1755261Ab0D0PjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 11:39:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754554Ab0D0PjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 11:39:10 -0400
+Date: Tue, 27 Apr 2010 17:37:59 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+ the wrong VMA information
+Message-ID: <20100427153759.GZ8860@random.random>
+References: <1272321478-28481-1-git-send-email-mel@csn.ul.ie>
+ <1272321478-28481-3-git-send-email-mel@csn.ul.ie>
+ <20100427090706.7ca68e12.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100427125040.634f56b3.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100427085951.GB4895@csn.ul.ie>
+ <20100427180949.673350f2.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100427102905.GE4895@csn.ul.ie>
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       linux-next <linux-next@vger.kernel.org>
-Subject: linux-next: April 27 (wireless/libertas warnings)
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090209.4BD70502.00D7:SCFMA4539811,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100427102905.GE4895@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/net/wireless/libertas_tf/deb_defs.h:12:1: warning: "pr_fmt" redefined
-include/linux/kernel.h:376:1: warning: this is the location of the previous definition
-drivers/net/wireless/libertas_tf/deb_defs.h:12:1: warning: "pr_fmt" redefined
-include/linux/kernel.h:376:1: warning: this is the location of the previous definition
+On Tue, Apr 27, 2010 at 11:29:05AM +0100, Mel Gorman wrote:
+> It could have been in both but the vma lock should have been held across
+> the rmap_one. It still reproduces but it's still the right thing to do.
+> This is the current version of patch 2/2.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Well, keep in mind I reproduced the swapops bug with 2.6.33 anon-vma
+code, it's unlikely that focusing on patch 2 you'll fix bug in
+swapops.h. If this is a bug in the new anon-vma code, it needs fixing
+of course! But I doubt this bug is related to swapops in execve on the
+bprm->p args.
+
+I've yet to check in detail patch 1 sorry, I'll let you know my
+opinion about it as soon as I checked it in detail.
