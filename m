@@ -1,36 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab0D0V57 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 17:57:59 -0400
-Received: from kroah.org ([198.145.64.141]:59074 "EHLO coco.kroah.org"
+	id S1757297Ab0D0V6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 17:58:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49435 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757259Ab0D0V5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 17:57:55 -0400
-Date: Tue, 27 Apr 2010 14:44:33 -0700
-From: Greg KH <greg@kroah.com>
-To: Vikram Dhillon <opensolarisdev@gmail.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, npalix@diku.dk,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] Staging: hv: NetVsc.c: Fixed a spacing issue
-Message-ID: <20100427214432.GJ9517@kroah.com>
-References: <1269065248-10575-1-git-send-email-opensolarisdev@gmail.com>
+	id S1754768Ab0D0V6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 17:58:43 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 1/5] FS: libfs, implement simple_write_to_buffer
+Date: Tue, 27 Apr 2010 23:58:36 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+       Nigel Cunningham <ncunningham@crca.org.au>,
+       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
+References: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269065248-10575-1-git-send-email-opensolarisdev@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004272358.36175.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 20, 2010 at 02:07:28AM -0400, Vikram Dhillon wrote:
-> Fixed spacing issues in 2 pointers.
+On Tuesday 27 April 2010, Jiri Slaby wrote:
+> It will be used in suspend code and serves as an easy wrap around
+> copy_from_user. Similar to simple_read_from_buffer, it takes care
+> of transfers with proper lengths depending on available and count
+> parameters and advances ppos appropriately.
 > 
-> Signed-off-by: Vikram Dhillon <opensolarisdev@gmail.com>
-> 
-> ---
->  drivers/staging/hv/NetVsc.c |    4 ++--
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Nigel Cunningham <ncunningham@crca.org.au>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: linux-fsdevel@vger.kernel.org
 
-Sorry, someone else already submitted this patch before you :(
+Thanks for the patches, I'll review them as soon as I can.
 
-greg k-h
+Rafael
