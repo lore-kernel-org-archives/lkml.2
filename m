@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab0D0PjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 11:39:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24393 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754554Ab0D0PjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 11:39:10 -0400
-Date: Tue, 27 Apr 2010 17:37:59 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
- the wrong VMA information
-Message-ID: <20100427153759.GZ8860@random.random>
-References: <1272321478-28481-1-git-send-email-mel@csn.ul.ie>
- <1272321478-28481-3-git-send-email-mel@csn.ul.ie>
- <20100427090706.7ca68e12.kamezawa.hiroyu@jp.fujitsu.com>
- <20100427125040.634f56b3.kamezawa.hiroyu@jp.fujitsu.com>
- <20100427085951.GB4895@csn.ul.ie>
- <20100427180949.673350f2.kamezawa.hiroyu@jp.fujitsu.com>
- <20100427102905.GE4895@csn.ul.ie>
+	id S1755211Ab0D0Pj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 11:39:58 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:59552 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033Ab0D0Pj5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 11:39:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: =?utf-8?q?J=C3=B6rn_Engel?= <joern@logfs.org>
+Subject: Re: [PATCH 1/7] logfs: push down BKL into ioctl function
+Date: Tue, 27 Apr 2010 17:38:50 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: John Kacur <jkacur@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
+References: <alpine.LFD.2.00.1004271359180.3318@localhost> <alpine.LFD.2.00.1004271725490.3318@localhost> <20100427153209.GD16794@logfs.org>
+In-Reply-To: <20100427153209.GD16794@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100427102905.GE4895@csn.ul.ie>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201004271738.50505.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1+LWPJhvCTW9g+olsqvrfKNNym5QRqrsyrL5+j
+ Dr3458pWk0QsErxiGCRqDovtJkESwmABP5gflk2Ks8pfq4SsoD
+ QsgGaC3g1/qXMq3QLeIkg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 11:29:05AM +0100, Mel Gorman wrote:
-> It could have been in both but the vma lock should have been held across
-> the rmap_one. It still reproduces but it's still the right thing to do.
-> This is the current version of patch 2/2.
+On Tuesday 27 April 2010, Jörn Engel wrote:
+> On Tue, 27 April 2010 17:27:19 +0200, John Kacur wrote:
+> > 
+> > Hasn't the "current" merge window been over with for weeks? I was assuming 
+> > that bkl push down, or other bkl patches are for the next merge window.
+> 
+> That's what I was thinking.  But some of the bkl related discussion gave
+> me the impression that such patches were still being merged.  So I
+> wanted to be sure.
 
-Well, keep in mind I reproduced the swapops bug with 2.6.33 anon-vma
-code, it's unlikely that focusing on patch 2 you'll fix bug in
-swapops.h. If this is a bug in the new anon-vma code, it needs fixing
-of course! But I doubt this bug is related to swapops in execve on the
-bprm->p args.
+Yes, just queue it for the 2.6.35-rc1 window and make sure it shows up in
+linux-next, or send a replacement patch with your Ack or S-o-b so we can
+put it into the BKL queue.
 
-I've yet to check in detail patch 1 sorry, I'll let you know my
-opinion about it as soon as I checked it in detail.
+	Arnd
