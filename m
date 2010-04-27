@@ -1,32 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab0D0R7m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 13:59:42 -0400
-Received: from kroah.org ([198.145.64.141]:36608 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756532Ab0D0R7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 13:59:39 -0400
-Date: Tue, 27 Apr 2010 10:24:25 -0700
-From: Greg KH <greg@kroah.com>
-To: Thomas Klute <thomas2.klute@uni-dortmund.de>
-Cc: gregkh@suse.de, sjakub@gmail.com, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] asus_oled: whitespace cleanup
-Message-ID: <20100427172425.GD28779@kroah.com>
-References: <1268240243-14519-1-git-send-email-thomas2.klute@uni-dortmund.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268240243-14519-1-git-send-email-thomas2.klute@uni-dortmund.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756663Ab0D0SAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 14:00:37 -0400
+Received: from mail.digidescorp.com ([66.244.163.200]:23719 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756169Ab0D0SAd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 14:00:33 -0400
+X-Spam-Processed: digidescorp.com, Tue, 27 Apr 2010 13:00:33 -0500
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1733b75585=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: microblaze-uclinux@itee.uq.edu.au
+Cc: monstr@monstr.eu, linux-kernel@vger.kernel.org,
+       "Steven J. Magnani" <steve@digidescorp.com>
+Subject: [PATCH][NOMMU] microblaze: re-enable interrupts before calling schedule
+Date: Tue, 27 Apr 2010 13:00:23 -0500
+Message-Id: <1272391223-32012-1-git-send-email-steve@digidescorp.com>
+X-Mailer: git-send-email 1.6.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 10, 2010 at 05:57:23PM +0100, Thomas Klute wrote:
-> Remove space in indentation to make checkpatch.pl happy.
-> 
+schedule() should not be called with interrupts disabled.
 
-Sorry, someone else already sent this fix in.
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+---
+diff -uprN a/arch/microblaze/kernel/entry-nommu.S b/arch/microblaze/kernel/entry-nommu.S
+--- a/arch/microblaze/kernel/entry-nommu.S	2010-04-27 10:14:33.000000000 -0500
++++ b/arch/microblaze/kernel/entry-nommu.S	2010-04-27 12:53:04.000000000 -0500
+@@ -476,6 +476,8 @@ ENTRY(ret_from_fork)
+ 	nop
+ 
+ work_pending:
++	enable_irq
++
+ 	andi	r11, r19, _TIF_NEED_RESCHED
+ 	beqi	r11, 1f
+ 	bralid	r15, schedule
 
-greg k-h
