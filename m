@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab0D0NtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 09:49:13 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:49394 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755930Ab0D0NtK (ORCPT
+	id S1755712Ab0D0Nz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 09:55:58 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:37233 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753416Ab0D0Nz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 09:49:10 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, acme@redhat.com, tzanussi@gmail.com,
-       a.p.zijlstra@chello.nl, fweisbec@gmail.com, stefanha@linux.vnet.ibm.com,
-       tglx@linutronix.de, mhiramat@redhat.com, mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf tools: Fix libdw-dev package name in error message
-In-Reply-To: Your message of "Tue, 27 Apr 2010 12:59:19 -0000."
-             <tip-f93830fbb06b67848c762f2177c06cc3cbb97deb@git.kernel.org>
-From: Valdis.Kletnieks@vt.edu
-References: <1272292023-9869-1-git-send-email-stefanha@linux.vnet.ibm.com>
-            <tip-f93830fbb06b67848c762f2177c06cc3cbb97deb@git.kernel.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1272376100_4032P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 27 Apr 2010 09:48:20 -0400
-Message-ID: <5694.1272376100@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020204.4BD6EB25.0082,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	Tue, 27 Apr 2010 09:55:56 -0400
+Date: Tue, 27 Apr 2010 21:55:47 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Fixes for 2.6.34
+Message-ID: <20100427135547.GA4008@gondor.apana.org.au>
+References: <20081225001724.GA2813@gondor.apana.org.au> <20081225002020.GA2912@gondor.apana.org.au> <20090324044932.GA18245@gondor.apana.org.au> <20090613020512.GA21024@gondor.apana.org.au> <20090910141905.GA17948@gondor.apana.org.au> <20091020065442.GA5947@gondor.apana.org.au> <20091230021253.GA17067@gondor.apana.org.au> <20100201195204.GA6953@gondor.apana.org.au> <20100305071043.GA3548@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100305071043.GA3548@gondor.apana.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1272376100_4032P
-Content-Type: text/plain; charset=us-ascii
+Hi Linus:
 
-On Tue, 27 Apr 2010 12:59:19 -0000, tip-bot for Stefan Hajnoczi said:
-> Commit-ID:  f93830fbb06b67848c762f2177c06cc3cbb97deb
-> Gitweb:     http://git.kernel.org/tip/f93830fbb06b67848c762f2177c06cc3cbb97deb
-> Author:     Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-> AuthorDate: Mon, 26 Apr 2010 15:39:54 -0300
-> Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-> CommitDate: Mon, 26 Apr 2010 15:39:54 -0300
-> 
-> perf tools: Fix libdw-dev package name in error message
-> 
-> The headers required for DWARF support are provided by the libdw-dev
-> package in Debian-based distros.
-
-Not all the world is Debian based.  As I mentioned before, the package needed
-is elfutils-devel on Redhat/Fedora systesm.  For those boxes, you're changing a
-'elfutil-dev' that the user can guess is supposed to be -devel, to a package
-that doesn't exist on Redhat/Fedora.  And to compound it, if the user guesses
-that you meant libdwarf-devel, that still fails, because that does *not*
-provide the libdw.h header - that's still in elfutil-devel.
+This push fixes an IPsec crash when an async hash driver is used.
 
 
---==_Exmh_1272376100_4032P
-Content-Type: application/pgp-signature
+Please pull from
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
 
-iD8DBQFL1uskcC3lWbTT17ARAvhUAKDXeuLVFvt5hiLh2ByEHj1UzOehjQCdEr8R
-hR/MEzZd63KMwi0Bb9Z8XGs=
-=xUru
------END PGP SIGNATURE-----
+or
 
---==_Exmh_1272376100_4032P--
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
 
+
+Herbert Xu (1):
+      crypto: authenc - Add EINPROGRESS check
+
+ crypto/authenc.c |   16 +++++++++++-----
+ 1 files changed, 11 insertions(+), 5 deletions(-)
+ 
+Thanks,
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
