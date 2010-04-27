@@ -1,93 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab0D0DVz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 23:21:55 -0400
-Received: from usul.saidi.cx ([204.11.33.34]:42450 "EHLO usul.overt.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753019Ab0D0DVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 23:21:54 -0400
-X-Greylist: delayed 2494 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Apr 2010 23:21:54 EDT
-Date: Mon, 26 Apr 2010 19:40:02 -0700
-From: Philip Langdale <philipl@overt.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Jeff Garrett <jeff@jgarrett.org>, Andi Kleen <andi@firstfloor.org>,
-       linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: acpi_idle: Very idle Core i7 machine never enters C3
-Message-ID: <20100426194002.586fbaa5@fido5>
-In-Reply-To: <alpine.LFD.2.00.1002051238280.4050@localhost.localdomain>
-References: <20100126084740.GA5265@jgarrett.org>
-	<87y6jkee1b.fsf@basil.nowhere.org>
-	<20100205160900.GA2736@jgarrett.org>
-	<alpine.LFD.2.00.1002051238280.4050@localhost.localdomain>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-RunX1: Yes
+	id S1753451Ab0D0Dah (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 23:30:37 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:46336 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752854Ab0D0Daf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 23:30:35 -0400
+Date: Tue, 27 Apr 2010 13:30:25 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: tytso@mit.edu, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       xfs@oss.sgi.com
+Subject: Re: [PATCH 3/4] writeback: pay attention to wbc->nr_to_write in
+ write_cache_pages
+Message-ID: <20100427033025.GB9783@dastard>
+References: <1271731314-5893-1-git-send-email-david@fromorbit.com>
+ <1271731314-5893-4-git-send-email-david@fromorbit.com>
+ <20100425033315.GC667@thunk.org>
+ <20100426014908.GD11437@dastard>
+ <20100426024302.GC13043@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100426024302.GC13043@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 05 Feb 2010 12:45:21 -0500 (EST)
-Len Brown <lenb@kernel.org> wrote:
-
-> Jeff,
-> What do you see if you apply just the patch below?
+On Sun, Apr 25, 2010 at 10:43:02PM -0400, tytso@mit.edu wrote:
+> On Mon, Apr 26, 2010 at 11:49:08AM +1000, Dave Chinner wrote:
+> > 
+> > Yes, but that does not require a negative value to get right.  None
+> > of the code relies on negative nr_to_write values to do anything
+> > correctly, and all the termination checks are for wbc->nr_to-write
+> > <= 0. And the tracing shows it behaves correctly when
+> > wbc->nr_to_write = 0 on return. Requiring a negative number is not
+> > documented in any of the comments, write_cache_pages() does not
+> > return a negative number, etc, so I can't see why you think this is
+> > necessary....
 > 
-> Also, in addition to "powertop -d" to show what the kernel requests,
-> please run turbostat to show what the hardware actually did:
+> In fs/fs-writeback.c, wb_writeback(), around line 774:
 > 
-> http://userweb.kernel.org/~lenb/acpi/utils/pmtools-latest/turbostat/turbostat.c
+>    		      wrote += MAX_WRITEBACK_PAGES - wbc.nr_to_write;
 > 
-> eg.
-> # turbostat -d -v sleep 5
+> If we want "wrote" to be reflect accurately the number of pages that
+> the filesystem actually wrote, then if you write more pages than what
+> was requested by wbc.nr_to_write, then it needs to be negative.
+
+Yes, but the change I made:
+
+	a) prevented it from writing more than requested in the
+	   async writeback case, and
+	b) prevented it from going massively negative so that the
+	   higher levels wouldn't have over-accounted for pages
+	   written.
+
+And if we consider that for the sync case we actaully return the
+number of pages written - it's gets capped at zero even when we
+write a lot more than that.
+
+Hence exactly accounting for pages written is really not important.
+Indeed, exact number of written pages is not actually used for
+anything specific - only to determine if there was activity or not:
+
+ 919                 pages_written = wb_do_writeback(wb, 0);
+ 920
+ 921                 if (pages_written)
+ 922                         last_active = jiffies;
+
+> > XFS put a workaround in for a different reason to ext4. ext4 put it
+> > in to improve delayed allocation by working with larger chunks of
+> > pages. XFS put it in to get large IOs to be issued through
+> > submit_bio(), not to help the allocator...
 > 
-> thanks,
-> -Len Brown, Intel Open Source Technology Center
-> ---
-
-To resurrect this thread...
-
-I have a giga-byte GA-P55M-UD4 motherboard and I have this same problem
-as well. Len's patch "works" in that I see C6 being used, but it also
-cripples the system - if I do a make -j16 kernel build, I see most jobs
-serialized onto one or two cores. Without the patch, I see the
-full utilization of all 8 hyper-threads as expected.
-
-Now, gigabyte have already b0rked these boards up by using the UHCI
-controllers on the PCH instead of the rate matching hubs. Maybe that's
-directly the cause of BM activity - maybe they screwed something else
-up - is it possible for BIOS/ACPI mistakes to lead to this behaviour?
-
-Jeff - is your board gigabyte too?
-
---phil
-
-> diff --git a/drivers/acpi/processor_idle.c
-> b/drivers/acpi/processor_idle.c index 7c0441f..f528625 100644
-> --- a/drivers/acpi/processor_idle.c
-> +++ b/drivers/acpi/processor_idle.c
-> @@ -763,7 +763,7 @@ static const struct file_operations
-> acpi_processor_power_fops = { static int acpi_idle_bm_check(void)
->  {
->  	u32 bm_status = 0;
-> -
-> +return bm_status;
->  	acpi_read_bit_register(ACPI_BITREG_BUS_MASTER_STATUS,
-> &bm_status); if (bm_status)
->  		acpi_write_bit_register(ACPI_BITREG_BUS_MASTER_STATUS,
-> 1);
+> That's why I put in ext4 at least initially, yes.  I'm working on
+> rewriting the ext4_writepages() code to make this unnecessary....
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> However...
 > 
+> > And to be the nasty person to shoot down your modern hardware
+> > theory: nr_to_write = 1024 pages works just fine on my laptop (XFS
+> > on indilix SSD) as well as my big test server (XFS on 12 disk RAID0)
+> > The server gets 1.5GB/s with pretty much perfect IO patterns with
+> > the fixes I posted, unlike the mess of single page IOs that occurs
+> > without them....
 > 
-> 
+> Have you tested with multiple files that are subject to writeout at
+> the same time?
 
+Of course.
 
+> After all, if your I/O allocator does a great job of
+> keeping the files contiguous in chunks larger tham 4MB, then if you
+> have two or more files that need to be written out, the page allocator
+> will round robin between the two files in 4MB chunks, and that might
+> not be considered an ideal I/O pattern.
 
+4MB chunks translate into 4-8 IOs at the block layer with typical
+setups that set the maximum IO size to 512k or 1MB. So that is
+_plenty_ to keep a single disk or several disks in a RAID stripe
+busy before seeking to another location to do the next set of 4-8
+writes. And if the drive has any amount of cache (we're seeing
+64-128MB in SATA drives now), then it will be aggregating these writes in
+the cache into even larger sequential chunks. Hence seeks in _modern
+hardware_ are going to be almost entirely mitigated for most large
+sequential write workloads as long as the contiguous chunks are more
+than a few MB in size.
 
---phil
+Some numbers for you:
+
+One 4GB file (baseline):
+
+$ dd if=/dev/zero of=/mnt/scratch/$i/test bs=1024k count=4000
+.....
+$ sudo xfs_bmap -vp /mnt/scratch/*/test
+/mnt/scratch/0/test:
+ EXT: FILE-OFFSET         BLOCK-RANGE      AG AG-OFFSET     TOTAL FLAGS
+   0: [0..4710271]:       96..4710367       0 (96..4710367) 4710272 00000
+   1: [4710272..8191999]: 5242976..8724703  1 (96..3481823) 3481728 00000
+
+Ideal layout - the AG size is about 2.4GB, so it'll be two extents
+as we see (average gives 2GB per extent). This completed at about 440MB/s.
+
+Two 4GB files in parallel into the same directory:
+
+$ for i in `seq 0 1 1`; do dd if=/dev/zero of=/mnt/scratch/test$i bs=1024k count=4000 & done
+$ sudo xfs_bmap -vp /mnt/scratch/test* | awk '/ [0-9]*:/ { tot += $6; cnt++ } END { print tot / cnt }'
+712348
+$
+
+So the average extent size is ~355MB, and throughput was roughly
+520MB/s.
+
+Two 4GB files in parallel into different directories (to trigger a
+different allocator placement heuristic):
+
+$ for i in `seq 0 1 1`; do dd if=/dev/zero of=/mnt/scratch/$i/test bs=1024k count=4000 & done
+$ sudo xfs_bmap -vp /mnt/scratch/*/test | awk '/ [0-9]*:/ { tot += $6; cnt++ } END { printf "%d\n", tot / cnt }'
+1170285
+$
+
+~600MB average extent size and throughput was roughly 530MB/s.
+
+Let's make it harder - eight 1GB files in parallel into the same directory:
+
+$ for i in `seq 0 1 7`; do dd if=/dev/zero of=/mnt/scratch/test$i bs=1024k count=1000 & done
+...
+$ sudo xfs_bmap -vp /mnt/scratch/test* | awk '/[0-9]:/ { tot += $6; cnt++ } END { print tot / cnt }'
+157538
+$
+
+An average of 78MB per extent with throughput at roughly 520MB/s.
+IOWs, the extent size is still large enough to provide full
+bandwidth to pretty much any application that does sequential IO.
+i.e. it is not ideal, but it's not badly fragmented enough to be a
+problem for most people.
+
+FWIW, with the current code I am seeing average extent sizes of
+roughly 55MB for this same test, so there is significant _reduction_
+in fragmentation by making sure we interleave chunks of pages
+_consistently_ in writeback. Mind you, throughput didn't change
+because extents of 55MB are still large enough to maintain full disk
+throughput for this workload....
+
+FYI, if this level of fragmentation were a problem for this
+workload (e.g. a mythTV box) I could use something like the
+allocsize mount option to specify the EOF preallocation size:
+
+$ sudo umount /mnt/scratch
+$ sudo mount -o logbsize=262144,nobarrier,allocsize=512m /dev/vdb /mnt/scratch
+$ for i in `seq 0 1 7`; do dd if=/dev/zero of=/mnt/scratch/test$i bs=1024k count=1000 & done
+....
+$ sudo xfs_bmap -vp /mnt/scratch/test* | awk '/ [0-9]*:/ { tot += $6; cnt++ } END { print tot / cnt }'
+1024000
+$
+
+512MB extent size average, exactly, with throughput at 510MB/s (so
+not real reduction in throughput). IOWs, fragmentation for this
+workload can be directly controlled without any performance penalty
+if necessary.
+
+I hope this answers your question, Ted. ;)
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
