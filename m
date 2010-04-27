@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab0D0VsG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 17:48:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35563 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757034Ab0D0VsB (ORCPT
+	id S932070Ab0D0VuP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 17:50:15 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:40156 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757036Ab0D0VuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 17:48:01 -0400
-Date: Tue, 27 Apr 2010 14:47:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Andi Kleen <andi@firstfloor.org>, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH 1/2] mm, Make __get_user_pages return -EHWPOISON for
- HWPOISON page
-Message-Id: <20100427144723.a8c3d997.akpm@linux-foundation.org>
-In-Reply-To: <1272351858.24125.14.camel@yhuang-dev.sh.intel.com>
-References: <1272351858.24125.14.camel@yhuang-dev.sh.intel.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Tue, 27 Apr 2010 17:50:13 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Psychovisually-optimized HZ setting (2.6.33.3)
+In-Reply-To: Your message of "Tue, 27 Apr 2010 21:03:11 +0200."
+             <op.vbt4jlyn6426ze@millennium.getinternet.no>
+From: Valdis.Kletnieks@vt.edu
+References: <1902387910.2078.435.camel@ymzhang.sh.intel.com> <4BC588CF.5010507@redhat.com> <1902445479.2078.458.camel@ymzhang.sh.intel.com> <4BC6C8CD.1020801@redhat.com> <1902473858.2078.481.camel@ymzhang.sh.intel.com>
+            <op.vbt4jlyn6426ze@millennium.getinternet.no>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: multipart/signed; boundary="==_Exmh_1272405003_4032P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 27 Apr 2010 17:50:03 -0400
+Message-ID: <29999.1272405003@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020207.4BD75C0E.002A,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Apr 2010 15:04:18 +0800
-Huang Ying <ying.huang@intel.com> wrote:
+--==_Exmh_1272405003_4032P
+Content-Type: text/plain; charset=us-ascii
 
-> With this patch, the caller of __get_user_pages can distinguish
-> HWPOISON page from general FAULT page. This is needed by KVM, where
-> UCR MCE should be relayed to guest for HWPOISON page, while
-> instruction emulation and MMIO will be tried for general FAULT page.
-> 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> ---
->  include/asm-generic/errno.h |    2 ++
->  mm/memory.c                 |    5 +++--
->  2 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> --- a/include/asm-generic/errno.h
-> +++ b/include/asm-generic/errno.h
-> @@ -108,4 +108,6 @@
->  
->  #define ERFKILL		132	/* Operation not possible due to RF-kill */
->  
-> +#define EHWPOISON	133	/* Memory page has hardware error */
-> +
->  #endif
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1432,9 +1432,10 @@ int __get_user_pages(struct task_struct
->  				if (ret & VM_FAULT_ERROR) {
->  					if (ret & VM_FAULT_OOM)
->  						return i ? i : -ENOMEM;
-> -					if (ret &
-> -					    (VM_FAULT_HWPOISON|VM_FAULT_SIGBUS))
-> +					if (ret & VM_FAULT_SIGBUS)
->  						return i ? i : -EFAULT;
-> +					if (ret & VM_FAULT_HWPOISON)
-> +						return i ? i : -EHWPOISON;
->  					BUG();
->  				}
->  				if (ret & VM_FAULT_MAJOR)
-> 
+On Tue, 27 Apr 2010 21:03:11 +0200, Uwaysi Bin Kareem said:
 
-This will cause various code paths (eg: fs/direct-io.c) to return
--EHWPOISON to userspace, will it not?
+> http://www.paradoxuncreated.com/articles/Millennium/Millennium.html
+
+> +	config HZ_3956
+> +		bool "3956 HZ"
+> +	help
+> +	 3956 Hz is nearly the highest timer interrupt rate supported in the kernel.
+> +	 Graphics workstations, and OpenGL applications may benefit from this,
+> +	 since it gives the lowest framerate-jitter. The exact value 3956 is
+> +	 psychovisually-optimized, meaning that it aims for a level of jitter,
+
+Even after reading your link, it's unclear why 3956 and not 4000. All your link
+said was "A granularity below 0.5 milliseconds, seems to suit the human
+senses." - anything over 2000 meets that requirement.  Also, if your screen
+refresh is sitting at 72hz or a bit under 14ms per refresh, any jitter under
+that won't really matter much - it doesn't matter if your next frame is
+ready 5ms early or 5.5ms early, you *still* have to wait for the next vertical
+blanking interval or suffer tearing.
+
+There's also the case of programs where HZ=300 would *make* the time budget,
+but the added 3,356 timer interrupts and associated overhead would cause a
+missed screen refresh.
+
+I think you need more technical justification of why 3956 is better than 1000.
+
+--==_Exmh_1272405003_4032P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFL11wLcC3lWbTT17ARAvMgAJ0ah240ABdHNHKQWCnb5OcuvUbifgCgjNx7
+Kc9UfdccQNtI+tGF/iTQp5c=
+=IPvH
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1272405003_4032P--
 
