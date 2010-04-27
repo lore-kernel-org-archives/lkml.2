@@ -1,182 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab0D0H6J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 03:58:09 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:41283 "EHLO
+	id S1754028Ab0D0IAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 04:00:06 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:60465 "EHLO
 	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302Ab0D0H6F (ORCPT
+	with ESMTP id S1753820Ab0D0IAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 03:58:05 -0400
-Message-ID: <4BD698FB.1030904@monstr.eu>
-Date: Tue, 27 Apr 2010 09:57:47 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Tue, 27 Apr 2010 04:00:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=trqYBpLn9LFMgdTC+O5V7Qp89bSOgbNTDTRhancBycGuCXXemP2sYJDQhED6fTtCg3
+         ZJxmtGBSH0cObVrPhc+/kpRTt6j//n7p2HZcW1u9aHsvD4rWlb7sTIRTwvj+EM8WrE0R
+         9mgwlNGcnWL5ZSB/CiYdmCTESb3fljvyNQBpY=
+Date: Tue, 27 Apr 2010 11:01:19 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Robert Hancock <hancockrwd@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: INFO: umount blocked for more than 120 seconds
+Message-ID: <20100427080119.GB3291@swordfish.minsk.epam.com>
+References: <20100426090142.GB3704@swordfish.minsk.epam.com>
+ <Pine.LNX.4.44L0.1004261534520.1764-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: steve@digidescorp.com
-CC: linux-kernel@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au
-Subject: Re: [microblaze-uclinux] Re: [PATCH 1/2] microblaze: add stack unwinder
-References: <1271220928-3502-1-git-send-email-steve@digidescorp.com>	 <4BC820B2.6060604@monstr.eu>	 <1271428410.3366.23.camel@iscandar.digidescorp.com>	 <4BD5B28B.4000401@monstr.eu> <1272339401.17476.7.camel@iscandar.digidescorp.com>
-In-Reply-To: <1272339401.17476.7.camel@iscandar.digidescorp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dc+cDN39EJAMEtIO"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1004261534520.1764-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven J. Magnani wrote:
-> On Mon, 2010-04-26 at 17:34 +0200, Michal Simek wrote:
-> 
->> I finally looked at it and here is what I found.
->>
->> # ./reboot
->> Restarting system.
->> Machine restart...
->> Machine shutdown...
->> Stack:
->> 4f3ffdc8: 48004aec 00000008
->> 4f3ffdd0: 00000000 00000001 4f3e0150 00000001 4f3ffdec 48004b14 481dc68c 
->> 48241318
->> 4f3ffdf0: ffffffff 00001099 00003fff 482f49cc 4801f518 481dc6a4 48241318 
->> ffffffff
->> 4f3ffe10: 00001083 00003fff 482f49cc 48020150 481e3048 00000000 000001a2 
->> 00000000
->> 4f3ffe30: 00000000 00000000 28121969 48006b38 48240dc0 481d549c 481d53a8 
->> 481d549c
->> 4f3ffe50: 00aa4812 481d523c 0000c350 00000035 48029618 4f3ffe70 000001a2 
->> 4f96c04c
->> 4f3ffe70: 481d6390 0000c350 4f3fff58 4f3ffee0 481d639c 481d6370 00000009 
->> 4f3ffee0
->> 4f3ffe90: 00000000 00000000 00000000 4f3ffee0 48029df4 00000001 4f3e0150 
->> 00000001
->> 4f3ffeb0: 00000001 00000001 00000000 00000001 00000001 48029f34 4801b2a8 
->> 4800c5e0
->> 4f3ffed0: 00000020 00000000 0000c350 00000000 00000001 00000000 00000000 
->> 00000035
->> 4f3ffef0: 00ab0b62 00000035 00aa4812 480294e0 482425c0 00000000 00000000 
->> 00000000
->> 4f3fff10: 0000c350 00000001 0000c350 4f3ead40 4f3fff58 00000001 00000000 
->> 00000000
->> 4f3fff30: 00000001 4f3e0150 00000001 48006b38 00000000 4f3eaf68 00000000 
->> 00010000
->> 4f3fff50: 00000000 00000000 00000000 fee1dead 01234567 00000000 00000000 
->> 4f3eaebc
->> 4f3fff70: 00000000 00000000 00000000 fee1dead 28121969 01234567 00000008 
->> 00000000
->> 4f3fff90: 00000000 28121969 00000058 00000000 4f3e0320 4f3e0274 00000000 
->> 00000000
->> 4f3fffb0: 7fffff82 00000000 00000000 00000000 fee1dead 01234567 00000000 
->> 00000000
->> 4f3fffd0: 00000001 4f3e0150 00000001 00000000 00000000 4f96c04c 4f3e0324 
->> 000001a0
->> 4f3ffff0: 00000000 00000000 000001a0 00000000
->>
->>
->> Call Trace:
->>      Unwinding with PC=480050d4, FP=4f3ffd74
->> [<480050d4>] microblaze_unwind+0xa8/0xc4
->> pc 0x480050ac instr 0x30210024
->>      Invalid frame size -36 at 0x480050ac
->>      Failed to find previous stack frame
->>
->> Below is the dump - then you can see that 36 is correct.
->> That could be due to different toolchain behavior.
->>
->> Thanks,
->> Michal
->>
->>
->> 4800502c <microblaze_unwind>:
->> 4800502c:       b000482f        imm     18479
->> 48005030:       e86043a8        lwi     r3, r0, 17320   // 482f43a8 <mbc>
->> 48005034:       3021ffdc        addik   r1, r1, -36
->> 48005038:       fa61001c        swi     r19, r1, 28
->> 4800503c:       fac10020        swi     r22, r1, 32
->> 48005040:       f9e10000        swi     r15, r1, 0
->> 48005044:       e8830020        lwi     r4, r3, 32
->> 48005048:       12650000        addk    r19, r5, r0
->> 4800504c:       99fc2000        brald   r15, r4
->> 48005050:       12c60000        addk    r22, r6, r0
->> 48005054:       b000482f        imm     18479
->> 48005058:       e86043a8        lwi     r3, r0, 17320   // 482f43a8 <mbc>
->> 4800505c:       e8830008        lwi     r4, r3, 8
->> 48005060:       99fc2000        brald   r15, r4
->> 48005064:       80000000        or      r0, r0, r0
->> 48005068:       be130068        beqid   r19, 104                // 480050d0
->> 4800506c:       10b30000        addk    r5, r19, r0
->> 48005070:       b0004800        imm     18432
->> 48005074:       30c069e0        addik   r6, r0, 27104   // 480069e0 
->> <_switch_to>
->> 48005078:       165f9800        rsubk   r18, r31, r19
->> 4800507c:       be120034        beqid   r18, 52         // 480050b0
->> 48005080:       11360000        addk    r9, r22, r0
->> 48005084:       e8730004        lwi     r3, r19, 4
->> 48005088:       10b30000        addk    r5, r19, r0
->> 4800508c:       e903004c        lwi     r8, r3, 76
->> 48005090:       e8e3003c        lwi     r7, r3, 60
->> 48005094:       b9f4fc7c        brlid   r15, -900       // 48004d10 
->> <microblaze_unwind_inner>
->> 48005098:       11360000        addk    r9, r22, r0
->> 4800509c:       e9e10000        lwi     r15, r1, 0
->> 480050a0:       ea61001c        lwi     r19, r1, 28
->> 480050a4:       eac10020        lwi     r22, r1, 32
->> 480050a8:       b60f0008        rtsd    r15, 8
->> 480050ac:       30210024        addik   r1, r1, 36
->> 480050b0:       e8730004        lwi     r3, r19, 4
->> 480050b4:       30631f68        addik   r3, r3, 8040
->> 480050b8:       e903003c        lwi     r8, r3, 60
->> 480050bc:       e8c30080        lwi     r6, r3, 128
->> 480050c0:       e8e30004        lwi     r7, r3, 4
->> 480050c4:       b9f4fc4c        brlid   r15, -948       // 48004d10 
->> <microblaze_unwind_inner>
->> 480050c8:       80000000        or      r0, r0, r0
->> 480050cc:       b800ffd0        bri     -48             // 4800509c
->> 480050d0:       80e10000        or      r7, r1, r0
->> 480050d4:       b8d40008        brlid   r6, 8
->> 480050d8:       80000000        or      r0, r0, r0
->> 480050dc:       11130000        addk    r8, r19, r0
->> 480050e0:       11360000        addk    r9, r22, r0
->> 480050e4:       b9f4fc2c        brlid   r15, -980       // 48004d10 
->> <microblaze_unwind_inner>
->> 480050e8:       10bf0000        addk    r5, r31, r0
->> 480050ec:       b800ffb0        bri     -80             // 4800509c
->>
-> 
-> Wow. Your compiler generates code very different from mine. (What's its
-> pedigree?) With mine, the rtsd and "addik r1, r1, +foo" instructions are
-> always at the end of each function. So, I had find_frame_creation()
-> treat these as crossing into a different function, and give up. I will
-> remove those checks when I respin the patch - they're not needed with my
-> compiler, and with yours they prevent the backtrace from completing
-> properly.
 
-It is gcc 4.1.2. It is not the first time when I see this construction.
+--dc+cDN39EJAMEtIO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> Thanks for testing.
+Hello,
 
-No problem. Looking forward to v2.
+Robert Hancock added to Cc list.
 
-Thanks,
-Michal
-
-> 
-> ------------------------------------------------------------------------
->  Steven J. Magnani               "I claim this network for MARS!
->  www.digidescorp.com              Earthling, return my space modulator!"
-> 
->  #include <standard.disclaimer>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+First of all, let me describe hw (sorry for skipping this part in prev. ema=
+il).
+The device is ASUS p535 in a card reader mode. The card is 1Gb MiniSD (King=
+ston).
 
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+On (04/26/10 15:36), Alan Stern wrote:
+> Is this repeatable?
+>
+Yes.
+
+kernel: [14980.102019] usb 2-1: new full speed USB device using uhci_hcd an=
+d address 2
+kernel: [14980.270773] usb 2-1: New USB device found, idVendor=3D0b05, idPr=
+oduct=3D422f
+kernel: [14980.270783] usb 2-1: New USB device strings: Mfr=3D1, Product=3D=
+2, SerialNumber=3D3
+kernel: [14980.270790] usb 2-1: Product: Generic Mass Storage
+kernel: [14980.270797] usb 2-1: Manufacturer: ASUS
+kernel: [14980.270803] usb 2-1: SerialNumber: *****************************=
+****
+kernel: [14980.273767] scsi3 : usb-storage 2-1:1.0
+kernel: [14981.279875] scsi scan: INQUIRY result too short (5), using 36
+kernel: [14981.279890] scsi 3:0:0:0: Direct-Access                         =
+           PQ: 0 ANSI: 0
+kernel: [14981.289597] sd 3:0:0:0: Attached scsi generic sg2 type 0
+kernel: [14981.301967] sd 3:0:0:0: [sdb] 2012160 512-byte logical blocks: (=
+1.03 GB/982 MiB)
+kernel: [14981.304760] sd 3:0:0:0: [sdb] Write Protect is off
+kernel: [14981.304765] sd 3:0:0:0: [sdb] Mode Sense: 00 06 00 00
+kernel: [14981.304768] sd 3:0:0:0: [sdb] Assuming drive cache: write through
+kernel: [14981.316864] sd 3:0:0:0: [sdb] Assuming drive cache: write through
+kernel: [14981.316877]  sdb: sdb1
+kernel: [14981.339861] sd 3:0:0:0: [sdb] Assuming drive cache: write through
+kernel: [14981.339873] sd 3:0:0:0: [sdb] Attached SCSI removable disk
+kernel: [15014.446419] FAT: utf8 is not a recommended IO charset for FAT fi=
+lesystems, filesystem will be case sensitive!
+kernel: [15360.625323] INFO: task umount:7148 blocked for more than 120 sec=
+onds.
+kernel: [15360.625332] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" d=
+isables this message.
+kernel: [15360.625340] umount        D 00000dd9     0  7148   6292 0x000000=
+00
+kernel: [15360.625353]  f38bfe38 00000046 12abbd47 00000dd9 c1610cc0 c12c38=
+90 c1610cc0 c1610cc0
+kernel: [15360.625377]  c1610cc0 c1610cc0 f6fc5790 c1610cc0 00010bbe 000000=
+00 12aab189 00000dd9
+kernel: [15360.625400]  f6fc5500 f38bfe40 f38bfe70 00000000 f38bfe78 f38bfe=
+40 c10b7cf0 f38bfe5c
+kernel: [15360.625423] Call Trace:
+kernel: [15360.625442]  [<c12c3890>] ? _raw_spin_unlock_irqrestore+0x36/0x5b
+kernel: [15360.625457]  [<c10b7cf0>] bdi_sched_wait+0x8/0xc
+kernel: [15360.625467]  [<c12c20ef>] __wait_on_bit+0x34/0x5b
+kernel: [15360.625477]  [<c10b7ce8>] ? bdi_sched_wait+0x0/0xc
+kernel: [15360.625487]  [<c12c216d>] out_of_line_wait_on_bit+0x57/0x5f
+kernel: [15360.625497]  [<c10b7ce8>] ? bdi_sched_wait+0x0/0xc
+kernel: [15360.625510]  [<c103fa75>] ? wake_bit_function+0x0/0x4d
+kernel: [15360.625521]  [<c10b84d4>] wait_on_bit.clone.0+0x17/0x23
+kernel: [15360.625531]  [<c10b8544>] sync_inodes_sb+0x64/0x10d
+kernel: [15360.625546]  [<c10d373f>] ? vfs_quota_sync+0x0/0x1da
+kernel: [15360.625556]  [<c10baef6>] __sync_filesystem+0x37/0x62
+kernel: [15360.625566]  [<c10bb062>] sync_filesystem+0x3c/0x3f
+kernel: [15360.625578]  [<c10a2def>] generic_shutdown_super+0x1c/0xca
+kernel: [15360.625588]  [<c10a2eba>] kill_block_super+0x1d/0x31
+kernel: [15360.625599]  [<c10a3833>] deactivate_super+0x48/0x5a
+kernel: [15360.625610]  [<c10b385c>] mntput_no_expire+0x5e/0x89
+kernel: [15360.625620]  [<c10b41cf>] sys_umount+0x277/0x29b
+kernel: [15360.625631]  [<c10b4200>] sys_oldumount+0xd/0xf
+kernel: [15360.625642]  [<c1002813>] sysenter_do_call+0x12/0x32
+kernel: [15360.625652] 1 lock held by umount/7148:
+kernel: [15360.625657]  #0:  (&type->s_umount_key#32){++++..}, at: [<c10a38=
+2e>] deactivate_super+0x43/0x5a
+
+
+> Can you do this with CONFIG_USB_DEBUG enabled?  And acquire a usbmon=20
+> trace at the same time (see Documentation/usb/usbmon.txt)?
+>=20
+
+Sure. Rebuilding the kernel right now.
+
+
+
+Robert Hancock wrote:
+> Is this some super-slow SD card or USB reader that you just wrote a bunch=
+ of data to?=20
+> It's not impossible it could take 2 minutes for the writeout of all the d=
+irty data to
+> complete on unmount..=20
+Please see above.
+
+> did the unmount ever complete?
+No entry in /etc/mtab. So, I guess, yes - umount complete.
+
+
+	Sergey
+
+--dc+cDN39EJAMEtIO
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iJwEAQECAAYFAkvWmc8ACgkQfKHnntdSXjQcMAP8CYmbOwUS26pOR8KIqxj0a9In
+9hwnJQcu/nCZpJsmbYCadnO/QLUpT9yjkEL+8wkYe4NrTT/36JuMWGxFEJ+t7iql
+riZUVFXbyZHo5GHmxgFHwJNWzzq0MxcbWRHGnNomkesj8x84if05pp+Gfem5p2zR
+ClhZQQbJfe5R8EroghY=
+=3d60
+-----END PGP SIGNATURE-----
+
+--dc+cDN39EJAMEtIO--
