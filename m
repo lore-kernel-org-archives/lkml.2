@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab0D0QC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 12:02:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11100 "EHLO mx1.redhat.com"
+	id S1755635Ab0D0QEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 12:04:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:7401 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752538Ab0D0QCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 12:02:25 -0400
-Message-ID: <4BD70A8E.2070906@redhat.com>
-Date: Tue, 27 Apr 2010 19:02:22 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1755433Ab0D0QE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 12:04:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,280,1270450800"; 
+   d="scan'208";a="561967134"
+Date: Tue, 27 Apr 2010 09:04:25 -0700 (Pacific Daylight Time)
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: "davem@davemloft.net" <davem@davemloft.net>,
+       "arjan@linux.jf.intel.com" <arjan@linux.jf.intel.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC: linux-next 1/2] irq: Add CPU mask affinity hint
+ callback framework
+In-Reply-To: <alpine.LFD.2.00.1004271425140.2951@localhost.localdomain>
+Message-ID: <Pine.WNT.4.64.1004270856560.320@PPWASKIE-MOBL2.amr.corp.intel.com>
+References: <20100419045741.30276.23233.stgit@ppwaskie-hc2.jf.intel.com>
+ <alpine.LFD.2.00.1004271425140.2951@localhost.localdomain>
+X-X-Sender: ppwaskie@imapmail.glb.intel.com
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/22] KVM: MMU: Track page fault data in struct vcpu
-References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com> <1272364712-17425-17-git-send-email-joerg.roedel@amd.com> <4BD6DF7C.1090203@redhat.com> <20100427132801.GI11097@amd.com> <4BD6E8A6.5040008@redhat.com> <20100427135700.GK11097@amd.com>
-In-Reply-To: <20100427135700.GK11097@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2010 04:57 PM, Joerg Roedel wrote:
+On Tue, 27 Apr 2010, Thomas Gleixner wrote:
+
+> On Sun, 18 Apr 2010, Peter P Waskiewicz Jr wrote:
+>> +/**
+>> + * struct irqaffinityhint - per interrupt affinity helper
+>> + * @callback:	device driver callback function
+>> + * @dev:	reference for the affected device
+>> + * @irq:	interrupt number
+>> + */
+>> +struct irqaffinityhint {
+>> +	irq_affinity_hint_t callback;
+>> +	void *dev;
+>> +	int irq;
+>> +};
 >
->> But the nested guest can use pae paging and generate a #NPF with
->> exit_info_2>  4GB.  So we need to keep the full fault address; if we
->> truncate, the guest might actually resolve the fault and let the
->> nested guest continue.
->>      
-> This could only be a malicious guest because it can't have memory above
-> 4gb. But a guest could certainly setup its page tables to point there,
-> thats true. So I change it to u64.
->    
+> Why do you need that extra data structure ? The device and the irq
+> number are known, so all you need is the callback itself. So no need
+> for allocating memory ....
 
-It doesn't need to be malicious, for example it could set up an mmio PCI 
-BAR outside the 4GB space.
+When I register the function callback with the interrupt layer, I need to 
+know what device structures to reference back in the driver.  In other 
+words, if I call into an underlying driver with just an interrupt number, 
+then I have no way at getting at the dev structures (netdevice for me, 
+plus my private adapter structures), unless I declare them globally 
+(yuck).
 
--- 
-error compiling committee.c: too many arguments to function
+I had a different approach before this one where I assumed the device from 
+the irq handler callback was safe to use for the device in this new 
+callback.  I didn't feel really great about that, since it's an implicit 
+assumption that could cause things to go sideways really quickly.
 
+Let me know what you think either way.  I'm certainly willing to make a 
+change, I just don't know at this point what's the safest approach from 
+what I currently have.
+
+>
+>> +static ssize_t irq_affinity_hint_proc_write(struct file *file,
+>> +		const char __user *buffer, size_t count, loff_t *pos)
+>> +{
+>> +	/* affinity_hint is read-only from proc */
+>> +	return -EOPNOTSUPP;
+>> +}
+>> +
+>
+> Why do you want a write function when the file is read only ?
+
+It's leftover paranoia.  I put it in early on, then changed the mode 
+later.  I can remove this function.  I'll re-send something once we agree 
+on how the code in your first comment should look.
+
+Thanks Thomas!
+
+-PJ
