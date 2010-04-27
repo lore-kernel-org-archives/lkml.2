@@ -1,156 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab0D0IAG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 04:00:06 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:60465 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab0D0IAD (ORCPT
+	id S1753651Ab0D0ILY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 04:11:24 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50224 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab0D0ILV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 04:00:03 -0400
+	Tue, 27 Apr 2010 04:11:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=trqYBpLn9LFMgdTC+O5V7Qp89bSOgbNTDTRhancBycGuCXXemP2sYJDQhED6fTtCg3
-         ZJxmtGBSH0cObVrPhc+/kpRTt6j//n7p2HZcW1u9aHsvD4rWlb7sTIRTwvj+EM8WrE0R
-         9mgwlNGcnWL5ZSB/CiYdmCTESb3fljvyNQBpY=
-Date: Tue, 27 Apr 2010 11:01:19 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Robert Hancock <hancockrwd@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: INFO: umount blocked for more than 120 seconds
-Message-ID: <20100427080119.GB3291@swordfish.minsk.epam.com>
-References: <20100426090142.GB3704@swordfish.minsk.epam.com>
- <Pine.LNX.4.44L0.1004261534520.1764-100000@iolanthe.rowland.org>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WC7A9RRRzO+MO17V/O3T969o9BIkUX8fI5WukJL7TjLc9dCw2Vw3oyNMXz6+8tVXLQ
+         KQdft1L+hPsuCPtPCQTkS5WgAN698m00e1STs7whr3LH90rOSSyspKBMFWGabGZUVs1S
+         o9b6SzVHGXVEYMQsX1GXnURqRi6rpE6gtmpcs=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dc+cDN39EJAMEtIO"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1004261534520.1764-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100427075229.GB27497@kernel.dk>
+References: <20100423100532.GN27497@kernel.dk>
+	 <20100426094810.GE27497@kernel.dk> <20100426143253.GB4364@logfs.org>
+	 <20100426143803.GM27497@kernel.dk> <20100426144532.GN27497@kernel.dk>
+	 <20100426163050.GC4364@logfs.org> <20100426163126.GD4364@logfs.org>
+	 <20100426170247.GP27497@kernel.dk> <20100426171236.GG4364@logfs.org>
+	 <20100427075229.GB27497@kernel.dk>
+Date: Tue, 27 Apr 2010 10:11:18 +0200
+Message-ID: <z2g4aa525de1004270111r8a9a475fna8715219551a889d@mail.gmail.com>
+Subject: Re: [PATCH 2/2] [MTD] Call bdi_init() and bdi_register()
+From: Paolo Minazzi <paolo.minazzi@gmail.com>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---dc+cDN39EJAMEtIO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hello,
-
-Robert Hancock added to Cc list.
-
-First of all, let me describe hw (sorry for skipping this part in prev. ema=
-il).
-The device is ASUS p535 in a card reader mode. The card is 1Gb MiniSD (King=
-ston).
+I Jens,
+I'm Paolo Minazzi and I have a problem with logfs and 2.6.34rc5.
+Can I apply the patch to rc5 and make a test on my ARM board ?
+Paolo
 
 
-On (04/26/10 15:36), Alan Stern wrote:
-> Is this repeatable?
+
+On Tue, Apr 27, 2010 at 9:52 AM, Jens Axboe <jens.axboe@oracle.com> wrote:
+> On Mon, Apr 26 2010, Jörn Engel wrote:
+>> On Mon, 26 April 2010 19:02:48 +0200, Jens Axboe wrote:
+>> > On Mon, Apr 26 2010, Jörn Engel wrote:
+>> > > Otherwise we hit a BUG_ON in bdi_queue_work().
+>> > >
+>> > > Signed-off-by: Joern Engel <joern@logfs.org>
+>> > > ---
+>> > >  drivers/mtd/mtdcore.c |   17 ++++++++++++++++-
+>> > >  1 files changed, 16 insertions(+), 1 deletions(-)
+>> > >
+>> > > diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+>> > > index cb4858b..8dd3e46 100644
+>> > > --- a/drivers/mtd/mtdcore.c
+>> > > +++ b/drivers/mtd/mtdcore.c
+>> > > @@ -322,6 +322,12 @@ int add_mtd_device(struct mtd_info *mtd)
+>> > >           if (!mtd_table[i]) {
+>> > >                   struct mtd_notifier *not;
+>> > >
+>> > > +                 err = bdi_register(mtd->backing_dev_info, NULL, "mtd%d",
+>> > > +                                 i);
+>> > > +                 if (err) {
+>> > > +                         /* We lose the errno information :( */
+>> > > +                         break;
+>> > > +                 }
+>> >
+>> > This is not a good idea, even if it'll currently work.
+>> >
+>> > > @@ -692,6 +698,15 @@ static int __init init_mtd(void)
+>> > >   int ret;
+>> > >   ret = class_register(&mtd_class);
+>> > >
+>> > > + ret = bdi_init(&mtd_bdi_unmappable);
+>> > > + if (ret)
+>> > > +         return ret;
+>> > > + ret = bdi_init(&mtd_bdi_ro_mappable);
+>> > > + if (ret)
+>> > > +         return ret;
+>> > > + ret = bdi_init(&mtd_bdi_rw_mappable);
+>> > > + if (ret)
+>> > > +         return ret;
+>> >
+>> > Do the bdi_register() here as well.
+>>
+>> -ENOBRAIN
+>>
+>> Initially I wanted to do just than.  Then I looked at the block layer
+>> and thought we could create one backing_dev_info per mtd as well.  Not
+>> necessarily a bad if I would actually _create_ them and not just reuse
+>> the same ones over and over again.
 >
-Yes.
-
-kernel: [14980.102019] usb 2-1: new full speed USB device using uhci_hcd an=
-d address 2
-kernel: [14980.270773] usb 2-1: New USB device found, idVendor=3D0b05, idPr=
-oduct=3D422f
-kernel: [14980.270783] usb 2-1: New USB device strings: Mfr=3D1, Product=3D=
-2, SerialNumber=3D3
-kernel: [14980.270790] usb 2-1: Product: Generic Mass Storage
-kernel: [14980.270797] usb 2-1: Manufacturer: ASUS
-kernel: [14980.270803] usb 2-1: SerialNumber: *****************************=
-****
-kernel: [14980.273767] scsi3 : usb-storage 2-1:1.0
-kernel: [14981.279875] scsi scan: INQUIRY result too short (5), using 36
-kernel: [14981.279890] scsi 3:0:0:0: Direct-Access                         =
-           PQ: 0 ANSI: 0
-kernel: [14981.289597] sd 3:0:0:0: Attached scsi generic sg2 type 0
-kernel: [14981.301967] sd 3:0:0:0: [sdb] 2012160 512-byte logical blocks: (=
-1.03 GB/982 MiB)
-kernel: [14981.304760] sd 3:0:0:0: [sdb] Write Protect is off
-kernel: [14981.304765] sd 3:0:0:0: [sdb] Mode Sense: 00 06 00 00
-kernel: [14981.304768] sd 3:0:0:0: [sdb] Assuming drive cache: write through
-kernel: [14981.316864] sd 3:0:0:0: [sdb] Assuming drive cache: write through
-kernel: [14981.316877]  sdb: sdb1
-kernel: [14981.339861] sd 3:0:0:0: [sdb] Assuming drive cache: write through
-kernel: [14981.339873] sd 3:0:0:0: [sdb] Attached SCSI removable disk
-kernel: [15014.446419] FAT: utf8 is not a recommended IO charset for FAT fi=
-lesystems, filesystem will be case sensitive!
-kernel: [15360.625323] INFO: task umount:7148 blocked for more than 120 sec=
-onds.
-kernel: [15360.625332] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" d=
-isables this message.
-kernel: [15360.625340] umount        D 00000dd9     0  7148   6292 0x000000=
-00
-kernel: [15360.625353]  f38bfe38 00000046 12abbd47 00000dd9 c1610cc0 c12c38=
-90 c1610cc0 c1610cc0
-kernel: [15360.625377]  c1610cc0 c1610cc0 f6fc5790 c1610cc0 00010bbe 000000=
-00 12aab189 00000dd9
-kernel: [15360.625400]  f6fc5500 f38bfe40 f38bfe70 00000000 f38bfe78 f38bfe=
-40 c10b7cf0 f38bfe5c
-kernel: [15360.625423] Call Trace:
-kernel: [15360.625442]  [<c12c3890>] ? _raw_spin_unlock_irqrestore+0x36/0x5b
-kernel: [15360.625457]  [<c10b7cf0>] bdi_sched_wait+0x8/0xc
-kernel: [15360.625467]  [<c12c20ef>] __wait_on_bit+0x34/0x5b
-kernel: [15360.625477]  [<c10b7ce8>] ? bdi_sched_wait+0x0/0xc
-kernel: [15360.625487]  [<c12c216d>] out_of_line_wait_on_bit+0x57/0x5f
-kernel: [15360.625497]  [<c10b7ce8>] ? bdi_sched_wait+0x0/0xc
-kernel: [15360.625510]  [<c103fa75>] ? wake_bit_function+0x0/0x4d
-kernel: [15360.625521]  [<c10b84d4>] wait_on_bit.clone.0+0x17/0x23
-kernel: [15360.625531]  [<c10b8544>] sync_inodes_sb+0x64/0x10d
-kernel: [15360.625546]  [<c10d373f>] ? vfs_quota_sync+0x0/0x1da
-kernel: [15360.625556]  [<c10baef6>] __sync_filesystem+0x37/0x62
-kernel: [15360.625566]  [<c10bb062>] sync_filesystem+0x3c/0x3f
-kernel: [15360.625578]  [<c10a2def>] generic_shutdown_super+0x1c/0xca
-kernel: [15360.625588]  [<c10a2eba>] kill_block_super+0x1d/0x31
-kernel: [15360.625599]  [<c10a3833>] deactivate_super+0x48/0x5a
-kernel: [15360.625610]  [<c10b385c>] mntput_no_expire+0x5e/0x89
-kernel: [15360.625620]  [<c10b41cf>] sys_umount+0x277/0x29b
-kernel: [15360.625631]  [<c10b4200>] sys_oldumount+0xd/0xf
-kernel: [15360.625642]  [<c1002813>] sysenter_do_call+0x12/0x32
-kernel: [15360.625652] 1 lock held by umount/7148:
-kernel: [15360.625657]  #0:  (&type->s_umount_key#32){++++..}, at: [<c10a38=
-2e>] deactivate_super+0x43/0x5a
-
-
-> Can you do this with CONFIG_USB_DEBUG enabled?  And acquire a usbmon=20
-> trace at the same time (see Documentation/usb/usbmon.txt)?
->=20
-
-Sure. Rebuilding the kernel right now.
-
-
-
-Robert Hancock wrote:
-> Is this some super-slow SD card or USB reader that you just wrote a bunch=
- of data to?=20
-> It's not impossible it could take 2 minutes for the writeout of all the d=
-irty data to
-> complete on unmount..=20
-Please see above.
-
-> did the unmount ever complete?
-No entry in /etc/mtab. So, I guess, yes - umount complete.
-
-
-	Sergey
-
---dc+cDN39EJAMEtIO
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkvWmc8ACgkQfKHnntdSXjQcMAP8CYmbOwUS26pOR8KIqxj0a9In
-9hwnJQcu/nCZpJsmbYCadnO/QLUpT9yjkEL+8wkYe4NrTT/36JuMWGxFEJ+t7iql
-riZUVFXbyZHo5GHmxgFHwJNWzzq0MxcbWRHGnNomkesj8x84if05pp+Gfem5p2zR
-ClhZQQbJfe5R8EroghY=
-=3d60
------END PGP SIGNATURE-----
-
---dc+cDN39EJAMEtIO--
+> I cooked up that patch myself, here:
+>
+> http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0661b1ac5d48eb47c8a5948c0554fea25e0895ab
+>
+> Care to give it a quick spin?
+>
+> --
+> Jens Axboe
+>
+>
