@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab0D0QWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 12:22:07 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:48197 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752498Ab0D0QWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 12:22:05 -0400
-Date: Tue, 27 Apr 2010 09:22:01 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Miles Lane <miles.lane@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
- rcu_dereference_check() usage
-Message-ID: <20100427162201.GA5826@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100422160144.GC2524@linux.vnet.ibm.com>
- <h2xa44ae5cd1004230550uf734c89eo2b1d1945d446068c@mail.gmail.com>
- <20100423194255.GE2589@linux.vnet.ibm.com>
- <m2xa44ae5cd1004231559hcf90671asf146a43b4748c2c3@mail.gmail.com>
- <20100425023455.GM2440@linux.vnet.ibm.com>
- <w2sa44ae5cd1004250849q73704370vc6af935c70db9b73@mail.gmail.com>
- <p2ga44ae5cd1004251320j55d23ba7ua0fa14497f623d76@mail.gmail.com>
- <20100426160925.GD2529@linux.vnet.ibm.com>
- <m1hbmydpup.fsf@fess.ebiederm.org>
- <20100427042744.GD2510@linux.vnet.ibm.com>
+	id S1756308Ab0D0QZd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 12:25:33 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:45527 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752939Ab0D0QZc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 12:25:32 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: linux-pm@lists.linux-foundation.org
+Subject: [PATCH v2] [RFC] ehci: Disable wake on overcurrent (WKOC_E) and disconnect (WKDISC_E)
+Date: Tue, 27 Apr 2010 18:25:20 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201004271523.48647.linux@rainbow-software.org> <201004271622.55904.linux@rainbow-software.org>
+In-Reply-To: <201004271622.55904.linux@rainbow-software.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100427042744.GD2510@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201004271825.21771.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 09:27:44PM -0700, Paul E. McKenney wrote:
-> On Mon, Apr 26, 2010 at 11:35:10AM -0700, Eric W. Biederman wrote:
-> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
-> > 
-> > > Eric Dumazet traced these down to a commit from Eric Biederman.
-> > >
-> > > If I don't hear from Eric Biederman in a few days, I will attempt a
-> > > patch, but it would be more likely to be correct coming from someone
-> > > with a better understanding of the code.  ;-)
-> > 
-> > I already replied.
-> > 
-> > http://lkml.org/lkml/2010/4/21/420
-> 
-> You did indeed!!!  This experience is giving me an even better appreciation
-> of the maintainers' ability to keep all their patches straight!
-> 
-> I will put together something based on your suggestion.
+The previous patch was not enough as it worked only when there were no USB
+devices connected. With a bus-powered device connected, power loss causes
+disconnect which wakes up the machine immediately again.
 
-How about the following?
+Does anyone know why is this enabled by default? No other USB host driver
+(except oxu210hp-hcd which is based on EHCI) does that. This also means that
+suspended laptop wakes up when disconnecting a mouse? I don't have any to test
+right now. Wakeup on USB connect makes a bit more sense but I'd say that it's
+still not a good idea to enable it by default.
 
-							Thanx, Paul
+If we don't need that, perhaps the following patch should be applied.
 
-------------------------------------------------------------------------
 
-commit 85fa42bd568ab99c375f018761ae6345249942cd
-Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Date:   Mon Apr 26 21:40:05 2010 -0700
+Disable wake on overcurrent and disconnect in EHCI.
+This fixes immediate resume from standby on boards where port power is lost
+in standby which triggers overcurrent detection and disconnect if a
+bus-powered device is connected. At least Asus P4P800 boards are affected when
+any of the USBPWxx (e.g. USBPW12) jumpers is set to 5V.
+Tested on Asus P4P800-VM.
 
-    net: suppress RCU lockdep false positive in twsk_net()
-    
-    Calls to twsk_net() are in some cases protected by reference counting
-    as an alternative to RCU protection.  Cases covered by reference counts
-    include __inet_twsk_kill(), inet_twsk_free(), inet_twdr_do_twkill_work(),
-    inet_twdr_twcal_tick(), and tcp_timewait_state_process().  RCU is used
-    by inet_twsk_purge().  Locking is used by established_get_first()
-    and established_get_next().  Finally, __inet_twsk_hashdance() is an
-    initialization case.
-    
-    It appears to be non-trivial to locate the appropriate locks and
-    reference counts from within twsk_net(), so used rcu_dereference_raw().
-    
-    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-diff --git a/include/net/inet_timewait_sock.h b/include/net/inet_timewait_sock.h
-index 79f67ea..a066fdd 100644
---- a/include/net/inet_timewait_sock.h
-+++ b/include/net/inet_timewait_sock.h
-@@ -224,7 +224,9 @@ static inline
- struct net *twsk_net(const struct inet_timewait_sock *twsk)
- {
- #ifdef CONFIG_NET_NS
--	return rcu_dereference(twsk->tw_net);
-+	return rcu_dereference_raw(twsk->tw_net); /* protected by locking, */
-+						  /* reference counting, */
-+						  /* initialization, or RCU. */
- #else
- 	return &init_net;
- #endif
+--- linux-source-2.6.33-orig/drivers/usb/host/ehci-hub.c	2010-02-24 19:52:17.000000000 +0100
++++ linux-source-2.6.33/drivers/usb/host/ehci-hub.c	2010-04-27 18:17:36.000000000 +0200
+@@ -173,21 +173,16 @@ static int ehci_bus_suspend (struct usb_
+ 		}
+ 
+ 		/* enable remote wakeup on all ports */
++		t2 &= ~PORT_WAKE_BITS;
+ 		if (hcd->self.root_hub->do_remote_wakeup) {
+ 			/* only enable appropriate wake bits, otherwise the
+ 			 * hardware can not go phy low power mode. If a race
+ 			 * condition happens here(connection change during bits
+ 			 * set), the port change detection will finally fix it.
+ 			 */
+-			if (t1 & PORT_CONNECT) {
+-				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+-				t2 &= ~PORT_WKCONN_E;
+-			} else {
+-				t2 |= PORT_WKOC_E | PORT_WKCONN_E;
+-				t2 &= ~PORT_WKDISC_E;
+-			}
+-		} else
+-			t2 &= ~PORT_WAKE_BITS;
++			if (!(t1 & PORT_CONNECT))
++				t2 |= PORT_WKCONN_E;
++		}
+ 
+ 		if (t1 != t2) {
+ 			ehci_vdbg (ehci, "port %d, %08x -> %08x\n",
+
+
+-- 
+Ondrej Zary
