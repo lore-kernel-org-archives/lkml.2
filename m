@@ -1,93 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab0D0BoT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 21:44:19 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24082 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531Ab0D0BoR (ORCPT
+	id S1754018Ab0D0Bo3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 21:44:29 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41378 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab0D0Bo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 21:44:17 -0400
-Message-ID: <4BD640E3.1050101@oracle.com>
-Date: Mon, 26 Apr 2010 18:41:55 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Mon, 26 Apr 2010 21:44:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=S1fOo9xppwMAbbxuiLzpWs9x1yrETL3jyPcW1/mwaE5M/f3221W5ehaUfHgVYq2UaD
+         SCbgdgeBwqwXg8HkvlrRRK863qdF++OHfStVmHw7ddbCIwrWVKAELyQKgudQiBkiyrMj
+         h0TMhRVhsDmFraFKm74PD750+Qq3o8mWDW014=
+Date: Tue, 27 Apr 2010 03:44:24 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
+       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com
+Subject: Re: [PATCH 0/8] lockup detector changes
+Message-ID: <20100427014422.GD5695@nowhere>
+References: <1272039216-8890-1-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>, Andy Isaacson <adi@hexapodia.org>,
-       "R. Andrew Bailey" <bailey@akamai.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       guenter.roeck@ericsson.com,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
-Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below    BIOS_END
-References: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com> <20100426162517.4ad308ff@virtuousgeek.org> <a96459c7f3573eef81dd6d6c4e3dedd8.squirrel@www.zytor.com> <20100426170547.5d7daa47@virtuousgeek.org> <alpine.LFD.2.00.1004261824570.3739@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1004261824570.3739@i5.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090204.4BD6414B.017B:SCFMA4539811,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272039216-8890-1-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2010 06:27 PM, Linus Torvalds wrote:
+On Fri, Apr 23, 2010 at 12:13:28PM -0400, Don Zickus wrote:
+> This patch series covers mostly the changes necessary for combining the
+> nmi_watchdog and softlockup code.  Also added are the cleanups associated
+> with the change, like removing the old files.
 > 
-> 
-> On Mon, 26 Apr 2010, Jesse Barnes wrote:
->>
->> Glad we agree.  As I said (and echoing Bjorn), I think it would be best
->> to reserve this space in a way that doesn't just use IORESOURCE_BUSY.
->> We want and need to do allocations from the special region, so we
->> should mark it as such.
-> 
-> I think Bjorn's patch to pcibios_align_resource() is really good and 
-> clever, and I think it should take care of the need for IORESOURCE_BUSY, 
-> no? We do want to let devices that are _already_ allocated there insert 
-> their resources, it's just that we never want to allocate new ones in the 
-> low 1M region.
+> The changelogs in each patch are more specific to what the changes are.
 
-case A:
-bus 0: --- bus X --- device Y
-if the BIOS only assign range to to BUS X bridge with 0xB0000, and
-device Y is not assigned.  then with Bojorn's patch, device Y can not
-get right resource allocated on first try.
+
+Thanks,
+
+I'll review it soon!
+
 
 
 > 
-> Do we actually have a regression left with Bjorn's patch?
+> Don Zickus (8):
+>   [watchdog] combine nmi_watchdog and softlockup
+>   [watchdog] convert touch_softlockup_watchdog to touch_watchdog
+>   [watchdog] remove old softlockup code
+>   [watchdog] remove nmi_watchdog.c file
+>   [x86] watchdog: move trigger_all_cpu_backtrace to its own die_notifier
+>   [x86] watchdog: cleanup hw_nmi.c cruft
+>   [watchdog] resolve softlockup.c conflicts
+>   [watchdog] separate touch_nmi_watchdog code path from touch_watchdog
+> 
+>  Documentation/kernel-parameters.txt |    2 +
+>  arch/ia64/kernel/time.c             |    2 +-
+>  arch/ia64/kernel/uncached.c         |    2 +-
+>  arch/ia64/xen/time.c                |    2 +-
+>  arch/mn10300/kernel/gdb-stub.c      |    2 +-
+>  arch/powerpc/kernel/swsusp_64.c     |    2 +-
+>  arch/sparc/kernel/nmi.c             |    2 +-
+>  arch/x86/include/asm/nmi.h          |    2 +-
+>  arch/x86/kernel/apic/Makefile       |    4 +-
+>  arch/x86/kernel/apic/hw_nmi.c       |  119 +++-----
+>  arch/x86/kernel/apic/nmi.c          |    2 +-
+>  arch/x86/kernel/traps.c             |    4 +-
+>  arch/x86/xen/smp.c                  |    2 +-
+>  drivers/ide/ide-iops.c              |    2 +-
+>  drivers/ide/ide-taskfile.c          |    2 +-
+>  drivers/mtd/nand/nand_base.c        |    4 +-
+>  drivers/video/nvidia/nv_accel.c     |    2 +-
+>  include/linux/nmi.h                 |   13 +-
+>  include/linux/sched.h               |   20 +-
+>  init/Kconfig                        |    5 +-
+>  kernel/Makefile                     |    3 +-
+>  kernel/kgdb.c                       |    6 +-
+>  kernel/nmi_watchdog.c               |  259 ----------------
+>  kernel/panic.c                      |    2 +-
+>  kernel/power/hibernate.c            |    2 +-
+>  kernel/sched.c                      |    2 +-
+>  kernel/sched_clock.c                |    2 +-
+>  kernel/softlockup.c                 |  278 -----------------
+>  kernel/sysctl.c                     |   52 ++--
+>  kernel/time/tick-sched.c            |    8 +-
+>  kernel/time/timekeeping.c           |    2 +-
+>  kernel/timer.c                      |    1 -
+>  kernel/watchdog.c                   |  568 +++++++++++++++++++++++++++++++++++
+>  lib/Kconfig.debug                   |   30 ++-
+>  34 files changed, 713 insertions(+), 697 deletions(-)
+>  delete mode 100644 kernel/nmi_watchdog.c
+>  delete mode 100644 kernel/softlockup.c
+>  create mode 100644 kernel/watchdog.c
+> 
 
-also find one AMD system:
-
-[    6.960006] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
-[    6.984225] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-06])
-[    7.023528] pci_root PNP0A03:00: host bridge window [io  0x0000-0x03af]
-[    7.024014] pci_root PNP0A03:00: host bridge window [io  0x03b0-0x03bb]
-[    7.028005] pci_root PNP0A03:00: host bridge window [io  0x03bc-0x03bf]
-[    7.032005] pci_root PNP0A03:00: host bridge window [io  0x03c0-0x03df]
-[    7.036005] pci_root PNP0A03:00: host bridge window [io  0x03e0-0xefff]
-[    7.040011] pci_root PNP0A03:00: host bridge window [mem 0xd8000000-0xe7ffffff]
-[    7.044005] pci_root PNP0A03:00: host bridge window [mem 0xf0000000-0xfe9fffff]
-[    7.048005] pci_root PNP0A03:00: host bridge window [mem 0xfec00000-0xfed0ffff]
-[    7.052005] pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
-[    7.056011] pci_root PNP0A03:00: host bridge window [mem 0xfed20000-0xffffffff]
-
-[    0.000000]  BIOS-e820: 0000000000000100 - 0000000000098c00 (usable)
-[    0.000000]  BIOS-e820: 0000000000098c00 - 00000000000a0000 (reserved)
-[    0.000000]  BIOS-e820: 00000000000e6000 - 0000000000100000 (reserved)
-[    0.000000]  BIOS-e820: 0000000000100000 - 00000000d7fa0000 (usable)
-[    0.000000]  BIOS-e820: 00000000d7fae000 - 00000000d7fb0000 (reserved)
-[    0.000000]  BIOS-e820: 00000000d7fb0000 - 00000000d7fbe000 (ACPI data)
-[    0.000000]  BIOS-e820: 00000000d7fbe000 - 00000000d7ff0000 (ACPI NVS)
-[    0.000000]  BIOS-e820: 00000000d7ff0000 - 00000000f0000000 (reserved)
-[    0.000000]  BIOS-e820: 00000000fec00000 - 00000000fec01000 (reserved)
-[    0.000000]  BIOS-e820: 00000000fee00000 - 00000000fee01000 (reserved)
-[    0.000000]  BIOS-e820: 00000000ff700000 - 0000000100000000 (reserved)
-[    0.000000]  BIOS-e820: 0000000100000000 - 0000008028000000 (usable)
-
-pci assign unassign code could use range like [mem 0xfed20000-0xffffffff] wrongly.
-
-YH
