@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab0D0Sfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 14:35:45 -0400
-Received: from fg-out-1718.google.com ([72.14.220.156]:57349 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab0D0Sfo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 14:35:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=MxFFiiO69BfhG9+BQVPLP7YSIJ6ICUWfr5w4cGs7eeT3fOPnq77NzFrs88h4gP/Vgt
-         s3ckQ1uy4cneiQgDdx8g8J8NGRC6wtgghVIv3VkMtMhHmbfavr3mD1/xVPccNJzTvN+T
-         NNhKWfJ9lMfeWmNnwitYe4kycgtUWYsY8Lr4Q=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: David Miller <davem@davemloft.net>
-Subject: Re: 2.6.34-rc5+: oops in IPv6
-Date: Tue, 27 Apr 2010 20:35:37 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc5; KDE/4.3.4; i686; ; )
-Cc: manuel.lauss@googlemail.com, linux-kernel@vger.kernel.org
-References: <z2if861ec6f1004250745u94892bdbw9b17db4be57b131b@mail.gmail.com> <201004262058.24465.maciej.rutecki@gmail.com> <20100426.120200.179935218.davem@davemloft.net>
-In-Reply-To: <20100426.120200.179935218.davem@davemloft.net>
+	id S1755201Ab0D0Sns (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 14:43:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57981 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754152Ab0D0Snr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 14:43:47 -0400
+Date: Tue, 27 Apr 2010 11:33:29 -0700
+From: Greg KH <gregkh@suse.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Al Viro <viro@zeniv.linux.org.uk>,
+       Jan Blunck <jblunck@suse.de>, Ingo Molnar <mingo@elte.hu>,
+       John Kacur <jkacur@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 4/6] staging: push down BKL into ioctl functions
+Message-ID: <20100427183329.GA525@suse.de>
+References: <201004262112.39906.arnd@arndb.de>
+ <1272320645-8671-5-git-send-email-arnd@arndb.de>
+ <20100427181501.GC5586@nowhere>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201004272035.37602.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100427181501.GC5586@nowhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On poniedziałek, 26 kwietnia 2010 o 21:02:00 David Miller wrote:
-> From: Maciej Rutecki <maciej.rutecki@gmail.com>
-> Date: Mon, 26 Apr 2010 20:58:24 +0200
+On Tue, Apr 27, 2010 at 08:15:07PM +0200, Frederic Weisbecker wrote:
+> Hi Greg,
 > 
-> > On niedziela, 25 kwietnia 2010 o 16:45:41 Manuel Lauss wrote:
-> >> 2.6.34-rc5-00204-gddc9b34  dies when sshd (openssh 5.5) is started
-> >> Last pull I made on April 23 was fine.
-> >>
-> >> (transcribed from a photo):
-> >>
-> >> BUG: unable to handle kernel NULL pointer dereference at 00000004
-> >> IP: [<b1535b72>] inet6_csk_bind_conflict+0x6e/0xb0
-> >
-> > I created a Bugzilla entry at
-> > https://bugzilla.kernel.org/show_bug.cgi?id=15857
-> > for your bug report, please add your address to the CC list in there,
-> > thanks!
 > 
-> It's fixed in Linus's tree like an hour after he reported this.
+> On Tue, Apr 27, 2010 at 12:24:03AM +0200, Arnd Bergmann wrote:
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > ---
+> >  drivers/staging/crystalhd/crystalhd_lnx.c |   13 +++++++++----
+> >  drivers/staging/dt3155/dt3155_drv.c       |   24 ++++++++++++++++++------
+> >  drivers/staging/poch/poch.c               |   17 +++++++++++++++--
+> >  drivers/staging/vme/devices/vme_user.c    |   18 +++++++++++++++---
+> >  4 files changed, 57 insertions(+), 15 deletions(-)
 > 
+> 
+> If you are fine with this patch, I think it would be better if
+> you get it in your tree.
 
-Thanks for information. Closed.
+Ok, I'll queue it up (note, the poch driver is now gone in the staging
+tree.)
 
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+thanks,
+
+greg k-h
