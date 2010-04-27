@@ -1,64 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab0D0SIG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 14:08:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43686 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab0D0SIB (ORCPT
+	id S1756622Ab0D0SI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 14:08:26 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36490 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756605Ab0D0SIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 14:08:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=NkgJ6x1huuaior6cEO1RJdnasjfrLcv4TyVFM9zrH90P8gpgAIqT5hUW9j7tKj4UQM
-         MPpuwNuJR6waIxPt/Yvnfxo8zLWNVjRmf0UL+ysBAOoVrWhcNYKEm0WE7e24xCIr6WwE
-         Wa0O2vQK8W/mriZvzJbP9Tpu6cGo4vLoNDucM=
-Date: Tue, 27 Apr 2010 20:07:56 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] lockdep: Fix redundant_hardirqs_on incremented with
-	irqs enabled
-Message-ID: <20100427180749.GB5586@nowhere>
-References: <20100415200414.1ef705c8.sfr@canb.auug.org.au> <1271338670-4537-1-git-send-regression-fweisbec@gmail.com> <20100427173227.7ec29329.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100427173227.7ec29329.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 27 Apr 2010 14:08:23 -0400
+Date: Tue, 27 Apr 2010 11:08:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Linux-Kernel <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+       Linux-Next <linux-next@vger.kernel.org>,
+       Matthew Garrett <mjg@redhat.com>, Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: linux-next: April 27 (mm/page-writeback)
+Message-Id: <20100427110807.d8641ace.akpm@linux-foundation.org>
+In-Reply-To: <8ea19b02-d4d8-4000-9842-fec7f5bcf90d@default>
+References: <8ea19b02-d4d8-4000-9842-fec7f5bcf90d@default>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 05:32:27PM +1000, Stephen Rothwell wrote:
-> Hi Frederic,
+On Tue, 27 Apr 2010 09:19:30 -0700 (PDT)
+Randy Dunlap <randy.dunlap@oracle.com> wrote:
+
+> When CONFIG_BLOCK is not enabled:
 > 
-> On Thu, 15 Apr 2010 15:37:50 +0200 Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >
-> > When a path restore the flags while irqs are already enabled, we
-> > update the per cpu var redundant_hardirqs_on in a racy fashion
-> > and debug_atomic_inc() warns about this situation.
-> > 
-> > In this particular case, we need to explictly disable the irqs before
-> > updating this stat var in order to update it safely.
-> > 
-> > Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: David Miller <davem@davemloft.net>
-> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > ---
-> >  kernel/lockdep.c |    4 ++++
-> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> mm/page-writeback.c:707: error: dereferencing pointer to incomplete type
+> mm/page-writeback.c:708: error: dereferencing pointer to incomplete type
 > 
-> Ping?  Any movement on this?
 
+Subject: "laptop-mode: Make flushes per-device" fix
+From: Andrew Morton <akpm@linux-foundation.org>
 
-Ingo, if you have no problems with these two patches, could you please
-apply them?
+When CONFIG_BLOCK is not enabled:
 
-Thanks.
+mm/page-writeback.c:707: error: dereferencing pointer to incomplete type
+mm/page-writeback.c:708: error: dereferencing pointer to incomplete type
+
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Jens Axboe <jens.axboe@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ block/blk-core.c          |   15 +++++++++++++++
+ include/linux/writeback.h |    1 -
+ mm/page-writeback.c       |   15 ---------------
+ 3 files changed, 15 insertions(+), 16 deletions(-)
+
+diff -puN block/blk-core.c~laptop-mode-make-flushes-per-device-fix block/blk-core.c
+--- a/block/blk-core.c~laptop-mode-make-flushes-per-device-fix
++++ a/block/blk-core.c
+@@ -488,6 +488,21 @@ struct request_queue *blk_alloc_queue(gf
+ }
+ EXPORT_SYMBOL(blk_alloc_queue);
+ 
++static void laptop_mode_timer_fn(unsigned long data)
++{
++	struct request_queue *q = (struct request_queue *)data;
++	int nr_pages = global_page_state(NR_FILE_DIRTY) +
++		global_page_state(NR_UNSTABLE_NFS);
++
++	/*
++	 * We want to write everything out, not just down to the dirty
++	 * threshold
++	 */
++
++	if (bdi_has_dirty_io(&q->backing_dev_info))
++		bdi_start_writeback(&q->backing_dev_info, NULL, nr_pages);
++}
++
+ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+ {
+ 	struct request_queue *q;
+diff -puN mm/page-writeback.c~laptop-mode-make-flushes-per-device-fix mm/page-writeback.c
+--- a/mm/page-writeback.c~laptop-mode-make-flushes-per-device-fix
++++ a/mm/page-writeback.c
+@@ -693,21 +693,6 @@ int dirty_writeback_centisecs_handler(ct
+ 	return 0;
+ }
+ 
+-void laptop_mode_timer_fn(unsigned long data)
+-{
+-	struct request_queue *q = (struct request_queue *)data;
+-	int nr_pages = global_page_state(NR_FILE_DIRTY) +
+-		global_page_state(NR_UNSTABLE_NFS);
+-
+-	/*
+-	 * We want to write everything out, not just down to the dirty
+-	 * threshold
+-	 */
+-
+-	if (bdi_has_dirty_io(&q->backing_dev_info))
+-		bdi_start_writeback(&q->backing_dev_info, NULL, nr_pages);
+-}
+-
+ /*
+  * We've spun up the disk and we're in laptop mode: schedule writeback
+  * of all dirty data a few seconds from now.  If the flush is already scheduled
+diff -puN include/linux/writeback.h~laptop-mode-make-flushes-per-device-fix include/linux/writeback.h
+--- a/include/linux/writeback.h~laptop-mode-make-flushes-per-device-fix
++++ a/include/linux/writeback.h
+@@ -99,7 +99,6 @@ static inline void inode_sync_wait(struc
+ void laptop_io_completion(struct backing_dev_info *info);
+ void laptop_sync_completion(void);
+ void laptop_mode_sync(struct work_struct *work);
+-void laptop_mode_timer_fn(unsigned long data);
+ void throttle_vm_writeout(gfp_t gfp_mask);
+ 
+ /* These are exported to sysctl. */
+_
 
