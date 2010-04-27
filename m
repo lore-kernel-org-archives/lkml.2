@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab0D0Gni (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 02:43:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55162 "EHLO mga09.intel.com"
+	id S1753121Ab0D0GpV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 02:45:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61927 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751912Ab0D0GnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 02:43:18 -0400
+	id S1751312Ab0D0GnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 02:43:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,278,1270450800"; 
-   d="scan'208";a="616765497"
+   d="scan'208";a="616765470"
 From: Huang Ying <ying.huang@intel.com>
 To: lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 09/12] ACPI, APEI, UEFI Common Platform Error Record (CPER) header
-Date: Tue, 27 Apr 2010 14:41:18 +0800
-Message-Id: <1272350481-27951-10-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 04/12] ACPI, APEI, EINJ support
+Date: Tue, 27 Apr 2010 14:41:13 +0800
+Message-Id: <1272350481-27951-5-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
 References: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
@@ -23,82 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPER stands for Common Platform Error Record, it is the hardware error
-record format used to describe platform hardware error by various APEI
-tables, such as ERST, BERT and HEST etc.
-
-For more information about CPER, please refer to Appendix N of UEFI
-Specification version 2.3.
-
-This patch mainly includes the data structure difinition header file
-used by other files.
+EINJ provides a hardware error injection mechanism, this is useful for
+debugging and testing of other APEI and RAS features.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/acpi/apei/Makefile        |    2 
- drivers/acpi/apei/apei-internal.h |   19 ++
- drivers/acpi/apei/cper.c          |   84 ++++++++++
- include/linux/cper.h              |  314 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 418 insertions(+), 1 deletion(-)
- create mode 100644 drivers/acpi/apei/cper.c
- create mode 100644 include/linux/cper.h
+ drivers/acpi/apei/Kconfig  |    7 
+ drivers/acpi/apei/Makefile |    1 
+ drivers/acpi/apei/einj.c   |  485 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 493 insertions(+)
+ create mode 100644 drivers/acpi/apei/einj.c
 
+--- a/drivers/acpi/apei/Kconfig
++++ b/drivers/acpi/apei/Kconfig
+@@ -7,3 +7,10 @@ config ACPI_APEI
+ 	  especially. In addition it supports error serialization and
+ 	  error injection.
+ 
++config ACPI_APEI_EINJ
++	tristate "APEI Error INJection (EINJ)"
++	depends on ACPI_APEI && DEBUG_FS
++	help
++	  EINJ provides a hardware error injection mechanism, it is
++	  mainly used for debugging and testing the other parts of
++	  APEI and some other RAS features.
 --- a/drivers/acpi/apei/Makefile
 +++ b/drivers/acpi/apei/Makefile
-@@ -1,4 +1,4 @@
+@@ -1,3 +1,4 @@
  obj-$(CONFIG_ACPI_APEI)		+= apei.o
- obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
++obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
  
--apei-y := apei-base.o hest.o
-+apei-y := apei-base.o hest.o cper.o
---- a/drivers/acpi/apei/apei-internal.h
-+++ b/drivers/acpi/apei/apei-internal.h
-@@ -6,6 +6,8 @@
- #ifndef APEI_INTERNAL_H
- #define APEI_INTERNAL_H
- 
-+#include <linux/cper.h>
-+
- struct apei_exec_context;
- 
- typedef int (*apei_exec_ins_func_t)(struct apei_exec_context *ctx,
-@@ -92,4 +94,21 @@ int apei_exec_collect_resources(struct a
- 
- struct dentry;
- struct dentry *apei_get_debugfs_dir(void);
-+
-+#define apei_estatus_for_each_section(estatus, section)			\
-+	for (section = (struct acpi_hest_generic_data *)(estatus + 1);	\
-+	     (void *)section - (void *)estatus < estatus->data_length;	\
-+	     section = (void *)(section+1) + section->error_data_length)
-+
-+static inline u32 apei_estatus_len(struct acpi_hest_generic_status *estatus)
-+{
-+	if (estatus->raw_data_length)
-+		return estatus->raw_data_offset + \
-+			estatus->raw_data_length;
-+	else
-+		return sizeof(*estatus) + estatus->data_length;
-+}
-+
-+int apei_estatus_check_header(const struct acpi_hest_generic_status *estatus);
-+int apei_estatus_check(const struct acpi_hest_generic_status *estatus);
- #endif
+ apei-y := apei-base.o hest.o
 --- /dev/null
-+++ b/drivers/acpi/apei/cper.c
-@@ -0,0 +1,84 @@
++++ b/drivers/acpi/apei/einj.c
+@@ -0,0 +1,485 @@
 +/*
-+ * UEFI Common Platform Error Record (CPER) support
++ * APEI Error INJection support
 + *
-+ * Copyright (C) 2010, Intel Corp.
-+ *	Author: Huang Ying <ying.huang@intel.com>
++ * EINJ provides a hardware error injection mechanism, this is useful
++ * for debugging and testing of other APEI and RAS features.
 + *
-+ * CPER is the format used to describe platform hardware error by
-+ * various APEI tables, such as ERST, BERT and HEST etc.
++ * For more information about EINJ, please refer to ACPI Specification
++ * version 4.0, section 17.5.
 + *
-+ * For more information about CPER, please refer to Appendix N of UEFI
-+ * Specification version 2.3.
++ * Copyright 2009 Intel Corp.
++ *   Author: Huang Ying <ying.huang@intel.com>
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License version
@@ -116,376 +86,460 @@ Signed-off-by: Andi Kleen <ak@linux.intel.com>
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/time.h>
-+#include <linux/cper.h>
-+#include <linux/acpi.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
++#include <linux/nmi.h>
++#include <acpi/acpi.h>
++
++#include "apei-internal.h"
++
++#define EINJ_PFX "EINJ: "
++
++#define SPIN_UNIT		100			/* 100ns */
++/* Firmware should respond within 1 miliseconds */
++#define FIRMWARE_TIMEOUT	(1 * NSEC_PER_MSEC)
++
++#define EINJ_OP_BUSY			0x1
++#define EINJ_STATUS_SUCCESS		0x0
++#define EINJ_STATUS_FAIL		0x1
++#define EINJ_STATUS_INVAL		0x2
++
++#define EINJ_TAB_ENTRY(tab)						\
++	((struct acpi_whea_header *)((char *)(tab) +			\
++				    sizeof(struct acpi_table_einj)))
++
++static struct acpi_table_einj *einj_tab;
++
++static struct apei_resources einj_resources;
++
++static struct apei_exec_ins_type einj_ins_type[] = {
++	[ACPI_EINJ_READ_REGISTER] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run   = apei_exec_read_register,
++	},
++	[ACPI_EINJ_READ_REGISTER_VALUE] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run   = apei_exec_read_register_value,
++	},
++	[ACPI_EINJ_WRITE_REGISTER] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run   = apei_exec_write_register,
++	},
++	[ACPI_EINJ_WRITE_REGISTER_VALUE] = {
++		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
++		.run   = apei_exec_write_register_value,
++	},
++	[ACPI_EINJ_NOOP] = {
++		.flags = 0,
++		.run   = apei_exec_noop,
++	},
++};
 +
 +/*
-+ * CPER record ID need to be unique even after reboot, because record
-+ * ID is used as index for ERST storage, while CPER records from
-+ * multiple boot may co-exist in ERST.
++ * Prevent EINJ interpreter to run simultaneously, because the
++ * corresponding firmware implementation may not work properly when
++ * invoked simultaneously.
 + */
-+u64 cper_next_record_id(void)
++static DEFINE_MUTEX(einj_mutex);
++
++static void einj_exec_ctx_init(struct apei_exec_context *ctx)
 +{
-+	static atomic64_t seq;
-+
-+	if (!atomic64_read(&seq))
-+		atomic64_set(&seq, ((u64)get_seconds()) << 32);
-+
-+	return atomic64_inc_return(&seq);
++	apei_exec_ctx_init(ctx, einj_ins_type, ARRAY_SIZE(einj_ins_type),
++			   EINJ_TAB_ENTRY(einj_tab), einj_tab->entries);
 +}
-+EXPORT_SYMBOL_GPL(cper_next_record_id);
 +
-+int apei_estatus_check_header(const struct acpi_hest_generic_status *estatus)
++static int __einj_get_available_error_type(u32 *type)
 +{
-+	if (estatus->data_length &&
-+	    estatus->data_length < sizeof(struct acpi_hest_generic_data))
-+		return -EINVAL;
-+	if (estatus->raw_data_length &&
-+	    estatus->raw_data_offset < sizeof(*estatus) + estatus->data_length)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(apei_estatus_check_header);
-+
-+int apei_estatus_check(const struct acpi_hest_generic_status *estatus)
-+{
-+	struct acpi_hest_generic_data *gdata;
-+	unsigned int data_len, gedata_len;
++	struct apei_exec_context ctx;
 +	int rc;
 +
-+	rc = apei_estatus_check_header(estatus);
++	einj_exec_ctx_init(&ctx);
++	rc = apei_exec_run(&ctx, ACPI_EINJ_GET_ERROR_TYPE);
 +	if (rc)
 +		return rc;
-+	data_len = estatus->data_length;
-+	gdata = (struct acpi_hest_generic_data *)(estatus + 1);
-+	while (data_len > sizeof(*gdata)) {
-+		gedata_len = gdata->error_data_length;
-+		if (gedata_len > data_len - sizeof(*gdata))
-+			return -EINVAL;
-+		data_len -= gedata_len + sizeof(*gdata);
++	*type = apei_exec_ctx_get_output(&ctx);
++
++	return 0;
++}
++
++/* Get error injection capabilities of the platform */
++static int einj_get_available_error_type(u32 *type)
++{
++	int rc;
++
++	mutex_lock(&einj_mutex);
++	rc = __einj_get_available_error_type(type);
++	mutex_unlock(&einj_mutex);
++
++	return rc;
++}
++
++static int einj_timedout(u64 *t)
++{
++	if ((s64)*t < SPIN_UNIT) {
++		pr_warning(FW_WARN EINJ_PFX
++			   "Firmware does not respond in time\n");
++		return 1;
 +	}
-+	if (data_len)
++	*t -= SPIN_UNIT;
++	ndelay(SPIN_UNIT);
++	touch_nmi_watchdog();
++	return 0;
++}
++
++/* do sanity check to trigger table */
++static int einj_check_trigger_header(struct acpi_einj_trigger *trigger_tab)
++{
++	if (trigger_tab->header_size != sizeof(struct acpi_einj_trigger))
++		return -EINVAL;
++	if (trigger_tab->table_size > PAGE_SIZE ||
++	    trigger_tab->table_size <= trigger_tab->header_size)
++		return -EINVAL;
++	if (trigger_tab->entry_count !=
++	    (trigger_tab->table_size - trigger_tab->header_size) /
++	    sizeof(struct acpi_einj_entry))
 +		return -EINVAL;
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL_GPL(apei_estatus_check);
---- /dev/null
-+++ b/include/linux/cper.h
-@@ -0,0 +1,314 @@
-+/*
-+ * UEFI Common Platform Error Record
-+ *
-+ * Copyright (C) 2010, Intel Corp.
-+ *	Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
 +
-+#ifndef LINUX_CPER_H
-+#define LINUX_CPER_H
++/* Execute instructions in trigger error action table */
++static int __einj_error_trigger(u64 trigger_paddr)
++{
++	struct acpi_einj_trigger *trigger_tab = NULL;
++	struct apei_exec_context trigger_ctx;
++	struct apei_resources trigger_resources;
++	struct acpi_whea_header *trigger_entry;
++	struct resource *r;
++	u32 table_size;
++	int rc = -EIO;
 +
-+#include <linux/uuid.h>
++	r = request_mem_region(trigger_paddr, sizeof(*trigger_tab),
++			       "APEI EINJ Trigger Table");
++	if (!r) {
++		pr_err(EINJ_PFX
++	"Can not request iomem region <%016llx-%016llx> for Trigger table.\n",
++		       (unsigned long long)trigger_paddr,
++		       (unsigned long long)trigger_paddr+sizeof(*trigger_tab));
++		goto out;
++	}
++	trigger_tab = ioremap_cache(trigger_paddr, sizeof(*trigger_tab));
++	if (!trigger_tab) {
++		pr_err(EINJ_PFX "Failed to map trigger table!\n");
++		goto out_rel_header;
++	}
++	rc = einj_check_trigger_header(trigger_tab);
++	if (rc) {
++		pr_warning(FW_BUG EINJ_PFX
++			   "The trigger error action table is invalid\n");
++		goto out_rel_header;
++	}
++	rc = -EIO;
++	table_size = trigger_tab->table_size;
++	r = request_mem_region(trigger_paddr + sizeof(*trigger_tab),
++			       table_size - sizeof(*trigger_tab),
++			       "APEI EINJ Trigger Table");
++	if (!r) {
++		pr_err(EINJ_PFX
++"Can not request iomem region <%016llx-%016llx> for Trigger Table Entry.\n",
++		       (unsigned long long)trigger_paddr+sizeof(*trigger_tab),
++		       (unsigned long long)trigger_paddr + table_size);
++		goto out_rel_header;
++	}
++	iounmap(trigger_tab);
++	trigger_tab = ioremap_cache(trigger_paddr, table_size);
++	if (!trigger_tab) {
++		pr_err(EINJ_PFX "Failed to map trigger table!\n");
++		goto out_rel_entry;
++	}
++	trigger_entry = (struct acpi_whea_header *)
++		((char *)trigger_tab + sizeof(struct acpi_einj_trigger));
++	apei_resources_init(&trigger_resources);
++	apei_exec_ctx_init(&trigger_ctx, einj_ins_type,
++			   ARRAY_SIZE(einj_ins_type),
++			   trigger_entry, trigger_tab->entry_count);
++	rc = apei_exec_collect_resources(&trigger_ctx, &trigger_resources);
++	if (rc)
++		goto out_fini;
++	rc = apei_resources_sub(&trigger_resources, &einj_resources);
++	if (rc)
++		goto out_fini;
++	rc = apei_resources_request(&trigger_resources, "APEI EINJ Trigger");
++	if (rc)
++		goto out_fini;
++	rc = apei_exec_pre_map_gars(&trigger_ctx);
++	if (rc)
++		goto out_release;
 +
-+/* CPER record signature and the size */
-+#define CPER_SIG_RECORD				"CPER"
-+#define CPER_SIG_SIZE				4
-+/* Used in signature_end field in struct cper_record_header */
-+#define CPER_SIG_END				0xffffffff
++	rc = apei_exec_run(&trigger_ctx, ACPI_EINJ_TRIGGER_ERROR);
 +
-+/*
-+ * CPER record header revision, used in revision field in struct
-+ * cper_record_header
-+ */
-+#define CPER_RECORD_REV				0x0100
++	apei_exec_post_unmap_gars(&trigger_ctx);
++out_release:
++	apei_resources_release(&trigger_resources);
++out_fini:
++	apei_resources_fini(&trigger_resources);
++out_rel_entry:
++	release_mem_region(trigger_paddr + sizeof(*trigger_tab),
++			   table_size - sizeof(*trigger_tab));
++out_rel_header:
++	release_mem_region(trigger_paddr, sizeof(*trigger_tab));
++out:
++	if (trigger_tab)
++		iounmap(trigger_tab);
 +
-+/*
-+ * Severity difinition for error_severity in struct cper_record_header
-+ * and section_severity in struct cper_section_descriptor
-+ */
-+#define CPER_SER_RECOVERABLE			0x0
-+#define CPER_SER_FATAL				0x1
-+#define CPER_SER_CORRECTED			0x2
-+#define CPER_SER_INFORMATIONAL			0x3
++	return rc;
++}
 +
-+/*
-+ * Validation bits difinition for validation_bits in struct
-+ * cper_record_header. If set, corresponding fields in struct
-+ * cper_record_header contain valid information.
-+ *
-+ * corresponds platform_id
-+ */
-+#define CPER_VALID_PLATFORM_ID			0x0001
-+/* corresponds timestamp */
-+#define CPER_VALID_TIMESTAMP			0x0002
-+/* corresponds partition_id */
-+#define CPER_VALID_PARTITION_ID			0x0004
++static int __einj_error_inject(u32 type)
++{
++	struct apei_exec_context ctx;
++	u64 val, trigger_paddr, timeout = FIRMWARE_TIMEOUT;
++	int rc;
 +
-+/*
-+ * Notification type used to generate error record, used in
-+ * notification_type in struct cper_record_header
-+ *
-+ * Corrected Machine Check
-+ */
-+#define CPER_NOTIFY_CMC							\
-+	UUID_LE(0x2DCE8BB1, 0xBDD7, 0x450e, 0xB9, 0xAD, 0x9C, 0xF4,	\
-+		0xEB, 0xD4, 0xF8, 0x90)
-+/* Corrected Platform Error */
-+#define CPER_NOTIFY_CPE							\
-+	UUID_LE(0x4E292F96, 0xD843, 0x4a55, 0xA8, 0xC2, 0xD4, 0x81,	\
-+		0xF2, 0x7E, 0xBE, 0xEE)
-+/* Machine Check Exception */
-+#define CPER_NOTIFY_MCE							\
-+	UUID_LE(0xE8F56FFE, 0x919C, 0x4cc5, 0xBA, 0x88, 0x65, 0xAB,	\
-+		0xE1, 0x49, 0x13, 0xBB)
-+/* PCI Express Error */
-+#define CPER_NOTIFY_PCIE						\
-+	UUID_LE(0xCF93C01F, 0x1A16, 0x4dfc, 0xB8, 0xBC, 0x9C, 0x4D,	\
-+		0xAF, 0x67, 0xC1, 0x04)
-+/* INIT Record (for IPF) */
-+#define CPER_NOTIFY_INIT						\
-+	UUID_LE(0xCC5263E8, 0x9308, 0x454a, 0x89, 0xD0, 0x34, 0x0B,	\
-+		0xD3, 0x9B, 0xC9, 0x8E)
-+/* Non-Maskable Interrupt */
-+#define CPER_NOTIFY_NMI							\
-+	UUID_LE(0x5BAD89FF, 0xB7E6, 0x42c9, 0x81, 0x4A, 0xCF, 0x24,	\
-+		0x85, 0xD6, 0xE9, 0x8A)
-+/* BOOT Error Record */
-+#define CPER_NOTIFY_BOOT						\
-+	UUID_LE(0x3D61A466, 0xAB40, 0x409a, 0xA6, 0x98, 0xF3, 0x62,	\
-+		0xD4, 0x64, 0xB3, 0x8F)
-+/* DMA Remapping Error */
-+#define CPER_NOTIFY_DMAR						\
-+	UUID_LE(0x667DD791, 0xC6B3, 0x4c27, 0x8A, 0x6B, 0x0F, 0x8E,	\
-+		0x72, 0x2D, 0xEB, 0x41)
++	einj_exec_ctx_init(&ctx);
 +
-+/*
-+ * Flags bits definitions for flags in struct cper_record_header
-+ * If set, the error has been recovered
-+ */
-+#define CPER_HW_ERROR_FLAGS_RECOVERED		0x1
-+/* If set, the error is for previous boot */
-+#define CPER_HW_ERROR_FLAGS_PREVERR		0x2
-+/* If set, the error is injected for testing */
-+#define CPER_HW_ERROR_FLAGS_SIMULATED		0x4
++	rc = apei_exec_run(&ctx, ACPI_EINJ_BEGIN_OPERATION);
++	if (rc)
++		return rc;
++	apei_exec_ctx_set_input(&ctx, type);
++	rc = apei_exec_run(&ctx, ACPI_EINJ_SET_ERROR_TYPE);
++	if (rc)
++		return rc;
++	rc = apei_exec_run(&ctx, ACPI_EINJ_EXECUTE_OPERATION);
++	if (rc)
++		return rc;
++	for (;;) {
++		rc = apei_exec_run(&ctx, ACPI_EINJ_CHECK_BUSY_STATUS);
++		if (rc)
++			return rc;
++		val = apei_exec_ctx_get_output(&ctx);
++		if (!(val & EINJ_OP_BUSY))
++			break;
++		if (einj_timedout(&timeout))
++			return -EIO;
++	}
++	rc = apei_exec_run(&ctx, ACPI_EINJ_GET_COMMAND_STATUS);
++	if (rc)
++		return rc;
++	val = apei_exec_ctx_get_output(&ctx);
++	if (val != EINJ_STATUS_SUCCESS)
++		return -EBUSY;
 +
-+/*
-+ * CPER section header revision, used in revision field in struct
-+ * cper_section_descriptor
-+ */
-+#define CPER_SEC_REV				0x0100
++	rc = apei_exec_run(&ctx, ACPI_EINJ_GET_TRIGGER_TABLE);
++	if (rc)
++		return rc;
++	trigger_paddr = apei_exec_ctx_get_output(&ctx);
++	rc = __einj_error_trigger(trigger_paddr);
++	if (rc)
++		return rc;
++	rc = apei_exec_run(&ctx, ACPI_EINJ_END_OPERATION);
 +
-+/*
-+ * Validation bits difinition for validation_bits in struct
-+ * cper_section_descriptor. If set, corresponding fields in struct
-+ * cper_section_descriptor contain valid information.
-+ *
-+ * corresponds fru_id
-+ */
-+#define CPER_SEC_VALID_FRU_ID			0x1
-+/* corresponds fru_text */
-+#define CPER_SEC_VALID_FRU_TEXT			0x2
++	return rc;
++}
 +
-+/*
-+ * Flags bits definitions for flags in struct cper_section_descriptor
-+ *
-+ * If set, the section is associated with the error condition
-+ * directly, and should be focused on
-+ */
-+#define CPER_SEC_PRIMARY			0x0001
-+/*
-+ * If set, the error was not contained within the processor or memory
-+ * hierarchy and the error may have propagated to persistent storage
-+ * or network
-+ */
-+#define CPER_SEC_CONTAINMENT_WARNING		0x0002
-+/* If set, the component must be re-initialized or re-enabled prior to use */
-+#define CPER_SEC_RESET				0x0004
-+/* If set, Linux may choose to discontinue use of the resource */
-+#define CPER_SEC_ERROR_THRESHOLD_EXCEEDED	0x0008
-+/*
-+ * If set, resource could not be queried for error information due to
-+ * conflicts with other system software or resources. Some fields of
-+ * the section will be invalid
-+ */
-+#define CPER_SEC_RESOURCE_NOT_ACCESSIBLE	0x0010
-+/*
-+ * If set, action has been taken to ensure error containment (such as
-+ * poisoning data), but the error has not been fully corrected and the
-+ * data has not been consumed. Linux may choose to take further
-+ * corrective action before the data is consumed
-+ */
-+#define CPER_SEC_LATENT_ERROR			0x0020
++/* Inject the specified hardware error */
++static int einj_error_inject(u32 type)
++{
++	int rc;
 +
-+/*
-+ * Section type definitions, used in section_type field in struct
-+ * cper_section_descriptor
-+ *
-+ * Processor Generic
-+ */
-+#define CPER_SEC_PROC_GENERIC						\
-+	UUID_LE(0x9876CCAD, 0x47B4, 0x4bdb, 0xB6, 0x5E, 0x16, 0xF1,	\
-+		0x93, 0xC4, 0xF3, 0xDB)
-+/* Processor Specific: X86/X86_64 */
-+#define CPER_SEC_PROC_IA						\
-+	UUID_LE(0xDC3EA0B0, 0xA144, 0x4797, 0xB9, 0x5B, 0x53, 0xFA,	\
-+		0x24, 0x2B, 0x6E, 0x1D)
-+/* Processor Specific: IA64 */
-+#define CPER_SEC_PROC_IPF						\
-+	UUID_LE(0xE429FAF1, 0x3CB7, 0x11D4, 0x0B, 0xCA, 0x07, 0x00,	\
-+		0x80, 0xC7, 0x3C, 0x88, 0x81)
-+/* Platform Memory */
-+#define CPER_SEC_PLATFORM_MEM						\
-+	UUID_LE(0xA5BC1114, 0x6F64, 0x4EDE, 0xB8, 0x63, 0x3E, 0x83,	\
-+		0xED, 0x7C, 0x83, 0xB1)
-+#define CPER_SEC_PCIE							\
-+	UUID_LE(0xD995E954, 0xBBC1, 0x430F, 0xAD, 0x91, 0xB4, 0x4D,	\
-+		0xCB, 0x3C, 0x6F, 0x35)
-+/* Firmware Error Record Reference */
-+#define CPER_SEC_FW_ERR_REC_REF						\
-+	UUID_LE(0x81212A96, 0x09ED, 0x4996, 0x94, 0x71, 0x8D, 0x72,	\
-+		0x9C, 0x8E, 0x69, 0xED)
-+/* PCI/PCI-X Bus */
-+#define CPER_SEC_PCI_X_BUS						\
-+	UUID_LE(0xC5753963, 0x3B84, 0x4095, 0xBF, 0x78, 0xED, 0xDA,	\
-+		0xD3, 0xF9, 0xC9, 0xDD)
-+/* PCI Component/Device */
-+#define CPER_SEC_PCI_DEV						\
-+	UUID_LE(0xEB5E4685, 0xCA66, 0x4769, 0xB6, 0xA2, 0x26, 0x06,	\
-+		0x8B, 0x00, 0x13, 0x26)
-+#define CPER_SEC_DMAR_GENERIC						\
-+	UUID_LE(0x5B51FEF7, 0xC79D, 0x4434, 0x8F, 0x1B, 0xAA, 0x62,	\
-+		0xDE, 0x3E, 0x2C, 0x64)
-+/* Intel VT for Directed I/O specific DMAr */
-+#define CPER_SEC_DMAR_VT						\
-+	UUID_LE(0x71761D37, 0x32B2, 0x45cd, 0xA7, 0xD0, 0xB0, 0xFE,	\
-+		0xDD, 0x93, 0xE8, 0xCF)
-+/* IOMMU specific DMAr */
-+#define CPER_SEC_DMAR_IOMMU						\
-+	UUID_LE(0x036F84E1, 0x7F37, 0x428c, 0xA7, 0x9E, 0x57, 0x5F,	\
-+		0xDF, 0xAA, 0x84, 0xEC)
++	mutex_lock(&einj_mutex);
++	rc = __einj_error_inject(type);
++	mutex_unlock(&einj_mutex);
 +
-+/*
-+ * All tables and structs must be byte-packed to match CPER
-+ * specification, since the tables are provided by the system BIOS
-+ */
-+#pragma pack(1)
++	return rc;
++}
 +
-+struct cper_record_header {
-+	char	signature[CPER_SIG_SIZE];	/* must be CPER_SIG_RECORD */
-+	__u16	revision;			/* must be CPER_RECORD_REV */
-+	__u32	signature_end;			/* must be CPER_SIG_END */
-+	__u16	section_count;
-+	__u32	error_severity;
-+	__u32	validation_bits;
-+	__u32	record_length;
-+	__u64	timestamp;
-+	uuid_le	platform_id;
-+	uuid_le	partition_id;
-+	uuid_le	creator_id;
-+	uuid_le	notification_type;
-+	__u64	record_id;
-+	__u32	flags;
-+	__u64	persistence_information;
-+	__u8	reserved[12];			/* must be zero */
++static u32 error_type;
++static struct dentry *einj_debug_dir;
++
++static int available_error_type_show(struct seq_file *m, void *v)
++{
++	int rc;
++	u32 available_error_type = 0;
++
++	rc = einj_get_available_error_type(&available_error_type);
++	if (rc)
++		return rc;
++	if (available_error_type & 0x0001)
++		seq_printf(m, "0x00000001\tProcessor Correctable\n");
++	if (available_error_type & 0x0002)
++		seq_printf(m, "0x00000002\tProcessor Uncorrectable non-fatal\n");
++	if (available_error_type & 0x0004)
++		seq_printf(m, "0x00000004\tProcessor Uncorrectable fatal\n");
++	if (available_error_type & 0x0008)
++		seq_printf(m, "0x00000008\tMemory Correctable\n");
++	if (available_error_type & 0x0010)
++		seq_printf(m, "0x00000010\tMemory Uncorrectable non-fatal\n");
++	if (available_error_type & 0x0020)
++		seq_printf(m, "0x00000020\tMemory Uncorrectable fatal\n");
++	if (available_error_type & 0x0040)
++		seq_printf(m, "0x00000040\tPCI Express Correctable\n");
++	if (available_error_type & 0x0080)
++		seq_printf(m, "0x00000080\tPCI Express Uncorrectable non-fatal\n");
++	if (available_error_type & 0x0100)
++		seq_printf(m, "0x00000100\tPCI Express Uncorrectable fatal\n");
++	if (available_error_type & 0x0200)
++		seq_printf(m, "0x00000200\tPlatform Correctable\n");
++	if (available_error_type & 0x0400)
++		seq_printf(m, "0x00000400\tPlatform Uncorrectable non-fatal\n");
++	if (available_error_type & 0x0800)
++		seq_printf(m, "0x00000800\tPlatform Uncorrectable fatal\n");
++
++	return 0;
++}
++
++static int available_error_type_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, available_error_type_show, NULL);
++}
++
++static const struct file_operations available_error_type_fops = {
++	.open		= available_error_type_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
 +};
 +
-+struct cper_section_descriptor {
-+	__u32	section_offset;		/* Offset in bytes of the
-+					 *  section body from the base
-+					 *  of the record header */
-+	__u32	section_length;
-+	__u16	revision;		/* must be CPER_RECORD_REV */
-+	__u8	validation_bits;
-+	__u8	reserved;		/* must be zero */
-+	__u32	flags;
-+	uuid_le	section_type;
-+	uuid_le	fru_id;
-+	__u32	section_severity;
-+	__u8	fru_text[20];
-+};
++static int error_type_get(void *data, u64 *val)
++{
++	*val = error_type;
 +
-+/* Generic Processor Error Section */
-+struct cper_sec_proc_generic {
-+	__u64	validation_bits;
-+	__u8	proc_type;
-+	__u8	proc_isa;
-+	__u8	proc_error_type;
-+	__u8	operation;
-+	__u8	flags;
-+	__u8	level;
-+	__u16	reserved;
-+	__u64	cpu_version;
-+	char	cpu_brand[128];
-+	__u64	proc_id;
-+	__u64	target_addr;
-+	__u64	requestor_id;
-+	__u64	responder_id;
-+	__u64	ip;
-+};
++	return 0;
++}
 +
-+/* IA32/X64 Processor Error Section */
-+struct cper_sec_proc_ia {
-+	__u64	validation_bits;
-+	__u8	lapic_id;
-+	__u8	cpuid[48];
-+};
++static int error_type_set(void *data, u64 val)
++{
++	int rc;
++	u32 available_error_type = 0;
 +
-+/* IA32/X64 Processor Error Infomation Structure */
-+struct cper_ia_err_info {
-+	uuid_le	err_type;
-+	__u64	validation_bits;
-+	__u64	check_info;
-+	__u64	target_id;
-+	__u64	requestor_id;
-+	__u64	responder_id;
-+	__u64	ip;
-+};
++	/* Only one error type can be specified */
++	if (val & (val - 1))
++		return -EINVAL;
++	rc = einj_get_available_error_type(&available_error_type);
++	if (rc)
++		return rc;
++	if (!(val & available_error_type))
++		return -EINVAL;
++	error_type = val;
 +
-+/* IA32/X64 Processor Context Information Structure */
-+struct cper_ia_proc_ctx {
-+	__u16	reg_ctx_type;
-+	__u16	reg_arr_size;
-+	__u32	msr_addr;
-+	__u64	mm_reg_addr;
-+};
++	return 0;
++}
 +
-+/* Memory Error Section */
-+struct cper_sec_mem_err {
-+	__u64	validation_bits;
-+	__u64	error_status;
-+	__u64	physical_addr;
-+	__u64	physical_addr_mask;
-+	__u16	node;
-+	__u16	card;
-+	__u16	module;
-+	__u16	bank;
-+	__u16	device;
-+	__u16	row;
-+	__u16	column;
-+	__u16	bit_pos;
-+	__u64	requestor_id;
-+	__u64	responder_id;
-+	__u64	target_id;
-+	__u8	error_type;
-+};
++DEFINE_SIMPLE_ATTRIBUTE(error_type_fops, error_type_get,
++			error_type_set, "0x%llx\n");
 +
-+/* Reset to default packing */
-+#pragma pack()
++static int error_inject_set(void *data, u64 val)
++{
++	if (!error_type)
++		return -EINVAL;
 +
-+u64 cper_next_record_id(void);
++	return einj_error_inject(error_type);
++}
 +
-+#endif
++DEFINE_SIMPLE_ATTRIBUTE(error_inject_fops, NULL,
++			error_inject_set, "%llu\n");
++
++static int einj_check_table(struct acpi_table_einj *einj_tab)
++{
++	if (einj_tab->header_length != sizeof(struct acpi_table_einj))
++		return -EINVAL;
++	if (einj_tab->header.length < sizeof(struct acpi_table_einj))
++		return -EINVAL;
++	if (einj_tab->entries !=
++	    (einj_tab->header.length - sizeof(struct acpi_table_einj)) /
++	    sizeof(struct acpi_einj_entry))
++		return -EINVAL;
++
++	return 0;
++}
++
++static int __init einj_init(void)
++{
++	int rc;
++	acpi_status status;
++	struct dentry *fentry;
++	struct apei_exec_context ctx;
++
++	if (acpi_disabled)
++		return -ENODEV;
++
++	status = acpi_get_table(ACPI_SIG_EINJ, 0,
++				(struct acpi_table_header **)&einj_tab);
++	if (status == AE_NOT_FOUND) {
++		pr_info(EINJ_PFX "Table is not found!\n");
++		return -ENODEV;
++	} else if (ACPI_FAILURE(status)) {
++		const char *msg = acpi_format_exception(status);
++		pr_err(EINJ_PFX "Failed to get table, %s\n", msg);
++		return -EINVAL;
++	}
++
++	rc = einj_check_table(einj_tab);
++	if (rc) {
++		pr_warning(FW_BUG EINJ_PFX "EINJ table is invalid\n");
++		return -EINVAL;
++	}
++
++	rc = -ENOMEM;
++	einj_debug_dir = debugfs_create_dir("einj", apei_get_debugfs_dir());
++	if (!einj_debug_dir)
++		goto err_cleanup;
++	fentry = debugfs_create_file("available_error_type", S_IRUSR,
++				     einj_debug_dir, NULL,
++				     &available_error_type_fops);
++	if (!fentry)
++		goto err_cleanup;
++	fentry = debugfs_create_file("error_type", S_IRUSR | S_IWUSR,
++				     einj_debug_dir, NULL, &error_type_fops);
++	if (!fentry)
++		goto err_cleanup;
++	fentry = debugfs_create_file("error_inject", S_IWUSR,
++				     einj_debug_dir, NULL, &error_inject_fops);
++	if (!fentry)
++		goto err_cleanup;
++
++	apei_resources_init(&einj_resources);
++	einj_exec_ctx_init(&ctx);
++	rc = apei_exec_collect_resources(&ctx, &einj_resources);
++	if (rc)
++		goto err_fini;
++	rc = apei_resources_request(&einj_resources, "APEI EINJ");
++	if (rc)
++		goto err_fini;
++	rc = apei_exec_pre_map_gars(&ctx);
++	if (rc)
++		goto err_release;
++
++	pr_info(EINJ_PFX "Error INJection is initialized.\n");
++
++	return 0;
++
++err_release:
++	apei_resources_release(&einj_resources);
++err_fini:
++	apei_resources_fini(&einj_resources);
++err_cleanup:
++	debugfs_remove_recursive(einj_debug_dir);
++
++	return rc;
++}
++
++static void __exit einj_exit(void)
++{
++	struct apei_exec_context ctx;
++
++	einj_exec_ctx_init(&ctx);
++	apei_exec_post_unmap_gars(&ctx);
++	apei_resources_release(&einj_resources);
++	apei_resources_fini(&einj_resources);
++	debugfs_remove_recursive(einj_debug_dir);
++}
++
++module_init(einj_init);
++module_exit(einj_exit);
++
++MODULE_AUTHOR("Huang Ying");
++MODULE_DESCRIPTION("APEI Error INJection support");
++MODULE_LICENSE("GPL");
