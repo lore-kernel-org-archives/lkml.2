@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab0D0MzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 08:55:18 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:52214 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752582Ab0D0MzO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 08:55:14 -0400
-Date: Tue, 27 Apr 2010 14:55:03 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, jeremy@goop.org, hugh.dickins@tiscali.co.uk,
-       ngupta@vflare.org, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com
-Subject: Re: Frontswap [PATCH 0/4] (was Transcendent Memory): overview
-Message-ID: <20100427125502.GA3681@ucw.cz>
-References: <53c81c97-b30f-4081-91a1-7cef1879c6fa@default>
- <4BD07594.9080905@redhat.com>
- <b1036777-129b-4531-a730-1e9e5a87cea9@default>
- <4BD16D09.2030803@redhat.com>
- <b01d7882-1a72-4ba9-8f46-ba539b668f56@default>
- <4BD1A74A.2050003@redhat.com>
- <4830bd20-77b7-46c8-994b-8b4fa9a79d27@default>
- <4BD1B427.9010905@redhat.com>
- <b559c57a-0acb-4338-af21-dbfc3b3c0de5@default4BD336CF.1000103@redhat.com>
- <d1bb78ca-5ef6-4a8d-af79-a265f2d4339c@default>
+	id S1753619Ab0D0M4g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 08:56:36 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48762 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753510Ab0D0M4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 08:56:31 -0400
+Date: Tue, 27 Apr 2010 12:55:45 GMT
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
+       eranian@google.com, hpa@zytor.com, mingo@redhat.com,
+       a.p.zijlstra@chello.nl, fweisbec@gmail.com, tglx@linutronix.de,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com, acme@redhat.com,
+       paulus@samba.org, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <4bcf232b.698fd80a.6fbe.ffffb737@mx.google.com>
+References: <4bcf232b.698fd80a.6fbe.ffffb737@mx.google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Fix initialization bug in parse_single_tracepoint_event()
+Message-ID: <tip-5710fcad7c367adefe5634dc998f1f88780a8457@git.kernel.org>
+Git-Commit-ID: 5710fcad7c367adefe5634dc998f1f88780a8457
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <d1bb78ca-5ef6-4a8d-af79-a265f2d4339c@default>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 27 Apr 2010 12:55:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Commit-ID:  5710fcad7c367adefe5634dc998f1f88780a8457
+Gitweb:     http://git.kernel.org/tip/5710fcad7c367adefe5634dc998f1f88780a8457
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Wed, 21 Apr 2010 18:06:01 +0200
+Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+CommitDate: Sat, 24 Apr 2010 03:24:09 +0200
 
-> > Can we extend it?  Adding new APIs is easy, but harder to maintain in
-> > the long term.
-> 
-> Umm... I think the difference between a "new" API and extending
-> an existing one here is a choice of semantics.  As designed, frontswap
-> is an extremely simple, only-very-slightly-intrusive set of hooks that
-> allows swap pages to, under some conditions, go to pseudo-RAM instead
-...
-> "Extending" the existing swap API, which has largely been untouched for
-> many years, seems like a significantly more complex and error-prone
-> undertaking that will affect nearly all Linux users with a likely long
-> bug tail.  And, by the way, there is no existence proof that it
-> will be useful.
+perf: Fix initialization bug in parse_single_tracepoint_event()
 
-> Seems like a no-brainer to me.
+The parse_single_tracepoint_event() was setting some attributes
+before it validated the event was indeed a tracepoint event. This
+caused problems with other initialization routines like in the
+builtin-top.c module whereby sample_period is not set if not 0.
 
-Stop right here. Instead of improving existing swap api, you just
-create one because it is less work.
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+LKML-Reference: <4bcf232b.698fd80a.6fbe.ffffb737@mx.google.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ tools/perf/util/parse-events.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-We do not want apis to cummulate; please just fix the existing one.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 3b4ec67..600d327 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -418,12 +418,6 @@ parse_single_tracepoint_event(char *sys_name,
+ 	u64 id;
+ 	int fd;
+ 
+-	attr->sample_type |= PERF_SAMPLE_RAW;
+-	attr->sample_type |= PERF_SAMPLE_TIME;
+-	attr->sample_type |= PERF_SAMPLE_CPU;
+-
+-	attr->sample_period = 1;
+-
+ 	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
+ 		 sys_name, evt_name);
+ 
+@@ -442,6 +436,13 @@ parse_single_tracepoint_event(char *sys_name,
+ 	attr->type = PERF_TYPE_TRACEPOINT;
+ 	*strp = evt_name + evt_length;
+ 
++	attr->sample_type |= PERF_SAMPLE_RAW;
++	attr->sample_type |= PERF_SAMPLE_TIME;
++	attr->sample_type |= PERF_SAMPLE_CPU;
++
++	attr->sample_period = 1;
++
++
+ 	return EVT_HANDLED;
+ }
+ 
