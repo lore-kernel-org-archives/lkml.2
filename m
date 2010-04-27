@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab0D0JSg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 05:18:36 -0400
+	id S1754281Ab0D0JSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 05:18:42 -0400
 Received: from mail-qy0-f179.google.com ([209.85.221.179]:52542 "EHLO
 	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab0D0JSd (ORCPT
+	with ESMTP id S1754248Ab0D0JSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 05:18:33 -0400
+	Tue, 27 Apr 2010 05:18:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=lPxfHmPoFI+6yhtv0mWHq7YAFXBVqKF6dFLq+P2RSPQP6PdGlOhlkQ4tlGk/lMRkKa
-         S2NWehFy+pdpXSIELXtbn5VWD6SLVgg/hBXwhtZsKMix41yG+s0pPkRVUlxU5ZpwdZI2
-         i0OmTC2L5BCVu4igZfa8ltPCX6J9czdyF3kmY=
+        b=RlnVV0Jeo1oIvqV8knc8Dn9GRWge793lC32mH+EhaW663p+qkHIjHnIfP8R0/y/+Jg
+         AysG+jDTEC0eVDpFfxTKwLde0saGmTrkIgMj7SW8UoE1qzQYiYZwghpldIJ+R4pB6XSc
+         Yb0jytQk2ZtTVRQlCKNftdQjxxcGGto3HUpII=
 From: John Kacur <jkacur@redhat.com>
 To: Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>
 Cc: Arnd Bergmann <arnd@arndb.de>,
@@ -21,9 +21,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
        John Kacur <jkacur@redhat.com>
-Subject: [PATCH 01/10] dvb: push down BKL into ioctl functions
-Date: Tue, 27 Apr 2010 11:18:09 +0200
-Message-Id: <1272359898-32020-2-git-send-email-jkacur@redhat.com>
+Subject: [PATCH 02/10] scsi: push down BKL into ioctl functions
+Date: Tue, 27 Apr 2010 11:18:10 +0200
+Message-Id: <1272359898-32020-3-git-send-email-jkacur@redhat.com>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1272359898-32020-1-git-send-email-jkacur@redhat.com>
 References: <1272359898-32020-1-git-send-email-jkacur@redhat.com>
@@ -33,9 +33,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnd Bergmann <arnd@arndb.de>
 
-This requires changing all users of dvb_usercopy to
-omit the inode argument.
-
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
 Fixed merge conflicts that result from having applied
@@ -43,527 +40,491 @@ Linus's Preparation for BKL'ed ioctl removal patch first.
 
 Signed-off-by: John Kacur <jkacur@redhat.com>
 ---
- drivers/media/dvb/dvb-core/dmxdev.c         |   31 +++++++++++++++++++-------
- drivers/media/dvb/dvb-core/dvb_ca_en50221.c |   17 ++++++++++----
- drivers/media/dvb/dvb-core/dvb_frontend.c   |   30 +++++++++++++-------------
- drivers/media/dvb/dvb-core/dvb_net.c        |   15 +++++++++---
- drivers/media/dvb/dvb-core/dvbdev.c         |   17 +++++++++-----
- drivers/media/dvb/dvb-core/dvbdev.h         |   11 +++------
- drivers/media/dvb/firewire/firedtv-ci.c     |    5 +--
- drivers/media/dvb/ttpci/av7110.c            |    4 +-
- drivers/media/dvb/ttpci/av7110_av.c         |    8 +++---
- drivers/media/dvb/ttpci/av7110_ca.c         |    5 +--
- 10 files changed, 85 insertions(+), 58 deletions(-)
+ drivers/scsi/3w-9xxx.c              |   10 +++++++---
+ drivers/scsi/3w-sas.c               |    7 +++++--
+ drivers/scsi/3w-xxxx.c              |   10 +++++++---
+ drivers/scsi/aacraid/linit.c        |   11 ++++++++---
+ drivers/scsi/dpt_i2o.c              |   20 +++++++++++++++++---
+ drivers/scsi/gdth.c                 |   20 +++++++++++++++-----
+ drivers/scsi/megaraid.c             |   20 +++++++++++++++++---
+ drivers/scsi/megaraid/megaraid_mm.c |   22 +++++++++++++++++-----
+ drivers/scsi/osst.c                 |   14 ++++++++++----
+ drivers/scsi/sg.c                   |   17 ++++++++++++++---
+ 10 files changed, 117 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/media/dvb/dvb-core/dmxdev.c b/drivers/media/dvb/dvb-core/dmxdev.c
-index a6c4f2f..425862f 100644
---- a/drivers/media/dvb/dvb-core/dmxdev.c
-+++ b/drivers/media/dvb/dvb-core/dmxdev.c
-@@ -25,6 +25,7 @@
- #include <linux/slab.h>
- #include <linux/vmalloc.h>
- #include <linux/module.h>
-+#include <linux/smp_lock.h>
- #include <linux/poll.h>
- #include <linux/ioctl.h>
- #include <linux/wait.h>
-@@ -963,7 +964,7 @@ dvb_demux_read(struct file *file, char __user *buf, size_t count,
- 	return ret;
- }
+diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
+index 32da0ef..4f74850 100644
+--- a/drivers/scsi/3w-9xxx.c
++++ b/drivers/scsi/3w-9xxx.c
+@@ -123,7 +123,7 @@ static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
+ static int twa_aen_read_queue(TW_Device_Extension *tw_dev, int request_id);
+ static char *twa_aen_severity_lookup(unsigned char severity_code);
+ static void twa_aen_sync_time(TW_Device_Extension *tw_dev, int request_id);
+-static int twa_chrdev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg);
++static long twa_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+ static int twa_chrdev_open(struct inode *inode, struct file *file);
+ static int twa_fill_sense(TW_Device_Extension *tw_dev, int request_id, int copy_sense, int print_host);
+ static void twa_free_request_id(TW_Device_Extension *tw_dev,int request_id);
+@@ -218,7 +218,7 @@ static struct device_attribute *twa_host_attrs[] = {
+ /* File operations struct for character device */
+ static const struct file_operations twa_fops = {
+ 	.owner		= THIS_MODULE,
+-	.bkl_ioctl	= twa_chrdev_ioctl,
++	.unlocked_ioctl	= twa_chrdev_ioctl,
+ 	.open		= twa_chrdev_open,
+ 	.release	= NULL
+ };
+@@ -635,8 +635,9 @@ out:
+ } /* End twa_check_srl() */
  
--static int dvb_demux_do_ioctl(struct inode *inode, struct file *file,
-+static int dvb_demux_do_ioctl(struct file *file,
- 			      unsigned int cmd, void *parg)
+ /* This function handles ioctl for the character device */
+-static int twa_chrdev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
++static long twa_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
  {
- 	struct dmxdev_filter *dmxdevfilter = file->private_data;
-@@ -1084,10 +1085,16 @@ static int dvb_demux_do_ioctl(struct inode *inode, struct file *file,
- 	return ret;
- }
++	struct inode *inode = file->f_path.dentry->d_inode;
+ 	long timeout;
+ 	unsigned long *cpu_addr, data_buffer_length_adjusted = 0, flags = 0;
+ 	dma_addr_t dma_handle;
+@@ -655,6 +656,8 @@ static int twa_chrdev_ioctl(struct inode *inode, struct file *file, unsigned int
+ 	int retval = TW_IOCTL_ERROR_OS_EFAULT;
+ 	void __user *argp = (void __user *)arg;
  
--static int dvb_demux_ioctl(struct inode *inode, struct file *file,
--			   unsigned int cmd, unsigned long arg)
-+static long dvb_demux_ioctl(struct file *file, unsigned int cmd,
-+			    unsigned long arg)
- {
--	return dvb_usercopy(inode, file, cmd, arg, dvb_demux_do_ioctl);
-+	int ret;
-+
 +	lock_kernel();
-+	ret = dvb_usercopy(file, cmd, arg, dvb_demux_do_ioctl);
++
+ 	/* Only let one of these through at a time */
+ 	if (mutex_lock_interruptible(&tw_dev->ioctl_lock)) {
+ 		retval = TW_IOCTL_ERROR_OS_EINTR;
+@@ -874,6 +877,7 @@ out3:
+ out2:
+ 	mutex_unlock(&tw_dev->ioctl_lock);
+ out:
++	unlock_kernel();
+ 	return retval;
+ } /* End twa_chrdev_ioctl() */
+ 
+diff --git a/drivers/scsi/3w-sas.c b/drivers/scsi/3w-sas.c
+index 3cac9e4..ab4ad09 100644
+--- a/drivers/scsi/3w-sas.c
++++ b/drivers/scsi/3w-sas.c
+@@ -750,7 +750,7 @@ static void twl_load_sgl(TW_Device_Extension *tw_dev, TW_Command_Full *full_comm
+ 
+ /* This function handles ioctl for the character device
+    This interface is used by smartmontools open source software */
+-static int twl_chrdev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
++static long twl_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ {
+ 	long timeout;
+ 	unsigned long *cpu_addr, data_buffer_length_adjusted = 0, flags = 0;
+@@ -763,6 +763,8 @@ static int twl_chrdev_ioctl(struct inode *inode, struct file *file, unsigned int
+ 	int retval = -EFAULT;
+ 	void __user *argp = (void __user *)arg;
+ 
++	lock_kernel();
++
+ 	/* Only let one of these through at a time */
+ 	if (mutex_lock_interruptible(&tw_dev->ioctl_lock)) {
+ 		retval = -EINTR;
+@@ -858,6 +860,7 @@ out3:
+ out2:
+ 	mutex_unlock(&tw_dev->ioctl_lock);
+ out:
++	unlock_kernel();
+ 	return retval;
+ } /* End twl_chrdev_ioctl() */
+ 
+@@ -884,7 +887,7 @@ out:
+ /* File operations struct for character device */
+ static const struct file_operations twl_fops = {
+ 	.owner		= THIS_MODULE,
+-	.bkl_ioctl	= twl_chrdev_ioctl,
++	.unlocked_ioctl	= twl_chrdev_ioctl,
+ 	.open		= twl_chrdev_open,
+ 	.release	= NULL
+ };
+diff --git a/drivers/scsi/3w-xxxx.c b/drivers/scsi/3w-xxxx.c
+index 2713dd5..45a737c 100644
+--- a/drivers/scsi/3w-xxxx.c
++++ b/drivers/scsi/3w-xxxx.c
+@@ -880,7 +880,7 @@ static int tw_allocate_memory(TW_Device_Extension *tw_dev, int size, int which)
+ } /* End tw_allocate_memory() */
+ 
+ /* This function handles ioctl for the character device */
+-static int tw_chrdev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
++static long tw_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ {
+ 	int request_id;
+ 	dma_addr_t dma_handle;
+@@ -898,9 +898,12 @@ static int tw_chrdev_ioctl(struct inode *inode, struct file *file, unsigned int
+ 
+ 	dprintk(KERN_WARNING "3w-xxxx: tw_chrdev_ioctl()\n");
+ 
++	lock_kernel();
+ 	/* Only let one of these through at a time */
+-	if (mutex_lock_interruptible(&tw_dev->ioctl_lock))
++	if (mutex_lock_interruptible(&tw_dev->ioctl_lock)) {
++		unlock_kernel();
+ 		return -EINTR;
++	}
+ 
+ 	/* First copy down the buffer length */
+ 	if (copy_from_user(&data_buffer_length, argp, sizeof(unsigned int)))
+@@ -1029,6 +1032,7 @@ out2:
+ 	dma_free_coherent(&tw_dev->tw_pci_dev->dev, data_buffer_length_adjusted+sizeof(TW_New_Ioctl) - 1, cpu_addr, dma_handle);
+ out:
+ 	mutex_unlock(&tw_dev->ioctl_lock);
++	unlock_kernel();
+ 	return retval;
+ } /* End tw_chrdev_ioctl() */
+ 
+@@ -1051,7 +1055,7 @@ static int tw_chrdev_open(struct inode *inode, struct file *file)
+ /* File operations struct for character device */
+ static const struct file_operations tw_fops = {
+ 	.owner		= THIS_MODULE,
+-	.bkl_ioctl	= tw_chrdev_ioctl,
++	.unlocked_ioctl	= tw_chrdev_ioctl,
+ 	.open		= tw_chrdev_open,
+ 	.release	= NULL
+ };
+diff --git a/drivers/scsi/aacraid/linit.c b/drivers/scsi/aacraid/linit.c
+index c2b037d..33898b6 100644
+--- a/drivers/scsi/aacraid/linit.c
++++ b/drivers/scsi/aacraid/linit.c
+@@ -705,12 +705,17 @@ static int aac_cfg_open(struct inode *inode, struct file *file)
+  *	Bugs: Needs to handle hot plugging
+  */
+ 
+-static int aac_cfg_ioctl(struct inode *inode, struct file *file,
++static long aac_cfg_ioctl(struct file *file,
+ 		unsigned int cmd, unsigned long arg)
+ {
++	int ret;
+ 	if (!capable(CAP_SYS_RAWIO))
+ 		return -EPERM;
+-	return aac_do_ioctl(file->private_data, cmd, (void __user *)arg);
++	lock_kernel();
++	ret = aac_do_ioctl(file->private_data, cmd, (void __user *)arg);
 +	unlock_kernel();
 +
 +	return ret;
  }
  
- static unsigned int dvb_demux_poll(struct file *file, poll_table *wait)
-@@ -1139,7 +1146,7 @@ static int dvb_demux_release(struct inode *inode, struct file *file)
- static const struct file_operations dvb_demux_fops = {
- 	.owner = THIS_MODULE,
- 	.read = dvb_demux_read,
--	.bkl_ioctl = dvb_demux_ioctl,
-+	.unlocked_ioctl = dvb_demux_ioctl,
- 	.open = dvb_demux_open,
- 	.release = dvb_demux_release,
- 	.poll = dvb_demux_poll,
-@@ -1152,7 +1159,7 @@ static struct dvb_device dvbdev_demux = {
- 	.fops = &dvb_demux_fops
+ #ifdef CONFIG_COMPAT
+@@ -1029,7 +1034,7 @@ ssize_t aac_get_serial_number(struct device *device, char *buf)
+ 
+ static const struct file_operations aac_cfg_fops = {
+ 	.owner		= THIS_MODULE,
+-	.bkl_ioctl	= aac_cfg_ioctl,
++	.unlocked_ioctl	= aac_cfg_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = aac_compat_cfg_ioctl,
+ #endif
+diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
+index 6ec5682..b0c576f 100644
+--- a/drivers/scsi/dpt_i2o.c
++++ b/drivers/scsi/dpt_i2o.c
+@@ -114,12 +114,13 @@ static int hba_count = 0;
+ 
+ static struct class *adpt_sysfs_class;
+ 
++static long adpt_unlocked_ioctl(struct file *, unsigned int, unsigned long);
+ #ifdef CONFIG_COMPAT
+ static long compat_adpt_ioctl(struct file *, unsigned int, unsigned long);
+ #endif
+ 
+ static const struct file_operations adpt_fops = {
+-	.bkl_ioctl	= adpt_ioctl,
++	.unlocked_ioctl	= adpt_unlocked_ioctl,
+ 	.open		= adpt_open,
+ 	.release	= adpt_close,
+ #ifdef CONFIG_COMPAT
+@@ -2069,8 +2070,7 @@ static int adpt_system_info(void __user *buffer)
+ 	return 0;
+ }
+ 
+-static int adpt_ioctl(struct inode *inode, struct file *file, uint cmd,
+-	      ulong arg)
++static int adpt_ioctl(struct inode *inode, struct file *file, uint cmd, ulong arg)
+ {
+ 	int minor;
+ 	int error = 0;
+@@ -2153,6 +2153,20 @@ static int adpt_ioctl(struct inode *inode, struct file *file, uint cmd,
+ 	return error;
+ }
+ 
++static long adpt_unlocked_ioctl(struct file *file, uint cmd, ulong arg)
++{
++	struct inode *inode;
++	long ret;
++ 
++	inode = file->f_dentry->d_inode;
++ 
++	lock_kernel();
++	ret = adpt_ioctl(inode, file, cmd, arg);
++	unlock_kernel();
++
++	return ret;
++}
++
+ #ifdef CONFIG_COMPAT
+ static long compat_adpt_ioctl(struct file *file,
+ 				unsigned int cmd, unsigned long arg)
+diff --git a/drivers/scsi/gdth.c b/drivers/scsi/gdth.c
+index 69c1629..d3f335d 100644
+--- a/drivers/scsi/gdth.c
++++ b/drivers/scsi/gdth.c
+@@ -180,8 +180,8 @@ static const char *gdth_ctr_name(gdth_ha_str *ha);
+ 
+ static int gdth_open(struct inode *inode, struct file *filep);
+ static int gdth_close(struct inode *inode, struct file *filep);
+-static int gdth_ioctl(struct inode *inode, struct file *filep,
+-                      unsigned int cmd, unsigned long arg);
++static long gdth_unlocked_ioctl(struct file *filep, unsigned int cmd,
++			        unsigned long arg);
+ 
+ static void gdth_flush(gdth_ha_str *ha);
+ static int gdth_queuecommand(Scsi_Cmnd *scp,void (*done)(Scsi_Cmnd *));
+@@ -369,7 +369,7 @@ MODULE_LICENSE("GPL");
+ 
+ /* ioctl interface */
+ static const struct file_operations gdth_fops = {
+-    .bkl_ioctl   = gdth_ioctl,
++    .unlocked_ioctl   = gdth_unlocked_ioctl,
+     .open    = gdth_open,
+     .release = gdth_close,
+ };
+@@ -4462,8 +4462,7 @@ free_fail:
+     return rc;
+ }
+   
+-static int gdth_ioctl(struct inode *inode, struct file *filep,
+-                      unsigned int cmd, unsigned long arg)
++static int gdth_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ {
+     gdth_ha_str *ha; 
+     Scsi_Cmnd *scp;
+@@ -4611,6 +4610,17 @@ static int gdth_ioctl(struct inode *inode, struct file *filep,
+     return 0;
+ }
+ 
++static long gdth_unlocked_ioctl(struct file *file, unsigned int cmd,
++			        unsigned long arg)
++{
++	int ret;
++
++	lock_kernel();
++	ret = gdth_ioctl(file, cmd, arg);
++	unlock_kernel();
++
++	return ret;
++}
+ 
+ /* flush routine */
+ static void gdth_flush(gdth_ha_str *ha)
+diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
+index 49a3501..c20b621 100644
+--- a/drivers/scsi/megaraid.c
++++ b/drivers/scsi/megaraid.c
+@@ -91,12 +91,15 @@ static struct proc_dir_entry *mega_proc_dir_entry;
+ /* For controller re-ordering */
+ static struct mega_hbas mega_hbas[MAX_CONTROLLERS];
+ 
++static long
++megadev_unlocked_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
++
+ /*
+  * The File Operations structure for the serial/ioctl interface of the driver
+  */
+ static const struct file_operations megadev_fops = {
+ 	.owner		= THIS_MODULE,
+-	.bkl_ioctl	= megadev_ioctl,
++	.unlocked_ioctl	= megadev_unlocked_ioctl,
+ 	.open		= megadev_open,
  };
  
--static int dvb_dvr_do_ioctl(struct inode *inode, struct file *file,
-+static int dvb_dvr_do_ioctl(struct file *file,
- 			    unsigned int cmd, void *parg)
+@@ -3302,8 +3305,7 @@ megadev_open (struct inode *inode, struct file *filep)
+  * controller.
+  */
+ static int
+-megadev_ioctl(struct inode *inode, struct file *filep, unsigned int cmd,
+-		unsigned long arg)
++megadev_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
  {
- 	struct dvb_device *dvbdev = file->private_data;
-@@ -1176,10 +1183,16 @@ static int dvb_dvr_do_ioctl(struct inode *inode, struct file *file,
- 	return ret;
+ 	adapter_t	*adapter;
+ 	nitioctl_t	uioc;
+@@ -3694,6 +3696,18 @@ freemem_and_return:
+ 	return 0;
  }
  
--static int dvb_dvr_ioctl(struct inode *inode, struct file *file,
-+static long dvb_dvr_ioctl(struct file *file,
- 			 unsigned int cmd, unsigned long arg)
- {
--	return dvb_usercopy(inode, file, cmd, arg, dvb_dvr_do_ioctl);
++static long
++megadev_unlocked_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
++{
 +	int ret;
 +
 +	lock_kernel();
-+	ret = dvb_usercopy(file, cmd, arg, dvb_dvr_do_ioctl);
++	ret = megadev_ioctl(filep, cmd, arg);
 +	unlock_kernel();
 +
 +	return ret;
++}
++
+ /**
+  * mega_m_to_n()
+  * @arg - user address
+diff --git a/drivers/scsi/megaraid/megaraid_mm.c b/drivers/scsi/megaraid/megaraid_mm.c
+index 9bd7787..41f82f7 100644
+--- a/drivers/scsi/megaraid/megaraid_mm.c
++++ b/drivers/scsi/megaraid/megaraid_mm.c
+@@ -22,7 +22,7 @@
+ 
+ // Entry points for char node driver
+ static int mraid_mm_open(struct inode *, struct file *);
+-static int mraid_mm_ioctl(struct inode *, struct file *, uint, unsigned long);
++static long mraid_mm_unlocked_ioctl(struct file *, uint, unsigned long);
+ 
+ 
+ // routines to convert to and from the old the format
+@@ -70,7 +70,7 @@ static wait_queue_head_t wait_q;
+ 
+ static const struct file_operations lsi_fops = {
+ 	.open	= mraid_mm_open,
+-	.bkl_ioctl = mraid_mm_ioctl,
++	.unlocked_ioctl = mraid_mm_unlocked_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = mraid_mm_compat_ioctl,
+ #endif
+@@ -110,8 +110,7 @@ mraid_mm_open(struct inode *inode, struct file *filep)
+  * @arg		: user ioctl packet
+  */
+ static int
+-mraid_mm_ioctl(struct inode *inode, struct file *filep, unsigned int cmd,
+-							unsigned long arg)
++mraid_mm_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ {
+ 	uioc_t		*kioc;
+ 	char		signature[EXT_IOCTL_SIGN_SZ]	= {0};
+@@ -218,6 +217,19 @@ mraid_mm_ioctl(struct inode *inode, struct file *filep, unsigned int cmd,
+ 	return rval;
  }
  
- static unsigned int dvb_dvr_poll(struct file *file, poll_table *wait)
-@@ -1208,7 +1221,7 @@ static const struct file_operations dvb_dvr_fops = {
- 	.owner = THIS_MODULE,
- 	.read = dvb_dvr_read,
- 	.write = dvb_dvr_write,
--	.bkl_ioctl = dvb_dvr_ioctl,
-+	.unlocked_ioctl = dvb_dvr_ioctl,
- 	.open = dvb_dvr_open,
- 	.release = dvb_dvr_release,
- 	.poll = dvb_dvr_poll,
-diff --git a/drivers/media/dvb/dvb-core/dvb_ca_en50221.c b/drivers/media/dvb/dvb-core/dvb_ca_en50221.c
-index 4609c7e..ef259a0 100644
---- a/drivers/media/dvb/dvb-core/dvb_ca_en50221.c
-+++ b/drivers/media/dvb/dvb-core/dvb_ca_en50221.c
-@@ -36,6 +36,7 @@
- #include <linux/delay.h>
- #include <linux/spinlock.h>
- #include <linux/sched.h>
-+#include <linux/smp_lock.h>
- #include <linux/kthread.h>
- 
- #include "dvb_ca_en50221.h"
-@@ -1181,7 +1182,7 @@ static int dvb_ca_en50221_thread(void *data)
-  *
-  * @return 0 on success, <0 on error.
-  */
--static int dvb_ca_en50221_io_do_ioctl(struct inode *inode, struct file *file,
-+static int dvb_ca_en50221_io_do_ioctl(struct file *file,
- 				      unsigned int cmd, void *parg)
- {
- 	struct dvb_device *dvbdev = file->private_data;
-@@ -1255,10 +1256,16 @@ static int dvb_ca_en50221_io_do_ioctl(struct inode *inode, struct file *file,
-  *
-  * @return 0 on success, <0 on error.
-  */
--static int dvb_ca_en50221_io_ioctl(struct inode *inode, struct file *file,
--				   unsigned int cmd, unsigned long arg)
-+static long dvb_ca_en50221_io_ioctl(struct file *file,
-+				    unsigned int cmd, unsigned long arg)
- {
--	return dvb_usercopy(inode, file, cmd, arg, dvb_ca_en50221_io_do_ioctl);
-+	int ret;
++static long
++mraid_mm_unlocked_ioctl(struct file *filep, unsigned int cmd,
++		        unsigned long arg)
++{
++	int err;
 +
++	/* inconsistant: mraid_mm_compat_ioctl doesn't take the BKL */
 +	lock_kernel();
-+	ret = dvb_usercopy(file, cmd, arg, dvb_ca_en50221_io_do_ioctl);
++	err = mraid_mm_ioctl(filep, cmd, arg);
 +	unlock_kernel();
 +
-+	return ret;
- }
++	return err;
++}
  
- 
-@@ -1611,7 +1618,7 @@ static const struct file_operations dvb_ca_fops = {
- 	.owner = THIS_MODULE,
- 	.read = dvb_ca_en50221_io_read,
- 	.write = dvb_ca_en50221_io_write,
--	.bkl_ioctl = dvb_ca_en50221_io_ioctl,
-+	.unlocked_ioctl = dvb_ca_en50221_io_ioctl,
- 	.open = dvb_ca_en50221_io_open,
- 	.release = dvb_ca_en50221_io_release,
- 	.poll = dvb_ca_en50221_io_poll,
-diff --git a/drivers/media/dvb/dvb-core/dvb_frontend.c b/drivers/media/dvb/dvb-core/dvb_frontend.c
-index 5ebf731..5450d1f 100644
---- a/drivers/media/dvb/dvb-core/dvb_frontend.c
-+++ b/drivers/media/dvb/dvb-core/dvb_frontend.c
-@@ -36,6 +36,7 @@
- #include <linux/list.h>
- #include <linux/freezer.h>
- #include <linux/jiffies.h>
-+#include <linux/smp_lock.h>
- #include <linux/kthread.h>
- #include <asm/processor.h>
- 
-@@ -1188,14 +1189,14 @@ static void dtv_property_cache_submit(struct dvb_frontend *fe)
- 	}
- }
- 
--static int dvb_frontend_ioctl_legacy(struct inode *inode, struct file *file,
-+static int dvb_frontend_ioctl_legacy(struct file *file,
- 			unsigned int cmd, void *parg);
--static int dvb_frontend_ioctl_properties(struct inode *inode, struct file *file,
-+static int dvb_frontend_ioctl_properties(struct file *file,
- 			unsigned int cmd, void *parg);
- 
- static int dtv_property_process_get(struct dvb_frontend *fe,
- 				    struct dtv_property *tvp,
--				    struct inode *inode, struct file *file)
-+				    struct file *file)
+ /**
+  * mraid_mm_get_adapter - Returns corresponding adapters for the mimd packet
+@@ -1225,7 +1237,7 @@ mraid_mm_compat_ioctl(struct file *filep, unsigned int cmd,
  {
- 	int r = 0;
+ 	int err;
  
-@@ -1328,7 +1329,6 @@ static int dtv_property_process_get(struct dvb_frontend *fe,
+-	err = mraid_mm_ioctl(NULL, filep, cmd, arg);
++	err = mraid_mm_ioctl(filep, cmd, arg);
  
- static int dtv_property_process_set(struct dvb_frontend *fe,
- 				    struct dtv_property *tvp,
--				    struct inode *inode,
- 				    struct file *file)
- {
- 	int r = 0;
-@@ -1359,7 +1359,7 @@ static int dtv_property_process_set(struct dvb_frontend *fe,
- 		dprintk("%s() Finalised property cache\n", __func__);
- 		dtv_property_cache_submit(fe);
- 
--		r |= dvb_frontend_ioctl_legacy(inode, file, FE_SET_FRONTEND,
-+		r |= dvb_frontend_ioctl_legacy(file, FE_SET_FRONTEND,
- 			&fepriv->parameters);
- 		break;
- 	case DTV_FREQUENCY:
-@@ -1391,12 +1391,12 @@ static int dtv_property_process_set(struct dvb_frontend *fe,
- 		break;
- 	case DTV_VOLTAGE:
- 		fe->dtv_property_cache.voltage = tvp->u.data;
--		r = dvb_frontend_ioctl_legacy(inode, file, FE_SET_VOLTAGE,
-+		r = dvb_frontend_ioctl_legacy(file, FE_SET_VOLTAGE,
- 			(void *)fe->dtv_property_cache.voltage);
- 		break;
- 	case DTV_TONE:
- 		fe->dtv_property_cache.sectone = tvp->u.data;
--		r = dvb_frontend_ioctl_legacy(inode, file, FE_SET_TONE,
-+		r = dvb_frontend_ioctl_legacy(file, FE_SET_TONE,
- 			(void *)fe->dtv_property_cache.sectone);
- 		break;
- 	case DTV_CODE_RATE_HP:
-@@ -1480,7 +1480,7 @@ static int dtv_property_process_set(struct dvb_frontend *fe,
- 	return r;
+ 	return err;
  }
+diff --git a/drivers/scsi/osst.c b/drivers/scsi/osst.c
+index a1a78bb..8dbf1c3 100644
+--- a/drivers/scsi/osst.c
++++ b/drivers/scsi/osst.c
+@@ -4932,7 +4932,7 @@ static int os_scsi_tape_close(struct inode * inode, struct file * filp)
  
--static int dvb_frontend_ioctl(struct inode *inode, struct file *file,
-+static int dvb_frontend_ioctl(struct file *file,
- 			unsigned int cmd, void *parg)
+ 
+ /* The ioctl command */
+-static int osst_ioctl(struct inode * inode,struct file * file,
++static long osst_ioctl(struct file * file,
+ 	 unsigned int cmd_in, unsigned long arg)
  {
- 	struct dvb_device *dvbdev = file->private_data;
-@@ -1502,17 +1502,17 @@ static int dvb_frontend_ioctl(struct inode *inode, struct file *file,
+ 	int		      i, cmd_nr, cmd_type, blk, retval = 0;
+@@ -4943,8 +4943,11 @@ static int osst_ioctl(struct inode * inode,struct file * file,
+ 	char		    * name  = tape_name(STp);
+ 	void	    __user  * p     = (void __user *)arg;
+ 
+-	if (mutex_lock_interruptible(&STp->lock))
++	lock_kernel();
++	if (mutex_lock_interruptible(&STp->lock)) {
++		unlock_kernel();
  		return -ERESTARTSYS;
++	}
  
- 	if ((cmd == FE_SET_PROPERTY) || (cmd == FE_GET_PROPERTY))
--		err = dvb_frontend_ioctl_properties(inode, file, cmd, parg);
-+		err = dvb_frontend_ioctl_properties(file, cmd, parg);
- 	else {
- 		fe->dtv_property_cache.state = DTV_UNDEFINED;
--		err = dvb_frontend_ioctl_legacy(inode, file, cmd, parg);
-+		err = dvb_frontend_ioctl_legacy(file, cmd, parg);
+ #if DEBUG
+ 	if (debugging && !STp->in_use) {
+@@ -5256,12 +5259,15 @@ static int osst_ioctl(struct inode * inode,struct file * file,
+ 
+ 	mutex_unlock(&STp->lock);
+ 
+-	return scsi_ioctl(STp->device, cmd_in, p);
++	retval = scsi_ioctl(STp->device, cmd_in, p);
++	unlock_kernel();
++	return retval;
+ 
+ out:
+ 	if (SRpnt) osst_release_request(SRpnt);
+ 
+ 	mutex_unlock(&STp->lock);
++	unlock_kernel();
+ 
+ 	return retval;
+ }
+@@ -5613,7 +5619,7 @@ static const struct file_operations osst_fops = {
+ 	.owner =        THIS_MODULE,
+ 	.read =         osst_read,
+ 	.write =        osst_write,
+-	.bkl_ioctl =        osst_ioctl,
++	.unlocked_ioctl = osst_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = osst_compat_ioctl,
+ #endif
+diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+index 93d043e..ef752b2 100644
+--- a/drivers/scsi/sg.c
++++ b/drivers/scsi/sg.c
+@@ -758,8 +758,7 @@ sg_common_write(Sg_fd * sfp, Sg_request * srp,
+ }
+ 
+ static int
+-sg_ioctl(struct inode *inode, struct file *filp,
+-	 unsigned int cmd_in, unsigned long arg)
++sg_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
+ {
+ 	void __user *p = (void __user *)arg;
+ 	int __user *ip = p;
+@@ -1078,6 +1077,18 @@ sg_ioctl(struct inode *inode, struct file *filp,
  	}
- 
- 	up(&fepriv->sem);
- 	return err;
  }
  
--static int dvb_frontend_ioctl_properties(struct inode *inode, struct file *file,
-+static int dvb_frontend_ioctl_properties(struct file *file,
- 			unsigned int cmd, void *parg)
- {
- 	struct dvb_device *dvbdev = file->private_data;
-@@ -1548,7 +1548,7 @@ static int dvb_frontend_ioctl_properties(struct inode *inode, struct file *file,
- 		}
- 
- 		for (i = 0; i < tvps->num; i++) {
--			(tvp + i)->result = dtv_property_process_set(fe, tvp + i, inode, file);
-+			(tvp + i)->result = dtv_property_process_set(fe, tvp + i, file);
- 			err |= (tvp + i)->result;
- 		}
- 
-@@ -1580,7 +1580,7 @@ static int dvb_frontend_ioctl_properties(struct inode *inode, struct file *file,
- 		}
- 
- 		for (i = 0; i < tvps->num; i++) {
--			(tvp + i)->result = dtv_property_process_get(fe, tvp + i, inode, file);
-+			(tvp + i)->result = dtv_property_process_get(fe, tvp + i, file);
- 			err |= (tvp + i)->result;
- 		}
- 
-@@ -1597,7 +1597,7 @@ out:
- 	return err;
- }
- 
--static int dvb_frontend_ioctl_legacy(struct inode *inode, struct file *file,
-+static int dvb_frontend_ioctl_legacy(struct file *file,
- 			unsigned int cmd, void *parg)
- {
- 	struct dvb_device *dvbdev = file->private_data;
-@@ -2022,7 +2022,7 @@ static int dvb_frontend_release(struct inode *inode, struct file *file)
- 
- static const struct file_operations dvb_frontend_fops = {
- 	.owner		= THIS_MODULE,
--	.bkl_ioctl	= dvb_generic_ioctl,
-+	.unlocked_ioctl	= dvb_generic_ioctl,
- 	.poll		= dvb_frontend_poll,
- 	.open		= dvb_frontend_open,
- 	.release	= dvb_frontend_release
-diff --git a/drivers/media/dvb/dvb-core/dvb_net.c b/drivers/media/dvb/dvb-core/dvb_net.c
-index 7ae8ef1..a96eee3 100644
---- a/drivers/media/dvb/dvb-core/dvb_net.c
-+++ b/drivers/media/dvb/dvb-core/dvb_net.c
-@@ -59,6 +59,7 @@
- #include <linux/netdevice.h>
- #include <linux/etherdevice.h>
- #include <linux/dvb/net.h>
-+#include <linux/smp_lock.h>
- #include <linux/uio.h>
- #include <asm/uaccess.h>
- #include <linux/crc32.h>
-@@ -1333,7 +1334,7 @@ static int dvb_net_remove_if(struct dvb_net *dvbnet, unsigned long num)
- 	return 0;
- }
- 
--static int dvb_net_do_ioctl(struct inode *inode, struct file *file,
-+static int dvb_net_do_ioctl(struct file *file,
- 		  unsigned int cmd, void *parg)
- {
- 	struct dvb_device *dvbdev = file->private_data;
-@@ -1435,10 +1436,16 @@ static int dvb_net_do_ioctl(struct inode *inode, struct file *file,
- 	return 0;
- }
- 
--static int dvb_net_ioctl(struct inode *inode, struct file *file,
-+static long dvb_net_ioctl(struct file *file,
- 	      unsigned int cmd, unsigned long arg)
- {
--	return dvb_usercopy(inode, file, cmd, arg, dvb_net_do_ioctl);
++static long
++sg_unlocked_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
++{
 +	int ret;
 +
 +	lock_kernel();
-+	ret = dvb_usercopy(file, cmd, arg, dvb_net_do_ioctl);
++	ret = sg_ioctl(filp, cmd_in, arg);
 +	unlock_kernel();
 +
 +	return ret;
- }
- 
- static int dvb_net_close(struct inode *inode, struct file *file)
-@@ -1459,7 +1466,7 @@ static int dvb_net_close(struct inode *inode, struct file *file)
- 
- static const struct file_operations dvb_net_fops = {
- 	.owner = THIS_MODULE,
--	.bkl_ioctl = dvb_net_ioctl,
-+	.unlocked_ioctl = dvb_net_ioctl,
- 	.open =	dvb_generic_open,
- 	.release = dvb_net_close,
- };
-diff --git a/drivers/media/dvb/dvb-core/dvbdev.c b/drivers/media/dvb/dvb-core/dvbdev.c
-index 94159b9..b915c39 100644
---- a/drivers/media/dvb/dvb-core/dvbdev.c
-+++ b/drivers/media/dvb/dvb-core/dvbdev.c
-@@ -154,10 +154,11 @@ int dvb_generic_release(struct inode *inode, struct file *file)
- EXPORT_SYMBOL(dvb_generic_release);
- 
- 
--int dvb_generic_ioctl(struct inode *inode, struct file *file,
--		      unsigned int cmd, unsigned long arg)
-+long dvb_generic_ioctl(struct file *file,
-+		       unsigned int cmd, unsigned long arg)
- {
- 	struct dvb_device *dvbdev = file->private_data;
-+	int ret;
- 
- 	if (!dvbdev)
- 		return -ENODEV;
-@@ -165,7 +166,11 @@ int dvb_generic_ioctl(struct inode *inode, struct file *file,
- 	if (!dvbdev->kernel_ioctl)
- 		return -EINVAL;
- 
--	return dvb_usercopy (inode, file, cmd, arg, dvbdev->kernel_ioctl);
-+	lock_kernel();
-+	ret = dvb_usercopy(file, cmd, arg, dvbdev->kernel_ioctl);
-+	unlock_kernel();
++}
 +
-+	return ret;
- }
- EXPORT_SYMBOL(dvb_generic_ioctl);
- 
-@@ -377,9 +382,9 @@ EXPORT_SYMBOL(dvb_unregister_adapter);
-    define this as video_usercopy(). this will introduce a dependecy
-    to the v4l "videodev.o" module, which is unnecessary for some
-    cards (ie. the budget dvb-cards don't need the v4l module...) */
--int dvb_usercopy(struct inode *inode, struct file *file,
-+int dvb_usercopy(struct file *file,
- 		     unsigned int cmd, unsigned long arg,
--		     int (*func)(struct inode *inode, struct file *file,
-+		     int (*func)(struct file *file,
- 		     unsigned int cmd, void *arg))
+ #ifdef CONFIG_COMPAT
+ static long sg_compat_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
  {
- 	char    sbuf[128];
-@@ -416,7 +421,7 @@ int dvb_usercopy(struct inode *inode, struct file *file,
- 	}
- 
- 	/* call driver */
--	if ((err = func(inode, file, cmd, parg)) == -ENOIOCTLCMD)
-+	if ((err = func(file, cmd, parg)) == -ENOIOCTLCMD)
- 		err = -EINVAL;
- 
- 	if (err < 0)
-diff --git a/drivers/media/dvb/dvb-core/dvbdev.h b/drivers/media/dvb/dvb-core/dvbdev.h
-index f7b499d..fcc6ae9 100644
---- a/drivers/media/dvb/dvb-core/dvbdev.h
-+++ b/drivers/media/dvb/dvb-core/dvbdev.h
-@@ -116,8 +116,7 @@ struct dvb_device {
- 
- 	wait_queue_head_t	  wait_queue;
- 	/* don't really need those !? -- FIXME: use video_usercopy  */
--	int (*kernel_ioctl)(struct inode *inode, struct file *file,
--			    unsigned int cmd, void *arg);
-+	int (*kernel_ioctl)(struct file *file, unsigned int cmd, void *arg);
- 
- 	void *priv;
- };
-@@ -138,17 +137,15 @@ extern void dvb_unregister_device (struct dvb_device *dvbdev);
- 
- extern int dvb_generic_open (struct inode *inode, struct file *file);
- extern int dvb_generic_release (struct inode *inode, struct file *file);
--extern int dvb_generic_ioctl (struct inode *inode, struct file *file,
-+extern long dvb_generic_ioctl (struct file *file,
- 			      unsigned int cmd, unsigned long arg);
- 
- /* we don't mess with video_usercopy() any more,
- we simply define out own dvb_usercopy(), which will hopefully become
- generic_usercopy()  someday... */
- 
--extern int dvb_usercopy(struct inode *inode, struct file *file,
--			    unsigned int cmd, unsigned long arg,
--			    int (*func)(struct inode *inode, struct file *file,
--			    unsigned int cmd, void *arg));
-+extern int dvb_usercopy(struct file *file, unsigned int cmd, unsigned long arg,
-+			    int (*func)(struct file *file, unsigned int cmd, void *arg));
- 
- /** generic DVB attach function. */
- #ifdef CONFIG_MEDIA_ATTACH
-diff --git a/drivers/media/dvb/firewire/firedtv-ci.c b/drivers/media/dvb/firewire/firedtv-ci.c
-index 9378618..d3c2cf6 100644
---- a/drivers/media/dvb/firewire/firedtv-ci.c
-+++ b/drivers/media/dvb/firewire/firedtv-ci.c
-@@ -175,8 +175,7 @@ static int fdtv_ca_send_msg(struct firedtv *fdtv, void *arg)
- 	return err;
- }
- 
--static int fdtv_ca_ioctl(struct inode *inode, struct file *file,
--			    unsigned int cmd, void *arg)
-+static int fdtv_ca_ioctl(struct file *file, unsigned int cmd, void *arg)
- {
- 	struct dvb_device *dvbdev = file->private_data;
- 	struct firedtv *fdtv = dvbdev->priv;
-@@ -217,7 +216,7 @@ static unsigned int fdtv_ca_io_poll(struct file *file, poll_table *wait)
- 
- static const struct file_operations fdtv_ca_fops = {
- 	.owner		= THIS_MODULE,
--	.bkl_ioctl	= dvb_generic_ioctl,
-+	.unlocked_ioctl	= dvb_generic_ioctl,
- 	.open		= dvb_generic_open,
- 	.release	= dvb_generic_release,
- 	.poll		= fdtv_ca_io_poll,
-diff --git a/drivers/media/dvb/ttpci/av7110.c b/drivers/media/dvb/ttpci/av7110.c
-index 0e606af..a6be529 100644
---- a/drivers/media/dvb/ttpci/av7110.c
-+++ b/drivers/media/dvb/ttpci/av7110.c
-@@ -708,7 +708,7 @@ static void gpioirq(unsigned long cookie)
- 
- 
- #ifdef CONFIG_DVB_AV7110_OSD
--static int dvb_osd_ioctl(struct inode *inode, struct file *file,
-+static int dvb_osd_ioctl(struct file *file,
- 			 unsigned int cmd, void *parg)
- {
- 	struct dvb_device *dvbdev = file->private_data;
-@@ -727,7 +727,7 @@ static int dvb_osd_ioctl(struct inode *inode, struct file *file,
- 
- static const struct file_operations dvb_osd_fops = {
- 	.owner		= THIS_MODULE,
--	.bkl_ioctl	= dvb_generic_ioctl,
-+	.unlocked_ioctl	= dvb_generic_ioctl,
- 	.open		= dvb_generic_open,
- 	.release	= dvb_generic_release,
- };
-diff --git a/drivers/media/dvb/ttpci/av7110_av.c b/drivers/media/dvb/ttpci/av7110_av.c
-index 62d3b1f..13efba9 100644
---- a/drivers/media/dvb/ttpci/av7110_av.c
-+++ b/drivers/media/dvb/ttpci/av7110_av.c
-@@ -1089,7 +1089,7 @@ static int play_iframe(struct av7110 *av7110, char __user *buf, unsigned int len
- }
- 
- 
--static int dvb_video_ioctl(struct inode *inode, struct file *file,
-+static int dvb_video_ioctl(struct file *file,
- 			   unsigned int cmd, void *parg)
- {
- 	struct dvb_device *dvbdev = file->private_data;
-@@ -1297,7 +1297,7 @@ static int dvb_video_ioctl(struct inode *inode, struct file *file,
- 	return ret;
- }
- 
--static int dvb_audio_ioctl(struct inode *inode, struct file *file,
-+static int dvb_audio_ioctl(struct file *file,
- 			   unsigned int cmd, void *parg)
- {
- 	struct dvb_device *dvbdev = file->private_data;
-@@ -1517,7 +1517,7 @@ static int dvb_audio_release(struct inode *inode, struct file *file)
- static const struct file_operations dvb_video_fops = {
- 	.owner		= THIS_MODULE,
- 	.write		= dvb_video_write,
--	.bkl_ioctl	= dvb_generic_ioctl,
-+	.unlocked_ioctl	= dvb_generic_ioctl,
- 	.open		= dvb_video_open,
- 	.release	= dvb_video_release,
- 	.poll		= dvb_video_poll,
-@@ -1535,7 +1535,7 @@ static struct dvb_device dvbdev_video = {
- static const struct file_operations dvb_audio_fops = {
- 	.owner		= THIS_MODULE,
- 	.write		= dvb_audio_write,
--	.bkl_ioctl	= dvb_generic_ioctl,
-+	.unlocked_ioctl	= dvb_generic_ioctl,
- 	.open		= dvb_audio_open,
- 	.release	= dvb_audio_release,
- 	.poll		= dvb_audio_poll,
-diff --git a/drivers/media/dvb/ttpci/av7110_ca.c b/drivers/media/dvb/ttpci/av7110_ca.c
-index 94e0668..4eba35a 100644
---- a/drivers/media/dvb/ttpci/av7110_ca.c
-+++ b/drivers/media/dvb/ttpci/av7110_ca.c
-@@ -248,8 +248,7 @@ static unsigned int dvb_ca_poll (struct file *file, poll_table *wait)
- 	return mask;
- }
- 
--static int dvb_ca_ioctl(struct inode *inode, struct file *file,
--		 unsigned int cmd, void *parg)
-+static int dvb_ca_ioctl(struct file *file, unsigned int cmd, void *parg)
- {
- 	struct dvb_device *dvbdev = file->private_data;
- 	struct av7110 *av7110 = dvbdev->priv;
-@@ -350,7 +349,7 @@ static const struct file_operations dvb_ca_fops = {
- 	.owner		= THIS_MODULE,
- 	.read		= dvb_ca_read,
- 	.write		= dvb_ca_write,
--	.bkl_ioctl	= dvb_generic_ioctl,
-+	.unlocked_ioctl	= dvb_generic_ioctl,
- 	.open		= dvb_ca_open,
- 	.release	= dvb_generic_release,
- 	.poll		= dvb_ca_poll,
+@@ -1322,7 +1333,7 @@ static const struct file_operations sg_fops = {
+ 	.read = sg_read,
+ 	.write = sg_write,
+ 	.poll = sg_poll,
+-	.bkl_ioctl = sg_ioctl,
++	.unlocked_ioctl = sg_unlocked_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = sg_compat_ioctl,
+ #endif
 -- 
 1.6.6.1
 
