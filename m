@@ -1,147 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab0D0MkS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 08:40:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47396 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755403Ab0D0MkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 08:40:16 -0400
-Message-ID: <4BD6DB2D.6080808@suse.cz>
-Date: Tue, 27 Apr 2010 14:40:13 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.9 Thunderbird/3.0.4
+	id S1755502Ab0D0Mlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 08:41:39 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:40330 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab0D0Mlh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 08:41:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=WSFikMdnm6+JQCgB8UOcHAs4AuYjfvIqcWNTJHkWrGkn005jyxATBOHfqajrIOy7SS
+         OxniaAGjBl7CgZqAh3kJtpfcFUBWgBPpIENapiLS5D26x1fZjOtBpHhCqJ13APLyYvle
+         qkB8gOL2+PKI6FDEnvtUtKj9PQYQABtJgTINs=
 MIME-Version: 1.0
-To: Nicolas Palix <npalix@diku.dk>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
-       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
-       linux-kbuild@vger.kernel.org, cocci@diku.dk
-Subject: Re: [PATCH 1/4] Add targets to use the Coccinelle checker
-References: <1272316279-12042-1-git-send-email-npalix@diku.dk> <1272316279-12042-2-git-send-email-npalix@diku.dk> <1272317821.15953.107.camel@Joe-Laptop.home> <201004270020.09447.npalix@diku.dk>
-In-Reply-To: <201004270020.09447.npalix@diku.dk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LFD.2.00.1004271359180.3318@localhost>
+References: <1272359898-32020-1-git-send-email-jkacur@redhat.com>
+	 <201004271331.58130.arnd@arndb.de>
+	 <alpine.LFD.2.00.1004271359180.3318@localhost>
+Date: Tue, 27 Apr 2010 14:41:35 +0200
+Message-ID: <m2xc62985531004270541n6537bc9bj1936319952a9f4ca@mail.gmail.com>
+Subject: Re: [PATCH 00/10] bkl: pushdowns from Arnd, and compile fixes
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: John Kacur <jkacur@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
-
-On 27.4.2010 00:20, Nicolas Palix wrote:
-> Four targets are added. Each one generates a different
-> output kind: context, patch, org, report.
-> Every SmPL file in 'scripts/smpl' is given to the spatch frontend
-> (located in the 'scripts' directory), and applied to the entire
-> source tree.
-
-Cool!
-
-
-> Signed-off-by: Nicolas Palix <npalix@diku.dk>
-> ---
->  MAINTAINERS       |   10 ++++++++++
->  Makefile          |    9 +++++++++
->  scripts/spatch.sh |   14 ++++++++++++++
->  3 files changed, 33 insertions(+), 0 deletions(-)
->  create mode 100755 scripts/spatch.sh
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 3d29fa3..2aab763 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1533,6 +1533,16 @@ L:	platform-driver-x86@vger.kernel.org
->  S:	Supported
->  F:	drivers/platform/x86/classmate-laptop.c
->  
-> +COCCINELLE/Semantic Patches (SmPL)
-> +M:	Julia Lawall <julia@diku.dk>
-> +M:	Gilles Muller <Gilles.Muller@lip6.fr>
-> +M:	Nicolas Palix <npalix@diku.dk>
-> +L:	cocci@diku.dk
-> +W:	http://coccinelle.lip6.fr/
-> +S:	Supported
-> +F:	scripts/smpl/
-> +F:	scripts/spatch.sh
-> +
->  CODA FILE SYSTEM
->  M:	Jan Harkes <jaharkes@cs.cmu.edu>
->  M:	coda@cs.cmu.edu
-> diff --git a/Makefile b/Makefile
-> index 67c1001..293c88b 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -325,6 +325,7 @@ INSTALLKERNEL  := installkernel
->  DEPMOD		= /sbin/depmod
->  KALLSYMS	= scripts/kallsyms
->  PERL		= perl
-> +SPATCH          = spatch
->  CHECK		= sparse
->  
->  CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
-> @@ -1424,6 +1425,14 @@ versioncheck:
->  		-name '*.[hcS]' -type f -print | sort \
->  		| xargs $(PERL) -w $(srctree)/scripts/checkversion.pl
->  
-> +coccicheck-context coccicheck-patch coccicheck-org coccicheck-report:
-> +	@echo "\nPlease check for false positive in the output before submitting a patch.\n\n"\
-> +		"Take particularly attention when using the \"patch\" mode\n"\
-> +		"and carefully review the patch you are about to submit.\n"
-
-This should be echo -e in bash, but then it won't work in dash I guess.
-So better use multiple echo commands. Also please add the targets to
-'make help' text and add coccicheck-% to the no-dot-config-targets variable.
-
-
-> +	@find $(srctree)/scripts/smpl/                        \
-> +		-name '*.cocci' -type f                       \
-> +		-exec $(srctree)/scripts/spatch.sh $(SPATCH) $(@:coccicheck-%=%) \{} $(srctree) \;
-> +
-
-Please use 'for file in $(srctree)/scripts/smpl/*.cocci; do ...', so
-that the reports are in a defined order. Or do you plan to use
-subdirectories below scripts/smpl?
-
-
->  namespacecheck:
->  	$(PERL) $(srctree)/scripts/namespace.pl
->  
-> diff --git a/scripts/spatch.sh b/scripts/spatch.sh
-> new file mode 100755
-> index 0000000..bdcca15
-> --- /dev/null
-> +++ b/scripts/spatch.sh
-> @@ -0,0 +1,14 @@
-> +#!/bin/sh
-> +
-> +SPATCH="$1"
-> +MODE="$2"
-> +COCCI="$3"
-> +DIR="$4"
-> +
-> +OPT=`grep "Option" $COCCI | cut -d':' -f2`
-> +FILE=`echo $COCCI | sed "s|$DIR/||"`
-> +
-> +echo Processing `basename $COCCI` with \"$OPT\"
-> +echo Message example to submit a patch:
-> +grep "^///" $COCCI | sed "s|///||" | sed "s|THISFILE|$FILE|"
-
-echo "The semantic patch that makes this change is available"
-echo "in $FILE"
-
-Then you don't need to add the same comment to each of the *.cocci
-files. Also is it necessary to advertise
-
-"More information about semantic patching is available at
- http://coccinelle.lip6.fr/"
-
-before processing each *.cocci file? If you want the banner, you could
-append it to the "Please check for false positives..." text printed once
-in the beginning.
+2010/4/27 John Kacur <jkacur@redhat.com>:
+>
+>
+> On Tue, 27 Apr 2010, Arnd Bergmann wrote:
+>
+>> On Tuesday 27 April 2010, John Kacur wrote:
+>> > These are bkl pushdowns from Arnd that conflicted with
+>> > Linus's "Preparation for BKL'ed ioctl removal patch". I fixed-up the merge
+>> > conflicts. In addition - during allyesconfig compile testing on x86_64 I found
+>> > a number of issues that I fixed-up
+>>
+>> Thanks for catching the scsi bugs! It was getting late yesterday night, so
+>> I didn't go through a full allyesconfig then.
+>>
+>> > I pushed these to my own new linus-bkl tree.
+>> > git://www.kernel.org/pub/scm/linux/kernel/git/jkacur/jk-2.6.git linux-bkl
+>> >
+>> > Frederic, if you want to grab those, pls do so. also, we might want to combine
+>> > my compile fixes with Arnd's push-down patches, for better git bisectability.
+>>
+>> Yes, your fixes (except the v4l2 patch, see comment there) should best be
+>> merged into the main patches.
+>>
+>> The idea was that if we manage to kill all fops->ioctl users right away,
+>> we wouldn't even need Linus' patch and move to dungeon level 2 directly.
+>> Either way works for me though.
+>>
+>> Should we just split up the rest? If you, Frederic and me each take one
+>> of these chunks, we're done. According to the diffstat from Linus' patch,
+>> this is what's left:
+>
+> Okay - good plan. I AM trying to balance doing my own day-to-day work,
+> and writing slides for a conference but I'm sure you and Frederic are
+>  just as pressed for time as me, so lets go-ahead and divide it up!
+> That will prevent us from doing redundant work.
+> I assume the target is 2.6.35 so, we have a little bit of time anyway.
+>
+> I suggest we divide up a) and b) first and postone c) until the first
+> parts are done.
+>
+> Arranging our names by alphabetical order and shuffling the files
+> off one at a time (for variety), I get this. Is everybody happy with that?
+> 36 files / 3 = 12 files each.
+> Jan - speak up if you want in.
+>
+> Arnd
+> ----
+> arch/cris/arch-v10/drivers/ds1302.c
+> arch/cris/arch-v10/drivers/pcf8563.c
+> arch/cris/arch-v32/drivers/i2c.c
+> arch/cris/arch-v32/drivers/pcf8563.c
+> arch/ia64/sn/kernel/sn2/sn_hwperf.c
+> arch/m68k/mvme16x/rtc.c
+> arch/um/drivers/mmapper_kern.c
+> fs/coda/psdev.c
+> fs/hfsplus/dir.c
+> fs/logfs/file.c
+> fs/ntfs/dir.c
+> fs/smbfs/file.c
+>
+> Frederic
+> --------
+> arch/cris/arch-v10/drivers/gpio.c
+> arch/cris/arch-v10/drivers/sync_serial.c
+> arch/cris/arch-v32/drivers/mach-a3/gpio.c
+> arch/cris/arch-v32/drivers/sync_serial.c
+> arch/m68k/bvme6000/rtc.c
+> arch/um/drivers/harddog_kern.c
+> fs/autofs/root.c
+> fs/fat/dir.c
+> fs/hfsplus/inode.c
+> fs/ncpfs/dir.c
+> fs/ntfs/file.c
+> fs/udf/dir.c
 
 
-> +$SPATCH -D $MODE -very_quiet -sp_file $COCCI $OPT -dir $DIR
 
-You can also print the URL here if the spatch command is not available.
-
-Michal
+Ok :)
