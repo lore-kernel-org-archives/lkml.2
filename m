@@ -1,128 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab0D0Nl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 09:41:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29430 "EHLO mx1.redhat.com"
+	id S1756000Ab0D0Nl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 09:41:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2069 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755843Ab0D0Nlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755908Ab0D0Nlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Apr 2010 09:41:47 -0400
-Date: Tue, 27 Apr 2010 10:35:43 -0300
+Date: Tue, 27 Apr 2010 10:28:07 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
 To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com
-Subject: Re: [PATCH 5/6] Try using new kvm clock msrs
-Message-ID: <20100427133543.GD18410@amt.cnet>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+       Jeremy Fitzhardinge <jeremy@goop.org>,
+       Zachary Amsden <zamsden@redhat.com>
+Subject: Re: [PATCH 2/6] Add a global synchronization point for pvclock
+Message-ID: <20100427132807.GB18410@amt.cnet>
 References: <1272303988-21929-1-git-send-email-glommer@redhat.com>
  <1272303988-21929-2-git-send-email-glommer@redhat.com>
  <1272303988-21929-3-git-send-email-glommer@redhat.com>
- <1272303988-21929-4-git-send-email-glommer@redhat.com>
- <1272303988-21929-5-git-send-email-glommer@redhat.com>
- <1272303988-21929-6-git-send-email-glommer@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1272303988-21929-6-git-send-email-glommer@redhat.com>
+In-Reply-To: <1272303988-21929-3-git-send-email-glommer@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 01:46:27PM -0400, Glauber Costa wrote:
-> We now added a new set of clock-related msrs in replacement of the old
-> ones. In theory, we could just try to use them and get a return value
-> indicating they do not exist, due to our use of kvm_write_msr_save.
+On Mon, Apr 26, 2010 at 01:46:24PM -0400, Glauber Costa wrote:
+> In recent stress tests, it was found that pvclock-based systems
+> could seriously warp in smp systems. Using ingo's time-warp-test.c,
+> I could trigger a scenario as bad as 1.5mi warps a minute in some systems.
+> (to be fair, it wasn't that bad in most of them). Investigating further, I
+> found out that such warps were caused by the very offset-based calculation
+> pvclock is based on.
 > 
-> However, kvm clock registration happens very early, and if we ever
-> try to write to a non-existant MSR, we raise a lethal #GP, since our
-> idt handlers are not in place yet.
+> This happens even on some machines that report constant_tsc in its tsc flags,
+> specially on multi-socket ones.
 > 
-> So this patch tests for a cpuid feature exported by the host to
-> decide which set of msrs are supported.
+> Two reads of the same kernel timestamp at approx the same time, will likely
+> have tsc timestamped in different occasions too. This means the delta we
+> calculate is unpredictable at best, and can probably be smaller in a cpu
+> that is legitimately reading clock in a forward ocasion.
+> 
+> Some adjustments on the host could make this window less likely to happen,
+> but still, it pretty much poses as an intrinsic problem of the mechanism.
+> 
+> A while ago, I though about using a shared variable anyway, to hold clock
+> last state, but gave up due to the high contention locking was likely
+> to introduce, possibly rendering the thing useless on big machines. I argue,
+> however, that locking is not necessary.
+> 
+> We do a read-and-return sequence in pvclock, and between read and return,
+> the global value can have changed. However, it can only have changed
+> by means of an addition of a positive value. So if we detected that our
+> clock timestamp is less than the current global, we know that we need to
+> return a higher one, even though it is not exactly the one we compared to.
+> 
+> OTOH, if we detect we're greater than the current time source, we atomically
+> replace the value with our new readings. This do causes contention on big
+> boxes (but big here means *BIG*), but it seems like a good trade off, since
+> it provide us with a time source guaranteed to be stable wrt time warps.
+> 
+> After this patch is applied, I don't see a single warp in time during 5 days
+> of execution, in any of the machines I saw them before.
 > 
 > Signed-off-by: Glauber Costa <glommer@redhat.com>
+> CC: Jeremy Fitzhardinge <jeremy@goop.org>
+> CC: Avi Kivity <avi@redhat.com>
+> CC: Marcelo Tosatti <mtosatti@redhat.com>
+> CC: Zachary Amsden <zamsden@redhat.com>
 > ---
->  arch/x86/kernel/kvmclock.c |   56 +++++++++++++++++++++++++++----------------
->  1 files changed, 35 insertions(+), 21 deletions(-)
+>  arch/x86/kernel/pvclock.c |   24 ++++++++++++++++++++++++
+>  1 files changed, 24 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-> index feaeb0d..f2f6aee 100644
-> --- a/arch/x86/kernel/kvmclock.c
-> +++ b/arch/x86/kernel/kvmclock.c
-> @@ -29,6 +29,8 @@
->  #define KVM_SCALE 22
->  
->  static int kvmclock = 1;
-> +static int msr_kvm_system_time = MSR_KVM_SYSTEM_TIME;
-> +static int msr_kvm_wall_clock = MSR_KVM_WALL_CLOCK;
->  
->  static int parse_no_kvmclock(char *arg)
->  {
-> @@ -41,6 +43,7 @@ early_param("no-kvmclock", parse_no_kvmclock);
->  static DEFINE_PER_CPU_SHARED_ALIGNED(struct pvclock_vcpu_time_info, hv_clock);
->  static struct pvclock_wall_clock wall_clock;
->  
-> +
-
-Extra newline.
-
->  /*
->   * The wallclock is the time of day when we booted. Since then, some time may
->   * have elapsed since the hypervisor wrote the data. So we try to account for
-> @@ -54,7 +57,8 @@ static unsigned long kvm_get_wallclock(void)
->  
->  	low = (int)__pa_symbol(&wall_clock);
->  	high = ((u64)__pa_symbol(&wall_clock) >> 32);
-> -	native_write_msr(MSR_KVM_WALL_CLOCK, low, high);
-> +
-> +	native_write_msr_safe(msr_kvm_wall_clock, low, high);
->  
->  	vcpu_time = &get_cpu_var(hv_clock);
->  	pvclock_read_wallclock(&wall_clock, vcpu_time, &ts);
-> @@ -130,7 +134,8 @@ static int kvm_register_clock(char *txt)
->  	high = ((u64)__pa(&per_cpu(hv_clock, cpu)) >> 32);
->  	printk(KERN_INFO "kvm-clock: cpu %d, msr %x:%x, %s\n",
->  	       cpu, high, low, txt);
-> -	return native_write_msr_safe(MSR_KVM_SYSTEM_TIME, low, high);
-> +
-> +	return native_write_msr_safe(msr_kvm_system_time, low, high);
+> diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
+> index 8f4af7b..6cf6dec 100644
+> --- a/arch/x86/kernel/pvclock.c
+> +++ b/arch/x86/kernel/pvclock.c
+> @@ -118,11 +118,14 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src)
+>  	return pv_tsc_khz;
 >  }
 >  
->  #ifdef CONFIG_X86_LOCAL_APIC
-> @@ -165,14 +170,15 @@ static void __init kvm_smp_prepare_boot_cpu(void)
->  #ifdef CONFIG_KEXEC
->  static void kvm_crash_shutdown(struct pt_regs *regs)
->  {
-> -	native_write_msr_safe(MSR_KVM_SYSTEM_TIME, 0, 0);
+> +static atomic64_t last_value = ATOMIC64_INIT(0);
 > +
-> +	native_write_msr(msr_kvm_system_time, 0, 0);
->  	native_machine_crash_shutdown(regs);
->  }
->  #endif
->  
->  static void kvm_shutdown(void)
+>  cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
 >  {
-> -	native_write_msr_safe(MSR_KVM_SYSTEM_TIME, 0, 0);
-> +	native_write_msr(msr_kvm_system_time, 0, 0);
->  	native_machine_shutdown();
->  }
+>  	struct pvclock_shadow_time shadow;
+>  	unsigned version;
+>  	cycle_t ret, offset;
+> +	u64 last;
 >  
-> @@ -181,27 +187,35 @@ void __init kvmclock_init(void)
->  	if (!kvm_para_available())
->  		return;
+>  	do {
+>  		version = pvclock_get_time_values(&shadow, src);
+> @@ -132,6 +135,27 @@ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
+>  		barrier();
+>  	} while (version != src->version);
 >  
-> -	if (kvmclock && kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE)) {
-> -		if (kvm_register_clock("boot clock"))
-> -			return;
-> -		pv_time_ops.sched_clock = kvm_clock_read;
-> -		x86_platform.calibrate_tsc = kvm_get_tsc_khz;
-> -		x86_platform.get_wallclock = kvm_get_wallclock;
-> -		x86_platform.set_wallclock = kvm_set_wallclock;
-> +	if (kvmclock && kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE2)) {
-> +		msr_kvm_system_time = MSR_KVM_SYSTEM_TIME_NEW;
-> +		msr_kvm_wall_clock = MSR_KVM_WALL_CLOCK_NEW;
-> +	}
-> +	else if (!(kvmclock && kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE)))
-> +		return;
+> +	/*
+> +	 * Assumption here is that last_value, a global accumulator, always goes
+> +	 * forward. If we are less than that, we should not be much smaller.
+> +	 * We assume there is an error marging we're inside, and then the correction
+> +	 * does not sacrifice accuracy.
+> +	 *
+> +	 * For reads: global may have changed between test and return,
+> +	 * but this means someone else updated poked the clock at a later time.
+> +	 * We just need to make sure we are not seeing a backwards event.
+> +	 *
+> +	 * For updates: last_value = ret is not enough, since two vcpus could be
+> +	 * updating at the same time, and one of them could be slightly behind,
+> +	 * making the assumption that last_value always go forward fail to hold.
+> +	 */
+> +	last = atomic64_read(&last_value);
+> +	do {
+> +		if (ret < last)
+> +			return last;
+> +		last = atomic64_cmpxchg(&last_value, last, ret);
+> +	} while (unlikely(last != ret));
 
-Non conformant indentation.
+Wraparound?
 
