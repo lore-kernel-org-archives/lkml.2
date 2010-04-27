@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab0D0GoL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 02:44:11 -0400
+	id S1753349Ab0D0Gnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 02:43:40 -0400
 Received: from mga09.intel.com ([134.134.136.24]:2242 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753090Ab0D0Gnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 02:43:32 -0400
+	id S1753135Ab0D0Gne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 02:43:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,278,1270450800"; 
-   d="scan'208";a="616765519"
+   d="scan'208";a="616765526"
 From: Huang Ying <ying.huang@intel.com>
 To: lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 11/12] ACPI, APEI, Error Record Serialization Table (ERST) support
-Date: Tue, 27 Apr 2010 14:41:20 +0800
-Message-Id: <1272350481-27951-12-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 12/12] ACPI, APEI, Use ERST for persistent storage of MCE
+Date: Tue, 27 Apr 2010 14:41:21 +0800
+Message-Id: <1272350481-27951-13-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
 References: <1272350481-27951-1-git-send-email-ying.huang@intel.com>
@@ -23,936 +23,303 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ERST is a way provided by APEI to save and retrieve hardware error
-record to and from some simple persistent storage (such as flash).
+Traditionally, fatal MCE will cause Linux print error log to console
+then reboot. Because MCE registers will preserve their content after
+warm reboot, the hardware error can be logged to disk or network after
+reboot. But system may fail to warm reboot, then you may lose the
+hardware error log. ERST can help here. Through saving the hardware
+error log into flash via ERST before go panic, the hardware error log
+can be gotten from the flash after system boot successful again.
 
-The Linux kernel support implementation is quite simple and workable
-in NMI context. So it can be used to save hardware error record into
-flash in hardware error exception or NMI handler, where other more
-complex persistent storage such as disk is not usable. After saving
-hardware error records via ERST in hardware error exception or NMI
-handler, the error records can be retrieved and logged into disk or
-network after a clean reboot.
+The fatal MCE processing procedure with ERST involved is as follow:
 
-For more information about ERST, please refer to ACPI Specification
-version 4.0, section 17.4.
+- Hardware detect error, MCE raised
+- MCE read MCE registers, check error severity (fatal), prepare error record
+- Write MCE error record into flash via ERST
+- Go panic, then trigger system reboot
+- System reboot, /sbin/mcelog run, it reads /dev/mcelog to check flash
+  for error record of previous boot via ERST, and output and clear
+  them if available
+- /sbin/mcelog logs error records into disk or network
+
+ERST only accepts CPER record format, but there is no pre-defined CPER
+section can accommodate all information in struct mce, so a customized
+section type is defined to hold struct mce inside a CPER record as an
+error section.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- Documentation/kernel-parameters.txt |    4 
- drivers/acpi/apei/Makefile          |    2 
- drivers/acpi/apei/erst.c            |  852 ++++++++++++++++++++++++++++++++++++
- include/acpi/apei.h                 |   21 
- 4 files changed, 878 insertions(+), 1 deletion(-)
- create mode 100644 drivers/acpi/apei/erst.c
+ arch/x86/kernel/cpu/mcheck/mce-apei.c     |   86 ++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/mcheck/mce-internal.h |   23 ++++++++
+ arch/x86/kernel/cpu/mcheck/mce.c          |   79 +++++++++++++++++++++++----
+ 3 files changed, 177 insertions(+), 11 deletions(-)
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -750,6 +750,10 @@ and is between 256 and 4096 characters.
- 			Default value is 0.
- 			Value can be changed at runtime via /selinux/enforce.
- 
-+	erst_disable	[ACPI]
-+			Disable Error Record Serialization Table (ERST)
-+			support.
-+
- 	ether=		[HW,NET] Ethernet cards parameters
- 			This option is obsoleted by the "netdev=" option, which
- 			has equivalent usage. See its documentation for details.
---- a/drivers/acpi/apei/Makefile
-+++ b/drivers/acpi/apei/Makefile
-@@ -2,4 +2,4 @@ obj-$(CONFIG_ACPI_APEI)		+= apei.o
- obj-$(CONFIG_ACPI_APEI_GHES)	+= ghes.o
- obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
- 
--apei-y := apei-base.o hest.o cper.o
-+apei-y := apei-base.o hest.o cper.o erst.o
---- /dev/null
-+++ b/drivers/acpi/apei/erst.c
-@@ -0,0 +1,852 @@
-+/*
-+ * APEI Error Record Serialization Table support
+--- a/arch/x86/kernel/cpu/mcheck/mce-apei.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
+@@ -8,6 +8,9 @@
+  * the error memory page can be offlined by /sbin/mcelog if the error
+  * count for one page is beyond the threshold.
+  *
++ * For fatal MCE, save MCE record into persistent storage via ERST, so
++ * that the MCE record can be logged after reboot via ERST.
 + *
-+ * ERST is a way provided by APEI to save and retrieve hardware error
-+ * infomation to and from a persistent store.
-+ *
-+ * For more information about ERST, please refer to ACPI Specification
-+ * version 4.0, section 17.4.
-+ *
-+ * Copyright 2010 Intel Corp.
-+ *   Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
+  * Copyright 2010 Intel Corp.
+  *   Author: Huang Ying <ying.huang@intel.com>
+  *
+@@ -50,3 +53,86 @@ void apei_mce_report_mem_error(int corre
+ 	mce_notify_irq();
+ }
+ EXPORT_SYMBOL_GPL(apei_mce_report_mem_error);
 +
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/acpi.h>
-+#include <linux/uaccess.h>
-+#include <linux/cper.h>
-+#include <linux/nmi.h>
-+#include <acpi/apei.h>
-+
-+#include "apei-internal.h"
-+
-+#define ERST_PFX "ERST: "
-+
-+/* ERST command status */
-+#define ERST_STATUS_SUCCESS			0x0
-+#define ERST_STATUS_NOT_ENOUGH_SPACE		0x1
-+#define ERST_STATUS_HARDWARE_NOT_AVAILABLE	0x2
-+#define ERST_STATUS_FAILED			0x3
-+#define ERST_STATUS_RECORD_STORE_EMPTY		0x4
-+#define ERST_STATUS_RECORD_NOT_FOUND		0x5
-+
-+#define ERST_TAB_ENTRY(tab)						\
-+	((struct acpi_whea_header *)((char *)(tab) +			\
-+				     sizeof(struct acpi_table_erst)))
-+
-+#define SPIN_UNIT		100			/* 100ns */
-+/* Firmware should respond within 1 miliseconds */
-+#define FIRMWARE_TIMEOUT	(1 * NSEC_PER_MSEC)
-+#define FIRMWARE_MAX_STALL	50			/* 50us */
-+
-+int erst_disable;
-+EXPORT_SYMBOL_GPL(erst_disable);
-+
-+static struct acpi_table_erst *erst_tab;
-+
-+/* ERST Error Log Address Range atrributes */
-+#define ERST_RANGE_RESERVED	0x0001
-+#define ERST_RANGE_NVRAM	0x0002
-+#define ERST_RANGE_SLOW		0x0004
++#define CPER_CREATOR_MCE						\
++	UUID_LE(0x75a574e3, 0x5052, 0x4b29, 0x8a, 0x8e, 0xbe, 0x2c,	\
++		0x64, 0x90, 0xb8, 0x9d)
++#define CPER_SECTION_TYPE_MCE						\
++	UUID_LE(0xfe08ffbe, 0x95e4, 0x4be7, 0xbc, 0x73, 0x40, 0x96,	\
++		0x04, 0x4a, 0x38, 0xfc)
 +
 +/*
-+ * ERST Error Log Address Range, used as buffer for reading/writing
-+ * error records.
++ * CPER specification (in UEFI specification 2.3 appendix N) requires
++ * byte-packed.
 + */
-+static struct erst_erange {
-+	u64 base;
-+	u64 size;
-+	void __iomem *vaddr;
-+	u32 attr;
-+} erst_erange;
++struct cper_mce_record {
++	struct cper_record_header hdr;
++	struct cper_section_descriptor sec_hdr;
++	struct mce mce;
++} __packed;
 +
-+/*
-+ * Prevent ERST interpreter to run simultaneously, because the
-+ * corresponding firmware implementation may not work properly when
-+ * invoked simultaneously.
-+ *
-+ * It is used to provide exclusive accessing for ERST Error Log
-+ * Address Range too.
-+ */
-+static DEFINE_SPINLOCK(erst_lock);
-+
-+static inline int erst_errno(int command_status)
++int apei_write_mce(struct mce *m)
 +{
-+	switch (command_status) {
-+	case ERST_STATUS_SUCCESS:
-+		return 0;
-+	case ERST_STATUS_HARDWARE_NOT_AVAILABLE:
-+		return -ENODEV;
-+	case ERST_STATUS_NOT_ENOUGH_SPACE:
-+		return -ENOSPC;
-+	case ERST_STATUS_RECORD_STORE_EMPTY:
-+	case ERST_STATUS_RECORD_NOT_FOUND:
-+		return -ENOENT;
-+	default:
-+		return -EINVAL;
-+	}
++	struct cper_mce_record rcd;
++
++	memset(&rcd, 0, sizeof(rcd));
++	memcpy(rcd.hdr.signature, CPER_SIG_RECORD, CPER_SIG_SIZE);
++	rcd.hdr.revision = CPER_RECORD_REV;
++	rcd.hdr.signature_end = CPER_SIG_END;
++	rcd.hdr.section_count = 1;
++	rcd.hdr.error_severity = CPER_SER_FATAL;
++	/* timestamp, platform_id, partition_id are all invalid */
++	rcd.hdr.validation_bits = 0;
++	rcd.hdr.record_length = sizeof(rcd);
++	rcd.hdr.creator_id = CPER_CREATOR_MCE;
++	rcd.hdr.notification_type = CPER_NOTIFY_MCE;
++	rcd.hdr.record_id = cper_next_record_id();
++	rcd.hdr.flags = CPER_HW_ERROR_FLAGS_PREVERR;
++
++	rcd.sec_hdr.section_offset = (void *)&rcd.mce - (void *)&rcd;
++	rcd.sec_hdr.section_length = sizeof(rcd.mce);
++	rcd.sec_hdr.revision = CPER_SEC_REV;
++	/* fru_id and fru_text is invalid */
++	rcd.sec_hdr.validation_bits = 0;
++	rcd.sec_hdr.flags = CPER_SEC_PRIMARY;
++	rcd.sec_hdr.section_type = CPER_SECTION_TYPE_MCE;
++	rcd.sec_hdr.section_severity = CPER_SER_FATAL;
++
++	memcpy(&rcd.mce, m, sizeof(*m));
++
++	return erst_write(&rcd.hdr);
 +}
 +
-+static int erst_timedout(u64 *t, u64 spin_unit)
++ssize_t apei_read_mce(struct mce *m, u64 *record_id)
 +{
-+	if ((s64)*t < spin_unit) {
-+		pr_warning(FW_WARN ERST_PFX
-+			   "Firmware does not respond in time\n");
-+		return 1;
-+	}
-+	*t -= spin_unit;
-+	ndelay(spin_unit);
-+	touch_nmi_watchdog();
-+	return 0;
-+}
-+
-+static int erst_exec_load_var1(struct apei_exec_context *ctx,
-+			       struct acpi_whea_header *entry)
-+{
-+	return __apei_exec_read_register(entry, &ctx->var1);
-+}
-+
-+static int erst_exec_load_var2(struct apei_exec_context *ctx,
-+			       struct acpi_whea_header *entry)
-+{
-+	return __apei_exec_read_register(entry, &ctx->var2);
-+}
-+
-+static int erst_exec_store_var1(struct apei_exec_context *ctx,
-+				struct acpi_whea_header *entry)
-+{
-+	return __apei_exec_write_register(entry, ctx->var1);
-+}
-+
-+static int erst_exec_add(struct apei_exec_context *ctx,
-+			 struct acpi_whea_header *entry)
-+{
-+	ctx->var1 += ctx->var2;
-+	return 0;
-+}
-+
-+static int erst_exec_subtract(struct apei_exec_context *ctx,
-+			      struct acpi_whea_header *entry)
-+{
-+	ctx->var1 -= ctx->var2;
-+	return 0;
-+}
-+
-+static int erst_exec_add_value(struct apei_exec_context *ctx,
-+			       struct acpi_whea_header *entry)
-+{
-+	int rc;
-+	u64 val;
-+
-+	rc = __apei_exec_read_register(entry, &val);
-+	if (rc)
-+		return rc;
-+	val += ctx->value;
-+	rc = __apei_exec_write_register(entry, val);
-+	return rc;
-+}
-+
-+static int erst_exec_subtract_value(struct apei_exec_context *ctx,
-+				    struct acpi_whea_header *entry)
-+{
-+	int rc;
-+	u64 val;
-+
-+	rc = __apei_exec_read_register(entry, &val);
-+	if (rc)
-+		return rc;
-+	val -= ctx->value;
-+	rc = __apei_exec_write_register(entry, val);
-+	return rc;
-+}
-+
-+static int erst_exec_stall(struct apei_exec_context *ctx,
-+			   struct acpi_whea_header *entry)
-+{
-+	u64 stall_time;
-+
-+	if (ctx->value > FIRMWARE_MAX_STALL) {
-+		if (!in_nmi())
-+			pr_warning(FW_WARN ERST_PFX
-+			"Too long stall time for stall instruction: %llx.\n",
-+				   ctx->value);
-+		stall_time = FIRMWARE_MAX_STALL;
-+	} else
-+		stall_time = ctx->value;
-+	udelay(stall_time);
-+	return 0;
-+}
-+
-+static int erst_exec_stall_while_true(struct apei_exec_context *ctx,
-+				      struct acpi_whea_header *entry)
-+{
-+	int rc;
-+	u64 val;
-+	u64 timeout = FIRMWARE_TIMEOUT;
-+	u64 stall_time;
-+
-+	if (ctx->var1 > FIRMWARE_MAX_STALL) {
-+		if (!in_nmi())
-+			pr_warning(FW_WARN ERST_PFX
-+		"Too long stall time for stall while true instruction: %llx.\n",
-+				   ctx->var1);
-+		stall_time = FIRMWARE_MAX_STALL;
-+	} else
-+		stall_time = ctx->var1;
-+
-+	for (;;) {
-+		rc = __apei_exec_read_register(entry, &val);
-+		if (rc)
-+			return rc;
-+		if (val != ctx->value)
-+			break;
-+		if (erst_timedout(&timeout, stall_time * NSEC_PER_USEC))
-+			return -EIO;
-+	}
-+	return 0;
-+}
-+
-+static int erst_exec_skip_next_instruction_if_true(
-+	struct apei_exec_context *ctx,
-+	struct acpi_whea_header *entry)
-+{
-+	int rc;
-+	u64 val;
-+
-+	rc = __apei_exec_read_register(entry, &val);
-+	if (rc)
-+		return rc;
-+	if (val == ctx->value) {
-+		ctx->ip += 2;
-+		return APEI_EXEC_SET_IP;
-+	}
-+
-+	return 0;
-+}
-+
-+static int erst_exec_goto(struct apei_exec_context *ctx,
-+			  struct acpi_whea_header *entry)
-+{
-+	ctx->ip = ctx->value;
-+	return APEI_EXEC_SET_IP;
-+}
-+
-+static int erst_exec_set_src_address_base(struct apei_exec_context *ctx,
-+					  struct acpi_whea_header *entry)
-+{
-+	return __apei_exec_read_register(entry, &ctx->src_base);
-+}
-+
-+static int erst_exec_set_dst_address_base(struct apei_exec_context *ctx,
-+					  struct acpi_whea_header *entry)
-+{
-+	return __apei_exec_read_register(entry, &ctx->dst_base);
-+}
-+
-+static int erst_exec_move_data(struct apei_exec_context *ctx,
-+			       struct acpi_whea_header *entry)
-+{
-+	int rc;
-+	u64 offset;
-+
-+	rc = __apei_exec_read_register(entry, &offset);
-+	if (rc)
-+		return rc;
-+	memmove((void *)ctx->dst_base + offset,
-+		(void *)ctx->src_base + offset,
-+		ctx->var2);
-+
-+	return 0;
-+}
-+
-+static struct apei_exec_ins_type erst_ins_type[] = {
-+	[ACPI_ERST_READ_REGISTER] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = apei_exec_read_register,
-+	},
-+	[ACPI_ERST_READ_REGISTER_VALUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = apei_exec_read_register_value,
-+	},
-+	[ACPI_ERST_WRITE_REGISTER] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = apei_exec_write_register,
-+	},
-+	[ACPI_ERST_WRITE_REGISTER_VALUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = apei_exec_write_register_value,
-+	},
-+	[ACPI_ERST_NOOP] = {
-+		.flags = 0,
-+		.run = apei_exec_noop,
-+	},
-+	[ACPI_ERST_LOAD_VAR1] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_load_var1,
-+	},
-+	[ACPI_ERST_LOAD_VAR2] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_load_var2,
-+	},
-+	[ACPI_ERST_STORE_VAR1] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_store_var1,
-+	},
-+	[ACPI_ERST_ADD] = {
-+		.flags = 0,
-+		.run = erst_exec_add,
-+	},
-+	[ACPI_ERST_SUBTRACT] = {
-+		.flags = 0,
-+		.run = erst_exec_subtract,
-+	},
-+	[ACPI_ERST_ADD_VALUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_add_value,
-+	},
-+	[ACPI_ERST_SUBTRACT_VALUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_subtract_value,
-+	},
-+	[ACPI_ERST_STALL] = {
-+		.flags = 0,
-+		.run = erst_exec_stall,
-+	},
-+	[ACPI_ERST_STALL_WHILE_TRUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_stall_while_true,
-+	},
-+	[ACPI_ERST_SKIP_NEXT_IF_TRUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_skip_next_instruction_if_true,
-+	},
-+	[ACPI_ERST_GOTO] = {
-+		.flags = 0,
-+		.run = erst_exec_goto,
-+	},
-+	[ACPI_ERST_SET_SRC_ADDRESS_BASE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_set_src_address_base,
-+	},
-+	[ACPI_ERST_SET_DST_ADDRESS_BASE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_set_dst_address_base,
-+	},
-+	[ACPI_ERST_MOVE_DATA] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_move_data,
-+	},
-+};
-+
-+static inline void erst_exec_ctx_init(struct apei_exec_context *ctx)
-+{
-+	apei_exec_ctx_init(ctx, erst_ins_type, ARRAY_SIZE(erst_ins_type),
-+			   ERST_TAB_ENTRY(erst_tab), erst_tab->entries);
-+}
-+
-+static int erst_get_erange(struct erst_erange *range)
-+{
-+	struct apei_exec_context ctx;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_ERROR_RANGE);
-+	if (rc)
-+		return rc;
-+	range->base = apei_exec_ctx_get_output(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_ERROR_LENGTH);
-+	if (rc)
-+		return rc;
-+	range->size = apei_exec_ctx_get_output(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_ERROR_ATTRIBUTES);
-+	if (rc)
-+		return rc;
-+	range->attr = apei_exec_ctx_get_output(&ctx);
-+
-+	return 0;
-+}
-+
-+static ssize_t __erst_get_record_count(void)
-+{
-+	struct apei_exec_context ctx;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_RECORD_COUNT);
-+	if (rc)
-+		return rc;
-+	return apei_exec_ctx_get_output(&ctx);
-+}
-+
-+ssize_t erst_get_record_count(void)
-+{
-+	ssize_t count;
-+	unsigned long flags;
-+
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&erst_lock, flags);
-+	count = __erst_get_record_count();
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+
-+	return count;
-+}
-+EXPORT_SYMBOL_GPL(erst_get_record_count);
-+
-+static int __erst_get_next_record_id(u64 *record_id)
-+{
-+	struct apei_exec_context ctx;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_RECORD_ID);
-+	if (rc)
-+		return rc;
-+	*record_id = apei_exec_ctx_get_output(&ctx);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Get the record ID of an existing error record on the persistent
-+ * storage. If there is no error record on the persistent storage, the
-+ * returned record_id is APEI_ERST_INVALID_RECORD_ID.
-+ */
-+int erst_get_next_record_id(u64 *record_id)
-+{
-+	int rc;
-+	unsigned long flags;
-+
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&erst_lock, flags);
-+	rc = __erst_get_next_record_id(record_id);
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(erst_get_next_record_id);
-+
-+static int __erst_write_to_storage(u64 offset)
-+{
-+	struct apei_exec_context ctx;
-+	u64 timeout = FIRMWARE_TIMEOUT;
-+	u64 val;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_WRITE);
-+	if (rc)
-+		return rc;
-+	apei_exec_ctx_set_input(&ctx, offset);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_OFFSET);
-+	if (rc)
-+		return rc;
-+	rc = apei_exec_run(&ctx, ACPI_ERST_EXECUTE_OPERATION);
-+	if (rc)
-+		return rc;
-+	for (;;) {
-+		rc = apei_exec_run(&ctx, ACPI_ERST_CHECK_BUSY_STATUS);
-+		if (rc)
-+			return rc;
-+		val = apei_exec_ctx_get_output(&ctx);
-+		if (!val)
-+			break;
-+		if (erst_timedout(&timeout, SPIN_UNIT))
-+			return -EIO;
-+	}
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_COMMAND_STATUS);
-+	if (rc)
-+		return rc;
-+	val = apei_exec_ctx_get_output(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	if (rc)
-+		return rc;
-+
-+	return erst_errno(val);
-+}
-+
-+static int __erst_read_from_storage(u64 record_id, u64 offset)
-+{
-+	struct apei_exec_context ctx;
-+	u64 timeout = FIRMWARE_TIMEOUT;
-+	u64 val;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_READ);
-+	if (rc)
-+		return rc;
-+	apei_exec_ctx_set_input(&ctx, offset);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_OFFSET);
-+	if (rc)
-+		return rc;
-+	apei_exec_ctx_set_input(&ctx, record_id);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_ID);
-+	if (rc)
-+		return rc;
-+	rc = apei_exec_run(&ctx, ACPI_ERST_EXECUTE_OPERATION);
-+	if (rc)
-+		return rc;
-+	for (;;) {
-+		rc = apei_exec_run(&ctx, ACPI_ERST_CHECK_BUSY_STATUS);
-+		if (rc)
-+			return rc;
-+		val = apei_exec_ctx_get_output(&ctx);
-+		if (!val)
-+			break;
-+		if (erst_timedout(&timeout, SPIN_UNIT))
-+			return -EIO;
-+	};
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_COMMAND_STATUS);
-+	if (rc)
-+		return rc;
-+	val = apei_exec_ctx_get_output(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	if (rc)
-+		return rc;
-+
-+	return erst_errno(val);
-+}
-+
-+static int __erst_clear_from_storage(u64 record_id)
-+{
-+	struct apei_exec_context ctx;
-+	u64 timeout = FIRMWARE_TIMEOUT;
-+	u64 val;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_CLEAR);
-+	if (rc)
-+		return rc;
-+	apei_exec_ctx_set_input(&ctx, record_id);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_ID);
-+	if (rc)
-+		return rc;
-+	rc = apei_exec_run(&ctx, ACPI_ERST_EXECUTE_OPERATION);
-+	if (rc)
-+		return rc;
-+	for (;;) {
-+		rc = apei_exec_run(&ctx, ACPI_ERST_CHECK_BUSY_STATUS);
-+		if (rc)
-+			return rc;
-+		val = apei_exec_ctx_get_output(&ctx);
-+		if (!val)
-+			break;
-+		if (erst_timedout(&timeout, SPIN_UNIT))
-+			return -EIO;
-+	}
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_COMMAND_STATUS);
-+	if (rc)
-+		return rc;
-+	val = apei_exec_ctx_get_output(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	if (rc)
-+		return rc;
-+
-+	return erst_errno(val);
-+}
-+
-+/* NVRAM ERST Error Log Address Range is not supported yet */
-+static void pr_unimpl_nvram(void)
-+{
-+	if (printk_ratelimit())
-+		pr_warning(ERST_PFX
-+		"NVRAM ERST Log Address Range is not implemented yet\n");
-+}
-+
-+static int __erst_write_to_nvram(const struct cper_record_header *record)
-+{
-+	/* do not print message, because printk is not safe for NMI */
-+	return -ENOSYS;
-+}
-+
-+static int __erst_read_to_erange_from_nvram(u64 record_id, u64 *offset)
-+{
-+	pr_unimpl_nvram();
-+	return -ENOSYS;
-+}
-+
-+static int __erst_clear_from_nvram(u64 record_id)
-+{
-+	pr_unimpl_nvram();
-+	return -ENOSYS;
-+}
-+
-+int erst_write(const struct cper_record_header *record)
-+{
-+	int rc;
-+	unsigned long flags;
-+	struct cper_record_header *rcd_erange;
-+
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	if (memcmp(record->signature, CPER_SIG_RECORD, CPER_SIG_SIZE))
-+		return -EINVAL;
-+
-+	if (erst_erange.attr & ERST_RANGE_NVRAM) {
-+		if (!spin_trylock_irqsave(&erst_lock, flags))
-+			return -EBUSY;
-+		rc = __erst_write_to_nvram(record);
-+		spin_unlock_irqrestore(&erst_lock, flags);
-+		return rc;
-+	}
-+
-+	if (record->record_length > erst_erange.size)
-+		return -EINVAL;
-+
-+	if (!spin_trylock_irqsave(&erst_lock, flags))
-+		return -EBUSY;
-+	memcpy(erst_erange.vaddr, record, record->record_length);
-+	rcd_erange = erst_erange.vaddr;
-+	/* signature for serialization system */
-+	memcpy(&rcd_erange->persistence_information, "ER", 2);
-+
-+	rc = __erst_write_to_storage(0);
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(erst_write);
-+
-+static int __erst_read_to_erange(u64 record_id, u64 *offset)
-+{
-+	int rc;
-+
-+	if (erst_erange.attr & ERST_RANGE_NVRAM)
-+		return __erst_read_to_erange_from_nvram(
-+			record_id, offset);
-+
-+	rc = __erst_read_from_storage(record_id, 0);
-+	if (rc)
-+		return rc;
-+	*offset = 0;
-+
-+	return 0;
-+}
-+
-+static ssize_t __erst_read(u64 record_id, struct cper_record_header *record,
-+			   size_t buflen)
-+{
-+	int rc;
-+	u64 offset, len = 0;
-+	struct cper_record_header *rcd_tmp;
-+
-+	rc = __erst_read_to_erange(record_id, &offset);
-+	if (rc)
-+		return rc;
-+	rcd_tmp = erst_erange.vaddr + offset;
-+	len = rcd_tmp->record_length;
-+	if (len <= buflen)
-+		memcpy(record, rcd_tmp, len);
-+
-+	return len;
-+}
-+
-+/*
-+ * If return value > buflen, the buffer size is not big enough,
-+ * else if return value < 0, something goes wrong,
-+ * else everything is OK, and return value is record length
-+ */
-+ssize_t erst_read(u64 record_id, struct cper_record_header *record,
-+		  size_t buflen)
-+{
++	struct cper_mce_record rcd;
 +	ssize_t len;
-+	unsigned long flags;
 +
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&erst_lock, flags);
-+	len = __erst_read(record_id, record, buflen);
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+	return len;
-+}
-+EXPORT_SYMBOL_GPL(erst_read);
-+
-+/*
-+ * If return value > buflen, the buffer size is not big enough,
-+ * else if return value = 0, there is no more record to read,
-+ * else if return value < 0, something goes wrong,
-+ * else everything is OK, and return value is record length
-+ */
-+ssize_t erst_read_next(struct cper_record_header *record, size_t buflen)
-+{
-+	int rc;
-+	ssize_t len;
-+	unsigned long flags;
-+	u64 record_id;
-+
-+	spin_lock_irqsave(&erst_lock, flags);
-+	rc = __erst_get_next_record_id(&record_id);
-+	if (rc) {
-+		spin_unlock_irqrestore(&erst_lock, flags);
-+		return rc;
-+	}
-+	/* no more record */
-+	if (record_id == APEI_ERST_INVALID_RECORD_ID) {
-+		spin_unlock_irqrestore(&erst_lock, flags);
-+		return 0;
++	len = erst_read_next(&rcd.hdr, sizeof(rcd));
++	if (len <= 0)
++		return len;
++	/* Can not skip other records in storage via ERST unless clear them */
++	else if (len != sizeof(rcd) ||
++		 uuid_le_cmp(rcd.hdr.creator_id, CPER_CREATOR_MCE)) {
++		if (printk_ratelimit())
++			pr_warning(
++			"MCE-APEI: Can not skip the unknown record in ERST");
++		return -EIO;
 +	}
 +
-+	len = __erst_read(record_id, record, buflen);
-+	spin_unlock_irqrestore(&erst_lock, flags);
++	memcpy(m, &rcd.mce, sizeof(*m));
++	*record_id = rcd.hdr.record_id;
 +
-+	return len;
++	return sizeof(*m);
 +}
-+EXPORT_SYMBOL_GPL(erst_read_next);
 +
-+int erst_clear(u64 record_id)
++/* Check whether there is record in ERST */
++int apei_check_mce(void)
 +{
-+	int rc;
-+	unsigned long flags;
-+
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&erst_lock, flags);
-+	if (erst_erange.attr & ERST_RANGE_NVRAM)
-+		rc = __erst_clear_from_nvram(record_id);
-+	else
-+		rc = __erst_clear_from_storage(record_id);
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+
-+	return rc;
++	return erst_get_record_count();
 +}
-+EXPORT_SYMBOL_GPL(erst_clear);
 +
-+static int __init setup_erst_disable(char *str)
++int apei_clear_mce(u64 record_id)
 +{
-+	erst_disable = 1;
++	return erst_clear(record_id);
++}
+--- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
++++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
+@@ -28,3 +28,26 @@ extern int mce_ser;
+ 
+ extern struct mce_bank *mce_banks;
+ 
++#ifdef CONFIG_ACPI_APEI
++int apei_write_mce(struct mce *m);
++ssize_t apei_read_mce(struct mce *m, u64 *record_id);
++int apei_check_mce(void);
++int apei_clear_mce(u64 record_id);
++#else
++static inline int apei_write_mce(struct mce *m)
++{
++	return -EINVAL;
++}
++static inline ssize_t apei_read_mce(struct mce *m, u64 *record_id)
++{
 +	return 0;
 +}
-+
-+__setup("erst_disable", setup_erst_disable);
-+
-+static int erst_check_table(struct acpi_table_erst *erst_tab)
++static inline int apei_check_mce(void)
 +{
-+	if (erst_tab->header_length != sizeof(struct acpi_table_erst))
-+		return -EINVAL;
-+	if (erst_tab->header.length < sizeof(struct acpi_table_erst))
-+		return -EINVAL;
-+	if (erst_tab->entries !=
-+	    (erst_tab->header.length - sizeof(struct acpi_table_erst)) /
-+	    sizeof(struct acpi_erst_entry))
-+		return -EINVAL;
-+
 +	return 0;
 +}
-+
-+static int __init erst_init(void)
++static inline int apei_clear_mce(u64 record_id)
 +{
-+	int rc = 0;
-+	acpi_status status;
-+	struct apei_exec_context ctx;
-+	struct apei_resources erst_resources;
-+	struct resource *r;
-+
-+	if (acpi_disabled)
-+		goto err;
-+
-+	if (erst_disable) {
-+		pr_info(ERST_PFX
-+	"Error Record Serialization Table (ERST) support is disabled.\n");
-+		goto err;
-+	}
-+
-+	status = acpi_get_table(ACPI_SIG_ERST, 0,
-+				(struct acpi_table_header **)&erst_tab);
-+	if (status == AE_NOT_FOUND) {
-+		pr_err(ERST_PFX "Table is not found!\n");
-+		goto err;
-+	} else if (ACPI_FAILURE(status)) {
-+		const char *msg = acpi_format_exception(status);
-+		pr_err(ERST_PFX "Failed to get table, %s\n", msg);
-+		rc = -EINVAL;
-+		goto err;
-+	}
-+
-+	rc = erst_check_table(erst_tab);
-+	if (rc) {
-+		pr_err(FW_BUG ERST_PFX "ERST table is invalid\n");
-+		goto err;
-+	}
-+
-+	apei_resources_init(&erst_resources);
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_collect_resources(&ctx, &erst_resources);
-+	if (rc)
-+		goto err_fini;
-+	rc = apei_resources_request(&erst_resources, "APEI ERST");
-+	if (rc)
-+		goto err_fini;
-+	rc = apei_exec_pre_map_gars(&ctx);
-+	if (rc)
-+		goto err_release;
-+	rc = erst_get_erange(&erst_erange);
-+	if (rc) {
-+		if (rc == -ENODEV)
-+			pr_info(ERST_PFX
-+	"The corresponding hardware device or firmware implementation "
-+	"is not available.\n");
-+		else
-+			pr_err(ERST_PFX
-+			       "Failed to get Error Log Address Range.\n");
-+		goto err_unmap_reg;
-+	}
-+
-+	r = request_mem_region(erst_erange.base, erst_erange.size, "APEI ERST");
-+	if (!r) {
-+		pr_err(ERST_PFX
-+		"Can not request iomem region <0x%16llx-0x%16llx> for ERST.\n",
-+		(unsigned long long)erst_erange.base,
-+		(unsigned long long)erst_erange.base + erst_erange.size);
-+		rc = -EIO;
-+		goto err_unmap_reg;
-+	}
-+	rc = -ENOMEM;
-+	erst_erange.vaddr = ioremap_cache(erst_erange.base,
-+					  erst_erange.size);
-+	if (!erst_erange.vaddr)
-+		goto err_release_erange;
-+
-+	pr_info(ERST_PFX
-+	"Error Record Serialization Table (ERST) support is initialized.\n");
-+
-+	return 0;
-+
-+err_release_erange:
-+	release_mem_region(erst_erange.base, erst_erange.size);
-+err_unmap_reg:
-+	apei_exec_post_unmap_gars(&ctx);
-+err_release:
-+	apei_resources_release(&erst_resources);
-+err_fini:
-+	apei_resources_fini(&erst_resources);
-+err:
-+	erst_disable = 1;
-+	return rc;
++	return -EINVAL;
 +}
-+
-+device_initcall(erst_init);
---- a/include/acpi/apei.h
-+++ b/include/acpi/apei.h
-@@ -5,9 +5,30 @@
- #ifndef ACPI_APEI_H
- #define ACPI_APEI_H
- 
-+#include <linux/acpi.h>
-+#include <linux/cper.h>
-+#include <asm/ioctls.h>
-+
-+#define APEI_ERST_INVALID_RECORD_ID	0xffffffffffffffffULL
-+
-+#define APEI_ERST_CLEAR_RECORD		_IOW('E', 1, u64)
-+#define APEI_ERST_GET_RECORD_COUNT	_IOR('E', 2, u32)
-+
-+#ifdef __KERNEL__
-+
- extern int hest_disable;
-+extern int erst_disable;
- 
- typedef int (*apei_hest_func_t)(struct acpi_hest_header *hest_hdr, void *data);
- int apei_hest_parse(apei_hest_func_t func, void *data);
- 
-+int erst_write(const struct cper_record_header *record);
-+ssize_t erst_get_record_count(void);
-+int erst_get_next_record_id(u64 *record_id);
-+ssize_t erst_read(u64 record_id, struct cper_record_header *record,
-+		  size_t buflen);
-+ssize_t erst_read_next(struct cper_record_header *record, size_t buflen);
-+int erst_clear(u64 record_id);
-+
 +#endif
- #endif
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -264,7 +264,7 @@ static void wait_for_panic(void)
+ 
+ static void mce_panic(char *msg, struct mce *final, char *exp)
+ {
+-	int i;
++	int i, apei_err = 0;
+ 
+ 	if (!fake_panic) {
+ 		/*
+@@ -287,8 +287,11 @@ static void mce_panic(char *msg, struct
+ 		struct mce *m = &mcelog.entry[i];
+ 		if (!(m->status & MCI_STATUS_VAL))
+ 			continue;
+-		if (!(m->status & MCI_STATUS_UC))
++		if (!(m->status & MCI_STATUS_UC)) {
+ 			print_mce(m);
++			if (!apei_err)
++				apei_err = apei_write_mce(m);
++		}
+ 	}
+ 	/* Now print uncorrected but with the final one last */
+ 	for (i = 0; i < MCE_LOG_LEN; i++) {
+@@ -297,11 +300,17 @@ static void mce_panic(char *msg, struct
+ 			continue;
+ 		if (!(m->status & MCI_STATUS_UC))
+ 			continue;
+-		if (!final || memcmp(m, final, sizeof(struct mce)))
++		if (!final || memcmp(m, final, sizeof(struct mce))) {
+ 			print_mce(m);
++			if (!apei_err)
++				apei_err = apei_write_mce(m);
++		}
+ 	}
+-	if (final)
++	if (final) {
+ 		print_mce(final);
++		if (!apei_err)
++			apei_err = apei_write_mce(final);
++	}
+ 	if (cpu_missing)
+ 		printk(KERN_EMERG "Some CPUs didn't answer in synchronization\n");
+ 	print_mce_tail();
+@@ -1493,6 +1502,43 @@ static void collect_tscs(void *data)
+ 	rdtscll(cpu_tsc[smp_processor_id()]);
+ }
+ 
++static int mce_apei_read_done;
++
++/* Collect MCE record of previous boot in persistent storage via APEI ERST. */
++static int __mce_read_apei(char __user **ubuf, size_t usize)
++{
++	int rc;
++	u64 record_id;
++	struct mce m;
++
++	if (usize < sizeof(struct mce))
++		return -EINVAL;
++
++	rc = apei_read_mce(&m, &record_id);
++	/* Error or no more MCE record */
++	if (rc <= 0) {
++		mce_apei_read_done = 1;
++		return rc;
++	}
++	rc = -EFAULT;
++	if (copy_to_user(*ubuf, &m, sizeof(struct mce)))
++		return rc;
++	/*
++	 * In fact, we should have cleared the record after that has
++	 * been flushed to the disk or sent to network in
++	 * /sbin/mcelog, but we have no interface to support that now,
++	 * so just clear it to avoid duplication.
++	 */
++	rc = apei_clear_mce(record_id);
++	if (rc) {
++		mce_apei_read_done = 1;
++		return rc;
++	}
++	*ubuf += sizeof(struct mce);
++
++	return 0;
++}
++
+ static ssize_t mce_read(struct file *filp, char __user *ubuf, size_t usize,
+ 			loff_t *off)
+ {
+@@ -1506,15 +1552,19 @@ static ssize_t mce_read(struct file *fil
+ 		return -ENOMEM;
+ 
+ 	mutex_lock(&mce_read_mutex);
++
++	if (!mce_apei_read_done) {
++		err = __mce_read_apei(&buf, usize);
++		if (err || buf != ubuf)
++			goto out;
++	}
++
+ 	next = rcu_dereference_check_mce(mcelog.next);
+ 
+ 	/* Only supports full reads right now */
+-	if (*off != 0 || usize < MCE_LOG_LEN*sizeof(struct mce)) {
+-		mutex_unlock(&mce_read_mutex);
+-		kfree(cpu_tsc);
+-
+-		return -EINVAL;
+-	}
++	err = -EINVAL;
++	if (*off != 0 || usize < MCE_LOG_LEN*sizeof(struct mce))
++		goto out;
+ 
+ 	err = 0;
+ 	prev = 0;
+@@ -1562,10 +1612,15 @@ timeout:
+ 			memset(&mcelog.entry[i], 0, sizeof(struct mce));
+ 		}
+ 	}
++
++	if (err)
++		err = -EFAULT;
++
++out:
+ 	mutex_unlock(&mce_read_mutex);
+ 	kfree(cpu_tsc);
+ 
+-	return err ? -EFAULT : buf - ubuf;
++	return err ? err : buf - ubuf;
+ }
+ 
+ static unsigned int mce_poll(struct file *file, poll_table *wait)
+@@ -1573,6 +1628,8 @@ static unsigned int mce_poll(struct file
+ 	poll_wait(file, &mce_wait, wait);
+ 	if (rcu_dereference_check_mce(mcelog.next))
+ 		return POLLIN | POLLRDNORM;
++	if (!mce_apei_read_done && apei_check_mce())
++		return POLLIN | POLLRDNORM;
+ 	return 0;
+ }
+ 
