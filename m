@@ -1,39 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755852Ab0D0QJl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 12:09:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50046 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751920Ab0D0QJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 12:09:40 -0400
-Message-ID: <4BD70C41.2060202@redhat.com>
-Date: Tue, 27 Apr 2010 19:09:37 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+	id S1756177Ab0D0QMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 12:12:19 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:57052 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610Ab0D0QMQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 12:12:16 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.160.239.110
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX183SHg4H8GsupjbpEbHFV16
+Date: Tue, 27 Apr 2010 09:12:17 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/22] KVM: MMU: Introduce kvm_read_guest_page_x86()
-References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com> <1272364712-17425-16-git-send-email-joerg.roedel@amd.com> <4BD6DE15.8070409@redhat.com> <20100427132030.GH11097@amd.com> <4BD6E80A.2000201@redhat.com> <20100427154024.GL11097@amd.com>
-In-Reply-To: <20100427154024.GL11097@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [GIT PULL] omap fixes for v2.6.34-rc5
+Message-ID: <20100427161217.GB7225@atomide.com>
+References: <20100426190005.GJ7225@atomide.com>
+ <alpine.LFD.2.00.1004270831430.3739@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004270831430.3739@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2010 06:40 PM, Joerg Roedel wrote:
->
-> Currently its a bit unclear when to use mmu or nested_mmu. With a
-> pointer it would be unclear to the code reader when to use the pointer
-> and when to select the mmu_contexts directly.
->    
+* Linus Torvalds <torvalds@linux-foundation.org> [100427 08:28]:
+> 
+> On Mon, 26 Apr 2010, Tony Lindgren wrote:
+> > 
+> > Please pull omap fixes from:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
+> 
+> I pulled it this time, but I'm starting to get really irritated with you.
+> 
+> These look like real fixes, but quite frankly, by -rc5, that IS NOT 
+> ENOUGH. 
+> 
+> They need to be _regressions_, not just cleanups and fixes for things that 
+> have never worked. And this is starting to be a pattern with the omap 
+> tree: you're not honoring the merge window properly.
+> 
+> Just "it's a bug-fix" or "it's deleting unused code" is not enough. The 
+> point of the late -rc series is to fix problems from the merge window, not 
+> add new changes. I realize that you think that all the new changes are 
+> obviously good, but the fact is, bugs happen even in "obvious bug-fixes". 
+> 
+> And that's why we have the rule about late-rc pulls being about 
+> _regressions_ and/or major oopses/security issues. Not just random 
+> development that are meant to improve things.
 
-I think in most cases you'd want full translation, thus the pointer.  
-This should be the default.  In specific cases you'd want just the 
-non-nested guest translation.
+OK point taken. I should have dealt with this earlier. Will only queue
+regressions after -rc3 or so.
 
--- 
-error compiling committee.c: too many arguments to function
+Regards,
 
+Tony
