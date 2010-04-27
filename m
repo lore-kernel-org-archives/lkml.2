@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab0D0KFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 06:05:24 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:38288 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1749667Ab0D0KFX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 06:05:23 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Robert Hancock <hancockrwd@gmail.com>
-Subject: Re: [linux-pm] Invalid opcode on resume from STR on Asus P4P800-VM
-Date: Tue, 27 Apr 2010 12:05:15 +0200
-User-Agent: KMail/1.9.10
-Cc: Alan Stern <stern@rowland.harvard.edu>, "H. Peter Anvin" <hpa@zytor.com>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>
-References: <201004262155.06949.linux@rainbow-software.org> <Pine.LNX.4.44L0.1004261631320.1764-100000@iolanthe.rowland.org> <4BD638D7.2090102@gmail.com>
-In-Reply-To: <4BD638D7.2090102@gmail.com>
+	id S1752914Ab0D0KO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 06:14:27 -0400
+Received: from bar.sig21.net ([80.81.252.164]:41548 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751092Ab0D0KO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 06:14:26 -0400
+Date: Tue, 27 Apr 2010 12:14:23 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: fat: excessive log spamming due to corrupted fs
+Message-ID: <20100427101423.GA30678@sig21.net>
+References: <20100422155944.GA22181@sig21.net>
+ <87633d2pm3.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201004271205.17369.linux@rainbow-software.org>
+In-Reply-To: <87633d2pm3.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.7 (---)
+X-Spam-21-Report: No, score=-3.7 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.731,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 April 2010 03:07:35 Robert Hancock wrote:
-> On 04/26/2010 02:34 PM, Alan Stern wrote:
-> > On Mon, 26 Apr 2010, Ondrej Zary wrote:
-> >> On Monday 26 April 2010 21:17:27 Alan Stern wrote:
-> >>> On Mon, 26 Apr 2010, Ondrej Zary wrote:
-> >>>> Hello,
-> >>>> I'm trying to debug oops on resume from suspend-to-RAM on Asus
-> >>>> P4P800-VM mainboard. It crashes with invalid opcode (see below). The
-> >>>> kernel is 2.6.32-trunk from Debian but the same problem is present
-> >>>> with vanilla kernels - both newer and older (but screen remains blank
-> >>>> most of the time, only keyboard LEDs blink indicating an oops).
-> >>>>
-> >>>> What can cause this problem?
-> >>>>
-> >>>>       8.000339  invalid opcode: 0000 [#1] SMP
-> >>>>       8.003529  last sysfs file: /sys/power/state
-> >>>>       8.004265  Modules linked in: sco bridge stp bnep l2cacp crc16
-> >>>> bluetooth rfkill loop i2c_i801 snd_intel8x0 snd_ac97_codec shpchp
-> >>>> ac97_bus parport_pc parport
-> >>>> rng_core pci_hotplug snd_pcsp snd_pcm snd_timer snd soundcore psmouse
-> >>>> snd_page_alloc serio_raw evdev processor ext3 jbd mbcache ide_gd_mod
-> >>>> ata_generic libata scsi_mod
-> >>>> ide_pci_generic i915 drm_kms_helper uhci_hcd drm i2c_algo_bit piix
-> >>>> i2c_core ehci_hcd intel_agp e100 video ide_core mii floppy agpgart
-> >>>> output usbcore nls_base button
-> >>>> thermal fan thermal_sys [last unloaded: scsi_wait_scan]
-> >>>> [  148.004265]
-> >>>> [  148.004265] Pid: 0, comm: swapper Not tainted (2.6.32-trunk-686 #1)
-> >>>> To Be Filled By O.E.M. [  148.004265] EIP: 0060:[<c1008ff3>] EFLAGS:
-> >>>> 00010086 CPU: 0
-> >>>> [  148.004265] EIP is at mwait_idle+0x4e/0x6c
-> >>>
-> >>> I had exactly the same problem (on an HP computer with an Intel
-> >>> chipset).  As far as anyone could figure out, it is caused by a bug in
-> >>> the BIOS.  It's not entirely clear that this is the complete answer,
-> >>> but nothing else turned up.  See
-> >>>
-> >>> 	http://bugzilla.kernel.org/show_bug.cgi?id=15385
-> >>>
-> >>> for the complete record.  The best solution I could find was to boot
-> >>> with "idle=halt" on the command line.  You might check to see if any
-> >>> BIOS updates are available.
-> >>
-> >> Thanks, it does not crash with "idle=halt" or "idle=poll". According to
-> >> this: http://siyobik.info/index.php?module=x86&id=215
-> >> the MWAIT instruction can be enabled/disabled in IA32_MISC_ENABLES MSR.
-> >> Kernel probably should enable it at boot and also on resume.
-> >> Here's some more info:
-> >> http://software.intel.com/en-us/forums/showthread.php?t=63654
-> >
-> > That could be the answer.  Clearly this should be handled by the
-> > arch-specific boot/setup code.  I don't know enough about it, but other
-> > people do.
->
-> It looks like idle=nomwait should be the workaround with the least
-> impact at the moment..
+On Tue, Apr 27, 2010 at 06:48:04PM +0900, OGAWA Hirofumi wrote:
+> Johannes Stezenbach <js@sig21.net> writes:
+> 
+> > Apr 22 16:30:18 zzz kernel: FAT: Filesystem error lidAT: Filesysalid cluster chain (i_pos 34568)
+> > Apr 22 16:30:18 zzz kernel: FAT: Filesystem ealid cluster chain (i_pos 3AT: Fiesysalid cluster chain (i_pos 34568)
+> > Apr 22 16:30:18 zzz kernel: FAT: Filesystem ealid cluster chain (i_pos 3AT: Fesystalid cluster chain (i_pos 34568)
+> > Apr 22 16:30:18 zzz kernel: FAT: Filesystem alid cluster chain (i_pos 3AT: Fiesyalid cluster chain (i_pos 34568)
+> > Apr 22 16:30:18 zzz kernel: FAT: Filesystem ealid cluster chain (i_pos AT: Fiesystalid cluster chain (i_pos 34568)
+> > Apr 22 16:30:18 zzz kernel: FAT: Filesystealid cluster chain (i_pos 3AT: Fiesystalid cluster chain (i_pos 34568)
+> 
+> I have no idea about message corruption, vfat just call vprintf() for
+> it. I'll see current vprintf() locking stuff.
 
-It does not work for me.
+I think multiple printk per line is prone to corruption on SMP, see the
+comment about KERN_CONT in kernel.h.  But maybe it only happens
+for /var/log/kern.log and my xconsole when generating too much
+output too quickly, "dmesg -s 10000000 | less" did not show
+the corruption (but only shows ~2700 lines out of the ~10000).
+But I think fat should use vprintf() to a buffer and then one printk()
+instead of multiple printk + vprintk.
 
--- 
-Ondrej Zary
+In xconsole it looks like this:
+
+Apr 27 12:06:45 zzz kernel: <systerrouster chain (i_pos 34568)
+Apr 27 12:06:45 zzz kernel: <systeerroruster chain (i_pos 34568)
+Apr 27 12:06:45 zzz kernel: <systeerroruster chain (i_pos 34568)
+Apr 27 12:06:45 zzz kernel: <3systerroruster chain (i_pos 34568)
+Apr 27 12:06:45 zzz kernel: uster chain (i_pos 34568)
+
+
+Thanks
+Johannes
