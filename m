@@ -1,208 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab0D0K3Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 06:29:25 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:41135 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223Ab0D0K3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 06:29:24 -0400
-Date: Tue, 27 Apr 2010 11:29:05 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
-	the wrong VMA information
-Message-ID: <20100427102905.GE4895@csn.ul.ie>
-References: <1272321478-28481-1-git-send-email-mel@csn.ul.ie> <1272321478-28481-3-git-send-email-mel@csn.ul.ie> <20100427090706.7ca68e12.kamezawa.hiroyu@jp.fujitsu.com> <20100427125040.634f56b3.kamezawa.hiroyu@jp.fujitsu.com> <20100427085951.GB4895@csn.ul.ie> <20100427180949.673350f2.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754283Ab0D0Ked (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 06:34:33 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:41846 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab0D0Kec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 06:34:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition
+         :content-transfer-encoding:in-reply-to:user-agent;
+        b=Z0K4h1PNtZDkA0toLUGwkoef/3CjBbLFCZ+SyNh+jTlAzcS3UReJvsPuepM8f8Vj2+
+         Z/px3YdY2x8/DuLB6nxg1I6cHOtX1IEzfw9rCmXKav3k0gPFKZ2ja63L0fgbHPiGHc4P
+         qlaQqSE1tX6ztyDFB8pH/V27WJYCwi9wPlCNo=
+Date: Tue, 27 Apr 2010 12:30:51 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Daniel =?iso-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Jani Nikula <ext-jani.1.nikula@nokia.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [patch] gpio: potential null dereference
+Message-ID: <20100427103051.GB29093@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Daniel =?iso-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jani Nikula <ext-jani.1.nikula@nokia.com>,
+	David Brownell <dbrownell@users.sourceforge.net>,
+	Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <20100426192520.GU29093@bicker> <20100426230515.GA1388@emlix.com> <20100427090533.GZ29093@bicker> <4BD6B13C.6020406@emlix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100427180949.673350f2.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4BD6B13C.6020406@emlix.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 06:09:49PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Tue, 27 Apr 2010 09:59:51 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On Tue, Apr 27, 2010 at 11:41:16AM +0200, Daniel Glöckner wrote:
+> It returns a valid pointer iff (desc->flags & GPIO_TRIGGER_MASK).
 > 
-> > On Tue, Apr 27, 2010 at 12:50:40PM +0900, KAMEZAWA Hiroyuki wrote:
-> > > On Tue, 27 Apr 2010 09:07:06 +0900
-> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > > 
-> > > > On Mon, 26 Apr 2010 23:37:58 +0100
-> > > > Mel Gorman <mel@csn.ul.ie> wrote:
-> > > > 
-> > > > > vma_adjust() is updating anon VMA information without any locks taken.
-> > > > > In contrast, file-backed mappings use the i_mmap_lock and this lack of
-> > > > > locking can result in races with page migration. During rmap_walk(),
-> > > > > vma_address() can return -EFAULT for an address that will soon be valid.
-> > > > > This leaves a dangling migration PTE behind which can later cause a BUG_ON
-> > > > > to trigger when the page is faulted in.
-> > > > > 
-> > > > > With the recent anon_vma changes, there can be more than one anon_vma->lock
-> > > > > that can be taken in a anon_vma_chain but a second lock cannot be spinned
-> > > > > upon in case of deadlock. Instead, the rmap walker tries to take locks of
-> > > > > different anon_vma's. If the attempt fails, the operation is restarted.
-> > > > > 
-> > > > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > > > 
-> > > > Ok, acquiring vma->anon_vma->spin_lock always sounds very safe.
-> > > > (but slow.)
-> > > > 
-> > > > I'll test this, too.
-> > > > 
-> > > > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > > > 
-> > > 
-> > > Sorry. reproduced. It seems the same bug before patch. 
-> > > mapcount 1 -> unmap -> remap -> mapcount 0. And it was SwapCache.
-> > > 
-> > 
-> > Same here, reproduced after 18 hours.
-> > 
-> Hmm. It seems rmap_one() is called and the race is not in vma_address()
-> but in remap_migration_pte().
+> When !(desc->flags & GPIO_TRIGGER_MASK) it returns NULL and everything
+> gets allocated (unless !gpio_flags as well). What you wanted to remove
+> is the allocation code, not error handling code. 
 
-It could have been in both but the vma lock should have been held across
-the rmap_one. It still reproduces but it's still the right thing to do.
-This is the current version of patch 2/2.
+No no.  I don't want to remove anything.  I'm happy with the code as is
+now that you've explained it to me.  :)
 
-==== CUT HERE ====
+regards,
+dan carpenter
 
-[PATCH] mm,migration: Prevent rmap_walk_[anon|ksm] seeing the wrong VMA information
-
-vma_adjust() is updating anon VMA information without any locks taken.
-In contrast, file-backed mappings use the i_mmap_lock and this lack of
-locking can result in races with page migration. During rmap_walk(),
-vma_address() can return -EFAULT for an address that will soon be valid.
-This leaves a dangling migration PTE behind which can later cause a BUG_ON
-to trigger when the page is faulted in.
-
-With the recent anon_vma changes, there can be more than one anon_vma->lock
-that can be taken in a anon_vma_chain but a second lock cannot be spinned
-upon in case of deadlock. Instead, the rmap walker tries to take locks of
-different anon_vma's. If the attempt fails, the operation is restarted.
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/ksm.c  |   19 +++++++++++++++++--
- mm/mmap.c |    6 ++++++
- mm/rmap.c |   27 +++++++++++++++++++++++----
- 3 files changed, 46 insertions(+), 6 deletions(-)
-
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 3666d43..87c7531 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1674,9 +1674,19 @@ again:
- 		spin_lock(&anon_vma->lock);
- 		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
- 			vma = vmac->vma;
-+
-+			/* See comment in mm/rmap.c#rmap_walk_anon on locking */
-+			if (anon_vma != vma->anon_vma) {
-+				if (!spin_trylock(&vma->anon_vma->lock)) {
-+					spin_unlock(&anon_vma->lock);
-+					goto again;
-+				}
-+			}
-+
- 			if (rmap_item->address < vma->vm_start ||
- 			    rmap_item->address >= vma->vm_end)
--				continue;
-+				goto next_vma;
-+
- 			/*
- 			 * Initially we examine only the vma which covers this
- 			 * rmap_item; but later, if there is still work to do,
-@@ -1684,9 +1694,14 @@ again:
- 			 * were forked from the original since ksmd passed.
- 			 */
- 			if ((rmap_item->mm == vma->vm_mm) == search_new_forks)
--				continue;
-+				goto next_vma;
- 
- 			ret = rmap_one(page, vma, rmap_item->address, arg);
-+
-+next_vma:
-+			if (anon_vma != vma->anon_vma)
-+				spin_unlock(&vma->anon_vma->lock);
-+
- 			if (ret != SWAP_AGAIN) {
- 				spin_unlock(&anon_vma->lock);
- 				goto out;
-diff --git a/mm/mmap.c b/mm/mmap.c
-index f90ea92..61d6f1d 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -578,6 +578,9 @@ again:			remove_next = 1 + (end > next->vm_end);
- 		}
- 	}
- 
-+	if (vma->anon_vma)
-+		spin_lock(&vma->anon_vma->lock);
-+
- 	if (root) {
- 		flush_dcache_mmap_lock(mapping);
- 		vma_prio_tree_remove(vma, root);
-@@ -620,6 +623,9 @@ again:			remove_next = 1 + (end > next->vm_end);
- 	if (mapping)
- 		spin_unlock(&mapping->i_mmap_lock);
- 
-+	if (vma->anon_vma)
-+		spin_unlock(&vma->anon_vma->lock);
-+
- 	if (remove_next) {
- 		if (file) {
- 			fput(file);
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 85f203e..7c2b7a9 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1368,18 +1368,37 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
- 	 * are holding mmap_sem. Users without mmap_sem are required to
- 	 * take a reference count to prevent the anon_vma disappearing
- 	 */
-+retry:
- 	anon_vma = page_anon_vma(page);
- 	if (!anon_vma)
- 		return ret;
- 	spin_lock(&anon_vma->lock);
- 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
- 		struct vm_area_struct *vma = avc->vma;
--		unsigned long address = vma_address(page, vma);
--		if (address == -EFAULT)
--			continue;
--		ret = rmap_one(page, vma, address, arg);
-+		unsigned long address;
-+
-+		/*
-+		 * Guard against deadlocks by not spinning against
-+		 * vma->anon_vma->lock. If contention is found, release our lock and
-+		 * try again until VMA list can be traversed without worrying about
-+		 * the details of the VMA changing underneath us.
-+		 */
-+		if (anon_vma != vma->anon_vma) {
-+			if (!spin_trylock(&vma->anon_vma->lock)) {
-+				spin_unlock(&anon_vma->lock);
-+				goto retry;
-+			}
-+		}
-+		address = vma_address(page, vma);
-+		if (address != -EFAULT)
-+			ret = rmap_one(page, vma, address, arg);
-+
-+		if (anon_vma != vma->anon_vma)
-+			spin_unlock(&vma->anon_vma->lock);
-+
- 		if (ret != SWAP_AGAIN)
- 			break;
-+		
- 	}
- 	spin_unlock(&anon_vma->lock);
- 	return ret;
+> It is always run when
+> the trigger is set from "none" to something else.
+> 
+>   Daniel
+>
