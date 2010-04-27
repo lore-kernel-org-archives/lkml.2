@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab0D0URJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 16:17:09 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:50057 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab0D0URG convert rfc822-to-8bit (ORCPT
+	id S1754379Ab0D0UTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 16:19:05 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:59530 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab0D0UTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 16:17:06 -0400
-Date: Tue, 27 Apr 2010 22:16:48 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Oliver Neukum <oliver@neukum.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Nicu Pavel <npavel@ituner.com>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>,
-       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>
-Subject: Re: [PATCH 2/2] hid: add PM support to PicoLCD device
-Message-ID: <20100427221648.39735c41@neptune.home>
-In-Reply-To: <alpine.LNX.2.00.1004271525330.9849@pobox.suse.cz>
-References: <20100425214003.7e87c6a3@neptune.home>
-	<20100425214306.5d7be049@neptune.home>
-	<alpine.LNX.2.00.1004271525330.9849@pobox.suse.cz>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 Apr 2010 16:19:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=aEW9viy/pEEufIGb4+sR1CNjejk6VG1TLaTKiX8PuK8wQxkHorWOGhzSDkeTLEFabk
+         f/hNR0TmHBNJYX2SKmMUz1EuToxW9vqnpV5t41WnELERKXRoxCLCA0DNmxjAgPDKyxRT
+         7WRE9Z6gMEY8s6R3R4TeUNU88y0XSlZF6U8Zo=
+Date: Tue, 27 Apr 2010 22:12:52 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: John Kacur <jkacur@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/7] logfs: push down BKL into ioctl function
+Message-ID: <20100427201247.GE5586@nowhere>
+References: <alpine.LFD.2.00.1004271359180.3318@localhost> <alpine.LFD.2.00.1004271725490.3318@localhost> <20100427153209.GD16794@logfs.org> <201004271738.50505.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201004271738.50505.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 April 2010 Jiri Kosina <jkosina@suse.cz> wrote:
-> On Sun, 25 Apr 2010, Bruno PrÃ©mont wrote:
-> 
-> > Add PM support in order to turn off backlight on suspend, restore
-> > it on resume and especially restore complete state on reset-resume.
+On Tue, Apr 27, 2010 at 05:38:50PM +0200, Arnd Bergmann wrote:
+> On Tuesday 27 April 2010, Jörn Engel wrote:
+> > On Tue, 27 April 2010 17:27:19 +0200, John Kacur wrote:
+> > > 
+> > > Hasn't the "current" merge window been over with for weeks? I was assuming 
+> > > that bkl push down, or other bkl patches are for the next merge window.
 > > 
-> > Signed-off-by: Bruno PrÃ©mont <bonbons@linux-vserver.org>
-> > ---
-> >  drivers/hid/hid-picolcd.c |   61 +++++++++++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 61 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-> > index aa6f2e1..c652390 100644
-> > --- a/drivers/hid/hid-picolcd.c
-> > +++ b/drivers/hid/hid-picolcd.c
-> > @@ -852,6 +852,20 @@ static inline int picolcd_resume_backlight(struct picolcd_data *data)
-> >  	return picolcd_set_brightness(data->backlight);
-> >  }
-> >  
-> > +#ifdef CONFIG_PM
-> > +static void picolcd_suspend_backlight(struct picolcd_data *data)
-> > +{
-> > +	int bl_power = data->lcd_power;
-> > +	if (!data->backlight)
-> > +		return;
-> > +
-> > +	data->backlight->props.power = FB_BLANK_POWERDOWN;
-> > +	picolcd_set_brightness(data->backlight);
-> > +	data->lcd_power = data->backlight->props.power = bl_power;
-> > +}
-> > +#else
-> > +#define picolcd_suspend_backlight(a)
-> > +#endif /* CONFIG_PM */
+> > That's what I was thinking.  But some of the bkl related discussion gave
+> > me the impression that such patches were still being merged.  So I
+> > wanted to be sure.
 > 
-> Stylistic thing -- it would be nice if this was actually 
+> Yes, just queue it for the 2.6.35-rc1 window and make sure it shows up in
+> linux-next, or send a replacement patch with your Ack or S-o-b so we can
+> put it into the BKL queue.
 > 
-> static inline void picolcd_suspend_backlight(struct picolcd_data *data)
-> {
-> 	return 0;
-> }
-> 
-> But why do you need to have it defined in !CONFIG_PM situation anyway? 
-> It's not used otherwise at all.
-
-Yeah, I could drop the #else branch (of #ifconfig CONFIG_PM).
-
-Is gcc quiet about defined but unused static inline functions?
-It's in order to avoid those warnings that I used #define bla().
-(same in other occasions of stubs returning void.
-
-Might be I forgot the inline keyword for the case I got the warning
-about defined but unused function. Will check tomorrow.
-
-> >  #else
-> >  static inline int picolcd_init_backlight(struct picolcd_data *data,
-> >  		struct hid_report *report)
-> > @@ -865,6 +879,7 @@ static inline int picolcd_resume_backlight(struct picolcd_data *data)
-> >  {
-> >  	return 0;
-> >  }
-> > +#define picolcd_suspend_backlight(a)
-> 
-> Any why is it defined once more here?
-
-Thats in the case where CONFIG_HID_PICOLCD_BACKLIGHT is not defined.
-c.f. the #else at the beginning of this quote.
+> 	Arnd
 
 
-Thanks,
-Bruno
+I've applied this series in bkl/ioctl, it passed allyesconfig in sparc.
+I will apply the others from you and John tomorrow or so (and will enjoy
+my part as well). Jörn, please queue this patch if you want to, as you prefer,
+we can host it as well if necessary.
+
+Linus I hope you don't mind but I've dropped the .bkl_ioctl renaming.
+In fact it had conflicts with several trees in Linux-next and now that
+we are about to pushdown in every ioctl users, this would be an
+unnecessary step I think.
+
+Thanks.
+
