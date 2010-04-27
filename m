@@ -1,247 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab0D0IYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 04:24:05 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:57429 "EHLO
-	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab0D0IYD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 04:24:03 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-       Nigel Cunningham <ncunningham@crca.org.au>
-Subject: [PATCH 5/5] PM / Hibernate: group swap ops
-Date: Tue, 27 Apr 2010 10:15:18 +0200
-Message-Id: <1272356118-10012-5-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.0.3
-In-Reply-To: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
-References: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
+	id S1754135Ab0D0IZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 04:25:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45786 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752730Ab0D0IZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 04:25:04 -0400
+Date: Tue, 27 Apr 2010 10:25:00 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jiri Slaby <jirislaby@gmail.com>, Alan Ott <alan@signal11.us>
+Cc: Stephane Chatty <chatty@enac.fr>, Marcel Holtmann <marcel@holtmann.org>,
+       simon.windows@gmail.com, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Bug in hidraw When a HID Device Contains Multiple
+ Reports
+In-Reply-To: <4BD69047.3010703@gmail.com>
+Message-ID: <alpine.LNX.2.00.1004271024140.7579@pobox.suse.cz>
+References: <4BD61506.1030301@signal11.us> <4BD69047.3010703@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move all the swap processing into one function. It will make swap
-calls from a non-swap code easier.
+On Tue, 27 Apr 2010, Jiri Slaby wrote:
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Nigel Cunningham <ncunningham@crca.org.au>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
----
- kernel/power/swap.c |  117 ++++++++++++++++++++++++++++++++-------------------
- 1 files changed, 74 insertions(+), 43 deletions(-)
+> On 04/27/2010 12:34 AM, Alan Ott wrote:
+> > Make hidraw not stick an extra byte on the beginning of an IN transfer
+> > when a HID device contains multiple reports.
+> ...
+> > I have attached a patch which seems to take care of this problem. Please
+> > let me know if I have completely misjudged the situation.
+> 
+> Nope, your analysis is correct. It was introduced by me in 85cdaf524. I
+> apparently forgot to change the hidraw case, so your fix is OK.
 
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 63e8062..b0bb217 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -208,9 +208,10 @@ static int mark_swapfiles(struct swap_map_handle *handle, unsigned int flags)
- /**
-  *	swsusp_swap_check - check if the resume device is a swap device
-  *	and get its index (if so)
-+ *
-+ *	This is called before saving image
-  */
--
--static int swsusp_swap_check(void) /* This is called before saving image */
-+static int swsusp_swap_check(void)
- {
- 	int res;
- 
-@@ -269,17 +270,33 @@ static void release_swap_writer(struct swap_map_handle *handle)
- 
- static int get_swap_writer(struct swap_map_handle *handle)
- {
-+	int ret;
-+
-+	ret = swsusp_swap_check();
-+	if (ret) {
-+		if (ret != -ENOSPC)
-+			printk(KERN_ERR "PM: Cannot find swap device, try "
-+					"swapon -a.\n");
-+		return ret;
-+	}
- 	handle->cur = (struct swap_map_page *)get_zeroed_page(GFP_KERNEL);
--	if (!handle->cur)
--		return -ENOMEM;
-+	if (!handle->cur) {
-+		ret = -ENOMEM;
-+		goto err_close;
-+	}
- 	handle->cur_swap = alloc_swapdev_block(root_swap);
- 	if (!handle->cur_swap) {
--		release_swap_writer(handle);
--		return -ENOSPC;
-+		ret = -ENOSPC;
-+		goto err_rel;
- 	}
- 	handle->k = 0;
- 	handle->first_sector = handle->cur_swap;
- 	return 0;
-+err_rel:
-+	release_swap_writer(handle);
-+err_close:
-+	swsusp_close(FMODE_WRITE);
-+	return ret;
- }
- 
- static int swap_write_page(struct swap_map_handle *handle, void *buf,
-@@ -322,6 +339,24 @@ static int flush_swap_writer(struct swap_map_handle *handle)
- 		return -EINVAL;
- }
- 
-+static int swap_writer_finish(struct swap_map_handle *handle,
-+		unsigned int flags, int error)
-+{
-+	if (!error) {
-+		flush_swap_writer(handle);
-+		printk(KERN_INFO "PM: S");
-+		error = mark_swapfiles(handle, flags);
-+		printk("|\n");
-+	}
-+
-+	if (error)
-+		free_all_swap_pages(root_swap);
-+	release_swap_writer(handle);
-+	swsusp_close(FMODE_WRITE);
-+
-+	return error;
-+}
-+
- /**
-  *	save_image - save the suspend image data
-  */
-@@ -399,48 +434,34 @@ int swsusp_write(unsigned int flags)
- 	struct swap_map_handle handle;
- 	struct snapshot_handle snapshot;
- 	struct swsusp_info *header;
-+	unsigned long pages;
- 	int error;
- 
--	error = swsusp_swap_check();
-+	pages = snapshot_get_image_size();
-+	error = get_swap_writer(&handle);
- 	if (error) {
--		printk(KERN_ERR "PM: Cannot find swap device, try "
--				"swapon -a.\n");
-+		printk(KERN_ERR "PM: Cannot get swap writer\n");
- 		return error;
- 	}
-+	if (!enough_swap(pages)) {
-+		printk(KERN_ERR "PM: Not enough free swap\n");
-+		error = -ENOSPC;
-+		goto out_finish;
-+	}
- 	memset(&snapshot, 0, sizeof(struct snapshot_handle));
- 	error = snapshot_read_next(&snapshot);
- 	if (error < PAGE_SIZE) {
- 		if (error >= 0)
- 			error = -EFAULT;
- 
--		goto out;
-+		goto out_finish;
- 	}
- 	header = (struct swsusp_info *)data_of(snapshot);
--	if (!enough_swap(header->pages)) {
--		printk(KERN_ERR "PM: Not enough free swap\n");
--		error = -ENOSPC;
--		goto out;
--	}
--	error = get_swap_writer(&handle);
--	if (!error) {
--		error = swap_write_page(&handle, header, NULL);
--		if (!error)
--			error = save_image(&handle, &snapshot,
--					header->pages - 1);
--
--		if (!error) {
--			flush_swap_writer(&handle);
--			printk(KERN_INFO "PM: S");
--			error = mark_swapfiles(&handle, flags);
--			printk("|\n");
--		}
--	}
--	if (error)
--		free_all_swap_pages(root_swap);
--
--	release_swap_writer(&handle);
-- out:
--	swsusp_close(FMODE_WRITE);
-+	error = swap_write_page(&handle, header, NULL);
-+	if (!error)
-+		error = save_image(&handle, &snapshot, pages - 1);
-+out_finish:
-+	error = swap_writer_finish(&handle, flags, error);
- 	return error;
- }
- 
-@@ -456,18 +477,21 @@ static void release_swap_reader(struct swap_map_handle *handle)
- 	handle->cur = NULL;
- }
- 
--static int get_swap_reader(struct swap_map_handle *handle, sector_t start)
-+static int get_swap_reader(struct swap_map_handle *handle,
-+		unsigned int *flags_p)
- {
- 	int error;
- 
--	if (!start)
-+	*flags_p = swsusp_header->flags;
-+
-+	if (!swsusp_header->image) /* how can this happen? */
- 		return -EINVAL;
- 
- 	handle->cur = (struct swap_map_page *)get_zeroed_page(__GFP_WAIT | __GFP_HIGH);
- 	if (!handle->cur)
- 		return -ENOMEM;
- 
--	error = hib_bio_read_page(start, handle->cur, NULL);
-+	error = hib_bio_read_page(swsusp_header->image, handle->cur, NULL);
- 	if (error) {
- 		release_swap_reader(handle);
- 		return error;
-@@ -502,6 +526,13 @@ static int swap_read_page(struct swap_map_handle *handle, void *buf,
- 	return error;
- }
- 
-+static int swap_reader_finish(struct swap_map_handle *handle)
-+{
-+	release_swap_reader(handle);
-+
-+	return 0;
-+}
-+
- /**
-  *	load_image - load the image using the swap map handle
-  *	@handle and the snapshot handle @snapshot
-@@ -571,20 +602,20 @@ int swsusp_read(unsigned int *flags_p)
- 	struct snapshot_handle snapshot;
- 	struct swsusp_info *header;
- 
--	*flags_p = swsusp_header->flags;
--
- 	memset(&snapshot, 0, sizeof(struct snapshot_handle));
- 	error = snapshot_write_next(&snapshot);
- 	if (error < PAGE_SIZE)
- 		return error < 0 ? error : -EFAULT;
- 	header = (struct swsusp_info *)data_of(snapshot);
--	error = get_swap_reader(&handle, swsusp_header->image);
-+	error = get_swap_reader(&handle, flags_p);
-+	if (error)
-+		goto end;
- 	if (!error)
- 		error = swap_read_page(&handle, header, NULL);
- 	if (!error)
- 		error = load_image(&handle, &snapshot, header->pages - 1);
--	release_swap_reader(&handle);
--
-+	swap_reader_finish(&handle);
-+end:
- 	if (!error)
- 		pr_debug("PM: Image successfully loaded\n");
- 	else
+Yeah, the analysis is correct, thanks a lot for catching this Alan!
+
+I have put 
+
+	Acked-by: Jiri Slaby <jslaby@suse.cz>
+
+to the patch and applied it.
+
+Thanks,
+
 -- 
-1.7.0.3
-
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
