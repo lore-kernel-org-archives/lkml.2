@@ -1,102 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab0D0KgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 06:36:24 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:50618 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447Ab0D0KgW (ORCPT
+	id S1754690Ab0D0Kiz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 06:38:55 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:43447 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493Ab0D0Kiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 06:36:22 -0400
-Subject: Re: [PULL] param sysfs oops (simple, leaky) fix, bool arrays fix
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-       Sitsofe Wheeler <sitsofe@yahoo.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>
-In-Reply-To: <200910290902.13724.rusty@rustcorp.com.au>
-References: <200910290902.13724.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Apr 2010 13:31:45 +0300
-Message-ID: <1272364305.26036.21.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 27 Apr 2010 10:35:59.0247 (UTC) FILETIME=[6D0801F0:01CAE5F5]
-X-Nokia-AV: Clean
+	Tue, 27 Apr 2010 06:38:52 -0400
+X-SpamScore: 17
+X-BigFish: VPS17(zzab9bhb0c3ihzz1202hzz6ff19hz32i87h2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L1J6WK-01-32Q-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 15/22] KVM: MMU: Introduce kvm_read_guest_page_x86()
+Date: Tue, 27 Apr 2010 12:38:25 +0200
+Message-ID: <1272364712-17425-16-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com>
+References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com>
+X-OriginalArrivalTime: 27 Apr 2010 10:38:36.0011 (UTC) FILETIME=[CA784BB0:01CAE5F5]
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2009-10-29 at 09:02 +1030, Rusty Russell wrote:
-> (Thanks to Takashi-san, who found the oops and kept reading the code to spot
->  the others.  A more complete fix is pending, but this works for 2.6.32 and
->  -stable: see commit message and FIXME in code.)
-> 
-> The following changes since commit 964fe080d94db82a3268443e9b9ece4c60246414:
->   Linus Torvalds (1):
->         Merge git://git.kernel.org/.../rusty/linux-2.6-for-linus
-> 
-> are available in the git repository at:
-> 
->   ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-param-fixes.git master
-> 
-> Rusty Russell (3):
->       param: fix lots of bugs with writing charp params from sysfs, by leaking mem.
->       param: fix NULL comparison on oom
->       param: fix setting arrays of bool
-> 
->  include/linux/moduleparam.h |    1 -
->  kernel/params.c             |   17 ++++++-----------
->  2 files changed, 6 insertions(+), 12 deletions(-)
-> 
-> commit 65afac7d80ab3bc9f81e75eafb71eeb92a3ebdef
-> Author: Rusty Russell <rusty@rustcorp.com.au>
-> Date:   Thu Oct 29 08:56:16 2009 -0600
-> 
->     param: fix lots of bugs with writing charp params from sysfs, by leaking mem.
->     
->     e180a6b7759a "param: fix charp parameters set via sysfs" fixed the case
->     where charp parameters written via sysfs were freed, leaving drivers
->     accessing random memory.
->     
->     Unfortunately, storing a flag in the kparam struct was a bad idea: it's
->     rodata so setting it causes an oops on some archs.  But that's not all:
->     
->     1) module_param_array() on charp doesn't work reliably, since we use an
->        uninitialized temporary struct kernel_param.
->     2) there's a fundamental race if a module uses this parameter and then
->        it's changed: they will still access the old, freed, memory.
->     
->     The simplest fix (ie. for 2.6.32) is to never free the memory.  This
->     prevents all these problems, at cost of a memory leak.  In practice, there
->     are only 18 places where a charp is writable via sysfs, and all are
->     root-only writable.
+This patch introduces the kvm_read_guest_page_x86 function
+which reads from the physical memory of the guest. If the
+guest is running in guest-mode itself with nested paging
+enabled it will read from the guest's guest physical memory
+instead.
+The patch also changes changes the code to use this function
+where it is necessary.
 
-Hmm, is it really only about changing the parameters via sysfs? We see
-the following kmemleak complaints in 2.6.32 (I think it will be the same
-in the latest kernel, but I did not check):
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/include/asm/kvm_host.h |    7 +++++++
+ arch/x86/kvm/x86.c              |   29 +++++++++++++++++++++++++----
+ 2 files changed, 32 insertions(+), 4 deletions(-)
 
-kmemleak: unreferenced object 0xdeff3c80 (size 64):
-kmemleak:   comm "modprobe", pid 788, jiffies 4294933427
-kmemleak:   backtrace:
-kmemleak:     [<c00e59b8>] __save_stack_trace+0x34/0x40
-kmemleak:     [<c00e5ad0>] create_object+0x10c/0x208
-kmemleak:     [<c03ae0ec>] kmemleak_alloc+0x40/0x84
-kmemleak:     [<c00dca74>] __kmalloc_track_caller+0x140/0x154
-kmemleak:     [<c00c47ac>] kstrdup+0x38/0x54
-kmemleak:     [<c0081854>] param_set_charp+0x68/0x94
-kmemleak:     [<c0081108>] parse_args+0x18c/0x280
-kmemleak:     [<c009fc74>] load_module+0x11e8/0x1644
-kmemleak:     [<c00a0130>] sys_init_module+0x60/0x1f4
-kmemleak:     [<c003c040>] ret_fast_syscall+0x0/0x38
-
-So we are leaking on every insmod/rmmod, AFAICS, not just in the sysfs
-case.
-
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 7851bbc..d9dfc8c 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -254,6 +254,13 @@ struct kvm_mmu {
+ 	union kvm_mmu_page_role base_role;
+ 	bool direct_map;
+ 
++	/*
++	 * If true the mmu runs in two-level mode.
++	 * vcpu->arch.nested_mmu needs to contain meaningful values in
++	 * this case.
++	 */
++	bool nested;
++
+ 	u64 *pae_root;
+ 	u64 rsvd_bits_mask[2][4];
+ };
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 558d995..317ad26 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -379,6 +379,20 @@ int kvm_read_guest_page_tdp(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
+ }
+ EXPORT_SYMBOL_GPL(kvm_read_guest_page_tdp);
+ 
++int kvm_read_guest_page_x86(struct kvm_vcpu *vcpu, gfn_t gfn,
++			    void *data, int offset, int len, u32 *error)
++{
++	struct kvm_mmu *mmu;
++
++	if (vcpu->arch.mmu.nested)
++		mmu = &vcpu->arch.nested_mmu;
++	else
++		mmu = &vcpu->arch.mmu;
++
++	return kvm_read_guest_page_tdp(vcpu, mmu, gfn, data, offset, len,
++				       error);
++}
++
+ /*
+  * Load the pae pdptrs.  Return true is they are all valid.
+  */
+@@ -386,12 +400,13 @@ int load_pdptrs(struct kvm_vcpu *vcpu, unsigned long cr3)
+ {
+ 	gfn_t pdpt_gfn = cr3 >> PAGE_SHIFT;
+ 	unsigned offset = ((cr3 & (PAGE_SIZE-1)) >> 5) << 2;
+-	int i;
++	int i, error;
+ 	int ret;
+ 	u64 pdpte[ARRAY_SIZE(vcpu->arch.pdptrs)];
+ 
+-	ret = kvm_read_guest_page(vcpu->kvm, pdpt_gfn, pdpte,
+-				  offset * sizeof(u64), sizeof(pdpte));
++	ret = kvm_read_guest_page_x86(vcpu, pdpt_gfn, pdpte,
++				      offset * sizeof(u64),
++				      sizeof(pdpte), &error);
+ 	if (ret < 0) {
+ 		ret = 0;
+ 		goto out;
+@@ -420,6 +435,9 @@ static bool pdptrs_changed(struct kvm_vcpu *vcpu)
+ {
+ 	u64 pdpte[ARRAY_SIZE(vcpu->arch.pdptrs)];
+ 	bool changed = true;
++	int offset;
++	u32 error;
++	gfn_t gfn;
+ 	int r;
+ 
+ 	if (is_long_mode(vcpu) || !is_pae(vcpu))
+@@ -429,7 +447,10 @@ static bool pdptrs_changed(struct kvm_vcpu *vcpu)
+ 		      (unsigned long *)&vcpu->arch.regs_avail))
+ 		return true;
+ 
+-	r = kvm_read_guest(vcpu->kvm, vcpu->arch.cr3 & ~31u, pdpte, sizeof(pdpte));
++	gfn = (vcpu->arch.cr3 & ~31u) >> PAGE_SHIFT;
++	offset = (vcpu->arch.cr3 & ~31u) & (PAGE_SIZE - 1);
++	r = kvm_read_guest_page_x86(vcpu, gfn, pdpte, offset, sizeof(pdpte),
++				    &error);
+ 	if (r < 0)
+ 		goto out;
+ 	changed = memcmp(pdpte, vcpu->arch.pdptrs, sizeof(pdpte)) != 0;
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+1.7.0.4
+
 
