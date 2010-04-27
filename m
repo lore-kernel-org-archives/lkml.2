@@ -1,243 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab0D0Hro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 03:47:44 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60447 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753723Ab0D0Hrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 03:47:41 -0400
-Message-ID: <4BD6970A.9020408@cn.fujitsu.com>
-Date: Tue, 27 Apr 2010 15:49:30 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1753923Ab0D0Hre (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 03:47:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51350 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753880Ab0D0Hrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 03:47:32 -0400
+Message-ID: <4BD69680.10402@redhat.com>
+Date: Tue, 27 Apr 2010 10:47:12 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
-Subject: [PATCH 6/6] xconfig: Add support to show hidden options which have
- prompts
-References: <4BD696C0.8050500@cn.fujitsu.com>
-In-Reply-To: <4BD696C0.8050500@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+To: Huang Ying <ying.huang@intel.com>
+CC: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>, masbock@linux.vnet.ibm.com
+Subject: Re: [PATCH 2/2] KVM, Fix QEMU-KVM is killed by guest SRAO MCE
+References: <1272351860.24125.15.camel@yhuang-dev.sh.intel.com>
+In-Reply-To: <1272351860.24125.15.camel@yhuang-dev.sh.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This feature has been supported in menuconfig and gconfig, so
-here add it to xconfig.
+(please copy kvm@vger.kernel.org on kvm patches)
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- scripts/kconfig/qconf.cc |   62 ++++++++++++++++++++++++++++++++-------------
- scripts/kconfig/qconf.h  |   16 +++++++++---
- 2 files changed, 56 insertions(+), 22 deletions(-)
 
-diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
-index d950fff..f8c07c6 100644
---- a/scripts/kconfig/qconf.cc
-+++ b/scripts/kconfig/qconf.cc
-@@ -149,7 +149,7 @@ void ConfigItem::updateMenu(void)
- 	case S_TRISTATE:
- 		char ch;
- 
--		if (!sym_is_changable(sym) && !list->showAll) {
-+		if (!sym_is_changable(sym) && list->optMode != normalOpt) {
- 			setPixmap(promptColIdx, 0);
- 			setText(noColIdx, QString::null);
- 			setText(modColIdx, QString::null);
-@@ -320,7 +320,7 @@ ConfigList::ConfigList(ConfigView* p, const char *name)
- 	  symbolYesPix(xpm_symbol_yes), symbolModPix(xpm_symbol_mod), symbolNoPix(xpm_symbol_no),
- 	  choiceYesPix(xpm_choice_yes), choiceNoPix(xpm_choice_no),
- 	  menuPix(xpm_menu), menuInvPix(xpm_menu_inv), menuBackPix(xpm_menuback), voidPix(xpm_void),
--	  showAll(false), showName(false), showRange(false), showData(false),
-+	  showName(false), showRange(false), showData(false), optMode(normalOpt),
- 	  rootEntry(0), headerPopup(0)
- {
- 	int i;
-@@ -337,10 +337,10 @@ ConfigList::ConfigList(ConfigView* p, const char *name)
- 
- 	if (name) {
- 		configSettings->beginGroup(name);
--		showAll = configSettings->readBoolEntry("/showAll", false);
- 		showName = configSettings->readBoolEntry("/showName", false);
- 		showRange = configSettings->readBoolEntry("/showRange", false);
- 		showData = configSettings->readBoolEntry("/showData", false);
-+		optMode = (enum optionMode)configSettings->readNumEntry("/optionMode", false);
- 		configSettings->endGroup();
- 		connect(configApp, SIGNAL(aboutToQuit()), SLOT(saveSettings()));
- 	}
-@@ -352,6 +352,17 @@ ConfigList::ConfigList(ConfigView* p, const char *name)
- 	reinit();
- }
- 
-+bool ConfigList::menuSkip(struct menu *menu)
-+{
-+	if (optMode == normalOpt && menu_is_visible(menu))
-+		return false;
-+	if (optMode == promptOpt && menu_has_prompt(menu))
-+		return false;
-+	if (optMode == allOpt)
-+		return false;
-+	return true;
-+}
-+
- void ConfigList::reinit(void)
- {
- 	removeColumn(dataColIdx);
-@@ -380,7 +391,7 @@ void ConfigList::saveSettings(void)
- 		configSettings->writeEntry("/showName", showName);
- 		configSettings->writeEntry("/showRange", showRange);
- 		configSettings->writeEntry("/showData", showData);
--		configSettings->writeEntry("/showAll", showAll);
-+		configSettings->writeEntry("/optionMode", (int)optMode);
- 		configSettings->endGroup();
- 	}
- }
-@@ -606,7 +617,7 @@ void ConfigList::updateMenuList(P* parent, struct menu* menu)
- 		}
- 
- 		visible = menu_is_visible(child);
--		if (showAll || visible) {
-+		if (!menuSkip(child)) {
- 			if (!child->sym && !child->list && !child->prompt)
- 				continue;
- 			if (!item || item->menu != child)
-@@ -860,13 +871,16 @@ ConfigView::~ConfigView(void)
- 	}
- }
- 
--void ConfigView::setShowAll(bool b)
-+void ConfigView::setOptionMode(QAction *act)
- {
--	if (list->showAll != b) {
--		list->showAll = b;
--		list->updateListAll();
--		emit showAllChanged(b);
--	}
-+	if (act == showNormalAction)
-+		list->optMode = normalOpt;
-+	else if (act == showAllAction)
-+		list->optMode = allOpt;
-+	else
-+		list->optMode = promptOpt;
-+
-+	list->updateListAll();
- }
- 
- void ConfigView::setShowName(bool b)
-@@ -1321,11 +1335,22 @@ ConfigMainWindow::ConfigMainWindow(void)
- 	  connect(showDataAction, SIGNAL(toggled(bool)), configView, SLOT(setShowData(bool)));
- 	  connect(configView, SIGNAL(showDataChanged(bool)), showDataAction, SLOT(setOn(bool)));
- 	  showDataAction->setOn(configList->showData);
--	QAction *showAllAction = new QAction(NULL, _("Show All Options"), 0, this);
--	  showAllAction->setToggleAction(TRUE);
--	  connect(showAllAction, SIGNAL(toggled(bool)), configView, SLOT(setShowAll(bool)));
--	  connect(showAllAction, SIGNAL(toggled(bool)), menuView, SLOT(setShowAll(bool)));
--	  showAllAction->setOn(configList->showAll);
-+
-+	QActionGroup *optGroup = new QActionGroup(this);
-+	optGroup->setExclusive(TRUE);
-+	connect(optGroup, SIGNAL(selected(QAction *)), configView,
-+		SLOT(setOptionMode(QAction *)));
-+
-+	configView->showNormalAction = new QAction(NULL, _("Show Normal Options"), 0, optGroup);
-+	configView->showAllAction = new QAction(NULL, _("Show All Options"), 0, optGroup);
-+	configView->showPromptAction = new QAction(NULL, _("Show Prompt Options"), 0, optGroup);
-+	configView->showNormalAction->setToggleAction(TRUE);
-+	configView->showNormalAction->setOn(configList->optMode == normalOpt);
-+	configView->showAllAction->setToggleAction(TRUE);
-+	configView->showAllAction->setOn(configList->optMode == allOpt);
-+	configView->showPromptAction->setToggleAction(TRUE);
-+	configView->showPromptAction->setOn(configList->optMode == promptOpt);
-+
- 	QAction *showDebugAction = new QAction(NULL, _("Show Debug Info"), 0, this);
- 	  showDebugAction->setToggleAction(TRUE);
- 	  connect(showDebugAction, SIGNAL(toggled(bool)), helpText, SLOT(setShowDebug(bool)));
-@@ -1368,7 +1393,8 @@ ConfigMainWindow::ConfigMainWindow(void)
- 	showRangeAction->addTo(optionMenu);
- 	showDataAction->addTo(optionMenu);
- 	optionMenu->insertSeparator();
--	showAllAction->addTo(optionMenu);
-+	optGroup->addTo(optionMenu);
-+	optionMenu->insertSeparator();
- 	showDebugAction->addTo(optionMenu);
- 
- 	// create help menu
-@@ -1463,7 +1489,7 @@ void ConfigMainWindow::setMenuLink(struct menu *menu)
- 	ConfigList* list = NULL;
- 	ConfigItem* item;
- 
--	if (!menu_is_visible(menu) && !configView->showAll())
-+	if (configList->menuSkip(menu))
- 		return;
- 
- 	switch (configList->mode) {
-diff --git a/scripts/kconfig/qconf.h b/scripts/kconfig/qconf.h
-index 54775ae..37bdaec 100644
---- a/scripts/kconfig/qconf.h
-+++ b/scripts/kconfig/qconf.h
-@@ -44,6 +44,9 @@ enum colIdx {
- enum listMode {
- 	singleMode, menuMode, symbolMode, fullMode, listMode
- };
-+enum optionMode {
-+	normalOpt = 0, allOpt, promptOpt
-+};
- 
- class ConfigList : public QListView {
- 	Q_OBJECT
-@@ -115,6 +118,8 @@ public:
- 	void setAllOpen(bool open);
- 	void setParentMenu(void);
- 
-+	bool menuSkip(struct menu *);
-+
- 	template <class P>
- 	void updateMenuList(P*, struct menu*);
- 
-@@ -124,8 +129,9 @@ public:
- 	QPixmap choiceYesPix, choiceNoPix;
- 	QPixmap menuPix, menuInvPix, menuBackPix, voidPix;
- 
--	bool showAll, showName, showRange, showData;
-+	bool showName, showRange, showData;
- 	enum listMode mode;
-+	enum optionMode optMode;
- 	struct menu *rootEntry;
- 	QColorGroup disabledColorGroup;
- 	QColorGroup inactivedColorGroup;
-@@ -222,17 +228,15 @@ public:
- 	static void updateList(ConfigItem* item);
- 	static void updateListAll(void);
- 
--	bool showAll(void) const { return list->showAll; }
- 	bool showName(void) const { return list->showName; }
- 	bool showRange(void) const { return list->showRange; }
- 	bool showData(void) const { return list->showData; }
- public slots:
--	void setShowAll(bool);
- 	void setShowName(bool);
- 	void setShowRange(bool);
- 	void setShowData(bool);
-+	void setOptionMode(QAction *);
- signals:
--	void showAllChanged(bool);
- 	void showNameChanged(bool);
- 	void showRangeChanged(bool);
- 	void showDataChanged(bool);
-@@ -242,6 +246,10 @@ public:
- 
- 	static ConfigView* viewList;
- 	ConfigView* nextView;
-+
-+	QAction *showNormalAction;
-+	QAction *showAllAction;
-+	QAction *showPromptAction;
- };
- 
- class ConfigInfoView : public QTextBrowser {
+On 04/27/2010 10:04 AM, Huang Ying wrote:
+> In common cases, guest SRAO MCE will cause corresponding poisoned page
+> be un-mapped and SIGBUS be sent to QEMU-KVM, then QEMU-KVM will relay
+> the MCE to guest OS.
+>
+> But it is reported that if the poisoned page is accessed in guest
+> after un-mapped and before MCE is relayed to guest OS, QEMU-KVM will
+> be killed.
+>
+> The reason is as follow. Because poisoned page has been un-mapped,
+> guest access will cause guest exit and kvm_mmu_page_fault will be
+> called. kvm_mmu_page_fault can not get the poisoned page for fault
+> address, so kernel and user space MMIO processing is tried in turn. In
+> user MMIO processing, poisoned page is accessed again, then QEMU-KVM
+> is killed by force_sig_info.
+>
+> To fix the bug, kvm_mmu_page_fault send HWPOISON signal to QEMU-KVM
+> and do not try kernel and user space MMIO processing for poisoned
+> page.
+>
+>
+>
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -32,6 +32,7 @@
+>   #include<linux/compiler.h>
+>   #include<linux/srcu.h>
+>   #include<linux/slab.h>
+> +#include<linux/uaccess.h>
+>
+>   #include<asm/page.h>
+>   #include<asm/cmpxchg.h>
+> @@ -1972,6 +1973,17 @@ static int __direct_map(struct kvm_vcpu
+>   	return pt_write;
+>   }
+>
+> +static void kvm_send_hwpoison_signal(struct kvm *kvm, gfn_t gfn)
+> +{
+> +	char buf[1];
+> +	void __user *hva;
+> +	int r;
+> +
+> +	/* Touch the page, so send SIGBUS */
+> +	hva = (void __user *)gfn_to_hva(kvm, gfn);
+> +	r = copy_from_user(buf, hva, 1);
+>    
+
+No error check?  What will a copy_from_user() of poisoned page expected 
+to return?
+
+Best to return -EFAULT on failure for consistency.
+
+> +}
+> +
+>   static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn)
+>   {
+>   	int r;
+> @@ -1997,7 +2009,11 @@ static int nonpaging_map(struct kvm_vcpu
+>   	/* mmio */
+>   	if (is_error_pfn(pfn)) {
+>   		kvm_release_pfn_clean(pfn);
+> -		return 1;
+> +		if (is_hwpoison_pfn(pfn)) {
+> +			kvm_send_hwpoison_signal(vcpu->kvm, gfn);
+> +			return 0;
+> +		} else
+> +			return 1;
+>   	}
+>    
+
+This is duplicated several times.  Please introduce a kvm_handle_bad_page():
+
+     if (is_error_pfn(pfn))
+         return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
+
 -- 
-1.6.3
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
 
