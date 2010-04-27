@@ -1,92 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab0D0BlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Apr 2010 21:41:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:44076 "EHLO mga09.intel.com"
+	id S1753781Ab0D0BmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Apr 2010 21:42:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32176 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753252Ab0D0Bk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Apr 2010 21:40:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,276,1270450800"; 
-   d="scan'208";a="512711870"
-Subject: Re: [Bug #15713] hackbench regression due to commit 9dfc6e68bfe6e
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Alex Shi <alex.shi@intel.com>, tim.c.chen@intel.com
-In-Reply-To: <x2o84144f021004260309k9edf9e88t92e4c988d12de234@mail.gmail.com>
-References: <deuQKFRcc0B.A.3EG.BRSzLB@tosh> <YeFfFNFyTSF.A.vjH.sRSzLB@tosh>
-	 <alpine.DEB.2.00.1004221045270.1204@router.home>
-	 <4BD086D0.9090309@cs.helsinki.fi>
-	 <alpine.DEB.2.00.1004232214520.29018@melkki.cs.helsinki.fi>
-	 <1272265147.2078.648.camel@ymzhang.sh.intel.com>
-	 <i2m84144f021004260022nb58e3e27vd351d6646b99f265@mail.gmail.com>
-	 <4BD564BE.6020700@kernel.org>
-	 <x2o84144f021004260309k9edf9e88t92e4c988d12de234@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 27 Apr 2010 09:41:17 +0800
-Message-Id: <1272332477.2078.674.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1752755Ab0D0BmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Apr 2010 21:42:19 -0400
+Date: Mon, 26 Apr 2010 21:41:37 -0400
+From: Dave Jones <davej@redhat.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Amerigo Wang <amwang@redhat.com>
+Subject: Re: 2.6.34-rc5-git7 -- INFO: possible circular locking dependency
+ detected - &per_cpu(cpu_policy_rwsem, cpu)){+++++.}, at:
+ [<ffffffff8139f077>] lock_policy_rwsem_read+0x4a/0x7a
+Message-ID: <20100427014136.GA14719@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Miles Lane <miles.lane@gmail.com>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, Amerigo Wang <amwang@redhat.com>
+References: <v2sa44ae5cd1004261830wd566507by56131aa9ececb3d@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <v2sa44ae5cd1004261830wd566507by56131aa9ececb3d@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-26 at 13:09 +0300, Pekka Enberg wrote:
-> Hi,
-> 
-> On Mon, Apr 26, 2010 at 9:59 AM, Zhang, Yanmin
-> <yanmin_zhang@linux.intel.com> wrote:
-> >>>> I haven't been able to reproduce this either on my Core 2 machine.
-> >>> Mostly, the regression exists on Nehalem machines. I suspect it's related to
-> >>> hyper-threading machine.
-> 
-> On 04/26/2010 09:22 AM, Pekka Enberg wrote:
-> >> OK, so does anyone know why hyper-threading would change things for
-> >> the per-CPU allocator?
-> 
-> On Mon, Apr 26, 2010 at 1:02 PM, Tejun Heo <tj@kernel.org> wrote:
-> > My wild speculation is that previously the cpu_slub structures of two
-> > neighboring threads ended up on the same cacheline by accident thanks
-> > to the back to back allocation.  W/ the percpu allocator, this no
-> > longer would happen as the allocator groups percpu data together
-> > per-cpu.
-> 
-> Yanmin, do we see a lot of remote frees for your hackbench run? IIRC,
-> it's the "deactivate_remote_frees" stat when CONFIG_SLAB_STATS is
-> enabled.
+On Mon, Apr 26, 2010 at 09:30:41PM -0400, Miles Lane wrote:
+ > Dave, is this the same?   http://marc.info/?l=linux-kernel&m=127207512031810&w=2
 
-After runing the testing with 2.6.34-rc5:
+looks like it to me.  499bca9b6d3243f9278a1f5a22d00e67acdd844d should have fixed it,
+but it looks like that's present in -git7, so something is still missing..
 
-#slabinfo -AD
-Name                   Objects      Alloc       Free   %Fast Fallb O
-skbuff_head_cache         2518  800011810  800009770  95  19     0 1
-kmalloc-512               1101  800009118  800008441  95  19     0 2
-anon_vma_chain            2500     195878     194477  98  13     0 0
-vm_area_struct            2487     160755     158908  97  20     0 1
-anon_vma                  2645      88626      87637  99  12     0 0
+	Dave
 
-[ymzhang@lkp-ne01 ~]$ cat /sys/kernel/slab/skbuff_head_cache/deactivate_remote_frees
-1 C13=1
-[ymzhang@lkp-ne01 ~]$ cat /sys/kernel/slab/kmalloc-512/deactivate_remote_frees       
-3 C8=2 C15=1
-
-
-After running testing against 2.6.33 kernel:
-#slabinfo -AD
-Name                   Objects      Alloc       Free   %Fast Fallb O
-kmalloc-1024               961  800011628  800011167  93   1     0 3
-skbuff_head_cache         2518  800012055  800010015  93   1     0 1
-vm_area_struct            2892     162196     159987  97  19     0 1
-names_cache                128      47139      47141  99  97     0 3
-kmalloc-64                3612      40180      37287  99  89     0 0
-Acpi-State                 816      36301      36301  99  98     0 0
-
-I remember with 2.6.34-rc1, the fast alloc/free are close to the one of 2.6.33.
-
-
+ > I produced this one by running "find /sys | xargs cat"
+ > 
+ > [ 2982.773548] [ INFO: possible circular locking dependency detected ]
+ > [ 2982.773551] 2.6.34-rc5-git7 #33
+ > [ 2982.773554] -------------------------------------------------------
+ > [ 2982.773557] head/6335 is trying to acquire lock:
+ > [ 2982.773560]  (&per_cpu(cpu_policy_rwsem, cpu)){+++++.}, at:
+ > [<ffffffff8139f077>] lock_policy_rwsem_read+0x4a/0x7a
+ > [ 2982.773571]
+ > [ 2982.773572] but task is already holding lock:
+ > [ 2982.773575]  (s_active#102){++++.+}, at: [<ffffffff81153a23>]
+ > sysfs_read_file+0x8d/0x139
+ > [ 2982.773586]
+ > [ 2982.773586] which lock already depends on the new lock.
+ > [ 2982.773587]
+ > [ 2982.773590]
+ > [ 2982.773591] the existing dependency chain (in reverse order) is:
+ > [ 2982.773593]
+ > [ 2982.773594] -> #2 (s_active#102){++++.+}:
+ > [ 2982.773601]        [<ffffffff8107654d>] __lock_acquire+0xb59/0xd11
+ > [ 2982.773608]        [<ffffffff8107681a>] lock_acquire+0x115/0x150
+ > [ 2982.773613]        [<ffffffff81154556>] sysfs_deactivate+0x9b/0xec
+ > [ 2982.773619]        [<ffffffff81154d0a>] sysfs_addrm_finish+0x31/0x50
+ > [ 2982.773624]        [<ffffffff81152e05>] sysfs_hash_and_remove+0x4e/0x65
+ > [ 2982.773629]        [<ffffffff81155fc0>] sysfs_remove_group+0x8c/0xc5
+ > [ 2982.773634]        [<ffffffffa00a3d26>]
+ > cpufreq_governor_dbs+0x2a6/0x33c [cpufreq_ondemand]
+ > [ 2982.773642]        [<ffffffff8139da32>] __cpufreq_governor+0x5d/0xa3
+ > [ 2982.773648]        [<ffffffff8139e4e2>] __cpufreq_remove_dev+0x231/0x2e2
+ > [ 2982.773653]        [<ffffffff81454e40>] cpufreq_cpu_callback+0x62/0x7a
+ > [ 2982.773660]        [<ffffffff8145d636>] notifier_call_chain+0x63/0x97
+ > [ 2982.773666]        [<ffffffff810680dc>] __raw_notifier_call_chain+0x9/0xb
+ > [ 2982.773672]        [<ffffffff8144337b>] _cpu_down+0x90/0x29e
+ > [ 2982.773679]        [<ffffffff81048cd7>] disable_nonboot_cpus+0x6f/0x105
+ > [ 2982.773685]        [<ffffffff81083b94>] suspend_devices_and_enter+0xe8/0x1ec
+ > [ 2982.773691]        [<ffffffff81083d72>] enter_state+0xda/0x12b
+ > [ 2982.773696]        [<ffffffff810834d5>] state_store+0xb1/0xce
+ > [ 2982.773702]        [<ffffffff811f2fb3>] kobj_attr_store+0x17/0x19
+ > [ 2982.773708]        [<ffffffff8115395a>] sysfs_write_file+0x103/0x13f
+ > [ 2982.773713]        [<ffffffff810fb933>] vfs_write+0xa9/0x106
+ > [ 2982.773719]        [<ffffffff810fba46>] sys_write+0x45/0x69
+ > [ 2982.773723]        [<ffffffff81009d82>] system_call_fastpath+0x16/0x1b
+ > [ 2982.773730]
+ > [ 2982.773731] -> #1 (dbs_mutex){+.+.+.}:
+ > [ 2982.773737]        [<ffffffff8107654d>] __lock_acquire+0xb59/0xd11
+ > [ 2982.773742]        [<ffffffff8107681a>] lock_acquire+0x115/0x150
+ > [ 2982.773747]        [<ffffffff814582ce>] __mutex_lock_common+0x57/0x558
+ > [ 2982.773752]        [<ffffffff81458875>] mutex_lock_nested+0x34/0x39
+ > [ 2982.773757]        [<ffffffffa00a3af6>]
+ > cpufreq_governor_dbs+0x76/0x33c [cpufreq_ondemand]
+ > [ 2982.773763]        [<ffffffff8139da32>] __cpufreq_governor+0x5d/0xa3
+ > [ 2982.773769]        [<ffffffff8139e7ec>] __cpufreq_set_policy+0x1a8/0x222
+ > [ 2982.773774]        [<ffffffff8139ecca>] store_scaling_governor+0x19f/0x1ed
+ > [ 2982.773779]        [<ffffffff8139e622>] store+0x56/0x78
+ > [ 2982.773783]        [<ffffffff8115395a>] sysfs_write_file+0x103/0x13f
+ > [ 2982.773788]        [<ffffffff810fb933>] vfs_write+0xa9/0x106
+ > [ 2982.773793]        [<ffffffff810fba46>] sys_write+0x45/0x69
+ > [ 2982.773798]        [<ffffffff81009d82>] system_call_fastpath+0x16/0x1b
+ > [ 2982.773803]
+ > [ 2982.773804] -> #0 (&per_cpu(cpu_policy_rwsem, cpu)){+++++.}:
+ > [ 2982.773810]        [<ffffffff810763f7>] __lock_acquire+0xa03/0xd11
+ > [ 2982.773815]        [<ffffffff8107681a>] lock_acquire+0x115/0x150
+ > [ 2982.773820]        [<ffffffff81458bba>] down_read+0x42/0x57
+ > [ 2982.773825]        [<ffffffff8139f077>] lock_policy_rwsem_read+0x4a/0x7a
+ > [ 2982.773830]        [<ffffffff8139f0d7>] show+0x30/0x69
+ > [ 2982.773835]        [<ffffffff81153a4a>] sysfs_read_file+0xb4/0x139
+ > [ 2982.773840]        [<ffffffff810fbb10>] vfs_read+0xa6/0x103
+ > [ 2982.773844]        [<ffffffff810fbc23>] sys_read+0x45/0x69
+ > [ 2982.773849]        [<ffffffff81009d82>] system_call_fastpath+0x16/0x1b
+ > [ 2982.773854]
+ > [ 2982.773855] other info that might help us debug this:
+ > [ 2982.773856]
+ > [ 2982.773860] 2 locks held by head/6335:
+ > [ 2982.773862]  #0:  (&buffer->mutex){+.+.+.}, at:
+ > [<ffffffff811539ca>] sysfs_read_file+0x34/0x139
+ > [ 2982.773871]  #1:  (s_active#102){++++.+}, at: [<ffffffff81153a23>]
+ > sysfs_read_file+0x8d/0x139
+ > [ 2982.773881]
+ > [ 2982.773882] stack backtrace:
+ > [ 2982.773886] Pid: 6335, comm: head Not tainted 2.6.34-rc5-git7 #33
+ > [ 2982.773889] Call Trace:
+ > [ 2982.773893]  [<ffffffff810755c3>] print_circular_bug+0xa8/0xb7
+ > [ 2982.773893]  [<ffffffff810763f7>] __lock_acquire+0xa03/0xd11
+ > [ 2982.773893]  [<ffffffff810766f6>] ? __lock_acquire+0xd02/0xd11
+ > [ 2982.773893]  [<ffffffff8139f077>] ? lock_policy_rwsem_read+0x4a/0x7a
+ > [ 2982.773893]  [<ffffffff8107681a>] lock_acquire+0x115/0x150
+ > [ 2982.773893]  [<ffffffff8139f077>] ? lock_policy_rwsem_read+0x4a/0x7a
+ > [ 2982.773893]  [<ffffffff81458bba>] down_read+0x42/0x57
+ > [ 2982.773893]  [<ffffffff8139f077>] ? lock_policy_rwsem_read+0x4a/0x7a
+ > [ 2982.773893]  [<ffffffff81459cb9>] ? _raw_spin_unlock_irqrestore+0x87/0x95
+ > [ 2982.773893]  [<ffffffff8139f077>] lock_policy_rwsem_read+0x4a/0x7a
+ > [ 2982.773893]  [<ffffffff8139f0d7>] show+0x30/0x69
+ > [ 2982.773893]  [<ffffffff81153a4a>] sysfs_read_file+0xb4/0x139
+ > [ 2982.773893]  [<ffffffff810fbb10>] vfs_read+0xa6/0x103
+ > [ 2982.773893]  [<ffffffff81074eae>] ? trace_hardirqs_on_caller+0x127/0x152
+ > [ 2982.773893]  [<ffffffff810fbc23>] sys_read+0x45/0x69
+ > [ 2982.773893]  [<ffffffff81009d82>] system_call_fastpath+0x16/0x1b
+ 
