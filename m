@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab0D0NlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 09:41:16 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:34719 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908Ab0D0NlO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 09:41:14 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Constantine Shulyupin <const@linuxdriver.co.il>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Need advice on updating the Linux kernel map
-In-Reply-To: Your message of "Sun, 25 Apr 2010 02:02:29 +0300."
-             <t2w8aa6b0651004241602i50449643lc05dcf834a80b344@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <t2w8aa6b0651004241602i50449643lc05dcf834a80b344@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1272375671_4032P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 27 Apr 2010 09:41:11 -0400
-Message-ID: <5312.1272375671@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020206.4BD6E978.0097,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	id S1755952Ab0D0Nlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 09:41:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54534 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755893Ab0D0Nlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 09:41:46 -0400
+Date: Tue, 27 Apr 2010 10:40:13 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com
+Subject: Re: [PATCH 6/6] don't compute pvclock adjustments if we trust the tsc
+Message-ID: <20100427134013.GE18410@amt.cnet>
+References: <1272303988-21929-1-git-send-email-glommer@redhat.com>
+ <1272303988-21929-2-git-send-email-glommer@redhat.com>
+ <1272303988-21929-3-git-send-email-glommer@redhat.com>
+ <1272303988-21929-4-git-send-email-glommer@redhat.com>
+ <1272303988-21929-5-git-send-email-glommer@redhat.com>
+ <1272303988-21929-6-git-send-email-glommer@redhat.com>
+ <1272303988-21929-7-git-send-email-glommer@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272303988-21929-7-git-send-email-glommer@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1272375671_4032P
-Content-Type: text/plain; charset=us-ascii
+On Mon, Apr 26, 2010 at 01:46:28PM -0400, Glauber Costa wrote:
+> If the HV told us we can fully trust the TSC, skip any
+> correction
+> 
+> Signed-off-by: Glauber Costa <glommer@redhat.com>
+> ---
+>  arch/x86/include/asm/kvm_para.h    |    5 +++++
+>  arch/x86/include/asm/pvclock-abi.h |    1 +
+>  arch/x86/kernel/kvmclock.c         |    3 +++
+>  arch/x86/kernel/pvclock.c          |    4 ++++
+>  4 files changed, 13 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+> index f019f8c..615ebb1 100644
+> --- a/arch/x86/include/asm/kvm_para.h
+> +++ b/arch/x86/include/asm/kvm_para.h
+> @@ -21,6 +21,11 @@
+>   */
+>  #define KVM_FEATURE_CLOCKSOURCE2        3
+>  
+> +/* The last 8 bits are used to indicate how to interpret the flags field
+> + * in pvclock structure. If no bits are set, all flags are ignored.
+> + */
+> +#define KVM_FEATURE_CLOCKSOURCE_STABLE_TSC	0xf8
+> +
+>  #define MSR_KVM_WALL_CLOCK  0x11
+>  #define MSR_KVM_SYSTEM_TIME 0x12
 
-On Sun, 25 Apr 2010 02:02:29 +0300, Constantine Shulyupin said:
-> I was wondering if you could help me. I've recently resumed work on
-> the map of the Linux kernel - http://www.makelinux.net/kernel_map in
-> order to make it more up-to-date and to improve it. Please let me know
-> how I can update the map, as it would help me a lot.
-
-A few quick comments:
-
-1) Can we do better than an OSI 7-layer burrito? ;)  As it stands, doing it
-that way creates a lot of things that look like layering violations.  For
-instance, "Device Model" is up on "virtual", when it actually gets *used*
-several levels further down.  And you have a *lot* of vertical lines that
-cross a whole bunch of levels.  You would probably be served much better
-by letting each column be a lot wider, and maybe only 4 levels high (you
-can probably squish virtual/bridges/logical into one wider level).
-
-1b) Much of the I/O column should be one wide section across the bottom of
-disk/network/user peripherals, and the 'system run' box should be in some
-other column(s).
-
-2) Security and debugging seem to be forced in the "user peripherals" column
-for no real rational reason.
-
-3) I see no mention of tracing/oprofile/perf.
-
-Hope that helps...
-
---==_Exmh_1272375671_4032P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFL1ul3cC3lWbTT17ARArudAKDfB2PxeO+LVIm2UfMZB6+oEfl9EwCgpSIt
-hQfxq7soW6TGKqiCJI09Ss8=
-=gF81
------END PGP SIGNATURE-----
-
---==_Exmh_1272375671_4032P--
+Please drop this. Its not certain what is the best method to reduce
+contention on the global variable. Whatever it is, can be done later.
 
