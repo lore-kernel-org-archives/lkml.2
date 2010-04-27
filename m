@@ -1,100 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab0D0M0Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 08:26:16 -0400
-Received: from sh.osrg.net ([192.16.179.4]:37051 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751386Ab0D0M0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 08:26:13 -0400
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-To: akpm@linux-foundation.org
-Cc: fujita.tomonori@lab.ntt.co.jp, linux-arch@vger.kernel.org,
+	id S1755511Ab0D0M0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 08:26:47 -0400
+Received: from hermes.ugcs.caltech.edu ([131.215.176.65]:54238 "EHLO
+	hermes.ugcs.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338Ab0D0M0m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 08:26:42 -0400
+X-Greylist: delayed 615 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Apr 2010 08:26:42 EDT
+Message-ID: <4BD6D59A.5070908@ugcs.caltech.edu>
+Date: Tue, 27 Apr 2010 05:16:26 -0700
+From: Matthew Ryan Maurer <maurer@ugcs.caltech.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100415 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jeff Dike <jdike@addtoit.com>, Tejun Heo <tj@kernel.org>,
+       Paul Mundt <lethal@linux-sh.org>, Mike Frysinger <vapier@gentoo.org>,
+       Michal Simek <monstr@monstr.eu>, Tim Abbott <tabbott@ksplice.com>
+CC: user-mode-linux-devel@lists.sourceforge.net,
+       user-mode-linux-user@lists.sourceforge.net,
        linux-kernel@vger.kernel.org
-Subject: [PATCH -mm 5/6] swiotlb: remove unnecessary swiotlb_sync_single_range_*
-Date: Tue, 27 Apr 2010 21:25:39 +0900
-Message-Id: <1272371140-6085-6-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1272371140-6085-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-References: <1272371140-6085-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 27 Apr 2010 21:26:08 +0900 (JST)
+Subject: [PATCH] UML: UML libc linking error fix
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=6F0BA31E;
+	url=http://pgp.ugcs.caltech.edu:11371/pks/lookup?op=get&search=0x518ED72D6F0BA31E
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-swiotlb_sync_single_range_for_cpu and
-swiotlb_sync_single_range_for_device are unnecessary because
-swiotlb_sync_single_for_cpu and swiotlb_sync_single_for_device can be
-used instead.
+From: Matthew Maurer <maurer@ugcs.caltech.edu>
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Fixes linking for UML against newer libcs by adding two hidden symbols
+which are now expected.
+Signed-off-by: Matthew Maurer <maurer@ugcs.caltech.edu>
 ---
- include/linux/swiotlb.h |   10 ----------
- lib/swiotlb.c           |   31 -------------------------------
- 2 files changed, 0 insertions(+), 41 deletions(-)
+Apologies ahead of time if I've missed something or if this has already
+been fixed somewhere I couldn't find it.
+diff --git a/arch/um/kernel/dyn.lds.S b/arch/um/kernel/dyn.lds.S
+index 7fcad58..85babf5 100644
+--- a/arch/um/kernel/dyn.lds.S
++++ b/arch/um/kernel/dyn.lds.S
+@@ -50,8 +50,21 @@ SECTIONS
+   .rela.got       : { *(.rela.got) }
+   .rel.bss        : { *(.rel.bss .rel.bss.* .rel.gnu.linkonce.b.*) }
+   .rela.bss       : { *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*) }
+-  .rel.plt        : { *(.rel.plt) }
+-  .rela.plt       : { *(.rela.plt) }
++  /* Deal with multilib libc */
++  .rel.plt        :
++  {
++    *(.rel.plt)
++    PROVIDE_HIDDEN (__rel_iplt_start = .);
++    *(.rel.iplt)
++    PROVIDE_HIDDEN (__rel_iplt_end = .);
++  }
++  .rela.plt       :
++  {
++    *(.rela.plt)
++    PROVIDE_HIDDEN (__rela_iplt_start = .);
++    *(.rela.iplt)
++    PROVIDE_HIDDEN (__rela_iplt_end = .);
++  }
+   .init           : {
+     KEEP (*(.init))
+   } =0x90909090
+diff --git a/arch/um/kernel/uml.lds.S b/arch/um/kernel/uml.lds.S
+index e7a6cca..50d80e8 100644
+--- a/arch/um/kernel/uml.lds.S
++++ b/arch/um/kernel/uml.lds.S
+@@ -35,6 +35,21 @@ SECTIONS
+     *(.gnu.warning)
+     *(.gnu.linkonce.t*)
+   }
++  /* Deal with multilib libc */
++  .rel.plt        :
++  {
++    *(.rel.plt)
++    PROVIDE_HIDDEN (__rel_iplt_start = .);
++    *(.rel.iplt)
++    PROVIDE_HIDDEN (__rel_iplt_end = .);
++  }
++  .rela.plt       :
++  {
++    *(.rela.plt)
++    PROVIDE_HIDDEN (__rela_iplt_start = .);
++    *(.rela.iplt)
++    PROVIDE_HIDDEN (__rela_iplt_end = .);
++  }
 
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index febedcf..81a4e21 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -73,16 +73,6 @@ extern void
- swiotlb_sync_sg_for_device(struct device *hwdev, struct scatterlist *sg,
- 			   int nelems, enum dma_data_direction dir);
- 
--extern void
--swiotlb_sync_single_range_for_cpu(struct device *hwdev, dma_addr_t dev_addr,
--				  unsigned long offset, size_t size,
--				  enum dma_data_direction dir);
--
--extern void
--swiotlb_sync_single_range_for_device(struct device *hwdev, dma_addr_t dev_addr,
--				     unsigned long offset, size_t size,
--				     enum dma_data_direction dir);
--
- extern int
- swiotlb_dma_mapping_error(struct device *hwdev, dma_addr_t dma_addr);
- 
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 5fddf72..a009055 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -757,37 +757,6 @@ swiotlb_sync_single_for_device(struct device *hwdev, dma_addr_t dev_addr,
- EXPORT_SYMBOL(swiotlb_sync_single_for_device);
- 
- /*
-- * Same as above, but for a sub-range of the mapping.
-- */
--static void
--swiotlb_sync_single_range(struct device *hwdev, dma_addr_t dev_addr,
--			  unsigned long offset, size_t size,
--			  int dir, int target)
--{
--	swiotlb_sync_single(hwdev, dev_addr + offset, size, dir, target);
--}
--
--void
--swiotlb_sync_single_range_for_cpu(struct device *hwdev, dma_addr_t dev_addr,
--				  unsigned long offset, size_t size,
--				  enum dma_data_direction dir)
--{
--	swiotlb_sync_single_range(hwdev, dev_addr, offset, size, dir,
--				  SYNC_FOR_CPU);
--}
--EXPORT_SYMBOL_GPL(swiotlb_sync_single_range_for_cpu);
--
--void
--swiotlb_sync_single_range_for_device(struct device *hwdev, dma_addr_t dev_addr,
--				     unsigned long offset, size_t size,
--				     enum dma_data_direction dir)
--{
--	swiotlb_sync_single_range(hwdev, dev_addr, offset, size, dir,
--				  SYNC_FOR_DEVICE);
--}
--EXPORT_SYMBOL_GPL(swiotlb_sync_single_range_for_device);
--
--/*
-  * Map a set of buffers described by scatterlist in streaming mode for DMA.
-  * This is the scatter-gather version of the above swiotlb_map_page
-  * interface.  Here the scatter gather list elements are each tagged with the
--- 
-1.6.5
-
+   . = ALIGN(PAGE_SIZE);
+   .syscall_stub : {
+Signed-off-by: Matthew Maurer <maurer@ugcs.caltech.edu>
