@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab0D0L2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 07:28:45 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:53311 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752983Ab0D0L2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 07:28:44 -0400
-Date: Tue, 27 Apr 2010 07:28:42 -0400
-From: Benjamin LaHaise <bcrl@lhnet.ca>
-To: Valdis.Kletnieks@vt.edu
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: I am an emotional amoeba who loves Erika-with-a-k and Erika-with-a-k loves me.
-Message-ID: <20100427112842.GQ5724@kvack.org>
-References: <20100427063547.GL5724@kvack.org> <71097.1272365836@localhost>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754837Ab0D0L3l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 07:29:41 -0400
+Received: from lazybastard.de ([212.112.238.170]:60897 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab0D0L3k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 07:29:40 -0400
+Date: Tue, 27 Apr 2010 13:29:25 +0200
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+       Paolo Minazzi <paolo.minazzi@gmail.com>
+Subject: Re: [PATCH 2/2] [MTD] Call bdi_init() and bdi_register()
+Message-ID: <20100427112924.GB13859@logfs.org>
+References: <20100423205518.GB7008@logfs.org> <20100426094810.GE27497@kernel.dk> <20100426143253.GB4364@logfs.org> <20100426143803.GM27497@kernel.dk> <20100426144532.GN27497@kernel.dk> <20100426163050.GC4364@logfs.org> <20100426163126.GD4364@logfs.org> <20100426170247.GP27497@kernel.dk> <20100426171236.GG4364@logfs.org> <20100427075229.GB27497@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <71097.1272365836@localhost>
-User-Agent: Mutt/1.4.2.2i
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100427075229.GB27497@kernel.dk>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 06:57:16AM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Tue, 27 Apr 2010 02:35:47 EDT, Benjamin LaHaise said:
-> > I am an emotional amoeba Erika loves because I love Erika, and we care 
-> > about each other more than anyone we've ever met because we love 
-> > technology more than our friends and family.
+On Tue, 27 April 2010 09:52:29 +0200, Jens Axboe wrote:
 > 
-> Doood - Facebook has a "It's Complicated" button. Use it. We don't really
-> care - we debug hardware and software, not liveware.
+> I cooked up that patch myself, here:
+> 
+> http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0661b1ac5d48eb47c8a5948c0554fea25e0895ab
+> 
+> Care to give it a quick spin?
 
-Agreed.  But she values the respect and standing that I have had in this 
-community.  Being able to admit where I stand in public is a huge sign of 
-trust in her keeping her word.  Like I said, she's smarter than me; it's 
-taken me 11 years to try to play the game we started 12 years ago.  But 
-each of us deserves to be shown respect, something I didn't learn until 
-this day.  Saying this in public is an important development for me.  Heck, 
-the it's complicated button is on the level of being a blockbuster true love 
-drama (think Hackers, but as a real life true story).
+Works for me.
 
-Sorry for the distration.  People who know me will know that when I say 
-Erika-with-a-k deserves the respect of this community for her own merit as 
-a talented hacker know that I rarely pay such compliments.  Many people 
-here have my respect.  I want to be shown that same respect myself and to/by 
-the person I love.
+Acked-and-tested-by: Joern Engel <joern@logfs.org>
 
-For what it's worth, liveware can be hacked.  I'm in awe of someone who 
-showed me her elite hacker skills in a way that is life changing.  She 
-hacked my brain and it took me 11 years to defuse her virus.  Elite. =-)
+Jörn
 
-		-ben
+-- 
+If you're willing to restrict the flexibility of your approach,
+you can almost always do something better.
+-- John Carmack
