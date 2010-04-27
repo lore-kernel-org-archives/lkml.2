@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab0D0Jlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 05:41:39 -0400
-Received: from mx1.emlix.com ([193.175.82.87]:54911 "EHLO mx1.emlix.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337Ab0D0Jlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 05:41:37 -0400
-Message-ID: <4BD6B13C.6020406@emlix.com>
-Date: Tue, 27 Apr 2010 11:41:16 +0200
-From: =?ISO-8859-1?Q?Daniel_Gl=F6ckner?= <dg@emlix.com>
-Organization: emlix GmbH
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
-MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       Jani Nikula <ext-jani.1.nikula@nokia.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [patch] gpio: potential null dereference
-References: <20100426192520.GU29093@bicker> <20100426230515.GA1388@emlix.com> <20100427090533.GZ29093@bicker>
-In-Reply-To: <20100427090533.GZ29093@bicker>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1754202Ab0D0JoY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 05:44:24 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:38425 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab0D0JoW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 05:44:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=qmq7xT4/PRvFcz7NtmRf8b9NvJtsXzHiW06Egg/WS0UiecUMWmDoTcv4EsgWonx+Vg
+         wuF4md2K9aAIOl/dt9NfXqveZVXIf61D2o3ok3qY7csRwcxyqC2DEY5uaP+FpdyQvOql
+         7d/O3vzCZMwKybF0Lt490zYjxuj9QST1JYWDI=
+From: Mark <reodge@gmail.com>
+To: gregkh@suse.de, andrew@lunn.ch, lindner_marek@yahoo.de,
+       siwu@hrz.tu-chemnitz.de, sven.eckelmann@gmx.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Mark <reodge@gmail.com>
+Subject: [PATCH] Staging: batman-adv: fixed comments to maintain 80 char limit
+Date: Tue, 27 Apr 2010 17:44:09 +0800
+Message-Id: <1272361449-15416-1-git-send-email-reodge@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2010 11:05 AM, Dan Carpenter wrote:
-> On Tue, Apr 27, 2010 at 01:05:15AM +0200, Daniel Glöckner wrote:
->> On Mon, Apr 26, 2010 at 09:25:20PM +0200, Dan Carpenter wrote:
->>> Smatch found a potential null dereference in gpio_setup_irq().  The 
->>> "pdesc" variable is allocated with idr_find() that can return NULL.  If
->>> gpio_setup_irq() is called with 0 as gpio_flags and "pdesc" is null, it
->>> would OOPs here.
->> idr_find() doesn't allocate, idr_get_new_above() does.
->> Assuming idr_find() never fails for an id if idr_get_new_above()
->> successfully allocated that id, I don't think we can reach that
->> line with pdesc being NULL:
->>
->> - There are two gotos leading to free_sd
->> - #2 is after a block that allocates pdesc
->> - #1 is in an if (!gpio_flags) block
->> - We exit early if ((desc->flags & GPIO_TRIGGER_MASK) == gpio_flags)
->> - Therefore (desc->flags & GPIO_TRIGGER_MASK) must be != 0 to reach #1
->> - Trigger flags are added to desc->flags only after we have
->>   successfully allocated pdesc (i.e. right before return 0)
->> - We start off with no trigger flags set
->>
-> 
-> Are you sure?  If we know that the call to idr_find() returns a valid 
-> pointer we could remove a lot of error handling code...
+This patches types.h to make sure the comments adhere to the 80 char limit and
+make checkpatch.pl happy
 
-It returns a valid pointer iff (desc->flags & GPIO_TRIGGER_MASK).
+Signed-off-by: Mark Rankilor <reodge@gmail.com>
+---
+ drivers/staging/batman-adv/types.h |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
-When !(desc->flags & GPIO_TRIGGER_MASK) it returns NULL and everything
-gets allocated (unless !gpio_flags as well). What you wanted to remove
-is the allocation code, not error handling code. It is always run when
-the trigger is set from "none" to something else.
-
-  Daniel
-
+diff --git a/drivers/staging/batman-adv/types.h b/drivers/staging/batman-adv/types.h
+index dec1b54..7d4768a 100644
+--- a/drivers/staging/batman-adv/types.h
++++ b/drivers/staging/batman-adv/types.h
+@@ -46,7 +46,7 @@ struct batman_if {
+ 
+ };
+ 
+-struct orig_node {               /* structure for orig_list maintaining nodes of mesh */
++struct orig_node { /* structure for orig_list maintaining nodes of mesh */
+ 	uint8_t orig[ETH_ALEN];
+ 	struct neigh_node *router;
+ 	struct batman_if *batman_if;
+@@ -54,15 +54,18 @@ struct orig_node {               /* structure for orig_list maintaining nodes of
+ 	uint8_t *bcast_own_sum;
+ 	uint8_t tq_own;
+ 	int tq_asym_penalty;
+-	unsigned long last_valid;        /* when last packet from this node was received */
+-/*	uint8_t  gwflags;      * flags related to gateway functions: gateway class */
++	unsigned long last_valid; /* when last packet from this node was
++				   * received */
++/*	uint8_t  gwflags;  * flags related to gateway functions:
++			   * gateway class */
+ 	uint8_t  flags;    		/* for now only VIS_SERVER flag. */
+ 	unsigned char *hna_buff;
+ 	int16_t  hna_buff_len;
+ 	uint16_t last_real_seqno;   /* last and best known squence number */
+ 	uint8_t last_ttl;         /* ttl of last received packet */
+ 	TYPE_OF_WORD bcast_bits[NUM_WORDS];
+-	uint16_t last_bcast_seqno;  /* last broadcast sequence number received by this host */
++	uint16_t last_bcast_seqno;  /* last broadcast sequence number received
++				     * by this host */
+ 	struct list_head neigh_list;
+ };
+ 
+@@ -74,7 +77,8 @@ struct neigh_node {
+ 	uint8_t tq_index;
+ 	uint8_t tq_avg;
+ 	uint8_t last_ttl;
+-	unsigned long last_valid;            /* when last packet via this neighbor was received */
++	unsigned long last_valid; /* when last packet via this neighbor was
++				   * received */
+ 	TYPE_OF_WORD real_bits[NUM_WORDS];
+ 	struct orig_node *orig_node;
+ 	struct batman_if *if_incoming;
+@@ -108,7 +112,8 @@ struct hna_global_entry {
+ 	struct orig_node *orig_node;
+ };
+ 
+-struct forw_packet {               /* structure for forw_list maintaining packets to be send/forwarded */
++struct forw_packet { /* structure for forw_list maintaining packets to be
++		      * send/forwarded */
+ 	struct hlist_node list;
+ 	unsigned long send_time;
+ 	uint8_t own;
 -- 
-Dipl.-Math. Daniel Glöckner, emlix GmbH, http://www.emlix.com
-Fon +49 551 30664-0, Fax -11, Bahnhofsallee 1b, 37081 Göttingen, Germany
-Sitz der Gesellschaft: Göttingen, Amtsgericht Göttingen HR B 3160
-Geschäftsführer: Dr. Uwe Kracke, Ust-IdNr.: DE 205 198 055
+1.7.0.5
 
-emlix - your embedded linux partner
