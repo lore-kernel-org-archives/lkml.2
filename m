@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab0D0Mak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 08:30:40 -0400
-Received: from sh.osrg.net ([192.16.179.4]:41136 "EHLO sh.osrg.net"
+	id S1755450Ab0D0Mci (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 08:32:38 -0400
+Received: from www.tglx.de ([62.245.132.106]:47610 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752647Ab0D0Maj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 08:30:39 -0400
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-To: akpm@linux-foundation.org
-Cc: fujita.tomonori@lab.ntt.co.jp, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH -mm 1/6] dma-mapping: fix dma_sync_single_range_*
-Date: Tue, 27 Apr 2010 21:25:35 +0900
-Message-Id: <1272371140-6085-2-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1272371140-6085-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-References: <1272371140-6085-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 27 Apr 2010 21:26:06 +0900 (JST)
+	id S1755364Ab0D0Mcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 08:32:36 -0400
+Date: Tue, 27 Apr 2010 14:32:22 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+cc: davem@davemloft.net, arjan@linux.jf.intel.com, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC: linux-next 1/2] irq: Add CPU mask affinity hint
+ callback framework
+In-Reply-To: <20100419045741.30276.23233.stgit@ppwaskie-hc2.jf.intel.com>
+Message-ID: <alpine.LFD.2.00.1004271425140.2951@localhost.localdomain>
+References: <20100419045741.30276.23233.stgit@ppwaskie-hc2.jf.intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma_sync_single_range_for_cpu and dma_sync_single_range_for_device
-use a wrong address with a partial synchronization.
+On Sun, 18 Apr 2010, Peter P Waskiewicz Jr wrote:
+> +/**
+> + * struct irqaffinityhint - per interrupt affinity helper
+> + * @callback:	device driver callback function
+> + * @dev:	reference for the affected device
+> + * @irq:	interrupt number
+> + */
+> +struct irqaffinityhint {
+> +	irq_affinity_hint_t callback;
+> +	void *dev;
+> +	int irq;
+> +};
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: stable@kernel.org
----
- include/asm-generic/dma-mapping-common.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Why do you need that extra data structure ? The device and the irq
+number are known, so all you need is the callback itself. So no need
+for allocating memory ....
 
-diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
-index e694263..6920695 100644
---- a/include/asm-generic/dma-mapping-common.h
-+++ b/include/asm-generic/dma-mapping-common.h
-@@ -131,7 +131,7 @@ static inline void dma_sync_single_range_for_cpu(struct device *dev,
- 		debug_dma_sync_single_range_for_cpu(dev, addr, offset, size, dir);
- 
- 	} else
--		dma_sync_single_for_cpu(dev, addr, size, dir);
-+		dma_sync_single_for_cpu(dev, addr + offset, size, dir);
- }
- 
- static inline void dma_sync_single_range_for_device(struct device *dev,
-@@ -148,7 +148,7 @@ static inline void dma_sync_single_range_for_device(struct device *dev,
- 		debug_dma_sync_single_range_for_device(dev, addr, offset, size, dir);
- 
- 	} else
--		dma_sync_single_for_device(dev, addr, size, dir);
-+		dma_sync_single_for_device(dev, addr + offset, size, dir);
- }
- 
- static inline void
--- 
-1.6.5
+> +static ssize_t irq_affinity_hint_proc_write(struct file *file,
+> +		const char __user *buffer, size_t count, loff_t *pos)
+> +{
+> +	/* affinity_hint is read-only from proc */
+> +	return -EOPNOTSUPP;
+> +}
+> +
 
+Why do you want a write function when the file is read only ?
+
+Thanks,
+
+	tglx
