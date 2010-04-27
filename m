@@ -1,109 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab0D0K6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 06:58:12 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:62604 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815Ab0D0K6K (ORCPT
+	id S1754671Ab0D0LCP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 07:02:15 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:14594 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754276Ab0D0LCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 06:58:10 -0400
-Subject: Re: [PULL] param sysfs oops (simple, leaky) fix, bool arrays fix
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-       Sitsofe Wheeler <sitsofe@yahoo.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>
-In-Reply-To: <1272364305.26036.21.camel@localhost>
-References: <200910290902.13724.rusty@rustcorp.com.au>
-	 <1272364305.26036.21.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Apr 2010 13:53:24 +0300
-Message-ID: <1272365604.26036.30.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 27 Apr 2010 10:57:37.0780 (UTC) FILETIME=[73046B40:01CAE5F8]
-X-Nokia-AV: Clean
+	Tue, 27 Apr 2010 07:02:12 -0400
+Message-ID: <001f01cae5f9$157be920$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "LKML" <linux-kernel@vger.kernel.org>
+Cc: "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+       "Intel OTC" <joel.clark@intel.com>,
+       "Andrew" <andrew.chih.howe.khor@intel.com>
+Subject: [PATCH] Topcliff UART: Add the UART driver [2/2]
+MIME-Version: 1.0
+Date: Tue, 27 Apr 2010 20:01:30 +0900
+Content-Type: message/partial;
+	total=2;
+	id="01CAE5F9.14B84B00@tsmail03";
+	number=2
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-27 at 13:31 +0300, Artem Bityutskiy wrote:
-> On Thu, 2009-10-29 at 09:02 +1030, Rusty Russell wrote:
-> > (Thanks to Takashi-san, who found the oops and kept reading the code to spot
-> >  the others.  A more complete fix is pending, but this works for 2.6.32 and
-> >  -stable: see commit message and FIXME in code.)
-> > 
-> > The following changes since commit 964fe080d94db82a3268443e9b9ece4c60246414:
-> >   Linus Torvalds (1):
-> >         Merge git://git.kernel.org/.../rusty/linux-2.6-for-linus
-> > 
-> > are available in the git repository at:
-> > 
-> >   ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-param-fixes.git master
-> > 
-> > Rusty Russell (3):
-> >       param: fix lots of bugs with writing charp params from sysfs, by leaking mem.
-> >       param: fix NULL comparison on oom
-> >       param: fix setting arrays of bool
-> > 
-> >  include/linux/moduleparam.h |    1 -
-> >  kernel/params.c             |   17 ++++++-----------
-> >  2 files changed, 6 insertions(+), 12 deletions(-)
-> > 
-> > commit 65afac7d80ab3bc9f81e75eafb71eeb92a3ebdef
-> > Author: Rusty Russell <rusty@rustcorp.com.au>
-> > Date:   Thu Oct 29 08:56:16 2009 -0600
-> > 
-> >     param: fix lots of bugs with writing charp params from sysfs, by leaking mem.
-> >     
-> >     e180a6b7759a "param: fix charp parameters set via sysfs" fixed the case
-> >     where charp parameters written via sysfs were freed, leaving drivers
-> >     accessing random memory.
-> >     
-> >     Unfortunately, storing a flag in the kparam struct was a bad idea: it's
-> >     rodata so setting it causes an oops on some archs.  But that's not all:
-> >     
-> >     1) module_param_array() on charp doesn't work reliably, since we use an
-> >        uninitialized temporary struct kernel_param.
-> >     2) there's a fundamental race if a module uses this parameter and then
-> >        it's changed: they will still access the old, freed, memory.
-> >     
-> >     The simplest fix (ie. for 2.6.32) is to never free the memory.  This
-> >     prevents all these problems, at cost of a memory leak.  In practice, there
-> >     are only 18 places where a charp is writable via sysfs, and all are
-> >     root-only writable.
-> 
-> Hmm, is it really only about changing the parameters via sysfs? We see
-> the following kmemleak complaints in 2.6.32 (I think it will be the same
-> in the latest kernel, but I did not check):
-> 
-> kmemleak: unreferenced object 0xdeff3c80 (size 64):
-> kmemleak:   comm "modprobe", pid 788, jiffies 4294933427
-> kmemleak:   backtrace:
-> kmemleak:     [<c00e59b8>] __save_stack_trace+0x34/0x40
-> kmemleak:     [<c00e5ad0>] create_object+0x10c/0x208
-> kmemleak:     [<c03ae0ec>] kmemleak_alloc+0x40/0x84
-> kmemleak:     [<c00dca74>] __kmalloc_track_caller+0x140/0x154
-> kmemleak:     [<c00c47ac>] kstrdup+0x38/0x54
-> kmemleak:     [<c0081854>] param_set_charp+0x68/0x94
-> kmemleak:     [<c0081108>] parse_args+0x18c/0x280
-> kmemleak:     [<c009fc74>] load_module+0x11e8/0x1644
-> kmemleak:     [<c00a0130>] sys_init_module+0x60/0x1f4
-> kmemleak:     [<c003c040>] ret_fast_syscall+0x0/0x38
-> 
-> So we are leaking on every insmod/rmmod, AFAICS, not just in the sysfs
-> case.
 
-Rusty, correct me if I'm wrong, but it looks like the above memleak was
-introduced by e180a6b7759a99a28cbcce3547c4c80822cb6c2a, where you added
-the kstrdup(). So you kinda fixed the sysfs case (it still memleaks
-though), but at the cost of additional insmod/rmmod leak, right?
++  .subvendor  = PCI_ANY_ID,
++  .subdevice  = PCI_ANY_ID,
++  .init  = pci_pch_init,
++  .setup      = pci_pch_setup,
++ },
++ {
++  .vendor     = PCI_VENDOR_ID_INTEL,
++  .device     = PCI_DEVICE_ID_PCH_UART3,
++  .subvendor  = PCI_ANY_ID,
++  .subdevice  = PCI_ANY_ID,
++  .init  = pci_pch_init,
++  .setup      = pci_pch_setup,
++ },
++#endif
++ /*
+   * Default "match everything" terminator entry
+   */
+  {
+@@ -1571,6 +1691,10 @@
+  pbn_ADDIDATA_PCIe_2_3906250,
+  pbn_ADDIDATA_PCIe_4_3906250,
+  pbn_ADDIDATA_PCIe_8_3906250,
++#if defined(ENABLE_SERIAL_8250_PCH)
++ pbn_pch_uart_8L_256FIFO,  /* pch 8 Line UART with 256 byte FIFO */
++ pbn_pch_uart_2L_64FIFO    /* pch 2 Line UART with 64 byte FIFO */
++#endif
+ };
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+ /*
+@@ -2228,6 +2352,27 @@
+   .uart_offset = 0x200,
+   .first_offset = 0x1000,
+  },
++
++#if defined(ENABLE_SERIAL_8250_PCH)
++
++ /*
++  * PCH UART
++  */
++ [pbn_pch_uart_8L_256FIFO] = {
++  .flags      = FL_BASE0,
++  .num_ports  = 1,
++  .base_baud  = 115200,  /* OKISEMI For LSI */
++  .reg_shift  = 0,
++ },
++
++ [pbn_pch_uart_2L_64FIFO] = {
++  .flags      = FL_BASE0,
++  .num_ports  = 1,
++  .base_baud  = 115200,  /* OKISEMI For LSI*/
++  .reg_shift  = 0,
++ },
++#endif
++
+ };
+
+ static const struct pci_device_id softmodem_blacklist[] = {
+@@ -2473,8 +2618,20 @@
+   return -EINVAL;
+  }
+
++#ifdef DEBUG
++ printk(KERN_DEBUG "PCH UART LOG:function pciserial_init_one ent->vendor"
++        " = %x\n, ent->device = %x, ent->driver_data = %ld\n  ",
++        ent->vendor, ent->device, ent->driver_data);
++#endif
++
+  board = &pci_boards[ent->driver_data];
+
++#ifdef DEBUG
++ printk(KERN_DEBUG "PCH UART LOG:function pciserial_init_one board->"
++       "base_baud = %u\n, board->flags = %d, board->num_ports = %d\n "
++       , board->base_baud, board->flags, board->num_ports);
++#endif
++
+  rc = pci_enable_device(dev);
+  if (rc)
+   return rc;
+@@ -2540,6 +2697,17 @@
+  if (priv)
+   pciserial_suspend_ports(priv);
+
++#if defined(ENABLE_SERIAL_8250_PCH)
++
++#ifdef DEBUG
++ printk(KERN_DEBUG "PCH UART LOG:pciserial_suspend_one->pci_enable_wake"
++       "invoked \n");
++#endif
++
++
++ pci_enable_wake(dev, PCI_D3hot, 1);
++#endif
++
+  pci_save_state(dev);
+  pci_set_power_state(dev, pci_choose_state(dev, state));
+  return 0;
+@@ -2561,6 +2729,17 @@
+   /* FIXME: We cannot simply error out here */
+   if (err)
+    printk(KERN_ERR "pciserial: Unable to re-enable ports, trying to
+continue.\n");
++
++#if defined(ENABLE_SERIAL_8250_PCH)
++
++#ifdef DEBUG
++ printk(KERN_DEBUG "PCH UART LOG:pciserial_resume_one->pci_enable_wake"
++       "invoked \n");
++#endif
++
++ pci_enable_wake(dev, PCI_D3hot, 0);
++#endif
++
+   pciserial_resume_ports(priv);
+  }
+  return 0;
+@@ -3649,6 +3828,48 @@
+   0, 0, pbn_b0_1_115200 },
+
+  /*
++  * PCH UART
++  */
++#if defined(ENABLE_SERIAL_8250_PCH)
++
++ {   PCI_VENDOR_ID_INTEL,
++  /*device id for pch uart with 8 i/o lines and 256 byte fifo. */
++  PCI_DEVICE_ID_PCH_UART0,
++  PCI_ANY_ID,
++  PCI_ANY_ID,
++  0,
++  0,
++  pbn_pch_uart_8L_256FIFO },
++
++ {   PCI_VENDOR_ID_INTEL,
++  /*device id for pch uart with 2 i/o lines and 256 byte fifo. */
++  PCI_DEVICE_ID_PCH_UART1,
++  PCI_ANY_ID,
++  PCI_ANY_ID,
++  0,
++  0,
++  pbn_pch_uart_2L_64FIFO },
++
++ {   PCI_VENDOR_ID_INTEL,
++  /*device id for pch uart with 8 i/o lines and 64 byte fifo. */
++  PCI_DEVICE_ID_PCH_UART2,
++  PCI_ANY_ID,
++  PCI_ANY_ID,
++  0,
++  0,
++  pbn_pch_uart_2L_64FIFO },
++
++ {   PCI_VENDOR_ID_INTEL,
++  /*device id for pch uart with 2 i/o lines and 64 byte fifo. */
++  PCI_DEVICE_ID_PCH_UART3,
++  PCI_ANY_ID,
++  PCI_ANY_ID,
++  0,
++  0,
++  pbn_pch_uart_2L_64FIFO },
++#endif
++
++ /*
+   * These entries match devices with class COMMUNICATION_SERIAL,
+   * COMMUNICATION_MODEM or COMMUNICATION_MULTISERIAL
+   */
+diff -urN linux-2.6.33.1/drivers/serial/Kconfig
+topcliff-2.6.33.1/drivers/serial/Kconfig
+--- linux-2.6.33.1/drivers/serial/Kconfig 2010-03-16 01:09:39.000000000
++0900
++++ topcliff-2.6.33.1/drivers/serial/Kconfig 2010-03-23 10:34:44.000000000
++0900
+@@ -89,6 +89,21 @@
+    disable this feature if you only need legacy serial support.
+    Saves about 9K.
+
++config SERIAL_8250_PCH
++ tristate "PCH PCI serial device support"
++ depends on SERIAL_8250 && PCI && SERIAL_8250_PCI
++ default SERIAL_8250_PCI
++ help
++   This makes the PCH PCI serial driver to support high speed PCH serial
+ports.
++
++config SERIAL_8250_PCH_DMA
++ bool "Enable DMA mode of PCH PCI serial device"
++ depends on SERIAL_8250_PCH
++ select PCH_UART_DMA
++ default y
++ help
++   This makes the PCH PCI serial driver with DMA mode.
++
+ config SERIAL_8250_PNP
+  tristate "8250/16550 PNP device support" if EMBEDDED
+  depends on SERIAL_8250 && PNP
+diff -urN linux-2.6.33.1/drivers/serial/Makefile
+topcliff-2.6.33.1/drivers/serial/Makefile
+--- linux-2.6.33.1/drivers/serial/Makefile 2010-03-16 01:09:39.000000000
++0900
++++ topcliff-2.6.33.1/drivers/serial/Makefile 2010-04-27 11:29:58.000000000
++0900
+@@ -1,6 +1,17 @@
+ #
+ # Makefile for the kernel serial device drivers.
+ #
++#
++#This is needed to enable pch dma#
++#EXTRA_CFLAGS +=-DENABLE_PCH_DMA_FEATURE
++ifdef CONFIG_SERIAL_8250_PCH
++EXTRA_CFLAGS +=-DENABLE_SERIAL_8250_PCH
++endif
++
++ifdef CONFIG_PCH_UART_DMA
++EXTRA_CFLAGS +=-DENABLE_PCH_DMA_FEATURE
++EXTRA_CFLAGS +=-Idrivers/dma/pch_dma/
++endif
+
+ obj-$(CONFIG_SERIAL_CORE) += serial_core.o
+ obj-$(CONFIG_SERIAL_21285) += 21285.o
 
