@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab0D0PLl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 11:11:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751011Ab0D0PLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 11:11:39 -0400
-Date: Tue, 27 Apr 2010 12:11:36 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com
-Subject: Re: [PATCH 6/6] don't compute pvclock adjustments if we trust the tsc
-Message-ID: <20100427151136.GJ16166@mothafucka.localdomain>
-References: <1272303988-21929-1-git-send-email-glommer@redhat.com>
- <1272303988-21929-2-git-send-email-glommer@redhat.com>
- <1272303988-21929-3-git-send-email-glommer@redhat.com>
- <1272303988-21929-4-git-send-email-glommer@redhat.com>
- <1272303988-21929-5-git-send-email-glommer@redhat.com>
- <1272303988-21929-6-git-send-email-glommer@redhat.com>
- <1272303988-21929-7-git-send-email-glommer@redhat.com>
- <20100427134013.GE18410@amt.cnet>
+	id S1753410Ab0D0PM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 11:12:28 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:30010 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab0D0PM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 11:12:26 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai <yinghai.lu@oracle.com>
+Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below    BIOS_END
+Date: Tue, 27 Apr 2010 09:11:10 -0600
+User-Agent: KMail/1.9.10
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       "H. Peter Anvin" <hpa@zytor.com>, Andy Isaacson <adi@hexapodia.org>,
+       "R. Andrew Bailey" <bailey@akamai.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       guenter.roeck@ericsson.com,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
+References: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com> <alpine.LFD.2.00.1004261824570.3739@i5.linux-foundation.org> <4BD640E3.1050101@oracle.com>
+In-Reply-To: <4BD640E3.1050101@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100427134013.GE18410@amt.cnet>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+Message-Id: <201004270911.12124.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 10:40:13AM -0300, Marcelo Tosatti wrote:
-> On Mon, Apr 26, 2010 at 01:46:28PM -0400, Glauber Costa wrote:
-> > If the HV told us we can fully trust the TSC, skip any
-> > correction
-> > 
-> > Signed-off-by: Glauber Costa <glommer@redhat.com>
-> > ---
-> >  arch/x86/include/asm/kvm_para.h    |    5 +++++
-> >  arch/x86/include/asm/pvclock-abi.h |    1 +
-> >  arch/x86/kernel/kvmclock.c         |    3 +++
-> >  arch/x86/kernel/pvclock.c          |    4 ++++
-> >  4 files changed, 13 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> > index f019f8c..615ebb1 100644
-> > --- a/arch/x86/include/asm/kvm_para.h
-> > +++ b/arch/x86/include/asm/kvm_para.h
-> > @@ -21,6 +21,11 @@
-> >   */
-> >  #define KVM_FEATURE_CLOCKSOURCE2        3
-> >  
-> > +/* The last 8 bits are used to indicate how to interpret the flags field
-> > + * in pvclock structure. If no bits are set, all flags are ignored.
-> > + */
-> > +#define KVM_FEATURE_CLOCKSOURCE_STABLE_TSC	0xf8
-> > +
-> >  #define MSR_KVM_WALL_CLOCK  0x11
-> >  #define MSR_KVM_SYSTEM_TIME 0x12
-> 
-> Please drop this. Its not certain what is the best method to reduce
-> contention on the global variable. Whatever it is, can be done later.
-You tell me to drop it, avi tells me to write this, I am happy to pick
-any one of the two options. Just don't want to get ping-ponged between
-haveit-dropit.
+On Monday 26 April 2010 07:41:55 pm Yinghai wrote:
+> On 04/26/2010 06:27 PM, Linus Torvalds wrote:
+> > Do we actually have a regression left with Bjorn's patch?
+
+After the pcibios_align_resource() patch, I'm not aware of any regressions.
+
+But let's double-check this:
+
+> also find one AMD system:
+> [    7.056011] pci_root PNP0A03:00: host bridge window [mem 0xfed20000-0xffffffff]
+> ...
+> pci assign unassign code could use range like [mem 0xfed20000-0xffffffff] wrongly.
+
+I agree, it's very unlikely that it's safe to put PCI devices all the
+way up to 0xffffffff.  I suspect this might be fixed by d558b483d5a,
+which computes the end of the bridge window using _MAX rather than _LEN.
+
+See https://bugzilla.kernel.org/show_bug.cgi?id=15480#c15 for an example
+similar to the one above: we originally thought the window was
+[mem 0xcff00000-0xffffffff], but d558b483d5a changes that to
+[mem 0xcff00000-0xfebfffff], which matches what Windows found.
+
+Yinghai, can you take a look at your AMD system again with a kernel that
+includes d558b483d5a, and see whether we still have a problem?  If we
+*do* still have a problem, please open a bugzilla and attach a dmesg log
+with ACPI resource info collected with the debug patch here:
+https://bugzilla.kernel.org/show_bug.cgi?id=15533#c5
+
+Bjorn
