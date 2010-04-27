@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab0D0PdA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 11:33:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34099 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754228Ab0D0Pc6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 11:32:58 -0400
-Date: Tue, 27 Apr 2010 08:31:59 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Tony Lindgren <tony@atomide.com>
-cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] omap fixes for v2.6.34-rc5
-In-Reply-To: <20100426190005.GJ7225@atomide.com>
-Message-ID: <alpine.LFD.2.00.1004270831430.3739@i5.linux-foundation.org>
-References: <20100426190005.GJ7225@atomide.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755040Ab0D0PeK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 11:34:10 -0400
+Received: from mail.atmel.fr ([81.80.104.162]:56516 "EHLO atmel-es2.atmel.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754418Ab0D0PeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 11:34:08 -0400
+Message-ID: <4BD703E8.4080307@atmel.com>
+Date: Tue, 27 Apr 2010 17:34:00 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: haavard.skinnemoen@atmel.com, linux-arm-kernel@lists.infradead.org,
+       akpm@linux-foundation.org, linux-mmc@vger.kernel.org,
+       kernel@avr32linux.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] MMC: atmel-mci: fix two parameters swapped
+References: <1271671952-29204-1-git-send-email-nicolas.ferre@atmel.com> <bfa27c51250b39deeccbf6f3a656db4e0b73ce92.1272378853.git.nicolas.ferre@atmel.com> <4BD70251.9060501@ru.mvista.com>
+In-Reply-To: <4BD70251.9060501@ru.mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Mon, 26 Apr 2010, Tony Lindgren wrote:
+Le 27/04/2010 17:27, Sergei Shtylyov :
+> Hello.
 > 
-> Please pull omap fixes from:
+> Nicolas Ferre wrote:
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
+>> Two parameters were swapped in the calls to atmci_init_slot(). Two
+>> parameters
+>> were swapped in the calls to atmci_init_slot().
+> 
+>  The same sentence is repeated twice.
+> 
+>>  Their values
+>>   
+> 
+>   ???
 
-I pulled it this time, but I'm starting to get really irritated with you.
+indeed! I reposted a new patch message.
 
-These look like real fixes, but quite frankly, by -rc5, that IS NOT 
-ENOUGH. 
+Sorry for the noise.
 
-They need to be _regressions_, not just cleanups and fixes for things that 
-have never worked. And this is starting to be a pattern with the omap 
-tree: you're not honoring the merge window properly.
+Best regards,
+-- 
+Nicolas Ferre
 
-Just "it's a bug-fix" or "it's deleting unused code" is not enough. The 
-point of the late -rc series is to fix problems from the merge window, not 
-add new changes. I realize that you think that all the new changes are 
-obviously good, but the fact is, bugs happen even in "obvious bug-fixes". 
-
-And that's why we have the rule about late-rc pulls being about 
-_regressions_ and/or major oopses/security issues. Not just random 
-development that are meant to improve things.
-
-		Linus
