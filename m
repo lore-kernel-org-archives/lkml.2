@@ -1,47 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab0D0Wst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 18:48:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57296 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757362Ab0D0Wss (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 18:48:48 -0400
-Date: Tue, 27 Apr 2010 15:48:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
-       David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] tosa_battery: fix FTBFS bug due to driver_data access
-Message-Id: <20100427154835.27bdc233.akpm@linux-foundation.org>
-In-Reply-To: <1272374302-9506-1-git-send-email-dbaryshkov@gmail.com>
-References: <1272374302-9506-1-git-send-email-dbaryshkov@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	id S1757498Ab0D0Ww0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 18:52:26 -0400
+Received: from sh.osrg.net ([192.16.179.4]:56750 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755088Ab0D0WwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 18:52:24 -0400
+Date: Wed, 28 Apr 2010 07:50:07 +0900
+To: linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+       davem@davemloft.net, linux-kernel@vger.kernel.org,
+       fujita.tomonori@lab.ntt.co.jp
+Subject: Re: [PATCH] ARM: dmabounce: fix partial sync in dma_sync_single_*
+	API
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100413142607V.fujita.tomonori@lab.ntt.co.jp>
+References: <20100405123847C.fujita.tomonori@lab.ntt.co.jp>
+	<20100412193536.GO3048@n2100.arm.linux.org.uk>
+	<20100413142607V.fujita.tomonori@lab.ntt.co.jp>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100428075137J.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 28 Apr 2010 07:50:09 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Apr 2010 17:18:22 +0400
-Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> wrote:
+On Tue, 13 Apr 2010 14:27:04 +0900
+FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
 
-> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> On Mon, 12 Apr 2010 20:35:36 +0100
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> 
+> > On Mon, Apr 05, 2010 at 12:39:32PM +0900, FUJITA Tomonori wrote:
+> > > I don't have arm hardware that uses dmabounce so I can't confirm the
+> > > problem but seems that dmabounce doesn't work for some drivers...
+> > 
+> > Patch reviews fine, except for one niggle.  I too don't have hardware
+> > I can test (well, I do except the kernel stopped supporting the UDA1341
+> > audio codec on the SA1110 Neponset.)
+> 
+> Thanks for reviewing.
+> 
+> > > @@ -171,10 +172,17 @@ find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_
+> > >  	read_lock_irqsave(&device_info->lock, flags);
+> > >  
+> > >  	list_for_each_entry(b, &device_info->safe_buffers, node)
+> > > -		if (b->safe_dma_addr == safe_dma_addr) {
+> > > -			rb = b;
+> > > -			break;
+> > > -		}
+> > > +		if (for_sync) {
+> > > +			if (b->safe_dma_addr <= safe_dma_addr &&
+> > > +			    safe_dma_addr < b->safe_dma_addr + b->size) {
+> > > +				rb = b;
+> > > +				break;
+> > > +			}
+> > > +		} else
+> > > +			if (b->safe_dma_addr == safe_dma_addr) {
+> > > +				rb = b;
+> > > +				break;
+> > > +			}
+> > 
+> > This is the niggle; I don't like this indentation style.  If you want to
+> > indent this if () statement, then please format like this:
+> > 
+> > 		} else {
+> > 			if (b->safe...) {
+> > 				...
+> > 			}
+> > 		}
+> > 
+> > or format it as:
+> > 
+> > 		} else if (b->safe...) {
+> > 			...
+> > 		}
+> 
+> ok, here's the fixed patch.
+> 
+> =
+> From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Subject: [PATCH] ARM: dmabounce: fix partial sync in dma_sync_single_* API
+> 
+> Some network drivers do a partial sync with
+> dma_sync_single_for_{device|cpu}. The dma_addr argument might not be
+> the same as one as passed into the mapping API.
+> 
+> This adds some tricks to find_safe_buffer() for
+> dma_sync_single_for_{device|cpu}.
+> 
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 > ---
->  drivers/power/tosa_battery.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>  arch/arm/common/dmabounce.c |   30 +++++++++++++++++++++---------
+>  1 files changed, 21 insertions(+), 9 deletions(-)
 
-Please don't send unchangelogged patches.
+Ping?
 
-Please don't send patches which require recipients to go googling
-acronyms to work out wtf you're up to.
-
-<googles the acronym>
-
-Ah, it appears to be a build fix.
-
-Please always quote the compiler errors when fixing a build error.
-
-IOW: bah.
-
+Is this going to be merged via the arm tree?
