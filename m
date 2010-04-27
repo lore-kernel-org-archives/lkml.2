@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab0D0U5Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 16:57:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38911 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754885Ab0D0U5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 16:57:14 -0400
-Date: Tue, 27 Apr 2010 22:57:11 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Oliver Neukum <oliver@neukum.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Nicu Pavel <npavel@ituner.com>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>,
-       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>
-Subject: Re: [PATCH 2/2] hid: add PM support to PicoLCD device
-In-Reply-To: <20100427221648.39735c41@neptune.home>
-Message-ID: <alpine.LNX.2.00.1004272256160.9849@pobox.suse.cz>
-References: <20100425214003.7e87c6a3@neptune.home> <20100425214306.5d7be049@neptune.home> <alpine.LNX.2.00.1004271525330.9849@pobox.suse.cz> <20100427221648.39735c41@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753614Ab0D0VGO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 17:06:14 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58332 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab0D0VGN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 17:06:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ueKvEeX4XwO2Z9oN+VP+XFdQBVUR1zM9ZBuxg39Q95LUNv934tcJaKuACmiZ9n7emi
+         ooEOoouD80BWUbeRlhv5vdbUOpRYWru3j38aeCWbLisldxdNlb17BG5nxoZ5ej7WVhBk
+         CSnJKACE/VVfKdPy+9cWjPnm/jRIRzTBvkYlI=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
+In-Reply-To: <1272401402.9739.77.camel@gandalf.stny.rr.com>
+References: <1272304925-2436-1-git-send-email-chase.douglas@canonical.com>
+	 <1272401402.9739.77.camel@gandalf.stny.rr.com>
+Date: Tue, 27 Apr 2010 17:06:12 -0400
+X-Google-Sender-Auth: 1a1bed4d0b5d630a
+Message-ID: <y2k40ec3ea41004271406x3727625cwa3c5d628e0e9ad3b@mail.gmail.com>
+Subject: Re: [PATCH] ftrace: print sample std dev when function profiling
+From: Chase Douglas <chase.douglas@canonical.com>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Apr 2010, Bruno Pr√©mont wrote:
+On Tue, Apr 27, 2010 at 4:50 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2010-04-26 at 14:02 -0400, Chase Douglas wrote:
+>
+>> + † † /* Sample standard deviation (s^2) */
+>> + † † if (rec->counter <= 1)
+>> + † † † † † † stddev = 0;
+>> + † † else {
+>> + † † † † † † stddev = rec->time_squared - rec->counter * avg * avg;
+>> + † † † † † † do_div(stddev, (rec->counter - 1) * 1000); /* ns^2 -> us^2 */
+>
+> Shouldn't this be:
+>
+> † † † †do_div(stddev, (rec->counter - 1) * 1000000); ?
+>
+> (x / 1000)^2 == x^2 / 1000^2
 
-> > > +#ifdef CONFIG_PM
-> > > +static void picolcd_suspend_backlight(struct picolcd_data *data)
-> > > +{
-> > > +	int bl_power = data->lcd_power;
-> > > +	if (!data->backlight)
-> > > +		return;
-> > > +
-> > > +	data->backlight->props.power = FB_BLANK_POWERDOWN;
-> > > +	picolcd_set_brightness(data->backlight);
-> > > +	data->lcd_power = data->backlight->props.power = bl_power;
-> > > +}
-> > > +#else
-> > > +#define picolcd_suspend_backlight(a)
-> > > +#endif /* CONFIG_PM */
-> > 
-> > Stylistic thing -- it would be nice if this was actually 
-> > 
-> > static inline void picolcd_suspend_backlight(struct picolcd_data *data)
-> > {
-> > 	return 0;
-> > }
-> > 
-> > But why do you need to have it defined in !CONFIG_PM situation anyway? 
-> > It's not used otherwise at all.
-> 
-> Yeah, I could drop the #else branch (of #ifconfig CONFIG_PM).
+The trace_print_graph_duration function divides the value by 1000
+again to display in us units. I could make the comment more clear, but
+I didn't want to make a big fuss over a unit conversion.
 
-Yup, please do so.
+I also figured this out *after* I had some really wrong looking
+numbers :). I made sure this patch produced the correct value after
+two events, so I assume the math is correct.
 
-> Is gcc quiet about defined but unused static inline functions?
-
-Yup, -Wunused-function doesn't warn about unused static inline function.
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+-- Chase
