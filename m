@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698Ab0D0E1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 00:27:50 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:38036 "EHLO e6.ny.us.ibm.com"
+	id S1751817Ab0D0EsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 00:48:19 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33430 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751521Ab0D0E1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 00:27:48 -0400
-Date: Mon, 26 Apr 2010 21:27:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Miles Lane <miles.lane@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
- rcu_dereference_check() usage
-Message-ID: <20100427042744.GD2510@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100422145640.GB3228@redhat.com>
- <20100422160144.GC2524@linux.vnet.ibm.com>
- <h2xa44ae5cd1004230550uf734c89eo2b1d1945d446068c@mail.gmail.com>
- <20100423194255.GE2589@linux.vnet.ibm.com>
- <m2xa44ae5cd1004231559hcf90671asf146a43b4748c2c3@mail.gmail.com>
- <20100425023455.GM2440@linux.vnet.ibm.com>
- <w2sa44ae5cd1004250849q73704370vc6af935c70db9b73@mail.gmail.com>
- <p2ga44ae5cd1004251320j55d23ba7ua0fa14497f623d76@mail.gmail.com>
- <20100426160925.GD2529@linux.vnet.ibm.com>
- <m1hbmydpup.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1hbmydpup.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751057Ab0D0EsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 00:48:17 -0400
+Date: Tue, 27 Apr 2010 14:48:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: =?UTF-8?B?IkZyw6lkw6lyaWMgV2Vpc2JlY2tlciI=?= <fweisbec@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Vijay Kumar <vijaykumar@bravegnu.org>, Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the bkl-ioctl tree with the
+ staging-next tree
+Message-Id: <20100427144804.cbfa9564.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__27_Apr_2010_14_48_04_+1000_jKdHnjIORDf7XFCN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 11:35:10AM -0700, Eric W. Biederman wrote:
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
-> 
-> > Eric Dumazet traced these down to a commit from Eric Biederman.
-> >
-> > If I don't hear from Eric Biederman in a few days, I will attempt a
-> > patch, but it would be more likely to be correct coming from someone
-> > with a better understanding of the code.  ;-)
-> 
-> I already replied.
-> 
-> http://lkml.org/lkml/2010/4/21/420
+--Signature=_Tue__27_Apr_2010_14_48_04_+1000_jKdHnjIORDf7XFCN
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You did indeed!!!  This experience is giving me an even better appreciation
-of the maintainers' ability to keep all their patches straight!
+Hi Fr=C3=A9d=C3=A9ric,
 
-I will put together something based on your suggestion.
+Today's linux-next merge of the bkl-ioctl tree got a conflict in
+drivers/staging/poch/poch.c between commit
+ba7d84da197c348efa2b2984a848e0fbccd4b9b0 ("Staging: Remove staging/poch")
+from the staging-next tree and commit
+1dd97d3d546aa14db7efa5366b21d1336b91379e ("Rename 'struct
+file_operations' 'ioctl' fn pointer to 'bkl_ioctl'") from the bkl-ioctl
+tree.
 
-							Thanx, Paul
+The former just removed the file, so I did as well.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__27_Apr_2010_14_48_04_+1000_jKdHnjIORDf7XFCN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvWbIQACgkQjjKRsyhoI8zRugCgu22pMBWZAxbeBaa1/xieZ2L8
+iXIAn1h7VO4mIKh35kPLJheZ5jvyjhIb
+=ld8o
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Apr_2010_14_48_04_+1000_jKdHnjIORDf7XFCN--
