@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab0D0HH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 03:07:29 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37496 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092Ab0D0HH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 03:07:28 -0400
-Date: Tue, 27 Apr 2010 09:07:24 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-       stable-review@kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [049/197] x86, amd: Get multi-node CPU info from NodeId MSR
- instead of PCI config space
-In-Reply-To: <20100427065534.GB6248@alberich.amd.com>
-Message-ID: <alpine.LNX.2.00.1004270906370.7579@pobox.suse.cz>
-References: <20100422190911.735233389@kvm.kroah.org> <alpine.LNX.2.00.1004261906410.7579@pobox.suse.cz> <20100427065534.GB6248@alberich.amd.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752862Ab0D0HUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 03:20:46 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:52980 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab0D0HUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 03:20:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=dWJgiW02zmdFI9fx5aeXm7zRnRJfmDPbnJEnw2bVtTUIH7Y5Vx93nU1zQa4eH/qV37
+         DkMHANegJAsgGVjvtQ4FYj1VGNR7gPe7+B5q8usc21Qc/JbI+CLHQ5nIlPNynF9qNQRM
+         efUnYuRefd5Woln1WkQ3i+3RbEw26Hgu/NiSY=
+Message-ID: <4BD69047.3010703@gmail.com>
+Date: Tue, 27 Apr 2010 09:20:39 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.5 Thunderbird/3.1b1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alan Ott <alan@signal11.us>
+CC: Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
+       Marcel Holtmann <marcel@holtmann.org>, simon.windows@gmail.com,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Bug in hidraw When a HID Device Contains Multiple
+ Reports
+References: <4BD61506.1030301@signal11.us>
+In-Reply-To: <4BD61506.1030301@signal11.us>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Apr 2010, Andreas Herrmann wrote:
+On 04/27/2010 12:34 AM, Alan Ott wrote:
+> Make hidraw not stick an extra byte on the beginning of an IN transfer
+> when a HID device contains multiple reports.
+...
+> I have attached a patch which seems to take care of this problem. Please
+> let me know if I have completely misjudged the situation.
 
-> > > 2.6.32-stable review patch.  If anyone has any objections, please let us know.
-> > 
-> > This patch is causing kernel panic on boot on Magny Cours CPU here 
-> > (cpu family 16, model 9, stepping 1).
-> > 
-> > Please see screenshot from the paniced kernel on 
-> > 
-> >    http://www.jikos.cz/jikos/junk/screenshot.jpg 
-> > 
-> > (sorry for bad quality of this screenshot, it was captured only from the 
-> > IPMI/HTTP console so far, I will try to grab something better tomorrow)
-> > 
-> > Also this screenshot probably doesn't show the complete picture -- see the 
-> > "end trace" marker on the very first line. I will try to have something 
-> > better tomorrow, but maybe this rings bell for someone right away.
-> 
-> This looks like a BIOS issue to me. Obviously this is a pre-production
-> test system where an old BIOS is installed. A BIOS update should fix
-> this issue for you.
+Nope, your analysis is correct. It was introduced by me in 85cdaf524. I
+apparently forgot to change the hidraw case, so your fix is OK.
 
-I can confirm that on different Magny Cours system (16/9/1) with a newer 
-BIOS, the NodeID is provided correctly via MSR, and the issue doesn't 
-trigger.
-
-Thanks,
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 2e2aa75..0e4a6fb 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1043,13 +1043,8 @@ void hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
+>  
+>  	if ((hid->claimed & HID_CLAIMED_HIDDEV) && hid->hiddev_report_event)
+>  		hid->hiddev_report_event(hid, report);
+> -	if (hid->claimed & HID_CLAIMED_HIDRAW) {
+> -		/* numbered reports need to be passed with the report num */
+> -		if (report_enum->numbered)
+> -			hidraw_report_event(hid, data - 1, size + 1);
+> -		else
+> -			hidraw_report_event(hid, data, size);
+> -	}
+> +	if (hid->claimed & HID_CLAIMED_HIDRAW)
+> +		hidraw_report_event(hid, data, size);
+>  
+>  	for (a = 0; a < report->maxfield; a++)
+>  		hid_input_field(hid, report->field[a], cdata, interrupt);
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+js
