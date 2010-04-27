@@ -1,12 +1,13 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1757313Ab0D0WQd (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Tue, 27 Apr 2010 18:16:33 -0400
-Received: from circlebd.net ([114.31.0.72]:54177 "EHLO cpanel.smilebd.com"
+        id S1757367Ab0D0W0p (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Tue, 27 Apr 2010 18:26:45 -0400
+Received: from mail.smile.com.bd ([114.31.0.72]:55940 "EHLO cpanel.smilebd.com"
         rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1754906Ab0D0WQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Tue, 27 Apr 2010 18:16:32 -0400
-Message-ID: <576805756c42ea1df6164f2134ef1bc8.squirrel@www.majestictravelint.com>
-Date: Wed, 28 Apr 2010 05:15:32 +0700
+        id S1755272Ab0D0W0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+        Tue, 27 Apr 2010 18:26:43 -0400
+X-Greylist: delayed 9752 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Apr 2010 18:26:43 EDT
+Message-ID: <e81fa3a68973859d88992c34f9ce4a55.squirrel@www.majestictravelint.com>
+Date: Wed, 28 Apr 2010 02:47:09 +0700
 Subject: Hello
 From: "Liu Tai Ling" <liu@live.co.uk>
 Reply-To: from_icbc_liuling@yahoo.com.hk
