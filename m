@@ -1,148 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab0D0LSn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 07:18:43 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:47340 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754842Ab0D0LSc convert rfc822-to-8bit (ORCPT
+	id S1754882Ab0D0LWE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 07:22:04 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:58725 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab0D0LWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 07:18:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CrkZ15dMvmFbnEvIBBeu58RFL7Z8qryQuRJhT/eFgohIda+45MGoyR5sAerP7oVV+2
-         EL8tqtqKwn7vGIIdpv4AubIGk9NaaPMlNBwCy1rgyqanig6iPPXHUTRZqB8oOUQYwVli
-         o8mkSAfVXwfTXZhlbpvKKY4/2NgDSDcWkkCKo=
+	Tue, 27 Apr 2010 07:22:00 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: fat: excessive log spamming due to corrupted fs
+References: <20100422155944.GA22181@sig21.net>
+	<87633d2pm3.fsf@devron.myhome.or.jp>
+	<20100427101423.GA30678@sig21.net>
+Date: Tue, 27 Apr 2010 20:21:56 +0900
+In-Reply-To: <20100427101423.GA30678@sig21.net> (Johannes Stezenbach's message
+	of "Tue, 27 Apr 2010 12:14:23 +0200")
+Message-ID: <87wrvt16p7.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.93 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1272295140.2434.8.camel@yio.site>
-References: <k2h1ba2fa241004190520z5f048287v6f84e9117b04c803@mail.gmail.com>
-	 <20100419145934.GA10893@kroah.com>
-	 <t2w1ba2fa241004211522le49fc938m341553b0f2b89031@mail.gmail.com>
-	 <20100425163711.GA20196@kroah.com>
-	 <o2n1ba2fa241004251222x6ab49726p9757fd8be4952bee@mail.gmail.com>
-	 <20100425193658.GA24039@kroah.com>
-	 <m2g1ba2fa241004251309oa5592255lb4e4b96ea07dd12a@mail.gmail.com>
-	 <o2qac3eb2511004260338xd8146a7dy415d3f0f4f1c8bbc@mail.gmail.com>
-	 <1272295140.2434.8.camel@yio.site>
-Date: Tue, 27 Apr 2010 14:18:30 +0300
-Message-ID: <j2t1ba2fa241004270418hd37b1fdk83f31d4f608584f9@mail.gmail.com>
-Subject: Re: request_firmware API exhaust memory
-From: Tomas Winkler <tomasw@gmail.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg KH <greg@kroah.com>, Johannes Berg <johannes@sipsolutions.net>,
-       David Woodhouse <dwmw2@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 6:19 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> On Mon, 2010-04-26 at 12:38 +0200, Kay Sievers wrote:
->> On Sun, Apr 25, 2010 at 22:09, Tomas Winkler <tomasw@gmail.com> wrote:
->> > Said thing is that I don't see where the memory goes.... Anyhow I will
->> > try to run valgrin on udev just to be sure.
->>
->> Nah, that memory would be freed, if you kill all udev processes, which
->> it doesn't.
->>
->> The many udev worker processes you see for a few seconds was caused by
->> udevd handling events with TIMEOUT= set special. We need to make sure,
->> that firmware events run immediately and don't wait for other
->> processes to finish. The logic who does that was always creating a new
->> worker. I changed this now, but this will not affect the underlying
->> problem you are seeing, it will just make the udev workers not grow in
->> a timeframe of less than 10 seconds. The change is here:
->>   http://git.kernel.org/?p=linux/hotplug/udev.git;a=commit;h=665ee17def2caa6811ae032ae68ebf8239a18cf8
->> but as mentioned, this change is unrelated to the memory leak you are seeing.
->>
->> > I'll be glad If someone can run my simple driver I posted and confirm
->> > that sees the same problem
->>
->> I can confirm that memory gets lost. I suspect for some reason the
->> firmware does not get properly cleaned up. If you increase the size of
->> the firmware image, it will leak memory much faster.
->
-> I guess, the assumption that vfree() will free pages which are allocated
-> by custom code, and not by vmalloc(), is not true.
->
-> The attached changes seem to fix the issue for me.
->
-> The custom page array mangling was introduced by David as an optimization
-> with commit 6e03a201bbe8137487f340d26aa662110e324b20 and this should be
-> checked, and if needed be fixed.
->
-> Cheers,
-> Kay
->
->
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index 985da11..fe4e872 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -162,7 +162,7 @@ static ssize_t firmware_loading_store(struct device *dev,
->                        mutex_unlock(&fw_lock);
->                        break;
->                }
-> -               vfree(fw_priv->fw->data);
-> +               vunmap(fw_priv->fw->data);
->                fw_priv->fw->data = NULL;
->                for (i = 0; i < fw_priv->nr_pages; i++)
->                        __free_page(fw_priv->pages[i]);
-> @@ -176,7 +176,7 @@ static ssize_t firmware_loading_store(struct device *dev,
->                break;
->        case 0:
->                if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
-> -                       vfree(fw_priv->fw->data);
-> +                       vunmap(fw_priv->fw->data);
->                        fw_priv->fw->data = vmap(fw_priv->pages,
->                                                 fw_priv->nr_pages,
->                                                 0, PAGE_KERNEL_RO);
-> @@ -184,9 +184,6 @@ static ssize_t firmware_loading_store(struct device *dev,
->                                dev_err(dev, "%s: vmap() failed\n", __func__);
->                                goto err;
->                        }
-> -                       /* Pages will be freed by vfree() */
-> -                       fw_priv->page_array_size = 0;
-> -                       fw_priv->nr_pages = 0;
->                        complete(&fw_priv->completion);
->                        clear_bit(FW_STATUS_LOADING, &fw_priv->status);
->                        break;
-> @@ -578,7 +575,7 @@ release_firmware(const struct firmware *fw)
->                        if (fw->data == builtin->data)
->                                goto free_fw;
->                }
-> -               vfree(fw->data);
-> +               vunmap(fw->data);
->        free_fw:
->                kfree(fw);
->        }
->
+Johannes Stezenbach <js@sig21.net> writes:
 
-The difference between vfree and vunmap is that vfree request for
-deallocating the pages while vunmap leaves the  pages allocated. I
-don't think you can replace vfree with vunmap the way you did.
-The transition from vmalloc to alloc_pages were done by the patch
-bellow.  I think this needs some more review.
+> On Tue, Apr 27, 2010 at 06:48:04PM +0900, OGAWA Hirofumi wrote:
+>> Johannes Stezenbach <js@sig21.net> writes:
+>> 
+>> > Apr 22 16:30:18 zzz kernel: FAT: Filesystem error lidAT: Filesysalid cluster chain (i_pos 34568)
+>> > Apr 22 16:30:18 zzz kernel: FAT: Filesystem ealid cluster chain (i_pos 3AT: Fiesysalid cluster chain (i_pos 34568)
+>> > Apr 22 16:30:18 zzz kernel: FAT: Filesystem ealid cluster chain (i_pos 3AT: Fesystalid cluster chain (i_pos 34568)
+>> > Apr 22 16:30:18 zzz kernel: FAT: Filesystem alid cluster chain (i_pos 3AT: Fiesyalid cluster chain (i_pos 34568)
+>> > Apr 22 16:30:18 zzz kernel: FAT: Filesystem ealid cluster chain (i_pos AT: Fiesystalid cluster chain (i_pos 34568)
+>> > Apr 22 16:30:18 zzz kernel: FAT: Filesystealid cluster chain (i_pos 3AT: Fiesystalid cluster chain (i_pos 34568)
+>> 
+>> I have no idea about message corruption, vfat just call vprintf() for
+>> it. I'll see current vprintf() locking stuff.
+>
+> I think multiple printk per line is prone to corruption on SMP, see the
+> comment about KERN_CONT in kernel.h.  But maybe it only happens
+> for /var/log/kern.log and my xconsole when generating too much
+> output too quickly, "dmesg -s 10000000 | less" did not show
+> the corruption (but only shows ~2700 lines out of the ~10000).
+> But I think fat should use vprintf() to a buffer and then one printk()
+> instead of multiple printk + vprintk.
 
-commit 6e03a201bbe8137487f340d26aa662110e324b20
-Author: David Woodhouse <dwmw2@infradead.org>
-Date:   Thu Apr 9 22:04:07 2009 -0700
+I think KERN_CONT issue doesn't explain this corruption (i.e. preempted
+at middle of vprintk()), so even if this is one vprintk(), this will not
+be fixed. One of possibility is buffer overflow of printk, so truncated
+the message, but of course, I'm not sure at least for now, and I'm not
+checking current printk stuff yet.
 
-    firmware: speed up request_firmware(), v3
+Thanks.
 
-    Rather than calling vmalloc() repeatedly to grow the firmware image as
-    we receive data from userspace, just allocate and fill individual pages.
-    Then vmap() the whole lot in one go when we're done.
-
-    A quick test with a 337KiB iwlagn firmware shows the time taken for
-    request_firmware() going from ~32ms to ~5ms after I apply this patch.
-
-    [v2: define PAGE_KERNEL_RO as PAGE_KERNEL where necessary, use min_t()]
-    [v3: kunmap() takes the struct page *, not the virtual address]
-
-    Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-    Tested-by: Sachin Sant <sachinp@in.ibm.com
+> In xconsole it looks like this:
+>
+> Apr 27 12:06:45 zzz kernel: <systerrouster chain (i_pos 34568)
+> Apr 27 12:06:45 zzz kernel: <systeerroruster chain (i_pos 34568)
+> Apr 27 12:06:45 zzz kernel: <systeerroruster chain (i_pos 34568)
+> Apr 27 12:06:45 zzz kernel: <3systerroruster chain (i_pos 34568)
+> Apr 27 12:06:45 zzz kernel: uster chain (i_pos 34568)
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
