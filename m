@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753116Ab0D0Hcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 03:32:36 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41255 "EHLO smtps.tip.net.au"
+	id S1753405Ab0D0Hi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 03:38:58 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38121 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306Ab0D0Hcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 03:32:35 -0400
-Date: Tue, 27 Apr 2010 17:32:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] lockdep: Fix redundant_hardirqs_on incremented with
- irqs enabled
-Message-Id: <20100427173227.7ec29329.sfr@canb.auug.org.au>
-In-Reply-To: <1271338670-4537-1-git-send-regression-fweisbec@gmail.com>
-References: <20100415200414.1ef705c8.sfr@canb.auug.org.au>
-	<1271338670-4537-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__27_Apr_2010_17_32_27_+1000_WnypVAOULDdjE+Yg"
+	id S1753184Ab0D0Hi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 03:38:56 -0400
+References: <594EC076-62C6-473D-9AF2-47AEE4B57ED3@suse.de> <1271827490-sup-48@au1.ibm.com> <12E39DE6-0957-43CD-8DD4-24970AAF45D3@suse.de> <1272331742-sup-1208@au1.ibm.com>
+Message-Id: <13932595-5EF2-4C1D-B07D-CB24AEB7BCF7@suse.de>
+From: Alexander Graf <agraf@suse.de>
+To: Ian Munsie <imunsie@au1.ibm.com>
+In-Reply-To: <1272331742-sup-1208@au1.ibm.com>
+Content-Type: text/plain;
+	charset=us-ascii;
+	format=flowed;
+	delsp=yes
+Content-Transfer-Encoding: 7bit
+X-Mailer: iPhone Mail (7E18)
+Mime-Version: 1.0 (iPhone Mail 7E18)
+Subject: Re: perf top broken on ppc64
+Date: Tue, 27 Apr 2010 08:39:18 +0100
+Cc: Paul Mackerras <paulus@samba.org>, Peter Zijlstra <peterz@infradead.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+       LKML Mailing List <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Apr_2010_17_32_27_+1000_WnypVAOULDdjE+Yg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Frederic,
+Am 27.04.2010 um 02:30 schrieb Ian Munsie <imunsie@au1.ibm.com>:
 
-On Thu, 15 Apr 2010 15:37:50 +0200 Frederic Weisbecker <fweisbec@gmail.com>=
- wrote:
+>>> I'm using 32 bit userland and 64 bit kernel on a PowerPC box and  
+>>> it's working for me.
+>>> Are you building perf from the tip tree?
+>>
+>> I'm using kvm.git which is pretty close to tip. The version says  
+>> something 2.6.34-rc3'ish. Has anything significantly changed since  
+>> then?
+>>
+>> Either way - I'll give it a try.
 >
-> When a path restore the flags while irqs are already enabled, we
-> update the per cpu var redundant_hardirqs_on in a racy fashion
-> and debug_atomic_inc() warns about this situation.
->=20
-> In this particular case, we need to explictly disable the irqs before
-> updating this stat var in order to update it safely.
->=20
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> ---
->  kernel/lockdep.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+>
+> Hey Alex,
+>
+> Did perf from the tip tree work for you?
 
-Ping?  Any movement on this?
+Howdy,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Sorry - I left for vacation without replying :).
 
---Signature=_Tue__27_Apr_2010_17_32_27_+1000_WnypVAOULDdjE+Yg
-Content-Type: application/pgp-signature
+I tried perf from tip with kvm.git kernel and that did show the same  
+effects. I didn't get around to also try to run the tip kernel, and  
+won't be within this week :o
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAkvWkwsACgkQjjKRsyhoI8xLngCdGSGiaLRVeLhm3giq+01yrZeP
-5d0An1rPSG2eovKYd0Jg9PxBOZTMp2Ll
-=Q59b
------END PGP SIGNATURE-----
+Greetings from Gran Canaria,
 
---Signature=_Tue__27_Apr_2010_17_32_27_+1000_WnypVAOULDdjE+Yg--
+Alex
+
+>
