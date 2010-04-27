@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab0D0PcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 11:32:21 -0400
-Received: from lazybastard.de ([212.112.238.170]:55036 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753953Ab0D0PcU (ORCPT
+	id S1755119Ab0D0PdA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 11:33:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34099 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754228Ab0D0Pc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 11:32:20 -0400
-Date: Tue, 27 Apr 2010 17:32:10 +0200
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: John Kacur <jkacur@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/7] logfs: push down BKL into ioctl function
-Message-ID: <20100427153209.GD16794@logfs.org>
-References: <alpine.LFD.2.00.1004271359180.3318@localhost> <1272378265-10909-2-git-send-email-arnd@arndb.de> <20100427145804.GA16794@logfs.org> <201004271705.50499.arnd@arndb.de> <20100427150919.GB16794@logfs.org> <alpine.LFD.2.00.1004271725490.3318@localhost>
+	Tue, 27 Apr 2010 11:32:58 -0400
+Date: Tue, 27 Apr 2010 08:31:59 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Tony Lindgren <tony@atomide.com>
+cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] omap fixes for v2.6.34-rc5
+In-Reply-To: <20100426190005.GJ7225@atomide.com>
+Message-ID: <alpine.LFD.2.00.1004270831430.3739@i5.linux-foundation.org>
+References: <20100426190005.GJ7225@atomide.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.00.1004271725490.3318@localhost>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 April 2010 17:27:19 +0200, John Kacur wrote:
+
+On Mon, 26 Apr 2010, Tony Lindgren wrote:
 > 
-> Hasn't the "current" merge window been over with for weeks? I was assuming 
-> that bkl push down, or other bkl patches are for the next merge window.
+> Please pull omap fixes from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
 
-That's what I was thinking.  But some of the bkl related discussion gave
-me the impression that such patches were still being merged.  So I
-wanted to be sure.
+I pulled it this time, but I'm starting to get really irritated with you.
 
-Jörn
+These look like real fixes, but quite frankly, by -rc5, that IS NOT 
+ENOUGH. 
 
--- 
-It is better to die of hunger having lived without grief and fear,
-than to live with a troubled spirit amid abundance.
--- Epictetus
+They need to be _regressions_, not just cleanups and fixes for things that 
+have never worked. And this is starting to be a pattern with the omap 
+tree: you're not honoring the merge window properly.
+
+Just "it's a bug-fix" or "it's deleting unused code" is not enough. The 
+point of the late -rc series is to fix problems from the merge window, not 
+add new changes. I realize that you think that all the new changes are 
+obviously good, but the fact is, bugs happen even in "obvious bug-fixes". 
+
+And that's why we have the rule about late-rc pulls being about 
+_regressions_ and/or major oopses/security issues. Not just random 
+development that are meant to improve things.
+
+		Linus
