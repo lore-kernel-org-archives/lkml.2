@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab0D0N3o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 09:29:44 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:47327 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab0D0N3m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 09:29:42 -0400
-Subject: Re: [PATCH 2/2] UBI: Remove reboot notifier
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: dwmw2@infradead.org, saeed.bishara@gmail.com,
-       linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <e5370484641ae54d637ece47f411bb0b0061cc54@localhost.localdomain>
-References: <4ccec90e21edfa387822b2cb71c886217c48b4e3@localhost.localdomain>
-	 <e5370484641ae54d637ece47f411bb0b0061cc54@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Apr 2010 16:25:15 +0300
-Message-ID: <1272374715.7750.8.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 27 Apr 2010 13:29:30.0164 (UTC) FILETIME=[AA6BDF40:01CAE60D]
-X-Nokia-AV: Clean
+	id S1755812Ab0D0Nco (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 09:32:44 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49341 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752895Ab0D0Ncm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 09:32:42 -0400
+Date: Tue, 27 Apr 2010 15:32:40 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Oliver Neukum <oliver@neukum.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+       linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
+       Nicu Pavel <npavel@ituner.com>, Jaya Kumar <jayakumar.lkml@gmail.com>
+Subject: Re: [PATCH] hid: split picolcd's operation_mode sysfs attribute
+In-Reply-To: <20100425212916.2b9af33b@neptune.home>
+Message-ID: <alpine.LNX.2.00.1004271532260.9849@pobox.suse.cz>
+References: <20100324233707.7243b04d@neptune.home> <20100330223224.18fe4f3e@neptune.home> <20100330223350.32044891@neptune.home> <201004011858.45859.oliver@neukum.org> <20100425212916.2b9af33b@neptune.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-13 at 13:30 -0700, Kevin Cernekee wrote:
-> The UBI reboot notifier causes problems with hibernation.  Move this
-> functionality into the low-level MTD driver instead.
-> 
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-> ---
->  drivers/mtd/ubi/build.c |   35 -----------------------------------
->  drivers/mtd/ubi/ubi.h   |    2 --
->  2 files changed, 0 insertions(+), 37 deletions(-)
-> 
+On Sun, 25 Apr 2010, Bruno Prémont wrote:
 
-Pushed this patch to the ubi-2.6.git tree, thanks.
+> Original operation_mode sysfs attribute accepts the operation mode
+> as main value with an option delay as second value to change
+> the start-up delay on mode change.
+> 
+> As it is preferred to have exactly one value per sysfs attribute,
+> extract this delay into a separate sysfs attribute called
+> operation_mode_delay.
+
+Yeah, thanks for fixing this. Applied.
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
