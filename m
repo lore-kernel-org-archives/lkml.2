@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab0D0Sd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 14:33:26 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50534 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751823Ab0D0SdY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 14:33:24 -0400
-Date: Tue, 27 Apr 2010 14:33:23 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-       <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
-       <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 2/9] PM: suspend_block: Add driver to access
-  suspend blockers from user-space
-In-Reply-To: <y2nd6200be21004262104mb81ba7d6xe5c8f35689ca20a0@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1004271432280.1850-100000@iolanthe.rowland.org>
+	id S1755123Ab0D0Seq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 14:34:46 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50963 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab0D0Sep (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 27 Apr 2010 14:34:45 -0400
+Date: Tue, 27 Apr 2010 14:34:28 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com, x86@kernel.org,
+       clalance@redhat.com, drjones@redhat.com
+Subject: Re: [LKML] [PATCH] Fix NULL pointer for Xen guests
+Message-ID: <20100427183428.GA15385@phenom.dumpdata.com>
+References: <20100427152434.16193.49104.sendpatchset@prarit.bos.redhat.com> <20100427165816.GA24707@phenom.dumpdata.com> <4BD71A2D.6050309@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BD71A2D.6050309@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4BD72E40.0089:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Apr 2010, Arve Hjønnevåg wrote:
+>> Can you provide a short example of test scenario? As in what I should do
+>> to reproduce this problem?
+>>    
+>
+> Take the latest upstream (well ... to be honest, a bit older than that  
+> because of some other bugs) -- take 2.6.33 and try to boot it as a PV  
 
-> > If you insist on using ioctl for init, you should use the standard
-> > convention for passing variable-length data.  The userspace program
-> > sets up a fixed-size buffer containing a pointer to the name and the
-> > name's length, and it passes the buffer's address as the ioctl
-> > argument.
-> 
-> Are you sure that is the standard? I searched for ioctls with NAME in
-> their name and only found one that passed the name that way. The rest
-> used fixed length string buffers, or passed the buffersize to _IOC
-> like I do. For instance, input.h has ioctls to read string and
-> bitmasks where user space specify the buffer size as an argument to
-> the ioctl macro. These pass data from the kernel to user space, but I
-> don't passing a string length is any worse than passing a buffer size.
+2.6.34-rc5 PV boots under Xen for me (and pretty much since 2.6.33 +
+Suresh fix for the CONFIG_RODATA_MARK).
 
-You're right.  Okay, I withdraw my objection.
+Perhaps I am missing some of the .config options you have set that make it not work?
 
-Alan Stern
+The irqbalance daemon looks to be running - but I think you are hitting
+this during bootup?  How long do you have to wait for this to trigger?
 
+How many CPUs did you assign to your guest?
+
+What are the "other bugs" you speak off?
+
+> guest.  I'm using a RHEL5 Xen HV fwiw ...
+
+OK, so your control domain is RHEL5. Mine is the Jeremy's xen/next one
+(2.6.32). Let me try to compile RHEL5 under FC11 - any tricks necessary
+to do that?
