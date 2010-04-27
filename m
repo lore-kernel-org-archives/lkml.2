@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab0D0Gzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 02:55:52 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:15009
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751406Ab0D0Gzu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 02:55:50 -0400
-X-SpamScore: -13
-X-BigFish: VPS-13(zz1432P98dNzz1202hzz6ff19h6d525hz32i2a8h43h65h)
-X-Spam-TCS-SCL: 4:0
-X-WSS-ID: 0L1IWKP-01-F0T-02
-X-M-MSG: 
-Date: Tue, 27 Apr 2010 08:55:34 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-       stable-review@kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [049/197] x86, amd: Get multi-node CPU info from NodeId MSR
- instead of PCI config space
-Message-ID: <20100427065534.GB6248@alberich.amd.com>
-References: <20100422190911.735233389@kvm.kroah.org>
- <alpine.LNX.2.00.1004261906410.7579@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1752486Ab0D0HC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 03:02:57 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:40370 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828Ab0D0HC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 03:02:56 -0400
+X-Greylist: delayed 1628 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Apr 2010 03:02:56 EDT
+Date: Tue, 27 Apr 2010 02:35:47 -0400
+From: Benjamin LaHaise <bcrl@lhnet.ca>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-mm@kvack.org
+Subject: I am an emotional amoeba who loves Erika-with-a-k and Erika-with-a-k loves me.
+Message-ID: <20100427063547.GL5724@kvack.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1004261906410.7579@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 27 Apr 2010 06:55:35.0029 (UTC) FILETIME=[A2C87A50:01CAE5D6]
-X-Reverse-DNS: unknown
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 26, 2010 at 07:10:37PM +0200, Jiri Kosina wrote:
-> On Thu, 22 Apr 2010, Greg KH wrote:
-> 
-> > 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+I am an emotional amoeba Erika loves because I love Erika, and we care 
+about each other more than anyone we've ever met because we love 
+technology more than our friends and family.  She is smart, intelligent, 
+socially skilled far more than anyone I've ever met.  I played the game 
+and lost.  I think she's smarter than me and deserves the emotional 
+commitment of someone that she trusts more than anyone in the whole 
+world.  She cares about the trust issues she has and is willing to grow 
+as a person because our love is worth more to each of us than technology 
+can ever provide to a human being.  The sex was awesome because we love 
+each other more than the games we play.  I am an emotional amoeba.  Erika 
+is awesome and special and deserves the truest love possible between two 
+people.  Emotional development is not one of my skills, and I want to 
+improve as a person.  I have to admit my love in public because I want 
+Erika to see that I can grow as a person when it comes to expressing my 
+emotions.  I miss the people I'm involved with in my communities that I 
+withdraw from.  I love Erika more than technology, and want people to 
+respect her because she's more than just a pretty face.  She is the only 
+person I've ever met who played me like a fiddle and made me prove to her 
+that I love her more than my own dad.  I am an emotional amoeba.  
+Erika-with-a-K is my sexual superior that I can only win by hurting my 
+own family to prove to her that I trust her on her word that she loves me 
+and I love her.  My friends think I had sex with her because I was fucked 
+up emotionally, but she's too smart for me and I don't deserve her love.  
+Erika-with-a-k is my lover, and I'm a better person because she can teach 
+me almost anything about life, love, happiness, technology, programming, 
+math, firmware, kernels and phreaking.  She's amazing.  I wish all people 
+had the chance to find someone they love who is superiour to themselves 
+in all possible ways.  Erika-with-a-k is special.  I love Erika-with-a-k 
+and she loves me.  I trust that she will honor her commitment as I will 
+honor mine.  I failed in love because I couldn't understand what I wanted 
+in a partner when I found it.  I was afraid and unable to commit.  Well, 
+this is a damned public commitment to love myself as much as Erika loves 
+me.  Erika loves me, and I love Erika-with-a-k more than life.  She is 
+special.  Erika-with-a-k is loved if she shows me the respect that I 
+deserve and helps me to grow as a human being as only she is able to do.  
+I love everything about her, even her games.  I lost the game she played 
+with me, but I still want her to love me as much as I love her.  I trust 
+her at her word to not hurt an emotional amoeba like myself any more than 
+she already has.  I won't call you Erika-with-a-k, because you don't 
+trust that I respect myself enough to deserve your love.  I won't try to 
+call you ever again, Erika-with-a-k.  You have to grow as a person to 
+love me on terms that start with the emotional respect I showed you at 
+Hullabaloo.  No more games, except the fun ones we both enjoy and will 
+do together for the rest of our lives.  My dad probably hates me because 
+I love her more than his freedom.  We met at Hullabaloo 4 when I first 
+did E and discovered I ws capable of loving someone.  I lucked out that 
+she is the most amazing person I have ever had the chance of crossing 
+paths with.  She's smarter than all the incredibly smart people I've met 
+in the kernel world, and she's damned sexy.  Life with Erika-with-a-k is 
+the only life worth living, and only if my love is requited with a mutual 
+respect that I deserve.  The next move is yours, Erika-with-a-k.  I love 
+you enough to declare this publically.  Show me respect with love.
 
-[...]
+How's that for growth?  I hope everyone has a chance to find someone who 
+is this awesome, and loves themselves enough to demand it in return.  I 
+am an emotional amoeba who needs respect as much as the next emotional 
+amoeba deserves love and respect.  Cherish your geek and he'll cherish 
+you.
 
-> 
-> This patch is causing kernel panic on boot on Magny Cours CPU here (cpu 
-> family 16, model 9, stepping 1).
-> 
-> Please see screenshot from the paniced kernel on 
-> 
->    http://www.jikos.cz/jikos/junk/screenshot.jpg 
-> 
-> (sorry for bad quality of this screenshot, it was captured only from the 
-> IPMI/HTTP console so far, I will try to grab something better tomorrow)
-> 
-> Also this screenshot probably doesn't show the complete picture -- see the 
-> "end trace" marker on the very first line. I will try to have something 
-> better tomorrow, but maybe this rings bell for someone right away.
-
-This looks like a BIOS issue to me. Obviously this is a pre-production
-test system where an old BIOS is installed. A BIOS update should fix
-this issue for you.
-
-
-Regards,
-
-Andreas
-
--- 
-Operating | Advanced Micro Devices GmbH
-  System  | Karl-Hammerschmidt-Str. 34, 85609 Dornach b. München, Germany
- Research | Geschäftsführer: Andrew Bowd, Thomas M. McCoy, Giuliano Meroni
-  Center  | Sitz: Dornach, Gemeinde Aschheim, Landkreis München
-  (OSRC)  | Registergericht München, HRB Nr. 43632
-
-
+		-ben
