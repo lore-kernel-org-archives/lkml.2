@@ -1,265 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab0D0Uoy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 16:44:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55511 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755704Ab0D0Uov (ORCPT
+	id S1756813Ab0D0UrE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 16:47:04 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:44929 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756065Ab0D0UrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 16:44:51 -0400
-Date: Tue, 27 Apr 2010 13:42:58 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Michal Marek <mmarek@suse.cz>, Randy Dunlap <randy.dunlap@oracle.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 6/6] xconfig: Add support to show hidden options which
- have prompts
-Message-Id: <20100427134258.053b58cb.randy.dunlap@oracle.com>
-In-Reply-To: <4BD6970A.9020408@cn.fujitsu.com>
-References: <4BD696C0.8050500@cn.fujitsu.com>
-	<4BD6970A.9020408@cn.fujitsu.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 27 Apr 2010 16:47:00 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH v2] [RFC] ehci: Disable wake on overcurrent (WKOC_E) and disconnect (WKDISC_E)
+Date: Tue, 27 Apr 2010 22:46:48 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-pm@lists.linux-foundation.org, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+References: <Pine.LNX.4.44L0.1004271509450.1850-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1004271509450.1850-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090205.4BD74C97.000E:SCFMA922111,ss=1,fgs=0
+Content-Disposition: inline
+Message-Id: <201004272246.51494.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Apr 2010 15:49:30 +0800 Li Zefan wrote:
+On Tuesday 27 April 2010 21:21:23 Alan Stern wrote:
+> On Tue, 27 Apr 2010, Ondrej Zary wrote:
+> > The previous patch was not enough as it worked only when there were no
+> > USB devices connected. With a bus-powered device connected, power loss
+> > causes disconnect which wakes up the machine immediately again.
+>
+> You said earlier that the host controller was disabled for remote
+> wakeup ("/sys/devices/pci0000:00/0000:00:1d.7/power/wakeup is disabled
+> by default").  So even though the root hub might issue a wakeup
+> request, the controller hardware should not forward that request to the
+> PCI bus and it should not cause the system to wake up.
 
-> This feature has been supported in menuconfig and gconfig, so
-> here add it to xconfig.
+Maybe it should not - but it wakes up this board and probably also P4P800, 
+P4P800-E and P4C800-E at least:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/75497
 
-Looks/sounds reasonable, but it does hide some symbols that were previously displayed
-when in "Show all options" mode.
+> > Does anyone know why is this enabled by default?
+>
+> Why _what_ is enabled?  Detection of disconnects?  Because otherwise
+> your computer wouldn't realize anything had happened when a suspended
+> USB device was unplugged from a suspended root hub.
 
-E.g., CONFIG_64BIT is not displayed at all with this patch applied
-(except by the Search function).
-Also, X86_32 is not displayed at all (when this patch is applied)
-and it cannot be found or displayed by the Search function.
+That's not disconnect detection - that's wakeup on disconnect. If I understand 
+EHCI 1.0 specification correctly, disconnect detection should work regardless 
+of the state of this bit:
+| PORTSC bit 21: Wake on Disconnect Enable (WKDSCNNT_E):
+| R/W. Default = 0b.
+| Writing this bit to a one enables the port to be sensitive to device
+| disconnects as wake-up events. See Section 4.3 for effects of this bit on
+| resume event behavior. Refer to Section 4.3.1 for operational model.  
 
-IOW, Show all options mode is busted.  :(
+And it really does. With this patch applied, system does not wake up when a 
+device is disconnected during suspend. When I wake up the system manually, 
+the disconnect is detected immediately (does not matter
 
+> > No other USB host driver
+> > (except oxu210hp-hcd which is based on EHCI) does that.
+>
+> Look again -- they all do.  (All the HCDs that support suspend/resume,
+> anyway.)
+>
+> > This also means that
+> > suspended laptop wakes up when disconnecting a mouse?
+>
+> No, for the reason I described above.  The controller is aware of the
+> wakeup request but doesn't generate a PME# event.  Likewise for desktop
+> systems.
+>
+> > I don't have any to test
+> > right now. Wakeup on USB connect makes a bit more sense but I'd say that
+> > it's still not a good idea to enable it by default.
+> >
+> > If we don't need that, perhaps the following patch should be applied.
+> >
+> >
+> > Disable wake on overcurrent and disconnect in EHCI.
+> > This fixes immediate resume from standby on boards where port power is
+> > lost in standby which triggers overcurrent detection and disconnect if a
+> > bus-powered device is connected. At least Asus P4P800 boards are affected
+> > when any of the USBPWxx (e.g. USBPW12) jumpers is set to 5V.
+>
+> Why would you want to change the jumper settings?  Host controllers are
+> _supposed_ to supply 5V power during system suspend.
 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  scripts/kconfig/qconf.cc |   62 ++++++++++++++++++++++++++++++++-------------
->  scripts/kconfig/qconf.h  |   16 +++++++++---
->  2 files changed, 56 insertions(+), 22 deletions(-)
-> 
-> diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
-> index d950fff..f8c07c6 100644
-> --- a/scripts/kconfig/qconf.cc
-> +++ b/scripts/kconfig/qconf.cc
-> @@ -149,7 +149,7 @@ void ConfigItem::updateMenu(void)
->  	case S_TRISTATE:
->  		char ch;
->  
-> -		if (!sym_is_changable(sym) && !list->showAll) {
-> +		if (!sym_is_changable(sym) && list->optMode != normalOpt) {
->  			setPixmap(promptColIdx, 0);
->  			setText(noColIdx, QString::null);
->  			setText(modColIdx, QString::null);
-> @@ -320,7 +320,7 @@ ConfigList::ConfigList(ConfigView* p, const char *name)
->  	  symbolYesPix(xpm_symbol_yes), symbolModPix(xpm_symbol_mod), symbolNoPix(xpm_symbol_no),
->  	  choiceYesPix(xpm_choice_yes), choiceNoPix(xpm_choice_no),
->  	  menuPix(xpm_menu), menuInvPix(xpm_menu_inv), menuBackPix(xpm_menuback), voidPix(xpm_void),
-> -	  showAll(false), showName(false), showRange(false), showData(false),
-> +	  showName(false), showRange(false), showData(false), optMode(normalOpt),
->  	  rootEntry(0), headerPopup(0)
->  {
->  	int i;
-> @@ -337,10 +337,10 @@ ConfigList::ConfigList(ConfigView* p, const char *name)
->  
->  	if (name) {
->  		configSettings->beginGroup(name);
-> -		showAll = configSettings->readBoolEntry("/showAll", false);
->  		showName = configSettings->readBoolEntry("/showName", false);
->  		showRange = configSettings->readBoolEntry("/showRange", false);
->  		showData = configSettings->readBoolEntry("/showData", false);
-> +		optMode = (enum optionMode)configSettings->readNumEntry("/optionMode", false);
->  		configSettings->endGroup();
->  		connect(configApp, SIGNAL(aboutToQuit()), SLOT(saveSettings()));
->  	}
-> @@ -352,6 +352,17 @@ ConfigList::ConfigList(ConfigView* p, const char *name)
->  	reinit();
->  }
->  
-> +bool ConfigList::menuSkip(struct menu *menu)
-> +{
-> +	if (optMode == normalOpt && menu_is_visible(menu))
-> +		return false;
-> +	if (optMode == promptOpt && menu_has_prompt(menu))
-> +		return false;
-> +	if (optMode == allOpt)
-> +		return false;
-> +	return true;
-> +}
-> +
->  void ConfigList::reinit(void)
->  {
->  	removeColumn(dataColIdx);
-> @@ -380,7 +391,7 @@ void ConfigList::saveSettings(void)
->  		configSettings->writeEntry("/showName", showName);
->  		configSettings->writeEntry("/showRange", showRange);
->  		configSettings->writeEntry("/showData", showData);
-> -		configSettings->writeEntry("/showAll", showAll);
-> +		configSettings->writeEntry("/optionMode", (int)optMode);
->  		configSettings->endGroup();
->  	}
->  }
-> @@ -606,7 +617,7 @@ void ConfigList::updateMenuList(P* parent, struct menu* menu)
->  		}
->  
->  		visible = menu_is_visible(child);
-> -		if (showAll || visible) {
-> +		if (!menuSkip(child)) {
->  			if (!child->sym && !child->list && !child->prompt)
->  				continue;
->  			if (!item || item->menu != child)
-> @@ -860,13 +871,16 @@ ConfigView::~ConfigView(void)
->  	}
->  }
->  
-> -void ConfigView::setShowAll(bool b)
-> +void ConfigView::setOptionMode(QAction *act)
->  {
-> -	if (list->showAll != b) {
-> -		list->showAll = b;
-> -		list->updateListAll();
-> -		emit showAllChanged(b);
-> -	}
-> +	if (act == showNormalAction)
-> +		list->optMode = normalOpt;
-> +	else if (act == showAllAction)
-> +		list->optMode = allOpt;
-> +	else
-> +		list->optMode = promptOpt;
-> +
-> +	list->updateListAll();
->  }
->  
->  void ConfigView::setShowName(bool b)
-> @@ -1321,11 +1335,22 @@ ConfigMainWindow::ConfigMainWindow(void)
->  	  connect(showDataAction, SIGNAL(toggled(bool)), configView, SLOT(setShowData(bool)));
->  	  connect(configView, SIGNAL(showDataChanged(bool)), showDataAction, SLOT(setOn(bool)));
->  	  showDataAction->setOn(configList->showData);
-> -	QAction *showAllAction = new QAction(NULL, _("Show All Options"), 0, this);
-> -	  showAllAction->setToggleAction(TRUE);
-> -	  connect(showAllAction, SIGNAL(toggled(bool)), configView, SLOT(setShowAll(bool)));
-> -	  connect(showAllAction, SIGNAL(toggled(bool)), menuView, SLOT(setShowAll(bool)));
-> -	  showAllAction->setOn(configList->showAll);
-> +
-> +	QActionGroup *optGroup = new QActionGroup(this);
-> +	optGroup->setExclusive(TRUE);
-> +	connect(optGroup, SIGNAL(selected(QAction *)), configView,
-> +		SLOT(setOptionMode(QAction *)));
-> +
-> +	configView->showNormalAction = new QAction(NULL, _("Show Normal Options"), 0, optGroup);
-> +	configView->showAllAction = new QAction(NULL, _("Show All Options"), 0, optGroup);
-> +	configView->showPromptAction = new QAction(NULL, _("Show Prompt Options"), 0, optGroup);
-> +	configView->showNormalAction->setToggleAction(TRUE);
-> +	configView->showNormalAction->setOn(configList->optMode == normalOpt);
-> +	configView->showAllAction->setToggleAction(TRUE);
-> +	configView->showAllAction->setOn(configList->optMode == allOpt);
-> +	configView->showPromptAction->setToggleAction(TRUE);
-> +	configView->showPromptAction->setOn(configList->optMode == promptOpt);
-> +
->  	QAction *showDebugAction = new QAction(NULL, _("Show Debug Info"), 0, this);
->  	  showDebugAction->setToggleAction(TRUE);
->  	  connect(showDebugAction, SIGNAL(toggled(bool)), helpText, SLOT(setShowDebug(bool)));
-> @@ -1368,7 +1393,8 @@ ConfigMainWindow::ConfigMainWindow(void)
->  	showRangeAction->addTo(optionMenu);
->  	showDataAction->addTo(optionMenu);
->  	optionMenu->insertSeparator();
-> -	showAllAction->addTo(optionMenu);
-> +	optGroup->addTo(optionMenu);
-> +	optionMenu->insertSeparator();
->  	showDebugAction->addTo(optionMenu);
->  
->  	// create help menu
-> @@ -1463,7 +1489,7 @@ void ConfigMainWindow::setMenuLink(struct menu *menu)
->  	ConfigList* list = NULL;
->  	ConfigItem* item;
->  
-> -	if (!menu_is_visible(menu) && !configView->showAll())
-> +	if (configList->menuSkip(menu))
->  		return;
->  
->  	switch (configList->mode) {
-> diff --git a/scripts/kconfig/qconf.h b/scripts/kconfig/qconf.h
-> index 54775ae..37bdaec 100644
-> --- a/scripts/kconfig/qconf.h
-> +++ b/scripts/kconfig/qconf.h
-> @@ -44,6 +44,9 @@ enum colIdx {
->  enum listMode {
->  	singleMode, menuMode, symbolMode, fullMode, listMode
->  };
-> +enum optionMode {
-> +	normalOpt = 0, allOpt, promptOpt
-> +};
->  
->  class ConfigList : public QListView {
->  	Q_OBJECT
-> @@ -115,6 +118,8 @@ public:
->  	void setAllOpen(bool open);
->  	void setParentMenu(void);
->  
-> +	bool menuSkip(struct menu *);
-> +
->  	template <class P>
->  	void updateMenuList(P*, struct menu*);
->  
-> @@ -124,8 +129,9 @@ public:
->  	QPixmap choiceYesPix, choiceNoPix;
->  	QPixmap menuPix, menuInvPix, menuBackPix, voidPix;
->  
-> -	bool showAll, showName, showRange, showData;
-> +	bool showName, showRange, showData;
->  	enum listMode mode;
-> +	enum optionMode optMode;
->  	struct menu *rootEntry;
->  	QColorGroup disabledColorGroup;
->  	QColorGroup inactivedColorGroup;
-> @@ -222,17 +228,15 @@ public:
->  	static void updateList(ConfigItem* item);
->  	static void updateListAll(void);
->  
-> -	bool showAll(void) const { return list->showAll; }
->  	bool showName(void) const { return list->showName; }
->  	bool showRange(void) const { return list->showRange; }
->  	bool showData(void) const { return list->showData; }
->  public slots:
-> -	void setShowAll(bool);
->  	void setShowName(bool);
->  	void setShowRange(bool);
->  	void setShowData(bool);
-> +	void setOptionMode(QAction *);
->  signals:
-> -	void showAllChanged(bool);
->  	void showNameChanged(bool);
->  	void showRangeChanged(bool);
->  	void showDataChanged(bool);
-> @@ -242,6 +246,10 @@ public:
->  
->  	static ConfigView* viewList;
->  	ConfigView* nextView;
-> +
-> +	QAction *showNormalAction;
-> +	QAction *showAllAction;
-> +	QAction *showPromptAction;
->  };
->  
->  class ConfigInfoView : public QTextBrowser {
-> -- 
+Maybe because I don't want all my USB devices to be powered when the system is 
+turned off. I doubt that laptop in suspend-to-RAM (on battery) provides power 
+to USB ports.
 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Ondrej Zary
