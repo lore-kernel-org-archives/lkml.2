@@ -1,114 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab0D0XbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 19:31:19 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:57954 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753876Ab0D0XbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 19:31:18 -0400
-Date: Tue, 27 Apr 2010 16:31:11 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
- rcu_dereference_check() usage
-Message-ID: <20100427233111.GF2424@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100423194255.GE2589@linux.vnet.ibm.com>
- <m2xa44ae5cd1004231559hcf90671asf146a43b4748c2c3@mail.gmail.com>
- <20100425023455.GM2440@linux.vnet.ibm.com>
- <w2sa44ae5cd1004250849q73704370vc6af935c70db9b73@mail.gmail.com>
- <p2ga44ae5cd1004251320j55d23ba7ua0fa14497f623d76@mail.gmail.com>
- <20100426160925.GD2529@linux.vnet.ibm.com>
- <m1hbmydpup.fsf@fess.ebiederm.org>
- <20100427042744.GD2510@linux.vnet.ibm.com>
- <20100427162201.GA5826@linux.vnet.ibm.com>
- <g2ya44ae5cd1004271058p9f73fba1v3f611693e81869c3@mail.gmail.com>
+	id S1754508Ab0D0Xln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 19:41:43 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:10755 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754249Ab0D0Xlk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 19:41:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,5965"; a="39858996"
+Message-ID: <4BD77633.9050403@codeaurora.org>
+Date: Tue, 27 Apr 2010 16:41:39 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <g2ya44ae5cd1004271058p9f73fba1v3f611693e81869c3@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: cpufreq <cpufreq@vger.kernel.org>,
+       linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+       Dave Jones <davej@redhat.com>, Thomas Renninger <trenn@suse.de>,
+       Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: CPUfreq - udelay() interaction issues
+References: <4BCFC3D0.5080904@codeaurora.org> <4BD0D9E5.3020606@codeaurora.org> <20100423184042.GA16190@Krystal> <4BD25C37.4070005@codeaurora.org> <20100424135817.GA27322@Krystal>
+In-Reply-To: <20100424135817.GA27322@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 01:58:30PM -0400, Miles Lane wrote:
-> On Tue, Apr 27, 2010 at 12:22 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Mon, Apr 26, 2010 at 09:27:44PM -0700, Paul E. McKenney wrote:
-> >> On Mon, Apr 26, 2010 at 11:35:10AM -0700, Eric W. Biederman wrote:
-> >> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
-> >> >
-> >> > > Eric Dumazet traced these down to a commit from Eric Biederman.
-> >> > >
-> >> > > If I don't hear from Eric Biederman in a few days, I will attempt a
-> >> > > patch, but it would be more likely to be correct coming from someone
-> >> > > with a better understanding of the code.  ;-)
-> >> >
-> >> > I already replied.
-> >> >
-> >> > http://lkml.org/lkml/2010/4/21/420
-> >>
-> >> You did indeed!!!  This experience is giving me an even better appreciation
-> >> of the maintainers' ability to keep all their patches straight!
-> >>
-> >> I will put together something based on your suggestion.
-> >
-> > How about the following?
-> >
-> >                                                        Thanx, Paul
-> >
-> > ------------------------------------------------------------------------
-> >
-> > commit 85fa42bd568ab99c375f018761ae6345249942cd
-> > Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Date:   Mon Apr 26 21:40:05 2010 -0700
-> >
-> >    net: suppress RCU lockdep false positive in twsk_net()
-> >
-> >    Calls to twsk_net() are in some cases protected by reference counting
-> >    as an alternative to RCU protection.  Cases covered by reference counts
-> >    include __inet_twsk_kill(), inet_twsk_free(), inet_twdr_do_twkill_work(),
-> >    inet_twdr_twcal_tick(), and tcp_timewait_state_process().  RCU is used
-> >    by inet_twsk_purge().  Locking is used by established_get_first()
-> >    and established_get_next().  Finally, __inet_twsk_hashdance() is an
-> >    initialization case.
-> >
-> >    It appears to be non-trivial to locate the appropriate locks and
-> >    reference counts from within twsk_net(), so used rcu_dereference_raw().
-> >
-> >    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >
-> > diff --git a/include/net/inet_timewait_sock.h b/include/net/inet_timewait_sock.h
-> > index 79f67ea..a066fdd 100644
-> > --- a/include/net/inet_timewait_sock.h
-> > +++ b/include/net/inet_timewait_sock.h
-> > @@ -224,7 +224,9 @@ static inline
-> >  struct net *twsk_net(const struct inet_timewait_sock *twsk)
-> >  {
-> >  #ifdef CONFIG_NET_NS
-> > -       return rcu_dereference(twsk->tw_net);
-> > +       return rcu_dereference_raw(twsk->tw_net); /* protected by locking, */
-> > +                                                 /* reference counting, */
-> > +                                                 /* initialization, or RCU. */
-> >  #else
-> >        return &init_net;
-> >  #endif
-> >
+Hi Mathieu,
+
+Thanks for taking the time to provide your input. More responses below.
+
+Mathieu Desnoyers wrote:
+> * Saravana Kannan (skannan@codeaurora.org) wrote:
+> [...]
+>> Seems a bit more complicated than what I had in mind. This is touching  
+>> the scheduler I think we can get away without having to. Also, there is  
+>> no simple implementation for the "slowpath" that can guarantee the delay  
+>> without starting over the loop and hoping not to get interrupted or just  
+>> giving up and doing a massively inaccurate delay (like msleep, etc).
 > 
-> Worked for me.  Thanks!
+> Not necessarily. Another way to do it: we could keep the udelay loop counter in
+> the task struct. When ondemand changes frequency, and upon migration, this
+> counter would be adapted to the current cpu frequency.
 
-Thank you both!  I have added Eric's Acked-by and Miles's Tested-by.
+This will take us back to the scalability problem because we now have to 
+go through every process running on a CPU to update their udelay loop 
+counters whenever the CPU freq changes.
 
-							Thanx, Paul
+>> I was thinking of something along the lines of this:
+>>
+>> udelay()
+>> {
+>>   if (!is_atomic())
+> 
+> see hardirq.h:
+> 
+> /*
+>  * Are we running in atomic context?  WARNING: this macro cannot
+>  * always detect atomic context; in particular, it cannot know about
+>  * held spinlocks in non-preemptible kernels.  Thus it should not be
+>  * used in the general case to determine whether sleeping is possible.
+>  * Do not use in_atomic() in driver code.
+>  */
+> #define in_atomic()     ((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_INATOMIC_BASE)
+> 
+> Sorry, your scheme is broken on !PREEMPT kernels.
+
+If it's a !PREEMPT kernel, we don't have to worry about the CPUfreq 
+changing on us. CPU freq is changed in a deferrable work queue context.
+
+>> 	down_read(&freq_sem);
+>>   /* else
+>> 	do nothing since cpufreq can't interrupt you.
+>>   */
+> 
+> This comment seems broken. in_atomic() can return true because preemption is
+> disabled, thus letting cpufreq interrupts coming in.
+
+As mentioned earlier, cpufreq change can't happen when udelay is running 
+in !PREEMPT kernel (which is where in_atomic() won't work). Btw, I 
+actually wasn't referring to the real in_atomic() macro (I remembered it 
+having limitations). But now that you mentioned the limitation, it might 
+not be a problem after all.
+
+>>   call usual code since cpufreq is not going to preempt you.
+>>
+>>   if (!is_atomic())
+>> 	up_read(&freq_sem);
+>> }
+>>
+>> __cpufreq_driver_target(...)
+>> {
+>>   down_write(&freq_sem);
+>>   cpufreq_driver->target(...);
+>>   up_write(&freq_sem);
+>> }
+>>
+>> In the implementation of the cpufreq driver, they just need to make sure  
+>> they always increase the LPJ _before_ increasing the freq and decrease  
+>> the LPJ _after_ decreasing the freq. This is make sure that when an  
+>> interrupt handler preempts the cpufreq driver code (since atomic  
+>> contexts aren't looking at the r/w semaphore) the LPJ value will be good  
+>> enough to satisfy the _at least_ guarantee of udelay().
+>>
+>> For the CPU switching issue, I think the solution I proposed is quite  
+>> simple and should work.
+> 
+> You mean this ?
+> 
+>>>>> udelay(us)
+>>>>> {
+>>>>>    set cpu affinity to current CPU;
+>>>>>    Do the usual udelay code;
+>>>>>    restore cpu affinity status;
+>>>>> }
+> 
+> Things like lock scalability and performance degradations comes to my mind. We
+> can expect some drivers to make very heavy use of udelay(). This should not
+> bring a 4096-core box to its knees. sched_setaffinity() is very far from being
+> lightweight, as it locks cpu hotplug (that's a global mutex protecting a
+> refcount), allocates memory, manipulates cpumasks, etc...
+
+Hmm... set affinity does seem more complicated than what I expected.
+
+>> Does my better explained solution look palatable?
+> 
+> Nope, not on a multiprocessor system.
+
+Yes, set affinity seems to be a problem.
+
+Didn't get to work on this for the past few days. Let me think more 
+about this before I get back. In the mean time, if you can come up with 
+a relatively simple solution without scalability issues, I would be glad 
+to drop my existing solution.
+
+Thanks again for the input.
+
+-Saravana
+
