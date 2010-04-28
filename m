@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab0D1GHt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 02:07:49 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56479 "EHLO smtps.tip.net.au"
+	id S1754375Ab0D1GIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 02:08:07 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56489 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752267Ab0D1GHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 02:07:47 -0400
-Date: Wed, 28 Apr 2010 16:07:41 +1000
+	id S1754247Ab0D1GIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 02:08:02 -0400
+Date: Wed, 28 Apr 2010 16:07:49 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       Jason Wong <tsanghan@gmail.com>
-Subject: linux-next: manual merge of the staging-next tree with the pcmcia
+       Wouter Van Rooy <wouter.vanrooy@gmail.com>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: linux-next: manual merge of the staging-next tree with the v4l-dvb
  tree
-Message-Id: <20100428160741.2695a14f.sfr@canb.auug.org.au>
+Message-Id: <20100428160749.52da847a.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__28_Apr_2010_16_07_49_+1000_XyLI3oR4tupeTerq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__28_Apr_2010_16_07_49_+1000_XyLI3oR4tupeTerq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi Greg,
 
 Today's linux-next merge of the staging-next tree got a conflict in
-drivers/staging/comedi/drivers/cb_das16_cs.c between commitc
-8bf6e66c254bba7d0ea3f5d02420776dceac657 ("") from the pcmcia tree and
-commit 6ea17dd43c1153f99920e66f806d86f4e83583cc ("Staging: comedi:
-cb_das16_cs: fixed multiple brace coding style issues") from the
-staging-next tree.
+drivers/staging/cx25821/cx25821-alsa.c between commit
+4e0c923a0d23f86c7331b32bc2aeb280e10e029e ("V4L/DVB: Staging: cx25821: fix
+coding style issues in cx25821-alsa.c") from the v4l-dvb tree and commit
+98a178beaaf4c9a0acc4815807be51425b91f0a7 ("Staging: cx25821 fixed C99
+comments, white spaces and unnecessary braces") from the staging-next
+tree.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
+I used the v4l-dvb versions of the conflicting bits (they looked neater
+to me).
+--=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --cc drivers/staging/comedi/drivers/cb_das16_cs.c
-index e0352c6,68bd5ca..0000000
---- a/drivers/staging/comedi/drivers/cb_das16_cs.c
-+++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
-@@@ -175,17 -175,17 +175,17 @@@ static int das16cs_attach(struct comedi
-  	printk("I/O base=0x%04lx ", dev->iobase);
-  
-  	printk("fingerprint:\n");
-- 	for (i = 0; i < 48; i += 2) {
-+ 	for (i = 0; i < 48; i += 2)
-  		printk("%04x ", inw(dev->iobase + i));
-- 	}
-+ 
-  	printk("\n");
-  
- -	ret = request_irq(link->irq.AssignedIRQ, das16cs_interrupt,
- +	ret = request_irq(link->irq, das16cs_interrupt,
-  			  IRQF_SHARED, "cb_das16_cs", dev);
-- 	if (ret < 0) {
-+ 	if (ret < 0)
-  		return ret;
-- 	}
-+ 
- -	dev->irq = link->irq.AssignedIRQ;
- +	dev->irq = link->irq;
-  	printk("irq=%u ", dev->irq);
-  
-  	dev->board_ptr = das16cs_probe(dev, link);
+--Signature=_Wed__28_Apr_2010_16_07_49_+1000_XyLI3oR4tupeTerq
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvX0LUACgkQjjKRsyhoI8xdmQCgt5bWuw0nb0NmYmVGqG9X/Qmk
+gkUAn0wYLEHwMDAvnrpQ+snYmZnGH7RW
+=rEkx
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Apr_2010_16_07_49_+1000_XyLI3oR4tupeTerq--
