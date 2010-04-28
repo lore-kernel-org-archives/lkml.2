@@ -1,78 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab0D1RpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 13:45:15 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:53473 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756071Ab0D1RpK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 13:45:10 -0400
-Date: Wed, 28 Apr 2010 13:45:07 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Greg KH <greg@kroah.com>
-Cc: Tejun Heo <tj@kernel.org>, Jiri Benc <jbenc@suse.cz>,
-       Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-       Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <jkosina@suse.cz>,
-       Anton Blanchard <anton@samba.org>
-Subject: Re: [171/197] module: fix __module_ref_addr()
-Message-ID: <20100428174507.GA4149@Krystal>
-References: <20100422191857.GA13268@kroah.com> <20100422190922.702027944@kvm.kroah.org> <20100428165201.3d7d6b4a@griffin.suse.cz> <20100428162056.GA2846@Krystal> <20100428185550.4406319c@logostar.upir.cz> <4BD86F3D.7040907@kernel.org> <20100428172944.GA14660@kroah.com>
+	id S1756995Ab0D1UCa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 16:02:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59277 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756973Ab0D1UC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 16:02:29 -0400
+Date: Wed, 28 Apr 2010 16:02:22 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Corrado Zoccolo <czoccolo@gmail.com>
+Cc: Miklos Szeredi <mszeredi@suse.cz>, Jens Axboe <jens.axboe@oracle.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+       Suresh Jayaraman <sjayaraman@suse.de>
+Subject: Re: CFQ read performance regression
+Message-ID: <20100428200222.GL16033@redhat.com>
+References: <1271677562.24780.184.camel@tucsk.pomaz.szeredi.hu> <j2t4e5e476b1004201350xbd08a002l3329fbdd4fb1b8db@mail.gmail.com> <1271856324.24780.285.camel@tucsk.pomaz.szeredi.hu> <1271865911.24780.292.camel@tucsk.pomaz.szeredi.hu> <p2t4e5e476b1004220059u2263832atf36ee33ae83463fa@mail.gmail.com> <20100422203123.GF3228@redhat.com> <1272020222.24780.460.camel@tucsk.pomaz.szeredi.hu> <s2q4e5e476b1004241336lbd071624ke489350093ca6e1a@mail.gmail.com> <20100426191453.GE3372@redhat.com> <x2i4e5e476b1004271025u8571ae0fuaee6453eac97e929@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100428172944.GA14660@kroah.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:43:09 up 95 days, 20:20,  6 users,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <x2i4e5e476b1004271025u8571ae0fuaee6453eac97e929@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH (greg@kroah.com) wrote:
-> On Wed, Apr 28, 2010 at 07:24:13PM +0200, Tejun Heo wrote:
-> > On 04/28/2010 06:55 PM, Jiri Benc wrote:
-> > > On Wed, 28 Apr 2010 12:20:56 -0400, Mathieu Desnoyers wrote:
-> > >> Can you try reverting commit c8d52465f95c4187871f8e65666c07806ca06d41 and see if
-> > >> it helps ?
-> > > 
-> > > It doesn't. The produced code is identical.
-> > > 
-> > >> If you have other compiler versions handy, that would also be helpful to see if
-> > >> the problem is specific to the gcc version you are using.
-> > > 
-> > > Tried 4.5.0, the same problem (at least looking at the produced assembler
-> > > code, I haven't booted the kernel, but it looks very similar to 4.3.3).
-> > 
-> > I wrote on the bugzilla but this is not a compiler bug but the -stable
-> > patch shouldn't have been applied only to 2.6.33.  Not 2.6.32.  This
-> > is because till 2.6.32, ia64 hadn't been converted to dynamic percpu
-> > allocator, so its static and dynamic percpu areas were separate and
-> > the per_cpu_ptr() wouldn't do the offsetting the module code expects
-> > there.  So, please revert the patch from 2.6.32.
-> 
-> Ah crap, I missed that.  I'll go revert it from .32 now, sorry about
-> that.
-> 
-> greg k-h
+On Tue, Apr 27, 2010 at 07:25:14PM +0200, Corrado Zoccolo wrote:
+> On Mon, Apr 26, 2010 at 9:14 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Sat, Apr 24, 2010 at 10:36:48PM +0200, Corrado Zoccolo wrote:
+> >
+> > [..]
+> >> >> Anyway, if that's the case, then we probably need to allow IO from
+> >> >> multiple sequential readers and keep a watch on throughput. If throughput
+> >> >> drops then reduce the number of parallel sequential readers. Not sure how
+> >> >> much of code that is but with multiple cfqq going in parallel, ioprio
+> >> >> logic will more or less stop working in CFQ (on multi-spindle hardware).
+> >> Hi Vivek,
+> >> I tried to implement exactly what you are proposing, see the attached patches.
+> >> I leverage the queue merging features to let multiple cfqqs share the
+> >> disk in the same timeslice.
+> >> I changed the queue split code to trigger on throughput drop instead
+> >> of on seeky pattern, so diverging queues can remain merged if they
+> >> have good throughput. Moreover, I measure the max bandwidth reached by
+> >> single queues and merged queues (you can see the values in the
+> >> bandwidth sysfs file).
+> >> If merged queues can outperform non-merged ones, the queue merging
+> >> code will try to opportunistically merge together queues that cannot
+> >> submit enough requests to fill half of the NCQ slots. I'd like to know
+> >> if you can see any improvements out of this on your hardware. There
+> >> are some magic numbers in the code, you may want to try tuning them.
+> >> Note that, since the opportunistic queue merging will start happening
+> >> only after merged queues have shown to reach higher bandwidth than
+> >> non-merged queues, you should use the disk for a while before trying
+> >> the test (and you can check sysfs), or the merging will not happen.
+> >
+> > Hi Corrado,
+> >
+> > I ran these patches and I did not see any improvement. I think the reason
+> > being that no cooperative queue merging took place and we did not have
+> > any data for throughput with coop flag on.
+> >
+> > #cat /sys/block/dm-3/queue/iosched/bandwidth
+> > 230     753     0
+> >
+> > I think we need to implement something similiar to hw_tag detection logic
+> > where we allow dispatches from multiple sync-idle queues at a time and try
+> > to observe the BW. After certain window once we have observed the window,
+> > then set the system behavior accordingly.
+> Hi Vivek,
+> thanks for testing. Can you try changing the condition to enable the
+> queue merging to also consider the case in which max_bw[1] == 0 &&
+> max_bw[0] > 100MB/s (notice that max_bw is measured in
+> sectors/jiffie).
+> This should rule out low end disks, and enable merging where it can be
+> beneficial.
+> If the results are good, but we find this enabling condition
+> unreliable, then we can think of a better way, but I'm curious to see
+> if the results are promising before thinking to the details.
 
-My bad, I indicated that it should be applied to 2.6.29.x through 2.6.33.x in
-the changelog.
+Ok, I made some changes and now some queue merging seems to be happening
+and I am getting little better BW. This will require more debugging. I
+will try to spare some time later.
 
-Sorry,
+Kernel=2.6.34-rc5-corrado-multicfq
+DIR= /mnt/iostmnt/fio          DEV= /dev/mapper/mpathe       
+Workload=bsr       iosched=cfq      Filesz=1G    bs=16K  
+==========================================================================
+job       Set NR  ReadBW(KB/s)   MaxClat(us)    WriteBW(KB/s)  MaxClat(us)    
+---       --- --  ------------   -----------    -------------  -----------    
+bsr       1   1   136457         67353          0              0              
+bsr       1   2   148008         192415         0              0              
+bsr       1   4   180223         535205         0              0              
+bsr       1   8   166983         542326         0              0              
+bsr       1   16  176617         832188         0              0              
 
-Mathieu
+Output of iosched/bandwidth
 
+0	546	740
 
+I did following changes on top of your patch.
+
+Vivek
+
+---
+ block/cfq-iosched.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 4e9e015..7589c44 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -243,6 +243,7 @@ struct cfq_data {
+ 	 */
+ 	int hw_tag_est_depth;
+ 	unsigned int hw_tag_samples;
++	unsigned int cfqq_merged_samples;
+ 	/*
+ 	 * performance measurements
+ 	 * max_bw is indexed by coop flag.
+@@ -1736,10 +1737,14 @@ static struct cfq_queue *cfqq_close(struct cfq_data *cfqd,
+ 	// Opportunistic queue merging could be beneficial even on far queues
+ 	// We enable it only on NCQ disks, if we observed that merged queues
+ 	// can reach higher bandwidth than single queues.
++	// 204 sectors per jiffy is equivalent to 100MB/s on 1000 HZ conf.
++	// Allow merge if we don't have sufficient merged cfqq samples.
+ 	rs = cur_cfqq->allocated[READ] + cur_cfqq->allocated[WRITE];
+-	if (cfqd->hw_tag && cfqd->max_bw[1] > cfqd->max_bw[0] &&
++	if (cfqd->hw_tag
++	   && (cfqd->max_bw[1] > cfqd->max_bw[0]
++	       || (cfqd->max_bw[0] > 204 && !sample_valid(cfqd->cfqq_merged_samples)))
+ 	    // Do not overload the device queue
+-	    rs < cfqd->hw_tag_est_depth / 2) {
++	    && rs < cfqd->hw_tag_est_depth / 2) {
+ 		unsigned r1 = __cfqq->allocated[READ] + __cfqq->allocated[WRITE];
+ 		unsigned r2 = __cfqq1->allocated[READ] + __cfqq1->allocated[WRITE];
+ 		// Prefer merging with a queue that has fewer pending requests
+@@ -1750,6 +1755,8 @@ static struct cfq_queue *cfqq_close(struct cfq_data *cfqd,
+ 		// Do not merge if the merged queue would have too many requests
+ 		if (r1 + rs > cfqd->hw_tag_est_depth / 2)
+ 			return NULL;
++		cfqd->cfqq_merged_samples++;
++
+ 		// Merge only if the BW of the two queues is comparable
+ 		if (abs(__cfqq->last_bw - cur_cfqq->last_bw) * 4 < cfqd->max_bw[0])
+ 			return __cfqq;
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.6.2.5
+
+> 
+> Thanks,
+> Corrado
+> 
+> >
+> > Kernel=2.6.34-rc5-corrado-multicfq
+> > DIR= /mnt/iostmnt/fio          DEV= /dev/mapper/mpathe
+> > Workload=bsr       iosched=cfq      Filesz=2G    bs=4K
+> > ==========================================================================
+> > job       Set NR  ReadBW(KB/s)   MaxClat(us)    WriteBW(KB/s)  MaxClat(us)
+> > ---       --- --  ------------   -----------    -------------  -----------
+> > bsr       1   1   126590         61448          0              0
+> > bsr       1   2   127849         242843         0              0
+> > bsr       1   4   131886         508021         0              0
+> > bsr       1   8   131890         398241         0              0
+> > bsr       1   16  129167         454244         0              0
+> >
+> > Thanks
+> > Vivek
+> >
+> 
+> 
+> 
+> -- 
+> __________________________________________________________________________
+> 
+> dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
+> PhD - Department of Computer Science - University of Pisa, Italy
+> --------------------------------------------------------------------------
+> The self-confidence of a warrior is not the self-confidence of the average
+> man. The average man seeks certainty in the eyes of the onlooker and calls
+> that self-confidence. The warrior seeks impeccability in his own eyes and
+> calls that humbleness.
+>                                Tales of Power - C. Castaneda
