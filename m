@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab0D1Q77 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 12:59:59 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:31128
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751337Ab0D1Q75 (ORCPT
+	id S1753269Ab0D1Hyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 03:54:52 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:17792 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab0D1Hyv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 12:59:57 -0400
-X-SpamScore: -19
-X-BigFish: VPS-19(zz98dN936eM62a3Lzz1202hzz6ff19h2ba5Mz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L1LJ7L-01-CND-02
-X-M-MSG: 
-Date: Wed, 28 Apr 2010 18:59:06 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Siarhei Siamashka <siarhei.siamashka@nokia.com>
-CC: oprofile-list@lists.sourceforge.net,
-       "Carmody Phil.2 (EXT-Ixonos/Helsinki)" <ext-phil.2.carmody@nokia.com>,
-       "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] updates for oprofile
-Message-ID: <20100428165906.GA21724@erda.amd.com>
-References: <20100427152544.GA9063@pcarmody-desktop>
- <20100427174026.GR6450@erda.amd.com>
- <201004272047.52056.siarhei.siamashka@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <201004272047.52056.siarhei.siamashka@nokia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 28 Apr 2010 16:59:06.0790 (UTC) FILETIME=[1D167460:01CAE6F4]
-X-Reverse-DNS: unknown
+	Wed, 28 Apr 2010 03:54:51 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Wed, 28 Apr 2010 09:55:07 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH RE-RESEND] Mass storage gadget: Handle eject request
+In-reply-to: <u2tfb5cec441004270519s5aa901c0ib08a63f2be4f0af2@mail.gmail.com>
+To: Chouteau Fabien <fabien.chouteau@gmail.com>, linux-usb@vger.kernel.org
+Cc: Fabien Chouteau <fabien.chouteau@barco.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org
+Message-id: <op.vbu395at7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.10 (Linux)
+References: <1272278094-25433-1-git-send-email-fabien.chouteau@gmail.com>
+ <u2tfb5cec441004270519s5aa901c0ib08a63f2be4f0af2@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.04.10 20:47:51, Siarhei Siamashka wrote:
-> Isn't hrtimer callback function supposed to be only called from IRQ context
-> after this cleanup: http://lwn.net/Articles/308545/ ?
+> On Mon, Apr 26, 2010 at 12:34 PM, <fabien.chouteau@gmail.com> wrote:
+>> This patch adds handling of the "Start/Stop Unit" SCSI request
+>> to simulate media ejection.
 
-Yes, the patch is upstream since v2.6.29. Thanks Siarhei.
+On Tue, 27 Apr 2010 14:19:42 +0200, Chouteau Fabien <fabien.chouteau@gmail.com> wrote:
+> Any comments on the last version?
 
-I will add a null pointer check anyway.
-
--Robert
+As far as I'm concerned, it looks fine.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
-
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
