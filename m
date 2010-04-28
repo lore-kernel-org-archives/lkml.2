@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab0D1SmY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 14:42:24 -0400
-Received: from mail.gmx.net ([213.165.64.20]:36076 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756358Ab0D1SmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 14:42:21 -0400
-X-Authenticated: #15668376
-X-Provags-ID: V01U2FsdGVkX18dHtE5vFkdBiAZzL9+aM8PksKX0+tXgHhgmDs1s0
-	NWtXhL9RLjMZyG
-From: Peter Fritzsche <Peter.Fritzsche@gmx.de>
-To: Jamie Lokier <jamie@shareable.org>
-Subject: Re: [PATCH 2/2] asm-generic: Don't warn that atomic_t is only 24 bit
-Date: Wed, 28 Apr 2010 20:42:09 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.33-2-686; KDE/4.4.2; i686; ; )
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Keith M Wesolowski <wesolows@foobazco.org>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>
-References: <1272451837-17961-1-git-send-email-peter.fritzsche@gmx.de> <20100428135434.GA4662@Krystal> <20100428152815.GB25569@shareable.org>
-In-Reply-To: <20100428152815.GB25569@shareable.org>
-MIME-Version: 1.0
-Message-Id: <201004282042.15485.Peter.Fritzsche@gmx.de>
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.62
+	id S1756066Ab0D1RpG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 13:45:06 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:42572 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755448Ab0D1RpD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 13:45:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=oGL7z8366cu2llAzVre5lKZmko50BRuYDk9TU/PrKul5G8+Yxhcb/sHU9unCnGPme3
+         Q0lWe7d/pwtudzrZvyos/r2pFtSUgYJfY8QyI31RGxFHmFD3chLUzvTl/tk3MYVBtiHg
+         H6EXABLKTOsHKbydOhoD2aburf3Smv50j+BmY=
+Subject: Re: Problem with "tcp: bind() fix when many ports are bound" commit
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: grzegorz.chwesewicz@retis.net.pl, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>
+In-Reply-To: <1272476040.2267.87.camel@edumazet-laptop>
+References: <4BD82B29.3000105@retis.net.pl>
+	 <20100428.095032.32709294.davem@davemloft.net>
+	 <1272476040.2267.87.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Apr 2010 19:44:57 +0200
+Message-ID: <1272476697.2267.95.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 April 2010 17:28:15 you wrote:
-
-> If the comment's getting removed, it should probably go from here too:
+Le mercredi 28 avril 2010 à 19:34 +0200, Eric Dumazet a écrit :
+> L
+> I am going to test following patch in a couple of hours (I have to
+> run ...)
 > 
-> linux-2.6$ git grep '24' arch/*/include/*/atomic*
-> arch/mn10300/include/asm/atomic.h: * useful range of an atomic_t is only 24
-> bits arch/mn10300/include/asm/atomic.h: * useful range of an atomic_t is
-> only 24 bits arch/mn10300/include/asm/atomic.h: * Note that the guaranteed
-> useful range of an arch/mn10300/include/asm/atomic.h: * Note that the
-> guaranteed useful range of an
+> Always allowing a reuse LISTEN if no other listener is already active on
+> same IP.
+> 
+> diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
+> index 78cbc39..e2076dd 100644
+> --- a/net/ipv4/inet_connection_sock.c
+> +++ b/net/ipv4/inet_connection_sock.c
+> @@ -78,6 +78,7 @@ int inet_csk_bind_conflict(const struct sock *sk,
+>  				    sk2_rcv_saddr == sk_rcv_saddr)
+>  					break;
+>  			} else if (reuse && sk2->sk_reuse &&
+> +				   sk->sk_state != TCP_LISTEN &&
+>  				   sk2_rcv_saddr &&
+>  				   sk2_rcv_saddr == sk_rcv_saddr)
+>  				break;
+> 
+> 
+> --
 
-This is part one of the patch - already sent to the mn10300 people. Currently 
-only got Acked reponses for both patches
+Hmm, this wont work because we dont know this sk socket will serve as a
+listener.
 
-Best regards,
-	Peter Fritzsche
+bind(... port=80);
+
+listen(...) or connect(...)
+
+David, I think we should revert patches for linux-2.6, and work on this
+problem more closely on net-next-2.6
+
+Thanks
+
+
