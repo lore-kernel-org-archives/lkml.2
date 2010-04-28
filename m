@@ -1,135 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757114Ab0D1VMu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 17:12:50 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53497 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754343Ab0D1VMs convert rfc822-to-8bit (ORCPT
+	id S1757113Ab0D1VOA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 17:14:00 -0400
+Received: from tomts40.bellnexxia.net ([209.226.175.97]:58791 "EHLO
+	tomts40-srv.bellnexxia.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755683Ab0D1VN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 17:12:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [PATCH 1/8] PM: Add suspend block api.
-Date: Wed, 28 Apr 2010 23:13:50 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
+	Wed, 28 Apr 2010 17:13:58 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAIg92EtGGNqG/2dsb2JhbACce3K+O4UOBA
+Date: Wed, 28 Apr 2010 17:13:53 -0400
+From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
-References: <Pine.LNX.4.44L0.1004281317310.1944-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1004281317310.1944-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201004282313.50603.rjw@sisk.pl>
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 10/10][RFC] tracing: Combine event filter_active and
+	enable into single flags field
+Message-ID: <20100428211353.GK8591@Krystal>
+References: <20100426195024.256424113@goodmis.org> <20100426200243.933345924@goodmis.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100426200243.933345924@goodmis.org>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 17:08:30 up 21 days,  7:02,  4 users,  load average: 0.63, 0.36,
+	0.26
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 April 2010, Alan Stern wrote:
-> On Tue, 27 Apr 2010, [UTF-8] Arve Hjønnevåg wrote:
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 > 
-> > +For example, in cell phones or other embedded systems, where powering the screen
-> > +is a significant drain on the battery, suspend blockers can be used to allow
-> > +user-space to decide whether a keystroke received while the system is suspended
-> > +should cause the screen to be turned back on or allow the system to go back into
-> > +suspend. Use set_irq_wake or a platform specific api to make sure the keypad
-> > +interrupt wakes up the cpu. Once the keypad driver has resumed, the sequence of
-> > +events can look like this:
-> > +
-> > +- The Keypad driver gets an interrupt. It then calls suspend_block on the
-> > +  keypad-scan suspend_blocker and starts scanning the keypad matrix.
-> > +- The keypad-scan code detects a key change and reports it to the input-event
-> > +  driver.
-> > +- The input-event driver sees the key change, enqueues an event, and calls
-> > +  suspend_block on the input-event-queue suspend_blocker.
-> > +- The keypad-scan code detects that no keys are held and calls suspend_unblock
-> > +  on the keypad-scan suspend_blocker.
-> > +- The user-space input-event thread returns from select/poll, calls
-> > +  suspend_block on the process-input-events suspend_blocker and then calls read
-> > +  on the input-event device.
-> > +- The input-event driver dequeues the key-event and, since the queue is now
-> > +  empty, it calls suspend_unblock on the input-event-queue suspend_blocker.
-> > +- The user-space input-event thread returns from read. If it determines that
-> > +  the key should leave the screen off, it calls suspend_unblock on the
-> > +  process_input_events suspend_blocker and then calls select or poll. The
-> > +  system will automatically suspend again, since now no suspend blockers are
-> > +  active.
-> > +
-> > +                 Key pressed   Key released
-> > +                     |             |
-> > +keypad-scan          ++++++++++++++++++
-> > +input-event-queue        +++          +++
-> > +process-input-events       +++          +++
-> 
-> This is better than before, but it still isn't ideal.  Here's what I 
-> mean:
-> 
-> >  suspend blockers can be used to allow
-> > +user-space to decide whether a keystroke received while the system is suspended
-> > +should cause the screen to be turned back on or allow the system to go back into
-> > +suspend.
-> 
-> That's not right.  Handling the screen doesn't need suspend blockers:
-> The program decides what to do and then either turns on the screen or
-> else writes "mem" to /sys/power/state.  What suspend blockers add is
-> the ability to resolve races and satisfy multiple constraints when
-> going into suspend -- which has nothing to do with operating the
-> screen.
-> 
-> I _think_ what you're trying to get at can be expressed this way:
-> 
-> 	Here's an example showing how a cell phone or other embedded
-> 	system can handle keystrokes (or other input events) in the 
-> 	presence of suspend blockers.  Use set_irq_wake...
-> 
-> 	...
-> 
->       - The user-space input-event thread returns from read.  It 
-> 	carries out whatever activities are appropriate (for example,
-> 	powering up the display screen, running other programs, and so 
-> 	on).  When it is finished, it calls suspend_unblock on the
-> 	process_input_events suspend_blocker and then calls select or
-> 	poll.  The system will automatically suspend again when it is
-> 	idle and no suspend blockers remain active.
+> The filter_active and enable both use an int (4 bytes each) to
+> set a single flag. We can save 4 bytes per event by combining the
+> two into a single integer.
 
-Yeah, that sounds better.  Arve, what do you think?
+So you're adding extra masks on the tracing fast path to save 4 bytes
+per event. That sounds like an acceptable tradeoff, since a mask is
+incredibly cheap compared to a cache miss.
 
-> > +/**
-> > + * suspend_block() - Block suspend
-> > + * @blocker:	The suspend blocker to use
-> > + *
-> > + * It is safe to call this function from interrupt context.
-> > + */
-> > +void suspend_block(struct suspend_blocker *blocker)
-> > +{
-> > +	unsigned long irqflags;
-> > +
-> > +	if (WARN_ON(!(blocker->flags & SB_INITIALIZED)))
-> > +		return;
-> > +
-> > +	spin_lock_irqsave(&list_lock, irqflags);
-> > +	blocker->flags |= SB_ACTIVE;
-> > +	list_del(&blocker->link);
-> > +
-> > +	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
-> > +		pr_info("suspend_block: %s\n", blocker->name);
-> > +
-> > +	list_add(&blocker->link, &active_blockers);
-> 
-> Here and in suspend_unblock(), you can use list_move() in place of 
-> list_del() followed by list_add().
-
-Indeed.  And the debug statement might be moved out of the critical section IMHO.
+This patch could use slightly more verbose locking rule explanation of
+the flags. The updates are protected by a mutex, but can reads happen
+concurrently with updates ? (can we update the filter while tracing is
+active ?)
 
 Thanks,
-Rafael
+
+Mathieu
+
+> 
+>    text	   data	    bss	    dec	    hex	filename
+> 5788186	1337252	9351592	16477030	 fb6b66	vmlinux.orig
+> 5761074	1262596	9351592	16375262	 f9ddde	vmlinux.id
+> 5761007	1256916	9351592	16369515	 f9c76b	vmlinux.flags
+> 
+> This gives us another 5K in savings.
+> 
+> The modification of both the enable and filter fields are done
+> under the event_mutex, so it is still safe to combine the two.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/linux/ftrace_event.h       |   21 +++++++++++++++++++--
+>  kernel/trace/trace.h               |    2 +-
+>  kernel/trace/trace_events.c        |   14 +++++++-------
+>  kernel/trace/trace_events_filter.c |   10 +++++-----
+>  kernel/trace/trace_kprobe.c        |    2 +-
+>  5 files changed, 33 insertions(+), 16 deletions(-)
+> 
+> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> index b26507f..2e28c94 100644
+> --- a/include/linux/ftrace_event.h
+> +++ b/include/linux/ftrace_event.h
+> @@ -141,6 +141,16 @@ struct ftrace_event_class {
+>  	int			(*raw_init)(struct ftrace_event_call *);
+>  };
+>  
+> +enum {
+> +	TRACE_EVENT_FL_ENABLED_BIT,
+> +	TRACE_EVENT_FL_FILTERED_BIT,
+> +};
+> +
+> +enum {
+> +	TRACE_EVENT_FL_ENABLED	= (1 << TRACE_EVENT_FL_ENABLED_BIT),
+> +	TRACE_EVENT_FL_FILTERED	= (1 << TRACE_EVENT_FL_FILTERED_BIT),
+> +};
+> +
+>  struct ftrace_event_call {
+>  	struct list_head	list;
+>  	struct ftrace_event_class *class;
+> @@ -152,8 +162,15 @@ struct ftrace_event_call {
+>  	void			*mod;
+>  	void			*data;
+>  
+> -	int			enabled;
+> -	int			filter_active;
+> +	/*
+> +	 * 32 bit flags:
+> +	 *   bit 1:		enabled
+> +	 *   bit 2:		filter_active
+> +	 *
+> +	 *  Must hold event_mutex to change.
+> +	 */
+> +	unsigned int		flags;
+> +
+>  	int			perf_refcount;
+>  };
+>  
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index ff63bee..51ee319 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -779,7 +779,7 @@ filter_check_discard(struct ftrace_event_call *call, void *rec,
+>  		     struct ring_buffer *buffer,
+>  		     struct ring_buffer_event *event)
+>  {
+> -	if (unlikely(call->filter_active) &&
+> +	if (unlikely(call->flags & TRACE_EVENT_FL_FILTERED) &&
+>  	    !filter_match_preds(call->filter, rec)) {
+>  		ring_buffer_discard_commit(buffer, event);
+>  		return 1;
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index 8d2e28e..176b8be 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -144,8 +144,8 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+>  
+>  	switch (enable) {
+>  	case 0:
+> -		if (call->enabled) {
+> -			call->enabled = 0;
+> +		if (call->flags & TRACE_EVENT_FL_ENABLED) {
+> +			call->flags &= ~TRACE_EVENT_FL_ENABLED;
+>  			tracing_stop_cmdline_record();
+>  			if (call->class->reg)
+>  				call->class->reg(call, TRACE_REG_UNREGISTER);
+> @@ -156,7 +156,7 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+>  		}
+>  		break;
+>  	case 1:
+> -		if (!call->enabled) {
+> +		if (!(call->flags & TRACE_EVENT_FL_ENABLED)) {
+>  			tracing_start_cmdline_record();
+>  			if (call->class->reg)
+>  				ret = call->class->reg(call, TRACE_REG_REGISTER);
+> @@ -170,7 +170,7 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+>  					"%s\n", call->name);
+>  				break;
+>  			}
+> -			call->enabled = 1;
+> +			call->flags |= TRACE_EVENT_FL_ENABLED;
+>  		}
+>  		break;
+>  	}
+> @@ -359,7 +359,7 @@ s_next(struct seq_file *m, void *v, loff_t *pos)
+>  	(*pos)++;
+>  
+>  	list_for_each_entry_continue(call, &ftrace_events, list) {
+> -		if (call->enabled)
+> +		if (call->flags & TRACE_EVENT_FL_ENABLED)
+>  			return call;
+>  	}
+>  
+> @@ -418,7 +418,7 @@ event_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
+>  	struct ftrace_event_call *call = filp->private_data;
+>  	char *buf;
+>  
+> -	if (call->enabled)
+> +	if (call->flags & TRACE_EVENT_FL_ENABLED)
+>  		buf = "1\n";
+>  	else
+>  		buf = "0\n";
+> @@ -493,7 +493,7 @@ system_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
+>  		 * or if all events or cleared, or if we have
+>  		 * a mixture.
+>  		 */
+> -		set |= (1 << !!call->enabled);
+> +		set |= (1 << !!(call->flags & TRACE_EVENT_FL_ENABLED));
+>  
+>  		/*
+>  		 * If we have a mixture, no need to look further.
+> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+> index b8e3bf3..fbc72ee 100644
+> --- a/kernel/trace/trace_events_filter.c
+> +++ b/kernel/trace/trace_events_filter.c
+> @@ -546,7 +546,7 @@ static void filter_disable_preds(struct ftrace_event_call *call)
+>  	struct event_filter *filter = call->filter;
+>  	int i;
+>  
+> -	call->filter_active = 0;
+> +	call->flags &= ~TRACE_EVENT_FL_FILTERED;
+>  	filter->n_preds = 0;
+>  
+>  	for (i = 0; i < MAX_FILTER_PRED; i++)
+> @@ -573,7 +573,7 @@ void destroy_preds(struct ftrace_event_call *call)
+>  {
+>  	__free_preds(call->filter);
+>  	call->filter = NULL;
+> -	call->filter_active = 0;
+> +	call->flags &= ~TRACE_EVENT_FL_FILTERED;
+>  }
+>  
+>  static struct event_filter *__alloc_preds(void)
+> @@ -612,7 +612,7 @@ static int init_preds(struct ftrace_event_call *call)
+>  	if (call->filter)
+>  		return 0;
+>  
+> -	call->filter_active = 0;
+> +	call->flags &= ~TRACE_EVENT_FL_FILTERED;
+>  	call->filter = __alloc_preds();
+>  	if (IS_ERR(call->filter))
+>  		return PTR_ERR(call->filter);
+> @@ -1267,7 +1267,7 @@ static int replace_system_preds(struct event_subsystem *system,
+>  		if (err)
+>  			filter_disable_preds(call);
+>  		else {
+> -			call->filter_active = 1;
+> +			call->flags |= TRACE_EVENT_FL_FILTERED;
+>  			replace_filter_string(filter, filter_string);
+>  		}
+>  		fail = false;
+> @@ -1316,7 +1316,7 @@ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
+>  	if (err)
+>  		append_filter_err(ps, call->filter);
+>  	else
+> -		call->filter_active = 1;
+> +		call->flags |= TRACE_EVENT_FL_FILTERED;
+>  out:
+>  	filter_opstack_clear(ps);
+>  	postfix_clear(ps);
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index 934078b..0e3ded6 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -1382,7 +1382,7 @@ static int register_probe_event(struct trace_probe *tp)
+>  		kfree(call->print_fmt);
+>  		return -ENODEV;
+>  	}
+> -	call->enabled = 0;
+> +	call->flags = 0;
+>  	call->class->reg = kprobe_register;
+>  	call->data = tp;
+>  	ret = trace_add_event_call(call);
+> -- 
+> 1.7.0
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
