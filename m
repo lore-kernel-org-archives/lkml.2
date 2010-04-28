@@ -1,146 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab0D1USN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 16:18:13 -0400
-Received: from tomts43-srv.bellnexxia.net ([209.226.175.110]:62043 "EHLO
-	tomts43-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757002Ab0D1USI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 16:18:08 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAHIv2EtGGNqG/2dsb2JhbACceHK+SIUOBA
-Date: Wed, 28 Apr 2010 16:18:04 -0400
-From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 00/10][RFC] tracing: Lowering the footprint of
-	TRACE_EVENTs
-Message-ID: <20100428201804.GA8591@Krystal>
-References: <20100426195024.256424113@goodmis.org>
+	id S932192Ab0D1UT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 16:19:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20149 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755101Ab0D1UT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 16:19:26 -0400
+Date: Wed, 28 Apr 2010 16:19:09 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 16/35] union-mount: Writable overlays/union mounts documentation
+Message-ID: <20100428201908.GC16691@shell>
+References: <1271372682-21225-9-git-send-email-vaurora@redhat.com> <1271372682-21225-10-git-send-email-vaurora@redhat.com> <1271372682-21225-11-git-send-email-vaurora@redhat.com> <1271372682-21225-12-git-send-email-vaurora@redhat.com> <1271372682-21225-13-git-send-email-vaurora@redhat.com> <1271372682-21225-14-git-send-email-vaurora@redhat.com> <1271372682-21225-15-git-send-email-vaurora@redhat.com> <1271372682-21225-16-git-send-email-vaurora@redhat.com> <1271372682-21225-17-git-send-email-vaurora@redhat.com> <E1O4GKw-000257-Hh@pomaz-ex.szeredi.hu>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100426195024.256424113@goodmis.org>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 16:14:11 up 21 days,  6:07,  4 users,  load average: 0.31, 0.24,
-	0.19
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <E1O4GKw-000257-Hh@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> This is an RFC patch set that also affects kprobes and perf.
-
-Hi Steven,
-
+On Tue, Apr 20, 2010 at 06:30:10PM +0200, Miklos Szeredi wrote:
+> On Thu, 15 Apr 2010, Valerie Aurora wrote:
+> > +VFS implementation
+> > +==================
+> > +
+> > +Writable overlays are implemented as an integral part of the VFS,
+> > +rather than as a VFS client file system (i.e., a stacked file system
+> > +like unionfs or ecryptfs).  Implementing writable overlays inside the
+> > +VFS eliminates the need for duplicate copies of VFS data structures,
+> > +unnecessary indirection, and code duplication, but requires very
+> > +maintainable, low-to-zero overhead code.  Writable overlays require no
+> > +change to file systems serving as the read-only layer, and requires
+> > +some minor support from file systems serving as the read-write layer.
+> > +File systems that want to be the writable layer must implement the new
+> > +->whiteout() and ->fallthru() inode operations, which create special
+> > +dummy directory entries.
 > 
-> At the Linux Collaboration Summit, I talked with Mathieu and others about
-> lowering the footprint of trace events. I spent all of last week
-> trying to get the size as small as I could.
+> Maybe this should have been discussed earlier, but looking at all the
+> places where copyup and whiteout logic needs to be added (and the
+> current code is still unfinished, as you state) makes me wonder, does
+> all that really belong in the VFS?
 > 
-> Currently, each TRACE_EVENT() macro adds 1 - 5K per tracepoint. I got various
-> results by adding a TRACE_EVENT() with the compiler, depending on
-> config options that did not seem related. The new tracepoint I added
-> would add between 1 and 5K, but I did not investigate enough to
-> see what the true size was.
+> What exactly are the areas where a VFS implementation eliminates
+> duplication and unnecessary indirection?  Well, it turns out that in
+> the current implementation there's only one place, and that's
+> non-directory nodes.
+> 
+> Which begs the question: why do all the other things (union lookup,
+> directory merging and copyup, file copyup) need to be in the VFS?
+> Especially since I can imagine other union implementations wanting to
+> do these differently (e.g. not copying up directories in readdir).
+>
+> What really needs to be in the VFS is the ability to:
+> 
+> - allow a filesystem to "redirect" a lookup to a different fs,
+> 
+> - if the operation happens to modify the file, then *not* redirect the
+>   lookup
+> 
+> And there is already one example for the above: LAST_BIND lookups in
+> /proc.  So basically it's mostly there and just needs to be
+> implemented in a filesystem.
+> 
+> Have I missed something fundamental?  Are there other reasons why a
+> filesystem based implementation would be inferior?
 
-Adding only one might not give an accurate picture, as some sections can
-be aligned on 4k boundaries. So if the added TRACE_EVENT() brings you to
-the next 4k page, your added size is bumped of an extra 4k.
+I'm sorry I have responded sooner, I've been trying to write a
+detailed useful message and that turns out to be hard.  I'll just
+include a few of the highlights; mainly I want to say that I'd
+rather do it the way you describe but when I tried it ended up even
+uglier than the VFS implementation.
 
-> 
-> What was consistent, was the DEFINE_EVENT(). Currently, it adds
-> a little over 700 bytes per DEFINE_EVENT().
-> 
-> This patch series does not seem to affect TRACE_EVENT() much (had
-> the same various sizes), but consistently brings DEFINE_EVENT()s
-> down from 700 bytes to 250 bytes per DEFINE_EVENT(). Since syscalls
-> use one "class" and are equivalent to DEFINE_EVENT() this can
-> be a significant savings.
-> 
-> With events and syscalls (82 events and 616 syscalls), before this
-> patch series, the size of vmlinux was: 16161794, and afterward: 16058182.
-> 
-> That is 103,612 bytes in savings! (over 100K)
-> 
-> 
-> Without tracing syscalls (82 events), it brought the size of vmlinux
-> down from 1591046 to 15999394.
+I went down this road initially (do most of the unioning in a file
+system) and spent a couple of months on it.  But I always ended up
+having to do some level of copy-around and redirection similar to that
+in unionfs.
 
-Probably a cut n paste error on the line above. Should read:
+One of the major difficulties that arises even when doing unioning at
+the VFS level is keeping around the parent's path in order to do the
+copyup later on.  Take a look at the code pattern in the "union-mount:
+Implement union-aware syscall()" series of patches.  That's the
+prettiest and most efficient version I could come up with, after two
+other implementations, and it's in the VFS, at the vfs_foo_syscall()
+level.  I don't even know how I would start if I had to wait until the
+file system op is called.
 
-down from 16021465 to 15999394.
-
-if you want the "22071 bytes in savings" to hold.
-
-Will look over your patchset.
+If you have some insights on how to do this, I'd love to hear them.  I
+don't enjoy writing VFS code for the fun of it. :)
 
 Thanks,
 
-Mathieu
+-VAL
 
-> 
-> 22,071 bytes in savings.
-> 
-> This is just an RFC (for now), to get peoples opinions on the changes.
-> It does a bit of rewriting of the CPP macros, just to warning you ;-)
-> 
-> -- Steve
-> 
-> The code can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/tracing/rfc-1
-> 
-> 
-> Steven Rostedt (10):
->       tracing: Create class struct for events
->       tracing: Let tracepoints have data passed to tracepoint callbacks
->       tracing: Convert TRACE_EVENT() to use the DECLARE_TRACE_DATA()
->       tracing: Remove per event trace registering
->       tracing: Move fields from event to class structure
->       tracing: Move raw_init from events to class
->       tracing: Allow events to share their print functions
->       tracing: Move print functions into event class
->       tracing: Remove duplicate id information in event structure
->       tracing: Combine event filter_active and enable into single flags field
-> 
-> ----
->  include/linux/ftrace_event.h         |   71 +++++++++---
->  include/linux/syscalls.h             |   55 +++-------
->  include/linux/tracepoint.h           |  119 ++++++++++++++++---
->  include/trace/ftrace.h               |  215 ++++++++++------------------------
->  include/trace/syscall.h              |    9 +-
->  kernel/trace/blktrace.c              |   13 ++-
->  kernel/trace/kmemtrace.c             |   28 +++--
->  kernel/trace/trace.c                 |    9 +-
->  kernel/trace/trace.h                 |    5 +-
->  kernel/trace/trace_event_perf.c      |   17 ++-
->  kernel/trace/trace_events.c          |  126 +++++++++++++-------
->  kernel/trace/trace_events_filter.c   |   28 +++--
->  kernel/trace/trace_export.c          |   16 ++-
->  kernel/trace/trace_functions_graph.c |    2 +-
->  kernel/trace/trace_kprobe.c          |  104 ++++++++++-------
->  kernel/trace/trace_output.c          |  137 +++++++++++++++-------
->  kernel/trace/trace_output.h          |    2 +-
->  kernel/trace/trace_syscalls.c        |  105 +++++++++++++++--
->  kernel/tracepoint.c                  |   91 ++++++++-------
->  19 files changed, 700 insertions(+), 452 deletions(-)
-> 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
