@@ -1,699 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab0D1UpF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 16:45:05 -0400
-Received: from tomts43.bellnexxia.net ([209.226.175.110]:63857 "EHLO
-	tomts43-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753803Ab0D1UpA (ORCPT
+	id S1754937Ab0D1Uu0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 16:50:26 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53400 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752088Ab0D1UuY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 16:45:00 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAAM22EtGGNqG/2dsb2JhbACceXK+UoUOBA
-Date: Wed, 28 Apr 2010 16:44:48 -0400
-From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+	Wed, 28 Apr 2010 16:50:24 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+Subject: Re: [PATCH 1/8] PM: Add suspend block api.
+Date: Wed, 28 Apr 2010 22:50:44 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc4-rjw; KDE/4.3.5; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 04/10][RFC] tracing: Remove per event trace registering
-Message-ID: <20100428204448.GE8591@Krystal>
-References: <20100426195024.256424113@goodmis.org> <20100426200242.214837703@goodmis.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <20100426200242.214837703@goodmis.org>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 16:43:05 up 21 days,  6:36,  4 users,  load average: 0.45, 0.33,
-	0.22
-User-Agent: Mutt/1.5.18 (2008-05-17)
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+References: <1272429119-12103-1-git-send-email-arve@android.com> <1272429119-12103-2-git-send-email-arve@android.com>
+In-Reply-To: <1272429119-12103-2-git-send-email-arve@android.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004282250.44200.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
+On Wednesday 28 April 2010, Arve Hjønnevåg wrote:
+> Adds /sys/power/policy that selects the behaviour of /sys/power/state.
+> After setting the policy to opportunistic, writes to /sys/power/state
+> become non-blocking requests that specify which suspend state to enter
+> when no suspend blockers are active. A special state, "on", stops the
+> process by activating the "main" suspend blocker.
 > 
-> This patch removes the register functions of TRACE_EVENT() to enable
-> and disable tracepoints. The registering of a event is now down
-> directly in the trace_events.c file. The tracepoint_probe_register()
-> is now called directly.
-> 
-> The prototypes are no longer type checked, but this should not be
-> an issue since the tracepoints are created automatically by the
-> macros. If a prototype is incorrect in the TRACE_EVENT() macro, then
-> other macros will catch it.
-> 
-> The trace_event_class structure now holds the probes to be called
-> by the callbacks. This removes needing to have each event have
-> a separate pointer for the probe.
-> 
-> To handle kprobes and syscalls, since they register probes in a
-> different manner, a "reg" field is added to the ftrace_event_class
-> structure. If the "reg" field is assigned, then it will be called for
-> enabling and disabling of the probe for either ftrace or perf. To let
-> the reg function know what is happening, a new enum (trace_reg) is
-> created that has the type of control that is needed.
-> 
-> With this new rework, the 82 kernel events and 616 syscall events
-> has their footprint dramatically lowered:
-> 
->    text	   data	    bss	    dec	    hex	filename
-> 5788186	1337252	9351592	16477030	 fb6b66	vmlinux.orig
-> 5792282	1333796	9351592	16477670	 fb6de6	vmlinux.class
-> 5793448	1333780	9351592	16478820	 fb7264	vmlinux.tracepoint
-> 5796926	1337748	9351592	16486266	 fb8f7a	vmlinux.data
-> 5774316	1306580	9351592	16432488	 fabd68	vmlinux.regs
-> 
-> The size went from 16477030 to 16432488, that's a total of 44K
-> in savings. With tracepoints being continuously added, this is
-> critical that the footprint becomes minimal.
-
-Have you tried doing a BUILD_BUG_ON() on __typeof__() mismatch between
-the type of the callback generated by TRACE_EVENT() and the expected
-type ?  This might help catching tricky preprocessor macro errors early.
-
-Thanks,
-
-Mathieu
-
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Arve Hjønnevåg <arve@android.com>
 > ---
->  include/linux/ftrace_event.h    |   17 +++++--
->  include/linux/syscalls.h        |   29 ++---------
->  include/linux/tracepoint.h      |   12 ++++-
->  include/trace/ftrace.h          |  110 +++++----------------------------------
->  kernel/trace/trace_event_perf.c |   15 ++++-
->  kernel/trace/trace_events.c     |   26 +++++++---
->  kernel/trace/trace_kprobe.c     |   34 +++++++++---
->  kernel/trace/trace_syscalls.c   |   56 +++++++++++++++++++-
->  8 files changed, 151 insertions(+), 148 deletions(-)
-> 
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index 496eea8..dd0051e 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -113,8 +113,21 @@ void tracing_record_cmdline(struct task_struct *tsk);
+...
+> @@ -20,6 +21,27 @@ DEFINE_MUTEX(pm_mutex);
+>  unsigned int pm_flags;
+>  EXPORT_SYMBOL(pm_flags);
 >  
->  struct event_filter;
->  
-> +enum trace_reg {
-> +	TRACE_REG_REGISTER,
-> +	TRACE_REG_UNREGISTER,
-> +	TRACE_REG_PERF_REGISTER,
-> +	TRACE_REG_PERF_UNREGISTER,
+> +struct policy {
+> +	const char *name;
+> +	bool (*valid_state)(suspend_state_t state);
+> +	int (*set_state)(suspend_state_t state);
 > +};
+> +static struct policy policies[] = {
+> +	{
+> +		.name		= "forced",
+> +		.valid_state	= valid_state,
+> +		.set_state	= enter_state,
+> +	},
+> +#ifdef CONFIG_OPPORTUNISTIC_SUSPEND
+> +	{
+> +		.name		= "opportunistic",
+> +		.valid_state	= request_suspend_valid_state,
+> +		.set_state	= request_suspend_state,
+> +	},
+> +#endif
+> +};
+> +static int policy;
 > +
-> +struct ftrace_event_call;
-> +
->  struct ftrace_event_class {
->  	char			*system;
-> +	void			*probe;
-> +	void			*perf_probe;
-> +	int			(*reg)(struct ftrace_event_call *event,
-> +				       enum trace_reg type);
->  };
+>  #ifdef CONFIG_PM_SLEEP
 >  
->  struct ftrace_event_call {
-> @@ -124,8 +137,6 @@ struct ftrace_event_call {
->  	struct dentry		*dir;
->  	struct trace_event	*event;
->  	int			enabled;
-> -	int			(*regfunc)(struct ftrace_event_call *);
-> -	void			(*unregfunc)(struct ftrace_event_call *);
->  	int			id;
->  	const char		*print_fmt;
->  	int			(*raw_init)(struct ftrace_event_call *);
-> @@ -137,8 +148,6 @@ struct ftrace_event_call {
->  	void			*data;
->  
->  	int			perf_refcount;
-> -	int			(*perf_event_enable)(struct ftrace_event_call *);
-> -	void			(*perf_event_disable)(struct ftrace_event_call *);
->  };
->  
->  #define PERF_MAX_TRACE_SIZE	2048
-> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-> index ac5791d..e3348c4 100644
-> --- a/include/linux/syscalls.h
-> +++ b/include/linux/syscalls.h
-> @@ -103,22 +103,6 @@ struct perf_event_attr;
->  #define __SC_TEST5(t5, a5, ...)	__SC_TEST(t5); __SC_TEST4(__VA_ARGS__)
->  #define __SC_TEST6(t6, a6, ...)	__SC_TEST(t6); __SC_TEST5(__VA_ARGS__)
->  
-> -#ifdef CONFIG_PERF_EVENTS
-> -
-> -#define TRACE_SYS_ENTER_PERF_INIT(sname)				       \
-> -	.perf_event_enable = perf_sysenter_enable,			       \
-> -	.perf_event_disable = perf_sysenter_disable,
-> -
-> -#define TRACE_SYS_EXIT_PERF_INIT(sname)					       \
-> -	.perf_event_enable = perf_sysexit_enable,			       \
-> -	.perf_event_disable = perf_sysexit_disable,
-> -#else
-> -#define TRACE_SYS_ENTER_PERF(sname)
-> -#define TRACE_SYS_ENTER_PERF_INIT(sname)
-> -#define TRACE_SYS_EXIT_PERF(sname)
-> -#define TRACE_SYS_EXIT_PERF_INIT(sname)
-> -#endif /* CONFIG_PERF_EVENTS */
-> -
->  #ifdef CONFIG_FTRACE_SYSCALLS
->  #define __SC_STR_ADECL1(t, a)		#a
->  #define __SC_STR_ADECL2(t, a, ...)	#a, __SC_STR_ADECL1(__VA_ARGS__)
-> @@ -134,7 +118,8 @@ struct perf_event_attr;
->  #define __SC_STR_TDECL5(t, a, ...)	#t, __SC_STR_TDECL4(__VA_ARGS__)
->  #define __SC_STR_TDECL6(t, a, ...)	#t, __SC_STR_TDECL5(__VA_ARGS__)
->  
-> -extern struct ftrace_event_class event_class_syscalls;
-> +extern struct ftrace_event_class event_class_syscall_enter;
-> +extern struct ftrace_event_class event_class_syscall_exit;
->  
->  #define SYSCALL_TRACE_ENTER_EVENT(sname)				\
->  	static const struct syscall_metadata __syscall_meta_##sname;	\
-> @@ -148,14 +133,11 @@ extern struct ftrace_event_class event_class_syscalls;
->  	  __attribute__((section("_ftrace_events")))			\
->  	  event_enter_##sname = {					\
->  		.name                   = "sys_enter"#sname,		\
-> -		.class			= &event_class_syscalls,	\
-> +		.class			= &event_class_syscall_enter,	\
->  		.event                  = &enter_syscall_print_##sname,	\
->  		.raw_init		= init_syscall_trace,		\
->  		.define_fields		= syscall_enter_define_fields,	\
-> -		.regfunc		= reg_event_syscall_enter,	\
-> -		.unregfunc		= unreg_event_syscall_enter,	\
->  		.data			= (void *)&__syscall_meta_##sname,\
-> -		TRACE_SYS_ENTER_PERF_INIT(sname)			\
->  	}
->  
->  #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
-> @@ -170,14 +152,11 @@ extern struct ftrace_event_class event_class_syscalls;
->  	  __attribute__((section("_ftrace_events")))			\
->  	  event_exit_##sname = {					\
->  		.name                   = "sys_exit"#sname,		\
-> -		.class			= &event_class_syscalls,	\
-> +		.class			= &event_class_syscall_exit,	\
->  		.event                  = &exit_syscall_print_##sname,	\
->  		.raw_init		= init_syscall_trace,		\
->  		.define_fields		= syscall_exit_define_fields,	\
-> -		.regfunc		= reg_event_syscall_exit,	\
-> -		.unregfunc		= unreg_event_syscall_exit,	\
->  		.data			= (void *)&__syscall_meta_##sname,\
-> -		TRACE_SYS_EXIT_PERF_INIT(sname)			\
->  	}
->  
->  #define SYSCALL_METADATA(sname, nb)				\
-> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-> index c04988a..5876b77 100644
-> --- a/include/linux/tracepoint.h
-> +++ b/include/linux/tracepoint.h
-> @@ -173,13 +173,21 @@ extern void tracepoint_update_probe_range(struct tracepoint *begin,
->  	{ }								\
->  	static inline void trace_##name(proto)				\
->  	{ }								\
-> +	static inline int register_trace_##name(void (*probe)(proto))	\
-> +	{								\
-> +		return -ENOSYS;						\
-> +	}								\
-> +	static inline int unregister_trace_##name(void (*probe)(proto))	\
-> +	{								\
-> +		return -ENOSYS;						\
-> +	}								\
->  	static inline int						\
-> -	register_trace_##name(void (*probe)(proto), void *data)		\
-> +	register_trace_##name##_data(void (*probe)(proto), void *data)	\
->  	{								\
->  		return -ENOSYS;						\
->  	}								\
->  	static inline int						\
-> -	unregister_trace_##name(void (*probe)(proto), void *data)	\
-> +	unregister_trace_##name##_data(void (*probe)(proto), void *data) \
->  	{								\
->  		return -ENOSYS;						\
->  	}
-> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-> index 0921a8f..62fe622 100644
-> --- a/include/trace/ftrace.h
-> +++ b/include/trace/ftrace.h
-> @@ -381,53 +381,6 @@ static inline notrace int ftrace_get_offsets_##call(			\
->  
->  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
->  
-> -#ifdef CONFIG_PERF_EVENTS
-> -
-> -/*
-> - * Generate the functions needed for tracepoint perf_event support.
-> - *
-> - * NOTE: The insertion profile callback (ftrace_profile_<call>) is defined later
-> - *
-> - * static int ftrace_profile_enable_<call>(void)
-> - * {
-> - * 	return register_trace_<call>(ftrace_profile_<call>);
-> - * }
-> - *
-> - * static void ftrace_profile_disable_<call>(void)
-> - * {
-> - * 	unregister_trace_<call>(ftrace_profile_<call>);
-> - * }
-> - *
-> - */
-> -
-> -#undef DECLARE_EVENT_CLASS
-> -#define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)
-> -
-> -#undef DEFINE_EVENT
-> -#define DEFINE_EVENT(template, name, proto, args)			\
-> -									\
-> -static void perf_trace_##name(proto);					\
-> -									\
-> -static notrace int							\
-> -perf_trace_enable_##name(struct ftrace_event_call *unused)		\
-> -{									\
-> -	return register_trace_##name(perf_trace_##name);		\
-> -}									\
-> -									\
-> -static notrace void							\
-> -perf_trace_disable_##name(struct ftrace_event_call *unused)		\
-> -{									\
-> -	unregister_trace_##name(perf_trace_##name);			\
-> -}
-> -
-> -#undef DEFINE_EVENT_PRINT
-> -#define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
-> -	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
-> -
-> -#include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
-> -
-> -#endif /* CONFIG_PERF_EVENTS */
-> -
->  /*
->   * Stage 4 of the trace events.
+>  /* Routines for PM-transition notifications */
+> @@ -146,6 +168,12 @@ struct kobject *power_kobj;
 >   *
-> @@ -468,16 +421,6 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
->   *						   event, irq_flags, pc);
->   * }
->   *
-> - * static int ftrace_raw_reg_event_<call>(struct ftrace_event_call *unused)
-> - * {
-> - *	return register_trace_<call>(ftrace_raw_event_<call>);
-> - * }
-> - *
-> - * static void ftrace_unreg_event_<call>(struct ftrace_event_call *unused)
-> - * {
-> - *	unregister_trace_<call>(ftrace_raw_event_<call>);
-> - * }
-> - *
->   * static struct trace_event ftrace_event_type_<call> = {
->   *	.trace			= ftrace_raw_output_<call>, <-- stage 2
->   * };
-> @@ -504,11 +447,15 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
+>   *	store() accepts one of those strings, translates it into the 
+>   *	proper enumerated value, and initiates a suspend transition.
+> + *
+> + *	If policy is set to opportunistic, store() does not block until the
+> + *	system resumes, and it will try to re-enter the state until another
+> + *	state is requested. Suspend blockers are respected and the requested
+> + *	state will only be entered when no suspend blockers are active.
+> + *	Write "on" to cancel.
+>   */
+>  static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
+>  			  char *buf)
+> @@ -155,12 +183,13 @@ static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
+>  	int i;
 >  
->  #ifdef CONFIG_PERF_EVENTS
->  
-> +#define _TRACE_PERF_PROTO(call, proto)					\
-> +	static notrace void						\
-> +	perf_trace_##call(proto, struct ftrace_event_call *event);
-> +
->  #define _TRACE_PERF_INIT(call)						\
-> -	.perf_event_enable = perf_trace_enable_##call,			\
-> -	.perf_event_disable = perf_trace_disable_##call,
-> +	.perf_probe		= perf_trace_##call,
->  
+>  	for (i = 0; i < PM_SUSPEND_MAX; i++) {
+> -		if (pm_states[i] && valid_state(i))
+> +		if (pm_states[i] && policies[policy].valid_state(i))
+>  			s += sprintf(s,"%s ", pm_states[i]);
+>  	}
+>  #endif
+>  #ifdef CONFIG_HIBERNATION
+> -	s += sprintf(s, "%s\n", "disk");
+> +	if (!policy)
+> +		s += sprintf(s, "%s\n", "disk");
 >  #else
-> +#define _TRACE_PERF_PROTO(call, proto)
->  #define _TRACE_PERF_INIT(call)
->  #endif /* CONFIG_PERF_EVENTS */
+>  	if (s != buf)
+>  		/* convert the last space to a newline */
+> @@ -173,7 +202,7 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  			   const char *buf, size_t n)
+>  {
+>  #ifdef CONFIG_SUSPEND
+> -	suspend_state_t state = PM_SUSPEND_STANDBY;
+> +	suspend_state_t state = PM_SUSPEND_ON;
+>  	const char * const *s;
+>  #endif
+>  	char *p;
+> @@ -184,7 +213,7 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  	len = p ? p - buf : n;
 >  
-> @@ -542,8 +489,8 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
->  #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
->  									\
->  static notrace void							\
-> -ftrace_raw_event_id_##call(struct ftrace_event_call *event_call,	\
-> -				       proto)				\
-> +ftrace_raw_event_##call(proto,						\
-> +			struct ftrace_event_call *event_call)		\
->  {									\
->  	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
->  	struct ring_buffer_event *event;				\
-> @@ -578,23 +525,6 @@ ftrace_raw_event_id_##call(struct ftrace_event_call *event_call,	\
->  #undef DEFINE_EVENT
->  #define DEFINE_EVENT(template, call, proto, args)			\
->  									\
-> -static notrace void ftrace_raw_event_##call(proto)			\
-> -{									\
-> -	ftrace_raw_event_id_##template(&event_##call, args);		\
-> -}									\
-> -									\
-> -static notrace int							\
-> -ftrace_raw_reg_event_##call(struct ftrace_event_call *unused)		\
-> -{									\
-> -	return register_trace_##call(ftrace_raw_event_##call);		\
-> -}									\
-> -									\
-> -static notrace void							\
-> -ftrace_raw_unreg_event_##call(struct ftrace_event_call *unused)		\
-> -{									\
-> -	unregister_trace_##call(ftrace_raw_event_##call);		\
-> -}									\
-> -									\
->  static struct trace_event ftrace_event_type_##call = {			\
->  	.trace			= ftrace_raw_output_##call,		\
->  };
-> @@ -618,9 +548,12 @@ static struct trace_event ftrace_event_type_##call = {			\
->  
->  #undef DECLARE_EVENT_CLASS
->  #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
-> +_TRACE_PERF_PROTO(call, PARAMS(proto));					\
->  static const char print_fmt_##call[] = print;				\
->  static struct ftrace_event_class __used event_class_##call = {		\
-> -	.system			= __stringify(TRACE_SYSTEM)		\
-> +	.system			= __stringify(TRACE_SYSTEM),		\
-> +	.probe			= ftrace_raw_event_##call,		\
-> +	_TRACE_PERF_INIT(call)						\
->  }
->  
->  #undef DEFINE_EVENT
-> @@ -633,11 +566,8 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
->  	.class			= &event_class_##template,		\
->  	.event			= &ftrace_event_type_##call,		\
->  	.raw_init		= trace_event_raw_init,			\
-> -	.regfunc		= ftrace_raw_reg_event_##call,		\
-> -	.unregfunc		= ftrace_raw_unreg_event_##call,	\
->  	.print_fmt		= print_fmt_##template,			\
->  	.define_fields		= ftrace_define_fields_##template,	\
-> -	_TRACE_PERF_INIT(call)					\
->  }
->  
->  #undef DEFINE_EVENT_PRINT
-> @@ -651,12 +581,7 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
->  	.name			= #call,				\
->  	.class			= &event_class_##template,		\
->  	.event			= &ftrace_event_type_##call,		\
-> -	.raw_init		= trace_event_raw_init,			\
-> -	.regfunc		= ftrace_raw_reg_event_##call,		\
-> -	.unregfunc		= ftrace_raw_unreg_event_##call,	\
->  	.print_fmt		= print_fmt_##call,			\
-> -	.define_fields		= ftrace_define_fields_##template,	\
-> -	_TRACE_PERF_INIT(call)					\
->  }
->  
->  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
-> @@ -756,8 +681,7 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
->  #undef DECLARE_EVENT_CLASS
->  #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
->  static notrace void							\
-> -perf_trace_templ_##call(struct ftrace_event_call *event_call,		\
-> -			    proto)					\
-> +perf_trace_##call(proto, struct ftrace_event_call *event_call)		\
->  {									\
->  	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
->  	struct ftrace_raw_##call *entry;				\
-> @@ -792,13 +716,7 @@ perf_trace_templ_##call(struct ftrace_event_call *event_call,		\
->  }
->  
->  #undef DEFINE_EVENT
-> -#define DEFINE_EVENT(template, call, proto, args)		\
-> -static notrace void perf_trace_##call(proto)			\
-> -{								\
-> -	struct ftrace_event_call *event_call = &event_##call;	\
-> -								\
-> -	perf_trace_templ_##template(event_call, args);		\
-> -}
-> +#define DEFINE_EVENT(template, call, proto, args)
->  
->  #undef DEFINE_EVENT_PRINT
->  #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
-> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-> index 81f691e..95df5a7 100644
-> --- a/kernel/trace/trace_event_perf.c
-> +++ b/kernel/trace/trace_event_perf.c
-> @@ -44,7 +44,12 @@ static int perf_trace_event_enable(struct ftrace_event_call *event)
->  		rcu_assign_pointer(perf_trace_buf_nmi, buf);
+>  	/* First, check if we are requested to hibernate */
+> -	if (len == 4 && !strncmp(buf, "disk", len)) {
+> +	if (len == 4 && !strncmp(buf, "disk", len) && !policy) {
+>  		error = hibernate();
+>    goto Exit;
 >  	}
->  
-> -	ret = event->perf_event_enable(event);
-> +	if (event->class->reg)
-> +		ret = event->class->reg(event, TRACE_REG_PERF_REGISTER);
-> +	else
-> +		ret = tracepoint_probe_register(event->name,
-> +						event->class->perf_probe,
-> +						event);
->  	if (!ret) {
->  		total_ref_count++;
->  		return 0;
-> @@ -70,7 +75,8 @@ int perf_trace_enable(int event_id)
->  
->  	mutex_lock(&event_mutex);
->  	list_for_each_entry(event, &ftrace_events, list) {
-> -		if (event->id == event_id && event->perf_event_enable &&
-> +		if (event->id == event_id &&
-> +		    event->class && event->class->perf_probe &&
->  		    try_module_get(event->mod)) {
->  			ret = perf_trace_event_enable(event);
+> @@ -195,7 +224,7 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
 >  			break;
-> @@ -88,7 +94,10 @@ static void perf_trace_event_disable(struct ftrace_event_call *event)
->  	if (--event->perf_refcount > 0)
->  		return;
->  
-> -	event->perf_event_disable(event);
-> +	if (event->class->reg)
-> +		event->class->reg(event, TRACE_REG_PERF_UNREGISTER);
-> +	else
-> +		tracepoint_probe_unregister(event->name, event->class->perf_probe, event);
->  
->  	if (!--total_ref_count) {
->  		buf = perf_trace_buf;
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index f6893cc..f84cfcb 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -126,13 +126,23 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
->  		if (call->enabled) {
->  			call->enabled = 0;
->  			tracing_stop_cmdline_record();
-> -			call->unregfunc(call);
-> +			if (call->class->reg)
-> +				call->class->reg(call, TRACE_REG_UNREGISTER);
-> +			else
-> +				tracepoint_probe_unregister(call->name,
-> +							    call->class->probe,
-> +							    call);
->  		}
->  		break;
->  	case 1:
->  		if (!call->enabled) {
->  			tracing_start_cmdline_record();
-> -			ret = call->regfunc(call);
-> +			if (call->class->reg)
-> +				ret = call->class->reg(call, TRACE_REG_REGISTER);
-> +			else
-> +				ret = tracepoint_probe_register(call->name,
-> +								call->class->probe,
-> +								call);
->  			if (ret) {
->  				tracing_stop_cmdline_record();
->  				pr_info("event trace: Could not enable event "
-> @@ -170,7 +180,8 @@ static int __ftrace_set_clr_event(const char *match, const char *sub,
->  	mutex_lock(&event_mutex);
->  	list_for_each_entry(call, &ftrace_events, list) {
->  
-> -		if (!call->name || !call->regfunc)
-> +		if (!call->name || !call->class ||
-> +		    (!call->class->probe && !call->class->reg))
->  			continue;
->  
->  		if (match &&
-> @@ -296,7 +307,7 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
->  		 * The ftrace subsystem is for showing formats only.
->  		 * They can not be enabled or disabled via the event files.
->  		 */
-> -		if (call->regfunc)
-> +		if (call->class && (call->class->probe || call->class->reg))
->  			return call;
 >  	}
+>  	if (state < PM_SUSPEND_MAX && *s)
+> -		error = enter_state(state);
+> +		error = policies[policy].set_state(state);
+>  #endif
 >  
-> @@ -449,7 +460,8 @@ system_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
+>   Exit:
+> @@ -204,6 +233,55 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
 >  
->  	mutex_lock(&event_mutex);
->  	list_for_each_entry(call, &ftrace_events, list) {
-> -		if (!call->name || !call->regfunc)
-> +		if (!call->name || !call->class ||
-> +		    (!call->class->probe && !call->class->reg))
->  			continue;
+>  power_attr(state);
 >  
->  		if (system && strcmp(call->class->system, system) != 0)
-> @@ -934,11 +946,11 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
->  		return -1;
->  	}
->  
-> -	if (call->regfunc)
-> +	if (call->class->probe || call->class->reg)
->  		trace_create_file("enable", 0644, call->dir, call,
->  				  enable);
->  
-> -	if (call->id && call->perf_event_enable)
-> +	if (call->id && (call->class->perf_probe || call->class->reg))
->  		trace_create_file("id", 0444, call->dir, call,
->  		 		  id);
->  
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index eda220b..f8af21a 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -202,6 +202,7 @@ struct trace_probe {
->  	unsigned long 		nhit;
->  	unsigned int		flags;	/* For TP_FLAG_* */
->  	const char		*symbol;	/* symbol name */
-> +	struct ftrace_event_class	class;
->  	struct ftrace_event_call	call;
->  	struct trace_event		event;
->  	unsigned int		nr_args;
-> @@ -323,6 +324,7 @@ static struct trace_probe *alloc_trace_probe(const char *group,
->  		goto error;
->  	}
->  
-> +	tp->call.class = &tp->class;
->  	tp->call.name = kstrdup(event, GFP_KERNEL);
->  	if (!tp->call.name)
->  		goto error;
-> @@ -332,8 +334,8 @@ static struct trace_probe *alloc_trace_probe(const char *group,
->  		goto error;
->  	}
->  
-> -	tp->call.class->system = kstrdup(group, GFP_KERNEL);
-> -	if (!tp->call.class->system)
-> +	tp->class.system = kstrdup(group, GFP_KERNEL);
-> +	if (!tp->class.system)
->  		goto error;
->  
->  	INIT_LIST_HEAD(&tp->list);
-> @@ -1302,6 +1304,26 @@ static void probe_perf_disable(struct ftrace_event_call *call)
->  }
->  #endif	/* CONFIG_PERF_EVENTS */
->  
-> +static __kprobes
-> +int kprobe_register(struct ftrace_event_call *event, enum trace_reg type)
+> +/**
+> + *	policy - set policy for state
+> + */
+> +
+> +static ssize_t policy_show(struct kobject *kobj,
+> +			   struct kobj_attribute *attr, char *buf)
 > +{
-> +	switch (type) {
-> +	case TRACE_REG_REGISTER:
-> +		return probe_event_enable(event);
-> +	case TRACE_REG_UNREGISTER:
-> +		probe_event_disable(event);
-> +		return 0;
+> +	char *s = buf;
+> +	int i;
 > +
-> +#ifdef CONFIG_PERF_EVENTS
-> +	case TRACE_REG_PERF_REGISTER:
-> +		return probe_perf_enable(event);
-> +	case TRACE_REG_PERF_UNREGISTER:
-> +		probe_perf_disable(event);
-> +		return 0;
-> +#endif
+> +	for (i = 0; i < ARRAY_SIZE(policies); i++) {
+> +		if (i == policy)
+> +			s += sprintf(s, "[%s] ", policies[i].name);
+> +		else
+> +			s += sprintf(s, "%s ", policies[i].name);
 > +	}
-> +	return 0;
-> +}
->  
->  static __kprobes
->  int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
-> @@ -1355,13 +1377,7 @@ static int register_probe_event(struct trace_probe *tp)
->  		return -ENODEV;
->  	}
->  	call->enabled = 0;
-> -	call->regfunc = probe_event_enable;
-> -	call->unregfunc = probe_event_disable;
-> -
-> -#ifdef CONFIG_PERF_EVENTS
-> -	call->perf_event_enable = probe_perf_enable;
-> -	call->perf_event_disable = probe_perf_disable;
-> -#endif
-> +	call->class->reg = kprobe_register;
->  	call->data = tp;
->  	ret = trace_add_event_call(call);
->  	if (ret) {
-> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-> index 31fc95a..c92934d 100644
-> --- a/kernel/trace/trace_syscalls.c
-> +++ b/kernel/trace/trace_syscalls.c
-> @@ -14,8 +14,19 @@ static int sys_refcount_exit;
->  static DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
->  static DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
->  
-> -struct ftrace_event_class event_class_syscalls = {
-> -	.system			= "syscalls"
-> +static int syscall_enter_register(struct ftrace_event_call *event,
-> +				 enum trace_reg type);
-> +static int syscall_exit_register(struct ftrace_event_call *event,
-> +				 enum trace_reg type);
-> +
-> +struct ftrace_event_class event_class_syscall_enter = {
-> +	.system			= "syscalls",
-> +	.reg			= syscall_enter_register
-> +};
-> +
-> +struct ftrace_event_class event_class_syscall_exit = {
-> +	.system			= "syscalls",
-> +	.reg			= syscall_exit_register
->  };
->  
->  extern unsigned long __start_syscalls_metadata[];
-> @@ -586,3 +597,44 @@ void perf_sysexit_disable(struct ftrace_event_call *call)
->  
->  #endif /* CONFIG_PERF_EVENTS */
->  
-> +static int syscall_enter_register(struct ftrace_event_call *event,
-> +				 enum trace_reg type)
-> +{
-> +	switch (type) {
-> +	case TRACE_REG_REGISTER:
-> +		return reg_event_syscall_enter(event);
-> +	case TRACE_REG_UNREGISTER:
-> +		unreg_event_syscall_enter(event);
-> +		return 0;
-> +
-> +#ifdef CONFIG_PERF_EVENTS
-> +	case TRACE_REG_PERF_REGISTER:
-> +		return perf_sysenter_enable(event);
-> +	case TRACE_REG_PERF_UNREGISTER:
-> +		perf_sysenter_disable(event);
-> +		return 0;
-> +#endif
-> +	}
-> +	return 0;
+> +	if (s != buf)
+> +		/* convert the last space to a newline */
+> +		*(s-1) = '\n';
+> +	return (s - buf);
 > +}
 > +
-> +static int syscall_exit_register(struct ftrace_event_call *event,
-> +				 enum trace_reg type)
+> +static ssize_t policy_store(struct kobject *kobj,
+> +			    struct kobj_attribute *attr,
+> +			    const char *buf, size_t n)
 > +{
-> +	switch (type) {
-> +	case TRACE_REG_REGISTER:
-> +		return reg_event_syscall_exit(event);
-> +	case TRACE_REG_UNREGISTER:
-> +		unreg_event_syscall_exit(event);
-> +		return 0;
+> +	const char *s;
+> +	char *p;
+> +	int len;
+> +	int i;
 > +
-> +#ifdef CONFIG_PERF_EVENTS
-> +	case TRACE_REG_PERF_REGISTER:
-> +		return perf_sysexit_enable(event);
-> +	case TRACE_REG_PERF_UNREGISTER:
-> +		perf_sysexit_disable(event);
-> +		return 0;
-> +#endif
+> +	p = memchr(buf, '\n', n);
+> +	len = p ? p - buf : n;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(policies); i++) {
+> +		s = policies[i].name;
+> +		if (s && len == strlen(s) && !strncmp(buf, s, len)) {
+> +			mutex_lock(&pm_mutex);
+> +			policies[policy].set_state(PM_SUSPEND_ON);
+> +			policy = i;
+> +			mutex_unlock(&pm_mutex);
+> +			return n;
+> +		}
 > +	}
-> +	return 0;
+> +	return -EINVAL;
 > +}
-> -- 
-> 1.7.0
-> 
-> 
+> +
+> +power_attr(policy);
+> +
+>  #ifdef CONFIG_PM_TRACE
+>  int pm_trace_enabled;
+>  
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Would you mind if I changed the above so that "policy" doesn't even show up
+if CONFIG_OPPORTUNISTIC_SUSPEND is unset?
+
+...
+> +static void suspend_worker(struct work_struct *work)
+> +{
+> +	int ret;
+> +	int entry_event_num;
+> +
+> +	enable_suspend_blockers = true;
+> +	while (!suspend_is_blocked()) {
+> +		entry_event_num = current_event_num;
+> +
+> +		if (debug_mask & DEBUG_SUSPEND)
+> +			pr_info("suspend: enter suspend\n");
+> +
+> +		ret = pm_suspend(requested_suspend_state);
+> +
+> +		if (debug_mask & DEBUG_EXIT_SUSPEND)
+> +			pr_info_time("suspend: exit suspend, ret = %d ", ret);
+> +
+> +		if (current_event_num == entry_event_num)
+> +			pr_info("suspend: pm_suspend returned with no event\n");
+
+Hmm, what exactly is this for?  It looks like a debug thing to me.  I'd use
+pr_debug() here and in both debug printk()s above.  Would you agree?
+
+> +	}
+> +	enable_suspend_blockers = false;
+> +}
+> +static DECLARE_WORK(suspend_work, suspend_worker);
+> +
+> +/**
+> + * suspend_blocker_init() - Initialize a suspend blocker
+> + * @blocker:	The suspend blocker to initialize.
+> + * @name:	The name of the suspend blocker to show in debug messages.
+> + *
+> + * The suspend blocker struct and name must not be freed before calling
+> + * suspend_blocker_destroy.
+> + */
+> +void suspend_blocker_init(struct suspend_blocker *blocker, const char *name)
+> +{
+> +	unsigned long irqflags = 0;
+> +
+> +	WARN_ON(!name);
+> +
+> +	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
+> +		pr_info("suspend_blocker_init name=%s\n", name);
+> +
+> +	blocker->name = name;
+> +	blocker->flags = SB_INITIALIZED;
+> +	INIT_LIST_HEAD(&blocker->link);
+> +
+> +	spin_lock_irqsave(&list_lock, irqflags);
+> +	list_add(&blocker->link, &inactive_blockers);
+> +	spin_unlock_irqrestore(&list_lock, irqflags);
+> +}
+> +EXPORT_SYMBOL(suspend_blocker_init);
+
+Is there a strong objection to changing that (and the other instances below) to
+EXPORT_SYMBOL_GPL?
+
+> +
+> +/**
+> + * suspend_blocker_destroy() - Destroy a suspend blocker
+> + * @blocker:	The suspend blocker to destroy.
+> + */
+> +void suspend_blocker_destroy(struct suspend_blocker *blocker)
+> +{
+> +	unsigned long irqflags;
+> +	if (WARN_ON(!(blocker->flags & SB_INITIALIZED)))
+> +		return;
+> +
+> +	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
+> +		pr_info("suspend_blocker_destroy name=%s\n", blocker->name);
+> +
+> +	spin_lock_irqsave(&list_lock, irqflags);
+> +	blocker->flags &= ~SB_INITIALIZED;
+> +	list_del(&blocker->link);
+> +	if ((blocker->flags & SB_ACTIVE) && list_empty(&active_blockers))
+> +		queue_work(suspend_work_queue, &suspend_work);
+> +	spin_unlock_irqrestore(&list_lock, irqflags);
+> +}
+> +EXPORT_SYMBOL(suspend_blocker_destroy);
+> +
+> +/**
+> + * suspend_block() - Block suspend
+> + * @blocker:	The suspend blocker to use
+> + *
+> + * It is safe to call this function from interrupt context.
+> + */
+> +void suspend_block(struct suspend_blocker *blocker)
+> +{
+> +	unsigned long irqflags;
+> +
+> +	if (WARN_ON(!(blocker->flags & SB_INITIALIZED)))
+> +		return;
+> +
+> +	spin_lock_irqsave(&list_lock, irqflags);
+> +	blocker->flags |= SB_ACTIVE;
+> +	list_del(&blocker->link);
+> +
+> +	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
+> +		pr_info("suspend_block: %s\n", blocker->name);
+> +
+> +	list_add(&blocker->link, &active_blockers);
+> +
+> +	current_event_num++;
+> +	spin_unlock_irqrestore(&list_lock, irqflags);
+> +}
+> +EXPORT_SYMBOL(suspend_block);
+> +
+> +/**
+> + * suspend_unblock() - Unblock suspend
+> + * @blocker:	The suspend blocker to unblock.
+> + *
+> + * If no other suspend blockers block suspend, the system will suspend.
+> + *
+> + * It is safe to call this function from interrupt context.
+> + */
+> +void suspend_unblock(struct suspend_blocker *blocker)
+> +{
+> +	unsigned long irqflags;
+> +
+> +	if (WARN_ON(!(blocker->flags & SB_INITIALIZED)))
+> +		return;
+> +
+> +	spin_lock_irqsave(&list_lock, irqflags);
+> +
+> +	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
+> +		pr_info("suspend_unblock: %s\n", blocker->name);
+> +
+> +	list_del(&blocker->link);
+> +	list_add(&blocker->link, &inactive_blockers);
+> +
+> +	if ((blocker->flags & SB_ACTIVE) && list_empty(&active_blockers))
+> +		queue_work(suspend_work_queue, &suspend_work);
+> +	blocker->flags &= ~(SB_ACTIVE);
+> +	if (blocker == &main_suspend_blocker) {
+> +		if (debug_mask & DEBUG_SUSPEND)
+> +			print_active_blockers_locked();
+> +	}
+> +	spin_unlock_irqrestore(&list_lock, irqflags);
+> +}
+> +EXPORT_SYMBOL(suspend_unblock);
+> +
+> +/**
+> + * suspend_blocker_is_active() - Test if a suspend blocker is blocking suspend
+> + * @blocker:	The suspend blocker to check.
+> + *
+> + * Returns true if the suspend_blocker is currently active.
+> + */
+> +bool suspend_blocker_is_active(struct suspend_blocker *blocker)
+> +{
+> +	WARN_ON(!(blocker->flags & SB_INITIALIZED));
+> +
+> +	return !!(blocker->flags & SB_ACTIVE);
+> +}
+> +EXPORT_SYMBOL(suspend_blocker_is_active);
+> +
+> +bool request_suspend_valid_state(suspend_state_t state)
+> +{
+> +	return (state == PM_SUSPEND_ON) || valid_state(state);
+> +}
+> +
+> +int request_suspend_state(suspend_state_t state)
+> +{
+> +	unsigned long irqflags;
+> +
+> +	if (!request_suspend_valid_state(state))
+> +		return -ENODEV;
+> +
+> +	spin_lock_irqsave(&state_lock, irqflags);
+> +
+> +	if (debug_mask & DEBUG_USER_STATE)
+> +		pr_info_time("request_suspend_state: %s (%d->%d) at %lld ",
+> +			     state != PM_SUSPEND_ON ? "sleep" : "wakeup",
+> +			     requested_suspend_state, state,
+> +			     ktime_to_ns(ktime_get()));
+> +
+> +	requested_suspend_state = state;
+> +	if (state == PM_SUSPEND_ON)
+> +		suspend_block(&main_suspend_blocker);
+> +	else
+> +		suspend_unblock(&main_suspend_blocker);
+> +	spin_unlock_irqrestore(&state_lock, irqflags);
+> +	return 0;
+> +}
+
+I think the two functions above should be static, shouldn't they?
+
+> +static int __init suspend_block_init(void)
+> +{
+> +	suspend_work_queue = create_singlethread_workqueue("suspend");
+> +	if (!suspend_work_queue)
+> +		return -ENOMEM;
+> +
+> +	suspend_blocker_init(&main_suspend_blocker, "main");
+> +	suspend_block(&main_suspend_blocker);
+> +	return 0;
+> +}
+> +
+> +core_initcall(suspend_block_init);
+
+Hmm.  Why don't you want to put that initialization into pm_init() (in
+kernel/power/main.c)?
+
+Also, we already have one PM workqueue.  It is used for runtime PM, but I guess
+it may be used just as well for the opportunistic suspend.  It is freezable,
+but would it hurt?
+
+Rafael
