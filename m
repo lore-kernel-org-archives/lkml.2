@@ -1,54 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab0D1OFp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 10:05:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:55804 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab0D1OFo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 10:05:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ingo Molnar <mingo@elte.hu>
-Subject: Re: [GIT PULL v2] Preparation for BKL'ed ioctl removal
-Date: Wed, 28 Apr 2010 16:05:26 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1756130Ab0D1RsK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 13:48:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6038 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754880Ab0D1RsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 13:48:05 -0400
+Date: Wed, 28 Apr 2010 13:47:19 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Linux-MM <linux-mm@kvack.org>,
        LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Al Viro <viro@zeniv.linux.org.uk>,
-       Jan Blunck <jblunck@suse.de>, John Kacur <jkacur@redhat.com>
-References: <1271390201-20431-1-git-send-regression-fweisbec@gmail.com> <201004261329.28427.arnd@arndb.de> <20100427092530.GD11348@elte.hu>
-In-Reply-To: <20100427092530.GD11348@elte.hu>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC PATCH] take all anon_vma locks in anon_vma_lock
+Message-ID: <20100428134719.32e8011b@annuminas.surriel.com>
+In-Reply-To: <20100428162305.GX510@random.random>
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
+	<1272403852-10479-3-git-send-email-mel@csn.ul.ie>
+	<20100427231007.GA510@random.random>
+	<20100428091555.GB15815@csn.ul.ie>
+	<20100428153525.GR510@random.random>
+	<20100428155558.GI15815@csn.ul.ie>
+	<20100428162305.GX510@random.random>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004281605.26248.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18QK5wPzCZleolJscCb+fw7rip2+BA31VyOF9b
- ih49qqd2xZwfkLM+gQYPvwuQsL/vbiTPJVV32gOzOODfFpNxgp
- +QFF54HHXf5YK4kt05qNw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 April 2010, Ingo Molnar wrote:
-> * Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > On Monday 26 April 2010, Ingo Molnar wrote:
-> > > This could be done all automated for a hundred old drivers if need to be. 
-> > > There would be no bkl_ioctl's left.
-> > 
-> > I don't think it can be fully automated. [...]
-> 
-> Corner cases are not a problem as long as the risk of them going unnoticed is 
-> lower than the risk of a manual conversion introducing bugs.
+Take all the locks for all the anon_vmas in anon_vma_lock, this properly
+excludes migration and the transparent hugepage code from VMA changes done
+by mmap/munmap/mprotect/expand_stack/etc...
 
-I actually support your idea of automatic conversion of modules in the
-way you lined out, but would not want to apply it to the entire kernel
-at once, but only to modules that were manually inspected to be safe for
-doing this.
+Also document the locking rules for the same_vma list in the anon_vma_chain
+and remove the anon_vma_lock call from expand_upwards, which does not need it.
 
-This minimizes both the risk from corner cases and the risk from manual
-conversion.
+Signed-off-by: Rik van Riel <riel@redhat.com>
 
-	Arnd
+--- 
+Posted quickly as an RFC patch, only compile tested so far.
+Andrea, Mel, does this look like a reasonable approach?
+
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index d25bd22..1eef42c 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -52,11 +52,15 @@ struct anon_vma {
+  * all the anon_vmas associated with this VMA.
+  * The "same_anon_vma" list contains the anon_vma_chains
+  * which link all the VMAs associated with this anon_vma.
++ *
++ * The "same_vma" list is locked by either having mm->mmap_sem
++ * locked for writing, or having mm->mmap_sem locked for reading
++ * AND holding the mm->page_table_lock.
+  */
+ struct anon_vma_chain {
+ 	struct vm_area_struct *vma;
+ 	struct anon_vma *anon_vma;
+-	struct list_head same_vma;   /* locked by mmap_sem & page_table_lock */
++	struct list_head same_vma;	/* see above */
+ 	struct list_head same_anon_vma;	/* locked by anon_vma->lock */
+ };
+ 
+@@ -90,11 +94,14 @@ static inline struct anon_vma *page_anon_vma(struct page *page)
+ 	return page_rmapping(page);
+ }
+ 
+-static inline void anon_vma_lock(struct vm_area_struct *vma)
++static inline void anon_vma_lock(struct vm_area_struct *vma, void *nest_lock)
+ {
+ 	struct anon_vma *anon_vma = vma->anon_vma;
+-	if (anon_vma)
+-		spin_lock(&anon_vma->lock);
++	if (anon_vma) {
++		struct anon_vma_chain *avc;
++		list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
++			spin_lock_nest_lock(&avc->anon_vma->lock, nest_lock);
++	}
+ }
+ 
+ static inline void anon_vma_unlock(struct vm_area_struct *vma)
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f90ea92..2c13bbb 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -452,7 +452,7 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		spin_lock(&mapping->i_mmap_lock);
+ 		vma->vm_truncate_count = mapping->truncate_count;
+ 	}
+-	anon_vma_lock(vma);
++	anon_vma_lock(vma, &mm->mmap_sem);
+ 
+ 	__vma_link(mm, vma, prev, rb_link, rb_parent);
+ 	__vma_link_file(vma);
+@@ -1705,12 +1705,11 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ 		return -EFAULT;
+ 
+ 	/*
+-	 * We must make sure the anon_vma is allocated
+-	 * so that the anon_vma locking is not a noop.
++	 * Unlike expand_downwards, we do not need to take the anon_vma lock,
++	 * because we leave vma->vm_start and vma->pgoff untouched. 
++	 * This means rmap lookups of pages inside this VMA stay valid
++	 * throughout the stack expansion.
+ 	 */
+-	if (unlikely(anon_vma_prepare(vma)))
+-		return -ENOMEM;
+-	anon_vma_lock(vma);
+ 
+ 	/*
+ 	 * vma->vm_start/vm_end cannot change under us because the caller
+@@ -1721,7 +1720,6 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ 	if (address < PAGE_ALIGN(address+4))
+ 		address = PAGE_ALIGN(address+4);
+ 	else {
+-		anon_vma_unlock(vma);
+ 		return -ENOMEM;
+ 	}
+ 	error = 0;
+@@ -1737,7 +1735,6 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ 		if (!error)
+ 			vma->vm_end = address;
+ 	}
+-	anon_vma_unlock(vma);
+ 	return error;
+ }
+ #endif /* CONFIG_STACK_GROWSUP || CONFIG_IA64 */
+@@ -1749,6 +1746,7 @@ static int expand_downwards(struct vm_area_struct *vma,
+ 				   unsigned long address)
+ {
+ 	int error;
++	struct mm_struct *mm = vma->vm_mm;
+ 
+ 	/*
+ 	 * We must make sure the anon_vma is allocated
+@@ -1762,7 +1760,8 @@ static int expand_downwards(struct vm_area_struct *vma,
+ 	if (error)
+ 		return error;
+ 
+-	anon_vma_lock(vma);
++	spin_lock(&mm->page_table_lock);
++	anon_vma_lock(vma, &mm->page_table_lock);
+ 
+ 	/*
+ 	 * vma->vm_start/vm_end cannot change under us because the caller
+@@ -1784,6 +1783,8 @@ static int expand_downwards(struct vm_area_struct *vma,
+ 		}
+ 	}
+ 	anon_vma_unlock(vma);
++	spin_unlock(&mm->page_table_lock);
++
+ 	return error;
+ }
+ 
