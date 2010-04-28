@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218Ab0D1WWQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 18:22:16 -0400
-Received: from tex.lwn.net ([70.33.254.29]:48836 "EHLO vena.lwn.net"
+	id S1757173Ab0D1WSQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 18:18:16 -0400
+Received: from tex.lwn.net ([70.33.254.29]:48820 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757193Ab0D1WST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 18:18:19 -0400
+	id S1752939Ab0D1WSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 18:18:09 -0400
 From: Jonathan Corbet <corbet@lwn.net>
 To: linux-kernel@vger.kernel.org
 Cc: Harald Welte <laforge@gnumonks.org>, linux-fbdev@vger.kernel.org,
        JosephChan@via.com.tw, ScottFang@viatech.com.cn,
        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 15/30] viafb: package often used basic io functions
-Date: Wed, 28 Apr 2010 16:17:16 -0600
-Message-Id: <1272493051-25380-16-git-send-email-corbet@lwn.net>
+Subject: [PATCH 02/30] viafb: use proper pci config API
+Date: Wed, 28 Apr 2010 16:17:03 -0600
+Message-Id: <1272493051-25380-3-git-send-email-corbet@lwn.net>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1272493051-25380-1-git-send-email-corbet@lwn.net>
 References: <1272493051-25380-1-git-send-email-corbet@lwn.net>
@@ -21,164 +21,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+From: Harald Welte <laforge@gnumonks.org>
 
-This patch puts redesigned versions of the basic io functions that
-are used overall the driver in an extra header. It is prefixed with
-via_ as no framebuffer dependend stuff is in there. They were inlined
-as they are really simple which reduced the module size about 2.5%.
-The parameter order of read and write was fixed as it really doesn't
-make sense to change the order as they are parts of the same address
-and not source and destination.
-Wrapper which use the new functions were added to hw.h to replicate
-the old interface and avoid changing all old code.
+This patch alters viafb to use the proper Linux in-kernel API to access
+PCI configuration space, rather than poking at I/O ports by itself.
 
-[jc: added one comment]
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: ScottFang@viatech.com.cn
+Cc: JosephChan@via.com.tw
+Signed-off-by: Harald Welte <HaraldWelte@viatech.com>
 ---
- drivers/video/via/hw.c     |   22 ----------------
- drivers/video/via/hw.h     |    8 ++++--
- drivers/video/via/via_io.h |   58 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 63 insertions(+), 25 deletions(-)
- create mode 100644 drivers/video/via/via_io.h
+ drivers/video/via/hw.c       |   62 +++++++++++++++++++++++++----------------
+ drivers/video/via/hw.h       |    4 +-
+ drivers/video/via/viafbdev.c |    4 +++
+ 3 files changed, 44 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index f2425ae..805151f 100644
+index f2583b1..c94bcce 100644
 --- a/drivers/video/via/hw.c
 +++ b/drivers/video/via/hw.c
-@@ -537,18 +537,6 @@ static void device_on(void);
- static void enable_second_display_channel(void);
- static void disable_second_display_channel(void);
- 
--void viafb_write_reg(u8 index, u16 io_port, u8 data)
--{
--	outb(index, io_port);
--	outb(data, io_port + 1);
--	/*DEBUG_MSG(KERN_INFO "\nIndex=%2d Value=%2d", index, data); */
--}
--u8 viafb_read_reg(int io_port, u8 index)
--{
--	outb(index, io_port);
--	return inb(io_port + 1);
--}
--
- void viafb_lock_crt(void)
- {
- 	viafb_write_reg_mask(CR11, VIACR, BIT7, BIT7);
-@@ -560,16 +548,6 @@ void viafb_unlock_crt(void)
- 	viafb_write_reg_mask(CR47, VIACR, 0, BIT0);
+@@ -2473,24 +2473,37 @@ static void disable_second_display_channel(void)
+ 	viafb_write_reg_mask(CR6A, VIACR, BIT6, BIT6);
  }
  
--void viafb_write_reg_mask(u8 index, int io_port, u8 data, u8 mask)
--{
--	u8 tmp;
--
--	outb(index, io_port);
--	tmp = inb(io_port + 1);
--	outb((data & mask) | (tmp & (~mask)), io_port + 1);
--	/*DEBUG_MSG(KERN_INFO "\nIndex=%2d Value=%2d", index, tmp); */
--}
--
- void write_dac_reg(u8 index, u8 r, u8 g, u8 b)
++static u_int16_t via_function3[] = {
++	CLE266_FUNCTION3, KM400_FUNCTION3, CN400_FUNCTION3, CN700_FUNCTION3,
++	CX700_FUNCTION3, KM800_FUNCTION3, KM890_FUNCTION3, P4M890_FUNCTION3,
++	P4M900_FUNCTION3, VX800_FUNCTION3, VX855_FUNCTION3,
++};
++
++/* Get the BIOS-configured framebuffer size from PCI configuration space
++ * of function 3 in the respective chipset */
+ int viafb_get_fb_size_from_pci(void)
  {
- 	outb(index, LUT_INDEX_WRITE);
+-	unsigned long configid, deviceid, FBSize = 0;
+-	int VideoMemSize;
+-	int DeviceFound = false;
+-
+-	for (configid = 0x80000000; configid < 0x80010800; configid += 0x100) {
+-		outl(configid, (unsigned long)0xCF8);
+-		deviceid = (inl((unsigned long)0xCFC) >> 16) & 0xffff;
+-
+-		switch (deviceid) {
+-		case CLE266:
+-		case KM400:
+-			outl(configid + 0xE0, (unsigned long)0xCF8);
+-			FBSize = inl((unsigned long)0xCFC);
+-			DeviceFound = true;	/* Found device id */
+-			break;
++	int i;
++	u_int8_t offset = 0;
++	u_int32_t FBSize;
++	u_int32_t VideoMemSize;
++
++	/* search for the "FUNCTION3" device in this chipset */
++	for (i = 0; i < ARRAY_SIZE(via_function3); i++) {
++		struct pci_dev *pdev;
++
++		pdev = pci_get_device(PCI_VENDOR_ID_VIA, via_function3[i],
++				      NULL);
++		if (!pdev)
++			continue;
++
++		DEBUG_MSG(KERN_INFO "Device ID = %x\n", pdev->device);
+ 
++		switch (pdev->device) {
++		case CLE266_FUNCTION3:
++		case KM400_FUNCTION3:
++			offset = 0xE0;
++			break;
+ 		case CN400_FUNCTION3:
+ 		case CN700_FUNCTION3:
+ 		case CX700_FUNCTION3:
+@@ -2500,21 +2513,22 @@ int viafb_get_fb_size_from_pci(void)
+ 		case P4M900_FUNCTION3:
+ 		case VX800_FUNCTION3:
+ 		case VX855_FUNCTION3:
+-			/*case CN750_FUNCTION3: */
+-			outl(configid + 0xA0, (unsigned long)0xCF8);
+-			FBSize = inl((unsigned long)0xCFC);
+-			DeviceFound = true;	/* Found device id */
+-			break;
+-
+-		default:
++		/*case CN750_FUNCTION3: */
++			offset = 0xA0;
+ 			break;
+ 		}
+ 
+-		if (DeviceFound)
++		if (!offset)
+ 			break;
++
++		pci_read_config_dword(pdev, offset, &FBSize);
++		pci_dev_put(pdev);
+ 	}
+ 
+-	DEBUG_MSG(KERN_INFO "Device ID = %lx\n", deviceid);
++	if (!offset) {
++		printk(KERN_ERR "cannot determine framebuffer size\n");
++		return -EIO;
++	}
+ 
+ 	FBSize = FBSize & 0x00007000;
+ 	DEBUG_MSG(KERN_INFO "FB Size = %x\n", FBSize);
 diff --git a/drivers/video/via/hw.h b/drivers/video/via/hw.h
-index d248f4d..23c3190 100644
+index 12ef32d..d6b25ac 100644
 --- a/drivers/video/via/hw.h
 +++ b/drivers/video/via/hw.h
-@@ -24,6 +24,11 @@
+@@ -823,8 +823,8 @@ struct iga2_crtc_timing {
+ };
  
- #include "viamode.h"
- #include "global.h"
-+#include "via_io.h"
-+
-+#define viafb_read_reg(p, i)			via_read_reg(p, i)
-+#define viafb_write_reg(i, p, d)		via_write_reg(p, i, d)
-+#define viafb_write_reg_mask(i, p, d, m)	via_write_reg_mask(p, i, d, m)
- 
- /***************************************************
- * Definition IGA1 Design Method of CRTC Registers *
-@@ -870,7 +875,6 @@ extern int viafb_LCD_ON;
- extern int viafb_DVI_ON;
- extern int viafb_hotplug;
- 
--void viafb_write_reg_mask(u8 index, int io_port, u8 data, u8 mask);
- void viafb_set_output_path(int device, int set_iga,
- 	int output_interface);
- 
-@@ -885,8 +889,6 @@ void viafb_crt_disable(void);
- void viafb_crt_enable(void);
- void init_ad9389(void);
- /* Access I/O Function */
--void viafb_write_reg(u8 index, u16 io_port, u8 data);
--u8 viafb_read_reg(int io_port, u8 index);
- void viafb_lock_crt(void);
- void viafb_unlock_crt(void);
- void viafb_load_fetch_count_reg(int h_addr, int bpp_byte, int set_iga);
-diff --git a/drivers/video/via/via_io.h b/drivers/video/via/via_io.h
-new file mode 100644
-index 0000000..e1c1093
---- /dev/null
-+++ b/drivers/video/via/via_io.h
-@@ -0,0 +1,58 @@
-+/*
-+ * Copyright 1998-2008 VIA Technologies, Inc. All Rights Reserved.
-+ * Copyright 2001-2008 S3 Graphics, Inc. All Rights Reserved.
-+ * Copyright 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public
-+ * License as published by the Free Software Foundation;
-+ * either version 2, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTIES OR REPRESENTATIONS; without even
-+ * the implied warranty of MERCHANTABILITY or FITNESS FOR
-+ * A PARTICULAR PURPOSE.See the GNU General Public License
-+ * for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc.,
-+ * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ */
-+/*
-+ * basic io functions
-+ */
-+
-+#ifndef __VIA_IO_H__
-+#define __VIA_IO_H__
-+
-+#include <linux/types.h>
-+#include <linux/io.h>
-+
-+/*
-+ * Indexed port operations.  Note that these are all multi-op
-+ * functions; every invocation will be racy if you're not holding
-+ * reg_lock.
-+ */
-+static inline u8 via_read_reg(u16 port, u8 index)
-+{
-+	outb(index, port);
-+	return inb(port + 1);
-+}
-+
-+static inline void via_write_reg(u16 port, u8 index, u8 data)
-+{
-+	outb(index, port);
-+	outb(data, port + 1);
-+}
-+
-+static inline void via_write_reg_mask(u16 port, u8 index, u8 data, u8 mask)
-+{
-+	u8 old;
-+
-+	outb(index, port);
-+	old = inb(port + 1);
-+	outb((data & mask) | (old & ~mask), port + 1);
-+}
-+
-+#endif /* __VIA_IO_H__ */
+ /* device ID */
+-#define CLE266              0x3123
+-#define KM400               0x3205
++#define CLE266_FUNCTION3    0x3123
++#define KM400_FUNCTION3     0x3205
+ #define CN400_FUNCTION2     0x2259
+ #define CN400_FUNCTION3     0x3259
+ /* support VT3314 chipset */
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index b7018ef..8af405b 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -1782,6 +1782,10 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
+ 	viafb_init_chip_info(pdev, ent);
+ 	viaparinfo->fbmem = pci_resource_start(pdev, 0);
+ 	viaparinfo->memsize = viafb_get_fb_size_from_pci();
++	if (viaparinfo->memsize < 0) {
++		rc = viaparinfo->memsize;
++		goto out_delete_i2c;
++	}
+ 	viaparinfo->fbmem_free = viaparinfo->memsize;
+ 	viaparinfo->fbmem_used = 0;
+ 	viafbinfo->screen_base = ioremap_nocache(viaparinfo->fbmem,
 -- 
 1.7.0.1
 
