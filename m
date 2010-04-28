@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab0D1GIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 02:08:12 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56496 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754338Ab0D1GIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 02:08:06 -0400
-Date: Wed, 28 Apr 2010 16:08:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jason Baldus <jason.baldus@gmail.com>,
-       H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: linux-next: manual merge of the staging-next tree with the
- staging.current tree
-Message-Id: <20100428160803.29fc7fe8.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751079Ab0D1GLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 02:11:40 -0400
+Received: from isilmar.linta.de ([213.133.102.198]:44919 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750803Ab0D1GLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 02:11:38 -0400
+Date: Wed, 28 Apr 2010 08:11:30 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: torvalds@osdl.org, akpm@osdl.org
+Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [git pull] PCMCIA bugfixes for 2.6.34-rc6
+Message-ID: <20100428061130.GA4497@comet.dominikbrodowski.net>
+Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org,
+	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Linus,
 
-Today's linux-next merge of the staging-next tree got a conflict in
-drivers/staging/dt3155/dt3155_drv.c between commit
-19ba984dd7d8dcf67cebc2ba55abbe454e318fb3 ("Staging: dt3155: fix 50Hz
-configuration") from the staging.current tree and commit
-da7bcc953ecf52d33b76b983ad5491d4d29f5f6a ("Staging: dt3155: fix
-parentheses and bracket spacing style issues") from the staging-next tree.
+in order to solve bugzilla bug 13426, and to fix another bug Alexander Kurz
+tracked down, please pull from
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
 
-diff --cc drivers/staging/dt3155/dt3155_drv.c
-index 7ac2c6d,993ed2f..0000000
---- a/drivers/staging/dt3155/dt3155_drv.c
-+++ b/drivers/staging/dt3155/dt3155_drv.c
-@@@ -464,9 -473,9 +465,9 @@@ static void dt3155_init_isr(int minor
-    /* 50/60 Hz should be set before this point but let's make sure it is */
-    /* right anyway */
-  
--   ReadI2C(dt3155_lbase[ minor ], CSR2, &i2c_csr2.reg);
- -  ReadI2C(dt3155_lbase[minor], CONFIG, &i2c_csr2.reg);
-++  ReadI2C(dt3155_lbase[minor], CSR2, &i2c_csr2.reg);
-    i2c_csr2.fld.HZ50 = FORMAT50HZ;
--   WriteI2C(dt3155_lbase[ minor ], CSR2, i2c_csr2.reg);
- -  WriteI2C(dt3155_lbase[minor], CONFIG, i2c_config.reg);
-++  WriteI2C(dt3155_lbase[minor], CSR2, i2c_csr2.reg);
-  
-    /* enable busmaster chip, clear flags */
-  
+The diffstat and list of changes follows; the patches went to the PCMCIA
+list yesterday.
+
+Thanks,
+	Dominik
+
+----
+
+Alexander Kurz (1):
+      pcmcia: fix matching rules for pseudo-multi-function cards
+
+Dominik Brodowski (1):
+      pcmcia: pcmcia_dev_present bugfix
+
+ drivers/pcmcia/ds.c |   54 +++++++++++++++++----------------------------------
+ include/pcmcia/ds.h |    7 ++---
+ include/pcmcia/ss.h |    8 ++----
+ 3 files changed, 24 insertions(+), 45 deletions(-)
