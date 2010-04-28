@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712Ab0D1QRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 12:17:25 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:40638 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755647Ab0D1QRU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 12:17:20 -0400
-Message-Id: <20100428161710.998665727@szeredi.hu>
-References: <20100428161636.272097923@szeredi.hu>
-User-Agent: quilt/0.46-1
-Date: Wed, 28 Apr 2010 18:16:39 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Cc: jens.axboe@oracle.com, akpm@linux-foundation.org,
-       torvalds@linux-foundation.org
-Subject: [RFC PATCH 3/6] fuse: use get_user_pages_fast()
-Content-Disposition: inline; filename=fuse-use-get_user_pages_fast.patch
+	id S1755336Ab0D1PdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 11:33:19 -0400
+Received: from compulab.co.il ([67.18.134.219]:47881 "EHLO compulab.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755228Ab0D1PdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 11:33:18 -0400
+Message-ID: <4BD854F0.9040107@compulab.co.il>
+Date: Wed, 28 Apr 2010 18:32:00 +0300
+From: Mike Rapoport <mike@compulab.co.il>
+User-Agent: Thunderbird 2.0.0.23 (X11/20100106)
+MIME-Version: 1.0
+To: Graeme Russ <graeme.russ@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Request For Help - Embedded x86, Kernel 2.6.33 boots, Mounts
+ JFFS2 rootfs, Stops at init
+References: <4BD8415C.9060409@gmail.com>
+In-Reply-To: <4BD8415C.9060409@gmail.com>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace uses of get_user_pages() with get_user_pages_fast().  It looks
-nicer and should be faster in most cases.
+Graeme Russ wrote:
+> Hi All,
+> 
+> I've been working for a while now getting the x86 U-Boot port up to speed
+> to boot a linux kernel
+> 
+> I now have a root fs (build from Linux-From-Scratch and trimmed to <15M
+> using qemu) but all attempts to get any serial console output past
+> launching of init have failed.
+> 
+> I have taken the root fs which successfully boots using qemu and created a
+> jffs2 image and flashed it onto one of the on-board flash chips. U-Boot can
+> successfully 'ls' the root fs
+> 
+> My bootags are:
+> 
+>   root=/dev/mtdblock1 rw rootfstype=jffs2 console=ttyS0,115200
+> 
+> as Linux can mount the root partition:
+> [    1.447819] Serial: 8250/16550 driver, 6 ports, IRQ sharing disabled
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/fuse/dev.c  |    5 +----
- fs/fuse/file.c |    5 +----
- 2 files changed, 2 insertions(+), 8 deletions(-)
+[ snip ]
 
-Index: linux-2.6/fs/fuse/dev.c
-===================================================================
---- linux-2.6.orig/fs/fuse/dev.c	2010-04-26 11:33:57.000000000 +0200
-+++ linux-2.6/fs/fuse/dev.c	2010-04-28 15:50:32.000000000 +0200
-@@ -551,10 +551,7 @@ static int fuse_copy_fill(struct fuse_co
- 		cs->iov++;
- 		cs->nr_segs--;
- 	}
--	down_read(&current->mm->mmap_sem);
--	err = get_user_pages(current, current->mm, cs->addr, 1, cs->write, 0,
--			     &cs->pg, NULL);
--	up_read(&current->mm->mmap_sem);
-+	err = get_user_pages_fast(cs->addr, 1, cs->write, &cs->pg);
- 	if (err < 0)
- 		return err;
- 	BUG_ON(err != 1);
-Index: linux-2.6/fs/fuse/file.c
-===================================================================
---- linux-2.6.orig/fs/fuse/file.c	2010-04-26 11:33:57.000000000 +0200
-+++ linux-2.6/fs/fuse/file.c	2010-04-28 15:50:32.000000000 +0200
-@@ -994,10 +994,7 @@ static int fuse_get_user_pages(struct fu
- 	nbytes = min_t(size_t, nbytes, FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT);
- 	npages = (nbytes + offset + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	npages = clamp(npages, 1, FUSE_MAX_PAGES_PER_REQ);
--	down_read(&current->mm->mmap_sem);
--	npages = get_user_pages(current, current->mm, user_addr, npages, !write,
--				0, req->pages, NULL);
--	up_read(&current->mm->mmap_sem);
-+	npages = get_user_pages_fast(user_addr, npages, !write, req->pages);
- 	if (npages < 0)
- 		return npages;
- 
+> [    1.911896] Write protecting the kernel read-only data: 596k
+> [    1.915842] kernel_execve(/sbin/init)
+> 
+> (I've added a printk in kernel_execve() which gives me the last line)
+> 
+> I  initially had hot-plug support compiled into the kernel and was getting
+> a lot of kernel_execve(/sbin/hotplug) messages as well (plus a udev:
+> starting version 151 message which appear 100+ seconds and the above
+> messages), but I have since removed that and used mknod to create
+> /dev/ttyS0 directly
+> 
+> I have also tried the following test script:
+> 
+> #!/bin/bash
+> stty -F /dev/ttyS0 115200
+> cat hello > /dev/ttyS0
+> 
+> but still no luck
+> 
+> Does anyone have any advise on how I can debug this problem?
+
+Have you tried with init=/bin/sh?
+Also, make sure you have /dev/null and /dev/console nodes.
+
+> 
+> Regards,
+> 
+> Graeme
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 
 -- 
+Sincerely yours,
+Mike.
