@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab0D1NXk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 09:23:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38964 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753218Ab0D1NXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 09:23:17 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1272451837-17961-1-git-send-email-peter.fritzsche@gmx.de>
-References: <1272451837-17961-1-git-send-email-peter.fritzsche@gmx.de>
-To: Peter Fritzsche <peter.fritzsche@gmx.de>
-Cc: dhowells@redhat.com, Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-       Ingo Molnar <mingo@elte.hu>,
-       Remis Lima Baima <remis.developer@googlemail.com>,
-       Arnd Bergmann <arnd@arndb.de>, linux-am33-list@redhat.com,
-       linux-kernel@vger.kernel.org,
-       Keith M Wesolowski <wesolows@foobazco.org>
-Subject: Re: [PATCH 1/2] mn10300: Don't warn that atomic_t is only 24 bit
-Date: Wed, 28 Apr 2010 14:22:15 +0100
-Message-ID: <12704.1272460935@redhat.com>
+	id S1753475Ab0D1H7G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 03:59:06 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:59508 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab0D1H7C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 03:59:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qS0N8ubum31873bcwX9P+zLQM6QT7qFQR2w+k1BpvmvRwWBx4SYzb2YXOguvgk5+ZO
+         CKrdpiXWAbRYfVDGKcRBKzoBBFh4J61M4rKYepHGuLLpQJbA7GucCPh2aVx3Kjt7Y0dz
+         XVZq3s0Mqjs+O02kCWw9thbhX1cnXjJKisWxI=
+Date: Wed, 28 Apr 2010 11:00:27 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Robert Hancock <hancockrwd@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: INFO: umount blocked for more than 120 seconds
+Message-ID: <20100428080027.GB30496@swordfish.minsk.epam.com>
+References: <20100427094614.GA3345@swordfish.minsk.epam.com>
+ <Pine.LNX.4.44L0.1004271457160.1850-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dTy3Mrz/UPE2dbVg"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1004271457160.1850-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Fritzsche <peter.fritzsche@gmx.de> wrote:
 
-> 32-bit Sparc used to only allow usage of 24-bit of it's atomic_t type.
-> This was corrected with linux 2.6.3 when Keith M Wesolowski changed the
-> implementation to use the parisc approach of having an array of
-> spinlocks to protect the atomic_t.
-> 
-> These warnings were also removed from the sparc implementation when the
-> new implementation was merged in BKrev:402e4949VThdc6D3iaosSFUgabMfvw,
-> but the warning still remained in some other places without any
-> 24-bit-only atomic_t implementation inside the kernel.
-> 
-> We should remove these warnings to allow users to rely on the full
-> 32-bit range of atomic_t.
-> 
-> Signed-off-by: Peter Fritzsche <peter.fritzsche@gmx.de>
+--dTy3Mrz/UPE2dbVg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: David Howells <dhowells@redhat.com>
+On (04/27/10 15:07), Alan Stern wrote:
+> Robert was right.  Your usbmon log covers only the last 40 seconds of
+> data transfer and showed a little over 15 MB being sent, so it seems
+> likely that the entire 246 MB transfer would require more than 10
+> minutes.
+>=20
+
+Thanks.
+
+> You can test this easily enough by simply waiting for 12 minutes or so
+> before issuing the "umount" command.
+>=20
+So, bug entry is invalid. Right?
+
+=09
+	Sergey
+
+--dTy3Mrz/UPE2dbVg
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iJwEAQECAAYFAkvX6xsACgkQfKHnntdSXjTpPgP/YSOu9u/z1HNRNwbxNMNTziRX
+Y9PW1WeBEehSdCnvk4+m02fHxcK7aWdUN92UwP6p9rdrtzrPdtj8vK1rUpPKkwVU
+SpI1Yu959S1ZCW9JP1A5U/P4S4c4masNgcjp9z0DRo9xPBj8Oc4BV0LdnYAxznQ+
+8T5ZHVQgC6urEK+Ic7s=
+=XMY/
+-----END PGP SIGNATURE-----
+
+--dTy3Mrz/UPE2dbVg--
