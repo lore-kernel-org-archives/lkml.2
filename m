@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab0D1WSM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 18:18:12 -0400
-Received: from tex.lwn.net ([70.33.254.29]:48816 "EHLO vena.lwn.net"
+	id S932399Ab0D1WXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 18:23:53 -0400
+Received: from tex.lwn.net ([70.33.254.29]:48833 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752635Ab0D1WSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 18:18:09 -0400
+	id S1752635Ab0D1WSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 18:18:14 -0400
 From: Jonathan Corbet <corbet@lwn.net>
 To: linux-kernel@vger.kernel.org
 Cc: Harald Welte <laforge@gnumonks.org>, linux-fbdev@vger.kernel.org,
        JosephChan@via.com.tw, ScottFang@viatech.com.cn,
        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 01/30] viafb: Fix various resource leaks during module_init()
-Date: Wed, 28 Apr 2010 16:17:02 -0600
-Message-Id: <1272493051-25380-2-git-send-email-corbet@lwn.net>
+Subject: [PATCH 08/30] viafb: Add 1200x900 DCON/LCD panel modes for OLPC XO-1.5
+Date: Wed, 28 Apr 2010 16:17:09 -0600
+Message-Id: <1272493051-25380-9-git-send-email-corbet@lwn.net>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1272493051-25380-1-git-send-email-corbet@lwn.net>
 References: <1272493051-25380-1-git-send-email-corbet@lwn.net>
@@ -21,144 +21,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Harald Welte <laforge@gnumonks.org>
+From: Chris Ball <cjb@laptop.org>
 
-The current code executed from module_init() in viafb does not have
-proper error checking and [partial] resoure release paths in case
-an error happens half way through driver initialization.
-
-This patch adresses the most obvious of those issues, such as a
-leftover i2c bus if module_init (and thus module load) fails.
-
-[jc: fixed merge conflicts]
-[jc: also restored -ENOMEM return on ioremap() fail]
-
+[jc: extensive merge conflict fixes]
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Cc: ScottFang@viatech.com.cn
 Cc: JosephChan@via.com.tw
-Signed-off-by: Harald Welte <HaraldWelte@viatech.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 ---
- drivers/video/via/viafbdev.c |   52 +++++++++++++++++++++++++++++++----------
- 1 files changed, 39 insertions(+), 13 deletions(-)
+ drivers/video/via/hw.c      |    1 +
+ drivers/video/via/ioctl.h   |    2 +-
+ drivers/video/via/lcd.c     |    9 +++++++++
+ drivers/video/via/lcd.h     |    2 ++
+ drivers/video/via/share.h   |    7 +++++++
+ drivers/video/via/viamode.c |   14 ++++++++++++++
+ 6 files changed, 34 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-index ce7783b..b7018ef 100644
---- a/drivers/video/via/viafbdev.c
-+++ b/drivers/video/via/viafbdev.c
-@@ -1,5 +1,5 @@
- /*
-- * Copyright 1998-2008 VIA Technologies, Inc. All Rights Reserved.
-+ * Copyright 1998-2009 VIA Technologies, Inc. All Rights Reserved.
-  * Copyright 2001-2008 S3 Graphics, Inc. All Rights Reserved.
+diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
+index ae664fb..2322612 100644
+--- a/drivers/video/via/hw.c
++++ b/drivers/video/via/hw.c
+@@ -62,6 +62,7 @@ static struct pll_map pll_value[] = {
+ 	 CX700_52_977M,	VX855_52_977M},
+ 	{CLK_56_250M, CLE266_PLL_56_250M, K800_PLL_56_250M,
+ 	 CX700_56_250M, VX855_56_250M},
++	{CLK_57_275M, 0, 0, 0, VX855_57_275M},
+ 	{CLK_60_466M, CLE266_PLL_60_466M, K800_PLL_60_466M,
+ 	 CX700_60_466M, VX855_60_466M},
+ 	{CLK_61_500M, CLE266_PLL_61_500M, K800_PLL_61_500M,
+diff --git a/drivers/video/via/ioctl.h b/drivers/video/via/ioctl.h
+index de89980..c430fa2 100644
+--- a/drivers/video/via/ioctl.h
++++ b/drivers/video/via/ioctl.h
+@@ -75,7 +75,7 @@
+ /*SAMM operation flag*/
+ #define OP_SAMM            0x80
  
-  * This program is free software; you can redistribute it and/or
-@@ -1737,6 +1737,7 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
- 	u32 default_xres, default_yres;
- 	struct VideoModeTable *vmode_entry;
- 	struct fb_var_screeninfo default_var;
-+	int rc;
- 	u32 viafb_par_length;
+-#define LCD_PANEL_ID_MAXIMUM	22
++#define LCD_PANEL_ID_MAXIMUM	23
  
- 	DEBUG_MSG(KERN_INFO "VIAFB PCI Probe!!\n");
-@@ -1751,7 +1752,7 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
- 		&pdev->dev);
- 	if (!viafbinfo) {
- 		printk(KERN_ERR"Could not allocate memory for viafb_info.\n");
--		return -ENODEV;
-+		return -ENOMEM;
- 	}
+ #define STATE_ON            0x1
+ #define STATE_OFF           0x0
+diff --git a/drivers/video/via/lcd.c b/drivers/video/via/lcd.c
+index 1b1ccdc..09020f0 100644
+--- a/drivers/video/via/lcd.c
++++ b/drivers/video/via/lcd.c
+@@ -398,6 +398,15 @@ static void fp_id_to_vindex(int panel_id)
+ 		viaparinfo->lvds_setting_info->device_lcd_dualedge = 0;
+ 		viaparinfo->lvds_setting_info->LCDDithering = 1;
+ 		break;
++	case 0x17:
++		/* OLPC XO-1.5 panel */
++		viaparinfo->lvds_setting_info->lcd_panel_hres = 1200;
++		viaparinfo->lvds_setting_info->lcd_panel_vres = 900;
++		viaparinfo->lvds_setting_info->lcd_panel_id =
++			LCD_PANEL_IDD_1200X900;
++		viaparinfo->lvds_setting_info->device_lcd_dualedge = 0;
++		viaparinfo->lvds_setting_info->LCDDithering = 0;
++		break;
+ 	default:
+ 		viaparinfo->lvds_setting_info->lcd_panel_hres = 800;
+ 		viaparinfo->lvds_setting_info->lcd_panel_vres = 600;
+diff --git a/drivers/video/via/lcd.h b/drivers/video/via/lcd.h
+index 071f47c..9762ec6 100644
+--- a/drivers/video/via/lcd.h
++++ b/drivers/video/via/lcd.h
+@@ -60,6 +60,8 @@
+ #define     LCD_PANEL_IDB_1360X768     0x0B
+ /* Resolution: 480x640,  Channel: single, Dithering: Enable */
+ #define     LCD_PANEL_IDC_480X640      0x0C
++/* Resolution: 1200x900,  Channel: single, Dithering: Disable */
++#define     LCD_PANEL_IDD_1200X900      0x0D
  
- 	viaparinfo = (struct viafb_par *)viafbinfo->par;
-@@ -1774,7 +1775,9 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
- 		viafb_dual_fb = 0;
  
- 	/* Set up I2C bus stuff */
--	viafb_create_i2c_bus(viaparinfo);
-+	rc = viafb_create_i2c_bus(viaparinfo);
-+	if (rc)
-+		goto out_fb_release;
+ extern int viafb_LCD2_ON;
+diff --git a/drivers/video/via/share.h b/drivers/video/via/share.h
+index d55aaa7..f974c73 100644
+--- a/drivers/video/via/share.h
++++ b/drivers/video/via/share.h
+@@ -570,6 +570,10 @@
+ #define M1200X720_R60_HSP       NEGATIVE
+ #define M1200X720_R60_VSP       POSITIVE
  
- 	viafb_init_chip_info(pdev, ent);
- 	viaparinfo->fbmem = pci_resource_start(pdev, 0);
-@@ -1785,7 +1788,8 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
- 		viaparinfo->memsize);
- 	if (!viafbinfo->screen_base) {
- 		printk(KERN_INFO "ioremap failed\n");
--		return -ENOMEM;
-+		rc = -ENOMEM;
-+		goto out_delete_i2c;
- 	}
- 
- 	viafbinfo->fix.mmio_start = pci_resource_start(pdev, 1);
-@@ -1861,8 +1865,8 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
- 		if (!viafbinfo1) {
- 			printk(KERN_ERR
- 			"allocate the second framebuffer struct error\n");
--			framebuffer_release(viafbinfo);
--			return -ENOMEM;
-+			rc = -ENOMEM;
-+			goto out_delete_i2c;
- 		}
- 		viaparinfo1 = viafbinfo1->par;
- 		memcpy(viaparinfo1, viaparinfo, viafb_par_length);
-@@ -1913,21 +1917,26 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
- 	viaparinfo->depth = fb_get_color_depth(&viafbinfo->var,
- 		&viafbinfo->fix);
- 	default_var.activate = FB_ACTIVATE_NOW;
--	fb_alloc_cmap(&viafbinfo->cmap, 256, 0);
-+	rc = fb_alloc_cmap(&viafbinfo->cmap, 256, 0);
-+	if (rc)
-+		goto out_fb1_release;
- 
- 	if (viafb_dual_fb && (viafb_primary_dev == LCD_Device)
- 	    && (viaparinfo->chip_info->gfx_chip_name == UNICHROME_CLE266)) {
--		if (register_framebuffer(viafbinfo1) < 0)
--			return -EINVAL;
-+		rc = register_framebuffer(viafbinfo1);
-+		if (rc)
-+			goto out_dealloc_cmap;
- 	}
--	if (register_framebuffer(viafbinfo) < 0)
--		return -EINVAL;
-+	rc = register_framebuffer(viafbinfo);
-+	if (rc)
-+		goto out_fb1_unreg_lcd_cle266;
- 
- 	if (viafb_dual_fb && ((viafb_primary_dev != LCD_Device)
- 			|| (viaparinfo->chip_info->gfx_chip_name !=
- 			UNICHROME_CLE266))) {
--		if (register_framebuffer(viafbinfo1) < 0)
--			return -EINVAL;
-+		rc = register_framebuffer(viafbinfo1);
-+		if (rc)
-+			goto out_fb_unreg;
- 	}
- 	DEBUG_MSG(KERN_INFO "fb%d: %s frame buffer device %dx%d-%dbpp\n",
- 		  viafbinfo->node, viafbinfo->fix.id, default_var.xres,
-@@ -1936,6 +1945,23 @@ static int __devinit via_pci_probe(struct pci_dev *pdev,
- 	viafb_init_proc(&viaparinfo->shared->proc_entry);
- 	viafb_init_dac(IGA2);
- 	return 0;
++/* 1200x900@60 Sync Polarity (DCON) */
++#define M1200X900_R60_HSP       NEGATIVE
++#define M1200X900_R60_VSP       NEGATIVE
 +
-+out_fb_unreg:
-+	unregister_framebuffer(viafbinfo);
-+out_fb1_unreg_lcd_cle266:
-+	if (viafb_dual_fb && (viafb_primary_dev == LCD_Device)
-+	    && (viaparinfo->chip_info->gfx_chip_name == UNICHROME_CLE266))
-+		unregister_framebuffer(viafbinfo1);
-+out_dealloc_cmap:
-+	fb_dealloc_cmap(&viafbinfo->cmap);
-+out_fb1_release:
-+	if (viafbinfo1)
-+		framebuffer_release(viafbinfo1);
-+out_delete_i2c:
-+	viafb_delete_i2c_buss(viaparinfo);
-+out_fb_release:
-+	framebuffer_release(viafbinfo);
-+	return rc;
- }
+ /* 1280x600@60 Sync Polarity (GTF Mode) */
+ #define M1280x600_R60_HSP       NEGATIVE
+ #define M1280x600_R60_VSP       POSITIVE
+@@ -651,6 +655,7 @@
+ #define CLK_52_406M     52406000
+ #define CLK_52_977M     52977000
+ #define CLK_56_250M     56250000
++#define CLK_57_275M     57275000
+ #define CLK_60_466M     60466000
+ #define CLK_61_500M     61500000
+ #define CLK_65_000M     65000000
+@@ -939,6 +944,7 @@
+ #define VX855_52_406M     0x00580C03
+ #define VX855_52_977M     0x00940C05
+ #define VX855_56_250M     0x009D0C05
++#define VX855_57_275M     0x009D8C85    /* Used by XO panel */
+ #define VX855_60_466M     0x00A90C05
+ #define VX855_61_500M     0x00AC0C05
+ #define VX855_65_000M     0x006D0C03
+@@ -1065,6 +1071,7 @@
+ #define RES_1600X1200_60HZ_PIXCLOCK  6172
+ #define RES_1600X1200_75HZ_PIXCLOCK  4938
+ #define RES_1280X720_60HZ_PIXCLOCK   13426
++#define RES_1200X900_60HZ_PIXCLOCK   17459
+ #define RES_1920X1080_60HZ_PIXCLOCK  5787
+ #define RES_1400X1050_60HZ_PIXCLOCK  8214
+ #define RES_1400X1050_75HZ_PIXCLOCK  6410
+diff --git a/drivers/video/via/viamode.c b/drivers/video/via/viamode.c
+index af50e24..6f3bcda 100644
+--- a/drivers/video/via/viamode.c
++++ b/drivers/video/via/viamode.c
+@@ -66,6 +66,7 @@ struct res_map_refresh res_map_refresh_tbl[] = {
+ 	{1088, 612, RES_1088X612_60HZ_PIXCLOCK, 60},
+ 	{1152, 720, RES_1152X720_60HZ_PIXCLOCK, 60},
+ 	{1200, 720, RES_1200X720_60HZ_PIXCLOCK, 60},
++	{1200, 900, RES_1200X900_60HZ_PIXCLOCK, 60},
+ 	{1280, 600, RES_1280X600_60HZ_PIXCLOCK, 60},
+ 	{1280, 720, RES_1280X720_50HZ_PIXCLOCK, 50},
+ 	{1280, 768, RES_1280X768_50HZ_PIXCLOCK, 50},
+@@ -759,6 +760,16 @@ struct crt_mode_table CRTM1200x720[] = {
+ 	 {1568, 1200, 1200, 368, 1256, 128, 746, 720, 720, 26, 721, 3} }
+ };
  
- static void __devexit via_pci_remove(struct pci_dev *pdev)
++/* 1200x900 (DCON) */
++struct crt_mode_table DCON1200x900[] = {
++	/* r_rate,          vclk,               hsp,               vsp   */
++	{REFRESH_60, CLK_57_275M, M1200X900_R60_HSP, M1200X900_R60_VSP,
++	/* The correct htotal is 1240, but this doesn't raster on VX855. */
++	/* Via suggested changing to a multiple of 16, hence 1264.       */
++	/*  HT,   HA,  HBS, HBE,  HSS, HSE,  VT,  VA, VBS, VBE, VSS, VSE */
++	 {1264, 1200, 1200,  64, 1211,  32, 912, 900, 900,  12, 901, 10} }
++};
++
+ /* 1280x600 (GTF) */
+ struct crt_mode_table CRTM1280x600[] = {
+ 	/* r_rate,          vclk,              hsp,             vsp   */
+@@ -937,6 +948,9 @@ struct VideoModeTable viafb_modes[] = {
+ 	/* Display : 1200x720 (GTF) */
+ 	{CRTM1200x720, ARRAY_SIZE(CRTM1200x720)},
+ 
++	/* Display : 1200x900 (DCON) */
++	{DCON1200x900, ARRAY_SIZE(DCON1200x900)},
++
+ 	/* Display : 1280x600 (GTF) */
+ 	{CRTM1280x600, ARRAY_SIZE(CRTM1280x600)},
+ 
 -- 
 1.7.0.1
 
