@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757321Ab0D1Bx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 21:53:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40907 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756848Ab0D1Bw7 (ORCPT
+	id S1757352Ab0D1Bxm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 21:53:42 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41106 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351Ab0D1Bww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 21:52:59 -0400
+	Tue, 27 Apr 2010 21:52:52 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Ian Munsie <imunsie@au.ibm.com>,
+       Avi Kivity <avi@redhat.com>,
        =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 5/5] perf tools: Create $(OUTPUT)arch/$(ARCH)/util/ directory
-Date: Tue, 27 Apr 2010 22:52:40 -0300
-Message-Id: <1272419560-4332-6-git-send-email-acme@infradead.org>
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Subject: [PATCH 1/5] perf tools: Rename "kernel_info" to "machine"
+Date: Tue, 27 Apr 2010 22:52:36 -0300
+Message-Id: <1272419560-4332-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1272419560-4332-1-git-send-email-acme@infradead.org>
 References: <1272419560-4332-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,36 +32,1492 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-So that "make -C tools/perf O=/tmp/some/path" works again.
+struct kernel_info and kerninfo__ are too vague, what they really
+describe are machines, virtual ones or hosts.
 
-Problem introduced in:
+There are more changes to introduce helpers to shorten function calls
+and to make more clear what is really being done, but I left that for
+subsequent patches.
 
-cd932c5 "perf: Move arch specific code into separate arch director"
-
-Cc: Ian Munsie <imunsie@au.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>
 Cc: Frédéric Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ tools/perf/builtin-annotate.c     |    2 +-
+ tools/perf/builtin-buildid-list.c |    2 +-
+ tools/perf/builtin-kmem.c         |    8 +-
+ tools/perf/builtin-record.c       |   36 +++++-----
+ tools/perf/builtin-report.c       |    2 +-
+ tools/perf/builtin-top.c          |   15 ++--
+ tools/perf/util/event.c           |   92 +++++++++++++-------------
+ tools/perf/util/event.h           |    4 +-
+ tools/perf/util/header.c          |   70 +++++++++----------
+ tools/perf/util/header.h          |    2 +-
+ tools/perf/util/map.c             |  105 ++++++++++++++---------------
+ tools/perf/util/map.h             |   63 ++++++++----------
+ tools/perf/util/session.c         |    4 +-
+ tools/perf/util/session.h         |   27 +++++++-
+ tools/perf/util/symbol.c          |  132 +++++++++++++++++--------------------
+ tools/perf/util/symbol.h          |    3 +-
+ 16 files changed, 280 insertions(+), 287 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 3ac6b67..b86f2ad 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -187,6 +187,8 @@ ifeq ($(ARCH),x86_64)
-         ARCH := x86
- endif
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index f924b43..986b2ef 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -571,7 +571,7 @@ static int __cmd_annotate(void)
+ 		perf_session__fprintf(session, stdout);
  
-+$(shell sh -c 'mkdir -p $(OUTPUT)arch/$(ARCH)/util/' 2> /dev/null)
+ 	if (verbose > 2)
+-		dsos__fprintf(&session->kerninfo_root, stdout);
++		dsos__fprintf(&session->machines, stdout);
+ 
+ 	perf_session__collapse_resort(&session->hists);
+ 	perf_session__output_resort(&session->hists, session->event_total[0]);
+diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
+index 623afe3..b4a265a 100644
+--- a/tools/perf/builtin-buildid-list.c
++++ b/tools/perf/builtin-buildid-list.c
+@@ -46,7 +46,7 @@ static int __cmd_buildid_list(void)
+ 	if (with_hits)
+ 		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
+ 
+-	dsos__fprintf_buildid(&session->kerninfo_root, stdout, with_hits);
++	dsos__fprintf_buildid(&session->machines, stdout, with_hits);
+ 
+ 	perf_session__delete(session);
+ 	return err;
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index ab906cb..2067475 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -352,7 +352,7 @@ static void __print_result(struct rb_root *root, struct perf_session *session,
+ 			   int n_lines, int is_caller)
+ {
+ 	struct rb_node *next;
+-	struct kernel_info *kerninfo;
++	struct machine *machine;
+ 
+ 	printf("%.102s\n", graph_dotted_line);
+ 	printf(" %-34s |",  is_caller ? "Callsite": "Alloc Ptr");
+@@ -361,8 +361,8 @@ static void __print_result(struct rb_root *root, struct perf_session *session,
+ 
+ 	next = rb_first(root);
+ 
+-	kerninfo = kerninfo__findhost(&session->kerninfo_root);
+-	if (!kerninfo) {
++	machine = perf_session__find_host_machine(session);
++	if (!machine) {
+ 		pr_err("__print_result: couldn't find kernel information\n");
+ 		return;
+ 	}
+@@ -370,7 +370,7 @@ static void __print_result(struct rb_root *root, struct perf_session *session,
+ 		struct alloc_stat *data = rb_entry(next, struct alloc_stat,
+ 						   node);
+ 		struct symbol *sym = NULL;
+-		struct map_groups *kmaps = &kerninfo->kmaps;
++		struct map_groups *kmaps = &machine->kmaps;
+ 		struct map *map;
+ 		char buf[BUFSIZ];
+ 		u64 addr;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 27f992a..83b308a 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -456,14 +456,14 @@ static void atexit_header(void)
+ 	}
+ }
+ 
+-static void event__synthesize_guest_os(struct kernel_info *kerninfo,
+-		void *data __attribute__((unused)))
++static void event__synthesize_guest_os(struct machine *machine, void *data)
+ {
+ 	int err;
+ 	char *guest_kallsyms;
+ 	char path[PATH_MAX];
++	struct perf_session *psession = data;
+ 
+-	if (is_host_kernel(kerninfo))
++	if (machine__is_host(machine))
+ 		return;
+ 
+ 	/*
+@@ -475,16 +475,15 @@ static void event__synthesize_guest_os(struct kernel_info *kerninfo,
+ 	 *in module instead of in guest kernel.
+ 	 */
+ 	err = event__synthesize_modules(process_synthesized_event,
+-			session,
+-			kerninfo);
++					psession, machine);
+ 	if (err < 0)
+ 		pr_err("Couldn't record guest kernel [%d]'s reference"
+-			" relocation symbol.\n", kerninfo->pid);
++		       " relocation symbol.\n", machine->pid);
+ 
+-	if (is_default_guest(kerninfo))
++	if (machine__is_default_guest(machine))
+ 		guest_kallsyms = (char *) symbol_conf.default_guest_kallsyms;
+ 	else {
+-		sprintf(path, "%s/proc/kallsyms", kerninfo->root_dir);
++		sprintf(path, "%s/proc/kallsyms", machine->root_dir);
+ 		guest_kallsyms = path;
+ 	}
+ 
+@@ -493,13 +492,13 @@ static void event__synthesize_guest_os(struct kernel_info *kerninfo,
+ 	 * have no _text sometimes.
+ 	 */
+ 	err = event__synthesize_kernel_mmap(process_synthesized_event,
+-			session, kerninfo, "_text");
++					    psession, machine, "_text");
+ 	if (err < 0)
+ 		err = event__synthesize_kernel_mmap(process_synthesized_event,
+-				session, kerninfo, "_stext");
++						    psession, machine, "_stext");
+ 	if (err < 0)
+ 		pr_err("Couldn't record guest kernel [%d]'s reference"
+-			" relocation symbol.\n", kerninfo->pid);
++		       " relocation symbol.\n", machine->pid);
+ }
+ 
+ static int __cmd_record(int argc, const char **argv)
+@@ -513,7 +512,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	int child_ready_pipe[2], go_pipe[2];
+ 	const bool forks = argc > 0;
+ 	char buf;
+-	struct kernel_info *kerninfo;
++	struct machine *machine;
+ 
+ 	page_size = sysconf(_SC_PAGE_SIZE);
+ 
+@@ -682,31 +681,30 @@ static int __cmd_record(int argc, const char **argv)
+ 		advance_output(err);
+ 	}
+ 
+-	kerninfo = kerninfo__findhost(&session->kerninfo_root);
+-	if (!kerninfo) {
++	machine = perf_session__find_host_machine(session);
++	if (!machine) {
+ 		pr_err("Couldn't find native kernel information.\n");
+ 		return -1;
+ 	}
+ 
+ 	err = event__synthesize_kernel_mmap(process_synthesized_event,
+-			session, kerninfo, "_text");
++					    session, machine, "_text");
+ 	if (err < 0)
+ 		err = event__synthesize_kernel_mmap(process_synthesized_event,
+-				session, kerninfo, "_stext");
++						    session, machine, "_stext");
+ 	if (err < 0) {
+ 		pr_err("Couldn't record kernel reference relocation symbol.\n");
+ 		return err;
+ 	}
+ 
+ 	err = event__synthesize_modules(process_synthesized_event,
+-				session, kerninfo);
++					session, machine);
+ 	if (err < 0) {
+ 		pr_err("Couldn't record kernel reference relocation symbol.\n");
+ 		return err;
+ 	}
+ 	if (perf_guest)
+-		kerninfo__process_allkernels(&session->kerninfo_root,
+-			event__synthesize_guest_os, session);
++		perf_session__process_machines(session, event__synthesize_guest_os);
+ 
+ 	if (!system_wide && profile_cpu == -1)
+ 		event__synthesize_thread(target_tid, process_synthesized_event,
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 816edae..49cc367 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -313,7 +313,7 @@ static int __cmd_report(void)
+ 		perf_session__fprintf(session, stdout);
+ 
+ 	if (verbose > 2)
+-		dsos__fprintf(&session->kerninfo_root, stdout);
++		dsos__fprintf(&session->machines, stdout);
+ 
+ 	next = rb_first(&session->stats_by_id);
+ 	while (next) {
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index dfd7ea7..c390f34 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -854,7 +854,7 @@ static void handle_keypress(struct perf_session *session, int c)
+ 		case 'Q':
+ 			printf("exiting.\n");
+ 			if (dump_symtab)
+-				dsos__fprintf(&session->kerninfo_root, stderr);
++				dsos__fprintf(&session->machines, stderr);
+ 			exit(0);
+ 		case 's':
+ 			prompt_symbol(&sym_filter_entry, "Enter details symbol");
+@@ -982,7 +982,7 @@ static void event__process_sample(const event_t *self,
+ 	u64 ip = self->ip.ip;
+ 	struct sym_entry *syme;
+ 	struct addr_location al;
+-	struct kernel_info *kerninfo;
++	struct machine *machine;
+ 	u8 origin = self->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 
+ 	++samples;
+@@ -992,18 +992,17 @@ static void event__process_sample(const event_t *self,
+ 		++us_samples;
+ 		if (hide_user_symbols)
+ 			return;
+-		kerninfo = kerninfo__findhost(&session->kerninfo_root);
++		machine = perf_session__find_host_machine(session);
+ 		break;
+ 	case PERF_RECORD_MISC_KERNEL:
+ 		++kernel_samples;
+ 		if (hide_kernel_symbols)
+ 			return;
+-		kerninfo = kerninfo__findhost(&session->kerninfo_root);
++		machine = perf_session__find_host_machine(session);
+ 		break;
+ 	case PERF_RECORD_MISC_GUEST_KERNEL:
+ 		++guest_kernel_samples;
+-		kerninfo = kerninfo__find(&session->kerninfo_root,
+-					  self->ip.pid);
++		machine = perf_session__find_machine(session, self->ip.pid);
+ 		break;
+ 	case PERF_RECORD_MISC_GUEST_USER:
+ 		++guest_us_samples;
+@@ -1016,7 +1015,7 @@ static void event__process_sample(const event_t *self,
+ 		return;
+ 	}
+ 
+-	if (!kerninfo && perf_guest) {
++	if (!machine && perf_guest) {
+ 		pr_err("Can't find guest [%d]'s kernel information\n",
+ 			self->ip.pid);
+ 		return;
+@@ -1041,7 +1040,7 @@ static void event__process_sample(const event_t *self,
+ 		 * --hide-kernel-symbols, even if the user specifies an
+ 		 * invalid --vmlinux ;-)
+ 		 */
+-		if (al.map == kerninfo->vmlinux_maps[MAP__FUNCTION] &&
++		if (al.map == machine->vmlinux_maps[MAP__FUNCTION] &&
+ 		    RB_EMPTY_ROOT(&al.map->dso->symbols[MAP__FUNCTION])) {
+ 			pr_err("The %s file can't be used\n",
+ 			       symbol_conf.vmlinux_name);
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index e3fa8d3..2f33ca9 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -172,17 +172,17 @@ static int event__synthesize_mmap_events(pid_t pid, pid_t tgid,
+ 
+ int event__synthesize_modules(event__handler_t process,
+ 			      struct perf_session *session,
+-			      struct kernel_info *kerninfo)
++			      struct machine *machine)
+ {
+ 	struct rb_node *nd;
+-	struct map_groups *kmaps = &kerninfo->kmaps;
++	struct map_groups *kmaps = &machine->kmaps;
+ 	u16 misc;
+ 
+ 	/*
+ 	 * kernel uses 0 for user space maps, see kernel/perf_event.c
+ 	 * __perf_event_mmap
+ 	 */
+-	if (is_host_kernel(kerninfo))
++	if (machine__is_host(machine))
+ 		misc = PERF_RECORD_MISC_KERNEL;
+ 	else
+ 		misc = PERF_RECORD_MISC_GUEST_KERNEL;
+@@ -204,7 +204,7 @@ int event__synthesize_modules(event__handler_t process,
+ 				        (sizeof(ev.mmap.filename) - size));
+ 		ev.mmap.start = pos->start;
+ 		ev.mmap.len   = pos->end - pos->start;
+-		ev.mmap.pid   = kerninfo->pid;
++		ev.mmap.pid   = machine->pid;
+ 
+ 		memcpy(ev.mmap.filename, pos->dso->long_name,
+ 		       pos->dso->long_name_len + 1);
+@@ -267,7 +267,7 @@ static int find_symbol_cb(void *arg, const char *name, char type, u64 start)
+ 
+ int event__synthesize_kernel_mmap(event__handler_t process,
+ 				  struct perf_session *session,
+-				  struct kernel_info *kerninfo,
++				  struct machine *machine,
+ 				  const char *symbol_name)
+ {
+ 	size_t size;
+@@ -288,8 +288,8 @@ int event__synthesize_kernel_mmap(event__handler_t process,
+ 	 */
+ 	struct process_symbol_args args = { .name = symbol_name, };
+ 
+-	mmap_name = kern_mmap_name(kerninfo, name_buff);
+-	if (is_host_kernel(kerninfo)) {
++	mmap_name = machine__mmap_name(machine, name_buff);
++	if (machine__is_host(machine)) {
+ 		/*
+ 		 * kernel uses PERF_RECORD_MISC_USER for user space maps,
+ 		 * see kernel/perf_event.c __perf_event_mmap
+@@ -298,10 +298,10 @@ int event__synthesize_kernel_mmap(event__handler_t process,
+ 		filename = "/proc/kallsyms";
+ 	} else {
+ 		ev.header.misc = PERF_RECORD_MISC_GUEST_KERNEL;
+-		if (is_default_guest(kerninfo))
++		if (machine__is_default_guest(machine))
+ 			filename = (char *) symbol_conf.default_guest_kallsyms;
+ 		else {
+-			sprintf(path, "%s/proc/kallsyms", kerninfo->root_dir);
++			sprintf(path, "%s/proc/kallsyms", machine->root_dir);
+ 			filename = path;
+ 		}
+ 	}
+@@ -309,7 +309,7 @@ int event__synthesize_kernel_mmap(event__handler_t process,
+ 	if (kallsyms__parse(filename, &args, find_symbol_cb) <= 0)
+ 		return -ENOENT;
+ 
+-	map = kerninfo->vmlinux_maps[MAP__FUNCTION];
++	map = machine->vmlinux_maps[MAP__FUNCTION];
+ 	size = snprintf(ev.mmap.filename, sizeof(ev.mmap.filename),
+ 			"%s%s", mmap_name, symbol_name) + 1;
+ 	size = ALIGN(size, sizeof(u64));
+@@ -318,7 +318,7 @@ int event__synthesize_kernel_mmap(event__handler_t process,
+ 	ev.mmap.pgoff = args.start;
+ 	ev.mmap.start = map->start;
+ 	ev.mmap.len   = map->end - ev.mmap.start;
+-	ev.mmap.pid   = kerninfo->pid;
++	ev.mmap.pid   = machine->pid;
+ 
+ 	return process(&ev, session);
+ }
+@@ -389,18 +389,18 @@ static int event__process_kernel_mmap(event_t *self,
+ {
+ 	struct map *map;
+ 	char kmmap_prefix[PATH_MAX];
+-	struct kernel_info *kerninfo;
++	struct machine *machine;
+ 	enum dso_kernel_type kernel_type;
+ 	bool is_kernel_mmap;
+ 
+-	kerninfo = kerninfo__findnew(&session->kerninfo_root, self->mmap.pid);
+-	if (!kerninfo) {
+-		pr_err("Can't find id %d's kerninfo\n", self->mmap.pid);
++	machine = perf_session__findnew_machine(session, self->mmap.pid);
++	if (!machine) {
++		pr_err("Can't find id %d's machine\n", self->mmap.pid);
+ 		goto out_problem;
+ 	}
+ 
+-	kern_mmap_name(kerninfo, kmmap_prefix);
+-	if (is_host_kernel(kerninfo))
++	machine__mmap_name(machine, kmmap_prefix);
++	if (machine__is_host(machine))
+ 		kernel_type = DSO_TYPE_KERNEL;
+ 	else
+ 		kernel_type = DSO_TYPE_GUEST_KERNEL;
+@@ -429,10 +429,9 @@ static int event__process_kernel_mmap(event_t *self,
+ 		} else
+ 			strcpy(short_module_name, self->mmap.filename);
+ 
+-		map = map_groups__new_module(&kerninfo->kmaps,
+-				self->mmap.start,
+-				self->mmap.filename,
+-				kerninfo);
++		map = map_groups__new_module(&machine->kmaps,
++					     self->mmap.start,
++					     self->mmap.filename, machine);
+ 		if (map == NULL)
+ 			goto out_problem;
+ 
+@@ -449,27 +448,27 @@ static int event__process_kernel_mmap(event_t *self,
+ 		 * Should be there already, from the build-id table in
+ 		 * the header.
+ 		 */
+-		struct dso *kernel = __dsos__findnew(&kerninfo->dsos__kernel,
+-				kmmap_prefix);
++		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
++						     kmmap_prefix);
+ 		if (kernel == NULL)
+ 			goto out_problem;
+ 
+ 		kernel->kernel = kernel_type;
+-		if (__map_groups__create_kernel_maps(&kerninfo->kmaps,
+-					kerninfo->vmlinux_maps, kernel) < 0)
++		if (__map_groups__create_kernel_maps(&machine->kmaps,
++						     machine->vmlinux_maps,
++						     kernel) < 0)
+ 			goto out_problem;
+ 
+-		event_set_kernel_mmap_len(kerninfo->vmlinux_maps, self);
+-		perf_session__set_kallsyms_ref_reloc_sym(kerninfo->vmlinux_maps,
+-				symbol_name,
+-				self->mmap.pgoff);
+-		if (is_default_guest(kerninfo)) {
++		event_set_kernel_mmap_len(machine->vmlinux_maps, self);
++		perf_session__set_kallsyms_ref_reloc_sym(machine->vmlinux_maps,
++							 symbol_name,
++							 self->mmap.pgoff);
++		if (machine__is_default_guest(machine)) {
+ 			/*
+ 			 * preload dso of guest kernel and modules
+ 			 */
+-			dso__load(kernel,
+-				kerninfo->vmlinux_maps[MAP__FUNCTION],
+-				NULL);
++			dso__load(kernel, machine->vmlinux_maps[MAP__FUNCTION],
++				  NULL);
+ 		}
+ 	}
+ 	return 0;
+@@ -479,7 +478,7 @@ out_problem:
+ 
+ int event__process_mmap(event_t *self, struct perf_session *session)
+ {
+-	struct kernel_info *kerninfo;
++	struct machine *machine;
+ 	struct thread *thread;
+ 	struct map *map;
+ 	u8 cpumode = self->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+@@ -498,8 +497,8 @@ int event__process_mmap(event_t *self, struct perf_session *session)
+ 	}
+ 
+ 	thread = perf_session__findnew(session, self->mmap.pid);
+-	kerninfo = kerninfo__findhost(&session->kerninfo_root);
+-	map = map__new(&kerninfo->dsos__user, self->mmap.start,
++	machine = perf_session__find_host_machine(session);
++	map = map__new(&machine->user_dsos, self->mmap.start,
+ 			self->mmap.len, self->mmap.pgoff,
+ 			self->mmap.pid, self->mmap.filename,
+ 			MAP__FUNCTION, session->cwd, session->cwdlen);
+@@ -546,7 +545,7 @@ void thread__find_addr_map(struct thread *self,
+ 			   struct addr_location *al)
+ {
+ 	struct map_groups *mg = &self->mg;
+-	struct kernel_info *kerninfo = NULL;
++	struct machine *machine = NULL;
+ 
+ 	al->thread = self;
+ 	al->addr = addr;
+@@ -555,19 +554,19 @@ void thread__find_addr_map(struct thread *self,
+ 
+ 	if (cpumode == PERF_RECORD_MISC_KERNEL && perf_host) {
+ 		al->level = 'k';
+-		kerninfo = kerninfo__findhost(&session->kerninfo_root);
+-		mg = &kerninfo->kmaps;
++		machine = perf_session__find_host_machine(session);
++		mg = &machine->kmaps;
+ 	} else if (cpumode == PERF_RECORD_MISC_USER && perf_host) {
+ 		al->level = '.';
+-		kerninfo = kerninfo__findhost(&session->kerninfo_root);
++		machine = perf_session__find_host_machine(session);
+ 	} else if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
+ 		al->level = 'g';
+-		kerninfo = kerninfo__find(&session->kerninfo_root, pid);
+-		if (!kerninfo) {
++		machine = perf_session__find_machine(session, pid);
++		if (!machine) {
+ 			al->map = NULL;
+ 			return;
+ 		}
+-		mg = &kerninfo->kmaps;
++		mg = &machine->kmaps;
+ 	} else {
+ 		/*
+ 		 * 'u' means guest os user space.
+@@ -603,10 +602,9 @@ try_again:
+ 		 * in the whole kernel symbol list.
+ 		 */
+ 		if ((long long)al->addr < 0 &&
+-			cpumode == PERF_RECORD_MISC_KERNEL &&
+-			kerninfo &&
+-			mg != &kerninfo->kmaps)  {
+-			mg = &kerninfo->kmaps;
++		    cpumode == PERF_RECORD_MISC_KERNEL &&
++		    machine && mg != &machine->kmaps) {
++			mg = &machine->kmaps;
+ 			goto try_again;
+ 		}
+ 	} else
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 4af2ed5..b364da5 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -156,12 +156,12 @@ void event__synthesize_threads(event__handler_t process,
+ 			       struct perf_session *session);
+ int event__synthesize_kernel_mmap(event__handler_t process,
+ 				struct perf_session *session,
+-				struct kernel_info *kerninfo,
++				struct machine *machine,
+ 				const char *symbol_name);
+ 
+ int event__synthesize_modules(event__handler_t process,
+ 			      struct perf_session *session,
+-			      struct kernel_info *kerninfo);
++			      struct machine *machine);
+ 
+ int event__process_comm(event_t *self, struct perf_session *session);
+ int event__process_lost(event_t *self, struct perf_session *session);
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 75d0167..6227dc4 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -229,10 +229,9 @@ static int dsos__write_buildid_table(struct perf_header *header, int fd)
+ 	int err = 0;
+ 	u16 kmisc, umisc;
+ 
+-	for (nd = rb_first(&session->kerninfo_root); nd; nd = rb_next(nd)) {
+-		struct kernel_info *pos = rb_entry(nd, struct kernel_info,
+-				rb_node);
+-		if (is_host_kernel(pos)) {
++	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		if (machine__is_host(pos)) {
+ 			kmisc = PERF_RECORD_MISC_KERNEL;
+ 			umisc = PERF_RECORD_MISC_USER;
+ 		} else {
+@@ -240,11 +239,11 @@ static int dsos__write_buildid_table(struct perf_header *header, int fd)
+ 			umisc = PERF_RECORD_MISC_GUEST_USER;
+ 		}
+ 
+-		err = __dsos__write_buildid_table(&pos->dsos__kernel, pos->pid,
+-				kmisc, fd);
++		err = __dsos__write_buildid_table(&pos->kernel_dsos, pos->pid,
++						  kmisc, fd);
+ 		if (err == 0)
+-			err = __dsos__write_buildid_table(&pos->dsos__user,
+-				pos->pid, umisc, fd);
++			err = __dsos__write_buildid_table(&pos->user_dsos,
++							  pos->pid, umisc, fd);
+ 		if (err)
+ 			break;
+ 	}
+@@ -378,11 +377,10 @@ static int dsos__cache_build_ids(struct perf_header *self)
+ 	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
+ 		return -1;
+ 
+-	for (nd = rb_first(&session->kerninfo_root); nd; nd = rb_next(nd)) {
+-		struct kernel_info *pos = rb_entry(nd, struct kernel_info,
+-				rb_node);
+-		ret |= __dsos__cache_build_ids(&pos->dsos__kernel, debugdir);
+-		ret |= __dsos__cache_build_ids(&pos->dsos__user, debugdir);
++	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		ret |= __dsos__cache_build_ids(&pos->kernel_dsos, debugdir);
++		ret |= __dsos__cache_build_ids(&pos->user_dsos, debugdir);
+ 	}
+ 	return ret ? -1 : 0;
+ }
+@@ -394,11 +392,10 @@ static bool dsos__read_build_ids(struct perf_header *self, bool with_hits)
+ 			struct perf_session, header);
+ 	struct rb_node *nd;
+ 
+-	for (nd = rb_first(&session->kerninfo_root); nd; nd = rb_next(nd)) {
+-		struct kernel_info *pos = rb_entry(nd, struct kernel_info,
+-				rb_node);
+-		ret |= __dsos__read_build_ids(&pos->dsos__kernel, with_hits);
+-		ret |= __dsos__read_build_ids(&pos->dsos__user, with_hits);
++	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		ret |= __dsos__read_build_ids(&pos->kernel_dsos, with_hits);
++		ret |= __dsos__read_build_ids(&pos->user_dsos, with_hits);
+ 	}
+ 
+ 	return ret;
+@@ -685,13 +682,13 @@ static int __event_process_build_id(struct build_id_event *bev,
+ {
+ 	int err = -1;
+ 	struct list_head *head;
+-	struct kernel_info *kerninfo;
++	struct machine *machine;
+ 	u16 misc;
+ 	struct dso *dso;
+ 	enum dso_kernel_type dso_type;
+ 
+-	kerninfo = kerninfo__findnew(&session->kerninfo_root, bev->pid);
+-	if (!kerninfo)
++	machine = perf_session__findnew_machine(session, bev->pid);
++	if (!machine)
+ 		goto out;
+ 
+ 	misc = bev->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+@@ -699,16 +696,16 @@ static int __event_process_build_id(struct build_id_event *bev,
+ 	switch (misc) {
+ 	case PERF_RECORD_MISC_KERNEL:
+ 		dso_type = DSO_TYPE_KERNEL;
+-		head = &kerninfo->dsos__kernel;
++		head = &machine->kernel_dsos;
+ 		break;
+ 	case PERF_RECORD_MISC_GUEST_KERNEL:
+ 		dso_type = DSO_TYPE_GUEST_KERNEL;
+-		head = &kerninfo->dsos__kernel;
++		head = &machine->kernel_dsos;
+ 		break;
+ 	case PERF_RECORD_MISC_USER:
+ 	case PERF_RECORD_MISC_GUEST_USER:
+ 		dso_type = DSO_TYPE_USER;
+-		head = &kerninfo->dsos__user;
++		head = &machine->user_dsos;
+ 		break;
+ 	default:
+ 		goto out;
+@@ -1113,8 +1110,7 @@ int event__process_tracing_data(event_t *self,
+ }
+ 
+ int event__synthesize_build_id(struct dso *pos, u16 misc,
+-			       event__handler_t process,
+-			       struct kernel_info *kerninfo,
++			       event__handler_t process, struct machine *machine,
+ 			       struct perf_session *session)
+ {
+ 	event_t ev;
+@@ -1131,7 +1127,7 @@ int event__synthesize_build_id(struct dso *pos, u16 misc,
+ 	memcpy(&ev.build_id.build_id, pos->build_id, sizeof(pos->build_id));
+ 	ev.build_id.header.type = PERF_RECORD_HEADER_BUILD_ID;
+ 	ev.build_id.header.misc = misc;
+-	ev.build_id.pid = kerninfo->pid;
++	ev.build_id.pid = machine->pid;
+ 	ev.build_id.header.size = sizeof(ev.build_id) + len;
+ 	memcpy(&ev.build_id.filename, pos->long_name, pos->long_name_len);
+ 
+@@ -1142,7 +1138,7 @@ int event__synthesize_build_id(struct dso *pos, u16 misc,
+ 
+ static int __event_synthesize_build_ids(struct list_head *head, u16 misc,
+ 					event__handler_t process,
+-					struct kernel_info *kerninfo,
++					struct machine *machine,
+ 					struct perf_session *session)
+ {
+ 	struct dso *pos;
+@@ -1153,7 +1149,7 @@ static int __event_synthesize_build_ids(struct list_head *head, u16 misc,
+ 			continue;
+ 
+ 		err = event__synthesize_build_id(pos, misc, process,
+-					kerninfo, session);
++						 machine, session);
+ 		if (err < 0)
+ 			return err;
+ 	}
+@@ -1166,15 +1162,15 @@ int event__synthesize_build_ids(event__handler_t process,
+ {
+ 	int err = 0;
+ 	u16 kmisc, umisc;
+-	struct kernel_info *pos;
++	struct machine *pos;
+ 	struct rb_node *nd;
+ 
+ 	if (!dsos__read_build_ids(&session->header, true))
+ 		return 0;
+ 
+-	for (nd = rb_first(&session->kerninfo_root); nd; nd = rb_next(nd)) {
+-		pos = rb_entry(nd, struct kernel_info, rb_node);
+-		if (is_host_kernel(pos)) {
++	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
++		pos = rb_entry(nd, struct machine, rb_node);
++		if (machine__is_host(pos)) {
+ 			kmisc = PERF_RECORD_MISC_KERNEL;
+ 			umisc = PERF_RECORD_MISC_USER;
+ 		} else {
+@@ -1182,11 +1178,11 @@ int event__synthesize_build_ids(event__handler_t process,
+ 			umisc = PERF_RECORD_MISC_GUEST_USER;
+ 		}
+ 
+-		err = __event_synthesize_build_ids(&pos->dsos__kernel,
+-				kmisc, process, pos, session);
++		err = __event_synthesize_build_ids(&pos->kernel_dsos, kmisc,
++						   process, pos, session);
+ 		if (err == 0)
+-			err = __event_synthesize_build_ids(&pos->dsos__user,
+-					umisc, process, pos, session);
++			err = __event_synthesize_build_ids(&pos->user_dsos, umisc,
++							   process, pos, session);
+ 		if (err)
+ 			break;
+ 	}
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 2759154..f39443d 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -120,7 +120,7 @@ int event__process_tracing_data(event_t *self,
+ 
+ int event__synthesize_build_id(struct dso *pos, u16 misc,
+ 			       event__handler_t process,
+-			       struct kernel_info *kerninfo,
++			       struct machine *machine,
+ 			       struct perf_session *session);
+ int event__synthesize_build_ids(event__handler_t process,
+ 				struct perf_session *session);
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 7facd01..da3d4e8 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -245,7 +245,7 @@ void map_groups__init(struct map_groups *self)
+ 		self->maps[i] = RB_ROOT;
+ 		INIT_LIST_HEAD(&self->removed_maps[i]);
+ 	}
+-	 self->this_kerninfo = NULL;
++	self->machine = NULL;
+ }
+ 
+ void map_groups__flush(struct map_groups *self)
+@@ -513,133 +513,130 @@ struct map *maps__find(struct rb_root *maps, u64 ip)
+ 	return NULL;
+ }
+ 
+-struct kernel_info *add_new_kernel_info(struct rb_root *kerninfo_root,
+-			pid_t pid, const char *root_dir)
++struct machine *machines__add(struct rb_root *self, pid_t pid,
++			      const char *root_dir)
+ {
+-	struct rb_node **p = &kerninfo_root->rb_node;
++	struct rb_node **p = &self->rb_node;
+ 	struct rb_node *parent = NULL;
+-	struct kernel_info *kerninfo, *pos;
++	struct machine *pos, *machine = malloc(sizeof(*machine));
+ 
+-	kerninfo = malloc(sizeof(struct kernel_info));
+-	if (!kerninfo)
++	if (!machine)
+ 		return NULL;
+ 
+-	kerninfo->pid = pid;
+-	map_groups__init(&kerninfo->kmaps);
+-	kerninfo->root_dir = strdup(root_dir);
+-	RB_CLEAR_NODE(&kerninfo->rb_node);
+-	INIT_LIST_HEAD(&kerninfo->dsos__user);
+-	INIT_LIST_HEAD(&kerninfo->dsos__kernel);
+-	kerninfo->kmaps.this_kerninfo = kerninfo;
++	machine->pid = pid;
++	map_groups__init(&machine->kmaps);
++	machine->root_dir = strdup(root_dir);
++	RB_CLEAR_NODE(&machine->rb_node);
++	INIT_LIST_HEAD(&machine->user_dsos);
++	INIT_LIST_HEAD(&machine->kernel_dsos);
++	machine->kmaps.machine = machine;
+ 
+ 	while (*p != NULL) {
+ 		parent = *p;
+-		pos = rb_entry(parent, struct kernel_info, rb_node);
++		pos = rb_entry(parent, struct machine, rb_node);
+ 		if (pid < pos->pid)
+ 			p = &(*p)->rb_left;
+ 		else
+ 			p = &(*p)->rb_right;
+ 	}
+ 
+-	rb_link_node(&kerninfo->rb_node, parent, p);
+-	rb_insert_color(&kerninfo->rb_node, kerninfo_root);
++	rb_link_node(&machine->rb_node, parent, p);
++	rb_insert_color(&machine->rb_node, self);
+ 
+-	return kerninfo;
++	return machine;
+ }
+ 
+-struct kernel_info *kerninfo__find(struct rb_root *kerninfo_root, pid_t pid)
++struct machine *machines__find(struct rb_root *self, pid_t pid)
+ {
+-	struct rb_node **p = &kerninfo_root->rb_node;
++	struct rb_node **p = &self->rb_node;
+ 	struct rb_node *parent = NULL;
+-	struct kernel_info *kerninfo;
+-	struct kernel_info *default_kerninfo = NULL;
++	struct machine *machine;
++	struct machine *default_machine = NULL;
+ 
+ 	while (*p != NULL) {
+ 		parent = *p;
+-		kerninfo = rb_entry(parent, struct kernel_info, rb_node);
+-		if (pid < kerninfo->pid)
++		machine = rb_entry(parent, struct machine, rb_node);
++		if (pid < machine->pid)
+ 			p = &(*p)->rb_left;
+-		else if (pid > kerninfo->pid)
++		else if (pid > machine->pid)
+ 			p = &(*p)->rb_right;
+ 		else
+-			return kerninfo;
+-		if (!kerninfo->pid)
+-			default_kerninfo = kerninfo;
++			return machine;
++		if (!machine->pid)
++			default_machine = machine;
+ 	}
+ 
+-	return default_kerninfo;
++	return default_machine;
+ }
+ 
+-struct kernel_info *kerninfo__findhost(struct rb_root *kerninfo_root)
++/*
++ * FIXME: Why repeatedly search for this?
++ */
++struct machine *machines__find_host(struct rb_root *self)
+ {
+-	struct rb_node **p = &kerninfo_root->rb_node;
++	struct rb_node **p = &self->rb_node;
+ 	struct rb_node *parent = NULL;
+-	struct kernel_info *kerninfo;
++	struct machine *machine;
+ 	pid_t pid = HOST_KERNEL_ID;
+ 
+ 	while (*p != NULL) {
+ 		parent = *p;
+-		kerninfo = rb_entry(parent, struct kernel_info, rb_node);
+-		if (pid < kerninfo->pid)
++		machine = rb_entry(parent, struct machine, rb_node);
++		if (pid < machine->pid)
+ 			p = &(*p)->rb_left;
+-		else if (pid > kerninfo->pid)
++		else if (pid > machine->pid)
+ 			p = &(*p)->rb_right;
+ 		else
+-			return kerninfo;
++			return machine;
+ 	}
+ 
+ 	return NULL;
+ }
+ 
+-struct kernel_info *kerninfo__findnew(struct rb_root *kerninfo_root, pid_t pid)
++struct machine *machines__findnew(struct rb_root *self, pid_t pid)
+ {
+ 	char path[PATH_MAX];
+ 	const char *root_dir;
+-	int ret;
+-	struct kernel_info *kerninfo = kerninfo__find(kerninfo_root, pid);
++	struct machine *machine = machines__find(self, pid);
+ 
+-	if (!kerninfo || kerninfo->pid != pid) {
++	if (!machine || machine->pid != pid) {
+ 		if (pid == HOST_KERNEL_ID || pid == DEFAULT_GUEST_KERNEL_ID)
+ 			root_dir = "";
+ 		else {
+ 			if (!symbol_conf.guestmount)
+ 				goto out;
+ 			sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
+-			ret = access(path, R_OK);
+-			if (ret) {
++			if (access(path, R_OK)) {
+ 				pr_err("Can't access file %s\n", path);
+ 				goto out;
+ 			}
+ 			root_dir = path;
+ 		}
+-		kerninfo = add_new_kernel_info(kerninfo_root, pid, root_dir);
++		machine = machines__add(self, pid, root_dir);
+ 	}
+ 
+ out:
+-	return kerninfo;
++	return machine;
+ }
+ 
+-void kerninfo__process_allkernels(struct rb_root *kerninfo_root,
+-		process_kernel_info process,
+-		void *data)
++void machines__process(struct rb_root *self, machine__process_t process, void *data)
+ {
+ 	struct rb_node *nd;
+ 
+-	for (nd = rb_first(kerninfo_root); nd; nd = rb_next(nd)) {
+-		struct kernel_info *pos = rb_entry(nd, struct kernel_info,
+-							rb_node);
++	for (nd = rb_first(self); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+ 		process(pos, data);
+ 	}
+ }
+ 
+-char *kern_mmap_name(struct kernel_info *kerninfo, char *buff)
++char *machine__mmap_name(struct machine *self, char *buff)
+ {
+-	if (is_host_kernel(kerninfo))
++	if (machine__is_host(self))
+ 		sprintf(buff, "[%s]", "kernel.kallsyms");
+-	else if (is_default_guest(kerninfo))
++	else if (machine__is_default_guest(self))
+ 		sprintf(buff, "[%s]", "guest.kernel.kallsyms");
+ 	else
+-		sprintf(buff, "[%s.%d]", "guest.kernel.kallsyms", kerninfo->pid);
++		sprintf(buff, "[%s.%d]", "guest.kernel.kallsyms", self->pid);
+ 
+ 	return buff;
+ }
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 30d38d6..4c1c2da 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -5,6 +5,7 @@
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+ #include <stdio.h>
++#include <stdbool.h>
+ #include "types.h"
+ 
+ enum map_type {
+@@ -19,7 +20,7 @@ extern const char *map_type__name[MAP__NR_TYPES];
+ struct dso;
+ struct ref_reloc_sym;
+ struct map_groups;
+-struct kernel_info;
++struct machine;
+ 
+ struct map {
+ 	union {
+@@ -46,23 +47,23 @@ struct kmap {
+ };
+ 
+ struct map_groups {
+-	struct rb_root		maps[MAP__NR_TYPES];
+-	struct list_head	removed_maps[MAP__NR_TYPES];
+-	struct kernel_info	*this_kerninfo;
++	struct rb_root	 maps[MAP__NR_TYPES];
++	struct list_head removed_maps[MAP__NR_TYPES];
++	struct machine	 *machine;
+ };
+ 
+-/* Native host kernel uses -1 as pid index in kernel_info */
++/* Native host kernel uses -1 as pid index in machine */
+ #define	HOST_KERNEL_ID			(-1)
+ #define	DEFAULT_GUEST_KERNEL_ID		(0)
+ 
+-struct kernel_info {
+-	struct rb_node rb_node;
+-	pid_t pid;
+-	char *root_dir;
+-	struct list_head dsos__user;
+-	struct list_head dsos__kernel;
++struct machine {
++	struct rb_node	  rb_node;
++	pid_t		  pid;
++	char		  *root_dir;
++	struct list_head  user_dsos;
++	struct list_head  kernel_dsos;
+ 	struct map_groups kmaps;
+-	struct map *vmlinux_maps[MAP__NR_TYPES];
++	struct map	  *vmlinux_maps[MAP__NR_TYPES];
+ };
+ 
+ static inline struct kmap *map__kmap(struct map *self)
+@@ -124,36 +125,30 @@ int map_groups__clone(struct map_groups *self,
+ size_t map_groups__fprintf(struct map_groups *self, int verbose, FILE *fp);
+ size_t map_groups__fprintf_maps(struct map_groups *self, int verbose, FILE *fp);
+ 
+-struct kernel_info *add_new_kernel_info(struct rb_root *kerninfo_root,
+-			pid_t pid, const char *root_dir);
+-struct kernel_info *kerninfo__find(struct rb_root *kerninfo_root, pid_t pid);
+-struct kernel_info *kerninfo__findnew(struct rb_root *kerninfo_root, pid_t pid);
+-struct kernel_info *kerninfo__findhost(struct rb_root *kerninfo_root);
+-char *kern_mmap_name(struct kernel_info *kerninfo, char *buff);
++typedef void (*machine__process_t)(struct machine *self, void *data);
 +
- # CFLAGS and LDFLAGS are for the users to override from the command line.
++void machines__process(struct rb_root *self, machine__process_t process, void *data);
++struct machine *machines__add(struct rb_root *self, pid_t pid,
++			      const char *root_dir);
++struct machine *machines__find_host(struct rb_root *self);
++struct machine *machines__find(struct rb_root *self, pid_t pid);
++struct machine *machines__findnew(struct rb_root *self, pid_t pid);
++char *machine__mmap_name(struct machine *self, char *buff);
  
- #
+ /*
+  * Default guest kernel is defined by parameter --guestkallsyms
+  * and --guestmodules
+  */
+-static inline int is_default_guest(struct kernel_info *kerninfo)
++static inline bool machine__is_default_guest(struct machine *self)
+ {
+-	if (!kerninfo)
+-		return 0;
+-	return kerninfo->pid == DEFAULT_GUEST_KERNEL_ID;
++	return self ? self->pid == DEFAULT_GUEST_KERNEL_ID : false;
+ }
+ 
+-static inline int is_host_kernel(struct kernel_info *kerninfo)
++static inline bool machine__is_host(struct machine *self)
+ {
+-	if (!kerninfo)
+-		return 0;
+-	return kerninfo->pid == HOST_KERNEL_ID;
++	return self ? self->pid == HOST_KERNEL_ID : false;
+ }
+ 
+-typedef void (*process_kernel_info)(struct kernel_info *kerninfo, void *data);
+-void kerninfo__process_allkernels(struct rb_root *kerninfo_root,
+-				  process_kernel_info process,
+-				  void *data);
+-
+ static inline void map_groups__insert(struct map_groups *self, struct map *map)
+ {
+ 	maps__insert(&self->maps[map->type], map);
+@@ -197,10 +192,8 @@ int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
+ 
+ struct map *map_groups__find_by_name(struct map_groups *self,
+ 				     enum map_type type, const char *name);
+-struct map *map_groups__new_module(struct map_groups *self,
+-				    u64 start,
+-				    const char *filename,
+-				    struct kernel_info *kerninfo);
++struct map *map_groups__new_module(struct map_groups *self, u64 start,
++				   const char *filename, struct machine *machine);
+ 
+ void map_groups__flush(struct map_groups *self);
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index b7aade2..b745c1c 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -70,7 +70,7 @@ void perf_session__update_sample_type(struct perf_session *self)
+ int perf_session__create_kernel_maps(struct perf_session *self)
+ {
+ 	int ret;
+-	struct rb_root *root = &self->kerninfo_root;
++	struct rb_root *root = &self->machines;
+ 
+ 	ret = map_groups__create_kernel_maps(root, HOST_KERNEL_ID);
+ 	if (ret >= 0)
+@@ -97,7 +97,7 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
+ 	self->cwd = NULL;
+ 	self->cwdlen = 0;
+ 	self->unknown_events = 0;
+-	self->kerninfo_root = RB_ROOT;
++	self->machines = RB_ROOT;
+ 	self->ordered_samples.flush_limit = ULLONG_MAX;
+ 	INIT_LIST_HEAD(&self->ordered_samples.samples_head);
+ 
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 796e229..7125272 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -25,7 +25,7 @@ struct perf_session {
+ 	unsigned long		mmap_window;
+ 	struct rb_root		threads;
+ 	struct thread		*last_match;
+-	struct rb_root		kerninfo_root;
++	struct rb_root		machines;
+ 	struct events_stats	events_stats;
+ 	struct rb_root		stats_by_id;
+ 	unsigned long		event_total[PERF_RECORD_MAX];
+@@ -102,4 +102,29 @@ int perf_session__browse_hists(struct rb_root *hists, u64 nr_hists,
+ 			       u64 session_total, const char *helpline,
+ 			       const char *input_name);
+ #endif
++
++static inline
++struct machine *perf_session__find_host_machine(struct perf_session *self)
++{
++	return machines__find_host(&self->machines);
++}
++
++static inline
++struct machine *perf_session__find_machine(struct perf_session *self, pid_t pid)
++{
++	return machines__find(&self->machines, pid);
++}
++
++static inline
++struct machine *perf_session__findnew_machine(struct perf_session *self, pid_t pid)
++{
++	return machines__findnew(&self->machines, pid);
++}
++
++static inline
++void perf_session__process_machines(struct perf_session *self,
++				    machine__process_t process)
++{
++	return machines__process(&self->machines, process, self);
++}
+ #endif /* __PERF_SESSION_H */
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index e77c33a..dc04636 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -485,7 +485,7 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
+ 			       symbol_filter_t filter)
+ {
+ 	struct map_groups *kmaps = map__kmap(map)->kmaps;
+-	struct kernel_info *kerninfo = kmaps->this_kerninfo;
++	struct machine *machine = kmaps->machine;
+ 	struct map *curr_map = map;
+ 	struct symbol *pos;
+ 	int count = 0;
+@@ -508,8 +508,8 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
+ 
+ 			if (strcmp(curr_map->dso->short_name, module)) {
+ 				if (curr_map != map &&
+-					self->kernel == DSO_TYPE_GUEST_KERNEL &&
+-					is_default_guest(kerninfo)) {
++				    self->kernel == DSO_TYPE_GUEST_KERNEL &&
++				    machine__is_default_guest(machine)) {
+ 					/*
+ 					 * We assume all symbols of a module are
+ 					 * continuous in * kallsyms, so curr_map
+@@ -527,13 +527,13 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
+ 					pr_err("%s/proc/{kallsyms,modules} "
+ 					         "inconsistency while looking "
+ 						 "for \"%s\" module!\n",
+-						 kerninfo->root_dir, module);
++						 machine->root_dir, module);
+ 					curr_map = map;
+ 					goto discard_symbol;
+ 				}
+ 
+ 				if (curr_map->dso->loaded &&
+-					!is_default_guest(kmaps->this_kerninfo))
++				    !machine__is_default_guest(machine))
+ 					goto discard_symbol;
+ 			}
+ 			/*
+@@ -586,7 +586,7 @@ discard_symbol:		rb_erase(&pos->rb_node, root);
+ 
+ 	if (curr_map != map &&
+ 	    self->kernel == DSO_TYPE_GUEST_KERNEL &&
+-	    is_default_guest(kmaps->this_kerninfo)) {
++	    machine__is_default_guest(kmaps->machine)) {
+ 		dso__set_loaded(curr_map->dso, curr_map->type);
+ 	}
+ 
+@@ -1291,7 +1291,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 	char build_id_hex[BUILD_ID_SIZE * 2 + 1];
+ 	int ret = -1;
+ 	int fd;
+-	struct kernel_info *kerninfo;
++	struct machine *machine;
+ 	const char *root_dir;
+ 
+ 	dso__set_loaded(self, map->type);
+@@ -1301,10 +1301,10 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 	else if (self->kernel == DSO_TYPE_GUEST_KERNEL)
+ 		return dso__load_guest_kernel_sym(self, map, filter);
+ 
+-	if (map->groups && map->groups->this_kerninfo)
+-		kerninfo = map->groups->this_kerninfo;
++	if (map->groups && map->groups->machine)
++		machine = map->groups->machine;
+ 	else
+-		kerninfo = NULL;
++		machine = NULL;
+ 
+ 	name = malloc(size);
+ 	if (!name)
+@@ -1359,8 +1359,8 @@ more:
+ 			snprintf(name, size, "%s", self->long_name);
+ 			break;
+ 		case DSO__ORIG_GUEST_KMODULE:
+-			if (map->groups && map->groups->this_kerninfo)
+-				root_dir = map->groups->this_kerninfo->root_dir;
++			if (map->groups && map->groups->machine)
++				root_dir = map->groups->machine->root_dir;
+ 			else
+ 				root_dir = "";
+ 			snprintf(name, size, "%s%s", root_dir, self->long_name);
+@@ -1566,12 +1566,12 @@ static struct map *map__new2(u64 start, struct dso *dso, enum map_type type)
+ 
+ struct map *map_groups__new_module(struct map_groups *self, u64 start,
+ 				const char *filename,
+-				struct kernel_info *kerninfo)
++				struct machine *machine)
+ {
+ 	struct map *map;
+ 	struct dso *dso;
+ 
+-	dso = __dsos__findnew(&kerninfo->dsos__kernel, filename);
++	dso = __dsos__findnew(&machine->kernel_dsos, filename);
+ 	if (dso == NULL)
+ 		return NULL;
+ 
+@@ -1579,7 +1579,7 @@ struct map *map_groups__new_module(struct map_groups *self, u64 start,
+ 	if (map == NULL)
+ 		return NULL;
+ 
+-	if (is_host_kernel(kerninfo))
++	if (machine__is_host(machine))
+ 		dso->origin = DSO__ORIG_KMODULE;
+ 	else
+ 		dso->origin = DSO__ORIG_GUEST_KMODULE;
+@@ -1587,7 +1587,7 @@ struct map *map_groups__new_module(struct map_groups *self, u64 start,
+ 	return map;
+ }
+ 
+-static int map_groups__create_modules(struct kernel_info *kerninfo)
++static int map_groups__create_modules(struct machine *machine)
+ {
+ 	char *line = NULL;
+ 	size_t n;
+@@ -1597,10 +1597,10 @@ static int map_groups__create_modules(struct kernel_info *kerninfo)
+ 	const char *modules;
+ 	char path[PATH_MAX];
+ 
+-	if (is_default_guest(kerninfo))
++	if (machine__is_default_guest(machine))
+ 		modules = symbol_conf.default_guest_modules;
+ 	else {
+-		sprintf(path, "%s/proc/modules", kerninfo->root_dir);
++		sprintf(path, "%s/proc/modules", machine->root_dir);
+ 		modules = path;
+ 	}
+ 
+@@ -1608,7 +1608,7 @@ static int map_groups__create_modules(struct kernel_info *kerninfo)
+ 	if (file == NULL)
+ 		return -1;
+ 
+-	root_dir = kerninfo->root_dir;
++	root_dir = machine->root_dir;
+ 
+ 	while (!feof(file)) {
+ 		char name[PATH_MAX];
+@@ -1638,8 +1638,8 @@ static int map_groups__create_modules(struct kernel_info *kerninfo)
+ 		*sep = '\0';
+ 
+ 		snprintf(name, sizeof(name), "[%s]", line);
+-		map = map_groups__new_module(&kerninfo->kmaps,
+-				start, name, kerninfo);
++		map = map_groups__new_module(&machine->kmaps, start,
++					     name, machine);
+ 		if (map == NULL)
+ 			goto out_delete_line;
+ 		dso__kernel_module_get_build_id(map->dso, root_dir);
+@@ -1648,7 +1648,7 @@ static int map_groups__create_modules(struct kernel_info *kerninfo)
+ 	free(line);
+ 	fclose(file);
+ 
+-	return map_groups__set_modules_path(&kerninfo->kmaps, root_dir);
++	return map_groups__set_modules_path(&machine->kmaps, root_dir);
+ 
+ out_delete_line:
+ 	free(line);
+@@ -1820,16 +1820,16 @@ static int dso__load_guest_kernel_sym(struct dso *self, struct map *map,
+ {
+ 	int err;
+ 	const char *kallsyms_filename = NULL;
+-	struct kernel_info *kerninfo;
++	struct machine *machine;
+ 	char path[PATH_MAX];
+ 
+ 	if (!map->groups) {
+ 		pr_debug("Guest kernel map hasn't the point to groups\n");
+ 		return -1;
+ 	}
+-	kerninfo = map->groups->this_kerninfo;
++	machine = map->groups->machine;
+ 
+-	if (is_default_guest(kerninfo)) {
++	if (machine__is_default_guest(machine)) {
+ 		/*
+ 		 * if the user specified a vmlinux filename, use it and only
+ 		 * it, reporting errors to the user if it cannot be used.
+@@ -1845,7 +1845,7 @@ static int dso__load_guest_kernel_sym(struct dso *self, struct map *map,
+ 		if (!kallsyms_filename)
+ 			return -1;
+ 	} else {
+-		sprintf(path, "%s/proc/kallsyms", kerninfo->root_dir);
++		sprintf(path, "%s/proc/kallsyms", machine->root_dir);
+ 		kallsyms_filename = path;
+ 	}
+ 
+@@ -1856,9 +1856,8 @@ static int dso__load_guest_kernel_sym(struct dso *self, struct map *map,
+ out_try_fixup:
+ 	if (err > 0) {
+ 		if (kallsyms_filename != NULL) {
+-			kern_mmap_name(kerninfo, path);
+-			dso__set_long_name(self,
+-				strdup(path));
++			machine__mmap_name(machine, path);
++			dso__set_long_name(self, strdup(path));
+ 		}
+ 		map__fixup_start(map);
+ 		map__fixup_end(map);
+@@ -1908,15 +1907,14 @@ static void __dsos__fprintf(struct list_head *head, FILE *fp)
+ 	}
+ }
+ 
+-void dsos__fprintf(struct rb_root *kerninfo_root, FILE *fp)
++void dsos__fprintf(struct rb_root *machines, FILE *fp)
+ {
+ 	struct rb_node *nd;
+ 
+-	for (nd = rb_first(kerninfo_root); nd; nd = rb_next(nd)) {
+-		struct kernel_info *pos = rb_entry(nd, struct kernel_info,
+-				rb_node);
+-		__dsos__fprintf(&pos->dsos__kernel, fp);
+-		__dsos__fprintf(&pos->dsos__user, fp);
++	for (nd = rb_first(machines); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		__dsos__fprintf(&pos->kernel_dsos, fp);
++		__dsos__fprintf(&pos->user_dsos, fp);
+ 	}
+ }
+ 
+@@ -1935,19 +1933,15 @@ static size_t __dsos__fprintf_buildid(struct list_head *head, FILE *fp,
+ 	return ret;
+ }
+ 
+-size_t dsos__fprintf_buildid(struct rb_root *kerninfo_root,
+-		FILE *fp, bool with_hits)
++size_t dsos__fprintf_buildid(struct rb_root *machines, FILE *fp, bool with_hits)
+ {
+ 	struct rb_node *nd;
+ 	size_t ret = 0;
+ 
+-	for (nd = rb_first(kerninfo_root); nd; nd = rb_next(nd)) {
+-		struct kernel_info *pos = rb_entry(nd, struct kernel_info,
+-				rb_node);
+-		ret += __dsos__fprintf_buildid(&pos->dsos__kernel,
+-					fp, with_hits);
+-		ret += __dsos__fprintf_buildid(&pos->dsos__user,
+-					fp, with_hits);
++	for (nd = rb_first(machines); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		ret += __dsos__fprintf_buildid(&pos->kernel_dsos, fp, with_hits);
++		ret += __dsos__fprintf_buildid(&pos->user_dsos, fp, with_hits);
+ 	}
+ 	return ret;
+ }
+@@ -1964,14 +1958,12 @@ struct dso *dso__new_kernel(const char *name)
+ 	return self;
+ }
+ 
+-static struct dso *dso__new_guest_kernel(struct kernel_info *kerninfo,
++static struct dso *dso__new_guest_kernel(struct machine *machine,
+ 					const char *name)
+ {
+ 	char buff[PATH_MAX];
+-	struct dso *self;
++	struct dso *self = dso__new(name ?: machine__mmap_name(machine, buff));
+ 
+-	kern_mmap_name(kerninfo, buff);
+-	self = dso__new(name ?: buff);
+ 	if (self != NULL) {
+ 		dso__set_short_name(self, "[guest.kernel]");
+ 		self->kernel = DSO_TYPE_GUEST_KERNEL;
+@@ -1980,36 +1972,35 @@ static struct dso *dso__new_guest_kernel(struct kernel_info *kerninfo,
+ 	return self;
+ }
+ 
+-void dso__read_running_kernel_build_id(struct dso *self,
+-			struct kernel_info *kerninfo)
++void dso__read_running_kernel_build_id(struct dso *self, struct machine *machine)
+ {
+ 	char path[PATH_MAX];
+ 
+-	if (is_default_guest(kerninfo))
++	if (machine__is_default_guest(machine))
+ 		return;
+-	sprintf(path, "%s/sys/kernel/notes", kerninfo->root_dir);
++	sprintf(path, "%s/sys/kernel/notes", machine->root_dir);
+ 	if (sysfs__read_build_id(path, self->build_id,
+ 				 sizeof(self->build_id)) == 0)
+ 		self->has_build_id = true;
+ }
+ 
+-static struct dso *dsos__create_kernel(struct kernel_info *kerninfo)
++static struct dso *dsos__create_kernel(struct machine *machine)
+ {
+ 	const char *vmlinux_name = NULL;
+ 	struct dso *kernel;
+ 
+-	if (is_host_kernel(kerninfo)) {
++	if (machine__is_host(machine)) {
+ 		vmlinux_name = symbol_conf.vmlinux_name;
+ 		kernel = dso__new_kernel(vmlinux_name);
+ 	} else {
+-		if (is_default_guest(kerninfo))
++		if (machine__is_default_guest(machine))
+ 			vmlinux_name = symbol_conf.default_guest_vmlinux_name;
+-		kernel = dso__new_guest_kernel(kerninfo, vmlinux_name);
++		kernel = dso__new_guest_kernel(machine, vmlinux_name);
+ 	}
+ 
+ 	if (kernel != NULL) {
+-		dso__read_running_kernel_build_id(kernel, kerninfo);
+-		dsos__add(&kerninfo->dsos__kernel, kernel);
++		dso__read_running_kernel_build_id(kernel, machine);
++		dsos__add(&machine->kernel_dsos, kernel);
+ 	}
+ 	return kernel;
+ }
+@@ -2154,29 +2145,28 @@ out_free_comm_list:
+ 	return -1;
+ }
+ 
+-int map_groups__create_kernel_maps(struct rb_root *kerninfo_root, pid_t pid)
++int map_groups__create_kernel_maps(struct rb_root *machines, pid_t pid)
+ {
+-	struct kernel_info *kerninfo;
+ 	struct dso *kernel;
++	struct machine *machine = machines__findnew(machines, pid);
+ 
+-	kerninfo = kerninfo__findnew(kerninfo_root, pid);
+-	if (kerninfo == NULL)
++	if (machine == NULL)
+ 		return -1;
+-	kernel = dsos__create_kernel(kerninfo);
++	kernel = dsos__create_kernel(machine);
+ 	if (kernel == NULL)
+ 		return -1;
+ 
+-	if (__map_groups__create_kernel_maps(&kerninfo->kmaps,
+-			kerninfo->vmlinux_maps, kernel) < 0)
++	if (__map_groups__create_kernel_maps(&machine->kmaps,
++					     machine->vmlinux_maps, kernel) < 0)
+ 		return -1;
+ 
+ 	if (symbol_conf.use_modules &&
+-		map_groups__create_modules(kerninfo) < 0)
++	    map_groups__create_modules(machine) < 0)
+ 		pr_debug("Problems creating module maps, continuing anyway...\n");
+ 	/*
+ 	 * Now that we have all the maps created, just set the ->end of them:
+ 	 */
+-	map_groups__fixup_end(&kerninfo->kmaps);
++	map_groups__fixup_end(&machine->kmaps);
+ 	return 0;
+ }
+ 
+@@ -2223,7 +2213,7 @@ char *strxfrchar(char *s, char from, char to)
+ 	return s;
+ }
+ 
+-int map_groups__create_guest_kernel_maps(struct rb_root *kerninfo_root)
++int map_groups__create_guest_kernel_maps(struct rb_root *machines)
+ {
+ 	int ret = 0;
+ 	struct dirent **namelist = NULL;
+@@ -2234,8 +2224,7 @@ int map_groups__create_guest_kernel_maps(struct rb_root *kerninfo_root)
+ 	if (symbol_conf.default_guest_vmlinux_name ||
+ 	    symbol_conf.default_guest_modules ||
+ 	    symbol_conf.default_guest_kallsyms) {
+-		map_groups__create_kernel_maps(kerninfo_root,
+-					DEFAULT_GUEST_KERNEL_ID);
++		map_groups__create_kernel_maps(machines, DEFAULT_GUEST_KERNEL_ID);
+ 	}
+ 
+ 	if (symbol_conf.guestmount) {
+@@ -2256,8 +2245,7 @@ int map_groups__create_guest_kernel_maps(struct rb_root *kerninfo_root)
+ 				pr_debug("Can't access file %s\n", path);
+ 				goto failure;
+ 			}
+-			map_groups__create_kernel_maps(kerninfo_root,
+-							pid);
++			map_groups__create_kernel_maps(machines, pid);
+ 		}
+ failure:
+ 		free(namelist);
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 478f5ab..ed885b0 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -186,8 +186,7 @@ enum dso_origin {
+ char dso__symtab_origin(const struct dso *self);
+ void dso__set_long_name(struct dso *self, char *name);
+ void dso__set_build_id(struct dso *self, void *build_id);
+-void dso__read_running_kernel_build_id(struct dso *self,
+-		struct kernel_info *kerninfo);
++void dso__read_running_kernel_build_id(struct dso *self, struct machine *machine);
+ struct symbol *dso__find_symbol(struct dso *self, enum map_type type, u64 addr);
+ struct symbol *dso__find_symbol_by_name(struct dso *self, enum map_type type,
+ 					const char *name);
 -- 
 1.6.2.5
 
