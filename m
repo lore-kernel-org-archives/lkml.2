@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab0D1QNJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 12:13:09 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:48640 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab0D1QNH (ORCPT
+	id S1751923Ab0D1IYQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 04:24:16 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57340 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab0D1IYN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 12:13:07 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Joe Perches <joe@perches.com>
-Cc: Greg KH <gregkh@suse.de>, Greg KH <greg@kroah.com>,
-       devel@driverdev.osuosl.org, Scott Smedley <ss@aao.gov.au>,
-       Jason Baldus <jason.baldus@gmail.com>, linux-kernel@vger.kernel.org,
-       Harley Sweeten <hsweeten@visionengravers.com>,
-       Simon Horman <horms@verge.net.au>
-Subject: Re: [PATCH 1/3] drivers/staging/dt3155: Integrate 3 badly styled files into 1 clean file
-In-Reply-To: Your message of "Tue, 27 Apr 2010 23:00:30 PDT."
-             <1272434430.23132.35.camel@Joe-Laptop.home>
-From: Valdis.Kletnieks@vt.edu
-References: <20100329032301.GC27607@verge.net.au> <cover.1269847733.git.joe@perches.com> <ba7a1e2464417043f00f78f6ddaab260c23c3cc9.1269847733.git.joe@perches.com> <20100427230228.GB17260@kroah.com> <1272432603.23132.30.camel@Joe-Laptop.home> <20100428053427.GA14510@kroah.com> <1272433474.23132.34.camel@Joe-Laptop.home> <20100428055237.GA14978@suse.de>
-            <1272434430.23132.35.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1272471159_4290P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 28 Apr 2010 12:12:39 -0400
-Message-ID: <10533.1272471159@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020207.4BD85E78.014C,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	Wed, 28 Apr 2010 04:24:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=FA1wGKD4W7/LWxK/0sh+oTt5h7J8FyRYbBviA9jOS+fr/FyqUpsI6O4/dSU0vCDsCz
+         REUkc7PeMinGlgB8EtN4Y2+N0xrZv2lvX6TplpPmYBZe9NSV1wXEmK0Turvh93OttbSh
+         9Y9nAcL/IcjgG5KGqLpvDD41VfYCrUO1Iv6nA=
+MIME-Version: 1.0
+In-Reply-To: <20100428081545.GA19027@windriver.com>
+References: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> 
+	<u2w7b6bb4a51004280047s8748cbfbi7ed8e2a238121fa9@mail.gmail.com> 
+	<q2j412e6f7f1004280052ice434710ra17a4516236bd3f3@mail.gmail.com> 
+	<20100428081545.GA19027@windriver.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Wed, 28 Apr 2010 16:23:52 +0800
+Message-ID: <u2t412e6f7f1004280123k642a1511gbce3ed784431dc1d@mail.gmail.com>
+Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
+To: Yong Zhang <yong.zhang@windriver.com>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Roland Dreier <rolandd@cisco.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       David Howells <dhowells@redhat.com>, Takashi Iwai <tiwai@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1272471159_4290P
-Content-Type: text/plain; charset=us-ascii
+On Wed, Apr 28, 2010 at 4:15 PM, Yong Zhang <yong.zhang@windriver.com> wrote:
+>
+> What do you mean "we don't need these processes"?
 
-On Tue, 27 Apr 2010 23:00:30 PDT, Joe Perches said:
-> On Tue, 2010-04-27 at 22:52 -0700, Greg KH wrote:
-> > > I seem to be learning that you little taste.
-> > -ENOPARSE
-> 
-> Choosing competing patches based on date received
-> order not quality is poor taste.
+If the work is less than the workers, we don't need the workers at the
+tail of the exculsive list.
 
-So you're saying when Greg gets a somewhat ugly but passable patch 2 weeks ago,
-he's supposed to *just know* that you'll be submitting a possibly better one 2
-weeks later and wait for it to show up?
+>
+>> without them, why we wake them up?
+>
+> So some processs(at the tail of exclusive list)will be treated abnormally
+> and it will sleep for a long time, is this reasonable?
+>
 
-How is that supposed to work in reality?
+If there isn't enough work to be done, we'd better not disrupt them
+and  leave them sleeping forever to keep the scheduler happier. Do we
+have reason to keep fair to all the workers? Does it have benefit?
 
-
-
-
---==_Exmh_1272471159_4290P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFL2F53cC3lWbTT17ARAjOfAJ4i8f4GGHWfgpz4KrRmxUUTX5otuACfWqAf
-3z8xX7pDYfajPjXTYVxl6WA=
-=0Trx
------END PGP SIGNATURE-----
-
---==_Exmh_1272471159_4290P--
-
+-- 
+Regards，
+Changli Gao(xiaosuo@gmail.com)
