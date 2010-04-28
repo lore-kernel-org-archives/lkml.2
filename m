@@ -1,201 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab0D1LSB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 07:18:01 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:12134 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab0D1LR5 (ORCPT
+	id S1756100Ab0D1RpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 13:45:15 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:53473 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756071Ab0D1RpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 07:17:57 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=rmuEWoslcRmU+q+05zdv5BdQ8aMU0HJu/fjoI7PA5Icpo/I4RJZghRvFnlTw7BipB
-	4WzhhewtHUzI7LnJ252Ww==
-Subject: [PATCH v2 2/6] sched: accumulate per-cfs_rq cpu usage
-To: linux-kernel@vger.kernel.org
-From: Paul Turner <pjt@google.com>
-Cc: Paul Menage <menage@google.com>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-       Dhaval Giani <dhaval@linux.vnet.ibm.com>,
-       Gautham R Shenoy <ego@in.ibm.com>,
-       Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-       Herbert Poetzl <herbert@13thfloor.at>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       Chris Friesen <cfriesen@nortel.com>, Avi Kivity <avi@redhat.com>,
-       Bharata B Rao <bharata@linux.vnet.ibm.com>,
-       Nikhil Rao <ncrao@google.com>, Ingo Molnar <mingo@elte.hu>,
-       Pavel Emelyanov <xemul@openvz.org>, Mike Waychison <mikew@google.com>,
-       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Wed, 28 Apr 2010 04:16:56 -0700
-Message-ID: <20100428111656.7954.19756.stgit@kitami.corp.google.com>
-In-Reply-To: <20100428110720.7954.53537.stgit@kitami.corp.google.com>
-References: <20100428110720.7954.53537.stgit@kitami.corp.google.com>
-User-Agent: StGit/0.15
+	Wed, 28 Apr 2010 13:45:10 -0400
+Date: Wed, 28 Apr 2010 13:45:07 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Greg KH <greg@kroah.com>
+Cc: Tejun Heo <tj@kernel.org>, Jiri Benc <jbenc@suse.cz>,
+       Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk, Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <jkosina@suse.cz>,
+       Anton Blanchard <anton@samba.org>
+Subject: Re: [171/197] module: fix __module_ref_addr()
+Message-ID: <20100428174507.GA4149@Krystal>
+References: <20100422191857.GA13268@kroah.com> <20100422190922.702027944@kvm.kroah.org> <20100428165201.3d7d6b4a@griffin.suse.cz> <20100428162056.GA2846@Krystal> <20100428185550.4406319c@logostar.upir.cz> <4BD86F3D.7040907@kernel.org> <20100428172944.GA14660@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100428172944.GA14660@kroah.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:43:09 up 95 days, 20:20,  6 users,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce account_cfs_rq_quota() to account bandwidth usage on the cfs_rq
-level versus task_groups for which bandwidth has been assigned.  This is
-tracked by whether the local cfs_rq->quota_assigned is finite or infinite
-(RUNTIME_INF).
+* Greg KH (greg@kroah.com) wrote:
+> On Wed, Apr 28, 2010 at 07:24:13PM +0200, Tejun Heo wrote:
+> > On 04/28/2010 06:55 PM, Jiri Benc wrote:
+> > > On Wed, 28 Apr 2010 12:20:56 -0400, Mathieu Desnoyers wrote:
+> > >> Can you try reverting commit c8d52465f95c4187871f8e65666c07806ca06d41 and see if
+> > >> it helps ?
+> > > 
+> > > It doesn't. The produced code is identical.
+> > > 
+> > >> If you have other compiler versions handy, that would also be helpful to see if
+> > >> the problem is specific to the gcc version you are using.
+> > > 
+> > > Tried 4.5.0, the same problem (at least looking at the produced assembler
+> > > code, I haven't booted the kernel, but it looks very similar to 4.3.3).
+> > 
+> > I wrote on the bugzilla but this is not a compiler bug but the -stable
+> > patch shouldn't have been applied only to 2.6.33.  Not 2.6.32.  This
+> > is because till 2.6.32, ia64 hadn't been converted to dynamic percpu
+> > allocator, so its static and dynamic percpu areas were separate and
+> > the per_cpu_ptr() wouldn't do the offsetting the module code expects
+> > there.  So, please revert the patch from 2.6.32.
+> 
+> Ah crap, I missed that.  I'll go revert it from .32 now, sorry about
+> that.
+> 
+> greg k-h
 
-For cfs_rq's that belong to a bandwidth constrained task_group we introduce
-tg_request_cfs_quota() which attempts to allocate quota from the global pool
-for use locally.  Updates involving the global pool are currently protected
-under cfs_bandwidth->lock, local pools are protected by rq->lock.
+My bad, I indicated that it should be applied to 2.6.29.x through 2.6.33.x in
+the changelog.
 
-This patch only attempts to assign and track quota, no action is taken in the
-case that cfs_rq->quota_used exceeds cfs_rq->quota_assigned.
+Sorry,
 
-Signed-off-by: Paul Turner <pjt@google.com>
-Signed-off-by: Nikhil Rao <ncrao@google.com>
----
- include/linux/sched.h |    4 ++++
- kernel/sched.c        |   13 +++++++++++++
- kernel/sched_fair.c   |   50 +++++++++++++++++++++++++++++++++++++++++++++++++
- kernel/sysctl.c       |   10 ++++++++++
- 4 files changed, 77 insertions(+), 0 deletions(-)
+Mathieu
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index dad7f66..8603645 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1903,6 +1903,10 @@ int sched_rt_handler(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos);
- 
-+#ifdef CONFIG_CFS_BANDWIDTH
-+extern unsigned int sysctl_sched_cfs_bandwidth_slice;
-+#endif
-+
- extern unsigned int sysctl_sched_compat_yield;
- 
- #ifdef CONFIG_RT_MUTEXES
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 96db602..3b53695 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1912,6 +1912,19 @@ static const struct sched_class rt_sched_class;
-  * default: 0.5s
-  */
- static u64 sched_cfs_bandwidth_period = 500000000ULL;
-+
-+/*
-+ * default slice of quota to allocate from global tg to local cfs_rq pool on
-+ * each refresh
-+ * default: 10ms
-+ */
-+unsigned int sysctl_sched_cfs_bandwidth_slice = 10000UL;
-+
-+static inline u64 sched_cfs_bandwidth_slice(void)
-+{
-+	return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
-+}
-+
- #endif
- 
- #define sched_class_highest (&rt_sched_class)
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index a61bc24..1db1991 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -267,6 +267,16 @@ find_matching_se(struct sched_entity **se, struct sched_entity **pse)
- 
- #endif	/* CONFIG_FAIR_GROUP_SCHED */
- 
-+#ifdef CONFIG_CFS_BANDWIDTH
-+static inline struct cfs_bandwidth *tg_cfs_bandwidth(struct task_group *tg)
-+{
-+	return &tg->cfs_bandwidth;
-+}
-+
-+static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
-+		unsigned long delta_exec);
-+#endif
-+
- 
- /**************************************************************
-  * Scheduling class tree data structure manipulation methods:
-@@ -546,6 +556,9 @@ static void update_curr(struct cfs_rq *cfs_rq)
- 		cpuacct_charge(curtask, delta_exec);
- 		account_group_exec_runtime(curtask, delta_exec);
- 	}
-+#ifdef CONFIG_CFS_BANDWIDTH
-+	account_cfs_rq_quota(cfs_rq, delta_exec);
-+#endif
- }
- 
- static inline void
-@@ -1148,6 +1161,43 @@ static void yield_task_fair(struct rq *rq)
- }
- 
- #ifdef CONFIG_CFS_BANDWIDTH
-+static u64 tg_request_cfs_quota(struct task_group *tg)
-+{
-+	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
-+	u64 delta = 0;
-+
-+	if (cfs_b->runtime > 0 || cfs_b->quota == RUNTIME_INF) {
-+		raw_spin_lock(&cfs_b->lock);
-+		/*
-+		 * it's possible a bandwidth update has changed the global
-+		 * pool.
-+		 */
-+		if (cfs_b->quota == RUNTIME_INF)
-+			delta = sched_cfs_bandwidth_slice();
-+		else {
-+			delta = min(cfs_b->runtime, 
-+					sched_cfs_bandwidth_slice());
-+			cfs_b->runtime -= delta;
-+		}
-+		raw_spin_unlock(&cfs_b->lock);
-+	}
-+	return delta;
-+}
-+
-+static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
-+		unsigned long delta_exec)
-+{
-+	if (cfs_rq->quota_assigned == RUNTIME_INF)
-+		return;
-+
-+	cfs_rq->quota_used += delta_exec;
-+
-+	if (cfs_rq->quota_used < cfs_rq->quota_assigned)
-+		return;
-+
-+	cfs_rq->quota_assigned += tg_request_cfs_quota(cfs_rq->tg);
-+}
-+
- static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
- {
- 	return 1;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 8686b0f..d0e17ca 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -354,6 +354,16 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-+#ifdef CONFIG_CFS_BANDWIDTH
-+	{
-+		.procname	= "sched_cfs_bandwidth_slice_us",
-+		.data		= &sysctl_sched_cfs_bandwidth_slice,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &one,
-+	},
-+#endif
- #ifdef CONFIG_PROVE_LOCKING
- 	{
- 		.procname	= "prove_locking",
 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
