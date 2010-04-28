@@ -1,97 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab0D3RN2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Apr 2010 13:13:28 -0400
-Received: from www.tglx.de ([62.245.132.106]:36196 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932747Ab0D3RMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Apr 2010 13:12:42 -0400
-Date: Fri, 30 Apr 2010 12:53:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-cc: davem@davemloft.net, arjan@linux.jf.intel.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH linux-next v2 1/2] irq: Add CPU mask affinity hint
-In-Reply-To: <20100430085150.4630.46790.stgit@ppwaskie-hc2.jf.intel.com>
-Message-ID: <alpine.LFD.2.00.1004301249540.2951@localhost.localdomain>
-References: <20100430085150.4630.46790.stgit@ppwaskie-hc2.jf.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932802Ab0D3RNk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Apr 2010 13:13:40 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:45002 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932800Ab0D3RMo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Apr 2010 13:12:44 -0400
+Date: Wed, 28 Apr 2010 07:52:44 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: rjw@sisk.pl, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+       Nigel Cunningham <ncunningham@crca.org.au>
+Subject: Re: [PATCH 3/5] PM / Hibernate: separate block_io
+Message-ID: <20100428055244.GA3501@ucw.cz>
+References: <1272356118-10012-1-git-send-email-jslaby@suse.cz>
+ <1272356118-10012-3-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272356118-10012-3-git-send-email-jslaby@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010, Peter P Waskiewicz Jr wrote:
+Hi!
 
-> This patch adds a cpumask affinity hint to the irq_desc
-> structure, along with a registration function and a read-only
-> proc entry for each interrupt.
+> Move block I/O operations to a separate file. It is because it will
+> be used later not only by the swap writer.
 > 
-> This affinity_hint handle for each interrupt can be used by
-> underlying drivers that need a better mechanism to control
-> interrupt affinity.  The underlying driver can register a
-> cpumask for the interrupt, which will allow the driver to
-> provide the CPU mask for the interrupt to anything that
-> requests it.  The intent is to extend the userspace daemon,
-> irqbalance, to help hint to it a preferred CPU mask to balance
-> the interrupt into.
-> 
-> Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> ---
-> 
->  include/linux/interrupt.h |   13 +++++++++++++
->  include/linux/irq.h       |    1 +
->  kernel/irq/manage.c       |   28 ++++++++++++++++++++++++++++
->  kernel/irq/proc.c         |   33 +++++++++++++++++++++++++++++++++
->  4 files changed, 75 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-> index 75f3f00..9c9ea2a 100644
-> --- a/include/linux/interrupt.h
-> +++ b/include/linux/interrupt.h
-> @@ -209,6 +209,9 @@ extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
->  extern int irq_can_set_affinity(unsigned int irq);
->  extern int irq_select_affinity(unsigned int irq);
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Nigel Cunningham <ncunningham@crca.org.au>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+
+> +++ b/kernel/power/block_io.c
+> @@ -0,0 +1,103 @@
+> +/*
+> + * This file provides functions for block I/O operations on swap/file.
+> + *
+> + * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@suse.cz>
+
+That address no longer works, but keeps popping up....
+
+> diff --git a/kernel/power/power.h b/kernel/power/power.h
+> index b1e207d..006270f 100644
+> --- a/kernel/power/power.h
+> +++ b/kernel/power/power.h
+> @@ -142,6 +142,15 @@ extern int swsusp_read(unsigned int *flags_p);
+>  extern int swsusp_write(unsigned int flags);
+>  extern void swsusp_close(fmode_t);
 >  
-> +extern int irq_register_affinity_hint(unsigned int irq,
-> +                                      const struct cpumask *m);
+> +/* kernel/power/block_io.c */
+> +extern struct block_device *hib_resume_bdev;
 
-I think we can do with a single funtion irq_set_affinity_hint() and
-let the caller set the pointer to NULL.
+It is slightly sad that this is now not only static, but also
+cross-module...
 
->  
-> +int irq_register_affinity_hint(unsigned int irq, const struct cpumask *m)
-> +{
-> +	struct irq_desc *desc = irq_to_desc(irq);
-> +	unsigned long flags;
 
-  desc needs to be checked. It might be NULL !
-
+> +extern int hib_bio_read_page(pgoff_t page_off, void *addr,
+> +		struct bio **bio_chain);
+> +extern int hib_bio_write_page(pgoff_t page_off, void *addr,
+> +		struct bio **bio_chain);
+> +extern int hib_wait_on_bio_chain(struct bio **bio_chain);
 > +
-> +	raw_spin_lock_irqsave(&desc->lock, flags);
-> +	desc->affinity_hint = m;
-> +	raw_spin_unlock_irqrestore(&desc->lock, flags);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(irq_register_affinity_hint);
 
-  EXPORT_SYMBOL_GPL please
+Does the documentation usually go to the header in these cases?
 
-> +static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
-> +{
-> +	struct irq_desc *desc = irq_to_desc((long)m->private);
-> +	unsigned long flags;
-> +	int ret = -EINVAL;
-> +
-> +	raw_spin_lock_irqsave(&desc->lock, flags);
-> +	if (desc->affinity_hint) {
-> +		seq_cpumask(m, desc->affinity_hint);
-
-  Please make a local copy under desc->mask and do the seq_cpumask()
-  stuff on the local copy outside of desc->lock
-
-Thanks,
-
-	tglx
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
