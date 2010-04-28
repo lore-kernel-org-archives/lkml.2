@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272Ab0D1W3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 18:29:37 -0400
-Received: from www.tglx.de ([62.245.132.106]:57518 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756337Ab0D1W3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 18:29:36 -0400
-Date: Thu, 29 Apr 2010 00:28:00 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Guillaume Knispel <gknispel@proformatique.com>
-cc: linux-kernel@vger.kernel.org, Linuxppc-dev@lists.ozlabs.org,
-       Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Haavard Skinnemoen <hskinnemoen@atmel.com>, Ingo Molnar <mingo@elte.hu>,
-       Lars-Peter Clausen <lars@metafoo.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Michael Buesch <mb@bu3sch.de>, Peter Zijlstra <peterz@infradead.org>,
-       Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 1/2] genirq: reliably replay pending edge-triggered irq
-In-Reply-To: <20100428235657.7120edd9.gknispel@proformatique.com>
-Message-ID: <alpine.LFD.2.00.1004290027090.2951@localhost.localdomain>
-References: <1271941798-9659-1-git-send-email-gknispel@proformatique.com> <1271941798-9659-2-git-send-email-gknispel@proformatique.com> <alpine.LFD.2.00.1004271537130.2951@localhost.localdomain> <20100428235657.7120edd9.gknispel@proformatique.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757263Ab0D1WbK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 18:31:10 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:54699 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754967Ab0D1WbH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 18:31:07 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <201004282258.51354.rjw@sisk.pl>
+References: <1272429119-12103-1-git-send-email-arve@android.com>
+	 <1272429119-12103-2-git-send-email-arve@android.com>
+	 <1272429119-12103-3-git-send-email-arve@android.com>
+	 <201004282258.51354.rjw@sisk.pl>
+Date: Wed, 28 Apr 2010 15:31:03 -0700
+Message-ID: <k2gd6200be21004281531y270549d7g8383f2c8a55038d4@mail.gmail.com>
+Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend 
+	blockers from user-space
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Jim Collar <jim.collar@eqware.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Avi Kivity <avi@redhat.com>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Magnus Damm <damm@igel.co.jp>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Apr 2010, Guillaume Knispel wrote:
+2010/4/28 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Wednesday 28 April 2010, Arve Hjønnevåg wrote:
+>> Add a misc device, "suspend_blocker", that allows user-space processes
+>> to block auto suspend. The device has ioctls to create a suspend_blocker,
+>> and to block and unblock suspend. To delete the suspend_blocker, close
+>> the device.
+>>
+>> Signed-off-by: Arve Hjønnevåg <arve@android.com>
+> ...
+>> +
+>> +#include <linux/fs.h>
+>> +#include <linux/miscdevice.h>
+>> +#include <linux/module.h>
+>> +#include <linux/uaccess.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/suspend_blocker.h>
+>> +#include <linux/suspend_block_dev.h>
+>> +
+>> +enum {
+>> +     DEBUG_FAILURE   = BIT(0),
+>> +};
+>> +static int debug_mask = DEBUG_FAILURE;
+>
+> What's the exact purpose of this?
 
-> On Tue, 27 Apr 2010 15:42:11 +0200 (CEST)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> > On Thu, 22 Apr 2010, Guillaume Knispel wrote:
-> [snip] 
-> > > acked and masked at controller level and IRQ_PENDING is set.
-> > > ---
-> > >  arch/arm/Kconfig                                   |    4 ----
-> > >  arch/arm/configs/acs5k_defconfig                   |    1 -
-> > >  arch/arm/configs/acs5k_tiny_defconfig              |    1 -
-> > 
-> >    Changing the defconfigs should be a separate patch and I'm not
-> >    going to push such a thing through the genirq tree. The stale
-> >    entries do not hurt.
-> 
-> Ok
-> In this separate patch, to I put "genirq" in the title?
-> Do I put it in the same series?
+To show errors returned to user space. I can turn it off by default if you want.
 
-Just keep them out for now and send them to the arch maintainers once
-the change hits linus tree.
+>
+>> +module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
+>> +
+>> +static DEFINE_MUTEX(ioctl_lock);
+>> +
+>> +struct user_suspend_blocker {
+>> +     struct suspend_blocker  blocker;
+>> +     char                    name[0];
+>> +};
+>
+> Why is this not in a header?
 
-Thanks,
+It's private to this file.
 
-	tglx
+>
+> Rafael
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+
+
+-- 
+Arve Hjønnevåg
