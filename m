@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab0D1PpG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:45:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7777 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755186Ab0D1PpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:45:04 -0400
-Date: Wed, 28 Apr 2010 11:44:57 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, jens.axboe@oracle.com
-Subject: Re: CFQ is broken for CONFIG_BLK_CGROUP=y, CFQ_GROUP_IOSCHED=n
-Message-ID: <20100428154457.GC16033@redhat.com>
-References: <877hnrg30c.fsf@openvz.org> <20100428150959.GA16033@redhat.com> <87ljc7egil.fsf@openvz.org>
+	id S1755299Ab0D1Pc2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 11:32:28 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:46043 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab0D1Pc1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 11:32:27 -0400
+Date: Wed, 28 Apr 2010 21:02:19 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Ingo Molnar <mingo@redhat.com>, Venkatesh Pallipadi <venki@google.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, ego@in.ibm.com
+Subject: [PATCH] sched: Fix group_capacity for sched_smt_powersavings=1
+Message-ID: <20100428153219.GM5781@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <87ljc7egil.fsf@openvz.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 07:36:02PM +0400, Dmitry Monakhov wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
-> 
-> > On Wed, Apr 28, 2010 at 04:44:51PM +0400, Dmitry Monakhov wrote:
-> >> 
-> >> I've had an  oops on kernel boot due to NULL pointer deference
-> >> linux-2.6-block/for-next HEAD:7eaed1226ab411ee5dc8c34fc0d8034e4c98e3c6
-> >> I've enabled CONFIG_BLK_CGROUP, but not CFQ_GROUP_IOSCHED
-> >> In this case cfq_ref_get_cfqg() defined as 
-> >> static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
-> >> {
-> >>         return NULL;
-> >> }
-> >> So following call trace is simply NOOP
-> >> cfq_set_request()
-> >>  rq->elevator_private3 = cfq_ref_get_cfqg(cfqq->cfqg);
-> >> 
-> >> Which later result in OOPS on bio insertion
-> >> cfq_insert_request
-> >>  -> blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,...)
-> >>     -> spin_lock_irqsave(&blkg->stats_lock, flags);
-> >> 
-> >> Bad commit.
-> >> >From 7f1dc8a2d2f45fc557b27fd56115338b1d34fc24 Mon Sep 17 00:00:00 2001
-> >> From: Vivek Goyal <vgoyal@redhat.com>
-> >> Date: Wed, 21 Apr 2010 17:44:16 +0200
-> >> Subject: [PATCH] blkio: Fix blkio crash during rq stat update
-> >
-> > Dmitry, this patch should fix the issue. Can you please give it a try.
-> Yes. the issue is gone.
-> >
-> > Jens, I know you don't like this form of cfq_ref_get_cfqg(), but this
-> > seems to be the simplest solution to fix it.
-> IMHO following fix is simpler, and cleaner.
+Hi Peter,
 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 286008c..0f3eb70 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -1094,7 +1094,7 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
->  
->  static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
->  {
-> -	return NULL;
-> +	return cfqg;
->  }
+This is repost of the same patch http://lkml.org/lkml/2010/4/1/71
+(and http://lkml.org/lkml/2010/3/2/216)
 
-Thanks Dmitry. I like it. simpler.
+After applying Suresh's fixes from discussion thread
+http://lkml.org/lkml/2010/2/12/352, we still need the attached patch
+to restore sched_smt_powersavings=1 functionality where tasks prefer
+sibling threads and keep more cores idle.
 
-Vivek
+Please apply to sched-tip, the patch is rebased and tested on today's
+sched-tip master.
+
+The attached patch will run 4 while(1) loops in two cores when
+sched_smt_power_savings=1.  Tested on two socket, quad core, hyper
+threaded system.
+
+Additional testing was done on POWER platform where
+sched_smt_powersavings was able to consolidate tasks on sibling
+threads leaving more idle cores.
+
+Thanks,
+Vaidy
+---
+        sched: Fix group_capacity for sched_smt_powersavings=1
+
+        sched_smt_powersavings for threaded systems need this fix for
+        consolidation to sibling threads to work.  Since threads have 
+        fractional capacity, group_capacity will turn out to be one 
+        always and not accommodate another task in the sibling thread.
+        
+        This fix makes group_capacity a function of cpumask_weight that
+        will enable the power saving load balancer to pack tasks among
+        sibling threads and keep more cores idle.
+
+Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 5a5ea2c..7c0a29a 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2538,6 +2538,21 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+ 		 */
+ 		if (prefer_sibling)
+ 			sgs.group_capacity = min(sgs.group_capacity, 1UL);
++		/*
++		 * If power savings balance is set at this domain, then
++		 * make capacity equal to number of hardware threads to
++		 * accommodate more tasks until capacity is reached.
++		 */
++		else if (sd->flags & SD_POWERSAVINGS_BALANCE)
++			sgs.group_capacity =
++				cpumask_weight(sched_group_cpus(group));
++
++			/*
++			 * The default group_capacity is rounded from sum of
++			 * fractional cpu_powers of sibling hardware threads
++			 * in order to enable fair use of available hardware
++			 * resources.
++			 */
+
+ 		if (local_group) {
+ 			sds->this_load = sgs.avg_load;
+@@ -2863,7 +2878,8 @@ static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle)
+ 		    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
+ 			return 0;
+
+-		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
++		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP &&
++		    sched_smt_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
+ 			return 0;
+ 	}
+
