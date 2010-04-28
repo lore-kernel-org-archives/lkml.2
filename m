@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab0D1Oxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 10:53:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62333 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581Ab0D1Oxq convert rfc822-to-8bit (ORCPT
+	id S1755902Ab0D1QR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 12:17:58 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:40643 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755680Ab0D1QRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 10:53:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=lFWwhHToMSZQ1TjC8wvd5otMovFWFTg1XW0QiP2b1BFPdfGOi3XCeh+rWbE46Up0/z
-         d3FU9KsYmc9M03OixQZVAucDfz0jaPeuEM7M8B917fgC0m2Q7EC2F766aJJYTMOEe3+K
-         8rjNHuHEyA9H1gpVO1CItHiKG4qYgPyzBCEH0=
-MIME-Version: 1.0
-In-Reply-To: <6096.1272463619@redhat.com>
-References: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> 
-	<8526.1272447122@redhat.com> <q2r412e6f7f1004280656t331e9120rc9eab069fb4d4de3@mail.gmail.com> 
-	<6096.1272463619@redhat.com>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Wed, 28 Apr 2010 22:53:16 +0800
-Message-ID: <v2x412e6f7f1004280753pd3438a3fv860edc580ecd6185@mail.gmail.com>
-Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
-To: David Howells <dhowells@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Alexander Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Davide Libenzi <davidel@xmailserver.org>,
-       Roland Dreier <rolandd@cisco.com>,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "David S. Miller" <davem@davemloft.net>,
-       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
-       Andreas Herrmann <andreas.herrmann3@amd.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Takashi Iwai <tiwai@suse.de>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Apr 2010 12:17:24 -0400
+Message-Id: <20100428161713.971813259@szeredi.hu>
+References: <20100428161636.272097923@szeredi.hu>
+User-Agent: quilt/0.46-1
+Date: Wed, 28 Apr 2010 18:16:40 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Cc: jens.axboe@oracle.com, akpm@linux-foundation.org,
+       torvalds@linux-foundation.org
+Subject: [RFC PATCH 4/6] fuse: get page reference for readpages
+Content-Disposition: inline; filename=fuse-get-page-ref-for-readpages.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 10:06 PM, David Howells <dhowells@redhat.com> wrote:
->
-> I suspect you really want to have the semantics defined per-queue.  _Either_ a
-> queue is FIFO (such as processes waiting for a resource so they can do
-> something with it) _or_ it is LIFO (such as a pool of processes waiting to be
-> given work).
->
-> How often do the two actually mix?  And if they do, is that really an error?
->
+Acquire a page ref on pages in ->readpages() and release them when the
+read has finished.  Not acquiring a reference didn't seem to cause any
+trouble since the page is locked and will not be kicked out of the
+page cache during the read.
 
-The sock.sk_sleep is used by exclusive and non-exclusive wait queues.
-exclusive and non-exclusive is identified by wait queues, not wait
-queue heads. Maybe there is a historical reason. It is much like a
-hack.
+However the following patches will want to remove the page from the
+cache so a separate ref is needed.  Making the reference in req->pages
+explicit also makes the code easier to understand.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/fuse/file.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: linux-2.6/fs/fuse/file.c
+===================================================================
+--- linux-2.6.orig/fs/fuse/file.c	2010-04-28 15:50:32.000000000 +0200
++++ linux-2.6/fs/fuse/file.c	2010-04-28 15:50:35.000000000 +0200
+@@ -536,6 +536,7 @@ static void fuse_readpages_end(struct fu
+ 		else
+ 			SetPageError(page);
+ 		unlock_page(page);
++		page_cache_release(page);
+ 	}
+ 	if (req->ff)
+ 		fuse_file_put(req->ff);
+@@ -589,6 +590,7 @@ static int fuse_readpages_fill(void *_da
+ 			return PTR_ERR(req);
+ 		}
+ 	}
++	page_cache_get(page);
+ 	req->pages[req->num_pages] = page;
+ 	req->num_pages++;
+ 	return 0;
 
 -- 
-Regards，
-Changli Gao(xiaosuo@gmail.com)
