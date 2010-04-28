@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab0D1D7K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 23:59:10 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57517 "EHLO song.cn.fujitsu.com"
+	id S1755810Ab0D1D7e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 23:59:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49771 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755607Ab0D1D7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 23:59:07 -0400
-Message-ID: <4BD7B1CE.3020108@cn.fujitsu.com>
-Date: Wed, 28 Apr 2010 11:55:58 +0800
+	id S1754961Ab0D1D7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 23:59:30 -0400
+Message-ID: <4BD7B1E4.4080105@cn.fujitsu.com>
+Date: Wed, 28 Apr 2010 11:56:20 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 8/10] KVM MMU: allow more page become unsync at getting
- sp time
+Subject: [PATCH v3 9/10] KVM MMU: separate invlpg code form kvm_mmu_pte_write()
 References: <4BD7AE34.5000408@cn.fujitsu.com>
 In-Reply-To: <4BD7AE34.5000408@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -24,107 +23,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow more page become asynchronous at getting sp time, if need create new
-shadow page for gfn but it not allow unsync(level > 1), we should unsync all
-gfn's unsync page
+Let invlpg not depends on kvm_mmu_pte_write path, later patch will need
+this feature
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmu.c |   47 +++++++++++++++++++++++++++++++++++++----------
- 1 files changed, 37 insertions(+), 10 deletions(-)
+ arch/x86/kvm/mmu.c         |   22 +++++++++++++---------
+ arch/x86/kvm/paging_tmpl.h |   36 +++++++++++++++++++++++-------------
+ 2 files changed, 36 insertions(+), 22 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a60cd51..ef32449 100644
+index ef32449..aa6faa7 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1215,6 +1215,35 @@ static int kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- 	return __kvm_sync_page(vcpu, sp, true);
+@@ -2308,6 +2308,10 @@ static bool is_rsvd_bits_set(struct kvm_vcpu *vcpu, u64 gpte, int level)
+ 	return (gpte & vcpu->arch.mmu.rsvd_bits_mask[bit7][level-1]) != 0;
  }
  
-+/* @gfn should be write-protected at the call site */
-+static void kvm_sync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
++static void mmu_guess_page_from_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
++					  u64 gpte);
++static void mmu_release_page_from_pte_write(struct kvm_vcpu *vcpu);
++
+ #define PTTYPE 64
+ #include "paging_tmpl.h"
+ #undef PTTYPE
+@@ -2619,6 +2623,14 @@ static void mmu_guess_page_from_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 	vcpu->arch.update_pte.pfn = pfn;
+ }
+ 
++static void mmu_release_page_from_pte_write(struct kvm_vcpu *vcpu)
 +{
-+	struct hlist_head *bucket;
-+	struct kvm_mmu_page *s;
-+	struct hlist_node *node, *n;
-+	unsigned index;
-+	bool flush = false;
-+
-+	index = kvm_page_table_hashfn(gfn);
-+	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
-+	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
-+		if (s->gfn != gfn || !s->unsync)
-+			continue;
-+
-+		WARN_ON(s->role.level != PT_PAGE_TABLE_LEVEL);
-+		if ((s->role.cr4_pae != !!is_pae(vcpu)) ||
-+			(vcpu->arch.mmu.sync_page(vcpu, s))) {
-+			kvm_mmu_zap_page(vcpu->kvm, s);
-+			continue;
-+		}
-+		kvm_unlink_unsync_page(vcpu->kvm, s);
-+		flush = true;
++	if (!is_error_pfn(vcpu->arch.update_pte.pfn)) {
++		kvm_release_pfn_clean(vcpu->arch.update_pte.pfn);
++		vcpu->arch.update_pte.pfn = bad_pfn;
 +	}
-+
-+	if (flush)
-+		kvm_mmu_flush_tlb(vcpu);
 +}
 +
- struct mmu_page_path {
- 	struct kvm_mmu_page *parent[PT64_ROOT_LEVEL-1];
- 	unsigned int idx[PT64_ROOT_LEVEL-1];
-@@ -1313,8 +1342,9 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 	unsigned index;
- 	unsigned quadrant;
- 	struct hlist_head *bucket;
--	struct kvm_mmu_page *sp, *unsync_sp = NULL;
-+	struct kvm_mmu_page *sp;
- 	struct hlist_node *node, *tmp;
-+	bool need_sync = false;
+ static void kvm_mmu_access_page(struct kvm_vcpu *vcpu, gfn_t gfn)
+ {
+ 	u64 *spte = vcpu->arch.last_pte_updated;
+@@ -2651,12 +2663,9 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 	int flooded = 0;
+ 	int npte;
+ 	int r;
+-	int invlpg_counter;
  
- 	role = vcpu->arch.mmu.base_role;
- 	role.level = level;
-@@ -1331,17 +1361,14 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
- 	hlist_for_each_entry_safe(sp, node, tmp, bucket, hash_link)
- 		if (sp->gfn == gfn) {
--			if (sp->unsync)
--				unsync_sp = sp;
-+			if (!need_sync && sp->unsync)
-+				need_sync = true;
+ 	pgprintk("%s: gpa %llx bytes %d\n", __func__, gpa, bytes);
  
- 			if (sp->role.word != role.word)
- 				continue;
- 
--			if (!direct && unsync_sp &&
--			      kvm_sync_page_transient(vcpu, unsync_sp)) {
--				unsync_sp = NULL;
-+			if (sp->unsync && kvm_sync_page_transient(vcpu, sp))
- 				break;
--			}
- 
- 			mmu_page_add_parent_pte(vcpu, sp, parent_pte);
- 			if (sp->unsync_children) {
-@@ -1351,9 +1378,6 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 			trace_kvm_mmu_get_page(sp, false);
- 			return sp;
- 		}
--	if (!direct && unsync_sp)
--		kvm_sync_page(vcpu, unsync_sp);
+-	invlpg_counter = atomic_read(&vcpu->kvm->arch.invlpg_counter);
 -
- 	++vcpu->kvm->stat.mmu_cache_miss;
- 	sp = kvm_mmu_alloc_page(vcpu, parent_pte);
- 	if (!sp)
-@@ -1364,6 +1388,9 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 	if (!direct) {
- 		if (rmap_write_protect(vcpu->kvm, gfn))
- 			kvm_flush_remote_tlbs(vcpu->kvm);
-+		if (level > PT_PAGE_TABLE_LEVEL && need_sync)
-+			kvm_sync_pages(vcpu, gfn);
-+
- 		account_shadowed(vcpu->kvm, gfn);
+ 	/*
+ 	 * Assume that the pte write on a page table of the same type
+ 	 * as the current vcpu paging mode.  This is nearly always true
+@@ -2689,8 +2698,6 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 
+ 	mmu_guess_page_from_pte_write(vcpu, gpa, gentry);
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+-	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
+-		gentry = 0;
+ 	kvm_mmu_access_page(vcpu, gfn);
+ 	kvm_mmu_free_some_pages(vcpu);
+ 	++vcpu->kvm->stat.mmu_pte_write;
+@@ -2767,10 +2774,7 @@ restart:
  	}
- 	if (shadow_trap_nonpresent_pte != shadow_notrap_nonpresent_pte)
+ 	kvm_mmu_audit(vcpu, "post pte write");
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+-	if (!is_error_pfn(vcpu->arch.update_pte.pfn)) {
+-		kvm_release_pfn_clean(vcpu->arch.update_pte.pfn);
+-		vcpu->arch.update_pte.pfn = bad_pfn;
+-	}
++	mmu_release_page_from_pte_write(vcpu);
+ }
+ 
+ int kvm_mmu_unprotect_page_virt(struct kvm_vcpu *vcpu, gva_t gva)
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 89d66ca..749cb1a 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -462,11 +462,11 @@ out_unlock:
+ 
+ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
+ {
++	struct kvm_mmu_page *sp = NULL;
+ 	struct kvm_shadow_walk_iterator iterator;
+-	gpa_t pte_gpa = -1;
+-	int level;
+-	u64 *sptep;
+-	int need_flush = 0;
++	gfn_t gfn = -1;
++	u64 *sptep = NULL, gentry;
++	int invlpg_counter, level, offset = 0, need_flush = 0;
+ 
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+ 
+@@ -475,15 +475,14 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
+ 		sptep = iterator.sptep;
+ 
+ 		if (is_last_spte(*sptep, level)) {
+-			struct kvm_mmu_page *sp = page_header(__pa(sptep));
+-			int offset, shift;
++			int shift;
+ 
++			sp = page_header(__pa(sptep));
+ 			shift = PAGE_SHIFT -
+ 				  (PT_LEVEL_BITS - PT64_LEVEL_BITS) * level;
++			gfn = sp->gfn;
+ 			offset = sp->role.quadrant << shift;
+-
+-			pte_gpa = (sp->gfn << PAGE_SHIFT) + offset;
+-			pte_gpa += (sptep - sp->spt) * sizeof(pt_element_t);
++			offset += (sptep - sp->spt) * sizeof(pt_element_t);
+ 
+ 			if (is_shadow_present_pte(*sptep)) {
+ 				rmap_remove(vcpu->kvm, sptep);
+@@ -502,16 +501,27 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
+ 	if (need_flush)
+ 		kvm_flush_remote_tlbs(vcpu->kvm);
+ 
+-	atomic_inc(&vcpu->kvm->arch.invlpg_counter);
+-
++	invlpg_counter = atomic_add_return(1, &vcpu->kvm->arch.invlpg_counter);
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+ 
+-	if (pte_gpa == -1)
++	if (gfn == -1)
+ 		return;
+ 
+ 	if (mmu_topup_memory_caches(vcpu))
+ 		return;
+-	kvm_mmu_pte_write(vcpu, pte_gpa, NULL, sizeof(pt_element_t), 0);
++	if (kvm_read_guest_page(vcpu->kvm, gfn, &gentry, offset,
++			sizeof(pt_element_t)))
++		return;
++
++	mmu_guess_page_from_pte_write(vcpu, gfn_to_gpa(gfn) + offset, gentry);
++	spin_lock(&vcpu->kvm->mmu_lock);
++	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) == invlpg_counter &&
++			sp->role.level == PT_PAGE_TABLE_LEVEL) {
++		++vcpu->kvm->stat.mmu_pte_updated;
++		FNAME(update_pte)(vcpu, sp, sptep, &gentry);
++	}
++	spin_unlock(&vcpu->kvm->mmu_lock);
++	mmu_release_page_from_pte_write(vcpu);
+ }
+ 
+ static gpa_t FNAME(gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t vaddr, u32 access,
 -- 
 1.6.1.2
 
