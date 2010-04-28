@@ -1,39 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab0D1P5z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:57:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49312 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab0D1P5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:57:53 -0400
-Date: Wed, 28 Apr 2010 08:56:04 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Joern Engel <joern@logfs.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       logfs@logfs.org
-Subject: Re: linux-next: Tree for April 28 (logfs)
-Message-Id: <20100428085604.0566092a.randy.dunlap@oracle.com>
-In-Reply-To: <20100428164341.cee2911a.sfr@canb.auug.org.au>
-References: <20100428164341.cee2911a.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4BD85AF3.0041:SCFMA922111,ss=1,fgs=0
+	id S1752373Ab0D1Kse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 06:48:34 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:52533 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751571Ab0D1Ksd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 06:48:33 -0400
+Date: Wed, 28 Apr 2010 11:48:13 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/3] mm,migration: Remove straggling migration PTEs
+	when page tables are being moved after the VMA has already moved
+Message-ID: <20100428104813.GD15815@csn.ul.ie>
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie> <1272403852-10479-4-git-send-email-mel@csn.ul.ie> <20100427223004.GF8860@random.random> <20100427225852.GH8860@random.random> <20100428102928.a3b25066.kamezawa.hiroyu@jp.fujitsu.com> <20100428014434.GM510@random.random> <20100428111248.2797801c.kamezawa.hiroyu@jp.fujitsu.com> <20100428024227.GN510@random.random> <20100428114944.3570105f.kamezawa.hiroyu@jp.fujitsu.com> <20100428162838.c762fcda.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100428162838.c762fcda.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks to you both for looking into this. I far prefer this general approach
+than cleaning up the migration PTEs as the page tables get copied. While it
+might "work", it's sloppy in the same way as having migration_entry_wait()
+do the cleanup was sloppy. It's far preferable to make the VMA move and
+page table copy atomic with anon_vma->lock.
 
-When CONFIG_BLOCK is not enabled:
+On Wed, Apr 28, 2010 at 04:28:38PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Wed, 28 Apr 2010 11:49:44 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > On Wed, 28 Apr 2010 04:42:27 +0200
+> > Andrea Arcangeli <aarcange@redhat.com> wrote:
+>  
+> > > migrate.c requires rmap to be able to find all ptes mapping a page at
+> > > all times, otherwise the migration entry can be instantiated, but it
+> > > can't be removed if the second rmap_walk fails to find the page.
+> > > 
+> > > So shift_arg_pages must run atomically with respect of rmap_walk, and
+> > > it's enough to run it under the anon_vma lock to make it atomic.
+> > > 
+> > > And split_huge_page() will have the same requirements as migrate.c
+> > > already has.
+> > > 
+> > > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > Seems good.
+> > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > I'll test this and report if I see trouble again.
+> > 
+> > Unfortunately, I'll have a week of holidays (in Japan) in 4/29-5/05,
+> > my office is nearly closed. So, please consider no-mail-from-me is
+> > good information.
+> > 
+> Here is bad news. When move_page_tables() fails, "some ptes" are moved
+> but others are not and....there is no rollback routine.
+> 
 
-fs/logfs/super.c:142: error: implicit declaration of function 'bdev_get_queue'
-fs/logfs/super.c:142: error: invalid type argument of '->' (have 'int')
+The biggest problem is that the reverse mapping is temporarily out of
+sync until do_exit gets rid of the mess, but how serious is that really?
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+If there is a migration entry in there, the mapcount should already be zero and
+migration holds a reference to the page to prevent it going away. rmap_walk()
+may then miss the migration_pte so it gets left behind. Ordinarily this
+would be bad but in exec(), we cannot be faulting this page so we won't
+trigger the bug in swapops. Instead, do_exit ultimately will skip over the
+migration PTE doing nothing with the page but as the mapcount is still zero,
+the page won't leak.
+
+> I bet the best way to fix this mess up is 
+>  - disable overlap moving of arg pages
+>  - use do_mremap().
+> 
+> But maybe you guys want to fix this directly.
+> Here is a temporal fix from me. But don't trust me..
+
+I see the point of your patch but I'm not yet seeing why it is
+necessary to back out if move_page_tables fails.
+
+That said, both patches have a greater problem. Both of them hold a spinlock
+(anon_vma->lock) while calling into the page allocator with GFP_KERNEL (to
+allocate the page tables). We don't want to change that to GFP_ATOMIC so
+either we need to allocate the pages in advance or special case rmap_walk()
+to not walk processes that are in exec.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
