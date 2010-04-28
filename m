@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab0D1HCj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 03:02:39 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:53002 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab0D1HCh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 03:02:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <4BD7D948.4080406@kernel.org>
-References: <1272429119-12103-1-git-send-email-arve@android.com>
-	 <1272429119-12103-2-git-send-email-arve@android.com>
-	 <1272429119-12103-3-git-send-email-arve@android.com>
-	 <1272429119-12103-4-git-send-email-arve@android.com>
-	 <1272429119-12103-5-git-send-email-arve@android.com>
-	 <1272429119-12103-6-git-send-email-arve@android.com>
-	 <1272429119-12103-7-git-send-email-arve@android.com>
-	 <4BD7D948.4080406@kernel.org>
-Date: Wed, 28 Apr 2010 00:02:36 -0700
-Message-ID: <i2vd6200be21004280002tde778c02h1586b4c06de2a89a@mail.gmail.com>
-Subject: Re: [PATCH 6/8] PM: Add suspend blocking work.
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>, Oleg Nesterov <oleg@redhat.com>,
-       Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751250Ab0D1HMQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 03:12:16 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46518 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750788Ab0D1HMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 03:12:15 -0400
+Date: Wed, 28 Apr 2010 17:12:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] lockdep: Fix redundant_hardirqs_on incremented with
+ irqs enabled
+Message-Id: <20100428171206.5529a549.sfr@canb.auug.org.au>
+In-Reply-To: <1271338670-4537-1-git-send-regression-fweisbec@gmail.com>
+References: <20100415200414.1ef705c8.sfr@canb.auug.org.au>
+	<1271338670-4537-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__28_Apr_2010_17_12_06_+1000_Wb0Bl8Gb7XK0q2mm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/27 Tejun Heo <tj@kernel.org>:
-> Hello,
->
->> +static void suspend_blocking_work_complete(struct suspend_blocking_work *work)
->> +{
->> +     unsigned long flags;
->> +
->> +     WARN_ON(!work->active);
->> +     spin_lock_irqsave(&work->lock, flags);
->> +     if (!--work->active)
->> +             suspend_unblock(&work->suspend_blocker);
->> +     spin_unlock_irqrestore(&work->lock, flags);
->> +}
->
-> Maybe work->active can be an atomic_t and the lock can be removed?
->
+--Signature=_Wed__28_Apr_2010_17_12_06_+1000_Wb0Bl8Gb7XK0q2mm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I need the spinlock to prevent the work from getting re-queued before
-suspend_unblock.
+Hi Frederic,
 
->> +/**
->> + * suspend_blocking_work_destroy - Destroy suspend_blocking_work
->> + * @work: The work item in question
->> + *
->> + * If the work was ever queued on more then one workqueue all but the last
->> + * workqueue must be flushed before calling suspend_blocking_work_destroy.
+On Thu, 15 Apr 2010 15:37:50 +0200 Frederic Weisbecker <fweisbec@gmail.com>=
+ wrote:
 >
-> As it's calling cancel_work_sync(), the above is not true.  As long as
-> no one is trying to queue it again, suspend_blocking_work_destroy() is
-> safe to call regardless of how the work has been used.
->
+> When a path restore the flags while irqs are already enabled, we
+> update the per cpu var redundant_hardirqs_on in a racy fashion
+> and debug_atomic_inc() warns about this situation.
+>=20
+> In this particular case, we need to explictly disable the irqs before
+> updating this stat var in order to update it safely.
+>=20
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> ---
+>  kernel/lockdep.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index 78325f8..65d4336 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -2298,7 +2298,11 @@ void trace_hardirqs_on_caller(unsigned long ip)
+>  		return;
+> =20
+>  	if (unlikely(curr->hardirqs_enabled)) {
+> +		unsigned long flags;
+> +
+> +		raw_local_irq_save(flags);
+>  		debug_atomic_inc(redundant_hardirqs_on);
+> +		raw_local_irq_restore(flags);
+>  		return;
+>  	}
+>  	/* we'll do an OFF -> ON transition: */
 
-I'm not sure what the best terminology is here, but cancel_work_sync()
-only waits for work running on all the cpu-workqueues of the last
-workqueue. So, if the caller queued the work on more than one
-workqueue, suspend_blocking_work_destroy does not ensure that the
-suspend_blocking_work structure is not still in use (it should trigger
-the WARN_ON though).
+I applied this patch to linux-next today and it fixes my PowerPC boot
+problems, so I will keep it in linux-next until it gets applied to the
+tip tree or something better comes along.
 
->> +void suspend_blocking_work_destroy(struct suspend_blocking_work *work)
->> +{
->> +     cancel_suspend_blocking_work_sync(work);
->> +     WARN_ON(work->active);
->> +     suspend_blocker_destroy(&work->suspend_blocker);
->> +}
->> +EXPORT_SYMBOL(suspend_blocking_work_destroy);
->
-> Other than the above, it looks good to me.
->
-> Thanks.
->
-> --
-> tejun
->
+Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Wed__28_Apr_2010_17_12_06_+1000_Wb0Bl8Gb7XK0q2mm
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
--- 
-Arve Hjønnevåg
+iEYEARECAAYFAkvX38YACgkQjjKRsyhoI8wIWgCdGXuyt9HC0OC89P2Lkv/W4cue
+pOUAnjFPV9o6uhpbe3wQjxNuk/UqqmeB
+=VOnM
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Apr_2010_17_12_06_+1000_Wb0Bl8Gb7XK0q2mm--
