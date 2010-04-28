@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab0D1MEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 08:04:40 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:46856 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab0D1MEj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 08:04:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ycj39ISYRgqHiN8IpXMUmW09lqZR6mWG9ZuAvZs3UYtWv7jjcIHeX8yT4BltAj5k19
-         FDWkOvMgOUOgoGhmR2oYHeD7L8E98A3BefoKv0DOX4YmWcKHsOovs+lzyr2LqB5ILH/T
-         eMH1OP3GqjIPiUTfj05vdQHnJDYjULjhAthPE=
+	id S1756894Ab0D1ToP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 15:44:15 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43797 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756868Ab0D1ToN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 15:44:13 -0400
+Date: Wed, 28 Apr 2010 12:41:00 -0700
+From: Greg KH <gregkh@suse.de>
+To: Joe Perches <joe@perches.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+       devel@driverdev.osuosl.org
+Subject: Re: [PATCH 09/13] drivers/staging/rtl8192su: Hoist assign from if
+Message-ID: <20100428194100.GA3602@suse.de>
+References: <cover.1269493047.git.joe@perches.com>
+ <c45ba099fc8f31f166c4067f2eff609c8eaf422f.1269493047.git.joe@perches.com>
+ <20100428182710.GD8509@kroah.com>
+ <1272481489.7831.24.camel@Joe-Laptop.home>
+ <20100428191116.GA29828@suse.de>
+ <1272482446.9188.4.camel@Joe-Laptop.home>
 MIME-Version: 1.0
-In-Reply-To: <20100426145928.7855.70221.stgit@warthog.procyon.org.uk>
-References: <20100426145928.7855.70221.stgit@warthog.procyon.org.uk>
-Date: Wed, 28 Apr 2010 14:04:37 +0200
-Message-ID: <i2s19f34abd1004280504n5b0eec52h1452a29726841e53@mail.gmail.com>
-Subject: Re: [PATCH] KEYS: The request_key() syscall should link an existing 
-	key to the dest keyring
-From: Vegard Nossum <vegard.nossum@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@osdl.org, akpm@linux-foundation.org, keyrings@linux-nfs.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272482446.9188.4.camel@Joe-Laptop.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 April 2010 16:59, David Howells <dhowells@redhat.com> wrote:
-> The request_key() system call and request_key_and_link() should make a link
-> from an existing key to the destination keyring (if supplied), not just from a
-> new key to the destination keyring.
->
-> This can be tested by:
->
->        ring=`keyctl newring fred @s`
->        keyctl request2 user debug:a a
->        keyctl request user debug:a $ring
->        keyctl list $ring
->
-> If it says:
->
->        keyring is empty
->
-> then it didn't work.  If it shows something like:
->
->        1 key in keyring:
->        1070462727: --alswrv     0     0 user: debug:a
->
-> then it did.
->
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
->
->  security/keys/request_key.c |    9 ++++++++-
->  1 files changed, 8 insertions(+), 1 deletions(-)
->
-> diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-> index ea97c31..d737cea 100644
-> --- a/security/keys/request_key.c
-> +++ b/security/keys/request_key.c
-> @@ -339,8 +339,10 @@ static int construct_alloc_key(struct key_type *type,
->
->  key_already_present:
->        mutex_unlock(&key_construction_mutex);
-> -       if (dest_keyring)
-> +       if (dest_keyring) {
-> +               __key_link(dest_keyring, key_ref_to_ptr(key_ref));
->                up_write(&dest_keyring->sem);
-> +       }
->        mutex_unlock(&user->cons_lock);
->        key_put(key);
->        *_key = key = key_ref_to_ptr(key_ref);
+On Wed, Apr 28, 2010 at 12:20:46PM -0700, Joe Perches wrote:
+> On Wed, 2010-04-28 at 12:11 -0700, Greg KH wrote:
+> > On Wed, Apr 28, 2010 at 12:04:49PM -0700, Joe Perches wrote:
+> > > On Wed, 2010-04-28 at 11:27 -0700, Greg KH wrote:
+> > > > On Wed, Mar 24, 2010 at 10:17:03PM -0700, Joe Perches wrote:
+> > > > > --- a/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c
+> > > > > +++ b/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c
+> > > > > @@ -1690,7 +1690,8 @@ ieee80211_rx_auth_rq(struct ieee80211_device *ieee, struct sk_buff *skb)
+> > > > >  	//IEEE80211DMESG("Rx probe");
+> > > > >  	ieee->softmac_stats.rx_auth_rq++;
+> > > > >  
+> > > > > -	if ((status = auth_rq_parse(skb, dest))!= -1){
+> > > > > +	status = auth_rq_parse(skb, dest);
+> > > > > +	if (status!= -1) {
+> > > > 
+> > > > And again.  Did you do this with some tool and not by hand?
+> > > []
+> > > > Did you not run your patch through checkpatch after creating it and 
+> > > > before sending it to me?
+> > > 
+> > > >From the original 0/13 introduction:
+> > > http://lkml.org/lkml/2010/3/25/6
+> > > 
+> > >         Used scripts/cvt_kernel.style.pl:
+> > >         --convert-hoist_assigns_from_if
+> > >         and verified visually.
+> > >         
+> > >         checkpatch errors ignored
+> > > 
+> > > The script itself is:
+> > > http://lkml.org/lkml/2010/3/24/447
+> > 
+> > And this points out why I hate scripts.
+> > 
+> > It is _trivial_ to fix up the obvious formatting problem, on the same
+> > line that you are modifying, when doing so.
+> 
+> Define _trivial_ and define obvious.
 
-Hi,
-
-Just a few questions (if you don't mind).
-
-1. Is it correct to return -EINPROGRESS in this case?
-
-2. (Why) Shouldn't the return value of __key_link() be checked?
-
-3. In __key_link(), shouldn't rcu_dereference() be used when accessing
-keyring->payload.subscriptions?
-
-Thanks,
-
-
-Vegard
+"I know it when I see it."
