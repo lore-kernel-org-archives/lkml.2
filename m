@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab0D1QWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 12:22:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754821Ab0D1QWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 12:22:46 -0400
-Date: Wed, 28 Apr 2010 12:21:01 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Avi Kivity <avi@redhat.com>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Alexander Graf <agraf@suse.de>
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-ID: <20100428152101.GB12091@amt.cnet>
-References: <20100427154917.405e21df.sfr@canb.auug.org.au>
+	id S1753830Ab0D1LeE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 07:34:04 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:43327 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab0D1LeB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 07:34:01 -0400
+Date: Wed, 28 Apr 2010 07:33:59 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Eric Sandeen <sandeen@redhat.com>,
+       xfs@oss.sgi.com, Alex Elder <aelder@sgi.com>,
+       Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH v2] XFS: Let the broken fiemap work in query mode.
+Message-ID: <20100428113359.GB27769@infradead.org>
+References: <20100428023058.GD9783@dastard> <1272423625-20142-1-git-send-email-tao.ma@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100427154917.405e21df.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1272423625-20142-1-git-send-email-tao.ma@oracle.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 03:49:17PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> arch/powerpc/kvm/book3s.c: In function 'kvmppc_core_vcpu_create':
-> arch/powerpc/kvm/book3s.c:1241: error: implicit declaration of function 'kzalloc'
-> arch/powerpc/kvm/book3s.c:1241: warning: cast to pointer from integer of different size
-> arch/powerpc/kvm/book3s.c:1281: error: implicit declaration of function 'kfree'
-> 
-> Caused by commit 046cdc052ffcbf1ee1c627ef811031d18654bafe ("KVM: PPC:
-> Improve indirect svcpu accessors") from the kvm tree.
-> 
-> You have to include slab.h directly to use kzalloc/kfree ...
-> 
-> I have applied the following patch for today.
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 27 Apr 2010 15:32:53 +1000
-> Subject: [PATCH] kvm: powerpc: use of kzalloc/kfree requires including slab.h
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+On Wed, Apr 28, 2010 at 11:00:25AM +0800, Tao Ma wrote:
+> -	bm.bmv_count = fieinfo->fi_extents_max + 1;
+> +	bm.bmv_count = !fieinfo->fi_extents_max ? MAXEXTNUM :
+> +					fieinfo->fi_extents_max + 1;
+> +	bm.bmv_count = MIN(bm.bmv_count,
+> +			   (__s32)(PAGE_SIZE * 16 / sizeof(struct getbmapx)));
 
-Applied, thanks.
+I would use min_t here instead of the case, but otherwise the patch
+looks good to me,
+
+
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 
