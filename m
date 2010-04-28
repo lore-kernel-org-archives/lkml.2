@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab0D1RJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 13:09:56 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:37685 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab0D1RJz (ORCPT
+	id S1754860Ab0D1PCj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 11:02:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8808 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752410Ab0D1PCh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 13:09:55 -0400
-Date: Wed, 28 Apr 2010 20:09:16 +0300
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: ext Robert Richter <robert.richter@amd.com>
-Cc: "Siamashka Siarhei (Nokia-D/Helsinki)" <siarhei.siamashka@nokia.com>,
-       "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>,
-       "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] updates for oprofile
-Message-ID: <20100428170915.GF17639@pcarmody-desktop>
-References: <20100427152544.GA9063@pcarmody-desktop> <20100427174026.GR6450@erda.amd.com> <201004272047.52056.siarhei.siamashka@nokia.com> <20100428165906.GA21724@erda.amd.com>
+	Wed, 28 Apr 2010 11:02:37 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <v2x412e6f7f1004280753pd3438a3fv860edc580ecd6185@mail.gmail.com>
+References: <v2x412e6f7f1004280753pd3438a3fv860edc580ecd6185@mail.gmail.com> <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> <8526.1272447122@redhat.com> <q2r412e6f7f1004280656t331e9120rc9eab069fb4d4de3@mail.gmail.com> <6096.1272463619@redhat.com>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: dhowells@redhat.com, Ingo Molnar <mingo@elte.hu>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Roland Dreier <rolandd@cisco.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Takashi Iwai <tiwai@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100428165906.GA21724@erda.amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-OriginalArrivalTime: 28 Apr 2010 17:09:36.0836 (UTC) FILETIME=[949FD840:01CAE6F5]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 28 Apr 2010 16:00:06 +0100
+Message-ID: <14370.1272466806@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/04/10 18:59 +0200, ext Robert Richter wrote:
-> On 27.04.10 20:47:51, Siarhei Siamashka wrote:
-> > Isn't hrtimer callback function supposed to be only called from IRQ context
-> > after this cleanup: http://lwn.net/Articles/308545/ ?
+Changli Gao <xiaosuo@gmail.com> wrote:
+
+> > How often do the two actually mix?  And if they do, is that really an
+> > error?
 > 
-> Yes, the patch is upstream since v2.6.29. Thanks Siarhei.
-> 
-> I will add a null pointer check anyway.
+> The sock.sk_sleep is used by exclusive and non-exclusive wait queues.
+> exclusive and non-exclusive is identified by wait queues, not wait
+> queue heads. Maybe there is a historical reason. It is much like a
+> hack.
 
-A few here thrashed around a couple of ideas, and the general consensus 
-was that the following work for us, and is offered for consideration.
+But is it actually used in both modes at the same time?
 
-Phil
-
-
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Date: Tue, 27 Apr 2010 19:28:33 +0300
-Subject: [PATCH v2 1/1] oprofile: HACK - protect from not being in an IRQ context
-
-http://lkml.org/lkml/2010/4/27/285
-
-Protect against dereferencing regs when it's NULL, and
-force a magic number into pc to prevent too deep processing.
-This approach permits the dropped samples to be tallied as
-invalid Instruction Pointer events.
-
-e.g. output from about 15mins at 10kHz sample rate:
-Nr. samples received: 2565380
-Nr. samples lost invalid pc: 4
-
-Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
----
- drivers/oprofile/cpu_buffer.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/oprofile/cpu_buffer.c b/drivers/oprofile/cpu_buffer.c
-index a7aae24..f70f954 100644
---- a/drivers/oprofile/cpu_buffer.c
-+++ b/drivers/oprofile/cpu_buffer.c
-@@ -357,9 +357,15 @@ void oprofile_add_ext_sample(unsigned long pc, struct pt_regs * const regs,
- 
- void oprofile_add_sample(struct pt_regs * const regs, unsigned long event)
- {
--	int is_kernel = !user_mode(regs);
--	unsigned long pc = profile_pc(regs);
--
-+	int is_kernel;
-+	unsigned long pc;
-+	if (likely(regs)) {
-+		is_kernel = !user_mode(regs);
-+		pc = profile_pc(regs);
-+	} else {
-+		is_kernel = 0;    /* This value will not be used */
-+		pc = ESCAPE_CODE; /* as this causes an early return. */
-+	}
- 	__oprofile_add_ext_sample(pc, regs, event, is_kernel);
- }
- 
--- 
-1.6.0.4
-
+David
