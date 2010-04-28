@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab0D1DY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 23:24:28 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43703 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752939Ab0D1DY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 23:24:26 -0400
-Date: Wed, 28 Apr 2010 13:24:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Ben Hutchings <bhutchings@solarflare.com>,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-       David Woodhouse <dwmw2@infradead.org>,
-       =?UTF-8?B?IkrDtnJuIEVuZ2VsIg==?= <joern@logfs.org>
-Subject: linux-next: manual merge of the block tree with the mtd tree
-Message-Id: <20100428132423.0cb8bd44.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754560Ab0D1Din (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 23:38:43 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:42627 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752628Ab0D1Dim (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 23:38:42 -0400
+Date: Wed, 28 Apr 2010 13:38:29 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       xfs@oss.sgi.com, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] mm: add context argument to shrinker callback
+Message-ID: <20100428033829.GE9783@dastard>
+References: <1271118255-21070-1-git-send-email-david@fromorbit.com>
+ <1271118255-21070-2-git-send-email-david@fromorbit.com>
+ <20100418001514.GA26575@infradead.org>
+ <20100419140039.GQ5683@laptop>
+ <20100420004149.GA14744@dastard>
+ <20100420083840.GR5683@laptop>
+ <20100420103216.GK15130@dastard>
+ <20100421084004.GS5683@laptop>
+ <20100422163211.GA2478@infradead.org>
+ <20100422163801.GZ5683@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100422163801.GZ5683@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On Fri, Apr 23, 2010 at 02:38:01AM +1000, Nick Piggin wrote:
+> On Thu, Apr 22, 2010 at 12:32:11PM -0400, Christoph Hellwig wrote:
+> > On Wed, Apr 21, 2010 at 06:40:04PM +1000, Nick Piggin wrote:
+> > > I'm saying that dynamic registration is no good, if we don't have a
+> > > way to order the shrinkers.
+> > 
+> > We can happily throw in a priority field into the shrinker structure,
+> > but at this stage in the release process I'd rather have an as simple
+> > as possible fix for the regression.  And just adding the context pointer
+> > which is a no-op for all existing shrinkers fits that scheme very well.
+> > 
+> > If it makes you happier I can queue up a patch to add the priorities
+> > for 2.6.35.  I think figuring out any meaningful priorities will be
+> > much harder than that, though.
+> 
+> I don't understand, it should be implemented like just all the other
+> shrinkers AFAIKS. Like the dcache one that has to shrink multiple
+> superblocks. There is absolutely no requirement for this API change
+> to implement it in XFS.
 
-Today's linux-next merge of the block tree got a conflict in
-drivers/mtd/mtdcore.c between commit
-b520e412faaaad35641aeedd6059179f9f1b393c ("mtd: Replace static array of
-devices with an idr structure") from the mtd tree and commit
-a33eb6b91034c95b9b08576f68be170f995b2c7d ("Move mtd_bdi_*mappable to
-mtdcore.c") from the block tree.
+Well, I've gone and done this global shrinker because I need a fix
+for the problem before .34 releases, not because I like it.
 
-Just overlapping additions.  I fixed it up (see below) and can carry the
-fix as necessary.
--- 
+Now my problem is that the accepted method of using global shrinkers
+(i.e. split nr_to-scan into portions based on per-fs usage) is
+causing a regression compared to not having a shrinker at all. The
+context based shrinker did not cause this regression, either.
+
+The regression is oom-killer panics with "no killable tasks" - it
+kills my 1GB RAM VM dead.  Without a shrinker or with the context
+based shrinkers I will see one or two dd processes getting
+OOM-killed maybe once every 10 or so runs on this VM, but the machine
+continues to stay up. The global shrinker is turning this into a
+panic, and it is happening about twice as often.
+
+To fix this I've had to remove all the code that proportions the
+reclaim across all the XFS filesystems in the system. Basically it
+now walks from the first filesystem in the list to the last every
+time and effectively it only reclaims from the first filesystem it
+finds with reclaimable inodes.
+
+This is exactly the behaviour the context based shrinkers give me,
+without the need for adding global lists, additional locking and
+traverses. Also, context based shrinkers won't re-traverse all the
+filesystems, avoiding the potential for starving some filesystems of
+shrinker based reclaim if filesystems earlier in the list are
+putting more inodes into reclaim concurrently.
+
+Given that this behaviour matches pretty closely to the reasons I've
+already given for preferring context based per-fs shrinkers than a
+global shrinker and list, can we please move forward with this API
+change, Nick?
+
+As it is, I'm going to cross my fingers and ship this global
+shrinker because of time limitations, but I certainly hoping that
+for .35 we can move to context based shrinking....
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/mtd/mtdcore.c
-index 3c48193,b177e75..0000000
---- a/drivers/mtd/mtdcore.c
-+++ b/drivers/mtd/mtdcore.c
-@@@ -16,13 -19,39 +19,41 @@@
-  #include <linux/init.h>
-  #include <linux/mtd/compatmac.h>
-  #include <linux/proc_fs.h>
- +#include <linux/idr.h>
- +#include <linux/gfp.h>
-+ #include <linux/backing-dev.h>
-  
-  #include <linux/mtd/mtd.h>
-- #include "internal.h"
-  
-  #include "mtdcore.h"
-+ /*
-+  * backing device capabilities for non-mappable devices (such as NAND flash)
-+  * - permits private mappings, copies are taken of the data
-+  */
-+ struct backing_dev_info mtd_bdi_unmappable = {
-+ 	.capabilities	= BDI_CAP_MAP_COPY,
-+ };
-+ 
-+ /*
-+  * backing device capabilities for R/O mappable devices (such as ROM)
-+  * - permits private mappings, copies are taken of the data
-+  * - permits non-writable shared mappings
-+  */
-+ struct backing_dev_info mtd_bdi_ro_mappable = {
-+ 	.capabilities	= (BDI_CAP_MAP_COPY | BDI_CAP_MAP_DIRECT |
-+ 			   BDI_CAP_EXEC_MAP | BDI_CAP_READ_MAP),
-+ };
-+ 
-+ /*
-+  * backing device capabilities for writable mappable devices (such as RAM)
-+  * - permits private mappings, copies are taken of the data
-+  * - permits non-writable shared mappings
-+  */
-+ struct backing_dev_info mtd_bdi_rw_mappable = {
-+ 	.capabilities	= (BDI_CAP_MAP_COPY | BDI_CAP_MAP_DIRECT |
-+ 			   BDI_CAP_EXEC_MAP | BDI_CAP_READ_MAP |
-+ 			   BDI_CAP_WRITE_MAP),
-+ };
-  
-  static int mtd_cls_suspend(struct device *dev, pm_message_t state);
-  static int mtd_cls_resume(struct device *dev);
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
