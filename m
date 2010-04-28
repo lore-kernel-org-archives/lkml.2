@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab0D1KwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 06:52:17 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:5445 "EHLO
-	VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752272Ab0D1KwO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 06:52:14 -0400
-X-SpamScore: -26
-X-BigFish: VPS-26(zz1432P98dN936eM9371Pzz1202hzzz32i2a8h87h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L1L26T-02-833-02
-X-M-MSG: 
-Date: Wed, 28 Apr 2010 12:52:01 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/22] KVM: MMU: Add infrastructure for two-level page
- walker
-Message-ID: <20100428105201.GC18832@amd.com>
-References: <1272364712-17425-1-git-send-email-joerg.roedel@amd.com>
- <1272364712-17425-12-git-send-email-joerg.roedel@amd.com>
- <4BD6D9C2.6020104@redhat.com>
+	id S1754365Ab0D1NJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 09:09:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17931 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753947Ab0D1NJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 09:09:05 -0400
+Date: Wed, 28 Apr 2010 15:06:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: roland@redhat.com, akpm@linux-foundation.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2]: mark ptrace_traceme static
+Message-ID: <20100428130652.GA31069@redhat.com>
+References: <20100201191855.GA11874@lst.de> <20100428114541.GA4705@lst.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BD6D9C2.6020104@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 28 Apr 2010 10:52:02.0533 (UTC) FILETIME=[D59B8950:01CAE6C0]
-X-Reverse-DNS: unknown
+In-Reply-To: <20100428114541.GA4705@lst.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 03:34:10PM +0300, Avi Kivity wrote:
-> On 04/27/2010 01:38 PM, Joerg Roedel wrote:
-> >This patch introduces a mmu-callback to translate gpa
-> >addresses in the walk_addr code. This is later used to
-> >translate l2_gpa addresses into l1_gpa addresses.
-> >
-> >+static inline gfn_t gpa_to_gfn(gpa_t gpa)
-> >+{
-> >+	return (gfn_t)gpa>>  PAGE_SHIFT;
-> >+}
-> >+
-> 
-> This overflows on 32-bit, since gpa_t is u64 and gfn_t is ulong.
+On 04/28, Christoph Hellwig wrote:
+>
+> Any reason this never made it to Linus?
 
-Hm, this is a problem outside of this patchset too (for 32bit hosts).
-The best solution is probably to convert gfn_t to u64 too.
+The patch is obviously fine, and iirc it was explicitly acked by Roland.
 
-	Joerg
+Probably you can resend it to Andrew?
 
+> On Mon, Feb 01, 2010 at 08:18:55PM +0100, Christoph Hellwig wrote:
+> > It's not used outside of ptrace.c, so no need to allow access to it.
+> > 
+> > Signed-off-by: Christoph Hellwig <hch@lst.de>
+> > 
+> > Index: linux-2.6/include/linux/ptrace.h
+> > ===================================================================
+> > --- linux-2.6.orig/include/linux/ptrace.h	2010-01-26 18:02:46.745004926 +0100
+> > +++ linux-2.6/include/linux/ptrace.h	2010-01-26 18:02:51.759268161 +0100
+> > @@ -81,7 +81,6 @@
+> >  
+> >  
+> >  extern long arch_ptrace(struct task_struct *child, long request, long addr, long data);
+> > -extern int ptrace_traceme(void);
+> >  extern int ptrace_readdata(struct task_struct *tsk, unsigned long src, char __user *dst, int len);
+> >  extern int ptrace_writedata(struct task_struct *tsk, char __user *src, unsigned long dst, int len);
+> >  extern int ptrace_attach(struct task_struct *tsk);
+> > Index: linux-2.6/kernel/ptrace.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/ptrace.c	2010-01-26 18:02:55.627012005 +0100
+> > +++ linux-2.6/kernel/ptrace.c	2010-01-26 18:04:22.163015407 +0100
+> > @@ -220,7 +220,7 @@ out:
+> >   * Performs checks and sets PT_PTRACED.
+> >   * Should be used by all ptrace implementations for PTRACE_TRACEME.
+> >   */
+> > -int ptrace_traceme(void)
+> > +static int ptrace_traceme(void)
+> >  {
+> >  	int ret = -EPERM;
+> >  
+> ---end quoted text---
 
