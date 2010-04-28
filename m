@@ -1,52 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab0D1Vql (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 17:46:41 -0400
-Received: from www.tglx.de ([62.245.132.106]:44553 "EHLO www.tglx.de"
+	id S1755824Ab0D1Vuc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 17:50:32 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36319 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751581Ab0D1Vqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 17:46:40 -0400
-Date: Wed, 28 Apr 2010 23:46:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Xianghua Xiao <xiaoxianghua@gmail.com>
-cc: john stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.33.3-rt16 Oops caused by umount
-In-Reply-To: <x2oe6bf505b1004281422m41f96ec4zf98a94a321d78ba2@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1004282339330.2951@localhost.localdomain>
-References: <l2ye6bf505b1004271144ta6817962vec8167d813658648@mail.gmail.com>  <1272400246.2255.5.camel@localhost>  <s2me6bf505b1004271354v128e0e89q6b506ce99af6d7fd@mail.gmail.com>  <1272434481.1974.101.camel@work-vm>  <w2ge6bf505b1004280821g70610cb7lc3821ee890345273@mail.gmail.com>
-  <alpine.LFD.2.00.1004281833230.2951@localhost.localdomain>  <y2ge6bf505b1004281054kfc44529fkf87dc5e9d564f9b3@mail.gmail.com>  <alpine.LFD.2.00.1004282137330.2951@localhost.localdomain>  <g2we6bf505b1004281306sa6ddb207p7a1b8853c3ab308f@mail.gmail.com> 
- <alpine.LFD.2.00.1004282218470.2951@localhost.localdomain> <x2oe6bf505b1004281422m41f96ec4zf98a94a321d78ba2@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754989Ab0D1Vua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 17:50:30 -0400
+Date: Wed, 28 Apr 2010 21:50:07 GMT
+Message-Id: <201004282150.o3SLo7dG007962@hera.kernel.org>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       <stable@kernel.org>, Colin Ian King <colin.king@canonical.com>,
+       "H. Peter Anvin" <hpa@linux.intel.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Jacob Pan <jacob.jun.pan@linux.intel.com>,
+       Samuel Thibault <samuel.thibault@inria.fr>
+Subject: [GIT PULL] x86 fixes for 2.6.34-rc6
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 28 Apr 2010 21:50:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Apr 2010, Xianghua Xiao wrote:
-> On Wed, Apr 28, 2010 at 3:22 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> > Can you please decode the code lines with
-> >
-> > # addr2line -e vmlinux 0xc009ca1c 0xc009c9cc
-> >
-> > You need to enable CONFIG_DEBUG_INFO to get real line numbers.
-> 
-> # reboot
-> # Oops: Kernel access of bad area, sig: 11 [#1]
-> PREEMPT 834x SYS
-> Modules linked in:
-> NIP: c009ded8 LR: c009de88 CTR: 00000000
+Hi Linus,
 
-Again. Can you please decode the code lines with
+The following changes since commit 05ce7bfe547c9fa967d9cab6c37867a9cb6fb3fa:
+  Linus Torvalds (1):
+        Merge branch 'for_linus' of git://git.kernel.org/.../jack/linux-fs-2.6
 
-# addr2line -e vmlinux 0xc009ded8 0xc009de88
+are available in the git repository at:
 
-Please run the above shell command in the directory where your kernel
-compile output resides. If you compiled with O=BUILD_DIR then cd to
-$BUILD_DIR otherwise you will find vmlinux in the root of your kernel
-source tree. Please provide the output.
+  git://git.kernel.org/pub/scm/linux/kernel/git/x86/linux-2.6-tip.git x86-fixes-for-linus
 
-Thanks,
+H. Peter Anvin (2):
+      x86-64: Clear a 64-bit FS/GS base on fork if selector is nonzero
+      x86: Disable large pages on CPUs with Atom erratum AAE44
 
-	tglx
+Jacob Pan (1):
+      x86, mrst: Conditionally register cpu hotplug notifier for apbt
+
+Note: expect another drop as soon as we have integrated and tested the
+currently pending patches, including Thomas' HPET patch and Bjorn's
+PCI patch.
+
+	-hpa
+
+
+ arch/x86/kernel/apb_timer.c  |    2 +-
+ arch/x86/kernel/cpu/intel.c  |   21 +++++++++++++++++++++
+ arch/x86/kernel/process_64.c |    4 ++--
+ 3 files changed, 24 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index ff469e4..a353475 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -429,7 +429,7 @@ static int apbt_cpuhp_notify(struct notifier_block *n,
+ 
+ static __init int apbt_late_init(void)
+ {
+-	if (disable_apbt_percpu)
++	if (disable_apbt_percpu || !apb_timer_block_enabled)
+ 		return 0;
+ 	/* This notifier should be called after workqueue is ready */
+ 	hotcpu_notifier(apbt_cpuhp_notify, -20);
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 7e1cca1..1366c7c 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -47,6 +47,27 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+ 		(c->x86 == 0x6 && c->x86_model >= 0x0e))
+ 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+ 
++	/*
++	 * Atom erratum AAE44/AAF40/AAG38/AAH41:
++	 *
++	 * A race condition between speculative fetches and invalidating
++	 * a large page.  This is worked around in microcode, but we
++	 * need the microcode to have already been loaded... so if it is
++	 * not, recommend a BIOS update and disable large pages.
++	 */
++	if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2) {
++		u32 ucode, junk;
++
++		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
++		sync_core();
++		rdmsr(MSR_IA32_UCODE_REV, junk, ucode);
++
++		if (ucode < 0x20e) {
++			printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
++			clear_cpu_cap(c, X86_FEATURE_PSE);
++		}
++	}
++
+ #ifdef CONFIG_X86_64
+ 	set_cpu_cap(c, X86_FEATURE_SYSENTER32);
+ #else
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index dc9690b..17cb329 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -276,12 +276,12 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 
+ 	set_tsk_thread_flag(p, TIF_FORK);
+ 
+-	p->thread.fs = me->thread.fs;
+-	p->thread.gs = me->thread.gs;
+ 	p->thread.io_bitmap_ptr = NULL;
+ 
+ 	savesegment(gs, p->thread.gsindex);
++	p->thread.gs = p->thread.gsindex ? 0 : me->thread.gs;
+ 	savesegment(fs, p->thread.fsindex);
++	p->thread.fs = p->thread.fsindex ? 0 : me->thread.fs;
+ 	savesegment(es, p->thread.es);
+ 	savesegment(ds, p->thread.ds);
+ 
