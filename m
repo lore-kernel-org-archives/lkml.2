@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab0D1CIX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 22:08:23 -0400
-Received: from ozlabs.org ([203.10.76.45]:33397 "EHLO ozlabs.org"
+	id S1754107Ab0D1CIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 22:08:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22862 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab0D1CIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 22:08:20 -0400
-Date: Wed, 28 Apr 2010 12:08:19 +1000
-From: Tony Breeds <tony@bakeyournoodle.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: linux-kernel@vger.kernel.org, dank@kegel.com
-Subject: Re: [PATCH 00/11] jump label v7
-Message-ID: <20100428020819.GN12389@ozlabs.org>
-Mail-Followup-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-	linux-kernel@vger.kernel.org, dank@kegel.com
-References: <cover.1271427118.git.jbaron@redhat.com>
- <20100422.161700.191166551.davem@davemloft.net>
- <20100427.175858.134109609.davem@davemloft.net>
- <20100428013951.GM12389@ozlabs.org>
- <20100428014941.GA8389@Krystal>
+	id S1752337Ab0D1CI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 22:08:29 -0400
+Date: Wed, 28 Apr 2010 03:44:34 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/3] mm,migration: Remove straggling migration PTEs
+ when page tables are being moved after the VMA has already moved
+Message-ID: <20100428014434.GM510@random.random>
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie>
+ <1272403852-10479-4-git-send-email-mel@csn.ul.ie>
+ <20100427223004.GF8860@random.random>
+ <20100427225852.GH8860@random.random>
+ <20100428102928.a3b25066.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100428014941.GA8389@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100428102928.a3b25066.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 27, 2010 at 09:49:41PM -0400, Mathieu Desnoyers wrote:
+On Wed, Apr 28, 2010 at 10:29:28AM +0900, KAMEZAWA Hiroyuki wrote:
+> Hmm..Mel's patch 2/3 takes vma->anon_vma->lock in vma_adjust(),
+> so this patch clears vma->anon_vma...
 
-> The crosstool package from Dan Kegel did a good job for this. Not sure
-> it's currently maintained though. It was a very useful project, it's a
-> shame if it does not live on. It would be good to have up-to-date and
-> tested compilers for various architectures available on kernel.org,
-> ideally with access to a package that helps building compilers for
-> various architectures.
+yep, it should be safe with patch 2 applied too. And I'm unsure why Mel's
+patch locks the anon_vma also when vm_start != start. See the other
+email I sent about patch 2.
 
-Trimmed the CC' as this is a bit of a tangent.
+> I think we can unlock this just after move_page_tables().
 
-Crosstool did a good job but seems to be less current than we'd like for the
-kernel[1].  When using crosstool in the past I found a lot of the complexity
-was in *libc to the toolcahins I've built don';t have a libc so they're only
-helpful for kernel (or similar) builds.
+Checking this, I can't see where exactly is vma->vm_pgoff adjusted
+during the atomic section I protected with the anon_vma->lock?
+For a moment it looks like these pages become unmovable.
 
-In terms of "testing", I build a kernel for each toolchain but I don't boot
-them and in the past I think blackfin said that what I had wouldn't actually be
-runable.  Last time I looked the wasn't a non-intel cross-toolchain for blackfin.
-
-I shoudl also mention that a subset of these compilers are used to build test
-linux-next daily.
-
-Yours Tony
-
-[1] http://www.kegel.com/crosstool/crosstool-0.43/buildlogs/
+I guess this is why I thought initially that it was move_page_tables
+to adjust the page->index. If it doesn't then the vma->vm_pgoff has to
+be moved down of shift >>PAGE_SHIFT and it doesn't seem to be
+happening which is an unrelated bug.
