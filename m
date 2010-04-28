@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756643Ab0D1TNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 15:13:05 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:48041 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953Ab0D1TND (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 15:13:03 -0400
-Message-ID: <4BD8882A.6050307@oracle.com>
-Date: Wed, 28 Apr 2010 12:10:34 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	id S1756338Ab0D1Sgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 14:36:51 -0400
+Received: from kroah.org ([198.145.64.141]:38308 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755667Ab0D1Sgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 14:36:49 -0400
+Date: Wed, 28 Apr 2010 11:24:52 -0700
+From: Greg KH <greg@kroah.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       devel@driverdev.osuosl.org
+Subject: Re: [PATCH 07/13] drivers/staging/rtl8187se: Hoist assign from if
+Message-ID: <20100428182452.GB8509@kroah.com>
+References: <cover.1269493047.git.joe@perches.com>
+ <65ce2b5aaf76237feec33b4dde5e553beb9ad03c.1269493047.git.joe@perches.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Andy Isaacson <adi@hexapodia.org>,
-       "R. Andrew Bailey" <bailey@akamai.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       guenter.roeck@ericsson.com,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>, yaneti@declera.com
-Subject: Re: [PATCH] x86/PCI: never allocate PCI MMIO resources below    BIOS_END
-References: <2b1eecc3-75b8-4ab3-8932-fdf7cc1e181b@email.android.com> <201004281007.37016.bjorn.helgaas@hp.com> <4BD86D05.20402@oracle.com> <201004281306.05648.bjorn.helgaas@hp.com>
-In-Reply-To: <201004281306.05648.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090203.4BD88896.0043:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <65ce2b5aaf76237feec33b4dde5e553beb9ad03c.1269493047.git.joe@perches.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2010 12:06 PM, Bjorn Helgaas wrote:
-> On Wednesday 28 April 2010 11:14:45 am Yinghai Lu wrote:
->> Never mind, for 2.6.34 your patch should be good enough.
-> 
-> Uh, OK.
-> 
-> I'm not trying to be a nuisance, but if there's a machine where
-> we think there's a bridge window like [mem 0xfed20000-0xffffffff],
-> I want to fix it, even if you think it's "good enough for 2.6.34."
-> 
-> I was hoping you could specifically confirm that "yes, that AMD
-> machine was fixed by d558b483d5a," or else give me some more
-> information that would help me figure out what's going on.
+On Wed, Mar 24, 2010 at 10:17:01PM -0700, Joe Perches wrote:
+> --- a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
+> +++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
+> @@ -1554,7 +1554,8 @@ ieee80211_rx_auth_rq(struct ieee80211_device *ieee, struct sk_buff *skb)
+>  	//IEEE80211DMESG("Rx probe");
+>  	ieee->softmac_stats.rx_auth_rq++;
+>  
+> -	if ((status = auth_rq_parse(skb, dest))!= -1){
+> +	status = auth_rq_parse(skb, dest);
+> +	if (status!= -1) {
 
+Careful that you don't add new coding style issues to a staging driver
+:)
 
-[    0.000000]  BIOS-e820: 0000000000000100 - 0000000000098c00 (usable)
-[    0.000000]  BIOS-e820: 0000000000098c00 - 00000000000a0000 (reserved)
-[    0.000000]  BIOS-e820: 00000000000e6000 - 0000000000100000 (reserved)
-[    0.000000]  BIOS-e820: 0000000000100000 - 00000000d7fa0000 (usable)
-[    0.000000]  BIOS-e820: 00000000d7fae000 - 00000000d7fb0000 (reserved)
-[    0.000000]  BIOS-e820: 00000000d7fb0000 - 00000000d7fbe000 (ACPI data)
-[    0.000000]  BIOS-e820: 00000000d7fbe000 - 00000000d7ff0000 (ACPI NVS)
-[    0.000000]  BIOS-e820: 00000000d7ff0000 - 00000000f0000000 (reserved)
-[    0.000000]  BIOS-e820: 00000000fec00000 - 00000000fec01000 (reserved)
-[    0.000000]  BIOS-e820: 00000000fee00000 - 00000000fee01000 (reserved)
-[    0.000000]  BIOS-e820: 00000000ff700000 - 0000000100000000 (reserved)
-[    0.000000]  BIOS-e820: 0000000100000000 - 0000008028000000 (usable)
+I've fixed this up in the patch...
 
-[    6.960006] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
-[    6.984225] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-06])
-[    7.023528] pci_root PNP0A03:00: host bridge window [io  0x0000-0x03af]
-[    7.024014] pci_root PNP0A03:00: host bridge window [io  0x03b0-0x03bb]
-[    7.028005] pci_root PNP0A03:00: host bridge window [io  0x03bc-0x03bf]
-[    7.032005] pci_root PNP0A03:00: host bridge window [io  0x03c0-0x03df]
-[    7.036005] pci_root PNP0A03:00: host bridge window [io  0x03e0-0xefff]
-[    7.040011] pci_root PNP0A03:00: host bridge window [mem 0xd8000000-0xe7ffffff]
-[    7.044005] pci_root PNP0A03:00: host bridge window [mem 0xf0000000-0xfe9fffff]
-[    7.048005] pci_root PNP0A03:00: host bridge window [mem 0xfec00000-0xfed0ffff]
-[    7.052005] pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
-[    7.056011] pci_root PNP0A03:00: host bridge window [mem 0xfed20000-0xffffffff]
+thanks,
 
-
-d7ff0000-efffffff : reserved
-  d8000000-e7ffffff : PCI Bus 0000:00
-    d8000000-dfffffff : GART
-  e8000000-efffffff : PCI Bus 0000:80
-fec00000-fed0ffff : PCI Bus 0000:00
-  fec00000-fec00fff : reserved
-    fec00000-fec003ff : IOAPIC 0
-  fed00000-fed003ff : HPET 0
-fed10000-fed1ffff : PCI Bus 0000:80
-fed20000-ffffffff : PCI Bus 0000:00
-  fee00000-fee00fff : Local APIC
-    fee00000-fee00fff : reserved
-  fefff000-feffffff : pnp 00:0a
-  ff700000-ffffffff : reserved
-    ffb80000-fffffffe : pnp 00:06
-
+greg k-h
