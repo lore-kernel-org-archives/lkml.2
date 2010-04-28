@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab0D1VwV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 17:52:21 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:41799 "EHLO
+	id S1756078Ab0D1VwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 17:52:19 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:47342 "EHLO
 	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755186Ab0D1VwS convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755156Ab0D1VwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 17:52:18 -0400
+	Wed, 28 Apr 2010 17:52:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=VjE8IoYHn4l0xNJXQyoTn7diGGsA9yblgF45iGlSU5x1jJVLYWSvTetLMp1B915xQn
-         VkCtzlIsVucmSqqEgPOA9MSdJvWWhr+/20WnsVuCAft/GA+/heB1Ot4NpBgPo1afc/Y1
-         12lxAGRbfpm7shUYzrKhJcCorR4QK9UPvUmqI=
-From: Pedro Francisco <pedrogfrancisco@gmail.com>
-To: Vegard Nossum <vegard.nossum@gmail.com>
-Subject: Re: ath5k misbehaving affecting other kernel parts unrelated?
-Date: Wed, 28 Apr 2010 22:52:07 +0100
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: me@bobcopeland.com, "John W. Linville" <linville@tuxdriver.com>,
-       linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-       mickflemm@gmail.com
-References: <201004230806.13628.pedrogfrancisco@gmail.com> <q2p19f34abd1004240509r63449b41l379bc14f5c6eaeae@mail.gmail.com> <201004241828.37489.pedrogfrancisco@gmail.com>
-In-Reply-To: <201004241828.37489.pedrogfrancisco@gmail.com>
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=xt1xP55G/ctJh1hs/K3QwzRfpU+Ism/fWFywJKRT83usx2O1CVb4qlEd6Thk5+UUtY
+         pRV8D3PMBpIif7rBUbR7efP4H67qHDq3Ag7CY/6NboCRd0xWTMVRoS6TW3RHSkBO4z6L
+         Z51OCnb+mYhhhSQubOf1fOEFQ/PSxXn85Ovio=
+Date: Wed, 28 Apr 2010 23:52:16 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, John Kacur <jkacur@redhat.com>,
+       lkml <linux-kernel@vger.kernel.org>, Jan Blunck <jblunck@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: [PATCH 10/10] bkl: Fix-up compile problems as a result of the
+	bkl-pushdown.
+Message-ID: <20100428215214.GC6037@nowhere>
+References: <1272359898-32020-1-git-send-email-jkacur@redhat.com> <201004271317.45503.arnd@arndb.de> <alpine.LFD.2.00.1004271352510.3318@localhost> <201004271503.18077.arnd@arndb.de> <alpine.LFD.2.00.1004280750330.3739@i5.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201004282252.07424.pedrogfrancisco@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004280750330.3739@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Sábado, 24 de Abril de 2010 18:28:36 Pedro Francisco escreveu:
--snip 
-> I get an error booting as if I'd forgotten to compile my disk's controller;
--snip
+On Wed, Apr 28, 2010 at 07:55:02AM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Tue, 27 Apr 2010, Arnd Bergmann wrote:
+> > +static long v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+> >  {
+> >  	struct video_device *vdev = video_devdata(filp);
+> > +	int ret;
+> >  
+> >  	/* Allow ioctl to continue even if the device was unregistered.
+> >  	   Things like dequeueing buffers might still be useful. */
+> > +	if (vdev->fops->unlocked_ioctl) {
+> > +		ret = vdev->fops->unlocked_ioctl(filp, cmd, arg);
+> > +	} else if (vdev->fops->ioctl) {
+> > +		/* TODO: convert all drivers to unlocked_ioctl */
+> > +		lock_kernel();
+> > +		ret = vdev->fops->ioctl(filp, cmd, arg);
+> > +		unlock_kernel();
+> > +	} else 
+> > +		ret = -ENOTTY;
+> >  
+> > +	return ret;
+> 
+> [ Removed the '-' lines so you can see what the end result ends up being ]
+> 
+> Please, if you do this for the V4L2 layer, then DO NOT make the same 
+> mistake we did with the vasic VFS layer.
+> 
+> In other words, DO NOT keep the "bkl" version named just "ioctl". It was a 
+> horrible horrible mistake, and it has resulted in problems years 
+> afterwards.
+> 
+> I realize that it's so easy to just add a new ".unlocked_ioctl" member, 
+> and then as people start using it, they get rid of the BKL. But it's a 
+> mistake. It was a mistake for the VFS layer, it would be a mistake for the 
+> V4L2 layer.
+> 
+> Instead, spend the 15 minutes just renaming every current 'ioctl' user in 
+> the V4L2 layer. It's not that much work, the scripts I documented in my 
+> renaming patch do 95% of the work (you just need to change 
+> "file_operations" to "v4l2_file_operations"). It's not that painful. And 
+> then you don't just push the BKL down, you actually annotate the remaining 
+> users so that they can be grepped for.
+> 
+> So please please please, don't make the same mistake we did long ago. 
+> 
+> 		Linus
 
-I am now able to compile my own kernels using `make all deb-pkg' on the 
-vanilla source and additional hocus-pocus to create the initramfs, after 
-having finally given up on using the Debian way (make-kpkg).
 
+Hmm, there are 92 struct v4l2_file_operations::ioctl but actually a lot
+of duplicates ioctl. In fact there are just 26 ioctl functions.
 
-A Sexta, 23 de Abril de 2010 17:37:03 me@bobcopeland.com escreveu:
--snip
-> Advice for debugging: turn on slub/slab debug options, and possibly
-> kmemcheck.  kmemcheck was very helpful for me last time I had such
-> a corruption issue.
+It's probably worth the whole pushdown instead of the rename.
 
-I can't seem to find the "kmemcheck: trap use of uninitialized memory" option 
-in make menuconfig, section Kernel Hacking, though a search shows it should be 
-there.
+I'm going to do this.
 
-Will it be useful if I do such tests now that I've opened a bug report with 
-data from slab_debug?
-If so, how can I enable such feature?
-
-P.S.: considering I'm just planning on using the kernel for the tests, I don't 
-bother enabling options which hurt interactivity, as long as a terminal works 
-well.
-
-Thanks again,
--- 
-Pedro
