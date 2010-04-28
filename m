@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab0D1ODi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 10:03:38 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:48327 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab0D1ODh (ORCPT
+	id S1756736Ab0D1TGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 15:06:52 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:60120 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756627Ab0D1TGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 10:03:37 -0400
-Subject: Re: [PATCH] Fix a huge latency problem in the MTD CFI and LPDDR
- flash drivers.
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stefani Seibold <stefani@seibold.net>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
-In-Reply-To: <20100422230737.95e441ef.akpm@linux-foundation.org>
-References: <1271623604.7050.0.camel@wall-e.seibold.net>
-	 <1271787391.16051.4.camel@wall-e.seibold.net>
-	 <1272002584.5347.2.camel@wall-e.seibold.net>
-	 <20100422230737.95e441ef.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Apr 2010 16:58:16 +0300
-Message-ID: <1272463096.7750.41.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 28 Apr 2010 14:02:43.0502 (UTC) FILETIME=[78F4DCE0:01CAE6DB]
-X-Nokia-AV: Clean
+	Wed, 28 Apr 2010 15:06:50 -0400
+Message-ID: <4BD8873F.5050807@infradead.org>
+Date: Wed, 28 Apr 2010 16:06:39 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       Wouter Van Rooy <wouter.vanrooy@gmail.com>
+Subject: Re: linux-next: manual merge of the staging-next tree with the v4l-dvb
+ tree
+References: <20100428160749.52da847a.sfr@canb.auug.org.au> <20100428152641.GD4483@kroah.com>
+In-Reply-To: <20100428152641.GD4483@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-22 at 23:07 -0400, Andrew Morton wrote:
-> On Fri, 23 Apr 2010 08:03:04 +0200 Stefani Seibold <stefani@seibold.net> wrote:
+Greg KH wrote:
+> On Wed, Apr 28, 2010 at 04:07:49PM +1000, Stephen Rothwell wrote:
+>> Hi Greg,
+>>
+>> Today's linux-next merge of the staging-next tree got a conflict in
+>> drivers/staging/cx25821/cx25821-alsa.c between commit
+>> 4e0c923a0d23f86c7331b32bc2aeb280e10e029e ("V4L/DVB: Staging: cx25821: fix
+>> coding style issues in cx25821-alsa.c") from the v4l-dvb tree and commit
+>> 98a178beaaf4c9a0acc4815807be51425b91f0a7 ("Staging: cx25821 fixed C99
+>> comments, white spaces and unnecessary braces") from the staging-next
+>> tree.
+>>
+>> I used the v4l-dvb versions of the conflicting bits (they looked neater
+>> to me).
 > 
-> > David did not respond to my request since more than a month. Can u apply
-> > the patch to linux next?
-> 
-> The patch is rather too fundamental for there to be benefit in me
-> carrying it.
-> 
-> Hopefully Artem can look at it soon, although he's somewhat busy with
-> real-life things at present.
+> Odd, Mauro, why are you applying coding style fixes to the staging tree
+> to your tree?  I'll be glad to take them instead.
 
-Yeah, the patch is in my l2 tree, and David should take it to
-mtd-2.6.git at some point, so it will probably be in 2.6.35, unless
-David misses the merge window :-)
+This driver (cx25821) came from my tree, so I was just keep maintaining it.
+Although the driver works fine, it has some coding style issues, but the biggest
+issue is that it has the same code that is almost identical replicated 8
+times (one for each simultaneous stream that the device supports), and another
+code duplicated 4 times (for the 4 simultaneous output streams).
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Sorry, but I didn't realized that you're also retrieving patches for it. I think
+I just assumed that we're following the same procedure as agreed with relation
+to go7007 driver.
 
+Anyway, the driver maintainer is now preparing a changeset that will hopefully 
+solve the remaining issues that prevented it to be added directly on /drivers/media.
+
+Cheers,
+Mauro
