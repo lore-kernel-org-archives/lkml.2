@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932335Ab0D1WTk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 18:19:40 -0400
-Received: from tex.lwn.net ([70.33.254.29]:48903 "EHLO vena.lwn.net"
+	id S932306Ab0D1WTh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 18:19:37 -0400
+Received: from tex.lwn.net ([70.33.254.29]:48915 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932283Ab0D1WS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 18:18:27 -0400
+	id S932284Ab0D1WS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 18:18:28 -0400
 From: Jonathan Corbet <corbet@lwn.net>
 To: linux-kernel@vger.kernel.org
 Cc: Harald Welte <laforge@gnumonks.org>, linux-fbdev@vger.kernel.org,
        JosephChan@via.com.tw, ScottFang@viatech.com.cn,
        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 26/30] viafb: move some modesetting functions to a seperate file
-Date: Wed, 28 Apr 2010 16:17:27 -0600
-Message-Id: <1272493051-25380-27-git-send-email-corbet@lwn.net>
+Subject: [PATCH 27/30] viafb: replace inb/outb
+Date: Wed, 28 Apr 2010 16:17:28 -0600
+Message-Id: <1272493051-25380-28-git-send-email-corbet@lwn.net>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1272493051-25380-1-git-send-email-corbet@lwn.net>
 References: <1272493051-25380-1-git-send-email-corbet@lwn.net>
@@ -23,340 +23,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 
-viafb: move some modesetting functions to a seperate file
+viafb: replace inb/outb
 
-This patch moves the modesetting functions which are already cleaned up
-to a seperate file.
-Just the beginning to bring some structure in this mess.
+This patch replaces occurences of inb/outb with via_write_reg and
+via_write_reg_mask where this is possible to improve code
+readability.
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 ---
- drivers/video/via/Makefile          |    3 +-
- drivers/video/via/hw.c              |   96 --------------------------
- drivers/video/via/hw.h              |    5 +-
- drivers/video/via/via_modesetting.c |  126 +++++++++++++++++++++++++++++++++++
- drivers/video/via/via_modesetting.h |   38 +++++++++++
- 5 files changed, 166 insertions(+), 102 deletions(-)
- create mode 100644 drivers/video/via/via_modesetting.c
- create mode 100644 drivers/video/via/via_modesetting.h
+ drivers/video/via/hw.c |   22 +++++++---------------
+ 1 files changed, 7 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/video/via/Makefile b/drivers/video/via/Makefile
-index 05401b6..0dfecd2 100644
---- a/drivers/video/via/Makefile
-+++ b/drivers/video/via/Makefile
-@@ -7,5 +7,4 @@ obj-$(CONFIG_FB_VIA_CAMERA) += via-camera.o
- 
- viafb-y	:=viafbdev.o hw.o via_i2c.o dvi.o lcd.o ioctl.o accel.o \
- 	via_utility.o vt1636.o global.o tblDPASetting.o viamode.o tbl1636.o \
--	via-core.o via-gpio.o
--
-+	via-core.o via-gpio.o via_modesetting.o
 diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index 1628a5f..d474fbe 100644
+index d474fbe..b2bb24e 100644
 --- a/drivers/video/via/hw.c
 +++ b/drivers/video/via/hw.c
-@@ -624,102 +624,6 @@ void viafb_set_iga_path(void)
- 	}
+@@ -1008,16 +1008,12 @@ void viafb_load_reg(int timing_value, int viafb_load_reg_num,
+ void viafb_write_regx(struct io_reg RegTable[], int ItemNum)
+ {
+ 	int i;
+-	unsigned char RegTemp;
+ 
+ 	/*DEBUG_MSG(KERN_INFO "Table Size : %x!!\n",ItemNum ); */
+ 
+-	for (i = 0; i < ItemNum; i++) {
+-		outb(RegTable[i].index, RegTable[i].port);
+-		RegTemp = inb(RegTable[i].port + 1);
+-		RegTemp = (RegTemp & (~RegTable[i].mask)) | RegTable[i].value;
+-		outb(RegTemp, RegTable[i].port + 1);
+-	}
++	for (i = 0; i < ItemNum; i++)
++		via_write_reg_mask(RegTable[i].port, RegTable[i].index,
++			RegTable[i].value, RegTable[i].mask);
  }
  
--void via_set_primary_address(u32 addr)
--{
--	DEBUG_MSG(KERN_DEBUG "via_set_primary_address(0x%08X)\n", addr);
--	via_write_reg(VIACR, 0x0D, addr & 0xFF);
--	via_write_reg(VIACR, 0x0C, (addr >> 8) & 0xFF);
--	via_write_reg(VIACR, 0x34, (addr >> 16) & 0xFF);
--	via_write_reg_mask(VIACR, 0x48, (addr >> 24) & 0x1F, 0x1F);
--}
--
--void via_set_secondary_address(u32 addr)
--{
--	DEBUG_MSG(KERN_DEBUG "via_set_secondary_address(0x%08X)\n", addr);
--	/* secondary display supports only quadword aligned memory */
--	via_write_reg_mask(VIACR, 0x62, (addr >> 2) & 0xFE, 0xFE);
--	via_write_reg(VIACR, 0x63, (addr >> 10) & 0xFF);
--	via_write_reg(VIACR, 0x64, (addr >> 18) & 0xFF);
--	via_write_reg_mask(VIACR, 0xA3, (addr >> 26) & 0x07, 0x07);
--}
--
--void via_set_primary_pitch(u32 pitch)
--{
--	DEBUG_MSG(KERN_DEBUG "via_set_primary_pitch(0x%08X)\n", pitch);
--	/* spec does not say that first adapter skips 3 bits but old
--	 * code did it and seems to be reasonable in analogy to 2nd adapter
--	 */
--	pitch = pitch >> 3;
--	via_write_reg(VIACR, 0x13, pitch & 0xFF);
--	via_write_reg_mask(VIACR, 0x35, (pitch >> (8 - 5)) & 0xE0, 0xE0);
--}
--
--void via_set_secondary_pitch(u32 pitch)
--{
--	DEBUG_MSG(KERN_DEBUG "via_set_secondary_pitch(0x%08X)\n", pitch);
--	pitch = pitch >> 3;
--	via_write_reg(VIACR, 0x66, pitch & 0xFF);
--	via_write_reg_mask(VIACR, 0x67, (pitch >> 8) & 0x03, 0x03);
--	via_write_reg_mask(VIACR, 0x71, (pitch >> (10 - 7)) & 0x80, 0x80);
--}
--
--void via_set_primary_color_depth(u8 depth)
--{
--	u8 value;
--
--	DEBUG_MSG(KERN_DEBUG "via_set_primary_color_depth(%d)\n", depth);
--	switch (depth) {
--	case 8:
--		value = 0x00;
--		break;
--	case 15:
--		value = 0x04;
--		break;
--	case 16:
--		value = 0x14;
--		break;
--	case 24:
--		value = 0x0C;
--		break;
--	case 30:
--		value = 0x08;
--		break;
--	default:
--		printk(KERN_WARNING "via_set_primary_color_depth: "
--			"Unsupported depth: %d\n", depth);
--		return;
--	}
--
--	via_write_reg_mask(VIASR, 0x15, value, 0x1C);
--}
--
--void via_set_secondary_color_depth(u8 depth)
--{
--	u8 value;
--
--	DEBUG_MSG(KERN_DEBUG "via_set_secondary_color_depth(%d)\n", depth);
--	switch (depth) {
--	case 8:
--		value = 0x00;
--		break;
--	case 16:
--		value = 0x40;
--		break;
--	case 24:
--		value = 0xC0;
--		break;
--	case 30:
--		value = 0x80;
--		break;
--	default:
--		printk(KERN_WARNING "via_set_secondary_color_depth: "
--			"Unsupported depth: %d\n", depth);
--		return;
--	}
--
--	via_write_reg_mask(VIACR, 0x67, value, 0xC0);
--}
--
- static void set_color_register(u8 index, u8 red, u8 green, u8 blue)
- {
- 	outb(0xFF, 0x3C6); /* bit mask of palette */
-diff --git a/drivers/video/via/hw.h b/drivers/video/via/hw.h
-index 641a5fa..a58701f 100644
---- a/drivers/video/via/hw.h
-+++ b/drivers/video/via/hw.h
-@@ -25,6 +25,7 @@
- #include "viamode.h"
- #include "global.h"
- #include "via_io.h"
-+#include "via_modesetting.h"
+ void viafb_load_fetch_count_reg(int h_addr, int bpp_byte, int set_iga)
+@@ -2130,10 +2126,8 @@ int viafb_setmode(struct VideoModeTable *vmode_tbl, int video_bpp,
+ 	outb(VPIT.Misc, VIAWMisc);
  
- #define viafb_read_reg(p, i)			via_read_reg(p, i)
- #define viafb_write_reg(i, p, d)		via_write_reg(p, i, d)
-@@ -910,10 +911,6 @@ void viafb_update_device_setting(int hres, int vres, int bpp,
- 			   int vmode_refresh, int flag);
+ 	/* Write Sequencer */
+-	for (i = 1; i <= StdSR; i++) {
+-		outb(i, VIASR);
+-		outb(VPIT.SR[i - 1], VIASR + 1);
+-	}
++	for (i = 1; i <= StdSR; i++)
++		via_write_reg(VIASR, i, VPIT.SR[i - 1]);
  
- void viafb_set_iga_path(void);
--void via_set_primary_address(u32 addr);
--void via_set_secondary_address(u32 addr);
--void via_set_primary_pitch(u32 pitch);
--void via_set_secondary_pitch(u32 pitch);
- void viafb_set_primary_color_register(u8 index, u8 red, u8 green, u8 blue);
- void viafb_set_secondary_color_register(u8 index, u8 red, u8 green, u8 blue);
- void viafb_get_fb_info(unsigned int *fb_base, unsigned int *fb_len);
-diff --git a/drivers/video/via/via_modesetting.c b/drivers/video/via/via_modesetting.c
-new file mode 100644
-index 0000000..69ff285
---- /dev/null
-+++ b/drivers/video/via/via_modesetting.c
-@@ -0,0 +1,126 @@
-+/*
-+ * Copyright 1998-2008 VIA Technologies, Inc. All Rights Reserved.
-+ * Copyright 2001-2008 S3 Graphics, Inc. All Rights Reserved.
-+ * Copyright 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public
-+ * License as published by the Free Software Foundation;
-+ * either version 2, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTIES OR REPRESENTATIONS; without even
-+ * the implied warranty of MERCHANTABILITY or FITNESS FOR
-+ * A PARTICULAR PURPOSE.See the GNU General Public License
-+ * for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc.,
-+ * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ */
-+/*
-+ * basic modesetting functions
-+ */
-+
-+#include <linux/kernel.h>
-+#include "via_modesetting.h"
-+#include "via_io.h"
-+#include "share.h"
-+#include "debug.h"
-+
-+void via_set_primary_address(u32 addr)
-+{
-+	DEBUG_MSG(KERN_DEBUG "via_set_primary_address(0x%08X)\n", addr);
-+	via_write_reg(VIACR, 0x0D, addr & 0xFF);
-+	via_write_reg(VIACR, 0x0C, (addr >> 8) & 0xFF);
-+	via_write_reg(VIACR, 0x34, (addr >> 16) & 0xFF);
-+	via_write_reg_mask(VIACR, 0x48, (addr >> 24) & 0x1F, 0x1F);
-+}
-+
-+void via_set_secondary_address(u32 addr)
-+{
-+	DEBUG_MSG(KERN_DEBUG "via_set_secondary_address(0x%08X)\n", addr);
-+	/* secondary display supports only quadword aligned memory */
-+	via_write_reg_mask(VIACR, 0x62, (addr >> 2) & 0xFE, 0xFE);
-+	via_write_reg(VIACR, 0x63, (addr >> 10) & 0xFF);
-+	via_write_reg(VIACR, 0x64, (addr >> 18) & 0xFF);
-+	via_write_reg_mask(VIACR, 0xA3, (addr >> 26) & 0x07, 0x07);
-+}
-+
-+void via_set_primary_pitch(u32 pitch)
-+{
-+	DEBUG_MSG(KERN_DEBUG "via_set_primary_pitch(0x%08X)\n", pitch);
-+	/* spec does not say that first adapter skips 3 bits but old
-+	 * code did it and seems to be reasonable in analogy to 2nd adapter
-+	 */
-+	pitch = pitch >> 3;
-+	via_write_reg(VIACR, 0x13, pitch & 0xFF);
-+	via_write_reg_mask(VIACR, 0x35, (pitch >> (8 - 5)) & 0xE0, 0xE0);
-+}
-+
-+void via_set_secondary_pitch(u32 pitch)
-+{
-+	DEBUG_MSG(KERN_DEBUG "via_set_secondary_pitch(0x%08X)\n", pitch);
-+	pitch = pitch >> 3;
-+	via_write_reg(VIACR, 0x66, pitch & 0xFF);
-+	via_write_reg_mask(VIACR, 0x67, (pitch >> 8) & 0x03, 0x03);
-+	via_write_reg_mask(VIACR, 0x71, (pitch >> (10 - 7)) & 0x80, 0x80);
-+}
-+
-+void via_set_primary_color_depth(u8 depth)
-+{
-+	u8 value;
-+
-+	DEBUG_MSG(KERN_DEBUG "via_set_primary_color_depth(%d)\n", depth);
-+	switch (depth) {
-+	case 8:
-+		value = 0x00;
-+		break;
-+	case 15:
-+		value = 0x04;
-+		break;
-+	case 16:
-+		value = 0x14;
-+		break;
-+	case 24:
-+		value = 0x0C;
-+		break;
-+	case 30:
-+		value = 0x08;
-+		break;
-+	default:
-+		printk(KERN_WARNING "via_set_primary_color_depth: "
-+			"Unsupported depth: %d\n", depth);
-+		return;
-+	}
-+
-+	via_write_reg_mask(VIASR, 0x15, value, 0x1C);
-+}
-+
-+void via_set_secondary_color_depth(u8 depth)
-+{
-+	u8 value;
-+
-+	DEBUG_MSG(KERN_DEBUG "via_set_secondary_color_depth(%d)\n", depth);
-+	switch (depth) {
-+	case 8:
-+		value = 0x00;
-+		break;
-+	case 16:
-+		value = 0x40;
-+		break;
-+	case 24:
-+		value = 0xC0;
-+		break;
-+	case 30:
-+		value = 0x80;
-+		break;
-+	default:
-+		printk(KERN_WARNING "via_set_secondary_color_depth: "
-+			"Unsupported depth: %d\n", depth);
-+		return;
-+	}
-+
-+	via_write_reg_mask(VIACR, 0x67, value, 0xC0);
-+}
-diff --git a/drivers/video/via/via_modesetting.h b/drivers/video/via/via_modesetting.h
-new file mode 100644
-index 0000000..ae35cfd
---- /dev/null
-+++ b/drivers/video/via/via_modesetting.h
-@@ -0,0 +1,38 @@
-+/*
-+ * Copyright 1998-2008 VIA Technologies, Inc. All Rights Reserved.
-+ * Copyright 2001-2008 S3 Graphics, Inc. All Rights Reserved.
-+ * Copyright 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public
-+ * License as published by the Free Software Foundation;
-+ * either version 2, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTIES OR REPRESENTATIONS; without even
-+ * the implied warranty of MERCHANTABILITY or FITNESS FOR
-+ * A PARTICULAR PURPOSE.See the GNU General Public License
-+ * for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc.,
-+ * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ */
-+/*
-+ * basic modesetting functions
-+ */
-+
-+#ifndef __VIA_MODESETTING_H__
-+#define __VIA_MODESETTING_H__
-+
-+#include <linux/types.h>
-+
-+void via_set_primary_address(u32 addr);
-+void via_set_secondary_address(u32 addr);
-+void via_set_primary_pitch(u32 pitch);
-+void via_set_secondary_pitch(u32 pitch);
-+void via_set_primary_color_depth(u8 depth);
-+void via_set_secondary_color_depth(u8 depth);
-+
-+#endif /* __VIA_MODESETTING_H__ */
+ 	viafb_write_reg_mask(0x15, VIASR, 0xA2, 0xA2);
+ 	viafb_set_iga_path();
+@@ -2142,10 +2136,8 @@ int viafb_setmode(struct VideoModeTable *vmode_tbl, int video_bpp,
+ 	viafb_fill_crtc_timing(crt_timing, vmode_tbl, video_bpp / 8, IGA1);
+ 
+ 	/* Write Graphic Controller */
+-	for (i = 0; i < StdGR; i++) {
+-		outb(i, VIAGR);
+-		outb(VPIT.GR[i], VIAGR + 1);
+-	}
++	for (i = 0; i < StdGR; i++)
++		via_write_reg(VIAGR, i, VPIT.GR[i]);
+ 
+ 	/* Write Attribute Controller */
+ 	for (i = 0; i < StdAR; i++) {
 -- 
 1.7.0.1
 
