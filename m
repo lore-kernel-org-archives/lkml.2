@@ -1,135 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab0D1OYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 10:24:17 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:52327 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754510Ab0D1OYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 10:24:15 -0400
-Date: Wed, 28 Apr 2010 15:23:56 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/3] Fix migration races in rmap_walk() V2
-Message-ID: <20100428142356.GF15815@csn.ul.ie>
-References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1004271723090.24133@router.home> <20100427223242.GG8860@random.random> <20100428091345.496ca4c4.kamezawa.hiroyu@jp.fujitsu.com> <20100428002056.GH510@random.random>
+	id S1754009Ab0D1NWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 09:22:49 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:40376 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754421Ab0D1NWq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 09:22:46 -0400
+Date: Wed, 28 Apr 2010 14:21:35 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, Yong Zhang <yong.zhang@windriver.com>,
+       Xiaotian Feng <xtfeng@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Roland Dreier <rolandd@cisco.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Takashi Iwai <tiwai@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
+Message-ID: <20100428132135.GA22268@shareable.org>
+References: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> <u2w7b6bb4a51004280047s8748cbfbi7ed8e2a238121fa9@mail.gmail.com> <q2j412e6f7f1004280052ice434710ra17a4516236bd3f3@mail.gmail.com> <20100428081545.GA19027@windriver.com> <u2t412e6f7f1004280123k642a1511gbce3ed784431dc1d@mail.gmail.com> <8482.1272446987@redhat.com> <q2m412e6f7f1004280417h449c67f9g86fca3dbece106e3@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100428002056.GH510@random.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <q2m412e6f7f1004280417h449c67f9g86fca3dbece106e3@mail.gmail.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 02:20:56AM +0200, Andrea Arcangeli wrote:
-> On Wed, Apr 28, 2010 at 09:13:45AM +0900, KAMEZAWA Hiroyuki wrote:
-> > Doing some check in move_ptes() after vma_adjust() is not safe.
-> > IOW, when vma's information and information in page-table is incosistent...objrmap
-> > is broken and migartion will cause panic.
-> > 
-> > Then...I think there are 2 ways.
-> >   1. use seqcounter in "mm_struct" as previous patch and lock it at mremap.
-> > or
-> >   2. get_user_pages_fast() when do remap.
+Changli Gao wrote:
+> On Wed, Apr 28, 2010 at 5:29 PM, David Howells <dhowells@redhat.com> wrote:
+> > Changli Gao <xiaosuo@gmail.com> wrote:
+> >
+> >> If there isn't enough work to be done, we'd better not disrupt them
+> >> and  leave them sleeping forever to keep the scheduler happier. Do we
+> >> have reason to keep fair to all the workers? Does it have benefit?
+> >
+> > You've made one important assumption: the processes on the wait queue are
+> > sleeping waiting to service things... but what if the wait queue governs
+> > access to a resource, and all the processes on that wait queue need access to
+> > that resource to do things?  Some of the processes waiting for it may never
+> > get a go, and so necessary work may be left undone.
+> >
 > 
-> 3 take the anon_vma->lock
+> You are right. I made the wrong assumption. But we indeed need some
+> primitive to add wait_queue at the head of the wait_queue_head, and I
+> know epoll needs it, at least.
 > 
+> fs/eventpoll.c: 1443.
+>                 wait.flags |= WQ_FLAG_EXCLUSIVE;
+>                 __add_wait_queue(&ep->wq, &wait);
 
-I've been looking at ways during the day that the anon_vma lock can be held
-while the page tables are being allocated. The schemes were way too hairy
-just to cover a migration corner case.
+The same thing about assumptions applies here.  The userspace process
+may be waiting for an epoll condition to get access to a resource,
+rather than being a worker thread interchangeable with others.
 
-As this is particular to exec, I'm wondering if Kamezawa's additional proposal
-of just skipping migration of pages within the temporary stack might be the
-best solution overall in terms of effectiveness and simplicity. His patch
-introduced a new variable to the VMA but it shouldn't be necessary and it
-altered vma_address which is unnecessary.
+For example, userspace might be using a pipe as a signal-safe lock, or
+signal-safe multi-token semaphore, and epoll to wait for that pipe.
 
-Here is a different version of the same basic idea to skip temporary VMAs
-during migration. Maybe go with this?
+WQ_FLAG_EXCLUSIVE means there is no point waking all tasks, to avoid a
+pointless thundering herd.  It doesn't mean unfairness is ok.
 
-(As a heads-up, I'll also be going offline in about 24 hours until Tuesday
-morning. The area I'm in has zero internet access)
+The LIFO idea _might_ make sense for interchangeable worker-thread
+situations - including userspace.  It would make sense for pipe
+waiters, socket waiters (especially accept), etc.
 
-==== CUT HERE ====
-mm,migration: Avoid race between shift_arg_pages() and rmap_walk() during migration by not migrating temporary stacks
+Do you have any measurements which showing the LIFO mode performing
+better than FIFO, and by how much?
 
-Page migration requires rmap to be able to find all ptes mapping a page
-at all times, otherwise the migration entry can be instantiated, but it
-is possible to leave one behind if the second rmap_walk fails to find
-the page.  If this page is later faulted, migration_entry_to_page() will
-call BUG because the page is locked indicating the page was migrated by
-the migration PTE not cleaned up.
-
-There is a race between shift_arg_pages and migration that allows this
-bug to trigger. A temporary stack is setup during exec and later moved. If
-migration moves a page in the temporary stack and the VMA is then removed,
-the migration PTE may not be found leading to a BUG when the stack is faulted.
-
-Ideally, shift_arg_pages must run atomically with respect of rmap_walk by
-holding the anon_vma lock but this is problematic as pages must be allocated
-for page tables. Instead, this patch identifies when it is about to migrate
-pages from a temporary stack and leaves them alone.  Memory hot-remove will
-try again, sys_move_pages() wouldn't be operating during exec() time and
-memory compaction will just continue to another page without concern.
-
-[kamezawa.hiroyu@jp.fujitsu.com: Idea for having migration skip the stacks]
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/rmap.c |   31 ++++++++++++++++++++++++++++++-
- 1 files changed, 30 insertions(+), 1 deletions(-)
-
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 85f203e..5aaf4df 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1141,6 +1141,21 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
- 	return ret;
- }
- 
-+static bool is_vma_temporary_stack(struct vm_area_struct *vma)
-+{
-+	if (vma->vm_flags != VM_STACK_FLAGS)
-+		return false;
-+
-+	/*
-+	 * Only during exec will the total VM consumed by a process
-+	 * be exacly the same as the stack
-+	 */
-+	if (vma->vm_mm->stack_vm == 1 && vma->vm_mm->total_vm == 1)
-+		return true;
-+
-+	return false;
-+}
-+
- /**
-  * try_to_unmap_anon - unmap or unlock anonymous page using the object-based
-  * rmap method
-@@ -1169,7 +1184,21 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
- 
- 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
- 		struct vm_area_struct *vma = avc->vma;
--		unsigned long address = vma_address(page, vma);
-+		unsigned long address;
-+
-+		/*
-+		 * During exec, a temporary VMA is setup and later moved.
-+		 * The VMA is moved under the anon_vma lock but not the
-+		 * page tables leading to a race where migration cannot
-+		 * find the migration ptes. Rather than increasing the
-+		 * locking requirements of exec(), migration skips
-+		 * temporary VMAs until after exec() completes.
-+		 */
-+		if (PAGE_MIGRATION && (flags & TTU_MIGRATION) &&
-+				is_vma_temporary_stack(vma))
-+			continue;
-+
-+		address = vma_address(page, vma);
- 		if (address == -EFAULT)
- 			continue;
- 		ret = try_to_unmap_one(page, vma, address, flags);
+-- Jamie
