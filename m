@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab0D1JsT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 05:48:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33417 "EHLO mx1.redhat.com"
+	id S1752730Ab0D1Jbp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 05:31:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34682 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753732Ab0D1JsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 05:48:17 -0400
-Message-ID: <4BD80449.4010700@redhat.com>
-Date: Wed, 28 Apr 2010 12:47:53 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Huang Ying <ying.huang@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Andi Kleen <andi@firstfloor.org>,
+	id S1751043Ab0D1Jbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 05:31:43 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <u2t412e6f7f1004280123k642a1511gbce3ed784431dc1d@mail.gmail.com>
+References: <u2t412e6f7f1004280123k642a1511gbce3ed784431dc1d@mail.gmail.com> <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> <u2w7b6bb4a51004280047s8748cbfbi7ed8e2a238121fa9@mail.gmail.com> <q2j412e6f7f1004280052ice434710ra17a4516236bd3f3@mail.gmail.com> <20100428081545.GA19027@windriver.com>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: dhowells@redhat.com, Yong Zhang <yong.zhang@windriver.com>,
+       Xiaotian Feng <xtfeng@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
        Andrew Morton <akpm@linux-foundation.org>,
-       "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/2] KVM, Fix QEMU-KVM is killed by guest SRAO MCE
-References: <1272351860.24125.15.camel@yhuang-dev.sh.intel.com>	 <4BD69680.10402@redhat.com>	 <1272360341.24125.116.camel@yhuang-dev.sh.intel.com>	 <4BD6AEC7.5020609@redhat.com> <1272423375.24125.189.camel@yhuang-dev.sh.intel.com>
-In-Reply-To: <1272423375.24125.189.camel@yhuang-dev.sh.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Roland Dreier <rolandd@cisco.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Takashi Iwai <tiwai@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
+Date: Wed, 28 Apr 2010 10:29:47 +0100
+Message-ID: <8482.1272446987@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2010 05:56 AM, Huang Ying wrote:
->    
->>>
->>> Just want to use the side effect of copy_from_user, SIGBUS will be sent
->>> to current process because the page touched is marked as poisoned. That
->>> is, failure is expected, so the return value is not checked.
->>>
->>>        
->> What if the failure doesn't happen?  Say, someone mmap()ed over the page.
->>      
-> Sorry, not get your idea clearly. hva is re-mmap()ed? We just read the
-> hva, not write, so I think it should be OK here.
->
->    
+Changli Gao <xiaosuo@gmail.com> wrote:
 
-We don't generate a signal in this case.  Does the code continue to work 
-correctly (not sure what correctly is in this case... should probably 
-just continue).
+> If there isn't enough work to be done, we'd better not disrupt them
+> and  leave them sleeping forever to keep the scheduler happier. Do we
+> have reason to keep fair to all the workers? Does it have benefit?
 
-There's also the possibility of -EFAULT.
+You've made one important assumption: the processes on the wait queue are
+sleeping waiting to service things... but what if the wait queue governs
+access to a resource, and all the processes on that wait queue need access to
+that resource to do things?  Some of the processes waiting for it may never
+get a go, and so necessary work may be left undone.
 
--- 
-error compiling committee.c: too many arguments to function
+So NACK.
 
+David
