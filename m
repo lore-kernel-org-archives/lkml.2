@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342Ab0D1WTL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 18:19:11 -0400
-Received: from tex.lwn.net ([70.33.254.29]:48918 "EHLO vena.lwn.net"
+	id S932347Ab0D1WTo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 18:19:44 -0400
+Received: from tex.lwn.net ([70.33.254.29]:48900 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932285Ab0D1WS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 18:18:29 -0400
+	id S932282Ab0D1WS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 18:18:27 -0400
 From: Jonathan Corbet <corbet@lwn.net>
 To: linux-kernel@vger.kernel.org
 Cc: Harald Welte <laforge@gnumonks.org>, linux-fbdev@vger.kernel.org,
        JosephChan@via.com.tw, ScottFang@viatech.com.cn,
        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 28/30] viafb: improve misc register handling
-Date: Wed, 28 Apr 2010 16:17:29 -0600
-Message-Id: <1272493051-25380-29-git-send-email-corbet@lwn.net>
+Subject: [PATCH 25/30] viafb: unify modesetting functions
+Date: Wed, 28 Apr 2010 16:17:26 -0600
+Message-Id: <1272493051-25380-26-git-send-email-corbet@lwn.net>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1272493051-25380-1-git-send-email-corbet@lwn.net>
 References: <1272493051-25380-1-git-send-email-corbet@lwn.net>
@@ -23,124 +23,216 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 
-viafb: improve misc register handling
+viafb: unify modesetting functions
 
-This patch improves the misc register handling by adding a modify
-function for this to via_io.h and moving expanded definitions of the
-relevant ports there. The code was changed to use those to improve
-readability.
+This patch unifies some cleaned up modesetting functions to prepare for
+moving them to an extra file. This includes make them use via_io and
+changing there names to reflect that they do not depend on anything
+framebuffer specific.
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 ---
- drivers/video/via/hw.c     |   27 ++++++++-------------------
- drivers/video/via/share.h  |    2 --
- drivers/video/via/via_io.h |    9 +++++++++
- 3 files changed, 17 insertions(+), 21 deletions(-)
+ drivers/video/via/hw.c       |   66 +++++++++++++++++++++---------------------
+ drivers/video/via/hw.h       |    8 ++--
+ drivers/video/via/viafbdev.c |   17 ++++++-----
+ 3 files changed, 46 insertions(+), 45 deletions(-)
 
 diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index b2bb24e..e356fe8 100644
+index 805151f..1628a5f 100644
 --- a/drivers/video/via/hw.c
 +++ b/drivers/video/via/hw.c
-@@ -1394,8 +1394,6 @@ u32 viafb_get_clk_value(int clk)
- /* Set VCLK*/
- void viafb_set_vclock(u32 CLK, int set_iga)
- {
--	unsigned char RegTemp;
--
- 	/* H.W. Reset : ON */
- 	viafb_write_reg_mask(CR17, VIACR, 0x00, BIT7);
+@@ -624,50 +624,50 @@ void viafb_set_iga_path(void)
+ 	}
+ }
  
-@@ -1468,8 +1466,7 @@ void viafb_set_vclock(u32 CLK, int set_iga)
+-void viafb_set_primary_address(u32 addr)
++void via_set_primary_address(u32 addr)
+ {
+-	DEBUG_MSG(KERN_DEBUG "viafb_set_primary_address(0x%08X)\n", addr);
+-	viafb_write_reg(CR0D, VIACR, addr & 0xFF);
+-	viafb_write_reg(CR0C, VIACR, (addr >> 8) & 0xFF);
+-	viafb_write_reg(CR34, VIACR, (addr >> 16) & 0xFF);
+-	viafb_write_reg_mask(CR48, VIACR, (addr >> 24) & 0x1F, 0x1F);
++	DEBUG_MSG(KERN_DEBUG "via_set_primary_address(0x%08X)\n", addr);
++	via_write_reg(VIACR, 0x0D, addr & 0xFF);
++	via_write_reg(VIACR, 0x0C, (addr >> 8) & 0xFF);
++	via_write_reg(VIACR, 0x34, (addr >> 16) & 0xFF);
++	via_write_reg_mask(VIACR, 0x48, (addr >> 24) & 0x1F, 0x1F);
+ }
+ 
+-void viafb_set_secondary_address(u32 addr)
++void via_set_secondary_address(u32 addr)
+ {
+-	DEBUG_MSG(KERN_DEBUG "viafb_set_secondary_address(0x%08X)\n", addr);
++	DEBUG_MSG(KERN_DEBUG "via_set_secondary_address(0x%08X)\n", addr);
+ 	/* secondary display supports only quadword aligned memory */
+-	viafb_write_reg_mask(CR62, VIACR, (addr >> 2) & 0xFE, 0xFE);
+-	viafb_write_reg(CR63, VIACR, (addr >> 10) & 0xFF);
+-	viafb_write_reg(CR64, VIACR, (addr >> 18) & 0xFF);
+-	viafb_write_reg_mask(CRA3, VIACR, (addr >> 26) & 0x07, 0x07);
++	via_write_reg_mask(VIACR, 0x62, (addr >> 2) & 0xFE, 0xFE);
++	via_write_reg(VIACR, 0x63, (addr >> 10) & 0xFF);
++	via_write_reg(VIACR, 0x64, (addr >> 18) & 0xFF);
++	via_write_reg_mask(VIACR, 0xA3, (addr >> 26) & 0x07, 0x07);
+ }
+ 
+-void viafb_set_primary_pitch(u32 pitch)
++void via_set_primary_pitch(u32 pitch)
+ {
+-	DEBUG_MSG(KERN_DEBUG "viafb_set_primary_pitch(0x%08X)\n", pitch);
++	DEBUG_MSG(KERN_DEBUG "via_set_primary_pitch(0x%08X)\n", pitch);
+ 	/* spec does not say that first adapter skips 3 bits but old
+ 	 * code did it and seems to be reasonable in analogy to 2nd adapter
+ 	 */
+ 	pitch = pitch >> 3;
+-	viafb_write_reg(0x13, VIACR, pitch & 0xFF);
+-	viafb_write_reg_mask(0x35, VIACR, (pitch >> (8 - 5)) & 0xE0, 0xE0);
++	via_write_reg(VIACR, 0x13, pitch & 0xFF);
++	via_write_reg_mask(VIACR, 0x35, (pitch >> (8 - 5)) & 0xE0, 0xE0);
+ }
+ 
+-void viafb_set_secondary_pitch(u32 pitch)
++void via_set_secondary_pitch(u32 pitch)
+ {
+-	DEBUG_MSG(KERN_DEBUG "viafb_set_secondary_pitch(0x%08X)\n", pitch);
++	DEBUG_MSG(KERN_DEBUG "via_set_secondary_pitch(0x%08X)\n", pitch);
+ 	pitch = pitch >> 3;
+-	viafb_write_reg(0x66, VIACR, pitch & 0xFF);
+-	viafb_write_reg_mask(0x67, VIACR, (pitch >> 8) & 0x03, 0x03);
+-	viafb_write_reg_mask(0x71, VIACR, (pitch >> (10 - 7)) & 0x80, 0x80);
++	via_write_reg(VIACR, 0x66, pitch & 0xFF);
++	via_write_reg_mask(VIACR, 0x67, (pitch >> 8) & 0x03, 0x03);
++	via_write_reg_mask(VIACR, 0x71, (pitch >> (10 - 7)) & 0x80, 0x80);
+ }
+ 
+-void viafb_set_primary_color_depth(u8 depth)
++void via_set_primary_color_depth(u8 depth)
+ {
+ 	u8 value;
+ 
+-	DEBUG_MSG(KERN_DEBUG "viafb_set_primary_color_depth(%d)\n", depth);
++	DEBUG_MSG(KERN_DEBUG "via_set_primary_color_depth(%d)\n", depth);
+ 	switch (depth) {
+ 	case 8:
+ 		value = 0x00;
+@@ -685,19 +685,19 @@ void viafb_set_primary_color_depth(u8 depth)
+ 		value = 0x08;
+ 		break;
+ 	default:
+-		printk(KERN_WARNING "viafb_set_primary_color_depth: "
++		printk(KERN_WARNING "via_set_primary_color_depth: "
+ 			"Unsupported depth: %d\n", depth);
+ 		return;
  	}
  
- 	/* Fire! */
--	RegTemp = inb(VIARMisc);
--	outb(RegTemp | (BIT2 + BIT3), VIAWMisc);
-+	via_write_misc_reg_mask(0x0C, 0x0C); /* select external clock */
+-	viafb_write_reg_mask(0x15, VIASR, value, 0x1C);
++	via_write_reg_mask(VIASR, 0x15, value, 0x1C);
  }
  
- void viafb_load_crtc_timing(struct display_timing device_timing,
-@@ -1713,6 +1710,7 @@ void viafb_fill_crtc_timing(struct crt_mode_table *crt_table,
- 	int index = 0;
- 	int h_addr, v_addr;
- 	u32 pll_D_N;
-+	u8 polarity = 0;
+-void viafb_set_secondary_color_depth(u8 depth)
++void via_set_secondary_color_depth(u8 depth)
+ {
+ 	u8 value;
  
- 	for (i = 0; i < video_mode->mode_array; i++) {
- 		index = i;
-@@ -1741,20 +1739,11 @@ void viafb_fill_crtc_timing(struct crt_mode_table *crt_table,
- 	v_addr = crt_reg.ver_addr;
+-	DEBUG_MSG(KERN_DEBUG "viafb_set_secondary_color_depth(%d)\n", depth);
++	DEBUG_MSG(KERN_DEBUG "via_set_secondary_color_depth(%d)\n", depth);
+ 	switch (depth) {
+ 	case 8:
+ 		value = 0x00;
+@@ -712,12 +712,12 @@ void viafb_set_secondary_color_depth(u8 depth)
+ 		value = 0x80;
+ 		break;
+ 	default:
+-		printk(KERN_WARNING "viafb_set_secondary_color_depth: "
++		printk(KERN_WARNING "via_set_secondary_color_depth: "
+ 			"Unsupported depth: %d\n", depth);
+ 		return;
+ 	}
  
- 	/* update polarity for CRT timing */
--	if (crt_table[index].h_sync_polarity == NEGATIVE) {
--		if (crt_table[index].v_sync_polarity == NEGATIVE)
--			outb((inb(VIARMisc) & (~(BIT6 + BIT7))) |
--			     (BIT6 + BIT7), VIAWMisc);
--		else
--			outb((inb(VIARMisc) & (~(BIT6 + BIT7))) | (BIT6),
--			     VIAWMisc);
--	} else {
--		if (crt_table[index].v_sync_polarity == NEGATIVE)
--			outb((inb(VIARMisc) & (~(BIT6 + BIT7))) | (BIT7),
--			     VIAWMisc);
--		else
--			outb((inb(VIARMisc) & (~(BIT6 + BIT7))), VIAWMisc);
--	}
-+	if (crt_table[index].h_sync_polarity == NEGATIVE)
-+		polarity |= BIT6;
-+	if (crt_table[index].v_sync_polarity == NEGATIVE)
-+		polarity |= BIT7;
-+	via_write_misc_reg_mask(polarity, BIT6 | BIT7);
- 
- 	if (set_iga == IGA1) {
- 		viafb_unlock_crt();
-@@ -2123,7 +2112,7 @@ int viafb_setmode(struct VideoModeTable *vmode_tbl, int video_bpp,
- 
- 	/* Fill VPIT Parameters */
- 	/* Write Misc Register */
--	outb(VPIT.Misc, VIAWMisc);
-+	outb(VPIT.Misc, VIA_MISC_REG_WRITE);
- 
- 	/* Write Sequencer */
- 	for (i = 1; i <= StdSR; i++)
-diff --git a/drivers/video/via/share.h b/drivers/video/via/share.h
-index f974c73..861b414 100644
---- a/drivers/video/via/share.h
-+++ b/drivers/video/via/share.h
-@@ -45,8 +45,6 @@
- 
- /* standard VGA IO port
- */
--#define VIARMisc    0x3CC
--#define VIAWMisc    0x3C2
- #define VIAStatus   0x3DA
- #define VIACR       0x3D4
- #define VIASR       0x3C4
-diff --git a/drivers/video/via/via_io.h b/drivers/video/via/via_io.h
-index e1c1093..a3d2aca 100644
---- a/drivers/video/via/via_io.h
-+++ b/drivers/video/via/via_io.h
-@@ -29,6 +29,9 @@
- #include <linux/types.h>
- #include <linux/io.h>
- 
-+#define VIA_MISC_REG_READ	0x03CC
-+#define VIA_MISC_REG_WRITE	0x03C2
-+
- /*
-  * Indexed port operations.  Note that these are all multi-op
-  * functions; every invocation will be racy if you're not holding
-@@ -55,4 +58,10 @@ static inline void via_write_reg_mask(u16 port, u8 index, u8 data, u8 mask)
- 	outb((data & mask) | (old & ~mask), port + 1);
+-	viafb_write_reg_mask(0x67, VIACR, value, 0xC0);
++	via_write_reg_mask(VIACR, 0x67, value, 0xC0);
  }
  
-+static inline void via_write_misc_reg_mask(u8 data, u8 mask)
-+{
-+	u8 old = inb(VIA_MISC_REG_READ);
-+	outb((data & mask) | (old & ~mask), VIA_MISC_REG_WRITE);
-+}
-+
- #endif /* __VIA_IO_H__ */
+ static void set_color_register(u8 index, u8 red, u8 green, u8 blue)
+@@ -2268,11 +2268,11 @@ int viafb_setmode(struct VideoModeTable *vmode_tbl, int video_bpp,
+ 		}
+ 	}
+ 
+-	viafb_set_primary_pitch(viafbinfo->fix.line_length);
+-	viafb_set_secondary_pitch(viafb_dual_fb ? viafbinfo1->fix.line_length
++	via_set_primary_pitch(viafbinfo->fix.line_length);
++	via_set_secondary_pitch(viafb_dual_fb ? viafbinfo1->fix.line_length
+ 		: viafbinfo->fix.line_length);
+-	viafb_set_primary_color_depth(viaparinfo->depth);
+-	viafb_set_secondary_color_depth(viafb_dual_fb ? viaparinfo1->depth
++	via_set_primary_color_depth(viaparinfo->depth);
++	via_set_secondary_color_depth(viafb_dual_fb ? viaparinfo1->depth
+ 		: viaparinfo->depth);
+ 	/* Update Refresh Rate Setting */
+ 
+diff --git a/drivers/video/via/hw.h b/drivers/video/via/hw.h
+index 23c3190..641a5fa 100644
+--- a/drivers/video/via/hw.h
++++ b/drivers/video/via/hw.h
+@@ -910,10 +910,10 @@ void viafb_update_device_setting(int hres, int vres, int bpp,
+ 			   int vmode_refresh, int flag);
+ 
+ void viafb_set_iga_path(void);
+-void viafb_set_primary_address(u32 addr);
+-void viafb_set_secondary_address(u32 addr);
+-void viafb_set_primary_pitch(u32 pitch);
+-void viafb_set_secondary_pitch(u32 pitch);
++void via_set_primary_address(u32 addr);
++void via_set_secondary_address(u32 addr);
++void via_set_primary_pitch(u32 pitch);
++void via_set_secondary_pitch(u32 pitch);
+ void viafb_set_primary_color_register(u8 index, u8 red, u8 green, u8 blue);
+ void viafb_set_secondary_color_register(u8 index, u8 red, u8 green, u8 blue);
+ void viafb_get_fb_info(unsigned int *fb_base, unsigned int *fb_len);
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index 70ed71f..e94f913 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -317,12 +317,12 @@ static int viafb_pan_display(struct fb_var_screeninfo *var,
+ 
+ 	DEBUG_MSG(KERN_DEBUG "viafb_pan_display, address = %d\n", vram_addr);
+ 	if (!viafb_dual_fb) {
+-		viafb_set_primary_address(vram_addr);
+-		viafb_set_secondary_address(vram_addr);
++		via_set_primary_address(vram_addr);
++		via_set_secondary_address(vram_addr);
+ 	} else if (viapar->iga_path == IGA1)
+-		viafb_set_primary_address(vram_addr);
++		via_set_primary_address(vram_addr);
+ 	else
+-		viafb_set_secondary_address(vram_addr);
++		via_set_secondary_address(vram_addr);
+ 
+ 	return 0;
+ }
+@@ -1018,8 +1018,8 @@ static void viafb_set_device(struct device_t active_dev)
+ 		viafb_SAMM_ON = active_dev.samm;
+ 	viafb_primary_dev = active_dev.primary_dev;
+ 
+-	viafb_set_primary_address(0);
+-	viafb_set_secondary_address(viafb_SAMM_ON ? viafb_second_offset : 0);
++	via_set_primary_address(0);
++	via_set_secondary_address(viafb_SAMM_ON ? viafb_second_offset : 0);
+ 	viafb_set_iga_path();
+ }
+ 
+@@ -1165,8 +1165,9 @@ static int apply_device_setting(struct viafb_ioctl_setting setting_info,
+ 			if (viafb_SAMM_ON)
+ 				viafb_primary_dev = setting_info.primary_device;
+ 
+-			viafb_set_primary_address(0);
+-			viafb_set_secondary_address(viafb_SAMM_ON ? viafb_second_offset : 0);
++			via_set_primary_address(0);
++			via_set_secondary_address(viafb_SAMM_ON ?
++				viafb_second_offset : 0);
+ 			viafb_set_iga_path();
+ 		}
+ 		need_set_mode = 1;
 -- 
 1.7.0.1
 
