@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab0D1PCj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:02:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8808 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752410Ab0D1PCh convert rfc822-to-8bit (ORCPT
+	id S1754585Ab0D1Nzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 09:55:47 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:64002 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679Ab0D1NzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:02:37 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <v2x412e6f7f1004280753pd3438a3fv860edc580ecd6185@mail.gmail.com>
-References: <v2x412e6f7f1004280753pd3438a3fv860edc580ecd6185@mail.gmail.com> <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> <8526.1272447122@redhat.com> <q2r412e6f7f1004280656t331e9120rc9eab069fb4d4de3@mail.gmail.com> <6096.1272463619@redhat.com>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: dhowells@redhat.com, Ingo Molnar <mingo@elte.hu>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Davide Libenzi <davidel@xmailserver.org>,
-       Roland Dreier <rolandd@cisco.com>,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "David S. Miller" <davem@davemloft.net>,
-       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
-       Andreas Herrmann <andreas.herrmann3@amd.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Takashi Iwai <tiwai@suse.de>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 28 Apr 2010 16:00:06 +0100
-Message-ID: <14370.1272466806@redhat.com>
+	Wed, 28 Apr 2010 09:55:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=NNx/s/lfYH7BKgWIHQiRonj0foK7ITQbo8DzU0A8PuIfwL3V8/YgfNFE04qIzfYxF3
+         Rj/UnaKFMzLtRRS6xwUP374B0utQ21o6pn4f6LgQ3pVCEf0TN/iXvrKjvC02fI4L6n1x
+         k0fYk3JuYYmLCAL6sYmpjjkyu/KDVTXQpkgsE=
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: jens.axboe@oracle.com, hch@infradead.org,
+       Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH 2/4] blkdev: allow async blkdev_issue_flush requests
+Date: Wed, 28 Apr 2010 17:55:07 +0400
+Message-Id: <1272462909-12942-3-git-send-email-dmonakhov@openvz.org>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1272462909-12942-2-git-send-email-dmonakhov@openvz.org>
+References: <20100426172651.GT27497@kernel.dk>
+ <1272462909-12942-1-git-send-email-dmonakhov@openvz.org>
+ <1272462909-12942-2-git-send-email-dmonakhov@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changli Gao <xiaosuo@gmail.com> wrote:
+In some places caller don't want to wait a request to complete.
 
-> > How often do the two actually mix?  And if they do, is that really an
-> > error?
-> 
-> The sock.sk_sleep is used by exclusive and non-exclusive wait queues.
-> exclusive and non-exclusive is identified by wait queues, not wait
-> queue heads. Maybe there is a historical reason. It is much like a
-> hack.
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+---
+ block/blk-barrier.c |   33 +++++++++++++++++++--------------
+ 1 files changed, 19 insertions(+), 14 deletions(-)
 
-But is it actually used in both modes at the same time?
+diff --git a/block/blk-barrier.c b/block/blk-barrier.c
+index cf14311..f11eec9 100644
+--- a/block/blk-barrier.c
++++ b/block/blk-barrier.c
+@@ -286,8 +286,9 @@ static void bio_end_empty_barrier(struct bio *bio, int err)
+ 			set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
+ 		clear_bit(BIO_UPTODATE, &bio->bi_flags);
+ 	}
+-
+-	complete(bio->bi_private);
++	if (bio->bi_private)
++		complete(bio->bi_private);
++	bio_put(bio);
+ }
+ 
+ /**
+@@ -300,7 +301,8 @@ static void bio_end_empty_barrier(struct bio *bio, int err)
+  * Description:
+  *    Issue a flush for the block device in question. Caller can supply
+  *    room for storing the error offset in case of a flush error, if they
+- *    wish to.
++ *    wish to. If WAIT flag is not passed then caller may check only what
++ *    request was pushed in some internal queue for later handling.
+  */
+ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
+ 		sector_t *error_sector, unsigned long flags)
+@@ -319,19 +321,22 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
+ 
+ 	bio = bio_alloc(gfp_mask, 0);
+ 	bio->bi_end_io = bio_end_empty_barrier;
+-	bio->bi_private = &wait;
+ 	bio->bi_bdev = bdev;
+-	submit_bio(WRITE_BARRIER, bio);
+-
+-	wait_for_completion(&wait);
++	if (test_bit(BLKDEV_WAIT, &flags))
++		bio->bi_private = &wait;
+ 
+-	/*
+-	 * The driver must store the error location in ->bi_sector, if
+-	 * it supports it. For non-stacked drivers, this should be copied
+-	 * from blk_rq_pos(rq).
+-	 */
+-	if (error_sector)
+-		*error_sector = bio->bi_sector;
++	bio_get(bio);
++	submit_bio(WRITE_BARRIER, bio);
++	if (test_bit(BLKDEV_WAIT, &flags)) {
++		wait_for_completion(&wait);
++		/*
++		 * The driver must store the error location in ->bi_sector, if
++		 * it supports it. For non-stacked drivers, this should be
++		 * copied from blk_rq_pos(rq).
++		 */
++		if (error_sector)
++			*error_sector = bio->bi_sector;
++	}
+ 
+ 	if (bio_flagged(bio, BIO_EOPNOTSUPP))
+ 		ret = -EOPNOTSUPP;
+-- 
+1.6.6.1
 
-David
