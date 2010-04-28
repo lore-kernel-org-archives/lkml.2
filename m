@@ -1,150 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773Ab0D1EzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 00:55:20 -0400
-Received: from mail.renesas.com ([202.234.163.13]:39411 "EHLO
-	mail04.idc.renesas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751060Ab0D1EzR (ORCPT
+	id S1752394Ab0D1FGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 01:06:46 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51914 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214Ab0D1FGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 00:55:17 -0400
-X-AuditID: ac140387-0000000700000202-d9-4bd7bfa25908
-Date: Wed, 28 Apr 2010 13:54:52 +0900
-From: Yusuke Goda <yusuke.goda.sx@renesas.com>
-Subject: Re: [PATCH 1/2] MMC: Add support MMCIF for SuperH
-In-reply-to: <20100427150227.24a1ba25.akpm@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: ben@decadent.org.uk, linux-mmc@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
-Message-id: <4BD7BF9C.3050701@renesas.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-User-Agent: Thunderbird 2.0.0.9 (Windows/20071031)
-References: <4BD6B926.3020704@renesas.com>
- <20100427150227.24a1ba25.akpm@linux-foundation.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 28 Apr 2010 01:06:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=RKSgydDoKOHhnUyimf+kPEE01ojgFX1qe+jCsUMrJ61XPeF9ZC1UcGLpyzyKbDTm2S
+         6DcyLsXKZrPO4Uvj7jVCEukD+c0f0Ixiu0yjyqGP7f+jiOpw6vSmrHtZexsWy1hBMnp7
+         iRK848kBvm7al5gsiZPSHLkhi1VZ72N6wihHY=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1004272242050.9849@pobox.suse.cz>
+References: <t2g3711715e1004240718m8aacffc5o68fc9ccd1e66f212@mail.gmail.com>
+	 <w2l3711715e1004271145v133cd94ax971aa213eb60cfaa@mail.gmail.com>
+	 <alpine.LNX.2.00.1004272242050.9849@pobox.suse.cz>
+Date: Wed, 28 Apr 2010 07:06:37 +0200
+Message-ID: <y2u3711715e1004272206u4700fac7u744b2fb0cf203367@mail.gmail.com>
+Subject: Re: HID: expand hid-topseed driver to support BTC "Emprex 3009URF III 
+	Vista MCE Remote"
+From: Wayne Thomas <waynethomas69@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=0016e6d9677e848ff1048544f9e3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew
+--0016e6d9677e848ff1048544f9e3
+Content-Type: text/plain; charset=ISO-8859-1
 
-Thanks so much for your help.
+On Tue, Apr 27, 2010 at 10:43 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Tue, 27 Apr 2010, Wayne Thomas wrote:
+>
+>> OK, next attempt...
+>
+> The patch is OK, but your mail client whitespace-damaged it. Could you
+> please fix up your client and resend? (or attach it separately as an
+> attachment, if your client can't be fixed).
+>
+> Thanks,
+>
+> --
+> Jiri Kosina
+> SUSE Labs, Novell Inc.
+>
 
-Andrew Morton wrote:
-> On Tue, 27 Apr 2010 19:15:02 +0900
-> Yusuke Goda <yusuke.goda.sx@renesas.com> wrote:
-> 
->>  MMCIF is MMC Host Interface in SuperH.
->>
->> ...
->>
->> +static void sh_mmcif_clock_control(struct sh_mmcif_host *host, unsigned int clk)
->> +{
->> +	int i;
->> +	struct sh_mmcif_plat_data *p = host->pd->dev.platform_data;
->> +
->> +	sh_mmcif_bitclr(host, MMCIF_CE_CLK_CTRL, CLK_ENABLE);
->> +	sh_mmcif_bitclr(host, MMCIF_CE_CLK_CTRL, CLK_CLEAR);
->> +
->> +	if (!clk)
->> +		return;
->> +	if (p->sup_pclk && clk == host->clk) {
->> +			sh_mmcif_bitset(host, MMCIF_CE_CLK_CTRL, CLK_SUP_PCLK);
->> +	} else {
->> +		for (i = 1; (unsigned int)host->clk / (1 << i) >= clk; i++)
->> +			;
-> 
-> I suspect this could be clarified.  Perhaps
-> 
-> 	i = ilog2(__roundup_pow_of_two(host->clk));
-> 
-> If that's wrong then include/linux/log2.h has various tools which can
-> surely be used.  If they're not appropriate then please feel free to
-> propose additions.
-OK.
-I correct it.
+I thought it might have; sorry about that.
+Have attached patch as separate file as a precaution.
 
-> 
->> +		sh_mmcif_bitset(host, MMCIF_CE_CLK_CTRL, (i - 1) << 16);
->> +	}
->> +	sh_mmcif_bitset(host, MMCIF_CE_CLK_CTRL, CLK_ENABLE);
->> +}
->> +
->>
->> ...
->>
->> +static int sh_mmcif_error_manage(struct sh_mmcif_host *host)
->> +{
->> +	u32 state1, state2;
->> +	int ret, timeout = 10000000;
->> +
->> +	host->sd_error = 0;
->> +	host->wait_int = 0;
->> +
->> +	state1 = sh_mmcif_readl(host, MMCIF_CE_HOST_STS1);
->> +	state2 = sh_mmcif_readl(host, MMCIF_CE_HOST_STS2);
->> +	pr_debug("%s: ERR HOST_STS1 = %08x\n", \
->> +			DRIVER_NAME, sh_mmcif_readl(host, MMCIF_CE_HOST_STS1));
->> +	pr_debug("%s: ERR HOST_STS2 = %08x\n", \
->> +			DRIVER_NAME, sh_mmcif_readl(host, MMCIF_CE_HOST_STS2));
->> +
->> +	if (state1 & STS1_CMDSEQ) {
->> +		pr_debug("%s: Forced end of command sequence\n", DRIVER_NAME);
->> +		sh_mmcif_bitset(host, MMCIF_CE_CMD_CTRL, CMD_CTRL_BREAK);
->> +		sh_mmcif_bitset(host, MMCIF_CE_CMD_CTRL, ~CMD_CTRL_BREAK);
->> +		while (1) {
->> +			timeout--;
->> +			if (timeout < 0) {
->> +				pr_err(DRIVER_NAME": Forceed end of " \
->> +					"command sequence timeout err\n");
->> +				return -EILSEQ;
->> +			}
->> +			if (!(sh_mmcif_readl(host, MMCIF_CE_HOST_STS1)
->> +								& STS1_CMDSEQ))
->> +				break;
->> +			mdelay(1);
->> +		}
->> +		sh_mmcif_sync_reset(host);
->> +		return -EILSEQ;
-> 
-> Good heavens, what is EILSEQ?
-> 
-> <googles a bit>
-> 
->     "An illegal multibyte sequence was found in the input.  This
->      usually means that you have the wrong charactor encoding, for
->      instance the MicrosoftCorporation version of latin-1 (aka
->      iso_8859_1(7)) (which has it's own stuff like "smart quotes" in
->      the reserved bytes) instead of the real latin (or perhaps
->      utf8(7))."
-> 
-> Why on earth are driver writers using this in the kernel???  Imagine
-> the confusion which ensues when this error code propagates all the way
-> back to some poor user's console.  They'll be scrabbling around with
-> language encodings not even suspecting that their hardware is busted.
-> 
-> People do this *a lot*.  They go grubbing through errno.h and grab
-> something which looks vaguely appropriate.  But it's wrong.
-> 
-> If your hardware is busted then return -EIO and emit a printk to tell
-> the operator what broke.
-> 
->> +	}
->> +
->> +	if (state2 & STS2_CRC_ERR)
->> +		ret = -EILSEQ;
->> +	else if (state2 & STS2_TIMEOUT_ERR)
->> +		ret = -ETIMEDOUT;
->> +	else
->> +		ret = -EILSEQ;
->> +	return ret;
->> +}
-Thank you.
-I think that EIO is appropriate.
+Cheers
+Wayne
 
-I revise it and send a patch.
+--0016e6d9677e848ff1048544f9e3
+Content-Type: application/octet-stream; name=btc_patch2
+Content-Disposition: attachment; filename=btc_patch2
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_g8joghzt0
 
-Thanks,
-Goda
-
+SElEOiBleHBhbmQgaGlkLXRvcHNlZWQgZHJpdmVyIHRvIHN1cHBvcnQgQlRDICJFbXByZXggMzAw
+OVVSRiBJSUkgVmlzdGEgTUNFIFJlbW90ZSIKClRoZSBCZWhhdmlvciBUZWNoLiBDb21wdXRlciBD
+b3JwLiAoQlRDKSByZW1vdGUgYnJhbmRlZCBhcyAiRW1wcmV4IDMwMDlVUkYgSUlJIFZpc3RhClJl
+bW90ZSBDb250cm9sbGVyIiB1c2VzIG5vbi1zdGFuZGFyZCBtYXBwaW5ncyBmb3IgYWxsIG9mIGl0
+cyAnc3BlY2lhbCBwdXJwb3NlJyBrZXlzCigweGZmYmMgdXNhZ2UgcGFnZSkuICBUaGlzIHBhdGNo
+IG1vZGlmaWVzIHRoZSBleGlzdGluZyBoaWQtdG9wc2VlZCBxdWlya3kgZHJpdmVyIHRvCnN1cHBv
+cnQgYm90aCByZW1vdGVzIGluIG9yZGVyIHRvIHByZXZlbnQgcHJvbGlmZXJhdGlvbiBvZiBpbi1r
+ZXJuZWwgcXVpcmt5IGRyaXZlcnMKdW50aWwgc3VjaCBhIHRpbWUgdGhhdCB1ZGV2IHJlbWFwcGlu
+ZyB3b3JrcyB3aXRoIHRoZXNlIGRldmljZXMuClRlc3RlZCBzdWNjZXNzZnVsbHkgd2l0aCBib3Ro
+IHRoZSAiRW1wcmV4IiByZW1vdGUgYW5kIHRoZSAiQ3liZXJMaW5rIiByZW1vdGUKb3JpZ2luYWxs
+eSBzdXBwb3J0ZWQgYnkgdGhlIGhpZC10b3BzZWVkIGRyaXZlci4KClNpZ25lZC1vZmYtYnk6IFdh
+eW5lIFRob21hcyA8d2F5bmV0aG9tYXM2OUBnbWFpbC5jb20+CgoKZGlmZiAtdXByTiBsaW51eC0y
+LjYuMzMtY2xlYW4vZHJpdmVycy9oaWQvaGlkLWNvcmUuYyBsaW51eC9kcml2ZXJzL2hpZC9oaWQt
+Y29yZS5jCi0tLSBsaW51eC0yLjYuMzMtY2xlYW4vZHJpdmVycy9oaWQvaGlkLWNvcmUuYwkyMDEw
+LTA0LTIyIDIxOjA0OjE3LjAwMDAwMDAwMCArMDIwMAorKysgbGludXgvZHJpdmVycy9oaWQvaGlk
+LWNvcmUuYwkyMDEwLTA0LTIzIDE5OjU1OjE3LjAwMDAwMDAwMCArMDIwMApAQCAtMTI5MSw2ICsx
+MjkxLDcgQEAgc3RhdGljIGNvbnN0IHN0cnVjdCBoaWRfZGV2aWNlX2lkIGhpZF9ibAogCXsgSElE
+X1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9GT1VO
+VEFJTl9UUF9PTkxZKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwg
+VVNCX0RFVklDRV9JRF9BUFBMRV9HRVlTRVIxX1RQX09OTFkpIH0sCiAJeyBISURfVVNCX0RFVklD
+RShVU0JfVkVORE9SX0lEX0JFTEtJTiwgVVNCX0RFVklDRV9JRF9GTElQX0tWTSkgfSwKKwl7IEhJ
+RF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQlRDLCBVU0JfREVWSUNFX0lEX0JUQ19FTVBSRVhf
+UkVNT1RFKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9DSEVSUlksIFVTQl9E
+RVZJQ0VfSURfQ0hFUlJZX0NZTU9USU9OKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRP
+Ul9JRF9DSElDT05ZLCBVU0JfREVWSUNFX0lEX0NISUNPTllfVEFDVElDQUxfUEFEKSB9LAogCXsg
+SElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9DWVBSRVNTLCBVU0JfREVWSUNFX0lEX0NZUFJF
+U1NfQkFSQ09ERV8xKSB9LApkaWZmIC11cHJOIGxpbnV4LTIuNi4zMy1jbGVhbi9kcml2ZXJzL2hp
+ZC9oaWQtaWRzLmggbGludXgvZHJpdmVycy9oaWQvaGlkLWlkcy5oCi0tLSBsaW51eC0yLjYuMzMt
+Y2xlYW4vZHJpdmVycy9oaWQvaGlkLWlkcy5oCTIwMTAtMDQtMjIgMjE6MDQ6MTcuMDAwMDAwMDAw
+ICswMjAwCisrKyBsaW51eC9kcml2ZXJzL2hpZC9oaWQtaWRzLmgJMjAxMC0wNC0yMyAwNzowOTo1
+OS4wMDAwMDAwMDAgKzAyMDAKQEAgLTExNiw2ICsxMTYsOSBAQAogI2RlZmluZSBVU0JfVkVORE9S
+X0lEX0JFUktTSElSRQkJMHgwYzk4CiAjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQkVSS1NISVJFX1BD
+V0QJMHgxMTQwCiAKKyNkZWZpbmUgVVNCX1ZFTkRPUl9JRF9CVEMJCTB4MDQ2ZQorI2RlZmluZSBV
+U0JfREVWSUNFX0lEX0JUQ19FTVBSRVhfUkVNT1RFCTB4NTU3OAorCiAjZGVmaW5lIFVTQl9WRU5E
+T1JfSURfQ0gJCTB4MDY4ZQogI2RlZmluZSBVU0JfREVWSUNFX0lEX0NIX1BST19QRURBTFMJMHgw
+MGYyCiAjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQ0hfQ09NQkFUU1RJQ0sJMHgwMGY0CmRpZmYgLXVw
+ck4gbGludXgtMi42LjMzLWNsZWFuL2RyaXZlcnMvaGlkL2hpZC10b3BzZWVkLmMgbGludXgvZHJp
+dmVycy9oaWQvaGlkLXRvcHNlZWQuYwotLS0gbGludXgtMi42LjMzLWNsZWFuL2RyaXZlcnMvaGlk
+L2hpZC10b3BzZWVkLmMJMjAxMC0wNC0yMiAyMDo0ODo0My4wMDAwMDAwMDAgKzAyMDAKKysrIGxp
+bnV4L2RyaXZlcnMvaGlkL2hpZC10b3BzZWVkLmMJMjAxMC0wNC0yMiAyMToyOToyMC4wMDAwMDAw
+MDAgKzAyMDAKQEAgLTMsNiArMyw5IEBACiAgKgogICogIENvcHlyaWdodCAoYykgMjAwOCBMZXYg
+QmFiaWV2CiAgKiAgYmFzZWQgb24gaGlkLWNoZXJyeSBkcml2ZXIKKyAqCisgKiAgTW9kaWZpZWQg
+dG8gYWxzbyBzdXBwb3J0IEJUQyAiRW1wcmV4IDMwMDlVUkYgSUlJIFZpc3RhIE1DRSBSZW1vdGUi
+IGJ5CisgKiAgV2F5bmUgVGhvbWFzIDIwMTAuCiAgKi8KIAogLyoKQEAgLTI0LDIzICsyNywyOSBA
+QCBzdGF0aWMgaW50IHRzX2lucHV0X21hcHBpbmcoc3RydWN0IGhpZF9kCiAJCXN0cnVjdCBoaWRf
+ZmllbGQgKmZpZWxkLCBzdHJ1Y3QgaGlkX3VzYWdlICp1c2FnZSwKIAkJdW5zaWduZWQgbG9uZyAq
+KmJpdCwgaW50ICptYXgpCiB7Ci0JaWYgKCh1c2FnZS0+aGlkICYgSElEX1VTQUdFX1BBR0UpICE9
+IDB4MGZmYmMwMDAwKQorCWlmICgodXNhZ2UtPmhpZCAmIEhJRF9VU0FHRV9QQUdFKSAhPSBISURf
+VVBfTE9HSVZFTkRPUikKIAkJcmV0dXJuIDA7CiAKIAlzd2l0Y2ggKHVzYWdlLT5oaWQgJiBISURf
+VVNBR0UpIHsKLSAgICAgICAgY2FzZSAweDAwZDogdHNfbWFwX2tleV9jbGVhcihLRVlfSE9NRSk7
+ICAgICAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDAyNDogdHNfbWFwX2tleV9jbGVhcihL
+RVlfTUVOVSk7ICAgICAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDAyNTogdHNfbWFwX2tl
+eV9jbGVhcihLRVlfVFYpOyAgICAgICAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDA0ODog
+dHNfbWFwX2tleV9jbGVhcihLRVlfUkVEKTsgICAgICAgICAgICBicmVhazsKLSAgICAgICAgY2Fz
+ZSAweDA0NzogdHNfbWFwX2tleV9jbGVhcihLRVlfR1JFRU4pOyAgICAgICAgICBicmVhazsKLSAg
+ICAgICAgY2FzZSAweDA0OTogdHNfbWFwX2tleV9jbGVhcihLRVlfWUVMTE9XKTsgICAgICAgICBi
+cmVhazsKLSAgICAgICAgY2FzZSAweDA0YTogdHNfbWFwX2tleV9jbGVhcihLRVlfQkxVRSk7ICAg
+ICAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDA0YjogdHNfbWFwX2tleV9jbGVhcihLRVlf
+QU5HTEUpOyAgICAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDA0YzogdHNfbWFwX2tleV9j
+bGVhcihLRVlfTEFOR1VBR0UpOyAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAweDA0ZDogdHNf
+bWFwX2tleV9jbGVhcihLRVlfU1VCVElUTEUpOyAgICAgICBicmVhazsKLSAgICAgICAgY2FzZSAw
+eDAzMTogdHNfbWFwX2tleV9jbGVhcihLRVlfQVVESU8pOyAgICAgICAgICBicmVhazsKLSAgICAg
+ICAgY2FzZSAweDAzMjogdHNfbWFwX2tleV9jbGVhcihLRVlfVEVYVCk7ICAgICAgICAgICBicmVh
+azsKLSAgICAgICAgY2FzZSAweDAzMzogdHNfbWFwX2tleV9jbGVhcihLRVlfQ0hBTk5FTCk7ICAg
+ICAgICBicmVhazsKKwljYXNlIDB4MDBkOiB0c19tYXBfa2V5X2NsZWFyKEtFWV9NRURJQSk7CWJy
+ZWFrOworCWNhc2UgMHgwMjQ6IHRzX21hcF9rZXlfY2xlYXIoS0VZX01FTlUpOwkJYnJlYWs7CisJ
+Y2FzZSAweDAyNTogdHNfbWFwX2tleV9jbGVhcihLRVlfVFYpOwkJYnJlYWs7CisJY2FzZSAweDAz
+MTogdHNfbWFwX2tleV9jbGVhcihLRVlfQVVESU8pOwlicmVhazsKKwljYXNlIDB4MDMyOiB0c19t
+YXBfa2V5X2NsZWFyKEtFWV9URVhUKTsJCWJyZWFrOworCWNhc2UgMHgwMzM6IHRzX21hcF9rZXlf
+Y2xlYXIoS0VZX0NIQU5ORUwpOwlicmVhazsKKwljYXNlIDB4MDQ3OiB0c19tYXBfa2V5X2NsZWFy
+KEtFWV9NUDMpOwkJYnJlYWs7CisJY2FzZSAweDA0ODogdHNfbWFwX2tleV9jbGVhcihLRVlfVFYy
+KTsJCWJyZWFrOworCWNhc2UgMHgwNDk6IHRzX21hcF9rZXlfY2xlYXIoS0VZX0NBTUVSQSk7CWJy
+ZWFrOworCWNhc2UgMHgwNGE6IHRzX21hcF9rZXlfY2xlYXIoS0VZX1ZJREVPKTsJYnJlYWs7CisJ
+Y2FzZSAweDA0YjogdHNfbWFwX2tleV9jbGVhcihLRVlfQU5HTEUpOwlicmVhazsKKwljYXNlIDB4
+MDRjOiB0c19tYXBfa2V5X2NsZWFyKEtFWV9MQU5HVUFHRSk7CWJyZWFrOworCWNhc2UgMHgwNGQ6
+IHRzX21hcF9rZXlfY2xlYXIoS0VZX1NVQlRJVExFKTsJYnJlYWs7CisJY2FzZSAweDA1MDogdHNf
+bWFwX2tleV9jbGVhcihLRVlfUkFESU8pOwlicmVhazsKKwljYXNlIDB4MDVhOiB0c19tYXBfa2V5
+X2NsZWFyKEtFWV9URVhUKTsJCWJyZWFrOworCWNhc2UgMHgwNWI6IHRzX21hcF9rZXlfY2xlYXIo
+S0VZX1JFRCk7CQlicmVhazsKKwljYXNlIDB4MDVjOiB0c19tYXBfa2V5X2NsZWFyKEtFWV9HUkVF
+Tik7CWJyZWFrOworCWNhc2UgMHgwNWQ6IHRzX21hcF9rZXlfY2xlYXIoS0VZX1lFTExPVyk7CWJy
+ZWFrOworCWNhc2UgMHgwNWU6IHRzX21hcF9rZXlfY2xlYXIoS0VZX0JMVUUpOwkJYnJlYWs7CiAJ
+ZGVmYXVsdDoKIAkJcmV0dXJuIDA7CiAJfQpAQCAtNTAsNiArNTksNyBAQCBzdGF0aWMgaW50IHRz
+X2lucHV0X21hcHBpbmcoc3RydWN0IGhpZF9kCiAKIHN0YXRpYyBjb25zdCBzdHJ1Y3QgaGlkX2Rl
+dmljZV9pZCB0c19kZXZpY2VzW10gPSB7CiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lE
+X1RPUFNFRUQsIFVTQl9ERVZJQ0VfSURfVE9QU0VFRF9DWUJFUkxJTkspIH0sCisJeyBISURfVVNC
+X0RFVklDRShVU0JfVkVORE9SX0lEX0JUQywgVVNCX0RFVklDRV9JRF9CVENfRU1QUkVYX1JFTU9U
+RSkgfSwKIAl7IH0KIH07CiBNT0RVTEVfREVWSUNFX1RBQkxFKGhpZCwgdHNfZGV2aWNlcyk7CmRp
+ZmYgLXVwck4gbGludXgtMi42LjMzLWNsZWFuL2RyaXZlcnMvaGlkL0tjb25maWcgbGludXgvZHJp
+dmVycy9oaWQvS2NvbmZpZwotLS0gbGludXgtMi42LjMzLWNsZWFuL2RyaXZlcnMvaGlkL0tjb25m
+aWcJMjAxMC0wNC0yMiAyMDo0ODo0My4wMDAwMDAwMDAgKzAyMDAKKysrIGxpbnV4L2RyaXZlcnMv
+aGlkL0tjb25maWcJMjAxMC0wNC0yNiAyMTowNjo0Ni4wMDAwMDAwMDAgKzAyMDAKQEAgLTI4NSw3
+ICsyODUsNyBAQCBjb25maWcgSElEX1RPUFNFRUQKIAlkZXBlbmRzIG9uIFVTQl9ISUQKIAlkZWZh
+dWx0ICFFTUJFRERFRAogCS0tLWhlbHAtLS0KLQlTYXkgWSBpZiB5b3UgaGF2ZSBhIFRvcFNlZWQg
+Q3liZXJsaW5rIHJlbW90ZSBjb250cm9sLgorCVNheSBZIGlmIHlvdSBoYXZlIGEgVG9wU2VlZCBD
+eWJlcmxpbmsgb3IgQlRDIEVtcHJleCByZW1vdGUgY29udHJvbC4KIAogY29uZmlnIEhJRF9USFJV
+U1RNQVNURVIKIAl0cmlzdGF0ZSAiVGhydXN0TWFzdGVyIGRldmljZXMgc3VwcG9ydCIgaWYgRU1C
+RURERUQK
+--0016e6d9677e848ff1048544f9e3--
