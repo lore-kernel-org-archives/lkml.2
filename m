@@ -1,69 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab0D1TEw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 15:04:52 -0400
-Received: from mail.perches.com ([173.55.12.10]:1794 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754483Ab0D1TEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 15:04:51 -0400
-Subject: Re: [PATCH 09/13] drivers/staging/rtl8192su: Hoist assign from if
-From: Joe Perches <joe@perches.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-       Greg Kroah-Hartman <gregkh@suse.de>
-In-Reply-To: <20100428182710.GD8509@kroah.com>
-References: <cover.1269493047.git.joe@perches.com>
-	 <c45ba099fc8f31f166c4067f2eff609c8eaf422f.1269493047.git.joe@perches.com>
-	 <20100428182710.GD8509@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Apr 2010 12:04:49 -0700
-Message-ID: <1272481489.7831.24.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753449Ab0D1MhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 08:37:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64381 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab0D1MhE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 08:37:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH] pktcdvd: improve BKL and compat_ioctl.c usage
+Date: Wed, 28 Apr 2010 14:36:41 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: "=?iso-8859-15?q?Fr=E9d=E9ric?= Weisbecker" <fweisbec@gmail.com>,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Peter Osterlund <petero2@telia.com>,
+       Akinobu Mita <akinobu.mita@gmail.com>, Ingo Molnar <mingo@elte.hu>
+References: <20100427150629.cb526876.sfr@canb.auug.org.au> <201004271102.35904.arnd@arndb.de> <20100428162209.cc9b2487.sfr@canb.auug.org.au>
+In-Reply-To: <20100428162209.cc9b2487.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004281436.42183.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19FSAuflHnBBhCNrFz5G4yz6OWYN/4uZ1+VZa7
+ owkbzy4Ub6Wepfz05LlS5YzKQnuGmPtwD/a7vj8D1cWoHNi3P/
+ gwVbpdwMpBWWkgcQFQg8w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-28 at 11:27 -0700, Greg KH wrote:
-> On Wed, Mar 24, 2010 at 10:17:03PM -0700, Joe Perches wrote:
-> > --- a/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c
-> > +++ b/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac.c
-> > @@ -1690,7 +1690,8 @@ ieee80211_rx_auth_rq(struct ieee80211_device *ieee, struct sk_buff *skb)
-> >  	//IEEE80211DMESG("Rx probe");
-> >  	ieee->softmac_stats.rx_auth_rq++;
-> >  
-> > -	if ((status = auth_rq_parse(skb, dest))!= -1){
-> > +	status = auth_rq_parse(skb, dest);
-> > +	if (status!= -1) {
-> 
-> And again.  Did you do this with some tool and not by hand?
-[]
-> Did you not run your patch through checkpatch after creating it and 
-> before sending it to me?
+The pktcdvd driver uses proper locking and does not need the
+BKL in the ioctl and llseek functions of the character device,
+so kill both. Moving the compat_ioctl handling from common code
+into the driver itself fixes build problems when CONFIG_BLOCK is
+disabled.
 
->From the original 0/13 introduction:
-http://lkml.org/lkml/2010/3/25/6
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+On Wednesday 28 April 2010, Stephen Rothwell wrote:
+ 
+> My fixes tree is here: ssh://master.kernel.org/~sfr/next-fixes.git it
+> currently only contains your pktcdvd patch.  My understanding was that
+> this patch was a fix for a build problem with Linus' tree.
 
-        Used scripts/cvt_kernel.style.pl:
-        --convert-hoist_assigns_from_if
-        and verified visually.
-        
-        checkpatch errors ignored
+Ah, I had forgotten that this was still needed and Jens or Peter
+obviously never picked it up.
 
-The script itself is:
-http://lkml.org/lkml/2010/3/24/447
+Linus, could you merge this now to fix building with CONFIG_BLOCK
+disabled? It's fallout of a patch c5ecc484c "pktcdvd: use BIO list
+management functions", but I fixed it because the problem appeared
+in compat_ioctl handling. It now came up because the patch conflicted
+with the BKL pushdown, which the original patch does as a side-effect.
 
->From an earlier Greg KH email:
+	Arnd
 
-> Careful that you don't add new coding style issues to a staging driver
-
-Avoiding checkpatch errors and avoiding new coding style issues
-are frequently conflicting goals.
-
-I try not to add "new" issues. and I generally
-leave the old ones alone.
-
-I don't use checkpatch as a guide for what to fix
-or as an inhibitor on what style patch to send.
-
+diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+index ddf1942..8a549db 100644
+--- a/drivers/block/pktcdvd.c
++++ b/drivers/block/pktcdvd.c
+@@ -48,6 +48,7 @@
+ #include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
++#include <linux/compat.h>
+ #include <linux/kthread.h>
+ #include <linux/errno.h>
+ #include <linux/spinlock.h>
+@@ -2984,7 +2985,7 @@ static void pkt_get_status(struct pkt_ctrl_command *ctrl_cmd)
+ 	mutex_unlock(&ctl_mutex);
+ }
+ 
+-static int pkt_ctl_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
++static long pkt_ctl_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ {
+ 	void __user *argp = (void __user *)arg;
+ 	struct pkt_ctrl_command ctrl_cmd;
+@@ -3021,10 +3022,20 @@ static int pkt_ctl_ioctl(struct inode *inode, struct file *file, unsigned int cm
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_COMPAT
++static long pkt_ctl_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	return pkt_ctl_ioctl(file, cmd, (unsigned long)compat_ptr(arg));
++}
++#endif
+ 
+ static const struct file_operations pkt_ctl_fops = {
+-	.ioctl	 = pkt_ctl_ioctl,
+-	.owner	 = THIS_MODULE,
++	.open		= nonseekable_open,
++	.unlocked_ioctl	= pkt_ctl_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= pkt_ctl_compat_ioctl,
++#endif
++	.owner		= THIS_MODULE,
+ };
+ 
+ static struct miscdevice pkt_misc = {
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index c32a1b6..641640d 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -102,7 +102,6 @@
+ #include <linux/nbd.h>
+ #include <linux/random.h>
+ #include <linux/filter.h>
+-#include <linux/pktcdvd.h>
+ 
+ #include <linux/hiddev.h>
+ 
+@@ -1126,8 +1125,6 @@ COMPATIBLE_IOCTL(PPGETMODE)
+ COMPATIBLE_IOCTL(PPGETPHASE)
+ COMPATIBLE_IOCTL(PPGETFLAGS)
+ COMPATIBLE_IOCTL(PPSETFLAGS)
+-/* pktcdvd */
+-COMPATIBLE_IOCTL(PACKET_CTRL_CMD)
+ /* Big A */
+ /* sparc only */
+ /* Big Q for sound/OSS */
