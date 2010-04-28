@@ -1,108 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab0D1PKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:10:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53601 "EHLO mx1.redhat.com"
+	id S1754808Ab0D1O56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 10:57:58 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:35247 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752259Ab0D1PKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:10:05 -0400
-Date: Wed, 28 Apr 2010 11:09:59 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, jens.axboe@oracle.com
-Subject: Re: CFQ is broken for CONFIG_BLK_CGROUP=y, CFQ_GROUP_IOSCHED=n
-Message-ID: <20100428150959.GA16033@redhat.com>
-References: <877hnrg30c.fsf@openvz.org>
+	id S1753472Ab0D1O55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 10:57:57 -0400
+Date: Wed, 28 Apr 2010 15:57:38 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/3] Fix migration races in rmap_walk() V2
+Message-ID: <20100428145737.GG15815@csn.ul.ie>
+References: <1272403852-10479-1-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1004271723090.24133@router.home> <20100427223242.GG8860@random.random> <20100428091345.496ca4c4.kamezawa.hiroyu@jp.fujitsu.com> <20100428002056.GH510@random.random> <20100428142356.GF15815@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <877hnrg30c.fsf@openvz.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100428142356.GF15815@csn.ul.ie>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 28, 2010 at 04:44:51PM +0400, Dmitry Monakhov wrote:
+On Wed, Apr 28, 2010 at 03:23:56PM +0100, Mel Gorman wrote:
+> On Wed, Apr 28, 2010 at 02:20:56AM +0200, Andrea Arcangeli wrote:
+> > On Wed, Apr 28, 2010 at 09:13:45AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > Doing some check in move_ptes() after vma_adjust() is not safe.
+> > > IOW, when vma's information and information in page-table is incosistent...objrmap
+> > > is broken and migartion will cause panic.
+> > > 
+> > > Then...I think there are 2 ways.
+> > >   1. use seqcounter in "mm_struct" as previous patch and lock it at mremap.
+> > > or
+> > >   2. get_user_pages_fast() when do remap.
+> > 
+> > 3 take the anon_vma->lock
+> > 
 > 
-> I've had an  oops on kernel boot due to NULL pointer deference
-> linux-2.6-block/for-next HEAD:7eaed1226ab411ee5dc8c34fc0d8034e4c98e3c6
-> I've enabled CONFIG_BLK_CGROUP, but not CFQ_GROUP_IOSCHED
-> In this case cfq_ref_get_cfqg() defined as 
-> static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
-> {
->         return NULL;
-> }
-> So following call trace is simply NOOP
-> cfq_set_request()
->  rq->elevator_private3 = cfq_ref_get_cfqg(cfqq->cfqg);
+> <SNIP>
+>
+> Here is a different version of the same basic idea to skip temporary VMAs
+> during migration. Maybe go with this?
 > 
-> Which later result in OOPS on bio insertion
-> cfq_insert_request
->  -> blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,...)
->     -> spin_lock_irqsave(&blkg->stats_lock, flags);
-> 
-> Bad commit.
-> >From 7f1dc8a2d2f45fc557b27fd56115338b1d34fc24 Mon Sep 17 00:00:00 2001
-> From: Vivek Goyal <vgoyal@redhat.com>
-> Date: Wed, 21 Apr 2010 17:44:16 +0200
-> Subject: [PATCH] blkio: Fix blkio crash during rq stat update
+> +static bool is_vma_temporary_stack(struct vm_area_struct *vma)
+> +{
+> +	if (vma->vm_flags != VM_STACK_FLAGS)
+> +		return false;
+> +
+> +	/*
+> +	 * Only during exec will the total VM consumed by a process
+> +	 * be exacly the same as the stack
+> +	 */
+> +	if (vma->vm_mm->stack_vm == 1 && vma->vm_mm->total_vm == 1)
+> +		return true;
+> +
+> +	return false;
+> +}
+> +
 
-Dmitry, this patch should fix the issue. Can you please give it a try.
+The assumptions on the vm flags is of course totally wrong. VM_EXEC might
+be applied as well as default flags from the mm.  The following is the same
+basic idea, skip VMAs belonging to processes in exec rather than trying
+to hold anon_vma->lock across move_page_tables(). Not tested yet.
 
-Jens, I know you don't like this form of cfq_ref_get_cfqg(), but this
-seems to be the simplest solution to fix it.
+==== CUT HERE ====
+mm,migration: Avoid race between shift_arg_pages() and rmap_walk() during migration by not migrating temporary stacks
 
-cfq-iosched: fix cfq crash with CFQ_GROUP_IOSCHED=n
+Page migration requires rmap to be able to find all ptes mapping a page
+at all times, otherwise the migration entry can be instantiated, but it
+is possible to leave one behind if the second rmap_walk fails to find
+the page.  If this page is later faulted, migration_entry_to_page() will
+call BUG because the page is locked indicating the page was migrated by
+the migration PTE not cleaned up.
 
-Dmitry reported an oops with CFQ when booted with BLK_CGROUP=y and
-CFQ_GROUP_IOSCHED=n. This patch fixes it.
+There is a race between shift_arg_pages and migration that allows this
+bug to trigger. A temporary stack is setup during exec and later moved. If
+migration moves a page in the temporary stack and the VMA is then removed,
+the migration PTE may not be found leading to a BUG when the stack is faulted.
 
-We maintain a root group even if group ioscheduling is not enabled. Hence
-don't store NULL in elevator_private3 in that case.
+Ideally, shift_arg_pages must run atomically with respect of rmap_walk by
+holding the anon_vma lock but this is problematic as pages must be allocated
+for page tables. Instead, this patch skips processes in exec by making an
+assumption that a mm with stack_vm == 1 and total_vm == 1 is a process in
+exec() that hasn't finalised the temporary stack yet.  Memory hot-remove
+will try again, sys_move_pages() wouldn't be operating during exec() time
+and memory compaction will just continue to another page without concern.
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+[kamezawa.hiroyu@jp.fujitsu.com: Idea for having migration skip temporary stacks]
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 ---
- block/cfq-iosched.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
+ mm/rmap.c |   28 +++++++++++++++++++++++++++-
+ 1 files changed, 27 insertions(+), 1 deletions(-)
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 286008c..5aa5364 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1002,10 +1002,9 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
- 	return cfqg;
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 85f203e..9e20188 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1141,6 +1141,18 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
+ 	return ret;
  }
  
--static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
-+static inline void cfq_ref_get_cfqg(struct cfq_group *cfqg)
- {
- 	atomic_inc(&cfqg->ref);
--	return cfqg;
- }
++static bool is_vma_in_exec(struct vm_area_struct *vma)
++{
++	/*
++	 * Only during exec will the total VM consumed by a process
++	 * be exacly the same as the stack and both equal to 1
++	 */
++	if (vma->vm_mm->stack_vm == 1 && vma->vm_mm->total_vm == 1)
++		return true;
++
++	return false;
++}
++
+ /**
+  * try_to_unmap_anon - unmap or unlock anonymous page using the object-based
+  * rmap method
+@@ -1169,7 +1181,21 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
  
- static void cfq_link_cfqq_cfqg(struct cfq_queue *cfqq, struct cfq_group *cfqg)
-@@ -1092,10 +1091,7 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
- 	return &cfqd->root_group;
- }
- 
--static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
--{
--	return NULL;
--}
-+static inline void cfq_ref_get_cfqg(struct cfq_group *cfqg) {}
- 
- static inline void
- cfq_link_cfqq_cfqg(struct cfq_queue *cfqq, struct cfq_group *cfqg) {
-@@ -3574,7 +3570,8 @@ new_queue:
- 
- 	rq->elevator_private = cic;
- 	rq->elevator_private2 = cfqq;
--	rq->elevator_private3 = cfq_ref_get_cfqg(cfqq->cfqg);
-+	rq->elevator_private3 = cfqq->cfqg;
-+	cfq_ref_get_cfqg(cfqq->cfqg);
- 	return 0;
- 
- queue_fail:
--- 
-1.6.2.5
-
+ 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
+ 		struct vm_area_struct *vma = avc->vma;
+-		unsigned long address = vma_address(page, vma);
++		unsigned long address;
++
++		/*
++		 * During exec, a temporary VMA is setup and later moved.
++		 * The VMA is moved under the anon_vma lock but not the
++		 * page tables leading to a race where migration cannot
++		 * find the migration ptes. Rather than increasing the
++		 * locking requirements of exec, migration skips
++		 * VMAs in processes calling exec.
++		 */
++		if (PAGE_MIGRATION && (flags & TTU_MIGRATION) &&
++				is_vma_in_exec(vma))
++			continue;
++
++		address = vma_address(page, vma);
+ 		if (address == -EFAULT)
+ 			continue;
+ 		ret = try_to_unmap_one(page, vma, address, flags);
