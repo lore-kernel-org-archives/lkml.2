@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab0D1TY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 15:24:26 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:5159 "EHLO
-	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897Ab0D1TYY (ORCPT
+	id S1755361Ab0D1PeK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 11:34:10 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36270 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab0D1PeH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 15:24:24 -0400
-X-SpamScore: -26
-X-BigFish: VPS-26(zz1432P98dN936eM62a3Lab9bh8c8aizz1202hzz6ff19h2ba5Mz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L1LPWA-02-PO2-02
-X-M-MSG: 
-Date: Wed, 28 Apr 2010 21:24:09 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Siarhei Siamashka <siarhei.siamashka@nokia.com>
-CC: oprofile-list@lists.sourceforge.net,
-       "Carmody Phil.2 (EXT-Ixonos/Helsinki)" <ext-phil.2.carmody@nokia.com>,
-       "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] oprofile, hrtimer: only add samples if regs are available
-Message-ID: <20100428192409.GB21724@erda.amd.com>
-References: <20100427152544.GA9063@pcarmody-desktop>
- <20100427174026.GR6450@erda.amd.com>
- <201004272047.52056.siarhei.siamashka@nokia.com>
- <20100428165906.GA21724@erda.amd.com>
+	Wed, 28 Apr 2010 11:34:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Hss+STcul4qpExnf46qlaH3YL2oaamkIyGaJDIsvK5aly7B+1APGbFJ3URgGCBgnhY
+         UxSLInAOthsh+qLg11cvfZVQYLa/PKE1W9lBEvJUlfxWVBzYAuCbTie74tpoVZykivE5
+         KLUGeKGdkidxtjiD6RP4R+vb0NsO8FJ5TjAH0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100428165906.GA21724@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 28 Apr 2010 19:24:10.0224 (UTC) FILETIME=[60BD1700:01CAE708]
-X-Reverse-DNS: unknown
+In-Reply-To: <14370.1272466806@redhat.com>
+References: <1272430986-20436-1-git-send-email-xiaosuo@gmail.com> 
+	<8526.1272447122@redhat.com> <q2r412e6f7f1004280656t331e9120rc9eab069fb4d4de3@mail.gmail.com> 
+	<6096.1272463619@redhat.com> <v2x412e6f7f1004280753pd3438a3fv860edc580ecd6185@mail.gmail.com> 
+	<14370.1272466806@redhat.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Wed, 28 Apr 2010 23:33:37 +0800
+Message-ID: <p2w412e6f7f1004280833y4bdbcc6s6d99f2b6283a283@mail.gmail.com>
+Subject: Re: [RFC] sched: implement the exclusive wait queue as a LIFO queue
+To: David Howells <dhowells@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Davide Libenzi <davidel@xmailserver.org>,
+       Roland Dreier <rolandd@cisco.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <dada1@cosmosbay.com>, Christoph Lameter <cl@linux.com>,
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Takashi Iwai <tiwai@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.04.10 18:59:06, Robert Richter wrote:
-> On 27.04.10 20:47:51, Siarhei Siamashka wrote:
-> > Isn't hrtimer callback function supposed to be only called from IRQ context
-> > after this cleanup: http://lwn.net/Articles/308545/ ?
-> 
-> Yes, the patch is upstream since v2.6.29. Thanks Siarhei.
-> 
-> I will add a null pointer check anyway.
+On Wed, Apr 28, 2010 at 11:00 PM, David Howells <dhowells@redhat.com> wrote:
+>
+> But is it actually used in both modes at the same time?
+>
 
---
+It should be seldom in good applications. So I only need to add a
+function, like this:
 
->From ad8a6546b32d22ecf92b4448ad329133d18dde0f Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Wed, 28 Apr 2010 20:43:18 +0200
-Subject: [PATCH] oprofile, hrtimer: only add samples if regs are available
-
-This patch adds a check if the regs pointer is valid. This actually
-should not happen since hrtimer notification code should always run in
-hard_irq context after this commit (since v2.6.29):
-
- ca10949 hrtimer: removing all ur callback modes
-
-However, if code does not run in interrupt context, regs will be null:
-
- http://www.mail-archive.com/linux-omap@vger.kernel.org/msg14074.html
-
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- drivers/oprofile/timer_int.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/oprofile/timer_int.c b/drivers/oprofile/timer_int.c
-index dc0ae4d..ca3436c 100644
---- a/drivers/oprofile/timer_int.c
-+++ b/drivers/oprofile/timer_int.c
-@@ -24,8 +24,12 @@ static DEFINE_PER_CPU(struct hrtimer, oprofile_hrtimer);
- 
- static enum hrtimer_restart oprofile_hrtimer_notify(struct hrtimer *hrtimer)
- {
--	oprofile_add_sample(get_irq_regs(), 0);
-+	struct pt_regs *regs = get_irq_regs();
-+
-+	if (regs)
-+		oprofile_add_sample(regs, 0);
- 	hrtimer_forward_now(hrtimer, ns_to_ktime(TICK_NSEC));
-+
- 	return HRTIMER_RESTART;
- }
- 
--- 
-1.7.0.3
-
+add_wait_queue_head_exclusive(wq, wait)
+   first_exclusive = find_the_first_exclusive(wq); // it is fast, as
+there should no or few non-exclusive wait queues
+   list_add(wait, first_exclusive);
 
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
-
+Regards，
+Changli Gao(xiaosuo@gmail.com)
