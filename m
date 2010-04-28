@@ -1,129 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab0D1TOA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 15:14:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37417 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754263Ab0D1TN6 (ORCPT
+	id S1753770Ab0D1JDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 05:03:21 -0400
+Received: from mx5.sophos.com ([213.31.172.35]:60017 "EHLO mx5.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751286Ab0D1JDT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 15:13:58 -0400
-Date: Wed, 28 Apr 2010 15:13:57 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/8] PM: Add suspend block api.
-In-Reply-To: <1272429119-12103-2-git-send-email-arve@android.com>
-Message-ID: <Pine.LNX.4.44L0.1004281317310.1944-100000@iolanthe.rowland.org>
+	Wed, 28 Apr 2010 05:03:19 -0400
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Apr 2010 05:03:18 EDT
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH 7/7] ondemand: Solve the big performance issue with ondemand during disk IO
+Date: Wed, 28 Apr 2010 09:57:07 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       "davej@redhat.com" <davej@redhat.com>,
+       "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
+References: <20100418115949.7b743898@infradead.org> <201004201010.50725.tvrtko.ursulin@sophos.com> <20100420040207.1be74046@infradead.org>
+In-Reply-To: <20100420040207.1be74046@infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Message-ID: <201004280957.07455.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 28/04/2010 09:57:07,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 28/04/2010 09:57:08,
+	Serialize complete at 28/04/2010 09:57:08
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Apr 2010, [UTF-8] Arve Hjønnevåg wrote:
+On Tuesday 20 Apr 2010 12:02:07 Arjan van de Ven wrote:
+> On Tue, 20 Apr 2010 10:10:49 +0100
+>
+> Tvrtko Ursulin <tvrtko.ursulin@sophos.com> wrote:
+> > > it's better then to stay high longer... at least on modern machines
+> > > the inbetween states are pretty much either useless or actually
+> > > energy hurting compared to the higher state.
+> >
+> > Why do you think it is not good for latency to stay at higher
+> > frequency for longer?
+>
+> oh it will be.
 
-> +For example, in cell phones or other embedded systems, where powering the screen
-> +is a significant drain on the battery, suspend blockers can be used to allow
-> +user-space to decide whether a keystroke received while the system is suspended
-> +should cause the screen to be turned back on or allow the system to go back into
-> +suspend. Use set_irq_wake or a platform specific api to make sure the keypad
-> +interrupt wakes up the cpu. Once the keypad driver has resumed, the sequence of
-> +events can look like this:
-> +
-> +- The Keypad driver gets an interrupt. It then calls suspend_block on the
-> +  keypad-scan suspend_blocker and starts scanning the keypad matrix.
-> +- The keypad-scan code detects a key change and reports it to the input-event
-> +  driver.
-> +- The input-event driver sees the key change, enqueues an event, and calls
-> +  suspend_block on the input-event-queue suspend_blocker.
-> +- The keypad-scan code detects that no keys are held and calls suspend_unblock
-> +  on the keypad-scan suspend_blocker.
-> +- The user-space input-event thread returns from select/poll, calls
-> +  suspend_block on the process-input-events suspend_blocker and then calls read
-> +  on the input-event device.
-> +- The input-event driver dequeues the key-event and, since the queue is now
-> +  empty, it calls suspend_unblock on the input-event-queue suspend_blocker.
-> +- The user-space input-event thread returns from read. If it determines that
-> +  the key should leave the screen off, it calls suspend_unblock on the
-> +  process_input_events suspend_blocker and then calls select or poll. The
-> +  system will automatically suspend again, since now no suspend blockers are
-> +  active.
-> +
-> +                 Key pressed   Key released
-> +                     |             |
-> +keypad-scan          ++++++++++++++++++
-> +input-event-queue        +++          +++
-> +process-input-events       +++          +++
+Well you said that "it's not even good for that ;-(" when I said that it may
+be good for latency...
 
-This is better than before, but it still isn't ideal.  Here's what I 
-mean:
+> > governor it was much much better. That is why I proposed to have a
+> > gradual lowering as an option in on-demand. You said it already does
+> > that - I ask are you sure? And also now you are saying it would not
+> > be good for latency
+> > - above is an example when it clearly does help (a lot).
+>
+> but the *gradual* lowering just does not make sense.
+> might as well just stay at the highest frequency for the duration for
+> which you do the gradual lowering, it's more efficient for power on most
+> modern machines.
+>
+> The problem is if you do this gradual thing for long enough to help
+> you on desktop loads, or the stay-high thing, on server workloads the
+> power efficiency will completely and utterly tank. Been there tried
+> that ;-)
 
->  suspend blockers can be used to allow
-> +user-space to decide whether a keystroke received while the system is suspended
-> +should cause the screen to be turned back on or allow the system to go back into
-> +suspend.
+Maybe it does not make sense for energy efficiency but it does for latency, I
+think we have now agreed on that so it would be a nice knob to have. If I had
+some time I would implement it if for nothing then to spice up this thread. :)
 
-That's not right.  Handling the screen doesn't need suspend blockers:
-The program decides what to do and then either turns on the screen or
-else writes "mem" to /sys/power/state.  What suspend blockers add is
-the ability to resolve races and satisfy multiple constraints when
-going into suspend -- which has nothing to do with operating the
-screen.
+I also like Mike Chan's idea of minimum_full_io_speed_frequency parameter, in
+addition to my gradual lowering.
 
-I _think_ what you're trying to get at can be expressed this way:
+> frankly, you're starting to touch at the more fundamental issues with
+> ondemand. I'm not trying to solve that in this small patch, they really
+> can only be solved in a complete redesign. While I'm doing such a
+> redesign, I was asked to at least fix this particular gap urgently.
+> Solving all of ondemand's issues needs a complete rethink of the core
+> assumptions it makes (which are not correct anymore nowadays).
 
-	Here's an example showing how a cell phone or other embedded
-	system can handle keystrokes (or other input events) in the 
-	presence of suspend blockers.  Use set_irq_wake...
+I understand that, although you gave no detail on how you designed this new
+ondemand. Problem I have is that to me this workaround is quite ugly. If you
+have to do it please add minimum_full_io_speed_frequency knob and also make it
+default to current behaviour (no increase on iowait).
 
-	...
-
-      - The user-space input-event thread returns from read.  It 
-	carries out whatever activities are appropriate (for example,
-	powering up the display screen, running other programs, and so 
-	on).  When it is finished, it calls suspend_unblock on the
-	process_input_events suspend_blocker and then calls select or
-	poll.  The system will automatically suspend again when it is
-	idle and no suspend blockers remain active.
+Tvrtko
 
 
-> +/**
-> + * suspend_block() - Block suspend
-> + * @blocker:	The suspend blocker to use
-> + *
-> + * It is safe to call this function from interrupt context.
-> + */
-> +void suspend_block(struct suspend_blocker *blocker)
-> +{
-> +	unsigned long irqflags;
-> +
-> +	if (WARN_ON(!(blocker->flags & SB_INITIALIZED)))
-> +		return;
-> +
-> +	spin_lock_irqsave(&list_lock, irqflags);
-> +	blocker->flags |= SB_ACTIVE;
-> +	list_del(&blocker->link);
-> +
-> +	if (debug_mask & DEBUG_SUSPEND_BLOCKER)
-> +		pr_info("suspend_block: %s\n", blocker->name);
-> +
-> +	list_add(&blocker->link, &active_blockers);
-
-Here and in suspend_unblock(), you can use list_move() in place of 
-list_del() followed by list_add().
-
-Alan Stern
-
-
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
