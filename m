@@ -1,175 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab0D1JBj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 05:01:39 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:65097 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619Ab0D1JBg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 05:01:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=rW9ZjrewHvRf3lU2mKrufuNa8EPmb0GeicKukH9pKu2NlizlLu0OI5HqbiwtzfXA4o
-         MUjPERGut1OmrNBSZE5bM8SoLAVUxFbePLCAfiXKeV18xzEvQvgSQ+EjYw7wBTuWUN7k
-         Y689/TsXuCzrJ5F5cENVa//i0QZfRxF4pWhsU=
-Date: Wed, 28 Apr 2010 11:01:15 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Samuel Ortiz <samuel.ortiz@intel.com>
-Cc: Zhu Yi <yi.zhu@intel.com>, Intel Linux Wireless <ilw@linux.intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alexey Dobriyan <adobriyan@gmail.com>, linux-wireless@vger.kernel.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [patch] iwl: cleanup: remove unneeded error handling
-Message-ID: <20100428090115.GF29093@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Samuel Ortiz <samuel.ortiz@intel.com>, Zhu Yi <yi.zhu@intel.com>,
-	Intel Linux Wireless <ilw@linux.intel.com>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Alexey Dobriyan <adobriyan@gmail.com>,
-	linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+	id S1755197Ab0D1Ptb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 11:49:31 -0400
+Received: from kroah.org ([198.145.64.141]:51437 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753637Ab0D1PtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 11:49:03 -0400
+Date: Wed, 28 Apr 2010 08:26:54 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       Jason Wong <tsanghan@gmail.com>
+Subject: Re: linux-next: manual merge of the staging-next tree with the
+ pcmcia tree
+Message-ID: <20100428152654.GE4483@kroah.com>
+References: <20100428160741.2695a14f.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100428160741.2695a14f.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just a cleanup and doesn't change how the code works.
+On Wed, Apr 28, 2010 at 04:07:41PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging-next tree got a conflict in
+> drivers/staging/comedi/drivers/cb_das16_cs.c between commitc
+> 8bf6e66c254bba7d0ea3f5d02420776dceac657 ("") from the pcmcia tree and
+> commit 6ea17dd43c1153f99920e66f806d86f4e83583cc ("Staging: comedi:
+> cb_das16_cs: fixed multiple brace coding style issues") from the
+> staging-next tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-debugfs_create_dir() and debugfs_create_file() return an error pointer 
-(-ENODEV) if CONFIG_DEBUG_FS is not enabled, otherwise if an error occurs
-they return NULL.  This is how they are implemented and what it says in 
-the DebugFS documentation.  DebugFS can not be compiled as a module.  
+Looks great, thanks,
 
-As a result, we only need to check for error pointers and particularly 
--ENODEV one time to know that DebugFS is enabled.  This patch keeps the 
-first check for error pointers and removes the rest. 
-
-The other reason for this patch, is that it silences some Smatch warnings.
-Smatch sees the condition "(result != -ENODEV)" and assumes that it's 
-possible for "result" to equal -ENODEV.  If it were possible it would lead
-to an error pointer dereference.  But since it's not, we can just remove
-the check.
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-
-diff --git a/drivers/net/wireless/iwmc3200wifi/debugfs.c b/drivers/net/wireless/iwmc3200wifi/debugfs.c
-index cbb81be..10eeeeb 100644
---- a/drivers/net/wireless/iwmc3200wifi/debugfs.c
-+++ b/drivers/net/wireless/iwmc3200wifi/debugfs.c
-@@ -438,40 +438,10 @@ int iwm_debugfs_init(struct iwm_priv *iwm)
- 	snprintf(devdir, sizeof(devdir), "%s", wiphy_name(iwm_to_wiphy(iwm)));
- 
- 	iwm->dbg.devdir = debugfs_create_dir(devdir, iwm->dbg.rootdir);
--	result = PTR_ERR(iwm->dbg.devdir);
--	if (IS_ERR(iwm->dbg.devdir) && (result != -ENODEV)) {
--		IWM_ERR(iwm, "Couldn't create devdir: %d\n", result);
--		goto error;
--	}
--
- 	iwm->dbg.dbgdir = debugfs_create_dir("debug", iwm->dbg.devdir);
--	result = PTR_ERR(iwm->dbg.dbgdir);
--	if (IS_ERR(iwm->dbg.dbgdir) && (result != -ENODEV)) {
--		IWM_ERR(iwm, "Couldn't create dbgdir: %d\n", result);
--		goto error;
--	}
--
- 	iwm->dbg.rxdir = debugfs_create_dir("rx", iwm->dbg.devdir);
--	result = PTR_ERR(iwm->dbg.rxdir);
--	if (IS_ERR(iwm->dbg.rxdir) && (result != -ENODEV)) {
--		IWM_ERR(iwm, "Couldn't create rx dir: %d\n", result);
--		goto error;
--	}
--
- 	iwm->dbg.txdir = debugfs_create_dir("tx", iwm->dbg.devdir);
--	result = PTR_ERR(iwm->dbg.txdir);
--	if (IS_ERR(iwm->dbg.txdir) && (result != -ENODEV)) {
--		IWM_ERR(iwm, "Couldn't create tx dir: %d\n", result);
--		goto error;
--	}
--
- 	iwm->dbg.busdir = debugfs_create_dir("bus", iwm->dbg.devdir);
--	result = PTR_ERR(iwm->dbg.busdir);
--	if (IS_ERR(iwm->dbg.busdir) && (result != -ENODEV)) {
--		IWM_ERR(iwm, "Couldn't create bus dir: %d\n", result);
--		goto error;
--	}
--
- 	if (iwm->bus_ops->debugfs_init) {
- 		result = iwm->bus_ops->debugfs_init(iwm, iwm->dbg.busdir);
- 		if (result < 0) {
-@@ -480,27 +450,15 @@ int iwm_debugfs_init(struct iwm_priv *iwm)
- 		}
- 	}
- 
--
- 	iwm->dbg.dbg_level = IWM_DL_NONE;
- 	iwm->dbg.dbg_level_dentry =
- 		debugfs_create_file("level", 0200, iwm->dbg.dbgdir, iwm,
- 				    &fops_iwm_dbg_level);
--	result = PTR_ERR(iwm->dbg.dbg_level_dentry);
--	if (IS_ERR(iwm->dbg.dbg_level_dentry) && (result != -ENODEV)) {
--		IWM_ERR(iwm, "Couldn't create dbg_level: %d\n", result);
--		goto error;
--	}
--
- 
- 	iwm->dbg.dbg_modules = IWM_DM_DEFAULT;
- 	iwm->dbg.dbg_modules_dentry =
- 		debugfs_create_file("modules", 0200, iwm->dbg.dbgdir, iwm,
- 				    &fops_iwm_dbg_modules);
--	result = PTR_ERR(iwm->dbg.dbg_modules_dentry);
--	if (IS_ERR(iwm->dbg.dbg_modules_dentry) && (result != -ENODEV)) {
--		IWM_ERR(iwm, "Couldn't create dbg_modules: %d\n", result);
--		goto error;
--	}
- 
- 	for (i = 0; i < __IWM_DM_NR; i++)
- 		add_dbg_module(iwm->dbg, iwm_debug_module[i].name,
-@@ -509,39 +467,18 @@ int iwm_debugfs_init(struct iwm_priv *iwm)
- 	iwm->dbg.txq_dentry = debugfs_create_file("queues", 0200,
- 						  iwm->dbg.txdir, iwm,
- 						  &iwm_debugfs_txq_fops);
--	result = PTR_ERR(iwm->dbg.txq_dentry);
--	if (IS_ERR(iwm->dbg.txq_dentry) && (result != -ENODEV)) {
--		IWM_ERR(iwm, "Couldn't create tx queue: %d\n", result);
--		goto error;
--	}
- 
- 	iwm->dbg.tx_credit_dentry = debugfs_create_file("credits", 0200,
- 						   iwm->dbg.txdir, iwm,
- 						   &iwm_debugfs_tx_credit_fops);
--	result = PTR_ERR(iwm->dbg.tx_credit_dentry);
--	if (IS_ERR(iwm->dbg.tx_credit_dentry) && (result != -ENODEV)) {
--		IWM_ERR(iwm, "Couldn't create tx credit: %d\n", result);
--		goto error;
--	}
- 
- 	iwm->dbg.rx_ticket_dentry = debugfs_create_file("tickets", 0200,
- 						  iwm->dbg.rxdir, iwm,
- 						  &iwm_debugfs_rx_ticket_fops);
--	result = PTR_ERR(iwm->dbg.rx_ticket_dentry);
--	if (IS_ERR(iwm->dbg.rx_ticket_dentry) && (result != -ENODEV)) {
--		IWM_ERR(iwm, "Couldn't create rx ticket: %d\n", result);
--		goto error;
--	}
- 
- 	iwm->dbg.fw_err_dentry = debugfs_create_file("last_fw_err", 0200,
- 						     iwm->dbg.dbgdir, iwm,
- 						     &iwm_debugfs_fw_err_fops);
--	result = PTR_ERR(iwm->dbg.fw_err_dentry);
--	if (IS_ERR(iwm->dbg.fw_err_dentry) && (result != -ENODEV)) {
--		IWM_ERR(iwm, "Couldn't create last FW err: %d\n", result);
--		goto error;
--	}
--
- 
- 	return 0;
- 
+greg k-h
