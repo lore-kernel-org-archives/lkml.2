@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab0D1DxG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Apr 2010 23:53:06 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53113 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753717Ab0D1DxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Apr 2010 23:53:04 -0400
-Date: Wed, 28 Apr 2010 13:52:58 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the block tree
-Message-Id: <20100428135258.35e3efdb.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__28_Apr_2010_13_52_58_+1000_a/4PJN9/kGiNi/9."
+	id S1754884Ab0D1D5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Apr 2010 23:57:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49525 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753717Ab0D1D5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Apr 2010 23:57:41 -0400
+Message-ID: <4BD7B177.9020003@cn.fujitsu.com>
+Date: Wed, 28 Apr 2010 11:54:31 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 0/10] KVM MMU: allow more shadow pages become asynchronous
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Apr_2010_13_52_58_+1000_a/4PJN9/kGiNi/9.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Changlog v3:
 
-Hi Jens,
+Those changes all form Avi's suggestion, thanks.
 
-After merging the block tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+- use smart way to fix the bug in patch 1
+- remove duplicates code in patch 5
+- check error code and fix forgot release page in patch 9
+- sync shadow pages in a batch instead of one by one
 
-include/linux/coda_psdev.h:4: included file 'linux/backing-dev.h' is not ex=
-ported
+And, there is one TODO thing:
+Marker shadow page as unsync at create time avoid write-protect,
+this idea is from Avi:
 
-Caused by commit 5163d90076729413cb882d3dd5c3d3cfb5b9f035 ("coda: add bdi
-backing to mount session").
+|Another interesting case is to create new shadow pages in the unsync state.
+|That can help when the guest starts a short lived process: we can avoid write
+|protecting its pagetables completely
 
-I have used the version of the block tree from next-20100427 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I'll send the patch out after this patchset applied.
+ 
+Changlog v2:
 
---Signature=_Wed__28_Apr_2010_13_52_58_+1000_a/4PJN9/kGiNi/9.
-Content-Type: application/pgp-signature
+- when level is PT_DIRECTORY_LEVEL, the 'offset' should be
+  'role.quadrant << 8', thanks Avi for point it out
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+- keep invlpg code in paging_tmpl.h address Avi's suggestion
 
-iEYEARECAAYFAkvXsRoACgkQjjKRsyhoI8ySfgCfRKL189UiT5DPsCRRjJcHUZid
-i5UAn3xDqica4nSkk6cvpGEg1EeKc3w+
-=jmKm
------END PGP SIGNATURE-----
+- split kvm_sync_page() into kvm_sync_page() and kvm_sync_page_transient()
+  to clarify the code address Avi's suggestion
 
---Signature=_Wed__28_Apr_2010_13_52_58_+1000_a/4PJN9/kGiNi/9.--
+
