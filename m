@@ -1,109 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab0D1Pld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Apr 2010 11:41:33 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37417 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754907Ab0D1Plc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Apr 2010 11:41:32 -0400
-Date: Wed, 28 Apr 2010 11:41:30 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ondrej Zary <linux@rainbow-software.org>
-cc: linux-pm@lists.linux-foundation.org, <linux-usb@vger.kernel.org>,
-       <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] [RFC] ehci: Disable wake on overcurrent (WKOC_E) and
- disconnect (WKDISC_E)
-In-Reply-To: <201004272246.51494.linux@rainbow-software.org>
-Message-ID: <Pine.LNX.4.44L0.1004281129140.1944-100000@iolanthe.rowland.org>
+	id S1755965Ab0D1RZE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Apr 2010 13:25:04 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57752 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754016Ab0D1RZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Apr 2010 13:25:01 -0400
+Message-ID: <4BD86F3D.7040907@kernel.org>
+Date: Wed, 28 Apr 2010 19:24:13 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jiri Benc <jbenc@suse.cz>
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, Greg KH <greg@kroah.com>, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk, Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <jkosina@suse.cz>,
+       Anton Blanchard <anton@samba.org>
+Subject: Re: [171/197] module: fix __module_ref_addr()
+References: <20100422191857.GA13268@kroah.com>	<20100422190922.702027944@kvm.kroah.org>	<20100428165201.3d7d6b4a@griffin.suse.cz>	<20100428162056.GA2846@Krystal> <20100428185550.4406319c@logostar.upir.cz>
+In-Reply-To: <20100428185550.4406319c@logostar.upir.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 28 Apr 2010 17:24:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Apr 2010, Ondrej Zary wrote:
-
-> On Tuesday 27 April 2010 21:21:23 Alan Stern wrote:
-> > On Tue, 27 Apr 2010, Ondrej Zary wrote:
-> > > The previous patch was not enough as it worked only when there were no
-> > > USB devices connected. With a bus-powered device connected, power loss
-> > > causes disconnect which wakes up the machine immediately again.
-> >
-> > You said earlier that the host controller was disabled for remote
-> > wakeup ("/sys/devices/pci0000:00/0000:00:1d.7/power/wakeup is disabled
-> > by default").  So even though the root hub might issue a wakeup
-> > request, the controller hardware should not forward that request to the
-> > PCI bus and it should not cause the system to wake up.
+On 04/28/2010 06:55 PM, Jiri Benc wrote:
+> On Wed, 28 Apr 2010 12:20:56 -0400, Mathieu Desnoyers wrote:
+>> Can you try reverting commit c8d52465f95c4187871f8e65666c07806ca06d41 and see if
+>> it helps ?
 > 
-> Maybe it should not - but it wakes up this board and probably also P4P800, 
-> P4P800-E and P4C800-E at least:
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/75497
-
-Okay, evidently the hardware or firmware on these boards is buggy.  
-Other systems do not have the same problem, as far as I know.
-
-> > > Does anyone know why is this enabled by default?
-> >
-> > Why _what_ is enabled?  Detection of disconnects?  Because otherwise
-> > your computer wouldn't realize anything had happened when a suspended
-> > USB device was unplugged from a suspended root hub.
+> It doesn't. The produced code is identical.
 > 
-> That's not disconnect detection - that's wakeup on disconnect.
-
-True; I oversimplified.  Furthermore, starting in 2.6.34, the wakeup 
-settings during system sleep (suspend or hibernation) can be different 
-from the settings during autosuspend, so you can have root hubs enabled 
-for wakeup during autosuspend but not during system sleep.
-
->  If I understand 
-> EHCI 1.0 specification correctly, disconnect detection should work regardless 
-> of the state of this bit:
-> | PORTSC bit 21: Wake on Disconnect Enable (WKDSCNNT_E):
-> | R/W. Default = 0b.
-> | Writing this bit to a one enables the port to be sensitive to device
-> | disconnects as wake-up events. See Section 4.3 for effects of this bit on
-> | resume event behavior. Refer to Section 4.3.1 for operational model.  
+>> If you have other compiler versions handy, that would also be helpful to see if
+>> the problem is specific to the gcc version you are using.
 > 
-> And it really does. With this patch applied, system does not wake up when a 
-> device is disconnected during suspend. When I wake up the system manually, 
-> the disconnect is detected immediately (does not matter
+> Tried 4.5.0, the same problem (at least looking at the produced assembler
+> code, I haven't booted the kernel, but it looks very similar to 4.3.3).
 
-It's worth pointing out that EHCI is different in this respect from
-OHCI and UHCI; the older controllers do not have the capability to
-enable or disable wakeup independently for connect, disconnect, and
-overcurrent events.  They are all or nothing.  So are external USB
-hubs.
+I wrote on the bugzilla but this is not a compiler bug but the -stable
+patch shouldn't have been applied only to 2.6.33.  Not 2.6.32.  This
+is because till 2.6.32, ia64 hadn't been converted to dynamic percpu
+allocator, so its static and dynamic percpu areas were separate and
+the per_cpu_ptr() wouldn't do the offsetting the module code expects
+there.  So, please revert the patch from 2.6.32.
 
+Thanks.
 
-> > > If we don't need that, perhaps the following patch should be applied.
-> > >
-> > >
-> > > Disable wake on overcurrent and disconnect in EHCI.
-> > > This fixes immediate resume from standby on boards where port power is
-> > > lost in standby which triggers overcurrent detection and disconnect if a
-> > > bus-powered device is connected. At least Asus P4P800 boards are affected
-> > > when any of the USBPWxx (e.g. USBPW12) jumpers is set to 5V.
-> >
-> > Why would you want to change the jumper settings?  Host controllers are
-> > _supposed_ to supply 5V power during system suspend.
-> 
-> Maybe because I don't want all my USB devices to be powered when the system is 
-> turned off. I doubt that laptop in suspend-to-RAM (on battery) provides power 
-> to USB ports.
-
-This depends on how your system was turned off.  During suspend or
-hibernation, you _should_ want USB devices to be powered (and some
-people do, as Greg pointed out).  During a normal system shutdown, the
-USB buses should not be powered.
-
-Regardless, I don't think a kernel patch is the way to solve your
-problem.  Changing the wakeup setting for the root hub will do what you
-want, and that setting is explicitly intended to be controlled by
-userspace (after all, that's why it is exposed in sysfs).  The initial
-value is only a reasonable default; you can certainly add scripts or
-udev rules to disable wakeup on your EHCI root hub.
-
-Alan Stern
-
+-- 
+tejun
